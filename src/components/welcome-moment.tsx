@@ -45,7 +45,7 @@ export function WelcomeMoment({ nickname, onContinue }: { nickname: string; onCo
         <Animated.View style={{ transform: reducedMotion ? undefined : [{ scale: burst.interpolate({ inputRange: [0, 0.65, 1], outputRange: [0.72, 1.08, 1] }) }] }}>
           <Image source={require('@/assets/brand/gling-night-wordmark.png')} resizeMode="contain" style={styles.mark} />
         </Animated.View>
-        <ThemedText accessibilityRole="header" style={styles.title}>{tr("글링에 오신 걸 환영해요,") + " "}{nickname}{tr("님!")}</ThemedText>
+        <ThemedText accessibilityRole="header" style={styles.title}>{tr('글링에 오신 걸 환영해요, {0}님!', nickname)}</ThemedText>
         <ThemedText style={styles.subtitle}>{tr("페스티벌도, 동네의 작은 한잔도. 마음 맞는 사람을 여기서 만나요.")}</ThemedText>
       </Animated.View>
     </View>

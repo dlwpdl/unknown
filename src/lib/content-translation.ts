@@ -1,14 +1,10 @@
-import { Platform } from 'react-native';
-import { requireOptionalNativeModule } from 'expo-modules-core';
-import { needsContentTranslation, protectTranslationSource, restoreTranslationSource, validateTranslationRequest, type TranslationRequest, type TranslationSource } from './translation-source.ts';
+import { supabase } from '@/lib/supabase';
+import { validateTranslationRequest, type TranslationRequest, type TranslationSource } from './translation-source.ts';
 
-type DeviceTranslator = { translate(texts: string[], language: 'ko' | 'en'): Promise<string[]> };
-const native = Platform.OS === 'web' ? null : requireOptionalNativeModule<DeviceTranslator>('GlingTranslation');
-export const isDeviceTranslationSupported = () => !!native;
 export const CONTENT_TRANSLATION_VIEWABILITY = { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 };
 type Job = { promise: Promise<TranslationSource>; controller: AbortController; readers: number; settled: boolean };
 const pending = new Map<string, Job>(), cache = new Map<string, TranslationSource>();
-let queue = Promise.resolve(), generation = 0;
+let generation = 0;
 
 export function resetContentTranslations() {
   generation++;
@@ -18,7 +14,6 @@ export function resetContentTranslations() {
 
 export async function requestContentTranslation(viewerScope: string, input: TranslationRequest, signal?: AbortSignal): Promise<TranslationSource> {
   if (!viewerScope) throw new Error('AUTH_REQUIRED');
-  if (!native) throw new Error('TRANSLATION_NOT_SUPPORTED');
   const request = validateTranslationRequest(input);
   if (signal?.aborted) throw new Error('TRANSLATION_CANCELLED');
   const key = JSON.stringify([viewerScope, request]);
@@ -44,8 +39,7 @@ export async function requestContentTranslation(viewerScope: string, input: Tran
       return requestContentTranslation(viewerScope, request, signal);
     }
     const controller = new AbortController();
-    const promise = queue.then(() => translate(request, controller.signal));
-    queue = promise.then(() => {}, () => {});
+    const promise = translate(request, controller.signal);
     job = { promise, controller, readers: 0, settled: false };
     pending.set(key, job);
     const current = job;
@@ -75,32 +69,15 @@ export async function requestContentTranslation(viewerScope: string, input: Tran
   }
 }
 
+// The server checks the text against the stored post, translates it once and shares the result with every viewer.
 async function translate(request: TranslationRequest, signal: AbortSignal): Promise<TranslationSource> {
-  const check = () => { if (signal.aborted) throw new Error('TRANSLATION_CANCELLED'); };
-  check();
-  const protectedSource = protectTranslationSource(request.source);
-  const token = new RegExp(`(⟦${protectedSource.prefix}\\d+⟧|\\r\\n|\\r|\\n)`, 'u');
-  const fields = [protectedSource.source.title, protectedSource.source.body].map(text => text?.split(token) ?? null);
-  const parts = fields.flatMap(field => field?.filter(part => part && !token.test(part) && needsContentTranslation({ title: null, body: part }, request.language)) ?? []);
-  const output: string[] = [];
-  try {
-    for (let start = 0; start < parts.length; start += 256) {
-      check();
-      const batch = parts.slice(start, start + 256);
-      const translated = await native!.translate(batch, request.language);
-      check();
-      if (!Array.isArray(translated) || translated.length !== batch.length || translated.some(text => typeof text !== 'string' || !text.trim() || text.length > 24000)) throw new Error();
-      output.push(...translated.map((text, index) => {
-        // ML Kit trims segment edges; keep the original spacing around protected values.
-        const original = batch[index];
-        return original.match(/^\s*/u)![0] + text.trim() + original.match(/\s*$/u)![0];
-      }));
-    }
-    let cursor = 0;
-    const restored = fields.map(field => field?.map(part => part && !token.test(part) && needsContentTranslation({ title: null, body: part }, request.language) ? output[cursor++] : part).join('') ?? null);
-    return restoreTranslationSource({ title: restored[0], body: restored[1] }, protectedSource);
-  } catch {
-    check();
+  const response = await supabase.functions.invoke('translate-content', { body: request, signal }).catch(() => null);
+  if (signal.aborted) throw new Error('TRANSLATION_CANCELLED');
+  const { data, error } = response ?? { data: null, error: true };
+  const translation = data?.translation;
+  if (error || !translation || typeof translation.body !== 'string' || !translation.body.trim()
+    || (request.source.title === null ? translation.title !== null : typeof translation.title !== 'string')) {
     throw new Error('TRANSLATION_UNAVAILABLE');
   }
+  return { title: translation.title, body: translation.body };
 }

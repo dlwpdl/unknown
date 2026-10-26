@@ -228,7 +228,7 @@ function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMercha
 }
 
 function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onChoose, accessChecking = false, businessOnly = false, initialTab = 'overview', layout }: { layout?: 'sidebar'; id: string; refreshSignal: number; onDirty: (dirty: boolean) => void; onConnectionsChanged?: () => void; onChoose?: () => void; accessChecking?: boolean; businessOnly?: boolean; initialTab?: MerchantTab }) {
-  const { tr, locale: appLocale } = useLanguage();
+  const { tr, language, locale: appLocale } = useLanguage();
   const theme = useTheme();
   const { me, isAdmin } = useAuth(); const { play } = useInteractionFeedback(), router = useRouter();
   const [revision, setRevision] = useState(0), [tab, setTab] = useState<MerchantTab>(initialTab);
@@ -343,7 +343,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     await run(async () => {
       const { data: result, error: failure } = await supabase.functions.invoke('draft-post', { body: {
         intent: 'merchant_promotion', merchantId: id, purpose: draftPurpose, cityName: merchant.city_name,
-        selectedCategory: base.tag_slug === 'festival' ? 'life' : base.tag_slug, bodyHint,
+        selectedCategory: base.tag_slug === 'festival' ? 'life' : base.tag_slug, bodyHint, language,
       } });
       if (failure) {
         let code = 'DRAFT_FAILED';

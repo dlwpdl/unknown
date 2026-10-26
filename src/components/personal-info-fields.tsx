@@ -38,7 +38,7 @@ export function PersonalInfoFields({ value, onChange, disabled = false, showCons
         editable={!disabled} accessibilityLabel={tr("비공개 생년월일, 연도 네 자리-월 두 자리-일 두 자리")} placeholder="YYYY-MM-DD" placeholderTextColor={theme.textSecondary}
         keyboardType="number-pad" autoComplete="off" autoCorrect={false} autoCapitalize="none" maxLength={10}
         style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]} />
-      {age != null && <ThemedText type="small" themeColor="textSecondary">{tr("만") + " "}{age}{tr("세 · 본인 입력 · 생년월일 미인증")}</ThemedText>}
+      {age != null && <ThemedText type="small" themeColor="textSecondary">{tr('만 {0}세 · 본인 입력 · 생년월일 미인증', age)}</ThemedText>}
     </View>
     {touched && error && <ThemedText type="small" accessibilityRole="alert" style={{ color: theme.accent }}>{tr(error)}</ThemedText>}
     <View style={styles.field}>

@@ -33,7 +33,7 @@ test('event meetup descriptions hide saved references while keeping old and new 
 const generated = { categorySlug: 'meetup', title: '함께 산책해요', body: '편하게 걸으며 이야기해요.', hashtags: [], purpose: '이웃과 알아가요.', activities: ['인사를 나눠요.', '편한 속도로 걸어요.'], fit: '산책을 좋아하는 분', preparation: [], applicationQuestion: '어떤 산책을 좋아하세요?' };
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 
-function form({ params = {}, sourceEvent, catalogReady = true } = {}) {
+function form({ params = {}, sourceEvent, catalogReady = true, language = 'ko' } = {}) {
   const slots = [], requests = [], writes = [], feedback = [], layouts = [], effects = [];
   let at = 0;
   let catalog = catalogReady ? JSON.parse(readFileSync(new URL('../src/lib/city-places.catalog.json', import.meta.url), 'utf8')) : null;
@@ -68,7 +68,7 @@ function form({ params = {}, sourceEvent, catalogReady = true } = {}) {
     'react-native': { View: 'View', TextInput: 'TextInput', KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'web' }, StyleSheet: { create: x => x, hairlineWidth: 1 }, Alert: { alert() {} }, DeviceEventEmitter: { emit() {} } },
     'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ replace() {}, push() {} }) },
     'react-native-reanimated': { useReducedMotion: () => true },
-    '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: s => s, t }) },
+    '@/hooks/use-language': { useLanguage: () => ({ language, tr: s => s, t }) },
     '@/hooks/use-theme': { useTheme: () => theme },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: 'host' }, isAdmin: false }) },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버' } }) },
@@ -214,6 +214,19 @@ test('an applied outline longer than 1000 characters can be refined without trun
   app.edit('모임 소개', introduction); app.generate();
   assert.equal(app.requests.length, 1);
   assert.equal(app.requests[0].args[1].body.bodyHint, introduction);
+});
+
+test('the event bridge pre-fills an English invitation for English users and keeps the Korean source reference', async () => {
+  const sourceEvent = { id: 'event-en', name: 'Example Festival', country: 'CA', status: 'onsale', startsAt: new Date(Date.now() + 7 * 86400000).toISOString(), ticketUrl: 'https://ticketmaster.ca/example', timeUnconfirmed: false };
+  const ko = form({ params: { ticketmasterEventId: sourceEvent.id, ticketmasterCityId: 'vancouver' }, sourceEvent });
+  ko.loadEvent(); await settle();
+  assert.equal(ko.find('모임 제목').props.value, 'Example Festival 같이 가요');
+  const app = form({ params: { ticketmasterEventId: sourceEvent.id, ticketmasterCityId: 'vancouver' }, sourceEvent, language: 'en' });
+  app.loadEvent(); await settle();
+  assert.equal(app.find('모임 제목').props.value, "Let's go to Example Festival");
+  assert.equal(app.find('모임 소개').props.value, "Looking for people to go to Example Festival with. Who's in?");
+  app.generate();
+  assert.equal(JSON.stringify(app.requests[0].args).includes('행사 ID'), false);
 });
 
 test('the event bridge preserves its seeded schedule and saved source when applying and publishing an invitation', async () => {

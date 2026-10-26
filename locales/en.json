@@ -1,5 +1,9 @@
 {
   "ios": {
-    "NSUserTrackingUsageDescription": "With your permission, Google AdMob uses this device's advertising identifier and app activity with other companies' data to measure ads and prevent ad fraud. You can use gling without allowing tracking."
+    "NSUserTrackingUsageDescription": "With your permission, Google AdMob uses this device's advertising identifier and app activity with other companies' data to measure ads and prevent ad fraud. You can use gling without allowing tracking.",
+    "NSPhotoLibraryUsageDescription": "Gling uses your photo library so you can add photos to your profile and posts.",
+    "NSCameraUsageDescription": "Gling uses your camera so you can take photos for your posts and AI drafts.",
+    "NSLocationWhenInUseUsageDescription": "Gling checks your location once to suggest a nearby city and to share places on the map. If you agree to city suggestions, that location record is also used to keep the community safe.",
+    "NSMotionUsageDescription": "Gling doesn't request or collect motion and fitness data. This description is only here because the location SDK includes a related system feature."
   }
 }

@@ -38,12 +38,12 @@ export function AppStoreChoices() {
       <a href={url} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>{store === 'ios' ? ko ? 'App Store에서 받기' : 'Get it on the App Store' : ko ? 'Google Play에서 확인' : 'View on Google Play'} <span aria-hidden="true">↗</span></a>
       {!qr && <p>{ko ? 'QR 코드 대신 위 스토어 링크를 이용해 주세요.' : 'Use the store link above if the QR code is unavailable.'}</p>}
       <p>{ko ? '설치 후 이 페이지로 돌아와 앱에서 이어가세요.' : 'After installing, return to this page and open the meetup or story in the app.'}</p>
-      {store === 'android' && <p>{ko ? 'Android는 비공개 테스트 중이며 공개 출시를 준비하고 있어요. 테스트 참여 대상만 설치할 수 있어요.' : 'Android is in private testing and its public release is being prepared. Installation is currently limited to eligible testers.'}</p>}
+      {store === 'android' && <p>{ko ? 'Android는 비공개 테스트 중이며 공개 출시를 준비하고 있어요. 테스트 참여 대상만 설치할 수 있어요.' : 'Android is in private testing, with a public release on the way. For now, only eligible testers can install it.'}</p>}
     </div>}
     <noscript><div className="public-app-store-result">
       <a href={stores.ios} target="_blank" rel="noopener noreferrer">{ko ? 'App Store에서 받기' : 'Get it on the App Store'}</a>
       <a href={stores.android} target="_blank" rel="noopener noreferrer">{ko ? 'Google Play에서 확인' : 'View on Google Play'}</a>
-      <p>{ko ? 'Android는 비공개 테스트 중이며 테스트 참여 대상만 설치할 수 있어요.' : 'Android is in private testing. Installation is limited to eligible testers.'}</p>
+      <p>{ko ? 'Android는 비공개 테스트 중이며 테스트 참여 대상만 설치할 수 있어요.' : 'Android is in private testing. Only eligible testers can install it.'}</p>
     </div></noscript>
   </section>;
 }

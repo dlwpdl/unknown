@@ -23,7 +23,7 @@ import { relativeTime } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { recordProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
-import { NOTIFICATION_CATEGORIES, adminDashboardUrl, isAdminNotificationKind, notificationRoute } from '@/lib/notification-preferences';
+import { NOTIFICATION_CATEGORIES, adminDashboardUrl, englishNotificationBody, isAdminNotificationKind, notificationRoute } from '@/lib/notification-preferences';
 import { subscribeNotificationChanges } from '@/lib/notification-refresh';
 
 type InboxFilter = 'all' | 'personal' | 'admin';
@@ -31,7 +31,7 @@ type Token = readonly unknown[];
 type Operation = { token: Token; userId: string | null; active: boolean; pending: Promise<void> | null; trailing: boolean; serial: number };
 
 export default function NotificationsScreen({ embedded = false }: { embedded?: boolean } = {}) {
-  const { tr, t, locale: appLocale } = useLanguage();
+  const { tr, t, locale: appLocale, language } = useLanguage();
   const INBOX_FILTERS: { key: InboxFilter; label: string }[] = [
     { key: 'all', get label() { return tr("전체"); } }, { key: 'personal', get label() { return tr("내 소식"); } }, { key: 'admin', get label() { return tr("관리자"); } },
   ];
@@ -166,6 +166,8 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
             renderItem={({ item, index }) => {
               const admin = isAdminNotificationKind(item.kind);
               const actor = item.actor_id && !admin && item.category !== 'meetups' && !item.kind.startsWith('meetup_') && actorResult?.token === token ? actorResult.people.get(item.actor_id) : undefined;
+              const body = language === 'en' ? englishNotificationBody(item, tr, actor?.nickname) : tr(item.body);
+              const title = item.title && tr(item.title);
               return <View>
                 {(index === 0 || index === newRows.length) && <ThemedText type="smallBold" style={[styles.groupTitle, { color: theme.textSecondary }]}>{index === 0 && newRows.length > 0 ? tr("새 소식") : newRows.length > 0 ? tr("이전 소식") : tr("모든 알림")}</ThemedText>}
                 <Pressable analyticsId="app_tabs_notifications.pressable.2"
@@ -183,7 +185,7 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
                   router.push((route?.startsWith('/admin') ? '/notifications' : route ?? '/notifications') as never);
                 }}
                 accessibilityRole="button"
-                accessibilityLabel={tr("{0}, {1}{2}", (admin ? tr('관리자 알림') : tr('내 소식')), (item.title ? `${item.title}, ` : ''), tr(item.body))}
+                accessibilityLabel={tr("{0}, {1}{2}", (admin ? tr('관리자 알림') : tr('내 소식')), (title ? `${title}, ` : ''), body)}
                 style={({ pressed }) => [
                   styles.row,
                   item.read_at == null && Depth.card,
@@ -200,12 +202,12 @@ export default function NotificationsScreen({ embedded = false }: { embedded?: b
                   <View style={styles.rowBody}>
                     <View style={styles.meta}>
                       <ThemedText type="smallBold" style={{ color: admin ? theme.accent : theme.textSecondary }}>
-                        {admin ? tr("관리자 알림") : NOTIFICATION_CATEGORIES.find(category => category.key === item.category)?.label ?? tr("글링 안내")}
+                        {admin ? tr("관리자 알림") : tr(NOTIFICATION_CATEGORIES.find(category => category.key === item.category)?.label ?? "글링 안내")}
                       </ThemedText>
                       <ThemedText type="small" themeColor="textSecondary">{relativeTime(item.created_at, undefined, appLocale)}</ThemedText>
                     </View>
-                    {item.title && <ThemedText type="smallBold">{item.title}</ThemedText>}
-                    <ThemedText>{tr(item.body)}</ThemedText>
+                    {title && <ThemedText type="smallBold">{title}</ThemedText>}
+                    <ThemedText>{body}</ThemedText>
                   </View>
                 </View>
                 </Pressable>

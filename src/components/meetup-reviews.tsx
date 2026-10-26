@@ -69,7 +69,7 @@ function Reviews({ postId, kind, attendanceOnly = false, onBeforeNavigate }: { p
       <ThemedText type="small" themeColor="textSecondary">{tr("회차별 후기는 모임에 쌓이고, 같은 사람의 반복 참여는 평점을 여러 번 올리지 않아요.")}</ThemedText>
       {page?.reviews.filter(review => !hidden('meetup_review', review.id, review.authorId)).map(review => <View key={review.id} style={[styles.review, { borderColor: theme.line }]}>
         <Pressable accessibilityRole="button" accessibilityLabel={tr("{0} 모임 프로필", review.nickname)} disabled={!isAuthed} style={button} onPress={() => { play('selection'); onBeforeNavigate?.(); router.push({ pathname: '/meetup-profile', params: { postId, userId: review.authorId } }); }}><ThemedText type="smallBold">{review.nickname} · {review.score}/10</ThemedText></Pressable>
-        <ThemedText type="small" themeColor="textSecondary">{new Date(review.sessionDate).toLocaleDateString(appLocale)}{" " + tr("참석 후기")}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{tr('{0} 참석 후기', new Date(review.sessionDate).toLocaleDateString(appLocale))}</ThemedText>
         {!!review.body && <ThemedText type="small">{review.body}</ThemedText>}
         {isAuthed && review.authorId !== me.id && <Pressable accessibilityRole="button" onPress={() => { play('selection'); setReport(review); }} style={button}><ThemedText type="small">{tr("후기 신고")}</ThemedText></Pressable>}
       </View>)}
@@ -138,7 +138,7 @@ function Session({ session, meId, onChanged, now }: { session: MeetupSession; me
       <Pressable accessibilityRole="button" disabled={busy || score === null || (score <= 5 && body.trim().length < 10)} accessibilityState={{ disabled: busy || score === null || (score <= 5 && body.trim().length < 10) }} style={button}
         onPress={() => void act(async () => { await writeMeetupReview(supabase, session.id, score!, body); setSubmitted(true); }, '후기를 제출했어요. 검토 후 모임에 반영됩니다.')}><ThemedText type="smallBold">{tr("후기 제출")}</ThemedText></Pressable>
     </>}
-    {!!session.reviewStatus && <ThemedText type="small">{tr("이 회차 후기는") + " "}{session.reviewStatus === 'published' ? tr("반영되었어요.") : tr("제출했어요. 검토 상태에 따라 공개돼요.")}</ThemedText>}
+    {!!session.reviewStatus && <ThemedText type="small">{session.reviewStatus === 'published' ? tr('이 회차 후기는 반영되었어요.') : tr('이 회차 후기는 제출했어요. 검토 상태에 따라 공개돼요.')}</ThemedText>}
     {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
   </View>;
 }

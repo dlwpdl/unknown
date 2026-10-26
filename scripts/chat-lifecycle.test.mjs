@@ -1448,8 +1448,8 @@ test('overview and location recovery copy follow Korean or English without trans
     const harness = mount('../src/components/meetup-chat-overview.tsx', 'MeetupChatOverview', overviewData({ language }), overviewProps);
     context.after(() => harness.cleanup()); await harness.settle();
     assert.ok(hasText(harness, overviewPost.title));
-    assert.ok(hasText(harness, language === 'en' ? 'No upcoming sessions are registered.' : '등록된 예정 일정이 없어요.'));
-    harness.nodes().find(node => node.props?.accessibilityLabel === (language === 'en' ? 'About this meetup' : '모임 소개')).props.onPress(); await harness.settle();
+    assert.ok(hasText(harness, language === 'en' ? 'No upcoming sessions yet.' : '등록된 예정 일정이 없어요.'));
+    harness.nodes().find(node => node.props?.accessibilityLabel === (language === 'en' ? 'About the meetup' : '모임 소개')).props.onPress(); await harness.settle();
     assert.ok(harness.nodes().some(node => node.type === 'PostBody' && node.props.body === overviewPost.body));
   }
 });

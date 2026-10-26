@@ -4,19 +4,20 @@ import { openBrowserAsync } from 'expo-web-browser';
 import { ThemedText, type ThemedTextProps } from '@/components/themed-text';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { PostAttachmentLink } from '@/components/post-attachment-link';
+import { localizeBusinessDisclosure } from '@/lib/translation-source';
 import { instagramPostLink, splitPostAttachments, splitPostLinks } from '../../supabase/functions/_shared/post-links';
 
 export function PostBody({ body, linksEnabled = true, ...props }: Omit<ThemedTextProps, 'children'> & { body: string; linksEnabled?: boolean }) {
   const { tr } = useLanguage();
   const { play } = useInteractionFeedback();
   const attached = splitPostAttachments(body);
-  return <View><ThemedText {...props}>{splitPostLinks(attached.body).map((part, index) => !part.url || !linksEnabled ? part.text
+  return <View><ThemedText {...props}>{splitPostLinks(localizeBusinessDisclosure(attached.body, tr)).map((part, index) => !part.url || !linksEnabled ? part.text
     : Platform.OS === 'web'
       ? <a key={index} href={part.url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"
           style={{ color: 'inherit', textDecoration: 'underline', overflowWrap: 'anywhere' }}
           onClick={event => {
             event.stopPropagation(); play('selection');
-            if (!instagramPostLink(part.url!) && !window.confirm(`${part.url}\n\n악성 여부를 아직 확인하지 못한 외부 링크예요. 이동할까요?`)) event.preventDefault();
+            if (!instagramPostLink(part.url!) && !window.confirm(tr('{0}\n\n악성 여부를 아직 확인하지 못한 외부 링크예요. 이동할까요?', part.url))) event.preventDefault();
           }}>{part.text}</a>
       : <ThemedText key={index} themeColor="accent" style={styles.link} accessibilityRole="link"
           accessibilityLabel={tr("{0} 외부 페이지 열기", (part.text))} onPress={event => {
@@ -25,7 +26,7 @@ export function PostBody({ body, linksEnabled = true, ...props }: Omit<ThemedTex
             if (instagramPostLink(part.url!)) open();
             else Alert.alert(tr("외부 링크 열기"), tr("{0}\n\n악성 여부를 아직 확인하지 못했어요.", (part.url)), [
               { text: tr("취소"), style: 'cancel', onPress: () => play('selection') },
-              { text: tr("이동"), onPress: () => { play('selection'); open(); } },
+              { text: tr('이동하기'), onPress: () => { play('selection'); open(); } },
             ]);
           }}>{part.text}</ThemedText>)}</ThemedText>
     {attached.urls.map((url, index) => <PostAttachmentLink key={`${url}-${index}`} url={url} enabled={linksEnabled} />)}

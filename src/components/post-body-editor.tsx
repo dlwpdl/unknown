@@ -79,7 +79,7 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
           <ThemedText themeColor="textSecondary">×</ThemedText>
         </Pressable>
       </View>)}
-      {blocked > 0 && <ThemedText type="small" accessibilityRole="alert">{tr("활성화할 수 없는 본문 링크") + " "}{blocked}{tr("개가 있어요. 주소를 확인해 주세요.")}</ThemedText>}
+      {blocked > 0 && <ThemedText type="small" accessibilityRole="alert">{tr('활성화할 수 없는 본문 링크 {0}개가 있어요. 주소를 확인해 주세요.', blocked)}</ThemedText>}
       {checks.length > blocked && <ThemedText type="small" themeColor="textSecondary">{tr("본문 외부 링크의 악성 여부는 아직 확인하지 못했어요.")}</ThemedText>}
     </>;
   return <>
@@ -116,7 +116,7 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
                 keyboardType="url" autoCapitalize="none" autoCorrect={false} maxLength={2048}
                 style={[styles.urlInput, { color: theme.text, borderColor: theme.line }]} />
               {!!candidate && <PostAttachmentLink url={candidate} />}
-              {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
+              {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
               <Pressable analyticsId="post.attachment.confirm" accessibilityRole="button" disabled={!next || !!error}
                 onPress={() => { if (!next || error) return; play('selection'); onChangeText?.(next); setStage(null); setInput(''); }}
                 style={[styles.confirm, { backgroundColor: theme.accent, opacity: !next || error ? 0.5 : 1 }]}>

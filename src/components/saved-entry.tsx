@@ -62,8 +62,8 @@ export function useSavedEntry(target: SavedTarget | null, visible: boolean) {
     }).finally(() => { request.busy = false; });
   }
   const error = !current?.error ? '' : current.error === 'read'
-    ? language === 'ko' ? '저장 상태를 확인하지 못했어요. 다시 시도해주세요.' : 'Could not check saved status. Please try again.'
-    : language === 'ko' ? '저장 상태를 바꾸지 못했어요. 다시 시도해주세요.' : 'Could not change saved status. Please try again.';
+    ? language === 'ko' ? '저장 상태를 확인하지 못했어요. 다시 시도해주세요.' : 'Couldn’t check if this is saved. Try again.'
+    : language === 'ko' ? '저장 상태를 바꾸지 못했어요. 다시 시도해주세요.' : 'Couldn’t update your saved items. Try again.';
   return { state: current?.state ?? null, error,
     loading: enabled && isAuthed && !current?.state && !current?.error,
     busy: current?.saving ?? false, visible: enabled, onPress };
@@ -73,7 +73,7 @@ export function SavedEntryButton({ entry, kind, analyticsId }: { entry: ReturnTy
   const theme = useTheme(), { language } = useLanguage(), ko = language === 'ko';
   if (!entry.visible || entry.state && !entry.state.available && !entry.state.saved) return null;
   const saved = entry.state?.saved ?? false, retry = !entry.state && !!entry.error, busy = entry.loading || entry.busy;
-  const label = busy ? ko ? '저장 상태 확인 중' : 'Checking saved status' : retry ? ko ? '저장 상태 다시 확인' : 'Retry saved status'
+  const label = busy ? ko ? '저장 상태 확인 중' : 'Checking saved status' : retry ? ko ? '저장 상태 다시 확인' : 'Check saved status again'
     : kind === 'place' ? saved ? ko ? '장소 저장 취소' : 'Unsave place' : ko ? '장소 저장' : 'Save place'
       : saved ? ko ? '사용자 저장 취소' : 'Unsave person' : ko ? '사용자 저장' : 'Save person';
   return <Pressable analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={label}

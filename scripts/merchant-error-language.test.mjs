@@ -31,7 +31,7 @@ test('every merchant error surface translates owned recovery copy while leaving 
     for (const markup of alerts) {
       const surface = {};
       vm.runInNewContext(compile('exports.render = () => (' + markup + ');'), { exports: surface, error, tr, ThemedText: 'Text', require: () => ({ jsx: (_type, props) => props }) });
-      assert.equal(surface.render().children, 'Could not create the draft. Your input is saved here. Please try again later.');
+      assert.equal(surface.render().children, 'Couldn’t create the draft. Your input is still here. Try again in a moment.');
     }
     for (const code of errorCodes) {
       const ownedMessage = exports.errorText(new Error(code));

@@ -79,8 +79,8 @@ function TemplatePicker({ draft, onApply, disabled = false }: MeetupTemplatePick
     <ThemedText type="smallBold">{say('내 모임 템플릿 · Plus', 'My meetup templates · Plus')}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">{say('제목과 소개, 신청 질문을 저장해두고 다시 쓸 수 있어요. 날짜·장소·정원·결제 정보는 직접 확인해주세요.', 'Save a title, description and application question to reuse. Confirm dates, venue, capacity and payment separately.')}</ThemedText>
     {loading && <ThemedText type="small" accessibilityLiveRegion="polite">{say('템플릿 불러오는 중…', 'Loading templates…')}</ThemedText>}
-    {!loading && !canUse && <ThemedText type="small" themeColor="textSecondary">{say('새 템플릿 저장·적용은 Plus부터 이용해요. 기존에 저장한 내용은 계속 볼 수 있어요.', 'Saving and applying templates requires Plus. Your saved content stays available to read.')}</ThemedText>}
-    {!loading && templates.length === 0 && !error && <ThemedText type="small" themeColor="textSecondary">{say('아직 저장한 템플릿이 없어요.', 'You have no saved templates yet.')}</ThemedText>}
+    {!loading && !canUse && <ThemedText type="small" themeColor="textSecondary">{say('새 템플릿 저장·적용은 Plus부터 이용해요. 기존에 저장한 내용은 계속 볼 수 있어요.', 'Saving and using templates needs Plus. You can still view the ones you saved.')}</ThemedText>}
+    {!loading && templates.length === 0 && !error && <ThemedText type="small" themeColor="textSecondary">{say('아직 저장한 템플릿이 없어요.', 'No saved templates yet.')}</ThemedText>}
     {templates.map(template => <Pressable analyticsId="meetup_template_picker.control.1" key={template.id} accessibilityRole="button" accessibilityState={{ expanded: selected === template.id, disabled: locked }} disabled={locked}
       accessibilityLabel={say(`${template.name} 미리보기`, `Preview ${template.name}`)} style={[button, selected === template.id && { borderColor: theme.accent }]}
       onPress={() => { play('selection'); setSelected(selected === template.id ? null : template.id); }}>
@@ -112,10 +112,10 @@ function TemplatePicker({ draft, onApply, disabled = false }: MeetupTemplatePick
       </Pressable>
     </>}
     {!!error && <>
-      <ThemedText type="small" accessibilityRole="alert">{error === 'load' ? say('템플릿을 불러오지 못했어요.', 'Templates could not be loaded.') : say('변경을 확인하지 못했어요. 연결과 멤버십 상태를 확인해주세요.', 'The change could not be verified. Check your connection and membership.')}</ThemedText>
+      <ThemedText type="small" accessibilityRole="alert">{error === 'load' ? say('템플릿을 불러오지 못했어요.', 'Couldn’t load templates.') : say('변경을 확인하지 못했어요. 연결과 멤버십 상태를 확인해주세요.', 'Couldn’t confirm the change. Check your connection and membership.')}</ThemedText>
       <Pressable analyticsId="meetup_template_picker.control.5" accessibilityRole="button" disabled={locked} accessibilityState={{ disabled: locked }} style={button} onPress={() => { play('selection'); setLoading(true); setRetry(value => value + 1); }}><ThemedText type="small">{say('다시 불러오기', 'Reload')}</ThemedText></Pressable>
     </>}
-    {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite">{notice === 'saved' ? say('템플릿을 저장했어요.', 'Template saved.') : notice === 'changed' ? say('작성 중인 내용이 바뀌었어요. 템플릿을 다시 확인한 뒤 적용해주세요.', 'Your draft changed. Review the template again before applying.') : notice === 'declined' ? say('적용하지 않았어요. 작성 화면의 안내를 확인해주세요.', 'The template was not applied. Check the note in your form.') : say('초안에 적용했어요. 게시 전에 내용을 확인해주세요.', 'Applied to your draft. Review it before publishing.')}</ThemedText>}
+    {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite">{notice === 'saved' ? say('템플릿을 저장했어요.', 'Template saved.') : notice === 'changed' ? say('작성 중인 내용이 바뀌었어요. 템플릿을 다시 확인한 뒤 적용해주세요.', 'Your draft changed. Review the template again before applying.') : notice === 'declined' ? say('적용하지 않았어요. 작성 화면의 안내를 확인해주세요.', 'Template not applied. Check the note on your form.') : say('초안에 적용했어요. 게시 전에 내용을 확인해주세요.', 'Applied to your draft. Review it before publishing.')}</ThemedText>}
   </View>;
 }
 

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { attachMerchantProfileImages } from './merchant-profile.ts';
 import { MAX_POST_IMAGES } from './image-upload.ts';
+import { tr } from '../i18n/index.ts';
 
 export type MerchantMcpAuthorization = { authorization_id: string; client_id: string; client_name: string; redirect_uri: string; scope: string; expires_at: string };
 export type MerchantMcpConnection = { id: string; client_id: string; client_name: string; merchant_ids: string[]; allow_drafts: boolean; allow_publish: boolean; is_connected: boolean;
@@ -110,8 +111,9 @@ export async function loadMerchantMcpChangePhotos(client: SupabaseClient, change
       attachMerchantProfileImages(client, profile({ ...change.before_value, ...change.changes }))]);
     if (before.imageLoadFailed || after.imageLoadFailed) throw new Error('MCP_PHOTO_PREVIEW_FAILED');
     return fields.flatMap(field => {
-      const label = field === 'avatar_path' ? '프로필 사진' : '커버 사진', key = field === 'avatar_path' ? 'avatarUri' : 'bannerUri';
-      return [{ label: `현재 ${label}`, uris: before[key] ? [before[key]] : [] }, { label: `제안한 ${label}`, uris: after[key] ? [after[key]] : [] }];
+      const [current, proposed] = field === 'avatar_path' ? [tr('현재 프로필 사진'), tr('제안한 프로필 사진')] : [tr('현재 커버 사진'), tr('제안한 커버 사진')];
+      const key = field === 'avatar_path' ? 'avatarUri' : 'bannerUri';
+      return [{ label: current, uris: before[key] ? [before[key]] : [] }, { label: proposed, uris: after[key] ? [after[key]] : [] }];
     });
   }
   const paths = (value: unknown): string[] => {
@@ -119,8 +121,8 @@ export async function loadMerchantMcpChangePhotos(client: SupabaseClient, change
     if (!Array.isArray(value) || value.length > MAX_POST_IMAGES || value.some(path => typeof path !== 'string' || !path)) throw new Error('MCP_PHOTO_PREVIEW_FAILED');
     return value;
   };
-  const groups = [{ label: change.kind === 'delete_post' ? '삭제할 글의 사진' : '현재 사진', paths: paths(change.before_value.image_paths) }];
-  if (change.kind === 'edit_post' && 'image_paths' in change.changes) groups.push({ label: '제안한 사진', paths: paths(change.changes.image_paths) });
+  const groups = [{ label: change.kind === 'delete_post' ? tr('삭제할 글의 사진') : tr('현재 사진'), paths: paths(change.before_value.image_paths) }];
+  if (change.kind === 'edit_post' && 'image_paths' in change.changes) groups.push({ label: tr('제안한 사진'), paths: paths(change.changes.image_paths) });
   const unique = [...new Set(groups.flatMap(group => group.paths))];
   if (!unique.length) return groups.map(group => ({ label: group.label, uris: [] }));
   const result = await client.storage.from('post-images').createSignedUrls(unique, 60);

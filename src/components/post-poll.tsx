@@ -53,7 +53,7 @@ export function PostPoll({ postId }: { postId: string }) {
   };
   return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <ThemedText type="smallBold">{poll.question}</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr("투표 참여") + " "}{total.toLocaleString(appLocale)}{tr("명 · 한 개만 고를 수 있어요")}</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr('투표 참여 {0}명 · 한 개만 고를 수 있어요', total.toLocaleString(appLocale))}</ThemedText>
     <View style={styles.options} accessibilityRole="radiogroup">
       {poll.options.map((label, index) => {
         const percentage = total ? Math.round(poll.counts[index] / total * 100) : 0;

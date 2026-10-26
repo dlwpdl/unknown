@@ -118,7 +118,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{tr("변경 후 발송되는 푸시부터 적용돼요.")}</ThemedText>
       </View>
       <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{tr("관심사와 내 도시")}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{tr(cityName)}{tr("의 맛집·레스토랑, 가볼 만한 곳·행사와 새 글·모임 소식을 골라 받을 수 있어요. 이사 후 선호 지역을 바꾸면 알림 지역도 함께 바뀝니다.")}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{tr("{0}의 맛집·레스토랑, 가볼 만한 곳·행사와 새 글·모임 소식을 골라 받을 수 있어요. 이사 후 선호 지역을 바꾸면 알림 지역도 함께 바뀝니다.", tr(cityName))}</ThemedText>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         {NOTIFICATION_CATEGORIES.slice(7, 13).map(item => <ToggleRow key={item.key} label={tr(item.label)} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
       </View>

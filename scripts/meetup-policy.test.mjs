@@ -29,9 +29,9 @@ test('API restriction errors show a release timestamp but never echo arbitrary s
 test('English policy copy preserves restriction lengths, exclusions and existing safety actions', () => {
   const leaving = meetupPolicyNotice({ ...clear, leaves24h: 2 }, 'leave', now, 'en-CA');
   assert.match(leaving, /12 hours/);
-  assert.match(leaving, /Natural endings/);
+  assert.match(leaving, /end on their own and cancellations before approval/);
   const restricted = meetupPolicyNotice({ ...clear, joinBlockedUntil: '2026-09-18T01:00:00Z' }, 'join', now, 'en-CA');
-  assert.match(restricted, /reporting, blocking and leaving/);
+  assert.match(restricted, /report, block or leave/);
   assert.doesNotMatch(restricted, /[가-힣]/);
   const error = meetupRestrictionError({ message: 'MEETUP_HOST_RESTRICTED', details: '<secret>' }, 'en-CA');
   assert.match(error, /report, block and leave/);

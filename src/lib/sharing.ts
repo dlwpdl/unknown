@@ -1,4 +1,5 @@
 import { decodeSharedUuid, encodeSharedUuid } from './shared-uuid.ts';
+import { tr } from '../i18n/index.ts';
 
 const appOrigin = 'https://gling.ej-entertainment.com';
 const previewOrigin = 'https://gling-share-preview.vercel.app';
@@ -43,7 +44,7 @@ export function sharedLinkInMessage(body: string) {
   return body.match(/https:\/\/[^\s<>]+/g)?.find(url => sharedLinkTarget(url)) ?? null;
 }
 export function sharedPostMessage(post: { id: string; title: string; room?: unknown }) {
-  return `${post.room ? '같이 가요! ' : ''}${post.title}\n${buildSharedPostUrl(post.id)}`;
+  return `${post.room ? `${tr('같이 가요!')} ` : ''}${post.title}\n${buildSharedPostUrl(post.id)}`;
 }
 
 export const SHARED_POST_RETURN_KEY = 'gling.sharedPostReturn';

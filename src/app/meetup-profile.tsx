@@ -273,7 +273,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
           {!loaded && <Pressable analyticsId="app_meetup-profile.pressable.9" onPress={() => { play('selection'); setLoading(true); setError(''); setRetry(x => x + 1); }} accessibilityRole="button" style={styles.button}><ThemedText>{tr("다시 불러오기")}</ThemedText></Pressable>}</>}
       </ScrollView>}
       {isAuthed && !postId && loaded && !loading && <View style={[styles.footer, { borderColor: theme.line, backgroundColor: theme.background }]}>
-        <ThemedText type="small" themeColor="textSecondary">{tr("필수 항목") + " "}{complete}{tr("/6 완료 ·") + " "}{step === 4 ? tr("저장하면 다음 모임에서도 사용할 수 있어요") : tr("답변은 나중에도 바꿀 수 있어요")}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{tr('필수 항목 {0}/6 완료 · {1}', complete, step === 4 ? tr('저장하면 다음 모임에서도 사용할 수 있어요') : tr('답변은 나중에도 바꿀 수 있어요'))}</ThemedText>
         {step === 4 ? <RaisedActionButton analyticsId="app_meetup-profile.pressable.8" disabled={saving || photoSaving || !stepReady} busy={saving} onPress={() => void save()} label={saving ? tr("저장 중…") : returnPostId ? tr("저장하고 신청 계속") : tr("이 프로필로 시작하기")} />
           : <RaisedActionButton analyticsId="app_meetup-profile.pressable.13" disabled={saving || photoSaving || !stepReady} onPress={() => { play('selection'); if (step === 3) addTags(tagDraft); changeStep(step + 1); }} label={step === 3 ? tr("내 프로필 미리보기") : tr("다음")} />}
       </View>}

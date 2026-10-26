@@ -136,3 +136,31 @@ test('초안 본문은 쓰레드 말투로 고정되고, 작성자 원고 다듬
   assert.ok(sent.instructions.includes('작성자의 말투를 쓰레드 말투로 바꾸지 마세요'), '다듬기 모드에서는 말투를 보존해야 한다');
   assert.equal('tone' in JSON.parse(sent.input[0].content[0].text), false, '말투는 사용자 선택이 아니라 서버 규칙이다');
 });
+
+test('personal drafts carry the requested app language and reject unknown languages', async () => {
+  let handler, sent;
+  const source = ts.transpileModule(fs.readFileSync(new URL('../supabase/functions/draft-post/index.ts', import.meta.url), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  }).outputText;
+  vm.runInNewContext(source, {
+    exports: {}, Request, Response, console,
+    Deno: { serve: fn => { handler = fn; }, env: { get: () => 'test-value' } },
+    require: () => ({ createClient: () => ({
+      auth: { getUser: async () => ({ data: { user: { id: 'member' } } }) },
+      from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { ai_safety_consent_at: '2026-09-11' } }) }) }) }),
+      rpc: async () => ({}),
+    }) }),
+    fetch: async (_url, options) => {
+      sent = JSON.parse(options.body);
+      return Response.json({ output: [{ content: [{ type: 'output_text', text: JSON.stringify({ categorySlug: 'life', title: 'Rainy-day walks', body: 'Any good spots for a walk when it rains?', hashtags: [] }) }] }] });
+    },
+  });
+  const post = body => handler(new Request('https://example.test/draft-post', { method: 'POST', headers: { Authorization: 'Bearer test' }, body: JSON.stringify(body) }));
+  const input = { cityName: 'Vancouver', selectedCategory: 'life', bodyHint: 'walks when it rains', language: 'en' };
+  assert.equal((await post(input)).status, 200);
+  assert.equal(JSON.parse(sent.input[0].content[0].text).language, 'en');
+  assert.ok(sent.instructions.includes('language가 en이면') && sent.instructions.includes('캐나다 철자'));
+  sent = undefined;
+  assert.equal((await post({ ...input, language: 'fr' })).status, 400);
+  assert.equal(sent, undefined);
+});

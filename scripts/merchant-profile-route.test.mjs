@@ -8,6 +8,7 @@ import { appendUniquePosts, getPostImageSource } from '../src/lib/feed-data.ts';
 import * as conveniences from '../src/lib/merchant-conveniences.ts';
 import * as savedItems from '../src/lib/saved-items.ts';
 import { safeMerchantSourceUrl } from '../src/lib/merchant-source.ts';
+import { translationSource } from './test-meetup-source-imports.mjs';
 
 const company = '11111111-1111-4111-8111-111111111111';
 const post = { id: '22222222-2222-4222-8222-222222222222', author: { id: 'writer' }, title: '업체가 올린 실제 글', body: '게시글 본문', tag: { slug: 'business', label: '업체' }, createdAtLabel: '2시간 전' };
@@ -48,7 +49,7 @@ function screen({ business = null, webshop = null, loadReviews = async (_, __, _
     '@/lib/auth': { useAuth: () => ({ isAuthed: !!account, isAuthLoading: false, me: { id: account ?? 'guest' }, promptLogin: reason => login.push(reason) }) },
     '@/lib/merchant-conveniences': conveniences,
     '@/lib/saved-items': savedItems,
-    '@/lib/merchant-source': { safeMerchantSourceUrl },
+    '@/lib/merchant-source': { safeMerchantSourceUrl }, '@/lib/translation-source': translationSource,
     '@/lib/merchant-profile': { loadMerchantProfile: async (...args) => { lastProfile = await loadProfile(...args); return lastProfile; },
       loadMerchantProfilePosts: async (...args) => { postCalls.push(args); return loadPosts(...args); } },
     '@/lib/feed-data': { getPostImageSource, appendUniquePosts },

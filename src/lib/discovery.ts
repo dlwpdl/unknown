@@ -1,3 +1,4 @@
+import { tr } from '../i18n/index.ts';
 import { googleMapsPin, googlePinUrl, postMapBody, type PostPin } from './post-maps.ts';
 import type { Post } from './types.ts';
 import { EVENT_TIMEZONES, festivalLocalDay, isFestivalEvent, type EventCity, type TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster.ts';
@@ -111,7 +112,7 @@ export function discoveryPost(post: Post, now = Date.now()): DiscoveryItem | nul
   if (!location.url) return null;
   const address = new URL(location.url).searchParams.get('query');
   return { id: `post:${post.id}`, source: 'post', sourceId: post.id, cityId: post.cityId, title: post.title,
-    category: categoryFor(post), label: location.label ?? (!pin && address ? address : '공개 위치'), latitude: pin?.latitude ?? null, longitude: pin?.longitude ?? null,
+    category: categoryFor(post), label: location.label ?? (!pin && address ? address : tr('공개 위치')), latitude: pin?.latitude ?? null, longitude: pin?.longitude ?? null,
     price: typeof post.price === 'number' && Number.isFinite(post.price) ? post.price : null, imageUri: post.imageThumbs?.[0] ?? post.imageUris?.[0], post };
 }
 export function discoveryEvent(event: TicketmasterEvent, cityId: string, now = Date.now()): DiscoveryItem | null {

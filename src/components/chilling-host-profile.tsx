@@ -95,7 +95,7 @@ function HostProfile({ post, onJoin, onBeforeNavigate }: { post: Post; onJoin?: 
     {!!post.room.eventKind && <>
       <Pressable analyticsId="components_chilling-host-profile.pressable.1" onPress={() => { play('selection'); if (profile) setProfile(null); else void load(); }} accessibilityRole="button" accessibilityState={{ expanded: !!profile, busy: loading }} style={[styles.disclosure, { borderColor: theme.line }]}>
         <View style={styles.factBody}><ThemedText type="small" themeColor="textSecondary">{tr("이 모임을 연 사람")}</ThemedText><ThemedText style={styles.factValue}>{post.author.nickname}</ThemedText></View>
-        <ThemedText type="smallBold" themeColor="accent">{tr("프로필") + " "}{profile ? tr("접기") : tr("보기")} ›</ThemedText>
+        <ThemedText type="smallBold" themeColor="accent">{profile ? tr('프로필 접기') : tr('프로필 보기')} ›</ThemedText>
       </Pressable>
       {loading && <GlingLoader color={theme.accent} />}
       {isAuthed && profile && <ChillingProfileCard profile={profile} />}
@@ -105,7 +105,7 @@ function HostProfile({ post, onJoin, onBeforeNavigate }: { post: Post; onJoin?: 
       <ThemedText type="smallBold">{tr("참여 안내")}</ThemedText><ThemedText themeColor="textSecondary">{infoOpen ? '−' : '＋'}</ThemedText>
     </Pressable>
     {infoOpen && <View style={styles.factBody}><ThemedText type="small" themeColor="textSecondary">{recommendedAgeLabel(post.room, appLocale)}{post.room.recommendedAgeMin != null ? tr(" · 권장 범위 밖이어도 신청 가능") : ''}</ThemedText>
-      {!!post.room.timezone && <ThemedText type="small" themeColor="textSecondary">{tr("일정은") + " "}{post.room.timezone}{" " + tr("기준이에요.")}</ThemedText>}
+      {!!post.room.timezone && <ThemedText type="small" themeColor="textSecondary">{tr('일정은 {0} 기준이에요.', post.room.timezone)}</ThemedText>}
       <ThemedText type="small" themeColor="textSecondary">{tr("준비물·참가비·집결 안내는 모임장 공지와 모임 대화에서 확인해 주세요.")}</ThemedText>
     </View>}
   </View>;

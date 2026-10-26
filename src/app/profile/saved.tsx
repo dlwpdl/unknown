@@ -125,7 +125,7 @@ export default function SavedScreen() {
     void perform(async operation => {
       await setSavedItem(supabase, item.target, false);
       if (operation.active && request.current === operation) update(page => ({ ...page, items: page.items.filter(row => row.key !== item.key) }));
-    }, ko ? '저장을 해제하지 못했어요. 항목은 그대로 남아 있어요. 다시 눌러주세요.' : 'Could not unsave this item. It is still saved. Please try again.');
+    }, ko ? '저장을 해제하지 못했어요. 항목은 그대로 남아 있어요. 다시 눌러주세요.' : 'Couldn’t remove this item. It’s still saved. Try again.');
   };
   const saveFolder = (name: string) => {
     if (!activeEditor || !['create', 'rename'].includes(activeEditor.kind)) return;
@@ -135,7 +135,7 @@ export default function SavedScreen() {
       if (!operation.active || request.current !== operation) return;
       update(page => page, folders => editing.kind === 'rename' ? folders.map(row => row.id === folder.id ? folder : row) : [...folders, folder]);
       setEditor(editing.kind === 'create' && editing.returnItem ? { key, visibility: hidden, value: { kind: 'item', item: { ...editing.returnItem, folderIds: [...editing.returnItem.folderIds, folder.id] } } } : null);
-    }, ko ? '폴더를 저장하지 못했어요. 이름을 확인하고 다시 시도해 주세요.' : 'Could not save the folder. Check the name and try again.');
+    }, ko ? '폴더를 저장하지 못했어요. 이름을 확인하고 다시 시도해 주세요.' : 'Couldn’t save the folder. Check the name and try again.');
   };
   const deleteFolder = () => {
     if (activeEditor?.kind !== 'delete') return;
@@ -146,7 +146,7 @@ export default function SavedScreen() {
       update(page => ({ ...page, items: page.items.map(item => ({ ...item, folderIds: item.folderIds.filter(folder => folder !== id) })) }), folders => folders.filter(folder => folder.id !== id));
       setEditor(null);
       if (folderId === id) setFolderId(null);
-    }, ko ? '폴더를 삭제하지 못했어요. 저장한 항목과 폴더는 유지돼요.' : 'Could not delete the folder. Your folder and saved items are unchanged.');
+    }, ko ? '폴더를 삭제하지 못했어요. 저장한 항목과 폴더는 유지돼요.' : 'Couldn’t delete the folder. Your folder and saved items are unchanged.');
   };
   const assign = (ids: string[]) => {
     if (activeEditor?.kind !== 'item') return;
@@ -156,7 +156,7 @@ export default function SavedScreen() {
       if (!operation.active || request.current !== operation) return;
       update(page => ({ ...page, items: page.items.filter(row => row.key !== item.key || !folderId || ids.includes(folderId)).map(row => row.key === item.key ? { ...row, folderIds: ids } : row) }));
       setEditor(null);
-    }, ko ? '폴더 정리를 저장하지 못했어요. 기존 정리는 유지돼요. 다시 시도해 주세요.' : 'Could not save the folder changes. Previous membership is unchanged. Please try again.');
+    }, ko ? '폴더 정리를 저장하지 못했어요. 기존 정리는 유지돼요. 다시 시도해 주세요.' : 'Couldn’t save folder changes. Your items stay where they were. Try again.');
   };
   async function compare(item: SavedItem) {
     const operation = activeOperation();
@@ -168,7 +168,7 @@ export default function SavedScreen() {
       if (!shop) throw new Error('UNAVAILABLE');
       setOffer({ key, visibility: hidden, name: item.title, shop });
     } catch {
-      if (operation.active && request.current === operation) { setMessage({ key, text: ko ? '지금은 웹샵 가격을 확인할 수 없어요. 잠시 후 다시 눌러주세요.' : 'Webshop prices are unavailable right now. Please try again shortly.' }); play('warning'); }
+      if (operation.active && request.current === operation) { setMessage({ key, text: ko ? '지금은 웹샵 가격을 확인할 수 없어요. 잠시 후 다시 눌러주세요.' : 'Can’t check webshop prices right now. Try again in a moment.' }); play('warning'); }
     } finally { if (comparing.current === task) { comparing.current = null; setCompareKey(null); } }
   }
   function open(item: SavedItem) {
@@ -204,12 +204,12 @@ export default function SavedScreen() {
         {!!error && !activeEditor && <ThemedText accessibilityRole="alert">{error}</ThemedText>}
       </View>}
       ListEmptyComponent={loading ? <GlingLoader color={theme.accent} accessibilityLabel={ko ? '저장 목록 불러오는 중' : 'Loading saved items'} style={styles.state} />
-        : <View style={styles.state}><StateCard kind={current?.failed ? 'error' : 'empty'} title={current?.failed ? ko ? '저장 목록을 불러오지 못했어요' : 'Could not load saved items' : query ? ko ? '검색 결과가 없어요' : 'No matching saved items' : ko ? '아직 저장한 항목이 없어요' : 'No saved items here yet'}
+        : <View style={styles.state}><StateCard kind={current?.failed ? 'error' : 'empty'} title={current?.failed ? ko ? '저장 목록을 불러오지 못했어요' : 'Couldn’t load saved items' : query ? ko ? '검색 결과가 없어요' : 'No matching saved items' : ko ? '아직 저장한 항목이 없어요' : 'No saved items here yet'}
           body={current?.failed ? ko ? '연결을 확인하고 다시 시도해 주세요.' : 'Check your connection and try again.' : query || folderId || filter !== 'all' ? ko ? '검색어나 필터, 폴더를 바꿔 보세요.' : 'Try another search, filter or folder.' : ko ? '마음에 드는 장소, 글, 채용 정보나 사람을 저장해 보세요. 폴더 정리는 나중에 해도 돼요.' : 'Save places, posts, jobs or people. Organize them in folders whenever you like.'}
           actionLabel={current?.failed ? ko ? '다시 시도' : 'Try again' : undefined} onAction={current?.failed ? retry : undefined} /></View>}
       ListFooterComponent={<View style={styles.footer}>
         {loading && !!rows.length && <ThemedText type="supporting" themeColor="textSecondary" accessibilityLiveRegion="polite">{ko ? '불러오는 중…' : 'Loading…'}</ThemedText>}
-        {current?.failed && !!rows.length && <><ThemedText type="supporting" accessibilityRole="alert">{ko ? '목록을 불러오지 못했어요. 앞서 불러온 항목은 유지돼요.' : 'Could not load the list. Previously loaded items are still here.'}</ThemedText><SavedLibraryButton analyticsId="saved.retry" label={ko ? '다시 시도' : 'Try again'} disabled={busy || loading} onPress={retry} /></>}
+        {current?.failed && !!rows.length && <><ThemedText type="supporting" accessibilityRole="alert">{ko ? '목록을 불러오지 못했어요. 앞서 불러온 항목은 유지돼요.' : 'Couldn’t load the list. Items you already loaded are still here.'}</ThemedText><SavedLibraryButton analyticsId="saved.retry" label={ko ? '다시 시도' : 'Try again'} disabled={busy || loading} onPress={retry} /></>}
         {page?.hasMore && !current?.failed && <SavedLibraryButton analyticsId="saved.more" label={ko ? '더 보기' : 'Load more'} disabled={busy || loading} onPress={() => void more()} />}
       </View>}
       ItemSeparatorComponent={() => <View style={styles.separator} />}

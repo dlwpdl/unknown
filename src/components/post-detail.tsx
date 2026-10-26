@@ -431,7 +431,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     if (!page || page.loading) return <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite" style={styles.loadMore}>{t.feed.loadingMore}</ThemedText>;
     if (!page.error && !page.cursor) return null;
     return <View>
-      {page.error && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr(parentId ? tr("답글") : tr("댓글"))}{tr("을 불러오지 못했어요.")}</ThemedText>}
+      {page.error && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr(parentId ? '답글을 불러오지 못했어요.' : '댓글을 불러오지 못했어요.')}</ThemedText>}
       <Pressable analyticsId="components_post-detail.pressable.1" onPress={() => { play('selection'); void loadPage(parentId, page.cursor); }} accessibilityRole="button" style={({ pressed }) => [styles.loadMore, pressed && styles.pressed]}>
         <ThemedText type="smallBold" themeColor="accent">{tr(page.error ? tr("다시 시도") : parentId ? tr("답글 더 보기") : t.detail.loadMoreComments)}</ThemedText>
       </Pressable>
@@ -492,7 +492,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               </View>
             )}
           </Pressable>
-          {c.replyToNickname && <ThemedText type="small" themeColor="accent" style={styles.commentActionText}>{c.replyToNickname}{tr("님에게 답글")}</ThemedText>}
+          {c.replyToNickname && <ThemedText type="small" themeColor="accent" style={styles.commentActionText}>{tr('{0}님에게 답글', c.replyToNickname)}</ThemedText>}
           <TranslatedCommentBody id={c.id} body={c.body} visible={visibleCommentIds.has(c.id)} />
           <View style={styles.commentActions}>
             <Pressable analyticsId="components_post-detail.pressable.4"
@@ -591,7 +591,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           toggleReplies(comment.id);
         }}
         accessibilityRole="button"
-        accessibilityLabel={tr("{0}의 댓글 답글 {1}개 {2}", (comment.nickname), (count(comment.replyCount ?? 0)), (expanded.has(comment.id) ? tr('접기') : tr('보기')))}
+        accessibilityLabel={tr(expanded.has(comment.id) ? '{0}의 댓글 답글 {1}개 접기' : '{0}의 댓글 답글 {1}개 보기', comment.nickname, count(comment.replyCount ?? 0))}
         accessibilityState={{ expanded: expanded.has(comment.id) }}
         aria-expanded={expanded.has(comment.id)}
         style={({ pressed }) => [styles.replyToggle, pressed && styles.pressed]}>
@@ -706,7 +706,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                   placeholder={tr("내용")} placeholderTextColor={theme.textSecondary} maxLength={Math.max(1000 - linkedEventDetails.length, [...(post.body ?? '')].length)} multiline editable={!savingPost}
                   accessibilityLabel={tr("글 내용 수정")}
                   style={[styles.postEditInput, styles.postEditBody, { color: theme.text, borderColor: theme.line }]} />
-                <ThemedText type="smallBold">{tr("사진") + " "}{postImages?.length ?? 0}/{MAX_POST_IMAGES}</ThemedText>
+                <ThemedText type="smallBold">{tr('사진 {0}/{1}', postImages?.length ?? 0, MAX_POST_IMAGES)}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">{tr("첫 사진이 표지예요. 앞·뒤 버튼으로 순서를 바꿀 수 있어요.")}</ThemedText>
                 <PostPhotoEditor images={postImages ?? []} disabled={savingPost || pickingPostImages} onChange={setPostImages} />
                 <View style={styles.postActions}>
@@ -791,7 +791,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
             </Pressable>
           </View>}
           {replyTo && !editing && <View style={styles.replyContext}>
-            <ThemedText type="small" themeColor="accent" style={{ flex: 1 }}>{replyTo.nickname}{tr("님에게 답글")}</ThemedText>
+            <ThemedText type="small" themeColor="accent" style={{ flex: 1 }}>{tr('{0}님에게 답글', replyTo.nickname)}</ThemedText>
             <Pressable analyticsId="components_post-detail.pressable.18" onPress={() => { play('selection'); setReplyTo(null); }} disabled={sending} accessibilityRole="button" accessibilityLabel={tr("답글 취소")}
               accessibilityState={{ disabled: sending }} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
               <ThemedText type="small" themeColor="textSecondary">{tr("취소")}</ThemedText>

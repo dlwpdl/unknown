@@ -5,11 +5,13 @@ import Head from 'expo-router/head';
 import { usePublicWebshop, WebshopBanner, WebshopComparisonSheet, WebshopOrderButton } from '@/components/business-webshop';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
+import { useLanguage } from '@/hooks/use-language';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { merchantMapsUrl, merchantPhoneUrl } from '@/lib/merchant-source';
 import { loadMerchantProfile, loadMerchantProfilePosts, type MerchantProfile, type MerchantProfilePostKind, type MerchantProfilePostPage } from '@/lib/merchant-profile';
 import type { MerchantReviewPage, MerchantReviewReply } from '@/lib/merchant-reviews';
 import { PUBLIC_SITE } from '@/lib/public-seo';
+import { localizeBusinessDisclosure } from '@/lib/translation-source';
 import { publicMerchantId, publicWebTarget } from '@/lib/public-web';
 import { publicWebClient } from '@/lib/public-web-client';
 
@@ -58,6 +60,7 @@ function RatingVisual({ kind, scoreTenths, animated = false }: { kind: ReviewKin
 }
 
 function Rating({ page, kind = 'usage', animated = false, compact = false }: { page: Pick<PublicReviewPage, 'ratingAverage' | 'reviewCount'>; kind?: ReviewKind; animated?: boolean; compact?: boolean }) {
+  const { language } = useLanguage(), ko = language === 'ko';
   const scoreTenths = page.ratingAverage == null ? null : Math.round(page.ratingAverage * 10);
   if (compact) return <span className="reader-company-rating-compact"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.3">{kind === 'usage'
     ? <path d="M8 1 10 6 15 8 10 10 8 15 6 10 1 8 6 6Z" fill="currentColor" stroke="none" />
@@ -65,13 +68,15 @@ function Rating({ page, kind = 'usage', animated = false, compact = false }: { p
     <strong>{scoreTenths == null ? '—' : (scoreTenths / 10).toFixed(1)}</strong></span>;
   return <span className="reader-company-rating"><span className="reader-company-rating-number"><strong>{scoreTenths == null ? '—' : (scoreTenths / 10).toFixed(1)}</strong><span>/ 10</span></span>
     <RatingVisual key={`${kind}:${scoreTenths}`} kind={kind} scoreTenths={scoreTenths} animated={animated} />
-    <span>인증 {kind === 'usage' ? '이용' : '근무'} 리뷰 {page.reviewCount}개</span></span>;
+    <span>{ko ? <>인증 {kind === 'usage' ? '이용' : '근무'} 리뷰 {page.reviewCount}개</>
+      : `${page.reviewCount} verified ${kind === 'usage' ? 'customer' : 'employee'} review${page.reviewCount === 1 ? '' : 's'}`}</span></span>;
 }
 
 function ProfileRatings({ merchantId, postId, selectedKind, onSelect, onRead, controls = 'company-reviews' }: {
   merchantId: string; postId: string; selectedKind: ReviewKind | null; onSelect: (kind: ReviewKind) => void; onRead?: (counts: ReviewCounts) => void; controls?: string;
 }) {
   const { play } = useInteractionFeedback();
+  const { language } = useLanguage(), ko = language === 'ko';
   const key = `${merchantId}:${postId}`;
   const [result, setResult] = useState<{ key: string; usage: PublicReviewPage | null; employment: PublicReviewPage | null } | null>(null);
   useEffect(() => {
@@ -87,10 +92,12 @@ function ProfileRatings({ merchantId, postId, selectedKind, onSelect, onRead, co
     return () => { active = false; };
   }, [key, merchantId, postId, onRead]);
   const current = result?.key === key ? result : null;
-  return <div className="reader-company-metrics" role="group" aria-label="인증 리뷰 평점" aria-busy={!current}>
+  return <div className="reader-company-metrics" role="group" aria-label={ko ? '인증 리뷰 평점' : 'Verified review ratings'} aria-busy={!current}>
     {(['usage', 'employment'] as const).map((kind) => {
       const page = current?.[kind];
-      const label = `${kind === 'usage' ? '상품·서비스' : '근무'} 리뷰 보기, ${!current ? '불러오는 중' : !page ? '조회 실패' : page.ratingAverage == null ? '점수 없음' : `10점 만점에 평균 ${(Math.round(page.ratingAverage * 10) / 10).toFixed(1)}점, 인증 후기 ${page.reviewCount}개`}`;
+      const average = page?.ratingAverage == null ? '' : (Math.round(page.ratingAverage * 10) / 10).toFixed(1);
+      const label = ko ? `${kind === 'usage' ? '상품·서비스' : '근무'} 리뷰 보기, ${!current ? '불러오는 중' : !page ? '조회 실패' : page.ratingAverage == null ? '점수 없음' : `10점 만점에 평균 ${average}점, 인증 후기 ${page.reviewCount}개`}`
+        : `See ${kind === 'usage' ? 'customer' : 'employee'} reviews, ${!current ? 'loading' : !page ? 'couldn’t load' : page.ratingAverage == null ? 'no score yet' : `average ${average} out of 10 from ${page.reviewCount} verified review${page.reviewCount === 1 ? '' : 's'}`}`;
       return <button type="button" className="reader-company-metric" key={kind} data-review-kind={kind} aria-label={label} title={label}
         aria-pressed={selectedKind === kind} aria-controls={controls} onClick={() => { play('selection'); onSelect(kind); }}>
         {page ? <Rating page={page} kind={kind} compact /> : <span className="reader-company-metric-unavailable">{current ? '—' : '…'}</span>}
@@ -101,6 +108,7 @@ function ProfileRatings({ merchantId, postId, selectedKind, onSelect, onRead, co
 
 export function PublicMerchantProfileLink({ postId }: { postId: string }) {
   const { play } = useInteractionFeedback();
+  const { language } = useLanguage(), ko = language === 'ko';
   const [result, setResult] = useState<{ postId: string; page: PublicReviewPage } | null>(null);
   useEffect(() => {
     let active = true;
@@ -111,13 +119,14 @@ export function PublicMerchantProfileLink({ postId }: { postId: string }) {
   }, [postId]);
   if (result?.postId !== postId) return null;
   return <a className="reader-company-link" href={`/company?id=${result.page.merchantId}`} onClick={() => play('selection')}
-    aria-label={`${result.page.merchantName} 비즈니스 프로필과 인증 이용 리뷰 보기`}>
+    aria-label={ko ? `${result.page.merchantName} 비즈니스 프로필과 인증 이용 리뷰 보기` : `See ${result.page.merchantName}’s business profile and verified customer reviews`}>
     <span><strong>{result.page.merchantName}</strong><Rating page={result.page} /></span><span aria-hidden="true">↗</span>
   </a>;
 }
 
 function PublicReviews({ merchantId, postId, kind = 'usage' }: { merchantId: string; postId: string; kind?: ReviewKind }) {
   const { play } = useInteractionFeedback();
+  const { language } = useLanguage(), ko = language === 'ko';
   const key = `${merchantId}:${postId}:${kind}`;
   const [result, setResult] = useState<{ key: string; page: PublicReviewPage | null; failed: boolean } | null>(null);
   const [busy, setBusy] = useState(true);
@@ -127,7 +136,7 @@ function PublicReviews({ merchantId, postId, kind = 'usage' }: { merchantId: str
   const current = result?.key === key ? result : null;
   const page = current?.page ?? null;
   const loading = busy || !current;
-  const label = kind === 'usage' ? '이용' : '근무';
+  const label = kind === 'usage' ? '이용' : '근무', noun = kind === 'usage' ? 'customer' : 'employee';
   useEffect(() => {
     const operation = { active: true, reading: false };
     request.current = operation;
@@ -160,32 +169,34 @@ function PublicReviews({ merchantId, postId, kind = 'usage' }: { merchantId: str
   }
 
   return <section id={`company-reviews-${kind}`} className="reader-company-reviews" data-review-kind={kind} aria-labelledby={`company-reviews-title-${kind}`} aria-busy={loading}>
-    <div className="reader-company-section-heading"><div><h2 id={`company-reviews-title-${kind}`}>{kind === 'usage' ? '상품·서비스 이용 리뷰' : '근무 리뷰'}</h2>
-      <p>{kind === 'usage' ? '영수증 인증을 마친 이용 리뷰예요.' : '사람이 근무 증빙을 확인한 공개 리뷰예요.'} 10점 척도로 표시해요.</p></div>{page && <Rating page={page} kind={kind} animated />}</div>
-    {loading && <p role="status">인증 {label} 리뷰를 불러오고 있어요…</p>}
-    {current?.failed && <div role="alert" className="reader-company-error"><p>{label} 리뷰를 불러오지 못했어요.</p>
-      <button disabled={loading} onClick={() => { play('selection'); setBusy(true); setRetry((value) => value + 1); }}>다시 시도</button></div>}
+    <div className="reader-company-section-heading"><div><h2 id={`company-reviews-title-${kind}`}>{ko ? kind === 'usage' ? '상품·서비스 이용 리뷰' : '근무 리뷰' : kind === 'usage' ? 'Customer reviews' : 'Employee reviews'}</h2>
+      <p>{ko ? <>{kind === 'usage' ? '영수증 인증을 마친 이용 리뷰예요.' : '사람이 근무 증빙을 확인한 공개 리뷰예요.'} 10점 척도로 표시해요.</>
+        : `${kind === 'usage' ? 'Reviews from customers who verified a receipt.' : 'Public reviews where our team checked proof of employment.'} Scores are out of 10.`}</p></div>{page && <Rating page={page} kind={kind} animated />}</div>
+    {loading && <p role="status">{ko ? `인증 ${label} 리뷰를 불러오고 있어요…` : `Loading verified ${noun} reviews…`}</p>}
+    {current?.failed && <div role="alert" className="reader-company-error"><p>{ko ? `${label} 리뷰를 불러오지 못했어요.` : `Couldn’t load ${noun} reviews.`}</p>
+      <button disabled={loading} onClick={() => { play('selection'); setBusy(true); setRetry((value) => value + 1); }}>{ko ? '다시 시도' : 'Try again'}</button></div>}
     {page?.reviews.map((review) => {
       const open = openId === review.id;
       const date = new Date(review.created_at);
       return <article className="reader-company-review" key={review.id}>
         <button className="reader-company-review-toggle" aria-expanded={open} aria-controls={`review-${kind}-${review.id}`}
-          aria-label={`${review.nickname}의 ${review.score.toFixed(1)}점 인증 ${label} 리뷰 ${open ? '접기' : '전체 보기'}`}
+          aria-label={ko ? `${review.nickname}의 ${review.score.toFixed(1)}점 인증 ${label} 리뷰 ${open ? '접기' : '전체 보기'}`
+            : `${review.nickname}, ${review.score.toFixed(1)}/10 verified ${noun} review. ${open ? 'Show less' : 'Show full review'}`}
           onClick={() => { play('selection'); setOpenId(open ? null : review.id); }}>
-          <span className="reader-company-review-heading"><strong>{review.nickname}</strong><span className="reader-company-verified">{kind === 'usage' ? '영수증 인증' : '근무 인증'}</span>
+          <span className="reader-company-review-heading"><strong>{review.nickname}</strong><span className="reader-company-verified">{ko ? kind === 'usage' ? '영수증 인증' : '근무 인증' : kind === 'usage' ? 'Receipt verified' : 'Employment verified'}</span>
             <span className="reader-company-review-score">{review.score.toFixed(1)} <small>/ 10</small></span></span>
           <RatingVisual kind={kind} scoreTenths={review.score * 10} />
-          {!open && <span className="reader-company-review-preview">{review.body || `점수만 남긴 ${label} 리뷰예요.`}</span>}
-          <span className="reader-company-review-meta"><time dateTime={review.created_at}>{Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('ko-KR')}</time>
-            <span>{open ? '접기 ↑' : '전체 보기 ↓'}</span></span>
+          {!open && <span className="reader-company-review-preview">{review.body || (ko ? `점수만 남긴 ${label} 리뷰예요.` : 'Score only, no written review.')}</span>}
+          <span className="reader-company-review-meta"><time dateTime={review.created_at}>{Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString(ko ? 'ko-KR' : 'en-CA')}</time>
+            <span>{ko ? open ? '접기 ↑' : '전체 보기 ↓' : open ? 'Show less ↑' : 'Show more ↓'}</span></span>
         </button>
-        {open && <div id={`review-${kind}-${review.id}`} className="reader-company-review-detail"><p>{review.body || `점수만 남긴 ${label} 리뷰예요.`}</p>
-          {review.reply && <aside className="reader-company-reply"><strong>비즈니스 답변</strong><p>{review.reply.body}</p></aside>}
+        {open && <div id={`review-${kind}-${review.id}`} className="reader-company-review-detail"><p>{review.body || (ko ? `점수만 남긴 ${label} 리뷰예요.` : 'Score only, no written review.')}</p>
+          {review.reply && <aside className="reader-company-reply"><strong>{ko ? '비즈니스 답변' : 'Reply from the business'}</strong><p>{review.reply.body}</p></aside>}
         </div>}
       </article>;
     })}
-    {!loading && !current?.failed && page && !page.reviewCount && <p className="reader-company-empty">아직 공개된 인증 {label} 리뷰가 없어요.</p>}
-    {page?.hasMore && <button className="reader-more" disabled={loading} onClick={() => void more()}>인증 {label} 리뷰 더 보기</button>}
+    {!loading && !current?.failed && page && !page.reviewCount && <p className="reader-company-empty">{ko ? `아직 공개된 인증 ${label} 리뷰가 없어요.` : `No verified ${noun} reviews yet.`}</p>}
+    {page?.hasMore && <button className="reader-more" disabled={loading} onClick={() => void more()}>{ko ? `인증 ${label} 리뷰 더 보기` : `More verified ${noun} reviews`}</button>}
   </section>;
 }
 
@@ -193,6 +204,7 @@ function PublicProfilePosts({ merchantId, kind, onRead, onPosts }: {
   merchantId: string; kind: MerchantProfilePostKind; onRead?: (counts: PostCounts) => void; onPosts?: () => void;
 }) {
   const { play } = useInteractionFeedback();
+  const { language, tr } = useLanguage(), ko = language === 'ko';
   const key = `${merchantId}:${kind}`;
   const [result, setResult] = useState<{ key: string; page: MerchantProfilePostPage | null; failed: boolean; failedOffset: number } | null>(null);
   const [busy, setBusy] = useState(true);
@@ -201,7 +213,7 @@ function PublicProfilePosts({ merchantId, kind, onRead, onPosts }: {
   const current = result?.key === key ? result : null;
   const page = current?.page ?? null;
   const loading = busy || !current;
-  const label = kind === 'posts' ? '게시글' : '채용';
+  const label = kind === 'posts' ? '게시글' : '채용', noun = kind === 'posts' ? 'posts' : 'jobs';
   useEffect(() => {
     const operation = { active: true, reading: false };
     request.current = operation;
@@ -235,32 +247,34 @@ function PublicProfilePosts({ merchantId, kind, onRead, onPosts }: {
   }
 
   return <div className="reader-company-posts" data-post-kind={kind} aria-busy={loading}>
-    <div className="reader-company-panel-heading"><h2>{kind === 'posts' ? '비즈니스 게시글' : '진행 중인 채용'}</h2>
-      {page && <span>{kind === 'posts' ? page.post_count : page.job_count}개</span>}</div>
-    {loading && <p role="status">{label}을 불러오고 있어요…</p>}
-    {current?.failed && <div className="reader-company-error" role="alert"><p>{label}을 불러오지 못했어요.</p>
+    <div className="reader-company-panel-heading"><h2>{ko ? kind === 'posts' ? '비즈니스 게시글' : '진행 중인 채용' : kind === 'posts' ? 'Business posts' : 'Open jobs'}</h2>
+      {page && <span>{kind === 'posts' ? page.post_count : page.job_count}{ko ? '개' : ''}</span>}</div>
+    {loading && <p role="status">{ko ? `${label}을 불러오고 있어요…` : `Loading ${noun}…`}</p>}
+    {current?.failed && <div className="reader-company-error" role="alert"><p>{ko ? `${label}을 불러오지 못했어요.` : `Couldn’t load ${noun}.`}</p>
       <button disabled={loading} onClick={() => {
         if (current.failedOffset > 0) void more();
         else { play('selection'); setBusy(true); setRetry((value) => value + 1); }
-      }}>다시 시도</button></div>}
+      }}>{ko ? '다시 시도' : 'Try again'}</button></div>}
     {page?.posts.map((post) => {
       const thumbnail = post.imageThumbs?.[0] || post.imageUris?.[0];
       return <article className="reader-company-post" key={post.id}><a href={`/post?id=${post.id}`} onClick={() => play('selection')}>
-        <span className="reader-company-post-text"><span className="reader-company-post-meta">{post.tag.label} · {post.createdAtLabel}</span>
-          <strong>{post.title}</strong><span className="reader-company-post-preview">{post.body}</span></span>
+        <span className="reader-company-post-text"><span className="reader-company-post-meta">{tr(post.tag.label)} · {post.createdAtLabel}</span>
+          <strong>{post.title}</strong><span className="reader-company-post-preview">{localizeBusinessDisclosure(post.body, tr)}</span></span>
         {thumbnail ? <img className="reader-company-post-cover" src={thumbnail} alt="" loading="lazy" onError={(event) => { event.currentTarget.hidden = true; }} />
           : <span className="reader-company-post-arrow" aria-hidden="true">›</span>}</a></article>;
     })}
-    {!loading && !current?.failed && !page && <p className="reader-company-empty">현재 공개된 비즈니스 글을 확인할 수 없어요.</p>}
-    {!loading && !current?.failed && page && !page.posts.length && <div className="reader-company-empty"><h3>{kind === 'jobs' ? '진행 중인 채용이 없어요' : '아직 공개된 게시글이 없어요'}</h3>
-      <p>{kind === 'jobs' ? '새로운 모집 글이 등록되면 여기에 표시돼요.' : '비즈니스에 연결된 공개 글이 등록되면 여기에 표시돼요.'}</p>
-      {kind === 'jobs' && onPosts && <button onClick={() => { play('selection'); onPosts(); }}>게시글 보기</button>}</div>}
-    {page?.has_more && <button className="reader-more" disabled={loading} onClick={() => void more()}>{label} 더 보기</button>}
+    {!loading && !current?.failed && !page && <p className="reader-company-empty">{ko ? '현재 공개된 비즈니스 글을 확인할 수 없어요.' : 'This business’s public posts aren’t available right now.'}</p>}
+    {!loading && !current?.failed && page && !page.posts.length && <div className="reader-company-empty"><h3>{ko ? kind === 'jobs' ? '진행 중인 채용이 없어요' : '아직 공개된 게시글이 없어요' : kind === 'jobs' ? 'No open jobs' : 'No posts yet'}</h3>
+      <p>{ko ? kind === 'jobs' ? '새로운 모집 글이 등록되면 여기에 표시돼요.' : '비즈니스에 연결된 공개 글이 등록되면 여기에 표시돼요.'
+        : kind === 'jobs' ? 'New job posts will show up here.' : 'Public posts linked to this business will show up here.'}</p>
+      {kind === 'jobs' && onPosts && <button onClick={() => { play('selection'); onPosts(); }}>{ko ? '게시글 보기' : 'See posts'}</button>}</div>}
+    {page?.has_more && <button className="reader-more" disabled={loading} onClick={() => void more()}>{ko ? `${label} 더 보기` : `More ${noun}`}</button>}
   </div>;
 }
 
 function ProfilePage({ merchantId }: { merchantId: string }) {
   const { play } = useInteractionFeedback();
+  const { language } = useLanguage(), ko = language === 'ko';
   const [result, setResult] = useState<{ key: string; profile: MerchantProfile | null; failed: boolean; attempt: number } | null>(null);
   const [retry, setRetry] = useState(0);
   const [broken, setBroken] = useState({ banner: false, avatar: false });
@@ -292,46 +306,46 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
   const reviews = reviewCounts?.key === `${merchantId}:${profile?.review_post_id}` ? reviewCounts : null;
   const totalReviews = reviews?.usage != null && reviews.employment != null ? reviews.usage + reviews.employment : null;
   const tabs: { id: ProfileTab; label: string; count?: number | null }[] = [
-    { id: 'about', label: '소개' }, { id: 'posts', label: '소식', count: counts?.postCount },
-    { id: 'jobs', label: '채용', count: counts?.jobCount }, { id: 'reviews', label: '후기', count: totalReviews },
+    { id: 'about', label: ko ? '소개' : 'About' }, { id: 'posts', label: ko ? '소식' : 'Updates', count: counts?.postCount },
+    { id: 'jobs', label: ko ? '채용' : 'Jobs', count: counts?.jobCount }, { id: 'reviews', label: ko ? '후기' : 'Reviews', count: totalReviews },
   ];
   const panelId = (id: ProfileTab) => `company-panel-${merchantId}-${id}`;
   return <article className="reader-company" aria-busy={busy}>
-    <Head>{profile && <><title>{`${profile.name} | 글링 비즈니스 프로필`}</title><meta name="description" content={`${profile.city_name} · ${profile.industry}. ${profile.services.slice(0, 150)}`} /></>}
+    <Head>{profile && <><title>{`${profile.name} | ${ko ? '글링 비즈니스 프로필' : 'Gling business profile'}`}</title><meta name="description" content={`${profile.city_name} · ${profile.industry}. ${profile.services.slice(0, 150)}`} /></>}
       <link rel="canonical" href={`${PUBLIC_SITE}/company?id=${merchantId}`} />
       {unavailable && <meta name="robots" content="noindex, nofollow" />}</Head>
-    <a className="reader-back" href="/" onClick={() => play('selection')}>← 동네 이야기로</a>
-    {busy && <p role="status">비즈니스 프로필을 불러오고 있어요…</p>}
-    {current?.failed && <div role="alert" className="reader-company-error"><p>비즈니스 프로필을 불러오지 못했어요.</p>
-      <button disabled={busy} onClick={() => { play('selection'); setRetry((value) => value + 1); }}>다시 시도</button></div>}
-    {unavailable && <div className="reader-notice"><h1>비즈니스 프로필을 찾을 수 없어요</h1><p>현재 공개된 비즈니스 프로필이 아니에요.</p></div>}
+    <a className="reader-back" href="/" onClick={() => play('selection')}>{ko ? '← 동네 이야기로' : '← Back to stories'}</a>
+    {busy && <p role="status">{ko ? '비즈니스 프로필을 불러오고 있어요…' : 'Loading business profile…'}</p>}
+    {current?.failed && <div role="alert" className="reader-company-error"><p>{ko ? '비즈니스 프로필을 불러오지 못했어요.' : 'Couldn’t load this business profile.'}</p>
+      <button disabled={busy} onClick={() => { play('selection'); setRetry((value) => value + 1); }}>{ko ? '다시 시도' : 'Try again'}</button></div>}
+    {unavailable && <div className="reader-notice"><h1>{ko ? '비즈니스 프로필을 찾을 수 없어요' : 'Business profile not found'}</h1><p>{ko ? '현재 공개된 비즈니스 프로필이 아니에요.' : 'This business profile isn’t public right now.'}</p></div>}
     {profile && <>
       <div className="reader-company-hero">
       <div className="reader-company-banner">{profile.bannerUri && !broken.banner
-        ? <img src={profile.bannerUri} alt={`${profile.name} 배너`} onError={() => setBroken((previous) => ({ ...previous, banner: true }))} />
+        ? <img src={profile.bannerUri} alt={ko ? `${profile.name} 배너` : `${profile.name} banner`} onError={() => setBroken((previous) => ({ ...previous, banner: true }))} />
         : <span aria-hidden="true">{profile.name}</span>}</div>
       <header className="reader-company-identity"><div className="reader-company-business"><div className="reader-company-avatar">{profile.avatarUri && !broken.avatar
-        ? <img src={profile.avatarUri} alt={`${profile.name} 로고`} onError={() => setBroken((previous) => ({ ...previous, avatar: true }))} />
+        ? <img src={profile.avatarUri} alt={ko ? `${profile.name} 로고` : `${profile.name} logo`} onError={() => setBroken((previous) => ({ ...previous, avatar: true }))} />
         : <span aria-hidden="true">{profile.name.slice(0, 1)}</span>}</div>
         <div><p className="reader-kicker">{[profile.industry, profile.city_name].filter(Boolean).join(' · ')}</p><h1>{profile.name}</h1></div></div>
         {profile.review_post_id && <ProfileRatings key={`${merchantId}:${profile.review_post_id}`} merchantId={merchantId} postId={profile.review_post_id}
           selectedKind={tab === 'reviews' ? reviewKind : null} onSelect={selectKind} onRead={setReviewCounts} controls={panelId('reviews')} />}</header>
       <div className="reader-company-blurb">{profile.services && <p>{profile.services}</p>}
         {counts?.jobCount != null && counts.jobCount > 0 && <button type="button" className="reader-company-hiring" aria-controls={panelId('jobs')}
-          onClick={() => { play('selection'); setTab('jobs'); }}><span aria-hidden="true">●</span> 채용 중 · {`${counts.jobCount}건`} <span aria-hidden="true">›</span></button>}</div>
-      {!!profile.links?.length && <nav className="reader-company-sources" aria-label="비즈니스 외부 페이지">{profile.links.map(link =>
-        <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" aria-label={`${profile.name} ${link.label}, 새 창 열기`}
+          onClick={() => { play('selection'); setTab('jobs'); }}><span aria-hidden="true">●</span> {ko ? '채용 중' : 'Hiring'} · {ko ? `${counts.jobCount}건` : `${counts.jobCount} job${counts.jobCount === 1 ? '' : 's'}`} <span aria-hidden="true">›</span></button>}</div>
+      {!!profile.links?.length && <nav className="reader-company-sources" aria-label={ko ? '비즈니스 외부 페이지' : 'Business links'}>{profile.links.map(link =>
+        <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" aria-label={ko ? `${profile.name} ${link.label}, 새 창 열기` : `${profile.name} ${link.label}, opens in a new tab`}
           onClick={() => play('selection')}>{link.label} <span aria-hidden="true">↗</span></a>)}</nav>}
       {webshop.shop && <div style={{ display: 'grid', gap: 16, paddingTop: 16 }}><WebshopBanner shop={webshop.shop} onPress={() => setOrderOpen(true)} /><WebshopOrderButton onPress={() => setOrderOpen(true)} /></div>}
-      {webshop.failed && <button type="button" onClick={() => { play('selection'); webshop.retry(); }}>웹샵 정보를 다시 확인해주세요</button>}
-      <div className="reader-company-hero-actions"><a className="reader-company-app-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>{profile.can_message ? '앱에서 문의하기' : '앱에서 비즈니스 보기'} <span aria-hidden="true">↗</span></a>
-        <a className="reader-company-save-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>앱에서 저장 <span aria-hidden="true">↗</span></a></div>
+      {webshop.failed && <button type="button" onClick={() => { play('selection'); webshop.retry(); }}>{ko ? '웹샵 정보를 다시 확인해주세요' : 'Reload webshop'}</button>}
+      <div className="reader-company-hero-actions"><a className="reader-company-app-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>{ko ? profile.can_message ? '앱에서 문의하기' : '앱에서 비즈니스 보기' : profile.can_message ? 'Message in the app' : 'View in the app'} <span aria-hidden="true">↗</span></a>
+        <a className="reader-company-save-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>{ko ? '앱에서 저장' : 'Save in the app'} <span aria-hidden="true">↗</span></a></div>
       {(profile.imageLoadFailed || broken.banner || broken.avatar) && <div className="reader-company-image-notice" role="status">
-        <p>일부 프로필 사진을 불러오지 못했어요.</p><button disabled={busy} onClick={() => { play('selection'); setRetry((value) => value + 1); }}>사진 다시 불러오기</button></div>}
+        <p>{ko ? '일부 프로필 사진을 불러오지 못했어요.' : 'Some profile photos couldn’t load.'}</p><button disabled={busy} onClick={() => { play('selection'); setRetry((value) => value + 1); }}>{ko ? '사진 다시 불러오기' : 'Reload photos'}</button></div>}
       </div>
       {webshop.shop && <WebshopComparisonSheet client={publicWebClient} shop={webshop.shop} name={profile.name} visible={orderOpen} onClose={() => setOrderOpen(false)} />}
       <div className="reader-company-details"><div className="reader-company-main-panel">
-      <div className="reader-company-tabs" role="tablist" aria-label="비즈니스 프로필 내용">{tabs.map((item, index) => <button type="button" role="tab" key={item.id} data-tab={item.id}
+      <div className="reader-company-tabs" role="tablist" aria-label={ko ? '비즈니스 프로필 내용' : 'Business profile sections'}>{tabs.map((item, index) => <button type="button" role="tab" key={item.id} data-tab={item.id}
         id={`company-tab-${merchantId}-${item.id}`} aria-controls={panelId(item.id)} aria-selected={tab === item.id} tabIndex={tab === item.id ? 0 : -1}
         onClick={() => { play('selection'); setTab(item.id); }} onKeyDown={(event) => {
           const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : event.key === 'ArrowRight' ? (index + 1) % tabs.length
@@ -344,27 +358,27 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
         aria-labelledby={`company-tab-${merchantId}-${item.id}`} tabIndex={0} hidden={tab !== item.id}>
         {tab === item.id && (item.id === 'posts' || item.id === 'jobs' ? <PublicProfilePosts key={`${merchantId}:${item.id}`} merchantId={merchantId} kind={item.id} onRead={setPostCounts} onPosts={() => setTab('posts')} />
           : item.id === 'reviews' ? profile.review_post_id ? <>
-            <div className="reader-company-review-kinds" role="group" aria-label="리뷰 종류">{(['usage', 'employment'] as const).map((kind) => <button type="button" key={kind}
+            <div className="reader-company-review-kinds" role="group" aria-label={ko ? '리뷰 종류' : 'Review type'}>{(['usage', 'employment'] as const).map((kind) => <button type="button" key={kind}
               aria-pressed={reviewKind === kind} aria-controls="company-reviews" onClick={() => { play('selection'); setReviewKind(kind); }}>
-              {kind === 'usage' ? '이용' : '근무'}{reviews?.[kind] != null && <span>{reviews[kind]}</span>}</button>)}</div>
+              {ko ? kind === 'usage' ? '이용' : '근무' : kind === 'usage' ? 'Customers' : 'Employees'}{reviews?.[kind] != null && <span>{reviews[kind]}</span>}</button>)}</div>
             <div id="company-reviews"><PublicReviews key={`${merchantId}:${profile.review_post_id}:${reviewKind}`} merchantId={merchantId} postId={profile.review_post_id} kind={reviewKind} /></div>
-          </> : <p className="reader-company-empty">아직 연결된 공개 리뷰가 없어요.</p>
-            : <div id="company-intro" className="reader-company-intro"><h2>소개</h2><p>{profile.services || '등록된 소개가 없어요.'}</p>
-              <dl><dt>업종</dt><dd>{profile.industry || '등록된 업종이 없어요.'}</dd><dt>지역</dt><dd>{profile.city_name}</dd>
-                {phone && <><dt>전화</dt><dd><a href={phone} onClick={() => play('selection')}>{profile.public_phone}</a></dd></>}
-                {!!profile.business_hours && <><dt>영업시간</dt><dd className="reader-company-hours">{profile.business_hours}</dd></>}
-                {profile.address && <><dt>주소</dt><dd>{profile.address}{directions && <a className="reader-company-directions" href={directions} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>길찾기 ↗</a>}</dd></>}
+          </> : <p className="reader-company-empty">{ko ? '아직 연결된 공개 리뷰가 없어요.' : 'No public reviews yet.'}</p>
+            : <div id="company-intro" className="reader-company-intro"><h2>{ko ? '소개' : 'About'}</h2><p>{profile.services || (ko ? '등록된 소개가 없어요.' : 'No description yet.')}</p>
+              <dl><dt>{ko ? '업종' : 'Category'}</dt><dd>{profile.industry || (ko ? '등록된 업종이 없어요.' : 'No category listed.')}</dd><dt>{ko ? '지역' : 'Area'}</dt><dd>{profile.city_name}</dd>
+                {phone && <><dt>{ko ? '전화' : 'Phone'}</dt><dd><a href={phone} onClick={() => play('selection')}>{profile.public_phone}</a></dd></>}
+                {!!profile.business_hours && <><dt>{ko ? '영업시간' : 'Hours'}</dt><dd className="reader-company-hours">{profile.business_hours}</dd></>}
+                {profile.address && <><dt>{ko ? '주소' : 'Address'}</dt><dd>{profile.address}{directions && <a className="reader-company-directions" href={directions} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>{ko ? '길찾기 ↗' : 'Directions ↗'}</a>}</dd></>}
               </dl></div>)}
       </section>)}
-      </div><aside className="reader-company-visit" aria-label="방문 정보"><h2>들르기 전에</h2>
+      </div><aside className="reader-company-visit" aria-label={ko ? '방문 정보' : 'Visit info'}><h2>{ko ? '들르기 전에' : 'Before you go'}</h2>
         {profile.city_name && <p className="reader-company-visit-city">{profile.city_name}</p>}
-        {profile.address && <div><h3>주소</h3><p>{profile.address}</p>{directions && <a href={directions} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>길찾기 ↗</a>}</div>}
-        {profile.business_hours && <div><h3>영업시간</h3><p className="reader-company-hours">{profile.business_hours}</p></div>}
-        {phone && <div><h3>공개 전화</h3><a href={phone} onClick={() => play('selection')}>{profile.public_phone}</a></div>}
-        {!profile.address && !profile.business_hours && !phone && <p>아직 등록된 방문 정보가 없어요.</p>}
-        <p className="reader-company-visit-note">비즈니스가 공개한 정보만 표시돼요.</p>
+        {profile.address && <div><h3>{ko ? '주소' : 'Address'}</h3><p>{profile.address}</p>{directions && <a href={directions} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>{ko ? '길찾기 ↗' : 'Directions ↗'}</a>}</div>}
+        {profile.business_hours && <div><h3>{ko ? '영업시간' : 'Hours'}</h3><p className="reader-company-hours">{profile.business_hours}</p></div>}
+        {phone && <div><h3>{ko ? '공개 전화' : 'Phone'}</h3><a href={phone} onClick={() => play('selection')}>{profile.public_phone}</a></div>}
+        {!profile.address && !profile.business_hours && !phone && <p>{ko ? '아직 등록된 방문 정보가 없어요.' : 'No visit info yet.'}</p>}
+        <p className="reader-company-visit-note">{ko ? '비즈니스가 공개한 정보만 표시돼요.' : 'Only info the business has made public is shown here.'}</p>
       </aside></div>
-      <a className="reader-company-mobile-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>{profile.can_message ? '앱에서 문의하기' : '앱에서 비즈니스 보기'} <span aria-hidden="true">↗</span></a>
+      <a className="reader-company-mobile-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>{ko ? profile.can_message ? '앱에서 문의하기' : '앱에서 비즈니스 보기' : profile.can_message ? 'Message in the app' : 'View in the app'} <span aria-hidden="true">↗</span></a>
     </>}
   </article>;
 }

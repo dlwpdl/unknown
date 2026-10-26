@@ -94,7 +94,7 @@ export default function EventDetailScreen() {
           {promo && videoOpen && <GlassSurface colorScheme="dark" interactive style={styles.closeVideo}><Pressable analyticsId="ticketmaster.detail.video.close" accessibilityRole="button" accessibilityLabel={tr("영상 닫기")} onPress={() => { play('selection'); setVideoOpen(false); }} style={({ pressed }) => [styles.closeTouch, { opacity: pressed ? 0.65 : 1 }]}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={20} tintColor="#F6F3F0" /></Pressable></GlassSurface>}
         </View>}
         {promo && <ThemedText type="small" themeColor="textSecondary">{promo.label} · YouTube{videoOpen ? tr(" · 음소거 자동 재생") : ''}</ThemedText>}
-        {!!videoError && <ThemedText accessibilityRole="alert" themeColor="accent">{videoError}</ThemedText>}
+        {!!videoError && <ThemedText accessibilityRole="alert" themeColor="accent">{tr(videoError)}</ThemedText>}
         <ThemedText type="subtitle" accessibilityRole="header">{event.name}</ThemedText>
         <View style={[styles.facts, { backgroundColor: theme.card }]}><ThemedText type="smallBold" themeColor="accent">{eventTime(event, appLocale)}</ThemedText><ThemedText>{event.venue || tr("장소 확인 필요")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{event.city}</ThemedText><ThemedText type="smallBold" themeColor={event.price ? 'accent' : 'textSecondary'}>{eventPriceLabel(event, appLocale)}</ThemedText></View>
         {!!eventNotice(event, appLocale) && <ThemedText accessibilityRole="alert" themeColor="accent">{eventNotice(event, appLocale)}</ThemedText>}
@@ -102,7 +102,7 @@ export default function EventDetailScreen() {
         <Pressable analyticsId="ticketmaster.meetup.find" accessibilityRole="button" accessibilityState={{ disabled: !meetupAllowed(event) }} disabled={!meetupAllowed(event)} onPress={findMeetups} style={({ pressed }) => [styles.button, Depth.control, { borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card, opacity: !meetupAllowed(event) ? 0.4 : 1, }]}><ThemedText type="smallBold">{tr("함께 갈 모임 찾기")}</ThemedText></Pressable>
         <RaisedActionButton analyticsId="ticketmaster.meetup.create" label={tr("함께 갈 모임 만들기")} disabled={!meetupAllowed(event)} onPress={create} />
         <Pressable analyticsId="ticketmaster.purchase" accessibilityRole="link" accessibilityState={{ disabled: !event.ticketUrl }} disabled={!event.ticketUrl} onPress={openTicket} style={({ pressed }) => [styles.button, Depth.control, { borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card, opacity: !event.ticketUrl ? 0.4 : 1, }]}><ThemedText type="smallBold">{tr("티켓 확인하기")}</ThemedText></Pressable>
-        {!!linkError && <ThemedText accessibilityRole="alert" themeColor="accent">{linkError}</ThemedText>}
+        {!!linkError && <ThemedText accessibilityRole="alert" themeColor="accent">{tr(linkError)}</ThemedText>}
       </>}
     </ScrollView>
   </SafeAreaView></Link.AppleZoomTarget>;

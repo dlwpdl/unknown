@@ -1,10 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { tr } from '../i18n/index.ts';
 
 export type PollDraft = { question: string; options: string[] };
 export type PostPoll = PollDraft & { post_id: string; counts: number[]; my_vote: number | null };
+// Getters translate the template when a poll is started, in the language active at that moment.
 export const STORY_POLL: PollDraft = {
-  question: '이 상황, 이해돼?',
-  options: ['남 · 이해돼', '남 · 이해 안 돼', '여 · 이해돼', '여 · 이해 안 돼'],
+  get question() { return tr('이 상황, 이해돼?'); },
+  get options() { return ['남 · 이해돼', '남 · 이해 안 돼', '여 · 이해돼', '여 · 이해 안 돼'].map(option => tr(option)); },
 };
 
 export function normalizePoll(poll: PollDraft): PollDraft {

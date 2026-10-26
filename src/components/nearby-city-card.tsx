@@ -45,7 +45,7 @@ export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false
     </View>}
     {!!location.message && <ThemedText type="small" accessibilityLiveRegion="polite">{tr(location.message)}</ThemedText>}
     {recommended && onSelect && <Pressable analyticsId="components_nearby-city-card.pressable.2" accessibilityRole="button" onPress={() => { play('selection'); onSelect(recommended.id); }} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
-      <ThemedText type="smallBold" style={{ color: theme.accent }}>{tr(recommended.name)}{" " + tr("소식 보기")}</ThemedText>
+      <ThemedText type="smallBold" style={{ color: theme.accent }}>{tr('{0} 소식 보기', tr(recommended.name))}</ThemedText>
     </Pressable>}
     <View style={styles.actions}>
       <Pressable analyticsId="components_nearby-city-card.pressable.3" accessibilityRole="button" disabled={disabled} accessibilityState={{ disabled, busy: location.busy }}

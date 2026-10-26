@@ -160,7 +160,7 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
     {notice && <ThemedText accessibilityLiveRegion="polite" aria-live="polite" themeColor="accent">{tr(notice)}</ThemedText>}
     {loading ? <GlingLoader accessibilityLabel={tr("AI 연결과 비즈니스 권한을 확인하는 중")} /> : <>
       {authorization && <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        <ThemedText type="subtitle" accessibilityRole="header">{authorization.client_name}{" " + tr("연결하기")}</ThemedText>
+        <ThemedText type="subtitle" accessibilityRole="header">{tr('{0} 연결하기', authorization.client_name)}</ThemedText>
         <ThemedText themeColor="textSecondary">{tr("이 도구에 허용할 비즈니스와 작업을 골라 주세요. 연결은 30일 동안 유지돼요.")}</ThemedText>
         <View style={[styles.included, { borderColor: theme.line }]} accessibilityRole={canPublish ? undefined : 'alert'}>
           <ThemedText type="smallBold" selectable style={canPublish ? undefined : { color: theme.danger }}>{canPublish ? tr("✓ 확인된 연결 주소 · {0}", trust?.host ?? '') : tr("⚠︎ 확인되지 않은 연결 주소 · {0}", trust?.host ?? '')}</ThemedText>
@@ -193,7 +193,7 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
         {!connected.length && <ThemedText themeColor="textSecondary">{tr("아직 연결된 도구가 없어요.")}</ThemedText>}
         {connected.map(c => <View key={c.id} style={[styles.connection, { borderColor: theme.line }]}>
           <ThemedText type="smallBold">{c.client_name} · {c.is_connected ? tr("연결됨") : tr("AI 도구에서 완료 필요")}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{c.businesses.map(m => m.name).join(' · ') || tr("현재 연결된 비즈니스 없음")}{`\n`}{tr("읽기")}{c.allow_drafts ? tr(" · 초안과 제안") : ''}{c.allow_publish ? tr(" · 승인한 원고 게시") : ''}{`\n`}{dateText(c.expires_at)}{tr("까지")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{c.businesses.map(m => m.name).join(' · ') || tr("현재 연결된 비즈니스 없음")}{`\n`}{tr("읽기")}{c.allow_drafts ? tr(" · 초안과 제안") : ''}{c.allow_publish ? tr(" · 승인한 원고 게시") : ''}{`\n`}{tr('{0}까지', dateText(c.expires_at))}</ThemedText>
           {revokeId === c.id ? <><ThemedText>{tr("해제하면 이 도구에서 글링에 접근할 수 없어요.")}</ThemedText><View style={styles.row}>
             <Action label={tr("연결 해제하기")} danger disabled={busy} onPress={() => { void run(async () => { await revokeMerchantMcp(supabase, userId, c.id); if (active.current) { setRevokeId(null); setNotice("AI 연결을 해제했어요."); refresh(); play('success'); } }); }} />
             <Action label={tr("계속 연결")} disabled={busy} onPress={() => setRevokeId(null)} /></View></>

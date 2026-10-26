@@ -4,8 +4,8 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-function mount({ stored = null, language = 'en', supported = true, viewer = 'viewer-a' } = {}) {
-  const hooks = [], dialogs = [], writes = [], values = new Map(stored === null ? [] : [['gling.device-translation.v1:viewer-a', stored]]);
+function mount({ stored = null, language = 'en', viewer = 'viewer-a' } = {}) {
+  const hooks = [], dialogs = [], writes = [], values = new Map(stored === null ? [] : [['gling.content-translation.v2:viewer-a', stored]]);
   let index = 0, effects = [], layout = [], target = language, account = viewer;
   const effect = (queue, fn, deps) => {
     const slot = index++, old = hooks[slot];
@@ -27,7 +27,7 @@ function mount({ stored = null, language = 'en', supported = true, viewer = 'vie
     'expo-router': {}, '@/hooks/use-language': { useLanguage: () => ({ language: target }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: !!account, me: { id: account ?? 'guest' } }) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
-    '@/lib/content-translation': { isDeviceTranslationSupported: () => supported, resetContentTranslations() {} }, '@/lib/translation-source': {},
+    '@/lib/content-translation': { resetContentTranslations() {} }, '@/lib/translation-source': {},
   };
   const exports = {};
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/hooks/use-content-translation.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText,
@@ -36,16 +36,16 @@ function mount({ stored = null, language = 'en', supported = true, viewer = 'vie
   return { render, dialogs, writes, language: value => { target = value; }, viewer: value => { account = value; }, async settle() { for (let i = 0; i < 3; i++) { render(); await new Promise(resolve => setImmediate(resolve)); } return render(); }, cleanup() { hooks.forEach(hook => hook?.cleanup?.()); } };
 }
 
-test('first English session offers automatic translation once and enables it only after language-pack acceptance', async () => {
+test('first English session offers automatic translation once and enables it only after the viewer accepts', async () => {
   const ui = mount(); let state = await ui.settle();
   assert.equal(state.mode, 'off'); assert.equal(ui.dialogs.length, 1); assert.equal(ui.writes.length, 0);
   ui.dialogs[0][2][1].onPress(); state = await ui.settle();
-  assert.equal(state.mode, 'auto'); assert.deepEqual(ui.writes, [['gling.device-translation.v1:viewer-a', 'auto']]);
+  assert.equal(state.mode, 'auto'); assert.deepEqual(ui.writes, [['gling.content-translation.v2:viewer-a', 'auto']]);
   await ui.settle(); assert.equal(ui.dialogs.length, 1); ui.cleanup();
 });
 
-test('saved off/manual choices, guests and unsupported binaries never receive an automatic setup prompt', async () => {
-  for (const options of [{ stored: 'off' }, { stored: 'manual' }, { viewer: null }, { supported: false }]) {
+test('saved off/manual choices and guests never receive an automatic setup prompt', async () => {
+  for (const options of [{ stored: 'off' }, { stored: 'manual' }, { viewer: null }]) {
     const ui = mount(options); await ui.settle(); assert.equal(ui.dialogs.length, 0); assert.equal(ui.writes.length, 0); ui.cleanup();
   }
 });

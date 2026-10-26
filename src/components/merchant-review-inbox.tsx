@@ -96,7 +96,7 @@ function ScopedInbox({ merchantId, onDirty, bare = false }: InboxProps) {
           placeholder={tr("이용 후기에 답변해 주세요.")} placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')}
           onChangeText={body => { setDraft({ ...draft, body }); setReplyError(''); }} style={[styles.input, { color: theme.text, borderColor: theme.line }]} />
         <ThemedText type="small" themeColor="textSecondary">{draft.body.length}{tr("/300 · 후기 공개 범위에 따라 답변도 표시돼요.")}</ThemedText>
-        {!!replyError && <ThemedText type="small" accessibilityRole="alert">{replyError}</ThemedText>}
+        {!!replyError && <ThemedText type="small" accessibilityRole="alert">{tr(replyError)}</ThemedText>}
         <View style={styles.actions}>
           <Pressable analyticsId="merchant.reply.save" accessibilityRole="button" disabled={replyBusy || !draft.body.trim()} accessibilityState={{ disabled: replyBusy || !draft.body.trim(), busy: replyBusy }}
             style={styles.button} onPress={() => { play('selection'); void saveReply(); }}><ThemedText type="smallBold" themeColor="accent">{replyBusy ? tr("저장 중…") : tr("답변 저장")}</ThemedText></Pressable>

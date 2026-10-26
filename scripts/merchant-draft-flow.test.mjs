@@ -19,13 +19,14 @@ function handler(name, values) {
 test('AI generation preserves photos, requires facts and discards results after account changes', async () => {
   const calls = [], changes = [], editor = { title: '', body: '', tag_slug: 'food', kind: 'story', image_paths: ['photo-a'] };
   const state = { data: { merchant: { city_name: '밴쿠버' } }, facts: '토요일부터 CAD12 도시락', busyRef: { current: false }, editor,
-    id: 'merchant-a', me: { id: 'owner-a' }, mounted: { current: true }, purpose: '메뉴·서비스 소개',
+    id: 'merchant-a', me: { id: 'owner-a' }, mounted: { current: true }, purpose: '메뉴·서비스 소개', language: 'en',
     run: async callback => callback(), confirmAction: async () => true, parseAiDraftResponse,
     changeDraft: change => changes.push(change), setAiDraftReady() {}, setDraftStep() {},
     supabase: { functions: { invoke: async (...args) => { calls.push(args); return { data: { draft: { categorySlug: 'food', title: '새 도시락', body: '원문', hashtags: [] } }, error: null }; } }, auth: { getSession: async () => ({ data: { session: { user: { id: 'owner-b' } } } }) } },
   };
   await assert.rejects(handler('generateDraft', state)(), /ACCOUNT_CHANGED/);
   assert.equal(calls.length, 1); assert.equal(calls[0][0], 'draft-post'); assert.equal(calls[0][1].body.intent, 'merchant_promotion');
+  assert.equal(calls[0][1].body.language, 'en'); assert.equal(calls[0][1].body.purpose, '메뉴·서비스 소개', 'purpose stays the server-validated Korean value');
   assert.equal(changes.length, 0); assert.deepEqual(editor.image_paths, ['photo-a']);
   calls.length = 0;
   await handler('generateDraft', { ...state, facts: '  ' })(); assert.equal(calls.length, 0);
@@ -51,7 +52,7 @@ test('saving before channel selection retains ordered photos and advances only a
 
 test('the business-web home generates from its own notes into the freshly opened draft without asking to replace a stale editor', async () => {
   const calls = [], edits = [], confirms = [];
-  const state = { data: { merchant: { city_name: '밴쿠버' } }, facts: '', purpose: '가게 소식', busyRef: { current: false },
+  const state = { data: { merchant: { city_name: '밴쿠버' } }, facts: '', purpose: '가게 소식', language: 'ko', busyRef: { current: false },
     editor: { title: '예전 초안', body: '예전 본문', tag_slug: 'festival', kind: 'story', image_paths: [] }, emptyDraft: () => ({ title: '', body: '', tag_slug: 'life', kind: 'story', image_paths: [] }),
     id: 'merchant-a', me: { id: 'owner-a' }, mounted: { current: true }, run: async callback => callback(), parseAiDraftResponse,
     confirmAction: async () => { confirms.push(true); return true; }, changeDraft: () => { throw new Error('stale editor must not be merged'); },

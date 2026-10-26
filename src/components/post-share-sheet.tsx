@@ -56,7 +56,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
     pending.current = true; setBusy(true); setNotice(''); play('selection');
     try {
       if (Platform.OS === 'web') {
-        if (!copy && navigator.share) await navigator.share({ title: post.title, text: invite ? '같이 가요!' : undefined, url });
+        if (!copy && navigator.share) await navigator.share({ title: post.title, text: invite ? tr('같이 가요!') : undefined, url });
         else { await navigator.clipboard.writeText(url); if (active.current) setNotice("링크를 복사했어요."); }
       } else {
         const result = await Share.share({ title: post.title, message: sharedPostMessage(post), url });

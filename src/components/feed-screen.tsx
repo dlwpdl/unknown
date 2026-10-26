@@ -82,7 +82,7 @@ import { splitPostAttachments, withPostAttachments } from '../../supabase/functi
 
 
 export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: boolean }) {
-  const { tr, t, locale: appLocale } = useLanguage();
+  const { tr, t, language, locale: appLocale } = useLanguage();
   const theme = useTheme();
   const hidden = useContentVisibility();
   const reducedMotion = useReducedMotion();
@@ -488,6 +488,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           selectedCategory: tag.slug,
           titleHint: titleHint || undefined,
           bodyHint: bodyHint || undefined,
+          language,
           ...(draftImages[0] ? { imageBase64: draftImages[0].base64, mimeType: draftImages[0].mimeType } : {}),
         },
       });
@@ -1085,7 +1086,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                       ))}
                     </View>
                   )}
-                  <ThemedText type="small" themeColor="textSecondary">{tr("사진") + " "}{draftImages.length}/{MAX_POST_IMAGES}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">{tr('사진 {0}/{1}', draftImages.length, MAX_POST_IMAGES)}</ThemedText>
                 </View>}
                   {selectedHashtags.length > 0 && <View style={styles.selectedHashtags}>
                     {selectedHashtags.map((hashtag) => <Pressable analyticsId="components_feed-screen.pressable.27" key={hashtag} accessibilityRole="button" accessibilityLabel={tr("#{0} 삭제", (hashtag))}

@@ -46,6 +46,12 @@ const MEETUP_CHAT_ICONS = {
   popcorn: require('@/assets/brand/chat-3d/popcorn.png'),
   beer: require('@/assets/brand/chat-3d/beer.png'),
 } as const;
+// Server-written list previews (attachments, deletions); every other preview is message content and stays as sent.
+const SERVER_PREVIEWS = new Set(['📷 사진', '📷 사진 1장', '📍 위치', '삭제된 메시지입니다.']);
+function listPreview(body: string, translate: (text: string, ...values: unknown[]) => string) {
+  const photos = /^📷 사진 ([2-9]|[1-9]\d+)장$/.exec(body);
+  return photos ? translate('📷 사진 {0}장', photos[1]) : SERVER_PREVIEWS.has(body) ? translate(body) : body;
+}
 
 export default function ChatScreen() {
   const { tr, t, locale: appLocale } = useLanguage();
@@ -319,7 +325,7 @@ export default function ChatScreen() {
       renderItem={({ item, index }) => <Pressable analyticsId="app_tabs_chat.pressable.7" onPress={() => { play('selection'); presentConversation(item); }} accessibilityRole="button" style={({ pressed }) => [styles.room, { borderBottomColor: theme.line, backgroundColor: pressed ? theme.backgroundElement : 'transparent', transform: [{ scale: pressed && !reducedMotion ? 0.985 : 1 }] }]}>
         <ChatAvatar kind={item.kind} title={item.title} meetupCategory={item.meetupCategory} initial={item.kind !== 'group' ? item.otherUser.nickname[0] : ''} avatarUri={item.otherIdentity?.avatarUri} active={focused && !shownConversation && index < 8} delay={index * 260} />
         <View style={styles.roomBody}><View style={styles.nickRow}><ThemedText style={[styles.flex, styles.roomName]} numberOfLines={1}>{item.kind === 'group' ? item.title : item.otherUser.nickname}</ThemedText>{item.kind === 'business' && <ThemedText type="small" themeColor="accent">{tr('비즈니스')}</ThemedText>}{item.kind === 'direct' && <TrustBadge verified={item.otherUser.verificationLevel >= 2} trustLevel={item.otherUser.verificationLevel === 3 ? 3 : item.otherUser.verificationLevel === 2 ? 2 : undefined} />}</View>
-          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{item.status === 'pending' ? tr("대화 상태 확인 중") : item.status === 'ended' ? t.chat.ended : item.latestBody ?? t.chat.newConversation}</ThemedText></View>
+          <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{item.status === 'pending' ? tr("대화 상태 확인 중") : item.status === 'ended' ? t.chat.ended : item.latestBody != null ? listPreview(item.latestBody, tr) : t.chat.newConversation}</ThemedText></View>
         <View style={styles.roomTime}><ThemedText type="small" themeColor="textSecondary">{chatListTime(item.latestAt, undefined, appLocale)}</ThemedText></View>
       </Pressable>} />
   </SafeAreaView><Modal key={modalConversation?.key ?? 'closed'} visible={focused && !!modalConversation && !!openConversation && routeMatches} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" allowSwipeDismissal onRequestClose={closeConversation} onDismiss={() => {

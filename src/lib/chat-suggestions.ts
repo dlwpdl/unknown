@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { tr } from '../i18n/index.ts';
 
 export type ChatSuggestionContext = {
   category: 'used' | 'housing_offer' | 'housing_wanted' | 'housing' | 'meetup' | 'generic';
@@ -6,6 +7,10 @@ export type ChatSuggestionContext = {
 };
 
 export function chatSuggestions(context: ChatSuggestionContext | null, isAuthor: boolean): string[] {
+  return koreanSuggestions(context, isAuthor).map(text => tr(text));
+}
+
+function koreanSuggestions(context: ChatSuggestionContext | null, isAuthor: boolean): string[] {
   if (context?.listingStatus === 'closed') return [];
   switch (context?.category) {
     case 'used': return isAuthor

@@ -326,7 +326,7 @@ function CityMap({ city, placeId, onClose, initialFilter }: { city: (typeof CITI
       {deliveryOnly && registry.ready && !registry.failed && !hasVerifiedDiscount && <ThemedText type="caption" themeColor="textSecondary">{tr('아직 할인율을 확인한 가게가 없어요')}</ThemedText>}
     </View>}
     {mode === 'list' && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite" style={styles.notice}>{tr('지도 {0}개 · 목록 {1}개', pins.length, items.length)}{limited ? tr(" · 500개까지 표시") : ''}</ThemedText>}
-    {!!current?.errors.length && <View style={styles.notice}><ThemedText type="small" accessibilityRole="alert">{current.errors.map(error => tr(error)).join(' ')}{tr("새로고침으로 다시 시도할 수 있어요.")}</ThemedText></View>}
+    {!!current?.errors.length && <View style={styles.notice}><ThemedText type="small" accessibilityRole="alert">{current.errors.map(error => tr(error)).join(' ')} {tr("새로고침으로 다시 시도할 수 있어요.")}</ThemedText></View>}
     <View style={styles.content}>
       {mode === 'map' ? <>
         <DiscoveryMap markers={markers} cityName={city.englishName} selectedId={selected?.id} center={center} userLocation={userLocation} topInset={mapFiltersHeight} bottomInset={selected && located(selected) && cardOpen ? Math.min(cardHeight + 56, 1000) : 0} onSelect={selectPin} />

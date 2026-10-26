@@ -8,7 +8,7 @@ import { getPostImageSource } from '../src/lib/feed-data.ts';
 import { uniqueHashtags } from '../src/lib/hashtags.ts';
 import { count, t } from '../src/i18n/ko.ts';
 import { googleMapsPin, googleMapsUrl, postMapBody } from '../src/lib/post-maps.ts';
-import { visibleTranslationSource } from './test-meetup-source-imports.mjs';
+import { translationSource } from './test-meetup-source-imports.mjs';
 import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 import * as postLinks from '../supabase/functions/_shared/post-links.ts';
 import * as product from '../src/lib/product-analytics.ts';
@@ -67,7 +67,7 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     '@/components/post-body': { PostBody: 'PostBody' },
     '@/components/content-translation': { TranslationControl: 'TranslationControl', TranslatedCommentBody: 'TranslatedCommentBody' },
     '@/hooks/use-content-translation': { useContentTranslation: (_kind, _id, source) => ({ display: translatedBody == null ? source : { ...source, body: translatedBody }, translated: translatedBody != null, original: translatedBody == null }) },
-    '@/lib/translation-source': { visibleTranslationSource },
+    '@/lib/translation-source': translationSource,
     '@/lib/post-photo-credits': { splitPostPhotoCredits },
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
     '../../supabase/functions/_shared/post-links': postLinks,

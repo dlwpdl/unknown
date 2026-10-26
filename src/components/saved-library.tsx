@@ -46,7 +46,7 @@ export function SavedItemCard({ item, folders, disabled = false, compareBusy = f
         {!!item.address && item.address !== item.subtitle && <ThemedText type="supporting" themeColor="textSecondary" numberOfLines={2}>{item.address}</ThemedText>}
       </View>
     </Pressable>
-    {item.target.kind === 'user' && <ThemedText type="supporting" themeColor="textSecondary">{ko ? '저장해도 상대에게 알림이 가지 않아요.' : 'Saving someone does not notify them.'}</ThemedText>}
+    {item.target.kind === 'user' && <ThemedText type="supporting" themeColor="textSecondary">{ko ? '저장해도 상대에게 알림이 가지 않아요.' : 'They won’t be notified when you save them.'}</ThemedText>}
     {!!names.length && <ThemedText type="supporting" themeColor="textSecondary">{names.join(' · ')}</ThemedText>}
     <View style={styles.actions}>
       <SavedLibraryButton analyticsId="saved.organize" testID={`saved.organize.${item.key}`} label={ko ? '폴더 정리' : 'Organize'} onPress={onOrganize} disabled={disabled} />
@@ -90,7 +90,7 @@ export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCrea
           {editor.kind === 'delete' && <ThemedText type="menu">{editor.folder.name}</ThemedText>}
           {editor.kind === 'item' && <>
             <ThemedText type="menu">{editor.item.title}</ThemedText>
-            {!folders.length && <ThemedText themeColor="textSecondary">{ko ? '폴더 없이도 저장돼요. 필요할 때 만들어 보세요.' : 'Your item is saved without a folder. Create one whenever you need it.'}</ThemedText>}
+            {!folders.length && <ThemedText themeColor="textSecondary">{ko ? '폴더 없이도 저장돼요. 필요할 때 만들어 보세요.' : 'It’s saved even without a folder. Make one whenever you like.'}</ThemedText>}
             {folders.map(folder => <Pressable key={folder.id} analyticsId="saved.editor.select" testID={`saved.editor.folder.${folder.id}`} accessibilityRole="checkbox" accessibilityLabel={folder.name}
               accessibilityState={{ checked: ids.includes(folder.id), disabled: busy }} disabled={busy}
               onPress={() => { play('selection'); setIds(previous => previous.includes(folder.id) ? previous.filter(id => id !== folder.id) : [...previous, folder.id]); }}

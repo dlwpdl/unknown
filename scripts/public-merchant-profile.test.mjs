@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { publicMerchantId, publicWebTarget } from '../src/lib/public-web.ts';
 import { merchantPhoneUrl, merchantMapsUrl } from '../src/lib/merchant-conveniences.ts';
+import { translationSource } from './test-meetup-source-imports.mjs';
 
 const merchantId = '11111111-1111-4111-8111-111111111111';
 const postId = '22222222-2222-4222-8222-222222222222';
@@ -36,7 +37,7 @@ function app(file = '../src/components/public-web/merchant-profile.tsx', { rpc =
     '@/lib/interaction-feedback': { InteractionFeedbackProvider: 'FeedbackProvider', useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/public-web-client': { publicWebClient: { rpc: async (name, args) => { calls.push([name, JSON.parse(JSON.stringify(args))]); return rpc(name, args); } } },
     '@/lib/merchant-profile': { loadMerchantProfile: loadProfile, loadMerchantProfilePosts: (...args) => { postCalls.push(args.slice(1)); return loadPosts(...args); } }, '@/lib/public-web': { publicMerchantId, publicWebTarget },
-    '@/lib/merchant-source': { merchantPhoneUrl, merchantMapsUrl },
+    '@/lib/merchant-source': { merchantPhoneUrl, merchantMapsUrl }, '@/lib/translation-source': translationSource,
     '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value }) }, '@/constants/theme': { WebNightColors: {} }, '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [] },
     '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.example', publicSiteName: () => '글링 | 캐나다 모임 커뮤니티' }, '@/i18n/ko': { t: {} },
     './shared-post-landing': { __esModule: true, default: 'SharedPostLanding' }, './analytics': { useReaderAnalytics() {} }, './merchant-profile': { PublicMerchantProfile: 'CompanyProfile', PublicMerchantProfileLink: 'CompanyLink' },

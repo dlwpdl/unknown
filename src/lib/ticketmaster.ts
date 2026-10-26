@@ -49,11 +49,12 @@ export function eventNotice(event: TicketmasterEvent, locale = getLocale()) {
   if (event.startsAt && Date.parse(event.startsAt) <= Date.now()) return translateUi(locale === 'ko-KR' ? 'ko' : 'en', '이미 시작된 행사예요.');
   return meetupAllowed(event) ? '' : translateUi(locale === 'ko-KR' ? 'ko' : 'en', '판매처에서 행사 상태를 확인해 주세요.');
 }
-export function eventMeetupDraft(event: TicketmasterEvent) {
+// The `행사 ID:` tail is a machine-read reference and stays Korean in both languages.
+export function eventMeetupDraft(event: TicketmasterEvent, language: 'ko' | 'en' = 'ko') {
   if (!meetupAllowed(event)) throw new Error(eventNotice(event));
   return {
-    title: `${event.name.slice(0, 49)} 같이 가요`,
-    body: `${event.name}, 함께 가실 분을 찾아요.\n\n행사 ID: ${event.id}`,
+    title: language === 'en' ? `Let's go to ${event.name.slice(0, 45)}` : `${event.name.slice(0, 49)} 같이 가요`,
+    body: `${language === 'en' ? `Looking for people to go to ${event.name} with. Who's in?` : `${event.name}, 함께 가실 분을 찾아요.`}\n\n행사 ID: ${event.id}`,
     startsAt: event.startsAt!, endsAt: new Date(Date.parse(event.startsAt!) + 2 * 3600_000).toISOString(),
   };
 }
