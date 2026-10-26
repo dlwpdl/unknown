@@ -1,0 +1,86 @@
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { jsonLd, publicPostUrl, publicSiteName, PUBLIC_SITE } from '../src/lib/public-seo.ts';
+import { previewImage } from '../src/lib/shared-link-preview.ts';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const escapeHtml = value => String(value).replace(/[&<>"']/g, character => `&#${character.charCodeAt(0)};`);
+
+// Same public RPCs the guest web reader calls, with the publishable key only.
+async function rpc(url, key, name, args, fetcher) {
+  const response = await fetcher(`${url}/rest/v1/rpc/${name}`, {
+    method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(args),
+  });
+  if (!response.ok) throw new Error(`${name} failed: ${response.status}`);
+  return response.json();
+}
+
+export async function loadPublicPosts({ url, key, cities, fetcher = fetch }) {
+  const rows = new Map();
+  for (const city of cities) {
+    let before = null, beforeId = null;
+    while (true) {
+      const page = await rpc(url, key, 'get_public_feed_page_v2', { p_city_id: city, p_tag_id: null, p_query: null, p_before_sort: before, p_before_id: beforeId, p_limit: 30 }, fetcher);
+      for (const row of page) if (UUID.test(row.id) && !rows.has(row.id)) rows.set(row.id, { id: row.id, cityId: city, lastmod: row.sort_at ?? row.created_at });
+      if (page.length < 30 || rows.size >= 45000) break;
+      const last = page.at(-1); before = last.sort_at ?? last.created_at; beforeId = last.id;
+    }
+  }
+  const posts = [], queue = [...rows.values()];
+  await Promise.all(Array.from({ length: 8 }, async () => {
+    for (let row = queue.shift(); row; row = queue.shift()) {
+      const preview = await rpc(url, key, 'get_shared_link_preview', { p_post_id: row.id }, fetcher);
+      // Meetup destinations and invites stay app-only, matching the guest landing's indexable rule.
+      if (preview?.id?.toLowerCase() === row.id && preview.kind !== 'meetup') posts.push({ ...row, ...preview, id: row.id, imageUrl: preview.imagePath ? previewImage(row.id) : undefined });
+    }
+  }));
+  return posts.sort((a, b) => String(b.lastmod).localeCompare(String(a.lastmod)));
+}
+
+export function renderPublicPost(template, post) {
+  const url = publicPostUrl(post.id), title = `${post.title} | ${publicSiteName()}`;
+  const description = post.teaser || [post.city, post.label, '글링에서 로그인하면 전체 글을 읽을 수 있어요.'].filter(Boolean).join(' · ');
+  const schema = {
+    '@context': 'https://schema.org', '@type': 'WebPage', url, name: post.title, inLanguage: 'ko', description,
+    ...(post.imageUrl ? { primaryImageOfPage: post.imageUrl } : {}), ...(post.lastmod ? { dateModified: new Date(post.lastmod).toISOString() } : {}),
+    about: [post.city, post.label].filter(Boolean).join(' · '),
+    isPartOf: { '@type': 'WebSite', name: publicSiteName(), url: `${PUBLIC_SITE}/` },
+    breadcrumb: { '@type': 'BreadcrumbList', itemListElement: [
+      { '@type': 'ListItem', position: 1, name: publicSiteName(), item: `${PUBLIC_SITE}/` },
+      { '@type': 'ListItem', position: 2, name: post.title, item: url },
+    ] },
+  };
+  const head = [
+    `<title data-rh="true">${escapeHtml(title)}</title>`,
+    `<meta name="description" content="${escapeHtml(description)}" data-rh="true"/>`,
+    '<meta name="robots" content="index, follow, max-image-preview:large" data-rh="true"/>',
+    `<link rel="canonical" href="${url}" data-rh="true"/>`,
+    '<meta property="og:type" content="article" data-rh="true"/>',
+    `<meta property="og:site_name" content="${escapeHtml(publicSiteName())}" data-rh="true"/>`,
+    `<meta property="og:title" content="${escapeHtml(post.title)}" data-rh="true"/>`,
+    `<meta property="og:description" content="${escapeHtml(description)}" data-rh="true"/>`,
+    `<meta property="og:url" content="${url}" data-rh="true"/>`,
+    `<meta property="og:image" content="${escapeHtml(post.imageUrl ?? `${PUBLIC_SITE}/share-covers/post.png`)}" data-rh="true"/>`,
+    `<meta name="twitter:card" content="${post.imageUrl ? 'summary_large_image' : 'summary'}" data-rh="true"/>`,
+    `<script type="application/ld+json" data-rh="true">${jsonLd(schema)}</script>`,
+  ].join('');
+  // Removed by the shared-post landing once the live preview has rendered.
+  const body = `<article id="gling-static-post" lang="ko" style="max-width:640px;margin:24px auto;padding:20px;color:#F6F3F0;font:16px/1.6 system-ui,sans-serif">`
+    + `<p style="margin:0 0 8px;color:#CBB9FF;font-size:13px;font-weight:700">${escapeHtml([post.city, post.label].filter(Boolean).join(' · '))}</p>`
+    + `<h1 style="margin:0;font-size:24px;line-height:1.35">${escapeHtml(post.title)}</h1>`
+    + (post.imageUrl ? `<img src="${escapeHtml(post.imageUrl)}" alt="${escapeHtml(post.title)}" style="display:block;width:100%;margin-top:16px;border-radius:12px" loading="lazy"/>` : '')
+    + (post.teaser ? `<p style="margin:16px 0 0;white-space:pre-line">${escapeHtml(post.teaser)}</p>` : '')
+    + `<p style="margin:16px 0 0"><a href="/post?id=${post.id}" style="color:#CBB9FF">글링에서 전체 글 읽기</a> · <a href="/" style="color:#CBB9FF">동네 이야기 더 보기</a></p></article>`;
+  const stripped = template.replace(/<title[^>]*>[^<]*<\/title>|<meta (?:name="(?:description|robots|twitter:[^"]*)"|property="og:[^"]*")[^>]*\/?>|<link rel="canonical"[^>]*\/?>|<script type="application\/ld\+json"[^>]*>[\s\S]*?<\/script>/g, '');
+  if (!/<\/head>/.test(stripped) || !/<body[^>]*>/.test(stripped)) throw new Error('Unexpected web shell for prerendered posts');
+  return stripped.replace('</head>', `${head}</head>`).replace(/<body[^>]*>/, match => `${match}${body}`);
+}
+
+export async function prerenderPublicPosts(directory, options) {
+  const posts = await loadPublicPosts(options);
+  // The 404 shell is what static hosts already serve for /posts/:id, so the client router hydrates it unchanged.
+  const template = readFileSync(join(directory, '+not-found.html'), 'utf8');
+  mkdirSync(join(directory, 'posts'), { recursive: true });
+  for (const post of posts) writeFileSync(join(directory, 'posts', `${post.id}.html`), renderPublicPost(template, post));
+  return posts;
+}

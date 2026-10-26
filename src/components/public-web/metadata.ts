@@ -7,14 +7,20 @@ export function publicMetadata(title: string, description: string, canonical: st
   return {
     title, description, robots: 'index, follow, max-image-preview:large',
     alternates: { canonical },
-    openGraph: { type: 'website', siteName: publicSiteName(), title, description, url: canonical },
-    twitter: { card: 'summary', title, description },
+    openGraph: { type: 'website', siteName: publicSiteName(), title, description, url: canonical, images: [{ url: `${PUBLIC_SITE}/share-covers/post.png`, alt: publicSiteName() }] },
+    twitter: { card: 'summary_large_image', title, description, images: [`${PUBLIC_SITE}/share-covers/post.png`] },
   };
 }
 
 export const publicHomeSchema = {
-  '@context': 'https://schema.org', '@type': 'WebSite', name: publicSiteName(),
-  url: `${PUBLIC_SITE}/`, description: publicReaderDescription, inLanguage: 'ko',
+  '@context': 'https://schema.org', '@graph': [
+    { '@type': 'WebSite', '@id': `${PUBLIC_SITE}/#website`, name: publicSiteName(), alternateName: [publicSiteName('en'), '글링', 'Gling'],
+      url: `${PUBLIC_SITE}/`, description: publicReaderDescription, inLanguage: 'ko', publisher: { '@id': `${PUBLIC_SITE}/#organization` } },
+    { '@type': 'Organization', '@id': `${PUBLIC_SITE}/#organization`, name: 'Gling', alternateName: '글링', url: `${PUBLIC_SITE}/`,
+      logo: `${PUBLIC_SITE}/share-covers/post.png`, email: 'gling@ej-entertainment.com', areaServed: 'CA', sameAs: ['https://apps.apple.com/ca/app/id6809273242', 'https://www.instagram.com/gling.app/', 'https://www.threads.net/@gling.app'] },
+    { '@type': 'MobileApplication', name: 'Gling', alternateName: '글링', operatingSystem: 'iOS', applicationCategory: 'SocialNetworkingApplication',
+      url: 'https://apps.apple.com/ca/app/id6809273242', offers: { '@type': 'Offer', price: '0', priceCurrency: 'CAD' }, publisher: { '@id': `${PUBLIC_SITE}/#organization` } },
+  ],
 };
 
 export function generatePrivateMetadata(): Metadata {

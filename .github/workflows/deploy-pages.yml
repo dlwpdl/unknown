@@ -4,6 +4,9 @@ on:
   push:
     branches: [mobile-app]
   workflow_dispatch:
+  # Daily rebuild so new public posts get their prerendered search pages (04:20 Pacific, after the map refresh).
+  schedule:
+    - cron: '20 11 * * *'
 
 permissions:
   contents: read

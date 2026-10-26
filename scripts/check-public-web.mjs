@@ -15,7 +15,16 @@ for (const page of ['index', 'terms', 'privacy', 'account-deletion', 'child-safe
 assert.ok(readFileSync(join(directory, 'index.html'), 'utf8').includes('https://apps.apple.com/ca/app/id6809273242'), 'Public web is missing the live iOS download');
 for (const file of ['robots.txt', 'sitemap.xml', 'llms.txt']) assert.ok(existsSync(join(directory, file)), `Public discovery file is missing: ${file}`);
 const robots = readFileSync(join(directory, 'robots.txt'), 'utf8');
-assert.ok(robots.includes('Sitemap: https://gling.ej-entertainment.com/sitemap.xml') && robots.includes('format=sitemap&city='), 'Static and live public-post sitemaps are missing');
+assert.ok(robots.includes('Sitemap: https://gling.ej-entertainment.com/sitemap.xml'), 'Public sitemap is missing');
+const sitemap = readFileSync(join(directory, 'sitemap.xml'), 'utf8');
+assert.ok(!sitemap.includes('?city='), 'Sitemap must list canonical pages only');
+if (process.env.CI) {
+  // Prerendered posts are the indexable copies; the /post?id= shell below stays noindex.
+  const posts = existsSync(join(directory, 'posts')) ? readdirSync(join(directory, 'posts')).filter(file => file.endsWith('.html')) : [];
+  assert.ok(posts.length > 0 && sitemap.includes('https://gling.ej-entertainment.com/posts/'), 'Public post pages were not prerendered');
+  const page = readFileSync(join(directory, 'posts', posts[0]), 'utf8');
+  assert.ok(page.includes('content="index, follow') && page.includes('id="gling-static-post"') && !/noindex/.test(page), 'Prerendered post must be indexable with static content');
+}
 assert.ok(robots.includes('Disallow: /merchant/') && robots.includes('Disallow: /admin'), 'Private surfaces must remain outside public discovery');
 assert.ok(readFileSync(join(directory, 'index.html'), 'utf8').includes('application/ld+json'), 'Public home structured data is missing');
 assert.match(readFileSync(join(directory, 'index.html'), 'utf8'), /<script\b[^>]*src=[^>]*_expo\/[^>]*\.js/, 'Public web hydration scripts are missing');
