@@ -128,6 +128,7 @@ function HostTools({ postId, onChanged, waitlistOnly }: MeetupHostToolsProps & {
   const locked = busy || loading;
   const button = [styles.button, { borderColor: theme.line, opacity: locked ? 0.5 : 1 }], dangerButton = [...button, { borderColor: theme.danger }];
   const ownInvitation = state?.cohosts.find(member => member.userId === me.id && member.status === 'pending');
+  const canInviteCohost = !!(state?.canInviteCohost ?? state?.canInvite);
   const showPanel = waitlistOnly ? !!state && !state.isHost && (!!state.waitlist || state.canJoinWaitlist) : !!state && (state.isHost || state.isCohost || !!ownInvitation);
   const identityById = new Map(roster.map(person => [person.userId, person]));
   const query = candidateQuery.trim().toLocaleLowerCase();
@@ -152,12 +153,12 @@ function HostTools({ postId, onChanged, waitlistOnly }: MeetupHostToolsProps & {
     </>}
     {!waitlistOnly && state && <>
       {ownInvitation && <View style={styles.section}>
-        <ThemedText type="small" style={styles.bodyText}>{say('공동 호스트로 초대받았어요. 수락하면 회차와 참석 확인을 함께 관리해요. 비공개 신청 답변과 계정 권한은 공유되지 않아요.', 'You were invited to cohost. Accept to help with sessions and attendance. Private application answers and account access stay private.')}</ThemedText>
+        <ThemedText type="small" style={styles.bodyText}>{say('공동 호스트로 초대받았어요. 수락하면 회차, 참석 확인, 대기자 초대를 함께 해요. 비공개 신청 답변과 계정 권한은 공유되지 않아요.', 'You were invited to cohost. Accept to help with sessions, attendance and waitlist invitations. Private application answers and account access stay private.')}</ThemedText>
         <Pressable analyticsId="meetup_host_tools.control.2" accessibilityRole="button" disabled={locked || !state.available} accessibilityState={{ disabled: locked || !state.available }} style={button} onPress={() => void act(() => respondMeetupCohost(supabase, postId, true), 'role', value => value.available && value.cohosts.some(member => member.userId === viewer && member.status === 'pending'))}><ThemedText type="smallBold" style={styles.label}>{say('공동 호스트 수락', 'Accept cohost invitation')}</ThemedText></Pressable>
         <Pressable analyticsId="meetup_host_tools.control.3" accessibilityRole="button" disabled={locked} accessibilityState={{ disabled: locked }} style={button} onPress={() => void act(() => respondMeetupCohost(supabase, postId, false), 'role', value => value.available && value.cohosts.some(member => member.userId === viewer && member.status === 'pending'))}><ThemedText type="small" style={styles.bodyText}>{say('초대 거절', 'Decline invitation')}</ThemedText></Pressable>
       </View>}
       {state.isCohost && <View style={styles.section}>
-        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{say('공동 호스트예요. 회차 등록과 기존 참석 확인을 함께해요. 신청 승인과 비공개 답변은 호스트만 관리해요.', 'You’re a cohost. You help add sessions and check attendance. Only the host handles requests and private answers.')}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{say('공동 호스트예요. 회차 등록, 참석 확인, 대기자 초대를 함께해요. 신청 승인과 비공개 답변은 호스트만 관리해요.', 'You’re a cohost. You help add sessions, check attendance and invite from the waitlist. Only the host handles requests and private answers.')}</ThemedText>
         <Pressable analyticsId="meetup_host_tools.control.4" accessibilityRole="button" disabled={locked} accessibilityState={{ disabled: locked }} style={dangerButton} onPress={() => confirmRemoval(say('공동 호스트 그만하기', 'Stop cohosting'), say('공동 호스트를 그만할까요? 회차와 참석 확인을 더 이상 함께 관리하지 않아요.', 'Stop cohosting? You will no longer help with sessions and attendance.'), () => void act(() => removeMeetupCohost(supabase, postId, me.id), 'role', value => value.isCohost))}><ThemedText type="small" themeColor="danger" style={styles.bodyText}>{say('공동 호스트 그만하기', 'Stop cohosting')}</ThemedText></Pressable>
       </View>}
       {(state.isHost || state.isCohost) && state.kind === 'group' && <View style={styles.section}>
@@ -181,6 +182,11 @@ function HostTools({ postId, onChanged, waitlistOnly }: MeetupHostToolsProps & {
           </View>)}
         </>}
       </View>}
+      {(state.isHost || state.isCohost) && <View style={styles.section}>
+        <ThemedText type="subtitle" accessibilityRole="header">{say('대기자 초대 · Pro', 'Waitlist invitations · Pro')}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{say(`초대 대기 ${state.waitlistCount ?? '—'}명 · 신청 순서대로 제안해요. 참여 승인과 자리 예약은 별도예요.`, `${state.waitlistCount ?? '—'} waiting for an invitation · invites go out in join order. Approval and spots are handled separately.`)}</ThemedText>
+        <Pressable analyticsId="meetup_host_tools.control.8" accessibilityRole="button" disabled={locked || !state.canInvite || !state.waitlistCount} accessibilityState={{ disabled: locked || !state.canInvite || !state.waitlistCount }} style={[button, (!state.canInvite || !state.waitlistCount) && styles.disabled]} onPress={() => void act(() => inviteNextMeetupWaitlist(supabase, postId), 'invited', value => (value.isHost || value.isCohost) && value.canInvite && !!value.waitlistCount)}><ThemedText type="smallBold" style={styles.label}>{say('다음 대기자 초대', 'Invite next person')}</ThemedText></Pressable>
+      </View>}
       {state.isHost && <>
         {state.available && <View style={styles.section}>
           <ThemedText type="subtitle" accessibilityRole="header">{say('회비', 'Meetup fee')}</ThemedText>
@@ -200,13 +206,9 @@ function HostTools({ postId, onChanged, waitlistOnly }: MeetupHostToolsProps & {
           </>}
         </View>}
         <View style={styles.section}>
-          <ThemedText type="subtitle" accessibilityRole="header">{say('대기자 초대 · Pro', 'Waitlist invitations · Pro')}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{say(`초대 대기 ${state.waitlistCount ?? '—'}명 · 신청 순서대로 제안해요. 참여 승인과 자리 예약은 별도예요.`, `${state.waitlistCount ?? '—'} waiting for an invitation · invites go out in join order. Approval and spots are handled separately.`)}</ThemedText>
-          <Pressable analyticsId="meetup_host_tools.control.8" accessibilityRole="button" disabled={locked || !state.canInvite || !state.waitlistCount} accessibilityState={{ disabled: locked || !state.canInvite || !state.waitlistCount }} style={[button, (!state.canInvite || !state.waitlistCount) && styles.disabled]} onPress={() => void act(() => inviteNextMeetupWaitlist(supabase, postId), 'invited', value => value.isHost && value.canInvite && !!value.waitlistCount)}><ThemedText type="smallBold" style={styles.label}>{say('다음 대기자 초대', 'Invite next person')}</ThemedText></Pressable>
-        </View>
-        <View style={styles.section}>
-          <ThemedText type="subtitle" accessibilityRole="header">{say('공동 호스트 · Pro', 'Cohosts · Pro')}</ThemedText>
+          <ThemedText type="subtitle" accessibilityRole="header">{state.cohostLimit == null ? say('공동 호스트 · Pro', 'Cohosts · Pro') : state.cohostLimit === 0 ? say('공동 호스트 · 플러스부터', 'Cohosts · Plus and up') : say(`공동 호스트 · 최대 ${state.cohostLimit}명`, `Cohosts · up to ${state.cohostLimit}`)}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{say('승인된 멤버가 수락한 뒤 함께 운영해요. 비공개 신청 답변·계정 권한은 공유하지 않아요.', 'Approved members can cohost once they accept. Private answers and account access aren’t shared.')}</ThemedText>
+          {state.cohostLimit != null && <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{say('플러스 1명, 프로 3명, 프리미엄 5명까지 둘 수 있어요.', 'Plus allows 1 cohost, Pro 3 and Premium 5.')}</ThemedText>}
           {state.cohosts.map(member => {
             const identity = identityById.get(member.userId);
             return identity ? <View key={member.userId} style={styles.section}>
@@ -216,7 +218,7 @@ function HostTools({ postId, onChanged, waitlistOnly }: MeetupHostToolsProps & {
           })}
           {state.candidates.length > 0 && <>
             <TextInput testID="meetup-host-candidate-search" accessibilityLabel={say('참가자 이름 검색', 'Search members by name')} placeholder={say('이름으로 찾기', 'Find a member by name')} placeholderTextColor={theme.textSecondary} value={candidateQuery} onChangeText={value => { setCandidateQuery(value); setCandidatePage(0); }} style={[styles.search, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
-            {visibleCandidates.map(identity => <Pressable analyticsId="meetup_host_tools.control.10" key={identity.userId} accessibilityRole="button" disabled={locked || !state.canInvite} accessibilityState={{ disabled: locked || !state.canInvite }} style={[button, !state.canInvite && styles.disabled]} onPress={() => void act(() => inviteMeetupCohost(supabase, postId, identity.userId), 'role', value => value.isHost && value.canInvite && value.candidates.includes(identity.userId))}><ThemedText style={styles.label}>{say(`${identity.displayName} 초대`, `Invite ${identity.displayName}`)}</ThemedText></Pressable>)}
+            {visibleCandidates.map(identity => <Pressable analyticsId="meetup_host_tools.control.10" key={identity.userId} accessibilityRole="button" disabled={locked || !canInviteCohost} accessibilityState={{ disabled: locked || !canInviteCohost }} style={[button, !canInviteCohost && styles.disabled]} onPress={() => void act(() => inviteMeetupCohost(supabase, postId, identity.userId), 'role', value => value.isHost && (value.canInviteCohost ?? value.canInvite) && value.candidates.includes(identity.userId))}><ThemedText style={styles.label}>{say(`${identity.displayName} 초대`, `Invite ${identity.displayName}`)}</ThemedText></Pressable>)}
             {!candidates.length && <ThemedText style={styles.helper} themeColor="textSecondary">{say('일치하는 이름이 없어요.', 'No matching names.')}</ThemedText>}
             {candidatePages > 1 && <View style={styles.row}>
               <Pressable analyticsId="meetup_host_tools.candidates.previous" accessibilityRole="button" accessibilityState={{ disabled: locked || page === 0 }} disabled={locked || page === 0} style={button} onPress={() => { play('selection'); setCandidatePage(page - 1); }}><ThemedText style={styles.label}>{say('이전', 'Previous')}</ThemedText></Pressable>
@@ -237,7 +239,7 @@ function HostTools({ postId, onChanged, waitlistOnly }: MeetupHostToolsProps & {
         </View>
       </>}
     </>}
-    {!!error && <ThemedText type="small" accessibilityRole="alert" style={styles.helper}>{error === 'INVALID_SESSION_TIME' ? say('종료 시간은 시작 이후여야 해요', 'The end time must be after the start') : error === 'SESSION_OVERLAP' ? say('같은 시간에 이미 등록된 회차가 있어요. 다른 시간을 골라주세요.', 'Another session already overlaps this time. Choose a different time.') : feeErrors[error] ? say(...feeErrors[error]) : say('상태를 확인하지 못했어요. 연결·참가 권한·멤버십과 날짜를 확인해주세요.', 'Couldn’t check the status. Check your connection, access, membership and dates.')}</ThemedText>}
+    {!!error && <ThemedText type="small" accessibilityRole="alert" style={styles.helper}>{error === 'INVALID_SESSION_TIME' ? say('종료 시간은 시작 이후여야 해요', 'The end time must be after the start') : error === 'SESSION_OVERLAP' ? say('같은 시간에 이미 등록된 회차가 있어요. 다른 시간을 골라주세요.', 'Another session already overlaps this time. Choose a different time.') : error === 'MEETUP_COHOST_LIMIT' ? say('공동 호스트 자리가 다 찼어요. 멤버십을 올리면 더 둘 수 있어요.', 'All cohost spots are taken. Upgrade your membership to add more.') : error === 'PLUS_REQUIRED' ? say('공동 호스트는 플러스 멤버십부터 둘 수 있어요.', 'Cohosts are available from Plus.') : feeErrors[error] ? say(...feeErrors[error]) : say('상태를 확인하지 못했어요. 연결·참가 권한·멤버십과 날짜를 확인해주세요.', 'Couldn’t check the status. Check your connection, access, membership and dates.')}</ThemedText>}
     {(error || metricError || state) && <Pressable analyticsId="meetup_host_tools.control.11" accessibilityRole="button" disabled={locked} accessibilityState={{ disabled: locked }} style={button} onPress={() => { play('selection'); setLoading(true); setMetricError(false); setRetry(value => value + 1); }}><ThemedText type="small" style={styles.bodyText}>{say('상태 다시 확인', 'Refresh status')}</ThemedText></Pressable>}
     {notice && <ThemedText type="small" accessibilityLiveRegion="polite" style={styles.helper}>{say(notices[notice][0], notices[notice][1])}</ThemedText>}
   </View>;

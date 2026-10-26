@@ -105,10 +105,10 @@ export function recommendedAgeMessage(room: ChillingSchedule, age: number | null
   return `본인 입력 기준 만 ${age}세 · 생년월일 미인증. ${matches ? '권장 연령대에 해당해요.' : '권장 연령대와 달라도 신청할 수 있어요.'}`;
 }
 
-// Use the personal get_membership snapshot; business promotion subscriptions are separate.
-export function chillingCapacityLimit(membership: { tier: string; expiresAt: string | null } | null | undefined, now = Date.now()): 50 | 5000 {
-  return membership && ['plus', 'pro', 'premium'].includes(membership.tier)
-    && membership.expiresAt != null && Date.parse(membership.expiresAt) > now ? 5000 : 50;
+// Mirrors private.meetup_capacity_limit from the personal get_membership snapshot; business promotion subscriptions are separate.
+const CAPACITY_BY_TIER: Record<string, number> = { plus: 30, pro: 100, premium: 500, admin: 5000 };
+export function chillingCapacityLimit(membership: { tier: string; expiresAt: string | null } | null | undefined, now = Date.now()): number {
+  return membership && membership.expiresAt != null && Date.parse(membership.expiresAt) > now ? CAPACITY_BY_TIER[membership.tier] ?? 10 : 10;
 }
 
 // Moving the start keeps the chosen duration; an unreadable start or end leaves the end alone for validation to catch.

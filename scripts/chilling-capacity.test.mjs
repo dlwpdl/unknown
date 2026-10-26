@@ -5,16 +5,16 @@ import * as chilling from '../src/lib/chilling.ts';
 const draft = { kind: 'group', startsAt: '', endsAt: '', timezone: '', cadence: 'weekly', capacity: 50 };
 const now = Date.parse('2026-10-25T12:00:00Z');
 
-test('only an unexpired personal paid membership raises the suggested meetup capacity', () => {
-  for (const tier of ['plus', 'pro', 'premium']) {
-    assert.equal(chilling.chillingCapacityLimit({ tier, expiresAt: '2026-10-26T12:00:00Z' }, now), 5000);
+test('an unexpired personal membership sets the seat limit by tier, matching the server', () => {
+  for (const [tier, seats] of [['plus', 30], ['pro', 100], ['premium', 500], ['admin', 5000]]) {
+    assert.equal(chilling.chillingCapacityLimit({ tier, expiresAt: '2026-10-26T12:00:00Z' }, now), seats);
   }
   for (const membership of [undefined, null, { tier: 'free', expiresAt: null },
     { tier: 'premium', expiresAt: null }, { tier: 'plus', expiresAt: 'invalid' },
     { tier: 'pro', expiresAt: '2026-10-25T12:00:00Z' }, { tier: 'premium', expiresAt: '2026-10-24T12:00:00Z' },
     { tier: 'unknown', expiresAt: '2026-10-26T12:00:00Z' },
     { tier: 'free', expiresAt: null, businessSubscription: { tier: 'premium', expiresAt: '2026-10-26T12:00:00Z' } }]) {
-    assert.equal(chilling.chillingCapacityLimit(membership, now), 50);
+    assert.equal(chilling.chillingCapacityLimit(membership, now), 10);
   }
 });
 

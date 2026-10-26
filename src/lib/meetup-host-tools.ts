@@ -7,8 +7,9 @@ export type MeetupOccurrence = { startsAt: string; endsAt: string };
 export type MeetupHostAggregates = { applications: number; approvals: number; confirmedAttendance: number; repeatParticipants: number };
 export type MeetupHostIdentity = { userId: string; displayName: string; photoPaths: string[]; isHost: boolean };
 export type MeetupHostToolsState = {
-  tier: 'free' | 'plus' | 'pro' | 'premium'; isHost: boolean; isCohost: boolean; canManageSessions: boolean;
-  canInvite: boolean; kind: 'once' | 'group'; available: boolean; canJoinWaitlist: boolean;
+  tier: 'free' | 'plus' | 'pro' | 'premium' | 'admin'; isHost: boolean; isCohost: boolean; canManageSessions: boolean;
+  // canInvite = waitlist invitations (host or acting cohost); cohost invitations use canInviteCohost/cohostLimit, absent before 2026-10-26.
+  canInvite: boolean; canInviteCohost?: boolean; cohostLimit?: number; kind: 'once' | 'group'; available: boolean; canJoinWaitlist: boolean;
   waitlist: { joinedAt: string; invitedAt: string | null; position: number } | null;
   waitlistCount: number | null; cohosts: { userId: string; status: 'pending' | 'accepted' }[];
   candidates: string[];

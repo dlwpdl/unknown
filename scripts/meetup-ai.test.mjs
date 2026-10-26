@@ -163,11 +163,11 @@ test('returning from the shared meetup-profile editor refreshes consent without 
 
 test('invalid capacity is shown at the input and fixed CTA, focuses that input, and never opens profile setup', async () => {
   const app = form(), moves = [];
-  app.edit('모임 제목', '산책'); app.edit('모임 소개', '함께 산책해요'); app.edit('정원, 2명부터 50명', '51');
+  app.edit('모임 제목', '산책'); app.edit('모임 소개', '함께 산책해요'); app.edit('정원, 2명부터 10명', '11');
   const tree = app.render();
-  const input = app.find('정원, 2명부터 50명');
+  const input = app.find('정원, 2명부터 10명');
   input.props.ref?.({ focus: () => moves.push('focus') });
-  const field = nodes(tree).find(node => node.props?.onLayout && nodes(node).some(child => child.props?.accessibilityLabel === '정원, 2명부터 50명'));
+  const field = nodes(tree).find(node => node.props?.onLayout && nodes(node).some(child => child.props?.accessibilityLabel === '정원, 2명부터 10명'));
   field?.props.onLayout({ nativeEvent: { layout: { y: 640 } } });
   const scroll = nodes(tree).find(node => node.props?.analyticsId === 'app_meetup-create.scrollview.1');
   if (scroll.props.ref) scroll.props.ref.current = { scrollTo: value => moves.push(value.y) };
@@ -237,15 +237,15 @@ test('a retained profile-setup action cannot push a new screen after its request
 
 test('capacity input and submitted draft use the actual unexpired personal membership limit', async () => {
   const app = form({ membership: { tier: 'plus', expiresAt: new Date(Date.now() + 3600000).toISOString() } });
-  assert.equal(app.find('정원, 2명부터 5000명').props.maxLength, 4);
-  app.edit('모임 제목', '큰 모임'); app.edit('모임 소개', '함께 만나요'); app.edit('정원, 2명부터 5000명', '5000');
+  assert.equal(app.find('정원, 2명부터 30명').props.maxLength, 2);
+  app.edit('모임 제목', '큰 모임'); app.edit('모임 소개', '함께 만나요'); app.edit('정원, 2명부터 30명', '30');
   app.find('app_meetup-create.pressable.4').props.onPress(); await settle();
   assert.equal(app.writes.length, 0, 'Paid capacity never bypasses the per-meetup profile consent.');
   app.find('meetup-create.host-consent').props.onPress();
   app.find('app_meetup-create.pressable.4').props.onPress(); await settle();
-  assert.equal(app.writes[0].event.capacity, 5000);
+  assert.equal(app.writes[0].event.capacity, 30);
   const expired = form({ membership: { tier: 'premium', expiresAt: '2020-01-01T00:00:00Z', businessSubscription: { tier: 'premium' } } });
-  assert.equal(expired.find('정원, 2명부터 50명').props.maxLength, 2, 'Business membership and expired personal access do not raise the free limit.');
+  assert.equal(expired.find('정원, 2명부터 10명').props.maxLength, 2, 'Business membership and expired personal access do not raise the free limit.');
 });
 
 test('a place invitation keeps its source city and immutable reference through AI and explicit host consent', async () => {
@@ -315,7 +315,7 @@ test('topic generation renders a preview without publishing or changing form fac
   assert.ok(app.find('모임 소개').props.value.includes(generated.purpose));
   assert.equal(app.find('신청할 때 물어볼 질문').props.value, generated.applicationQuestion);
   assert.deepEqual(nodes(app.render()).filter(n => n.type === 'ChillingDateInput').map(n => n.props.value), before);
-  assert.equal(app.find('정원, 2명부터 50명').props.value, '6');
+  assert.equal(app.find('정원, 2명부터 10명').props.value, '6');
   assert.equal(app.writes.length, 0);
 });
 

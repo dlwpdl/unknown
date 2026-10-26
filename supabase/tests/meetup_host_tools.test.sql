@@ -71,7 +71,7 @@ select lives_ok($$select public.respond_meetup_cohost('a1620000-0000-0000-0000-0
 select is(public.get_meetup_host_tools('a1620000-0000-0000-0000-000000000001')->>'isCohost','true','accepted role is visible only in scoped context');
 select is(public.get_meetup_host_tools('a1620000-0000-0000-0000-000000000001')->>'canManageSessions','true','host Pro entitlement enables approved accepted cohost operations');
 select public.confirm_meetup_occurrence('a1620000-0000-0000-0000-000000000001',now()+interval '9 days',now()+interval '9 days 1 hour') as cohost_session_id \gset
-select throws_ok($$select public.invite_next_meetup_waitlist('a1620000-0000-0000-0000-000000000001')$$,'P0001','HOST_REQUIRED','cohosts cannot invite applicants');
+select is(public.invite_next_meetup_waitlist('a1620000-0000-0000-0000-000000000001'),false,'an acting cohost may invite from the waitlist (nobody is queued yet)');
 select throws_ok($$select public.invite_meetup_cohost('a1620000-0000-0000-0000-000000000001','a1610000-0000-0000-0000-000000000003')$$,'P0001','HOST_REQUIRED','cohosts cannot expand account privileges');
 select throws_ok($$select public.get_meetup_host_aggregates('a1620000-0000-0000-0000-000000000001')$$,'P0001','HOST_REQUIRED','paid cohosts cannot read owner aggregates');
 reset role;
@@ -119,7 +119,10 @@ select throws_ok($$select public.confirm_meetup_occurrence('a1620000-0000-0000-0
 select is(jsonb_array_length(public.get_meetup_sessions('a1620000-0000-0000-0000-000000000001')->'sessions'),2,'expiry preserves existing sessions and attendance access');
 select is(public.confirm_meetup_occurrence('a1620000-0000-0000-0000-000000000001',now()+interval '2 days',now()+interval '2 days 1 hour'),:'session_id'::uuid,'expiry still allows readback of a previously successful session');
 select set_config('request.jwt.claims','{"sub":"a1610000-0000-0000-0000-000000000002","role":"authenticated"}',true);
-select is(public.get_meetup_host_tools('a1620000-0000-0000-0000-000000000001')->>'isCohost','true','expiry preserves accepted role history');
+select is(public.get_meetup_host_tools('a1620000-0000-0000-0000-000000000001')->>'isCohost','false','owner expiry pauses cohost powers (the accepted record stays until renewal)');
+reset role;
+select is((select status from private.meetup_cohosts where post_id='a1620000-0000-0000-0000-000000000001' and user_id='a1610000-0000-0000-0000-000000000002'),'accepted','expiry keeps the accepted cohost record');
+set local role authenticated;
 select is(public.get_meetup_host_tools('a1620000-0000-0000-0000-000000000001')->>'canManageSessions','false','expiry prevents new paid cohost sessions');
 select lives_ok($$select public.remove_meetup_cohost('a1620000-0000-0000-0000-000000000001','a1610000-0000-0000-0000-000000000002')$$,'cohost may relinquish access after owner expiry');
 reset role;
