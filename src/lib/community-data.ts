@@ -882,11 +882,22 @@ export async function loadMyPosts(client: SupabaseClient, userId: string, kind: 
 
 export async function loadRepliesToMe(client: SupabaseClient, userId: string): Promise<ReplyToMe[]> {
   const result = await client.from('comments')
-    .select('id,author_id,post_id,body,created_at,author:profiles!comments_author_id_fkey(nickname,verification_level),post:posts!comments_post_id_fkey!inner(title,author_id)')
+    .select('id,author_id,business_author_id,post_id,body,created_at,author:profiles!comments_author_id_fkey(nickname,verification_level),post:posts!comments_post_id_fkey!inner(title,author_id)')
     .eq('post.author_id', userId).neq('author_id', userId).is('deleted_at', null)
     .order('created_at', { ascending: false }).limit(30);
   if (result.error) throw result.error;
-  return (result.data ?? []) as unknown as ReplyToMe[];
+  const rows = (result.data ?? []) as unknown as (ReplyToMe & { business_author_id: string | null })[];
+  const businessRows = rows.filter(row => row.business_author_id);
+  if (!businessRows.length) return rows;
+  // Business comments show the business, never the operator; hidden businesses drop out like on the post.
+  const names = await client.rpc('get_public_comment_businesses', { p_comment_ids: businessRows.map(row => row.id) });
+  if (names.error) throw names.error;
+  const byComment = new Map((names.data as { comment_id: string; business_id: string; business_name: string }[]).map(row => [row.comment_id, row]));
+  return rows.flatMap(row => {
+    if (!row.business_author_id) return [row];
+    const business = byComment.get(row.id);
+    return business ? [{ ...row, author_id: business.business_id, author: { nickname: business.business_name, verification_level: 0 } }] : [];
+  });
 }
 
 // Own comments: RLS "users update own comments" allows body edits and soft deletes (deleted_at).

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import type { PublicCommentRow } from './feed-data.ts';
+import { commentBusiness, type PublicCommentRow } from './feed-data.ts';
 import type { PostComment } from './types.ts';
 
 export type CommentCursor = { createdAt: string; id: string };
@@ -26,6 +26,7 @@ function mapThreadComment(comment: ThreadCommentRow): PostComment {
     replyToId: comment.reply_to_id ?? undefined,
     replyToNickname: comment.reply_to_nickname ?? undefined,
     replyCount: comment.reply_count,
+    ...(comment.business_id ? { business: commentBusiness(comment) } : {}),
   };
 }
 
@@ -61,9 +62,10 @@ export async function createThreadComment(
   postId: string,
   body: string,
   replyToId: string | null = null,
+  businessId: string | null = null,
 ): Promise<string> {
   const result = await client.rpc('create_thread_comment', {
-    p_post_id: postId, p_body: body.trim(), p_reply_to_id: replyToId,
+    p_post_id: postId, p_body: body.trim(), p_reply_to_id: replyToId, ...(businessId ? { p_business_id: businessId } : {}),
   });
   if (result.error) throw result.error;
   return result.data as string;

@@ -77,6 +77,7 @@ export interface PostComment {
   replyToId?: string; // 직접 답하는 댓글 (답글도 가능)
   replyToNickname?: string;
   replyCount?: number;
+  business?: { id: string; name: string; avatarUri?: string | null }; // 가게 이름으로 단 댓글
 }
 
 export interface Post {

@@ -61,7 +61,7 @@ function renderDetail(post, { isAuthed = true, hidden = false } = {}) {
     'expo-router': { useRouter: () => ({ push() {} }) },
     'react-native-safe-area-context': { useSafeAreaInsets: () => ({ bottom: 0 }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed, me: { id: 'viewer' }, promptLogin() {} }) },
-    '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/hooks/use-content-visibility': { useContentVisibility: () => () => hidden },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16 }, Depth: {} },

@@ -40,6 +40,8 @@ import { BusinessNewsCard } from '@/components/business-news-card';
 import { PostBodyEditor } from '@/components/post-body-editor';
 import { PollDraftFields } from '@/components/poll-draft-fields';
 import { ProfileAvatarButton } from '@/components/profile-avatar-button';
+import { BusinessWriter } from '@/components/business-writer';
+import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { StateCard } from '@/components/state-card';
 import { WeeklyRanking } from '@/components/weekly-ranking';
@@ -67,7 +69,7 @@ import {
   MEETUPS_CHANGED_EVENT,
   requestMeetupJoin,
 } from '@/lib/community-data';
-import { appendUniquePosts, loadPublicFeed, loadPublicPost, type FeedSort } from '@/lib/feed-data';
+import { appendUniquePosts, limitBusinessPosts, loadPublicFeed, loadPublicPost, type FeedSort } from '@/lib/feed-data';
 import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, hasAdLabel, MAX_HASHTAGS, parseHashtags, toggleAdLabel } from '@/lib/hashtags';
 import { canAddPostImage, MAX_POST_IMAGES } from '@/lib/image-upload';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -92,6 +94,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const router = useRouter();
   const { compose, hashtag } = useLocalSearchParams<{ compose?: string; hashtag?: string }>();
   const { isAuthed, promptLogin, me, isAdmin } = useAuth();
+  const business = useChatIdentity();
+  const [businessWriting, setBusinessWriting] = useState(false);
   const { play } = useInteractionFeedback();
   const insets = useSafeAreaInsets();
   const bottomClear = insets.bottom + TabBarHeight; // 탭바 + 홈 인디케이터 실측 높이
@@ -227,7 +231,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const feedData = useMemo(
     () =>
       cityOpen
-        ? cityPosts.filter((p) => (tagFilter == null || p.tag.id === tagFilter) && (!meetupsOnly || !p.room?.closed))
+        ? tagFilter == null && !meetupsOnly ? limitBusinessPosts(cityPosts)
+          : cityPosts.filter((p) => (tagFilter == null || p.tag.id === tagFilter) && (!meetupsOnly || !p.room?.closed))
         : [],
     [cityOpen, cityPosts, meetupsOnly, tagFilter],
   );
@@ -405,6 +410,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const openWriter = useCallback(() => {
     play('reaction');
     if (!isAuthed) return promptLogin(t.auth.reasonWrite);
+    // Acting as a business, the writer offers only business post types (owner 2026-10-25, option A).
+    if (business) { setBusinessWriting(true); return; }
     if (writing) return;
     void loadListingQuota(supabase).then(setListingQuota).catch(() => {});
     const revision = ++writerRevision.current;
@@ -417,7 +424,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       if (revision !== writerRevision.current) return;
       draftLocation.current = fix;
     });
-  }, [isAuthed, promptLogin, writing, city, location, title, body, hashtagInput, draftImages, pollDraft, play, t.auth.reasonWrite]);
+  }, [isAuthed, promptLogin, business, writing, city, location, title, body, hashtagInput, draftImages, pollDraft, play, t.auth.reasonWrite]);
 
   useEffect(() => {
     if (!writing) { writerRevision.current++; draftLocation.current = null; }
@@ -941,6 +948,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       </Modal>
 
       {/* 글쓰기의 선택 항목은 접고, 제목과 본문을 먼저 보여준다. */}
+      {business && <BusinessWriter business={business} visible={businessWriting} onClose={() => setBusinessWriting(false)} onPublished={() => { void refreshFeed().catch(() => {}); }} />}
       <Modal visible={writing} animationType={reducedMotion ? 'none' : 'slide'}
         presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} allowSwipeDismissal
         onDismiss={() => {

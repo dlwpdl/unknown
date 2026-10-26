@@ -19,6 +19,8 @@ import { Typography } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useAuth } from '@/lib/auth';
+import { useChatIdentity } from '@/hooks/use-chat-identity';
+import { selectChatBusiness } from '@/lib/chat-identity';
 import { getChillingError, loadChillingHostProfile, loadMeetupParticipation, type ChillingProfile, type MeetupParticipation } from '@/lib/chilling-data';
 import { chillingAvailability, chillingKind, chillingSchedule, chillingTimezoneLabel, meetupBarAction, recommendedAgeLabel } from '@/lib/chilling';
 import { MEETUPS_CHANGED_EVENT } from '@/lib/community-data';
@@ -165,11 +167,19 @@ export function MeetupNotes({ post }: { post: Post }) {
 
 export function MeetupActionBar({ post, status, onJoin, onBeforeNavigate }: { post: Post; status: MeetupStatus; onJoin?: () => void; onBeforeNavigate?: () => void }) {
   const { tr } = useLanguage();
-  const { isAuthed, promptLogin } = useAuth(), theme = useTheme(), router = useRouter(), insets = useSafeAreaInsets();
-  const { play } = useInteractionFeedback();
+  const { isAuthed, me, promptLogin } = useAuth(), theme = useTheme(), router = useRouter(), insets = useSafeAreaInsets();
+  const { play } = useInteractionFeedback(), business = useChatIdentity();
   const room = post.room;
   if (!room) return null;
   const { own, participation } = status;
+  // Meetups are between people: while acting as a business the bar only offers switching back.
+  if (business && !own) return <View style={[styles.bar, { borderTopColor: theme.line, backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>
+    <View style={styles.barMeta}>
+      <ThemedText style={Typography.menu}>{tr('모임은 개인으로 참여해요')}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{tr('지금은 {0} 이름으로 쓰는 중', business.name)}</ThemedText>
+    </View>
+    <RaisedActionButton compact analyticsId="meetup.detail.switch-personal" label={tr('개인으로 바꾸기')} onPress={() => { play('selection'); selectChatBusiness(me.id, null); }} />
+  </View>;
   const availability = chillingAvailability(room);
   const bar = meetupBarAction({ own, participating: !!participation, loading: status.statusLoading, availability });
   const fee = room.fee ? meetupFeeAmount(room.fee.amount) : null;

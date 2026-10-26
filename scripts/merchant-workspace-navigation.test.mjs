@@ -6,7 +6,7 @@ import ts from 'typescript';
 import { calculateMerchantCost, MERCHANT_CHANNELS } from '../src/lib/merchant-workspace.ts';
 
 const source = readFileSync(new URL('../src/components/merchant-workspace.tsx', import.meta.url), 'utf8');
-const compiled = ts.transpileModule(source + '\nexports.MerchantTools = MerchantTools; exports.MerchantWorkspaceContent = MerchantWorkspaceContent; exports.Action = Action;', {
+const compiled = ts.transpileModule(source + '\nexports.MerchantTools = MerchantTools; exports.parseCostMenus = parseCostMenus; exports.MerchantWorkspaceContent = MerchantWorkspaceContent; exports.Action = Action;', {
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
 const merchant = (id = 'merchant-a') => ({ id, name: id === 'merchant-a' ? '테스트 가게' : '두 번째 가게', city_name: '밴쿠버', city_id: 'vancouver', owner_id: 'owner', owner_verified_at: '2026-10-17', plan: 'basic' });
@@ -60,7 +60,7 @@ function mount(name = 'MerchantTools', options = {}) {
 
 async function composer(screen) {
   await screen.settle();
-  if (find(screen.tree, '비즈니스 글쓰기')) await screen.press('비즈니스 글쓰기');
+  if (find(screen.tree, '소식 쓰기')) await screen.press('소식 쓰기');
   else { const drafts = find(screen.tree, '홍보글'); assert.ok(drafts); await drafts.props.onPress(); await screen.settle(); }
   if (find(screen.tree, '직접 작성할게요')) await screen.press('직접 작성할게요');
 }
@@ -85,7 +85,7 @@ test('actual access loss clears private editor state before a later successful r
     screen.api.workspace = async () => { throw Error(reason); }; screen.render({ refreshSignal: 1 }); await screen.settle();
     assert.ok(!find(screen.tree, '제목'));
     screen.api.workspace = async () => fixture(); await screen.press('다시 불러오기');
-    if (find(screen.tree, '비즈니스 글쓰기')) await screen.press('비즈니스 글쓰기');
+    if (find(screen.tree, '소식 쓰기')) await screen.press('소식 쓰기');
     if (find(screen.tree, '직접 작성할게요')) if (find(screen.tree, '직접 작성할게요')) await screen.press('직접 작성할게요');
     assert.equal(find(screen.tree, '제목').props.value, '', reason); assert.equal(dirty.at(-1), false, reason);
   }
@@ -127,10 +127,10 @@ test('merchant web selects only assigned businesses even when the account also h
 
 test('overview exposes every authorized tool, separates draft list/composer, and resumes dirty editing', async () => {
   const screen = mount(); await screen.settle();
-  assert.ok(find(screen.tree, '비즈니스 글쓰기')); assert.ok(!find(screen.tree, '직접 작성할게요'));
-  for (const title of ['글·사진', '프로필', '이용 후기', '홍보글 관리', '채널 연결', '원가 계산', '재고', '성과·멤버십', '계정 관리']) assert.ok(find(screen.tree, title), title);
+  assert.ok(find(screen.tree, '소식 쓰기')); assert.ok(!find(screen.tree, '직접 작성할게요'));
+  for (const title of ['게시한 글', '프로필·사진', '이용 후기', '소식·초안', '채널 연결', '대화함', '원가 계산', '재고', '성과·멤버십', '계정·권한']) assert.ok(find(screen.tree, title), title);
   await composer(screen); screen.edit('제목', '돌아와도 남는 제목'); await screen.settle();
-  await screen.press('업체 관리'); await screen.press('홍보글 관리');
+  await screen.press('업체 관리'); await screen.press('소식·초안');
   assert.ok(!find(screen.tree, '제목'), 'list does not show composer');
   await screen.press('작성 중인 초안 이어쓰기'); assert.equal(find(screen.tree, '제목').props.value, '돌아와도 남는 제목');
   await screen.press('업체 관리'); await screen.press('작성 중인 초안 이어쓰기'); assert.equal(find(screen.tree, '제목').props.value, '돌아와도 남는 제목');
@@ -139,8 +139,8 @@ test('overview exposes every authorized tool, separates draft list/composer, and
 
 test('operator overview keeps private business tools unavailable and OAuth initial channels remains supported', async () => {
   const screen = mount('MerchantTools', { workspace: async () => fixture(false) }); await screen.settle();
-  assert.ok(find(screen.tree, '비즈니스 글쓰기'));
-  for (const title of ['이용 후기', '채널 연결', '원가 계산', '재고', '성과·멤버십', '계정 관리']) assert.ok(!find(screen.tree, title), title);
+  assert.ok(find(screen.tree, '소식 쓰기'));
+  for (const title of ['이용 후기', '채널 연결', '원가 계산', '재고', '성과·멤버십', '계정·권한']) assert.ok(!find(screen.tree, title), title);
   const callback = mount('MerchantTools', { props: { initialTab: 'channels' } }); await callback.settle();
   assert.ok(nodes(callback.tree).some(n => n.type === 'MerchantNaverCafe'));
 });
@@ -171,14 +171,14 @@ test('workspace revalidation retains hidden nested profile and dirty reply edito
 
 test('business overview starts a plain business post directly and exposes photo management', async () => {
   const screen = mount(); await screen.settle();
-  assert.ok(find(screen.tree, '사진 관리'));
-  await screen.press('비즈니스 글쓰기');
+  assert.ok(find(screen.tree, '프로필·사진'));
+  await screen.press('소식 쓰기');
   assert.ok(find(screen.tree, '제목')); assert.ok(visibleNodes(screen.tree).some(n => n.type === 'PostBodyEditor'));
   assert.equal(screen.confirmations.length, 0);
 });
 
 test('photo management opens the same scoped profile editor', async () => {
-  const screen = mount(); await screen.settle(); await screen.press('사진 관리');
+  const screen = mount(); await screen.settle(); await screen.press('프로필·사진');
   assert.ok(visibleNodes(screen.tree).some(n => n.type === 'MerchantProfileEditor' && n.props.merchantId === 'merchant-a'));
 });
 
@@ -194,13 +194,13 @@ test('business mode does not promote an admin operator to business owner control
   const data = fixture(true); data.merchant.owner_id = 'other-owner';
   const screen = mount('MerchantTools', { props: { businessOnly: true }, workspace: async () => data });
   screen.auth.isAdmin = true; await screen.settle();
-  for (const title of ['원가 계산', '재고', '성과·멤버십', '계정 관리']) assert.ok(!find(screen.tree, title), title);
+  for (const title of ['원가 계산', '재고', '성과·멤버십', '계정·권한']) assert.ok(!find(screen.tree, title), title);
 });
 
 test('an admin business owner has the same business inbox entry as an ordinary owner', async () => {
   const screen = mount('MerchantTools', { props: { businessOnly: true } });
   screen.auth.isAdmin = true; await screen.settle();
-  assert.ok(find(screen.tree, '비즈니스 대화함'));
+  assert.ok(find(screen.tree, '대화함'));
 });
 
 
@@ -248,4 +248,14 @@ test('back inside an app business tool returns to the business home instead of l
   listeners.at(-1)[1](); await screen.settle();
   assert.ok(find(screen.tree, '원가 계산'), 'the business home with its tool list is shown again');
   assert.equal(listeners.at(-1)[0], false, 'the next back leaves normally');
+});
+
+test('saved cost menus keep only readable entries and never block the calculator', () => {
+  const { parseCostMenus } = (() => { const exports = {}; vm.runInNewContext(compiled, { exports, require: path => path === 'react-native' ? { StyleSheet: { create: v => v }, Platform: { OS: 'web' } } : new Proxy({}, { get: (_, key) => key === '__esModule' ? true : String(key) }), Error, Map, Promise, console }); return exports; })();
+  const values = { batchCost: '58.5', yield: '30', packaging: '0.5', other: '', price: '6.5', feePercent: '10.5' };
+  const plain = value => JSON.parse(JSON.stringify(value));
+  assert.deepEqual(plain(parseCostMenus(JSON.stringify([{ name: '단호박 라떼', values, extra: 1 }, { name: '', values }, { name: 'x', values: { ...values, price: 6 } }, null]))), [{ name: '단호박 라떼', values }]);
+  assert.equal(parseCostMenus('{broken').length, 0);
+  assert.equal(parseCostMenus(null).length, 0);
+  assert.equal(parseCostMenus(JSON.stringify(Array.from({ length: 30 }, (_, i) => ({ name: `m${i}`, values })))).length, 20);
 });

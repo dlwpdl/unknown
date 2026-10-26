@@ -4,11 +4,13 @@ import { Platform } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useUnreadCount } from '@/hooks/use-unread-count';
+import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 // Native selected-state motion stays quiet; the commit actions get stronger feedback elsewhere.
 export default function AppTabs() {
-  const { t } = useLanguage();
+  const { t, tr } = useLanguage();
+  const business = useChatIdentity();
   const { play } = useInteractionFeedback();
   const unreadCount = useUnreadCount('other');
   const chatCount = useUnreadCount('chat');
@@ -33,9 +35,10 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
+      {/* Acting as a business, the meetup tab becomes the business home (meetups stay personal-only). */}
       <NativeTabs.Trigger name="meetups">
-        <NativeTabs.Trigger.Label>{t.tabs.meetups}</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={{ default: 'person.2', selected: 'person.2.fill' }} md="groups" />
+        <NativeTabs.Trigger.Label>{business ? tr('내 가게') : t.tabs.meetups}</NativeTabs.Trigger.Label>
+        {business ? <NativeTabs.Trigger.Icon sf="storefront" md="storefront" /> : <NativeTabs.Trigger.Icon sf={{ default: 'person.2', selected: 'person.2.fill' }} md="groups" />}
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="compose">

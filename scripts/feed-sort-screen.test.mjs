@@ -6,7 +6,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { t } from '../src/i18n/ko.ts';
 import { TAGS } from '../src/lib/mock.ts';
-import { groupJournalPosts, appendUniquePosts } from '../src/lib/feed-data.ts';
+import { groupJournalPosts, appendUniquePosts, limitBusinessPosts } from '../src/lib/feed-data.ts';
 import { withPostMap, postMapBody } from '../src/lib/post-maps.ts';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
@@ -36,7 +36,8 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '@/lib/post-maps': { withPostMap, postMapBody },
     '@/lib/hashtags': { getSuggestedHashtags: () => [], parseHashtags: () => [], canonicalizeHashtag: value => value },
     '@/lib/ads': { adsSupported: false }, '@/lib/supabase': { supabase: { functions: { invoke: (...args) => new Promise((resolve, reject) => drafts.push({ args, resolve, reject })) } } },
-    '@/lib/feed-data': { groupJournalPosts, appendUniquePosts, loadPublicFeed: (...args) => new Promise((resolve, reject) => calls.push({ args, resolve, reject })) },
+    '@/hooks/use-chat-identity': { useChatIdentity: () => null },
+    '@/lib/feed-data': { groupJournalPosts, appendUniquePosts, limitBusinessPosts, loadPublicFeed: (...args) => new Promise((resolve, reject) => calls.push({ args, resolve, reject })) },
     '../../supabase/functions/_shared/post-links': { splitPostAttachments: body => ({ body }) },
   };
   const exports = {};

@@ -42,7 +42,7 @@ export function mountParticipant(screen, options = {}) {
     'react-native-safe-area-context': { SafeAreaView: 'View', useSafeAreaInsets: () => ({ bottom: 0, right: 0 }) }, 'expo-symbols': { SymbolView: 'Symbol' },
     '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async key => { calls.push(['read-pref', key]); return ctx.readPreference ? ctx.readPreference(key) : ctx.preference ?? null; }, setItem: async (key, value) => calls.push(['write-pref', key, JSON.parse(value)]) } },
     '@/hooks/use-language': { useLanguage: () => ({ language: ctx.language, locale: ctx.language === 'en' ? 'en-CA' : 'ko-KR', t: translationsFor(ctx.language), tr: (value, ...args) => translateUi(ctx.language, value, ...args) }) },
-    '@/hooks/use-theme': { useTheme: () => ctx.theme ?? {} }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
+    '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/app/profile/merchant': { default: 'MerchantScreen' }, '@/hooks/use-theme': { useTheme: () => ctx.theme ?? {} }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
     '@/lib/auth': { useAuth: () => ctx.auth }, '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버', state: 'open' } }) },
     '@/lib/membership-provider': { useMembership: () => ({ membership: {}, refresh: noop }) }, '@/components/relationship-slot-card': { relationshipSlotData: () => null },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => calls.push(['feedback', value]) }) },
@@ -199,7 +199,7 @@ test('the meetup card, schedule and fee line render the compact CAD fee in both 
       react: { memo: value => value, useState: value => [value, () => {}] }, 'react/jsx-runtime': { jsx: (type, props) => typeof type === 'function' ? type(props) : { type, props }, jsxs: (type, props) => typeof type === 'function' ? type(props) : { type, props }, Fragment: 'Fragment' },
       'react-native': { StyleSheet: { create: value => value, hairlineWidth: 1 }, View: 'View' }, 'expo-image': { Image: 'Image' },
       '@/hooks/use-language': { useLanguage: () => ({ language, locale: language === 'en' ? 'en-CA' : 'ko-KR', tr: (value, ...args) => translateUi(language, value, ...args) }) },
-      '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/auth': { useAuth: () => ({ me: { id: 'viewer' }, isAuthed: true }) }, '@/lib/chilling': chilling, '@/lib/meetup-host-tools': hostTools,
+      '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/auth': { useAuth: () => ({ me: { id: 'viewer' }, isAuthed: true }) }, '@/lib/chilling': chilling, '@/lib/meetup-host-tools': hostTools,
       '@/lib/feed-data': { getPostImageSource: () => null }, '@/lib/community-data': {}, '@/lib/supabase': {}, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     };
     vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, { exports, require: name => {

@@ -36,7 +36,7 @@ test('destructive text meets AA contrast on light, dark and admin surfaces', () 
 
 function glass(scheme, platform = 'ios', api = true, liquid = true) {
   return load('components/glass-surface.tsx', {
-    '@/hooks/use-theme': { useTheme: () => Colors[scheme] },
+    '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => Colors[scheme] },
     '@/constants/theme': { Colors },
     'react-native': { Platform: { OS: platform }, View: 'View', StyleSheet: { hairlineWidth: 0.5, create: styles => styles } },
     'expo-glass-effect': { GlassView: 'GlassView', isGlassEffectAPIAvailable: () => {
@@ -143,7 +143,7 @@ test('native tabs follow the palette and preserve feedback, badges and Android b
       'expo-router/unstable-native-tabs': { NativeTabs },
       'react-native': { Platform: { OS: platform } },
       '@/constants/theme': { Colors },
-      '@/hooks/use-theme': { useTheme: () => Colors[scheme] },
+      '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => Colors[scheme] },
       '@/i18n/ko': { t: { tabs: { today: 'Today', meetups: 'Meetups', write: 'Write', chat: 'Chat', notifications: 'Notifications' } } },
       '@/hooks/use-unread-count': { useUnreadCount: type => type === 'chat' ? 120 : 3 },
       '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },

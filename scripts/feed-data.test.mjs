@@ -6,6 +6,7 @@ import {
   attachSignedPostImages,
   getPostImageSource,
   groupJournalPosts,
+  limitBusinessPosts,
   loadAuthorPosts,
   mapPublicFeed,
 } from '../src/lib/feed-data.ts';
@@ -217,4 +218,10 @@ test('meetup context preserves denied, non-meetup and error results without any 
   await assert.rejects(api.loadPublicMeetupContext({ rpc: async () => ({ data: [{ id: 'different', room_preview: { id: 'room' } }], error: null }) }, 'post'), /INVALID_PUBLIC_MEETUP_CONTEXT/);
   const unavailable = Error('POST_NOT_VISIBLE');
   await assert.rejects(api.loadPublicMeetupContext({ rpc: async () => ({ data: null, error: unavailable }) }, 'post'), error => error === unavailable);
+});
+
+test('오늘 전체는 비즈니스 글을 5개 중 최대 1개만 섞고 비즈니스 채용글은 뺀다', () => {
+  const p = (id, business = false, slug = 'life') => ({ id, business: business ? { id: 'm' } : undefined, tag: { slug } });
+  const posts = [p('b1', true), p('b2', true), p('a'), p('b3', true, 'jobs'), p('c'), p('d'), p('e'), p('b4', true), p('f')];
+  assert.deepEqual(limitBusinessPosts(posts).map(({ id }) => id), ['b1', 'a', 'c', 'd', 'e', 'b4', 'f']);
 });

@@ -17,7 +17,7 @@ function avatar({ os = 'ios', authenticated = true } = {}) {
     '@/components/analytics-controls': { Pressable: 'Pressable' },
     '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/chat-identity-switcher': { ChatIdentitySwitcher: 'ChatIdentitySwitcher' },
-    '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: authenticated, me: { nickname: '개인', photoUri: 'own-photo' } }) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) },
   };

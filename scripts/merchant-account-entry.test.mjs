@@ -217,7 +217,7 @@ test('Today profile switching is hidden until actual linked business access is k
   view.auth({ isAuthed: false }); assert.equal(view.render(), null);
 });
 
-test('Today Instagram sheet opens the selected business workspace after access revalidation', async () => {
+test('Today sheet switches to the business and opens its home tab after access revalidation', async () => {
   chatIdentity.resetChatIdentity();
   const view = app('ChatIdentitySwitcher'); view.props({ target: 'business' }); view.render();
   assert.equal(view.pending.length, 1); view.pending.shift()(context()); await flush();
@@ -228,8 +228,8 @@ test('Today Instagram sheet opens the selected business workspace after access r
   assert.ok(row); const opening = row.props.onPress();
   assert.deepEqual(view.routes, []);
   view.pending.shift()(context()); await opening; await flush();
-  assert.equal(view.routes[0].pathname, '/profile/merchant'); assert.equal(view.routes[0].params.merchant, 'company-a');
-  assert.equal(view.routes[0].params.tab, undefined, 'Land on the business overview with writing and photo actions.');
+  assert.deepEqual(view.navigated, ['/meetups'], 'Acting as a business, the meetup tab becomes the business home.');
+  assert.equal(chatIdentity.chatBusinessIdentity('user-a')?.id, 'company-a');
   assert.ok(view.feedback.includes('selection')); assert.ok(!view.feedback.includes('success'), 'Profile switching must not play the post-saved celebration.');
 });
 
@@ -260,15 +260,14 @@ test('Today sheet rejects revoked business access and never reuses another user 
 });
 
 
-test('Today sheet uses opaque business photos and returns the personal row to the existing profile', async () => {
+test('Today sheet uses opaque business photos and switching back to personal stays in place', async () => {
   const id = '11111111-1111-4111-8111-111111111111';
   const view = app('ChatIdentitySwitcher'); view.props({ target: 'business' }); view.render();
   view.pending.shift()(context('user-a', [{ id, name: '가게', role: 'owner', city_name: '밴쿠버', avatar_path: `business-profile/${id}/avatar/${'a'.repeat(32)}` }])); await flush();
   nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.open').props.onPress();
   assert.ok(nodes(view.render()).some(n => n.type === 'Image' && n.props.source.uri.includes('kind=avatar')));
   nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.personal').props.onPress();
-  assert.equal(view.routes[0], '/profile');
-  assert.deepEqual(view.navigated, ['/profile'], 'Personal return reuses the existing profile route instead of pushing another profile screen.');
+  assert.deepEqual(view.routes, [], 'Switching back to personal stays on the current screen.');
 });
 
 test('Today foreground checks remove a revoked switch and cannot expose admin review access', async () => {
@@ -304,7 +303,7 @@ test('a new account can select its own business while an old account selection i
   const option = nodes(view.render()).find(n => n.props?.analyticsId === 'chat.identity.business');
   assert.equal(option.props.disabled, false); option.props.onPress();
   assert.equal(view.pending.length, 1); view.pending.shift()(next); await flush();
-  assert.equal(view.routes.length, 1); assert.equal(view.routes[0].params.merchant, 'company-b');
+  assert.deepEqual(view.navigated, ['/meetups']); assert.equal(chatIdentity.chatBusinessIdentity('user-b')?.id, 'company-b');
 });
 
 

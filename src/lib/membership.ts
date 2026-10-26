@@ -22,7 +22,7 @@ export const BUSINESS_LIMITS = {
 export type BusinessMembershipSnapshot = {
   merchantId: string; tier: MembershipTier; expiresAt: string | null; productId: string | null;
   store: string | null; willRenew: boolean | null; canPurchase: boolean;
-  postLimit: number | null; bumpLimit: number; bumpCooldownHours?: number; postsUsed: number; bumpsUsed: number;
+  postLimit: number | null; bumpLimit: number | null; bumpCooldownHours?: number; postsUsed: number; bumpsUsed: number;
   managedPostLimit: number; managedBumpLimit: number; managedPostsUsed: number; managedBumpsUsed: number;
   reportLimit: number; reportsUsed: number; resetsAt: string; nextBumpAt: string | null;
 };

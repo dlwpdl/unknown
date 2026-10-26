@@ -49,7 +49,14 @@ export type PublicCommentRow = {
   created_at: string;
   author_nickname: string;
   author_verification_level: number;
+  business_id?: string | null;
+  business_avatar_path?: string | null;
 };
+
+// Business comments arrive already masked (author_id/nickname are the business); this adds the storefront marker.
+export const commentBusiness = (row: PublicCommentRow) => row.business_id
+  ? { id: row.business_id, name: row.author_nickname, avatarUri: row.business_avatar_path?.startsWith(`business-profile/${row.business_id}/avatar/`) ? businessMediaUrl(row.business_avatar_path) : null }
+  : undefined;
 
 export type FeedSort = 'latest' | 'popular';
 export type FeedCursor = { createdAt: string; id: string; sortAt?: string; popularityScore?: number; rankingAsOf?: string };
@@ -62,6 +69,17 @@ let businessImageSessionRevision = 0;
 export function setBusinessImageSession(viewer: string | null, token: string | null) {
   businessImageSession = viewer && token ? { viewer, token } : null;
   businessImageSessionRevision++;
+}
+
+// Owner 2026-10-25: 오늘 '전체' carries at most one business post per five; business hiring stays in 구인구직.
+export function limitBusinessPosts<T extends { business?: unknown; tag: { slug: string } }>(posts: readonly T[]) {
+  let sinceBusiness = 4;
+  return posts.filter((post) => {
+    if (!post.business) { sinceBusiness++; return true; }
+    if (post.tag.slug === 'jobs' || sinceBusiness < 4) return false;
+    sinceBusiness = 0;
+    return true;
+  });
 }
 
 export function appendUniquePosts<T extends { id: string }>(current: readonly T[], next: readonly T[]) {
@@ -198,6 +216,7 @@ export function mapPublicFeed(
       verified: comment.author_verification_level >= 2,
       trustLevel: comment.author_verification_level === 3 ? 3 : undefined,
       createdAt: comment.created_at,
+      ...(comment.business_id ? { business: commentBusiness(comment) } : {}),
     });
     commentsByPost.set(comment.post_id, list);
   }

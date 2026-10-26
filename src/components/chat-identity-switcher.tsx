@@ -70,7 +70,7 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
   async function choose(id: string | null) {
     if (pending.current || user.current !== me.id) return;
     play('selection');
-    if (id === null) { selectChatBusiness(me.id, null); setOpenedFor(null); onChanged?.(); if (target === 'business') router.navigate('/profile'); return; }
+    if (id === null) { selectChatBusiness(me.id, null); setOpenedFor(null); onChanged?.(); return; }
     pending.current = true; setBusy(true); setError('');
     const request = ++serial.current;
     try {
@@ -81,7 +81,7 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
       if (!selected) throw new Error('MERCHANT_ACCESS_REQUIRED');
       selectChatBusiness(me.id, selected); setOpenedFor(null); onChanged?.();
       if (target === 'chat') play('success');
-      if (target === 'business') router.push({ pathname: '/profile/merchant', params: { merchant: selected.id } });
+      if (target === 'business') router.navigate('/meetups');
     } catch {
       if (user.current === me.id && request === serial.current) { setError('비즈니스 연결을 다시 확인해 주세요. 현재 프로필은 유지돼요.'); play('warning'); }
     } finally {
@@ -108,7 +108,7 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
     </Pressable>}
     <Modal visible={openedFor === me.id} transparent animationType="fade" onRequestClose={close}>
       <View style={styles.backdrop}><Pressable analyticsId="chat.identity.close" accessibilityRole="button" accessibilityLabel={tr('프로필 선택 닫기')} onPress={close} style={StyleSheet.absoluteFill} /><SafeAreaView edges={['bottom']} accessibilityViewIsModal onAccessibilityEscape={close} style={[styles.sheet, { backgroundColor: theme.card }]}>
-        <View style={styles.heading}><ThemedText style={Typography.sheetTitle}>{tr(target === 'business' ? '프로필 전환' : '대화 프로필')}</ThemedText><Pressable analyticsId="chat.identity.close" accessibilityRole="button" accessibilityLabel={tr('프로필 선택 닫기')} onPress={close} style={styles.close}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} /></Pressable></View>
+        <View style={styles.heading}><ThemedText style={Typography.sheetTitle}>{tr(target === 'business' ? '누구로 쓸까요?' : '대화 프로필')}</ThemedText><Pressable analyticsId="chat.identity.close" accessibilityRole="button" accessibilityLabel={tr('프로필 선택 닫기')} onPress={close} style={styles.close}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} /></Pressable></View>
         <ScrollView analyticsId="chat.identity.options" contentContainerStyle={{ gap: 10 }}>
           <Pressable analyticsId="chat.identity.personal" accessibilityRole="radio" accessibilityState={{ selected: !business, disabled: busy }} disabled={busy} onPress={() => { void choose(null); }} style={optionStyle(!business)}>
             {photo(me.photoUri, true)}
@@ -120,7 +120,7 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
           </Pressable>)}
           {busy && <ThemedText accessibilityLiveRegion="polite" type="small">{tr('현재 연결 확인 중…')}</ThemedText>}
           {!!error && <ThemedText accessibilityRole="alert" type="small">{tr(error)}</ThemedText>}
-          {target === 'business' && <ThemedText type="small" themeColor="textSecondary">{tr('연결된 비즈니스만 보여요. 전환한 뒤 글쓰기와 사진 관리를 할 수 있어요.')}</ThemedText>}
+          {target === 'business' && <ThemedText type="small" themeColor="textSecondary">{tr('비즈니스로 바꾸면 글과 대화가 가게 이름으로 올라가요. 모임은 개인으로만 열고 참여할 수 있어요.')}</ThemedText>}
         </ScrollView>
       </SafeAreaView></View>
     </Modal>

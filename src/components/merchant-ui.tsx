@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
+import { Colors } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -56,9 +57,14 @@ export function MerchantMeter({ label, value, max }: { label: string; value: num
 }
 
 export type MerchantBadgeTone = 'neutral' | 'accent' | 'ok' | 'warn' | 'danger';
+// The bright ok/warn tints only read on the dark theme; light mode uses the darker admin shades.
+export function merchantToneColor(theme: ReturnType<typeof useTheme>, tone: MerchantBadgeTone) {
+  const dark = theme === Colors.dark;
+  return tone === 'accent' ? theme.accent : tone === 'ok' ? dark ? '#7FD6A6' : Colors.admin.success : tone === 'warn' ? dark ? '#F5C451' : Colors.admin.warning : tone === 'danger' ? theme.danger : theme.textSecondary;
+}
 export function MerchantBadge({ label, tone = 'neutral' }: { label: string; tone?: MerchantBadgeTone }) {
   const theme = useTheme();
-  const color = tone === 'accent' ? theme.accent : tone === 'ok' ? '#7FD6A6' : tone === 'warn' ? '#F5C451' : tone === 'danger' ? theme.danger : theme.textSecondary;
+  const color = merchantToneColor(theme, tone);
   return <View style={[styles.badge, { backgroundColor: theme.backgroundElement }]}><ThemedText type="small" style={{ color }} numberOfLines={1}>{label}</ThemedText></View>;
 }
 

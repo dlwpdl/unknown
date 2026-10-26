@@ -195,7 +195,7 @@ export default function MembershipScreen() {
           <MeetupPolicyNotice mode="once" />
           </> : <View style={styles.detailContent}>
             <SectionHead title={tr("이번 달 사용")} note={business ? tr("{0} 초기화", (new Date(business.resetsAt).toLocaleDateString(appLocale))) : tr("비즈니스별 합산")} />
-            {business && <ThemedText>{tr('신규 {0} / {1}편 · 끌어올리기 {2} / {3}회', business.postsUsed, business.postLimit ?? tr('기존 약정 유지'), business.bumpsUsed, business.bumpLimit)}</ThemedText>}
+            {business && <ThemedText>{tr('신규 {0} / {1}편 · 끌어올리기 {2} / {3}회', business.postsUsed, business.postLimit ?? tr('기존 약정 유지'), business.bumpsUsed, business.bumpLimit ?? tr('한도 없음'))}</ThemedText>}
             {business?.tier === 'premium' && <ThemedText type="small">{tr('운영대행 사용: 신규 {0}/4편 · 끌어올리기 {1}/8회 · 보고서 {2}/1회', business.managedPostsUsed, business.managedBumpsUsed, business.reportsUsed)}</ThemedText>}
             <ThemedText type="small" themeColor="textSecondary">{tr("같은 내용은 새 글로 다시 올릴 수 없어요. 기존 글을 수정하거나 끌어올려 주세요. 같은 글은 플러스 72시간·프로 60시간·프리미엄 48시간 간격이에요. 비즈니스 전체는 24시간 간격을 지켜 주세요.")}</ThemedText>
           </View>}

@@ -24,6 +24,8 @@ import { ControlStyles, IconSize, Typography, controlPresentation } from '@/cons
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
+import { useChatIdentity } from '@/hooks/use-chat-identity';
+import MerchantScreen from '@/app/profile/merchant';
 import { useCommunityCity } from '@/lib/community-city';
 import { loadPendingMeetupRequests, MEETUPS_CHANGED_EVENT } from '@/lib/community-data';
 import { chillingCreateKindParams, discoveryCursor, hasOpenSeat, matchesChilling, matchesChillingWindow, parseChillingDiscoveryPreference, sortChillings, type ChillingDiscoveryKind, type ChillingDiscoveryView, type ChillingWindow } from '@/lib/chilling-discovery';
@@ -47,7 +49,21 @@ export default function MeetupsScreen() {
   const { placeCityId, placeId, ticketmasterCityId, ticketmasterEventId } = params as MeetupDestinationParams;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const source = useMemo(() => resolveMeetupDestination({ placeCityId, placeId, ticketmasterCityId, ticketmasterEventId }), [placeCityId, placeId, ticketmasterCityId, ticketmasterEventId, placesRevision]);
+  const business = useChatIdentity();
+  if (business) return <BusinessHome />;
   return <MeetupDiscovery key={`${isAuthed ? me.id : 'guest'}:${city.id}:${params.placeCityId}:${params.placeId}:${params.ticketmasterCityId}:${params.ticketmasterEventId}`} destination={source.destination} sourceInvalid={source.invalid} />;
+}
+
+// Acting as a business this tab is "내 가게": the same workspace as the profile entry, under the tab header.
+function BusinessHome() {
+  const { tr } = useLanguage(), theme = useTheme();
+  return <TabContent style={styles.root}><SafeAreaView edges={['top', 'left', 'right']} style={[styles.root, { backgroundColor: theme.background }]}>
+    <View style={[styles.head, styles.headFixed, { backgroundColor: theme.background }]}>
+      <ThemedText accessibilityRole="header" style={[styles.title, { flex: 1 }]}>{tr('내 가게')}</ThemedText>
+      <ProfileAvatarButton />
+    </View>
+    <MerchantScreen />
+  </SafeAreaView></TabContent>;
 }
 
 function MeetupDiscovery({ destination, sourceInvalid }: { destination: MeetupDestination | null; sourceInvalid: boolean }) {

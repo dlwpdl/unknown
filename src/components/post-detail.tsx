@@ -59,13 +59,15 @@ import { placeMapRoute } from '@/lib/discovery';
 import { ControlStyles, Typography, controlPresentation } from '@/constants/design-system';
 import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 import { supabase } from '@/lib/supabase';
+import { useChatIdentity } from '@/hooks/use-chat-identity';
 import type { Post, PostComment } from '@/lib/types';
 import { ticketmasterReference } from '../../supabase/functions/_shared/ticketmaster';
 
 type ReportSelection = {
   targetType: ReportTarget;
   targetId: string;
-  reportedUserId: string;
+  reportedUserId?: string;
+  reportedBusinessId?: string;
   reportedNickname: string;
 };
 
@@ -97,6 +99,7 @@ export function PostDetail(props: PostDetailProps) {
 
 function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCommentCountChange, onViewCountChange, onPostRemoved, onPostChanged, management }: PostDetailProps) {
   const { tr, t, language } = useLanguage();
+  const business = useChatIdentity();
   const theme = useTheme();
   const hidden = useContentVisibility();
   const [post, setPost] = useState(initialPost);
@@ -381,13 +384,13 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     setSendError(null);
     setSending(true);
     try {
-      const id = await createThreadComment(supabase, post.id, body, replyTo?.id);
+      const id = await createThreadComment(supabase, post.id, body, replyTo?.id, business?.id);
       if (!active.current) return;
       createdCommentToReveal.current = id;
       const nextTotal = commentTotal + 1;
       setComments((current) => [{
-        id, authorId: me.id, nickname: me.nickname, body, likes: 0, likedByMe: false,
-        verified: isVerified, trustLevel: trustLevel === 3 ? 3 : undefined,
+        id, authorId: business?.id ?? me.id, nickname: business?.name ?? me.nickname, body, likes: 0, likedByMe: false, business: business ?? undefined,
+        verified: !business && isVerified, trustLevel: !business && trustLevel === 3 ? 3 : undefined,
         parentId: parentId ?? undefined, replyToId: replyTo?.id, replyToNickname: replyTo?.nickname, replyCount: 0,
       }, ...current]);
       if (parentId) {
@@ -443,21 +446,19 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   };
 
   const renderComment = (c: PostComment) => {
-    const mine = isAuthed && c.authorId === me.id;
+    // A business comment is editable while acting as that business; RLS still checks the real author.
+    const mine = isAuthed && (c.business ? c.business.id === business?.id : c.authorId === me.id);
+    const openAuthor = () => {
+      play('selection');
+      if (c.business) { onClose(); router.push({ pathname: '/company/[id]', params: { id: c.business.id } }); return; }
+      setSheetUser({ id: c.authorId, nickname: c.nickname, verified: c.verified, trustLevel: c.trustLevel, mine });
+    };
     return (
       <View
         key={c.id}
         style={styles.comment}>
         <Pressable analyticsId="components_post-detail.pressable.2"
-          onPress={() => {
-            play('selection'); setSheetUser({
-              id: c.authorId,
-              nickname: c.nickname,
-              verified: c.verified,
-              trustLevel: c.trustLevel,
-              mine,
-            });
-          }}
+          onPress={openAuthor}
           accessibilityRole="button"
           accessibilityLabel={tr("{0} 프로필 보기", (c.nickname))}
           style={({ pressed }) => [styles.avatar, { backgroundColor: mine ? theme.accent : theme.backgroundElement }, pressed && styles.pressed]}>
@@ -469,15 +470,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
         </Pressable>
         <View style={{ flex: 1 }}>
           <Pressable analyticsId="components_post-detail.pressable.3"
-            onPress={() => {
-              play('selection'); setSheetUser({
-                id: c.authorId,
-                nickname: c.nickname,
-                verified: c.verified,
-                trustLevel: c.trustLevel,
-                mine,
-              });
-            }}
+            onPress={openAuthor}
             accessibilityRole="button"
             accessibilityLabel={tr("{0} 프로필 보기", (c.nickname))}
             style={({ pressed }) => [styles.commentHead, pressed && styles.pressed]}>
@@ -485,6 +478,11 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               {c.nickname}
             </ThemedText>
             <TrustBadge verified={c.verified} trustLevel={c.trustLevel} />
+            {c.business && (
+              <View style={[styles.mineBadge, { backgroundColor: theme.backgroundElement }]}>
+                <ThemedText type="smallBold" themeColor="textSecondary" style={{ fontSize: 10, lineHeight: 13 }}>{tr('비즈니스')}</ThemedText>
+              </View>
+            )}
             {mine && (
               <View style={[styles.mineBadge, { backgroundColor: theme.accent }]}>
                 <ThemedText type="smallBold" style={{ fontSize: 10, lineHeight: 13, color: theme.accentInk }}>
@@ -527,7 +525,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
             )}
             {!mine && c.authorId && (
               <Pressable analyticsId="components_post-detail.pressable.8"
-                onPress={() => { play('selection'); setReportSelection({ targetType: 'comment', targetId: c.id, reportedUserId: c.authorId!, reportedNickname: c.nickname }); }}
+                onPress={() => { play('selection'); setReportSelection({ targetType: 'comment', targetId: c.id, ...(c.business ? { reportedBusinessId: c.business.id } : { reportedUserId: c.authorId! }), reportedNickname: c.nickname }); }}
                 accessibilityRole="button" accessibilityLabel={tr("{0}의 {1} 신고", (c.nickname), (c.parentId ? tr('답글') : tr('댓글')))} style={({ pressed }) => [styles.commentAction, pressed && styles.pressed]}>
                 <ThemedText type="small" themeColor="textSecondary" style={styles.commentActionText}>{t.report.short}</ThemedText>
               </Pressable>
@@ -826,7 +824,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               multiline
               maxLength={1000}
               accessibilityLabel={tr(replyTo ? tr("{0}님에게 답글", (replyTo.nickname)) : tr("댓글 쓰기"))}
-              placeholder={tr(replyTo ? tr("답글을 남겨 주세요") : t.detail.commentPlaceholder)}
+              placeholder={business && !editing ? tr("{0} 이름으로 남겨요", business.name) : tr(replyTo ? tr("답글을 남겨 주세요") : t.detail.commentPlaceholder)}
               placeholderTextColor={theme.textSecondary}
               style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.line }]}
             />
