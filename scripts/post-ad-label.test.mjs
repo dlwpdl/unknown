@@ -54,3 +54,18 @@ test('the real writer AD control updates the existing hashtag input and plays fe
   exports.button.props.onPress();
   assert.equal(input, '카페 AD'); assert.deepEqual(feedback, ['selection']);
 });
+
+test('the real writer category picker hides 비즈니스 from people but not from the admin', async () => {
+  const { TAGS } = await import('../src/lib/mock.ts');
+  const ast = ts.createSourceFile('feed-screen.tsx', readFileSync(new URL('../src/components/feed-screen.tsx', import.meta.url), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let filter;
+  const visit = node => {
+    if (ts.isCallExpression(node) && node.expression.getText(ast) === 'TAGS.filter') filter = node.arguments[0];
+    ts.forEachChild(node, visit);
+  };
+  visit(ast); assert.ok(filter, 'the writer filters its category list');
+  const shown = isAdmin => { const exports = {}; vm.runInNewContext(ts.transpileModule(`exports.f = ${filter.getText(ast)};`, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, { exports, isAdmin }); return TAGS.filter(exports.f).map(tag => tag.slug); };
+  assert.ok(!shown(false).includes('business'));
+  assert.ok(shown(false).includes('jobs'), 'people can still post in 구인구직');
+  assert.ok(shown(true).includes('business'));
+});
