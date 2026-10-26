@@ -47,7 +47,7 @@ export function AdminAnalyticsView({ localPreview, onUser, refreshSignal = 0 }: 
       <View style={styles.headingRow}>
         <View style={styles.titleRow}>
           <ThemedText accessibilityRole="header" style={styles.title}>분석</ThemedText>
-          <AdminInfo text={['회원·활동·결제 흐름을 봐요. 시각은 UTC 기준이에요.', ...(data ? [`기본 집계 ${date(data.periodStart)} 이후 · 갱신 ${date(data.generatedAt)}`] : [])]} />
+          <AdminInfo text={['회원·활동·결제 흐름을 봐요. 날짜와 시각은 세계 표준시 기준이라 밴쿠버보다 7~8시간 빨라요.', ...(data ? [`기본 집계 ${date(data.periodStart)} 이후 · 갱신 ${date(data.generatedAt)}`] : [])]} />
         </View>
         <AdminButton label="새로고침" accessibilityLabel="분석 새로고침" disabled={loading || localPreview} onPress={() => setRetry((value) => value + 1)} />
       </View>
@@ -92,13 +92,13 @@ function Members({ data }: { data: AdminAnalytics | null }) {
 
 function Traffic({ data, onUser }: { data: AdminAnalytics | null; onUser: (id: string) => void }) {
   return <Card title="최근 접속" icon="⇢" tone="navy" info={[
-    data ? `접속 수집 시작 ${date(data.collectionStartedAt)} (UTC) · 이전 접속 기록은 미수집이에요.` : '접속 정보 수집 전이에요.',
-    '선택 조건의 최근 기록 최대 50개예요. 로그인한 회원의 화면·플랫폼만 수집해요.',
+    data ? `접속 기록 시작 ${date(data.collectionStartedAt)} · 그 전 접속은 기록이 없어요.` : '접속 정보 수집 전이에요.',
+    '고른 조건의 최근 기록 50개까지예요. 로그인한 회원이 어느 화면을 어느 기기로 봤는지만 모아요.',
     '익명 방문·IP·검색어·대화 내용은 분석용으로 수집하지 않으며, 접속 원자료는 90일 보관해요.',
     '화면 조회: 수집된 화면 방문 횟수 · 글 조회 기록: 선택 기간 실제 중복 제거 조회 기록',
   ]}>
     <View style={styles.metrics}><Metric label="화면 조회" value={data?.counts.screenViews} /><Metric label="글 조회 기록" value={data?.counts.uniquePostViews} /></View>
-    <DataTable headers={['회원', '화면', '플랫폼 / 버전', '최초 방문', '최근 방문', '화면 조회']} rows={(data?.visits ?? []).map((visit) => ({ key: `${visit.userId}:${visit.platform}:${visit.firstAt}`, cells: [<UserLink key="user" id={visit.userId} nickname={visit.nickname} onUser={onUser} />, visit.screen, `${visit.platform} / ${visit.appVersion || '미확인'}`, date(visit.firstAt), date(visit.lastAt), `${number(visit.views)}회`] }))} />
+    <DataTable headers={['회원', '화면', '기기 / 앱 버전', '처음 방문', '최근 방문', '본 횟수']} rows={(data?.visits ?? []).map((visit) => ({ key: `${visit.userId}:${visit.platform}:${visit.firstAt}`, cells: [<UserLink key="user" id={visit.userId} nickname={visit.nickname} onUser={onUser} />, visit.screen, `${visit.platform} / ${visit.appVersion || '미확인'}`, date(visit.firstAt), date(visit.lastAt), `${number(visit.views)}회`] }))} />
   </Card>;
 }
 
@@ -106,31 +106,31 @@ function Behavior({ data }: { data: AdminAnalytics | null }) {
   const rows = data?.behavior;
   const stepNames: Record<string, string> = { signup_complete: '회원가입 완료', consent_complete: '필수 동의 완료', meetup_request_complete: '모임 신청 완료', 'post.poll.vote': '투표 참여', 'ticketmaster.meetup.created': '행사 모임 등록' };
   return <>
-    <Card title="화면별 활동" icon="▤" tone="navy" info={['고정된 UI 식별자만 기록해요. 입력값·대화 내용은 수집하지 않아요.', '익명 방문은 메모리 세션 기준이며 도시·등급 필터를 적용하면 제외돼요. 기존 빌드의 미수집 활동은 복원되지 않아요.', '체류는 앱 활성·웹 표시 상태에서 측정한 합계예요. 앱 강제 종료·오프라인 상황에서는 일부 누락될 수 있어요.']}>
-      <DataTable headers={['플랫폼 / 화면', '조회', '세션', '활성 체류 (분)', '버튼 클릭', '끝까지 스크롤']} rows={(rows?.screens ?? []).map((r) => ({ key: `${r.platform}:${r.screen}`, cells: [`${r.platform} / ${r.screen}`, number(r.views), number(r.sessions), (r.dwellMs / 60000).toFixed(1), number(r.presses), number(r.bottoms)] }))} />
+    <Card title="화면별 활동" icon="▤" tone="navy" info={['어느 화면·버튼인지만 기록해요. 입력한 글이나 대화 내용은 모으지 않아요.', '로그인 안 한 방문은 앱을 한 번 연 것을 방문 한 번으로 세요. 도시나 등급을 고르면 이런 방문은 빠져요. 예전 앱 버전에서 모으지 않은 기록은 되살릴 수 없어요.', '머문 시간은 앱이나 웹 화면을 실제로 보고 있던 시간의 합이에요. 앱을 강제로 끄거나 인터넷이 끊기면 일부 빠질 수 있어요.']}>
+      <DataTable headers={['기기 / 화면', '본 횟수', '방문 수', '머문 시간 (분)', '버튼 누름', '끝까지 내림']} rows={(rows?.screens ?? []).map((r) => ({ key: `${r.platform}:${r.screen}`, cells: [`${r.platform} / ${r.screen}`, number(r.views), number(r.sessions), (r.dwellMs / 60000).toFixed(1), number(r.presses), number(r.bottoms)] }))} />
     </Card>
-    <Card title="완료한 작업" icon="✓" tone="success" info={['서버에서 성공한 작업을 클라이언트가 보고한 횟수예요. 버튼 클릭과 구분하며, 결제·회원 원장 대용이 아니에요.', '단계 발생 수는 순서 기반 전환율이 아니에요.']}>
-      <DataTable headers={['작업', '플랫폼', '횟수', '세션']} rows={(rows?.steps ?? []).map((r) => ({ key: `${r.platform}:${r.screen}:${r.target}`, cells: [stepNames[r.target] ?? '기타 완료 기록', r.platform, number(r.count), number(r.sessions)] }))} />
+    <Card title="완료한 작업" icon="✓" tone="success" info={['실제로 끝까지 성공한 작업을 앱이 알려 온 횟수예요. 버튼을 누른 횟수와는 달라요. 결제나 회원 수의 공식 기록으로 쓰면 안 돼요.', '단계마다 따로 센 숫자라, 앞 단계에서 다음 단계로 몇 퍼센트가 넘어갔는지는 아니에요.']}>
+      <DataTable headers={['작업', '기기', '횟수', '방문 수']} rows={(rows?.steps ?? []).map((r) => ({ key: `${r.platform}:${r.screen}:${r.target}`, cells: [stepNames[r.target] ?? '기타 완료 기록', r.platform, number(r.count), number(r.sessions)] }))} />
     </Card>
     <RawData>
       <SectionTitle title="완료한 작업 원본 기록" />
-      <DataTable headers={['단계 식별자', '플랫폼', '횟수', '세션']} rows={(rows?.steps ?? []).map((r) => ({ key: `${r.platform}:${r.screen}:${r.target}`, cells: [r.target, r.platform, number(r.count), number(r.sessions)] }))} />
-      <SectionTitle title="버튼 · 스크롤 상세" note="고정 식별자는 코드의 analyticsId와 대응해요. 25/50/75/100은 읽기 깊이예요. 상위 300개 집계." />
-      <DataTable headers={['화면 / 플랫폼', '종류', 'UI 식별자', '깊이', '횟수', '세션']} rows={(rows?.actions ?? []).filter((r) => r.kind !== 'success').map((r) => ({ key: `${r.platform}:${r.screen}:${r.kind}:${r.target}:${r.value}`, cells: [`${r.screen} / ${r.platform}`, r.kind, r.target, r.kind === 'scroll' ? `${r.value}%` : '—', number(r.count), number(r.sessions)] }))} />
-      <SectionTitle title="최근 행동 순서" note="최근 100개. 같은 세션의 순번으로 행동 순서를 확인해요. 시각은 서버 수신 시각이에요." />
-      <DataTable headers={['수신 시각', '세션 / 순번', '화면', '행동', 'UI 식별자', '값']} rows={(rows?.recent ?? []).map((r) => ({ key: `${r.sessionId}:${r.seq}`, cells: [date(r.createdAt), `${r.sessionId} / ${r.seq}${r.anonymous ? ' (익명)' : ''}`, `${r.platform} / ${r.screen}`, r.kind, r.target, String(r.value)] }))} />
+      <DataTable headers={['단계 이름표', '기기', '횟수', '방문 수']} rows={(rows?.steps ?? []).map((r) => ({ key: `${r.platform}:${r.screen}:${r.target}`, cells: [r.target, r.platform, number(r.count), number(r.sessions)] }))} />
+      <SectionTitle title="버튼 · 스크롤 상세" note="이름표는 코드에 붙인 버튼·화면 이름이에요. 25/50/75/100은 화면을 몇 퍼센트까지 내렸는지예요. 많은 순으로 300개까지 보여요." />
+      <DataTable headers={['화면 / 기기', '종류', '이름표', '내린 정도', '횟수', '방문 수']} rows={(rows?.actions ?? []).filter((r) => r.kind !== 'success').map((r) => ({ key: `${r.platform}:${r.screen}:${r.kind}:${r.target}:${r.value}`, cells: [`${r.screen} / ${r.platform}`, r.kind, r.target, r.kind === 'scroll' ? `${r.value}%` : '—', number(r.count), number(r.sessions)] }))} />
+      <SectionTitle title="최근 행동 순서" note="최근 100개예요. 같은 방문 안에서 번호 순서대로 무엇을 했는지 볼 수 있어요. 시각은 서버가 기록을 받은 때예요." />
+      <DataTable headers={['받은 시각', '방문 / 순서', '화면', '행동', '이름표', '값']} rows={(rows?.recent ?? []).map((r) => ({ key: `${r.sessionId}:${r.seq}`, cells: [date(r.createdAt), `${r.sessionId} / ${r.seq}${r.anonymous ? ' (익명)' : ''}`, `${r.platform} / ${r.screen}`, r.kind, r.target, String(r.value)] }))} />
     </RawData>
   </>;
 }
 
 function Revenue({ data, onUser }: { data: AdminAnalytics | null; onUser: (id: string) => void }) {
   return <>
-    <Card title="구독 결제 기록" icon="$" tone="success" info={['운영 환경의 실제 결제 이벤트예요. 환불·스토어 수수료 차감 전이고 통화별로 집계해요.', data ? `결제 이벤트 수집 시작 ${date(data.collectionStartedAt)} (UTC) · 이전 결제 내역은 집계되지 않아요.` : '결제 데이터 미연결', '구매 회원은 통화별 결제 발생액 내림차순 최대 50명이에요.', '결제 이벤트는 최근 수신 기록 최대 50개예요. 테스트 이벤트는 결제액에서 빠져요.']}>
+    <Card title="구독 결제 기록" icon="$" tone="success" info={['실제 결제 기록이에요. 환불과 스토어 수수료를 빼기 전 금액이고, 통화별로 따로 더해요.', data ? `결제 기록 시작 ${date(data.collectionStartedAt)} · 그 전 결제는 들어 있지 않아요.` : '결제 데이터 미연결', '결제한 회원은 통화별로 많이 낸 순서대로 50명까지 보여요.', '결제 기록은 최근 50개까지 보여요. 테스트 결제는 금액에서 빠져요.']}>
       <View style={styles.metrics}>{data?.purchases.length ? data.purchases.map((purchase) => <View key={purchase.currency} style={styles.metric}><ThemedText type="small" style={styles.muted}>{purchase.currency}</ThemedText><ThemedText style={styles.metricValue}>{money(purchase.amount, purchase.currency)}</ThemedText><ThemedText type="small" style={styles.muted}>{number(purchase.purchases)}건 · 구매 회원 {number(purchase.buyers)}명</ThemedText></View>) : <Notice title="집계할 결제 기록이 없어요" text="인증된 결제 알림을 받은 시점부터 집계해요. 과거 미수집 결제액은 0원으로 간주하지 않아요." />}</View>
       <SectionTitle title="구독 구매 회원" />
       <DataTable headers={['회원', '통화', '결제 발생액', '결제 건수']} rows={(data?.buyers ?? []).map((buyer) => ({ key: `${buyer.userId}:${buyer.currency}`, cells: [<UserLink key="user" id={buyer.userId} nickname={buyer.nickname} onUser={onUser} />, buyer.currency, money(buyer.amount, buyer.currency), number(buyer.purchases)] }))} />
-      <SectionTitle title="결제 이벤트" />
-      <DataTable headers={['발생 시각 (UTC)', '이벤트', '상품', '환경']} rows={(data?.paymentEvents ?? []).map((event) => ({ key: event.id, cells: [date(event.occurredAt), paymentLabel(event.type), event.productId, event.environment === 'SANDBOX' ? '테스트' : event.environment === 'PRODUCTION' ? '운영' : event.environment] }))} />
+      <SectionTitle title="결제 기록" />
+      <DataTable headers={['시각', '결제 종류', '상품', '실제/테스트']} rows={(data?.paymentEvents ?? []).map((event) => ({ key: event.id, cells: [date(event.occurredAt), paymentLabel(event.type), event.productId, event.environment === 'SANDBOX' ? '테스트' : event.environment === 'PRODUCTION' ? '운영' : event.environment] }))} />
     </Card>
     <Card title="글 끌어올리기" icon="↑" tone="neutral" count="연결 전" info="홍보 상품과 유료 노출 집계는 아직 연결되지 않았어요. 연결 후 진행 중인 글·목표 대비 노출·남은 노출·구매 회원 순위를 볼 수 있어요. 자연 조회수는 유료 노출에 합산하지 않아요." />
   </>;
@@ -138,18 +138,18 @@ function Revenue({ data, onUser }: { data: AdminAnalytics | null; onUser: (id: s
 
 function Logs({ data }: { data: AdminAnalytics | null }) {
   return <>
-    <Card title="관리자 접근 기록" icon="⌂" tone="navy" info="선택 기간의 전체 운영 감사 기록이에요. 도시·회원 멤버십 필터는 적용하지 않아요.">
+    <Card title="관리자 접근 기록" icon="⌂" tone="navy" info="고른 기간에 관리자가 무엇을 했는지 남긴 기록 전체예요. 도시·멤버십 선택은 적용되지 않아요.">
       <View style={styles.metrics}>{data?.auditSummary.length ? data.auditSummary.map((row) => <Metric key={row.key} label={scopeLabel(row.key)} value={row.count} />) : <Empty />}</View>
-      <DataTable headers={['시각 (UTC)', '작업']} rows={(data?.audit ?? []).map((entry) => ({ key: String(entry.id), cells: [date(entry.createdAt), scopeLabel(entry.scope)] }))} />
+      <DataTable headers={['시각', '작업']} rows={(data?.audit ?? []).map((entry) => ({ key: String(entry.id), cells: [date(entry.createdAt), scopeLabel(entry.scope)] }))} />
     </Card>
-    <Card title="안전 분석 오류" icon="!" tone="warning" count={data ? `${data.errors.length}건` : undefined} info="전체 운영 기준 최근 실패 최대 50개예요. 콘텐츠 원문과 내부 오류 상세는 보여주지 않아요.">
-      <DataTable headers={['상태', '생성 시각 (UTC)']} rows={(data?.errors ?? []).map((entry) => ({ key: String(entry.id), cells: [entry.status === 'failed' ? '실패' : entry.status, date(entry.createdAt)] }))} />
+    <Card title="안전 분석 오류" icon="!" tone="warning" count={data ? `${data.errors.length}건` : undefined} info="AI 안전 분석이 실패한 최근 기록 50개까지예요. 글 원문과 자세한 오류 내용은 보여 주지 않아요.">
+      <DataTable headers={['상태', '생긴 시각']} rows={(data?.errors ?? []).map((entry) => ({ key: String(entry.id), cells: [entry.status === 'failed' ? '실패' : entry.status, date(entry.createdAt)] }))} />
     </Card>
     <RawData>
       <SectionTitle title="관리자 접근 원본 기록" />
-      <DataTable headers={['시각 (UTC)', '운영자 ID', '작업']} rows={(data?.audit ?? []).map((entry) => ({ key: String(entry.id), cells: [date(entry.createdAt), entry.actorId, scopeLabel(entry.scope)] }))} />
+      <DataTable headers={['시각', '운영자 ID', '작업']} rows={(data?.audit ?? []).map((entry) => ({ key: String(entry.id), cells: [date(entry.createdAt), entry.actorId, scopeLabel(entry.scope)] }))} />
       <SectionTitle title="안전 분석 오류 원본 기록" />
-      <DataTable headers={['기록 ID', '상태', '시도 횟수', '생성 시각 (UTC)']} rows={(data?.errors ?? []).map((entry) => ({ key: String(entry.id), cells: [String(entry.id), entry.status === 'failed' ? '실패' : entry.status, `${entry.attempts}회`, date(entry.createdAt)] }))} />
+      <DataTable headers={['기록 ID', '상태', '시도 횟수', '생긴 시각']} rows={(data?.errors ?? []).map((entry) => ({ key: String(entry.id), cells: [String(entry.id), entry.status === 'failed' ? '실패' : entry.status, `${entry.attempts}회`, date(entry.createdAt)] }))} />
     </RawData>
   </>;
 }

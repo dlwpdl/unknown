@@ -144,14 +144,14 @@ test('real rendering separates loading, valid zero, null collectors and all eigh
   try {
     await view.render();
     assert.ok(find(view.container, 'progressbar', '성과 데이터 불러오는 중'));
-    assert.equal(metric(view.container, 'DAU'), undefined);
+    assert.equal(metric(view.container, '오늘 들어온 회원'), undefined);
     await view.answer(0);
-    for (const title of ['성장·유입', '활동', '재방문·코호트', '커뮤니티', '행사·장소', '알림', '수익', '품질']) assert.ok(area(view.container, title), title);
-    assert.match(metric(view.container, 'DAU'), /0/);
-    assert.match(metric(view.container, '가입 후 활동률'), /0%/);
-    assert.match(metric(view.container, '푸시 탭'), /미수집/);
+    for (const title of ['성장·유입', '활동', '다시 찾아온 회원', '커뮤니티', '행사·장소', '알림', '수익', '품질']) assert.ok(area(view.container, title), title);
+    assert.match(metric(view.container, '오늘 들어온 회원'), /0/);
+    assert.match(metric(view.container, '가입 후 실제로 활동한 비율'), /0%/);
+    assert.match(metric(view.container, '알림 누른 횟수'), /기록 없음/);
     assert.match(metric(view.container, '환불'), /연결 전/);
-    assert.match(area(view.container, '행사·장소').textContent, /수집 대기/);
+    assert.match(area(view.container, '행사·장소').textContent, /기록 대기/);
     assert.match(area(view.container, '수익').textContent, /기록이 없어요/);
   } finally { await view.unmount(); }
 });
@@ -160,7 +160,7 @@ test('eight domain areas render as open cards with captions behind ⓘ, and the 
   const view = app();
   try {
     await view.render(); await view.answer(0);
-    for (const title of ['성장·유입', '활동', '재방문·코호트', '커뮤니티', '행사·장소', '알림', '수익', '품질']) {
+    for (const title of ['성장·유입', '활동', '다시 찾아온 회원', '커뮤니티', '행사·장소', '알림', '수익', '품질']) {
       assert.ok(area(view.container, title), title);
       assert.equal(find(view.container, 'button', title), undefined, `${title} is no longer a disclosure`);
     }
@@ -178,15 +178,15 @@ test('pending and eligible-zero retention remain different from an observed zero
   const view = app();
   try {
     await view.render(); await view.answer(0);
-    const table = area(view.container, 'D1·D7·D30 재방문');
-    assert.match(row(table, 'D1').textContent, /0%/);
-    assert.match(row(table, 'D7').textContent, /관측 중/);
-    assert.doesNotMatch(row(table, 'D7').textContent, /0%/);
-    assert.match(row(table, 'D30').textContent, /대상 없음/);
-    assert.doesNotMatch(row(table, 'D30').textContent, /0%/);
-    const cohort = row(area(view.container, '가입일별 재방문'), '2026-10-13');
-    assert.match(cohort.textContent, /D1.*0%.*D7.*관측 중.*D30.*관측 중/s);
-    const scroller = walk(area(view.container, '가입일별 재방문')).find(node => node.getAttribute('data-horizontal') === 'true');
+    const table = area(view.container, '가입 후 1일·7일·30일째 다시 온 회원');
+    assert.match(row(table, '1일째').textContent, /0%/);
+    assert.match(row(table, '7일째').textContent, /아직 계산 중/);
+    assert.doesNotMatch(row(table, '7일째').textContent, /0%/);
+    assert.match(row(table, '30일째').textContent, /해당 회원 없음/);
+    assert.doesNotMatch(row(table, '30일째').textContent, /0%/);
+    const cohort = row(area(view.container, '가입한 날짜별로 다시 온 회원'), '2026-10-13');
+    assert.match(cohort.textContent, /0%.*2명 중 0명 다시 옴.*아직 계산 중.*아직 날이 안 된 2명.*아직 계산 중.*아직 날이 안 된 2명/s);
+    const scroller = walk(area(view.container, '가입한 날짜별로 다시 온 회원')).find(node => node.getAttribute('data-horizontal') === 'true');
     assert.ok(scroller);
     assert.equal(scroller.getAttribute('tabindex'), '0', 'the wide cohort table must be keyboard focusable');
     await React.act(async () => props(scroller).onFocus());
@@ -215,7 +215,7 @@ test('captions retain city, platform, delivery, revenue and report scope', async
     await view.render(); await view.answer(0);
     for (const info of walk(view.container).filter(node => ['설명 보기', '집계 범위 보기'].includes(node.getAttribute('aria-label')))) await React.act(async () => props(info).onClick());
     const text = view.container.textContent;
-    for (const meaning of [/현재 저장한 선호 지역/, /일반 멤버십/, /대상 도시/, /플랫폼.*방문.*행동.*행사.*장소.*알림/, /운영 캐릭터/, /가입.*글.*모임.*결제.*신고.*발송/, /APNs.*FCM.*접수/, /단말.*표시/, /최대 7일/, /2026.*10.*08/, /알림.*입구.*기기/, /30분.*고유 회원/, /인과|증가 효과/, /현재.*설정.*스냅샷/, /통화별.*총.*결제/, /정산/, /갱신 해지/, /같은 기간 첫 결제/, /현재.*미처리/, /기간.*해결/, /실패.*회원/, /회원 신고/]) assert.match(text, meaning);
+    for (const meaning of [/현재 저장한 선호 지역/, /일반 멤버십/, /대상 도시/, /기기 선택.*방문.*행동.*행사.*장소.*알림/, /운영 캐릭터/, /가입.*글.*모임.*결제.*신고.*발송/, /애플·구글이 받은 알림이라도/, /휴대폰 화면에 떴는지는 알 수 없어요/, /최대 7일/, /2026.*10.*08/, /같은 알림을 여러 기기에서 눌러도 한 번/, /30분 안에.*회원 수/, /알림 덕분이라는 뜻은 아니에요/, /지금 알림을 켜 둔 회원/, /통화별로 더한 금액/, /정산/, /갱신 해지/, /같은 기간에 처음 결제/, /지금 남아 있는 신고/, /고른 기간에 처리를 끝낸 신고/, /오류를 겪은 로그인 회원 수/, /회원 신고/]) assert.match(text, meaning);
   } finally { await view.unmount(); }
 });
 
@@ -224,7 +224,7 @@ test('filters and platform make a new protected request and discard older respon
   try {
     await view.render();
     await view.render({ filters: { days: 7, city: 'vancouver', tier: 'plus', includeInternal: true, offset: 75 } });
-    await view.press('radio', 'iOS');
+    await view.press('radio', '아이폰');
     assert.deepEqual(view.calls[2].args, { p_days: 7, p_city: 'vancouver', p_tier: 'plus', p_include_internal: true, p_platform: 'ios' });
     assert.equal(view.calls[2].name, 'get_admin_performance');
     assert.equal(view.feedback.at(-1), 'selection');
@@ -245,7 +245,7 @@ test('failed and denied RPCs show recovery, and retry can render authenticated d
     await view.render(); await view.answer(0, null, { message: 'ADMIN_REQUIRED' });
     const denied = walk(view.container).find(node => node.getAttribute('role') === 'alert');
     assert.match(denied.textContent, /관리자.*인증|MFA/);
-    assert.equal(metric(view.container, 'DAU'), undefined);
+    assert.equal(metric(view.container, '오늘 들어온 회원'), undefined);
     await view.press('button', '다시 시도');
     assert.equal(view.feedback.at(-1), 'selection');
     assert.ok(find(view.container, 'progressbar', '성과 데이터 불러오는 중'));
@@ -253,7 +253,7 @@ test('failed and denied RPCs show recovery, and retry can render authenticated d
     assert.match(view.container.textContent, /불러오지 못/);
     assert.doesNotMatch(view.container.textContent, /private detail/);
     await view.press('button', '다시 시도'); await view.answer(2);
-    assert.match(metric(view.container, 'DAU'), /0/);
+    assert.match(metric(view.container, '오늘 들어온 회원'), /0/);
   } finally { await view.unmount(); }
 });
 
@@ -263,7 +263,7 @@ test('missing RPC data is an error, not an empty successful report', async () =>
     await view.render(); await view.answer(0, null);
     assert.ok(walk(view.container).some(node => node.getAttribute('role') === 'alert'));
     assert.equal(area(view.container, '성장·유입'), undefined);
-    assert.equal(metric(view.container, 'DAU'), undefined);
+    assert.equal(metric(view.container, '오늘 들어온 회원'), undefined);
   } finally { await view.unmount(); }
 });
 
@@ -272,8 +272,8 @@ test('localPreview never calls the privileged RPC and filters cannot reveal stal
   try {
     await view.render(); await view.render({ filters: { ...filters, city: 'toronto' }, refreshSignal: 1 });
     assert.equal(view.calls.length, 0);
-    assert.match(view.container.textContent, /로컬 미리보기/);
-    assert.equal(metric(view.container, 'DAU'), undefined);
+    assert.match(view.container.textContent, /이 컴퓨터에서만 보는 미리보기/);
+    assert.equal(metric(view.container, '오늘 들어온 회원'), undefined);
     await view.render({ localPreview: false });
     await view.render({ localPreview: true });
     const stale = payload(); stale.growth.newMembers = 889;
@@ -292,12 +292,12 @@ test('daily chart and table distinguish uncollected values and zero, with select
   const view = app();
   try {
     await view.render(); await view.answer(0);
-    assert.ok(walk(area(view.container, '일별 활동 추이')).some(node => /2026-09-19.*미수집/.test(node.getAttribute('aria-label') ?? '')), 'uncollected days are announced as 미수집');
+    assert.ok(walk(area(view.container, '일별 활동 추이')).some(node => /2026-09-19.*기록 없음/.test(node.getAttribute('aria-label') ?? '')), 'uncollected days are announced as 기록 없음');
     await view.press('button', '수치 표 보기');
     assert.equal(view.feedback.at(-1), 'selection');
     const table = area(view.container, '일별 활동 수치');
-    assert.match(row(table, '2026-09-19').textContent, /미수집/);
-    assert.doesNotMatch(row(table, '2026-10-14').textContent, /미수집/);
+    assert.match(row(table, '2026-09-19').textContent, /기록 없음/);
+    assert.doesNotMatch(row(table, '2026-10-14').textContent, /기록 없음/);
     await view.press('button', '차트 보기');
     assert.ok(area(view.container, '일별 활동 추이'));
   } finally { await view.unmount(); }
@@ -311,7 +311,7 @@ test('legacy lifetime errors appear only for internal-inclusive all-city and all
     await view.answer(0, data);
     assert.doesNotMatch(area(view.container, '품질').textContent, /9,999/);
     await view.render({ filters: { ...filters, includeInternal: true } }); await view.answer(1, data);
-    assert.match(area(view.container, '품질').textContent, /운영 누적 참고/);
+    assert.match(area(view.container, '품질').textContent, /예전 오류 누적 \(참고용\)/);
     assert.match(area(view.container, '품질').textContent, /9,999/);
     await view.render({ filters: { ...filters, includeInternal: true, city: 'vancouver' } }); await view.answer(2, data);
     assert.doesNotMatch(area(view.container, '품질').textContent, /9,999/);
@@ -323,14 +323,14 @@ test('legacy lifetime errors appear only for internal-inclusive all-city and all
 test('a platform-specific report cannot infer delivery click rate or attributed legacy clicks', async () => {
   const view = app();
   try {
-    await view.render(); await view.press('radio', 'iOS');
+    await view.render(); await view.press('radio', '아이폰');
     const data = payload(); data.notifications.clickStartedAt = stamp; data.notifications.pushOpens = 0;
     data.notifications.inboxOpens = 0; data.notifications.activeAfterOpen = 0;
     await view.answer(1, data);
-    assert.match(metric(view.container, '푸시 탭'), /0/);
-    assert.doesNotMatch(metric(view.container, '푸시 탭'), /미수집/);
-    assert.match(metric(view.container, '푸시 클릭률'), /플랫폼.*산출 불가/);
-    assert.doesNotMatch(metric(view.container, '푸시 클릭률'), /0%/);
+    assert.match(metric(view.container, '알림 누른 횟수'), /0/);
+    assert.doesNotMatch(metric(view.container, '알림 누른 횟수'), /기록 없음/);
+    assert.match(metric(view.container, '알림 누른 비율'), /기기별로는 계산할 수 없어요/);
+    assert.doesNotMatch(metric(view.container, '알림 누른 비율'), /0%/);
     assert.match(metric(view.container, '기존 행사 클릭'), /범위.*확인 불가/);
   } finally { await view.unmount(); }
 });
@@ -345,7 +345,7 @@ test('five tabs: 한눈에 uses only the performance report, other tabs add the 
     assert.deepEqual(view.calls.map(call => call.name), ['get_admin_performance']);
     await view.answer(0);
     assert.ok(area(view.container, '핵심 지표'));
-    assert.match(metric(view.container, '7일 재방문'), /관측 중/);
+    assert.match(metric(view.container, '일주일 뒤 다시 온 비율'), /아직 계산 중/);
     for (const title of ['성장 요약', '활동 요약', '수익 요약', '품질 요약']) assert.ok(area(view.container, title), title);
     assert.match(area(view.container, '수익 요약').textContent, /연결 전/);
     assert.equal(area(view.container, '알림'), undefined, 'detail areas stay in their tabs');
@@ -355,7 +355,7 @@ test('five tabs: 한눈에 uses only the performance report, other tabs add the 
     await view.answer(1, basePayload());
     assert.equal(view.calls[2].name, 'get_admin_behavior');
     await view.answer(2, { screens: [], steps: [], actions: [], recent: [] });
-    assert.ok(area(view.container, '성장·유입') && area(view.container, '재방문·코호트') && area(view.container, '회원 분포'));
+    assert.ok(area(view.container, '성장·유입') && area(view.container, '다시 찾아온 회원') && area(view.container, '회원 분포'));
     assert.equal(area(view.container, '핵심 지표'), undefined);
     for (const [tab, perf, base] of [['활동', '알림', '최근 접속'], ['수익', '수익', '구독 구매 회원'], ['품질', '품질', '관리자 접근 기록']]) {
       await view.press('tab', tab);
@@ -391,19 +391,19 @@ test('populated rows use server values without inventing funnels, activity uplif
     await view.answer(0, data);
     assert.match(row(area(view.container, '유입 채널'), '미분류').textContent, /12.*3.*25%/);
     assert.match(row(area(view.container, '가입·온보딩 완료 행동'), '필수 동의 완료').textContent, /13.*9/);
-    assert.match(row(area(view.container, '플랫폼별 활동'), 'Web').textContent, /7.*21/);
+    assert.match(row(area(view.container, '기기별 활동'), '웹').textContent, /7.*21/);
     assert.match(row(area(view.container, '커뮤니티 참여'), '현재 승인된 신청').textContent, /8건/);
     assert.match(row(area(view.container, '커뮤니티 참여'), '글 저장').textContent, /11건/);
     assert.match(row(area(view.container, '커뮤니티 참여'), '글 공유·복사').textContent, /6건/);
     assert.match(row(area(view.container, '대상별 행동'), '실제 서버 대상').textContent, /토론토.*41.*7.*3/);
-    assert.match(metric(view.container, '열기 뒤 활동 회원'), /3/);
-    assert.doesNotMatch(metric(view.container, '열기 뒤 활동 회원'), /12/);
+    assert.match(metric(view.container, '알림 열고 활동한 회원'), /3/);
+    assert.doesNotMatch(metric(view.container, '알림 열고 활동한 회원'), /12/);
     assert.match(row(area(view.container, '알림 종류별 반응'), '새 회원 가입').textContent, /20.*10.*1.*2.*1.*20%/);
     assert.match(row(area(view.container, '통화별 결제 발생액'), 'CAD').textContent, /12\.45/);
     assert.match(row(area(view.container, '통화별 결제 발생액'), 'USD').textContent, /9\.99/);
     assert.doesNotMatch(area(view.container, '수익').textContent, /22\.44/);
-    assert.match(row(area(view.container, '실패를 겪은 회원'), '사진 업로드 실패').textContent, /5명/);
-    assert.match(row(area(view.container, '앱 버전별 활동'), 'iOS').textContent, /1\.2\.3.*8.*24/);
+    assert.match(row(area(view.container, '오류를 겪은 회원'), '사진 업로드 실패').textContent, /5명/);
+    assert.match(row(area(view.container, '앱 버전별 활동'), '아이폰').textContent, /1\.2\.3.*8.*24/);
   } finally { await view.unmount(); }
 });
 
