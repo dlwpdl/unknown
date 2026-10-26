@@ -573,6 +573,7 @@ export const uiEnglish: Record<string, string> = {
   "게시 결과를 확인하지 못했어요. 입력은 남아 있어요. 커뮤니티에서 내 글을 확인한 뒤 다시 시도해 주세요.": "Couldn’t confirm your review was published. Your draft is still here. Check your posts in the community before trying again.",
   "내 후기와 매너 평가 관리": "Manage my reviews and private conduct reviews",
   "모임 후기 · 매너 평가": "Meetup reviews · Conduct reviews",
+  "모임 후기": "Meetup reviews",
   "초대 링크를 공유하지 못했어요. 다시 시도해 주세요.": "Couldn’t share the invite link. Try again.",
   "초대 링크를 복사하세요": "Copy the invite link",
   "초대 링크를 복사했어요.": "Invite link copied.",
