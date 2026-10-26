@@ -168,7 +168,7 @@ function parseCostMenus(stored: string | null): CostMenu[] {
 }
 const tileIcon = (ios: string, material: string) => ({ ios, android: material, web: material }) as SymbolViewProps['name'];
 
-type WorkspaceProps = { merchantId?: string; refreshSignal?: number; initialMerchantId?: string; initialTab?: MerchantTab; assignedOnly?: boolean; onBusinessesChanged?: () => void; layout?: 'sidebar' };
+type WorkspaceProps = { merchantId?: string; refreshSignal?: number; initialMerchantId?: string; initialTab?: MerchantTab; assignedOnly?: boolean; onBusinessesChanged?: () => void; onCityChange?: (cityId: string) => void; layout?: 'sidebar' };
 export function MerchantWorkspace(props: WorkspaceProps) {
 
   const [connectionRevision, setConnectionRevision] = useState(0);
@@ -176,7 +176,7 @@ export function MerchantWorkspace(props: WorkspaceProps) {
   return <>{!props.merchantId && <MerchantAccountInvitations refreshSignal={refreshSignal} onChanged={() => { setConnectionRevision(v => v + 1); props.onBusinessesChanged?.(); }} />}
     <MerchantAccessGate businessOnly={props.assignedOnly} refreshSignal={refreshSignal}><MerchantWorkspaceContent {...props} refreshSignal={refreshSignal} /></MerchantAccessGate></>;
 }
-function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMerchantId, initialTab, assignedOnly = false, onBusinessesChanged, layout }: WorkspaceProps) {
+function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMerchantId, initialTab, assignedOnly = false, onBusinessesChanged, onCityChange, layout }: WorkspaceProps) {
   const { tr } = useLanguage();
   const { me, isAuthed, isAdmin } = useAuth();
   const [response, setResponse] = useState<{ user: string; rows: BusinessMerchant[]; revision: number; refreshSignal: number } | null>(null);
@@ -188,6 +188,8 @@ function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMercha
   const busyRef = useRef(false);
   const rows = response?.user === me.id ? response.rows : null;
   const checking = !rows || response?.revision !== revision || response?.refreshSignal !== refreshSignal;
+  const cityId = rows?.find(row => row.id === selected)?.city_id;
+  useEffect(() => { if (cityId) onCityChange?.(cityId); }, [cityId, onCityChange]);
   useEffect(() => {
     let active = true;
     if (!isAuthed || merchantId) return;
