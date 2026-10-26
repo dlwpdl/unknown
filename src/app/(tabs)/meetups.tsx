@@ -306,7 +306,7 @@ function MeetupDiscovery({ destination, sourceInvalid }: { destination: MeetupDe
       </View>
       <MyMeetups onOpen={open} hideTitle />
     </ScrollView>}
-    <Modal visible={cityPicker} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setCityPicker(false)}><SafeAreaView style={[styles.root, { backgroundColor: theme.background }]}><CityPicker onClose={() => setCityPicker(false)} /></SafeAreaView></Modal>
+    <Modal visible={cityPicker} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setCityPicker(false)}><View style={[styles.root, { backgroundColor: theme.background, paddingTop: insets.top, paddingBottom: insets.bottom }]}><CityPicker onClose={() => setCityPicker(false)} /></View></Modal>
     {/* 카테고리·일정·자리 남음은 시트에서만 편다(목록이 먼저 보여야 한다). 값은 켜는 즉시 적용된다. */}
     <Modal visible={filtersOpen} transparent animationType="none" onRequestClose={closeFilters}
       onShow={() => { sheetOffset.setValue(screenHeight); if (reducedMotion) sheetOffset.setValue(0); else Animated.timing(sheetOffset, { toValue: 0, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }}>

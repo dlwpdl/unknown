@@ -940,9 +940,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             <Pressable analyticsId="components_feed-screen.pressable.13" style={StyleSheet.absoluteFill} onPress={() => { play('selection'); setCityPicker(false); }} accessibilityRole="button" accessibilityLabel={t.write.cancel} />
           )}
           <ThemedView style={[styles.citySheet, Platform.OS === 'ios' && styles.citySheetIOS]}>
-            <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+            <View style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? insets.top : 0, paddingBottom: insets.bottom }}>
               <CityPicker onClose={() => setCityPicker(false)} />
-            </SafeAreaView>
+            </View>
           </ThemedView>
         </SafeAreaProvider>
       </Modal>

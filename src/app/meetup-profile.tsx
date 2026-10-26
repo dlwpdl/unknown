@@ -9,7 +9,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
 import { Alert, AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Modal, Platform, type ScrollViewInstance, StyleSheet, TextInput, UIManager, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { InfoNote, MoreDetails, WhoSees } from '@/components/notice-blocks';
 import { CityPicker } from '@/components/city-picker';
@@ -34,7 +34,7 @@ export default function MeetupProfileRoute() {
 }
 function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId?: string; returnPostId?: string }) {
   const { tr, language } = useLanguage();
-  const theme = useTheme(), router = useRouter();
+  const theme = useTheme(), router = useRouter(), insets = useSafeAreaInsets();
   const { isAuthed, me, promptLogin } = useAuth();
   const viewer = me.id;
   const [initialCity] = useState(me.cityId);
@@ -318,7 +318,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
     </KeyboardAvoidingView>
     <Modal visible={cityOpen} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setCityOpen(false)}>
       <SafeAreaProvider style={[styles.fill, { backgroundColor: theme.background }]}>
-        <SafeAreaView style={styles.fill}><CityPicker title={tr("활동 지역")} onClose={() => setCityOpen(false)} draft={{ city: selectedCity, onSelect: city => { setProfile(current => ({ ...current, cityId: city.id })); setCityOpen(false); } }} /></SafeAreaView>
+        <View style={[styles.fill, { paddingTop: insets.top, paddingBottom: insets.bottom }]}><CityPicker title={tr("활동 지역")} onClose={() => setCityOpen(false)} draft={{ city: selectedCity, onSelect: city => { setProfile(current => ({ ...current, cityId: city.id })); setCityOpen(false); } }} /></View>
       </SafeAreaProvider>
     </Modal>
   </SafeAreaView></ThemedView>;
