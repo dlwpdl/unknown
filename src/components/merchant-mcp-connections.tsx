@@ -125,7 +125,8 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
     return () => { current = false; };
   }, [userId, authorizationId, revision]);
   useEffect(() => {
-    const refresh = () => { if (!working.current) { setLoading(true); setApplyId(null); setRevision(value => value + 1); } };
+    // Returning to the tab (also fired around clipboard copies) re-checks quietly; swapping in the loader made the page flash and reset the guide.
+    const refresh = () => { if (!working.current) { setApplyId(null); setRevision(value => value + 1); } };
     const app = AppState.addEventListener('change', state => { if (state === 'active') refresh(); });
     const visible = () => { if (document.visibilityState === 'visible') refresh(); };
     if (Platform.OS === 'web') { window.addEventListener('focus', refresh); document.addEventListener('visibilitychange', visible); }
