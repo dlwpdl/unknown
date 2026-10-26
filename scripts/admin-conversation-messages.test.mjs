@@ -64,32 +64,19 @@ test('the global conversations section routes to room monitoring with its own pa
   assert.equal(tree.props.onLoadMore, props.onLoadMore);
 });
 
-test('global monitoring retains the existing risk review without exposing it inside a meetup list or preview', () => {
+test('global conversations open as one review screen and the local preview keeps the room monitor', () => {
   const screen = view('AdminConversationWorkspace', {
     '@/components/admin/admin-conversation-review': { AdminConversationReviewView: 'RiskReview' },
   });
   const props = { data: { profiles: [], posts: [], conversations: [], messages: [] }, onUser() {}, onLoadMore() {}, noMore: true, loadingMore: false, refreshSignal: 3 };
   let tree = screen.render(props);
-  assert.ok(nodes(tree).some(node => node.type?.name === 'AdminConversationsView'));
-  const control = nodes(tree).find(node => node.type === 'details' && node.props?.['aria-label'] === '위험 신호·검토 기록');
-  assert.ok(control);
-  assert.equal(nodes(tree).some(node => node.type === 'RiskReview'), false, 'review reads wait for an explicit open');
-  control.props.onToggle({ currentTarget: { open: true } });
-  tree = screen.render(props);
-  const review = nodes(tree).find(node => node.type === 'RiskReview');
-  assert.ok(review);
-  assert.equal(review.props.onUser, props.onUser);
-  assert.equal(review.props.refreshSignal, 3);
-  assert.deepEqual(screen.feedback, ['selection']);
-  assert.ok(nodes(tree).some(node => node.type?.name === 'AdminConversationsView'), 'room filters stay mounted');
-  control.props.onToggle({ currentTarget: { open: false } });
-  tree = screen.render(props);
-  assert.ok(nodes(tree).some(node => node.type === 'RiskReview'), 'closing the native disclosure preserves an unsaved review draft');
-  tree = screen.render({ ...props, localPreview: true });
-  assert.equal(nodes(tree).some(node => node.type === 'RiskReview'), false);
+  assert.equal(tree.type, 'RiskReview', 'the deciding review screen is not folded behind a disclosure');
+  assert.equal(tree.props.onUser, props.onUser);
+  assert.equal(tree.props.refreshSignal, 3);
   assert.equal(nodes(tree).some(node => node.type === 'details'), false);
-  const scoped = view('AdminConversationsView').render(props);
-  assert.equal(nodes(scoped).some(node => node.props?.['aria-label'] === '위험 신호·검토 기록'), false);
+  tree = screen.render({ ...props, localPreview: true });
+  assert.equal(nodes(tree).some(node => node.type === 'RiskReview'), false, 'preview never reads server conversations');
+  assert.equal(tree.type?.name, 'AdminConversationsView');
 });
 
 test('conversation pagination reads room rows, hydrates members and preserves older meetup titles', async () => {

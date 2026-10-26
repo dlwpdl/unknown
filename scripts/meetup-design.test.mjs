@@ -42,6 +42,6 @@ test('멤버십은 사용 현황·이용 규칙·플랜 비교 순서로 묶고 
 
 test('관리자 콘솔은 사람을 ID가 아니라 이름으로 보여준다', () => {
   const queue = read('src/components/admin/admin-report-queue.tsx');
-  assert.ok(queue.includes('displayName(profiles.get(report.reporter_id), report.reporter_id)'), '신고자도 이름으로');
-  assert.ok(/<details[^>]*>[\s\S]*문제 추적 정보/.test(queue), '원본 ID는 접어 두고 필요할 때만 연다');
+  assert.ok(queue.includes('displayName(profiles.get(item.reporter_id), item.reporter_id)'), '신고자도 이름으로');
+  assert.ok(/<AdminTrace items=\{\[[\s\S]*'신고 ID'/.test(queue), '원본 ID는 접어 두고 필요할 때만 연다');
 });

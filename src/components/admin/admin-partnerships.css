@@ -40,7 +40,6 @@
 .partnership-dialog-heading h2 { min-width:0; overflow-wrap:anywhere; }
 .partnership-dialog-heading button { flex-shrink:0; }
 .partnership-dialog-body { flex:1; min-height:0; padding:24px; overflow:auto; overscroll-behavior:contain; }
-.partnership-detail-actions { justify-content:flex-end; margin-bottom:20px; }
 .partnership-facts { display:grid; grid-template-columns:1fr 1fr; gap:18px 24px; margin:0; }
 .partnership-facts dt { color:var(--admin-muted); font-size:12px; margin-bottom:3px; }
 .partnership-facts dd { margin:0; overflow-wrap:anywhere; }
@@ -73,7 +72,6 @@
 @media(max-width:600px) { .partnership-heading { gap:12px; } .partnership-heading h1 { font-size:23px; } .partnership-dialog { width:100%; height:100dvh; max-height:100dvh; margin:0; border:0; border-radius:0; } .partnership-dialog-heading { padding:16px; } .partnership-dialog-body { padding:16px; } .partnership-facts,.partnership-form-grid { grid-template-columns:1fr; gap:14px; } .partnership-history li { flex-direction:column; gap:4px; } .partnership-form-actions { bottom:-16px; } .partnership-toolbar { gap:8px; } }
 @media(prefers-reduced-motion:reduce) { .partnership-admin button:active:not(:disabled) { transform:none; } }
 
-.creator-directory td:first-child { padding:4px; text-overflow:clip; }
 .creator-directory td.creator-cost { text-align:right; font-variant-numeric:tabular-nums; }
 .partnership-table-wrap:focus-visible { outline:2px solid var(--admin-accent); outline-offset:3px; }
 .creator-deals { list-style:none; margin:16px 0 0; padding:0; }
@@ -85,9 +83,6 @@
 @media(max-width:600px) { .creator-deal-costs { grid-template-columns:repeat(2,minmax(0,1fr)); } .creator-deal-costs > div:last-child { grid-column:1/-1; } }
 .creator-directory .partnership-row-button { width:100%; min-width:0; padding:0; }
 .creator-directory .partnership-row-button strong { display:block; max-width:100%; }
-.creator-batch-actions { display:flex; align-items:center; flex-wrap:wrap; gap:8px 16px; margin-bottom:12px; }
-.creator-select { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-width:44px; min-height:44px; cursor:pointer; }
-.partnership-admin .creator-select input { width:20px; height:20px; min-width:20px; min-height:20px; margin:0; padding:0; accent-color:var(--admin-accent); }
 .creator-fact-note { display:block; margin-top:4px; }
 .creator-platform { display:grid; grid-template-columns:minmax(0,1fr) 150px; align-items:center; gap:24px; padding:16px 0; border-bottom:1px solid var(--admin-line); }
 .creator-platform:first-child { padding-top:0; }
@@ -99,3 +94,20 @@
 .creator-profile-editor { display:grid; gap:16px; }
 .creator-profile-options { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-top:12px; }
 @media(max-width:600px) { .creator-platform { grid-template-columns:minmax(0,1fr); gap:8px; } .creator-profile-options { align-items:flex-start; flex-direction:column; gap:8px; } }
+
+/* 2026-10-25 redesign: ⓘ next to titles, header fact cards, agreement timeline, folded form groups. */
+.partnership-title-row { display:flex; align-items:center; gap:8px; min-width:0; flex-wrap:wrap; }
+.partnership-title-row :is(h1,h2,h3) { margin:0; }
+.partnership-detail-facts { padding:0 24px 16px; }
+.creator-deals > li.creator-deal { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:12px; }
+.creator-deal-main { display:flex; flex-direction:column; gap:4px; min-width:0; }
+.creator-deal-main .partnership-copy { margin-top:4px!important; }
+.creator-deal-chips { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:4px; }
+.creator-deal-chips a { min-height:32px; font-size:12px; }
+.creator-fact-copy { white-space:pre-wrap; overflow-wrap:anywhere; font-weight:600; }
+.partnership-admin button.creator-fact-button { min-height:44px; padding:0; border:0; background:transparent; color:var(--admin-accent); text-align:left; }
+.partnership-admin button.partnership-danger { color:var(--admin-danger); border-color:var(--admin-danger); }
+.partnership-form-group { display:flex; flex-direction:column; gap:16px; padding:16px!important; border:1px solid var(--admin-line)!important; border-radius:12px; background:var(--admin-card); }
+.partnership-form-group > legend { float:left; width:100%; display:flex; align-items:center; gap:8px; margin:0!important; }
+.partnership-form-group > legend + * { clear:both; }
+@media(max-width:600px) { .partnership-detail-facts { padding:0 16px 12px; } }

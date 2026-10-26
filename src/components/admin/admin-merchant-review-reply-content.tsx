@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { AdminButton } from '@/components/admin/admin-ui';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -21,34 +22,26 @@ function ReplyContent({ targetId, localPreview = false, onUser }: Props) {
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   async function load() {
     if (localPreview || reading.current) return;
-    reading.current = true; setBusy(true); setError(''); setContent(null); play('selection');
+    reading.current = true; setBusy(true); setError(''); setContent(null);
     try {
       const next = await loadAdminMerchantReviewReplyContent(supabase, targetId);
       if (!mounted.current) return;
       setContent(next);
-      if (!next) { setError('비즈니스 답변을 찾을 수 없습니다.'); play('warning'); }
+      if (!next) { setError('비즈니스 답변을 찾을 수 없어요.'); play('warning'); }
     } catch {
-      if (mounted.current) { setError('비즈니스 답변 원문을 불러오지 못했습니다. 관리자 권한과 연결 상태를 확인해주세요.'); play('warning'); }
+      if (mounted.current) { setError('비즈니스 답변 원문을 불러오지 못했어요. 관리자 권한과 연결 상태를 확인해 주세요.'); play('warning'); }
     } finally { reading.current = false; if (mounted.current) setBusy(false); }
   }
-  const actionStyle = [styles.action, { borderColor: theme.line, backgroundColor: theme.card }];
   return <View style={styles.content}>
-    <Pressable accessibilityRole="button" accessibilityLabel="비즈니스 답변 원문 보기" disabled={localPreview || busy}
-      accessibilityState={{ disabled: localPreview || busy, busy }} onPress={() => load()} style={[actionStyle, (localPreview || busy) && styles.disabled]}>
-      <ThemedText type="smallBold">{busy ? '비즈니스 답변 불러오는 중…' : '비즈니스 답변 원문 보기'}</ThemedText>
-    </Pressable>
+    <AdminButton label={busy ? '비즈니스 답변 불러오는 중…' : '비즈니스 답변 원문 보기'} accessibilityLabel="비즈니스 답변 원문 보기" disabled={localPreview || busy} onPress={() => load()} />
     {error ? <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText> : null}
     {content && <>
       <ThemedText type="small" selectable>{content.text}</ThemedText>
       <ThemedText type="small" style={{ color: theme.textSecondary }}>비즈니스 답변 · {content.status === 'removed' ? '숨김' : '게시 중'}</ThemedText>
-      <Pressable accessibilityRole="button" accessibilityLabel="답변 작성자 이력 보기" onPress={() => { play('selection'); onUser(content.authorId); }} style={actionStyle}>
-        <ThemedText type="smallBold">답변 작성자 이력 보기</ThemedText>
-      </Pressable>
+      <AdminButton kind="text" label="답변 작성자 이력 보기 →" accessibilityLabel="답변 작성자 이력 보기" onPress={() => onUser(content.authorId)} />
     </>}
   </View>;
 }
 const styles = StyleSheet.create({
-  content: { gap: Spacing.two },
-  action: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start', paddingHorizontal: Spacing.three, borderWidth: 1, borderRadius: 8 },
-  disabled: { opacity: 0.5 },
+  content: { gap: Spacing.two, alignItems: 'flex-start' },
 });

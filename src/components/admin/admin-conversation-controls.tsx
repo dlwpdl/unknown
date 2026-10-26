@@ -5,6 +5,7 @@ import { Modal, Platform, Pressable, ScrollView, Text, View, type StyleProp, typ
 
 import { Colors } from '@/constants/theme';
 import { adminOptionKeys } from '@/lib/admin';
+import { AdminInfo } from './admin-ui';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { conversationStyles as styles } from './admin-conversation-styles';
 
@@ -21,15 +22,15 @@ export function ConversationButton({ label, onPress, disabled, busy, primary, te
   </Pressable>;
 }
 
-export function ConversationDialog({ title, visible, onClose, children, review = false, testID }: {
-  title: string; visible: boolean; onClose: () => void; children: ReactNode; review?: boolean; testID?: string;
+export function ConversationDialog({ title, visible, onClose, children, review = false, testID, info }: {
+  title: string; visible: boolean; onClose: () => void; children: ReactNode; review?: boolean; testID?: string; info?: string[];
 }) {
   const { play } = useInteractionFeedback();
   return <Modal visible={visible} transparent animationType="none" onRequestClose={() => { play('selection'); onClose(); }}>
     <View nativeID="gling-admin-detail" style={styles.modalShade}>
       <Pressable accessibilityLabel={`${title} 닫기`} accessibilityRole="button" onPress={() => { play('selection'); onClose(); }} style={styles.modalBackdrop} />
       <View testID={testID} accessibilityViewIsModal accessibilityLabel={title} role="dialog" aria-modal style={[styles.modal, review && styles.reviewModal]}>
-        <View style={styles.modalHeader}><Text accessibilityRole="header" style={styles.sectionTitle}>{title}</Text>
+        <View style={[styles.modalHeader, { zIndex: 2 }]}><View style={[styles.row, styles.grow]}><Text accessibilityRole="header" style={styles.sectionTitle}>{title}</Text>{!!info && <AdminInfo text={info} />}</View>
           <ConversationButton testID={review ? 'conversation-inspector-close' : undefined} label={`${title} 닫기`} onPress={onClose} style={styles.iconButton}>
             <SymbolView name={{ ios: 'xmark', web: 'close' }} size={18} tintColor={Colors.admin.textSecondary} />
           </ConversationButton>

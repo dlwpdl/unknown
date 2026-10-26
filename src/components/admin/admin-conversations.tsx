@@ -10,17 +10,11 @@ import { supabase } from '@/lib/supabase';
 
 const formatDate = (value: string) => new Date(value).toLocaleString('ko-KR');
 
+// One conversation screen (room list | thread | review). Its server list covers every conversation, so the
+// separate room monitor only remains for the local preview, which has no server data.
 export function AdminConversationWorkspace(props: Parameters<typeof AdminConversationsView>[0]) {
-  const { play } = useInteractionFeedback();
-  const [reviewOpened, setReviewOpened] = useState(false);
-  return <section>
-    <AdminConversationsView {...props} />
-    {!props.localPreview && <details className="admin-context-details" aria-label="위험 신호·검토 기록" onToggle={event => {
-      play('selection'); if (event.currentTarget.open) setReviewOpened(true);
-    }}><summary>위험 신호·검토 기록</summary>
-      {reviewOpened && <AdminConversationReviewView onUser={props.onUser} refreshSignal={props.refreshSignal ?? 0} />}
-    </details>}
-  </section>;
+  return props.localPreview ? <AdminConversationsView {...props} />
+    : <AdminConversationReviewView onUser={props.onUser} refreshSignal={props.refreshSignal ?? 0} />;
 }
 
 export function AdminConversationsView({ data, loadingMore, noMore, onLoadMore, onUser, localPreview = false, refreshSignal = 0 }: {
@@ -41,7 +35,7 @@ export function AdminConversationsView({ data, loadingMore, noMore, onLoadMore, 
   const selectedLabel = selected && label(selected);
   return <section>
     <div hidden={!!selected} className="admin-conversation-list">
-      <div className="admin-detail-heading"><h2>대화 모니터링</h2><p className="admin-muted">대화방을 선택하면 참여자와 전체 대화를 확인할 수 있습니다.</p></div>
+      <div className="admin-detail-heading"><h2>대화 모니터링</h2></div>
       <div className="admin-toolbar"><AdminSearch value={query} onChange={setQuery} placeholder="대화방, 참여자 이름 또는 ID 검색" />
         <AdminFilterBar applied={kind === 'all' ? 0 : 1}><div className="admin-filter-row">
           <AdminSelect label="대화 유형" value={kind} onChange={setKind} options={[{ value: 'all', label: '전체' }, { value: 'direct', label: '1:1 대화' }, { value: 'group', label: '모임 대화' }]} />
@@ -113,9 +107,9 @@ export function AdminConversationDetail({ conversationId, title, subtitle, profi
 
   return <section className="admin-meetup-detail" aria-label="상세 대화">
     {onClose && <button type="button" className="admin-reset admin-back-button" onClick={() => { play('selection'); onClose(); }}>← 대화방 목록</button>}
-    {!embedded && <div className="admin-detail-heading"><h2 ref={heading} tabIndex={-1}>{title}</h2><p className="admin-muted">{subtitle ?? '선택한 대화방의 메시지와 참여자 이력을 확인합니다.'}</p></div>}
+    {!embedded && <div className="admin-detail-heading"><h2 ref={heading} tabIndex={-1}>{title}</h2>{!!subtitle && <p className="admin-muted">{subtitle}</p>}</div>}
     <div className="admin-detail-content">
-      <div className="admin-detail-record-head"><div><h3>대화 내용</h3><p className="admin-muted">오래된 메시지부터 시간순으로 표시합니다.</p></div>
+      <div className="admin-detail-record-head"><div><h3>대화 내용</h3></div>
         <button type="button" className="admin-reset" aria-label="대화 새로고침" onClick={() => { play('selection'); setRetry(value => value + 1); }}>새로고침</button>
       </div>
       {error ? <div role="alert" className="admin-meetup-error">{error}<button type="button" className="admin-reset" onClick={() => { play('selection'); setRetry(value => value + 1); }}>다시 시도</button></div>
@@ -131,7 +125,7 @@ export function AdminConversationDetail({ conversationId, title, subtitle, profi
             </article>)}
             {!page.rows.length && <div className="admin-empty">이 대화방에 아직 메시지가 없습니다.</div>}
           </div>
-          <details className="admin-context-details" onToggle={() => play('selection')}><summary>문제 추적 정보</summary><p>대화 ID {conversationId}</p></details>
+          <details className="admin-context-details" onToggle={() => play('selection')}><summary>추적 정보</summary><p>대화 ID {conversationId}</p></details>
         </>}
     </div>
   </section>;

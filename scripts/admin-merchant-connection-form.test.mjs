@@ -109,7 +109,7 @@ function reviewedConnection() {
     '@/lib/auth': { useAuth: () => ({ me: { id: admin }, isAdmin: true }) }, '@/lib/admin-merchants': adminMerchants,
     '@/lib/admin-user-data': { searchAdminUsers: async () => { throw Error('pinned account cannot be replaced by a search'); } },
     '@/lib/merchant-connections': merchantConnections, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
-    '@/lib/supabase': { supabase: client }, '@/lib/mock': { CITIES: [] },
+    '@/lib/supabase': { supabase: client }, '@/lib/mock': { CITIES: [] }, './admin-ui': { AdminCard: 'AdminCard', AdminButton: 'AdminButton' },
   };
   const exports = {}, source = ts.transpileModule(readFileSync(new URL('../src/components/admin/admin-merchant-connections.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(source, { exports, require: name => { assert.ok(Object.hasOwn(imports, name), name); return imports[name]; }, window: { confirm: () => true }, Error });

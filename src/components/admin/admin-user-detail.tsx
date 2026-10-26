@@ -39,16 +39,18 @@ export function AdminUserDetail({
     <Modal visible={userId != null} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View nativeID="gling-admin-detail" style={styles.sheet} accessibilityViewIsModal accessibilityLabel="사용자 전체 활동">
-          <View style={[styles.header, compact && styles.headerCompact]}>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <ThemedText accessibilityRole="header" style={styles.title}>회원 활동</ThemedText>
+          {/* The live member review renders its own name header with the close button (redesign screen 5). */}
+          {userId && !localData ? <AdminUserReview key={userId} userId={userId} profiles={profiles} onStatusChange={onStatusChange} onTrustLevelChange={onTrustLevelChange} onProfileChanged={onProfileChanged} onClose={onClose} /> : <>
+            <View style={[styles.header, compact && styles.headerCompact]}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <ThemedText accessibilityRole="header" style={styles.title}>회원 활동</ThemedText>
+              </View>
+              <Pressable onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" accessibilityLabel="사용자 상세 닫기" style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
+                <ThemedText type="smallBold">닫기</ThemedText>
+              </Pressable>
             </View>
-            <Pressable onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" accessibilityLabel="사용자 상세 닫기" style={({ pressed }) => [styles.close, pressed && styles.pressed]}>
-              <ThemedText type="smallBold">닫기</ThemedText>
-            </Pressable>
-          </View>
-
-          {userId && !localData ? <AdminUserReview key={userId} userId={userId} profiles={profiles} onStatusChange={onStatusChange} onTrustLevelChange={onTrustLevelChange} onProfileChanged={onProfileChanged} /> : activity ? <ScrollView contentContainerStyle={[styles.body, compact && styles.bodyCompact]}><ActivityContent activity={activity} profiles={profiles} /></ScrollView> : null}
+            {activity && <ScrollView contentContainerStyle={[styles.body, compact && styles.bodyCompact]}><ActivityContent activity={activity} profiles={profiles} /></ScrollView>}
+          </>}
         </View>
       </View>
     </Modal>

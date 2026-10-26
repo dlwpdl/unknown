@@ -21,6 +21,7 @@ function screen() {
     react: hooks, 'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     './admin-partnership-editors': { CreatorDealForm: 'CreatorDealForm', CreatorDealMerchantForm: 'CreatorDealMerchantForm', EntityPicker: 'EntityPicker' },
     '@/lib/admin-partnerships': { ...api, loadMerchantCreatorDeals: async () => ({ rows: [linked], more: false }), loadCreatorDeal: async (_client, id) => { reads.push(id); return linked; }, loadPartnerships: async () => ({ record: creator, deals: [deal, { ...deal, id: 'other', merchant_id: 'other-vendor', merchant_name: '다른 벤더' }], children_more: false }) },
+    './admin-ui': { AdminCard: 'AdminCard', AdminButton: 'AdminButton' },
     '@/lib/merchant-source': { merchantEventId: () => 'new-request' }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) }, '@/lib/supabase': { supabase: {} },
   };
   const code = ts.transpileModule(readFileSync(new URL('../src/components/admin/admin-merchant-creators.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
@@ -30,7 +31,7 @@ function screen() {
 test('vendor direction displays real costs and connects the same existing agreement without taking another vendor history', async () => {
   const app = screen(); app.render(); await new Promise(setImmediate);
   let tree = app.render(); assert.match(text(tree), /CAD.*0\.00/); assert.match(text(tree), /2026-10-24/);
-  nodes(tree).find(n => n.type === 'button' && text(n) === '크리에이터 연결').props.onClick();
+  nodes(tree).find(n => n.type === 'AdminButton' && n.props.label === '크리에이터 연결').props.onPress();
   nodes(app.render()).find(n => n.type === 'EntityPicker').props.onPick(creator.id, creator.display_name);
   app.render(); await new Promise(setImmediate); tree = app.render();
   assert.equal(nodes(tree).find(n => n.type === 'button' && text(n) === '다른 비즈니스와의 협업').props.disabled, true);

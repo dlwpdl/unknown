@@ -4,6 +4,7 @@ import { creatorDealAmount, loadCreatorDeal, loadMerchantCreatorDeals, loadPartn
 import { merchantEventId } from '@/lib/merchant-source';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
+import { AdminButton, AdminCard } from './admin-ui';
 import './admin-partnerships.css';
 
 export function AdminMerchantCreators({ merchant, onDirty, onBusy }: { merchant: { id: string; name: string }; onDirty: (dirty: boolean) => void; onBusy: (busy: boolean) => void }) {
@@ -31,8 +32,9 @@ export function AdminMerchantCreators({ merchant, onDirty, onBusy }: { merchant:
   }
   const callbacks = { onSaved: saved, onCancel: cancel, onDirty: changeDirty, onBusy: changeBusy };
   const creator = picked?.record && 'display_name' in picked.record ? picked.record : null;
-  return <section className="merchant-creators partnership-admin" aria-label="비즈니스 크리에이터 협업">
-    <div className="partnership-section-heading"><div><h2>크리에이터 협업</h2><p className="partnership-muted">{merchant.name}과 연결된 같은 협업 이력입니다. 날짜는 예정일을 포함합니다.</p></div>{!chosen && !form && <button type="button" className="partnership-primary" onClick={() => { play('selection'); setChosen({ id: null, name: '' }); setHistoryOffset(0); setNotice(''); }}>크리에이터 연결</button>}</div>
+  return <AdminCard icon="↔" tone="accent" title="협업 이력" count={current ? `${current.rows.length}${current.more ? '+' : ''}` : undefined} info={`${merchant.name}과 연결된 협업 이력이에요. 날짜에는 예정일도 들어가요.`}
+    action={!chosen && !form ? <AdminButton kind="primary" label="크리에이터 연결" onPress={() => { setChosen({ id: null, name: '' }); setHistoryOffset(0); setNotice(''); }} /> : undefined}>
+   <section className="merchant-creators partnership-admin" aria-label="비즈니스 크리에이터 협업">
     {notice && <p role="status" className="partnership-notice">{notice}</p>}
     {error && <p role="alert">{error}<button type="button" disabled={busy} onClick={() => { play('selection'); setRevision(value => value + 1); }}>다시 불러오기</button></p>}
     {form ? 'deal' in form ? <CreatorDealMerchantForm key={form.deal.id} deal={form.deal} initialMerchant={merchant} {...callbacks} /> : <CreatorDealForm key={form.requestId} requestId={form.requestId} creator={form.creator} initialMerchant={merchant} {...callbacks} /> : chosen ? <>
@@ -46,5 +48,6 @@ export function AdminMerchantCreators({ merchant, onDirty, onBusy }: { merchant:
       {!current.rows.length ? <div className="partnership-state"><h3>연결된 크리에이터가 없습니다</h3><p>기존 합의 이력에 이 비즈니스를 연결하거나 새 협업을 기록해 주세요.</p></div> : <ol className="creator-deals">{current.rows.map(deal => <li key={deal.id}><div className="partnership-section-heading"><div><h3>{deal.creator_name}</h3><p>{deal.collaboration_on || '협업일 미확인'} · 합의 {deal.agreed_on}</p></div><button type="button" onClick={() => { play('selection'); setForm({ deal }); setNotice(''); }}>비즈니스·협업일 수정</button></div><dl className="creator-deal-costs"><div><dt>광고비</dt><dd>{creatorDealAmount(deal.ad_fee_cents, deal.currency)}</dd></div><div><dt>식사 지원 한도</dt><dd>{creatorDealAmount(deal.meal_support_cents, deal.currency)}</dd></div><div><dt>콘텐츠</dt><dd>{deal.deliverables}</dd></div></dl><a href={deal.creator_profile_url} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>크리에이터 프로필 ↗</a></li>)}</ol>}
       <nav className="partnership-pages" aria-label="비즈니스 협업 목록 페이지"><button type="button" disabled={!offset} onClick={() => { play('selection'); setOffset(value => Math.max(0, value - 50)); }}>이전</button><span>{offset / 50 + 1}페이지</span><button type="button" disabled={!current.more} onClick={() => { play('selection'); setOffset(value => value + 50); }}>다음</button></nav>
     </>}
-  </section>;
+   </section>
+  </AdminCard>;
 }

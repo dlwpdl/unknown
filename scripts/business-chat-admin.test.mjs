@@ -21,7 +21,7 @@ function mount(kind = 'business') {
   vm.runInNewContext(source, { exports, JSON, Map, Set, Date, requestAnimationFrame: () => 1, cancelAnimationFrame() {}, require(name) {
     if (name === 'react') return react;
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if (name === 'react-native') return Object.fromEntries(['View','Text','FlatList','Pressable','ScrollView','TextInput','Platform'].map(key => [key, key === 'Platform' ? { OS: 'web' } : key]));
+    if (name === 'react-native') return { ...Object.fromEntries(['View','Text','FlatList','Pressable','ScrollView','TextInput','Platform'].map(key => [key, key === 'Platform' ? { OS: 'web' } : key])), StyleSheet: { create: styles => styles } };
     if (name === 'expo-image') return { Image: 'Image' };
     if (name === '@/constants/theme') return { Colors: { admin: {} } };
     if (name === '@/lib/mock') return { CITIES: [] };

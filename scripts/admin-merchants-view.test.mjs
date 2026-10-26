@@ -5,16 +5,17 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import * as merchantApi from '../src/lib/admin-merchants.ts';
 import * as merchantSource from '../src/lib/merchant-source.ts';
-const { merchantAddressCity } = merchantApi;
 
 const merchants = ['first', 'second'].map((id, i) => ({ id, name: `업체 ${i + 1}`, city_id: 'vancouver', city_name: '밴쿠버', timezone: 'America/Vancouver', industry: '카페', services: '', address: '', contact: `contact${i + 1}@example.test`, status: 'trial', consent: 'pending', consent_note: '', trial_ends_at: null, post_count: i + 1, report_count: 0, updated_at: '2026-10-11T00:00:00Z' }));
 
-test('vendor workspace groups the directory into seven columns without dropping location, account or actions', () => {
+test('vendor rows keep name, city, one status, post count and rare actions in a menu', () => {
   const tree = app().render(), table = nodes(tree).find(n => n.type === 'table');
   const head = nodes(table).find(n => n.type === 'thead');
-  assert.equal(nodes(head).filter(n => n.type === 'th').length, 7);
-  assert.match(text(table), /미연결/); assert.match(text(table), /게시 지역/);
-  assert.ok(button(tree, '업체 1 크리에이터 협업')); assert.ok(button(tree, '업체 1 삭제'));
+  assert.equal(nodes(head).filter(n => n.type === 'th').length, 6);
+  assert.match(text(table), /계정 미연결/); assert.match(text(table), /밴쿠버/);
+  assert.equal(nodes(table).find(n => n.type === 'AdminPill')?.props.label, '허락 대기', 'Missing consent outranks the operating status.');
+  assert.ok(menuItem(tree, '업체 1 더 보기', '크리에이터 협업')); assert.ok(menuItem(tree, '업체 1 더 보기', '삭제').danger);
+  assert.ok(!button(tree, '업체 1 수정'), 'Row click is the only way into the detail.');
 });
 
 function app({ failure = null } = {}) {
@@ -45,6 +46,7 @@ function app({ failure = null } = {}) {
     if (name === './admin-table-controls') return { AdminSelect: 'AdminSelect', AdminFilterBar: 'AdminFilterBar', AdminFilterReset: 'AdminFilterReset' };
     if (name === './admin-merchant-connections') return { AdminMerchantConnections: 'AdminMerchantConnections' };
     if (name === '@/components/merchant-profile-editor') return { MerchantProfileEditor: 'MerchantProfileEditor' };
+    if (name === './admin-ui') return Object.fromEntries(['AdminButton', 'AdminCard', 'AdminFacts', 'AdminInfo', 'AdminMoreMenu', 'AdminPill'].map(kit => [kit, kit]));
     return {};
   } });
   const render = () => { stateIndex = refIndex = effectIndex = 0; return exports.AdminMerchantsView({ refreshSignal: 0 }); };
@@ -57,8 +59,10 @@ function app({ failure = null } = {}) {
 }
 function nodes(node) {
   if (!node || typeof node !== 'object') return [];
-  return [node, ...[node.props?.children].flat(Infinity).flatMap(nodes)];
+  return [node, ...[node.props?.children, node.props?.action].flat(Infinity).flatMap(nodes)];
 }
+const kitButton = (root, label) => nodes(root).find(n => n.type === 'AdminButton' && (n.props.accessibilityLabel ?? n.props.label) === label);
+const menuItem = (root, menu, label) => nodes(root).find(n => n.type === 'AdminMoreMenu' && n.props.label === menu)?.props.items.find(item => item.label === label);
 function text(node) {
   if (node == null || typeof node === 'boolean') return '';
   if (typeof node === 'string' || typeof node === 'number') return String(node);
@@ -72,12 +76,13 @@ test('business detail starts with an overview and keeps profile and account mana
   let root = view.render();
   const overview = button(root, '개요'); assert.ok(overview, 'A business should open to a readable overview.');
   assert.equal(overview.props['aria-pressed'], true);
-  for (const label of ['프로필', '계정 연결', '크리에이터 협업', '글·성과', '운영 도구']) assert.ok(button(root, label), label);
-  const profile = button(root, '프로필 관리'); assert.ok(profile); profile.props.onClick();
+  for (const label of ['프로필', '계정', '크리에이터', '글·성과', '도구']) assert.ok(button(root, label), label);
+  assert.equal(kitButton(root, '게시 허락 기록 없음 · 기록하기')?.props.kind, 'primary', 'The first missing step is the one filled action.');
+  const profile = kitButton(root, '등록 정보 수정'); assert.ok(profile); profile.props.onPress();
   root = view.render(); assert.equal(button(root, '프로필').props['aria-pressed'], true);
   assert.equal(nodes(root).find(n => n.type === 'MerchantProfileEditor')?.props.merchantId, 'first');
-  button(root, '계정 연결').props.onClick();
-  root = view.render(); assert.equal(button(root, '계정 연결').props['aria-pressed'], true);
+  button(root, '계정').props.onClick();
+  root = view.render(); assert.equal(button(root, '계정').props['aria-pressed'], true);
   assert.ok(nodes(root).find(n => n.props?.id === 'merchant-accounts-panel' && !n.props.hidden));
   assert.ok(nodes(root).find(n => n.type === 'AdminMerchantConnections'));
 });
@@ -103,7 +108,7 @@ test('source records have no business-only profile, account or collaboration con
   button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
   const nav = nodes(view.render()).find(n => n.type === 'nav' && n.props['aria-label'] === '비즈니스 상세 화면');
   assert.ok(nav); assert.ok(button(nav, '개요')); assert.ok(button(nav, '등록 정보')); assert.ok(button(nav, '글·성과'));
-  for (const label of ['프로필', '계정 연결', '크리에이터 협업', '운영 도구']) assert.ok(!button(nav, label), label);
+  for (const label of ['프로필', '계정', '크리에이터', '도구']) assert.ok(!button(nav, label), label);
   assert.ok(!nodes(view.render()).some(n => n.type === 'MerchantProfileEditor'));
 });
 
@@ -123,20 +128,19 @@ test('merchant contact links preserve text, recognize named platforms and reject
   assert.equal(merchantSource.merchantPrimaryContactLink('https://instagram.com.evil.test/ · Instagram @cafe')?.href, 'https://www.instagram.com/cafe/');
 });
 
-test('merchant accounts open directly from the list and detail without opening the row editor', () => {
+const registration = root => nodes(root).find(n => n.type === 'AdminCard' && n.props.title === '등록 정보');
+test('merchant contacts open in a new tab from the detail overview, and row controls never open the detail', () => {
   const view = app();
   view.refreshMerchant({ ...merchants[0], contact: 'Instagram @sample.cafe · https://cafe.example.com/' });
   const table = nodes(view.render()).find(n => n.type === 'table');
-  const links = nodes(table).filter(n => n.type === 'a');
-  assert.equal(links.length, 1);
-  assert.equal(links[0].props.href, 'https://www.instagram.com/sample.cafe/');
-  for (const link of links) { assert.equal(link.props.target, '_blank'); assert.equal(link.props.rel, 'noopener noreferrer'); link.props.onClick(); }
+  assert.equal(nodes(table).filter(n => n.type === 'a').length, 0, 'Contacts live in the detail, not the row.');
   const row = nodes(table).find(n => n.type === 'tr' && n.props.onClick);
-  row.props.onClick({ target: { closest: selectors => selectors.split(',').includes('a') ? {} : null } });
+  row.props.onClick({ target: { closest: selectors => selectors.split(',').includes('[role="button"]') ? {} : null } });
   assert.equal(nodes(view.render()).find(n => n.type === 'h2' && n.props.id === 'merchant-detail-title')?.props.children, '등록 종류와 정보');
-  button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
-  const heading = nodes(view.render()).find(n => n.type === 'header' && n.props.className === 'merchant-detail-heading');
-  assert.equal(nodes(heading).filter(n => n.type === 'a').length, 2);
+  button(view.render(), '업체 1 활동과 정보 보기').props.onClick(); view.detail();
+  const links = nodes(registration(view.render())).filter(n => n.type === 'a');
+  assert.deepEqual(links.map(link => link.props.href), ['https://www.instagram.com/sample.cafe/', 'https://cafe.example.com/']);
+  for (const link of links) { assert.equal(link.props.target, '_blank'); assert.equal(link.props.rel, 'noopener noreferrer'); link.props.onClick(); }
   assert.ok(view.feedback.includes('selection'));
 });
 
@@ -149,30 +153,27 @@ test('the overview keeps full contacts in detail while exposing merchant names a
     assert.ok(!text(table).includes(merchant.contact));
     assert.ok(button(table, `${merchant.name} 활동과 정보 보기`));
   }
-  assert.ok(text(table).includes('SNS'));
   assert.equal(nodes(root).filter(n => n.type === 'dialog').length, 1);
 });
 
-test('the directory prefers one Instagram link even when other links appear first', () => {
+test('long contacts stay out of the directory and appear in full with every link in the detail', () => {
   const view = app();
   view.refreshMerchant({ ...merchants[0], contact: '담당자 긴 연락처 · https://example.com/menu · Threads @sample.cafe · Instagram @sample.cafe · https://instagram.com/other/' });
   const table = nodes(view.render()).find(n => n.type === 'table');
-  const links = nodes(table).filter(n => n.type === 'a');
-  assert.equal(links.length, 1);
-  assert.equal(links[0].props.href, 'https://www.instagram.com/sample.cafe/');
   assert.ok(!text(table).includes('긴 연락처'));
-  button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
-  const heading = nodes(view.render()).find(n => n.type === 'header' && n.props.className === 'merchant-detail-heading');
-  assert.equal(nodes(heading).filter(n => n.type === 'a').length, 4);
-  assert.ok(text(heading).includes('긴 연락처'));
+  button(view.render(), '업체 1 활동과 정보 보기').props.onClick(); view.detail();
+  const card = registration(view.render());
+  assert.equal(nodes(card).filter(n => n.type === 'a').length, 4);
+  assert.ok(text(card).includes('긴 연락처'));
 });
 
 test('registration date uses the merchant timezone and never substitutes the update date', () => {
   const view = app();
   view.refreshMerchant({ ...merchants[0], created_at: '2026-10-15T00:30:00Z' });
-  const table = nodes(view.render()).find(n => n.type === 'table');
-  assert.ok(text(table).includes('등록일'));
-  const dates = nodes(table).filter(n => n.type === 'time');
+  button(view.render(), '업체 1 활동과 정보 보기').props.onClick(); view.detail();
+  const card = registration(view.render());
+  assert.ok(text(card).includes('등록일'));
+  const dates = nodes(card).filter(n => n.type === 'time');
   assert.equal(dates.length, 1);
   assert.equal(dates[0].props.dateTime, '2026-10-15T00:30:00Z');
   assert.match(text(dates[0]), /2026[-. ]+10[-. ]+14/);
@@ -183,7 +184,7 @@ test('sorting and filters invalidate old rows and bulk selection, then reload th
   checkbox(view.render(), '업체 1 선택').props.onChange({ target: { checked: true } });
   nodes(view.render()).find(n => n.type === 'AdminSelect' && n.props.label === '정렬').props.onChange('name_desc');
   assert.ok(!nodes(view.render()).some(n => n.type === 'table'), 'Previous sort rows must not stay selectable.');
-  assert.equal(button(view.render(), '선택 삭제').props.disabled, true);
+  assert.ok(!button(view.render(), '선택 삭제'), 'Bulk actions appear only while rows are checked.');
   view.reloadList(); await settle();
   assert.equal(view.calls.at(-1).args.p_offset, 0);
   assert.equal(view.calls.at(-1).args.p_filters.sort, 'name_desc');
@@ -202,15 +203,14 @@ test('벤더 목록은 주소 기반 소재지와 연결 계정을 구분하고 
   view.refreshMerchant({ ...merchants[0], address, owner_id: 'owned' });
   const table = nodes(view.render()).find(n => n.type === 'table');
   assert.ok(text(view.render()).includes('비즈니스 관리'));
-  assert.ok(text(table).includes('North York, ON'));
   assert.ok(text(table).includes('벤더 회원'));
-  assert.ok(text(table).includes('미연결'));
-  assert.ok(text(table).includes('주소 미확인'));
-  const location = nodes(table).filter(n => n.type === 'td' && n.props.className === 'merchant-location')[1];
-  assert.equal(text(nodes(location).find(n => n.type === 'span')), '주소 미확인');
-  assert.match(text(location), /게시 지역:\s+밴쿠버/);
+  assert.ok(text(table).includes('계정 미연결'));
+  const city = nodes(table).filter(n => n.type === 'td' && n.props.className === 'merchant-location')[1];
+  assert.equal(text(city), '밴쿠버', 'The directory city is the posting area.');
   assert.ok(!text(table).includes(address));
   button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
+  const subline = nodes(view.render()).find(n => n.type === 'p' && n.props.className === 'merchant-detail-location');
+  assert.match(text(subline), /North York, ON/, 'The detail names the address city separately.');
   assert.ok(nodes(view.render()).some(n => n.type === 'input' && n.props.value === address));
 });
 
@@ -236,7 +236,7 @@ test('linked post management belongs to the activity tab and retains unsaved inp
   const view = app();
   view.refreshMerchant({ ...merchants[0], consent: 'granted' });
   button(view.render(), '업체 1 활동과 정보 보기').props.onClick(); view.detail();
-  const linked = root => nodes(root).find(n => n.type === 'section' && text(n).startsWith('연결된 글'));
+  const linked = root => nodes(root).find(n => n.type === 'section' && n.props['aria-label'] === '연결된 글');
   const activity = root => nodes(root).find(n => n.type === 'div' && n.props.id === 'merchant-activity-panel' && n.props.hidden === true && nodes(n).includes(linked(root)));
   assert.ok(activity(view.render()), 'linked posts stay mounted inside the activity section while the overview is visible');
   button(view.render(), '글·성과').props.onClick();
@@ -289,11 +289,12 @@ test('unknown promotions default to a source record and choosing a business give
 const checkbox = (root, label) => nodes(root).find(n => n.type === 'input' && n.props.type === 'checkbox' && n.props['aria-label'] === label);
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
-test('row editing opens the existing information form directly', () => {
+test('the overview edit action opens the existing information form', () => {
   const view = app();
-  const edit = button(view.render(), '업체 1 수정');
-  assert.ok(edit, 'A vendor must have a direct edit action.');
-  edit.props.onClick();
+  button(view.render(), '업체 1 활동과 정보 보기').props.onClick(); view.detail();
+  const edit = kitButton(view.render(), '등록 정보 수정');
+  assert.ok(edit, 'A vendor must keep a direct edit action.');
+  edit.props.onPress();
   const profileTab = button(view.render(), '프로필');
   assert.equal(profileTab.props['aria-pressed'], true);
   assert.ok(nodes(view.render()).some(n => n.type === 'input' && n.props.value === '업체 1'));
@@ -351,10 +352,10 @@ test('failed deletion preserves selection and exposes a recoverable error', asyn
 
 test('deleting another vendor preserves an unsaved information draft', async () => {
   const view = app(); view.allow();
-  button(view.render(), '업체 1 수정').props.onClick();
+  button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
   nodes(view.render()).find(n => n.type === 'input' && n.props.value === '업체 1').props.onChange({ target: { value: '저장 전 이름' } });
   button(view.render(), '비즈니스 상세 닫기').props.onClick();
-  button(view.render(), '업체 2 삭제').props.onClick();
+  menuItem(view.render(), '업체 2 더 보기', '삭제').onPress();
   await settle();
   assert.ok(nodes(view.render()).some(n => n.type === 'input' && n.props.value === '저장 전 이름'));
   assert.equal(view.prompts.length, 1);
@@ -362,9 +363,9 @@ test('deleting another vendor preserves an unsaved information draft', async () 
 
 test('confirmed deletion of the open vendor clears its abandoned editor', async () => {
   const view = app(); view.allow();
-  button(view.render(), '업체 1 수정').props.onClick();
+  button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
   button(view.render(), '비즈니스 상세 닫기').props.onClick();
-  button(view.render(), '업체 1 삭제').props.onClick();
+  menuItem(view.render(), '업체 1 더 보기', '삭제').onPress();
   await settle();
   assert.ok(!nodes(view.render()).some(n => n.type === 'input' && n.props.value === '업체 1'));
 });
@@ -376,22 +377,36 @@ test('reloading vendor data clears selection so a changed record must be reviewe
   view.reloadList();
   await settle();
   assert.equal(checkbox(view.render(), '업체 1 선택').props.checked, false);
-  assert.equal(button(view.render(), '선택 삭제').props.disabled, true);
+  assert.ok(!button(view.render(), '선택 삭제'));
 });
 
 test('deleting another vendor keeps a locally edited owner form mounted', async () => {
   const view = app(); view.allow();
   view.refreshMerchant({ ...merchants[0], owner_id: 'owned' });
-  button(view.render(), '업체 1 수정').props.onClick();
+  button(view.render(), '업체 1 활동과 정보 보기').props.onClick();
   view.detail();
   const ownerForm = root => nodes(root).find(n => typeof n.type === 'function' && n.type.name === 'MerchantOwnerForm');
   const before = ownerForm(view.render());
   assert.ok(before);
   before.props.onDirty();
   button(view.render(), '비즈니스 상세 닫기').props.onClick();
-  button(view.render(), '업체 2 삭제').props.onClick();
+  menuItem(view.render(), '업체 2 더 보기', '삭제').onPress();
   await settle();
   const after = ownerForm(view.render());
   assert.ok(after, 'Deleting a different vendor must not unmount local owner inputs.');
   assert.equal(after.props.merchant.updated_at, before.props.merchant.updated_at);
+});
+
+test('to-do chips toggle one server filter', () => {
+  const view = app();
+  const chip = root => nodes(root).find(n => n.type === 'button' && n.props.className === 'merchant-chip' && text(n).startsWith('게시 허락 대기'));
+  chip(view.render()).props.onClick();
+  let root = view.render();
+  assert.equal(chip(root).props['aria-pressed'], true);
+  assert.equal(nodes(root).find(n => n.type === 'AdminSelect' && n.props.label === '게시 허락').props.value, 'pending');
+  chip(root).props.onClick();
+  root = view.render();
+  assert.equal(chip(root).props['aria-pressed'], false);
+  assert.equal(nodes(root).find(n => n.type === 'AdminFilterBar').props.applied, 0);
+  assert.ok(view.feedback.includes('selection'));
 });

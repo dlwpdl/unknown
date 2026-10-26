@@ -118,7 +118,7 @@ export function useAdminConversations(filters: ConversationFilters, refreshSigna
       return true;
     } catch {
       if (alive.current && version === detailVersion.current && activeDetailKey.current === detailKey) {
-        setDetailFailure({ key: detailKey, message: focusMessageId ? '신호 앞뒤의 대화를 불러오지 못했어요. 보존된 신호 문구는 조사 기록에서 확인할 수 있어요.' : '메시지를 불러오지 못했어요. 다시 시도해 주세요.' });
+        setDetailFailure({ key: detailKey, message: focusMessageId ? '신호 앞뒤의 대화를 불러오지 못했어요. 보존된 신호 문구는 검토 기록에서 확인할 수 있어요.' : '메시지를 불러오지 못했어요. 다시 시도해 주세요.' });
       }
       return false;
     } finally {

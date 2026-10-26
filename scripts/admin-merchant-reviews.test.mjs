@@ -42,7 +42,7 @@ function view(file, name, { rpc = async () => ({ data: null }), storage = {}, us
     '@/lib/auth': { useAuth: () => ({ me: user, isAuthed: true }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => calls.push(['feedback', kind]) }) },
     '@/hooks/use-theme': { useTheme: () => ({ line: '#343443', card: '#171722', textSecondary: '#B7B4C3' }) },
     '@/lib/supabase': { supabase: { rpc, storage } },
-    '@/i18n/ko': { count },
+    '@/i18n/ko': { count }, '@/lib/mock': { CITIES: [] },
     './admin-table-controls': controls, '@/components/admin/admin-table-controls': controls, '@/components/admin/admin-merchant-review-content': { AdminMerchantReviewContent: 'ReviewContent' },
     '@/components/admin/admin-merchant-review-reply-content': { AdminMerchantReviewReplyContent: 'ReplyContent' },
     '@/components/admin/admin-trust-review-content': { ...module('../src/components/admin/admin-trust-review-content.tsx'), AdminTrustReviewContent: 'TrustContent' },
@@ -244,17 +244,18 @@ test('personal feedback requires a specific negative reason and preserves it acr
 const report = { id: 'report-review', reporter_id: 'reporter', reported_user_id: 'review-author', target_type: 'merchant_review', target_id: 'review-uuid', reason_code: 'harassment', details: '검토 요청', status: 'open', created_at: '2026-10-08T20:00:00Z', resolved_at: null,
   evidence: { merchant_id: 'merchant-uuid', merchant_name: '동네 가게', score: 8.5, body: '접수 당시 후기', status: 'published', created_at: '2026-10-07T20:00:00Z', updated_at: '2026-10-08T18:00:00Z', author_id: 'review-author' } };
 const pendingReview = { authorId: 'review-author', reviewKind: 'usage', text: '동네 가게\n8.5/10\n후기 전체', merchantId: 'merchant-uuid', merchantName: '동네 가게', score: 8.5, body: '후기 전체', status: 'published', createdAt: '2026-10-07T20:00:00Z', updatedAt: '2026-10-08T18:00:00Z', receiptPath: 'review-author/receipt.webp', receiptStatus: 'pending', receiptReviewedAt: null, receiptReviewNote: null };
-const press = (tree, label) => { const control = nodes(tree).find(node => node.type === 'Pressable' && node.props.accessibilityLabel === label); assert.ok(control, `Missing control: ${label}`); return control; };
+const kit = { '@/components/admin/admin-ui': Object.fromEntries(['AdminButton', 'AdminCard', 'AdminDock', 'AdminInfo', 'AdminPill'].map(name => [name, name])) };
+const press = (tree, label) => { const control = nodes(tree).find(node => (node.type === 'Pressable' && node.props.accessibilityLabel === label) || (node.type === 'AdminButton' && (node.props.accessibilityLabel ?? node.props.label) === label)); assert.ok(control, `Missing control: ${label}`); return control; };
 
 test('a merchant review report is filterable, shows its captured context and hides the review ID', async () => {
-  const queue = view('../src/components/admin/admin-report-queue.tsx', 'AdminReportQueue');
+  const queue = view('../src/components/admin/admin-report-queue.tsx', 'AdminReportQueue', { imports: { '@/components/admin/admin-ui': { AdminButton: 'AdminButton' } } });
   const resolved = [];
   const tree = queue.render({ reports: [report], profiles: new Map(), actions: [], resolving: false, onUser() {}, onResolve: async (...args) => { resolved.push(args); return ['report-review']; } });
   const filters = nodes(tree).find(node => node.type === 'AdminMultiFilter' && node.props.label === '대상');
   assert.ok(filters.props.options.some(option => option.value === 'merchant_review' && option.label === '비즈니스 후기'));
   assert.ok(nodes(tree).some(node => typeof node.props?.value === 'string' && node.props.value.includes('동네 가게') && node.props.value.includes('8.5/10')));
   assert.ok(nodes(tree).some(node => node.props?.value === '접수 당시 후기'));
-  const hide = nodes(tree).find(node => node.type === 'Pressable' && nodes(node).some(child => child.props?.children === '콘텐츠 전체 숨김'));
+  const hide = nodes(tree).find(node => node.type === 'AdminButton' && node.props.accessibilityLabel === '콘텐츠 전체 숨김');
   await hide.props.onPress();
   assert.deepEqual(resolved, [['report-review', 'hidden', '']]);
 });
@@ -311,7 +312,7 @@ test('web and native safety, alerts and reports route company replies to their o
 test('company reply preview shows the audited actor and ignores duplicate or late protected reads', async () => {
   let resolve, calls = 0;
   const screen = view('../src/components/admin/admin-merchant-review-reply-content.tsx', 'ReplyContent', {
-    rpc: () => { calls++; return new Promise(done => { resolve = done; }); }, extra: '\nexports.ReplyContent = ReplyContent;',
+    rpc: () => { calls++; return new Promise(done => { resolve = done; }); }, extra: '\nexports.ReplyContent = ReplyContent;', imports: kit,
   });
   const users = [], props = { targetId: 'reply-id', localPreview: true, onUser: id => users.push(id) };
   await press(screen.render(props), '비즈니스 답변 원문 보기').props.onPress();
@@ -333,32 +334,31 @@ test('company reply preview shows the audited actor and ignores duplicate or lat
 
 function reviewView(options) {
   assert.ok(existsSync(new URL('../src/components/admin/admin-merchant-review-content.tsx', import.meta.url)), 'Audited merchant review preview control has not been implemented.');
-  return view('../src/components/admin/admin-merchant-review-content.tsx', 'ReviewContent', { ...options, extra: '\nexports.ReviewContent = ReviewContent;' });
+  return view('../src/components/admin/admin-merchant-review-content.tsx', 'ReviewContent', { ...options, imports: kit, extra: '\nexports.ReviewContent = ReviewContent;' });
 }
 test('review full-content preview shows the whole audited response and opens the returned author', async () => {
   let calls = 0;
   const screen = reviewView({ rpc: async () => { calls++; return { data: { ...pendingReview, status: 'removed' } }; } });
   const users = [];
   const props = { targetId: 'review-uuid', onUser: id => users.push(id) };
-  const control = nodes(screen.render(props)).find(node => node.type === 'Pressable');
-  await control.props.onPress();
+  await press(screen.render(props), '후기 원문 보기').props.onPress();
   const tree = screen.render(props);
   assert.equal(calls, 1);
   assert.ok(nodes(tree).some(node => node.props?.children === '동네 가게\n8.5/10\n후기 전체'));
   assert.ok(nodes(tree).some(node => [node.props?.children].flat().includes('숨김')));
-  const history = nodes(tree).find(node => node.type === 'Pressable' && node.props.accessibilityLabel === '후기 작성자 이력 보기');
+  const history = press(tree, '후기 작성자 이력 보기');
   history.props.onPress();
   assert.deepEqual(users, ['review-author']);
-  assert.ok(screen.calls.some(([name]) => name === 'feedback'));
+  assert.equal(history.type, 'AdminButton', 'The shared admin button plays interaction feedback.');
 });
 test('review previews make no local-preview reads and late reads cannot reveal content after unmount', async () => {
   let resolve, calls = 0;
   const screen = reviewView({ rpc: () => { calls++; return new Promise(done => { resolve = done; }); } });
   let props = { targetId: 'review-uuid', localPreview: true, onUser() {} };
-  await nodes(screen.render(props)).find(node => node.type === 'Pressable').props.onPress();
+  await press(screen.render(props), '후기 원문 보기').props.onPress();
   assert.equal(calls, 0);
   props = { ...props, localPreview: false };
-  const control = nodes(screen.render(props)).find(node => node.type === 'Pressable');
+  const control = press(screen.render(props), '후기 원문 보기');
   const pending = control.props.onPress();
   const duplicate = control.props.onPress();
   assert.equal(calls, 1);
@@ -371,11 +371,11 @@ test('failed audited review reads show an error and retry without cached content
   let fail = true;
   const screen = reviewView({ rpc: async () => fail ? { error: new Error('ADMIN_REQUIRED') } : { data: null } });
   const props = { targetId: 'review-uuid', onUser() {} };
-  await nodes(screen.render(props)).find(node => node.type === 'Pressable').props.onPress();
+  await press(screen.render(props), '후기 원문 보기').props.onPress();
   assert.ok(nodes(screen.render(props)).some(node => node.props?.accessibilityRole === 'alert'));
   fail = false;
-  await nodes(screen.render(props)).find(node => node.type === 'Pressable').props.onPress();
-  assert.ok(nodes(screen.render(props)).some(node => node.props?.children === '후기를 찾을 수 없습니다.'));
+  await press(screen.render(props), '후기 원문 보기').props.onPress();
+  assert.ok(nodes(screen.render(props)).some(node => node.props?.children === '후기를 찾을 수 없어요.'));
 });
 
 test('web safety reviews and keyword alerts both offer an audited merchant review content read', () => {
@@ -432,7 +432,7 @@ test('manual verification requires a loaded private receipt and reads back the v
   assert.equal(verify.props.disabled, false);
   await verify.props.onPress();
   assert.deepEqual(rpcCalls.map(([name]) => name), ['get_admin_merchant_review_content', 'set_admin_merchant_review_receipt', 'get_admin_merchant_review_content']);
-  assert.ok(nodes(screen.render(props)).some(node => node.props?.children === '영수증 인증을 확인했습니다.'));
+  assert.ok(nodes(screen.render(props)).some(node => node.props?.children === '영수증 인증을 확인했어요.'));
 });
 
 test('employment certification requires loaded private proof and a meaningful note before public state', async () => {
@@ -446,7 +446,7 @@ test('employment certification requires loaded private proof and a meaningful no
   const props = { targetId: 'employment-review', onUser() {} };
   await press(screen.render(props), '후기 원문 보기').props.onPress();
   let tree = screen.render(props);
-  assert.ok(nodes(tree).some(node => typeof node.props?.children === 'string' && node.props.children.includes('회사·근무자·근무 이력')));
+  assert.ok(nodes(tree).some(node => node.type === 'AdminInfo' && node.props.text.includes('회사·근무자·근무 이력')), 'Proof criteria stay one tap away in ⓘ.');
   assert.ok(nodes(tree).some(node => [node.props?.children].flat().includes('비공개')));
   const note = nodes(tree).find(node => node.type === 'TextInput' && node.props.accessibilityLabel === '근무 증빙 검토 메모');
   note.props.onChangeText('회사와 근무 이력 확인');
@@ -468,7 +468,7 @@ test('employment certification requires loaded private proof and a meaningful no
   assert.deepEqual(calls.map(([name]) => name), ['get_admin_merchant_review_content', 'set_admin_merchant_review_receipt', 'get_admin_merchant_review_content']);
   assert.deepEqual(calls[1][1], { p_target_id: 'employment-review', p_receipt_path: 'review-author/employment.webp', p_updated_at: pendingReview.updatedAt, p_verified: true, p_note: '회사·작성자와 근무자·실제 근무 이력 확인' });
   tree = screen.render(props);
-  assert.ok(nodes(tree).some(node => node.props?.children === '근무 증빙 인증을 확인했습니다.'));
+  assert.ok(nodes(tree).some(node => node.props?.children === '근무 증빙 인증을 확인했어요.'));
   assert.ok(nodes(tree).some(node => [node.props?.children].flat().includes('공개')));
 });
 
@@ -488,13 +488,13 @@ test('a certification readback for another review kind never reports successful 
   const tree = screen.render(props);
   assert.ok(nodes(tree).some(node => node.props?.accessibilityRole === 'alert'));
   assert.equal(nodes(tree).find(node => node.type === 'TextInput').props.value, '회사·근무 이력 확인');
-  assert.ok(!nodes(tree).some(node => node.props?.children === '근무 증빙 인증을 확인했습니다.'));
+  assert.ok(!nodes(tree).some(node => node.props?.children === '근무 증빙 인증을 확인했어요.'));
 });
 
 test('the pending receipt queue discovers unreported reviews and pages through the audited RPC', async () => {
   assert.ok(existsSync(new URL('../src/components/admin/admin-merchant-receipt-queue.tsx', import.meta.url)), 'Receipt review queue has not been implemented.');
   const calls = [];
-  const screen = view('../src/components/admin/admin-merchant-receipt-queue.tsx', 'ReceiptQueue', { extra: '\nexports.ReceiptQueue = ReceiptQueue;', rpc: async (name, args) => {
+  const screen = view('../src/components/admin/admin-merchant-receipt-queue.tsx', 'ReceiptQueue', { imports: kit, extra: '\nexports.ReceiptQueue = ReceiptQueue;', rpc: async (name, args) => {
     calls.push([name, JSON.parse(JSON.stringify(args))]);
     return { data: args.p_offset ? { reviews: [{ ...pendingReview, reviewKind: 'employment', id: 'second-review', nickname: '이웃 2' }], has_more: false }
       : { reviews: [{ ...pendingReview, id: 'unreported-review', nickname: '이웃 1' }], has_more: true } };
@@ -504,10 +504,16 @@ test('the pending receipt queue discovers unreported reviews and pages through t
   assert.ok(nodes(screen.render(props)).some(node => node.type === 'ReviewContent' && node.props.targetId === 'unreported-review'));
   await press(screen.render(props), '검토 대기 후기 더 보기').props.onPress();
   assert.deepEqual(calls, [['get_admin_merchant_receipt_reviews', { p_offset: 0 }], ['get_admin_merchant_receipt_reviews', { p_offset: 1 }]]);
-  assert.equal(nodes(screen.render(props)).filter(node => node.type === 'ReviewContent').length, 2);
-  assert.ok(nodes(screen.render(props)).some(node => node.props?.children === '근무 후기'));
-  assert.ok(nodes(screen.render(props)).some(node => node.props?.children === '상품·서비스 후기'));
-  assert.ok(nodes(screen.render(props)).some(node => typeof node.props?.children === 'string' && node.props.children.includes('미인증 근무 후기는 작성자와 관리자만')));
+  let tree = screen.render(props);
+  assert.equal(nodes(tree).filter(node => node.type === 'Pressable' && node.props.accessibilityLabel?.endsWith('후기 검토')).length, 2);
+  assert.equal(nodes(tree).filter(node => node.type === 'ReviewContent').length, 1, 'Only the picked review is read.');
+  assert.equal(nodes(tree).find(node => node.type === 'ReviewContent').props.autoLoad, true);
+  assert.ok(nodes(tree).some(node => typeof node.props?.children === 'string' && node.props.children.startsWith('근무 후기')));
+  assert.ok(nodes(tree).some(node => typeof node.props?.children === 'string' && node.props.children.startsWith('상품·서비스 후기')));
+  assert.ok(nodes(tree).some(node => node.type === 'AdminCard' && [node.props.info].flat().some(line => line?.includes('미인증 근무 후기는 작성자와 관리자만'))));
+  nodes(tree).find(node => node.type === 'Pressable' && node.props.accessibilityLabel === '동네 가게 근무 증빙 후기 검토').props.onPress();
+  tree = screen.render(props);
+  assert.equal(nodes(tree).find(node => node.type === 'ReviewContent').props.targetId, 'second-review');
 });
 
 test('a changed receipt or failed readback preserves the audit note and never claims approval', async () => {
@@ -521,7 +527,7 @@ test('a changed receipt or failed readback preserves the audit note and never cl
   const tree = screen.render(props);
   assert.ok(nodes(tree).some(node => node.props?.accessibilityRole === 'alert'));
   assert.equal(nodes(tree).find(node => node.type === 'TextInput').props.value, '이용일 재확인 필요');
-  assert.ok(!nodes(tree).some(node => node.props?.children === '영수증 인증을 확인했습니다.'));
+  assert.ok(!nodes(tree).some(node => node.props?.children === '영수증 인증을 확인했어요.'));
 });
 
 test('merchant admin entrypoints keep receipt queries disabled during local preview', async () => {
@@ -534,11 +540,11 @@ test('merchant admin entrypoints keep receipt queries disabled during local prev
     '@/lib/admin-merchants': { ...adminMerchants, loadMerchants: async () => ({ merchants: [], more: false }) },
   } });
   const root = web.render(props);
-  const disclosure = nodes(root).find(node => node.type === 'details' && nodes(node).some(child => child.props?.children === '후기 증빙 검토'));
-  disclosure.props.onToggle({ currentTarget: { open: true } });
+  assert.ok(!nodes(root).some(node => node.type === 'ReceiptQueue'), 'The receipt queue reads only after its tab opens.');
+  nodes(root).find(node => node.type === 'button' && node.props?.role === 'tab' && [node.props.children].flat()[0] === '후기 증빙').props.onClick();
   assert.equal(nodes(web.render(props)).find(node => node.type === 'ReceiptQueue').props.localPreview, true);
   let calls = 0;
-  const queue = view('../src/components/admin/admin-merchant-receipt-queue.tsx', 'ReceiptQueue', { extra: '\nexports.ReceiptQueue = ReceiptQueue;', rpc: async () => { calls++; return { data: { reviews: [], has_more: false } }; } });
+  const queue = view('../src/components/admin/admin-merchant-receipt-queue.tsx', 'ReceiptQueue', { imports: kit, extra: '\nexports.ReceiptQueue = ReceiptQueue;', rpc: async () => { calls++; return { data: { reviews: [], has_more: false } }; } });
   queue.render(props); await new Promise(setImmediate);
   assert.equal(calls, 0);
 });

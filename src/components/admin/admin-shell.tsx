@@ -71,7 +71,7 @@ export function AdminShell({
         key={item.id}
         onPress={() => { play('selection'); onSection(item.id); setMenuOpen(false); }}
         accessibilityRole="tab"
-        accessibilityLabel={badge != null ? `${item.label} ${badge}건` : item.label}
+        accessibilityLabel={badge ? `${item.label} ${badge}건` : item.label}
         aria-selected={active}
         tabIndex={active ? 0 : -1}
         {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})}
@@ -80,8 +80,8 @@ export function AdminShell({
         <ThemedText type="smallBold" style={active ? styles.navTextActive : styles.navText}>
           {item.label}
         </ThemedText>
-        {badge != null && (
-          <View style={[styles.badge, badge === 0 && styles.badgeQuiet]}>
+        {!!badge && (
+          <View style={styles.badge}>
             <ThemedText type="smallBold" style={styles.badgeText}>{badge}</ThemedText>
           </View>
         )}
@@ -204,9 +204,9 @@ const styles = StyleSheet.create({
   navItemActive: { backgroundColor: Colors.admin.backgroundSelected },
   navText: { color: Colors.admin.textSecondary },
   navTextActive: { color: Colors.admin.accent },
-  badge: { marginLeft: 'auto', minWidth: 22, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 5, backgroundColor: Colors.admin.backgroundSelected, alignItems: 'center' },
-  badgeQuiet: { backgroundColor: Colors.admin.backgroundElement },
-  badgeText: { color: Colors.admin.accent, fontSize: 11 },
+  // Shown only when something waits, in red, so urgency isn't confused with the purple active state.
+  badge: { marginLeft: 'auto', minWidth: 22, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 5, backgroundColor: Colors.admin.danger, alignItems: 'center' },
+  badgeText: { color: Colors.admin.accentInk, fontSize: 11 },
   sidebarFooter: { marginTop: Spacing.two, borderTopWidth: 1, borderTopColor: Colors.admin.line, paddingTop: 12 },
   auditNotice: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingVertical: Spacing.two },
   disabled: { opacity: 0.55 },

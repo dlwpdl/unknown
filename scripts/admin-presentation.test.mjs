@@ -7,7 +7,7 @@ import * as admin from '../src/lib/admin.ts';
 import * as labels from '../src/lib/admin-labels.ts';
 import { filterReportRows } from '../src/components/admin/admin-report-filter.ts';
 
-function view(file, name, extra = '') {
+function view(file, name, extra = '', extraImports = {}) {
   const state = [], feedback = [];
   let index = 0;
   const imports = {
@@ -20,6 +20,7 @@ function view(file, name, extra = '') {
     '@/components/admin/admin-trust-review-content': { isTrustTarget: () => false },
     './admin-report-filter': { filterReportRows },
     './admin-table-controls': Object.fromEntries(['AdminFilterBar', 'AdminFilterReset', 'AdminMultiFilter', 'AdminSearch', 'AdminTableSummary'].map(name => [name, name])),
+    ...extraImports,
   };
   const exports = {};
   const source = ts.transpileModule(readFileSync(new URL(file, import.meta.url), 'utf8') + extra, {
@@ -51,7 +52,7 @@ test('internal UI targets and session identifiers appear only when detailed beha
   assert.equal(text(tree).includes('973d36fa'), false);
   assert.equal(text(tree).includes('signup_complete'), false);
   assert.ok(text(tree).includes('회원가입 완료'));
-  const toggle = nodes(tree).find(node => node.type === 'Pressable' && /세부 분석 기록/.test(text(node)));
+  const toggle = nodes(tree).find(node => node.type === 'Pressable' && /원본 데이터/.test(text(node)));
   assert.ok(toggle);
   toggle.props.onPress();
   tree = screen.render(props);
@@ -69,7 +70,7 @@ test('audit and error records retain operational context while their exact IDs a
   assert.ok(text(tree).includes('실패'));
   assert.equal(text(tree).includes('9d817992'), false);
   assert.equal(text(tree).includes('572938462'), false);
-  const toggle = nodes(tree).find(node => node.type === 'Pressable' && /문제 추적 정보/.test(text(node)));
+  const toggle = nodes(tree).find(node => node.type === 'Pressable' && /원본 데이터/.test(text(node)));
   assert.ok(toggle); toggle.props.onPress();
   tree = screen.render(props);
   assert.ok(text(tree).includes('9d817992-89e8-42c4-93bc-eb3c2f13a2c1'));
@@ -77,25 +78,26 @@ test('audit and error records retain operational context while their exact IDs a
 });
 
 test('report evidence paths stay in tracing disclosure and accessible selection preserves the exact batch ID', async () => {
-  const screen = view('../src/components/admin/admin-report-queue.tsx', 'AdminReportQueue');
+  const kit = Object.fromEntries(['AdminButton', 'AdminCard', 'AdminDock', 'AdminFacts', 'AdminInfo', 'AdminMoreMenu', 'AdminPill', 'AdminTrace'].map(name => [name, name]));
+  const screen = view('../src/components/admin/admin-report-queue.tsx', 'AdminReportQueue', '', { '@/components/admin/admin-ui': kit });
   const report = { id: '2f7a81bd-f81f-488e-94a4-a4503cbe7396', reported_user_id: 'member-a', reporter_id: 'member-b', target_type: 'post', target_id: 'post-a', reason_code: 'spam', details: '신고 설명', status: 'open', created_at: '2026-10-14T10:00:00Z', evidence: { body: '원문 그대로', image_paths: ['private/evidence/photo-original.jpg'] } };
   const resolved = [];
   const props = { reports: [report], profiles: new Map([['member-a', { nickname: '동네 이웃' }], ['member-b', { nickname: '산책 친구' }]]), actions: [], resolving: false, onUser() {}, onResolve: async (...args) => { resolved.push(args); return args[0]; } };
   let tree = screen.render(props);
-  const path = nodes(tree).find(node => node.type === 'Text' && text(node) === 'private/evidence/photo-original.jpg');
-  assert.ok(path);
-  const disclosure = nodes(tree).find(node => node.type === 'details' && nodes(node).includes(path));
-  assert.ok(disclosure, 'attachment storage paths belong inside the tracing disclosure');
-  assert.ok(text(disclosure).includes('문제 추적 정보'));
+  const trace = nodes(tree).filter(node => node.type === 'AdminTrace');
+  assert.equal(trace.length, 1, 'IDs and storage paths live in one folded trace line');
+  assert.ok(trace[0].props.items.some(item => item.value === 'private/evidence/photo-original.jpg'), 'attachment storage paths belong inside the tracing disclosure');
+  assert.equal(text(tree).includes('private/evidence/photo-original.jpg'), false, 'storage paths are not shown outside the trace');
   assert.ok(text(tree).includes('원문 그대로'));
-  disclosure.props.onToggle();
+  nodes(tree).find(node => node.type === 'button' && node.props?.['aria-controls'] === 'admin-report-detail').props.onClick();
   const checkbox = nodes(tree).find(node => node.type === 'input' && node.props?.type === 'checkbox' && node.props['aria-label']?.includes('동네 이웃'));
   assert.ok(checkbox);
   assert.equal(checkbox.props['aria-label'].includes(report.id), false);
   checkbox.props.onChange({ target: { checked: true } });
   tree = screen.render(props);
-  const bulk = nodes(tree).find(node => node.type === 'button' && text(node) === '선택 경고');
-  await bulk.props.onClick();
+  nodes(tree).find(node => node.type === 'textarea' && node.props['aria-label'] === '일괄 처리 메모').props.onFocus();
+  const bulk = nodes(tree).find(node => node.type === 'AdminButton' && node.props.accessibilityLabel === '선택 경고');
+  await bulk.props.onPress();
   assert.deepEqual(Array.from(resolved[0][0]), [report.id]);
   assert.equal(resolved[0][1], 'warned');
   assert.ok(screen.feedback.length >= 3);

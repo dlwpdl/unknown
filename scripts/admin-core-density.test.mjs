@@ -34,13 +34,16 @@ const find = (tree, type, label) => nodes(tree).find(node => node.type === type 
 const report = { id: 'report-a', reported_user_id: 'member-a', reporter_id: 'member-b', target_type: 'post', target_id: 'post-a', reason_code: 'spam', details: '신고 설명', status: 'open', created_at: '2026-10-14T10:00:00Z', evidence: { body: '접수 당시 내용' } };
 const props = { reports: [report], profiles: new Map(), actions: [], resolving: false, onUser() {}, onResolve: async () => [] };
 
+const kit = { '@/components/admin/admin-ui': Object.fromEntries(['AdminButton', 'AdminCard', 'AdminDock', 'AdminFacts', 'AdminInfo', 'AdminMoreMenu', 'AdminPill', 'AdminTrace'].map(name => [name, name])) };
+const rowCheck = tree => nodes(tree).find(node => node.type === 'input' && node.props?.['aria-label']?.endsWith('신고 선택'));
+
 test('compact report back closes detail, retaining filter, checked ID and note when reopened', () => {
-  const render = view(); let tree = render(props);
+  const render = view(390, { extra: kit }); let tree = render(props);
   assert.ok(nodes(tree).some(node => node.props?.label === '접수 당시 원본' && node.props.value === '접수 당시 내용'), 'compact case retains captured evidence');
   const input = () => nodes(tree).find(node => node.props?.accessibilityLabel === '신고 처리 메모');
   nodes(tree).find(node => node.type === 'AdminSearch').props.onChange('신고'); tree = render(props);
   input().props.onChangeText('판단 근거 초안'); tree = render(props);
-  nodes(tree).find(node => node.type === 'input' && node.props?.['aria-label']).props.onChange({ target: { checked: true } }); tree = render(props);
+  rowCheck(tree).props.onChange({ target: { checked: true } }); tree = render(props);
   find(tree, 'button', '‹ 목록으로').props.onClick(); tree = render(props);
   assert.equal(nodes(tree).some(node => node.props?.role === 'dialog'), false);
   const row = nodes(tree).find(node => node.type === 'button' && node.props?.['aria-controls'] === 'admin-report-detail');
@@ -49,13 +52,15 @@ test('compact report back closes detail, retaining filter, checked ID and note w
   assert.equal(row.props['aria-pressed'], true, 'closing preserves selection');
   row.props.onClick(); tree = render(props);
   assert.equal(input().props.value, '판단 근거 초안');
-  assert.equal(nodes(tree).find(node => node.type === 'input' && node.props?.['aria-label']).props.checked, true);
+  assert.equal(rowCheck(tree).props.checked, true);
 });
 
 test('desktop selects first report and preserves all exact case action bindings', async () => {
-  const calls = [], render = view(1200); let tree = render({ ...props, onResolve: async (...args) => { calls.push(args); return []; } });
+  const calls = [], render = view(1200, { extra: kit }); let tree = render({ ...props, onResolve: async (...args) => { calls.push(args); return []; } });
   assert.ok(nodes(tree).some(node => node.props?.nativeID === 'admin-report-detail'));
-  for (const label of ['기각', '경고', '콘텐츠 전체 숨김', '계정 정지']) await find(tree, 'Pressable', label).props.onPress();
+  const dock = nodes(tree).find(node => node.type === 'AdminDock');
+  assert.ok(nodes(dock).some(node => node.props?.accessibilityLabel === '신고 처리 메모'), 'memo sits in the decision dock');
+  for (const label of ['기각', '경고', '콘텐츠 전체 숨김', '계정 정지']) await nodes(dock).find(node => node.type === 'AdminButton' && (node.props.accessibilityLabel ?? node.props.label) === label).props.onPress();
   assert.deepEqual(calls.map(args => args.slice(0, 2)), [['report-a', 'dismissed'], ['report-a', 'warned'], ['report-a', 'hidden'], ['report-a', 'blocked']]);
 });
 
@@ -142,17 +147,17 @@ test('member activity opens first with fixed keyboard tabs and keeps private acc
   const props = { userId: 'member-a', profiles: new Map() };
   let tree = render(props);
   const tabs = nodes(tree).filter(n => n.props?.accessibilityRole === 'tab');
-  assert.deepEqual(tabs.map(text), ['활동 기록', '프로필', '계정 관리', '접속 정보']);
+  assert.deepEqual(tabs.map(text), ['활동 기록', '계정 관리', '정보']);
   assert.equal(tabs[0].props['aria-selected'], true);
   assert.equal(tabs[0].props.tabIndex, 0);
   const scroll = nodes(tree).find(n => n.props?.nativeID === 'admin-member-scroll');
   assert.ok(scroll); assert.equal(nodes(scroll).some(n => n.props?.accessibilityRole === 'tab'), false);
   const pane = id => nodes(tree).find(n => n.props?.nativeID === `admin-member-${id}`);
   assert.equal(pane('activity').props.style.display, 'flex');
-  assert.equal(pane('profile').props.style.display, 'none');
-  assert.ok(nodes(pane('profile')).some(n => n.props?.value === 'private@example.test'));
+  assert.equal(pane('info').props.style.display, 'none');
+  assert.ok(nodes(pane('info')).some(n => n.props?.value === 'private@example.test'));
   const timeline = nodes(tree).find(n => n.type?.name === 'ActivityTimeline');
-  tabs[2].props.onPress(); tree = render(props);
+  tabs[1].props.onPress(); tree = render(props);
   assert.equal(pane('management').props.style.display, 'flex');
   assert.equal(pane('activity').props.style.display, 'none');
   assert.equal(nodes(tree).find(n => n.type?.name === 'ActivityTimeline').props.filters, timeline.props.filters);

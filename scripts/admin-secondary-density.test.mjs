@@ -24,6 +24,7 @@ function panelView(component = 'admin-trending-panel', exportName = 'AdminTrendi
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) };
     if (name === '@/constants/theme') return { Colors: { admin: {} }, Spacing: {} };
     if (name === '@/components/state-card') return { StateCard: 'StateCard' };
+    if (name === './admin-ui') return { AdminButton: 'AdminButton', AdminCard: 'AdminCard', AdminFacts: 'AdminFacts', AdminInfo: 'AdminInfo' };
     if (name === '@/lib/admin-ticketmaster') return { revenueMonths: () => ['2026-10'], loadTicketmasterRevenue: async () => ({ connected: true, generatedAt: '2026-10-14T00:00:00Z', totals: [{ currency: 'CAD', pending: '12.00', approved: '8.00', settled: '5.00' }, { currency: 'USD', pending: '7.00', approved: '3.00', settled: '1.00' }] }) };
     if (name === '@/lib/admin-data') return { loadAdminTrending: async () => ({ config, quietNow: true, preview: [], recent: [] }), saveAdminTrending() { throw new Error('no save permitted in disclosure test'); } };
     if (name === '@/lib/mock') return { CITIES: [] };
@@ -35,36 +36,28 @@ function panelView(component = 'admin-trending-panel', exportName = 'AdminTrendi
 const nodes = node => !node || typeof node !== 'object' ? [] : [node, ...[node.props?.children].flat(Infinity).flatMap(nodes)];
 const text = node => node == null || typeof node === 'boolean' ? '' : typeof node !== 'object' ? String(node) : [node.props?.children].flat(Infinity).map(text).join('');
 
-test('collapsed trending settings keep edited fields mounted and retain the quiet-time warning', async () => {
+test('trending settings stay visible in grouped fields, keep edits and retain the quiet-time warning', async () => {
   const view = panelView(); view.render(); await view.load();
   const field = root => nodes(root).find(node => node.type === 'TextInput' && node.props.accessibilityLabel === '집계 구간(시간)');
-  const toggle = root => nodes(root).find(node => node.type === 'Pressable' && text(node).includes('발송 기준 설정'));
-  assert.ok(field(view.render()), 'collapsed configuration fields must remain mounted');
-  assert.equal(toggle(view.render()).props['aria-expanded'], false);
-  toggle(view.render()).props.onPress();
+  assert.ok(field(view.render()), 'configuration fields must be rendered without an extra disclosure');
+  for (const group of ['점수 가중치', '시간', '발송 한도']) assert.ok(nodes(view.render()).some(node => node.type === 'Text' && text(node) === group), group);
   field(view.render()).props.onChangeText('36');
-  toggle(view.render()).props.onPress();
   assert.equal(field(view.render()).props.value, '36');
-  toggle(view.render()).props.onPress();
-  assert.equal(field(view.render()).props.value, '36');
+  field(view.render()).props.onFocus();
   assert.equal(view.feedback.at(-1), 'selection');
   assert.match(text(view.render()), /조용한 시간/);
 });
 
-test('Ticketmaster keeps per-currency figures and settlement warning outside collapsed methodology', async () => {
+test('Ticketmaster keeps per-currency figures unsummed and the settlement caution in the info note', async () => {
   const view = panelView('admin-ticketmaster', 'AdminTicketmasterView'); view.render(); await view.load();
-  const toggle = root => nodes(root).find(node => node.type === 'Pressable' && text(node).includes('정산·출금과 갱신 기준'));
-  const scope = root => nodes(root).find(node => node.type === 'View' && node.props['aria-hidden'] !== undefined);
-  assert.equal(toggle(view.render()).props['aria-expanded'], false);
-  assert.equal(scope(view.render()).props['aria-hidden'], true);
   const root = view.render();
-  assert.match(text(root), /CAD.*12\.00.*USD.*7\.00/);
-  assert.doesNotMatch(text(root), /19\.00/);
-  const warning = nodes(root).find(node => node.type === 'Text' && text(node).includes('정산 완료는 은행 입금과 다릅니다'));
-  assert.ok(warning && !nodes(scope(root)).includes(warning));
-  toggle(view.render()).props.onPress();
-  assert.equal(scope(view.render()).props['aria-hidden'], false);
+  const figures = nodes(root).find(node => node.type === 'AdminFacts').props.items.map(item => `${item.label} ${text(item.value)}`).join(' | ');
+  assert.match(figures, /확정 대기 CAD12\.00USD7\.00/);
+  assert.doesNotMatch(figures, /19\.00/);
+  assert.ok(nodes(root).some(node => node.props?.accessibilityLabel === 'CAD 확정 대기 48%, 정산 대기 32%, 정산 완료 20%'));
+  const info = nodes(root).find(node => node.type === 'AdminInfo');
+  assert.ok([info.props.text].flat().some(line => line.includes('정산 완료는 은행 입금과 달라요')));
+  assert.equal(nodes(root).filter(node => node.type === 'StateCard').length, 0, 'Connected data shows figures, not an empty state.');
+  nodes(root).find(node => node.type === 'Pressable' && node.props.accessibilityRole === 'tab').props.onPress();
   assert.equal(view.feedback.at(-1), 'selection');
-  toggle(view.render()).props.onPress();
-  assert.equal(scope(view.render()).props['aria-hidden'], true);
 });

@@ -105,6 +105,7 @@ function app(entry = 'performance', initial = {}) {
     '@/lib/admin-performance': performanceApi, '@/lib/admin-analytics': analyticsApi,
     '@/lib/admin': admin, '@/lib/admin-labels': labels, '@/lib/admin-layout': layout,
     '@/lib/mock': mock, '@/lib/supabase': { supabase: client },
+    '@/components/analytics-controls': { Pressable: native.Pressable },
   };
   function load(relative) {
     if (modules.has(relative)) return modules.get(relative);
@@ -119,6 +120,7 @@ function app(entry = 'performance', initial = {}) {
       if (name === '@/constants/theme') return load('constants/theme.ts');
       if (name === './admin-performance') return load('components/admin/admin-performance.tsx');
       if (name === './admin-table-controls') return load('components/admin/admin-table-controls.tsx');
+      if (name === './admin-ui') return load('components/admin/admin-ui.tsx');
       throw new Error(`Unexpected dependency: ${name}`);
     } });
     return exports;
@@ -148,33 +150,27 @@ test('real rendering separates loading, valid zero, null collectors and all eigh
     assert.match(metric(view.container, 'DAU'), /0/);
     assert.match(metric(view.container, '가입 후 활동률'), /0%/);
     assert.match(metric(view.container, '푸시 탭'), /미수집/);
-    assert.match(metric(view.container, '환불'), /미연결/);
+    assert.match(metric(view.container, '환불'), /연결 전/);
     assert.match(area(view.container, '행사·장소').textContent, /수집 대기/);
-    assert.match(area(view.container, '수익').textContent, /기록이 없습니다/);
+    assert.match(area(view.container, '수익').textContent, /기록이 없어요/);
   } finally { await view.unmount(); }
 });
 
-test('eight domain disclosures keep real figures and mounted state, with only growth and activity initially open', async () => {
+test('eight domain areas render as open cards with captions behind ⓘ, and the chart/table toggle keeps feedback', async () => {
   const view = app();
   try {
     await view.render(); await view.answer(0);
     for (const title of ['성장·유입', '활동', '재방문·코호트', '커뮤니티', '행사·장소', '알림', '수익', '품질']) {
-      const control = find(view.container, 'button', title);
-      assert.ok(control, `${title} needs an accessible disclosure`);
-      assert.equal(control.getAttribute('aria-expanded'), String(['성장·유입', '활동'].includes(title)));
+      assert.ok(area(view.container, title), title);
+      assert.equal(find(view.container, 'button', title), undefined, `${title} is no longer a disclosure`);
     }
-    assert.match(find(view.container, 'button', '성장·유입').textContent, /신규 가입.*2/);
-    assert.match(find(view.container, 'button', '행사·장소').textContent, /수집 대기/);
-    const retention = area(view.container, 'D1·D7·D30 재방문');
-    await view.press('button', '재방문·코호트');
-    assert.equal(view.feedback.at(-1), 'selection');
-    assert.equal(find(view.container, 'button', '재방문·코호트').getAttribute('aria-expanded'), 'true');
-    await view.press('button', '재방문·코호트');
-    assert.equal(area(view.container, 'D1·D7·D30 재방문'), retention);
+    assert.match(metric(view.container, '신규 가입'), /2/);
+    assert.doesNotMatch(view.container.textContent, /가입 뒤 글·댓글/, 'metric captions stay folded in ⓘ');
     await view.press('button', '수치 표 보기');
-    const daily = area(view.container, '일별 활동 수치');
-    await view.press('button', '활동'); await view.press('button', '활동');
-    assert.equal(area(view.container, '일별 활동 수치'), daily, 'closing a domain must keep the selected chart/table and DOM mounted');
+    assert.equal(view.feedback.at(-1), 'selection');
+    assert.ok(area(view.container, '일별 활동 수치'));
+    await view.press('button', '차트 보기');
+    assert.equal(area(view.container, '일별 활동 수치'), undefined);
   } finally { await view.unmount(); }
 });
 
@@ -217,6 +213,7 @@ test('captions retain city, platform, delivery, revenue and report scope', async
   const view = app();
   try {
     await view.render(); await view.answer(0);
+    for (const info of walk(view.container).filter(node => ['설명 보기', '집계 범위 보기'].includes(node.getAttribute('aria-label')))) await React.act(async () => props(info).onClick());
     const text = view.container.textContent;
     for (const meaning of [/현재 저장한 선호 지역/, /일반 멤버십/, /대상 도시/, /플랫폼.*방문.*행동.*행사.*장소.*알림/, /운영 캐릭터/, /가입.*글.*모임.*결제.*신고.*발송/, /APNs.*FCM.*접수/, /단말.*표시/, /최대 7일/, /2026.*10.*08/, /알림.*입구.*기기/, /30분.*고유 회원/, /인과|증가 효과/, /현재.*설정.*스냅샷/, /통화별.*총.*결제/, /정산/, /갱신 해지/, /같은 기간 첫 결제/, /현재.*미처리/, /기간.*해결/, /실패.*회원/, /회원 신고/]) assert.match(text, meaning);
   } finally { await view.unmount(); }
@@ -295,7 +292,7 @@ test('daily chart and table distinguish uncollected values and zero, with select
   const view = app();
   try {
     await view.render(); await view.answer(0);
-    assert.match(area(view.container, '일별 활동 추이').textContent, /미수집/);
+    assert.ok(walk(area(view.container, '일별 활동 추이')).some(node => /2026-09-19.*미수집/.test(node.getAttribute('aria-label') ?? '')), 'uncollected days are announced as 미수집');
     await view.press('button', '수치 표 보기');
     assert.equal(view.feedback.at(-1), 'selection');
     const table = area(view.container, '일별 활동 수치');
@@ -338,33 +335,37 @@ test('a platform-specific report cannot infer delivery click rate or attributed 
   } finally { await view.unmount(); }
 });
 
-test('default performance loads independently, and all original tabs still use the base RPC', async () => {
+test('five tabs: 한눈에 uses only the performance report, other tabs add the base report once', async () => {
   const view = app('analytics');
   try {
     await view.render();
-    assert.equal(find(view.container, 'tab', '전체 성과')?.getAttribute('aria-selected'), 'true');
+    assert.deepEqual(['한눈에', '성장', '활동', '수익', '품질'].map(tab => !!find(view.container, 'tab', tab)), [true, true, true, true, true]);
+    for (const removed of ['전체 성과', '요약', '회원', '트래픽', '행동 분석', '결제·홍보', '운영 로그']) assert.equal(find(view.container, 'tab', removed), undefined, removed);
+    assert.equal(find(view.container, 'tab', '한눈에').getAttribute('aria-selected'), 'true');
     assert.deepEqual(view.calls.map(call => call.name), ['get_admin_performance']);
     await view.answer(0);
-    for (const tab of ['요약', '회원', '트래픽', '행동 분석', '결제·홍보', '운영 로그']) assert.ok(find(view.container, 'tab', tab));
-    await view.press('tab', '회원');
+    assert.ok(area(view.container, '핵심 지표'));
+    assert.match(metric(view.container, '7일 재방문'), /관측 중/);
+    for (const title of ['성장 요약', '활동 요약', '수익 요약', '품질 요약']) assert.ok(area(view.container, title), title);
+    assert.match(area(view.container, '수익 요약').textContent, /연결 전/);
+    assert.equal(area(view.container, '알림'), undefined, 'detail areas stay in their tabs');
+    await view.press('tab', '성장');
     assert.equal(view.feedback.at(-1), 'selection');
     assert.equal(view.calls[1].name, 'get_admin_analytics');
-    await view.press('tab', '전체 성과');
-    assert.equal(view.calls[2].name, 'get_admin_performance');
-    await view.answer(1, null, { message: 'base failed' });
-    await view.answer(2);
-    assert.ok(area(view.container, '품질'));
-    assert.doesNotMatch(view.container.textContent, /분석 데이터를 불러오지 못/);
-    await view.press('tab', '회원'); await view.answer(3, basePayload());
-    assert.equal(view.calls[4].name, 'get_admin_behavior');
-    await view.answer(4, { screens: [], steps: [], actions: [], recent: [] });
-    assert.match(view.container.textContent, /회원 목록/);
-    for (const [tab, content] of [['요약', '전체 회원'], ['트래픽', '최근 접속'], ['행동 분석', '완료한 작업'], ['결제·홍보', '구독 구매 회원'], ['운영 로그', '관리자 접근 기록']]) {
+    await view.answer(1, basePayload());
+    assert.equal(view.calls[2].name, 'get_admin_behavior');
+    await view.answer(2, { screens: [], steps: [], actions: [], recent: [] });
+    assert.ok(area(view.container, '성장·유입') && area(view.container, '재방문·코호트') && area(view.container, '회원 분포'));
+    assert.equal(area(view.container, '핵심 지표'), undefined);
+    for (const [tab, perf, base] of [['활동', '알림', '최근 접속'], ['수익', '수익', '구독 구매 회원'], ['품질', '품질', '관리자 접근 기록']]) {
       await view.press('tab', tab);
-      assert.ok(view.container.textContent.includes(content), `${tab} must still render its existing content`);
+      assert.ok(area(view.container, perf), `${tab} keeps ${perf}`);
+      assert.ok(view.container.textContent.includes(base), `${tab} keeps ${base}`);
       assert.equal(view.feedback.at(-1), 'selection');
     }
-    assert.equal(view.calls.length, 5, 'switching between original tabs reuses their base report');
+    assert.ok(find(view.container, 'button', '원본 데이터'), 'raw records are folded at the bottom');
+    await view.press('tab', '한눈에');
+    assert.equal(view.calls.length, 3, 'switching tabs reuses both reports');
   } finally { await view.unmount(); }
 });
 
@@ -409,7 +410,7 @@ test('populated rows use server values without inventing funnels, activity uplif
 test('parent local preview and changed common filters preserve the private RPC boundary', async () => {
   const view = app('analytics', { localPreview: true });
   try {
-    await view.render(); await view.press('tab', '회원'); await view.press('tab', '전체 성과');
+    await view.render(); await view.press('tab', '성장'); await view.press('tab', '한눈에');
     assert.equal(view.calls.length, 0);
     await view.render({ localPreview: false }); await view.answer(0);
     await view.press('button', '필터 · 전체');

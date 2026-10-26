@@ -1,20 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
 import { Image, type ImageSource } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import { FlatList, Platform, Pressable, ScrollView, Text, TextInput, View, type TextInputInstance } from 'react-native';
+import { FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextInputInstance } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import {
   CONVERSATION_REVIEW_STATUS, CONVERSATION_RISK_LABEL,
   type ConversationCase, type ConversationDetail, type ConversationMessage, type ConversationReviewStatus,
 } from '@/lib/admin-conversations';
+import { adminOptionKeys } from '@/lib/admin';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { chatImagePaths } from '@/lib/chat-details';
 import { authenticatedChatImages } from '@/lib/business-chat';
 import { CITIES } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
-import { ConversationButton, ConversationPicker, ConversationState } from './admin-conversation-controls';
+import { ConversationButton, ConversationState } from './admin-conversation-controls';
 import { conversationStyles as styles } from './admin-conversation-styles';
+import { AdminButton, AdminCard, AdminDock, AdminTrace } from './admin-ui';
+
+// One ⓘ replaces the AI/scope/audit sentences that used to repeat in three places on this screen.
+export const CONVERSATION_REVIEW_INFO = [
+  '감지 신호만으로 위반을 확정하지 않아요. 원문과 앞뒤 맥락을 보고 운영자가 최종 판단해요.',
+  '검토 기록을 저장해도 경고 전송이나 계정 제한은 실행되지 않아요.',
+  '신고 여부와 관계없이 모든 대화를 검토할 수 있고, 대화 열람과 검토 기록은 남아요.',
+];
+const highRisk = (risk: ConversationCase['risk_level']) => risk === 'critical' || risk === 'high';
 
 export const conversationTitle = (room: ConversationCase) => room.title || room.participants.map((person) => person.nickname).join(' ↔ ') || '참여자 정보 없음';
 export const cityName = (id: string | null) => CITIES.find((city) => city.id === id)?.name ?? (id || '도시 미등록');
@@ -36,7 +46,7 @@ function RiskTag({ room }: { room: ConversationCase }) {
   const risk = room.risk_level;
   return <View style={[styles.tag, (risk === 'critical' || risk === 'high') && styles.dangerTag, risk === 'medium' && styles.warningTag, risk === 'low' && styles.accentTag]}>
     <Text style={[styles.tagText, (risk === 'critical' || risk === 'high') && styles.dangerText, risk === 'medium' && styles.warningText, risk === 'low' && styles.accentText]}>
-      {risk === 'none' ? room.pending_analysis > 0 ? 'AI 분석 대기' : '감지 신호 없음' : `${CONVERSATION_RISK_LABEL[risk]} · 신호 ${room.signal_count}건`}
+      {room.reopened ? '재검토 · ' : ''}{risk === 'none' ? room.pending_analysis > 0 ? 'AI 분석 대기' : '신호 없음' : `${CONVERSATION_RISK_LABEL[risk]} ${room.signal_count}`}
     </Text>
   </View>;
 }
@@ -45,14 +55,10 @@ export function ConversationCaseRow({ room, selected, onPress }: { room: Convers
   const { play } = useInteractionFeedback();
   return <Pressable nativeID={`conversation-case-${room.id}`} testID={`conversation-case-${room.id}`} accessibilityRole="button" aria-current={selected}
     accessibilityLabel={`${conversationTitle(room)}, ${conversationCities(room)}, ${room.kind === 'group' ? '그룹' : '1:1'}, ${CONVERSATION_RISK_LABEL[room.risk_level]}, ${CONVERSATION_REVIEW_STATUS[room.status]}${room.reopened ? ', 새 신호로 재검토 필요' : ''}`}
-    onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.caseRow, selected && styles.caseSelected, pressed && styles.pressed]}>
-    <View style={styles.row}><Avatars room={room} /><Text numberOfLines={1} style={styles.caseTitle}>{conversationTitle(room)}</Text>
+    onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.caseRow, local.caseRow, selected && styles.caseSelected, pressed && styles.pressed]}>
+    <View style={styles.row}><Text numberOfLines={1} style={styles.caseTitle}>{conversationTitle(room)}</Text>
       <Text style={styles.caption}>{conversationTime(room.latest_message_at)}</Text></View>
-    {room.kind === 'group' && !!room.title && <Text numberOfLines={1} style={styles.caption}>{room.participants.map((person) => person.nickname).join(', ')}</Text>}
-    <Text numberOfLines={1} style={styles.caption}>{conversationCities(room)} · {room.kind === 'group' ? `그룹 ${room.participants.length}명` : '1:1 대화'}</Text>
-    <Text numberOfLines={1} style={styles.body}>{room.latest_excerpt || '메시지 내용 없음'}</Text>
-    <View style={[styles.row, styles.between]}><RiskTag room={room} />
-      <Text style={styles.caption}>{room.reopened ? '재검토 필요' : CONVERSATION_REVIEW_STATUS[room.status]}</Text></View>
+    <View style={styles.row}><RiskTag room={room} /><Text numberOfLines={1} style={[styles.caption, styles.grow]}>{room.latest_excerpt || '메시지 내용 없음'}</Text></View>
   </Pressable>;
 }
 
@@ -110,8 +116,10 @@ export function ConversationThread({ detail, loading, error, loadingMessages, na
     body={error || '참여자와 위험 신호를 보고 목록에서 대화를 선택하세요.'} action={error ? '대화 다시 불러오기' : undefined} onAction={onRetry} /></View>;
   const room = detail.conversation;
   const participant = new Map(room.participants.map((person) => [person.id, person]));
-  const signalIds = new Set(detail.signals.map((signal) => signal.message_id));
+  // First listed signal per message names the red line; reversed so the earliest entry wins.
+  const signalFor = new Map([...detail.signals].reverse().map((signal) => [signal.message_id, signal]));
   const signalsPresent = room.signal_count > 0;
+  const bandDanger = signalsPresent && highRisk(room.risk_level);
 
   return <View testID="conversation-thread" accessibilityLabel="선택한 대화 내용" style={styles.thread}>
     <View style={styles.threadHeader}>
@@ -122,14 +130,16 @@ export function ConversationThread({ detail, loading, error, loadingMessages, na
         <Text accessibilityRole="header" style={styles.threadTitle}>{conversationTitle(room)}</Text>
         <Text style={styles.caption}>{room.kind === 'group' ? `그룹 ${room.participants.length}명` : '1:1 대화'} · {conversationCities(room)} · 메시지 {room.message_count}개</Text>
       </View>
-      {showReviewButton && <ConversationButton testID="conversation-inspector-open" label="조사 기록" onPress={onReview} />}
+      {showReviewButton && <ConversationButton testID="conversation-inspector-open" label="검토" onPress={onReview} />}
     </View>
-    <View style={[styles.alert, !signalsPresent && styles.quietAlert]}>
-      <SymbolView name={{ ios: 'exclamationmark.bubble', web: 'report' }} size={16} tintColor={signalsPresent ? Colors.admin.warning : Colors.admin.textSecondary} />
-      <Text style={[styles.caption, styles.grow, signalsPresent && styles.warningText]}>
-        {signalsPresent ? `감지 신호 ${room.signal_count}건 · 앞뒤 맥락을 확인하세요.` : room.pending_analysis > 0 ? `AI 분석 대기 ${room.pending_analysis}건 · 결과가 아직 없어요.` : '현재 표시할 감지 신호가 없어요. 필요하면 직접 검토할 수 있어요.'}
+    <View style={[styles.alert, !signalsPresent && styles.quietAlert, bandDanger && local.dangerBand]}>
+      <Text style={[styles.caption, styles.grow, signalsPresent && (bandDanger ? styles.dangerText : styles.warningText)]}>
+        {signalsPresent ? <Text style={local.strong}>감지 신호 {room.signal_count}건</Text> : room.pending_analysis > 0 ? `AI 분석 대기 ${room.pending_analysis}건` : '감지 신호 없음'}
+        {signalsPresent && !!detail.signals[0] && `  ${detail.signals[0].category}`}
       </Text>
-      {detail.signals.length > 0 && <ConversationButton testID="conversation-first-signal" label="첫 신호로 이동" onPress={onFirstSignal} disabled={loadingMessages} />}
+      {detail.signals.length > 0 && <ConversationButton testID="conversation-first-signal" label="첫 신호로 이동" onPress={onFirstSignal} disabled={loadingMessages} style={local.bandButton}>
+        <Text style={[styles.buttonText, styles.accentText]}>첫 신호로 ↓</Text>
+      </ConversationButton>}
     </View>
     {!!error && <View accessibilityRole="alert" style={styles.errorBox}><Text style={styles.error}>{error}</Text><ConversationButton label="최신 대화 다시 불러오기" onPress={onRetry} disabled={loadingMessages} /></View>}
     <FlatList ref={list} testID="conversation-messages" style={styles.scroll} contentContainerStyle={styles.messageList}
@@ -140,20 +150,21 @@ export function ConversationThread({ detail, loading, error, loadingMessages, na
         setTimeout(() => { if (scrollTarget.current === index) list.current?.scrollToIndex({ index, animated: false, viewPosition: 0.4 }); }, 100);
       }}
       ListHeaderComponent={detail.nextCursor ? <ConversationButton testID="conversation-earlier" label={loadingMessages ? '메시지를 불러오는 중…' : '이전 메시지 더 보기'} disabled={loadingMessages} busy={loadingMessages} onPress={() => { scrollEnd.current = false; onEarlier(); }} /> : undefined}
-      ListEmptyComponent={<ConversationState title="보존된 원문 메시지가 없어요." body="감지 당시의 문구는 조사 기록에서 확인하세요." />}
+      ListEmptyComponent={<ConversationState title="보존된 원문 메시지가 없어요." body="감지 당시의 문구는 검토 패널에서 확인하세요." />}
       renderItem={({ item: message, index }) => {
         const sender = participant.get(message.sender_id);
         const second = room.participants[0]?.id !== message.sender_id;
-        const flagged = signalIds.has(message.id);
+        const signal = signalFor.get(message.id);
+        const flagged = !!signal;
         const paths = chatImagePaths(message);
         return <View>
           {(index === 0 || detail.messages[index - 1]?.created_at.slice(0, 10) !== message.created_at.slice(0, 10)) && <Text style={[styles.caption, styles.centered, { marginVertical: 14 }]}>{new Date(message.created_at).toLocaleDateString('ko-KR')}</Text>}
           <View nativeID={`conversation-message-${message.id}`} testID={`conversation-message-${message.id}`} tabIndex={-1}
-            accessibilityLabel={`${sender?.nickname ?? '참여자 정보 없음'}, ${conversationTime(message.created_at)}${flagged ? ', 감지 신호' : ''}`} style={styles.message}>
-            <View style={[styles.avatar, second && styles.accentTag]} aria-hidden accessibilityElementsHidden><Text style={styles.avatarText}>{sender?.nickname.slice(0, 1) ?? '?'}</Text></View>
-            <View style={styles.messageBody}><View style={styles.row}><Text style={styles.caseTitle}>{sender?.nickname ?? '참여자 정보 없음'}</Text><Text style={styles.caption}>{conversationTime(message.created_at)}</Text></View>
+            accessibilityLabel={`${sender?.nickname ?? '참여자 정보 없음'}, ${conversationTime(message.created_at)}${signal ? `, 감지 신호 ${signal.category}` : ''}`} style={[styles.message, local.message]}>
+            <View style={[styles.messageBody, local.messageBody, second && local.messageSecond]}>
               {!!message.reply_to_id && <Text style={styles.caption}>이전 메시지에 답장</Text>}
-              <View style={[styles.bubble, second && styles.bubbleSecond, flagged && styles.flaggedBubble, focusId === message.id && styles.focusedBubble]}>
+              <View style={[styles.bubble, local.bubble, second && styles.bubbleSecond, flagged && local.flaggedBubble, focusId === message.id && styles.focusedBubble]}>
+                <Text style={[styles.caption, flagged && styles.dangerText]}>{sender?.nickname ?? '참여자 정보 없음'} · {conversationTime(message.created_at)}{signal ? ` · ${signal.category}` : ''}</Text>
                 <Text selectable style={styles.messageText}>{message.body}</Text>
                 {(message.kind === 'image' || paths.length > 0) && (paths.length ? paths : [null]).map((path, position) => <View key={path ?? 'missing'} style={styles.attachment}>
                   {path && imageSources[path] && !failedImages[path] ? <Image source={imageSources[path]} cachePolicy={business ? 'none' : undefined} style={styles.image} contentFit="contain" accessibilityLabel={`대화에 첨부한 원본 사진 ${position + 1}/${paths.length}`}
@@ -164,13 +175,12 @@ export function ConversationThread({ detail, loading, error, loadingMessages, na
                   <Text selectable style={styles.caption}>{message.latitude != null && message.longitude != null ? `위도 ${message.latitude} · 경도 ${message.longitude}` : '좌표 정보 없음'}</Text></View>}
               </View>
               {(message.reply_to_id || paths.length > 0 || message.kind === 'image') && <details onToggle={() => play('selection')}>
-                <summary style={{ minHeight: 44, cursor: 'pointer', alignContent: 'center' }}>문제 추적 정보</summary>
+                <summary style={{ minHeight: 44, cursor: 'pointer', alignContent: 'center', color: Colors.admin.textSecondary, fontSize: 11 }}>추적 정보</summary>
                 {!!message.reply_to_id && <Text selectable style={styles.caption}>답장 대상 ID · {message.reply_to_id}</Text>}
                 <Text selectable style={styles.caption}>메시지 ID · {message.id}</Text>
                 {paths.map((path, position) => <Text key={path} selectable style={styles.caption}>사진 {position + 1} 원본 경로 · {path}</Text>)}
                 {message.kind === 'image' && !paths.length && <Text style={styles.caption}>원본 경로 없음</Text>}
               </details>}
-              {flagged && <Text style={[styles.caption, styles.warningText]}>감지 신호 · 맥락 확인 필요</Text>}
             </View>
           </View>
         </View>;
@@ -189,49 +199,49 @@ export function ConversationReviewPanel({ detail, draft, saving, saveError, noti
   const { play } = useInteractionFeedback();
   const noteInput = useRef<TextInputInstance>(null);
   const [validation, setValidation] = useState(false);
+  const [allSignals, setAllSignals] = useState(false);
   const room = detail.conversation;
-  return <View testID="conversation-inspector" accessibilityLabel="대화 조사 기록" style={[styles.review, inModal && styles.reviewInModal]}>
-    {!inModal && <View style={styles.reviewHeader}><Text accessibilityRole="header" style={styles.sectionTitle}>조사 기록</Text><RiskTag room={room} /></View>}
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.reviewContent} keyboardShouldPersistTaps="handled">
-      <View style={styles.reviewSection}>
-        <Text style={styles.sectionLabel}>감지 신호 · 표시 {detail.signals.length} / 전체 {room.signal_count}건</Text>
-        <Text style={styles.caption}>감지 신호만으로 위반을 확정하지 않아요. 원문과 맥락을 함께 확인하세요.</Text>
+  const shownSignals = allSignals ? detail.signals : detail.signals.slice(0, 2);
+  return <View testID="conversation-inspector" accessibilityLabel="대화 검토" style={[styles.review, local.review, inModal && styles.reviewInModal]}>
+    {!inModal && <AdminCard icon="⚑" tone={highRisk(room.risk_level) ? 'danger' : 'warning'} title="검토" info={CONVERSATION_REVIEW_INFO} infoAlign="right" style={local.reviewHead} />}
+    <ScrollView style={styles.scroll} contentContainerStyle={[styles.reviewContent, local.reviewContent]} keyboardShouldPersistTaps="handled">
+      <View style={local.block}>
+        <Text style={styles.sectionLabel}>신호 {room.signal_count.toLocaleString()}건{detail.signals.length < room.signal_count ? ` · ${detail.signals.length}건 표시` : ''}</Text>
         {room.reopened && <Text style={[styles.body, styles.warningText]}>새 신호가 생겨 재검토가 필요해요.</Text>}
         {room.pending_analysis > 0 && <Text style={[styles.body, styles.warningText]}>AI 분석 대기 {room.pending_analysis}건 · 결과가 아직 없어요.</Text>}
-        {!detail.signals.length && <Text style={styles.caption}>현재 표시할 감지 신호가 없어요.</Text>}
-        {detail.signals.map((signal) => <Pressable key={signal.id} testID={`conversation-signal-${signal.id}`} accessibilityRole="button"
+        {shownSignals.map((signal) => <Pressable key={signal.id} testID={`conversation-signal-${signal.id}`} accessibilityRole="button"
           accessibilityLabel={`${signal.source === 'ai' ? 'AI 분석' : '감시어'} 신호 ${signal.category}, ${CONVERSATION_RISK_LABEL[signal.severity]}, 앞뒤 대화 보기`}
           disabled={loadingMessages} accessibilityState={{ disabled: loadingMessages }}
-          onPress={() => { play('selection'); onSignal(signal.message_id); }} style={({ pressed }) => [styles.signal, pressed && styles.pressed, loadingMessages && styles.disabled]}>
-          <View style={[styles.row, styles.between]}><Text style={[styles.body, styles.grow]}>{signal.category}</Text><Text style={[styles.caption, styles.warningText]}>{CONVERSATION_RISK_LABEL[signal.severity]}</Text></View>
-          <Text style={styles.caption}>{signal.source === 'ai' ? 'AI 분석' : '감시어'} · {conversationTime(signal.message_at ?? signal.created_at)}</Text>
-          <Text style={styles.body}>{signal.excerpt}</Text>
+          onPress={() => { play('selection'); onSignal(signal.message_id); }} style={({ pressed }) => [local.fact, pressed && styles.pressed, loadingMessages && styles.disabled]}>
+          <Text style={[styles.caption, highRisk(signal.severity) ? styles.dangerText : styles.warningText]}>{CONVERSATION_RISK_LABEL[signal.severity]} · {conversationTime(signal.message_at ?? signal.created_at)} · {signal.source === 'ai' ? 'AI' : '감시어'}</Text>
+          <Text style={[styles.body, local.strong]}>{signal.category}</Text>
+          {!!signal.excerpt && <Text numberOfLines={3} style={styles.caption}>{signal.excerpt}</Text>}
           {signal.reasons.map((reason, index) => <Text key={`${signal.id}:${index}`} style={styles.caption}>{reason}</Text>)}
-          <Text style={[styles.caption, styles.accentText]}>앞뒤 대화 보기 →</Text>
         </Pressable>)}
+        {detail.signals.length > shownSignals.length && <View style={local.start}><AdminButton kind="text" label={`${detail.signals.length - shownSignals.length}건 더`} onPress={() => setAllSignals(true)} /></View>}
       </View>
-      <View style={styles.reviewSection}><Text style={styles.sectionLabel}>참여자 {room.participants.length}명</Text>
-        {room.participants.map((person) => <Pressable key={person.id} testID={`conversation-participant-${person.id}`} accessibilityRole="button" accessibilityLabel={`${person.nickname}, ${cityName(person.city_id)}, 회원 정보 보기`}
-          onPress={() => { play('selection'); onUser(person.id); }} style={({ pressed }) => [styles.person, pressed && styles.pressed]}>
-          <View style={styles.avatar} aria-hidden accessibilityElementsHidden><Text style={styles.avatarText}>{person.nickname.slice(0, 1)}</Text></View>
-          <View style={styles.grow}><Text style={styles.body}>{person.nickname}</Text><Text style={styles.caption}>{cityName(person.city_id)} · 회원 정보 보기</Text></View>
-          <SymbolView name={{ ios: 'chevron.right', web: 'chevron_right' }} size={16} tintColor={Colors.admin.textSecondary} />
-        </Pressable>)}
+      <View style={local.block}><Text style={styles.sectionLabel}>참여자 {room.participants.length}명</Text>
+        <View style={local.chips}>{room.participants.map((person) => <ConversationButton key={person.id} testID={`conversation-participant-${person.id}`}
+          label={`${person.nickname}, ${cityName(person.city_id)}, 회원 정보 보기`} onPress={() => onUser(person.id)}>
+          <Text numberOfLines={1} style={styles.buttonText}>{person.nickname}</Text>
+        </ConversationButton>)}</View>
       </View>
-      <View style={styles.reviewSection}>
-        <Text style={styles.sectionLabel}>검토 상태</Text>
-        <ConversationPicker testID="conversation-review-status" label="검토 상태" value={draft.status} disabled={saving}
-          options={Object.entries(CONVERSATION_REVIEW_STATUS).map(([value, label]) => ({ value, label }))}
-          onChange={(status) => onDraft({ ...draft, status: status as ConversationReviewStatus })} />
-        <Text style={styles.sectionLabel}>판단 근거·검토 메모 · 필수</Text>
-        <TextInput ref={noteInput} testID="conversation-review-note" accessibilityLabel="판단 근거와 검토 메모, 필수, 1,000자 이내" aria-invalid={validation}
-          value={draft.note} onFocus={() => play('selection')} onChangeText={(note) => { setValidation(false); onDraft({ ...draft, note }); }} editable={!saving} multiline maxLength={1000}
-          placeholder="확인한 맥락과 필요한 후속 조치를 적어 주세요." placeholderTextColor={Colors.admin.textSecondary} style={[styles.note, validation && styles.noteError]} />
-        <Text style={styles.caption}>{draft.note.length.toLocaleString()} / 1,000자</Text>
-        {validation && <Text accessibilityRole="alert" style={styles.error}>판단 근거나 검토 메모를 남겨 주세요.</Text>}
-        {!!saveError && <View accessibilityRole="alert" style={{ gap: 8 }}><Text style={styles.error}>{saveError}</Text><ConversationButton testID="conversation-review-reload" label="최신 기록 불러오기" onPress={onReload} disabled={saving} /></View>}
+      <View style={local.block}>
+        <Text nativeID="conversation-review-status-label" style={styles.sectionLabel}>검토 상태</Text>
+        <View testID="conversation-review-status" accessibilityRole="radiogroup" accessibilityLabel="검토 상태" style={[styles.segments, local.statusGroup]}>
+          {(Object.entries(CONVERSATION_REVIEW_STATUS) as [ConversationReviewStatus, string][]).map(([value, label]) => {
+            const checked = draft.status === value;
+            return <Pressable key={value} testID={`conversation-review-status-${value}`} accessibilityRole="radio" accessibilityLabel={label}
+              accessibilityState={{ checked, disabled: saving }} disabled={saving} tabIndex={checked ? 0 : -1}
+              {...(Platform.OS === 'web' ? { onKeyDown: adminOptionKeys } : {})}
+              onPress={() => { play('selection'); onDraft({ ...draft, status: value }); }}
+              style={({ pressed }) => [styles.segment, local.statusOption, checked && styles.segmentSelected, pressed && styles.pressed, saving && styles.disabled]}>
+              <Text style={[styles.segmentText, checked && styles.segmentTextSelected]}>{label}</Text>
+            </Pressable>;
+          })}
+        </View>
       </View>
-      <View style={styles.reviewSection}>
+      <View style={local.block}>
         {!detail.review_history.length ? <Text style={styles.caption}>저장된 검토 이력 0건</Text> : <>
           <Text style={styles.sectionLabel}>최근 저장된 검토 · {CONVERSATION_REVIEW_STATUS[detail.review_history[0].status]}</Text>
           <Text style={styles.caption}>{conversationTime(detail.review_history[0].created_at)} · {detail.review_history[0].actor_name ?? '운영자'}</Text>
@@ -245,18 +255,44 @@ export function ConversationReviewPanel({ detail, draft, saving, saveError, noti
           </details>
         </>}
       </View>
-      <details onToggle={() => play('selection')}>
-        <summary style={{ minHeight: 44, cursor: 'pointer', alignContent: 'center' }}>문제 추적 정보</summary>
-        <Text selectable style={styles.caption}>대화 ID · {room.id}</Text>
-      </details>
+      <AdminTrace items={[{ label: '대화 ID', value: room.id }]} />
     </ScrollView>
-    <View style={styles.reviewFooter}>
+    <AdminDock><View style={local.dock}>
+      <Text style={styles.sectionLabel}>판단 근거 (필수)</Text>
+      <TextInput ref={noteInput} testID="conversation-review-note" accessibilityLabel="판단 근거와 검토 메모, 필수, 1,000자 이내" aria-invalid={validation}
+        value={draft.note} onFocus={() => play('selection')} onChangeText={(note) => { setValidation(false); onDraft({ ...draft, note }); }} editable={!saving} multiline maxLength={1000}
+        placeholder="확인한 맥락과 필요한 후속 조치를 적어 주세요." placeholderTextColor={Colors.admin.textSecondary} style={[styles.note, local.note, validation && styles.noteError]} />
+      <Text style={styles.caption}>{draft.note.length.toLocaleString()} / 1,000자</Text>
+      {validation && <Text accessibilityRole="alert" style={styles.error}>판단 근거나 검토 메모를 남겨 주세요.</Text>}
+      {!!saveError && <View accessibilityRole="alert" style={{ gap: 8 }}><Text style={styles.error}>{saveError}</Text><ConversationButton testID="conversation-review-reload" label="최신 기록 불러오기" onPress={onReload} disabled={saving} /></View>}
       <ConversationButton testID="conversation-save" primary label={saving ? '저장 중…' : '검토 기록 저장'} disabled={saving || !!saveError || loadingMessages} busy={saving} onPress={() => {
         if (!draft.note.trim()) { play('warning'); setValidation(true); noteInput.current?.focus(); return; }
         setValidation(false); onSave();
       }} />
       {!!notice && <Text accessibilityLiveRegion="polite" style={styles.notice}>{notice}</Text>}
-      <Text style={styles.caption}>이 저장은 경고 전송이나 계정 제한을 실행하지 않아요.</Text>
-    </View>
+    </View></AdminDock>
   </View>;
 }
+
+const local = StyleSheet.create({
+  caseRow: { minHeight: 72, paddingVertical: 12, gap: 6 },
+  strong: { fontWeight: '700' },
+  dangerBand: { backgroundColor: Colors.admin.dangerBackground },
+  bandButton: { borderWidth: 0, backgroundColor: 'transparent' },
+  message: { marginBottom: 12, flexDirection: 'column', alignItems: 'stretch' },
+  messageBody: { flex: 0, maxWidth: '80%', alignSelf: 'flex-start' },
+  messageSecond: { alignSelf: 'flex-end', alignItems: 'flex-end' },
+  bubble: { gap: 2, borderTopLeftRadius: 9 },
+  flaggedBubble: { backgroundColor: Colors.admin.dangerBackground, borderColor: Colors.admin.danger, borderLeftWidth: 3 },
+  review: { width: 300, borderTopRightRadius: 12, borderBottomRightRadius: 12 },
+  start: { alignItems: 'flex-start' },
+  reviewHead: { borderWidth: 0, borderRadius: 0, overflow: 'visible', zIndex: 2 },
+  reviewContent: { gap: 18 },
+  block: { gap: 8 },
+  fact: { minHeight: 44, gap: 3, padding: 10, borderRadius: 10, backgroundColor: Colors.admin.backgroundElement },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  statusGroup: { alignSelf: 'stretch' },
+  statusOption: { flexGrow: 1, alignItems: 'center' },
+  dock: { flexBasis: '100%', flexGrow: 1, gap: 6 },
+  note: { minHeight: 80 },
+});

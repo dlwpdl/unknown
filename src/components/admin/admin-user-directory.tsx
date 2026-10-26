@@ -8,6 +8,7 @@ import { ACCOUNT_TYPES, ADMIN_GENDERS, EMPTY_DIRECTORY_FILTERS, searchAdminUsers
 import { supabase } from '@/lib/supabase';
 import { CITIES } from '@/lib/mock';
 import { isCompactAdminWidth } from '@/lib/admin-layout';
+import { AdminInfo } from './admin-ui';
 import { AdminFilterBar, AdminFilterReset, AdminMultiFilter, AdminSearch, AdminSelect, AdminTableSummary } from './admin-table-controls';
 
 const ACCOUNT_OPTIONS = [{ value: 'member', label: '실제 가입자' }, { value: 'example', label: '직접 만든 계정' }, { value: 'admin', label: '관리자' }, { value: 'review', label: '심사 계정' }];
@@ -61,9 +62,10 @@ export function AdminUserDirectoryPanel({ onUser, refreshData }: { onUser: (id: 
   const search = () => { setQuery(input.trim()); setRetry((value) => value + 1); };
   const reset = () => { setInput(''); setQuery(''); setFilters(EMPTY_DIRECTORY_FILTERS); };
   return <View style={styles.section}>
-    <View style={styles.heading}>
+    <View style={[styles.heading, styles.titleRow]}>
       <ThemedText type="title" accessibilityRole="header" style={styles.title}>사용자</ThemedText>
-      <ThemedText type="small" style={styles.muted}>이름을 선택해 회원 정보와 활동을 확인하세요.</ThemedText>
+      <AdminInfo text={['이름을 누르면 회원 정보와 활동을 볼 수 있어요.', '직접 만든 계정은 예시 계정이에요. 실제 가입자에는 관리자·심사 계정이 빠져 있어요.',
+        ...(result ? [`조회 관리자 · ${result.viewer.email || '관리자'}`] : [])]} />
     </View>
     <div className="admin-toolbar">
       <AdminSearch value={input} onChange={setInput} onSubmit={search} placeholder="닉네임, 이메일 또는 이름 검색" />
@@ -126,14 +128,12 @@ export function AdminUserDirectoryPanel({ onUser, refreshData }: { onUser: (id: 
       </div>
       )}
       {result.rows.length < result.total && <button type="button" className="admin-reset" disabled={busy} onClick={() => { play('selection'); return void more(); }}>{busy ? '불러오는 중' : '회원 더 보기'}</button>}
-      <div className="admin-muted">직접 만든 계정은 예시 계정이며, 실제 가입자에는 관리자·심사 계정이 포함되지 않습니다.</div>
-      <div className="admin-muted">조회 관리자 · {result.viewer.email || '관리자'}</div>
     </>}
   </View>;
 }
 
 const styles = StyleSheet.create({
   section: { gap: 20 }, muted: { color: Colors.admin.textSecondary }, error: { color: Colors.admin.danger },
-  heading: { gap: Spacing.two, marginBottom: Spacing.two }, title: { fontSize: 28, lineHeight: 36, letterSpacing: -0.6 },
+  heading: { gap: Spacing.two, marginBottom: Spacing.two }, titleRow: { flexDirection: 'row', alignItems: 'center' }, title: { fontSize: 28, lineHeight: 36, letterSpacing: -0.6 },
   button: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three },
 });

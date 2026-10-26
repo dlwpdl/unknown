@@ -137,8 +137,7 @@ test('config form saves the exact branch revision and preserves absent checkout 
   const view = webshopView(async () => fixtureData(), { saveAdminWebshop: async (_client, id, config) => { writes.push({ id, config }); return { ...fixtureStore, ...config, updatedAt: '2026-10-23T01:00:00Z' }; } });
   view.render(); await tick();
   let tree = view.render();
-  const registry = treeNodes(tree).find(node => typeof node.type === 'function' && node.props?.caption === '웹샵과 지점 설정');
-  const edit = treeNodes(registry.props.rows).find(node => node.type === 'button' && treeText(node) === '설정');
+  const edit = treeNodes(tree).find(node => node.type === 'button' && treeText(node) === '연결 관리');
   edit.props.onClick({ currentTarget: { focus() {} } }); tree = view.render();
   const editor = treeNodes(tree).find(node => typeof node.type === 'function' && node.type.name === 'ConfigEditor');
   const child = view.mount(editor);
@@ -155,8 +154,9 @@ test('report form requires preflight and explicit evidence confirmation and keep
   const view = webshopView(async () => fixtureData(), { importAdminWebshopOrders: async (_client, id, input) => { writes.push({ id, input }); throw new Error('temporary private database failure'); } });
   view.render(); await tick();
   let tree = view.render();
-  const registry = treeNodes(tree).find(node => typeof node.type === 'function' && node.props?.caption === '웹샵과 지점 설정');
-  treeNodes(registry.props.rows).find(node => node.type === 'button' && treeText(node) === '보고서 가져오기').props.onClick({ currentTarget: { focus() {} } });
+  const imports = treeNodes(tree).filter(node => node.type === 'button' && treeText(node) === '보고서 가져오기');
+  assert.equal(imports.length, 1, 'Report import is one header action, not repeated per restaurant.');
+  imports[0].props.onClick({ currentTarget: { focus() {} } });
   tree = view.render();
   const editor = treeNodes(tree).find(node => typeof node.type === 'function' && node.type.name === 'ReportEditor');
   const child = view.mount(editor);

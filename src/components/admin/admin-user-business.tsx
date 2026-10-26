@@ -31,8 +31,8 @@ export function AdminUserBusiness({ account, onChanged }: { account: AdminDirect
     catch { if (active.current && token === request.current) { setSelected(null); setError('연결은 변경됐지만 최신 비즈니스 정보를 확인하지 못했습니다. 다시 선택해 주세요.'); } }
   }
   return <section className="merchant-admin admin-user-business" aria-label="회원 비즈니스 연결">
-    <h3>비즈니스 연결</h3><p className="merchant-hint">{account.nickname}님의 개인 프로필은 유지하고, 실제 운영하는 비즈니스를 연결합니다.</p>
-    {linked && <p className="merchant-hint">{linked.length ? linked.map(row => `${row.name} · ${MERCHANT_ACCOUNT_ROLES[row.role]}`).join(' / ') : '연결된 비즈니스가 없습니다.'}</p>}
+    {/* Title and the profile-is-kept note live in the parent card header and its ⓘ. */}
+    {linked && <p className="merchant-hint">{linked.length ? linked.map(row => `${row.name} · ${MERCHANT_ACCOUNT_ROLES[row.role]}`).join(' / ') : '연결 없음'}</p>}
     {error && <p role="alert">{error} <button type="button" className="merchant-secondary" disabled={busy} onClick={() => { play('selection'); setError(''); setRevision(value => value + 1); }}>연결 다시 확인</button></p>}
     {selected ? <>
       <button type="button" className="merchant-secondary" disabled={busy} onClick={() => { play('selection'); if (!dirty || window.confirm('저장하지 않은 연결 내용을 닫을까요?')) { request.current++; setSelected(null); setDirty(false); } }}>다른 비즈니스 선택</button>
