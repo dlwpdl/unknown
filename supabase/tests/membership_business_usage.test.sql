@@ -45,13 +45,22 @@ select set_config('request.jwt.claims','{"sub":"15900000-0000-0000-0000-00000000
 set local role authenticated;
 select is((public.get_business_membership('15910000-0000-0000-0000-000000000002')->>'canPurchase')::bool,false,'operator shares benefits but cannot bind a purchase');
 select throws_ok($$select public.bind_business_membership('15910000-0000-0000-0000-000000000002')$$,'P0001','MERCHANT_ACCESS_REQUIRED','operator cannot buy on behalf of owner');
-select throws_ok($$select public.bump_post('15920000-0000-0000-0000-000000000003')$$,'P0001','BUSINESS_BUMP_COOLDOWN','switching operator cannot bypass whole-business 24-hour wait');
+select throws_ok($$select public.bump_post('15920000-0000-0000-0000-000000000003')$$,'P0001','BUSINESS_BUMP_COOLDOWN','switching operator cannot bypass the whole-business 48-hour Plus wait');
 reset role;
-update private.merchant_membership_usage set created_at=now()-interval '25 hours' where action='bump';
+-- One bump per interval across all of the business's posts: post 2 was bumped, so post 3 waits too.
+update private.merchant_membership_usage set created_at=now()-interval '47 hours' where action='bump';
+select set_config('request.jwt.claims','{"sub":"15900000-0000-0000-0000-000000000002","role":"authenticated","client_id":"15980000-0000-0000-0000-000000000001"}',true);
+set local role authenticated;
+select throws_ok($$select public.bump_post('15920000-0000-0000-0000-000000000003')$$,'P0001','BUSINESS_BUMP_COOLDOWN','an AI tool session cannot bypass the whole-business wait');
+reset role;
 select set_config('request.jwt.claims','{"sub":"15900000-0000-0000-0000-000000000002","role":"authenticated"}',true);
 set local role authenticated;
-select throws_ok($$select public.bump_post('15920000-0000-0000-0000-000000000002')$$,'P0001','BUSINESS_BUMP_COOLDOWN','same business post still needs seventy-two hours');
-select lives_ok($$select public.bump_post('15920000-0000-0000-0000-000000000003')$$,'different post works after shared wait and is charged once');
+select throws_ok($$select public.bump_post('15920000-0000-0000-0000-000000000003')$$,'P0001','BUSINESS_BUMP_COOLDOWN','after bumping one post, Plus cannot bump a different post one hour before the business interval');
+reset role;
+update private.merchant_membership_usage set created_at=now()-interval '48 hours' where action='bump';
+set local role authenticated;
+select throws_ok($$select public.bump_post('15920000-0000-0000-0000-000000000002')$$,'P0001','BUSINESS_BUMP_COOLDOWN','same business post still needs its own forty-eight hours');
+select lives_ok($$select public.bump_post('15920000-0000-0000-0000-000000000003')$$,'a different post works exactly at the business interval and is charged once');
 reset role;
 select public.apply_membership_snapshot('15900000-0000-0000-0000-000000000002','[]',now());
 select is((private.business_membership_details('15910000-0000-0000-0000-000000000002')->>'bumpsUsed')::int,2,'refund/expiry does not erase already-used actions');
@@ -59,39 +68,53 @@ select throws_ok($$update private.merchant_posts set merchant_id='15910000-0000-
 
 -- Boundary checks use the verified canonical business tier, never the caller's personal tier.
 select public.apply_membership_snapshot('15900000-0000-0000-0000-000000000002',jsonb_build_array(jsonb_build_object('kind','business','plan_version',2,'tier','plus','expires_at',now()+interval '30 days','product_id','com.dlwpdl.gling.business.plus.monthly.v2','store','app_store','will_renew',true)),now()+interval '1 second');
-select is((private.business_membership_details('15910000-0000-0000-0000-000000000002')->>'bumpCooldownHours')::int,72,'business Plus publishes seventy-two hours');
-update private.merchant_membership_usage set created_at=now()-interval '25 hours' where merchant_id='15910000-0000-0000-0000-000000000002' and action='bump';
-update public.posts set bumped_at=now()-interval '71 hours' where id='15920000-0000-0000-0000-000000000002';
+select is((private.business_membership_details('15910000-0000-0000-0000-000000000002')->>'bumpCooldownHours')::int,48,'business Plus publishes forty-eight hours');
+select is(private.business_membership_details('15910000-0000-0000-0000-000000000002')->'bumpLimit','null'::jsonb,'business Plus has no monthly bump cap');
+update private.merchant_membership_usage set created_at=now()-interval '48 hours' where merchant_id='15910000-0000-0000-0000-000000000002' and action='bump';
+update public.posts set bumped_at=now()-interval '47 hours' where id='15920000-0000-0000-0000-000000000002';
 set local role authenticated;
 select throws_ok($$select public.bump_post('15920000-0000-0000-0000-000000000002')$$,'P0001','BUSINESS_BUMP_COOLDOWN','Plus cannot bump one hour early');
 reset role;
-update public.posts set bumped_at=now()-interval '72 hours' where id='15920000-0000-0000-0000-000000000002';
+update public.posts set bumped_at=now()-interval '48 hours' where id='15920000-0000-0000-0000-000000000002';
 set local role authenticated;
-select is((public.bump_post('15920000-0000-0000-0000-000000000002')->>'nextBumpAt')::timestamptz,now()+interval '72 hours','Plus works exactly at seventy-two hours and returns that wait');
+select is((public.bump_post('15920000-0000-0000-0000-000000000002')->>'nextBumpAt')::timestamptz,now()+interval '48 hours','Plus works exactly at forty-eight hours and returns that wait');
 reset role;
 
 select public.apply_membership_snapshot('15900000-0000-0000-0000-000000000002',jsonb_build_array(jsonb_build_object('kind','business','plan_version',2,'tier','pro','expires_at',now()+interval '30 days','product_id','com.dlwpdl.gling.business.pro.monthly.v2','store','app_store','will_renew',true)),now()+interval '2 seconds');
-select is((private.business_membership_details('15910000-0000-0000-0000-000000000002')->>'bumpCooldownHours')::int,60,'business Pro publishes sixty hours');
-update private.merchant_membership_usage set created_at=now()-interval '25 hours' where merchant_id='15910000-0000-0000-0000-000000000002' and action='bump';
-update public.posts set bumped_at=now()-interval '59 hours' where id='15920000-0000-0000-0000-000000000002';
+select is((private.business_membership_details('15910000-0000-0000-0000-000000000002')->>'bumpCooldownHours')::int,24,'business Pro publishes twenty-four hours');
+select is(private.business_membership_details('15910000-0000-0000-0000-000000000002')->'bumpLimit','null'::jsonb,'business Pro has no monthly bump cap');
+update private.merchant_membership_usage set created_at=now()-interval '24 hours' where merchant_id='15910000-0000-0000-0000-000000000002' and action='bump';
+update public.posts set bumped_at=now()-interval '23 hours' where id='15920000-0000-0000-0000-000000000002';
 set local role authenticated;
 select throws_ok($$select public.bump_post('15920000-0000-0000-0000-000000000002')$$,'P0001','BUSINESS_BUMP_COOLDOWN','Pro cannot bump one hour early');
 reset role;
-update public.posts set bumped_at=now()-interval '60 hours' where id='15920000-0000-0000-0000-000000000002';
+update public.posts set bumped_at=now()-interval '24 hours' where id='15920000-0000-0000-0000-000000000002';
 set local role authenticated;
-select is((public.bump_post('15920000-0000-0000-0000-000000000002')->>'nextBumpAt')::timestamptz,now()+interval '60 hours','Pro works exactly at sixty hours and returns that wait');
+select is((public.bump_post('15920000-0000-0000-0000-000000000002')->>'nextBumpAt')::timestamptz,now()+interval '24 hours','Pro works exactly at twenty-four hours and returns that wait');
 reset role;
 
 select public.apply_membership_snapshot('15900000-0000-0000-0000-000000000002',jsonb_build_array(jsonb_build_object('kind','business','plan_version',2,'tier','premium','expires_at',now()+interval '30 days','product_id','com.dlwpdl.gling.business.premium.monthly.v2','store','app_store','will_renew',true)),now()+interval '3 seconds');
-select is((private.business_membership_details('15910000-0000-0000-0000-000000000002')->>'bumpCooldownHours')::int,48,'business Premium publishes forty-eight hours');
-update private.merchant_membership_usage set created_at=now()-interval '25 hours' where merchant_id='15910000-0000-0000-0000-000000000002' and action='bump';
-update public.posts set bumped_at=now()-interval '47 hours' where id='15920000-0000-0000-0000-000000000002';
+select is((private.business_membership_details('15910000-0000-0000-0000-000000000002')->>'bumpCooldownHours')::int,12,'business Premium publishes twelve hours');
+select is(private.business_membership_details('15910000-0000-0000-0000-000000000002')->'bumpLimit','null'::jsonb,'business Premium has no monthly bump cap');
+update private.merchant_membership_usage set created_at=now()-interval '12 hours' where merchant_id='15910000-0000-0000-0000-000000000002' and action='bump';
+update public.posts set bumped_at=now()-interval '11 hours' where id='15920000-0000-0000-0000-000000000002';
 set local role authenticated;
 select throws_ok($$select public.bump_post('15920000-0000-0000-0000-000000000002')$$,'P0001','BUSINESS_BUMP_COOLDOWN','Premium cannot bump one hour early');
 reset role;
-update public.posts set bumped_at=now()-interval '48 hours' where id='15920000-0000-0000-0000-000000000002';
+update public.posts set bumped_at=now()-interval '12 hours' where id='15920000-0000-0000-0000-000000000002';
 set local role authenticated;
-select is((public.bump_post('15920000-0000-0000-0000-000000000002')->>'nextBumpAt')::timestamptz,now()+interval '48 hours','Premium works exactly at forty-eight hours and returns that wait');
+select is((public.bump_post('15920000-0000-0000-0000-000000000002')->>'nextBumpAt')::timestamptz,now()+interval '12 hours','Premium works exactly at twelve hours and returns that wait');
+reset role;
+-- Paid tiers have no monthly bump cap: usage above the old 24/16/8 caps still bumps once the interval passes.
+update private.merchant_membership_usage set created_at=date_trunc('month',now() at time zone 'UTC') at time zone 'UTC' where merchant_id='15910000-0000-0000-0000-000000000002' and action='bump';
+insert into private.merchant_membership_usage(merchant_id,action,post_id,created_at)
+select '15910000-0000-0000-0000-000000000002','bump','15920000-0000-0000-0000-000000000004',date_trunc('month',now() at time zone 'UTC') at time zone 'UTC' from generate_series(1,30);
+select ok((private.business_membership_details('15910000-0000-0000-0000-000000000002')->>'bumpsUsed')::int>24,'fixture puts Premium above the old twenty-four bump cap');
+set local role authenticated;
+-- shortcut: rows must be in this UTC month and 12h old, so the first 12h of a month skip this check.
+select case when now()-(date_trunc('month',now() at time zone 'UTC') at time zone 'UTC')>=interval '12 hours'
+  then lives_ok($$select public.bump_post('15920000-0000-0000-0000-000000000004')$$,'Premium bumps past the old monthly cap')
+  else skip('first 12 hours of a UTC month',1) end;
 reset role;
 select public.apply_membership_snapshot('15900000-0000-0000-0000-000000000002','[]',now()+interval '4 seconds');
 select is((private.business_membership_details('15910000-0000-0000-0000-000000000002')->>'bumpLimit')::int,2,'expiry drops to the two Basic bumps without resetting usage');
@@ -111,7 +134,7 @@ set local role authenticated;
 select lives_ok($$select public.bump_post('15930000-0000-0000-0000-000000000002')$$,'upgrade uses shorter thirty-hour cooldown without accumulating turns');
 reset role;
 
--- Premium's managed actions are a partition of 30/24, not an extra allowance.
+-- Premium's managed posts are a partition of thirty, not an extra allowance.
 select public.apply_membership_snapshot('15900000-0000-0000-0000-000000000001',jsonb_build_array(jsonb_build_object('kind','business','plan_version',2,'tier','premium','expires_at',now()+interval '30 days','product_id','com.dlwpdl.gling.business.premium.monthly.v2','store','app_store','will_renew',true)),now());
 select set_config('request.jwt.claims','{"sub":"15900000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 set local role authenticated;

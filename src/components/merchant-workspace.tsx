@@ -861,7 +861,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
             {businessMembership.bumpLimit != null ? <MerchantMeter label={tr("끌어올리기")} value={businessMembership.bumpsUsed} max={businessMembership.bumpLimit} />
               : <ThemedText type="small">{tr("끌어올리기 {0}회 · 한도 없음", businessMembership.bumpsUsed)}</ThemedText>}
             <ThemedText type="small" themeColor="textSecondary">{tr("{0}에 초기화돼요. 직원·AI도 같은 한도를 써요.", new Date(businessMembership.resetsAt).toLocaleDateString(appLocale))}</ThemedText>
-            {businessMembership.tier === 'premium' && <ThemedText type="small" themeColor="textSecondary">{tr("전체 30편·24회에 운영대행 신규 4편·끌어올리기 8회·보고서 1회가 포함돼요.")}</ThemedText>}
+            {businessMembership.tier === 'premium' && <ThemedText type="small" themeColor="textSecondary">{tr("전체 30편에 운영대행 신규 4편이 포함돼요. 대행 끌어올리기 8회와 보고서 1회도 함께 써요.")}</ThemedText>}
           </> : <ThemedText type="small">{tr("멤버십 사용량을 확인하지 못했어요. 비즈니스 연결 상태를 확인하고 다시 열어 주세요.")}</ThemedText>}
         </Section></View>
         <View style={styles.column}><Section title={tr("이용 상태")}>

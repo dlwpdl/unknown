@@ -27,8 +27,8 @@ insert into private.merchants(id,name,city_id,owner_id,owner_verified_at,status,
 set local role authenticated;
 select lives_ok($$select public.bind_business_membership('14910000-0000-0000-0000-000000000001')$$,'verified owner binds own canonical business');
 select is((public.get_business_membership('14910000-0000-0000-0000-000000000001')->>'postLimit')::int,30,'Premium has thirty new posts');
-select is((public.get_business_membership('14910000-0000-0000-0000-000000000001')->>'bumpLimit')::int,24,'Premium has twenty-four bumps');
-select is((public.get_business_membership('14910000-0000-0000-0000-000000000001')->>'bumpCooldownHours')::int,48,'business Premium returns its forty-eight-hour same-post wait');
+select is(public.get_business_membership('14910000-0000-0000-0000-000000000001')->'bumpLimit','null'::jsonb,'Premium has no monthly bump cap');
+select is((public.get_business_membership('14910000-0000-0000-0000-000000000001')->>'bumpCooldownHours')::int,12,'business Premium returns its twelve-hour business-wide bump interval');
 select is((public.get_business_membership('14910000-0000-0000-0000-000000000001')->>'managedPostLimit')::int,4,'managed new posts are part of thirty');
 select throws_ok($$select public.bind_business_membership('14910000-0000-0000-0000-000000000002')$$,'P0001','MERCHANT_ACCESS_REQUIRED','another business cannot be bound');
 select throws_ok($$select public.bind_business_membership('14910000-0000-0000-0000-000000000003')$$,'P0001','BUSINESS_SUBSCRIPTION_BOUND','one active subscription cannot cover multiple companies');

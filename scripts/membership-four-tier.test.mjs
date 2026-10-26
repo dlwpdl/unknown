@@ -17,8 +17,8 @@ test('four general tiers keep chat unlimited and apply reviewed group limits', (
   });
 });
 
-test('higher business tiers shorten the same-post wait without adding monthly bumps', () => {
-  assert.deepEqual(['plus','pro','premium'].map(tier => [BUSINESS_LIMITS[tier].bumpCooldownHours, BUSINESS_LIMITS[tier].bumps]), [[72,8],[60,16],[48,24]]);
+test('business bumps are one per interval across all posts; paid tiers have no monthly cap', () => {
+  assert.deepEqual(['free','plus','pro','premium'].map(tier => [BUSINESS_LIMITS[tier].bumpCooldownHours, BUSINESS_LIMITS[tier].bumps]), [[120,2],[48,null],[24,null],[12,null]]);
 });
 
 test('general and business subscriptions coexist and keep separate receipt scope', () => {
