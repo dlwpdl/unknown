@@ -29,6 +29,7 @@ export default function MerchantWebIndex() {
   const [connected, setConnected] = useState<{ user: string; merchantId: string } | null>(null);
   const [revision, setRevision] = useState(0), [signingOut, setSigningOut] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [feedCity, setFeedCity] = useState<string | null>(null);
   const signOutBusy = useRef(false);
   const loginScope = useRef({ active: false, key: '' }), loginKey = `${me.id}:${isAuthed}:${isAuthLoading}`;
   useLayoutEffect(() => {
@@ -75,7 +76,7 @@ export default function MerchantWebIndex() {
         {isAuthed && <View style={styles.account}>
           <ThemedText type="small" numberOfLines={1} style={styles.nickname}>{me.nickname}</ThemedText>
           {/* The public reader lives at the site root; this keeps the business web from being a dead end for reading posts. */}
-          <Pressable analyticsId="merchant-web.feed" accessibilityRole="link" accessibilityLabel={tr('게시글 보기')} onPress={() => { play('selection'); window.location.assign('/'); }}
+          <Pressable analyticsId="merchant-web.feed" accessibilityRole="link" accessibilityLabel={tr('게시글 보기')} onPress={() => { play('selection'); window.location.assign(feedCity ? `/?city=${encodeURIComponent(feedCity)}` : '/'); }}
             style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold">{tr('게시글 보기')}</ThemedText></Pressable>
           <Pressable analyticsId="merchant-web.ai" accessibilityRole="button" accessibilityLabel={current?.value?.canConnectMcp ? tr('AI 연결') : tr('AI 연결 관리')} onPress={() => { play('selection'); router.push('/ai'); }}
             style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold">{current?.value?.canConnectMcp ? tr('AI 연결') : tr('AI 연결 관리')}</ThemedText></Pressable>
@@ -118,7 +119,7 @@ export default function MerchantWebIndex() {
                 <ThemedText themeColor="textSecondary">{tr('비즈니스 운영 승인은 완료됐어요. 아래에서 받은 초대를 확인하거나 비즈니스를 등록해 주세요. AI 신규 연결은 소유권 확인 후 이용할 수 있어요.')}</ThemedText>
               </View>}
               {callback && <MerchantNaverCallback key={me.id} callback={callback} onConnected={merchantId => { setConnected({ user: me.id, merchantId }); setCallback(null); }} />}
-              <MerchantWorkspace layout="sidebar" key={`${me.id}:${initialMerchantId ?? ''}`} refreshSignal={revision} initialMerchantId={initialMerchantId} initialTab={initialMerchantId ? 'channels' : undefined} assignedOnly onBusinessesChanged={() => setRevision(value => value + 1)} />
+              <MerchantWorkspace layout="sidebar" key={`${me.id}:${initialMerchantId ?? ''}`} refreshSignal={revision} initialMerchantId={initialMerchantId} initialTab={initialMerchantId ? 'channels' : undefined} assignedOnly onBusinessesChanged={() => setRevision(value => value + 1)} onCityChange={setFeedCity} />
             </>}
     </ScrollView>
   </View>;
