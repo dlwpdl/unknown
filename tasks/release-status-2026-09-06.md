@@ -13,7 +13,7 @@
 - App Store Connect: [글링, Apple ID 6809273242](https://appstoreconnect.apple.com/apps/6809273242/distribution/ios/version/inflight).
 - Bundle ID `com.dlwpdl.gling`, Apple Team `P3X3452TDZ`, 버전 `1.0.0`, 빌드 `1`, iPhone 대상.
 - 한국어 이름·부제·카테고리·소개·프로모션·키워드·지원/마케팅/개인정보 URL을 초안에 저장했습니다. 출시 방식은 수동입니다.
-- 고객지원은 기존 앱·정책의 `gling@ej-entertainment.com`을 유지합니다.
+- 고객지원은 기존 앱·정책의 `(소유자 Gmail)`을 유지합니다.
 - 6.9인치 스크린샷 3장도 저장했고 6.5인치는 동일 자료를 사용합니다. TestFlight의 `1.0.0 (1)` 처리가 완료되어 ‘제출 준비 완료’ 상태를 확인했습니다. 테스터 초대와 공개 심사 제출은 하지 않았습니다.
 - [한국어 메타데이터와 심사 메모 초안](app-store-metadata-ko-KR.md), [실제 화면 자료](../release/app-store/README.md).
 
