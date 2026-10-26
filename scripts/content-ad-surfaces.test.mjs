@@ -132,7 +132,7 @@ test('the independent public reader counts across appended pages without replaci
   nodes(view.tree).find(node => node.props?.className === 'reader-more').props.onClick(); await view.settle();
   const after = nodes(view.tree).filter(node => node.type === 'article' || node.type === 'FeedAd');
   assert.equal(after.filter(node => node.type === 'article').length, 33);
-  assert.deepEqual(after.filter(node => node.type === 'article').map(node => nodes(node).find(child => child.props?.['data-analytics'] === 'web_control_10').props.href), posts.map(post => `/post?id=${post.id}`));
+  assert.deepEqual(after.filter(node => node.type === 'article').map(node => nodes(node).find(child => child.props?.['data-analytics'] === 'web_control_10').props.href), posts.map(post => `/posts/${post.id}`));
   assert.equal(ads(view.tree).length, 8);
   assert.deepEqual(after.slice(0, before.length).map(node => [node.type, node.key]), before.map(node => [node.type, node.key]));
 });

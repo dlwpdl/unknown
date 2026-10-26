@@ -36,7 +36,7 @@ export function sharedLinkTarget(input: string) {
       return id ? { id, invite: url.searchParams.get('invite') === '1' } : null;
     }
     const id = url.pathname === '/post' && url.searchParams.getAll('id').length === 1 ? url.searchParams.get('id')
-      : url.pathname.match(/^\/(?:share|post)\/([^/]+)\/?$/)?.[1];
+      : url.pathname.match(/^\/(?:share|posts?)\/([^/]+)\/?$/)?.[1];
     return id && uuid.test(id) ? { id: id.toLowerCase(), invite: url.searchParams.get('invite') === '1' } : null;
   } catch { return null; }
 }

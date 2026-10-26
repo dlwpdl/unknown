@@ -257,7 +257,7 @@ function PublicProfilePosts({ merchantId, kind, onRead, onPosts }: {
       }}>{ko ? '다시 시도' : 'Try again'}</button></div>}
     {page?.posts.map((post) => {
       const thumbnail = post.imageThumbs?.[0] || post.imageUris?.[0];
-      return <article className="reader-company-post" key={post.id}><a href={`/post?id=${post.id}`} onClick={() => play('selection')}>
+      return <article className="reader-company-post" key={post.id}><a href={`/posts/${post.id}`} onClick={() => play('selection')}>
         <span className="reader-company-post-text"><span className="reader-company-post-meta">{tr(post.tag.label)} · {post.createdAtLabel}</span>
           <strong>{post.title}</strong><span className="reader-company-post-preview">{localizeBusinessDisclosure(post.body, tr)}</span></span>
         {thumbnail ? <img className="reader-company-post-cover" src={thumbnail} alt="" loading="lazy" onError={(event) => { event.currentTarget.hidden = true; }} />

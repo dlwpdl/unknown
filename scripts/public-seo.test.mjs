@@ -9,7 +9,7 @@ const post = { id: '682af685-1df0-404d-a245-12086221efb9', title: '동네 가게
 
 test('public SEO contains discovery metadata, never the login-protected body or identity', () => {
   const seo = postSeo(post, '밴쿠버');
-  assert.equal(seo.canonical, `${PUBLIC_SITE}/post?id=${post.id}`);
+  assert.equal(seo.canonical, `${PUBLIC_SITE}/posts/${post.id}`);
   assert.equal(seo.source, `${PUBLIC_SOURCE}?format=markdown&id=${post.id}`);
   assert.ok(seo.description.startsWith('밴쿠버 · 비즈니스 · 로그인하면'));
   const main = seo.schema.mainEntity;
@@ -69,7 +69,7 @@ test('localized post metadata keeps original post content and existing call comp
     assert.match(seo.description, language === 'ko' ? /전체 본문을 웹에서/ : /full public post on the web/);
     assert.ok(!JSON.stringify(seo).includes('직접 만든 메뉴'));
     assert.ok(!JSON.stringify(seo).includes('private-user-id'));
-    assert.equal(seo.canonical, `${PUBLIC_SITE}/post?id=${post.id}`);
+    assert.equal(seo.canonical, `${PUBLIC_SITE}/posts/${post.id}`);
   }
   assert.equal(postSeo(post).schema.inLanguage, 'ko');
   assert.equal(JSON.stringify(post), original);

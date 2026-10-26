@@ -58,10 +58,13 @@ test('public root HTML retains SDK 58 metadata, hydration scripts and document a
   assert.match(head, /name="description" content="Generated route metadata"/);
   assert.ok(html.indexOf('/_expo/hydration.js') > html.indexOf('</main>'), 'hydration assets follow the route content');
   const schema = JSON.parse(head.match(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/)[1]);
-  assert.equal(schema['@type'], 'WebSite');
-  assert.equal(schema.url, 'https://gling.ej-entertainment.com/');
-  assert.equal(schema.inLanguage, 'ko');
-  assert.match(schema.description, /로그인 후/);
+  assert.deepEqual(schema['@graph'].map(node => node['@type']), ['WebSite', 'Organization', 'MobileApplication']);
+  const [site, organization, app] = schema['@graph'];
+  assert.equal(site.url, 'https://gling.ej-entertainment.com/');
+  assert.equal(site.inLanguage, 'ko');
+  assert.match(site.description, /로그인 후/);
+  assert.equal(site.publisher['@id'], organization['@id']);
+  assert.equal(app.url, 'https://apps.apple.com/ca/app/id6809273242');
 });
 
 test('public root escapes JSON-LD script boundaries and omits the home schema on protected routes', () => {
@@ -88,7 +91,7 @@ test('public home, company and Visited routes export initial title, canonical an
     assert.ok(value.description.length > 20);
     assert.equal(value.openGraph.title, title);
     assert.equal(value.openGraph.url, canonical);
-    assert.equal(value.twitter.card, 'summary');
+    assert.equal(value.twitter.card, 'summary_large_image');
   }
 });
 

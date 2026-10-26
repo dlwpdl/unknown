@@ -5,6 +5,11 @@ export function publicSiteName(language: 'ko' | 'en' = 'ko') {
   return language === 'en' ? 'Gling | Canada Meetup Community' : '글링 | 캐나다 모임 커뮤니티';
 }
 
+// Prerendered at build time (scripts/prerender-public-posts.mjs); `/post?id=` stays the noindex app shell.
+export function publicPostUrl(id: string) {
+  return `${PUBLIC_SITE}/posts/${encodeURIComponent(id.toLowerCase())}`;
+}
+
 export function jsonLd(value: unknown) {
   return JSON.stringify(value).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 }
@@ -13,7 +18,7 @@ export function postSeo(post: {
   id: string; title: string; body: string; author: { nickname: string }; tag: { label: string };
   createdAt?: string; imageUris?: string[]; room?: unknown;
 }, city = '', language: 'ko' | 'en' = 'ko') {
-  const canonical = `${PUBLIC_SITE}/post?id=${encodeURIComponent(post.id)}`;
+  const canonical = publicPostUrl(post.id);
   const description = [city, post.tag.label, language === 'en' ? 'Sign in to read the full public post on the web.' : '로그인하면 공개 글의 전체 본문을 웹에서 읽을 수 있어요.'].filter(Boolean).join(' · ');
   const published = post.createdAt && Number.isFinite(Date.parse(post.createdAt)) ? new Date(post.createdAt).toISOString() : undefined;
   const images = post.imageUris?.filter(Boolean) ?? [];
