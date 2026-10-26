@@ -9,7 +9,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { MEMBERSHIP_LIMITS, type MembershipSnapshot } from '@/lib/membership';
 
 type Kind = 'meetup' | 'conversation';
-const tierNames = { free: '베이직', plus: '플러스', pro: '프로', premium: '프리미엄' };
+const tierNames = { free: '베이직', plus: '플러스', pro: '프로', premium: '프리미엄', admin: '관리자' };
 // 서버 한도가 바뀌면 여기서 같이 따라간다. 표에 없는 값은 숫자를 지어내지 않고 '확인 필요'로 둔다.
 const knownLimits = (kind: Kind): number[] => (['free', 'plus', 'pro', 'premium'] as const)
   .map((tier) => MEMBERSHIP_LIMITS[tier][kind === 'meetup' ? 'meetups' : 'conversations'])

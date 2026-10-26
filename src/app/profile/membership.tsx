@@ -27,7 +27,7 @@ const plans = [
   { tier: 'pro', name: '프로' },
   { tier: 'premium', name: '프리미엄' },
 ] as const;
-const tierNames = { free: '베이직', plus: '플러스', pro: '프로', premium: '프리미엄' };
+const tierNames = { free: '베이직', plus: '플러스', pro: '프로', premium: '프리미엄', admin: '관리자' };
 
 
 export default function MembershipScreen() {

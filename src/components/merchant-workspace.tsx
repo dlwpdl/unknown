@@ -720,7 +720,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
         <MerchantStat label={tr("연결된 글")} value={tr("{0}편", data.metrics.linked_posts)} />
       </MerchantStats>
       <View style={styles.columns}>
-        <View style={styles.column}><Section title={businessMembership ? ({ free: tr("베이직"), plus: tr("플러스"), pro: tr("프로"), premium: tr("프리미엄") })[businessMembership.tier] : tr("비즈니스 멤버십")}>
+        <View style={styles.column}><Section title={businessMembership ? ({ free: tr("베이직"), plus: tr("플러스"), pro: tr("프로"), premium: tr("프리미엄"), admin: tr("관리자") })[businessMembership.tier] : tr("비즈니스 멤버십")}>
           {businessMembership ? <>
             {businessMembership.postLimit != null ? <MerchantMeter label={tr("이번 달 새 글")} value={businessMembership.postsUsed} max={businessMembership.postLimit} />
               : <ThemedText type="small">{tr("이번 달 새 글 {0}편 · 기존 약정 유지", businessMembership.postsUsed)}</ThemedText>}

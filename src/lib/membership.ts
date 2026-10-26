@@ -1,6 +1,7 @@
 import { membershipProductIds } from '../../supabase/functions/_shared/membership.ts';
 
-export type MembershipTier = 'free' | 'plus' | 'pro' | 'premium';
+// 'admin' is granted by the server to the operator account only; it is never sold.
+export type MembershipTier = 'free' | 'plus' | 'pro' | 'premium' | 'admin';
 export type MembershipKind = 'general' | 'business';
 
 export const MEMBERSHIP_LIMITS = {
@@ -10,7 +11,7 @@ export const MEMBERSHIP_LIMITS = {
   premium: { meetups: 20, conversations: null },
 } as const;
 
-export const GENERAL_BUMP_HOURS = { free: 48, plus: 36, pro: 30, premium: 24 } as const;
+export const GENERAL_BUMP_HOURS = { free: 48, plus: 36, pro: 30, premium: 24, admin: 0 } as const;
 export const BUSINESS_LIMITS = {
   free: { posts: 4, bumps: 0, bumpCooldownHours: 72, managedPosts: 0, managedBumps: 0, reports: 0 },
   plus: { posts: 12, bumps: 8, bumpCooldownHours: 72, managedPosts: 0, managedBumps: 0, reports: 0 },
