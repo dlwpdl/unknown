@@ -501,7 +501,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       });
       if (error) throw error;
       const draft = parseAiDraftResponse(data);
-      setTag(TAGS.find(({ slug }) => slug === draft.categorySlug) ?? tag);
+      setTag(TAGS.find(({ slug }) => slug === draft.categorySlug && (isAdmin || slug !== 'business')) ?? tag);
       setTitle(draft.title);
       setBody(withPostMap(withPostAttachments(draft.body, attached.urls), mapped.url ?? '', mapped.label));
       setHashtagInput(current => parseHashtags(`${hasAdLabel(parseHashtags(current)) ? 'AD ' : ''}${draft.hashtags.join(' ')}`).map(hashtag => `#${hashtag}`).join(' '));
@@ -1028,7 +1028,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 {writerPanel === 'category' && <View>
                   <ThemedText type="small" themeColor="textSecondary" style={styles.writerLabel}>{t.write.pickTag}</ThemedText>
                   <View style={styles.tagRow}>
-                    {TAGS.map((tg) => {
+                    {/* 비즈니스 is written from a business profile; only the admin posts there as a person. */}
+                    {TAGS.filter((tg) => isAdmin || tg.slug !== 'business').map((tg) => {
                       const selected = tg.id === tag.id;
                       return (
                         <Pressable analyticsId="components_feed-screen.pressable.20"

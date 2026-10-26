@@ -105,6 +105,7 @@ export const en: Translations = {
     BUMP_COOLDOWN: { title: 'You can bump this again later', body: 'You can bump every 48 hours on Basic, 36 on Plus, 30 on Pro and 24 on Premium. This applies to your account and to each listing. Your existing subscription benefits stay the same.', membership: true },
     BUSINESS_BUMP_COOLDOWN: { title: 'You can bump again soon', body: 'Bumps are shared across all your business posts: once every 5 days on Free, every 2 days on Plus, daily on Pro and every 12 hours on Premium. Switching accounts or AI tools doesn’t change this.', membership: false },
     BUSINESS_MONTHLY_LIMIT_REACHED: { title: 'You’ve used this month’s business allowance', body: 'Check your new post and bump usage. Anything done through our managed service counts toward the total.', membership: true },
+    BUSINESS_TAG_RESERVED: { title: 'Business posts come from business profiles', body: 'Pick another category. To post news for your business, switch to its business profile first.', membership: false },
     DUPLICATE_PROMOTION: { title: 'This promo post already exists', body: 'Edit or bump the existing post. Changing just the title or photo order doesn’t make it a new post.', membership: false },
     LISTING_NOT_OPEN: { title: 'This listing is closed', body: 'Reopening it uses 1 active listing slot.', membership: false },
   },
