@@ -2,6 +2,9 @@ import { parseHashtags } from './hashtags.ts';
 import { joinMeetupSections } from './meetup-sections.ts';
 import type { TagSlug } from './types';
 import { parseMeetupDraft, type MeetupAiDraft } from '../../supabase/functions/draft-post/meetup-draft.ts';
+import { parseDraftFields, type DraftField } from '../../supabase/functions/draft-post/post-draft.ts';
+
+export { isShortNote, withDraftFields, MAX_AI_IMAGES, type DraftField } from '../../supabase/functions/draft-post/post-draft.ts';
 
 export type { MeetupAiDraft };
 export const MEETUP_DRAFT_FIELDS = ['title', 'body', 'question'] as const;
@@ -46,6 +49,10 @@ export type AiDraft = {
   title: string;
   body: string;
   hashtags: string[];
+  fields: DraftField[];
+  price: number | null;
+  looksLikeBusiness: boolean;
+  remaining: number | null;
 };
 
 export function parseAiDraftResponse(value: unknown): AiDraft {
@@ -72,6 +79,10 @@ export function parseAiDraftResponse(value: unknown): AiDraft {
     title,
     body,
     hashtags: parseHashtags(draft.hashtags.join(' ')),
+    fields: parseDraftFields(draft.fields),
+    price: typeof draft.price === 'number' && draft.price >= 0 ? draft.price : null,
+    looksLikeBusiness: draft.looksLikeBusiness === true,
+    remaining: isRecord(value) && typeof value.remaining === 'number' ? value.remaining : null,
   };
 }
 

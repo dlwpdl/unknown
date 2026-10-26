@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
+import * as postDraftContract from '../supabase/functions/draft-post/post-draft.ts';
 import vm from 'node:vm';
 import ts from 'typescript';
 
@@ -15,7 +16,7 @@ function setup({ accessError, merchants = [{ id: merchantId, name: '사장님 �
   vm.runInNewContext(source, {
     exports: {}, Request, Response, console,
     Deno: { serve: fn => { handler = fn; }, env: { get: () => 'test-value' } },
-    require: () => ({ createClient: () => ({
+    require: name => name.includes('post-draft') ? postDraftContract : ({ createClient: () => ({
       auth: { getUser: async () => ({ data: { user: { id: 'owner' } } }) },
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { ai_safety_consent_at: consent ? '2026-10-07' : null } }) }) }) }),
       rpc: async (name, args) => {
