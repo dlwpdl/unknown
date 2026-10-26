@@ -16,7 +16,7 @@ Keep Gling account, store, and test browser tabs in the existing `Git → gling`
 
 `orca tab create` resolves its default workspace from the CLI working directory. For Gling, invoke browser creation from `/Users/ash/Desktop/Git/unknown` and verify the resulting tab belongs to `folder:e88d505b-f6bb-47d6-ba41-904ef2a72a8b`. Run git/build commands in the isolated source checkout. If the workspace mapping changes, discover it again before opening a tab.
 
-Show browser work in Orca. Close completed task tabs automatically after verifying the result; when pausing or finishing, leave only tabs needed to resolve outstanding blockers. Preserve unsaved work and tabs still in use by the user or another active task. Remove completed duplicate tabs, including misplaced Gling tabs in other workspaces.
+Show browser work in Orca. Owner 2026-10-25: do not close tabs ("왜 닫어 계속켜놔 어짜피그걸로 매번 볼텐데 닫지마"). Reuse the tab that is already open for a site/account (Instagram, Threads, Meta, Blind, admin) by navigating it, and open a new one only when none exists. Never close the user's tabs or another task's tabs.
 
 # Non-negotiable safety operations
 

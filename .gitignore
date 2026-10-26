@@ -63,3 +63,6 @@ yarn-error.*
 /.vercel/
 
 /.merchant-dist/
+
+# Owner-only archives of superseded automation rules/assets — never published
+archive/
