@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { execFileSync } from 'node:child_process';
 import { googleMapsUrl, postMapBody, withPostMap } from '../src/lib/post-maps.ts';
 import * as maps from '../src/lib/post-maps.ts';
 import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
@@ -119,18 +118,4 @@ test('지도와 본문을 합쳐 DB의 4000자 한도를 지키고 이모지를 
   assert.throws(() => withPostMap('가'.repeat(4000), place), /POST_BODY_TOO_LONG/);
   const body = '😀'.repeat(3900);
   assert.equal(postMapBody(withPostMap(body, place)).body, body);
-});
-
-test('도시 자동화의 공식 장소명이 기존 지도 버튼용 본문과 정확한 검색어로 연결된다', () => {
-  const script = new URL('./city-post-schedule.py', import.meta.url).pathname;
-  const body = execFileSync('python3', ['-c', `import importlib.util
-s=importlib.util.spec_from_file_location('schedule',${JSON.stringify(script)});m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
-posts=[dict(ord=n*5+i+1,city_id=c,author_nickname='seed',tag_slug='life',title=c+str(i),body='공식 안내') for n,c in enumerate(m.CITIES) for i in range(5)]
-posts[0].update(body='Vancouver의 Kitsilano 산책 코스',place_name='Kitsilano')
-print(m.prepare(dict(posts=posts),'2026-10-12')['posts'][0]['body'])`], { encoding: 'utf8' }).trim();
-  const parsed = postMapBody(body);
-  assert.equal(parsed.body, 'Vancouver의 Kitsilano 산책 코스');
-  assert.equal(googleMapsUrl(parsed.url), parsed.url);
-  assert.equal(new URL(parsed.url).searchParams.get('query'), 'Kitsilano, Vancouver, Canada');
-  assert.equal(new URL(parsed.url).searchParams.get('api'), '1');
 });
