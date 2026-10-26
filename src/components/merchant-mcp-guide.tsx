@@ -13,10 +13,10 @@ type Client = { key: string; name: string; steps: Step[]; note?: string };
 
 function clients(endpoint: string): Client[] {
   return [
-    { key: 'claude', name: 'Claude', note: '무료 요금제는 커넥터를 1개까지 추가할 수 있어요. 팀·엔터프라이즈 요금제는 조직 관리자가 먼저 추가해야 해요.', steps: [
+    { key: 'claude', name: 'Claude', note: '무료 요금제는 커넥터를 1개까지 추가할 수 있어요. 팀 요금제에서 "already exists"가 뜨면 이미 추가돼 있는 거예요. 다시 추가하지 말고 목록의 글링에서 Connect를 눌러요.', steps: [
       { title: '커넥터 추가 화면 열기', detail: 'claude.ai 또는 Claude 데스크톱 앱에서 Customize(맞춤 설정) → Connectors(커넥터) → + → Add custom connector를 눌러요.', link: { label: 'Claude 열기', url: 'https://claude.ai' } },
       { title: '연결 주소 붙여 넣기', detail: '이름에 "글링"을 쓰고, 서버 주소 칸에 아래 주소를 붙여 넣은 뒤 Continue → Add를 눌러요.', copy: endpoint },
-      { title: '글링으로 로그인', detail: 'Connect를 누르면 글링 로그인 창이 떠요. 연결할 비즈니스와 권한을 고르면 끝이에요. 대화창의 + → Connectors에서 글링을 켜고 써요.' },
+      { title: '글링으로 로그인', detail: 'Claude 커넥터 목록에서 글링 옆 Connect를 누르면 글링 로그인 창이 떠요. 연결할 비즈니스에 체크하고 연결하면 끝이에요. 연결은 Claude에서 시작해야 해서 이 페이지에는 연결 버튼이 없어요.' },
     ] },
     { key: 'chatgpt', name: 'ChatGPT', note: 'ChatGPT는 요금제에 따라 이 메뉴가 보이지 않을 수 있어요.', steps: [
       { title: '플러그인 화면 열기', detail: '웹 브라우저에서 ChatGPT 플러그인 화면을 열고 + → Add custom MCP server를 눌러요.', link: { label: 'ChatGPT 플러그인 화면 열기', url: 'https://chatgpt.com/plugins' } },

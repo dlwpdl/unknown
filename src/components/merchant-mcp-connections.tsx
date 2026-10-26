@@ -118,7 +118,8 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
         setMerchants(owned); setConnections(links); setAuthorization(request); setCheckedAt(Date.now());
         const failure = [businessResponse, linkResponse, requestResponse].find(response => response.status === 'rejected');
         setError(failure?.status === 'rejected' ? errorText(failure.reason) : '');
-        setSelected(ids => ids.filter(id => owned.some(m => m.id === id)));
+        // With a single business there is nothing to choose; pre-tick it so the approve button isn't silently disabled.
+        setSelected(ids => { const kept = ids.filter(id => owned.some(m => m.id === id)); return kept.length || !request || owned.length !== 1 ? kept : [owned[0].id]; });
         setReviewMerchant(id => owned.some(m => m.id === id) ? id : owned[0]?.id ?? null);
       }).catch(failure => { if (current) { setError(errorText(failure)); setAuthorization(null); setMerchants([]); setConnections([]); setChangeResponse(null); } })
       .finally(() => { if (current) setLoading(false); });
