@@ -33,6 +33,8 @@ const ERRORS: Record<string, string> = {
   MERCHANT_ACCESS_REQUIRED: '이 비즈니스로 글을 올릴 권한이 없어요.',
   CONTENT_REJECTED: '게시 기준에 맞지 않는 내용이 있어요. 글을 다시 확인해 주세요.',
   RATE_LIMITED: '요청이 많아요. 잠시 후 다시 올려 주세요.',
+  BUSINESS_MONTHLY_LIMIT_REACHED: '이번 달에 올릴 수 있는 글을 다 썼어요. 다음 달에 다시 채워지고, 멤버십을 올리면 더 올릴 수 있어요.',
+  DUPLICATE_PROMOTION: '최근에 올린 글과 내용이 거의 같아요. 내용을 조금 바꿔서 올려 주세요.',
   IMAGE_UNSUPPORTED: 'JPEG, PNG, WebP 사진만 올릴 수 있어요.',
 };
 

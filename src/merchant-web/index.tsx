@@ -74,6 +74,9 @@ export default function MerchantWebIndex() {
         <View style={styles.brand}><Image source={require('@/assets/brand/gling-night-wordmark.png')} style={styles.wordmark} contentFit="contain" accessibilityLabel={tr('글링')} /><ThemedText type="smallBold">{tr('비즈니스 관리')}</ThemedText></View>
         {isAuthed && <View style={styles.account}>
           <ThemedText type="small" numberOfLines={1} style={styles.nickname}>{me.nickname}</ThemedText>
+          {/* The public reader lives at the site root; this keeps the business web from being a dead end for reading posts. */}
+          <Pressable analyticsId="merchant-web.feed" accessibilityRole="link" accessibilityLabel={tr('게시글 보기')} onPress={() => { play('selection'); window.location.assign('/'); }}
+            style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold">{tr('게시글 보기')}</ThemedText></Pressable>
           <Pressable analyticsId="merchant-web.ai" accessibilityRole="button" accessibilityLabel={current?.value?.canConnectMcp ? tr('AI 연결') : tr('AI 연결 관리')} onPress={() => { play('selection'); router.push('/ai'); }}
             style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold">{current?.value?.canConnectMcp ? tr('AI 연결') : tr('AI 연결 관리')}</ThemedText></Pressable>
           <Pressable analyticsId="merchant-web.signout" accessibilityRole="button" accessibilityLabel={tr('로그아웃')} accessibilityState={{ disabled: signingOut }} disabled={signingOut} onPress={() => { void exit(); }}

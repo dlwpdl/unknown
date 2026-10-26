@@ -31,7 +31,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import type { BusinessMembershipSnapshot } from '@/lib/membership';
 import { MAX_POST_IMAGES } from '@/lib/image-upload';
 import { saveMerchantDraftImages } from '@/lib/merchant-posts';
-import { CITIES, TAGS } from '@/lib/mock';
+import { CITIES } from '@/lib/mock';
 import { merchantEventId } from '@/lib/merchant-source';
 import {
   MERCHANT_CHANNELS, adjustMerchantInventory, approveMerchantDrafts, archiveMerchantDrafts,
@@ -60,6 +60,8 @@ const errorText = (error: unknown) => ({
   IMAGE_TOO_LARGE: '사진 용량이 커요. 다른 사진으로 다시 시도해 주세요.', INVALID_IMAGE_PATH: '현재 계정의 원고 사진을 다시 확인해 주세요.',
   MERCHANT_PHOTOS_UNAVAILABLE: '사진을 모두 불러오지 못했어요. 원고를 다시 열어주세요.', INVALID_IMAGE_COUNT: `사진은 최대 ${MAX_POST_IMAGES}장까지 추가할 수 있어요.`,
   IMAGE_UNSUPPORTED: 'JPEG, PNG, WebP 사진을 선택해 주세요.',
+  BUSINESS_MONTHLY_LIMIT_REACHED: '이번 달에 올릴 수 있는 글을 다 썼어요. 다음 달에 다시 채워지고, 멤버십을 올리면 더 올릴 수 있어요.',
+  DUPLICATE_PROMOTION: '최근에 올린 글과 내용이 거의 같아요. 내용을 조금 바꿔서 올려 주세요.',
   BUSINESS_PLAN_REQUIRED: 'AI 초안은 유료 비즈니스 멤버십에서 쓸 수 있어요. 직접 작성은 계속할 수 있어요.',
   DRAFT_FAILED: '초안을 만들지 못했어요. 입력은 그대로 두었으니 잠시 후 다시 시도해 주세요.',
   INVALID_AI_DRAFT: 'AI 응답을 읽지 못했어요. 작성한 내용은 그대로예요.',
@@ -73,7 +75,7 @@ const money = (value: number) => `CAD ${Number(value).toFixed(2)}`;
 type DraftInput = Pick<MerchantDraft, 'id' | 'channel' | 'title' | 'body' | 'tag_slug' | 'kind' | 'image_paths'> & { original_url: string };
 type MerchantTab = 'overview' | 'drafts' | 'posts' | 'profile' | 'reviews' | 'channels' | 'cost' | 'stock' | 'membership' | 'accounts';
 const accessLost = (error: unknown) => error instanceof Error && ['MERCHANT_ACCESS_REQUIRED', 'MERCHANT_ACCOUNT_REQUIRED', 'AUTH_REQUIRED', 'ACCOUNT_LOCKED', 'ACCOUNT_CHANGED', 'ADMIN_REQUIRED'].includes(error.message);
-const emptyDraft = (): DraftInput => ({ id: merchantEventId(), channel: 'gling', title: '', body: '', original_url: '', tag_slug: 'life', kind: 'story', image_paths: [] });
+const emptyDraft = (): DraftInput => ({ id: merchantEventId(), channel: 'gling', title: '', body: '', original_url: '', tag_slug: 'business', kind: 'story', image_paths: [] });
 const draftPurposes = ['가게 소식', '메뉴·서비스 소개', '구인구직'] as const;
 const sameDraftContent = (a: DraftInput | MerchantDraft, b: DraftInput | MerchantDraft) => a.id === b.id && a.channel === b.channel
   && a.title === b.title && a.body === b.body && (a.original_url ?? '') === (b.original_url ?? '') && a.tag_slug === b.tag_slug && a.kind === b.kind
@@ -389,8 +391,8 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       }
       const draft = parseAiDraftResponse(result), session = await supabase.auth.getSession();
       if (!mounted.current || session.data.session?.user.id !== me.id) throw new Error('ACCOUNT_CHANGED');
-      if (fresh) { setEditor(current => ({ ...current, title: draft.title, body: draft.body, kind: draftPurpose === '구인구직' ? 'listing' : current.kind })); setDirty(true); setPreparedChannels(null); }
-      else changeDraft({ title: draft.title, body: draft.body, kind: draftPurpose === '구인구직' ? 'listing' : editor.kind });
+      if (fresh) { setEditor(current => ({ ...current, title: draft.title, body: draft.body, ...(draftPurpose === '구인구직' ? { kind: 'listing', tag_slug: 'jobs' } : {}) })); setDirty(true); setPreparedChannels(null); }
+      else changeDraft({ title: draft.title, body: draft.body, ...(draftPurpose === '구인구직' ? { kind: 'listing', tag_slug: 'jobs' } : {}) });
       setAiDraftReady(true); setDraftStep('edit');
     }, '', false);
   }
@@ -720,8 +722,8 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
         <Action label={tr(draftOptions ? tr("추가 설정 닫기") : tr("분류·원문 주소"))} disabled={busy} onPress={() => setDraftOptions(!draftOptions)} />
         {(draftOptions || editor.channel !== 'gling') && <>
         <Field label={tr("원문 주소 · 선택")} value={editor.original_url} maxLength={2048} disabled={busy || published} onChange={(original_url) => changeDraft({ original_url })} />
-        <View style={styles.actions}>{TAGS.filter((t) => t.kind === 'post').map((t) => <Action key={t.slug} label={t.label} selected={editor.tag_slug === t.slug} disabled={busy || published} onPress={() => changeDraft({ tag_slug: t.slug })} />)}</View>
-        <View style={styles.actions}><Action label={tr("비즈니스 안내")} selected={editor.kind === 'story'} disabled={busy || published} onPress={() => changeDraft({ kind: 'story' })} /><Action label={tr("구인구직·거래")} selected={editor.kind === 'listing'} disabled={busy || published} onPress={() => changeDraft({ kind: 'listing' })} /></View>
+        {/* Published as the business, the server files these under 비즈니스 or 구인구직 only. */}
+        <View style={styles.actions}><Action label={tr("비즈니스 안내")} selected={editor.kind === 'story'} disabled={busy || published} onPress={() => changeDraft({ kind: 'story', tag_slug: 'business' })} /><Action label={tr("구인구직")} selected={editor.kind === 'listing'} disabled={busy || published} onPress={() => changeDraft({ kind: 'listing', tag_slug: 'jobs' })} /></View>
         </>}
         {published ? <>{editor.channel === 'gling' && <Action primary label={tr("카페용 원고 준비")} disabled={busy || !draftReady} onPress={() => setDraftStep('channels')} />}<Action label={tr("새 초안으로 복제")} disabled={busy} onPress={() => { setEditor({ ...editor, id: merchantEventId() }); setOpenedDraft(null); setDirty(true); setExternalUrl(''); setPreparedChannels(null); setChannels({ gling: true, naver: false, daum: false }); }} /></> : editor.channel === 'gling' ? <>
           <ThemedText type="small" themeColor="textSecondary">{tr("채널 선택 전에 초안을 저장해요. 아직 게시되지 않아요.")}</ThemedText>
