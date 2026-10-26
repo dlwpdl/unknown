@@ -4,6 +4,9 @@ on:
   push:
     branches: [mobile-app]
   workflow_dispatch:
+  # Daily rebuild so new public posts get their prerendered search pages (04:20 Pacific, after the map refresh).
+  schedule:
+    - cron: '20 11 * * *'
 
 permissions:
   contents: read
@@ -35,7 +38,10 @@ jobs:
           EXPO_PUBLIC_SHARE_URL: ${{ secrets.EXPO_PUBLIC_SHARE_URL }}
           EXPO_PUBLIC_APP_URL: https://gling.ej-entertainment.com
           EXPO_PUBLIC_SUPPORT_EMAIL: gling@ej-entertainment.com
+          GLING_PRERENDER_POSTS: '1'
       - run: npm run check:public-web
+        env:
+          GLING_PRERENDER_POSTS: '1'
       - run: npm run check:merchant-web
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

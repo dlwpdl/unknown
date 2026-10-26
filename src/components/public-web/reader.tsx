@@ -119,12 +119,12 @@ function subscribeLocation(onChange: () => void) {
 }
 
 // Legacy path URLs are served the same static 404 document before hydration.
-const staticReaderPath = (path: string) => /^\/(?:post|share)\//.test(path) ? '/+not-found' : path;
+const staticReaderPath = (path: string) => /^\/(?:posts?|share)\//.test(path) ? '/+not-found' : path;
 
 export default function PublicReader() {
   const routerPath = usePathname();
   const path = useSyncExternalStore(subscribeLocation, () => window.location.pathname, () => staticReaderPath(routerPath));
-  return /^\/(?:post|share)(?:\/|$)/.test(path) ? <SharedPostLanding /> : <ReaderContent />;
+  return /^\/(?:posts?|share)(?:\/|$)/.test(path) ? <SharedPostLanding /> : <ReaderContent />;
 }
 
 function ReaderContent() {
@@ -249,7 +249,7 @@ function ReaderContent() {
           {meetupPage ? <PublicMeetupList posts={current?.posts ?? []} cityName={tr(city.name)} loading={loading} failed={!!current?.failed} onRetry={() => setRetry(value => value + 1)} /> : <div aria-busy={loading}>
             {current && <InteractionFeedbackProvider>{current.posts.map((item, index) => { const mapped = postMapBody(item.body); const attached = splitPostAttachments(mapped.body); return <Fragment key={item.id}><article className="reader-card">
               <div><p className="reader-kicker">{hasAdLabel(item.hashtags) && <span aria-label={ko ? '광고' : 'Ad'}>AD · </span>}{tr(item.tag.label)}{item.room?.closed ? ko ? ' · 모집 마감' : ' · Closed' : ''}</p>
-                <h3><a data-analytics="web_control_10" href={`/post?id=${encodeURIComponent(item.id)}`}>{item.title}</a></h3>
+                <h3><a data-analytics="web_control_10" href={`/posts/${encodeURIComponent(item.id)}`}>{item.title}</a></h3>
                 <p className="reader-excerpt">{item.room ? visibleMeetupBody(attached.body) : attached.body}</p>
                 {attached.urls.map((url, index) => <PostAttachmentLink key={`${url}-${index}`} url={url} />)}
                 {mapped.url && <MapAction url={mapped.url} label={mapped.label} />}
