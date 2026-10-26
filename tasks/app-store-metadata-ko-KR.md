@@ -19,7 +19,7 @@
 - 지원 URL: `https://gling.ej-entertainment.com` (하단 운영자 이메일)
 - 마케팅 URL: `https://gling.ej-entertainment.com`
 - 개인정보 선택 / 계정 삭제 URL: `https://gling.ej-entertainment.com/account-deletion`
-- 현재 앱·정책의 고객지원 이메일: `gling@ej-entertainment.com`
+- 현재 앱·정책의 고객지원 이메일: `(소유자 Gmail)`
 - 저작권: `2026 Eunsense Studio` — Rottery의 기존 등록 정보를 확인하고 2026-09-07에 글링에도 저장.
 - 키워드: `교민,유학,이민,정착,생활,맛집,모임` — 이름·부제에 있는 중복 단어는 CLI 검사 결과에 따라 제거.
 
@@ -48,7 +48,7 @@
 이용 전 확인해주세요
 게시글을 둘러보는 데는 로그인이 필요하지 않습니다. 글쓰기와 대화 등 계정 기능은 로그인과 프로필 설정 후 사용할 수 있습니다. 모든 새 게시글·댓글·대화는 동의를 거쳐 자동 안전 분석 대상이 되며, 권한 있는 관리자가 감사 기록을 남기며 검토할 수 있습니다. 대화는 종단간 암호화 서비스가 아닙니다.
 
-문의: gling@ej-entertainment.com
+문의: (소유자 Gmail)
 개인정보처리방침: https://gling.ej-entertainment.com/privacy
 이용약관: https://gling.ej-entertainment.com/terms
 
@@ -69,7 +69,7 @@ Camera and photo-library access are optional and requested when choosing or taki
 ## 심사 연락처
 
 - 이름: Eunseok Choi (Rottery의 기존 등록 정보 확인)
-- 이메일: `gling@ej-entertainment.com` (글링의 기존 고객지원 주소)
+- 이메일: `(소유자 Gmail)` (글링의 기존 고객지원 주소)
 - 전화번호: Rottery의 등록 번호를 TestFlight 연락처에 저장. 전화번호 자체는 Git에 기록하지 않음.
 - 위 연락처는 TestFlight에 반영했다. App Store 심사 정보는 실제 심사 로그인 수단을 준비한 뒤 생성해야 한다.
 

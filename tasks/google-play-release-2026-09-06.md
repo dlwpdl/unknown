@@ -9,7 +9,7 @@
 - 이름: `글링` (2/30자). 브랜드 확정 후 기존 `글링 - 캐나다 한인 커뮤니티`에서 변경했다. `app.json`의 홈 화면 이름도 `글링`으로 설정했으며 이미 업로드된 빌드 1에는 포함되지 않아 다음 네이티브 빌드부터 적용된다.
 - 간단한 설명: `밴쿠버·토론토 한인들의 일상, 정착 정보, 맛집과 모임을 한국어로 나누세요.` (42/80자).
 - 자세한 설명: [App Store 메타데이터](app-store-metadata-ko-KR.md)의 설명 820자를 재사용했다.
-- 지원 이메일 `gling@ej-entertainment.com`, 웹사이트 `https://dlwpdl.github.io/gling`, 개인정보처리방침 `https://dlwpdl.github.io/gling/privacy`를 저장했다.
+- 지원 이메일 `(소유자 Gmail)`, 웹사이트 `https://dlwpdl.github.io/gling`, 개인정보처리방침 `https://dlwpdl.github.io/gling/privacy`를 저장했다.
 - [이미지 자료](../release/google-play/README.md): 아이콘 512×512, 홍보 이미지 1024×500, 실제 Android 화면 1080×1920 4장. 홍보 이미지에는 Console의 AI 생성 애셋 라벨을 지정했다. 스토어 등록정보 상태는 **검토를 위해 전송 준비 완료**이며, 검토 전송은 하지 않았다.
 - [내부 테스트 버전](https://play.google.com/console/u/0/developers/4802509944213002773/app/4972349784406622597/tracks/4701555384444643122/releases/1/review): `1.0.0 (1)` AAB 업로드·처리 완료, 한국어 출시 노트와 함께 초안 저장. Console에서 API 24 이상 / target 36 / ABI 4개 / 설치 크기 29.6 MB를 확인했다. 테스터 추가·초대·출시는 하지 않았다.
 - 내부 버전 검증은 오류 없이 경고 2개: 테스터 미지정, R8/ProGuard 가독화 파일 없음. Expo 기본값에서 `minifyEnabled=false`이므로 앱의 R8 매핑 파일이 생성되지 않는다. 네이티브 디버그 기호는 AAB에 첨부되어 Console에서 확인됐다.

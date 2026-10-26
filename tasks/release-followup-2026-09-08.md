@@ -4,7 +4,7 @@ Android 내부 테스트 `1.0.0 (4)`를 출시했다. iOS 빌드 4 업로드와 
 
 ## 설치와 스토어 상태
 
-- [Android 내부 테스트 참여](https://play.google.com/apps/internaltest/4701555384444643122): 소유자 Google 계정 `gling@ej-entertainment.com` 1명을 `글링 내부 테스트` 목록에 등록했다. Console에서 **활성 / 최신 출시 버전 1.0.0 (4) / 내부 테스터에게 제공됨**과 참여 링크 활성화를 재확인했다. 최초 심사 전에는 `com.dlwpdl.gling (unreviewed)`라는 임시 이름이 표시된다.
+- [Android 내부 테스트 참여](https://play.google.com/apps/internaltest/4701555384444643122): 소유자 Google 계정 `(소유자 Gmail)` 1명을 `글링 내부 테스트` 목록에 등록했다. Console에서 **활성 / 최신 출시 버전 1.0.0 (4) / 내부 테스터에게 제공됨**과 참여 링크 활성화를 재확인했다. 최초 심사 전에는 `com.dlwpdl.gling (unreviewed)`라는 임시 이름이 표시된다.
 - Play의 테스터 미지정 경고는 해소됐다. 남은 ReTrace 경고 1개는 R8 난독화를 사용하지 않아 매핑 파일이 없는 경우다. AAB에는 네이티브 디버그 기호 48개가 첨부됐다. 공개 테스트나 프로덕션으로 승급하지 않았다.
 - [App Store Connect](https://appstoreconnect.apple.com/apps/6809273242/distribution/ios/version/inflight): 빌드 `cde35d10-4251-4779-b0e2-4fb950ab254b`가 **VALID**이며 기존 버전 `1fe513b3-ec8d-4b00-bc4e-09c6a5087088`에 연결됐다. 버전은 수동 출시의 `PREPARE_FOR_SUBMISSION`이다. 한국어 What to Test도 저장했다. TestFlight 테스터 배포는 별도 단계다.
 - `asc --profile gling validate --app 6809273242 --version-id 1fe513b3-ec8d-4b00-bc4e-09c6a5087088 --check-urls`: **오류 0, 경고 0**. 수동 출시와 API의 App Privacy 조회 한계에 대한 안내 2개만 남았다. `validate testflight`도 오류·경고 0이다. 실제 계정 인증 성공을 검사하는 명령은 아니다.

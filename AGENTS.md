@@ -28,4 +28,4 @@ For every branding, UI, UX, logo, icon, visual-system, or other design request, 
 
 # Marketing operations
 
-Marketing and operations material is not kept in this public app repository. Read it from the private operations checkout at `/Users/ash/Desktop/Git/unknown/mobile-ops/` and its `/Users/ash/Desktop/Git/unknown/CLAUDE.md`; do not copy it back here.
+Marketing and operations material is never committed to this public app repository. On the operator's Mac it stays in this checkout as git-ignored local files (the local automations run here) and is backed up privately; start from `/Users/ash/Desktop/Git/unknown/CLAUDE.md`. Do not `git add` it.
