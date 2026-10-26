@@ -393,7 +393,7 @@ test('public company post rows reuse the shared scoped loader, real post links a
   const root = view.render('PublicProfilePosts', props);
   assert.deepEqual(view.postCalls, [[merchantId, 'posts', 0, 'public']]);
   const link = nodes(root).find(node => node.type === 'a');
-  assert.equal(link.props.href, `/post?id=${postId}`);
+  assert.equal(link.props.href, `/posts/${postId}`);
   assert.equal(nodes(root).find(node => node.type === 'img').props.src, 'signed-thumb');
   assert.ok(text(root).includes(companyPost.title) && text(root).includes(companyPost.body) && text(root).includes(companyPost.createdAtLabel));
   assert.deepEqual(JSON.parse(JSON.stringify(counts)), [{ merchantId, postCount: 7, jobCount: 2 }]);

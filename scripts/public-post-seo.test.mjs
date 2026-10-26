@@ -72,7 +72,7 @@ test('AI 미리보기는 제목·도시·주제만 읽고 로그인 원문 경�
   assert.equal(response.status, 200);
   assert.match(response.headers.get('content-type'), /text\/markdown/);
   assert.equal(response.headers.get('cache-control'), 'no-store');
-  assert.ok(response.headers.get('link').includes(`${seo.PUBLIC_SITE}/post?id=${id}`));
+  assert.ok(response.headers.get('link').includes(`${seo.PUBLIC_SITE}/posts/${id}`));
   const text = await response.text();
   assert.ok(text.includes(preview.title));
   assert.ok(text.includes('도시: 밴쿠버'));

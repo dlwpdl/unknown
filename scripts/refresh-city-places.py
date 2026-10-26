@@ -102,7 +102,8 @@ def build_catalog(seed, elements, now):
                 hours = tags.get('opening_hours')
                 if isinstance(hours, str) and 0 < len(hours) <= 1000 and not re.search(r'[\x00-\x1f\x7f]', hours): p['openingHours'] = hours
                 website = tags.get('website', tags.get('contact:website'))
-                if https(website): p['website'] = website
+                # Regional links were reviewed by hand; an OSM website can point at a lapsed or hijacked domain.
+                if https(website) and ident in base_ids: p['website'] = website
                 street, number = tags.get('addr:street'), tags.get('addr:housenumber')
                 if ident in base_ids and all(isinstance(v, str) and 0 < len(v) <= 300 and not re.search(r'[\x00-\x1f\x7f]', v) for v in [street, number]):
                     p['address'] = (number+' '+street)[:1000]

@@ -15,7 +15,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { publicWebClient } from '@/lib/public-web-client';
-import { publicSiteName, PUBLIC_SITE } from '@/lib/public-seo';
+import { jsonLd, publicSiteName, PUBLIC_SITE } from '@/lib/public-seo';
 import { loadSharedLinkPost, loadSharedLinkPreview, type SharedLinkPreview } from '@/lib/shared-link-preview';
 import { sharedLinkTarget, SHARED_POST_RETURN_KEY } from '@/lib/sharing';
 import { supabase } from '@/lib/supabase';
@@ -93,6 +93,12 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
   const id = postId && UUID.test(postId) ? postId.toLowerCase() : null;
   const ready = status === 'ready' && !!id && (authenticated ? post?.id === id : preview?.id === id);
   const canonical = id ? `${PUBLIC_SITE}/post?id=${id}${invite ? '&invite=1' : ''}` : null;
+  // Guests see only the vetted title, teaser and cover, so those pages may be indexed; meetups and invites stay out.
+  const indexable = ready && !authenticated && !!preview && preview.kind !== 'meetup' && !invite;
+  useEffect(() => {
+    // The build-time copy of this preview (scripts/prerender-public-posts.mjs) is for crawlers without JavaScript.
+    if (status !== 'loading') globalThis.document?.getElementById?.('gling-static-post')?.remove();
+  }, [status]);
   const appUrl = id ? `gling://post/${id}${invite ? '?invite=1' : ''}` : null;
   const [copyMessage, setCopyMessage] = useState(''), [failedImage, setFailedImage] = useState<string | null>(null);
   const [store, setStore] = useState<'ios' | 'android' | null>(null);
@@ -122,9 +128,13 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
   return <div className="shared-post-landing" lang={ko ? 'ko' : 'en'} style={palette}>
     <Head><title>{ready ? `${title} | ${ko ? '글링' : 'Gling'}` : ko ? '글링 공유 글' : 'Shared post | Gling'}</title>
       <meta property="og:site_name" content={publicSiteName(language)} /><meta property="og:locale" content={ko ? 'ko_KR' : 'en_CA'} />
-      <meta name="robots" content="noindex, follow" /><meta name="description" content={description} />
+      <meta name="robots" content={indexable ? 'index, follow, max-image-preview:large' : 'noindex, follow'} />
+      <meta name="description" content={indexable && preview!.teaser ? preview!.teaser : description} />
       <meta property="og:title" content={ready ? title : ko ? '글링 공유 글' : 'Shared post | Gling'} />
-      <meta property="og:description" content={description} />{canonical && <link rel="canonical" href={canonical} />}</Head>
+      <meta property="og:description" content={indexable && preview!.teaser ? preview!.teaser : description} />
+      {indexable && preview!.imageUrl && <meta property="og:image" content={preview!.imageUrl} />}
+      {id && <link rel="canonical" href={`${PUBLIC_SITE}/posts/${id}`} />}
+      {indexable && <script type="application/ld+json">{jsonLd(publicPostSchema(preview!))}</script>}</Head>
     <style>{styles}</style>
     <header><a data-analytics="shared.web.home" href="/" aria-label={ko ? '글링 홈' : 'Gling home'} onClick={() => play('selection')}>
       <img src={theme === Colors.dark ? wordmark : lightWordmark} alt="gling" width={132} height={55} /></a><span>{ko ? '함께 나눈 이야기' : 'A story shared with you'}</span>
@@ -169,6 +179,20 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
       </aside>}
     </main>
   </div>;
+}
+
+export function publicPostSchema(preview: Pick<SharedLinkPreview, 'id' | 'title' | 'teaser' | 'city' | 'label' | 'imageUrl'>) {
+  const url = `${PUBLIC_SITE}/posts/${preview.id}`;
+  return {
+    '@context': 'https://schema.org', '@type': 'WebPage', url, name: preview.title, inLanguage: 'ko',
+    ...(preview.teaser ? { description: preview.teaser } : {}), ...(preview.imageUrl ? { primaryImageOfPage: preview.imageUrl } : {}),
+    about: [preview.city, preview.label].filter(Boolean).join(' · '),
+    isPartOf: { '@type': 'WebSite', name: publicSiteName(), url: `${PUBLIC_SITE}/` },
+    breadcrumb: { '@type': 'BreadcrumbList', itemListElement: [
+      { '@type': 'ListItem', position: 1, name: publicSiteName(), item: `${PUBLIC_SITE}/` },
+      { '@type': 'ListItem', position: 2, name: preview.title, item: url },
+    ] },
+  };
 }
 
 const styles = `
