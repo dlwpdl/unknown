@@ -25,7 +25,7 @@ const NOTIFICATION_KINDS: Record<string, string> = {
   saved_merchant_post: '저장한 비즈니스 새 소식', merchant_review_received: '비즈니스 후기', merchant_review_verified: '비즈니스 후기 인증',
   merchant_review_rejected: '비즈니스 후기 인증 거절', merchant_review_reply: '비즈니스 후기 답변', merchant_operation: '비즈니스 게시·연결 문제',
   account_security: '계정 보안', moderation_warning: '이용 안내', moderation_blocked: '이용 제한', safety_alert: '안전 경고',
-  admin_security: '보안 경고', admin_multiacct: '다계정 의심', admin_error_spike: '앱 오류 급증', admin_signup: '새 회원 가입',
+  admin_security: '보안 경고', admin_multiacct: '다계정 의심', admin_error_spike: '앱 오류 급증', admin_signup: '새 회원 가입', admin_persona_contact: '운영 캐릭터 개인 연락',
 };
 
 export type PerformanceView = 'overview' | 'growth' | 'activity' | 'revenue' | 'quality';

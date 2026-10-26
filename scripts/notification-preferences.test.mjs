@@ -21,7 +21,7 @@ test('notification routing accepts existing content destinations and rejects ext
     assert.equal(notificationRoute(route), route);
   }
   assert.equal(notificationRoute(`/chat?requestId=${id}`), '/chat?view=requests');
-  for (const route of ['/admin', '/admin?section=reports', '/admin?section=errors', `/admin?safety=${id}`, `/admin?alert=${id}`, '/admin?safety=12', '/admin?alert=1']) {
+  for (const route of ['/admin', '/admin?section=reports', '/admin?section=errors', '/admin?section=conversations', `/admin?safety=${id}`, `/admin?alert=${id}`, '/admin?safety=12', '/admin?alert=1']) {
     assert.equal(notificationRoute(route), route);
   }
   for (const route of ['https://example.com', '//example.com', 'javascript:alert(1)', '/admin?section=../admin', '/admin?redirect=https://example.com', `/admin?safety=${id}&redirect=//example.com`, `/admin?safety=not-a-uuid`, '/admin?alert=0', '/profile/settings?redirect=https://example.com', `/post/${id}/../admin`, `/chat?conversationId=${id}&redirect=//example.com`, {}, null]) {
@@ -45,7 +45,7 @@ test('meetup review reminders open the existing review screen without accepting 
 });
 
 test('admin-only alerts are distinct from ordinary Gling notifications', () => {
-  for (const kind of ['safety_alert', 'admin_security', 'admin_multiacct', 'admin_error_spike']) assert.equal(isAdminNotificationKind(kind), true);
+  for (const kind of ['safety_alert', 'admin_security', 'admin_multiacct', 'admin_error_spike', 'admin_persona_contact']) assert.equal(isAdminNotificationKind(kind), true);
   for (const kind of ['moderation_warning', 'message', 'weekly_ranking']) assert.equal(isAdminNotificationKind(kind), false);
 });
 
