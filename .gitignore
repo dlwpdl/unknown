@@ -66,3 +66,11 @@ yarn-error.*
 
 # Owner-only archives of superseded automation rules/assets — never published
 archive/
+
+# Internal operations material lives in the private ops repository
+/marketing/
+/content/
+/docs/operations/*
+!/docs/operations/merchant-map-photo.md
+/release/app-review/
+/.claude/product-marketing-context.md

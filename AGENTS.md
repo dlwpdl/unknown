@@ -16,7 +16,7 @@ Keep Gling account, store, and test browser tabs in the existing `Git → gling`
 
 `orca tab create` resolves its default workspace from the CLI working directory. For Gling, invoke browser creation from `/Users/ash/Desktop/Git/unknown` and verify the resulting tab belongs to `folder:e88d505b-f6bb-47d6-ba41-904ef2a72a8b`. Run git/build commands in the isolated source checkout. If the workspace mapping changes, discover it again before opening a tab.
 
-Show browser work in Orca. Owner 2026-10-25: do not close tabs ("왜 닫어 계속켜놔 어짜피그걸로 매번 볼텐데 닫지마"). Reuse the tab that is already open for a site/account (Instagram, Threads, Meta, Blind, admin) by navigating it, and open a new one only when none exists. Never close the user's tabs or another task's tabs.
+Show browser work in Orca. Owner 2026-10-25: do not close tabs ("왜 닫어 계속켜놔 어짜피그걸로 매번 볼텐데 닫지마"). Reuse the tab that is already open for a site/account (Instagram, Threads, Meta, admin) by navigating it, and open a new one only when none exists. Never close the user's tabs or another task's tabs.
 
 # Non-negotiable safety operations
 
@@ -28,4 +28,4 @@ For every branding, UI, UX, logo, icon, visual-system, or other design request, 
 
 # Marketing operations
 
-Before Gling marketing work, read `/Users/ash/.codex/memories/marketing-sales-playbook.md`, `.claude/product-marketing-context.md`, and `marketing/launch-kit.md` (회차 실행 지침). The shared 2026-09-11 SNS rule supersedes older direct-link/acquisition CTA instructions. Use `marketing/social-calendar.csv` as the existing queue and run `python3 marketing/check_calendar.py` after edits. Preserve content IDs and publication receipts; missing metrics are not zero. The full course analysis and adoption decisions live in `marketing/learning-2026-09-09-nick-saraev.md`. Skills and source examples do not authorize new paid services or messages outside the user's scope.
+Marketing and operations material is not kept in this public app repository. Read it from the private operations checkout at `/Users/ash/Desktop/Git/unknown/mobile-ops/` and its `/Users/ash/Desktop/Git/unknown/CLAUDE.md`; do not copy it back here.
