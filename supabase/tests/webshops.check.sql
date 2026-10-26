@@ -64,7 +64,8 @@ select throws_ok($$select pg_temp.import_webshop(gen_random_uuid(),'[]')$$,'P000
 reset role;
 select set_config('request.jwt.claims','{"sub":"c2300000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal2","session_id":"c2300000-0000-4000-8000-000000000010","app_metadata":{"role":"admin"}}',true);
 set local role authenticated;
-select is((select count(*) from jsonb_array_elements(public.get_admin_webshops()->'stores') value where value->>'merchantId' in ('c2310000-0000-4000-8000-000000000001','c2310000-0000-4000-8000-000000000002')),2::bigint,'all fixture businesses available before configuration');
+select is((select count(*) from jsonb_array_elements(public.get_admin_webshops()->'stores') value where value->>'merchantId' in ('c2310000-0000-4000-8000-000000000001','c2310000-0000-4000-8000-000000000002')),0::bigint,'unconfigured business profiles are not enrolled webshops');
+select is(public.get_admin_webshops(30,'c2310000-0000-4000-8000-000000000001')->'stores'->0->>'merchantId','c2310000-0000-4000-8000-000000000001','explicitly selected business profile remains available for manual setup');
 select is(public.get_admin_webshops()->'totals'->'verifiedOrders','null'::jsonb,'missing provider report remains unavailable');
 select is(public.get_admin_webshops()->'totals'->>'orderDataAvailable','false','report availability is explicit');
 select throws_ok($$select pg_temp.save_webshop('c2310000-0000-4000-8000-000000000001','{"cityId":"webshop-other"}')$$,'P0001','WEBSHOP_BRANCH_MISMATCH','another city cannot be linked');
@@ -75,6 +76,7 @@ select lives_ok($$select pg_temp.save_webshop('c2310000-0000-4000-8000-000000000
 select lives_ok($$select pg_temp.save_webshop('c2310000-0000-4000-8000-000000000002','{"placeKeys":["partner:test-existing-branch"]}')$$,'business without a webshop keeps a place link');
 select throws_ok($$select pg_temp.save_webshop('c2310000-0000-4000-8000-000000000002','{"placeKeys":["osm:node:123456789"]}')$$,'P0001','WEBSHOP_PLACE_ALREADY_LINKED','one physical place cannot map to two businesses');
 select throws_ok($$select pg_temp.save_webshop('c2310000-0000-4000-8000-000000000001','{"updatedAt":"2020-01-01T00:00:00Z"}')$$,'P0001','WEBSHOP_CHANGED','stale administrator cannot overwrite configuration');
+select is(jsonb_array_length(public.get_admin_webshops()->'stores'),1,'default performance includes only valid Uber webshops, not every business or place-only link');
 reset role;
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 set local role anon;

@@ -26,8 +26,11 @@ const date = (value: string | null) => value ? `${new Date(value).toLocaleString
 const STATUS = { completed: '완료', cancelled: '취소', refunded: '전액 환불', partial_refund: '일부 환불' };
 const ATTRIBUTION = { provider_report: '공급자 기여 보고', promo_code: '코드 확인', unattributed: '기여 미확인' };
 
-export function AdminWebshopsView({ localPreview, refreshSignal = 0, onStateChange, initialMerchantId = '' }: {
-  localPreview: boolean; refreshSignal?: number; initialMerchantId?: string; onStateChange?: (state: { dirty: boolean; busy: boolean }) => void;
+// Only saved Uber webshops count as enrolled; a business opened from Business Management stays a setup candidate.
+const enrolled = (store: AdminWebshop) => !!(store.updatedAt && store.url && store.provider === 'uber');
+
+export function AdminWebshopsView({ localPreview, refreshSignal = 0, onStateChange, initialMerchantId = '', onBusinesses }: {
+  localPreview: boolean; refreshSignal?: number; initialMerchantId?: string; onBusinesses?: () => void; onStateChange?: (state: { dirty: boolean; busy: boolean }) => void;
 }) {
   const { play } = useInteractionFeedback();
   const [days, setDays] = useState(30), [merchantId, setMerchantId] = useState(initialMerchantId), [retry, setRetry] = useState(0);
@@ -36,12 +39,14 @@ export function AdminWebshopsView({ localPreview, refreshSignal = 0, onStateChan
   const editorHeading = useRef<HTMLHeadingElement>(null), editorTrigger = useRef<HTMLButtonElement | null>(null), dialog = useRef<HTMLDialogElement>(null);
   const [editor, setEditor] = useState<Editor | null>(null), [dirty, setDirty] = useState(false), [busy, setBusy] = useState(false), [notice, setNotice] = useState('');
   const [tab, setTab] = useState<'stores' | 'orders'>('stores');
+  const [restaurantConfirmed, setRestaurantConfirmed] = useState(false);
   const requestKey = JSON.stringify([days, merchantId, retry, refreshSignal, localPreview]);
   const current = !localPreview && result?.key === requestKey ? result : null;
   const data = current?.data;
   const loading = !localPreview && !current;
   // A report belongs to one saved webshop; open it directly when the filter or data leaves only one choice.
-  const importable = data?.stores.filter(store => store.updatedAt) ?? [];
+  const importable = data?.stores.filter(enrolled) ?? [];
+  const listed = data?.stores.filter(store => enrolled(store) || store.merchantId === initialMerchantId) ?? [];
   const importTarget = importable.find(store => store.merchantId === merchantId) ?? (importable.length === 1 ? importable[0] : null);
 
   useEffect(() => {
@@ -92,7 +97,7 @@ export function AdminWebshopsView({ localPreview, refreshSignal = 0, onStateChan
     </header>
     <fieldset className="admin-toolbar" disabled={busy || !!editor} style={{ margin: 0 }}><legend className="admin-sr-only">웹샵 성과 필터</legend>
       <AdminSelect label="조회 기간" value={String(days)} options={[7, 30, 90].map(value => ({ value: String(value), label: `최근 ${value}일` }))} onChange={value => setDays(Number(value))} />
-      <AdminSelect label="비즈니스" value={merchantId} options={[{ value: '', label: '전체 비즈니스' }, ...stores.map(store => ({ value: store.merchantId, label: `${store.name} · ${store.cityId}` }))]} onChange={setMerchantId} />
+      <AdminSelect label="비즈니스" value={merchantId} options={[{ value: '', label: '연결한 음식점 전체' }, ...stores.filter(store => enrolled(store) || store.merchantId === initialMerchantId).map(store => ({ value: store.merchantId, label: `${store.name} · ${enrolled(store) ? store.cityId : '연결 전'}` }))]} onChange={setMerchantId} />
     </fieldset>
     {notice && <p role="status">{notice}</p>}
     {localPreview ? <p role="status">실제 운영 데이터는 관리자 로그인과 MFA 인증 후 표시됩니다.</p>
@@ -104,11 +109,12 @@ export function AdminWebshopsView({ localPreview, refreshSignal = 0, onStateChan
             </div>
             {!data.totals.orderDataAvailable && <p className="partnership-muted">선택 기간에 검증된 주문 보고서가 없어서 주문·매출·예상 수수료는 확인할 수 없어요.</p>}
             <div role="tablist" aria-label="웹샵 성과 보기" className="webshop-tabs">
-              {([['stores', '음식점', data.stores.length], ['orders', '주문 보고서', null]] as const).map(([value, label, total]) => <button key={value} type="button" role="tab" id={`webshop-tab-${value}`} aria-selected={tab === value} aria-controls={`webshop-panel-${value}`} tabIndex={tab === value ? 0 : -1}
+              {([['stores', '음식점', listed.length], ['orders', '주문 보고서', null]] as const).map(([value, label, total]) => <button key={value} type="button" role="tab" id={`webshop-tab-${value}`} aria-selected={tab === value} aria-controls={`webshop-panel-${value}`} tabIndex={tab === value ? 0 : -1}
                 onKeyDown={adminOptionKeys} onClick={() => { play('selection'); setTab(value); }}>{label}{total != null && <span className="webshop-tab-count">{total}</span>}</button>)}
             </div>
             {tab === 'stores' ? <div role="tabpanel" id="webshop-panel-stores" aria-labelledby="webshop-tab-stores" className="webshop-panel">
-              {!data.stores.length ? <p className="partnership-muted">기존 비즈니스를 등록한 뒤 웹샵과 연결할 수 있어요.</p> : <ul className="webshop-stores" aria-label="웹샵과 지점 설정">{data.stores.map(store => {
+              {onBusinesses && <button type="button" style={{ alignSelf: 'flex-start' }} disabled={busy || dirty} onClick={() => { play('selection'); onBusinesses(); }}>비즈니스 프로필에서 선택</button>}
+              {!listed.length ? <p className="partnership-muted">연결한 음식점이 없어요. 다른 비즈니스가 자동으로 추가되지는 않아요.</p> : <ul className="webshop-stores" aria-label="웹샵과 지점 설정">{listed.map(store => {
                 const status = !store.url ? { label: '웹샵 미등록', tone: 'neutral' as const } : !store.enabled ? { label: '주문 비활성', tone: 'neutral' as const } : !store.verifiedAt ? { label: '가격 확인 필요', tone: 'warning' as const } : { label: '연결됨', tone: 'success' as const };
                 return <li key={store.merchantId} className="webshop-store">
                   <div className="webshop-store-main"><strong>{store.name}</strong>
@@ -116,11 +122,12 @@ export function AdminWebshopsView({ localPreview, refreshSignal = 0, onStateChan
                     <small>{[`수수료 ${store.commissionBps / 100}%`, store.commissionScope === 'attributed' ? '기여 확인 주문' : store.commissionScope === 'all_webshop' ? '전체 웹샵 주문' : '적용 범위 미확인', store.commissionBasisConfirmed ? '음식 순소계 기준 확인' : '정산 기준 미확인', store.placeKeys.length ? `장소 키 ${store.placeKeys.length}개` : '장소 연결 없음'].join(' · ')}</small>
                   </div>
                   <AdminPill label={status.label} tone={status.tone} />
-                  <button type="button" disabled={busy} aria-label={`${store.name} 연결 관리`} onClick={event => openEditor({ kind: 'config', store }, event.currentTarget)}>연결 관리</button>
+                  {!enrolled(store) && <label><input type="checkbox" checked={restaurantConfirmed} onChange={event => { play('selection'); setRestaurantConfirmed(event.target.checked); }} /> 음식점이고 Uber 주문이 되는 걸 확인했어요</label>}
+                  <button type="button" disabled={busy || (!enrolled(store) && !restaurantConfirmed)} aria-label={`${store.name} 연결 관리`} onClick={event => openEditor({ kind: 'config', store }, event.currentTarget)}>{enrolled(store) ? '연결 관리' : '이 음식점 웹샵 연결'}</button>
                 </li>;
               })}</ul>}
               <h2 style={SECTION_STYLE}>음식점별 성과</h2>
-              <Table caption="비즈니스별 웹샵 성과" headers={['비즈니스', '비교표 조회', '이동 / 세션', '확인 주문 / 기여 확인', '전체 순매출 / 기여 확인', '예상 수수료']} rows={data.breakdown.map(row => ({ key: row.merchantId, cells: [row.name, count(row.sheetViews), `${count(row.clicks)} / ${count(row.sessions)}`, `${count(row.verifiedOrders)} / ${count(row.attributedVerifiedOrders)}`, `${webshopMoney(row.netRevenueCents, row.currency)} / ${webshopMoney(row.attributedNetRevenueCents, row.currency)}`, webshopMoney(row.estimatedCommissionCents, row.currency)] }))} empty="등록된 비즈니스가 없습니다." />
+              <Table caption="비즈니스별 웹샵 성과" headers={['비즈니스', '비교표 조회', '이동 / 세션', '확인 주문 / 기여 확인', '전체 순매출 / 기여 확인', '예상 수수료']} rows={data.breakdown.filter(row => importable.some(store => store.merchantId === row.merchantId)).map(row => ({ key: row.merchantId, cells: [row.name, count(row.sheetViews), `${count(row.clicks)} / ${count(row.sessions)}`, `${count(row.verifiedOrders)} / ${count(row.attributedVerifiedOrders)}`, `${webshopMoney(row.netRevenueCents, row.currency)} / ${webshopMoney(row.attributedNetRevenueCents, row.currency)}`, webshopMoney(row.estimatedCommissionCents, row.currency)] }))} empty="등록된 비즈니스가 없습니다." />
             </div> : <div role="tabpanel" id="webshop-panel-orders" aria-labelledby="webshop-tab-orders" className="webshop-panel">
               <div className="admin-summary-strip">
                 {[['이동 세션', count(data.totals.sessions)], ['기여 확인 주문', count(data.totals.attributedVerifiedOrders)], ['기여 확인 순매출', webshopMoney(data.totals.attributedNetRevenueCents, data.totals.currency)], ['예상 수수료', webshopMoney(data.totals.estimatedCommissionCents, data.totals.currency)]].map(([label, value]) => <span key={label}>{label}<strong>{value}</strong></span>)}

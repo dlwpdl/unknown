@@ -186,3 +186,39 @@ test('business-detail entry opens the shared dashboard filtered to that business
   assert.match(screen, /onWebshop={\(merchantId\) => \{ chooseSection\('webshops'\); setWebshopMerchantId\(merchantId\); \}\}/);
   assert.match(screen, /initialMerchantId={webshopMerchantId}/);
 });
+
+test('unconnected business profiles never appear as enrolled restaurants or filter options', async () => {
+  const unconnected = { ...fixtureStore, merchantId: '70000000-0000-4000-8000-000000000003', name: '꽃집 프로필', updatedAt: null, url: null, enabled: false };
+  const view = webshopView(async () => ({ ...fixtureData(), stores: [fixtureStore, unconnected] }));
+  view.render(); await tick(); const tree = view.render();
+  assert.ok(treeText(tree).includes(fixtureStore.name));
+  assert.ok(!treeText(tree).includes(unconnected.name));
+  const select = treeNodes(tree).find(node => node.type === 'AdminSelect' && node.props.label === '비즈니스');
+  assert.deepEqual(Array.from(select.props.options, option => option.value), ['', merchantId]);
+});
+
+test('an explicitly selected unconnected profile requires restaurant/Uber confirmation and never auto-saves', async () => {
+  const writes = []; const candidate = { ...fixtureStore, updatedAt: null, enabled: false, url: null, comparisons: [] };
+  const view = webshopView(async () => ({ ...fixtureData(), stores: [candidate] }), { saveAdminWebshop: async (...args) => writes.push(args) });
+  view.props.initialMerchantId = merchantId; view.render(); await tick(); let tree = view.render();
+  let connect = treeNodes(tree).find(node => node.type === 'button' && treeText(node) === '이 음식점 웹샵 연결');
+  assert.equal(connect.props.disabled, true); assert.equal(writes.length, 0);
+  treeNodes(tree).find(node => node.type === 'input' && node.props.type === 'checkbox').props.onChange({ target: { checked: true } }); tree = view.render();
+  connect = treeNodes(tree).find(node => node.type === 'button' && treeText(node) === '이 음식점 웹샵 연결'); assert.equal(connect.props.disabled, false);
+  connect.props.onClick({ currentTarget: { focus() {} } }); tree = view.render();
+  assert.ok(treeNodes(tree).some(node => typeof node.type === 'function' && node.type.name === 'ConfigEditor')); assert.equal(writes.length, 0);
+});
+
+test('additional enrolled restaurants remain independently selectable for report import', async () => {
+  const second = { ...fixtureStore, merchantId: '70000000-0000-4000-8000-000000000004', name: '두 번째 음식점' }; const requests = [];
+  const view = webshopView(async (_days, selected) => { requests.push(selected); return { ...fixtureData(), stores: selected ? [second] : [fixtureStore, second] }; });
+  view.render(); await tick(); let tree = view.render();
+  assert.ok(treeText(tree).includes(fixtureStore.name)); assert.ok(treeText(tree).includes(second.name));
+  const select = treeNodes(tree).find(node => node.type === 'AdminSelect' && node.props.label === '비즈니스');
+  assert.deepEqual(Array.from(select.props.options, option => option.value), ['', merchantId, second.merchantId]);
+  select.props.onChange(second.merchantId); view.render(); await tick(); tree = view.render();
+  assert.equal(requests.at(-1), second.merchantId);
+  treeNodes(tree).find(node => node.type === 'button' && treeText(node) === '보고서 가져오기').props.onClick({ currentTarget: { focus() {} } }); tree = view.render();
+  const editor = treeNodes(tree).find(node => typeof node.type === 'function' && node.type.name === 'ReportEditor');
+  assert.equal(editor.props.store.merchantId, second.merchantId);
+});
