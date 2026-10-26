@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LoginPanel } from '@/components/login-panel';
 import { relationshipSlotData } from '@/components/relationship-slot-card';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
-import { InfoNote } from '@/components/notice-blocks';
+import { InfoNote, WhoSees } from '@/components/notice-blocks';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -87,7 +87,7 @@ export default function MembershipScreen() {
   const bumpEvery = (hours: number) => hours === 24 ? tr("하루 1번") : hours === 48 ? tr("이틀에 1번") : hours % 24 === 0 ? tr("{0}일에 1번", hours / 24) : tr("{0}시간에 1번", hours);
   const planFacts = (tier: 'free' | MembershipOffer['tier']): [string, string][] => kind === 'general'
     ? [[tr("모임 정원"), tr("{0}명", MEMBERSHIP_LIMITS[tier].seats)], [tr("공동 호스트"), tr("{0}명", MEMBERSHIP_LIMITS[tier].cohosts)], [tr("모임 자리"), tr("{0}개", MEMBERSHIP_LIMITS[tier].meetups)]]
-    : [[tr("한 달 글"), tr("{0}개", BUSINESS_LIMITS[tier].posts)], [tr("끌올"), bumpEvery(BUSINESS_LIMITS[tier].bumpCooldownHours)], [tr("함께 관리"), tr("{0}명", BUSINESS_LIMITS[tier].managers)]];
+    : [[tr("끌올"), bumpEvery(BUSINESS_LIMITS[tier].bumpCooldownHours)], [tr("공동 관리자"), tr("{0}명", BUSINESS_LIMITS[tier].managers)], [tr("한 달 글"), tr("{0}개", BUSINESS_LIMITS[tier].posts)]];
   const toggle = (key: keyof typeof open) => { play('selection'); animateLayout(); setOpen(value => ({ ...value, [key]: !value[key] })); };
   const selectPlan = (next: typeof selection) => {
     play('selection');
@@ -203,6 +203,10 @@ export default function MembershipScreen() {
             </Pressable>)}
           </View>}
 
+          {kind === 'business' && <WhoSees title={tr("비즈니스 멤버십의 핵심")} rows={[
+            { icon: { ios: 'arrow.up.circle', android: 'arrow_circle_up', web: 'arrow_circle_up' }, label: tr("끌올"), detail: tr("올린 글 하나를 최신 글 맨 위로 다시 올려요. 등급이 높을수록 더 자주 할 수 있어요.") },
+            { icon: { ios: 'person.2', android: 'group', web: 'group' }, label: tr("공동 관리자"), detail: tr("직원이나 동업자를 초대해 같은 가게 계정을 함께 관리해요.") },
+          ]} />}
           {plans.map((plan) => {
             const offer = familyOffers.find((item) => item.tier === plan.tier && item.period === period) ?? familyOffers.find((item) => item.tier === plan.tier);
             const listPrice = offer?.period === 'year' && monthlyOf(plan.tier) ? yearlyListPrice(monthlyOf(plan.tier)!.price) : null;
@@ -223,14 +227,14 @@ export default function MembershipScreen() {
               <View style={[styles.facts, { borderColor: theme.line }]}>
                 {planFacts(plan.tier).map(([label, value], index) => <View key={label} style={[styles.fact, index > 0 && { borderLeftWidth: 1, borderLeftColor: theme.line }]}>
                   <ThemedText type="small" themeColor="textSecondary" style={styles.center}>{label}</ThemedText>
-                  <ThemedText type="smallBold" style={styles.center}>{value}</ThemedText>
+                  <ThemedText type="smallBold" themeColor={kind === 'business' && index < 2 ? 'accent' : undefined} style={styles.center}>{value}</ThemedText>
                 </View>)}
               </View>
               {kind === 'general' && <ThemedText type="small" themeColor="textSecondary">{tr("모임 도구")} · {tr(plan.tier === 'plus' ? '템플릿 · 질문 재사용' : plan.tier === 'pro' ? '플러스 + 반복 회차 · 대기 명단' : '프로 + 신청·참석 통계')}</ThemedText>}
             </Pressable>;
           })}
           <View style={[styles.free, { borderColor: theme.line }]}>
-            <ThemedText type="small" themeColor="textSecondary"><ThemedText type="smallBold">{tr("베이직 · 무료")}</ThemedText> — {planFacts('free').filter((_, index) => kind === 'business' ? index < 2 : index !== 1).map(([label, value]) => `${label} ${value}`).join(' · ')}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary"><ThemedText type="smallBold">{tr("베이직 · 무료")}</ThemedText> — {planFacts('free').filter((_, index) => index !== 1).map(([label, value]) => `${label} ${value}`).join(' · ')}</ThemedText>
           </View>
           {kind === 'business' && <>
             <InfoNote>{tr("끌올은 올린 글 중 하나를 골라 정해진 간격마다 한 번 할 수 있어요. 같은 내용을 새 글로 다시 올릴 수는 없어요.")}</InfoNote>
@@ -260,7 +264,7 @@ export default function MembershipScreen() {
                 ] : [
                   [tr("한 달 글"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => String(BUSINESS_LIMITS[tier].posts))],
                   [tr("끌올"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => bumpEvery(BUSINESS_LIMITS[tier].bumpCooldownHours))],
-                  [tr("함께 관리"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => BUSINESS_LIMITS[tier].managers ? String(BUSINESS_LIMITS[tier].managers) : '–')],
+                  [tr("공동 관리자"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => BUSINESS_LIMITS[tier].managers ? String(BUSINESS_LIMITS[tier].managers) : '–')],
                 ])].map((cells, row) => <View key={cells[0] || 'head'} style={[styles.tableRow, { borderTopColor: theme.line }, row === 0 && { borderTopWidth: 0, backgroundColor: theme.backgroundElement }]}>
                   {cells.map((cell, column) => <ThemedText key={column} type={row === 0 ? 'smallBold' : 'small'} themeColor={column === 0 ? 'textSecondary' : undefined} style={[styles.cell, column === 0 && styles.cellLabel]}>{cell}</ThemedText>)}
                 </View>)}

@@ -21,7 +21,7 @@ test('four general tiers keep chat unlimited and apply reviewed group limits', (
 
 test('business bumps are one per interval across all posts; paid tiers have no monthly cap', () => {
   assert.deepEqual(['free','plus','pro','premium'].map(tier => [BUSINESS_LIMITS[tier].bumpCooldownHours, BUSINESS_LIMITS[tier].bumps]), [[120,2],[48,null],[24,null],[12,null]]);
-  assert.deepEqual(['free','plus','pro','premium'].map(tier => [BUSINESS_LIMITS[tier].posts, BUSINESS_LIMITS[tier].managers, BUSINESS_LIMITS[tier].managedPosts]), [[1,0,0],[2,1,0],[5,3,0],[10,5,0]]);
+  assert.deepEqual(['free','plus','pro','premium'].map(tier => [BUSINESS_LIMITS[tier].posts, BUSINESS_LIMITS[tier].managers, BUSINESS_LIMITS[tier].managedPosts]), [[1,0,0],[2,1,0],[5,2,0],[10,5,0]]);
 });
 
 test('v2 yearly products are offered and verified like monthly, with the matching period', () => {

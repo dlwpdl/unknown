@@ -88,10 +88,10 @@ test('membership keeps stories and direct chat free while preserving meetup and 
   button(render(),'비즈니스').props.onPress();
   tree = render();
   assert.deepEqual(planOrder(tree), ['플러스', '프로', '프리미엄'], 'business plans follow Basic, Plus, Pro, Premium');
-  for (const [name, facts] of [['플러스','한 달 글2개끌올이틀에 1번함께 관리1명'], ['프로','한 달 글5개끌올하루 1번함께 관리3명'], ['프리미엄','한 달 글10개끌올12시간에 1번함께 관리5명']]) {
+  for (const [name, facts] of [['플러스','끌올이틀에 1번공동 관리자1명한 달 글2개'], ['프로','끌올하루 1번공동 관리자2명한 달 글5개'], ['프리미엄','끌올12시간에 1번공동 관리자5명한 달 글10개']]) {
     assert.ok(text(card(tree, name)).includes(facts), `${name} displays its business posts, bump interval and managers`);
   }
-  assert.match(text(tree), /베이직 · 무료 — 한 달 글 1개 · 끌올 5일에 1번/);
+  assert.match(text(tree), /베이직 · 무료 — 끌올 5일에 1번 · 한 달 글 1개/);
   assert.doesNotMatch(text(tree), /운영대행/);
   assert.doesNotMatch(text(tree), /모임 이용 규칙/, 'meetup rules belong to the personal family');
   nodes(tree).find(node => node.props?.analyticsId === 'membership.business.managed').props.onPress();

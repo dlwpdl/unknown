@@ -18,7 +18,7 @@ export const GENERAL_BUMP_HOURS = { free: 48, plus: 36, pro: 30, premium: 24, ad
 export const BUSINESS_LIMITS = {
   free: { posts: 1, bumps: 2, bumpCooldownHours: 120, managers: 0, managedPosts: 0, managedBumps: 0, reports: 0 },
   plus: { posts: 2, bumps: null, bumpCooldownHours: 48, managers: 1, managedPosts: 0, managedBumps: 0, reports: 0 },
-  pro: { posts: 5, bumps: null, bumpCooldownHours: 24, managers: 3, managedPosts: 0, managedBumps: 0, reports: 0 },
+  pro: { posts: 5, bumps: null, bumpCooldownHours: 24, managers: 2, managedPosts: 0, managedBumps: 0, reports: 0 },
   premium: { posts: 10, bumps: null, bumpCooldownHours: 12, managers: 5, managedPosts: 0, managedBumps: 0, reports: 0 },
 } as const;
 

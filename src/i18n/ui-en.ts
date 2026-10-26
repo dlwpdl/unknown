@@ -3427,6 +3427,10 @@ export const uiEnglish: Record<string, string> = {
   "한 달 글": "Posts per month",
   "한 달 글 15개를 글링이 대신 써서 올리고 관리해 드려요. 가격은 가게 상황을 듣고 따로 안내해요.": "Gling writes, posts and manages 15 posts a month for you. We’ll quote a price after hearing about your business.",
   "함께 관리": "Co-managers",
+  "비즈니스 멤버십의 핵심": "What business membership gets you",
+  "올린 글 하나를 최신 글 맨 위로 다시 올려요. 등급이 높을수록 더 자주 할 수 있어요.": "Bump one of your posts back to the top of the latest feed. Higher plans can bump more often.",
+  "직원이나 동업자를 초대해 같은 가게 계정을 함께 관리해요.": "Invite staff or partners to run the same business account with you.",
+  "공동 관리자": "Co-managers",
   "가게 선택": "Choose a business",
   "바꾸기": "Change",
 };
