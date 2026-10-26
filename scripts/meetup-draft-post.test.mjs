@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import * as postDraftContract from '../supabase/functions/draft-post/post-draft.ts';
 import vm from 'node:vm';
 import ts from 'typescript';
 
@@ -15,7 +16,7 @@ function setup({ output = draft, user = true, consent = true, quotaError, provid
   vm.runInNewContext(source, {
     exports: {}, Request, Response, console: { error() {} },
     Deno: { serve: fn => { handler = fn; }, env: { get: () => 'test-value' } },
-    require: name => name.includes('meetup-draft') ? contract : ({ createClient: () => ({
+    require: name => name.includes('meetup-draft') ? contract : name.includes('post-draft') ? postDraftContract : ({ createClient: () => ({
       auth: { getUser: async () => ({ data: { user: user ? { id: 'member' } : null } }) },
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: consent ? { ai_safety_consent_at: '2026-09-11' } : null }) }) }) }),
       rpc: async name => { calls.push(name); return { error: quotaError }; },
@@ -90,8 +91,8 @@ test('photo-only generation and category-only meetup feed drafts retain their ex
     const output = { categorySlug: request.selectedCategory, title: '이웃과 함께해요', body: '가볍게 이야기 나눠요.', hashtags: [] };
     const app = setup({ output }); assert.equal((await app.request(request)).status, 200);
     const sent = app.requests[0];
-    assert.equal(JSON.parse(sent.input[0].content[0].text).mode, request.imageBase64 ? 'create_from_photo' : 'edit_existing_draft');
-    assert.deepEqual(sent.text.format.schema.required, ['categorySlug', 'title', 'body', 'hashtags']);
+    assert.equal(JSON.parse(sent.input[0].content[0].text).mode, request.imageBase64 ? 'create_from_photo' : 'create_from_note');
+    assert.deepEqual(sent.text.format.schema.required, ['categorySlug', 'title', 'body', 'hashtags', 'fields', 'price', 'looksLikeBusiness']);
     if (request.imageBase64) assert.equal(sent.input[0].content[1].image_url, 'data:image/png;base64,aGVsbG8=');
   }
   const meetup = setup(); assert.equal((await meetup.request({ ...base, intent: 'meetup', selectedCategory: 'meetup' })).status, 200);

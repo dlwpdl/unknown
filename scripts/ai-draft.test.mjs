@@ -4,6 +4,9 @@ import test from 'node:test';
 import { parseAiDraftResponse } from '../src/lib/ai-draft.ts';
 import * as aiDraft from '../src/lib/ai-draft.ts';
 
+// Older and merchant responses carry no extra fields; the app fills these defaults.
+const extras = { fields: [], price: null, looksLikeBusiness: false, remaining: null };
+
 test('AI 초안 응답을 앱 형식으로 정규화한다', () => {
   assert.deepEqual(
     parseAiDraftResponse({
@@ -19,19 +22,20 @@ test('AI 초안 응답을 앱 형식으로 정규화한다', () => {
       title: '원목 식탁 나눔',
       body: '사진 속 식탁을 나눔합니다. 상태와 크기를 확인해주세요.',
       hashtags: ['가구', '코퀴틀람', '나눔', '이사', '원목'],
+      ...extras,
     },
   );
 });
 
 test('비즈니스 초안은 정상 카테고리로 받아들인다', () => {
   const draft = { categorySlug: 'business', title: '업체 소개', body: '밴쿠버에서 운영하는 가게를 소개합니다.', hashtags: ['업체소개'] };
-  assert.deepEqual(parseAiDraftResponse({ draft }), draft);
+  assert.deepEqual(parseAiDraftResponse({ draft }), { ...draft, ...extras });
 });
 
 test('업체 소개·구인구직·중고거래 초안 카테고리를 지원한다', () => {
   for (const categorySlug of ['business', 'jobs', 'used']) {
     const draft = { categorySlug, title: '지역 안내', body: '밴쿠버의 소식을 나눕니다.', hashtags: [] };
-    assert.deepEqual(parseAiDraftResponse({ draft }), draft);
+    assert.deepEqual(parseAiDraftResponse({ draft }), { ...draft, ...extras });
   }
 });
 
@@ -68,4 +72,24 @@ test('meetup application includes the useful outline and only selected unchanged
   assert.deepEqual(aiDraft.meetupAiDraftChanges(fields, { title: true, body: true, question: true }, baseline, { title: 1, body: 0, question: 2 }), { body: fields.body });
   assert.deepEqual(aiDraft.meetupAiDraftChanges(fields, { title: true, body: true, question: true }, baseline, { title: 1, body: 1, question: 1 }), {});
   assert.ok(aiDraft.meetupAiDraftFields({ ...meetup, preparation: ['물'] }, 'en').body.includes('Preparation\n• 물'));
+});
+
+test('짧은 한 줄 메모는 새 글로, 긴 원고는 다듬기로 간다', () => {
+  assert.equal(aiDraft.isShortNote('', '이케아 책상 팔아요 40불 거의 새거 버나비 픽업만'), true);
+  assert.equal(aiDraft.isShortNote('책상', '이케아 책상 팔아요\n40불이고 거의 새거예요'), false);
+  assert.equal(aiDraft.isShortNote('', 'ㄱ'.repeat(61)), false);
+  assert.equal(aiDraft.isShortNote('', '  '), false);
+});
+
+test('카테고리 칸은 빈 값을 비어 있음으로 두고, 올릴 때 본문 위에 붙는다', () => {
+  const draft = parseAiDraftResponse({
+    remaining: 2,
+    draft: { categorySlug: 'used', title: '책상 팔아요', body: '버나비 픽업만 돼요.', hashtags: [], price: 40, looksLikeBusiness: false,
+      fields: [{ label: '상태', value: '거의 새것', source: 'memo' }, { label: '크기·모델', value: ' ', source: 'photo' }, { label: 1 }] },
+  });
+  assert.deepEqual(draft.fields, [{ label: '상태', value: '거의 새것', source: 'memo' }, { label: '크기·모델', value: '', source: 'missing' }]);
+  assert.equal(draft.price, 40);
+  assert.equal(draft.remaining, 2);
+  assert.equal(aiDraft.withDraftFields(draft.body, draft.fields), '상태: 거의 새것\n\n버나비 픽업만 돼요.');
+  assert.equal(aiDraft.withDraftFields('본문', []), '본문');
 });

@@ -59,7 +59,7 @@ import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
 import { useCommunityCity } from '@/lib/community-city';
 import type { LocationFix } from '@/lib/location';
 import { useCommunityLocation } from '@/lib/location-provider';
-import { parseAiDraftResponse } from '@/lib/ai-draft';
+import { isShortNote, MAX_AI_IMAGES, parseAiDraftResponse, withDraftFields, type DraftField } from '@/lib/ai-draft';
 import {
   createCommunityPost,
   loadListingQuota,
@@ -128,6 +128,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [draftImages, setDraftImages] = useState<PreparedImage[]>([]);
   const [creatingDraft, setCreatingDraft] = useState(false);
   const [aiDraftReady, setAiDraftReady] = useState(false);
+  const [aiFields, setAiFields] = useState<DraftField[]>([]);
+  const [aiNote, setAiNote] = useState<{ tone: 'info' | 'warn'; text: string } | null>(null);
+  const aiUndo = useRef<{ title: string; body: string; tag: Tag; hashtagInput: string; postKind: PostKind; priceInput: string } | null>(null);
+  const writesNew = !hasDraftText || isShortNote(title, splitPostAttachments(body).body);
   const [detailPost, setDetailPost] = useState<Post | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
   const [sheetUser, setSheetUser] = useState<SheetUser | null>(null);
@@ -488,6 +492,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     const bodyHint = attached.body.trim();
     if ((draftImages.length === 0 && !titleHint && !bodyHint) || creatingDraft) return;
     setCreatingDraft(true);
+    setAiNote(null);
     try {
       const { data, error } = await supabase.functions.invoke('draft-post', {
         body: {
@@ -496,21 +501,45 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           titleHint: titleHint || undefined,
           bodyHint: bodyHint || undefined,
           language,
-          ...(draftImages[0] ? { imageBase64: draftImages[0].base64, mimeType: draftImages[0].mimeType } : {}),
+          ...(draftImages.length ? { images: draftImages.slice(0, MAX_AI_IMAGES).map(({ base64, mimeType }) => ({ imageBase64: base64, mimeType })) } : {}),
         },
       });
       if (error) throw error;
       const draft = parseAiDraftResponse(data);
-      setTag(TAGS.find(({ slug }) => slug === draft.categorySlug && (isAdmin || slug !== 'business')) ?? tag);
+      aiUndo.current ??= { title, body, tag, hashtagInput, postKind, priceInput };
+      const nextTag = TAGS.find(({ slug }) => slug === draft.categorySlug && (isAdmin || slug !== 'business')) ?? tag;
+      setTag(nextTag);
+      setAiFields(draft.fields);
+      if (draft.price != null && nextTag.slug === 'used') { setPostKind('listing'); setPriceInput(String(draft.price)); }
+      const notes = [
+        nextTag.id !== tag.id ? tr("{0} 카테고리로 옮겼어요.", tr(nextTag.label)) : '',
+        draft.looksLikeBusiness && !isAdmin ? tr("가게 소식은 비즈니스 프로필로 바꿔서 올리면 가게 이름으로 나가요.") : '',
+        draft.remaining != null && draft.remaining <= 2 ? tr("오늘 AI 초안은 {0}번 남았어요.", draft.remaining) : '',
+      ].filter(Boolean);
+      if (notes.length) setAiNote({ tone: 'info', text: notes.join(' ') });
       setTitle(draft.title);
       setBody(withPostMap(withPostAttachments(draft.body, attached.urls), mapped.url ?? '', mapped.label));
       setHashtagInput(current => parseHashtags(`${hasAdLabel(parseHashtags(current)) ? 'AD ' : ''}${draft.hashtags.join(' ')}`).map(hashtag => `#${hashtag}`).join(' '));
       setAiDraftReady(true);
-    } catch {
-      Alert.alert(t.write.aiErrorTitle, t.write.aiErrorBody);
+    } catch (cause) {
+      const code = await (cause as { context?: Response })?.context?.json?.().then((value: { error?: { code?: string } }) => value?.error?.code).catch(() => null);
+      play('warning');
+      setAiNote({ tone: 'warn', text: code === 'DAILY_LIMIT_REACHED'
+        ? tr("오늘 AI 초안 5번을 다 썼어요. 내일 다시 쓸 수 있어요. 적어 둔 메모와 사진은 그대로 있어요.")
+        : tr("초안을 만들지 못했어요. 횟수는 줄지 않았고, 적어 둔 메모와 사진은 그대로 있어요.") });
     } finally {
       setCreatingDraft(false);
     }
+  };
+
+  const undoAiDraft = () => {
+    const before = aiUndo.current;
+    if (!before) return;
+    setTitle(before.title); setBody(before.body); setTag(before.tag); setHashtagInput(before.hashtagInput); setPostKind(before.postKind); setPriceInput(before.priceInput);
+    aiUndo.current = null;
+    setAiFields([]);
+    setAiNote(null);
+    setAiDraftReady(false);
   };
 
   const submit = async () => {
@@ -532,7 +561,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       return;
     }
     let postBody: string;
-    try { postBody = withPostMap(body, ''); }
+    try { postBody = withPostMap(withDraftFields(body, aiFields), ''); }
     catch (error) {
       play('warning');
       Alert.alert(t.write.validationTitle, error instanceof Error && error.message === 'INVALID_MAP_LINK' ? t.write.mapInvalid : t.write.bodyTooLong);
@@ -569,6 +598,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       setHashtagInput('');
       setDraftImages([]);
       setAiDraftReady(false);
+      setAiFields([]);
+      setAiNote(null);
+      aiUndo.current = null;
       setPostKind('story');
       setPriceInput('');
       postSuccessPending.current = Platform.OS === 'ios';
@@ -1070,7 +1102,25 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 {input}
                 <View style={styles.writerAttachments}>{attachments}</View>
                 {tag.kind !== 'meetup' && postKind === 'story' && pollDraft && <View style={styles.writerAttachments}><PollDraftFields poll={pollDraft} onChange={setPollDraft} disabled={submitting || creatingDraft} /></View>}
-                {aiDraftReady && <ThemedText accessibilityRole="alert" type="small" themeColor="textSecondary" style={styles.aiNotice}>{t.write.reviewDraft}</ThemedText>}
+                {aiDraftReady && aiFields.length > 0 && <View style={[styles.aiFields, { backgroundColor: theme.card }]}>
+                  {aiFields.map((field, index) => <View key={field.label} style={[styles.aiFieldRow, index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.line }]}>
+                    <ThemedText type="small" themeColor="textSecondary" style={styles.aiFieldLabel}>{field.label}</ThemedText>
+                    <TextInput value={field.value} editable={!submitting} maxLength={80} accessibilityLabel={field.label}
+                      onChangeText={value => setAiFields(current => current.map((item, position) => position === index ? { ...item, value, source: value.trim() ? (item.source === 'missing' ? 'memo' : item.source) : 'missing' } : item))}
+                      placeholder={tr("직접 적어 주세요")} placeholderTextColor={theme.textSecondary}
+                      style={[styles.aiFieldInput, { color: theme.text }]} />
+                    <ThemedText type="small" style={{ color: field.value.trim() ? theme.textSecondary : theme.accent }}>
+                      {!field.value.trim() ? tr("비어 있음") : field.source === 'photo' ? tr("사진") : tr("메모")}
+                    </ThemedText>
+                  </View>)}
+                </View>}
+                {aiDraftReady && <View style={styles.aiReviewRow}>
+                  <ThemedText accessibilityRole="alert" type="small" themeColor="textSecondary" style={styles.flexText}>{t.write.reviewDraft}</ThemedText>
+                  {aiUndo.current && <Pressable analyticsId="components_feed-screen.ai-undo" accessibilityRole="button" onPress={() => { play('selection'); undoAiDraft(); }}
+                    style={({ pressed }) => [styles.aiUndo, { opacity: pressed ? 0.6 : 1 }]}>
+                    <ThemedText type="smallBold" style={{ color: theme.accent }}>{tr("메모로 되돌리기")}</ThemedText>
+                  </Pressable>}
+                </View>}
                 {tag.kind === 'meetup' && <ThemedText type="small" themeColor="textSecondary" style={styles.meetupNote}>{t.write.roomNote}</ThemedText>}
                 {tag.kind !== 'meetup' && postKind === 'listing' && <>
                   <TextInput value={priceInput} onChangeText={setPriceInput} editable={!submitting && !creatingDraft} accessibilityLabel={t.write.pricePlaceholder}
@@ -1084,6 +1134,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                       {draftImages.map((image, index) => (
                         <View key={`${image.uri}-${index}`} style={styles.photoTile}>
                           <Image source={{ uri: image.uri }} style={styles.photoTileImage} contentFit="cover" />
+                          {index < MAX_AI_IMAGES && <View style={[styles.photoAiBadge, { backgroundColor: theme.card }]} accessibilityLabel={tr("AI가 읽는 사진")}>
+                            <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} size={10} tintColor={theme.accent} />
+                          </View>}
                           <Pressable analyticsId="components_feed-screen.pressable.21"
                             onPress={() => { play('selection'); setDraftImages((current) => current.filter((_, position) => position !== index)); setAiDraftReady(false); }}
                             accessibilityRole="button"
@@ -1113,14 +1166,20 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   disabled={submitting || creatingDraft || (draftImages.length === 0 && !hasDraftText)}
                   accessibilityRole="button"
                   accessibilityState={{ disabled: submitting || creatingDraft || (draftImages.length === 0 && !hasDraftText), busy: creatingDraft }}
-                  accessibilityHint={hasDraftText ? tr("적어둔 내용으로 글을 다듬어요") : tr("사진이나 한 줄 메모로 시작해요")}
+                  accessibilityHint={writesNew ? tr("메모로 글 한 편 써 드려요") : tr("적어둔 내용으로 글을 다듬어요")}
                   style={[styles.aiButton, { borderColor: theme.accent, opacity: submitting || creatingDraft || (draftImages.length === 0 && !hasDraftText) ? 0.6 : 1 }]}>
                   <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} size={16} tintColor={theme.accent} />
                   <ThemedText type="smallBold" style={{ color: theme.accent, flexShrink: 1 }}>
-                    {creatingDraft ? t.write.creatingDraft : hasDraftText ? t.write.polishDraft : tr("AI로 글쓰기")}
+                    {creatingDraft ? t.write.creatingDraft : writesNew ? tr("AI로 글쓰기") : t.write.polishDraft}
                   </ThemedText>
                 </Pressable>
-                  <ThemedText type="small" themeColor="textSecondary" style={styles.writerAiHint}>{hasDraftText ? tr("적어둔 내용으로 글을 다듬어요") : tr("사진이나 한 줄 메모로 시작해요")}</ThemedText>
+                  <ThemedText type="small" accessibilityLiveRegion="polite" themeColor={aiNote?.tone === 'warn' ? undefined : 'textSecondary'} style={[styles.writerAiHint, aiNote?.tone === 'warn' && { color: theme.danger }]}>
+                    {creatingDraft ? (draftImages.length ? tr("사진 {0}장이랑 메모 보고 쓰는 중이에요", Math.min(draftImages.length, MAX_AI_IMAGES)) : tr("메모로 글 쓰는 중이에요"))
+                      : aiNote ? aiNote.text
+                      : !hasDraftText && draftImages.length === 0 ? tr("한 줄만 적어도 돼요. 예) 이케아 책상 팔아요 40불")
+                      : writesNew ? (draftImages.length ? tr("메모랑 사진 {0}장 보고 글 한 편 써 드려요", Math.min(draftImages.length, MAX_AI_IMAGES)) : tr("메모로 글 한 편 써 드려요"))
+                      : tr("적어둔 내용으로 글을 다듬어요")}
+                  </ThemedText>
                 </View>
                 <View style={styles.writerTools}>
                     <Pressable analyticsId="components_feed-screen.pressable.25"
@@ -1382,6 +1441,14 @@ const styles = StyleSheet.create({
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   photoTile: { width: '31%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden' },
   photoTileImage: { width: '100%', height: '100%' },
+  photoAiBadge: { position: 'absolute', left: 6, bottom: 6, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  aiFields: { marginHorizontal: Spacing.four, marginBottom: Spacing.two, borderRadius: 14, overflow: 'hidden' },
+  aiFieldRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, minHeight: 44 },
+  aiFieldLabel: { width: 72 },
+  aiFieldInput: { flex: 1, fontSize: 15, paddingVertical: 10 },
+  aiReviewRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginHorizontal: Spacing.four, marginBottom: Spacing.two },
+  aiUndo: { minHeight: 44, justifyContent: 'center' },
+  flexText: { flex: 1 },
   photoRemove: { position: 'absolute', top: 0, right: 0, width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   secondaryButton: {
     minHeight: 44,

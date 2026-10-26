@@ -1,4 +1,5 @@
 import { withLanguageImports } from './test-language-imports.mjs';
+import * as aiDraft from '../src/lib/ai-draft.ts';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
@@ -39,6 +40,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '@/hooks/use-chat-identity': { useChatIdentity: () => null },
     '@/lib/feed-data': { groupJournalPosts, appendUniquePosts, limitBusinessPosts, loadPublicFeed: (...args) => new Promise((resolve, reject) => calls.push({ args, resolve, reject })) },
     '../../supabase/functions/_shared/post-links': { splitPostAttachments: body => ({ body }) },
+    '@/lib/ai-draft': aiDraft,
   };
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/feed-screen.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;

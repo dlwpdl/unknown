@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
+import * as postDraftContract from '../supabase/functions/draft-post/post-draft.ts';
 import vm from 'node:vm';
 import ts from 'typescript';
 import * as meetupContract from '../supabase/functions/draft-post/meetup-draft.ts';
@@ -13,7 +14,7 @@ test('photo draft keeps author hints outside trusted writing instructions and di
   vm.runInNewContext(source, {
     exports: {}, Request, Response, console,
     Deno: { serve: fn => { handler = fn; }, env: { get: () => 'test-value' } },
-    require: () => ({ createClient: () => ({
+    require: name => name.includes('post-draft') ? postDraftContract : ({ createClient: () => ({
       auth: { getUser: async () => ({ data: { user: { id: 'member' } } }) },
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { ai_safety_consent_at: '2026-09-11' } }) }) }) }),
       rpc: async () => ({}),
@@ -28,7 +29,7 @@ test('photo draft keeps author hints outside trusted writing instructions and di
   assert.equal(response.status, 200);
   assert.equal(sent.store, false);
   assert.ok(sent.instructions && !sent.instructions.includes(input.bodyHint));
-  assert.deepEqual(JSON.parse(sent.input[0].content[0].text), { cityName: input.cityName, selectedCategory: input.selectedCategory, titleHint: input.titleHint, bodyHint: input.bodyHint, mode: 'edit_existing_draft' });
+  assert.deepEqual(JSON.parse(sent.input[0].content[0].text), { cityName: input.cityName, selectedCategory: input.selectedCategory, titleHint: input.titleHint, bodyHint: input.bodyHint, mode: 'create_from_note' });
   assert.equal(sent.input[0].content[1].image_url, `data:image/png;base64,${input.imageBase64}`);
 });
 
@@ -40,7 +41,7 @@ test('written draft can be polished without a photo', async () => {
   vm.runInNewContext(source, {
     exports: {}, Request, Response, console,
     Deno: { serve: fn => { handler = fn; }, env: { get: () => 'test-value' } },
-    require: () => ({ createClient: () => ({
+    require: name => name.includes('post-draft') ? postDraftContract : ({ createClient: () => ({
       auth: { getUser: async () => ({ data: { user: { id: 'member' } } }) },
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { ai_safety_consent_at: '2026-09-11' } }) }) }) }),
       rpc: async () => ({}),
@@ -54,7 +55,7 @@ test('written draft can be polished without a photo', async () => {
   const response = await handler(new Request('https://example.test/draft-post', { method: 'POST', headers: { Authorization: 'Bearer test' }, body: JSON.stringify(input) }));
 
   assert.equal(response.status, 200);
-  assert.deepEqual(JSON.parse(sent.input[0].content[0].text), { cityName: input.cityName, selectedCategory: input.selectedCategory, titleHint: input.titleHint, bodyHint: input.bodyHint, mode: 'edit_existing_draft' });
+  assert.deepEqual(JSON.parse(sent.input[0].content[0].text), { cityName: input.cityName, selectedCategory: input.selectedCategory, titleHint: input.titleHint, bodyHint: input.bodyHint, mode: 'create_from_note' });
   assert.equal(sent.input[0].content.length, 1);
 });
 
@@ -66,7 +67,7 @@ test('new categories can request drafts and remain valid AI output choices', asy
   vm.runInNewContext(source, {
     exports: {}, Request, Response, console,
     Deno: { serve: fn => { handler = fn; }, env: { get: () => 'test-value' } },
-    require: () => ({ createClient: () => ({
+    require: name => name.includes('post-draft') ? postDraftContract : ({ createClient: () => ({
       auth: { getUser: async () => ({ data: { user: { id: 'member' } } }) },
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { ai_safety_consent_at: '2026-09-11' } }) }) }) }),
       rpc: async () => ({}),
@@ -81,7 +82,8 @@ test('new categories can request drafts and remain valid AI output choices', asy
     const response = await handler(new Request('https://example.test/draft-post', { method: 'POST', headers: { Authorization: 'Bearer test' }, body: JSON.stringify({ cityName: '밴쿠버', selectedCategory, bodyHint: '밴쿠버 소식' }) }));
     assert.equal(response.status, 200);
     assert.equal((await response.json()).draft.categorySlug, selectedCategory);
-    assert.ok(sent.text.format.schema.properties.categorySlug.enum.includes(selectedCategory));
+    // A personal draft may arrive in 비즈니스 (an admin picked it) but the AI itself can't choose it.
+    assert.equal(sent.text.format.schema.properties.categorySlug.enum.includes(selectedCategory), selectedCategory !== 'business');
   }
 });
 
@@ -93,7 +95,7 @@ test('event meetup request creates an invitation from the seeded festival instea
   vm.runInNewContext(source, {
     exports: {}, Request, Response, console,
     Deno: { serve: fn => { handler = fn; }, env: { get: () => 'test-value' } },
-    require: name => name.includes('meetup-draft') ? meetupContract : ({ createClient: () => ({
+    require: name => name.includes('meetup-draft') ? meetupContract : name.includes('post-draft') ? postDraftContract : ({ createClient: () => ({
       auth: { getUser: async () => ({ data: { user: { id: 'member' } } }) },
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { ai_safety_consent_at: '2026-09-11' } }) }) }) }),
       rpc: async () => ({}),
@@ -119,7 +121,7 @@ test('초안 본문은 쓰레드 말투로 고정되고, 작성자 원고 다듬
   vm.runInNewContext(source, {
     exports: {}, Request, Response, console,
     Deno: { serve: fn => { handler = fn; }, env: { get: () => 'test-value' } },
-    require: () => ({ createClient: () => ({
+    require: name => name.includes('post-draft') ? postDraftContract : ({ createClient: () => ({
       auth: { getUser: async () => ({ data: { user: { id: 'member' } } }) },
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { ai_safety_consent_at: '2026-09-11' } }) }) }) }),
       rpc: async () => ({}),
@@ -145,7 +147,7 @@ test('personal drafts carry the requested app language and reject unknown langua
   vm.runInNewContext(source, {
     exports: {}, Request, Response, console,
     Deno: { serve: fn => { handler = fn; }, env: { get: () => 'test-value' } },
-    require: () => ({ createClient: () => ({
+    require: name => name.includes('post-draft') ? postDraftContract : ({ createClient: () => ({
       auth: { getUser: async () => ({ data: { user: { id: 'member' } } }) },
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { ai_safety_consent_at: '2026-09-11' } }) }) }) }),
       rpc: async () => ({}),
@@ -163,4 +165,39 @@ test('personal drafts carry the requested app language and reject unknown langua
   sent = undefined;
   assert.equal((await post({ ...input, language: 'fr' })).status, 400);
   assert.equal(sent, undefined);
+});
+
+test('a longer written draft is polished, up to three photos go to the AI, and a failed draft is refunded', async () => {
+  let handler, sent, refunded = null, fail = false;
+  const source = ts.transpileModule(fs.readFileSync(new URL('../supabase/functions/draft-post/index.ts', import.meta.url), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  }).outputText;
+  vm.runInNewContext(source, {
+    exports: {}, Request, Response, console: { ...console, error() {} },
+    Deno: { serve: fn => { handler = fn; }, env: { get: () => 'test-value' } },
+    require: name => name.includes('post-draft') ? postDraftContract : ({ createClient: () => ({
+      auth: { getUser: async () => ({ data: { user: { id: 'member' } } }) },
+      from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { ai_safety_consent_at: '2026-09-11' } }) }) }) }),
+      rpc: async (fn, args) => { if (fn === 'release_ai_draft') refunded = args.p_user_id; return { data: fn === 'reserve_ai_draft' ? 4 : null }; },
+    }) }),
+    fetch: async (_url, options) => {
+      sent = JSON.parse(options.body);
+      if (fail) return new Response('nope', { status: 500 });
+      return Response.json({ output: [{ content: [{ type: 'output_text', text: JSON.stringify({ categorySlug: 'used', title: '책상', body: '팔아요.', hashtags: [], fields: [], price: 40, looksLikeBusiness: false }) }] }] });
+    },
+  });
+  const image = { mimeType: 'image/png', imageBase64: 'aGVsbG8=' };
+  const call = body => handler(new Request('https://example.test/draft-post', { method: 'POST', headers: { Authorization: 'Bearer test' }, body: JSON.stringify(body) }));
+  const draft = { cityName: '밴쿠버', selectedCategory: 'life', bodyHint: '이케아 책상 팔아요.\n40불이고 거의 새거예요. 버나비 픽업만 가능해요.', images: [image, image, image] };
+  const ok = await call(draft);
+  assert.equal(ok.status, 200);
+  assert.equal((await ok.json()).remaining, 1);
+  assert.equal(JSON.parse(sent.input[0].content[0].text).mode, 'edit_existing_draft');
+  assert.equal(JSON.parse(sent.input[0].content[0].text).photoCount, 3);
+  assert.equal(sent.input[0].content.length, 4);
+  assert.equal(refunded, null);
+  assert.equal((await call({ ...draft, images: [image, image, image, image] })).status, 400);
+  fail = true;
+  assert.equal((await call(draft)).status, 500);
+  assert.equal(refunded, 'member');
 });
