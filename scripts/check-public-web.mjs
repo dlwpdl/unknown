@@ -18,7 +18,7 @@ const robots = readFileSync(join(directory, 'robots.txt'), 'utf8');
 assert.ok(robots.includes('Sitemap: https://gling.ej-entertainment.com/sitemap.xml'), 'Public sitemap is missing');
 const sitemap = readFileSync(join(directory, 'sitemap.xml'), 'utf8');
 assert.ok(!sitemap.includes('?city='), 'Sitemap must list canonical pages only');
-if (process.env.CI) {
+if (process.env.GLING_PRERENDER_POSTS === '1') {
   // Prerendered posts are the indexable copies; the /post?id= shell below stays noindex.
   const posts = existsSync(join(directory, 'posts')) ? readdirSync(join(directory, 'posts')).filter(file => file.endsWith('.html')) : [];
   assert.ok(posts.length > 0 && sitemap.includes('https://gling.ej-entertainment.com/posts/'), 'Public post pages were not prerendered');

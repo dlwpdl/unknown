@@ -23,12 +23,10 @@ export function finishPublicWeb(directory = 'dist', posts = []) {
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const directory = process.argv[2] ?? 'dist';
   const url = process.env.EXPO_PUBLIC_SUPABASE_URL, key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  // CI must publish post pages; a failed fetch fails the deploy and keeps the previous site live.
-  if (!url || !key) {
-    if (process.env.CI) throw new Error('Supabase public env is required to prerender public posts');
-    console.warn('Skipping public post prerender: Supabase public env is not set.');
-  }
-  const posts = url && key ? await prerenderPublicPosts(directory, { url: url.replace(/\/+$/, ''), key, cities: CITIES.filter(city => city.state === 'open').map(city => city.id) }) : [];
+  // Only the Pages deploy prerenders (CI exports against a stub project); there a failed fetch fails the deploy and keeps the previous site live.
+  const prerender = process.env.GLING_PRERENDER_POSTS === '1';
+  if (prerender && (!url || !key)) throw new Error('Supabase public env is required to prerender public posts');
+  const posts = prerender ? await prerenderPublicPosts(directory, { url: url.replace(/\/+$/, ''), key, cities: CITIES.filter(city => city.state === 'open').map(city => city.id) }) : [];
   finishPublicWeb(directory, posts);
   console.log(`Prerendered ${posts.length} public posts.`);
 }
