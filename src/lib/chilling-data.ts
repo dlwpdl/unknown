@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { normalizeChillingEvent, type ChillingEventDraft } from './chilling.ts';
-import { t } from '../i18n/index.ts';
+import { getLocale, t, tr } from '../i18n/index.ts';
 import { meetupRestrictionError } from './meetup-policy.ts';
 import { removePostImages, uploadPostImage, type PostDraftImage } from './community-data.ts';
 import { loadMeetupProfilePhoto } from './chilling-profile-media.ts';
@@ -114,7 +114,7 @@ export async function loadChillingApplication(client: SupabaseClient, requestId:
   if (result.data.requesterId !== viewerId && (!request || request.host_id !== viewerId || (request.status !== 'pending' && request.status !== 'approved'))) return null;
   const profile = await withChillingPhotos(client, result.data.profile);
   if (request) {
-    request.requester = { nickname: profile?.displayName || '모임 멤버', city_id: profile?.cityId ?? '', avatar_path: null,
+    request.requester = { nickname: profile?.displayName || tr('모임 멤버'), city_id: profile?.cityId ?? '', avatar_path: null,
       ...(profile?.photoUris?.[0] ? { photoUri: profile.photoUris[0] } : {}) };
   }
   return { ...result.data, profile, request };
@@ -186,10 +186,10 @@ export function getChillingErrorCode(error: unknown): string | null {
 }
 
 export function getChillingError(error: unknown): string {
-  const restriction = meetupRestrictionError(error);
+  const restriction = meetupRestrictionError(error, getLocale());
   if (restriction) return restriction;
   const code = getChillingErrorCode(error);
-  if (code && chillingErrors[code]) return chillingErrors[code];
+  if (code && chillingErrors[code]) return tr(chillingErrors[code]);
   const common = code ? t.actionErrors[code as keyof typeof t.actionErrors] : null;
-  return common ? `${common.title}\n${common.body}` : '처리하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.';
+  return common ? `${common.title}\n${common.body}` : tr('처리하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.');
 }

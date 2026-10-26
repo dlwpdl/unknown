@@ -12,7 +12,7 @@ import { PostBody } from '@/components/post-body';
 import { PostMapLink } from '@/components/post-map-link';
 import { TranslationControl } from '@/components/content-translation';
 import { useContentTranslation } from '@/hooks/use-content-translation';
-import { visibleTranslationSource } from '@/lib/translation-source';
+import { businessDisclosureLines, visibleTranslationSource } from '@/lib/translation-source';
 import { splitPostPhotoCredits } from '@/lib/post-photo-credits';
 import { splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
 import { ReportSheet } from '@/components/report-sheet';
@@ -97,7 +97,7 @@ export function PostCard({
   const attached = splitPostAttachments(originalBody);
   const credited = splitPostPhotoCredits(attached.body);
   const displayBody = translation.translated && !translation.original
-    ? withPostAttachments(translation.display.body + (credited.credits ? attached.body.slice(credited.body.length) : ''), attached.urls)
+    ? withPostAttachments(translation.display.body + businessDisclosureLines(credited.body).map(line => `\n\n${line}`).join('') + (credited.credits ? attached.body.slice(credited.body.length) : ''), attached.urls)
     : originalBody;
 
   const toggleLike = async () => {

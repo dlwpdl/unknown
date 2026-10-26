@@ -45,8 +45,8 @@ function MannerReview({ subjectId, nickname, context }: { subjectId: string; nic
   }
   const button = [styles.button, { borderColor: theme.line, backgroundColor: theme.backgroundElement }];
   return <View style={styles.container}>
-    {!open && <Pressable accessibilityRole="button" accessibilityLabel={tr("{0} {1} 리뷰", (nickname), (context.sessionId ? tr('만남') : tr('대화')))} disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => void start()} style={button}>
-      <ThemedText type="smallBold">{busy ? tr("확인 중…") : tr("{0} {1} 리뷰 남기기", (nickname), (context.sessionId ? tr('만남') : tr('대화')))}</ThemedText>
+    {!open && <Pressable accessibilityRole="button" accessibilityLabel={tr(context.sessionId ? '{0} 만남 리뷰' : '{0} 대화 리뷰', nickname)} disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => void start()} style={button}>
+      <ThemedText type="smallBold">{busy ? tr("확인 중…") : tr(context.sessionId ? '{0} 만남 리뷰 남기기' : '{0} 대화 리뷰 남기기', nickname)}</ThemedText>
     </Pressable>}
     {open && <>
       <ThemedText type="smallBold">{tr("글링 리뷰 ·") + " "}{score === null ? tr("평점을 선택해주세요") : `${score.toFixed(1)} / 10`}</ThemedText>

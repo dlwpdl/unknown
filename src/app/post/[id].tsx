@@ -126,7 +126,7 @@ export default function SharedPostRoute() {
                   onPress={() => void beginLogin()} style={[styles.login, { backgroundColor: theme.accent, opacity: savingReturn || isAuthLoading ? 0.45 : 1 }]}>
                   <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{savingReturn ? language === 'ko' ? '로그인 준비 중…' : 'Preparing sign-in…' : tr("로그인하고 내용 보기")}</ThemedText>
                 </Pressable>
-                {returnError === requestKey && <ThemedText type="small" accessibilityRole="alert">{language === 'ko' ? '로그인을 준비하지 못했어요. 다시 시도해 주세요.' : 'Could not prepare sign-in. Please try again.'}</ThemedText>}
+                {returnError === requestKey && <ThemedText type="small" accessibilityRole="alert">{language === 'ko' ? '로그인을 준비하지 못했어요. 다시 시도해 주세요.' : 'Couldn’t get sign-in ready. Try again.'}</ThemedText>}
               </View> : loading || isAuthLoading || (!isAuthed && postId && preview?.key !== requestKey) ? (
                 <GlingLoader color={theme.accent} accessibilityLabel={tr("공유 글 불러오는 중")} />
               ) : (

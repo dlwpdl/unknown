@@ -14,7 +14,7 @@ import { hideContent, subscribeVisibility, visibilityRevision } from '../src/lib
 import { count, t } from '../src/i18n/ko.ts';
 import { uniqueHashtags } from '../src/lib/hashtags.ts';
 import { postMapBody } from '../src/lib/post-maps.ts';
-import { visibleTranslationSource } from './test-meetup-source-imports.mjs';
+import { translationSource } from './test-meetup-source-imports.mjs';
 import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 import * as postLinks from '../supabase/functions/_shared/post-links.ts';
 import * as postReactions from '../src/lib/post-reactions.ts';
@@ -88,7 +88,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/components/post-body': { PostBody: 'PostBody' },
     '@/components/content-translation': { TranslationControl: 'TranslationControl', TranslatedCommentBody: 'TranslatedCommentBody' },
     '@/hooks/use-content-translation': { useContentTranslation: (_kind, _id, source) => ({ display: source, translated: false, original: true }) },
-    '@/lib/translation-source': { visibleTranslationSource },
+    '@/lib/translation-source': translationSource,
     '@/lib/post-photo-credits': { splitPostPhotoCredits },
     '@/lib/post-reactions': postReactions,
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },

@@ -104,3 +104,12 @@ test('free businesses cannot spend AI drafts and never reach the model or quota'
   assert.ok(!h.calls.some(call => call.name === 'reserve_ai_draft'));
 });
 
+test('merchant AI passes the requested app language and rejects unknown languages', async () => {
+  const h = setup();
+  assert.equal((await h.request({ ...input, language: 'en' })).status, 200);
+  assert.equal(JSON.parse(h.modelCalls[0].input[0].content[0].text).language, 'en');
+  assert.ok(h.modelCalls[0].instructions.includes('language가 en이면'));
+  const bad = setup();
+  assert.equal((await bad.request({ ...input, language: 'fr' })).status, 400);
+  assert.equal(bad.calls.length, 0);
+});

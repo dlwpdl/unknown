@@ -5,11 +5,13 @@ import { useIsFocused } from 'expo-router';
 
 import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/auth';
-import { requestContentTranslation, isDeviceTranslationSupported, resetContentTranslations } from '@/lib/content-translation';
+import { requestContentTranslation, resetContentTranslations } from '@/lib/content-translation';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { needsContentTranslation, type TranslationKind, type TranslationSource } from '@/lib/translation-source';
 
 type TranslationMode = 'off' | 'manual' | 'auto';
+// v1 answers agreed to on-device Google translation; server translation asks again.
+const STORAGE_KEY = 'gling.content-translation.v2:';
 const PreferenceContext = createContext<{
   mode: TranslationMode; ready: boolean; saving: boolean;
   requestMode: (mode: TranslationMode) => Promise<boolean>;
@@ -33,7 +35,7 @@ export function ContentTranslationProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     let active = true;
     if (!scope) return;
-    void AsyncStorage.getItem('gling.device-translation.v1:' + scope).catch(() => null).then((value) => {
+    void AsyncStorage.getItem(STORAGE_KEY + scope).catch(() => null).then((value) => {
       if (active) setSaved({ scope, mode: value === 'auto' || value === 'manual' ? value : 'off', ready: true, hasPreference: value === 'off' || value === 'manual' || value === 'auto' });
     });
     return () => { active = false; };
@@ -44,7 +46,7 @@ export function ContentTranslationProvider({ children }: PropsWithChildren) {
     busy.current = true;
     setSaving(true);
     try {
-      await AsyncStorage.setItem('gling.device-translation.v1:' + scope, next);
+      await AsyncStorage.setItem(STORAGE_KEY + scope, next);
       if (current.current !== scope) return false;
       setSaved({ scope, mode: next, ready: true, hasPreference: true });
       return true;
@@ -58,17 +60,17 @@ export function ContentTranslationProvider({ children }: PropsWithChildren) {
   }, [scope, ready, language, play]);
 
   const requestMode = useCallback(async (next: TranslationMode) => {
-    if (!scope || !ready || busy.current || !isDeviceTranslationSupported()) return false;
+    if (!scope || !ready || busy.current) return false;
     if (next === 'off' || mode !== 'off') return save(next);
     return new Promise<boolean>((resolve) => {
       let answered = false;
-      Alert.alert(language === 'en' ? 'Use on-device translation?' : '기기에서 번역할까요?',
+      Alert.alert(language === 'en' ? 'Translate posts for you?' : '글을 번역해서 보여드릴까요?',
         language === 'en'
-          ? 'Google Translate processes text on your phone. First use downloads Korean/English language packs over Wi-Fi (about 30 MB per model). Originals stay unchanged.'
-          : 'Google Translate가 휴대폰에서 번역해요. 처음에는 Wi-Fi로 한·영 언어팩을 내려받아요(모델당 약 30MB). 원문은 그대로 보존돼요.',
+          ? 'Gling uses AI to translate Korean posts and comments into English. Translations can have mistakes, and you can always tap to see the original.'
+          : '글링이 AI로 영어 글과 댓글을 한국어로 번역해요. 번역이 틀릴 수 있으니 언제든 원문을 눌러 확인할 수 있어요.',
         [
-          { text: language === 'en' ? 'Cancel' : '취소', style: 'cancel', onPress: () => { answered = true; play('selection'); resolve(false); } },
-          { text: language === 'en' ? 'Use translation' : '번역 사용', onPress: () => {
+          { text: language === 'en' ? 'Not now' : '나중에', style: 'cancel', onPress: () => { answered = true; play('selection'); resolve(false); } },
+          { text: language === 'en' ? 'Translate' : '번역하기', onPress: () => {
             answered = true; play('selection');
             if (current.current !== scope) { resolve(false); return; }
             void save(next).then(resolve);
@@ -78,7 +80,7 @@ export function ContentTranslationProvider({ children }: PropsWithChildren) {
   }, [scope, ready, mode, save, language, play]);
 
   useEffect(() => {
-    if (!scope || !ready || language !== 'en' || saved.hasPreference || offered.current === scope || !isDeviceTranslationSupported()) return;
+    if (!scope || !ready || language !== 'en' || saved.hasPreference || offered.current === scope) return;
     offered.current = scope;
     void requestMode('auto');
   }, [scope, ready, language, saved.hasPreference, requestMode]);
@@ -106,7 +108,6 @@ export function useContentTranslation(kind: TranslationKind, id: string, source:
   const preference = useTranslationPreference();
   const request = useMemo(() => ({ kind, id, language, source: { title: source.title, body: source.body } }), [kind, id, language, source.title, source.body]);
   const key = JSON.stringify([isAuthed ? me.id : null, request]);
-  const supported = isDeviceTranslationSupported();
   const eligible = isAuthed && needsContentTranslation(source, language);
   const current = useRef({ key, active: focused && foreground });
   useLayoutEffect(() => { current.current = { key, active: focused && foreground }; }, [key, focused, foreground]);
@@ -131,7 +132,7 @@ export function useContentTranslation(kind: TranslationKind, id: string, source:
   }, [key]);
 
   const run = useCallback(async (controller = new AbortController()) => {
-    if (!supported || !eligible || !mounted.current || current.current.key !== key || !current.current.active) return;
+    if (!eligible || !mounted.current || current.current.key !== key || !current.current.active) return;
     const sequence = ++counter.current;
     loaded.current = '';
     controllers.current.add(controller);
@@ -146,7 +147,7 @@ export function useContentTranslation(kind: TranslationKind, id: string, source:
     } catch (error) {
       if (active()) setState({ key, status: controller.signal.aborted ? 'idle' : 'error', error: controller.signal.aborted ? undefined : error instanceof Error ? error.message : 'TRANSLATION_UNAVAILABLE' });
     } finally { controllers.current.delete(controller); }
-  }, [supported, eligible, key, request, me.id]);
+  }, [eligible, key, request, me.id]);
 
   useEffect(() => {
     if (preference.mode !== 'auto' || !preference.ready || !visible || !focused || !foreground || !eligible || loaded.current === key) return;
@@ -164,5 +165,5 @@ export function useContentTranslation(kind: TranslationKind, id: string, source:
     if (preference.mode === 'off' && !await preference.requestMode('manual')) return;
     if (mounted.current && current.current.key === key && current.current.active) await run();
   };
-  return { display, eligible, supported, translated, original: !!present.original, loading: present.status === 'loading', error: present.error, ready: preference.ready, action };
+  return { display, eligible, translated, original: !!present.original, loading: present.status === 'loading', error: present.error, ready: preference.ready, action };
 }

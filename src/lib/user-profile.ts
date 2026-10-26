@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { hydratePublicPosts, mapPublicFeed, type FeedCursor, type PublicFeedRow } from './feed-data.ts';
 import type { Post, PostKind } from './types.ts';
+import { tr } from '../i18n/index.ts';
 
 export type MannerPart = { participants: number; score: number | null; rating?: { participants: number; score: number | null } };
 export type MannerSummary = { meeting: MannerPart; chat: MannerPart };
@@ -14,7 +15,7 @@ async function rpc<T>(client: SupabaseClient, name: string, args: Record<string,
 }
 export function mannerLabel(part: MannerPart) {
   const { participants, score } = part.rating ?? { participants: 0, score: null };
-  return participants < 5 || score == null ? `리뷰가 쌓이는 중 · ${participants}명` : `${score.toFixed(1)} / 10 · ${participants}명`;
+  return participants < 5 || score == null ? tr('리뷰가 쌓이는 중 · {0}명', participants) : tr('{0} / 10 · {1}명', score.toFixed(1), participants);
 }
 export const loadMannerSummary = (client: SupabaseClient, userId: string) => rpc<MannerSummary>(client, 'get_manner_summary', { p_user_id: userId });
 export const loadPublicUserProfile = (client: SupabaseClient, userId: string) => rpc<PublicUserProfile | null>(client, 'get_public_user_profile', { p_user_id: userId });

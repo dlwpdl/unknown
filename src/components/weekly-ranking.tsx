@@ -151,7 +151,7 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
             style={({ pressed }) => [pressed && { backgroundColor: theme.backgroundElement, transform: [{ scale: reducedMotion ? 1 : 0.985 }] }]}>
           <Animated.View style={[styles.collapsed, { opacity: fade }]}>
             <ThemedText type="smallBold" style={[styles.label, { color: theme.accent }]}>
-              {tr("이번 주") + " "}{showing.rank}{tr("위")}</ThemedText>
+              {tr('이번 주 {0}위', showing.rank)}</ThemedText>
             <ThemedText type="small" numberOfLines={1} style={styles.title}>{showing.title}</ThemedText>
             <Animated.View style={{ transform: [{ rotate: arrow.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] }) }] }}>
               <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={13} tintColor={theme.textSecondary} />

@@ -149,7 +149,7 @@ function EventListScreen() {
       </Pressable></Link.AppleZoom></Link>{adsSupported && !loading && !error && contentAdPosition(index, visibleEvents.length) && <FeedAd key={`ad-after-${item.id}`} surface="events" />}</>}
       ListFooterComponent={<View style={styles.footer}>{!!data && <View style={styles.paging}>
         <Pressable analyticsId="ticketmaster.previous" accessibilityRole="button" disabled={!page || loading} accessibilityState={{ disabled: !page || loading }} onPress={() => { play('selection'); setPage(n => n - 1); }} style={({ pressed }) => [styles.chip, { borderColor: theme.line, backgroundColor: theme.card, opacity: !page || loading ? 0.35 : pressed ? 0.7 : 1 }]}><ThemedText>{tr("이전")}</ThemedText></Pressable>
-        <ThemedText type="small">{page + 1}{" " + tr("페이지")}</ThemedText>
+        <ThemedText type="small">{tr('{0} 페이지', page + 1)}</ThemedText>
         <Pressable analyticsId="ticketmaster.next" accessibilityRole="button" disabled={!data.hasMore || loading} accessibilityState={{ disabled: !data.hasMore || loading }} onPress={() => { play('selection'); setPage(n => n + 1); }} style={({ pressed }) => [styles.chip, { borderColor: theme.line, backgroundColor: theme.card, opacity: !data.hasMore || loading ? 0.35 : pressed ? 0.7 : 1 }]}><ThemedText>{tr("다음")}</ThemedText></Pressable>
       </View>}<ThemedText type="small" themeColor="textSecondary">{tr("행사 정보 제공: Ticketmaster. 일정·판매 상태는 변경될 수 있어요. 구매 전 판매처에서 최신 정보를 확인해 주세요.")}</ThemedText></View>} />
     </Animated.View>

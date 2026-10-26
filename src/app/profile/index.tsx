@@ -252,7 +252,7 @@ export default function ProfileScreen() {
             <ThemedText type="small" themeColor="textSecondary">{tr(TAGS.find(({ id }) => id === row.tag_id)?.label ?? '')}{row.kind === 'listing' ? ` · ${t.detail.listingBadge}` : ''}{row.kind === 'listing' && row.listing_status && row.listing_status !== 'open' ? ` · ${t.detail.listingStatus[row.listing_status]}` : ''}</ThemedText>
             <ThemedText type="smallBold" style={styles.myTitle}>{row.title}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{visibleMeetupBody(row.body)}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary" style={{ fontVariant: ['tabular-nums'] }}>{row.kind === 'listing' && row.price != null ? `${t.detail.price(Number(row.price))} · ` : ''}{tr("공감") + " "}{count(row.like_count)}{" " + tr("· 댓글") + " "}{count(row.comment_count)}{" " + tr("· 저장") + " "}{count(row.save_count)} · {relativeTime(row.created_at, undefined, appLocale)}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={{ fontVariant: ['tabular-nums'] }}>{row.kind === 'listing' && row.price != null ? `${t.detail.price(Number(row.price))} · ` : ''}{tr('공감 {0} · 댓글 {1} · 저장 {2}', count(row.like_count), count(row.comment_count), count(row.save_count))} · {relativeTime(row.created_at, undefined, appLocale)}</ThemedText>
           </Pressable>
         ))}
         {segment !== 'replies' && myPosts[segment].length === 0 && <ThemedText type="small" themeColor="textSecondary" style={styles.emptyNote}>{segment === 'listing' ? tr("아직 올린 구해요·팔아요 글이 없어요.") : tr("아직 쓴 글이 없어요. 오늘의 한 편을 남겨보세요.")}</ThemedText>}

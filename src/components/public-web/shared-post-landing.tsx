@@ -78,7 +78,7 @@ export default function SharedPostLanding() {
       window.sessionStorage.setItem(SHARED_POST_RETURN_KEY, `/post?id=${postId}${target?.invite ? '&invite=1' : ''}`);
       promptLogin(language === 'ko' ? '로그인하거나 가입하면 웹에서 전체 글을 읽을 수 있어요.' : 'Sign in or sign up to read the full post on the web.');
     } catch {
-      setLoginError(language === 'ko' ? '로그인을 준비하지 못했어요. 다시 시도해 주세요.' : 'Could not prepare sign-in. Please try again.'); play('warning');
+      setLoginError(language === 'ko' ? '로그인을 준비하지 못했어요. 다시 시도해 주세요.' : 'Couldn’t start sign-in. Try again.'); play('warning');
     }
   }
   return <SharedPostLandingContent key={`${postId}:${owner}`} postId={postId} preview={authenticated ? null : current?.preview ?? null} post={post}
@@ -109,7 +109,7 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
     if (!canonical) return;
     play('selection'); setCopyMessage('');
     try { await navigator.clipboard.writeText(canonical); setCopyMessage(ko ? '이 글의 링크를 복사했어요.' : 'Link to this post copied.'); play('success'); }
-    catch { setCopyMessage(ko ? '복사하지 못했어요. 아래 링크 주소를 직접 복사해 주세요.' : 'Could not copy the link. Please copy the address below.'); play('warning'); }
+    catch { setCopyMessage(ko ? '복사하지 못했어요. 아래 링크 주소를 직접 복사해 주세요.' : 'Couldn’t copy the link. Copy the address below instead.'); play('warning'); }
   }
   const meetupInvitation = invite && ready && (preview?.kind === 'meetup' || !!post?.room);
   const description = meetupInvitation
@@ -138,9 +138,9 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
           </div></section>
           : <section className={id ? 'shared-state' : 'shared-state shared-invalid'} aria-live="polite" aria-busy={status === 'loading'}>
             <h1>{status === 'loading' ? ko ? '공유한 글을 확인하고 있어요' : 'Loading the shared preview' : !id ? ko ? '공유 링크를 확인해 주세요' : 'Check the shared link'
-              : status === 'error' ? ko ? '글을 불러오지 못했어요' : 'Could not load the post' : ko ? '지금은 이 글을 볼 수 없어요' : 'This post is unavailable'}</h1>
-            <p>{status === 'loading' ? ko ? '잠시만 기다려 주세요.' : 'Please wait a moment.' : !id ? ko ? '글 주소가 올바르지 않아요. 공유받은 링크를 다시 열어 주세요.' : 'The post address is invalid. Please open the original shared link again.'
-              : authenticated ? ko ? '삭제되었거나 열람할 수 없는 글이에요.' : 'This post was removed or is not available to you.' : ko ? '삭제되었거나 열람할 수 없는 글일 수 있어요. 로그인한 뒤 확인해 주세요.' : 'Sign in to check access. Removed or inaccessible posts stay unavailable.'}</p>
+              : status === 'error' ? ko ? '글을 불러오지 못했어요' : 'Couldn’t load the post' : ko ? '지금은 이 글을 볼 수 없어요' : 'This post is unavailable'}</h1>
+            <p>{status === 'loading' ? ko ? '잠시만 기다려 주세요.' : 'Just a moment.' : !id ? ko ? '글 주소가 올바르지 않아요. 공유받은 링크를 다시 열어 주세요.' : 'This link doesn’t look right. Open the original shared link again.'
+              : authenticated ? ko ? '삭제되었거나 열람할 수 없는 글이에요.' : 'This post was removed or isn’t available to you.' : ko ? '삭제되었거나 열람할 수 없는 글일 수 있어요. 로그인한 뒤 확인해 주세요.' : 'Sign in to check access. Removed or inaccessible posts stay unavailable.'}</p>
             {status === 'error' && <button type="button" data-analytics="shared.web.retry" className="shared-secondary" onClick={() => { play('selection'); onRetry(); }}>{ko ? '다시 시도' : 'Try again'}</button>}
           </section>}
         {id && !authenticated && <section className="shared-login"><h2>{meetupInvitation ? ko ? '이 모임에 함께하고 싶나요?' : 'Want to join this meetup?' : ko ? '이어서 읽어보세요' : 'Keep reading'}</h2><p>{description}</p>
@@ -150,7 +150,7 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
       {id && <aside className="shared-handoff" aria-label={ko ? '앱에서 대화하기' : 'Chat in the app'}>
         <h2>{ko ? '앱에서 대화하기' : 'Chat in the Gling app'}</h2><p>{ko ? '대화, 댓글 작성과 모임 참여는 글링 앱에서 이용해 주세요.' : 'Use the Gling app for conversations, comments and joining meetups.'}</p>
         <a className="shared-secondary shared-open-app" data-analytics="shared.web.open_app" href={appUrl!} onClick={() => play('selection')}>{ko ? '앱에서 이 글 열기' : 'Open this post in the app'} <span aria-hidden="true">↗</span></a>
-        <p className="shared-support">{ko ? '앱이 설치되어 있어야 열 수 있어요. 카카오톡·Threads 안에서 열리지 않으면 Safari 또는 Chrome으로 이 링크를 열어 주세요.' : 'Gling needs to be installed. If an in-app browser won’t open it, open this link in Safari or Chrome.'}</p>
+        <p className="shared-support">{ko ? '앱이 설치되어 있어야 열 수 있어요. 카카오톡·Threads 안에서 열리지 않으면 Safari 또는 Chrome으로 이 링크를 열어 주세요.' : 'You’ll need the Gling app. If this in-app browser won’t open it, open the link in Safari or Chrome.'}</p>
         <div className="shared-install"><h2>{ko ? '아직 앱이 없나요?' : 'Need the app?'}</h2><p>{ko ? '휴대폰의 스토어를 선택해 주세요.' : 'Choose your phone’s store.'}</p>
           <div className="shared-store-picker" role="group" aria-label={ko ? '앱 스토어 선택' : 'Choose an app store'}>
             <button type="button" data-analytics="shared.web.store.ios" className="shared-secondary" aria-pressed={store === 'ios'} onClick={() => { play('selection'); setStore('ios'); }}>App Store</button>
@@ -160,7 +160,7 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
             {qr && <svg className="shared-qr" role="img" aria-label={`${store === 'ios' ? 'App Store' : 'Google Play'} ${ko ? '설치 안내 QR 코드' : 'download QR code'}`} viewBox={`0 0 ${qr.extent} ${qr.extent}`} width={180} height={180} shapeRendering="crispEdges">
               <rect width={qr.extent} height={qr.extent} fill="#fff" /><path d={qr.path} fill="#000" /></svg>}
             <a className="shared-secondary" data-analytics={store === 'ios' ? 'shared.web.ios_store' : 'shared.web.android_store'} href={storeUrl} target="_blank" rel="noopener" onClick={() => play('selection')}>{store === 'ios' ? ko ? 'App Store에서 받기' : 'Get it on the App Store' : ko ? 'Google Play에서 확인' : 'View on Google Play'} <span aria-hidden="true">↗</span></a>
-            {store === 'android' && <p className="shared-support">{ko ? 'Android는 비공개 테스트 중이며 공개 출시를 준비하고 있어요. 테스트 참여 대상만 설치할 수 있어요.' : 'Android is in private testing and its public release is being prepared. Installation is currently limited to eligible testers.'}</p>}
+            {store === 'android' && <p className="shared-support">{ko ? 'Android는 비공개 테스트 중이며 공개 출시를 준비하고 있어요. 테스트 참여 대상만 설치할 수 있어요.' : 'Android is in private testing, with a public release on the way. For now, only eligible testers can install it.'}</p>}
             <p className="shared-support">{ko ? '설치 후 이 글의 링크를 다시 열어 주세요.' : 'After installing, open this post’s link again.'}</p>
           </div>}
         </div>

@@ -125,7 +125,7 @@ export default function MembershipScreen() {
             <ThemedText type="small" themeColor="textSecondary">{tr("비즈니스별로 글링 안의 홍보글을 관리해요. 개인 멤버십과 별도예요.")}</ThemedText>
             {companies.map((company) => <Pressable analyticsId="membership.business.select" key={company.id} accessibilityRole="radio" accessibilityState={{ selected: merchantId === company.id, checked: merchantId === company.id, disabled: busy }} disabled={busy}
               onPress={() => { play('selection'); setMerchantId(company.id); }} style={({ pressed }) => [styles.row, { borderWidth: 1, borderRadius: 12, borderColor: merchantId === company.id ? theme.accent : theme.line, opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold">{company.name}</ThemedText></Pressable>)}
-            {businessError && <ThemedText type="small" accessibilityRole="alert">{businessError}</ThemedText>}
+            {businessError && <ThemedText type="small" accessibilityRole="alert">{tr(businessError)}</ThemedText>}
             {business && !business.canPurchase && <ThemedText type="small">{tr("확인된 비즈니스 소유자만 구독을 연결할 수 있어요.")}</ThemedText>}
             {otherBusiness && <ThemedText type="small">{tr("결제 연결은 다른 비즈니스에 묶여 있어요. 해당 비즈니스를 선택해 주세요.")}</ThemedText>}
             {business?.canPurchase && membership?.businessSubscription?.tier !== 'free' && membership?.businessSubscription && !membership.businessSubscription.merchantId && <Pressable analyticsId="membership.business.bind" accessibilityRole="button" disabled={busy || loading} style={styles.textButton}
@@ -135,20 +135,20 @@ export default function MembershipScreen() {
             <View style={styles.row}>
               <View style={styles.planIdentity}>
                 <ThemedText type="small" themeColor="textSecondary">{tr("내 멤버십")}</ThemedText>
-                <ThemedText accessibilityRole="header" style={styles.heading}>{activeMembership ? tierNames[activeMembership.tier] : loading ? tr("확인 중") : tr("확인 필요")}</ThemedText>
+                <ThemedText accessibilityRole="header" style={styles.heading}>{activeMembership ? tr(tierNames[activeMembership.tier]) : loading ? tr("확인 중") : tr("확인 필요")}</ThemedText>
               </View>
               {activeMembership?.tier === 'free' && <View style={[styles.badge, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" themeColor="textSecondary">{tr("무료")}</ThemedText></View>}
             </View>
             {activeMembership?.expiresAt && activeMembership.tier !== 'free' && <ThemedText type="small" themeColor="textSecondary" style={styles.statusNote}>
-              {new Date(activeMembership.expiresAt).toLocaleDateString(appLocale)} {activeMembership.willRenew === true ? tr("갱신 예정") : activeMembership.willRenew === false ? tr("까지 이용 가능") : tr("이용 기간 종료 예정")}
+              {tr(activeMembership.willRenew === true ? '{0} 갱신 예정' : activeMembership.willRenew === false ? '{0} 까지 이용 가능' : '{0} 이용 기간 종료 예정', new Date(activeMembership.expiresAt).toLocaleDateString(appLocale))}
             </ThemedText>}
             {kind === 'general' && auth.isAdmin && <ThemedText type="small" themeColor="accent" style={styles.statusNote}>{tr("관리자 계정 · 모임을 제한 없이 이용해요.")}</ThemedText>}
             {kind === 'general' && membership?.planVersion === 1 && <ThemedText type="small" themeColor="textSecondary" style={styles.statusNote}>{tr("기존 구독 가격과 더 빠른 끌어올리기 혜택을 유지해요.")}</ThemedText>}
           </View>
 
           {(error || notice || pendingApproval) && <View style={styles.feedback}>
-            {error && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{error}</ThemedText>}
-            {notice && <ThemedText type="small" accessibilityLiveRegion="polite">{notice}</ThemedText>}
+            {error && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{tr(error)}</ThemedText>}
+            {notice && <ThemedText type="small" accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
             <Pressable analyticsId="app_profile_membership.pressable.1" onPress={() => { play('selection'); void refresh(); }} accessibilityRole="button" disabled={busy || loading} accessibilityState={{ disabled: busy || loading }} style={({ pressed }) => [styles.textButton, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold" themeColor="accent">{tr("다시 확인하기")}</ThemedText></Pressable>
             {pendingApproval && <>
               <ThemedText type="small" themeColor="textSecondary">{tr("스토어의 취소·거절 완료 안내를 확인해 주세요. 빈 구독 목록만으로는 확인할 수 없어요. 승인 대기가 계속되면 다시 구매하지 마세요.")}</ThemedText>
@@ -195,8 +195,8 @@ export default function MembershipScreen() {
           <MeetupPolicyNotice mode="once" />
           </> : <View style={styles.detailContent}>
             <SectionHead title={tr("이번 달 사용")} note={business ? tr("{0} 초기화", (new Date(business.resetsAt).toLocaleDateString(appLocale))) : tr("비즈니스별 합산")} />
-            {business && <ThemedText>{tr("신규") + " "}{business.postsUsed} / {business.postLimit ?? tr("기존 약정 유지")}{tr("편 · 끌어올리기") + " "}{business.bumpsUsed} / {business.bumpLimit}{tr("회")}</ThemedText>}
-            {business?.tier === 'premium' && <ThemedText type="small">{tr("운영대행 사용: 신규") + " "}{business.managedPostsUsed}{tr("/4편 · 끌어올리기") + " "}{business.managedBumpsUsed}{tr("/8회 · 보고서") + " "}{business.reportsUsed}{tr("/1회")}</ThemedText>}
+            {business && <ThemedText>{tr('신규 {0} / {1}편 · 끌어올리기 {2} / {3}회', business.postsUsed, business.postLimit ?? tr('기존 약정 유지'), business.bumpsUsed, business.bumpLimit)}</ThemedText>}
+            {business?.tier === 'premium' && <ThemedText type="small">{tr('운영대행 사용: 신규 {0}/4편 · 끌어올리기 {1}/8회 · 보고서 {2}/1회', business.managedPostsUsed, business.managedBumpsUsed, business.reportsUsed)}</ThemedText>}
             <ThemedText type="small" themeColor="textSecondary">{tr("같은 내용은 새 글로 다시 올릴 수 없어요. 기존 글을 수정하거나 끌어올려 주세요. 같은 글은 플러스 72시간·프로 60시간·프리미엄 48시간 간격이에요. 비즈니스 전체는 24시간 간격을 지켜 주세요.")}</ThemedText>
           </View>}
 
@@ -228,7 +228,7 @@ export default function MembershipScreen() {
                 onPress={() => selectPlan({ tier: plan.tier, period: offer?.period ?? period })}
                 style={({ pressed }) => [styles.plan, selected && Depth.card, { backgroundColor: theme.card, borderColor: selected ? theme.accent : theme.line, opacity: pressed ? 0.88 : 1, }]}>
                 <View style={styles.planHeading}>
-                  <ThemedText style={styles.planName}>{plan.name}</ThemedText>
+                  <ThemedText style={styles.planName}>{tr(plan.name)}</ThemedText>
                   <ThemedText type="smallBold" themeColor={selected ? 'accent' : 'textSecondary'}>{selected ? tr("✓ 선택됨") : tr("선택하기")}</ThemedText>
                 </View>
                 <View style={styles.priceRow}>
@@ -237,13 +237,13 @@ export default function MembershipScreen() {
                 {kind === 'general' ? <><ThemedText type="small" themeColor="textSecondary">{tr('오늘 글 무제한 · 동시 모임 {0}개', limits.meetups)}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">{tr(plan.tier === 'plus' ? '모임 템플릿 · 질문 재사용' : plan.tier === 'pro' ? '템플릿 · 반복 회차 · 대기 명단 · 공동 호스트' : 'Pro 모임 도구 · 신청·참석 통계')}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">{t.membership.listingBenefits[plan.tier]}</ThemedText></> : <>
-                  <ThemedText type="small" themeColor="textSecondary">{tr("월 신규") + " "}{BUSINESS_LIMITS[plan.tier].posts}{tr("편 · 끌어올리기") + " "}{BUSINESS_LIMITS[plan.tier].bumps}{tr("회")}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">{tr("같은 글은") + " "}{BUSINESS_LIMITS[plan.tier].bumpCooldownHours}{tr("시간 간격")}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">{tr('월 신규 {0}편 · 끌어올리기 {1}회', BUSINESS_LIMITS[plan.tier].posts, BUSINESS_LIMITS[plan.tier].bumps)}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">{tr('같은 글은 {0}시간 간격', BUSINESS_LIMITS[plan.tier].bumpCooldownHours)}</ThemedText>
                   {plan.tier === 'premium' ? <><ThemedText type="small">{tr("운영대행: 신규 4편 · 끌어올리기 8회 · 월간 보고서 1회")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("전체 30편·24회에 포함돼요. 직접·AI 관리분은 신규 26편·끌어올리기 16회예요.")}</ThemedText></> : <ThemedText type="small" themeColor="textSecondary">{tr("직접 관리 · 연결된 AI와 사용량 공유")}</ThemedText>}
                 </>}
               </Pressable>;
             })}
-            {kind === 'general' && <ThemedText type="small" themeColor="textSecondary">{tr("계정과 같은 글에") + " "}{GENERAL_BUMP_HOURS[selection.tier]}{tr("시간 간격이 적용돼요. 쓰지 않은 끌어올리기는 쌓이지 않아요.")}</ThemedText>}
+            {kind === 'general' && <ThemedText type="small" themeColor="textSecondary">{tr('계정과 같은 글에 {0}시간 간격이 적용돼요. 쓰지 않은 끌어올리기는 쌓이지 않아요.', GENERAL_BUMP_HOURS[selection.tier])}</ThemedText>}
 
             {periods.length > 1 && <View onLayout={event => setPeriodWidth(event.nativeEvent.layout.width)} style={[styles.periods, { backgroundColor: theme.backgroundElement }]}>
               {periodWidth > 0 && <Animated.View pointerEvents="none" style={[styles.periodIndicator, { width: (periodWidth - 12) / 2, backgroundColor: theme.card, transform: [{ translateX: periodPosition.interpolate({ inputRange: [0, 1], outputRange: [0, (periodWidth - 12) / 2 + 4] }) }] }]} />}
@@ -255,16 +255,16 @@ export default function MembershipScreen() {
             </View>}
 
             <View style={styles.checkout}>
-              {selectedOffer && <ThemedText type="smallBold" style={styles.center}>{tierNames[selectedOffer.tier]} · {selectedOffer.price} / {periodNames[selectedOffer.period]}</ThemedText>}
+              {selectedOffer && <ThemedText type="smallBold" style={styles.center}>{tr(tierNames[selectedOffer.tier])} · {selectedOffer.price} / {periodNames[selectedOffer.period]}</ThemedText>}
               {purchaseUnavailableReason && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{purchaseUnavailableReason}</ThemedText>}
               <Pressable analyticsId="app_profile_membership.pressable.6" accessibilityRole="button" disabled={purchaseDisabled} accessibilityState={{ disabled: purchaseDisabled, busy }}
                 onPress={() => { play('selection'); if (selectedOffer) void purchase(selectedOffer, kind === 'business' && merchantId ? merchantId : undefined); }}
                 style={({ pressed }) => [styles.purchase, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: purchaseDisabled ? 0.5 : 1, }]}>
                 {busy ? <GlingLoader color={theme.accentInk} accessibilityLabel={tr("구독 처리 중")} /> : <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
-                  {currentProduct ? tr("현재 이용 중인 구독") : selectedOffer ? tr("{0} 구독하기", (tierNames[selectedOffer.tier])) : tr("구독 준비 중")}
+                  {currentProduct ? tr("현재 이용 중인 구독") : selectedOffer ? tr("{0} 구독하기", tr(tierNames[selectedOffer.tier])) : tr("구독 준비 중")}
                 </ThemedText>}
               </Pressable>
-              {selectedOffer && <ThemedText type="small" themeColor="textSecondary">{selectedOffer.period === 'month' ? tr("매월") : tr("매년")} {selectedOffer.price}{tr("이 청구되며 자동 갱신됩니다. 구독 변경과 해지는 결제한 스토어에서 관리할 수 있어요.")}</ThemedText>}
+              {selectedOffer && <ThemedText type="small" themeColor="textSecondary">{tr(selectedOffer.period === 'month' ? '매월 {0}이 청구되며 자동 갱신됩니다. 구독 변경과 해지는 결제한 스토어에서 관리할 수 있어요.' : '매년 {0}이 청구되며 자동 갱신됩니다. 구독 변경과 해지는 결제한 스토어에서 관리할 수 있어요.', selectedOffer.price)}</ThemedText>}
               <Pressable analyticsId="app_profile_membership.pressable.7" onPress={() => { play('selection'); leave(); }} accessibilityRole="button" style={({ pressed }) => [styles.textButton, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold">{membership?.tier === 'free' ? tr("무료로 계속하기") : tr("돌아가기")}</ThemedText></Pressable>
             </View>
           </View>}

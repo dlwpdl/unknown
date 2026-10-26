@@ -32,7 +32,7 @@ export function ChillingEventSchedule({ room }: { room: ChillingSchedule }) {
     <ThemedText type="smallBold" themeColor="accent">{once ? tr("칠링 · 일회성") : tr("모임 · 정기모임")}</ThemedText>
     <ThemedText type="small">{chillingSchedule(room, appLocale)}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">{recommendedAgeLabel(room, appLocale)}{room.recommendedAgeMin != null ? tr(" · 권장 범위 밖이어도 신청 가능") : ''}</ThemedText>
-    {once && room.timezone ? <ThemedText type="small" themeColor="textSecondary">{room.timezone}{" " + tr("기준")}</ThemedText> : null}
+    {once && room.timezone ? <ThemedText type="small" themeColor="textSecondary">{tr('{0} 기준', room.timezone)}</ThemedText> : null}
   </View>;
 }
 
@@ -80,7 +80,7 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
       </View> : null}
     </Pressable>
     <View style={styles.footer}>
-      <Pressable analyticsId="components_chilling-event.pressable.3" onPress={() => { play('selection'); onAuthor(); }} accessibilityRole="button" accessibilityLabel={tr("{0} 프로필", (post.author.nickname))} style={styles.author}><TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} /><ThemedText type="small" themeColor="textSecondary">{post.author.nickname}{tr("님이 열었어요 ›")}</ThemedText></Pressable>
+      <Pressable analyticsId="components_chilling-event.pressable.3" onPress={() => { play('selection'); onAuthor(); }} accessibilityRole="button" accessibilityLabel={tr("{0} 프로필", (post.author.nickname))} style={styles.author}><TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} /><ThemedText type="small" themeColor="textSecondary">{tr('{0}님이 열었어요 ›', post.author.nickname)}</ThemedText></Pressable>
       <Pressable analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={post.author.id === me.id ? tr("내 모임에 초대하기") : tr("모임 공유하기")} style={styles.action}
         onPress={() => { play('selection'); if (isAuthed) setSharing(true); else promptLogin('모임을 공유하려면 로그인해주세요.'); }}><ThemedText type="smallBold" themeColor="accent">{post.author.id === me.id ? tr("초대") : tr("공유")}</ThemedText></Pressable>
       {post.author.id !== me.id && <Pressable analyticsId="components_chilling-event.pressable.4" accessibilityRole="button" accessibilityLabel={tr("신고 및 차단")} style={styles.action} onPress={() => { play('selection'); if (isAuthed) setReport(true); else promptLogin('신고하려면 로그인해 주세요.'); }}><ThemedText style={{ color: theme.textSecondary }}>···</ThemedText></Pressable>}

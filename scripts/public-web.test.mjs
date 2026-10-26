@@ -12,6 +12,7 @@ import { publicSiteName } from '../src/lib/public-seo.ts';
 import { instagramPostLink, splitPostAttachments, splitPostLinks } from '../supabase/functions/_shared/post-links.ts';
 import { publicWebTarget, publicWebFetch, publicMerchantId } from '../src/lib/public-web.ts';
 import { ControlMetrics, ControlMotion, Typography } from '../src/constants/design-system.ts';
+import { translationSource } from './test-meetup-source-imports.mjs';
 
 const id = '12345678-1234-1234-1234-123456789abc';
 test('only public post identifiers survive web to app handoff', () => {
@@ -127,7 +128,7 @@ function readerMarkup(path, { mounted = false, search = '', directPost = false, 
     '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
     '../../../supabase/functions/_shared/post-links': { instagramPostLink, splitPostAttachments, splitPostLinks },
     '@/components/post-attachment-link': { PostAttachmentLink: () => null },
-    '@/lib/post-maps': { postMapBody: body => ({ body }) },
+    '@/lib/post-maps': { postMapBody: body => ({ body }) }, '@/lib/translation-source': translationSource,
     '@/lib/chilling': { chillingSchedule: () => '공개 일정' },
     '@/lib/interaction-feedback': { InteractionFeedbackProvider: React.Fragment, useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [] },
@@ -202,7 +203,7 @@ test('web meetup discovery explains app participation and keeps a visible public
   const markup = readerMarkup('/meetups', { language: 'en' });
   assert.doesNotMatch(markup, /reader-showcase/);
   assert.match(markup, /<h1 id="stories">Meetups<\/h1>/);
-  assert.match(markup, /Joining, creating meetups and chatting happen in the Gling app/);
+  assert.match(markup, /To join, create a meetup or chat, use the Gling app/);
   assert.match(markup, /href="gling:\/\/meetup-create"/);
   assert.match(markup, /action="\/meetups"/);
   assert.match(markup, /href="\/merchant\/"/);

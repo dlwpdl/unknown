@@ -25,13 +25,13 @@ export function PublicMeetupList({ posts, cityName, loading, failed, onRetry }: 
     '--pm-body': `${Typography.menu.fontSize / 16}rem`, '--pm-meta': `${Typography.supporting.fontSize / 16}rem` } as CSSProperties;
   return <section className="public-meetups" style={style} aria-label={ko ? `${cityName} 모임` : `Meetups in ${cityName}`} aria-busy={loading}>
     <header className="public-meetups-heading"><div><h2>{ko ? `${cityName}의 모임` : `Meetups in ${cityName}`}</h2>
-      <p>{ko ? '어떤 모임인지 살펴보세요. 참여 신청·모임 만들기·대화는 글링 앱에서 이용해요.' : 'Explore the meetups below. Joining, creating meetups and chatting happen in the Gling app.'}</p></div>
+      <p>{ko ? '어떤 모임인지 살펴보세요. 참여 신청·모임 만들기·대화는 글링 앱에서 이용해요.' : 'Explore the meetups below. To join, create a meetup or chat, use the Gling app.'}</p></div>
       <a className="public-meetup-action" href="gling://meetup-create" onClick={() => play('selection')}>{ko ? '앱에서 모임 만들기' : 'Create a meetup in the app'} <span aria-hidden="true">↗</span></a>
     </header>
     {loading ? <p className="public-meetups-state" role="status">{ko ? '모임을 불러오고 있어요.' : 'Loading meetups…'}</p>
-      : failed ? <div className="public-meetups-state" role="alert"><p>{ko ? '모임을 불러오지 못했어요. 다시 확인해 주세요.' : 'Could not load the meetups. Please try again.'}</p>
+      : failed ? <div className="public-meetups-state" role="alert"><p>{ko ? '모임을 불러오지 못했어요. 다시 확인해 주세요.' : 'Couldn’t load meetups. Try again.'}</p>
         <button type="button" className="public-meetup-action" onClick={() => { play('selection'); onRetry(); }}>{ko ? '다시 불러오기' : 'Try again'}</button></div>
-        : !meetups.length ? <p className="public-meetups-state" role="status">{ko ? '지금 이 도시에서 볼 수 있는 공개 모임이 없어요. 다른 도시를 살펴보거나 앱에서 모임을 만들어 보세요.' : 'No meetups are available to preview in this city. Explore another city or create a meetup in the app.'}</p>
+        : !meetups.length ? <p className="public-meetups-state" role="status">{ko ? '지금 이 도시에서 볼 수 있는 공개 모임이 없어요. 다른 도시를 살펴보거나 앱에서 모임을 만들어 보세요.' : 'No meetups to preview in this city yet. Try another city or create a meetup in the app.'}</p>
           : <div className="public-meetups-list">{meetups.map(post => {
             const room = post.room!;
             const memberCount = Number.isSafeInteger(room.memberCount) && room.memberCount >= 0 ? room.memberCount : null;

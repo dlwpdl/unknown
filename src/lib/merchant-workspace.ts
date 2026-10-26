@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { MerchantMetrics, MerchantPost, MerchantReport } from './admin-merchants.ts';
+import { getLocale, tr } from '../i18n/index.ts';
 
 export type MerchantChannel = 'gling' | 'casmo' | 'hellovancouver';
 export type BusinessMerchant = {
@@ -72,11 +73,11 @@ export const archiveMerchantDrafts = (client: SupabaseClient, id: string, draftI
 export function merchantReportText(report: MerchantReport) {
   const m = report.metrics;
   return `${report.merchant_name} · ${report.title}\n${report.city_name} · ${report.period_start}~${report.period_end} (${report.timezone})\n\n`
-    + `연결 게시글: ${m.linked_posts}편 · 기간 내 새 글: ${m.new_posts}편\n`
-    + `표시 조회수: ${m.displayed_views.toLocaleString('ko-KR')}회 (보고서 작성 시점 누적, 익명 조회·운영 조정 포함)\n`
-    + `기간 내 로그인 회원 최초 열람: ${m.first_reads}회 · 로그인 열람 회원: ${m.unique_readers}명\n`
-    + `비즈니스 링크 클릭: ${m.source_clicks}회 · 로그인 클릭 회원: ${m.member_clickers}명 · 익명 클릭 세션: ${m.anonymous_sessions}개\n\n`
-    + `${report.summary}\n\n다음 운영 제안\n${report.next_step}`
-    + (report.proposal_amount == null ? '' : `\n${report.proposal_period === 'month' ? '월' : '2주'} 운영: CAD ${Number(report.proposal_amount).toFixed(2)} · ${report.tax_note}`)
-    + '\n\n표시 조회수는 실제 열람 인원이 아닙니다. 로그인 회원과 익명 세션은 합산하지 않습니다. 비즈니스 링크 클릭은 외부 이동을 누른 기록이며 문의·지원·주문 완료는 확인하지 않았습니다. 최초 열람은 같은 글의 로그인 계정별 최초 기록만 포함하며 재방문은 포함하지 않습니다.';
+    + tr('연결 게시글: {0}편 · 기간 내 새 글: {1}편', m.linked_posts, m.new_posts) + '\n'
+    + tr('표시 조회수: {0}회 (보고서 작성 시점 누적, 익명 조회·운영 조정 포함)', m.displayed_views.toLocaleString(getLocale())) + '\n'
+    + tr('기간 내 로그인 회원 최초 열람: {0}회 · 로그인 열람 회원: {1}명', m.first_reads, m.unique_readers) + '\n'
+    + tr('비즈니스 링크 클릭: {0}회 · 로그인 클릭 회원: {1}명 · 익명 클릭 세션: {2}개', m.source_clicks, m.member_clickers, m.anonymous_sessions) + '\n\n'
+    + `${report.summary}\n\n${tr('다음 운영 제안')}\n${report.next_step}`
+    + (report.proposal_amount == null ? '' : '\n' + tr(report.proposal_period === 'month' ? '월 운영: CAD {0} · {1}' : '2주 운영: CAD {0} · {1}', Number(report.proposal_amount).toFixed(2), report.tax_note))
+    + '\n\n' + tr('표시 조회수는 실제 열람 인원이 아닙니다. 로그인 회원과 익명 세션은 합산하지 않습니다. 비즈니스 링크 클릭은 외부 이동을 누른 기록이며 문의·지원·주문 완료는 확인하지 않았습니다. 최초 열람은 같은 글의 로그인 계정별 최초 기록만 포함하며 재방문은 포함하지 않습니다.');
 }

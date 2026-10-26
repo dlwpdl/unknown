@@ -93,7 +93,7 @@ function Application({ requestId }: { requestId: string }) {
   };
   const confirmReject = () => {
     play('selection');
-    if (Platform.OS === 'web') { if (globalThis.confirm('이 참여 신청을 거절할까요?')) void respond('rejected'); }
+    if (Platform.OS === 'web') { if (globalThis.confirm(tr('이 참여 신청을 거절할까요?'))) void respond('rejected'); }
     else Alert.alert(tr("참여 신청 거절"), tr("신청자에게 결과를 알리고 프로필 열람을 종료해요."), [{ text: tr("돌아가기"), style: 'cancel' }, { text: tr("거절하기"), style: 'destructive', onPress: () => void respond('rejected') }]);
   };
   return <ThemedView style={styles.fill}><SafeAreaView style={styles.fill}>

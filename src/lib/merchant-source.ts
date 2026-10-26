@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { safePostLink } from '../../supabase/functions/_shared/post-links.ts';
+import { tr } from '../i18n/index.ts';
 
 export function merchantMapsUrl(address: string): string | null {
   if (!address.trim()) return null;
@@ -68,7 +69,7 @@ export function merchantEventId() {
 }
 export type MerchantSource = { merchant_name: string; original_url: string; record_kind?: 'business' | 'source' };
 export const merchantSourceActionLabel = (url: string) => /^https:\/\/(?:[a-z0-9-]+\.)*craigslist\.org(?:\/|$)/i.test(url)
-  ? '비즈니스에 직접 문의' : '비즈니스 계정으로 가기';
+  ? tr('비즈니스에 직접 문의') : tr('비즈니스 계정으로 가기');
 export async function loadMerchantSource(client: SupabaseClient, postId: string): Promise<MerchantSource | null> {
   try {
     const { data, error } = await client.rpc('get_merchant_post_source', { p_post_id: postId });

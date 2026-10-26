@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import { AndroidImportance, IosAuthorizationStatus, dismissAllNotificationsAsync, getExpoPushTokenAsync, getPermissionsAsync, requestPermissionsAsync, setNotificationChannelAsync, type NotificationPermissionsStatus } from 'expo-notifications';
 import { Platform } from 'react-native';
+import { tr } from '@/i18n';
 
 const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId ?? process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
 export const pushSupported = Platform.OS === 'ios' || Platform.OS === 'android';
@@ -29,7 +30,7 @@ function pushStatusAnswered(status: NotificationPermissionsStatus) {
 export async function registerPushDevice(client: SupabaseClient, userId: string, requestPermission = false) {
   if (!pushConfigured) throw new Error('PUSH_NOT_CONFIGURED');
   if (Platform.OS === 'android') await setNotificationChannelAsync('gling-activity', {
-    name: '글링 소식', importance: AndroidImportance.DEFAULT,
+    name: tr('글링 소식'), importance: AndroidImportance.DEFAULT,
   });
   if (!await pushPermissionGranted()) {
     if (!requestPermission) return false;

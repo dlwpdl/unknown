@@ -103,7 +103,7 @@ function JoinForm({ postId }: { postId: string }) {
   };
   const confirmCancel = () => {
     play('selection');
-    if (Platform.OS === 'web') { if (globalThis.confirm('이 모임의 참여 신청을 취소할까요?')) void cancelRequest(); }
+    if (Platform.OS === 'web') { if (globalThis.confirm(tr('이 모임의 참여 신청을 취소할까요?'))) void cancelRequest(); }
     else Alert.alert(tr("참여 신청 취소"), tr("호스트가 더 이상 신청 프로필을 볼 수 없어요."), [{ text: tr("돌아가기"), style: 'cancel' }, { text: tr("신청 취소"), style: 'destructive', onPress: () => void cancelRequest() }]);
   };
   const submit = async () => {
@@ -148,7 +148,7 @@ function JoinForm({ postId }: { postId: string }) {
                     {availability === 'full' && <StateCard kind="blocked" title={tr("정원이 모두 찼어요")} body={tr("현재 남은 자리가 없어 신청을 보낼 수 없어요. 작성한 답변은 유지돼요. 자리 현황을 다시 확인해 주세요.")} />}
                     {(status === 'rejected' || status === 'cancelled') && <StateCard kind={status === 'rejected' ? 'blocked' : 'empty'} title={status === 'rejected' ? tr("이전 신청이 거절됐어요") : tr("이전 신청은 취소된 상태예요")} body={coolingDown ? tr('이전 신청 처리 후 24시간 동안 재신청할 수 없어요. {0} 이후 다시 신청해 주세요.', new Date(reapplyAt).toLocaleString(appLocale)) : tr('현재 참여가 확정되지 않았어요. 답변과 공유 동의를 확인하고 다시 신청할 수 있어요.')} actionLabel={coolingDown ? tr('현재 상태 확인') : undefined} onAction={coolingDown ? () => setRetry(v => v + 1) : undefined} />}
                     <View style={[styles.questionCard, { backgroundColor: theme.card }]}>
-                      <ThemedText type="smallBold" themeColor="accent">{post!.author.nickname}{tr("님이 궁금해요")}</ThemedText>
+                      <ThemedText type="smallBold" themeColor="accent">{tr('{0}님이 궁금해요', post!.author.nickname)}</ThemedText>
                       <ThemedText style={styles.question}>{post!.room!.applicationQuestion || tr("함께하고 싶은 이유를 알려주세요")}</ThemedText>
                       <TextInput value={answer} onChangeText={setAnswer} accessibilityLabel={tr("신청 답변")} multiline maxLength={300} editable={!sending} placeholder={tr("나답게 편하게 답해주세요.")} placeholderTextColor={theme.textSecondary} style={[styles.input, { borderColor: theme.line, color: theme.text, backgroundColor: theme.background }]} />
                       <ThemedText type="small" themeColor="textSecondary" style={styles.count}>{answer.length}/300</ThemedText>
@@ -166,7 +166,7 @@ function JoinForm({ postId }: { postId: string }) {
                     </> : <>
                       {profile && <View style={[styles.profilePreview, { borderColor: theme.line }]}>
                         <Pressable analyticsId="app_meetup-join.pressable.13" accessibilityRole="button" accessibilityState={{ expanded: previewOpen }} onPress={() => { play('selection'); setPreviewOpen(value => !value); }} style={styles.previewHead}>
-                          <View style={styles.flex}><ThemedText type="smallBold">{profile.displayName || tr("모임 멤버")}{tr("님의 모임 프로필")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("이 모임장에게 함께 보내요")}</ThemedText></View><ThemedText type="smallBold" themeColor="accent">{previewOpen ? tr("접기") : tr("미리보기")} ›</ThemedText>
+                          <View style={styles.flex}><ThemedText type="smallBold">{tr('{0}님의 모임 프로필', profile.displayName || tr('모임 멤버'))}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("이 모임장에게 함께 보내요")}</ThemedText></View><ThemedText type="smallBold" themeColor="accent">{previewOpen ? tr("접기") : tr("미리보기")} ›</ThemedText>
                         </Pressable>
                         {previewOpen && <ChillingProfileCard profile={chillingProfilePreview(profile, 'host')} />}
                         <Pressable analyticsId="app_meetup-join.pressable.6" onPress={() => { play('selection'); profileRoute(); }} accessibilityRole="button" style={styles.button}><ThemedText themeColor="accent">{tr("프로필 수정")}</ThemedText></Pressable></View>}

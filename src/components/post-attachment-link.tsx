@@ -39,7 +39,7 @@ export function PostAttachmentLink({ url: input, enabled = true }: { url: string
             if (profile) open();
             else Alert.alert(tr("외부 링크 열기"), tr("{0}\n\n악성 여부를 아직 확인하지 못했어요.", (url)), [
               { text: tr("취소"), style: 'cancel', onPress: () => play('selection') },
-              { text: tr("이동"), onPress: () => { play('selection'); open(); } },
+              { text: tr('이동하기'), onPress: () => { play('selection'); open(); } },
             ]);
           }}>{content}</Pressable>}
     {!profile && <ThemedText type="small" themeColor="textSecondary">{tr("악성 여부 미확인")}</ThemedText>}

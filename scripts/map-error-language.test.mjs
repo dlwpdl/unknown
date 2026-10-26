@@ -50,10 +50,10 @@ test('map permission feedback switches language on the same view without another
 test('invalid map date feedback switches language while preserving the entered draft', () => {
   const view = mount();
   view.context.exports.submit();
-  assert.equal(view.render('dateError'), 'Enter a date within the next year in YYYY-MM-DD format.');
+  assert.equal(view.render('dateError'), 'Enter a date within the next year as YYYY-MM-DD.');
   view.setLanguage('ko');
   assert.equal(view.render('dateError'), '오늘부터 1년 안의 날짜를 YYYY-MM-DD로 입력해 주세요.');
   view.setLanguage('en');
-  assert.equal(view.render('dateError'), 'Enter a date within the next year in YYYY-MM-DD format.');
+  assert.equal(view.render('dateError'), 'Enter a date within the next year as YYYY-MM-DD.');
   assert.equal(view.context.dateDraft, 'invalid');
 });

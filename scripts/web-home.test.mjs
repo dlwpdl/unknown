@@ -61,7 +61,7 @@ test('web home title and lang use the resolved saved/device language without tra
   const jsx = (type, props) => ({ type, props });
   const modules = { '../index.web.css': {}, 'expo-asset': { Asset: { fromModule: () => ({ uri: 'local-asset' }) } },
     'expo-router/head': { default: 'Head' }, react: { useState: value => [value, () => {}] }, 'react/jsx-runtime': { jsx, jsxs: jsx },
-    '@/constants/theme': { WebNightColors: {} }, '@/hooks/use-language': { useLanguage: () => ({ language }) },
+    '@/constants/theme': { WebNightColors: {} }, '@/hooks/use-language': { useLanguage: () => ({ language, tr: text => text }) },
     '@/lib/web-home': webHome, '@/lib/public-seo': publicSeo };
   const code = ts.transpileModule(readFileSync(new URL('../src/app/(tabs)/index.web.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const exported = {};

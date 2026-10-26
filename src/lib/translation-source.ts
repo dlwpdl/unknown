@@ -23,10 +23,17 @@ export function validateTranslationRequest(value: unknown): TranslationRequest {
   return { kind: input.kind as TranslationKind, id: input.id, language: input.language as TranslationLanguage, source: { title: source.title, body: source.body } };
 }
 
+// Fixed lines the server writes into business post bodies (both naming generations). Shown through tr(), never machine-translated.
+const BUSINESS_DISCLOSURES = new Set(['비즈니스에서 직접 게시한 안내입니다.', '비즈니스의 허락을 받아 글링에서 대신 게시한 안내입니다.', '업체에서 직접 게시한 안내입니다.', '업체의 허락을 받아 글링에서 대신 게시한 안내입니다.']);
+export const businessDisclosureLines = (body: string) => body.split('\n').filter(line => BUSINESS_DISCLOSURES.has(line));
+export const localizeBusinessDisclosure = (body: string, tr: (text: string) => string) =>
+  body.split('\n').map(line => BUSINESS_DISCLOSURES.has(line) ? tr(line) : line).join('\n');
+
 export function visibleTranslationSource(kind: TranslationKind, title: string | null, body: string, meetup = false): TranslationSource {
   if (kind === 'comment') return { title: null, body };
   const mapped = postMapBody(splitPostPhotoCredits(body).body).body;
-  return { title, body: splitPostAttachments(meetup ? visibleMeetupBody(mapped) : mapped).body };
+  const visible = splitPostAttachments(meetup ? visibleMeetupBody(mapped) : mapped).body;
+  return { title, body: businessDisclosureLines(visible).length ? visible.split('\n').filter(line => !BUSINESS_DISCLOSURES.has(line)).join('\n').trim() : visible };
 }
 
 export function needsContentTranslation(source: TranslationSource, language: TranslationLanguage) {
@@ -34,40 +41,4 @@ export function needsContentTranslation(source: TranslationSource, language: Tra
     .replace(/https?:\/\/\S+|[\w.+-]+@[\w.-]+\.[A-Za-z]+|#[\p{L}\p{N}_]+/gu, '');
   const korean = /[\u1100-\u11ff\u3130-\u318f\uac00-\ud7af]/.test(text);
   return language === 'en' ? korean : /[A-Za-z]/.test(text);
-}
-
-const protectedValues = () => /https?:\/\/[^\s]+|[\w.+-]+@[\w.-]+\.[A-Za-z]+|@[\p{L}\p{N}_.-]+|#[\p{L}\p{N}_]+|(?:CA\$|C\$|US\$|\$|€|£|₩)\s*\d+(?:[.,]\d+)*|\d+(?:[.,:/-]\d+)*/gu;
-
-export function protectTranslationSource(original: TranslationSource) {
-  let prefix = 'GLING_VALUE_';
-  while (JSON.stringify(original).includes(prefix)) prefix += '_';
-  const values: string[] = [];
-  const protect = (text: string) => text.replace(protectedValues(), (value) => {
-    const token = '⟦' + prefix + values.length + '⟧';
-    values.push(value);
-    return token;
-  });
-  return { source: { title: original.title === null ? null : protect(original.title), body: protect(original.body) }, values, prefix };
-}
-
-export function restoreTranslationSource(value: unknown, protectedSource: ReturnType<typeof protectTranslationSource>): TranslationSource {
-  if (!value || typeof value !== 'object') throw new Error('INVALID_TRANSLATION');
-  const output = value as TranslationSource;
-  const restore = (text: unknown, original: string, max: number) => {
-    if (typeof text !== 'string' || text.length > max || (original.trim() && !text.trim())) throw new Error('INVALID_TRANSLATION');
-    const tokens = (s: string) => (s.match(/⟦[^⟧]*⟧/g) ?? []).sort();
-    if (JSON.stringify(tokens(text)) !== JSON.stringify(tokens(original))
-      || protectedValues().test(text.replace(/⟦[^⟧]*⟧/g, ''))) throw new Error('INVALID_TRANSLATION');
-    return text.replace(/⟦[^⟧]*⟧/g, (token) => {
-      const index = Number(token.slice(('⟦' + protectedSource.prefix).length, -1));
-      if (!token.startsWith('⟦' + protectedSource.prefix) || !Number.isInteger(index) || index < 0 || index >= protectedSource.values.length) {
-        throw new Error('INVALID_TRANSLATION');
-      }
-      return protectedSource.values[index];
-    });
-  };
-  const title = protectedSource.source.title === null
-    ? output.title === null ? null : (() => { throw new Error('INVALID_TRANSLATION'); })()
-    : restore(output.title, protectedSource.source.title, 400);
-  return { title, body: restore(output.body, protectedSource.source.body, 12000) };
 }

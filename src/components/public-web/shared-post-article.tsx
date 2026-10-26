@@ -6,15 +6,16 @@ import { chillingSchedule } from '@/lib/chilling';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 import { postMapBody } from '@/lib/post-maps';
+import { localizeBusinessDisclosure } from '@/lib/translation-source';
 import type { Post } from '@/lib/types';
 
 export function PublicPostBody({ body }: { body: string }) {
-  const { play } = useInteractionFeedback();
+  const { play } = useInteractionFeedback(), { language, tr } = useLanguage();
   const attached = splitPostAttachments(body);
-  return <><p className="reader-body">{splitPostLinks(attached.body).map((part, index) => part.url
+  return <><p className="reader-body">{splitPostLinks(localizeBusinessDisclosure(attached.body, tr)).map((part, index) => part.url
     ? <a key={index} href={part.url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer" onClick={event => {
         play('selection');
-        if (!instagramPostLink(part.url!) && !window.confirm(`${part.url}\n\n악성 여부를 아직 확인하지 못한 외부 링크예요. 이동할까요?`)) event.preventDefault();
+        if (!instagramPostLink(part.url!) && !window.confirm(`${part.url}\n\n${language === 'ko' ? '악성 여부를 아직 확인하지 못한 외부 링크예요. 이동할까요?' : 'This external link hasn’t been checked for safety yet. Open it anyway?'}`)) event.preventDefault();
       }}>{part.text}</a>
     : part.text)}</p>{attached.urls.map((url, index) => <PostAttachmentLink key={`${url}-${index}`} url={url} />)}</>;
 }

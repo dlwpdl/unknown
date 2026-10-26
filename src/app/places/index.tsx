@@ -65,7 +65,7 @@ function PlacesList({ city, nearby = false }: { city?: (typeof CITIES)[number]; 
     </View>
     <ScrollView analyticsId="places.list.scroll" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       {!city ? <StateCard kind="error" title={tr("도시를 확인해 주세요")} body={tr("홈에서 도시를 선택한 뒤 다시 열어 주세요.")} />
-        : error ? <StateCard kind="error" title={tr("장소를 불러오지 못했어요")} body={error} /> : <>
+        : error ? <StateCard kind="error" title={tr("장소를 불러오지 못했어요")} body={tr(error)} /> : <>
           <ThemedText type="small" themeColor="textSecondary">{tr(city.name)} · {tr(getCityPlacesCoverage(city.id))}</ThemedText>
           <ThemedText accessibilityRole="header" style={styles.title}>{tr("이 도시에서 가볼 만한 곳")}</ThemedText>
           {nearby ? <NearbyPlacesLocation location={location} analyticsId="places.nearby.locate" /> : <ThemedText type="small" themeColor="textSecondary">{tr("가볼 만한 곳과 레스토랑·카페를 골랐어요")}</ThemedText>}

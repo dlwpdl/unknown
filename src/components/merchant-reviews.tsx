@@ -167,7 +167,7 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
     </View>
     {page?.merchant_id && onOpenProfile && <Pressable analyticsId="merchant.review.profile" accessibilityRole="button" accessibilityLabel={tr("{0} 비즈니스 프로필 보기", (page.merchant_name))}
       style={[styles.outlineButton, { borderColor: theme.line, alignSelf: 'flex-start' }]} onPress={() => { play('selection'); onOpenProfile(page.merchant_id); }}>
-      <ThemedText type="smallBold" themeColor="accent">{page.merchant_name}{" " + tr("프로필 보기 →")}</ThemedText>
+      <ThemedText type="smallBold" themeColor="accent">{tr('{0} 프로필 보기 →', page.merchant_name)}</ThemedText>
     </Pressable>}
     {page && <View style={styles.summary}>
       <ThemedText type="title" accessibilityLabel={page.rating_average == null ? tr("아직 점수가 없어요") : tr("평균 {0}점, 10점 만점", (page.rating_average.toFixed(1)))}>

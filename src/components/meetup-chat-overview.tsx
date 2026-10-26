@@ -74,7 +74,7 @@ export function MeetupChatOverview({ postId, currentUserId, onClose }: { postId:
   const date = (value: string) => new Date(value).toLocaleString(locale, {
     month: 'short', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
   });
-  const title = view === 'intro' ? say('모임 소개', 'About this meetup') : view === 'attendance' ? say('일정·참석 확인', 'Sessions and attendance') : say('모임 현황', 'Meetup overview');
+  const title = view === 'intro' ? say('모임 소개', 'About the meetup') : view === 'attendance' ? say('일정·참석 확인', 'Sessions and attendance') : say('모임 현황', 'Meetup overview');
   const retryRead = () => { if (scope && liveScope.current === scope && !closing.current) { play('selection'); setPage(null); setErrorScope(null); setRetry(value => value + 1); } };
   return <Modal visible={visible && !!scope} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" allowSwipeDismissal
     onDismiss={finish} onRequestClose={() => { if (Platform.OS === 'android' && view !== 'overview') changeView('overview'); else dismiss(); }}>
@@ -91,8 +91,8 @@ export function MeetupChatOverview({ postId, currentUserId, onClose }: { postId:
         </Pressable>
       </View>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-        {!scope || (page?.scope === scope && !ready) ? <ThemedText>{say('이 모임에 접근할 수 없어요. 참여 상태를 다시 확인해 주세요.', 'This meetup is unavailable. Please check your membership.')}</ThemedText>
-          : errorScope === scope ? <><ThemedText accessibilityRole="alert">{say('모임 현황을 불러오지 못했어요.', 'Could not load the meetup overview.')}</ThemedText>
+        {!scope || (page?.scope === scope && !ready) ? <ThemedText>{say('이 모임에 접근할 수 없어요. 참여 상태를 다시 확인해 주세요.', 'You can’t open this meetup. Check that you’ve joined it.')}</ThemedText>
+          : errorScope === scope ? <><ThemedText accessibilityRole="alert">{say('모임 현황을 불러오지 못했어요.', 'Couldn’t load the meetup overview.')}</ThemedText>
             <Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" onPress={retryRead} style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: pressed ? 0.82 : 1 }]}><ThemedText>{say('다시 불러오기', 'Try again')}</ThemedText></Pressable></>
           : !ready ? <GlingLoader accessibilityLabel={say('모임 현황 불러오는 중', 'Loading meetup overview')} />
           : view === 'intro' ? <><ThemedText type="subtitle">{post!.title}</ThemedText><PostBody body={visibleMeetupBody(post!.body)} /></>
@@ -101,7 +101,7 @@ export function MeetupChatOverview({ postId, currentUserId, onClose }: { postId:
             <ThemedText type="subtitle">{post!.title}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{say('등록된 모임 멤버', 'Meetup members')} · {post!.room!.memberCount}</ThemedText>
             <ThemedText type="smallBold">{say('예정 일정', 'Upcoming sessions')}</ThemedText>
-            {ready.scheduleError ? <><ThemedText accessibilityRole="alert">{say('일정을 불러오지 못했어요.', 'Could not load upcoming sessions.')}</ThemedText>
+            {ready.scheduleError ? <><ThemedText accessibilityRole="alert">{say('일정을 불러오지 못했어요.', 'Couldn’t load upcoming sessions.')}</ThemedText>
               <Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" onPress={retryRead} style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: pressed ? 0.82 : 1 }]}><ThemedText>{say('다시 불러오기', 'Try again')}</ThemedText></Pressable></>
               : upcoming.length ? upcoming.map((session, index) => <View key={session.id} testID="meetup-upcoming-session" style={[styles.session, { backgroundColor: theme.card, borderColor: theme.line }]}>
               <ThemedText type="smallBold" themeColor={index === 0 ? 'accent' : undefined}>{Date.parse(session.startsAt) <= now ? say('진행 중', 'In progress') : index === 0 ? say('다음 일정', 'Next session') : say('예정 일정', 'Upcoming session')}</ThemedText>
@@ -109,14 +109,14 @@ export function MeetupChatOverview({ postId, currentUserId, onClose }: { postId:
               {session.members.some(member => member.verified) && <ThemedText type="small" themeColor="textSecondary">{say('실제 참석 확인', 'Verified attendance')} · {session.members.filter(member => member.verified).length}</ThemedText>}
             </View>) : once ? <View testID="meetup-once-schedule" style={[styles.session, { backgroundColor: theme.card, borderColor: theme.line }]}>
               <ThemedText>{date(once.startsAt!)}</ThemedText><ThemedText type="small" themeColor="textSecondary">{say('종료', 'Ends')} · {date(once.endsAt!)}</ThemedText>
-            </View> : <ThemedText themeColor="textSecondary">{say('등록된 예정 일정이 없어요.', 'No upcoming sessions are registered.')}</ThemedText>}
+            </View> : <ThemedText themeColor="textSecondary">{say('등록된 예정 일정이 없어요.', 'No upcoming sessions yet.')}</ThemedText>}
             <View style={[styles.session, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="smallBold">{say('모임 공통 장소', 'Meetup location')}</ThemedText>
-              <ThemedText>{address ?? say('장소가 아직 등록되지 않았어요.', 'A location has not been registered.')}</ThemedText></View>
+              <ThemedText>{address ?? say('장소가 아직 등록되지 않았어요.', 'No location added yet.')}</ThemedText></View>
             {participation && <Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" accessibilityLabel={participation.isHost ? say('일정·참석 관리', 'Manage sessions and attendance') : say('참석 확인', 'Attendance')}
               onPress={() => changeView('attendance')} style={({ pressed }) => [styles.action, { borderColor: theme.line, backgroundColor: theme.card, opacity: pressed ? 0.82 : 1 }]}><ThemedText type="smallBold" themeColor="accent">{participation!.isHost ? say('일정·참석 관리', 'Manage sessions and attendance') : say('참석 확인', 'Attendance')}</ThemedText></Pressable>
             }
-            <Pressable analyticsId="chat.meetup-summary" accessibilityRole="button" accessibilityLabel={say('모임 소개', 'About this meetup')}
-              onPress={() => changeView('intro')} style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: pressed ? 0.82 : 1 }]}><ThemedText>{say('모임 소개', 'About this meetup')}</ThemedText></Pressable>
+            <Pressable analyticsId="chat.meetup-summary" accessibilityRole="button" accessibilityLabel={say('모임 소개', 'About the meetup')}
+              onPress={() => changeView('intro')} style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: pressed ? 0.82 : 1 }]}><ThemedText>{say('모임 소개', 'About the meetup')}</ThemedText></Pressable>
           </>}
       </ScrollView>
     </View>

@@ -26,7 +26,7 @@ export function SharedPreviewContent({ preview }: { preview: SharedLinkPreview }
       <ThemedText type="smallBold" themeColor="accent">{preview.kind === 'meetup' ? tr("모임 초대") : preview.kind === 'festival' ? tr("페스티벌 같이 가요") : preview.label}</ThemedText>
       <ThemedText type="subtitle" numberOfLines={3}>{preview.title}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{preview.city}{preview.schedule ? ` · ${chillingSchedule(preview.schedule, appLocale)}` : ''}{preview.closed ? tr(" · 모집 마감") : ''}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{tr("글링에서") + " "}{preview.kind === 'meetup' ? tr("모임 확인하기") : tr("전체 내용 보기")} ›</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{preview.kind === 'meetup' ? tr('글링에서 모임 확인하기') : tr('글링에서 전체 내용 보기')} ›</ThemedText>
     </View>
   </View>;
 }

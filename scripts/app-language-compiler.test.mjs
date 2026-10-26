@@ -61,8 +61,8 @@ test('compiled location copy changes Korean → English → Korean without remou
   try {
     assert.ok(nodes(view.render('ko')).some(node => node.props?.children === '내 주변 소식'));
     const english = nodes(view.render('en'));
-    assert.ok(english.some(node => node.props?.children === 'News near me'));
-    assert.ok(english.some(node => node.props?.accessibilityLabel === 'About location use'));
+    assert.ok(english.some(node => node.props?.children === 'What’s happening nearby'));
+    assert.ok(english.some(node => node.props?.accessibilityLabel === 'How we use your location'));
     assert.ok(nodes(view.render('ko')).some(node => node.props?.children === '내 주변 소식'));
   } finally { dictionary.setActiveLanguage('ko'); }
 });

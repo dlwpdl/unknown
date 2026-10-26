@@ -353,11 +353,11 @@ export function AuthProvider({ children, publicPage = false }: { children: React
         code === 'ADMIN_ACCESS_DENIED' ? '이 계정에는 관리자 권한이 없습니다.'
           : code.startsWith('SESSION_SAVE_FAILED') ? '브라우저가 로그인 정보를 저장하지 못했습니다. 시크릿 모드나 쿠키 차단 설정을 끄고 다시 시도해주세요.'
           : /invalid|credential/i.test(code) ? '이메일 또는 비밀번호가 맞지 않습니다.'
-          : `로그인에 실패했습니다 (${code.slice(0, 80) || 'unknown'}).`,
+          : tr('로그인에 실패했습니다 ({0}).', code.slice(0, 80) || 'unknown'),
       );
     }
     finally { signInInFlight.current = false; setSigningIn(false); }
-  }, [beginSignIn]);
+  }, [beginSignIn, tr]);
   const setProfilePhoto = useCallback(async (uri: string | null, base64?: string) => {
     if (!session) return;
     let avatarPath: string | null = null;
@@ -450,7 +450,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
   const value = useMemo<AuthValue>(
     () => ({
       level,
-      me: { id: session?.user.id ?? 'me', nickname: activeProfile?.nickname ?? socialNickname ?? '밴쿠버뉴비', photoUri: activeProfile ? profilePhotoUri ?? socialPhoto : socialPhoto, cityId: activeProfile?.city_id },
+      me: { id: session?.user.id ?? 'me', nickname: activeProfile?.nickname ?? socialNickname ?? tr('밴쿠버뉴비'), photoUri: activeProfile ? profilePhotoUri ?? socialPhoto : socialPhoto, cityId: activeProfile?.city_id },
       isAuthed: level >= 1,
       isVerified: trustLevel >= 2,
       trustLevel,

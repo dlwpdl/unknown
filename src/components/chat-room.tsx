@@ -800,7 +800,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           const time = showChatMessageTime(message, messages[index + 1]) ? <ThemedText type="small" themeColor="textSecondary" style={mine ? styles.timeMine : undefined}>{chatMessageTime(message.created_at, appLocale)}</ThemedText> : null;
           const reaction = reactions.get(message.id);
           const attachment = message.kind === 'image' || message.kind === 'location';
-          const locationAccessibility = `${message.location_label ?? tr('공유한 위치')} · ${message.latitude}, ${message.longitude} · ${tr('지도에서 열기 ↗')}`;
+          const locationAccessibility = `${tr(message.location_label ?? '공유한 위치')} · ${message.latitude}, ${message.longitude} · ${tr('지도에서 열기 ↗')}`;
           const sharedUrl = attachment || message.deleted_at ? null : sharedLinkInMessage(message.body);
           const photos: ChatPhoto[] = message.imageSources ?? message.imageUrls ?? (message.imageUrl ? [message.imageUrl] : chatImagePaths(message).map(() => undefined));
           const gridWidth = Math.min(234, screen.width - 120);
@@ -811,7 +811,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
                 onPress={() => openPhotos(photos, position, message.id)} style={[styles.albumTile, { width: (gridWidth - (photos.length > 4 ? 4 : 2)) / (photos.length > 4 ? 3 : 2), backgroundColor: theme.backgroundElement }]}>
                 {uri ? <Image source={photoSource(uri)} cachePolicy={business ? 'none' : undefined} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} /> : <ThemedText type="small" themeColor="textSecondary">{tr("사진을 불러오지 못했어요")}</ThemedText>}
                 {position === 8 && photos.length > 9 && <View pointerEvents="none" style={styles.morePhotos}><ThemedText type="subtitle" style={{ color: '#fff' }}>+{photos.length - 9}</ThemedText></View>}
-              </BubblePressable>)}</View><ThemedText type="small" themeColor="textSecondary">{tr("사진") + " "}{photos.length}{tr("장")}</ThemedText>
+              </BubblePressable>)}</View><ThemedText type="small" themeColor="textSecondary">{tr('사진 {0}장', photos.length)}</ThemedText>
               </View> : photos[0] ? <Image source={photoSource(photos[0])} cachePolicy={business ? 'none' : undefined} style={styles.chatPhoto} contentFit="cover" accessibilityLabel={tr("대화에서 보낸 사진")} />
               : <ThemedText type="small" themeColor="textSecondary">{tr("사진을 불러오지 못했어요")}</ThemedText>
             : message.kind === 'location' && message.latitude != null && message.longitude != null
@@ -862,7 +862,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
         <RoomAction label={tr("답장 취소")} onPress={() => { if (!photoSend.current?.submitted) setReplyTo(null); }} disabled={sending || pickingPhoto || replyLocked} />
       </View>}
       {access.write && selectedPhotos.length > 0 && <ScrollView keyboardShouldPersistTaps="handled" style={{ flexGrow: 0, flexShrink: 1, backgroundColor: theme.card }} contentContainerStyle={[styles.photoPreview, { borderTopColor: theme.line }]}>
-        <View style={styles.photoHeading}><View style={{ flex: 1 }}><ThemedText type="smallBold" style={{ fontSize: 16 }}>{tr("사진") + " "}{selectedPhotos.length}{tr("장")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr(selectedPhotos.length > 1 ? tr("한 말풍선에 묶어 보내요") : tr("이 대화에만 공유"))}</ThemedText></View>
+        <View style={styles.photoHeading}><View style={{ flex: 1 }}><ThemedText type="smallBold" style={{ fontSize: 16 }}>{tr('사진 {0}장', selectedPhotos.length)}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr(selectedPhotos.length > 1 ? tr("한 말풍선에 묶어 보내요") : tr("이 대화에만 공유"))}</ThemedText></View>
           <Pressable analyticsId="chat.photo.cancel" accessibilityRole="button" accessibilityLabel={tr("선택한 사진 모두 취소")} accessibilityState={{ disabled: sending || pickingPhoto }} disabled={sending || pickingPhoto} onPress={() => { play('selection'); discardPhotoSend(); setSelectedPhotos([]); }} style={({ pressed }) => [styles.iconAction, { opacity: sending ? 0.45 : pressed ? 0.7 : 1 }]}>
             <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} />
           </Pressable>

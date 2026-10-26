@@ -67,7 +67,7 @@ test('meetup teasers stay hidden and nonready previews preserve handoff without 
   for(const status of ['unavailable','error','loading']){tree=app.render('SharedPostLandingContent',{postId:id,preview,status,onRetry(){}});assert.doesNotMatch(text(tree),new RegExp(preview.title));assert.equal(action(tree,'shared.web.open_app').props.href,`gling://post/${id}`);assert.equal(nodes(tree).some(node=>node.type==='svg'),false);}app.unmount();
 });
 test('copy failures stay honest and English content preserves destination',async()=>{
-  const app=mount({language:'en',copy:async()=>{throw Error('PRIVATE clipboard');}});const props={postId:id,preview,status:'ready',onRetry(){}};let tree=app.render('SharedPostLandingContent',props);await action(tree,'shared.web.copy_link').props.onClick();await settle();tree=app.render('SharedPostLandingContent',props);assert.match(text(tree),/copy/i);assert.doesNotMatch(text(tree),/PRIVATE/);action(tree,'shared.web.store.android').props.onClick();tree=app.render('SharedPostLandingContent',props);assert.match(text(tree),/Android.*public release.*prepared/i);assert.equal(action(tree,'shared.web.open_app').props.href,`gling://post/${id}`);app.unmount();
+  const app=mount({language:'en',copy:async()=>{throw Error('PRIVATE clipboard');}});const props={postId:id,preview,status:'ready',onRetry(){}};let tree=app.render('SharedPostLandingContent',props);await action(tree,'shared.web.copy_link').props.onClick();await settle();tree=app.render('SharedPostLandingContent',props);assert.match(text(tree),/copy/i);assert.doesNotMatch(text(tree),/PRIVATE/);action(tree,'shared.web.store.android').props.onClick();tree=app.render('SharedPostLandingContent',props);assert.match(text(tree),/Android.*public release on the way/i);assert.equal(action(tree,'shared.web.open_app').props.href,`gling://post/${id}`);app.unmount();
 });
 
 test('public providers retain normal login, signup and profile onboarding gates on shared routes',()=>{
@@ -145,7 +145,7 @@ test('store picker creates only the selected store QR while the explicit post ap
   assert.equal(app.encoded.at(-1),'https://play.google.com/store/apps/details?id=com.dlwpdl.gling');
   assert.equal(nodes(tree).filter(node=>node.type==='svg').length,1);
   assert.equal(action(tree,'shared.web.ios_store'),undefined);
-  assert.match(text(tree),/비공개 테스트|private testing/);assert.match(text(tree),/공개 출시.*준비|public release.*prepared/);
+  assert.match(text(tree),/비공개 테스트|private testing/);assert.match(text(tree),/공개 출시.*준비|public release on the way/);
   assert.equal(action(tree,'shared.web.open_app').props.href,`gling://post/${id}`);
   assert.ok(app.feedback.includes('selection'));app.unmount();
 });

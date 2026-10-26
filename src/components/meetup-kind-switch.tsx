@@ -39,7 +39,7 @@ export function MeetupKindSwitch({ value, onChange, disabled = false, analyticsI
       accessibilityRole="tab" accessibilityState={{ selected: value === kind, disabled }} disabled={disabled}
       onPress={() => { play('reaction'); if (kind !== value) onChange(kind); }}
       style={({ pressed }) => [styles.tab, { opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
-      <ThemedText type="smallBold" style={{ color: value === kind ? theme.accentInk : theme.text }}>
+      <ThemedText type="smallBold" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ color: value === kind ? theme.accentInk : theme.text }}>
         {kind === 'once' ? tr("칠링 (일회성)") : tr("모임 (정기모임)")}
       </ThemedText>
     </Pressable>)}

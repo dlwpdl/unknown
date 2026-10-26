@@ -1,13 +1,16 @@
 import './festivals.css';
 
 import { useEffect, useRef, useState } from 'react';
-import { EVENT_CITIES, eventPriceLabel, eventTime, festivalLocalDay, safeTicketUrl, type EventCity, type TicketmasterEvent } from '../../../supabase/functions/_shared/ticketmaster';
+import { EVENT_CITIES, festivalLocalDay, safeTicketUrl, type EventCity, type TicketmasterEvent } from '../../../supabase/functions/_shared/ticketmaster';
+import { useLanguage } from '@/hooks/use-language';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { eventPriceLabel, eventTime } from '@/lib/ticketmaster';
 import { loadPublicFestivals } from '@/lib/public-web';
 import { publicWebClient } from '@/lib/public-web-client';
 
 export function PublicFestivals({ cityId, cityName }: { cityId: string; cityName: string }) {
   const { play } = useInteractionFeedback();
+  const { tr, locale } = useLanguage();
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState<{ key: string; events: TicketmasterEvent[]; failed: boolean; nextRefreshAt?: string } | null>(null);
   const [index, setIndex] = useState(0);
@@ -84,46 +87,46 @@ export function PublicFestivals({ cityId, cityName }: { cityId: string; cityName
     setPlaying(false);
   }
 
-  return <section className="reader-festivals" aria-labelledby="reader-festivals-title" aria-roledescription="캐러셀"
+  return <section className="reader-festivals" aria-labelledby="reader-festivals-title" aria-roledescription={tr('캐러셀')}
     onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}
     onFocusCapture={() => setFocused(true)}
     onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}
     onPointerDown={(event) => { if (event.pointerType === 'touch') setPlaying(false); }}>
     <div className="reader-festivals-heading"><div><span className="reader-kicker">IN YOUR CITY</span>
-      <h2 id="reader-festivals-title">{cityName}의 다음 페스티벌</h2></div><span className="reader-meta">Ticketmaster</span></div>
-    {!current ? <p className="reader-festival-state" role="status">{cityName} 행사 정보를 불러오고 있어요.</p>
-      : current.failed ? <div className="reader-festival-state" role="status"><p>행사 정보를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.</p>
-        <button type="button" onClick={() => { play('selection'); setAttempt((value) => value + 1); }}>다시 불러오기</button></div>
-        : !event ? <p className="reader-festival-state" role="status">지금 Ticketmaster에 등록된 예정 페스티벌이 없어요. 아래 도시 이야기도 둘러보세요.</p>
+      <h2 id="reader-festivals-title">{tr('{0}의 다음 페스티벌', cityName)}</h2></div><span className="reader-meta">Ticketmaster</span></div>
+    {!current ? <p className="reader-festival-state" role="status">{tr('{0} 행사 정보를 불러오고 있어요.', cityName)}</p>
+      : current.failed ? <div className="reader-festival-state" role="status"><p>{tr('행사 정보를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.')}</p>
+        <button type="button" onClick={() => { play('selection'); setAttempt((value) => value + 1); }}>{tr('다시 불러오기')}</button></div>
+        : !event ? <p className="reader-festival-state" role="status">{tr('지금 Ticketmaster에 등록된 예정 페스티벌이 없어요. 아래 도시 이야기도 둘러보세요.')}</p>
           : <>
-            <article className="reader-festival-card" aria-roledescription="슬라이드" aria-label={`${index % events.length + 1}/${events.length}: ${event.name}`}>
+            <article className="reader-festival-card" aria-roledescription={tr('슬라이드')} aria-label={`${index % events.length + 1}/${events.length}: ${event.name}`}>
               {event.image && failedImage !== event.id && <img key={event.id} src={event.image} alt="" width="960" height="540"
                 loading="lazy" onError={() => setFailedImage(event.id)} />}
-              <div className="reader-festival-copy"><p className="reader-festival-date">{eventTime(event)} · 현지 시간</p>
-                <h3>{event.name}</h3><p>{event.venue || '장소는 판매처에서 확인해 주세요.'}</p>
-                <p className="reader-festival-price">{eventPriceLabel(event)}</p>
-                {event.status === 'rescheduled' && <p>변경된 일정은 판매처에서 확인해 주세요.</p>}
-                {event.status === 'offsale' && <p>현재 티켓 판매가 중단돼 있어요.</p>}
+              <div className="reader-festival-copy"><p className="reader-festival-date">{eventTime(event, locale)} · {tr('현지 시간')}</p>
+                <h3>{event.name}</h3><p>{event.venue || tr('장소는 판매처에서 확인해 주세요.')}</p>
+                <p className="reader-festival-price">{eventPriceLabel(event, locale)}</p>
+                {event.status === 'rescheduled' && <p>{tr('변경된 일정은 판매처에서 확인해 주세요.')}</p>}
+                {event.status === 'offsale' && <p>{tr('현재 티켓 판매가 중단돼 있어요.')}</p>}
                 <div className="reader-festival-actions">
                   {ticketUrl && <a className="reader-primary" href={ticketUrl} target="_blank" rel="noopener noreferrer"
-                    aria-label={`${event.name} 티켓·행사 정보, Ticketmaster 새 탭 열기`} onClick={() => play('selection')}>티켓·행사 정보 ↗</a>}
+                    aria-label={tr('{0} 티켓·행사 정보, Ticketmaster 새 탭 열기', event.name)} onClick={() => play('selection')}>{tr('티켓·행사 정보 ↗')}</a>}
                   <a className="reader-secondary" href={`gling://events/${encodeURIComponent(event.id)}?cityId=${encodeURIComponent(cityId)}`}
-                    onClick={() => play('selection')}>앱에서 함께 갈 사람 찾기</a>
+                    onClick={() => play('selection')}>{tr('앱에서 함께 갈 사람 찾기')}</a>
                 </div>
               </div>
               {events.length > 1 && <div className="reader-festival-controls">
                 <span aria-live={rotating ? 'off' : 'polite'} aria-atomic="true">{index % events.length + 1} / {events.length}</span>
-                <button className="reader-festival-arrow reader-festival-previous" type="button" aria-label="이전 페스티벌" onClick={() => move(-1)}>
+                <button className="reader-festival-arrow reader-festival-previous" type="button" aria-label={tr('이전 페스티벌')} onClick={() => move(-1)}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="m15 6-6 6 6 6" /></svg>
                 </button>
                 <button className="reader-festival-toggle" type="button" onClick={() => { play('selection'); setPlaying((value) => !value); }}
-                  aria-label={playing ? '페스티벌 자동 넘김 일시정지' : '페스티벌 자동 넘김 시작'}>{playing ? '일시정지' : '자동 넘김'}</button>
-                <button className="reader-festival-arrow reader-festival-next" type="button" aria-label="다음 페스티벌" onClick={() => move(1)}>
+                  aria-label={tr(playing ? '페스티벌 자동 넘김 일시정지' : '페스티벌 자동 넘김 시작')}>{tr(playing ? '일시정지' : '자동 넘김')}</button>
+                <button className="reader-festival-arrow reader-festival-next" type="button" aria-label={tr('다음 페스티벌')} onClick={() => move(1)}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6" /></svg>
                 </button>
               </div>}
             </article>
-            <p className="reader-festival-source">행사 정보: Ticketmaster · 일정과 판매 상태는 달라질 수 있어요.</p>
+            <p className="reader-festival-source">{tr('행사 정보: Ticketmaster · 일정과 판매 상태는 달라질 수 있어요.')}</p>
           </>}
   </section>;
 }

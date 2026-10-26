@@ -6,6 +6,7 @@ import Head from 'expo-router/head';
 import { Asset } from 'expo-asset';
 import type { CSSProperties } from 'react';
 import { WebNightColors } from '@/constants/theme';
+import { useLanguage } from '@/hooks/use-language';
 
 import { LEGAL_DOCUMENTS, type LegalDocument, type LegalDocumentSlug } from '@/lib/legal-documents';
 
@@ -23,14 +24,15 @@ export function generateStaticParams() {
 
 export default function LegalDocumentPage() {
   const { document } = useLocalSearchParams<{ document: string }>();
+  const { tr } = useLanguage();
   const slug = document as LegalDocumentSlug;
   const page = LEGAL_DOCUMENTS[slug] as LegalDocument | undefined;
 
   if (!page) {
     return (
       <main className="legal-missing">
-        <h1>페이지를 찾을 수 없습니다.</h1>
-        <a href="./">gling으로 돌아가기</a>
+        <h1>{tr('페이지를 찾을 수 없습니다.')}</h1>
+        <a href="./">{tr('gling으로 돌아가기')}</a>
       </main>
     );
   }
@@ -56,13 +58,13 @@ export default function LegalDocumentPage() {
 
       <div className="legal-shell">
         <header className="legal-topbar">
-          <a className="legal-brand" href="./" aria-label="gling 홈">
+          <a className="legal-brand" href="./" aria-label={tr('gling 홈')}>
             <img src={wordmark} width="96" alt="gling" />
           </a>
-          <nav aria-label="법적 문서">
+          <nav aria-label={tr('법적 문서')}>
             {LEGAL_LINKS.map((link) => (
               <a key={link.slug} href={`./${link.slug}`} aria-current={link.slug === slug ? 'page' : undefined}>
-                {link.label}
+                {tr(link.label)}
               </a>
             ))}
           </nav>
@@ -73,17 +75,17 @@ export default function LegalDocumentPage() {
             <span>{page.eyebrow}</span>
             <h1>{page.title}</h1>
             <p>{page.summary}</p>
-            <small>시행일 {page.effectiveDate}</small>
+            <small>{tr('시행일 {0}', page.effectiveDate)}</small>
             {slug === 'account-deletion' && (
-              <a className="legal-request" href="mailto:eunsense0308@gmail.com?subject=gling%20계정%20삭제%20요청">
-                계정 삭제 요청 이메일 보내기
+              <a className="legal-request" href={`mailto:eunsense0308@gmail.com?subject=${encodeURIComponent(tr('gling 계정 삭제 요청'))}`}>
+                {tr('계정 삭제 요청 이메일 보내기')}
               </a>
             )}
           </header>
 
           <div className="legal-layout">
-            <aside aria-label="문서 목차">
-              <strong>목차</strong>
+            <aside aria-label={tr('문서 목차')}>
+              <strong>{tr('목차')}</strong>
               {page.sections.map((section, index) => (
                 <a key={section.title} href={`#section-${index + 1}`}>
                   {section.title}

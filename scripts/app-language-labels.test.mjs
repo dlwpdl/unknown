@@ -38,7 +38,7 @@ test('meetup action labels translate fixed Chilling and Meetup terms in both mod
 test('the initial meetup question follows the selected language and user text stays verbatim', () => {
   const declaration = nodes(tree('src/app/meetup-create.tsx')).find(node => ts.isVariableDeclaration(node) && ts.isArrayBindingPattern(node.name) && node.name.elements[0]?.getText() === 'question');
   const initial = evaluate(declaration.initializer.arguments[0], 'en');
-  assert.equal(typeof initial === 'function' ? initial() : initial, 'What kind of meetup are you hoping for?');
+  assert.equal(typeof initial === 'function' ? initial() : initial, 'What kind of vibe are you hoping for?');
   assert.ok(translateUi('en', '{0} 프로필', '칠링').includes('칠링'));
   assert.equal(translateUi('en', '회원이 작성한 원문'), '회원이 작성한 원문');
 });
@@ -93,11 +93,11 @@ function renderedText(file, contains, scope, tag = 'ThemedText') {
 }
 
 test('meetup city, capacity and slot copy preserves word spacing and uses slot units', () => {
-  assert.equal(renderedText('src/app/(tabs)/meetups.tsx', ['styles.cityText'], { city: { name: '밴쿠버' } }), 'in Vancouver');
+  assert.equal(renderedText('src/app/(tabs)/meetups.tsx', ['styles.cityText'], { city: { name: '밴쿠버' } }), 'In Vancouver');
   assert.equal(renderedText('src/app/meetup-create.tsx', ['<ThemedText>{tr(meetupCity?.name'], { meetupCity: { name: '밴쿠버' }, city: { name: '토론토' } }), 'Vancouver');
   assert.equal(renderedText('src/app/meetup-create.tsx', ['Where we’re going'], { meetupCity: { name: '밴쿠버' }, city: { name: '토론토' }, aiCopy: (_ko, en) => en }), 'Where we’re going · Vancouver');
-  assert.equal(renderedText('src/app/(tabs)/meetups.tsx', ['같이 갈 모임을 열어요'], { city: { name: '밴쿠버' } }), 'Find an event in Vancouver and host a meetup to go together ›');
-  assert.equal(renderedText('src/app/(tabs)/meetups.tsx', ['slots.active', 'slots.available'], { slots: { active: 0, limit: 3, available: 3 } }), 'Concurrent meetup slots 0/3 used · 3 available');
+  assert.equal(renderedText('src/app/(tabs)/meetups.tsx', ['같이 갈 모임을 열어요'], { city: { name: '밴쿠버' } }), 'Find something in Vancouver and host a meetup for it ›');
+  assert.equal(renderedText('src/app/(tabs)/meetups.tsx', ['slots.active', 'slots.available'], { slots: { active: 0, limit: 3, available: 3 } }), 'Concurrent meetup slots 0/3 used · 3 left');
   assert.equal(renderedText('src/components/my-meetups.tsx', ['meetup.room.memberCount'], { CITIES: [{ id: 'toronto', name: '토론토' }], meetup: { cityId: 'toronto', room: { memberCount: 1, capacity: 8 } } }), 'Toronto · 1/8 people');
 });
 
@@ -105,7 +105,7 @@ test('meetup city, capacity and slot copy preserves word spacing and uses slot u
 test('profile and business counters use contextual units rather than a shared reviews suffix', () => {
   assert.equal(renderedText('src/app/user/[id].tsx', ['styles.stats', 'publicProfile.storyCount'], { publicProfile: { storyCount: 3, listingCount: 2, completedCount: 1 }, count: String, theme: {} }, 'View'), '3Today2Listings1Marked complete');
   // The business metric now lives in the membership page's help list as one whole-sentence key.
-  assert.equal(translateUi('en', '로그인 클릭 회원 {0}명 · 익명 클릭 세션 {1}개', 2, 4), 'Signed-in clickers: 2 · Anonymous click sessions: 4');
+  assert.equal(translateUi('en', '로그인 클릭 회원 {0}명 · 익명 클릭 세션 {1}개', 2, 4), 'Members who clicked: 2 · Anonymous sessions that clicked: 4');
 });
 
 test('both meetup slot summaries show the existing administrator exemption without finite counts', () => {

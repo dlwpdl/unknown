@@ -41,7 +41,7 @@ function mount() {
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: viewer } }) },
     '@/lib/interaction-feedback': {},
     '@/lib/translation-source': { needsContentTranslation },
-    '@/lib/content-translation': { isDeviceTranslationSupported: () => true, resetContentTranslations() {}, requestContentTranslation: (scope, request, signal) => new Promise((resolve, reject) => {
+    '@/lib/content-translation': { resetContentTranslations() {}, requestContentTranslation: (scope, request, signal) => new Promise((resolve, reject) => {
       calls.push({ scope, request, resolve, reject, signal });
       signal.addEventListener('abort', () => reject(new Error('TRANSLATION_CANCELLED')), { once: true });
     }) },
