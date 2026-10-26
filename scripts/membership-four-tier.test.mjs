@@ -12,13 +12,27 @@ const data = entries => ({ request_date_ms: now, subscriber: {
 
 test('four general tiers keep chat unlimited and apply reviewed group limits', () => {
   assert.deepEqual(MEMBERSHIP_LIMITS, {
-    free: { meetups: 3, conversations: null }, plus: { meetups: 5, conversations: null },
-    pro: { meetups: 10, conversations: null }, premium: { meetups: 20, conversations: null },
+    free: { meetups: 3, conversations: null, seats: 10, cohosts: 0, listings: 5 },
+    plus: { meetups: 5, conversations: null, seats: 30, cohosts: 1, listings: 10 },
+    pro: { meetups: 10, conversations: null, seats: 100, cohosts: 3, listings: 20 },
+    premium: { meetups: 20, conversations: null, seats: 500, cohosts: 5, listings: 20 },
   });
 });
 
 test('business bumps are one per interval across all posts; paid tiers have no monthly cap', () => {
   assert.deepEqual(['free','plus','pro','premium'].map(tier => [BUSINESS_LIMITS[tier].bumpCooldownHours, BUSINESS_LIMITS[tier].bumps]), [[120,2],[48,null],[24,null],[12,null]]);
+  assert.deepEqual(['free','plus','pro','premium'].map(tier => [BUSINESS_LIMITS[tier].posts, BUSINESS_LIMITS[tier].managers, BUSINESS_LIMITS[tier].managedPosts]), [[1,0,0],[2,1,0],[5,3,0],[10,5,0]]);
+});
+
+test('v2 yearly products are offered and verified like monthly, with the matching period', () => {
+  const yearly = { identifier: 'business_pro_yearly', product: { identifier: 'com.dlwpdl.gling.business.pro.yearly.v2', priceString: 'CA$499.99', subscriptionPeriod: 'P1Y' } };
+  assert.deepEqual(membershipOffer(yearly), { id: 'business_pro_yearly', kind: 'business', planVersion: 2, tier: 'pro', period: 'year', price: 'CA$499.99', productId: 'com.dlwpdl.gling.business.pro.yearly.v2' });
+  assert.equal(membershipOffer({ ...yearly, product: { ...yearly.product, subscriptionPeriod: 'P1M' } }), null, 'a yearly package must carry a yearly period');
+  assert.equal(membershipOffer({ ...yearly, product: { ...yearly.product, identifier: 'com.dlwpdl.gling.business.pro.monthly.v2' } }), null, 'a yearly package must not point at the monthly product');
+  assert.equal(membershipOffer({ identifier: 'general_plus_yearly', product: { identifier: 'gling_general_plus_v2:yearly', priceString: 'CA$99.99', subscriptionPeriod: 'P1Y' } })?.period, 'year');
+  const [entitlement] = parseRevenueCatMembership(data([['gling_business_premium', 'com.dlwpdl.gling.business.premium.yearly.v2']]), { now }).entitlements;
+  assert.equal(entitlement?.tier, 'premium');
+  assert.equal(entitlement?.kind, 'business');
 });
 
 test('general and business subscriptions coexist and keep separate receipt scope', () => {

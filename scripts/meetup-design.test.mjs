@@ -33,11 +33,11 @@ test('모임 프로필은 사진·작성 예시·관심사 태그·미리보기�
   assert.ok(profile.includes('필수 항목'), '저장에 필요한 항목의 작성 상태 표시');
 });
 
-test('멤버십은 사용 현황·이용 규칙·플랜 비교 순서로 묶고 관리자는 제한 없음으로 보여준다', () => {
+test('멤버십은 내 사용 현황 → 연간·월간 → 플랜 카드 → 접힌 비교·규칙 순서이고 관리자는 제한 없음으로 보여준다', () => {
   const membership = read('src/app/profile/membership.tsx');
-  const order = ['사용 현황', '이용 규칙', '플랜 비교'].map((title) => membership.indexOf(title));
-  assert.ok(order.every((index) => index > -1) && order[0] < order[1] && order[1] < order[2], '섹션 순서가 사용 현황 → 이용 규칙 → 플랜 비교여야 한다');
-  assert.ok(membership.includes('관리자 계정 · 제한 없음'), '관리자는 숫자 대신 제한 없음을 본다');
+  const order = ['지금 쓰는 멤버십', 'app_profile_membership.pressable.5', 'app_profile_membership.pressable.4', '전체 비교 보기', '모임 이용 규칙'].map((title) => membership.indexOf(title));
+  assert.ok(order.every((index) => index > -1) && order.every((index, i) => i === 0 || order[i - 1] < index), '사용 현황 → 기간 → 플랜 → 비교 → 규칙 순서여야 한다');
+  assert.ok(membership.includes('관리자 계정 · 모임을 제한 없이 이용해요.'), '관리자는 숫자 대신 제한 없음을 본다');
 });
 
 test('관리자 콘솔은 사람을 ID가 아니라 이름으로 보여준다', () => {

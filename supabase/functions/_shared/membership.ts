@@ -10,7 +10,7 @@ export type VerifiedEntitlement = {
 };
 
 export function membershipProductIds(kind: 'general' | 'business', tier: 'plus' | 'pro' | 'premium') {
-  return [`com.dlwpdl.gling.${kind}.${tier}.monthly.v2`, `gling_${kind}_${tier}_v2:monthly`];
+  return (['monthly', 'yearly'] as const).flatMap(period => [`com.dlwpdl.gling.${kind}.${tier}.${period}.v2`, `gling_${kind}_${tier}_v2:${period}`]);
 }
 
 function record(value: unknown): value is RecordValue {

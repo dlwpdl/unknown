@@ -4,20 +4,22 @@ import { membershipProductIds } from '../../supabase/functions/_shared/membershi
 export type MembershipTier = 'free' | 'plus' | 'pro' | 'premium' | 'admin';
 export type MembershipKind = 'general' | 'business';
 
+// seats/cohosts mirror private meetup scale (20261026040000); listings = live buy/sell posts.
 export const MEMBERSHIP_LIMITS = {
-  free: { meetups: 3, conversations: null },
-  plus: { meetups: 5, conversations: null },
-  pro: { meetups: 10, conversations: null },
-  premium: { meetups: 20, conversations: null },
+  free: { meetups: 3, conversations: null, seats: 10, cohosts: 0, listings: 5 },
+  plus: { meetups: 5, conversations: null, seats: 30, cohosts: 1, listings: 10 },
+  pro: { meetups: 10, conversations: null, seats: 100, cohosts: 3, listings: 20 },
+  premium: { meetups: 20, conversations: null, seats: 500, cohosts: 5, listings: 20 },
 } as const;
 
 export const GENERAL_BUMP_HOURS = { free: 48, plus: 36, pro: 30, premium: 24, admin: 0 } as const;
 // Mirrors private.business_membership_details_base: one bump per interval across all of a business's posts; paid tiers have no monthly bump cap.
+// managers mirrors private.business_operator_limit.
 export const BUSINESS_LIMITS = {
-  free: { posts: 1, bumps: 2, bumpCooldownHours: 120, managedPosts: 0, managedBumps: 0, reports: 0 },
-  plus: { posts: 12, bumps: null, bumpCooldownHours: 48, managedPosts: 0, managedBumps: 0, reports: 0 },
-  pro: { posts: 30, bumps: null, bumpCooldownHours: 24, managedPosts: 0, managedBumps: 0, reports: 0 },
-  premium: { posts: 30, bumps: null, bumpCooldownHours: 12, managedPosts: 4, managedBumps: 8, reports: 1 },
+  free: { posts: 1, bumps: 2, bumpCooldownHours: 120, managers: 0, managedPosts: 0, managedBumps: 0, reports: 0 },
+  plus: { posts: 2, bumps: null, bumpCooldownHours: 48, managers: 1, managedPosts: 0, managedBumps: 0, reports: 0 },
+  pro: { posts: 5, bumps: null, bumpCooldownHours: 24, managers: 3, managedPosts: 0, managedBumps: 0, reports: 0 },
+  premium: { posts: 10, bumps: null, bumpCooldownHours: 12, managers: 5, managedPosts: 0, managedBumps: 0, reports: 0 },
 } as const;
 
 export type BusinessMembershipSnapshot = {
@@ -65,11 +67,12 @@ export type MembershipOffer = {
 };
 
 export function membershipOffer(item: { identifier: string; product: { identifier: string; priceString: string; subscriptionPeriod: string | null } }): MembershipOffer | null {
-  const current = /^(general|business)_(plus|pro|premium)_monthly$/.exec(item.identifier);
+  const current = /^(general|business)_(plus|pro|premium)_(monthly|yearly)$/.exec(item.identifier);
   if (current) {
-    const kind = current[1] as MembershipKind, tier = current[2] as MembershipOffer['tier'];
-    if (!membershipProductIds(kind, tier).includes(item.product.identifier) || !item.product.priceString || item.product.subscriptionPeriod !== 'P1M') return null;
-    return { id: item.identifier, kind, planVersion: 2, tier, period: 'month', price: item.product.priceString, productId: item.product.identifier };
+    const kind = current[1] as MembershipKind, tier = current[2] as MembershipOffer['tier'], yearly = current[3] === 'yearly';
+    if (!membershipProductIds(kind, tier).includes(item.product.identifier) || !item.product.identifier.includes(yearly ? 'yearly' : 'monthly')
+      || !item.product.priceString || item.product.subscriptionPeriod !== (yearly ? 'P1Y' : 'P1M')) return null;
+    return { id: item.identifier, kind, planVersion: 2, tier, period: yearly ? 'year' : 'month', price: item.product.priceString, productId: item.product.identifier };
   }
   const match = /^(plus|premium)_(monthly|yearly)$/.exec(item.identifier);
   if (!match || !item.product.priceString || item.product.subscriptionPeriod !== (match[2] === 'monthly' ? 'P1M' : 'P1Y')) return null;
@@ -77,21 +80,16 @@ export function membershipOffer(item: { identifier: string; product: { identifie
   return { id: item.identifier, tier: match[1] as 'plus' | 'premium', period: match[2] === 'monthly' ? 'month' : 'year', price: item.product.priceString, productId: item.product.identifier };
 }
 
-// 출시 기념가 표시용 정가. 스토어 가격 문자열을 그대로 배율(플러스 1.5배, 프리미엄 4/3배)로 올려 같은 통화·서식으로 돌려준다.
-// CA$9.99 → CA$14.99, CA$14.99 → CA$19.99, ₩11,000 → ₩16,500. 나중에 실제 정가로 올릴 계획이 있어 "정가"로 표시한다.
-// ponytail: 통화별 표는 두지 않는다. 배율이 바뀌면 여기 숫자만 고친다.
-export function referencePrice(offer: { tier: 'plus' | 'premium'; price: string }): string | null {
-  const match = /(\d[\d.,]*\d|\d)/.exec(offer.price);
+// 연간 상품 옆 취소선 가격(월 가격 × 12). 스토어 가격 문자열의 통화·서식을 그대로 쓴다: CA$9.99 → CA$119.88, ₩11,000 → ₩132,000, 9,99 € → 119,88 €.
+export function yearlyListPrice(monthlyPrice: string): string | null {
+  const match = /(\d[\d.,]*\d|\d)/.exec(monthlyPrice);
   if (!match) return null;
   const raw = match[1];
   const decimalSep = /[.,]\d{2}$/.test(raw) ? raw[raw.length - 3] : null;
   const thousandsSep = raw.replace(decimalSep ? new RegExp(`\\${decimalSep}\\d{2}$`) : /$/, '').match(/[.,]/)?.[0] ?? null;
   const value = Number(raw.replace(/[.,]/g, (ch) => (ch === decimalSep ? '.' : '')));
   if (!Number.isFinite(value) || value <= 0) return null;
-  const ratio = offer.tier === 'plus' ? 1.5 : 4 / 3;
-  const step = 10 ** Math.max(0, Math.floor(Math.log10(value * ratio)) - 2); // 소수 없는 통화는 유효숫자 3자리로
-  const scaled = decimalSep ? Math.ceil(value * ratio) - 0.01 : Math.round((value * ratio) / step) * step;
-  const [whole, fraction] = scaled.toFixed(decimalSep ? 2 : 0).split('.');
-  const grouped = thousandsSep ? whole.replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSep) : whole;
-  return offer.price.replace(raw, fraction ? `${grouped}${decimalSep}${fraction}` : grouped);
+  const [whole, fraction] = (value * 12).toFixed(decimalSep ? 2 : 0).split('.');
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSep ?? ',');
+  return monthlyPrice.replace(raw, fraction ? `${grouped}${decimalSep}${fraction}` : grouped);
 }
