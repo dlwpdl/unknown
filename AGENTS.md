@@ -1,3 +1,7 @@
+# Gling terminology — owner correction 2026-10-19
+
+Use **비즈니스** in Gling's user-facing replies, new UI, prototypes and documentation, even when the user says “업체”. Preserve database, route and API identifiers; this is a display-language rule, not a schema migration.
+
 # Gling design system — owner 2026-10-19
 
 Before adding or changing Gling UI, read `docs/design-system.md`. Reuse `src/constants/design-system.ts`, the existing palette/Spacing, ThemedText, shared action components and interaction-feedback hook. The owner explicitly requires consistent buttons, selected/pressed/disabled/busy states, icons, typography/line-height/letter-spacing, category labels and menu spacing across existing and future features. Do not invent page-local equivalents of an existing role. Add a necessary new variant to the shared contract, document its purpose, and verify real rendered light/dark, narrow/large-text and reduced-motion states. Preserve card layouts and all existing data/privacy/permission/navigation behaviour. Exceptions need a concrete documented reason and scope, not a new user approval gate. An approved HTML mockup is separate from native runtime verification. See the current change manifest for actual migrated screens; documentation alone does not prove app-wide adoption.
