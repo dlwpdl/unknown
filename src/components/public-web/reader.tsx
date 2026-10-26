@@ -37,6 +37,7 @@ import { loadMerchantSource, merchantSourceActionLabel, trackPublicMerchantSourc
 import type { Post } from '@/lib/types';
 
 const wordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark.png')).uri;
+const BRAND_CARD = `${PUBLIC_SITE}/share-covers/post.png`;
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const palette = Object.fromEntries(Object.entries(WebNightColors).map(([key, value]) => [`--${key}`, value])) as CSSProperties;
 const cities = CITIES.filter((city) => city.state === 'open');
@@ -217,7 +218,10 @@ function ReaderContent() {
       {canonical && <meta property="og:url" content={canonical} />}
       <meta name="twitter:card" content={post?.imageUris?.some(Boolean) ? 'summary_large_image' : 'summary'} />
       <meta name="twitter:title" content={pageTitle} /><meta name="twitter:description" content={description} />
-      {post?.imageUris?.[0] && <><meta property="og:image" content={post.imageUris[0]} /><meta property="og:image:alt" content={ko ? `${post.title} 사진 1` : `${post.title}, photo 1`} /><meta name="twitter:image" content={post.imageUris[0]} /></>}
+      {/* A photo-less post would otherwise scrape the cream wordmark onto a white link card. */}
+      <meta property="og:image" content={post?.imageUris?.[0] ?? BRAND_CARD} />
+      <meta property="og:image:alt" content={post?.imageUris?.[0] ? (ko ? `${post.title} 사진 1` : `${post.title}, photo 1`) : tr('글링')} />
+      <meta name="twitter:image" content={post?.imageUris?.[0] ?? BRAND_CARD} />
       {metadata?.published && <meta property="article:published_time" content={metadata.published} />}
       {schema && <script type="application/ld+json">{jsonLd(schema)}</script>}
     </Head>

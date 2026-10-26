@@ -6,7 +6,7 @@ import { useState, type CSSProperties } from 'react';
 
 import { WebNightColors } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
-import { publicSiteName } from '@/lib/public-seo';
+import { publicSiteName, PUBLIC_SITE } from '@/lib/public-seo';
 import {
   WEB_CATEGORY_LABELS,
   WEB_FEATURES,
@@ -19,6 +19,8 @@ import {
   type WebHomeCitySummary,
 } from '@/lib/web-home';
 
+// The wordmark asset is cream-on-transparent, so without this card white link previews show a white logo.
+const BRAND_CARD = `${PUBLIC_SITE}/share-covers/post.png`;
 const appIconSrc = Asset.fromModule(require('@/assets/brand/gling-night-app-icon.png')).uri;
 const wordmarkSrc = Asset.fromModule(require('@/assets/brand/gling-night-wordmark.png')).uri;
 // Reuse the real B-design store captures so the website and store show the same app.
@@ -68,6 +70,16 @@ export default function WebHome() {
         <title>{publicSiteName(language)}</title>
         <link rel="icon" type="image/png" href={appIconSrc} />
         <meta name="description" content={tr('밴쿠버·토론토의 일상과 동네 정보를 한국어로 나누는 커뮤니티, 글링. 가까운 이웃의 이야기와 모임을 만날 준비를 하고 있어요.')} />
+        {/* Without an explicit og:image, chat apps scrape the white wordmark and show it on a white card. */}
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={tr('글링')} />
+        <meta property="og:title" content={publicSiteName(language)} />
+        <meta property="og:description" content={tr('밴쿠버·토론토의 일상과 동네 정보를 한국어로 나누는 커뮤니티, 글링. 가까운 이웃의 이야기와 모임을 만날 준비를 하고 있어요.')} />
+        <meta property="og:url" content={`${PUBLIC_SITE}/`} />
+        <meta property="og:image" content={BRAND_CARD} />
+        <meta property="og:image:alt" content={tr('글링')} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content={BRAND_CARD} />
       </Head>
       <a className="site-skip-link" href="#main">{tr('본문으로 바로가기')}</a>
       <div className="site-shell">

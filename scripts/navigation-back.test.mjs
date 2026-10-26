@@ -69,6 +69,7 @@ function screen(path, imports) {
     if (name === 'expo-router/head') return { default: 'Head' };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ background: '#fff', text: '#123', accent: '#b34' }) };
     if (name in imports) return imports[name];
+    if (name === '@/lib/public-seo') return { PUBLIC_SITE: 'https://gling.example' };
     throw new Error(`Unexpected import: ${name}`);
   }) });
   return exports.default;

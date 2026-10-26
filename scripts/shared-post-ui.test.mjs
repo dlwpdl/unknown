@@ -116,6 +116,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/lib/content-visibility': { subscribeVisibility, visibilityRevision },
     '@/lib/shared-link-preview': { loadSharedLinkPreview: (...args) => { calls.push(['preview', args[1], auth.me.id]); return data.preview?.(...args) ?? Promise.resolve(preview()); } },
     '@/lib/supabase': { supabase: client },
+    '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.example' },
     ...data.imports,
   };
   const exports = {};

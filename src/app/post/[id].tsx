@@ -18,11 +18,13 @@ import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadPublicPost } from '@/lib/feed-data';
 import { supabase } from '@/lib/supabase';
+import { PUBLIC_SITE } from '@/lib/public-seo';
 import { loadSharedLinkPreview, type SharedLinkPreview } from '@/lib/shared-link-preview';
 import { SHARED_POST_RETURN_KEY, buildSharedPostUrl } from '@/lib/sharing';
 import { clearSharedPostReturn, rememberSharedPostReturn } from '@/lib/shared-post-return';
 import type { Post } from '@/lib/types';
 
+const BRAND_CARD = `${PUBLIC_SITE}/share-covers/post.png`;
 export default function SharedPostRoute() {
   const { tr, language } = useLanguage();
   const { id, commentId, invite } = useLocalSearchParams<{ id: string; commentId?: string; invite?: string }>();
@@ -101,7 +103,9 @@ export default function SharedPostRoute() {
         <meta property="og:site_name" content={tr("글링")} /><meta property="og:title" content={preview?.key === requestKey ? preview.value?.title ?? '글링 공유' : current?.post?.title ?? '글링 공유'} />
         <meta property="og:description" content={tr("Google·소셜 로그인 후 전체 내용과 모임을 확인해요.")} />
         {postId && <meta property="og:url" content={buildSharedPostUrl(postId)} />}
-        {preview?.key === requestKey && preview.value?.imageUrl && <meta property="og:image" content={preview.value.imageUrl} />}
+        {/* A photo-less post would otherwise scrape the cream wordmark onto a white link card. */}
+        <meta property="og:image" content={preview?.key === requestKey ? preview.value?.imageUrl ?? BRAND_CARD : BRAND_CARD} />
+        <meta property="og:image:alt" content={tr("글링")} />
       </Head>}
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         {isAuthed && current?.post ? (
