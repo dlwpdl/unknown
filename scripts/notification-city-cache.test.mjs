@@ -6,13 +6,14 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
-const displayedRows = tree => nodes(tree).find(node => node.type === 'FlatList')?.props.data ?? [];
+const displayedRows = tree => (nodes(tree).find(node => node.type === 'FlatList')?.props.data ?? []).filter(entry => entry.type === 'item').map(entry => entry.item.lead);
+const firstItem = list => list.props.data.find(entry => entry.type === 'item');
 const settle = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); };
 function cityCache(file, { holdList = false, holdActors = false } = {}) {
   const slots = [], pending = [], channels = [], appListeners = new Set(), settingListeners = new Set();
   let cursor = 0, offline = false, focused = true, everFocused = false, isAuthed = true, isAdmin = false, authLoading = false, pathname = '/feed', foreground = 'active', legacyFocus, legacyCleanup;
   const me = { id: 'member', cityId: 'vancouver' };
-  let rows = [{ id: 'vancouver-notice', kind: 'trending_post', category: 'trending', body: 'Vancouver discovery', actor_id: null, read_at: '2026-10-13', created_at: '2026-10-13' }];
+  let rows = [{ id: 'vancouver-notice', kind: 'comment', category: 'replies', body: 'Vancouver discovery', actor_id: null, read_at: '2026-10-13', created_at: '2026-10-13' }];
   const requests = [], actorReads = [], listReads = [], actorRequests = [], marked = [], routes = [], events = [];
   const effect = (fn, deps, layout = false) => {
     const i = cursor++, previous = slots[i];
@@ -36,6 +37,7 @@ function cityCache(file, { holdList = false, holdActors = false } = {}) {
     DeviceEventEmitter: { addListener: (_name, callback) => { settingListeners.add(callback); return { remove: () => settingListeners.delete(callback) }; } } };
   const data = {
     loadNotifications: () => { const snapshot = [...rows]; if (holdList) return new Promise(resolve => listReads.push(() => resolve(snapshot))); listReads.push(null); return offline ? Promise.reject(Error('OFFLINE')) : Promise.resolve(snapshot); },
+    loadNotificationSnippets: async () => new Map(),
     loadNotificationActors: async (_client, ids) => { actorReads.push([...ids]); return holdActors ? new Promise(resolve => actorRequests.push(resolve)) : new Map(); },
     markNotificationsRead: async (_client, ids) => { marked.push([...ids]); },
     loadUnreadNotificationCount: () => new Promise(resolve => requests.push(resolve)),
@@ -44,7 +46,7 @@ function cityCache(file, { holdList = false, holdActors = false } = {}) {
   const resolve = withLanguageImports(name => {
     if (name === 'react') return hooks;
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if (name === 'expo-router') return { useRouter: () => ({ push: value => routes.push(value) }), usePathname: () => pathname, useIsFocused: () => focused, useFocusEffect: fn => { legacyFocus = fn; } };
+    if (name === 'expo-router') return { useRouter: () => ({ push: value => routes.push(value), navigate: value => routes.push(value) }), usePathname: () => pathname, useIsFocused: () => focused, useFocusEffect: fn => { legacyFocus = fn; } };
     if (name === 'react-native') return native;
     if (name === 'react-native-reanimated') return { useReducedMotion: () => true };
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed, isAuthLoading: authLoading, isAdmin, me }) };
@@ -53,7 +55,10 @@ function cityCache(file, { holdList = false, holdActors = false } = {}) {
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     if (name === '@/constants/theme') return { Depth: {}, MaxContentWidth: {}, Spacing: {}, TabBarHeight: 60 };
-    if (name === '@/lib/notification-preferences') return { NOTIFICATION_CATEGORIES: [], NOTIFICATION_PREFERENCES_CHANGED: 'preferences', isAdminNotificationKind: kind => kind.startsWith('admin_'), notificationRoute: route => route, adminDashboardUrl: () => null };
+    if (name === '@/lib/notification-preferences') return { NOTIFICATION_CATEGORIES: [], NOTIFICATION_PREFERENCES_CHANGED: 'preferences', englishNotificationBody: item => item.body, loadAdminDashboardOrigin: async () => null,
+      openNotificationTarget: ({ route, navigate }) => { if (route) navigate(route); return !!route; } };
+    if (name === '@/lib/notification-inbox') return load('lib/notification-inbox.ts');
+    if (name === '@/lib/mock') return { CITIES: [] };
     if (name === '@/lib/product-analytics') return { recordProductEvent: async (_client, event) => { events.push(event); } };
     if (name === '@/lib/feed-data') return { relativeTime: () => '' };
     if (name === '@/lib/notification-refresh') return load('lib/notification-refresh.ts');
@@ -97,7 +102,7 @@ test('city changes hide a cached discovery immediately and an offline refresh ca
   assert.equal(displayedRows(ui.render()).length, 0);
   await ui.focus();
   assert.equal(displayedRows(ui.render()).length, 0);
-  ui.offline(false); ui.rows([{ id: 'toronto-notice', kind: 'trending_post', category: 'trending', body: 'Toronto discovery', actor_id: null, read_at: '2026-10-13', created_at: '2026-10-13' }]);
+  ui.offline(false); ui.rows([{ id: 'toronto-notice', kind: 'comment', category: 'replies', body: 'Toronto discovery', actor_id: null, read_at: '2026-10-13', created_at: '2026-10-13' }]);
   await ui.focus();
   assert.equal(displayedRows(ui.render())[0].id, 'toronto-notice');
   ui.dispose();
@@ -159,7 +164,7 @@ for (const change of ['account', 'city', 'blur', 'restoring']) {
     const ui = cityCache('app/(tabs)/notifications.tsx');
     ui.render(); await ui.focus();
     const list = nodes(ui.render()).find(node => node.type === 'FlatList');
-    const item = list.props.renderItem({ item: list.props.data[0], index: 0 });
+    const item = list.props.renderItem({ item: firstItem(list) });
     const retained = nodes(item).find(node => node.props?.analyticsId === 'app_tabs_notifications.pressable.2').props.onPress;
     transition(ui); retained(); await settle();
     assert.equal(ui.routes.length, 0); assert.equal(ui.events.length, 0);
@@ -199,7 +204,7 @@ test('late actor photos cannot cross an account boundary and a current row still
   ui.account('next-account'); ui.rows([{ ...notification, id: 'current' }]); ui.render(); ui.commit(); await settle();
   ui.actorRequests[0](new Map([['actor', { nickname: 'Previous account actor', avatarUrl: 'private-old-avatar' }]])); await settle();
   const list = nodes(ui.render()).find(node => node.type === 'FlatList');
-  const item = list.props.renderItem({ item: list.props.data[0], index: 0 });
+  const item = list.props.renderItem({ item: firstItem(list) });
   assert.equal(nodes(item).some(node => node.props?.source?.uri === 'private-old-avatar'), false);
   nodes(item).find(node => node.props?.analyticsId === 'app_tabs_notifications.pressable.2').props.onPress();
   await settle(); assert.deepEqual(ui.routes, ['/post?id=public']); assert.equal(ui.events.length, 1);

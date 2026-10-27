@@ -76,7 +76,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     '@/lib/push-notifications': { pushSupported: true, pushConfigured: true, registerPushDevice: async () => {} },
     '@/lib/supabase': { supabase }, '@/lib/analytics': { analyticsScreen },
     '@/lib/kakao-auth': { getOAuthCallbackPath },
-    '@/lib/community-data': { loadNotifications: async () => ctx.rows, loadNotificationActors: async () => new Map(), markNotificationsRead: async (_client, ids) => read.push(plain(ids)) },
+    '@/lib/community-data': { loadNotifications: async () => ctx.rows, loadNotificationActors: async () => new Map(), loadNotificationSnippets: async () => new Map(), markNotificationsRead: async (_client, ids) => read.push(plain(ids)) },
     '@/lib/ticketmaster': { loadTicketmasterEvent: async () => { if (ctx.eventError) throw new Error('offline'); return { event: ctx.event }; },
       recordTicketmasterEventClick: async (cityId, id) => order.push(`recommendation:${cityId}:${id}`), eventNotice: () => '', eventTime: () => '', eventPriceLabel: () => '', meetupAllowed: () => true },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
@@ -105,6 +105,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     return exports;
   };
   imports['@/lib/notification-refresh'] = load('lib/notification-refresh.ts');
+  imports['@/lib/notification-inbox'] = load('lib/notification-inbox.ts');
   imports['@/lib/error-reporting'] = load('lib/error-reporting.ts');
   const exports = load(file);
   const render = () => {
@@ -146,12 +147,12 @@ test('foreign, custom-action, invalid-ID and stale push callbacks never record',
 });
 
 test('inbox loading and bulk read never count; only a current account row tap counts', async t => {
-  const ui = mount('app/(tabs)/notifications.tsx'); t.after(ui.cleanup); await ui.settle();
+  const ui = mount('app/(tabs)/notifications.tsx', 'default', {}, { rows: [{ ...notification, kind: 'comment', category: 'replies' }] }); t.after(ui.cleanup); await ui.settle();
   assert.deepEqual(ui.read, [[noticeId]]); assert.deepEqual(ui.product(), []);
   const list = ui.nodes().find(node => node.type === 'FlatList');
-  const row = nodes(list.props.renderItem({ item: notification, index: 0 })).find(node => node.props?.analyticsId === 'app_tabs_notifications.pressable.2');
+  const row = nodes(list.props.renderItem({ item: list.props.data.find(entry => entry.type === 'item') })).find(node => node.props?.analyticsId === 'app_tabs_notifications.pressable.2');
   row.props.onPress(); assert.deepEqual(ui.product(), [payload('notification_inbox_open', noticeId)]);
-  assert.ok(ui.order.indexOf('record_product_event') < ui.order.indexOf('push:/post/9f100000-0000-4000-8000-000000000002'));
+  assert.ok(ui.order.indexOf('record_product_event') < ui.order.indexOf('navigate:/post/9f100000-0000-4000-8000-000000000002'), 'bell rows and push taps share router.navigate');
   ui.ctx.auth = { ...ui.ctx.auth, me: { id: 'other', cityId: 'vancouver' } }; ui.render();
   row.props.onPress(); assert.equal(ui.product().length, 1, 'a retained row callback cannot report for the next account');
 });

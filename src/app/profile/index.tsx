@@ -199,7 +199,7 @@ export default function ProfileScreen() {
           {([
             [tr("멤버십"), membershipLabel, { ios: 'star.circle', android: 'stars', web: 'stars' }, false, () => router.push('/profile/membership')],
             [tr("인증 Lv{0}", (trustLevel)), trustLevel === 1 ? t.trust.short(trustLevel) : tr("등록된 단계"), { ios: 'checkmark.seal', android: 'verified', web: 'verified' }, false, () => router.push('/profile/trust')],
-            [t.notifications.title, unreadLabel, { ios: 'bell', android: 'notifications', web: 'notifications' }, unread > 0, () => router.push('/profile/inbox')],
+            [t.notifications.title, unreadLabel, { ios: 'bell', android: 'notifications', web: 'notifications' }, unread > 0, () => router.navigate('/notifications')],
             [t.profile.saved, tr("모아보기"), { ios: 'bookmark', android: 'bookmark', web: 'bookmark' }, false, () => router.push('/profile/saved')],
           ] as const).map(([label, sub, symbol, attention, onPress]) => (
             <Pressable analyticsId="app_profile_index.pressable.2" key={label} onPress={() => { play('selection'); onPress(); }} accessibilityRole="button" accessibilityLabel={`${label}, ${sub ?? ''}`}

@@ -108,7 +108,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/lib/business-chat': { startBusinessConversation: async (...args) => { calls.push(['business-start', ...args.slice(1)]); return 'business-conversation'; }, sendBusinessChatMessage: async (...args) => { calls.push(['business-send', ...args.slice(1)]); return 'business-message'; } },
     '@/lib/merchant-source': { merchantEventId: () => 'c1850000-0000-4000-8000-000000000001' },
     '@/lib/chat-identity': { chatBusinessIdentity: () => data.businessIdentity ?? null },
-    '@/lib/auth': { useAuth: () => auth }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => calls.push(['feedback', kind]) }) },
+    '@/lib/auth': { useAuth: () => auth }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => calls.push(['feedback', kind]) }) }, '@/lib/push-prompt': { requestPushPrompt() {} },
     '@/lib/community-data': { recordPostShare: async () => { calls.push(['count-share']); return 1; }, loadTradeProfile: async () => null, startDirectConversation: async () => 'direct-conversation', loadConversations: (...args) => { calls.push(['inbox', ...args.slice(1)]); return data.inbox?.(...args) ?? Promise.resolve(page([conversation('chat-a')])); },
       sendDirectMessage: (...args) => { calls.push(['send', ...args.slice(1)]); return data.send?.(...args) ?? Promise.resolve('saved-message'); } },
     '@/lib/feed-data': { appendUniquePosts, getPostImageSource, loadPublicPost: (...args) => { calls.push(['full-post', args[1], auth.me.id]); return data.fullPost?.(...args) ?? Promise.resolve(post()); } },

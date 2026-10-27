@@ -24,6 +24,7 @@ import {
   View,
   type FlatList as NativeFlatList,
 } from 'react-native';
+import { requestPushPrompt } from '@/lib/push-prompt';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { todayLabel } from '@/components/daily-chip';
@@ -397,6 +398,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     try {
       await requestMeetupJoin(supabase, joinPost.id, joinMessage);
       DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
+      requestPushPrompt('meetup_request');
       play('meetup');
       setJoinPost(null);
       setJoinMessage('');
@@ -592,6 +594,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         setTagFilter(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null);
       }
       if (post?.room) DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
+      requestPushPrompt(post?.room ? 'meetup_create' : 'post');
       setTitle('');
       setBody('');
       setPollDraft(null);

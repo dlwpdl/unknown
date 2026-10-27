@@ -5,7 +5,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { translateUi } from '../src/i18n/index.ts';
-import { NOTIFICATION_CATEGORIES } from '../src/lib/notification-preferences.ts';
+import { NOTIFICATION_SETTING_GROUPS } from '../src/lib/notification-preferences.ts';
 import { MANNER_QUESTIONS } from '../src/lib/meetup-reviews.ts';
 
 const root = new URL('../', import.meta.url).pathname;
@@ -76,10 +76,12 @@ test('fixed Korean words in UI format arguments are translated before interpolat
 
 
 test('notification categories and manner questions render translated app-owned labels', () => {
-  const toggle = nodes(tree('src/app/profile/notifications.tsx')).find(node => ts.isJsxSelfClosingElement(node) && node.tagName.getText() === 'ToggleRow'
-    && node.attributes.properties.some(attr => attr.name?.text === 'label' && attr.initializer?.getText().includes('item.label')));
-  const categoryLabel = toggle.attributes.properties.find(attr => attr.name?.text === 'label').initializer.expression;
-  for (const item of NOTIFICATION_CATEGORIES) assert.equal(korean.test(evaluate(categoryLabel, 'en', { item })), false, item.label);
+  const element = nodes(tree('src/app/profile/notifications.tsx')).find(node => ts.isJsxSelfClosingElement(node) && node.tagName.getText() === 'CategoryRow');
+  const attribute = name => element.attributes.properties.find(attr => attr.name?.text === name).initializer.expression;
+  for (const row of NOTIFICATION_SETTING_GROUPS.flatMap(group => group.rows)) {
+    assert.equal(korean.test(evaluate(attribute('label'), 'en', { row })), false, row.label);
+    if (row.description) assert.equal(korean.test(translateUi('en', row.description)), false, row.description);
+  }
   for (const file of ['src/components/manner-review.tsx', 'src/app/profile/meetup-reviews.tsx']) {
     const label = nodes(tree(file)).find(node => ts.isJsxExpression(node) && ['label', 'tr(label)'].includes(node.expression?.getText()));
     for (const item of MANNER_QUESTIONS) assert.equal(korean.test(evaluate(label.expression, 'en', item)), false, item.label);

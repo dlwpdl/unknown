@@ -158,6 +158,7 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
     if (name === '@/lib/comment-list') return { buildCommentListRows };
     if (name === '@/lib/post-photo-credits') return { splitPostPhotoCredits };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
+    if (name === '@/lib/push-prompt') return { requestPushPrompt() {} };
     if (name === '@/lib/promotions') return { PROMOTIONS_PREVIEW_ENABLED: false };
     if (name === '@/lib/community-data') return {
       recordPostView: async () => 2,

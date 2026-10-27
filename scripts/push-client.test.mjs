@@ -129,8 +129,8 @@ test('an in-flight preference refresh cannot restore foreground push after optin
   assert.equal(registrations, 0, 'a stale read must not re-register the device after opt-out');
 });
 
-function androidPush({ granted = true, rpcError = null, zone = () => Intl.DateTimeFormat().resolvedOptions().timeZone } = {}) {
-  const events = [];
+function androidPush({ granted = true, rpcError = null, zone = () => Intl.DateTimeFormat().resolvedOptions().timeZone, localeMissing = false } = {}) {
+  const events = [], calls = [];
   const token = 'ExpoPushToken[device_token_12345]';
   const projectId = '11111111-1111-4111-8111-111111111111';
   const client = { rpc: async (name, args) => {
@@ -138,6 +138,8 @@ function androidPush({ granted = true, rpcError = null, zone = () => Intl.DateTi
     assert.equal(args.p_token, name === 'unregister_push_device' ? null : token);
     assert.equal(args.p_user_id, 'member');
     if (name === 'register_push_device') {
+      calls.push(args);
+      if (localeMissing && 'p_locale' in args) return { error: { code: 'PGRST202', message: 'Could not find the function' } };
       let expected = null;
       try { expected = zone(); } catch {}
       assert.equal(args.p_timezone, expected);
@@ -156,7 +158,7 @@ function androidPush({ granted = true, rpcError = null, zone = () => Intl.DateTi
       dismissAllNotificationsAsync: async () => { events.push('dismiss'); },
     },
   }, { Intl: { DateTimeFormat: () => ({ resolvedOptions: () => ({ timeZone: zone() }) }) } });
-  return { ...api, client, events };
+  return { ...api, client, events, calls };
 }
 
 test('Android creates its channel before permission/token work and registers for the expected account', async () => {
@@ -187,4 +189,20 @@ test('unregistration clears the expected account session with a null token and p
   const push = androidPush({ rpcError: new Error('OFFLINE') });
   await assert.rejects(push.unregisterPushDevice(push.client, 'member'), /OFFLINE/);
   assert.deepEqual(push.events, ['unregister_push_device']);
+});
+
+test('registration sends the app language and falls back to the old signature on servers without p_locale', async () => {
+  const current = androidPush();
+  await current.registerPushDevice(current.client, 'member', true);
+  assert.equal(current.calls[0].p_locale, 'ko');
+  const old = androidPush({ localeMissing: true });
+  assert.equal(await old.registerPushDevice(old.client, 'member', true), true);
+  assert.deepEqual(old.calls.map(args => 'p_locale' in args), [true, false]);
+});
+
+test('Android only counts as answered once the OS will not show its dialog again', () => {
+  const { pushStatusAnswered } = androidPush();
+  assert.equal(pushStatusAnswered({ granted: false, canAskAgain: true }, 'android'), false);
+  assert.equal(pushStatusAnswered({ granted: false, canAskAgain: false }, 'android'), true);
+  assert.equal(pushStatusAnswered({ granted: true, canAskAgain: true }, 'android'), true);
 });

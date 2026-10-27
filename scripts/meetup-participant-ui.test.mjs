@@ -46,6 +46,7 @@ export function mountParticipant(screen, options = {}) {
     '@/lib/auth': { useAuth: () => ctx.auth }, '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버', state: 'open' } }) },
     '@/lib/membership-provider': { useMembership: () => ({ membership: {}, refresh: noop }) }, '@/components/relationship-slot-card': { relationshipSlotData: () => null },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => calls.push(['feedback', value]) }) },
+    '@/lib/push-prompt': { requestPushPrompt: reason => calls.push(['push-prompt', reason]) },
     '@/lib/supabase': { supabase: { rpc: async name => name === 'get_meetup_fee_payments' && ctx.payments === 'error' ? { error: { message: 'offline' } } : { data: name === 'get_meetup_fee_payments' ? ctx.payments ?? [] : null, error: null } } }, '@/lib/meetup-host-tools': hostTools, '@/lib/personal-info': { ageForMeetupRecommendation: () => null },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 12, four: 16, six: 24 }, Depth: { control: {}, card: {} }, MaxContentWidth: 640, TabBarHeight: 60 }, '@/constants/design-system': designSystem,
     '@/lib/chilling': chilling, '@/lib/chilling-discovery': discovery, '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [{ id: 5, kind: 'meetup' }] },

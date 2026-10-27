@@ -7,13 +7,14 @@ import { Alert, AppState, DeviceEventEmitter, Linking, Platform, StyleSheet, Tex
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { ControlMotion } from '@/constants/design-system';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { parseHashtags } from '@/lib/hashtags';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES, TAGS } from '@/lib/mock';
-import { loadNotificationPreferences, NOTIFICATION_CATEGORIES, NOTIFICATION_PREFERENCES_CHANGED, saveNotificationPreferences, type NotificationPreferences } from '@/lib/notification-preferences';
+import { loadNotificationPreferences, NOTIFICATION_PREFERENCES_CHANGED, NOTIFICATION_SETTING_GROUPS, saveNotificationPreferences, settingPatch, settingState, type NotificationPreferences } from '@/lib/notification-preferences';
 import { pushConfigured, pushPermissionGranted, pushSupported, registerPushDevice, unregisterPushDevice } from '@/lib/push-notifications';
 import { supabase } from '@/lib/supabase';
 
@@ -97,7 +98,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
   </> : <GlingLoader color={theme.accent} />}</View>;
   return <SafeAreaView key={fontScale} style={styles.container} edges={['bottom']}>
     <ScrollView analyticsId="app_profile_notifications.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-      <ThemedText type="small" themeColor="textSecondary">{tr("받고 싶은 소식만 골라주세요. 소식 종류 설정은 앱의 알림 목록에도 적용돼요.")}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{tr("종류마다 앱 알림 목록과 휴대폰 푸시를 따로 켜고 끌 수 있어요.")}</ThemedText>
       {saveError && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">{tr("설정을 저장하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.")}</ThemedText>}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <ToggleRow label={tr("휴대폰 푸시 알림")} value={preferences.push_enabled} onChange={value => void save({ push_enabled: value })} disabled={busy || (!pushConfigured && !preferences.push_enabled)} />
@@ -106,26 +107,28 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
           : preferences.push_enabled && !permission ? tr("기기 설정에서 글링 알림이 꺼져 있어요.") : tr("앱을 닫아도 선택한 소식을 받을 수 있어요.")}</ThemedText>
         {pushSupported && <Pressable analyticsId="app_profile_notifications.pressable.2" accessibilityRole="button" style={styles.button} onPress={() => { play('selection'); void Linking.openSettings(); }}><ThemedText type="smallBold" themeColor="accent">{tr("기기 알림 설정")}</ThemedText></Pressable>}
       </View>
-      <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{tr("나의 활동")}</ThemedText>
+      {NOTIFICATION_SETTING_GROUPS.map(group => <View key={group.id} style={styles.group}>
+        <View style={styles.groupHead}>
+          <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.label}>{group.id === 'mine' ? tr("나한테 온 것") : group.id === 'city' ? tr("{0} 소식", tr(cityName)) : tr("계정")}</ThemedText>
+          <ThemedText type="caption" themeColor="textSecondary" style={styles.column}>{tr("앱")}</ThemedText>
+          <ThemedText type="caption" themeColor="textSecondary" style={styles.column}>{tr("푸시")}</ThemedText>
+        </View>
+        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+          {group.rows.map(row => {
+            const state = settingState(preferences, row);
+            const description = row.id === 'interests' && preferences.interest_hashtags.length ? preferences.interest_hashtags.map(tag => `#${tag}`).join(' ') : row.description && tr(row.description);
+            return <CategoryRow key={row.id} label={tr(row.label)} description={description || undefined} app={state.app} push={state.push} pushDisabled={state.pushDisabled} locked={!!row.locked} disabled={busy}
+              onApp={value => void save(settingPatch(preferences, row, 'app', value))} onPush={value => void save(settingPatch(preferences, row, 'push', value))} />;
+          })}
+        </View>
+      </View>)}
+      <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{tr("미리보기")}</ThemedText>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        {NOTIFICATION_CATEGORIES.slice(0, 7).map(item => <ToggleRow key={item.key} label={tr(item.label)} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
-      </View>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        <ToggleRow label={tr("메시지 미리보기")} value={preferences.message_preview ?? false} onChange={value => void save({ message_preview: value })} disabled={busy} />
+        <ToggleRow label={tr("잠금화면에 메시지 내용 보이기")} value={preferences.message_preview ?? false} onChange={value => void save({ message_preview: value })} disabled={busy} />
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{preferences.message_preview
           ? tr("잠금 화면에 보낸 사람과 짧은 메시지가 표시돼요. 사진은 사진 안내만 보여요.")
           : tr("보낸 사람과 내용 없이 “메시지가 도착했어요.”만 표시돼요.")}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{tr("변경 후 발송되는 푸시부터 적용돼요.")}</ThemedText>
-      </View>
-      <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{tr("관심사와 내 도시")}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{tr("{0}의 맛집·레스토랑, 가볼 만한 곳·행사와 새 글·모임 소식을 골라 받을 수 있어요. 이사 후 선호 지역을 바꾸면 알림 지역도 함께 바뀝니다.", tr(cityName))}</ThemedText>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        {NOTIFICATION_CATEGORIES.slice(7, 13).map(item => <ToggleRow key={item.key} label={tr(item.label)} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
-      </View>
-      <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{tr("비즈니스와 계정")}</ThemedText>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        {NOTIFICATION_CATEGORIES.slice(13).map(item => <ToggleRow key={item.key} label={tr(item.label)} value={preferences[item.key]} onChange={value => void save({ [item.key]: value })} disabled={busy} />)}
-        <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{tr("새 소식은 저장한 비즈니스에서 “새 소식 받기”를 켠 경우에만 받아요.")}</ThemedText>
       </View>
       <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{tr("관심 태그")}</ThemedText>
       <View style={styles.tags}>{TAGS.map(tag => <Pressable analyticsId="app_profile_notifications.pressable.3" key={tag.id} accessibilityRole="checkbox" accessibilityState={{ checked: tagIds.includes(tag.id), disabled: busy }}
@@ -150,6 +153,30 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
   </SafeAreaView>;
 }
 
+// One category row: 앱 controls the in-app list (and push), 푸시 only the phone alert. Locked rows stay on.
+function CategoryRow({ label, description, app, push, pushDisabled, locked, disabled, onApp, onPush }: { label: string; description?: string; app: boolean; push: boolean; pushDisabled: boolean; locked: boolean; disabled: boolean; onApp: (next: boolean) => void; onPush: (next: boolean) => void }) {
+  const { tr } = useLanguage();
+  return <View style={styles.row}>
+    <View style={styles.label}>
+      <ThemedText type="smallBold">{label}</ThemedText>
+      {description && <ThemedText type="small" themeColor="textSecondary">{description}</ThemedText>}
+    </View>
+    <Pill text={tr("앱")} label={tr("{0} 앱 알림", label)} value={app} disabled={disabled || locked} locked={locked} onChange={onApp} />
+    <Pill text={tr("푸시")} label={tr("{0} 푸시 알림", label)} value={push} disabled={disabled || pushDisabled} locked={locked} onChange={onPush} />
+  </View>;
+}
+
+function Pill({ text, label, value, disabled, locked, onChange }: { text: string; label: string; value: boolean; disabled: boolean; locked: boolean; onChange: (next: boolean) => void }) {
+  const theme = useTheme();
+  const { play } = useInteractionFeedback();
+  return <Pressable analyticsId="app_profile_notifications.pressable.5" accessibilityRole="switch" accessibilityLabel={label} accessibilityState={{ checked: value, disabled }} aria-checked={value}
+    disabled={disabled} hitSlop={{ top: 8, bottom: 8 }} onPress={() => { play('selection'); onChange(!value); }}
+    style={({ pressed }) => [styles.pill, { backgroundColor: value ? theme.accent : theme.backgroundSelected,
+      opacity: locked ? 0.55 : disabled ? ControlMotion.disabledOpacity : pressed ? ControlMotion.pressedOpacity : 1 }]}>
+    <ThemedText type="smallBold" style={{ color: value ? theme.accentInk : theme.textSecondary }}>{text}</ThemedText>
+  </Pressable>;
+}
+
 function ToggleRow({ label, value, onChange, disabled }: { label: string; value: boolean; onChange: (next: boolean) => void; disabled: boolean }) {
 
   const theme = useTheme();
@@ -170,7 +197,10 @@ const styles = StyleSheet.create({
   card: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 14, paddingHorizontal: Spacing.three },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 56, paddingVertical: Spacing.two },
   switch: { minHeight: Platform.OS === 'web' ? 44 : undefined, minWidth: 44 },
-  label: { flex: 1 }, note: { paddingBottom: Spacing.two }, button: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
+  label: { flex: 1, minWidth: 0 }, note: { paddingBottom: Spacing.two }, button: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
+  group: { gap: Spacing.two }, groupHead: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.two, paddingHorizontal: Spacing.three },
+  column: { width: 44, textAlign: 'center' },
+  pill: { width: 44, minHeight: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, tag: { minHeight: 44, borderRadius: 22, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, justifyContent: 'center' },
   input: { minHeight: 48, borderWidth: 1, borderRadius: 10, padding: Spacing.three, fontSize: 16 },
   save: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, padding: Spacing.two },

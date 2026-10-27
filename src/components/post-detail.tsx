@@ -16,6 +16,7 @@ import {
   type FlatList as NativeFlatList,
   type TextInputInstance,
 } from 'react-native';
+import { requestPushPrompt } from '@/lib/push-prompt';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TicketmasterSourceLink } from '@/components/ticketmaster-source-link';
@@ -387,6 +388,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
       const id = await createThreadComment(supabase, post.id, body, replyTo?.id, business?.id);
       if (!active.current) return;
       createdCommentToReveal.current = id;
+      requestPushPrompt('comment');
       const nextTotal = commentTotal + 1;
       setComments((current) => [{
         id, authorId: business?.id ?? me.id, nickname: business?.name ?? me.nickname, body, likes: 0, likedByMe: false, business: business ?? undefined,

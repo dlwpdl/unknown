@@ -8,6 +8,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 
 import { AppUpdateGate } from '@/components/app-update-gate';
 import { AppActivity } from '@/components/app-activity';
+import { AppBadgeSync } from '@/components/app-badge-sync';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { NotificationObserver } from '@/components/notification-observer';
 import { PushInvite } from '@/components/push-invite';
@@ -50,10 +51,12 @@ function AppLayout() {
         <CommunityCityProvider>
         <AppActivity />
         <NotificationObserver />
+        <AppBadgeSync />
         <MembershipProvider>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="meetup-create" options={{ animation: reducedMotion ? 'none' : 'slide_from_bottom' }} />
           </Stack>
+          {/* Opens only right after a first comment, post, meetup request or meetup creation. */}
           <PushInvite />
         </MembershipProvider>
         </CommunityCityProvider>

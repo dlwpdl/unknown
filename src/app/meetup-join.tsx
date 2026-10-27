@@ -4,6 +4,7 @@ import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, AppState, DeviceEventEmitter, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { requestPushPrompt } from '@/lib/push-prompt';
 import { SymbolView } from 'expo-symbols';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
@@ -132,7 +133,7 @@ function JoinForm({ postId }: { postId: string }) {
       if (modern) await requestChillingJoin(supabase, post.id, answer, consent, profile!.revision ?? '');
       else await requestMeetupJoin(supabase, post.id, answer);
       if (focusedScope.current !== scope) return;
-      submitted = true; setSent(true); play('meetup'); DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
+      submitted = true; setSent(true); play('meetup'); DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT); requestPushPrompt('meetup_request');
       const next = await loadMeetupParticipation(supabase, post.id, me.id);
       if (focusedScope.current === scope) setParticipation(next);
     } catch (e) { if (focusedScope.current === scope) { play('warning'); setError(submitted ? "신청은 접수됐어요. 현재 상태를 다시 불러와 주세요." : getChillingError(e)); setErrorCode(submitted ? null : getChillingErrorCode(e)); if (!submitted && getChillingErrorCode(e) === 'CHILLING_PROFILE_CHANGED') { setConsent(false); setRetry(value => value + 1); } } }
