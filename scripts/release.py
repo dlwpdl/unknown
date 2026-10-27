@@ -373,7 +373,7 @@ def submit(platform, env, google, directory):
         else:
             request(f"{api}/appStoreReviewDetails", token, {"data": {"type": "appStoreReviewDetails", "attributes": attributes, "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}}}}, "POST")
         summary(f"iOS submission started: version {version}. Check App Store state before retrying an interrupted submission.")
-        receipt = run(["asc", "publish", "appstore", "--app", APP, "--ipa", str(OUT / "app.ipa"), "--version", version, "--wait", "--timeout", "30m", "--submit", "--confirm", "--output", "json"], True, env)
+        receipt = run(["asc", "publish", "appstore", "--app", APP, "--ipa", str(OUT / "app.ipa"), "--version", version, "--wait", "--timeout", "60m", "--submit", "--confirm", "--output", "json"], True, env)
         result = json.loads(receipt)
         summary(json.dumps({k: result.get(k) for k in ["buildId", "versionId", "submissionId", "submitted"]}))
         run(["asc", "builds", "add-groups", "--build-id", result["buildId"], "--group", "03fefab3-98b9-4f9c-a6a0-450fdd703efb,d403db93-bfb8-42da-b542-5184101817e4", "--submit", "--confirm"], env=env)
