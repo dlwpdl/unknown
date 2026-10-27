@@ -120,12 +120,16 @@ export function ListingMapScreen({ visible, category, city, posts, filters, onFi
   const theme = useTheme(), { tr, language } = useLanguage(), { play } = useInteractionFeedback(), reduced = useReducedMotion();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [moved, setMoved] = useState<MapBounds | null>(null), [region, setRegion] = useState<MapBounds | null>(null);
+  const [free, setFree] = useState(false); // after the first pan or tap the camera is the person's
   const color = DISCOVERY_CATEGORIES.find(item => item.id === category)!.color;
   const areas = useMemo(() => groupListingsByArea(posts, language).filter(area => !region || inBounds(region, area)), [posts, language, region]);
   const markers = useMemo(() => areas.map(area => ({ id: area.id, latitude: area.latitude, longitude: area.longitude, color, label: area.label })), [areas, color]);
   const selected = areas.find(area => area.id === selectedId) ?? null;
+  // Open on the busiest neighborhood: the city centre can sit outside every listing.
+  const busiest = areas.reduce<typeof areas[number] | null>((top, area) => !top || area.posts.length > top.posts.length ? area : top, null);
+  const focus = free || !busiest ? null : { latitude: busiest.latitude, longitude: busiest.longitude };
   const count = areas.reduce((sum, area) => sum + area.posts.length, 0);
-  const close = () => { play('selection'); onClose(); };
+  const close = () => { play('selection'); setFree(false); setMoved(null); setRegion(null); setSelectedId(null); onClose(); };
   return <Modal visible={visible} animationType={reduced ? 'none' : 'slide'} onRequestClose={onClose}>
     <SafeAreaView edges={['top', 'bottom']} style={[styles.screen, { backgroundColor: theme.background }]}>
       <View style={styles.mapHeader}>
@@ -134,12 +138,12 @@ export function ListingMapScreen({ visible, category, city, posts, filters, onFi
           <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={IconSize.toolbar} tintColor={theme.text} />
         </Pressable>
         <ThemedText accessibilityRole="header" style={[Typography.menu, styles.flex]} numberOfLines={1}>{tr(city.name)} · {tr(category === 'housing' ? '부동산' : '중고거래')}</ThemedText>
-        <ListingModeSwitch mode="map" onChange={mode => { if (mode === 'list') onClose(); }} />
+        <ListingModeSwitch mode="map" onChange={mode => { if (mode === 'list') { setFree(false); setMoved(null); setRegion(null); setSelectedId(null); onClose(); } }} />
       </View>
       <View style={styles.mapFilters}><ListingFilterBar category={category} filters={filters} onChange={next => { setSelectedId(null); onFilters(next); }} /></View>
       <View style={styles.flex}>
         {visible && <DiscoveryMap markers={markers} cityName={city.englishName} selectedId={selected?.id ?? null}
-          onSelect={id => setSelectedId(id)} onMoved={bounds => setMoved(bounds)} bottomInset={selected ? 300 : 72} />}
+          center={focus} onSelect={id => { setFree(true); setSelectedId(id); }} onMoved={bounds => { setFree(true); setMoved(bounds); }} bottomInset={selected ? 300 : 72} />}
         {moved && moved !== region && <Pressable analyticsId="listing.map.search-here" accessibilityRole="button" onPress={() => { play('selection'); setRegion(moved); setSelectedId(null); }}
           style={({ pressed }) => [styles.searchHere, { backgroundColor: theme.card, borderColor: theme.line, opacity: pressed ? 0.82 : 1 }]}>
           <SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={IconSize.inline} tintColor={theme.accent} />
