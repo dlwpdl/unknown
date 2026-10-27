@@ -3,6 +3,7 @@ import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
 import { Alert, DeviceEventEmitter, KeyboardAvoidingView, LayoutAnimation, Platform, StyleSheet, TextInput, UIManager, View, type ScrollViewInstance, type TextInputInstance } from 'react-native';
+import { requestPushPrompt } from '@/lib/push-prompt';
 import { Image } from 'expo-image';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SymbolView } from 'expo-symbols';
@@ -246,6 +247,7 @@ function MeetupCreateForm() {
       if (ticketmasterEventId) behavior('success', 'ticketmaster.meetup.created');
       play('meetupCreated');
       router.replace({ pathname: '/post/[id]', params: { id } });
+      requestPushPrompt('meetup_create');
     } catch (cause) {
       if (!mounted.current) return;
       const code = getChillingErrorCode(cause);

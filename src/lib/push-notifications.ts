@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import { AndroidImportance, IosAuthorizationStatus, dismissAllNotificationsAsync, getExpoPushTokenAsync, getPermissionsAsync, requestPermissionsAsync, setNotificationChannelAsync, type NotificationPermissionsStatus } from 'expo-notifications';
 import { Platform } from 'react-native';
-import { tr } from '@/i18n';
+import { getLocale, tr } from '@/i18n';
 
 const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId ?? process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
 export const pushSupported = Platform.OS === 'ios' || Platform.OS === 'android';
@@ -18,8 +18,10 @@ export async function pushPermissionUndetermined() {
   const status = await getPermissionsAsync();
   return !pushStatusAnswered(status);
 }
-function pushStatusAnswered(status: NotificationPermissionsStatus) {
+export function pushStatusAnswered(status: Pick<NotificationPermissionsStatus, 'granted' | 'canAskAgain' | 'ios'>, os: string = Platform.OS) {
   if (status.granted) return true;
+  // Android has no "undetermined" state; the OS reports whether it will still show its dialog.
+  if (os === 'android') return status.canAskAgain === false;
   if (status.ios?.status === IosAuthorizationStatus.DENIED) return true;
   const ios = status.ios?.status;
   return ios === IosAuthorizationStatus.AUTHORIZED
@@ -41,9 +43,10 @@ export async function registerPushDevice(client: SupabaseClient, userId: string,
   let timezone: string | null = null;
   try { timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? null; }
   catch { /* Messages still work when the device cannot report its timezone. */ }
-  const { error } = await client.rpc('register_push_device', {
-    p_token: token, p_user_id: userId, p_timezone: timezone,
-  });
+  const legacy = { p_token: token, p_user_id: userId, p_timezone: timezone };
+  let { error } = await client.rpc('register_push_device', { ...legacy, p_locale: getLocale().startsWith('en') ? 'en' : 'ko' });
+  // Servers without p_locale yet reject the unknown parameter; register the old way (Korean pushes).
+  if (error && ['PGRST202', '42883'].includes((error as { code?: string }).code ?? '')) ({ error } = await client.rpc('register_push_device', legacy));
   if (error) throw error;
   return true;
 }

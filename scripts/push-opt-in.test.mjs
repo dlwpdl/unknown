@@ -59,10 +59,12 @@ function invite({ denied = false, failure = null } = {}) {
   const { PushInvite } = load('../src/components/push-invite.tsx', {
     useEffect: callback => { if (!started) { started = true; callback(); } },
     useState: initial => { const index = cursor++; if (!(index in state)) state[index] = initial;
-      return [state[index], value => { state[index] = value; }]; },
+      return [state[index], value => { state[index] = typeof value === 'function' ? value(state[index]) : value; }]; },
   });
   const render = () => { cursor = 0; return PushInvite(); };
   render();
+  // The sheet opens only after an action such as a first comment.
+  listeners.get(preferences.PUSH_PROMPT_EVENT)({ reason: 'comment' });
   return { render, writes, alerts, events, cleanup: () => observerCleanup(), setFailure: value => { fail = value; },
     allow: async () => { nodes(render()).find(node => node.props?.analyticsId === 'components_push-invite.pressable.2').props.onPress(); await flush(); },
     foreground: () => handler.handleNotification({ request: { content: { data: { userId: 'member', category: 'replies' } } } }),
@@ -71,6 +73,7 @@ function invite({ denied = false, failure = null } = {}) {
 
 test('allowing push updates foreground delivery without reopening the app', async t => {
   const ui = invite(); t.after(ui.cleanup); await flush();
+  assert.ok(ui.render(), 'a first comment opens the contextual sheet');
   assert.equal((await ui.foreground()).shouldShowBanner, false);
   await ui.allow();
   assert.equal((await ui.foreground()).shouldShowBanner, true, 'the invite must update the running observer');
@@ -83,7 +86,7 @@ test('connection failures keep the permission invite available for a successful 
     await ui.allow();
     assert.ok(ui.render(), 'a failed opt-in must retain the existing retry button');
     assert.equal(ui.alerts.length, 1, 'the user must know push was not enabled');
-    assert.equal(ui.writes.length, 0, 'failed opt-in must not consume the seven-day reminder');
+    assert.equal(ui.writes.length, 0, 'failed opt-in must not consume the reminder or the comment moment');
     assert.equal(ui.events.length, 0);
     ui.setFailure(null); await ui.allow();
     assert.equal((await ui.foreground()).shouldShowBanner, true);

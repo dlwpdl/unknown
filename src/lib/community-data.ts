@@ -94,6 +94,8 @@ export type AppNotification = {
   created_at: string;
   /** 알림을 일으킨 사람(댓글·답글·요청 등). 시스템 안내는 null. */
   actor_id?: string | null;
+  target_type?: string | null;
+  target_id?: string | null;
 };
 
 export type MeetupRequest = {
@@ -777,15 +779,40 @@ export async function respondMeetupRequest(
   return result.data as string | null;
 }
 
-export async function loadNotifications(client: SupabaseClient, userId: string) {
-  const result = await client
+// Bell list pages, newest first. Messages live only in the chat tab, so they never take a slot here.
+// shortcut: the cursor is created_at alone, so rows sharing the boundary timestamp can be skipped; add an id tiebreak if that shows up.
+export async function loadNotifications(client: SupabaseClient, userId: string, before?: string) {
+  let query = client
     .from('user_notifications')
     .select('*')
     .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(50);
+    .neq('kind', 'message');
+  if (before) query = query.lt('created_at', before);
+  const result = await query.order('created_at', { ascending: false }).limit(50);
   if (result.error) throw result.error;
   return (result.data ?? []) as AppNotification[];
+}
+
+/** 좋아요·댓글 알림 아래에 보여 줄 글 제목·댓글 한 줄. 보이지 않는 글·실패는 그냥 비워 둔다. */
+export async function loadNotificationSnippets(client: SupabaseClient, rows: Pick<AppNotification, 'kind' | 'target_type' | 'target_id'>[]) {
+  const snippets = new Map<string, string>();
+  const ids = (type: string) => [...new Set(rows.filter(row => row.target_type === type && row.target_id
+    && ['comment', 'reply', 'post_like', 'comment_like', 'like_summary'].includes(row.kind)).map(row => row.target_id as string))];
+  const [posts, comments] = await Promise.all([
+    ids('post').length ? client.from('posts').select('id,title').in('id', ids('post')) : null,
+    ids('comment').length ? client.from('comments').select('id,body').in('id', ids('comment')) : null,
+  ]);
+  for (const row of (posts && !posts.error ? posts.data ?? [] : []) as { id: string; title: string | null }[]) if (row.title?.trim()) snippets.set(row.id, row.title.trim());
+  for (const row of (comments && !comments.error ? comments.data ?? [] : []) as { id: string; body: string | null }[]) if (row.body?.trim()) snippets.set(row.id, row.body.replace(/\s+/g, ' ').trim());
+  return snippets;
+}
+
+/** Which of these notification ids are already read (used to clear delivered OS notifications). */
+export async function loadReadNotificationIds(client: SupabaseClient, ids: string[]) {
+  if (!ids.length) return new Set<string>();
+  const result = await client.from('user_notifications').select('id').in('id', ids).not('read_at', 'is', null);
+  if (result.error) throw result.error;
+  return new Set(((result.data ?? []) as { id: string }[]).map(row => row.id));
 }
 
 /**
