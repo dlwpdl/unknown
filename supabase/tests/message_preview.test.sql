@@ -36,6 +36,8 @@ create function pg_temp.preview_message(p_body text default '내일 만나요',p
 returns uuid language plpgsql as $$
 declare message_id uuid:=gen_random_uuid();
 begin
+  -- Each fixture message models a separate minute; same-minute bursts are covered in notification_overhaul.test.sql.
+  update public.notifications set created_at=created_at-interval '2 minutes' where kind='message';
   insert into public.messages(id,conversation_id,sender_id,body,kind,image_path,latitude,longitude)
   values(message_id,'71440000-0000-0000-0002-000000000001','71440000-0000-0000-0000-000000000001',p_body,p_kind,
     case when p_kind='image' then '71440000-0000-0000-0000-000000000001/'||message_id||'.webp' end,
