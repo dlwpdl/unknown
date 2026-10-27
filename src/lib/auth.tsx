@@ -408,6 +408,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
   const socialPhoto = [metadata?.avatar_url, metadata?.picture, metadata?.profile_image_url].find(
     (value): value is string => typeof value === 'string' && value.startsWith('http'),
   ) ?? null;
+  const appleSignIn = session?.user.app_metadata?.provider === 'apple' || !!session?.user.identities?.some((identity) => identity.provider === 'apple');
 
   const completeProfile = useCallback((created: CompletedProfile) => {
     setProfile({ ...created, account_status: 'active' });
@@ -536,6 +537,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
           userId={session.user.id}
           socialNickname={socialNickname}
           socialPhoto={socialPhoto}
+          appleSignIn={appleSignIn}
           existingProfile={activeProfile?.account_status === 'active' ? {
             nickname: activeProfile.nickname,
             city_id: activeProfile.city_id,

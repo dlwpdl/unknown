@@ -99,6 +99,14 @@ test('membership keeps stories and direct chat free while preserving meetup and 
   assert.equal(button(tree,'구독 준비 중').props.disabled,true,'unverified business cannot purchase');
   value.membership.businessSubscription = { tier:'free', merchantId:'bound-business' };
   assert.match(text(render()), /결제 연결은 다른 비즈니스에 묶여 있어요/, 'an expired or pending business binding must remain visible');
+  value.offers = ['plus', 'pro', 'premium'].map(tier => ({ id: `business_${tier}_yearly`, kind: 'business', planVersion: 2, tier, period: 'year', price: 'CA$1', productId: `com.dlwpdl.gling.business.${tier}.yearly.v2` }));
+  const blocked = nodes(render()).find(node => node.props?.analyticsId === 'app_profile_membership.pressable.6');
+  assert.equal(blocked.props.disabled, false, 'a blocked business purchase still answers a tap (App Review 2.1(b))');
+  const purchasesBefore = purchases.length;
+  blocked.props.onPress();
+  assert.match(confirmation[0], /다른 비즈니스/);
+  assert.equal(purchases.length, purchasesBefore, 'an unverified or mismatched business never starts a purchase');
+  value.offers = [];
   delete value.membership.businessSubscription;
   value.error = '업체 결제 확인 실패'; value.notice = '복원 확인 중'; value.pendingApproval = true;
   assert.match(text(render()), /업체 결제 확인 실패/);

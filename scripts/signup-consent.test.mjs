@@ -8,7 +8,7 @@ import { t } from '../src/i18n/ko.ts';
 import * as personalInfo from '../src/lib/personal-info.ts';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(v => Array.isArray(v) ? v.flatMap(nodes) : nodes(v))];
-function onboarding(existingProfile = null) {
+function onboarding(existingProfile = null, appleSignIn = false) {
   const state = [], refs = [], calls = [], opened = [], completed = [];
   let cursor = 0, refCursor = 0, fail = false;
   const exports = {};
@@ -37,7 +37,7 @@ if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () =
     if (name === '@/lib/supabase') return { supabase: { rpc: async (...args) => { calls.push(args); return { error: fail ? new Error('offline') : null }; } } };
     return {};
   }) });
-  const render = () => { cursor = refCursor = 0; return exports.ProfileOnboarding({ visible: true, userId: 'member', socialPhoto: null, existingProfile, onComplete: x => completed.push(x) }); };
+  const render = () => { cursor = refCursor = 0; return exports.ProfileOnboarding({ visible: true, userId: 'member', socialPhoto: null, existingProfile, appleSignIn, onComplete: x => completed.push(x) }); };
   const boxes = () => nodes(render()).filter(n => n.props?.accessibilityRole === 'checkbox');
   const save = async () => { nodes(render()).find(n => n.props?.accessibilityState?.busy !== undefined).props.onPress(); for (let i = 0; i < 10; i++) await Promise.resolve(); };
   const finishWelcome = () => nodes(render()).find(n => n.props?.onContinue)?.props.onContinue();
@@ -117,4 +117,14 @@ test('consented invalid birth dates still block signup', async () => {
   await ui.save();
   assert.equal(ui.calls.length, 0);
   assert.equal(ui.completed.length, 0);
+});
+
+test('Sign in with Apple signup never asks for name again (App Review 4)', async () => {
+  const ui = onboarding(null, true);
+  assert.equal(nodes(ui.render()).find(n => n.type === 'PersonalInfoFields'), undefined);
+  assert.equal(ui.boxes().length, 4, 'no optional name consent row');
+  ui.boxes()[0].props.onPress();
+  await ui.save();
+  assert.equal(ui.calls[0][0], 'create_profile_with_personal_info');
+  assert.equal(ui.calls[0][1].p_full_name, null);
 });

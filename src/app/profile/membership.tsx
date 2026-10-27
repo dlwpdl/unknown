@@ -103,7 +103,11 @@ export default function MembershipScreen() {
   const periods = (['year', 'month'] as const).filter((value) => familyOffers.some((offer) => offer.tier === selection.tier && offer.period === value));
   const currentProduct = !!activeMembership && activeMembership.tier !== 'free' && !!selectedOffer && selectedOffer.productId === activeMembership.productId;
   const otherBusiness = kind === 'business' && !!membership?.businessSubscription?.merchantId && membership.businessSubscription.merchantId !== merchantId;
-  const purchaseDisabled = busy || loading || offersLoading || !selectedOffer || !membership || membership.billingPolicyVersion !== 2 || !!purchaseUnavailableReason || currentProduct || (kind === 'business' && (!business?.canPurchase || otherBusiness));
+  // A business plan needs a verified business; say why on tap instead of leaving a dead button (App Review 2.1(b)).
+  const businessBlockedReason = kind !== 'business' ? null
+    : otherBusiness ? '결제 연결은 다른 비즈니스에 묶여 있어요. 해당 비즈니스를 선택해 주세요.'
+    : business?.canPurchase ? null : businessError ?? (business ? '확인된 비즈니스 소유자만 구독을 연결할 수 있어요.' : null);
+  const purchaseDisabled = busy || loading || offersLoading || !selectedOffer || !membership || membership.billingPolicyVersion !== 2 || !!purchaseUnavailableReason || currentProduct || (kind === 'business' && !businessBlockedReason && (!business?.canPurchase || otherBusiness));
   const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
   const openLegal = (slug: 'terms' | 'privacy') => {
     play('selection');
@@ -304,7 +308,7 @@ export default function MembershipScreen() {
         <View style={[styles.checkout, { backgroundColor: theme.background, borderTopColor: theme.line }]}>
           {purchaseUnavailableReason && <ThemedText type="small" themeColor="textSecondary" style={styles.center} accessibilityLiveRegion="polite">{purchaseUnavailableReason}</ThemedText>}
           <Pressable analyticsId="app_profile_membership.pressable.6" accessibilityRole="button" disabled={purchaseDisabled} accessibilityState={{ disabled: purchaseDisabled, busy }}
-            onPress={() => { play('selection'); if (selectedOffer) void purchase(selectedOffer, kind === 'business' && merchantId ? merchantId : undefined); }}
+            onPress={() => { play('selection'); if (businessBlockedReason) Alert.alert(tr(businessBlockedReason)); else if (selectedOffer) void purchase(selectedOffer, kind === 'business' && merchantId ? merchantId : undefined); }}
             style={({ pressed }) => [styles.purchase, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: purchaseDisabled ? 0.5 : pressed ? 0.85 : 1 }]}>
             {busy ? <GlingLoader color={theme.accentInk} accessibilityLabel={tr("구독 처리 중")} /> : <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
               {currentProduct ? tr("현재 이용 중인 구독") : selectedOffer ? tr("{0} {1} 구독하기", tr(tierNames[selectedOffer.tier]), selectedOffer.period === 'year' ? tr("연간") : tr("월간")) : tr("구독 준비 중")}

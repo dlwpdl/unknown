@@ -40,6 +40,7 @@ export function ProfileOnboarding({
   socialNickname,
   socialPhoto,
   existingProfile,
+  appleSignIn = false,
   onComplete,
 }: {
   visible: boolean;
@@ -47,6 +48,7 @@ export function ProfileOnboarding({
   socialNickname?: string;
   socialPhoto: string | null;
   existingProfile?: ExistingProfile | null;
+  appleSignIn?: boolean;
   onComplete: (profile: CompletedProfile) => void;
 }) {
   const { tr, t } = useLanguage();
@@ -70,10 +72,12 @@ export function ProfileOnboarding({
   const savingLock = useRef(false);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const consentOnly = existingProfile != null;
+  // Sign in with Apple already shares the name and email it allows; Apple review forbids asking for them again (Guideline 4).
+  const askPersonalInfo = !consentOnly && !appleSignIn;
   const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
   const requiredAccepted = termsAccepted && privacyAccepted && aiAccepted;
-  const allAccepted = requiredAccepted && (consentOnly || personalInfo.accepted);
-  const someAccepted = termsAccepted || privacyAccepted || aiAccepted || (!consentOnly && personalInfo.accepted);
+  const allAccepted = requiredAccepted && (!askPersonalInfo || personalInfo.accepted);
+  const someAccepted = termsAccepted || privacyAccepted || aiAccepted || (askPersonalInfo && personalInfo.accepted);
   const allChecked = allAccepted ? true : someAccepted ? 'mixed' : false;
   const toggleAll = () => {
     if (saving) return;
@@ -82,7 +86,7 @@ export function ProfileOnboarding({
     setTermsAccepted(checked);
     setPrivacyAccepted(checked);
     setAiAccepted(checked);
-    if (!consentOnly) setPersonalInfo((current) => ({ ...current, accepted: checked }));
+    if (askPersonalInfo) setPersonalInfo((current) => ({ ...current, accepted: checked }));
     setError(null);
   };
   const consentItems = [
@@ -90,7 +94,7 @@ export function ProfileOnboarding({
     { id: 'privacy', label: '[필수] 개인정보 수집·이용', checked: privacyAccepted, change: setPrivacyAccepted, url: `${publicSiteUrl}/privacy` },
     { id: 'ai', label: '[필수] 외부 AI(OpenAI) 안전 처리', checked: aiAccepted, change: setAiAccepted,
       details: `${t.onboarding.consentLabel} ${tr("모든 게시글·댓글·대화가 안전 분석 대상이며, 권한 있는 관리자가 안전 운영을 위해 확인할 수 있습니다.")}` },
-    ...(!consentOnly ? [{ id: 'personal', label: '[선택] 이름·생년월일·성별 수집·이용', checked: personalInfo.accepted,
+    ...(askPersonalInfo ? [{ id: 'personal', label: '[선택] 이름·생년월일·성별 수집·이용', checked: personalInfo.accepted,
       change: (checked: boolean) => setPersonalInfo((current) => ({ ...current, accepted: checked })),
       details: PERSONAL_INFO_NOTICE }] : []),
   ];
@@ -136,10 +140,10 @@ export function ProfileOnboarding({
       setError(t.onboarding.errorNickname);
       return;
     }
-    const fullName = !consentOnly && personalInfo.accepted ? personalInfo.fullName.trim() : '';
-    const dateOfBirth = !consentOnly && personalInfo.accepted ? personalInfo.dateOfBirth.trim() : '';
-    const gender = !consentOnly && personalInfo.accepted ? personalInfo.gender : '';
-    const personalInfoError = consentOnly ? null : validatePersonalInfo(fullName, dateOfBirth, gender);
+    const fullName = askPersonalInfo && personalInfo.accepted ? personalInfo.fullName.trim() : '';
+    const dateOfBirth = askPersonalInfo && personalInfo.accepted ? personalInfo.dateOfBirth.trim() : '';
+    const gender = askPersonalInfo && personalInfo.accepted ? personalInfo.gender : '';
+    const personalInfoError = askPersonalInfo ? validatePersonalInfo(fullName, dateOfBirth, gender) : null;
     if (personalInfoError) { setError(personalInfoError); return; }
 
     savingLock.current = true;
@@ -272,18 +276,18 @@ export function ProfileOnboarding({
               </View>
             </View>}
 
-            {!consentOnly && <PersonalInfoFields showConsent={false} value={personalInfo} disabled={saving} onChange={(value) => { setPersonalInfo(value); setError(null); }} />}
+            {askPersonalInfo && <PersonalInfoFields showConsent={false} value={personalInfo} disabled={saving} onChange={(value) => { setPersonalInfo(value); setError(null); }} />}
 
             <View style={[styles.consents, { backgroundColor: theme.card, borderColor: theme.line }]}>
               <Pressable analyticsId="components_profile-onboarding.pressable.7" onPress={toggleAll} disabled={saving} accessibilityRole="checkbox"
-                accessibilityLabel={consentOnly ? tr("모두 동의") : tr("모두 동의, 선택 항목 포함")} aria-checked={allChecked}
+                accessibilityLabel={!askPersonalInfo ? tr("모두 동의") : tr("모두 동의, 선택 항목 포함")} aria-checked={allChecked}
                 accessibilityState={{ checked: allChecked, disabled: saving }}
                 {...(Platform.OS === 'web' ? { onKeyDown: (event: KeyDownEvent) => { if (event.nativeEvent.key === ' ') { event.preventDefault(); toggleAll(); } } } : {})}
                 style={[styles.consent, styles.allConsent, { borderBottomColor: theme.line }]}>
                 <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { backgroundColor: someAccepted ? theme.accent : 'transparent', borderColor: someAccepted ? theme.accent : theme.line }]}>
                   {someAccepted && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{allAccepted ? '✓' : '−'}</ThemedText>}
                 </View>
-                <ThemedText type="smallBold" style={styles.consentText}>{tr("모두 동의")}{!consentOnly && <ThemedText type="small" themeColor="textSecondary"> {" " + tr("(선택 포함)")}</ThemedText>}</ThemedText>
+                <ThemedText type="smallBold" style={styles.consentText}>{tr("모두 동의")}{askPersonalInfo && <ThemedText type="small" themeColor="textSecondary"> {" " + tr("(선택 포함)")}</ThemedText>}</ThemedText>
               </Pressable>
               {consentItems.map((item) => {
                 const toggle = () => { if (!saving) { play('selection'); item.change(!item.checked); setError(null); } };
@@ -312,7 +316,7 @@ export function ProfileOnboarding({
                 </View>;
               })}
             </View>
-            <ThemedText type="small" themeColor="textSecondary">{consentOnly ? tr("필수 항목에 동의하면 계속 이용할 수 있어요.") : tr("필수 항목에 동의하면 가입할 수 있어요. 이름·생년월일 입력과 동의는 선택이에요.")}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{!askPersonalInfo ? tr("필수 항목에 동의하면 계속 이용할 수 있어요.") : tr("필수 항목에 동의하면 가입할 수 있어요. 이름·생년월일 입력과 동의는 선택이에요.")}</ThemedText>
 
             {!!error && <ThemedText accessibilityRole="alert" type="small" style={{ color: theme.accent }}>{tr(error)}</ThemedText>}
           </ScrollView>
