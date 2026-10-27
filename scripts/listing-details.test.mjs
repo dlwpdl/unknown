@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  buildListingLead, emptyListingDraft, groupListingsByArea, listingFromDraft, listingPin, listingPriceLabel, matchesListingFilters,
+  buildListingLead, emptyListingDraft, groupListingsByArea, listingExtras, listingFromDraft, listingPin, listingPriceLabel, matchesListingFilters,
   NO_LISTING_FILTERS, parseListingDetails, parseListingView, stripListingLead, withListingLead,
 } from '../src/lib/listing-details.ts';
 import { coarseListingPin, findNeighborhood, NEIGHBORHOODS } from '../src/lib/neighborhoods.ts';
 import { hydratePublicPosts } from '../src/lib/feed-data.ts';
+import { localDay, parseLocalDay } from '../src/lib/chilling-date.ts';
 import { googlePinUrl, withPostMap } from '../src/lib/post-maps.ts';
 
 const draft = (category, patch) => ({ ...emptyListingDraft(category), ...patch });
@@ -156,10 +157,10 @@ test('비즈니스 구인글은 posts.price 없이도 시급을 보여 준다', 
 // Mirrors private.guard_listing_details: the column holds only allow-listed keys, and its free text must
 // already be in the body that the content filter and safety review read.
 test('저장하는 칸의 글자는 모두 본문 안에 있다 (서버 트리거와 같은 규칙)', () => {
-  const keys = { housing: ['type', 'deal', 'rooms', 'moveIn', 'area', 'includes', 'lead'],
+  const keys = { housing: ['type', 'deal', 'rooms', 'moveIn', 'area', 'includes', 'extras', 'lead'],
     jobs: ['type', 'deal', 'payUnit', 'pay', 'jobTypes', 'area', 'hours', 'duties', 'apply', 'lead'], used: ['type', 'deal', 'offers', 'condition', 'area', 'lead'] };
   const cases = [
-    ['housing', draft('housing', { rooms: '2b2b', price: '3200', moveIn: 'now', area: 'metrotown', includes: ['pets'] }), '방 사진은 대화로 보내 드려요'],
+    ['housing', draft('housing', { rooms: '2b2b', price: '3200', moveIn: 'now', area: 'metrotown', includes: ['pets'], extras: [' 세탁기 ', '헬스장\t이용'] }), '방 사진은 대화로 보내 드려요'],
     ['jobs', draft('jobs', { price: '20', jobTypes: ['full'], area: 'downtown', hours: '평일 9–6시\n야간 없음', duties: '  재고 정리,\t계산  ', apply: ['email', 'phone'] }), ''],
     ['jobs', draft('jobs', { deal: 'seeking', payUnit: 'negotiable', hours: '주말', duties: '바리스타 경력 3년' }), '연락 주세요'],
     ['used', draft('used', { price: '15', offers: true, condition: 'used', area: 'joyce' }), '직거래만'],
@@ -170,6 +171,43 @@ test('저장하는 칸의 글자는 모두 본문 안에 있다 (서버 트리�
     assert.deepEqual(Object.keys(details).filter(key => !keys[category].includes(key)), []);
     assert.ok(body.startsWith(details.lead));
     for (const key of ['hours', 'duties']) if (details[key]) assert.ok(body.includes(details[key]), `${category}.${key}`);
+    for (const extra of details.extras ?? []) assert.ok(body.includes(extra), extra);
     assert.deepEqual(parseListingDetails(details, body), details);
   }
+});
+
+test('포함된 것 직접 추가: 본문 첫 줄에 들어가고 5개·20자·중복을 지킨다', () => {
+  const { details } = listingFromDraft('housing', draft('housing', {
+    rooms: '1b', price: '2000', area: 'delta', includes: ['parking'], extras: ['세탁기', '  식기  세척기 ', '세탁기', '주차', 'Parking', '', '가'.repeat(21), 7, '발코니', '헬스장', '수영장', '창고'],
+  }), { title: 't', cityId: 'vancouver' }, 'ko');
+  assert.deepEqual(details.extras, ['세탁기', '식기 세척기', '발코니', '헬스장', '수영장']);
+  assert.equal(details.lead, '렌트 내놓음 · 1베드 · $2,000/월 · 델타 · 주차, 세탁기, 식기 세척기, 발코니, 헬스장, 수영장');
+  assert.equal(buildListingLead({ type: 'housing', deal: 'rent_offer', extras: ['In-suite laundry'] }, { title: '', price: null, cityId: 'vancouver' }, 'en'), 'For rent · In-suite laundry');
+  assert.deepEqual(listingExtras(['가'.repeat(20)]), ['가'.repeat(20)]);
+  assert.equal(listingFromDraft('housing', draft('housing', {}), { title: 't', cityId: 'vancouver' }, 'ko').details.extras, undefined);
+});
+
+test('서버에서 온 직접 추가 항목은 본문에 있는 문자열만 읽는다', () => {
+  const body = '렌트 내놓음 · 세탁기, 발코니\n\n연락 주세요';
+  const parsed = parseListingDetails({ type: 'housing', deal: 'rent_offer', extras: ['세탁기', '본문에 없음', 3, '', '발코니', '세탁기', '가'.repeat(21)] }, body);
+  assert.deepEqual(parsed.extras, ['세탁기', '발코니']);
+  assert.equal(parseListingDetails({ type: 'housing', deal: 'rent_offer', extras: '세탁기' }, body).extras, undefined);
+});
+
+test('입주일 필터는 고른 날짜까지 들어갈 수 있는 집만 남긴다', () => {
+  const post = moveIn => ({ price: 2000, listingDetails: { type: 'housing', deal: 'rent_offer', moveIn } });
+  const filters = { ...NO_LISTING_FILTERS, moveInBy: '2026-11-15' };
+  assert.ok(matchesListingFilters(post('2026-11-15'), filters, '2026-10-27'));
+  assert.ok(!matchesListingFilters(post('2026-11-16'), filters, '2026-10-27'));
+  assert.ok(matchesListingFilters(post('now'), filters, '2026-10-27'));
+  assert.ok(!matchesListingFilters(post(undefined), filters, '2026-10-27'));
+  // The date picker hands over an ISO time; the filter keeps the local calendar day.
+  assert.equal(localDay(parseLocalDay('2026-11-15')), '2026-11-15');
+  assert.equal(parseLocalDay('2026-02-30'), '');
+  assert.equal(parseLocalDay('nope'), '');
+});
+
+test('델타 등 메트로 밴쿠버 동네를 고를 수 있다', () => {
+  for (const id of ['delta', 'ladner', 'tsawwassen', 'port-coquitlam', 'maple-ridge', 'white-rock']) assert.match(findNeighborhood('vancouver', id).id, /^[a-z0-9-]{1,40}$/);
+  assert.equal(new Set(NEIGHBORHOODS.vancouver.map(item => item.id)).size, NEIGHBORHOODS.vancouver.length);
 });

@@ -5,6 +5,7 @@ import { SymbolView } from 'expo-symbols';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { ChillingDateInput } from '@/components/chilling-date-input';
 import { DiscoveryMap } from '@/components/discovery-map';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { SelectionChip } from '@/components/selection-chip';
@@ -13,9 +14,10 @@ import { ControlStyles, IconSize, Typography, controlPresentation } from '@/cons
 import { Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
+import { localDay, parseLocalDay } from '@/lib/chilling-date';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import {
-  APPLY_WAYS, CONDITIONS, formatMoveIn, HOUSING_DEALS, HOUSING_INCLUDES, JOB_DEALS, JOB_TYPES, LISTING_LABELS, PAY_UNITS, ROOMS, USED_DEALS,
+  APPLY_WAYS, CONDITIONS, HOUSING_DEALS, HOUSING_INCLUDES, JOB_DEALS, JOB_TYPES, LISTING_LABELS, listingExtras, MAX_LISTING_EXTRAS, PAY_UNITS, ROOMS, USED_DEALS,
   type ListingCategory, type ListingDraft, type ListingMissing,
 } from '@/lib/listing-details';
 import { CITIES } from '@/lib/mock';
@@ -23,24 +25,21 @@ import { findNeighborhood, nearestNeighborhood, neighborhoodName, neighborhoodsF
 
 const DEALS = { housing: HOUSING_DEALS, jobs: JOB_DEALS, used: USED_DEALS } as const;
 const DEAL_HINTS: Partial<Record<string, string>> = { hiring: '사람 구해요', seeking: '일 찾아요' };
-const isoDay = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+// First pick of 날짜 정하기: the 1st of next month, the most common lease start.
+const nextMonthFirst = () => { const now = new Date(); return localDay(new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString()); };
 
-// The 1st and 15th of the next few months: one tap instead of a date wheel.
-function moveInChoices(now: Date) {
-  const days: string[] = [];
-  for (let month = 0; days.length < 6 && month < 4; month++) for (const day of [1, 15]) {
-    const date = new Date(now.getFullYear(), now.getMonth() + month, day);
-    if (date > now && days.length < 6) days.push(isoDay(date));
-  }
-  return ['now', ...days];
-}
-
-function Chip({ label, selected, onPress, disabled, multi }: { label: string; selected: boolean; onPress: () => void; disabled?: boolean; multi?: boolean }) {
+// action: a plain button (직접 추가); removeLabel: a selected chip that removes itself when tapped.
+function Chip({ label, selected, onPress, disabled, multi, action, removeLabel }: {
+  label: string; selected: boolean; onPress: () => void; disabled?: boolean; multi?: boolean; action?: boolean; removeLabel?: string;
+}) {
   const theme = useTheme(), { play } = useInteractionFeedback();
+  const button = action || !!removeLabel;
   return <SelectionChip analyticsId="listing.fields.chip" selected={selected} disabled={disabled} baseColor={theme.backgroundElement}
-    accessibilityRole={multi ? 'checkbox' : 'radio'} accessibilityLabel={label} accessibilityState={{ selected, checked: selected, disabled }}
+    accessibilityRole={button ? 'button' : multi ? 'checkbox' : 'radio'} accessibilityLabel={removeLabel ?? label}
+    accessibilityState={button ? { disabled } : { selected, checked: selected, disabled }}
     onPress={() => { play('selection'); onPress(); }} style={[ControlStyles.pill, styles.chip, { borderColor: selected ? theme.accent : theme.line }]}>
     <ThemedText type="label" style={{ color: selected ? theme.accentInk : theme.text }}>{label}</ThemedText>
+    {removeLabel && <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={IconSize.chevron} tintColor={theme.accentInk} />}
   </SelectionChip>;
 }
 
@@ -56,14 +55,15 @@ function Section({ label, hint, missing, children }: { label: string; hint?: str
   </View>;
 }
 
-function Field({ label, value, onChange, placeholder, disabled, prefix, suffix, numeric, multiline, maxLength = 40 }: {
-  label: string; value: string; onChange: (value: string) => void; placeholder?: string; disabled?: boolean; prefix?: string; suffix?: string; numeric?: boolean; multiline?: boolean; maxLength?: number;
+function Field({ label, value, onChange, placeholder, disabled, prefix, suffix, numeric, multiline, maxLength = 40, onSubmit }: {
+  label: string; value: string; onChange: (value: string) => void; placeholder?: string; disabled?: boolean; prefix?: string; suffix?: string; numeric?: boolean; multiline?: boolean; maxLength?: number; onSubmit?: () => void;
 }) {
   const theme = useTheme(), { play } = useInteractionFeedback();
   return <View style={[ControlStyles.field, styles.field, multiline && styles.multiline, { borderColor: theme.line, backgroundColor: theme.card }]}>
     {prefix && <ThemedText style={Typography.menu} themeColor="textSecondary">{prefix}</ThemedText>}
     <TextInput accessibilityLabel={label} value={value} onChangeText={onChange} onFocus={() => play('selection')} editable={!disabled} placeholder={placeholder}
       placeholderTextColor={theme.textSecondary} keyboardType={numeric ? 'decimal-pad' : 'default'} multiline={multiline} maxLength={maxLength}
+      onSubmitEditing={onSubmit} returnKeyType={onSubmit ? 'done' : undefined} autoFocus={!!onSubmit}
       style={[styles.input, Typography.menu, multiline && styles.multilineInput, { color: theme.text }]} />
     {suffix && <ThemedText type="supporting" themeColor="textSecondary">{suffix}</ThemedText>}
   </View>;
@@ -76,7 +76,11 @@ export function ListingFields({ category, cityId, value, onChange, missing = [],
 }) {
   const theme = useTheme(), { tr, language } = useLanguage(), { play } = useInteractionFeedback();
   const [picking, setPicking] = useState(false);
-  const [moveIns] = useState(() => moveInChoices(new Date()));
+  const [extra, setExtra] = useState<string | null>(null); // null: the 직접 추가 field is closed
+  const extraNext = extra == null ? value.extras : listingExtras([...value.extras, extra]);
+  const canAddExtra = extraNext.length > value.extras.length;
+  const addExtra = () => { if (!canAddExtra) return; play('selection'); set({ extras: extraNext }); setExtra(null); };
+  const [today] = useState(() => new Date());
   const set = (patch: Partial<ListingDraft>) => onChange({ ...value, ...patch });
   const toggle = <T extends string>(list: T[], item: T) => list.includes(item) ? list.filter(entry => entry !== item) : [...list, item];
   const area = findNeighborhood(cityId, value.area);
@@ -108,12 +112,27 @@ export function ListingFields({ category, cityId, value, onChange, missing = [],
         <Field label={tr(housingPrice)} value={value.price} onChange={price => set({ price })} prefix="$" suffix={value.deal === 'rent_offer' || value.deal === 'rent_wanted' ? tr('/월') : undefined} numeric disabled={disabled} maxLength={12} placeholder={wanted ? tr('비워 둬도 돼요') : undefined} />
       </Section>
       <Section label={tr(wanted ? '입주 희망일' : '입주 가능일')}>
-        <View accessibilityRole="radiogroup" style={styles.chips}>{moveIns.map(day => <Chip key={day} label={day === 'now' ? tr('바로') : formatMoveIn(day, language)} selected={value.moveIn === day} disabled={disabled}
-          onPress={() => set({ moveIn: value.moveIn === day ? null : day })} />)}</View>
+        <View accessibilityRole="radiogroup" style={styles.chips}>
+          <Chip label={tr('바로')} selected={value.moveIn === 'now'} disabled={disabled} onPress={() => set({ moveIn: value.moveIn === 'now' ? null : 'now' })} />
+          <Chip label={tr('날짜 정하기')} selected={!!value.moveIn && value.moveIn !== 'now'} disabled={disabled}
+            onPress={() => set({ moveIn: value.moveIn && value.moveIn !== 'now' ? null : nextMonthFirst() })} />
+        </View>
+        {!!value.moveIn && value.moveIn !== 'now' && <ChillingDateInput dateOnly label={tr('입주 날짜')} value={parseLocalDay(value.moveIn)} minimumDate={today} disabled={disabled}
+          onChange={iso => { const day = localDay(iso); if (day) set({ moveIn: day }); }} />}
       </Section>
       {areaButton('동네', '동네까지만 보여요. 정확한 주소는 대화에서 알려 주세요.')}
       <Section label={tr('포함된 것')} hint={tr('여러 개 고를 수 있어요')}>
-        <View style={styles.chips}>{HOUSING_INCLUDES.map(item => <Chip key={item} multi label={tr(LISTING_LABELS.includes[item])} selected={value.includes.includes(item)} disabled={disabled} onPress={() => set({ includes: toggle(value.includes, item) })} />)}</View>
+        <View style={styles.chips}>
+          {HOUSING_INCLUDES.map(item => <Chip key={item} multi label={tr(LISTING_LABELS.includes[item])} selected={value.includes.includes(item)} disabled={disabled} onPress={() => set({ includes: toggle(value.includes, item) })} />)}
+          {value.extras.map(item => <Chip key={`extra:${item}`} label={item} removeLabel={tr('{0} 빼기', item)} selected disabled={disabled}
+            onPress={() => set({ extras: value.extras.filter(entry => entry !== item) })} />)}
+          {extra == null && value.extras.length < MAX_LISTING_EXTRAS && <Chip action label={tr('+ 직접 추가')} selected={false} disabled={disabled} onPress={() => setExtra('')} />}
+        </View>
+        {extra != null && <View style={styles.extraRow}>
+          <View style={styles.flex}><Field label={tr('직접 추가할 항목')} value={extra} onChange={setExtra} placeholder={tr('예: 세탁기')} disabled={disabled} maxLength={20} onSubmit={addExtra} /></View>
+          <RaisedActionButton compact analyticsId="listing.fields.extra-add" label={tr('추가')} disabled={disabled || !canAddExtra} onPress={addExtra} />
+        </View>}
+        {extra != null && <ThemedText type="caption" themeColor="textSecondary">{tr('20자까지, {0}개까지 넣을 수 있어요.', MAX_LISTING_EXTRAS)}</ThemedText>}
       </Section>
     </>}
 
@@ -210,7 +229,8 @@ const styles = StyleSheet.create({
   sectionHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: Spacing.two },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   chipsRow: { flexDirection: 'row', gap: Spacing.two, paddingVertical: Spacing.one },
-  chip: { borderWidth: 1 },
+  chip: { borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  extraRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   field: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   multiline: { alignItems: 'flex-start', paddingVertical: Spacing.two },
   input: { flex: 1, minHeight: 44, paddingVertical: 0 },

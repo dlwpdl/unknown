@@ -5,6 +5,7 @@ import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { ChillingDateInput } from '@/components/chilling-date-input';
 import { DiscoveryMap } from '@/components/discovery-map';
 import { ListingCard, type DetailedPost } from '@/components/listing-card';
 import { SelectionChip } from '@/components/selection-chip';
@@ -14,9 +15,10 @@ import { Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { DISCOVERY_CATEGORIES } from '@/lib/discovery';
+import { localDay, parseLocalDay } from '@/lib/chilling-date';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import {
-  CONDITIONS, formatMoney, groupListingsByArea, inBounds, LISTING_LABELS, ROOMS, type ListingCategory, type ListingFilters, type ListingView, type MapBounds,
+  CONDITIONS, formatMoney, formatMoveIn, groupListingsByArea, inBounds, LISTING_LABELS, ROOMS, type ListingCategory, type ListingFilters, type ListingView, type MapBounds,
 } from '@/lib/listing-details';
 import type { City, Post } from '@/lib/types';
 
@@ -25,10 +27,6 @@ const FILTERS: Record<'housing' | 'used', FilterKey[]> = { housing: ['market', '
 // Monthly rent and sale prices live on different scales, so 매매 gets its own steps.
 const PRICES = { housing: [1500, 2000, 2500, 3000, 4000], sale: [500000, 800000, 1000000, 1500000, 2000000], used: [0, 20, 50, 100, 300] };
 const MARKETS = { rent: '렌트', sale: '매매' } as const;
-const monthEnd = (now: Date, offset: number) => {
-  const date = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-};
 
 function Segment({ options, value, onChange, label }: { options: { key: string; label: string; icon?: SymbolViewProps['name'] }[]; value: string; onChange: (key: string) => void; label: string }) {
   const theme = useTheme(), { play } = useInteractionFeedback();
@@ -59,17 +57,14 @@ export function ListingFilterBar({ category, filters, onChange, view, onView }: 
   const [open, setOpen] = useState<FilterKey | null>(null);
   const [now] = useState(() => new Date());
   if (category === 'jobs') return null;
-  const months = [0, 1, 2].map(offset => monthEnd(now, offset));
-  const monthLabel = (iso: string, index: number) => {
-    const month = Number(iso.slice(5, 7));
-    return language === 'en' ? tr(index === 0 ? '{0} 안' : '{0}까지', ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][month - 1]) : `${month}월${index === 0 ? ' 안' : '까지'}`;
-  };
+  // Before a date is chosen the picker shows the 1st of next month; only a chosen date filters.
+  const moveInShown = filters.moveInBy ?? localDay(new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString());
   const priceLabel = (value: number) => category === 'used' && value === 0 ? tr('무료만') : tr('{0} 이하', formatMoney(value));
   const summary: Record<FilterKey, string | null> = {
     market: filters.market ? tr(MARKETS[filters.market]) : null,
     rooms: filters.rooms.length ? filters.rooms.map(room => tr(LISTING_LABELS.rooms[room])).join(' · ') : null,
     price: filters.maxPrice != null ? priceLabel(filters.maxPrice) : null,
-    moveIn: filters.moveInBy ? monthLabel(filters.moveInBy, months.indexOf(filters.moveInBy)) : null,
+    moveIn: filters.moveInBy ? tr('{0}까지 입주', formatMoveIn(filters.moveInBy, language)) : null,
     deal: filters.deal ? tr(LISTING_LABELS.used[filters.deal]) : null,
     condition: filters.conditions.length ? filters.conditions.map(item => tr(LISTING_LABELS.condition[item])).join(' · ') : null,
   };
@@ -101,16 +96,17 @@ export function ListingFilterBar({ category, filters, onChange, view, onView }: 
       ]} />}
     </View>
     {open && <View style={[styles.panel, { borderColor: theme.line, backgroundColor: theme.backgroundElement }]}>
-      <View style={styles.options}>
+      {open !== 'moveIn' && <View style={styles.options}>
         {open === 'market' && (['rent', 'sale'] as const).map(market => option(market, tr(MARKETS[market]), filters.market === market,
           // Switching market resets the price step (different scale); 매매 has no move-in date.
           () => onChange({ ...filters, market: filters.market === market ? null : market, maxPrice: null, moveInBy: market === 'sale' ? null : filters.moveInBy })))}
         {open === 'rooms' && ROOMS.map(room => option(room, tr(LISTING_LABELS.rooms[room]), filters.rooms.includes(room), () => onChange({ ...filters, rooms: toggle(filters.rooms, room) }), true))}
         {open === 'price' && PRICES[category === 'housing' && filters.market === 'sale' ? 'sale' : category].map(value => option(String(value), priceLabel(value), filters.maxPrice === value, () => onChange({ ...filters, maxPrice: filters.maxPrice === value ? null : value })))}
-        {open === 'moveIn' && months.map((iso, index) => option(iso, monthLabel(iso, index), filters.moveInBy === iso, () => onChange({ ...filters, moveInBy: filters.moveInBy === iso ? null : iso })))}
         {open === 'deal' && (['sell', 'buy'] as const).map(deal => option(deal, tr(LISTING_LABELS.used[deal]), filters.deal === deal, () => onChange({ ...filters, deal: filters.deal === deal ? null : deal })))}
         {open === 'condition' && CONDITIONS.map(item => option(item, tr(LISTING_LABELS.condition[item]), filters.conditions.includes(item), () => onChange({ ...filters, conditions: toggle(filters.conditions, item) }), true))}
-      </View>
+      </View>}
+      {open === 'moveIn' && <ChillingDateInput dateOnly label={tr('이 날짜까지 들어갈 수 있는 집')} value={parseLocalDay(moveInShown)} minimumDate={now}
+        onChange={iso => { const day = localDay(iso); if (day) { play('selection'); onChange({ ...filters, moveInBy: day }); } }} />}
       {summary[open] != null && <Pressable analyticsId="listing.filter.clear" accessibilityRole="button" onPress={() => { play('selection'); clear(open); }} style={styles.clear}>
         <ThemedText type="label" themeColor="accent">{tr('이 조건 지우기')}</ThemedText>
       </Pressable>}

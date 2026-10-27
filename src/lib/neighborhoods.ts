@@ -20,6 +20,9 @@ export const NEIGHBORHOODS: Record<string, readonly Neighborhood[]> = {
     n('port-moody', '포트무디', 'Port Moody', 49.284, -122.832), n('new-westminster', '뉴웨스트민스터', 'New Westminster', 49.206, -122.911),
     n('richmond', '리치먼드', 'Richmond', 49.167, -123.134), n('surrey', '써리', 'Surrey', 49.19, -122.849),
     n('langley', '랭리', 'Langley', 49.104, -122.66),
+    n('delta', '델타', 'Delta', 49.163, -122.902), n('ladner', '래드너', 'Ladner', 49.089, -123.082),
+    n('tsawwassen', '츠와센', 'Tsawwassen', 49.006, -123.083), n('port-coquitlam', '포트코퀴틀람', 'Port Coquitlam', 49.262, -122.781),
+    n('maple-ridge', '메이플리지', 'Maple Ridge', 49.219, -122.598), n('white-rock', '화이트락', 'White Rock', 49.025, -122.802),
   ],
   toronto: [
     n('downtown', '다운타운', 'Downtown', 43.651, -79.383), n('koreatown', '코리아타운', 'Koreatown', 43.665, -79.418),
