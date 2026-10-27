@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useReducedMotion } from 'react-native-reanimated';
 
@@ -131,6 +131,7 @@ export function ListingMapScreen({ visible, category, city, posts, filters, onFi
   const count = areas.reduce((sum, area) => sum + area.posts.length, 0);
   const close = () => { play('selection'); setFree(false); setMoved(null); setRegion(null); setSelectedId(null); onClose(); };
   return <Modal visible={visible} animationType={reduced ? 'none' : 'slide'} onRequestClose={onClose}>
+    <SafeAreaProvider style={styles.flex}>
     <SafeAreaView edges={['top', 'bottom']} style={[styles.screen, { backgroundColor: theme.background }]}>
       <View style={styles.mapHeader}>
         <Pressable analyticsId="listing.map.close" accessibilityRole="button" accessibilityLabel={tr('목록으로 돌아가기')} onPress={close}
@@ -173,6 +174,7 @@ export function ListingMapScreen({ visible, category, city, posts, filters, onFi
         </View>}
       </View>
     </SafeAreaView>
+    </SafeAreaProvider>
   </Modal>;
 }
 

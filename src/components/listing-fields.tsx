@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Modal, StyleSheet, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
 import { useReducedMotion } from 'react-native-reanimated';
 
@@ -176,6 +176,7 @@ export function NeighborhoodPicker({ visible, cityId, initial, onClose, onConfir
   };
   const current = findNeighborhood(cityId, selected);
   return <Modal visible={visible} animationType={reduced ? 'none' : 'slide'} presentationStyle="pageSheet" onRequestClose={onClose}>
+    <SafeAreaProvider style={styles.flex}>
     <SafeAreaView edges={['top', 'bottom']} style={[styles.screen, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
         <Pressable analyticsId="listing.area.close" accessibilityRole="button" accessibilityLabel={tr('닫기')} onPress={() => { play('selection'); onClose(); }}
@@ -199,6 +200,7 @@ export function NeighborhoodPicker({ visible, cityId, initial, onClose, onConfir
           onPress={() => { if (current) { play('selection'); onConfirm(current.id); } }} />
       </View>
     </SafeAreaView>
+    </SafeAreaProvider>
   </Modal>;
 }
 
