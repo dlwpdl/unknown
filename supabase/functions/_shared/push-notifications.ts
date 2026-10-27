@@ -1,10 +1,14 @@
 import { EVENT_CITIES } from './ticketmaster.ts';
+import { englishNotificationBody } from '../../../src/lib/notification-copy.ts';
+import { uiEnglish } from '../../../src/i18n/ui-en.ts';
 
 type PushJob = {
   id: string; lease_id: string; token: string; user_id: string; notification_id: string;
   category: string; body: string; route: string | null; ticket_id: string | null;
   post_title?: string | null; post_preview?: string | null;
   event_title?: string | null;
+  // Added 2026-10-27; older claims omit them and keep Korean copy without a badge.
+  kind?: string | null; locale?: string | null; badge?: number | null;
 };
 type WorkerOptions = {
   secret?: string; expoAccessToken?: string; fetcher?: typeof fetch;
@@ -15,8 +19,11 @@ const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const uuid = new RegExp(`^${UUID}$`, 'i');
 // 앱의 notificationRoute()와 같은 목적지 목록을 유지한다. 관리자 알림(/admin?section=…)이 빠지면
 // 서버가 보낸 화면 대신 /notifications 로 열리므로 두 곳을 함께 고쳐야 한다.
-const routePattern = new RegExp(`^(?:/post/${UUID}(?:\\?commentId=${UUID})?|/company/${UUID}\\?review=(?:usage|employment)|/chat\\?(?:conversationId=${UUID}(?:&view=requests)?|requestId=${UUID}|view=requests)|/profile/(?:guidelines|settings|meetup-reviews|merchant\\?merchant=${UUID})|/notifications|/admin(?:\\?(?:section=(?:alerts|analytics|errors|overview|posts|reports|safety|trending|users)|(?:safety|alert)=(?:${UUID}|[1-9][0-9]*)))?)$`, 'i');
+const routePattern = new RegExp(`^(?:/post/${UUID}(?:\\?commentId=${UUID})?|/company/${UUID}\\?review=(?:usage|employment)|/chat\\?(?:conversationId=${UUID}(?:&view=requests|&businessId=${UUID})?|requestId=${UUID}|view=requests)|/profile/(?:guidelines|settings|meetup-reviews|merchant\\?merchant=${UUID})|/notifications|/admin(?:\\?(?:section=(?:alerts|analytics|conversations|errors|overview|posts|reports|safety|trending|users)|(?:safety|alert)=(?:${UUID}|[1-9][0-9]*)))?)$`, 'i');
 const json = (value: unknown, status = 200) => Response.json(value, { status });
+const RECOMMENDATIONS = ['trending', 'city_food', 'city_places', 'merchant_updates', 'weekly_ranking', 'interests', 'nearby'];
+const ROUNDS = 5; // ~500 sends per invocation, in Expo's 100-message batches
+const translateEnglish = (text: string) => uiEnglish[text] ?? text;
 const object = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 
 function postBodyPreview(title: string, preview: string): string {
@@ -53,11 +60,12 @@ export async function handlePushNotifications(request: Request, options: WorkerO
   const fetcher = options.fetcher ?? fetch;
   const counts = { tickets: 0, providerAccepted: 0, retrying: 0, failed: 0 };
   // No request body is consumed: callers cannot choose recipients, tokens, text, or routes.
-  for (const phase of ['receipt', 'send'] as const) {
+  const deadline = Date.now() + 100_000;
+  for (const phase of ['receipt', 'send'] as const) for (let round = 0; round < ROUNDS && Date.now() < deadline; round += 1) {
     const claimed = await options.rpc('claim_push_notifications', { p_phase: phase, p_limit: 100 });
     if (claimed.error) return json({ error: 'CLAIM_FAILED' }, 500);
     const jobs = (claimed.data ?? []) as PushJob[];
-    if (!jobs.length) continue;
+    if (!jobs.length) break;
     let results: ReturnType<typeof resultFor>[];
     try {
       const response = await fetcher(`https://exp.host/--/api/v2/push/${phase === 'send' ? 'send' : 'getReceipts'}`, {
@@ -71,10 +79,17 @@ export async function handlePushNotifications(request: Request, options: WorkerO
             && typeof job.post_title === 'string' && job.post_title.trim().length > 0 && typeof job.post_preview === 'string';
           const eventPreview = event && route === job.route && ['trending', 'city_places'].includes(job.category)
             && typeof job.event_title === 'string' && job.event_title.trim().length > 0;
+          const admin = route.startsWith('/admin');
+          // Admin copy stays Korean; member copy follows the device language.
+          const english = job.locale === 'en' && !admin;
+          const body = postPreview ? postBodyPreview(job.post_title!, job.post_preview!)
+            : english ? englishNotificationBody({ kind: job.kind ?? '', body: job.body }, translateEnglish) : job.body;
           return {
-            to: job.token, title: eventPreview ? job.event_title : postPreview ? job.post_title : route.startsWith('/admin') ? '글링 관리자' : '글링',
-            body: postPreview ? postBodyPreview(job.post_title!, job.post_preview!) : job.body,
-            sound: 'default', channelId: 'gling-activity', ttl: 300,
+            to: job.token, title: eventPreview ? job.event_title : postPreview ? job.post_title : admin ? '글링 관리자' : english ? 'Gling' : '글링',
+            body, sound: 'default', channelId: 'gling-activity',
+            ttl: RECOMMENDATIONS.includes(job.category) || job.kind === 'trending_meetup' ? 3600 : 86400,
+            // Only devices registered with a locale run a client that also clears the badge.
+            ...(job.locale && Number.isInteger(job.badge) ? { badge: job.badge } : {}),
             // Expo has no send idempotency key. Stable IDs collapse ambiguous retry copies on devices.
             collapseId: job.notification_id, tag: job.notification_id,
             data: { notificationId: job.notification_id, userId: job.user_id, category: job.category, route },
@@ -109,6 +124,7 @@ export async function handlePushNotifications(request: Request, options: WorkerO
       return true;
     }));
     if (completed.includes(false)) return json({ error: 'RESULT_SAVE_FAILED' }, 500);
+    if (jobs.length < 100) break;
   }
   return json(counts);
 }

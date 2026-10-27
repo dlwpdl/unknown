@@ -48,3 +48,16 @@ test('hashtag routing reads the stored Korean body, not the English display text
   assert.equal(notificationRoute('/notifications', item), '/?hashtag=' + encodeURIComponent('밴쿠버'));
   assert.equal(en(item.kind, item.body), 'Trending near you: #밴쿠버');
 });
+
+test('overhaul kinds render English, and the shared module works without a translator', async () => {
+  const { englishNotificationBody: shared } = await import('../src/lib/notification-copy.ts');
+  assert.equal(shared, englishNotificationBody, 'notification-preferences re-exports the shared copy');
+  assert.equal(en('like_summary', '민지님 외 3명이 내 글을 좋아해요.'), '민지 and 3 others liked your post.');
+  assert.equal(en('like_summary', '민지님 외 1명이 내 댓글을 좋아해요.'), '민지 and 1 other liked your comment.');
+  assert.equal(en('like_summary', '민지님이 내 글을 좋아해요.'), '민지 liked your post.');
+  assert.equal(en('message_reaction', '민지님이 내 메시지에 공감했어요.'), '민지 loved your message.');
+  assert.equal(en('message', 'Sam: 사진을 보냈어요.'), 'Sam: Sent a photo.');
+  assert.equal(en('admin_digest', '새로 가입한 사람 3명, 운영 모임 참여 신청 1건이 있어요.'), '3 new members and 1 request to join Gling-run meetups.');
+  assert.equal(shared({ kind: 'post_like', body: '민지님이 내 글에 공감했어요.' }), '민지 liked your post.');
+  assert.equal(shared({ kind: 'unknown', body: '그대로' }), '그대로');
+});

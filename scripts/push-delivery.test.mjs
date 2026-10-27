@@ -26,7 +26,7 @@ test('post recommendations show the current title and excerpt in the actual Expo
       assert.equal(message.title, claim.post_title);
       assert.equal(message.body, claim.post_preview);
       assert.equal(message.data.route, claim.route);
-      assert.equal(message.ttl, 300);
+      assert.equal(message.ttl, 3600, 'recommendations expire within the hour');
       assert.equal(message.collapseId, notificationId);
       assert.deepEqual(Object.keys(message.data).sort(), ['category', 'notificationId', 'route', 'userId']);
       return Response.json({ data: [{ status: 'ok', id: ticketId }] });
@@ -376,4 +376,50 @@ test('meetup review push keeps the actual review destination and rejects injecte
       return Response.json({ data: messages.map(() => ({ status: 'ok', id: ticketId })) });
     } });
   assert.equal((await (await h.run()).json()).tickets, routes.length);
+});
+
+test('personal pushes live a day, recommendations an hour', async () => {
+  const seen = [];
+  const h = harness({ sends: [{ ...job, category: 'replies', route: `/post/${notificationId}` }, { ...job, id: ticketId, notification_id: ticketId, category: 'meetups', kind: 'trending_meetup', route: `/post/${notificationId}` }],
+    fetcher: async (_, options) => { seen.push(...JSON.parse(options.body).map((m) => m.ttl)); return Response.json({ data: [{ status: 'ok', id: ticketId }, { status: 'ok', id: ticketId }] }); } });
+  assert.equal((await (await h.run()).json()).tickets, 2);
+  assert.deepEqual(seen, [86400, 3600]);
+});
+test('business chat and admin conversation routes are kept', async () => {
+  const seen = [];
+  const routes = [`/chat?conversationId=${notificationId}&businessId=${ticketId}`, '/admin?section=conversations', `/chat?conversationId=${notificationId}&businessId=nope`];
+  const h = harness({ sends: routes.map((route) => ({ ...job, route })), fetcher: async (_, options) => {
+    const messages = JSON.parse(options.body); seen.push(...messages.map((m) => m.data.route));
+    return Response.json({ data: messages.map(() => ({ status: 'ok', id: ticketId })) });
+  } });
+  await h.run();
+  assert.deepEqual(seen, [routes[0], routes[1], '/notifications']);
+});
+test('English devices get English copy; Korean, unknown-locale and admin pushes stay Korean', async () => {
+  const sends = [
+    { ...job, kind: 'message', body: '메시지가 도착했어요.', locale: 'en' },
+    { ...job, kind: 'like_summary', category: 'post_likes', body: '민지님 외 3명이 내 글을 좋아해요.', route: `/post/${notificationId}`, locale: 'en' },
+    { ...job, kind: 'post_like', category: 'post_likes', body: '민지님이 내 글에 공감했어요.', route: `/post/${notificationId}`, locale: 'ko' },
+    { ...job, kind: 'admin_digest', category: 'system', body: '새로 가입한 사람이 2명 있어요.', route: '/admin', locale: 'en' },
+    { ...job, body: '메시지가 도착했어요.' },
+  ];
+  let messages;
+  const h = harness({ sends, fetcher: async (_, options) => { messages = JSON.parse(options.body); return Response.json({ data: messages.map(() => ({ status: 'ok', id: ticketId })) }); } });
+  await h.run();
+  assert.deepEqual(messages.map((m) => [m.title, m.body]), [
+    ['Gling', 'You have a new message.'], ['Gling', '민지 and 3 others liked your post.'], ['글링', '민지님이 내 글에 공감했어요.'],
+    ['글링 관리자', '새로 가입한 사람이 2명 있어요.'], ['글링', '메시지가 도착했어요.']]);
+});
+test('badge is sent only to devices whose client registered a locale', async () => {
+  let messages;
+  const h = harness({ sends: [{ ...job, locale: 'ko', badge: 4 }, { ...job, badge: 4 }, { ...job, locale: 'en', badge: null }],
+    fetcher: async (_, options) => { messages = JSON.parse(options.body); return Response.json({ data: messages.map(() => ({ status: 'ok', id: ticketId })) }); } });
+  await h.run();
+  assert.deepEqual(messages.map((m) => m.badge), [4, undefined, undefined]);
+});
+test('a full batch claims again, up to five rounds per phase', async () => {
+  const full = Array.from({ length: 100 }, () => job);
+  const h = harness({ sends: full, fetcher: async () => Response.json({ data: full.map(() => ({ status: 'ok', id: ticketId })) }) });
+  assert.equal((await (await h.run()).json()).tickets, 500);
+  assert.equal(h.calls.filter((c) => c.name === 'claim_push_notifications' && c.args.p_phase === 'send').length, 5);
 });
