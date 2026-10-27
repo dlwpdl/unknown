@@ -3530,7 +3530,6 @@ export const uiEnglish: Record<string, string> = {
   "이 근처": "Nearby",
   "이 지도 안에 글 {0}개": "Posts on this map: {0}",
   "지도에 표시할 글이 아직 없어요. 동네를 고른 글만 지도에 나와요.": "Nothing to show on the map yet. Only posts with a neighbourhood appear here.",
-  "{0} 안": "By end of {0}",
   "바로 입주": "Available now",
   "{0} 입주": "Move in {0}",
   "{0}부터": "From {0}",
@@ -3634,4 +3633,15 @@ export const uiEnglish: Record<string, string> = {
   "글 {0}개": "Posts: {0}",
   "포지션": "Position",
   "필요한 경험, 쓰는 언어": "Experience, languages",
+  // 입주일 달력·포함된 것 직접 추가 (2026-10-27)
+  "날짜 정하기": "Pick a date",
+  "입주 날짜": "Move-in date",
+  "이 날짜까지 들어갈 수 있는 집": "Places you can move into by this date",
+  "{0}까지 입주": "Move in by {0}",
+  "+ 직접 추가": "+ Add your own",
+  "추가": "Add",
+  "직접 추가할 항목": "Your own item",
+  "예: 세탁기": "e.g. Washer",
+  "{0} 빼기": "Remove {0}",
+  "20자까지, {0}개까지 넣을 수 있어요.": "Up to {0} items, 20 characters each.",
 };

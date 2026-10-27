@@ -32,7 +32,8 @@ export type UsedDeal = typeof USED_DEALS[number];
 export type Condition = typeof CONDITIONS[number];
 
 // moveIn: 'now' or YYYY-MM-DD. area: a neighborhood id from neighborhoods.ts, never an address.
-export type HousingDetails = { type: 'housing'; deal: HousingDeal; rooms?: Room; moveIn?: string; area?: string; includes?: HousingInclude[]; lead?: string };
+// extras: the author's own 포함된 것 items (≤5, ≤20 chars), shown only while they are in the body.
+export type HousingDetails = { type: 'housing'; deal: HousingDeal; rooms?: Room; moveIn?: string; area?: string; includes?: HousingInclude[]; extras?: string[]; lead?: string };
 // pay repeats posts.price for business job posts, which are published without a price.
 export type JobsDetails = { type: 'jobs'; deal: JobDeal; payUnit?: PayUnit; pay?: number; jobTypes?: JobType[]; area?: string; hours?: string; duties?: string; apply?: ApplyWay[]; lead?: string };
 export type UsedDetails = { type: 'used'; deal: UsedDeal; offers?: boolean; condition?: Condition; area?: string; lead?: string };
@@ -105,7 +106,9 @@ export function buildListingLead(details: ListingDetails, input: { title: string
   const extra: string[] = [];
   if (details.type === 'housing') {
     parts.push(details.rooms && t(LISTING_LABELS.rooms[details.rooms]), listingPriceLabel(details, input.price, language),
-      details.moveIn && (details.moveIn === 'now' ? t('바로 입주') : t('{0}부터', formatMoveIn(details.moveIn, language))), area, details.includes?.length ? includesText(details.includes, language) : null);
+      details.moveIn && (details.moveIn === 'now' ? t('바로 입주') : t('{0}부터', formatMoveIn(details.moveIn, language))), area,
+      // Extras go in verbatim: the server accepts them only while the body contains them.
+      [details.includes?.length ? includesText(details.includes, language) : '', ...details.extras ?? []].filter(Boolean).join(', '));
   } else if (details.type === 'jobs') {
     // Korean reads "시급 $17.85"; English reads "$17.85/hr" like the card.
     const pay = language === 'ko' && details.payUnit && details.payUnit !== 'negotiable' && input.price != null
@@ -130,18 +133,30 @@ export function stripListingLead(body: string, details: ListingDetails | null | 
 
 // ---- composer draft ---------------------------------------------------------------------------
 export type ListingDraft = {
-  deal: string; rooms: Room | null; moveIn: string | null; area: string | null; includes: HousingInclude[];
+  deal: string; rooms: Room | null; moveIn: string | null; area: string | null; includes: HousingInclude[]; extras: string[];
   payUnit: PayUnit; jobTypes: JobType[]; hours: string; duties: string; apply: ApplyWay[];
   condition: Condition | null; offers: boolean; free: boolean; price: string;
 };
 export const emptyListingDraft = (category: ListingCategory): ListingDraft => ({
   deal: category === 'housing' ? 'rent_offer' : category === 'jobs' ? 'hiring' : 'sell',
-  rooms: null, moveIn: null, area: null, includes: [], payUnit: 'hour', jobTypes: [], hours: '', duties: '', apply: [],
+  rooms: null, moveIn: null, area: null, includes: [], extras: [], payUnit: 'hour', jobTypes: [], hours: '', duties: '', apply: [],
   condition: null, offers: false, free: false, price: '',
 });
 export type ListingMissing = 'deal' | 'rooms' | 'area' | 'price' | 'condition';
 
 const clean = (value: string, max: number) => value.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+export const MAX_LISTING_EXTRAS = 5;
+const PRESET_INCLUDES = new Set(HOUSING_INCLUDES.flatMap(item => [LISTING_LABELS.includes[item], translateUi('en', LISTING_LABELS.includes[item])].map(label => label.toLowerCase())));
+// Cleans the author's own 포함된 것 items: 1–20 chars, no repeats or preset names, at most 5. Longer text is dropped, not cut.
+export function listingExtras(list: readonly unknown[]): string[] {
+  const kept: string[] = [];
+  for (const item of list) {
+    const text = typeof item === 'string' ? clean(item, 21) : '';
+    const key = text.toLowerCase();
+    if (text && text.length <= 20 && !PRESET_INCLUDES.has(key) && !kept.some(entry => entry.toLowerCase() === key) && kept.length < MAX_LISTING_EXTRAS) kept.push(text);
+  }
+  return kept;
+}
 const pick = <T extends string>(values: readonly T[], value: unknown): T | undefined => values.includes(value as T) ? value as T : undefined;
 const pickAll = <T extends string>(values: readonly T[], list: unknown) => Array.isArray(list) ? values.filter(value => list.includes(value)) : [];
 export function parsePrice(text: string): number | null {
@@ -159,7 +174,7 @@ export function listingFromDraft(category: ListingCategory, draft: ListingDraft,
   let details: ListingDetails, price = typed;
   if (category === 'housing') {
     const deal = pick(HOUSING_DEALS, draft.deal) ?? 'rent_offer';
-    details = { type: 'housing', deal, rooms: draft.rooms ?? undefined, moveIn: draft.moveIn ?? undefined, area, includes: pickAll(HOUSING_INCLUDES, draft.includes) };
+    details = { type: 'housing', deal, rooms: draft.rooms ?? undefined, moveIn: draft.moveIn ?? undefined, area, includes: pickAll(HOUSING_INCLUDES, draft.includes), extras: listingExtras(draft.extras ?? []) };
     if (!draft.rooms) missing.push('rooms');
     if ((deal === 'rent_offer' || deal === 'sale') && price == null && !missing.includes('price')) missing.push('price');
     if (!area) missing.push('area');
@@ -200,7 +215,8 @@ export function parseListingDetails(raw: unknown, body: string): ListingDetails 
     const deal = pick(HOUSING_DEALS, value.deal);
     if (!deal) return null;
     const moveIn = value.moveIn === 'now' || (typeof value.moveIn === 'string' && /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(value.moveIn)) ? value.moveIn as string : undefined;
-    details = { type: 'housing', deal, rooms: pick(ROOMS, value.rooms), moveIn, area, includes: pickAll(HOUSING_INCLUDES, value.includes) };
+    const extras = Array.isArray(value.extras) ? listingExtras(value.extras.filter(item => text(item, 20) === item)).filter(item => body.includes(item)) : [];
+    details = { type: 'housing', deal, rooms: pick(ROOMS, value.rooms), moveIn, area, includes: pickAll(HOUSING_INCLUDES, value.includes), extras };
   } else if (value.type === 'jobs') {
     const deal = pick(JOB_DEALS, value.deal);
     if (!deal) return null;

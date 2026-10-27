@@ -52,7 +52,7 @@ export function useListingText(post: DetailedPost) {
     price: listingPriceLabel(details, post.price, language),
     status: tr(listingStatusLabel(category, post.listingStatus)),
     rooms: details.type === 'housing' && details.rooms ? tr(LISTING_LABELS.rooms[details.rooms]) : null,
-    includes: details.type === 'housing' ? (details.includes ?? []).map(item => tr(LISTING_LABELS.includes[item])) : [],
+    includes: details.type === 'housing' ? [...(details.includes ?? []).map(item => tr(LISTING_LABELS.includes[item])), ...details.extras ?? []] : [],
     jobTypes: details.type === 'jobs' ? (details.jobTypes ?? []).map(item => tr(LISTING_LABELS.jobTypes[item])) : [],
     condition: details.type === 'used' && details.condition ? tr(LISTING_LABELS.condition[details.condition]) : null,
   };
