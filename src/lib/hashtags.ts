@@ -7,7 +7,6 @@ export const DEFAULT_HASHTAGS: Record<TagSlug, readonly string[]> = {
   travel: ['여행', '나들이', '동행'],
   shopping: ['핫딜', '중고', '쇼핑'],
   settlement: ['이민', '유학', '워홀'],
-  transport: ['차량', '교통', '운전'],
   housing: ['상업용', '주거용', '렌트', '룸메', '매매'],
   education: ['학교', '학원', '어학'],
   business: ['비즈니스소개', '창업', '사업정보'],

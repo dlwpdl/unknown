@@ -35,7 +35,6 @@ const CATEGORY_SLUGS = new Set<TagSlug>([
   'travel',
   'shopping',
   'settlement',
-  'transport',
   'housing',
   'education',
   'business',

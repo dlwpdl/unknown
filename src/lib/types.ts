@@ -19,7 +19,6 @@ export type TagSlug =
   | 'travel'
   | 'shopping'
   | 'settlement'
-  | 'transport'
   | 'housing'
   | 'education'
   | 'business'

@@ -5,7 +5,7 @@ import { discoveryPost, discoveryEvent, discoveryDays, discoveryMatches, directi
 
 const post = { id: 'p1', cityId: 'vancouver', author: { id: 'u1' }, tag: { slug: 'used' }, kind: 'listing', listingStatus: 'open', expiresAt: '2027-01-01T00:00:00Z', price: 20, title: '책상', body: '거래 장소\n\nGoogle 지도: https://www.google.com/maps/search/?api=1&query=49.28%2C-123.12\n위치: 도서관 앞' };
 test('a Google Maps attachment does not turn an unrelated community topic into a discovery listing', () => {
-  for (const slug of ['life', 'settlement', 'jobs', 'education', 'transport', 'meetup', 'business']) {
+  for (const slug of ['life', 'settlement', 'jobs', 'education', 'meetup', 'business']) {
     assert.equal(discoveryPost({ ...post, kind: 'story', tag: { slug }, hashtags: ['카페'], title: '일반 질문' }), null, slug);
   }
   for (const slug of ['food', 'travel', 'festival', 'shopping']) {

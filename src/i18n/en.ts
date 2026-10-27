@@ -65,7 +65,7 @@ export const en: Translations = {
     bodyPlaceholder: {
       life: 'Share a moment from your day or ask a question', festival: 'Talk about a festival or show you want to see', food: 'Share a hidden-gem spot you love',
       travel: 'Share a trip or a day out', shopping: 'Share shopping tips, deals or secondhand finds', settlement: 'Share how you settled in: immigration, study or working holiday',
-      transport: 'Share tips on cars, driving or transit', housing: 'Talk about real estate, rentals or roommates', education: 'Share tips on schools, classes or learning a language',
+      housing: 'Talk about real estate, rentals or roommates', education: 'Share tips on schools, classes or learning a language',
       business: 'Introduce your business or share tips on running one', meetup: 'What’s the meetup, and how many people are you looking for?',
       jobs: 'Add the requirements, location and pay, or describe the work you’re looking for', used: 'Add the condition, price and pickup area',
     },
