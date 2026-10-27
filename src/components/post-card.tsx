@@ -48,6 +48,7 @@ export function PostCard({
   hideRoom = false,
   flat = false,
   afterBody,
+  beforeBody,
   translationVisible = true,
   meetupDetail,
   postDetail = false,
@@ -61,6 +62,7 @@ export function PostCard({
   hideRoom?: boolean;
   flat?: boolean;
   afterBody?: ReactNode;
+  beforeBody?: ReactNode; // 부동산·구인구직·중고거래 상세: 항목 카드가 가격 줄을 대신한다
   translationVisible?: boolean;
   meetupDetail?: { beforeTitle: ReactNode; afterTitle: ReactNode }; // 모임 상세: 작성자 줄·분류·반응 줄 대신 요약을 끼운다
   postDetail?: boolean; // 일반 글 상세: 장소·링크는 정보 카드, 본문은 문단, 출처는 접고, 반응은 하단 바로 옮긴다
@@ -278,8 +280,9 @@ export function PostCard({
               {infoLinks.map((url, index) => <View key={url} style={index > 0 && [styles.infoDivider, { borderTopColor: theme.line }]}><PostAttachmentLink url={url} row /></View>)}
             </View>}
           </View>}
+          {beforeBody}
           {!meetupDetail && (info ? <View style={styles.detailBodyWrap}>{bodyText}</View> : bodyText)}
-          {isListing && (post.price != null || (post.listingStatus && post.listingStatus !== 'open')) && (
+          {isListing && !beforeBody && (post.price != null || (post.listingStatus && post.listingStatus !== 'open')) && (
             <View style={styles.listingLine}>
               {post.price != null && <ThemedText style={styles.price}>{t.detail.price(post.price)}</ThemedText>}
               {post.listingStatus && post.listingStatus !== 'open' && (

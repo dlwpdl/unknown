@@ -51,7 +51,9 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadPublicPost } from '@/lib/feed-data';
 import { MAX_POST_IMAGES } from '@/lib/image-upload';
 import { CITIES } from '@/lib/mock';
-import { postPublicAddress } from '@/lib/post-maps';
+import { postMapBody, postPublicAddress } from '@/lib/post-maps';
+import { stripListingLead } from '@/lib/listing-details';
+import { ListingInfo, type DetailedPost } from '@/components/listing-card';
 import { splitPostPhotoCredits } from '@/lib/post-photo-credits';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { splitEventMeetupBody, visibleMeetupBody } from '@/lib/meetup-ai';
@@ -747,10 +749,12 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               hideRoom={!!post.room}
               flat={!!post.room}
               postDetail={!post.room}
-              post={{ ...post, body: photoCredits.body, views: viewCount }}
+              // The info card shows the summary line and the neighborhood map, so the body drops both.
+              post={{ ...post, body: post.listingDetails ? postMapBody(stripListingLead(photoCredits.body, post.listingDetails)).body : photoCredits.body, views: viewCount }}
+              beforeBody={post.listingDetails ? <ListingInfo post={post as DetailedPost} /> : undefined}
               meetupDetail={post.room ? { beforeTitle: <MeetupChips post={post} />, afterTitle: <MeetupSummary post={post} status={meetupStatus} onClose={onClose} onBeforeNavigate={onJoin ? onClose : undefined} /> } : undefined}
               afterBody={<>
-                {post.kind === 'listing' && post.tag.slug === 'housing' && <View style={{ gap: Spacing.one }}>
+                {post.kind === 'listing' && post.tag.slug === 'housing' && !post.listingDetails && <View style={{ gap: Spacing.one }}>
                   <ThemedText type="smallBold" accessibilityRole="header">{tr("주소·위치")}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary" selectable>{postPublicAddress(post.body) ?? tr("상세주소 미등록")}</ThemedText>
                 </View>}

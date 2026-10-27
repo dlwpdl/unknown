@@ -1,4 +1,5 @@
-import { tr } from '../i18n/index.ts';
+import { getLocale, tr } from '../i18n/index.ts';
+import { coarseListingPin, neighborhoodName } from './neighborhoods.ts';
 import { googleMapsPin, googlePinUrl, postMapBody, type PostPin } from './post-maps.ts';
 import type { Post } from './types.ts';
 import { EVENT_TIMEZONES, festivalLocalDay, isFestivalEvent, type EventCity, type TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster.ts';
@@ -108,11 +109,14 @@ const categoryFor = (post: Post): DiscoveryCategory => {
 export function discoveryPost(post: Post, now = Date.now()): DiscoveryItem | null {
   if (!['housing', 'used', 'food', 'travel', 'festival', 'shopping'].includes(post.tag.slug)) return null;
   if (post.kind === 'listing' && (!['open', 'partial'].includes(post.listingStatus ?? '') || !(Date.parse(post.expiresAt ?? '') > now))) return null;
-  const location = postMapBody(post.body), pin = location.url ? googleMapsPin(location.url) : null;
+  const location = postMapBody(post.body), exact = location.url ? googleMapsPin(location.url) : null;
   if (!location.url) return null;
   const address = new URL(location.url).searchParams.get('query');
+  // 부동산·중고거래 never show a home or meeting point: snap to the neighborhood centre and name only the neighborhood.
+  const listing = post.tag.slug === 'housing' || post.tag.slug === 'used', coarse = listing && exact ? coarseListingPin(post.cityId, exact) : null, pin = coarse ?? exact;
+  const label = listing ? coarse?.neighborhood ? neighborhoodName(coarse.neighborhood, getLocale() === 'en-CA' ? 'en' : 'ko') : tr('이 근처') : location.label ?? (!pin && address ? address : tr('공개 위치'));
   return { id: `post:${post.id}`, source: 'post', sourceId: post.id, cityId: post.cityId, title: post.title,
-    category: categoryFor(post), label: location.label ?? (!pin && address ? address : tr('공개 위치')), latitude: pin?.latitude ?? null, longitude: pin?.longitude ?? null,
+    category: categoryFor(post), label, latitude: pin?.latitude ?? null, longitude: pin?.longitude ?? null,
     price: typeof post.price === 'number' && Number.isFinite(post.price) ? post.price : null, imageUri: post.imageThumbs?.[0] ?? post.imageUris?.[0], post };
 }
 export function discoveryEvent(event: TicketmasterEvent, cityId: string, now = Date.now()): DiscoveryItem | null {

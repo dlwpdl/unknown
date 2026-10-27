@@ -6,7 +6,8 @@ export type DiscoveryMarker = { id: string; latitude: number; longitude: number;
 type Center = { latitude: number; longitude: number; requestId?: number };
 type MapState = { markers: DiscoveryMarker[]; selectedId?: string | null; center?: Center | null; userLocation?: { latitude: number; longitude: number } | null; bottomInset?: number; topInset?: number };
 type MapUpdate = Omit<MapState, 'markers'> & { markers?: DiscoveryMarker[] };
-type DiscoveryMessage = { type: 'ready' | 'error' | 'feedback' } | { type: 'select'; id: string } | { type: 'credits'; url: string };
+export type DiscoveryBounds = { west: number; south: number; east: number; north: number };
+type DiscoveryMessage = { type: 'ready' | 'error' | 'feedback' } | { type: 'select'; id: string } | { type: 'credits'; url: string } | { type: 'moved'; bounds: DiscoveryBounds };
 const credits = ['https://openfreemap.org/', 'https://www.openmaptiles.org/', 'https://www.openstreetmap.org/copyright'];
 const text = (value: unknown, length: number): value is string => typeof value === 'string' && value.length > 0 && value.length <= length && !/[\u0000-\u001f\u007f]/.test(value);
 const coordinate = (value: Center) => value && Number.isFinite(value.latitude) && Math.abs(value.latitude) <= 90 && Number.isFinite(value.longitude) && Math.abs(value.longitude) <= 180
@@ -42,6 +43,10 @@ export function discoveryMapMessage(raw: string, sessionId: string, markers: Dis
     if (['ready', 'error', 'feedback'].includes(message.type)) return { type: message.type };
     if (message.type === 'select' && text(message.id, 180) && markers.some(marker => marker.id === message.id)) return { type: 'select', id: message.id };
     if (message.type === 'credits' && credits.includes(message.url)) return { type: 'credits', url: message.url };
+    if (message.type === 'moved' && Array.isArray(message.bounds) && message.bounds.length === 4 && message.bounds.every(Number.isFinite)) {
+      const [west, south, east, north] = message.bounds as number[];
+      if (Math.abs(south) <= 90 && Math.abs(north) <= 90 && south <= north && Math.abs(west) <= 360 && Math.abs(east) <= 360) return { type: 'moved', bounds: { west, south, east, north } };
+    }
   } catch { /* The embedded map is an untrusted message boundary. */ }
   return null;
 }
@@ -140,6 +145,8 @@ try{
   if(hit.properties?.point_count){send({type:'feedback'});const version=revision;try{const zoom=await map.getSource('discovery').getClusterExpansionZoom(hit.properties.cluster_id);if(version===revision&&Number.isFinite(zoom))move({center:hit.geometry.coordinates,zoom:Math.min(zoom,18)})}catch{fail()}}
   else if(current.markers.some(m=>m.id===hit.properties?.id)){send({type:'feedback'});send({type:'select',id:hit.properties.id})}
  });
+ // Only a person's pan or zoom counts; the app's own camera moves have no originalEvent.
+ map.on('moveend',e=>{if(!loaded||!e.originalEvent)return;const b=map.getBounds();send({type:'moved',bounds:[b.getWest(),b.getSouth(),b.getEast(),b.getNorth()]})});
  map.on('mousemove',e=>{if(loaded)map.getCanvas().style.cursor=map.queryRenderedFeatures(e.point,{layers:hitLayers}).length?'pointer':''});
 }catch{fail()}
 </script></body></html>`;

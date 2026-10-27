@@ -9,7 +9,7 @@ import { useTheme } from '@/hooks/use-theme';
 import type { FeedSort } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
-export function FeedSortControl({ sort, title, onChange, action }: { sort: FeedSort; title: string; onChange: (sort: FeedSort) => void; action?: ReactNode }) {
+export function FeedSortControl({ sort, title, onChange, action, children }: { sort: FeedSort; title: string; onChange: (sort: FeedSort) => void; action?: ReactNode; children?: ReactNode }) {
   const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
@@ -32,6 +32,7 @@ export function FeedSortControl({ sort, title, onChange, action }: { sort: FeedS
     <View style={styles.descriptionRow}><ThemedText type="small" themeColor="textSecondary" style={styles.description}>
       {sort === 'latest' ? tr("새로 올라온 글부터") : tr("최근 7일 · 반응이 많은 글부터")}
     </ThemedText>{action}</View>
+    {children ? <View style={styles.extra}>{children}</View> : null}
   </View>;
 }
 
@@ -43,4 +44,5 @@ const styles = StyleSheet.create({
   option: { ...ControlStyles.pill, minWidth: 44, paddingVertical: 8 },
   descriptionRow: { marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between' },
   description: { flexShrink: 1 },
+  extra: { marginTop: 12 },
 });

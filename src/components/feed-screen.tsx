@@ -38,6 +38,10 @@ import { adsSupported, feedAdPosition } from '@/lib/ads';
 import { MyMeetups } from '@/components/my-meetups';
 import { PostCard } from '@/components/post-card';
 import { BusinessNewsCard } from '@/components/business-news-card';
+import { ListingCard, type DetailedPost } from '@/components/listing-card';
+import { ListingFields } from '@/components/listing-fields';
+import { ListingFilterBar, ListingMapScreen, ListingModeSwitch } from '@/components/listing-browse';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PostBodyEditor } from '@/components/post-body-editor';
 import { PollDraftFields } from '@/components/poll-draft-fields';
 import { ProfileAvatarButton } from '@/components/profile-avatar-button';
@@ -77,7 +81,12 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { normalizePoll, type PollDraft } from '@/lib/post-polls';
 import { TAGS } from '@/lib/mock';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
-import { postMapBody, withPostMap } from '@/lib/post-maps';
+import { googlePinUrl, postMapBody, withPostMap } from '@/lib/post-maps';
+import {
+  emptyListingDraft, isListingCategory, LISTING_VIEW_KEY, listingFiltersActive, listingFromDraft, matchesListingFilters, NO_LISTING_FILTERS, parseListingView, withListingLead,
+  type ListingCategory, type ListingDraft, type ListingFilters, type ListingView,
+} from '@/lib/listing-details';
+import { findNeighborhood, neighborhoodName } from '@/lib/neighborhoods';
 import { supabase } from '@/lib/supabase';
 import type { DailyQuota, Post, PostKind, Tag } from '@/lib/types';
 import { splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
@@ -103,8 +112,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [posts, setPosts] = useState<Post[]>([]);
   const [visibleFeedIds, setVisibleFeedIds] = useState<Set<string>>(new Set());
   const [visibleSearchIds, setVisibleSearchIds] = useState<Set<string>>(new Set());
-  const trackTranslationFeed = useCallback(({ viewableItems }: { viewableItems: { item: Post | null }[] }) =>
-    setVisibleFeedIds(new Set(viewableItems.flatMap(({ item }) => item ? [item.id] : []))), []);
+  const trackTranslationFeed = useCallback(({ viewableItems }: { viewableItems: { item: Post | Post[] | null }[] }) =>
+    setVisibleFeedIds(new Set(viewableItems.flatMap(({ item }) => Array.isArray(item) ? item.map(post => post.id) : item ? [item.id] : []))), []);
   const trackTranslationSearch = useCallback(({ viewableItems }: { viewableItems: { item: Post }[] }) =>
     setVisibleSearchIds(new Set(viewableItems.map(({ item }) => item.id))), []);
   const { city, setCity } = useCommunityCity();
@@ -120,11 +129,20 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [tag, setTag] = useState<Tag>(TAGS[0]);
   const [postKind, setPostKind] = useState<PostKind>('story');
   const [priceInput, setPriceInput] = useState('');
+  const [listingDraft, setListingDraft] = useState<{ category: ListingCategory; draft: ListingDraft } | null>(null);
+  const [listingTried, setListingTried] = useState(false);
+  const [listingFilters, setListingFilters] = useState<ListingFilters>(NO_LISTING_FILTERS);
+  const [listingView, setListingView] = useState<ListingView>('list');
+  const [listingMap, setListingMap] = useState(false);
   const [listingQuota, setListingQuota] = useState<DailyQuota | null>(null);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [pollDraft, setPollDraft] = useState<PollDraft | null>(null);
   const hasDraftText = !!title.trim() || !!splitPostAttachments(body).body.trim();
+  // 부동산·구인구직·중고거래 listings get category fields; the summary line also goes into the body for older apps.
+  const writerListing = postKind === 'listing' && isListingCategory(tag.slug) ? tag.slug as ListingCategory : null;
+  const writerListingDraft = writerListing ? listingDraft?.category === writerListing ? listingDraft.draft : { ...emptyListingDraft(writerListing), price: priceInput } : null;
+  const writerListingResult = writerListing && writerListingDraft ? listingFromDraft(writerListing, writerListingDraft, { title: title.trim(), cityId: draftCity.id }, language) : null;
   const [hashtagInput, setHashtagInput] = useState('');
   const [draftImages, setDraftImages] = useState<PreparedImage[]>([]);
   const [creatingDraft, setCreatingDraft] = useState(false);
@@ -149,7 +167,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [categoryLoading, setCategoryLoading] = useState(false);
   const [feedOpacity] = useState(() => new Animated.Value(1));
   const [chipLift] = useState(() => new Animated.Value(1));
-  const feedListRef = useRef<NativeFlatList<Post | null>>(null);
+  const feedListRef = useRef<NativeFlatList<Post | Post[] | null>>(null);
   const feedIntroHeight = useRef(0);
   const scrollToResults = useRef(false);
   useScrollToTop(feedListRef);
@@ -243,6 +261,17 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   );
 
   const showFeedSort = cityOpen && !meetupsOnly;
+  const listingCategory = !meetupsOnly && isListingCategory(TAGS.find(item => item.id === tagFilter)?.slug) ? TAGS.find(item => item.id === tagFilter)!.slug as ListingCategory : null;
+  const listingPosts = useMemo(() => {
+    if (!listingCategory || !listingFiltersActive(listingFilters)) return feedData;
+    const now = new Date(), today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    return feedData.filter(post => matchesListingFilters(post, listingFilters, today));
+  }, [feedData, listingCategory, listingFilters]);
+  const usedGrid = listingCategory === 'used' && listingView === 'grid';
+  // 중고거래 grid: two tiles per list row so the sticky header and paging keep working.
+  const feedRows: (Post | Post[])[] = usedGrid
+    ? listingPosts.reduce<Post[][]>((rows, post, index) => (index % 2 ? rows[rows.length - 1].push(post) : rows.push([post]), rows), [])
+    : listingPosts;
   const feedLoading = categoryLoading || loadedFeedKey !== feedKey;
   const cityLoading = cityOpen && !meetupsOnly && (loadedFeedCityId !== city.id || loadedEventsCityId !== city.id);
 
@@ -340,6 +369,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     filterTransition.current = next;
     feedOpacity.setValue(0);
     setCategoryLoading(true);
+    setListingFilters(NO_LISTING_FILTERS);
+    setListingMap(false);
     setTagFilter(next);
   };
   const changeFeedSort = (next: FeedSort) => {
@@ -352,6 +383,16 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     setCategoryLoading(true);
     setFeedSort(next);
   };
+
+  const changeListingView = (next: ListingView) => {
+    setListingView(next);
+    AsyncStorage.setItem(LISTING_VIEW_KEY, next).catch(() => {});
+  };
+  useEffect(() => {
+    let active = true;
+    AsyncStorage.getItem(LISTING_VIEW_KEY).then(value => { if (active) setListingView(parseListingView(value)); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   const updateViewCount = useCallback((postId: string, count: number) => {
     setPosts((current) => current.map((item) => item.id === postId ? { ...item, views: count } : item));
@@ -422,7 +463,12 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     void loadListingQuota(supabase).then(setListingQuota).catch(() => {});
     const revision = ++writerRevision.current;
     draftLocation.current = null;
-    if (!title.trim() && !body.trim() && !hashtagInput.trim() && draftImages.length === 0 && !pollDraft) setDraftCity(city);
+    if (!title.trim() && !body.trim() && !hashtagInput.trim() && draftImages.length === 0 && !pollDraft) {
+      setDraftCity(city);
+      // Writing from 부동산·구인구직·중고거래 starts in that category with its fields.
+      const listingTag = listingCategory && TAGS.find(item => item.slug === listingCategory);
+      if (listingTag) { setTag(listingTag); setPostKind('listing'); }
+    }
     setWriterPanel(null);
     setWriterOptionsOpen(false);
     setWriting(true);
@@ -430,7 +476,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       if (revision !== writerRevision.current) return;
       draftLocation.current = fix;
     });
-  }, [isAuthed, promptLogin, business, writing, city, location, title, body, hashtagInput, draftImages, pollDraft, play, t.auth.reasonWrite]);
+  }, [isAuthed, promptLogin, business, writing, city, location, title, body, hashtagInput, draftImages, pollDraft, play, t.auth.reasonWrite, listingCategory]);
 
   useEffect(() => {
     if (!writing) { writerRevision.current++; draftLocation.current = null; }
@@ -550,11 +596,17 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       router.push('/meetup-create');
       return;
     }
-    if (!title.trim() || !body.trim()) {
+    if (!title.trim() || (!body.trim() && !writerListingResult)) {
       Alert.alert(t.write.validationTitle, t.write.validationBody);
       return;
     }
     if (submitting) return;
+    if (writerListingResult?.missing.length) {
+      play('warning');
+      setListingTried(true);
+      Alert.alert(tr('빠진 항목이 있어요'), tr('표시된 항목을 채워 주세요.'));
+      return;
+    }
     let poll: PollDraft | undefined;
     try { poll = postKind === 'story' && pollDraft ? normalizePoll(pollDraft) : undefined; }
     catch {
@@ -563,7 +615,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       return;
     }
     let postBody: string;
-    try { postBody = withPostMap(withDraftFields(body, aiFields), ''); }
+    try {
+      const area = writerListingResult && findNeighborhood(draftCity.id, writerListingResult.details.area);
+      // Listings carry only the neighborhood centre, never a typed or tapped point.
+      postBody = writerListingResult
+        ? withPostMap(withListingLead(writerListingResult.details.lead!, postMapBody(withDraftFields(body, aiFields)).body), area ? googlePinUrl(area) : '', area ? neighborhoodName(area, language) : undefined)
+        : withPostMap(withDraftFields(body, aiFields), '');
+    }
     catch (error) {
       play('warning');
       Alert.alert(t.write.validationTitle, error instanceof Error && error.message === 'INVALID_MAP_LINK' ? t.write.mapInvalid : t.write.bodyTooLong);
@@ -583,7 +641,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         images: draftImages.map(({ base64, mimeType, thumbBase64, width, height }) => ({ base64, mimeType, thumbBase64, width, height })),
         kind: postKind,
         poll,
-        price: postKind === 'listing' && priceInput.trim() ? Number(priceInput.replace(/[^0-9.]/g, '')) : null,
+        price: writerListingResult ? writerListingResult.price : postKind === 'listing' && priceInput.trim() ? Number(priceInput.replace(/[^0-9.]/g, '')) : null,
+        listingDetails: writerListingResult?.details,
       });
       const post = created.post;
       if (revision === feedRevision.current) {
@@ -606,6 +665,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       aiUndo.current = null;
       setPostKind('story');
       setPriceInput('');
+      setListingDraft(null);
+      setListingTried(false);
       postSuccessPending.current = Platform.OS === 'ios';
       setWriting(false);
       if (Platform.OS !== 'ios') setTimeout(() => play('postPublished'), 350);
@@ -657,6 +718,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     cityOpen ? (
       feedError && feedData.length === 0 ? (
         <StateCard kind="error" title={tr("글을 불러오지 못했어요")} body={tr("연결을 확인하고 다시 시도해 주세요.")} actionLabel={tr("다시 시도")} onAction={() => { play('selection'); void refreshFeed().catch(() => {}); }} />
+      ) : feedData.length > 0 && listingPosts.length === 0 ? (
+        <View style={styles.soon}>
+          <ThemedText accessibilityRole="header" style={styles.soonTitle}>{tr('조건에 맞는 글이 없어요')}</ThemedText>
+          <Pressable analyticsId="listing.filters.reset" onPress={() => { play('selection'); setListingFilters(NO_LISTING_FILTERS); }} accessibilityRole="button" style={({ pressed }) => [styles.soonCta, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, opacity: pressed ? 0.82 : 1 }]}>
+            <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr('조건 모두 지우기')}</ThemedText>
+          </Pressable>
+        </View>
       ) : feedData.length === 0 ? (
         <View style={styles.soon}>
           <ThemedText accessibilityRole="header" style={styles.soonTitle}>{meetupsOnly ? t.feed.meetupEmptyTitle : activeSort === 'popular' ? tr("최근 7일 글이 아직 없어요") : t.feed.emptyTitle}</ThemedText>
@@ -716,7 +784,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         <FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
           onViewableItemsChanged={trackTranslationFeed}
           viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY}
-          data={[null, ...(showFeedSort ? [null] : []), ...(feedLoading ? [] : feedData)]}
+          data={[null, ...(showFeedSort ? [null] : []), ...(feedLoading ? [] : feedRows)]}
           stickyHeaderIndices={showFeedSort ? [1] : undefined}
           onContentSizeChange={() => {
             if (!feedLoading && scrollToResults.current) {
@@ -732,9 +800,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             setRankingRefresh((current) => current + 1);
             void refreshFeed().catch(() => Alert.alert(t.feed.refreshErrorTitle, t.feed.refreshErrorBody)).finally(() => setRefreshing(false));
           }}
-          keyExtractor={(p, index) => p?.id ?? (index === 0 ? 'journal-intro' : 'feed-sort')}
+          keyExtractor={(p, index) => Array.isArray(p) ? `grid:${p[0].id}` : p?.id ?? (index === 0 ? 'journal-intro' : 'feed-sort')}
           contentContainerStyle={[styles.listContent, { paddingBottom: bottomClear + Spacing.three }]}
-          ItemSeparatorComponent={({ leadingItem }) => leadingItem == null ? null : <View style={{ height: businessCategory ? 0 : Spacing.four }} />}
+          ItemSeparatorComponent={({ leadingItem }) => leadingItem == null ? null : <View style={{ height: businessCategory || (listingCategory && !usedGrid) ? 0 : Spacing.four }} />}
           ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : feedState ?? undefined}
           renderItem={({ item, index }) => item == null && index === 1 && showFeedSort ? (
             <FeedSortControl sort={activeSort} title={businessCategory ? tr('새 소식') : selectedFilterTag ? tr("{0} 글", (selectedFilterTag.label)) : tr("오늘 글")} onChange={changeFeedSort}
@@ -744,7 +812,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 <SymbolView name={{ ios: 'storefront', android: 'storefront', web: 'storefront' }} size={IconSize.inline} tintColor={theme.accent} />
                 <ThemedText type="smallBold" themeColor="accent">{tr('비즈니스 찾기')}</ThemedText>
                 <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={IconSize.chevron} tintColor={theme.accent} />
-              </Pressable> : undefined} />
+              </Pressable> : listingCategory && listingCategory !== 'jobs' ? <ListingModeSwitch mode="list" onChange={mode => setListingMap(mode === 'map')} /> : undefined}>
+              {listingCategory && listingCategory !== 'jobs' && <ListingFilterBar category={listingCategory} filters={listingFilters} onChange={setListingFilters}
+                view={listingView} onView={changeListingView} />}
+            </FeedSortControl>
           ) : item == null ? (
             <View style={styles.header} onLayout={event => { feedIntroHeight.current = event.nativeEvent.layout.height; }}>
               <View style={styles.journalIntro}>
@@ -787,7 +858,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               {!feedLoading && weeklyRanking}
             </View>
           ) : (
-            <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: feedOpacity }}>{businessCategory ? <BusinessNewsCard
+            Array.isArray(item) ? <Animated.View style={[styles.listingGrid, { opacity: feedOpacity }]}>
+              {item.map(post => post.listingDetails ? <ListingCard key={post.id} variant="tile" post={post as DetailedPost} onPress={() => openDetail(post)} />
+                : <View key={post.id} style={styles.flexText}><PostCard flat post={post} onPress={() => openDetail(post)} onJoin={() => void onJoin(post)} onHashtag={openSearch} onAuthor={() => openAuthor(post)} /></View>)}
+              {item.length === 1 && <View style={styles.flexText} />}
+            </Animated.View> :
+            <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: feedOpacity }}>{listingCategory && item.listingDetails ? <ListingCard
+              post={item as DetailedPost} onPress={() => openDetail(item)} /> : businessCategory ? <BusinessNewsCard
               post={item} onPress={() => openDetail(item)} onAuthor={() => openAuthor(item)}
               translationVisible={visibleFeedIds.has(item.id) && !searching && !detailVisible && !writing} /> : <PostCard
               flat
@@ -797,12 +874,15 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               onJoin={() => void onJoin(item)}
               onHashtag={openSearch}
               onAuthor={() => openAuthor(item)}
-            />}{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !detailVisible && !writing && !searching)) && feedAdPosition(index - (showFeedSort ? 2 : 1), feedData.length) && <FeedAd key={`ad-after-${item.id}`} />}</Animated.View></Reanimated.View>
+            />}{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !detailVisible && !writing && !searching)) && feedAdPosition(index - (showFeedSort ? 2 : 1), feedRows.length) && <FeedAd key={`ad-after-${item.id}`} />}</Animated.View></Reanimated.View>
           )}
         />
 
       </View></SafeAreaView>
 
+      {(listingCategory === 'housing' || listingCategory === 'used') && <ListingMapScreen visible={listingMap} category={listingCategory} city={city} posts={listingPosts}
+        filters={listingFilters} onFilters={setListingFilters} onClose={() => setListingMap(false)}
+        onOpenPost={post => { setListingMap(false); setTimeout(() => openDetail(post), Platform.OS === 'ios' ? 350 : 0); }} />}
       {/* 검색: 제목·내용·해시태그. 입력 전엔 인기 해시태그 칩 (당근 검색 패턴) */}
       <Modal visible={searching} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setSearching(false)}
         onDismiss={() => {
@@ -1010,10 +1090,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                     : isAdmin ? tr("관리자 계정 · 제한 없음") : listingQuota ? t.write.listingRemaining(listingQuota.used, listingQuota.max) : t.write.listingLimitNote}</ThemedText>}
                 </View>
                 <RaisedActionButton analyticsId="components_feed-screen.pressable.15" compact onPress={() => { play('selection'); void submit(); }}
-                  disabled={submitting || creatingDraft || !title.trim() || !body.trim()} busy={submitting}
+                  disabled={submitting || creatingDraft || !title.trim() || (!body.trim() && !writerListing)} busy={submitting}
                   label={submitting ? t.write.submitting : t.write.submit} />
               </View>
-              <PostBodyEditor value={body} onChangeText={setBody} cityName={draftCity.englishName} allowLocation={tag.kind !== 'meetup'} editable={!submitting && !creatingDraft} accessibilityLabel={t.write.bodyLabel}
+              <PostBodyEditor value={body} onChangeText={setBody} cityName={draftCity.englishName} allowLocation={tag.kind !== 'meetup' && !writerListing} editable={!submitting && !creatingDraft} accessibilityLabel={t.write.bodyLabel}
                 placeholder={tag.kind !== 'meetup' && postKind === 'listing' ? t.write.listingBodyPlaceholder : t.write.bodyPlaceholder[tag.slug]} placeholderTextColor={theme.textSecondary} multiline
                 style={[styles.bodyInput, { color: theme.text }]}
                 renderLayout={({ input, actions, attachments }) => <View style={styles.writer}>
@@ -1079,6 +1159,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                             }
                             animateLayout();
                             setTag(tg);
+                            if (isListingCategory(tg.slug)) setPostKind('listing');
                             setWriterPanel(null);
                             setWriterOptionsOpen(false);
                           }}
@@ -1100,8 +1181,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   </View>
                 </View>}
                 <TextInput value={title} onChangeText={setTitle} onFocus={() => play('selection')} editable={!submitting && !creatingDraft} accessibilityLabel={t.write.titlePlaceholder}
-                  placeholder={t.write.titlePlaceholder} placeholderTextColor={theme.textSecondary} maxLength={80}
+                  placeholder={writerListing === 'jobs' ? tr('포지션 (예: 카페 바리스타)') : t.write.titlePlaceholder} placeholderTextColor={theme.textSecondary} maxLength={80}
                   style={[styles.titleInput, { color: theme.text, borderBottomColor: theme.line }]} />
+                {writerListing && writerListingDraft && <View style={styles.writerAttachments}><ListingFields category={writerListing} cityId={draftCity.id} value={writerListingDraft}
+                  onChange={draft => setListingDraft({ category: writerListing, draft })} missing={listingTried ? writerListingResult?.missing : []}
+                  disabled={submitting || creatingDraft} lead={writerListingResult?.details.lead} /></View>}
                 {input}
                 <View style={styles.writerAttachments}>{attachments}</View>
                 {tag.kind !== 'meetup' && postKind === 'story' && pollDraft && <View style={styles.writerAttachments}><PollDraftFields poll={pollDraft} onChange={setPollDraft} disabled={submitting || creatingDraft} /></View>}
@@ -1125,7 +1209,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   </Pressable>}
                 </View>}
                 {tag.kind === 'meetup' && <ThemedText type="small" themeColor="textSecondary" style={styles.meetupNote}>{t.write.roomNote}</ThemedText>}
-                {tag.kind !== 'meetup' && postKind === 'listing' && <>
+                {tag.kind !== 'meetup' && postKind === 'listing' && !writerListing && <>
                   <TextInput value={priceInput} onChangeText={setPriceInput} editable={!submitting && !creatingDraft} accessibilityLabel={t.write.pricePlaceholder}
                     placeholder={t.write.pricePlaceholder} placeholderTextColor={theme.textSecondary} keyboardType="decimal-pad" maxLength={10}
                     style={[styles.hashtagInput, { color: theme.text, borderBottomColor: theme.line }]} />
@@ -1452,6 +1536,7 @@ const styles = StyleSheet.create({
   aiReviewRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginHorizontal: Spacing.four, marginBottom: Spacing.two },
   aiUndo: { minHeight: 44, justifyContent: 'center' },
   flexText: { flex: 1 },
+  listingGrid: { flexDirection: 'row', gap: Spacing.three },
   photoRemove: { position: 'absolute', top: 0, right: 0, width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   secondaryButton: {
     minHeight: 44,

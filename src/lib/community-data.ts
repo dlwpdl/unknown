@@ -10,6 +10,7 @@ import { mapBusinessConversation } from './business-chat.ts';
 
 import { hydratePublicPosts, loadPublicPost, mapPublicFeed, type FeedCursor, type PublicCommentRow, type PublicFeedRow } from './feed-data.ts';
 import type { DailyQuota, ListingStatus, Post, PostComment, PostKind, RoomPreview, Tag } from './types.ts';
+import type { ListingDetails } from './listing-details.ts';
 
 const IMAGE_EXTENSIONS: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -201,6 +202,7 @@ export async function createCommunityPost(
     kind?: PostKind;
     price?: number | null;
     poll?: PollDraft;
+    listingDetails?: ListingDetails;
   },
 ): Promise<{ id: string; post: Post | null }> {
   const poll = input.poll ? normalizePoll(input.poll) : null;
@@ -227,10 +229,22 @@ export async function createCommunityPost(
   }
 
   const id = created.data as string;
+  if (input.listingDetails && input.kind === 'listing') await saveListingDetails(client, id, input.listingDetails);
   try {
     return { id, post: await loadPublicPost(client, id) };
   } catch {
     return { id, post: null };
+  }
+}
+
+// Additive and best effort: the body already starts with the same facts, so a missing column (old server) or a
+// rejected write leaves a normal post that every app version can read.
+export async function saveListingDetails(client: SupabaseClient, postId: string, details: ListingDetails) {
+  try {
+    const result = await client.from('posts').update({ listing_details: details }).eq('id', postId).select('id');
+    return !result.error && Array.isArray(result.data) && result.data.length === 1;
+  } catch {
+    return false;
   }
 }
 

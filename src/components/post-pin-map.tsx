@@ -13,8 +13,8 @@ import { useAuth } from '@/lib/auth';
 import { recordProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
 
-export function PostPinMap({ pin, cityName = '', preview = false, bottomInset = 0, onSelect, onReadyChange }: {
-  pin: PostPin | null; label?: string; cityName?: string; preview?: boolean; bottomInset?: number;
+export function PostPinMap({ pin, cityName = '', preview = false, area = false, bottomInset = 0, onSelect, onReadyChange }: {
+  pin: PostPin | null; label?: string; cityName?: string; preview?: boolean; area?: boolean; bottomInset?: number;
   onSelect?: (pin: PostPin, label?: string) => void; onReadyChange?: (ready: boolean) => void;
 }) {
   const { tr } = useLanguage();
@@ -25,9 +25,9 @@ export function PostPinMap({ pin, cityName = '', preview = false, bottomInset = 
   const mapStyle = [styles.map, preview && styles.preview];
   const [initialPin] = useState(pin);
   const [failed, setFailed] = useState(false), [retry, setRetry] = useState(0), [image, setImage] = useState<string>();
-  const key = pin ? googlePinUrl(pin) : '', cached = preview ? mapPreviews.get(key) ?? image : undefined;
+  const key = pin ? `${area ? 'area:' : ''}${googlePinUrl(pin)}` : '', cached = preview ? mapPreviews.get(key) ?? image : undefined;
   const seed = preview ? pin : initialPin;
-  const html = useMemo(() => mapHtml({ pin: seed, cityName, preview, accent: theme.accent }), [seed, cityName, preview, theme.accent]);
+  const html = useMemo(() => mapHtml({ pin: seed, cityName, preview, accent: theme.accent, area }), [seed, cityName, preview, theme.accent, area]);
   const fail = useCallback(() => {
     setFailed(true); onReadyChange?.(false);
     if (userId && identity.current === userId) void recordProductEvent(supabase, { kind: 'map_error', platform: Platform.OS }).catch(() => {});

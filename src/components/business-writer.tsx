@@ -1,10 +1,11 @@
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { ListingFields } from '@/components/listing-fields';
 import { PostPhotoEditor, type EditablePostImage } from '@/components/post-photo-editor';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
@@ -19,6 +20,8 @@ import { saveMerchantDraftImages } from '@/lib/merchant-posts';
 import { merchantEventId } from '@/lib/merchant-source';
 import { approveMerchantDrafts, loadMerchantWorkspace, publishMerchantDraft } from '@/lib/merchant-workspace';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
+import { saveListingDetails } from '@/lib/community-data';
+import { emptyListingDraft, listingFromDraft, withListingLead } from '@/lib/listing-details';
 import { supabase } from '@/lib/supabase';
 
 type Kind = 'news' | 'hire' | 'menu';
@@ -40,22 +43,31 @@ const ERRORS: Record<string, string> = {
 
 // Business posts go through the merchant draft → approve → publish path so the server stamps business authorship.
 export function BusinessWriter({ business, visible, onClose, onPublished }: { business: BusinessChatIdentity; visible: boolean; onClose: () => void; onPublished: () => void }) {
-  const { tr } = useLanguage(), theme = useTheme(), { me } = useAuth(), { play } = useInteractionFeedback();
+  const { tr, language } = useLanguage(), theme = useTheme(), { me } = useAuth(), { play } = useInteractionFeedback();
   const [kind, setKind] = useState<Kind>('news');
-  const [form, setForm] = useState({ title: '', body: '', wage: '', hours: '', place: '' });
+  const [form, setForm] = useState({ title: '', body: '' });
+  // 직원 구해요 uses the same 구인구직 fields as the community writer.
+  const [job, setJob] = useState(() => emptyListingDraft('jobs')), [jobTried, setJobTried] = useState(false);
+  const [merchantCity, setMerchantCity] = useState<{ id: string; city: string } | null>(null);
   const [photos, setPhotos] = useState<EditablePostImage[]>([]);
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const draftId = useRef(merchantEventId());
   const hire = kind === 'hire';
   const set = (key: keyof typeof form) => (value: string) => setForm(current => ({ ...current, [key]: value }));
-  const body = hire
-    ? [form.wage.trim() && `시급: ${form.wage.trim()}`, form.hours.trim() && `근무: ${form.hours.trim()}`, form.place.trim() && `📍 ${form.place.trim()}`].filter(Boolean).join('\n') + (form.body.trim() ? `\n\n${form.body.trim()}` : '')
-    : form.body.trim();
-  const ready = !!form.title.trim() && !!body.trim() && (!hire || (!!form.wage.trim() && !!form.hours.trim()));
-  const dirty = !!(form.title || form.body || form.wage || form.hours || form.place || photos.length);
+  const cityId = merchantCity?.id === business.id ? merchantCity.city : '';
+  const listing = hire ? listingFromDraft('jobs', job, { title: form.title.trim(), cityId }, language) : null;
+  const body = listing ? withListingLead(listing.details.lead!, form.body) : form.body.trim();
+  const ready = !!form.title.trim() && !!body.trim();
+  const dirty = !!(form.title || form.body || photos.length) || JSON.stringify(job) !== JSON.stringify(emptyListingDraft('jobs'));
+  useEffect(() => {
+    if (!visible || !hire || merchantCity?.id === business.id) return;
+    let active = true;
+    loadMerchantWorkspace(supabase, business.id).then(workspace => { if (active) setMerchantCity({ id: business.id, city: workspace.merchant.city_id }); }).catch(() => {});
+    return () => { active = false; };
+  }, [visible, hire, business.id, merchantCity?.id]);
 
   function reset() {
-    setKind('news'); setForm({ title: '', body: '', wage: '', hours: '', place: '' }); setPhotos([]); setError('');
+    setKind('news'); setForm({ title: '', body: '' }); setJob(emptyListingDraft('jobs')); setJobTried(false); setPhotos([]); setError('');
     draftId.current = merchantEventId();
   }
   function close() {
@@ -93,7 +105,8 @@ export function BusinessWriter({ business, visible, onClose, onPublished }: { bu
       await approveMerchantDrafts(supabase, business.id, [saved.id], true, { [saved.id]: saved.updated_at });
       const approved = await latest();
       if (!approved?.approved_at) throw new Error('MERCHANT_DRAFT_CHANGED');
-      await publishMerchantDraft(supabase, business.id, approved.id, approved.updated_at);
+      const postId = await publishMerchantDraft(supabase, business.id, approved.id, approved.updated_at);
+      if (listing && postId) await saveListingDetails(supabase, postId, listing.details);
       play('success'); reset(); onPublished(); onClose();
     } catch (failure) {
       const code = failure instanceof Error ? failure.message : '';
@@ -104,6 +117,7 @@ export function BusinessWriter({ business, visible, onClose, onPublished }: { bu
   }
   function confirm() {
     if (!ready || busy) return;
+    if (listing?.missing.length) { play('warning'); setJobTried(true); setError('표시된 항목을 채워 주세요.'); return; }
     play('selection');
     Alert.alert(tr('지금 올릴까요?'), tr('{0} 이름으로 바로 공개돼요.', business.name), [
       { text: tr('취소'), style: 'cancel' },
@@ -138,10 +152,9 @@ export function BusinessWriter({ business, visible, onClose, onPublished }: { bu
             </Pressable>;
           })}</View>
           {hire ? <>
-            {input('어떤 일인가요', 'title', '예: 주말 홀 서빙')}
-            <View style={styles.row}><View style={styles.half}>{input('시급', 'wage', '예: CAD 18.50')}</View><View style={styles.half}>{input('근무 시간', 'hours', '예: 토·일 11시–7시')}</View></View>
-            {input('일하는 곳', 'place', '주소나 동네')}
-            {input('더 알려줄 것', 'body', '필요한 경험, 쓰는 언어, 지원 방법', true)}
+            {input('포지션', 'title', '예: 주말 홀 서빙')}
+            <ListingFields category="jobs" fixedDeal cityId={cityId} value={job} onChange={setJob} missing={jobTried ? listing?.missing : []} disabled={busy} lead={listing?.details.lead} />
+            {input('더 알려줄 것', 'body', '필요한 경험, 쓰는 언어', true)}
           </> : <>
             {input('제목', 'title', kind === 'menu' ? '예: 가을 한정 단호박 라떼' : '예: 이번 주말 1+1 이벤트')}
             {input('내용', 'body', kind === 'menu' ? '가격, 맛, 언제부터 파는지' : '언제, 무엇을, 어떻게 하는지', true)}
@@ -175,8 +188,6 @@ const styles = StyleSheet.create({
   field: { gap: 6 },
   input: { minHeight: 48, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, fontSize: 16, lineHeight: 22 },
   multiline: { minHeight: 140, textAlignVertical: 'top' },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  half: { flexGrow: 1, flexBasis: 140 },
   photoHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 },
   chip: { minHeight: 44, borderRadius: 22, paddingHorizontal: 14, justifyContent: 'center' },
   where: { flexDirection: 'row', gap: 6, alignItems: 'flex-start' },

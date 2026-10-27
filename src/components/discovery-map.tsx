@@ -6,12 +6,12 @@ import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers, type DiscoveryMarker } from '@/lib/discovery-map-html';
+import { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers, type DiscoveryBounds, type DiscoveryMarker } from '@/lib/discovery-map-html';
 
 export type { DiscoveryMarker } from '@/lib/discovery-map-html';
 type Props = {
   markers: DiscoveryMarker[]; cityName: string; selectedId?: string | null;
-  center?: { latitude: number; longitude: number; requestId?: number } | null; onSelect: (id: string) => void;
+  center?: { latitude: number; longitude: number; requestId?: number } | null; onSelect: (id: string) => void; onMoved?: (bounds: DiscoveryBounds) => void;
   userLocation?: { latitude: number; longitude: number } | null;
   topInset?: number; bottomInset?: number;
 };
@@ -20,7 +20,7 @@ export function DiscoveryMap(props: Props) {
   return <Canvas key={props.cityName} {...props} />;
 }
 
-function Canvas({ markers, cityName, selectedId = null, center = null, userLocation = null, topInset = 0, bottomInset = 0, onSelect }: Props) {
+function Canvas({ markers, cityName, selectedId = null, center = null, userLocation = null, topInset = 0, bottomInset = 0, onSelect, onMoved }: Props) {
   const { language, tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const native = useRef<WebView<unknown>>(null), web = useRef<HTMLIFrameElement>(null), id = useId();
@@ -69,7 +69,8 @@ function Canvas({ markers, cityName, selectedId = null, center = null, userLocat
     else if (message.type === 'select') onSelect(message.id);
     else if (message.type === 'feedback') play('selection');
     else if (message.type === 'credits') void Linking.openURL(message.url).catch(() => play('warning'));
-  }, [sessionId, update, markerData, sync, onSelect, play]);
+    else if (message.type === 'moved') onMoved?.(message.bounds);
+  }, [sessionId, update, markerData, sync, onSelect, onMoved, play]);
   useEffect(() => { sync(); }, [sync]);
   useEffect(() => {
     if (!html || readySession === sessionId) return;

@@ -4,6 +4,7 @@ import { getLocale, tr } from '../i18n/index.ts';
 import { thumbPathFor } from './image-upload.ts';
 import { businessMediaUrl } from './business-media.ts';
 import type { ListingStatus, Post, PostComment, PostKind, RoomPreview, TagSlug } from './types.ts';
+import { isListingCategory, parseListingDetails, type ListingDetails } from './listing-details.ts';
 
 export type PublicFeedRow = {
   id: string;
@@ -263,7 +264,8 @@ export async function hydratePublicPosts(client: SupabaseClient, posts: Post[], 
   if (posts.length > 50) throw new Error('BUSINESS_IDENTITY_READ_FAILED');
   const ids = [...new Set(posts.map(post => post.id))];
   const [images, response] = await Promise.all([
-    attachSignedPostImages(client, posts, viewerScope),
+    Promise.all([attachSignedPostImages(client, posts, viewerScope), loadListingDetails(client, posts)])
+      .then(([signed, details]) => details.size ? signed.map(post => details.has(post.id) ? { ...post, listingDetails: details.get(post.id) } : post) : signed),
     client.rpc('get_public_post_businesses', { p_post_ids: ids }),
   ]);
   // Before this additive migration there are no explicitly attributed business posts.
@@ -279,6 +281,22 @@ export async function hydratePublicPosts(client: SupabaseClient, posts: Post[], 
     const business = businesses.get(post.id);
     return business ? { ...post, business, author: { id: business.id, nickname: business.name, verified: false } } : post;
   });
+}
+
+// 부동산·구인구직·중고거래 칸. Optional: before the migration, or on any read error, posts render from the body lead as before.
+export async function loadListingDetails(client: SupabaseClient, posts: readonly Post[]): Promise<Map<string, ListingDetails>> {
+  const listings = posts.filter(post => post.kind === 'listing' && isListingCategory(post.tag.slug));
+  if (!listings.length) return new Map();
+  const response = await client.rpc('get_public_post_listing_details', { p_post_ids: [...new Set(listings.map(post => post.id))] });
+  if (response.error || !Array.isArray(response.data)) return new Map();
+  const bodies = new Map(listings.map(post => [post.id, post.body]));
+  const details = new Map<string, ListingDetails>();
+  for (const row of response.data as { post_id?: unknown; details?: unknown }[]) {
+    const body = typeof row?.post_id === 'string' ? bodies.get(row.post_id) : undefined;
+    const parsed = body == null ? null : parseListingDetails(row.details, body);
+    if (parsed && parsed.type === listings.find(post => post.id === row.post_id)?.tag.slug) details.set(row.post_id as string, parsed);
+  }
+  return details;
 }
 
 export async function attachSignedPostImages(client: SupabaseClient, posts: Post[], viewerScope?: string) {

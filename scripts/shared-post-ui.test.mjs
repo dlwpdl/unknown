@@ -15,6 +15,7 @@ import { count, t } from '../src/i18n/ko.ts';
 import { uniqueHashtags } from '../src/lib/hashtags.ts';
 import { postLocationUrl, postMapBody } from '../src/lib/post-maps.ts';
 import { postInfoParts } from '../src/lib/post-info.ts';
+import { stripListingLead } from '../src/lib/listing-details.ts';
 import { parseMeetupSections } from '../src/lib/meetup-sections.ts';
 import { translationSource } from './test-meetup-source-imports.mjs';
 import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
@@ -101,6 +102,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/components/post-ad-label': { PostAdLabel: 'PostAdLabel' },
     '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' },
     '@/constants/theme': { Depth: {}, Spacing: { one: 4, two: 8, three: 16 } }, '@/i18n/ko': { count, t },
+    '@/lib/listing-details': { stripListingLead }, '@/components/listing-card': { ListingInfo: 'ListingInfo' },
     '@/lib/hashtags': { uniqueHashtags }, '@/lib/post-maps': { postLocationUrl, postMapBody }, '@/lib/meetup-ai': { visibleMeetupBody: body => body },
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' }, '@/components/post-detail': { PostDetail: 'PostDetail' }, '@/components/shared-link-card': { SharedPreviewContent: 'SharedPreviewContent' },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/hooks/use-content-visibility': { useContentVisibility: () => data.hidden ?? unhidden },

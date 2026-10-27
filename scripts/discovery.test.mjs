@@ -15,14 +15,16 @@ test('a Google Maps attachment does not turn an unrelated community topic into a
 test('지도에는 공개 첨부 핀만 쓰며 거래 종료·만료 위치는 제외한다', () => {
   const item = discoveryPost(post, Date.parse('2026-10-15T00:00:00Z'));
   assert.equal(item.category, 'used');
-  assert.equal(item.label, '도서관 앞');
-  assert.equal(item.latitude, 49.28);
+  // 중고거래·부동산 pins snap to the neighborhood centre and never repeat the writer's spot label.
+  assert.equal(item.label, '다운타운');
+  assert.deepEqual([item.latitude, item.longitude], [49.282, -123.12]);
   assert.equal(discoveryPost({ ...post, body: '위치 없는 글', location_snapshot: { latitude: 49, longitude: -123 } }, Date.parse('2026-10-15')), null);
   assert.equal(discoveryPost({ ...post, listingStatus: 'closed' }, Date.parse('2026-10-15')), null);
   assert.equal(discoveryPost({ ...post, expiresAt: '2020-01-01T00:00:00Z' }, Date.parse('2026-10-15')), null);
   const unresolved = discoveryPost({ ...post, body: 'Google 지도: https://www.google.com/maps/search/?api=1&query=Kitsilano%2C+Vancouver' }, Date.parse('2026-10-15T00:00:00Z'));
   assert.equal(unresolved.latitude, null);
-  assert.equal(unresolved.label, 'Kitsilano, Vancouver');
+  assert.equal(unresolved.label, '이 근처');
+  assert.equal(discoveryPost({ ...post, kind: 'story', tag: { slug: 'food' }, body: post.body }).label, '도서관 앞');
 });
 test('릴스 카테고리 색을 바꾸지 않고 장소 유형을 구분한다', () => {
   const colors = JSON.parse(readFileSync(new URL('./fixtures/discovery-category-colors.json', import.meta.url))).categoryPointColors;

@@ -1,3 +1,4 @@
+import type { ListingDetails } from './listing-details.ts';
 // 도메인 타입 — supabase/migrations/0001_init.sql 스키마와 1:1 대응
 
 export type CityState = 'open' | 'soon'; // soon = 대기열(cohort 전). DB cities.state와 매핑
@@ -105,6 +106,7 @@ export interface Post {
   room?: RoomPreview;
   kind?: PostKind; // story(기본) | listing(구인구직·렌트·중고·차량). 규칙은 카테고리가 아니라 종류를 따른다
   listingStatus?: ListingStatus;
+  listingDetails?: ListingDetails; // 부동산·구인구직·중고거래 칸. 없으면 지금처럼 본문만 보여준다
   price?: number | null;
   expiresAt?: string | null;
   bumpedAt?: string | null;

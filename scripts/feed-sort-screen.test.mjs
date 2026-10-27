@@ -8,7 +8,9 @@ import ts from 'typescript';
 import { t } from '../src/i18n/ko.ts';
 import { TAGS } from '../src/lib/mock.ts';
 import { groupJournalPosts, appendUniquePosts, limitBusinessPosts } from '../src/lib/feed-data.ts';
-import { withPostMap, postMapBody } from '../src/lib/post-maps.ts';
+import { withPostMap, postMapBody, googlePinUrl } from '../src/lib/post-maps.ts';
+import * as listingDetails from '../src/lib/listing-details.ts';
+import * as neighborhoods from '../src/lib/neighborhoods.ts';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = false, width = 390, fontScale = 1 } = {}) {
@@ -34,7 +36,8 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버', state: 'open' }, setCity() {} }) },
     '@/lib/location-provider': { useCommunityLocation: () => ({ record() {}, capture: async () => null }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/community-data': { loadListingQuota: async () => ({ used: 0, max: 3 }), createCommunityPost: () => deferPublish ? new Promise(resolve => writes.push({ resolve })) : Promise.resolve({ id: createdPost.id, post: createdPost }), getCommunityActionError: () => null, isContentRejected: () => false },
-    '@/lib/post-maps': { withPostMap, postMapBody },
+    '@/lib/post-maps': { withPostMap, postMapBody, googlePinUrl }, '@/lib/listing-details': listingDetails, '@/lib/neighborhoods': neighborhoods,
+    '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async () => null, setItem: async () => {} } },
     '@/lib/hashtags': { getSuggestedHashtags: () => [], parseHashtags: () => [], canonicalizeHashtag: value => value },
     '@/lib/ads': { adsSupported: false }, '@/lib/supabase': { supabase: { functions: { invoke: (...args) => new Promise((resolve, reject) => drafts.push({ args, resolve, reject })) } } },
     '@/hooks/use-chat-identity': { useChatIdentity: () => null },
