@@ -149,3 +149,24 @@ test('비즈니스 구인글은 posts.price 없이도 시급을 보여 준다', 
   assert.equal(parseListingDetails({ ...details, pay: 'free' }, body).pay, undefined);
   assert.equal(stripListingLead(body, parsed), '경험 없어도 괜찮아요.\n\n비즈니스에서 직접 게시한 안내입니다.');
 });
+
+// Mirrors private.guard_listing_details: the column holds only allow-listed keys, and its free text must
+// already be in the body that the content filter and safety review read.
+test('저장하는 칸의 글자는 모두 본문 안에 있다 (서버 트리거와 같은 규칙)', () => {
+  const keys = { housing: ['type', 'deal', 'rooms', 'moveIn', 'area', 'includes', 'lead'],
+    jobs: ['type', 'deal', 'payUnit', 'pay', 'jobTypes', 'area', 'hours', 'duties', 'apply', 'lead'], used: ['type', 'deal', 'offers', 'condition', 'area', 'lead'] };
+  const cases = [
+    ['housing', draft('housing', { rooms: '2b2b', price: '3200', moveIn: 'now', area: 'metrotown', includes: ['pets'] }), '방 사진은 대화로 보내 드려요'],
+    ['jobs', draft('jobs', { price: '20', jobTypes: ['full'], area: 'downtown', hours: '평일 9–6시\n야간 없음', duties: '  재고 정리,\t계산  ', apply: ['email', 'phone'] }), ''],
+    ['jobs', draft('jobs', { deal: 'seeking', payUnit: 'negotiable', hours: '주말', duties: '바리스타 경력 3년' }), '연락 주세요'],
+    ['used', draft('used', { price: '15', offers: true, condition: 'used', area: 'joyce' }), '직거래만'],
+  ];
+  for (const language of ['ko', 'en']) for (const [category, item, written] of cases) {
+    const { details } = listingFromDraft(category, item, { title: '제목', cityId: 'vancouver' }, language);
+    const body = withPostMap(withListingLead(details.lead, written), details.area ? googlePinUrl(findNeighborhood('vancouver', details.area)) : '', '동네');
+    assert.deepEqual(Object.keys(details).filter(key => !keys[category].includes(key)), []);
+    assert.ok(body.startsWith(details.lead));
+    for (const key of ['hours', 'duties']) if (details[key]) assert.ok(body.includes(details[key]), `${category}.${key}`);
+    assert.deepEqual(parseListingDetails(details, body), details);
+  }
+});
