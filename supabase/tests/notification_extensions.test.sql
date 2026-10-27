@@ -12,7 +12,7 @@ select is(public.get_notification_preferences()->'merchant_updates','true'::json
 select is(public.get_notification_preferences()->'merchant_operations','true'::jsonb,'business problems default is on');
 select is(public.get_notification_preferences()->'account_security','true'::jsonb,'account security default is on');
 select lives_ok($$select public.update_notification_preferences('{"merchant_updates":false,"merchant_operations":false,"account_security":false}')$$,'all new categories accept actual user choices');
-select is(public.get_notification_preferences()->'account_security','false'::jsonb,'security OFF is saved');
+select is(public.get_notification_preferences()->'account_security','true'::jsonb,'account security cannot be turned off');
 select is(public.get_notification_preferences()->'city_food','true'::jsonb,'new flags do not change city preferences');
 select throws_ok($$select public.update_notification_preferences('{"merchant_updates":"false"}')$$,'P0001','INVALID_PREFERENCES','string boolean rejected');
 select throws_ok($$select public.update_notification_preferences('{"account_security":null}')$$,'P0001','INVALID_PREFERENCES','null boolean rejected');
@@ -22,7 +22,7 @@ select is(private.notification_category('saved_merchant_post','post'),'merchant_
 select is(private.notification_category('merchant_review_received','merchant_review'),'merchant_reviews','incoming reviews reuse review preference');
 select is(private.notification_category('merchant_operation','merchant_operation'),'merchant_operations','business errors use their category');
 select is(private.notification_category('account_security','account_security'),'account_security','security uses its category');
-select ok(not private.can_receive_notification('15000000-0000-4000-8000-000000000001','account_security',null),'latest security OFF blocks event creation/read');
+select ok(private.can_receive_notification('15000000-0000-4000-8000-000000000001','account_security',null),'account security notices ignore a stored OFF');
 insert into auth.users(id,email) values ('15000000-0000-4000-8000-000000000002','notification-budget@example.test');
 insert into public.profiles(id,nickname,city_id) values ('15000000-0000-4000-8000-000000000002','알림공용한도검사','vancouver');
 insert into public.posts(id,author_id,city_id,tag_id,title,body)
