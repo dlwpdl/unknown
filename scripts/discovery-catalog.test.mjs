@@ -46,6 +46,14 @@ test('existing catalog places retain their public coordinates, category and exac
   for (const patch of [{ latitude: NaN }, { longitude: 181 }]) assert.equal(discovery.discoveryPlace({ ...place, ...patch }), null);
 });
 
+test('places marked nightlife land in the 나이트라이프 filter, not dining', () => {
+  const bar = discovery.discoveryPlace({ ...place, category: 'food', nightlife: true });
+  assert.equal(bar.category, 'nightlife');
+  assert.ok(discovery.discoveryMatches(bar, 'nightlife', ''));
+  assert.ok(!discovery.discoveryMatches(bar, 'dining', ''));
+  assert.equal(discovery.discoveryPlace({ ...place, category: 'food' }).category, 'dining');
+});
+
 test('a Top 25 pick merges the same canonical catalog ID without awarding other branches a badge', () => {
   assert.equal(typeof discovery.discoveryPlace, 'function');
   const item = discovery.discoveryPlace(place);

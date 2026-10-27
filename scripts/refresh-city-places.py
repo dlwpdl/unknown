@@ -91,6 +91,9 @@ def build_catalog(seed, elements, now):
             if p['sourceUrl'] != 'https://www.openstreetmap.org/' + '/'.join(ident.split(':')[1:]): raise ValueError('INVALID_PLACE_SOURCE')
             if not isinstance(p['name'], str) or not 0 < len(p['name']) <= 300 or re.search(r'[\x00-\x1f\x7f]', p['name']) or p['category'] not in ['food','cafe','places'] or not isinstance(p['address'], str) or len(p['address']) > 1000: raise ValueError('INVALID_PLACE_RECORD')
             if p['website'] is not None and not https(p['website']): raise ValueError('INVALID_PLACE_WEBSITE')
+            if 'nightlife' in original:  # optional marker for the app's 나이트라이프 filter; older apps ignore it
+                if original['nightlife'] is not True: raise ValueError('INVALID_PLACE_NIGHTLIFE')
+                p['nightlife'] = True
             if p['openingHours'] is not None and (not isinstance(p['openingHours'], str) or not 0 < len(p['openingHours']) <= 1000): raise ValueError('INVALID_PLACE_HOURS')
             if not all(isinstance(p[k], (int,float)) and math.isfinite(p[k]) for k in ['latitude','longitude']) or not (40 <= p['latitude'] <= 85 and -142 <= p['longitude'] <= -52): raise ValueError('INVALID_PLACE_LOCATION')
             e = indexed.get(ident)
