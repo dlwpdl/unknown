@@ -3473,6 +3473,8 @@ export const uiEnglish: Record<string, string> = {
   "내 도시": "Your city",
   "가볼 만한 곳·행사": "Places and events",
   "지금 뜨는 글": "Trending posts",
+  "지금 뜨는 모임": "Trending meetups",
+  "지금 뜨는 주제": "Trending topics",
   "근처 새 모임": "New meetups nearby",
   "이번 주 인기 글": "Top posts this week",
   "댓글·답글": "Comments and replies",

@@ -110,8 +110,6 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
       {NOTIFICATION_SETTING_GROUPS.map(group => <View key={group.id} style={styles.group}>
         <View style={styles.groupHead}>
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.label}>{group.id === 'mine' ? tr("나한테 온 것") : group.id === 'city' ? tr("{0} 소식", tr(cityName)) : tr("계정")}</ThemedText>
-          <ThemedText type="caption" themeColor="textSecondary" style={styles.column}>{tr("앱")}</ThemedText>
-          <ThemedText type="caption" themeColor="textSecondary" style={styles.column}>{tr("푸시")}</ThemedText>
         </View>
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
           {group.rows.map(row => {
@@ -199,7 +197,6 @@ const styles = StyleSheet.create({
   switch: { minHeight: Platform.OS === 'web' ? 44 : undefined, minWidth: 44 },
   label: { flex: 1, minWidth: 0 }, note: { paddingBottom: Spacing.two }, button: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   group: { gap: Spacing.two }, groupHead: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.two, paddingHorizontal: Spacing.three },
-  column: { width: 44, textAlign: 'center' },
   pill: { width: 44, minHeight: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, tag: { minHeight: 44, borderRadius: 22, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, justifyContent: 'center' },
   input: { minHeight: 48, borderWidth: 1, borderRadius: 10, padding: Spacing.three, fontSize: 16 },

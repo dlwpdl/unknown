@@ -262,7 +262,7 @@ export default function NotificationsScreen() {
     const body = textOf(item), title = row.title ? tr(row.title) : null;
     const snippet = row.target_id && extras?.token === cache ? extras.snippets.get(row.target_id) : undefined;
     const time = relativeTime(row.created_at, undefined, appLocale);
-    const tag = activeTab === 'city' ? tr(CITY_LABELS[row.category] ?? (row.kind === 'trending_hashtag' ? '지금 뜨는 글' : '글링 안내')) : null;
+    const tag = activeTab === 'city' ? tr(row.kind === 'trending_hashtag' ? '지금 뜨는 주제' : row.kind === 'trending_meetup' ? '지금 뜨는 모임' : CITY_LABELS[row.category] ?? '글링 안내') : null;
     const people = item.kind === 'likes' ? likeActors(item).slice(0, 2).map(id => ({ id, actor: actorAllowed(row) && extras?.token === cache ? extras.people.get(id) : undefined })) : [];
     const chip = row.kind === 'comment' || row.kind === 'reply' ? tr("답글 달기") : row.kind === 'meetup_request' ? tr("신청 보기") : null;
     const label = [tag, title, body, snippet, time, unread ? tr("읽지 않음") : null].filter(Boolean).join(', ');
@@ -277,8 +277,8 @@ export default function NotificationsScreen() {
       <View style={styles.rowBody}>
         {tag && <ThemedText type="caption" themeColor="textSecondary">{tag}</ThemedText>}
         {title && <ThemedText type="smallBold">{title}</ThemedText>}
-        <ThemedText>{body}</ThemedText>
-        {snippet && <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{snippet}</ThemedText>}
+        {body !== title && <ThemedText>{body}</ThemedText>}
+        {snippet && snippet !== title && snippet !== body && <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{snippet}</ThemedText>}
         <ThemedText type="small" themeColor="textSecondary">{time}</ThemedText>
         {chip && <Pressable analyticsId="app_tabs_notifications.pressable.4" accessibilityRole="button" accessibilityLabel={chip} onPress={() => open(item)}
           style={({ pressed }) => [ControlStyles.pill, styles.chip, controlPresentation(theme, { tone: row.kind === 'meetup_request' ? 'primary' : 'secondary', pressed }).container]}>
