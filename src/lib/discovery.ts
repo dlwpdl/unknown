@@ -47,7 +47,7 @@ export function placeMapRoute(place: Pick<CityPlace, 'id' | 'cityId' | 'glingVis
 
 export function discoveryPlace(place: CityPlace): DiscoveryItem | null {
   if (!Number.isFinite(place.latitude) || Math.abs(place.latitude) > 90 || !Number.isFinite(place.longitude) || Math.abs(place.longitude) > 180) return null;
-  const category = place.category === 'food' ? 'dining' : place.category === 'cafe' ? 'cafe' : 'place';
+  const category = place.nightlife ? 'nightlife' : place.category === 'food' ? 'dining' : place.category === 'cafe' ? 'cafe' : 'place';
   const pick = place.recommendation?.placeId === place.id ? place.recommendation : null;
   return { id: `place:${place.cityId}:${place.id}`, source: 'place', sourceId: place.id, cityId: place.cityId, title: place.name,
     category, label: place.address || place.name,

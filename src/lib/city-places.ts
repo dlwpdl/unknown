@@ -14,6 +14,7 @@ export type CityPlace = {
   id: string; cityId: string; name: string; category: Exclude<PlaceCategory, 'all'>;
   latitude: number; longitude: number; address: string; sourceUrl: string;
   website?: string | null; openingHours?: string | null;
+  nightlife?: true;
   photo?: PlacePhoto | null;
   mapPhotoUri?: string;
   recommendation?: PlaceRecommendation;
@@ -99,7 +100,8 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
           || !['food', 'cafe', 'places'].includes(p.category) || !Number.isFinite(p.latitude) || p.latitude < 40 || p.latitude > 85
           || !Number.isFinite(p.longitude) || p.longitude < -142 || p.longitude > -52 || typeof p.address !== 'string' || p.address.length > 1000
           || p.sourceUrl !== `https://www.openstreetmap.org/${p.id.split(':').slice(1).join('/')}`
-          || (p.website != null && !https(p.website)) || (p.openingHours != null && !text(p.openingHours, 1000))) invalid();
+          || (p.website != null && !https(p.website)) || (p.openingHours != null && !text(p.openingHours, 1000))
+          || (p.nightlife !== undefined && p.nightlife !== true)) invalid();
         seen.add(p.id); ids.add(p.id);
       }
     }
