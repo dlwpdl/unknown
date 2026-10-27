@@ -30,7 +30,9 @@ type PhotoCatalog = {
 };
 type PlaceCatalog = {
   photoCatalog?: PhotoCatalog; externalRatings?: unknown;
-  collectedAt: string; selectionRevision?: number; recommendationTheme?: 'photo-spots'; cities: Record<string, { coverage: string; places: CityPlace[]; regionalPlaces?: CityPlace[]; regionalPhotos?: PlacePhoto[]; recommendations?: PlaceRecommendation[]; diningRecommendations?: PlaceRecommendation[] }>;
+  collectedAt: string; selectionRevision?: number; recommendationTheme?: 'photo-spots'; cities: Record<string, { coverage: string; places: CityPlace[]; regionalPlaces?: CityPlace[]; regionalPhotos?: PlacePhoto[]; recommendations?: PlaceRecommendation[]; diningRecommendations?: PlaceRecommendation[];
+    // Places past the 200 that 1.4.4/1.4.5 accept per city; those apps ignore these fields.
+    extraPlaces?: CityPlace[]; extraRecommendations?: PlaceRecommendation[]; extraPhotos?: PlacePhoto[] }>;
 };
 let catalog = snapshot as PlaceCatalog;
 let photoCatalog = photoSnapshot as PhotoCatalog;
@@ -44,6 +46,9 @@ function regionalPlacesForCity(cityId: string): CityPlace[] {
   return catalog.cities[cityId].regionalPlaces ?? (snapshot as PlaceCatalog).cities[cityId]?.regionalPlaces ?? [];
 }
 
+const addedPlacesForCity = (cityId: string) => [...regionalPlacesForCity(cityId), ...(catalog.cities[cityId].extraPlaces ?? [])];
+const diningPicksForCity = (cityId: string) => [...(catalog.cities[cityId].diningRecommendations ?? []), ...(catalog.cities[cityId].extraRecommendations ?? [])];
+
 function photosForCity(cityId: string): PlacePhoto[] {
   const photos = [...(photoCatalog.cities[cityId] ?? [])], ids = new Set(photos.map(photo => photo.placeId));
   for (const group of [photoCatalog.additionalCatalog, photoCatalog.flickrCatalog]) {
@@ -53,7 +58,7 @@ function photosForCity(cityId: string): PlacePhoto[] {
       photos.push(photo);
     }
   }
-  for (const photo of catalog.cities[cityId].regionalPhotos ?? (snapshot as PlaceCatalog).cities[cityId]?.regionalPhotos ?? []) {
+  for (const photo of [...(catalog.cities[cityId].regionalPhotos ?? (snapshot as PlaceCatalog).cities[cityId]?.regionalPhotos ?? []), ...(catalog.cities[cityId].extraPhotos ?? [])]) {
     if (!ids.has(photo.placeId)) { ids.add(photo.placeId); photos.push(photo); }
   }
   return photos;
@@ -93,7 +98,8 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
     if (!data || !['municipal-boundary', 'city-center'].includes(data.coverage) || !Array.isArray(data.places) || !data.places.length || data.places.length > 200) invalid();
     const ids = new Set<string>();
     if (data.regionalPlaces !== undefined && (!Array.isArray(data.regionalPlaces) || data.regionalPlaces.length > 200)) invalid();
-    for (const rows of [data.places, data.regionalPlaces ?? []]) {
+    if (data.extraPlaces !== undefined && (!Array.isArray(data.extraPlaces) || data.extraPlaces.length > 300)) invalid();
+    for (const rows of [data.places, data.regionalPlaces ?? [], data.extraPlaces ?? []]) {
       const seen = new Set<string>();
       for (const p of rows) {
         if (!p || !text(p.id, 80) || !/^osm:(node|way|relation):[1-9]\d*$/.test(p.id) || seen.has(p.id) || p.cityId !== city.id || !text(p.name, 300)
@@ -105,10 +111,12 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
         seen.add(p.id); ids.add(p.id);
       }
     }
-    const baseIds = new Set(data.places.map(place => place.id));
-    for (const [photos, photoIds, regional] of [...(next.photoCatalog ? [[next.photoCatalog.cities[city.id], baseIds, false] as const] : []), ...(data.regionalPhotos !== undefined ? [[data.regionalPhotos, ids, true] as const] : [])]) {
+    const baseIds = new Set(data.places.map(place => place.id)), extraIds = new Set((data.extraPlaces ?? []).map(place => place.id));
+    if ([...extraIds].some(id => baseIds.has(id))) invalid();
+    for (const [photos, photoIds, regional, max] of [...(next.photoCatalog ? [[next.photoCatalog.cities[city.id], baseIds, false, 200] as const] : []), ...(data.regionalPhotos !== undefined ? [[data.regionalPhotos, ids, true, 200] as const] : []),
+      ...(data.extraPhotos !== undefined ? [[data.extraPhotos, extraIds, false, 300] as const] : [])]) {
       const seenPhotos = new Set<string>();
-      if (!Array.isArray(photos) || photos.length > 200) invalid();
+      if (!Array.isArray(photos) || photos.length > max) invalid();
       for (const photo of photos) {
         if (regional && (photo?.discoveredVia === 'Openverse' || photo?.discoveredVia === 'Flickr')) {
           validateFlickrPhoto(photo, city.id, photoIds, photo.discoveredVia);
@@ -128,11 +136,11 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
         seenPhotos.add(photo.placeId);
       }
     }
-    for (const [picks, dining] of [[data.recommendations, false], [data.diningRecommendations ?? [], true]] as const) {
-      if (!Array.isArray(picks) || picks.length > (dining ? 200 : 50)) invalid();
+    for (const [picks, dining, pickIds, max] of [[data.recommendations, false, baseIds, 50], [data.diningRecommendations ?? [], true, baseIds, 200], [data.extraRecommendations ?? [], false, extraIds, 300]] as const) {
+      if (!Array.isArray(picks) || picks.length > max) invalid();
       const selected = new Set<string>();
       for (const pick of picks!) {
-        if (!pick || !baseIds.has(pick.placeId) || selected.has(pick.placeId) || !text(pick.reason, 500) || (pick.reasonEn !== undefined && !text(pick.reasonEn, 500)) || !https(pick.sourceUrl)
+        if (!pick || !pickIds.has(pick.placeId) || selected.has(pick.placeId) || !text(pick.reason, 500) || (pick.reasonEn !== undefined && !text(pick.reasonEn, 500)) || !https(pick.sourceUrl)
           || !text(pick.verifiedAt, 80) || !Number.isFinite(Date.parse(pick.verifiedAt)) || Date.parse(pick.verifiedAt) > now + 300_000
           || (dining && !data.places.some(p => p.id === pick.placeId && ['food', 'cafe'].includes(p.category)))) invalid();
         selected.add(pick.placeId);
@@ -181,9 +189,9 @@ function reviewedPicks(cityId: string): PlaceRecommendation[] {
 function displayedPicks(cityId: string): PlaceRecommendation[] {
   if (catalog.recommendationTheme !== 'photo-spots') return [];
   const city = catalog.cities[cityId];
-  const places = new Map([...(snapshot as PlaceCatalog).cities[cityId].places, ...regionalPlacesForCity(cityId), ...city.places].map(place => [place.id, place]));
+  const places = new Map([...(snapshot as PlaceCatalog).cities[cityId].places, ...addedPlacesForCity(cityId), ...city.places].map(place => [place.id, place]));
   const photographed = new Set(photosForCity(cityId).map(photo => photo.placeId));
-  const picks = [...reviewedPicks(cityId), ...(city.diningRecommendations ?? [])];
+  const picks = [...reviewedPicks(cityId), ...diningPicksForCity(cityId)];
   const seen = new Set<string>();
   const groups = (['places', 'food', 'cafe'] as const).map(category => picks.filter(pick => {
     if (places.get(pick.placeId)?.category !== category || seen.has(pick.placeId)) return false;
@@ -207,9 +215,9 @@ export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): 
   const photos = photosForCity(cityId);
   const photoOrder = new Map(photos.map((photo, index) => [photo.placeId, index]));
   const reviewed = new Map(displayedPicks(cityId).map(pick => [pick.placeId, pick]));
-  const dining = new Map((city.diningRecommendations ?? []).map(pick => [pick.placeId, pick]));
+  const dining = new Map(diningPicksForCity(cityId).map(pick => [pick.placeId, pick]));
   const currentIds = new Set(city.places.map(place => place.id));
-  const current = [...city.places, ...regionalPlacesForCity(cityId).filter(place => !currentIds.has(place.id))];
+  const current = [...city.places, ...addedPlacesForCity(cityId).filter(place => !currentIds.has(place.id))];
   for (const place of current) currentIds.add(place.id);
   const archived = (snapshot as PlaceCatalog).cities[cityId]?.places.filter(place => !currentIds.has(place.id)) ?? [];
   return [...current, ...archived].filter(place => category === 'all' || place.category === category)
@@ -233,8 +241,8 @@ export function getCityRecommendations(cityId: string, category: PlaceCategory =
 // Keep all admitted map destinations even when the displayed Top list is capped.
 export function getCityDiscoveryPlaces(cityId: string): CityPlace[] {
   const places = getCityPlaces(cityId), byId = new Map(places.map(place => [place.id, place]));
-  const picks = [...reviewedPicks(cityId), ...(catalog.cities[cityId].diningRecommendations ?? [])];
-  const ids = new Set([...picks.map(pick => pick.placeId), ...regionalPlacesForCity(cityId).map(place => place.id), ...places.filter(place => place.glingVisited).map(place => place.id)]);
+  const picks = [...reviewedPicks(cityId), ...diningPicksForCity(cityId)];
+  const ids = new Set([...picks.map(pick => pick.placeId), ...addedPlacesForCity(cityId).map(place => place.id), ...places.filter(place => place.glingVisited).map(place => place.id)]);
   return [...ids].flatMap(id => { const place = byId.get(id); return place ? [place] : []; });
 }
 

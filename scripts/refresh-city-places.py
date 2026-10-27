@@ -44,8 +44,8 @@ def validate_flickr_photo(row, city_id, ids, discovery):
     license_path = '/publicdomain/zero/1.0' if row['license'] == 'CC0' else '/publicdomain/mark/1.0' if row['license'] == 'Public domain' else f'/licenses/by{"-sa" if cc[1] else ""}/{cc[2]}' if cc else None
     if image.hostname != 'live.staticflickr.com' or source.hostname != 'www.flickr.com' or not image_id or not source_id or image_id[1] != source_id[1] or license.hostname != 'creativecommons.org' or not license_path or license.path.removesuffix('/') != license_path: raise ValueError('INVALID_ADDITIONAL_PHOTOS')
 
-def validate_photos(rows, city_id, ids, allow_flickr=False):
-    if not isinstance(rows, list) or len(rows) > 200: raise ValueError('INVALID_PLACE_PHOTOS')
+def validate_photos(rows, city_id, ids, allow_flickr=False, limit=200):
+    if not isinstance(rows, list) or len(rows) > limit: raise ValueError('INVALID_PLACE_PHOTOS')
     seen = set()
     for row in rows:
         if not isinstance(row, dict) or row.get('cityId') != city_id or row.get('placeId') not in ids or row['placeId'] in seen: raise ValueError('INVALID_PLACE_PHOTOS')
@@ -66,9 +66,11 @@ def build_catalog(seed, elements, now):
     if type(selection_revision) is not int or not 0 <= selection_revision <= 9007199254740991: raise ValueError('INVALID_SELECTION_REVISION')
     if not elements: raise ValueError('EMPTY_OSM_RESPONSE')
     for city in seed['cities'].values():
-        rows = city.get('regionalPlaces', [])
-        if not isinstance(rows, list) or len(rows) > 200 or any(not isinstance(p, dict) or not isinstance(p.get('id'), str) for p in rows): raise ValueError('INVALID_PLACE_CATALOG')
-    expected = {p['id'] for city in seed['cities'].values() for p in [*city['places'], *city.get('regionalPlaces', [])]}
+        # extraPlaces: a city's places past the 200 that 1.4.4/1.4.5 accept; those apps ignore the field.
+        for field, limit in [('regionalPlaces', 200), ('extraPlaces', 300)]:
+            rows = city.get(field, [])
+            if not isinstance(rows, list) or len(rows) > limit or any(not isinstance(p, dict) or not isinstance(p.get('id'), str) for p in rows): raise ValueError('INVALID_PLACE_CATALOG')
+    expected = {p['id'] for city in seed['cities'].values() for p in [*city['places'], *city.get('regionalPlaces', []), *city.get('extraPlaces', [])]}
     indexed = {}
     for element in elements:
         if not isinstance(element, dict): raise ValueError('INVALID_OSM_RESPONSE')
@@ -80,11 +82,13 @@ def build_catalog(seed, elements, now):
     result = dict(collectedAt=now, selectionRevision=selection_revision, recommendationTheme='photo-spots', source='OpenStreetMap; source-reviewed Gling photo spots', license='ODbL-1.0',
                   attribution='© OpenStreetMap contributors', attributionUrl='https://www.openstreetmap.org/copyright', cities={})
     for city_id, city in seed['cities'].items():
-        places, regional_places, eligible = [], [], set()
-        regional = city.get('regionalPlaces', [])
+        places, regional_places, extra_places, eligible = [], [], [], set()
+        regional, extra = city.get('regionalPlaces', []), city.get('extraPlaces', [])
         if not isinstance(regional, list) or len(regional) > 200 or len({p['id'] for p in regional}) != len(regional): raise ValueError('INVALID_PLACE_CATALOG')
+        if len({p['id'] for p in extra}) != len(extra): raise ValueError('INVALID_PLACE_CATALOG')
         base_ids = {p['id'] for p in city['places']}
-        for is_regional, original in [(False, p) for p in city['places']] + [(True, p) for p in regional]:
+        own_ids = base_ids | {p['id'] for p in extra}
+        for kind, original in [('base', p) for p in city['places']] + [('regional', p) for p in regional] + [('extra', p) for p in extra]:
             ident = original['id']
             if not re.fullmatch(r'osm:(node|way|relation):[1-9]\d*', ident) or original['cityId'] != city_id: raise ValueError('INVALID_PLACE_IDENTITY')
             p = {k: original.get(k) for k in ['id','cityId','name','category','latitude','longitude','address','sourceUrl','website','openingHours']}
@@ -106,29 +110,31 @@ def build_catalog(seed, elements, now):
                 if isinstance(hours, str) and 0 < len(hours) <= 1000 and not re.search(r'[\x00-\x1f\x7f]', hours): p['openingHours'] = hours
                 website = tags.get('website', tags.get('contact:website'))
                 # Regional links were reviewed by hand; an OSM website can point at a lapsed or hijacked domain.
-                if https(website) and ident in base_ids: p['website'] = website
+                if https(website) and ident in own_ids: p['website'] = website
                 street, number = tags.get('addr:street'), tags.get('addr:housenumber')
-                if ident in base_ids and all(isinstance(v, str) and 0 < len(v) <= 300 and not re.search(r'[\x00-\x1f\x7f]', v) for v in [street, number]):
+                if ident in own_ids and all(isinstance(v, str) and 0 < len(v) <= 300 and not re.search(r'[\x00-\x1f\x7f]', v) for v in [street, number]):
                     p['address'] = (number+' '+street)[:1000]
                 closed = any(tags.get(k) == 'yes' for k in ['disused','abandoned','demolished','closed']) or any(k in tags for k in ['disused:amenity','abandoned:amenity','demolished:amenity'])
                 names = [tags.get(k) for k in ['name','name:en','name:fr','official_name','brand']]
                 if tags.get('bridge') == 'yes': names.append(tags.get('bridge:name'))
                 renamed = p['name'].casefold() not in [v.casefold() for v in names if isinstance(v, str)]
                 if not closed and not renamed and tags.get('access') not in ['private','no'] and hours not in ['closed','off']: eligible.add(ident)
-            if not is_regional: places.append(p)
+            if kind == 'base': places.append(p)
             elif ident not in base_ids and ident in eligible:
                 # Keep the reviewed municipality suffix; regional facts are not city-boundary claims.
-                regional_places.append(p)
+                (regional_places if kind == 'regional' else extra_places).append(p)
         if len({p['id'] for p in places}) != len(places) or not places or len(places) > 200: raise ValueError('INVALID_PLACE_CATALOG')
         result['cities'][city_id] = dict(coverage=city['coverage'], places=places)
         if 'regionalPlaces' in city: result['cities'][city_id]['regionalPlaces'] = regional_places
-        for field in ['recommendations', *(['diningRecommendations'] if 'diningRecommendations' in city else [])]:
+        if 'extraPlaces' in city: result['cities'][city_id]['extraPlaces'] = extra_places
+        for field in ['recommendations', *[f for f in ['diningRecommendations', 'extraRecommendations'] if f in city]]:
             picks = city.get(field, [])
-            if not isinstance(picks, list) or len(picks) > (200 if field == 'diningRecommendations' else 50): raise ValueError('CITY_RECOMMENDATIONS_NOT_VERIFIED')
+            if not isinstance(picks, list) or len(picks) > {'diningRecommendations': 200, 'extraRecommendations': 300}.get(field, 50): raise ValueError('CITY_RECOMMENDATIONS_NOT_VERIFIED')
+            targets = {p['id'] for p in (extra if field == 'extraRecommendations' else city['places'])}
             reviewed, selected = [], set()
             for pick in picks:
                 if field == 'diningRecommendations' and not any(p['id'] == pick.get('placeId') and p['category'] in ['food', 'cafe'] for p in places): raise ValueError('INVALID_DINING_RECOMMENDATION')
-                if pick['placeId'] not in {p['id'] for p in places} or pick['placeId'] in selected or not https(pick['sourceUrl']) or not isinstance(pick['reason'], str) or not 0 < len(pick['reason']) <= 500: raise ValueError('INVALID_PLACE_RECOMMENDATION')
+                if pick['placeId'] not in targets or pick['placeId'] in selected or not https(pick['sourceUrl']) or not isinstance(pick['reason'], str) or not 0 < len(pick['reason']) <= 500: raise ValueError('INVALID_PLACE_RECOMMENDATION')
                 checked = instant(pick['verifiedAt'])
                 if checked.tzinfo is None or checked > instant(now): raise ValueError('INVALID_PLACE_REVIEW_DATE')
                 selected.add(pick['placeId'])
@@ -145,6 +151,11 @@ def build_catalog(seed, elements, now):
             validate_photos(rows, city_id, {p['id'] for p in city.get('regionalPlaces', [])} | {p['id'] for p in city['places']}, allow_flickr=True)
             current = {p['id'] for p in result['cities'][city_id].get('regionalPlaces', [])} | {p['id'] for p in result['cities'][city_id]['places']}
             result['cities'][city_id]['regionalPhotos'] = deepcopy([photo for photo in rows if photo['placeId'] in current])
+        if 'extraPhotos' in city:
+            rows = city['extraPhotos']
+            validate_photos(rows, city_id, {p['id'] for p in city.get('extraPlaces', [])}, limit=300)
+            current = {p['id'] for p in result['cities'][city_id].get('extraPlaces', [])}
+            result['cities'][city_id]['extraPhotos'] = deepcopy([photo for photo in rows if photo['placeId'] in current])
     if 'photoCatalog' in seed:
         metadata = seed['photoCatalog']
         if not isinstance(metadata, dict) or not isinstance(metadata.get('cities'), dict) or set(metadata['cities']) != set(seed['cities']): raise ValueError('INVALID_PLACE_PHOTOS')
@@ -194,7 +205,7 @@ def current_catalog():
 def collect(seed):
     grouped = {kind:[] for kind in ['node','way','relation']}
     for city in seed['cities'].values():
-        for p in [*city['places'], *city.get('regionalPlaces', [])]:
+        for p in [*city['places'], *city.get('regionalPlaces', []), *city.get('extraPlaces', [])]:
             match = re.fullmatch(r'osm:(node|way|relation):([1-9]\d*)', p['id'])
             if not match: raise ValueError('INVALID_PLACE_IDENTITY')
             if match[2] not in grouped[match[1]]: grouped[match[1]].append(match[2])
@@ -250,7 +261,7 @@ def main():
         for field in ['photoCatalog', 'externalRatings']:
             if field not in seed and field in previous: seed[field] = deepcopy(previous[field])
         for city_id, city in seed['cities'].items():
-            for field in ['regionalPlaces', 'regionalPhotos']:
+            for field in ['regionalPlaces', 'regionalPhotos', 'extraPlaces', 'extraRecommendations', 'extraPhotos']:
                 if field not in city and field in previous['cities'][city_id]: city[field] = deepcopy(previous['cities'][city_id][field])
             known = {p['id'] for p in city['places']}
             city['places'] += [p for p in previous['cities'][city_id]['places'] if p['id'] not in known]

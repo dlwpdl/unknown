@@ -109,6 +109,33 @@ class DailyPlaces(unittest.TestCase):
         self.assertEqual(removed['regionalPlaces'], [])
         self.assertEqual(removed['regionalPhotos'], [])
 
+    def test_extra_places_carry_picks_and_photos_past_the_legacy_200_without_touching_base_arrays(self):
+        m = implementation(); seed, osm, now = self.fixture()
+        city = seed['cities']['vancouver']
+        bar = dict(city['places'][0], id='osm:node:3', name='Fixture Bar', category='food', nightlife=True, address='1 Bar St', sourceUrl='https://www.openstreetmap.org/node/3')
+        city['extraPlaces'] = [bar]
+        city['extraRecommendations'] = [dict(placeId=bar['id'], reason='Neon-lit bar counter', reasonEn='Neon-lit counter', sourceUrl='https://example.org/bar', verifiedAt='2026-10-17T10:00:00Z')]
+        city['extraPhotos'] = [dict(cityId='vancouver', placeId=bar['id'], artist='Fixture Bar', imageSha256='b'*64, license='Business-provided photo', discoveredVia='Business site', uri='https://example.org/bar.jpg', sourceUrl='https://example.org/bar', licenseUrl='https://example.org/bar')]
+        osm = osm + [dict(type='node', id=3, lat=49.29, lon=-123.1, tags={'name':'Fixture Bar','amenity':'bar'})]
+        with patch.object(m, 'http', return_value={'elements':osm}) as request:
+            m.collect(seed)
+            self.assertIn('node%28id%3A1%2C3%29', request.call_args.args[1].decode())
+        result = m.build_catalog(seed, osm, now)['cities']['vancouver']
+        self.assertEqual([p['id'] for p in result['places']], ['osm:node:1'])
+        self.assertEqual(result['extraPlaces'][0]['nightlife'], True)
+        self.assertEqual(result['extraRecommendations'][0]['reasonEn'], 'Neon-lit counter')
+        self.assertEqual(result['extraPhotos'], city['extraPhotos'])
+        dup = json.loads(json.dumps(seed)); dup['cities']['vancouver']['extraPlaces'].append(dict(city['places'][0]))
+        self.assertEqual([p['id'] for p in m.build_catalog(dup, osm, now)['cities']['vancouver']['extraPlaces']], ['osm:node:3'])
+        for mutate in [lambda c: c['extraRecommendations'][0].update(placeId='osm:node:1'),
+                       lambda c: c['extraPhotos'][0].update(placeId='osm:node:1'),
+                       lambda c: c.update(extraPlaces=[dict(bar, id=f'osm:node:{i}', sourceUrl=f'https://www.openstreetmap.org/node/{i}') for i in range(10, 311)])]:
+            bad = json.loads(json.dumps(seed)); mutate(bad['cities']['vancouver'])
+            with self.assertRaises(ValueError): m.build_catalog(bad, osm, now)
+        closed = json.loads(json.dumps(osm)); closed[-1]['tags']['closed'] = 'yes'
+        removed = m.build_catalog(seed, closed, now)['cities']['vancouver']
+        self.assertEqual((removed['extraPlaces'], removed['extraRecommendations'], removed['extraPhotos']), ([], [], []))
+
     def fixture(self):
         now = '2026-10-18T01:00:00+00:00'
         place = dict(id='osm:node:1', cityId='vancouver', name='Verified Cafe', category='cafe', latitude=49.28, longitude=-123.12, address='Address', sourceUrl='https://www.openstreetmap.org/node/1')

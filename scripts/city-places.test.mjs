@@ -102,6 +102,42 @@ test('invalid regional facts and photos cannot change the last valid catalog', (
   }
 });
 
+function extraFixture() {
+  const seed = catalog(), city = seed.cities.vancouver, base = city.places.find(place => ['food', 'cafe'].includes(place.category));
+  const bar = { ...base, id: 'osm:node:999999999998', name: 'Extra fixture bar', category: 'food', nightlife: true, sourceUrl: 'https://www.openstreetmap.org/node/999999999998' };
+  city.extraPlaces = [bar];
+  city.extraRecommendations = [{ placeId: bar.id, reason: '네온 바', sourceUrl: 'https://example.org/bar', verifiedAt: new Date(fixtureTime - 86_400_000).toISOString() }];
+  city.extraPhotos = [{ cityId: 'vancouver', placeId: bar.id, artist: 'Extra fixture bar', imageSha256: 'b'.repeat(64), license: 'Business-provided photo', discoveredVia: 'Business site', uri: 'https://example.org/bar.jpg', sourceUrl: 'https://example.org/bar', licenseUrl: 'https://example.org/bar' }];
+  seed.collectedAt = new Date(fixtureTime).toISOString();
+  return { seed, city, bar };
+}
+
+test('extra places past the legacy 200 join the map with their pick and photo', () => {
+  const { seed, city, bar } = extraFixture(), api = data(), base = JSON.stringify(city.places);
+  assert.equal(api.replaceCityPlacesCatalog(seed, fixtureNow), true);
+  const found = api.getCityPlaces('vancouver').find(row => row.id === bar.id);
+  assert.equal(found.diningRecommendation.reason, '네온 바');
+  assert.equal(found.photo.imageSha256, 'b'.repeat(64));
+  assert.ok(api.getCityDiscoveryPlaces('vancouver').some(row => row.id === bar.id));
+  assert.equal(JSON.stringify(city.places), base);
+});
+
+test('invalid extra places cannot change the last valid catalog', () => {
+  for (const mutate of [
+    city => { city.extraPlaces = null; },
+    city => { city.extraPlaces.push({ ...city.places[0] }); },
+    city => { city.extraPlaces = Array.from({ length: 301 }, (_, index) => ({ ...city.extraPlaces[0], id: `osm:node:${999980000000 + index}`, sourceUrl: `https://www.openstreetmap.org/node/${999980000000 + index}` })); },
+    city => { city.extraRecommendations[0].placeId = city.places[0].id; },
+    city => { city.extraPhotos[0].placeId = city.places[0].id; },
+    city => { city.extraPhotos[0].license = 'Unknown'; },
+  ]) {
+    const { seed, city } = extraFixture(), api = data(), before = api.cityPlacesRevision();
+    mutate(city);
+    assert.throws(() => api.replaceCityPlacesCatalog(seed, fixtureNow), /INVALID_PLACE_CATALOG/);
+    assert.equal(api.cityPlacesRevision(), before);
+  }
+});
+
 test('regional Openverse photos reuse the existing exact Flickr identity and licence rules', () => {
   const seed = catalog(), city = seed.cities.vancouver;
   const place = { ...city.places[0], id: 'osm:node:9381204484', name: 'Port Coquitlam Cenotaph', address: '2580 Shaughnessy Street, Port Coquitlam, BC', sourceUrl: 'https://www.openstreetmap.org/node/9381204484' };
