@@ -29,6 +29,8 @@ import { safeMerchantSourceUrl } from '@/lib/merchant-source';
 import { supabase } from '@/lib/supabase';
 import { localizeBusinessDisclosure } from '@/lib/translation-source';
 
+// A business with no linked post has no reviews yet; its two rating rows still show as empty.
+const NO_REVIEWS = { usage: { rating_average: null, review_count: 0 }, employment: { rating_average: null, review_count: 0 } };
 const tabs = [{ id: 'about', label: '소개' }, { id: 'posts', label: '소식' }, { id: 'jobs', label: '채용' }, { id: 'reviews', label: '후기' }] as const;
 type ProfileTab = typeof tabs[number]['id'];
 
@@ -211,8 +213,8 @@ export default function CompanyProfileRoute() {
     </View>
     <ScrollView ref={scroll} analyticsId="company.profile" contentContainerStyle={styles.content}>
       {profile ? <>
-        <MerchantProfileHeader profile={{ ...profile, services: '', address: '' }} ratings={ratings}
-          onReviewPress={profile.review_post_id ? openReviews : undefined} />
+        <MerchantProfileHeader profile={{ ...profile, services: '', address: '' }} ratings={profile.review_post_id ? ratings : NO_REVIEWS}
+          onReviewPress={openReviews} />
         {webshop.shop && <WebshopBanner shop={webshop.shop} onPress={() => setOrderMerchant(merchantId)} />}
         {webshop.failed && <Pressable analyticsId="webshop.retry" accessibilityRole="button" style={styles.button} onPress={() => { play('selection'); webshop.retry(); }}><ThemedText type="small" themeColor="accent">{tr("웹샵 정보를 다시 확인해주세요")}</ThemedText></Pressable>}
         <View style={styles.actions}>
@@ -301,7 +303,7 @@ export default function CompanyProfileRoute() {
             {(['usage', 'employment'] as const).map(kind => <Pressable key={kind} analyticsId={`company.reviews.${kind}`} accessibilityRole="button"
               accessibilityState={{ selected: kind === reviewKind }} style={[styles.reviewTab, { borderColor: kind === reviewKind ? theme.accent : theme.line, backgroundColor: kind === reviewKind ? theme.card : theme.background }]}
               onPress={() => { play('selection'); setSelected({ merchantId, kind }); }}>
-              <ThemedText type="smallBold" themeColor={kind === reviewKind ? 'accent' : 'textSecondary'}>{kind === 'usage' ? tr("이용") : tr("근무")} {displayCount(ratings?.[kind]?.review_count, ratingResult?.key === key)}</ThemedText>
+              <ThemedText type="smallBold" themeColor={kind === reviewKind ? 'accent' : 'textSecondary'}>{kind === 'usage' ? tr("상품·서비스 후기") : tr("직원 후기")} {displayCount(ratings?.[kind]?.review_count, ratingResult?.key === key)}</ThemedText>
             </Pressable>)}
           </View>
           <MerchantReviews postId={profile.review_post_id} reviewKind={reviewKind} onChanged={() => setReviewRevision(value => value + 1)} />

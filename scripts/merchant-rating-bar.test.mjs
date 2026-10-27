@@ -53,17 +53,17 @@ test('an all-review mean is rounded once and maps ten points to five fractional 
   const fills = nodes(tree).filter(node => node.props?.testID?.startsWith('merchant-rating-fill-'));
   assert.equal(fills.length, 5);
   assert.deepEqual(fills.map(node => node.props.style.width), [...Array(4).fill('100%'), '40%']);
-  assert.match(rating({ score: 8.35, reviewKind: 'employment' }).tree.props.accessibilityLabel, /근무.*8\.4/);
+  assert.match(rating({ score: 8.35, reviewKind: 'employment' }).tree.props.accessibilityLabel, /직원 후기.*8\.4/);
 });
 
-test('each sparkle covers two points while employment retains ten one-point segments', () => {
+test('each sparkle and each employment cell covers two points', () => {
   for (const [score, widths] of [[1, ['50%', '0%', '0%', '0%', '0%']], [1.5, ['75%', '0%', '0%', '0%', '0%']],
     [3, ['100%', '50%', '0%', '0%', '0%']], [8.7, ['100%', '100%', '100%', '100%', '35%']], [10, Array(5).fill('100%')]]) {
     const fills = nodes(rating({ score }).tree).filter(node => node.props?.testID?.startsWith('merchant-rating-fill-'));
     assert.deepEqual(fills.map(node => node.props.style.width), widths, String(score));
   }
   const work = nodes(rating({ score: 3, reviewKind: 'employment' }).tree).filter(node => node.props?.testID?.startsWith('merchant-rating-fill-'));
-  assert.deepEqual(work.map(node => node.props.style.width), [...Array(3).fill('100%'), ...Array(7).fill('0%')]);
+  assert.deepEqual(work.map(node => node.props.style.width), ['100%', '50%', '0%', '0%', '0%']);
 });
 
 test('empty and invalid means never look like a scored review; work uses a bar and usage sparkles', () => {
@@ -79,7 +79,7 @@ test('empty and invalid means never look like a scored review; work uses a bar a
 test('rating motion is finite, stops on unmount, and skips movement with reduced motion', () => {
   const normal = rating({ score: 10 });
   assert.equal(normal.animations.length, 5);
-  assert.equal(rating({ score: 10, reviewKind: 'employment' }).animations.length, 10);
+  assert.equal(rating({ score: 10, reviewKind: 'employment' }).animations.length, 5);
   assert.ok(normal.animations.every(config => config.duration <= 300 && config.useNativeDriver === true));
   assert.equal(normal.cleanups.length, 1);
   normal.cleanups[0]();

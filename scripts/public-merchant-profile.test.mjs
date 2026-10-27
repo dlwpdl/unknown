@@ -246,9 +246,8 @@ test('profile metrics retain independent real aggregates and select the correspo
   const metrics = nodes(root).filter(node => node.type === 'button' && node.props['data-review-kind']);
   assert.equal(metrics.length, 2);
   for (const metric of metrics) {
-    const rating = nodes(metric).find(node => typeof node.type === 'function' && node.props.page);
-    const rendered = rating.type(rating.props), kind = metric.props['data-review-kind'];
-    assert.ok(text(rendered).includes(kind === 'usage' ? '8.3' : '7.3'));
+    const kind = metric.props['data-review-kind'];
+    assert.ok(text(metric).includes(kind === 'usage' ? '8.3/10' : '7.3/10'));
     assert.ok(metric.props['aria-label'].includes(`인증 후기 ${kind === 'usage' ? '4' : '3'}개`));
   }
   metrics.find(node => node.props['data-review-kind'] === 'employment').props.onClick();
@@ -260,6 +259,16 @@ test('profile metrics retain independent real aggregates and select the correspo
   assert.ok(nodes(profileRoot).some(node => typeof node.type === 'function' && node.type.name === 'PublicReviews' && node.props.kind === 'employment'));
 });
 
+test('a business with no linked post still shows both review rows as empty without reading reviews', async () => {
+  const calls = [], view = app(undefined, { rpc: async (name) => { calls.push(name); return { data: page }; } });
+  const props = { merchantId, postId: null, selectedKind: null, onSelect() {} };
+  view.render('ProfileRatings', props); await settle();
+  const metrics = nodes(view.render('ProfileRatings', props)).filter(node => node.type === 'button' && node.props['data-review-kind']);
+  assert.deepEqual(metrics.map(node => text(node).includes('–/10 · 아직 없어요')), [true, true]);
+  assert.ok(text(metrics[1]).startsWith('직원 후기'));
+  assert.equal(calls.filter(name => name === 'get_merchant_reviews').length, 0);
+});
+
 test('a failed employment metric keeps the independent usage statistic', async () => {
   const view = app(undefined, { rpc: async (_name, args) => args.p_review_kind ? { error: new Error('EMPLOYMENT_READ_FAILED') } : { data: page } });
   const props = { merchantId, postId, selectedKind: 'usage', onSelect() {} };
@@ -267,12 +276,11 @@ test('a failed employment metric keeps the independent usage statistic', async (
   const root = view.render('ProfileRatings', props);
   const metrics = nodes(root).filter(node => node.type === 'button' && node.props['data-review-kind']);
   const usage = metrics.find(node => node.props['data-review-kind'] === 'usage');
-  const rating = nodes(usage).find(node => typeof node.type === 'function' && node.props.page);
-  assert.ok(text(rating.type(rating.props)).includes('8.3'));
+  assert.ok(text(usage).includes('8.3/10'));
   assert.ok(metrics.find(node => node.props['data-review-kind'] === 'employment').props['aria-label'].includes('조회 실패'));
 });
 
-test('usage sparkles and the continuous employment bar use the same once-rounded average as the number', async () => {
+test('usage sparkles and the five employment cells use the same once-rounded average as the number', async () => {
   const view = app(); view.render('PublicMerchantProfileLink', { postId }); await settle();
   const root = view.render('PublicMerchantProfileLink', { postId });
   const rating = nodes(root).find(node => typeof node.type === 'function' && node.props.page);
@@ -282,9 +290,8 @@ test('usage sparkles and the continuous employment bar use the same once-rounded
   assert.equal(visual.props.scoreTenths, 83);
   for (const kind of ['usage', 'employment']) {
     const units = nodes(view.exports.RatingVisual({ kind, scoreTenths: 83 })).filter(node => node.props?.['data-portion'] != null);
-    assert.equal(units.length, kind === 'usage' ? 5 : 10);
-    assert.equal(units[kind === 'usage' ? 4 : 8].props['data-portion'], kind === 'usage' ? 15 : 30);
-    if (kind === 'employment') assert.equal(units[9].props['data-portion'], 0);
+    assert.equal(units.length, 5);
+    assert.equal(units[4].props['data-portion'], 15);
     assert.ok(nodes(view.exports.RatingVisual({ kind, scoreTenths: 83 })).some(node => kind === 'usage' ? node.type === 'path' && node.props.d?.includes('19 11') : node.props?.className === 'reader-company-rating-segment'));
   }
 });
@@ -359,7 +366,7 @@ test('confirmed review tab count sums both kinds and disappears when either read
   component(root, 'ProfileRatings').props.onSelect('employment'); root = view.render('ProfilePage', { merchantId });
   assert.equal(tabs(root).find(node => node.props['aria-selected']).props['data-tab'], 'reviews');
   assert.equal(component(root, 'PublicReviews').props.kind, 'employment');
-  button(root, '이용').props.onClick(); root = view.render('ProfilePage', { merchantId });
+  button(root, '상품·서비스 후기').props.onClick(); root = view.render('ProfilePage', { merchantId });
   assert.equal(component(root, 'PublicReviews').props.kind, 'usage');
   component(root, 'ProfileRatings').props.onRead({ key: `${merchantId}:${postId}`, usage: 4, employment: null });
   root = view.render('ProfilePage', { merchantId });

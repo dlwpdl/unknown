@@ -101,6 +101,7 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   modules['@/components/post-ad-label'] = { PostAdLabel: 'PostAdLabel' };
+  modules['@/components/merchant-rating-bar'] = { MerchantRatingBar: 'MerchantRatingBar' };
   vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     if (name === '@/lib/post-reactions') return reactionModule();
     assert.ok(name in modules, `Unexpected import: ${name}`);
@@ -358,6 +359,19 @@ test('profile logo/banner failures retain only the business fallback and recover
  images.forEach(n=>n.props.onError());assert.equal(nodes(render()).filter(n=>n.type==='Image').length,0);
  assert.ok(nodes(render()).some(n=>n.type==='ThemedText'&&n.props.children==='지'));
  profile.avatarUri='new-logo';assert.equal(nodes(render()).find(n=>n.type==='Image').props.source.uri,'new-logo');
+});
+
+test('profile shows customer and employee review rows out of ten, empty ones included, and opens the matching kind',()=>{
+ const renderer=cardRenderer('MerchantProfileHeader'),opened=[];
+ const profile={name:'지모코',city_name:'밴쿠버',industry:'카페',services:'',address:'',links:[]};
+ const tree=renderer.render({profile,onReviewPress:kind=>opened.push(kind),ratings:{usage:{rating_average:8.64,review_count:24},employment:{rating_average:null,review_count:0}}});
+ const rows=nodes(tree).filter(n=>n.props?.analyticsId?.startsWith('company.rating.'));
+ assert.deepEqual(rows.map(n=>n.props.analyticsId),['company.rating.usage','company.rating.employment']);
+ const texts=row=>nodes(row).filter(n=>n.type==='ThemedText').map(n=>n.props.children);
+ assert.deepEqual(texts(rows[0]).slice(0,2),['상품·서비스 후기','8.6/10 · 24개']);
+ assert.deepEqual(texts(rows[1]).slice(0,2),['직원 후기','–/10 · 아직 없어요']);
+ assert.equal(nodes(rows[1]).find(n=>n.type==='MerchantRatingBar').props.reviewKind,'employment');
+ rows[1].props.onPress();assert.deepEqual(opened,['employment']);
 });
 
 test('글 상세는 📍 주소·링크를 정보 카드로, 본문을 문단으로, 출처를 접어서 보여주고 반응 줄을 숨긴다', () => {

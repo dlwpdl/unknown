@@ -46,7 +46,8 @@ export async function loadPublicMerchantReviews(client: SupabaseClient, postId: 
 }
 
 function RatingVisual({ kind, scoreTenths, animated = false }: { kind: ReviewKind; scoreTenths: number | null; animated?: boolean }) {
-  const pointsPerUnit = kind === 'usage' ? 2 : 1, unitCount = 10 / pointsPerUnit;
+  // Both kinds use five marks worth two points each; employment draws cells instead of sparkles.
+  const pointsPerUnit = 2, unitCount = 5;
   const shape = kind === 'usage' ? <svg viewBox="0 0 30 32" aria-hidden="true" focusable="false" fill="currentColor"><path d="M15 1 19 11 29 16 19 21 15 31 11 21 1 16 11 11Z" /></svg>
     : <span className="reader-company-rating-segment" />;
   return <span className={`reader-company-rating-visual${animated ? ' playing' : ''}`} data-review-kind={kind} aria-hidden="true">
@@ -59,27 +60,24 @@ function RatingVisual({ kind, scoreTenths, animated = false }: { kind: ReviewKin
   </span>;
 }
 
-function Rating({ page, kind = 'usage', animated = false, compact = false }: { page: Pick<PublicReviewPage, 'ratingAverage' | 'reviewCount'>; kind?: ReviewKind; animated?: boolean; compact?: boolean }) {
+function Rating({ page, kind = 'usage', animated = false }: { page: Pick<PublicReviewPage, 'ratingAverage' | 'reviewCount'>; kind?: ReviewKind; animated?: boolean }) {
   const { language } = useLanguage(), ko = language === 'ko';
   const scoreTenths = page.ratingAverage == null ? null : Math.round(page.ratingAverage * 10);
-  if (compact) return <span className="reader-company-rating-compact"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.3">{kind === 'usage'
-    ? <path d="M8 1 10 6 15 8 10 10 8 15 6 10 1 8 6 6Z" fill="currentColor" stroke="none" />
-    : <><rect x="1" y="4" width="14" height="11" rx="2" /><path d="M5 4V2a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M1 8h14" /></>}</svg>
-    <strong>{scoreTenths == null ? '—' : (scoreTenths / 10).toFixed(1)}</strong></span>;
   return <span className="reader-company-rating"><span className="reader-company-rating-number"><strong>{scoreTenths == null ? '—' : (scoreTenths / 10).toFixed(1)}</strong><span>/ 10</span></span>
     <RatingVisual key={`${kind}:${scoreTenths}`} kind={kind} scoreTenths={scoreTenths} animated={animated} />
-    <span>{ko ? <>인증 {kind === 'usage' ? '이용' : '근무'} 리뷰 {page.reviewCount}개</>
+    <span>{ko ? <>인증 {kind === 'usage' ? '상품·서비스' : '직원'} 후기 {page.reviewCount}개</>
       : `${page.reviewCount} verified ${kind === 'usage' ? 'customer' : 'employee'} review${page.reviewCount === 1 ? '' : 's'}`}</span></span>;
 }
 
 function ProfileRatings({ merchantId, postId, selectedKind, onSelect, onRead, controls = 'company-reviews' }: {
-  merchantId: string; postId: string; selectedKind: ReviewKind | null; onSelect: (kind: ReviewKind) => void; onRead?: (counts: ReviewCounts) => void; controls?: string;
+  merchantId: string; postId: string | null; selectedKind: ReviewKind | null; onSelect: (kind: ReviewKind) => void; onRead?: (counts: ReviewCounts) => void; controls?: string;
 }) {
   const { play } = useInteractionFeedback();
   const { language } = useLanguage(), ko = language === 'ko';
   const key = `${merchantId}:${postId}`;
   const [result, setResult] = useState<{ key: string; usage: PublicReviewPage | null; employment: PublicReviewPage | null } | null>(null);
   useEffect(() => {
+    if (!postId) return;
     let active = true;
     void Promise.allSettled([loadPublicMerchantReviews(publicWebClient, postId), loadPublicMerchantReviews(publicWebClient, postId, 0, 'employment')]).then(([usage, employment]) => {
       const ownPage = (row: PromiseSettledResult<PublicReviewPage | null>) => row.status === 'fulfilled' && row.value?.merchantId === merchantId ? row.value : null;
@@ -91,16 +89,21 @@ function ProfileRatings({ merchantId, postId, selectedKind, onSelect, onRead, co
     });
     return () => { active = false; };
   }, [key, merchantId, postId, onRead]);
-  const current = result?.key === key ? result : null;
-  return <div className="reader-company-metrics" role="group" aria-label={ko ? '인증 리뷰 평점' : 'Verified review ratings'} aria-busy={!current}>
+  // A business with no linked post has no reviews yet, so both rows show as empty instead of disappearing.
+  const empty = { ratingAverage: null, reviewCount: 0 };
+  const current = !postId ? { usage: empty, employment: empty } : result?.key === key ? result : null;
+  return <div className="reader-company-metrics" role="group" aria-label={ko ? '인증 후기 평점' : 'Verified review ratings'} aria-busy={!current}>
     {(['usage', 'employment'] as const).map((kind) => {
-      const page = current?.[kind];
-      const average = page?.ratingAverage == null ? '' : (Math.round(page.ratingAverage * 10) / 10).toFixed(1);
-      const label = ko ? `${kind === 'usage' ? '상품·서비스' : '근무'} 리뷰 보기, ${!current ? '불러오는 중' : !page ? '조회 실패' : page.ratingAverage == null ? '점수 없음' : `10점 만점에 평균 ${average}점, 인증 후기 ${page.reviewCount}개`}`
-        : `See ${kind === 'usage' ? 'customer' : 'employee'} reviews, ${!current ? 'loading' : !page ? 'couldn’t load' : page.ratingAverage == null ? 'no score yet' : `average ${average} out of 10 from ${page.reviewCount} verified review${page.reviewCount === 1 ? '' : 's'}`}`;
+      const page = current?.[kind], name = ko ? kind === 'usage' ? '상품·서비스 후기' : '직원 후기' : kind === 'usage' ? 'Customer reviews' : 'Employee reviews';
+      const scoreTenths = page?.ratingAverage == null ? null : Math.round(page.ratingAverage * 10), average = scoreTenths == null ? '' : (scoreTenths / 10).toFixed(1);
+      const value = !current ? '…' : !page ? (ko ? '다시 확인해 주세요' : 'Couldn’t load') : scoreTenths == null ? (ko ? '–/10 · 아직 없어요' : '–/10 · none yet')
+        : ko ? `${average}/10 · ${page.reviewCount}개` : `${average}/10 · ${page.reviewCount}`;
+      const label = ko ? `${name} 보기, ${!current ? '불러오는 중' : !page ? '조회 실패' : scoreTenths == null ? '아직 후기가 없어요' : `10점 만점에 평균 ${average}점, 인증 후기 ${page.reviewCount}개`}`
+        : `See ${name.toLowerCase()}, ${!current ? 'loading' : !page ? 'couldn’t load' : scoreTenths == null ? 'no reviews yet' : `average ${average} out of 10 from ${page.reviewCount} verified review${page.reviewCount === 1 ? '' : 's'}`}`;
       return <button type="button" className="reader-company-metric" key={kind} data-review-kind={kind} aria-label={label} title={label}
         aria-pressed={selectedKind === kind} aria-controls={controls} onClick={() => { play('selection'); onSelect(kind); }}>
-        {page ? <Rating page={page} kind={kind} compact /> : <span className="reader-company-metric-unavailable">{current ? '—' : '…'}</span>}
+        <span className="reader-company-metric-name">{name}</span><RatingVisual kind={kind} scoreTenths={scoreTenths} />
+        <span className="reader-company-metric-value">{value}</span><span aria-hidden="true">›</span>
       </button>;
     })}
   </div>;
@@ -328,8 +331,8 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
         ? <img src={profile.avatarUri} alt={ko ? `${profile.name} 로고` : `${profile.name} logo`} onError={() => setBroken((previous) => ({ ...previous, avatar: true }))} />
         : <span aria-hidden="true">{profile.name.slice(0, 1)}</span>}</div>
         <div><p className="reader-kicker">{[profile.industry, profile.city_name].filter(Boolean).join(' · ')}</p><h1>{profile.name}</h1></div></div>
-        {profile.review_post_id && <ProfileRatings key={`${merchantId}:${profile.review_post_id}`} merchantId={merchantId} postId={profile.review_post_id}
-          selectedKind={tab === 'reviews' ? reviewKind : null} onSelect={selectKind} onRead={setReviewCounts} controls={panelId('reviews')} />}</header>
+        <ProfileRatings key={`${merchantId}:${profile.review_post_id}`} merchantId={merchantId} postId={profile.review_post_id}
+          selectedKind={tab === 'reviews' ? reviewKind : null} onSelect={selectKind} onRead={setReviewCounts} controls={panelId('reviews')} /></header>
       <div className="reader-company-blurb">{profile.services && <p>{profile.services}</p>}
         {counts?.jobCount != null && counts.jobCount > 0 && <button type="button" className="reader-company-hiring" aria-controls={panelId('jobs')}
           onClick={() => { play('selection'); setTab('jobs'); }}><span aria-hidden="true">●</span> {ko ? '채용 중' : 'Hiring'} · {ko ? `${counts.jobCount}건` : `${counts.jobCount} job${counts.jobCount === 1 ? '' : 's'}`} <span aria-hidden="true">›</span></button>}</div>
@@ -360,9 +363,9 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
           : item.id === 'reviews' ? profile.review_post_id ? <>
             <div className="reader-company-review-kinds" role="group" aria-label={ko ? '리뷰 종류' : 'Review type'}>{(['usage', 'employment'] as const).map((kind) => <button type="button" key={kind}
               aria-pressed={reviewKind === kind} aria-controls="company-reviews" onClick={() => { play('selection'); setReviewKind(kind); }}>
-              {ko ? kind === 'usage' ? '이용' : '근무' : kind === 'usage' ? 'Customers' : 'Employees'}{reviews?.[kind] != null && <span>{reviews[kind]}</span>}</button>)}</div>
+              {ko ? kind === 'usage' ? '상품·서비스 후기' : '직원 후기' : kind === 'usage' ? 'Customer reviews' : 'Employee reviews'}{reviews?.[kind] != null && <span>{reviews[kind]}</span>}</button>)}</div>
             <div id="company-reviews"><PublicReviews key={`${merchantId}:${profile.review_post_id}:${reviewKind}`} merchantId={merchantId} postId={profile.review_post_id} kind={reviewKind} /></div>
-          </> : <p className="reader-company-empty">{ko ? '아직 연결된 공개 리뷰가 없어요.' : 'No public reviews yet.'}</p>
+          </> : <p className="reader-company-empty">{ko ? '아직 후기가 없어요.' : 'No reviews yet.'}</p>
             : <div id="company-intro" className="reader-company-intro"><h2>{ko ? '소개' : 'About'}</h2><p>{profile.services || (ko ? '등록된 소개가 없어요.' : 'No description yet.')}</p>
               <dl><dt>{ko ? '업종' : 'Category'}</dt><dd>{profile.industry || (ko ? '등록된 업종이 없어요.' : 'No category listed.')}</dd><dt>{ko ? '지역' : 'Area'}</dt><dd>{profile.city_name}</dd>
                 {phone && <><dt>{ko ? '전화' : 'Phone'}</dt><dd><a href={phone} onClick={() => play('selection')}>{profile.public_phone}</a></dd></>}
