@@ -20,9 +20,11 @@ import {
 } from '@/lib/listing-details';
 import type { City, Post } from '@/lib/types';
 
-type FilterKey = 'rooms' | 'price' | 'moveIn' | 'deal' | 'condition';
-const FILTERS: Record<'housing' | 'used', FilterKey[]> = { housing: ['rooms', 'price', 'moveIn'], used: ['deal', 'price', 'condition'] };
-const PRICES = { housing: [1500, 2000, 2500, 3000, 4000], used: [0, 20, 50, 100, 300] };
+type FilterKey = 'market' | 'rooms' | 'price' | 'moveIn' | 'deal' | 'condition';
+const FILTERS: Record<'housing' | 'used', FilterKey[]> = { housing: ['market', 'rooms', 'price', 'moveIn'], used: ['deal', 'price', 'condition'] };
+// Monthly rent and sale prices live on different scales, so 매매 gets its own steps.
+const PRICES = { housing: [1500, 2000, 2500, 3000, 4000], sale: [500000, 800000, 1000000, 1500000, 2000000], used: [0, 20, 50, 100, 300] };
+const MARKETS = { rent: '렌트', sale: '매매' } as const;
 const monthEnd = (now: Date, offset: number) => {
   const date = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -64,25 +66,26 @@ export function ListingFilterBar({ category, filters, onChange, view, onView }: 
   };
   const priceLabel = (value: number) => category === 'used' && value === 0 ? tr('무료만') : tr('{0} 이하', formatMoney(value));
   const summary: Record<FilterKey, string | null> = {
+    market: filters.market ? tr(MARKETS[filters.market]) : null,
     rooms: filters.rooms.length ? filters.rooms.map(room => tr(LISTING_LABELS.rooms[room])).join(' · ') : null,
     price: filters.maxPrice != null ? priceLabel(filters.maxPrice) : null,
     moveIn: filters.moveInBy ? monthLabel(filters.moveInBy, months.indexOf(filters.moveInBy)) : null,
     deal: filters.deal ? tr(LISTING_LABELS.used[filters.deal]) : null,
     condition: filters.conditions.length ? filters.conditions.map(item => tr(LISTING_LABELS.condition[item])).join(' · ') : null,
   };
-  const names: Record<FilterKey, string> = { rooms: tr('방 구성'), price: tr('가격'), moveIn: tr('입주일'), deal: tr('팝니다·삽니다'), condition: tr('상태') };
+  const names: Record<FilterKey, string> = { market: tr('렌트·매매'), rooms: tr('방 구성'), price: tr('가격'), moveIn: tr('입주일'), deal: tr('팝니다·삽니다'), condition: tr('상태') };
   const option = (key: string, label: string, selected: boolean, onPress: () => void, multi = false) => <SelectionChip key={key} analyticsId="listing.filter.option" selected={selected} baseColor={theme.card}
     accessibilityRole={multi ? 'checkbox' : 'radio'} accessibilityLabel={label} accessibilityState={{ selected, checked: selected }}
     onPress={() => { play('selection'); onPress(); }} style={[ControlStyles.pill, styles.optionChip, { borderColor: selected ? theme.accent : theme.line }]}>
     <ThemedText type="label" style={{ color: selected ? theme.accentInk : theme.text }}>{label}</ThemedText>
   </SelectionChip>;
   const toggle = <T extends string>(list: T[], item: T) => list.includes(item) ? list.filter(entry => entry !== item) : [...list, item];
-  const clear = (key: FilterKey) => onChange({ ...filters, ...(key === 'rooms' ? { rooms: [] } : key === 'price' ? { maxPrice: null } : key === 'moveIn' ? { moveInBy: null } : key === 'deal' ? { deal: null } : { conditions: [] }) });
+  const clear = (key: FilterKey) => onChange({ ...filters, ...(key === 'market' ? { market: null, maxPrice: null } : key === 'rooms' ? { rooms: [] } : key === 'price' ? { maxPrice: null } : key === 'moveIn' ? { moveInBy: null } : key === 'deal' ? { deal: null } : { conditions: [] }) });
 
   return <View style={styles.filterWrap}>
     <View style={styles.filterRow}>
       <ScrollView analyticsId="listing.filters" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterChips} style={styles.flex}>
-        {FILTERS[category].map(key => {
+        {FILTERS[category].filter(key => !(key === 'moveIn' && filters.market === 'sale')).map(key => {
           const active = summary[key] != null, expanded = open === key;
           return <Pressable key={key} analyticsId={`listing.filter.${key}`} accessibilityRole="button" accessibilityLabel={`${names[key]}${active ? `, ${summary[key]}` : ''}`} accessibilityState={{ expanded, selected: active }}
             onPress={() => { play('selection'); setOpen(expanded ? null : key); }}
@@ -99,8 +102,11 @@ export function ListingFilterBar({ category, filters, onChange, view, onView }: 
     </View>
     {open && <View style={[styles.panel, { borderColor: theme.line, backgroundColor: theme.backgroundElement }]}>
       <View style={styles.options}>
+        {open === 'market' && (['rent', 'sale'] as const).map(market => option(market, tr(MARKETS[market]), filters.market === market,
+          // Switching market resets the price step (different scale); 매매 has no move-in date.
+          () => onChange({ ...filters, market: filters.market === market ? null : market, maxPrice: null, moveInBy: market === 'sale' ? null : filters.moveInBy })))}
         {open === 'rooms' && ROOMS.map(room => option(room, tr(LISTING_LABELS.rooms[room]), filters.rooms.includes(room), () => onChange({ ...filters, rooms: toggle(filters.rooms, room) }), true))}
-        {open === 'price' && PRICES[category].map(value => option(String(value), priceLabel(value), filters.maxPrice === value, () => onChange({ ...filters, maxPrice: filters.maxPrice === value ? null : value })))}
+        {open === 'price' && PRICES[category === 'housing' && filters.market === 'sale' ? 'sale' : category].map(value => option(String(value), priceLabel(value), filters.maxPrice === value, () => onChange({ ...filters, maxPrice: filters.maxPrice === value ? null : value })))}
         {open === 'moveIn' && months.map((iso, index) => option(iso, monthLabel(iso, index), filters.moveInBy === iso, () => onChange({ ...filters, moveInBy: filters.moveInBy === iso ? null : iso })))}
         {open === 'deal' && (['sell', 'buy'] as const).map(deal => option(deal, tr(LISTING_LABELS.used[deal]), filters.deal === deal, () => onChange({ ...filters, deal: filters.deal === deal ? null : deal })))}
         {open === 'condition' && CONDITIONS.map(item => option(item, tr(LISTING_LABELS.condition[item]), filters.conditions.includes(item), () => onChange({ ...filters, conditions: toggle(filters.conditions, item) }), true))}

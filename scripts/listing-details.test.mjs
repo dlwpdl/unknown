@@ -111,6 +111,9 @@ test('필터는 목록과 지도에 똑같이 걸린다', () => {
   assert.ok(matchesListingFilters(used, { ...NO_LISTING_FILTERS, deal: 'sell', conditions: ['like_new'] }, today));
   assert.ok(!matchesListingFilters(used, { ...NO_LISTING_FILTERS, deal: 'buy' }, today));
   assert.ok(!matchesListingFilters(legacy, { ...NO_LISTING_FILTERS, maxPrice: 100 }, today), 'a post without fields cannot prove it matches');
+  assert.ok(matchesListingFilters(housing, { ...NO_LISTING_FILTERS, market: 'rent' }, today), '렌트 includes 렌트 내놓음');
+  assert.ok(!matchesListingFilters(housing, { ...NO_LISTING_FILTERS, market: 'sale' }, today), '매매 excludes rentals');
+  assert.ok(matchesListingFilters({ ...housing, listingDetails: { ...housing.listingDetails, deal: 'buy' } }, { ...NO_LISTING_FILTERS, market: 'sale' }, today), '매매 includes 매매 구매');
 });
 
 test('중고거래 보기 선택은 목록이 기본이고 그리드만 기억한다', () => {

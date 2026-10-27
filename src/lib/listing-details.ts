@@ -256,9 +256,12 @@ export const inBounds = (bounds: MapBounds, point: { latitude: number; longitude
   point.latitude >= bounds.south && point.latitude <= bounds.north && point.longitude >= bounds.west && point.longitude <= bounds.east;
 
 // ---- filters (shared by list and map) ----------------------------------------------------------
-export type ListingFilters = { rooms: Room[]; maxPrice: number | null; moveInBy: string | null; deal: UsedDeal | null; conditions: Condition[] };
-export const NO_LISTING_FILTERS: ListingFilters = { rooms: [], maxPrice: null, moveInBy: null, deal: null, conditions: [] };
-export const listingFiltersActive = (filters: ListingFilters) => filters.rooms.length > 0 || filters.maxPrice != null || filters.moveInBy != null || filters.deal != null || filters.conditions.length > 0;
+// 부동산 렌트·매매: rent covers 렌트 내놓음/구함, sale covers 매매 판매/구매.
+export type HousingMarket = 'rent' | 'sale';
+export const housingMarket = (deal: HousingDeal): HousingMarket => deal === 'rent_offer' || deal === 'rent_wanted' ? 'rent' : 'sale';
+export type ListingFilters = { market: HousingMarket | null; rooms: Room[]; maxPrice: number | null; moveInBy: string | null; deal: UsedDeal | null; conditions: Condition[] };
+export const NO_LISTING_FILTERS: ListingFilters = { market: null, rooms: [], maxPrice: null, moveInBy: null, deal: null, conditions: [] };
+export const listingFiltersActive = (filters: ListingFilters) => filters.market != null || filters.rooms.length > 0 || filters.maxPrice != null || filters.moveInBy != null || filters.deal != null || filters.conditions.length > 0;
 
 export function matchesListingFilters(post: Pick<Post, 'price' | 'listingDetails'>, filters: ListingFilters, today: string) {
   if (!listingFiltersActive(filters)) return true;
@@ -266,6 +269,7 @@ export function matchesListingFilters(post: Pick<Post, 'price' | 'listingDetails
   if (!details) return false; // a post without fields cannot prove it matches
   if (filters.maxPrice != null && (post.price == null || post.price > filters.maxPrice)) return false;
   if (details.type === 'housing') {
+    if (filters.market && housingMarket(details.deal) !== filters.market) return false;
     if (filters.rooms.length && (!details.rooms || !filters.rooms.includes(details.rooms))) return false;
     if (filters.moveInBy && (!details.moveIn || (details.moveIn === 'now' ? today : details.moveIn) > filters.moveInBy)) return false;
   }
