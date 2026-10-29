@@ -31,6 +31,7 @@ const imports = {
   react: React, 'react/jsx-runtime': jsxRuntime, 'expo-router': {},
   '@/components/public-web/metadata': metadata, '@/lib/public-seo': seo, '@/lib/mock': mock, '@/lib/legal-documents': legal,
   '@/components/public-web/reader': { default: () => null }, '@/components/public-web/visited': { default: () => null },
+  '@/components/public-web/faq': { default: () => null },
   '@/components/public-web/shared-post-landing': { default: () => null }, '../app/[document].web': { default: () => null },
 };
 
@@ -83,6 +84,7 @@ test('public home, company and Visited routes export initial title, canonical an
     ['index', seo.publicSiteName(), 'https://gling.ej-entertainment.com/'],
     ['company', '글링 비즈니스 프로필', 'https://gling.ej-entertainment.com/company'],
     ['visited', '밴쿠버 Gling Visited | 글링', 'https://gling.ej-entertainment.com/visited?city=vancouver'],
+    ['faq', '글링 자주 묻는 질문 | 캐나다 모임 커뮤니티', 'https://gling.ej-entertainment.com/faq'],
   ]) {
     const value = load(`web/${file}.tsx`, imports).generateMetadata();
     assert.equal(value.title, title);
