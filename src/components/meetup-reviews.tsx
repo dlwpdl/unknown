@@ -30,7 +30,7 @@ function Reviews({ postId, kind, attendanceOnly = false, reviewsOnly = false, on
   const [page, setPage] = useState<MeetupReviewPage | null>(null), [sessions, setSessions] = useState<MeetupSessions | null>(null);
   const [error, setError] = useState(''), [retry, setRetry] = useState(0), [busy, setBusy] = useState(false), pending = useRef(false);
   const [startsAt, setStartsAt] = useState(() => new Date(Date.now() + 86400000).toISOString());
-  const [endsAt, setEndsAt] = useState(() => new Date(Date.now() + 93600000).toISOString());
+  const [endsAt, setEndsAt] = useState(() => new Date(Date.parse(startsAt) + 7200000).toISOString());
   const [report, setReport] = useState<MeetupReviewPage['reviews'][number] | null>(null);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
