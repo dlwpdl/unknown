@@ -25,7 +25,9 @@ export function finishPublicWeb(directory = 'dist', posts = []) {
   for (const [file, city] of [['index.html', null], ...cities.map(city => [`${city.id}.html`, city])]) {
     const target = join(directory, file);
     if (!existsSync(target)) continue;
-    writeFileSync(target, readFileSync(target, 'utf8').replace(/<body[^>]*>/, match => `${match}${staticHub(cities, posts, city)}`));
+    writeFileSync(target, readFileSync(target, 'utf8')
+      .replace('</head>', `<meta name="naver-site-verification" content="3840dfdac2db5fd4f65e9c9160c31225d7e05db5"/><link rel="alternate" type="application/rss+xml" title="글링 새 글" href="${PUBLIC_SITE}/rss.xml"/></head>`)
+      .replace(/<body[^>]*>/, match => `${match}${staticHub(cities, posts, city)}`));
   }
   const day = value => { const time = Date.parse(value); return Number.isFinite(time) ? `<lastmod>${new Date(time).toISOString().slice(0, 10)}</lastmod>` : ''; };
   writeFileSync(join(directory, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${paths.map(path => `<url><loc>${PUBLIC_SITE}${path}</loc></url>`).join('')}${posts.map(post => `<url><loc>${publicPostUrl(post.id)}</loc>${day(post.lastmod)}</url>`).join('')}</urlset>\n`);
@@ -41,6 +43,13 @@ export function finishPublicWeb(directory = 'dist', posts = []) {
     `- 도시 페이지: ${cities.map(city => `[${city.name} 한인 커뮤니티](${PUBLIC_SITE}/${city.id})`).join(' · ')}`,
   ].join('\n');
   writeFileSync(join(directory, 'llms.txt'), `# 글링 Gling: 캐나다 한인 커뮤니티 (${cities.map(city => city.name).join('·')})\n\n> ${publicAboutGlingEn}\n\n${publicAboutGling}\n\n${facts}\n\n공개 미리보기는 작성자의 게시물 정보이며 글링의 공식 사실 확인이나 비즈니스 소유 인증을 뜻하지 않습니다. 게스트는 허용된 대표 이미지 한 장과 짧은 소개를 볼 수 있습니다. 로그인하거나 정상 가입을 마치면 현재 공개 상태와 열람 권한을 확인한 뒤 공개 글의 전체 본문을 웹에서 읽을 수 있습니다. 댓글 작성·대화·모임 참여는 앱에서 이용합니다. 아래 원문은 현재 공개 상태를 조회합니다. 삭제·비공개 글의 내용, 개인 대화와 계정 정보는 제공하지 않습니다. 공개 미리보기를 전체 원문으로 간주하지 마세요.\n\n## 공개 이야기\n\n- [글링 공개 게시판](${PUBLIC_SITE}/)\n${cities.map(city => `- [${city.name} 공개 미리보기 · 다음 페이지](${PUBLIC_SOURCE}?format=markdown&city=${city.id})`).join('\n')}\n${cities.map(city => recent(city) && `\n## ${city.name} 최근 글\n\n${recent(city)}\n`).filter(Boolean).join('')}\n## 이용 안내\n\n- [자주 묻는 질문](${PUBLIC_SITE}/faq)\n- [iPhone 앱](https://apps.apple.com/ca/app/id6809273242)\n- [이용약관](${PUBLIC_SITE}/terms)\n- [개인정보처리방침](${PUBLIC_SITE}/privacy)\n- [계정 삭제](${PUBLIC_SITE}/account-deletion)\n`);
+  // Naver Search Advisor and other feed readers pick up new public posts from this (teasers only, same as the post pages).
+  const date = value => { const time = Date.parse(value); return Number.isFinite(time) ? `<pubDate>${new Date(time).toUTCString()}</pubDate>` : ''; };
+  const item = ({ title, link, description, lastmod }) => `<item><title>${escapeHtml(title)}</title><link>${link}</link><guid isPermaLink="true">${link}</guid><description>${escapeHtml(description)}</description>${date(lastmod)}</item>`;
+  writeFileSync(join(directory, 'rss.xml'), `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>글링 | 캐나다 한인 커뮤니티</title><link>${PUBLIC_SITE}/</link><description>${escapeHtml(publicAboutGling)}</description><language>ko</language>${[
+    ...cities.map(city => ({ title: `${city.name} 한인 커뮤니티 · 동네 이야기와 모임`, link: `${PUBLIC_SITE}/${city.id}`, description: `${city.name}에 사는 한인들이 나누는 동네 이야기, 맛집, 렌트·구인·중고, 소모임을 글링에서 둘러보세요.`, lastmod: posts.find(post => post.cityId === city.id)?.lastmod })),
+    ...posts.slice(0, 100).map(post => ({ title: post.title, link: publicPostUrl(post.id), description: post.teaser || [post.city, post.label].filter(Boolean).join(' · '), lastmod: post.lastmod })),
+  ].map(item).join('')}</channel></rss>\n`);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
