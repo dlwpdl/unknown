@@ -22,7 +22,7 @@ function fixture(t) {
     mkdirSync(join(dir, '_expo'), { recursive: true }); mkdirSync(join(dir, 'auth'));
   }
   mkdirSync(join(publicDir, 'profile'));
-  const publicHtml = '<meta name="robots" content="noindex"><style>--bg:#111;--text:#fff;--accent:#9283AC;color:#746486</style>gling-night-wordmark.png https://apps.apple.com/ca/app/id6809273242 <script type="application/ld+json">{}</script><script src="/_expo/entry.js"></script> 아동 안전 표준 CSAE CSAM gling@ej-entertainment.com Cybertip.ca';
+  const publicHtml = 'city-stories/logo.svg city-hero-heading <meta name="robots" content="noindex"><style>--bg:#111;--text:#fff;--accent:#9283AC;color:#746486</style>gling-night-wordmark.png https://apps.apple.com/ca/app/id6809273242 <script type="application/ld+json">{}</script><script src="/_expo/entry.js"></script> 아동 안전 표준 CSAE CSAM gling@ej-entertainment.com Cybertip.ca';
   for (const page of ['index', 'meetups', 'company', 'terms', 'privacy', 'account-deletion', 'child-safety', 'post', 'chat', 'meetup-join', 'meetup-profile', 'meetup-application', 'auth/callback', 'profile/membership']) writeFileSync(join(publicDir, `${page}.html`), publicHtml);
   writeFileSync(join(publicDir, 'robots.txt'), 'Sitemap: https://gling.ej-entertainment.com/sitemap.xml format=sitemap&city= Disallow: /merchant/ Disallow: /admin');
   for (const file of ['sitemap.xml', 'llms.txt']) writeFileSync(join(publicDir, file), 'public discovery');
