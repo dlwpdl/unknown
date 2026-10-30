@@ -3738,7 +3738,6 @@ export const uiEnglish: Record<string, string> = {
   "고르기": "Choose",
   "조건 맞는 신청 바로 승인": "Auto-approve matching requests",
   "참석 인원 미리 보기 · 노쇼 규칙": "See who's coming · No-show rule",
-  "대기 순서 우선 · 새 모임 소식 먼저": "Waitlist priority · Hear about new meetups first",
   "빈자리 대기자에게 자동으로 넘기기": "Pass open spots to the waitlist automatically",
   "이 호스트의 모임에 말없이 빠진 적이 여러 번 있어서 지금은 대기 명단으로만 신청할 수 있어요.": "You've missed this host's meetups without notice a few times, so for now you can only join their waitlist.",
   "새 멤버만": "Newcomers only",

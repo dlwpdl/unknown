@@ -62,6 +62,10 @@ try:
         if sql(path.read_text(), False).returncode:
             skipped.append(path.name)
     sql((ROOT / 'supabase/migrations' / MIGRATION).read_text())
+    # Later migrations (e.g. invite rewards) must still apply on top of this one.
+    later = [path.name for path in sorted((ROOT / 'supabase/migrations').glob('*.sql')) if path.name > MIGRATION and path.name.split('_')[0] not in applied]
+    for name in later:
+        sql((ROOT / 'supabase/migrations' / name).read_text())
     # Production applies migrations as postgres; objects created here by supabase_admin would otherwise
     # hit privilege errors that production never sees.
     sql("""do $$ declare r record; begin
@@ -80,6 +84,6 @@ try:
     assert re.search(r'^1\.\.\d+$', output, re.M), output
     assert sql("select count(*) from public.profiles where id::text like 'c0000000-%';").stdout.strip() == '0', 'fixture did not roll back'
     print(json.dumps({'pgTapPassed': len(re.findall(r'^\s*ok \d+', output, re.M)), 'rollbackVerified': True,
-                      'catchUpMigrationsSkipped': skipped, 'disposableContainer': CONTAINER, 'sharedDatabaseWrites': False}))
+                      'catchUpMigrationsSkipped': skipped, 'laterMigrationsApplied': later, 'disposableContainer': CONTAINER, 'sharedDatabaseWrites': False}))
 finally:
     command(['docker', 'rm', '-f', CONTAINER], check=False)

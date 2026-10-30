@@ -93,7 +93,7 @@ reset role;
 select throws_ok($$insert into public.meetup_requests(post_id,host_id,requester_id,status) select c,h,m7,'pending' from ids$$,'P0001','MEETUP_WAITLIST_ONLY','Past the threshold: waitlist only');
 select lives_ok($$insert into public.meetup_requests(post_id,host_id,requester_id,status) select c,h,m2,'pending' from ids$$,'Excused absence does not count');
 
--- 4. Waitlist: plus members first; pro promotion offers a freed seat with a deadline and auto-approves the reply.
+-- 4. Waitlist: signup order for every tier; pro promotion offers a freed seat with a deadline and auto-approves the reply.
 select pg_temp.member_tier(h,'pro') from ids;
 insert into private.meetup_waitlist(post_id,user_id,joined_at) select b,m5,now()-interval '2 hours' from ids union all select b,m6,now()-interval '1 hour' from ids;
 select pg_temp.as_user(h) from ids; set local role authenticated;
@@ -101,17 +101,17 @@ select lives_ok($$select public.set_meetup_waitlist_promotion((select b from ids
 reset role;
 update public.meetup_requests set status='cancelled',responded_at=now() where post_id=(select b from ids) and requester_id=(select m3 from ids);
 select ok((select invited_at is not null and offer_expires_at between now()+interval '2 hours 59 minutes' and now()+interval '3 hours 1 minute'
-  from private.meetup_waitlist w,ids where w.post_id=b and w.user_id=m6),'Freed seat goes to the plus member first, with 3 hours to reply');
-select ok((select invited_at is null from private.meetup_waitlist w,ids where w.post_id=b and w.user_id=m5),'Free member waits behind');
-select ok(exists(select 1 from public.notifications n,ids where n.user_id=m6 and n.target_id=b and n.body like '%3시간 안에 신청하면%'),'Offer notice names the deadline');
-insert into public.meetup_requests(post_id,host_id,requester_id,status) select b,h,m6,'pending' from ids;
+  from private.meetup_waitlist w,ids where w.post_id=b and w.user_id=m5),'Freed seat goes to whoever joined first (free member), with 3 hours to reply');
+select ok((select invited_at is null from private.meetup_waitlist w,ids where w.post_id=b and w.user_id=m6),'Plus member waits in signup order, no priority');
+select ok(exists(select 1 from public.notifications n,ids where n.user_id=m5 and n.target_id=b and n.body like '%3시간 안에 신청하면%'),'Offer notice names the deadline');
+insert into public.meetup_requests(post_id,host_id,requester_id,status) select b,h,m5,'pending' from ids;
 set constraints meetup_requests_auto_approve immediate;
-select is((select status from public.meetup_requests r,ids where r.post_id=b and r.requester_id=m6),'approved','Reply within the deadline is approved automatically');
-update public.meetup_requests set status='cancelled',responded_at=now() where post_id=(select b from ids) and requester_id=(select m6 from ids);
-select ok((select invited_at is not null from private.meetup_waitlist w,ids where w.post_id=b and w.user_id=m5),'Next seat goes to the next person');
-update private.meetup_waitlist set offer_expires_at=now()-interval '1 minute' where post_id=(select b from ids) and user_id=(select m5 from ids);
+select is((select status from public.meetup_requests r,ids where r.post_id=b and r.requester_id=m5),'approved','Reply within the deadline is approved automatically');
+update public.meetup_requests set status='cancelled',responded_at=now() where post_id=(select b from ids) and requester_id=(select m5 from ids);
+select ok((select invited_at is not null from private.meetup_waitlist w,ids where w.post_id=b and w.user_id=m6),'Next seat goes to the next person');
+update private.meetup_waitlist set offer_expires_at=now()-interval '1 minute' where post_id=(select b from ids) and user_id=(select m6 from ids);
 select is(private.expire_meetup_waitlist_offers(),1,'Unanswered offer lapses');
-select ok((select cancelled_at is not null from private.meetup_waitlist w,ids where w.post_id=b and w.user_id=m5),'Lapsed entry leaves the waitlist');
+select ok((select cancelled_at is not null from private.meetup_waitlist w,ids where w.post_id=b and w.user_id=m6),'Lapsed entry leaves the waitlist');
 
 -- 5. "못 가요" with release leaves through leave_meetup.
 select pg_temp.as_user(m4) from ids; set local role authenticated;
@@ -126,18 +126,6 @@ select throws_ok($$select public.reserve_meetup_title_draft('c0300000-0000-4000-
 reset role; select pg_temp.as_user(m3) from ids; set local role authenticated;
 select lives_ok($$select public.reserve_meetup_title_draft('c0300000-0000-4000-8000-000000000002'); select public.reserve_meetup_title_draft('c0300000-0000-4000-8000-000000000002')$$,'Plus: regenerate');
 reset role;
-
--- 7. Plus members hear about a new meetup first.
-insert into public.notification_preferences(user_id,nearby) select m2,true from ids union all select m3,true from ids
-  on conflict(user_id) do update set nearby=true;
-insert into public.posts(id,author_id,city_id,tag_id,title,body,posted_on,room_preview)
-select 'c0100000-0000-4000-8000-000000000009',h,'conv-test',31996,'Fresh walk','Synthetic local test',current_date,
-  jsonb_build_object('eventKind','once','startsAt',now()+interval '4 days','endsAt',now()+interval '4 days 2 hours','timezone','America/Vancouver','capacity',6,'memberCount',1) from ids;
-select ok(private.send_early_meetup_alerts()>=1,'Early alerts sent');
-select ok(exists(select 1 from public.notifications n,ids where n.user_id=m3 and n.target_id='c0100000-0000-4000-8000-000000000009'),'Plus member notified right away');
-select ok(not exists(select 1 from public.notifications n,ids where n.user_id=m2 and n.target_id='c0100000-0000-4000-8000-000000000009'),'Free member not yet');
-select private.process_discovery_posts(500);
-select ok(not exists(select 1 from public.notifications n,ids where n.user_id=m2 and n.target_id='c0100000-0000-4000-8000-000000000009'),'Regular pass holds a fresh meetup for 30 minutes');
 
 -- 8. Empty meetups.
 select ok(private.tidy_empty_meetups()>=2,'Tidy ran');

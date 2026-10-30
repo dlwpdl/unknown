@@ -14,7 +14,7 @@ export const MEMBERSHIP_LIMITS = {
 
 // Meetup tools per paid tier; each tier also has the ones below it. The server checks private.meetup_tier_rank.
 export const MEETUP_TOOL_PERKS = {
-  plus: ['템플릿 · 질문 재사용', '조건 맞는 신청 바로 승인', '참석 인원 미리 보기 · 노쇼 규칙', '대기 순서 우선 · 새 모임 소식 먼저'],
+  plus: ['템플릿 · 질문 재사용', '조건 맞는 신청 바로 승인', '참석 인원 미리 보기 · 노쇼 규칙'],
   pro: ['플러스 + 반복 회차 · 대기 명단', '빈자리 대기자에게 자동으로 넘기기'],
   premium: ['프로 + 신청·참석 통계'],
 } as const;
