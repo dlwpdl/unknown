@@ -35,10 +35,11 @@ export function chillingAvailability(room: ChillingSchedule & { closed?: boolean
 }
 
 // The one primary action on a meetup detail. Labels are Korean tr() keys; the host can review requests even after it closes.
-export function meetupBarAction({ own, participating, loading, availability }: { own: boolean; participating: boolean; loading: boolean; availability: ReturnType<typeof chillingAvailability> }) {
+export function meetupBarAction({ own, participating, loading, availability, newcomerLocked = false }: { own: boolean; participating: boolean; loading: boolean; availability: ReturnType<typeof chillingAvailability>; newcomerLocked?: boolean }) {
   if (own) return { action: 'review', label: '신청자 검토', disabled: false, busy: false } as const;
   if (loading) return { action: null, label: '확인 중…', disabled: true, busy: true } as const;
   if (participating) return { action: 'status', label: '내 신청 보기', disabled: false, busy: false } as const;
+  if (availability === 'open' && newcomerLocked) return { action: 'locked', label: '새 멤버만 신청할 수 있는 모임이에요', disabled: true, busy: false } as const;
   if (availability === 'open') return { action: 'apply', label: '참여 신청', disabled: false, busy: false } as const;
   return { action: null, label: ({ full: '정원 마감', closed: '모집 마감', ended: '종료된 모임' } as const)[availability], disabled: true, busy: false } as const;
 }

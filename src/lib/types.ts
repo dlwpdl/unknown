@@ -49,6 +49,8 @@ export interface RoomPreview {
   verifiedOnly: boolean;
   closed?: boolean;
   recruitingClosed?: boolean; // host paused new requests; members and pending requests stay
+  newcomerWelcome?: boolean; // host marked the meetup first-timer friendly ("처음 와도 돼요")
+  newcomerOnly?: boolean; // only members still in their newcomer period may request; needs newcomerWelcome
   eventKind?: 'once' | 'group';
   category?: 'casual' | 'hobby' | 'travel' | 'party' | 'festival' | 'sports';
   startsAt?: string | null;

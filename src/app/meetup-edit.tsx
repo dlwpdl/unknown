@@ -24,9 +24,12 @@ import { splitEventMeetupBody } from '@/lib/meetup-ai';
 import { splitPlaceMeetupBody } from '@/lib/meetup-destination';
 import { joinMeetupSections, parseMeetupSections } from '@/lib/meetup-sections';
 import { MeetupSectionsEditor } from '@/components/meetup-sections';
+import { MeetupNewcomerOption } from '@/components/newcomer';
+import { setMeetupNewcomer } from '@/lib/newcomer';
 import { supabase } from '@/lib/supabase';
 
-type Baseline = { title: string; intro: string; event: ChillingEventDraft; capacity: string };
+type Newcomer = { welcome: boolean; only: boolean };
+type Baseline = { title: string; intro: string; event: ChillingEventDraft; capacity: string; newcomer: Newcomer };
 
 // Place/event lines are appended at creation and drive map/event links; only the human intro is editable.
 // An unverifiable place tail still falls to the event split, so machine lines are kept rather than exposed.
@@ -49,6 +52,7 @@ function MeetupEditForm({ postId }: { postId: string }) {
   const [base, setBase] = useState<Baseline | null>(null);
   const [title, setTitle] = useState(''), [intro, setIntro] = useState(''), [details, setDetails] = useState('');
   const [event, setEvent] = useState<ChillingEventDraft | null>(null), [capacity, setCapacity] = useState('');
+  const [newcomer, setNewcomer] = useState<Newcomer>({ welcome: false, only: false });
   const [saving, setSaving] = useState(false), [error, setError] = useState(''), [errorField, setErrorField] = useState<string | null>(null);
   const busy = useRef(false), mounted = useRef(true);
   useLayoutEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
@@ -64,8 +68,9 @@ function MeetupEditForm({ postId }: { postId: string }) {
       const draft: ChillingEventDraft = { kind: room.eventKind ?? 'group', startsAt: room.startsAt ?? '', endsAt: room.endsAt ?? '', timezone: room.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone, cadence: room.cadence ?? '', capacity: room.capacity ?? 8, category: room.category };
       // Headed intros are compared in their saved shape, so opening the editor alone never marks the form dirty.
       const sections = parseMeetupSections(parts.intro);
-      const next = { title: value.title, intro: sections ? joinMeetupSections(sections) : parts.intro, event: draft, capacity: String(draft.capacity) };
-      setBase(next); setTitle(next.title); setIntro(next.intro); setDetails(parts.details); setEvent(draft); setCapacity(next.capacity);
+      const next = { title: value.title, intro: sections ? joinMeetupSections(sections) : parts.intro, event: draft, capacity: String(draft.capacity),
+        newcomer: { welcome: room.newcomerWelcome === true, only: room.newcomerOnly === true } };
+      setBase(next); setNewcomer(next.newcomer); setTitle(next.title); setIntro(next.intro); setDetails(parts.details); setEvent(draft); setCapacity(next.capacity);
     }).catch(cause => { if (active) setLoadError(getChillingError(cause)); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -73,7 +78,8 @@ function MeetupEditForm({ postId }: { postId: string }) {
 
   const textDirty = !!base && (title !== base.title || intro !== base.intro);
   const eventDirty = !!base && !!event && (capacity !== base.capacity || event.startsAt !== base.event.startsAt || event.endsAt !== base.event.endsAt || event.cadence !== base.event.cadence);
-  const dirty = textDirty || eventDirty;
+  const newcomerDirty = !!base && (newcomer.welcome !== base.newcomer.welcome || newcomer.only !== base.newcomer.only);
+  const dirty = textDirty || eventDirty || newcomerDirty;
   usePreventRemove(dirty && !saving, ({ repeat }) => {
     const heading = tr('수정 중인 내용을 버리고 나갈까요?'), message = tr('저장하지 않은 수정 내용은 사라져요.');
     if (Platform.OS === 'web') { if (globalThis.confirm(`${heading}\n${message}`)) repeat(); return; }
@@ -107,6 +113,7 @@ function MeetupEditForm({ postId }: { postId: string }) {
       // Kind is passed back unchanged; the server rechecks ownership, expiry and the member floor.
       if (eventDirty) { await configureChillingEvent(supabase, meetup.id, draft); eventSaved = true; }
       if (textDirty) await editPost(supabase, meetup.id, { title: title.trim(), body: intro.trim() + details });
+      if (newcomerDirty) await setMeetupNewcomer(supabase, meetup.id, newcomer.welcome, newcomer.only);
       DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       if (!mounted.current) return;
       play('success');
@@ -168,6 +175,7 @@ function MeetupEditForm({ postId }: { postId: string }) {
             <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('현재 멤버 {0}명 · 이보다 적게 줄일 수 없어요.', memberCount)}</ThemedText>
             {fieldError('capacity')}
           </View>
+          <MeetupNewcomerOption welcome={newcomer.welcome} only={newcomer.only} onChange={setNewcomer} disabled={saving} />
         </>}
       </>}
     </ScrollView>{!blocked && <View style={[styles.footer, { backgroundColor: theme.background, borderTopColor: theme.line }]}>

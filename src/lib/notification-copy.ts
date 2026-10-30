@@ -38,6 +38,18 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
   meetup_changed: [[/^(.+) 모임의 시간이나 장소가 바뀌었어요\. 바뀐 내용을 확인해 주세요\.$/, m => `The time or place for “${m[1]}” changed. Check the updated details.`]],
   trending_post: [[/^오늘 (.+?) 소식, 같이 읽어볼까요\? (.+)$/, (m, translate) => `Today in ${translate(m[1])}: ${m[2]}`], eventPattern],
   city_places: [eventPattern],
+  // First-week newcomer nudges (private.send_newcomer_nudges) reuse the trending_meetup kind.
+  trending_meetup: [
+    [/^가입 축하해요\. 처음 가기 편한 모임부터 모아 뒀어요\.$/, () => 'You’re in. We saved the easiest meetups to start with.'],
+    [/^이번 주 모임이 올라왔어요\. (.+), 아직 자리 있어요\.$/, m => `This week’s meetups are up. “${m[1]}” still has room.`],
+    [/^이번 주말엔 처음 오는 분 반기는 모임이 (?:(한|두|세|네) 곳|(\d+)곳) 있어요\.$/, m => {
+      const count = m[1] ? '한두세네'.indexOf(m[1]) + 1 : Number(m[2]);
+      return count === 1 ? 'One meetup this weekend welcomes first-timers.'
+        : `${['', '', 'Two', 'Three', 'Four'][count] ?? count} meetups this weekend welcome first-timers.`;
+    }],
+    [/^벌써 일주일이네요\. 다음 주 모임도 열렸어요\.$/, () => 'One week in already. Next week’s meetups are open.'],
+    [/^첫 모임 어땠어요\? 다음 주에도 같은 호스트 모임이 있어요\.$/, () => 'How was your first meetup? The same host has one next week too.'],
+  ],
   trending_hashtag: [[/^(?:요즘 관심이 모이는 주제예요\.?|요즘 뜨는 해시태그 ·)\s*(#[\p{L}\p{M}\p{N}_-]{1,64})$/u, m => `Trending near you: ${m[1]}`]],
   like_summary: [
     [/^(.+)님 외 (\d+)명이 내 (글|댓글)을 좋아해요\.$/, m => `${m[1]} and ${m[2]} ${m[2] === '1' ? 'other' : 'others'} liked your ${m[3] === '글' ? 'post' : 'comment'}.`],

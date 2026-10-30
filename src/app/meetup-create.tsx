@@ -36,6 +36,8 @@ import { useMembership } from '@/lib/membership-provider';
 import { supabase } from '@/lib/supabase';
 import { behavior } from '@/lib/behavior-analytics';
 import { MeetupSectionsEditor } from '@/components/meetup-sections';
+import { MeetupNewcomerOption } from '@/components/newcomer';
+import { setMeetupNewcomer } from '@/lib/newcomer';
 import { MEETUP_DRAFT_FIELDS, meetupAiDraftChanges, meetupAiDraftFields, parseMeetupAiDraftResponse, type MeetupDraftField, type MeetupDraftFields, type MeetupDraftRevision } from '@/lib/ai-draft';
 import { splitEventMeetupBody } from '@/lib/meetup-ai';
 import { placeMapRoute } from '@/lib/discovery';
@@ -95,6 +97,7 @@ function MeetupCreateForm() {
   });
   const [capacity, setCapacity] = useState('6');
   const [ageMin, setAgeMin] = useState(''), [ageMax, setAgeMax] = useState('');
+  const [newcomer, setNewcomer] = useState({ welcome: false, only: false });
   const [saving, setSaving] = useState(false), [error, setError] = useState(''), [touched, setTouched] = useState(false);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
@@ -112,7 +115,7 @@ function MeetupCreateForm() {
     setDraftEdited(true); setAiDraftReady(false);
   };
   useLayoutEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  usePreventRemove((draftEdited || touched || !!cover || !!topic.trim() || capacity !== '6' || !!ageMin || !!ageMax) && !saving, ({ repeat }) => {
+  usePreventRemove((draftEdited || touched || !!cover || !!topic.trim() || capacity !== '6' || !!ageMin || !!ageMax || newcomer.welcome) && !saving, ({ repeat }) => {
     const title = tr('작성 중인 모임에서 나갈까요?'), message = tr('작성한 내용은 저장되지 않아요.');
     if (Platform.OS === 'web') { if (globalThis.confirm(`${title}\n${message}`)) repeat(); return; }
     Alert.alert(title, message, [{ text: tr('계속 작성'), style: 'cancel' }, { text: tr('나가기'), style: 'destructive', onPress: repeat }]);
@@ -241,6 +244,8 @@ function MeetupCreateForm() {
         return;
       }
       const id = await createChillingEvent(supabase, { userId: me.id, image: cover ?? undefined, cityId: meetupCity.id, title: title.trim(), body: body.trim() + eventDetails, question: question.trim(), hostProfileRevision: profile.revision, event: { ...event, capacity: Number(capacity), ...(ageMin ? { recommendedAgeMin: Number(ageMin), recommendedAgeMax: Number(ageMax) } : {}) } });
+      // A failed label save leaves the meetup open without labels; the host can retry from edit.
+      const newcomerSaved = !newcomer.welcome || await setMeetupNewcomer(supabase, id, true, newcomer.only).then(() => true, () => false);
       // The meetup exists even if the host already left this screen, so lists refresh first.
       DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       if (!mounted.current || !focused.current || request !== profileRead.current) return;
@@ -248,6 +253,7 @@ function MeetupCreateForm() {
       play('meetupCreated');
       router.replace({ pathname: '/post/[id]', params: { id } });
       requestPushPrompt('meetup_create');
+      if (!newcomerSaved) Alert.alert(tr('처음 오는 분 설정은 저장하지 못했어요'), tr('모임은 열렸어요. 모임 정보 수정에서 다시 켜 주세요.'));
     } catch (cause) {
       if (!mounted.current) return;
       const code = getChillingErrorCode(cause);
@@ -329,6 +335,7 @@ function MeetupCreateForm() {
         <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{aiCopy(`현재 멤버십은 호스트를 포함해 최대 ${capacityLimit}명까지예요.`, `Your current membership allows up to ${capacityLimit} people, including the host.`)}</ThemedText>
         {errorField === 'capacity' && !!error && <ThemedText accessibilityRole="alert" themeColor="accent" style={styles.bodyText}>{tr(error)}</ThemedText>}
       </View>
+      <MeetupNewcomerOption welcome={newcomer.welcome} only={newcomer.only} onChange={setNewcomer} disabled={saving} />
       <Pressable analyticsId="meetup-create.advanced" accessibilityRole="button" accessibilityState={{ expanded: advancedOpen }} onPress={() => { play('selection'); setAdvancedOpen(value => !value); }} style={({ pressed }) => [styles.disclosure, { opacity: pressed ? 0.82 : 1 }]}>
         <ThemedText style={styles.label} themeColor="accent">{aiCopy('참가 설정 · 선택', 'Participation settings · optional')}</ThemedText>
         <SymbolView name={{ ios: advancedOpen ? 'chevron.up' : 'chevron.down', android: advancedOpen ? 'expand_less' : 'expand_more', web: advancedOpen ? 'expand_less' : 'expand_more' }} size={16} tintColor={theme.accent} />

@@ -1,3 +1,4 @@
+import { NewcomerProgressCard } from '@/components/newcomer';
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView, FlatList } from '@/components/analytics-controls';
@@ -833,6 +834,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 </View>
                 <ThemedText accessibilityRole="header" style={styles.journalTitle}>{meetupsOnly ? t.feed.meetupTitle : t.feed.journalTitle}</ThemedText>
               </View>
+              {!meetupsOnly && isAuthed && <NewcomerProgressCard />}
               {cityOpen && !meetupsOnly && <LocalEventsCarousel cityId={city.id} refreshKey={rankingRefresh} cityLoading={cityLoading} onCityReady={setLoadedEventsCityId} />}
               {cityOpen && !meetupsOnly && <CityPopularPlaces cityId={city.id} />}
               {meetupsOnly && <>
