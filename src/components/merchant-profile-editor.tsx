@@ -15,6 +15,8 @@ import { loadMyMerchantProfile, saveMyMerchantProfile, saveMyMerchantProfilePhot
 import { saveMerchantContact } from '@/lib/merchant-conveniences';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { supabase } from '@/lib/supabase';
+import { publicCompanyUrl } from '@/lib/public-seo';
+import { CONTACT_EMAIL } from '@/lib/legal-documents';
 
 type Photo = { path: string | null; uri: string | null; image?: PreparedImage };
 type Photos = { avatar: Photo; banner: Photo; map: Photo };
@@ -150,16 +152,25 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
   const name = (kind: keyof Photos) => kind === 'banner' ? tr("채널 배너") : kind === 'avatar' ? tr("가게 로고") : tr("지도 대표 사진");
   const short = (kind: keyof Photos) => kind === 'banner' ? tr('배너') : kind === 'avatar' ? tr('로고') : tr('지도 사진');
   const card = [styles.card, { borderColor: theme.line, backgroundColor: theme.card }];
+  // Public profile fields guests see; [label, fillable on this screen].
+  const missing = !profile ? [] : ([[tr("배너"), !profile.banner_path], [tr("로고"), !profile.avatar_path], [tr("주소"), !profile.address?.trim(), false],
+    [tr("영업시간"), !profile.business_hours?.trim()], [tr("전화번호"), !profile.public_phone?.trim()], [tr("소개"), !profile.services?.trim(), false]] as [string, boolean, boolean?][])
+    .filter(([, empty]) => empty).map(([label, , here = true]) => [label, here] as const);
   return <View style={styles.page}>
     {(!bare || profile) && <View style={[styles.row, bare && styles.end]}>
       {!bare && <ThemedText type="subtitle">{tr("비즈니스 프로필")}</ThemedText>}
       {profile && <ProfileAction label={tr("공개 프로필 보기")} onPress={() => {
-        if (Platform.OS === 'web') void Linking.openURL(`https://gling.ej-entertainment.com/company?id=${encodeURIComponent(merchantId)}`).catch(() => setError("프로필을 열지 못했어요. 잠시 후 다시 시도해 주세요."));
+        if (Platform.OS === 'web') void Linking.openURL(publicCompanyUrl(merchantId)).catch(() => setError("프로필을 열지 못했어요. 잠시 후 다시 시도해 주세요."));
         else router.push({ pathname: '/company/[id]', params: { id: merchantId } });
       }} disabled={busy} />}
     </View>}
     {loading ? <ThemedText type="small" accessibilityLiveRegion="polite">{tr("프로필을 불러오는 중…")}</ThemedText>
       : profile && photos && <>
+        {profile.can_edit && missing.length > 0 && <View style={card} accessibilityRole="summary">
+          <ThemedText type="smallBold">{tr("배너·주소·영업시간을 채우면 더 잘 보여요")}</ThemedText>
+          <ThemedText type="small">{tr("아직 비어 있어요: {0}", missing.map(([label]) => label).join(', '))}</ThemedText>
+          {missing.some(([, here]) => !here) && <ThemedText type="small" themeColor="textSecondary">{tr("주소와 소개는 {0}로 보내 주시면 넣어 드려요.", CONTACT_EMAIL)}</ThemedText>}
+        </View>}
         <View style={card}>
           <ThemedText type="smallBold">{tr("사진")}</ThemedText>
           <MerchantProfileHeader profile={{ ...profile, avatarUri: photos.avatar.uri, bannerUri: photos.banner.uri }} />

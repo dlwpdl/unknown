@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import { useEffect, useRef, useState } from 'react';
 import { Image } from 'expo-image';
-import { AppState, Platform, StyleSheet, View, type KeyDownEvent } from 'react-native';
+import { AppState, Linking, Platform, StyleSheet, View, type KeyDownEvent } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
@@ -14,6 +14,7 @@ import { MerchantMcpGuide } from '@/components/merchant-mcp-guide';
 import { mcpClientTrust } from '@/lib/mcp-client-trust';
 import { loadMyMerchants, type BusinessMerchant } from '@/lib/merchant-workspace';
 import { supabase } from '@/lib/supabase';
+import { PUBLIC_BUSINESS_PRICING } from '@/lib/public-seo';
 
 
 const valueText = (value: unknown) => value == null || value === '' ? '없음' : Array.isArray(value) ? value.length ? value.join('\n') : '없음' : String(value);
@@ -189,6 +190,7 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
       {merchants.length > 0 && !merchants.some(m => m.plan !== 'basic') && <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <ThemedText type="subtitle" accessibilityRole="header">{tr("AI 연결은 유료 비즈니스 멤버십에서 쓸 수 있어요.")}</ThemedText>
         <ThemedText themeColor="textSecondary">{tr("플러스 이상으로 바꾸면 Claude·ChatGPT에서 바로 글링 초안을 만들 수 있어요. 무료에서는 직접 쓰기를 계속 이용할 수 있어요.")}</ThemedText>
+        <View style={styles.row}><Action label={tr("요금제 보기")} onPress={() => { void Linking.openURL(PUBLIC_BUSINESS_PRICING).catch(() => {}); }} /></View>
       </View>}
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <ThemedText type="subtitle" accessibilityRole="header">{tr("연결된 AI 도구")}</ThemedText>

@@ -19,7 +19,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CONTACT_EMAIL } from '@/lib/legal-documents';
-import { BUSINESS_LIMITS, GENERAL_BUMP_HOURS, MEETUP_TOOL_PERKS, MEMBERSHIP_LIMITS, yearlyListPrice, type BusinessMembershipSnapshot, type MembershipKind, type MembershipOffer } from '@/lib/membership';
+import { BUSINESS_LIMITS, GENERAL_BUMP_HOURS, MEETUP_TOOL_PERKS, MEMBERSHIP_LIMITS, yearlyListPrice, yearlySavings, type BusinessMembershipSnapshot, type MembershipKind, type MembershipOffer } from '@/lib/membership';
 import { useMembership } from '@/lib/membership-provider';
 import { loadMyMerchants, type BusinessMerchant } from '@/lib/merchant-workspace';
 import { supabase } from '@/lib/supabase';
@@ -100,6 +100,8 @@ export default function MembershipScreen() {
   const selectedOffer = familyOffers.find((offer) => offer.tier === selection.tier && offer.period === selection.period)
     ?? familyOffers.find((offer) => offer.tier === selection.tier);
   const period = selectedOffer?.period ?? selection.period;
+  const tierPrice = (value: 'month' | 'year') => familyOffers.find((offer) => offer.tier === selection.tier && offer.period === value)?.price;
+  const yearSaving = yearlySavings(tierPrice('month') ?? '', tierPrice('year') ?? '');
   const periods = (['year', 'month'] as const).filter((value) => familyOffers.some((offer) => offer.tier === selection.tier && offer.period === value));
   const currentProduct = !!activeMembership && activeMembership.tier !== 'free' && !!selectedOffer && selectedOffer.productId === activeMembership.productId;
   const otherBusiness = kind === 'business' && !!membership?.businessSubscription?.merchantId && membership.businessSubscription.merchantId !== merchantId;
@@ -204,7 +206,7 @@ export default function MembershipScreen() {
               onPress={() => selectPlan({ ...selection, period: value })}
               style={({ pressed }) => [styles.period, styles.periodLabel, { backgroundColor: periodWidth === 0 && value === period ? theme.card : 'transparent', opacity: pressed ? 0.7 : 1 }]}>
               <ThemedText type="smallBold" themeColor={value === period ? 'accent' : undefined}>{value === 'month' ? tr("월간") : tr("연간")}</ThemedText>
-              {value === 'year' && <View style={[styles.save, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={[styles.saveText, { color: theme.accentInk }]}>{tr("2달 무료")}</ThemedText></View>}
+              {value === 'year' && yearSaving && <View style={[styles.save, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={[styles.saveText, { color: theme.accentInk }]}>{'freeMonths' in yearSaving ? tr("2달 무료") : tr("{0}% 할인", yearSaving.percent)}</ThemedText></View>}
             </Pressable>)}
           </View>}
 

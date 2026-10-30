@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentProps } from 'react';
-import { Platform, StyleSheet, TextInput, View, useWindowDimensions } from 'react-native';
+import { Linking, Platform, StyleSheet, TextInput, View, useWindowDimensions } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
@@ -9,6 +9,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadMerchantMcpConnections } from '@/lib/merchant-mcp';
+import { PUBLIC_BUSINESS_PRICING } from '@/lib/public-seo';
 import { supabase } from '@/lib/supabase';
 
 // Below this width the business web drops the sidebar for a scrollable row of the same destinations.
@@ -122,7 +123,7 @@ export function MerchantHome({ name, place, onChoose, purposes, purpose, onPurpo
         {aiOwner && <View style={card}>
           <ThemedText type="subtitle" accessibilityRole="header">{tr('AI로 글쓰기')}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{!aiEnabled ? tr('AI 연결은 유료 비즈니스 멤버십에서 쓸 수 있어요.') : connected ? tr('연결된 AI {0}개', connected) : tr('Claude·ChatGPT에서 바로 글링 초안을 만들어요.')}</ThemedText>
-          <View style={styles.row}>{button(connected ? tr('관리') : tr('연결하기'), onOpenAi, 'merchant.action')}</View>
+          <View style={styles.row}>{button(connected ? tr('관리') : tr('연결하기'), onOpenAi, 'merchant.action')}{!aiEnabled && button(tr('요금제 보기'), () => { void Linking.openURL(PUBLIC_BUSINESS_PRICING).catch(() => {}); }, 'merchant.action')}</View>
         </View>}
         {onOpenReviews && <View style={card}>
           <ThemedText type="subtitle" accessibilityRole="header">{tr('이용 후기')}</ThemedText>
