@@ -72,6 +72,6 @@ test('web home title and lang use the resolved saved/device language without tra
     language = resolveLanguage(parseLanguagePreference(saved), devices);
     const tree = exported.default();
     assert.equal(tree.props.lang, expectedLanguage);
-    assert.equal(nodes(tree).find(node => node.type === 'title').props.children, language === 'ko' ? '글링 | 캐나다 모임 커뮤니티' : 'Gling | Canada Meetup Community');
+    assert.equal(nodes(tree).find(node => node.type === 'title').props.children, language === 'ko' ? '글링 | 캐나다 한인 커뮤니티' : 'Gling | Korean Community in Canada');
   }
 });

@@ -70,7 +70,7 @@ export const uiEnglish: Record<string, string> = {
   "처리를 확인하지 못했어요. 연결 상태를 확인한 뒤 다시 시도해 주세요.": "Couldn’t confirm the result. Check your connection and try again.",
   "AI 신규 연결은 비즈니스 오너만 이용할 수 있어요.": "Only business owners can set up new AI connections.",
   "소유권이 확인된 내 비즈니스가 필요해요. 운영 담당자는 웹에서 배정된 비즈니스를 관리할 수 있어요. 이전에 연결한 AI는 아래에서 해제할 수 있어요.": "You’ll need a business with verified ownership. Operators can manage their assigned businesses on the web. You can disconnect previously connected AI tools below.",
-  "글링 | 캐나다 모임 커뮤니티": "Gling | Canada Meetup Community",
+  "글링 | 캐나다 한인 커뮤니티": "Gling | Korean Community in Canada",
   "비즈니스 찾기": "Find businesses",
   "새 소식으로 돌아가기": "Back to updates",
   "이름, 업종으로 검색": "Search by name or industry",

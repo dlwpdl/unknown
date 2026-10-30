@@ -4,7 +4,7 @@ import { jsonLd, publicPostUrl, publicSiteName, PUBLIC_SITE } from '../src/lib/p
 import { previewImage } from '../src/lib/shared-link-preview.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const escapeHtml = value => String(value).replace(/[&<>"']/g, character => `&#${character.charCodeAt(0)};`);
+export const escapeHtml = value => String(value).replace(/[&<>"']/g, character => `&#${character.charCodeAt(0)};`);
 
 // Same public RPCs the guest web reader calls, with the publishable key only.
 async function rpc(url, key, name, args, fetcher) {
@@ -21,7 +21,8 @@ export async function loadPublicPosts({ url, key, cities, fetcher = fetch }) {
     let before = null, beforeId = null;
     while (true) {
       const page = await rpc(url, key, 'get_public_feed_page_v2', { p_city_id: city, p_tag_id: null, p_query: null, p_before_sort: before, p_before_id: beforeId, p_limit: 30 }, fetcher);
-      for (const row of page) if (UUID.test(row.id) && !rows.has(row.id)) rows.set(row.id, { id: row.id, cityId: city, lastmod: row.sort_at ?? row.created_at });
+      // 20000000-… rows are the 0002 seed fixtures, not real posts.
+      for (const row of page) if (UUID.test(row.id) && !row.id.startsWith('20000000-0000-0000-0000-') && !rows.has(row.id)) rows.set(row.id, { id: row.id, cityId: city, lastmod: row.sort_at ?? row.created_at });
       if (page.length < 30 || rows.size >= 45000) break;
       const last = page.at(-1); before = last.sort_at ?? last.created_at; beforeId = last.id;
     }
@@ -37,8 +38,9 @@ export async function loadPublicPosts({ url, key, cities, fetcher = fetch }) {
   return posts.sort((a, b) => String(b.lastmod).localeCompare(String(a.lastmod)));
 }
 
-export function renderPublicPost(template, post) {
-  const url = publicPostUrl(post.id), title = `${post.title} | ${publicSiteName()}`;
+export function renderPublicPost(template, post, related = []) {
+  const url = publicPostUrl(post.id), title = `${post.title} | 글링`;
+  const hub = post.cityId ? `${PUBLIC_SITE}/${post.cityId}` : null;
   const description = post.teaser || [post.city, post.label, '글링에서 로그인하면 전체 글을 읽을 수 있어요.'].filter(Boolean).join(' · ');
   const schema = {
     '@context': 'https://schema.org', '@type': 'WebPage', url, name: post.title, inLanguage: 'ko', description,
@@ -47,7 +49,8 @@ export function renderPublicPost(template, post) {
     isPartOf: { '@type': 'WebSite', name: publicSiteName(), url: `${PUBLIC_SITE}/` },
     breadcrumb: { '@type': 'BreadcrumbList', itemListElement: [
       { '@type': 'ListItem', position: 1, name: publicSiteName(), item: `${PUBLIC_SITE}/` },
-      { '@type': 'ListItem', position: 2, name: post.title, item: url },
+      ...(hub ? [{ '@type': 'ListItem', position: 2, name: `${post.city || post.cityId} 한인 커뮤니티`, item: hub }] : []),
+      { '@type': 'ListItem', position: hub ? 3 : 2, name: post.title, item: url },
     ] },
   };
   const head = [
@@ -70,7 +73,9 @@ export function renderPublicPost(template, post) {
     + `<h1 style="margin:0;font-size:24px;line-height:1.35">${escapeHtml(post.title)}</h1>`
     + (post.imageUrl ? `<img src="${escapeHtml(post.imageUrl)}" alt="${escapeHtml(post.title)}" style="display:block;width:100%;margin-top:16px;border-radius:12px" loading="lazy"/>` : '')
     + (post.teaser ? `<p style="margin:16px 0 0;white-space:pre-line">${escapeHtml(post.teaser)}</p>` : '')
-    + `<p style="margin:16px 0 0"><a href="/post?id=${post.id}" style="color:#CBB9FF">글링에서 전체 글 읽기</a> · <a href="/" style="color:#CBB9FF">동네 이야기 더 보기</a></p></article>`;
+    + `<p style="margin:16px 0 0"><a href="/post?id=${post.id}" style="color:#CBB9FF">글링에서 전체 글 읽기</a> · <a href="${hub ? `/${post.cityId}` : '/'}" style="color:#CBB9FF">${escapeHtml(post.city ? `${post.city} 동네 이야기 더 보기` : '동네 이야기 더 보기')}</a></p>`
+    + (related.length ? `<h2 style="margin:24px 0 8px;font-size:17px">${escapeHtml(post.city ? `${post.city} 다른 이야기` : '다른 이야기')}</h2><ul style="margin:0;padding-left:20px">${related.map(item => `<li><a href="/posts/${item.id}" style="color:#CBB9FF">${escapeHtml(item.title)}</a></li>`).join('')}</ul>` : '')
+    + '</article>';
   const stripped = template.replace(/<title[^>]*>[^<]*<\/title>|<meta (?:name="(?:description|robots|twitter:[^"]*)"|property="og:[^"]*")[^>]*\/?>|<link rel="canonical"[^>]*\/?>|<script type="application\/ld\+json"[^>]*>[\s\S]*?<\/script>/g, '');
   if (!/<\/head>/.test(stripped) || !/<body[^>]*>/.test(stripped)) throw new Error('Unexpected web shell for prerendered posts');
   return stripped.replace('</head>', `${head}</head>`).replace(/<body[^>]*>/, match => `${match}${body}`);
@@ -81,6 +86,11 @@ export async function prerenderPublicPosts(directory, options) {
   // The 404 shell is what static hosts already serve for /posts/:id, so the client router hydrates it unchanged.
   const template = readFileSync(join(directory, '+not-found.html'), 'utf8');
   mkdirSync(join(directory, 'posts'), { recursive: true });
-  for (const post of posts) writeFileSync(join(directory, 'posts', `${post.id}.html`), renderPublicPost(template, post));
+  for (const [index, post] of posts.entries()) {
+    // The next few newer-or-older posts from the same city, so every prerendered post links to others.
+    const sameCity = posts.filter(item => item.cityId === post.cityId && item.id !== post.id);
+    const at = Math.max(0, sameCity.findIndex(item => posts.indexOf(item) > index) - 4);
+    writeFileSync(join(directory, 'posts', `${post.id}.html`), renderPublicPost(template, post, sameCity.slice(at, at + 8)));
+  }
   return posts;
 }
