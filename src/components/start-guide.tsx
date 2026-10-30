@@ -26,9 +26,9 @@ export function resetStartGuide() {
 type Icon = SymbolViewProps['name'];
 const TOUR: { icon: Icon; title: string; body: string }[] = [
   { icon: { ios: 'location', android: 'location_on', web: 'location_on' }, title: '위쪽 도시 이름', body: '눌러서 사는 도시로 바꿀 수 있어요. 글·모임·장소가 모두 그 도시 기준으로 바뀌어요.' },
-  { icon: { ios: 'magnifyingglass', android: 'search', web: 'search' }, title: '돋보기 (검색)', body: '제목·내용·해시태그로 이웃 글을 찾아요. "원베드", "알바"처럼 짧게 쳐 보세요.' },
-  { icon: { ios: 'map', android: 'map', web: 'map' }, title: '지도', body: '렌트·매매 매물, 중고거래, 가볼 만한 곳, 행사를 지도에서 한눈에 봐요.' },
-  { icon: { ios: 'line.3.horizontal.decrease', android: 'filter_list', web: 'filter_list' }, title: '카테고리 줄', body: "맨 위 로고 바로 밑 줄이에요. 부동산·구인구직·중고거래처럼 주제별로 모아 보고, 끝의 '더보기'에 나머지가 있어요." },
+  { icon: { ios: 'magnifyingglass', android: 'search', web: 'search' }, title: '검색창', body: '도시 이름 아래에 있어요. 글·모임·장소·비즈니스를 한 번에 찾아요. "원베드", "알바"처럼 짧게 쳐 보세요.' },
+  { icon: { ios: 'line.3.horizontal.decrease', android: 'filter_list', web: 'filter_list' }, title: '카테고리 줄', body: "검색창 바로 아래 줄이에요. 부동산·구인구직처럼 주제별로 골라 볼 수 있어요. 나머지 주제는 맨 끝 '더보기'에 있어요." },
+  { icon: { ios: 'map', android: 'map', web: 'map' }, title: '렌트·중고 지도', body: "날짜 옆 '렌트·중고' 버튼을 누르면 집 매물과 중고 물건이 지도에 한꺼번에 나와요. 가볼 만한 곳과 행사는 지도 위쪽에서 같이 고를 수 있어요." },
   { icon: { ios: 'person.2', android: 'groups', web: 'groups' }, title: '아래 모임 탭', body: '이번 주 열리는 모임을 보고 바로 신청해요. 직접 모임을 열 수도 있어요.' },
   { icon: { ios: 'square.and.pencil', android: 'edit_square', web: 'edit_square' }, title: '아래 글쓰기 탭', body: '궁금한 걸 묻거나 집·일자리·중고 글을 올려요. 주제를 고르면 맞는 칸이 나와요.' },
   { icon: { ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' }, title: '채팅 · 알림', body: '채팅은 1:1 대화와 모임 단톡방, 알림은 내 글에 달린 댓글과 모임 소식이에요.' },
@@ -102,7 +102,7 @@ export function StartGuide({ cityName, onPickCity, onOpenMeetups }: { cityName: 
         <SafeAreaView style={[styles.flex, { backgroundColor: theme.background }]}>
           <ScrollView analyticsId="start-guide.tour" contentContainerStyle={styles.tour}>
             <ThemedText accessibilityRole="header" style={Typography.sheetTitle}>{tr('글링은 이렇게 생겼어요')}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">{tr('오늘 화면 위에서 아래 순서대로 보면 돼요.')}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{tr('홈 화면 맨 위부터 차례로 보면 돼요.')}</ThemedText>
             {TOUR.map(item => (
               <View key={item.title} style={styles.tourRow}>
                 <View style={[styles.stepIcon, { backgroundColor: theme.backgroundElement }]}>

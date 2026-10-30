@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { discoveryDistanceKm, sortDiscoveryItems } from '../src/lib/discovery-sort.ts';
+import { discoveryDistanceKm, preferVisitedPlaces, sortDiscoveryItems } from '../src/lib/discovery-sort.ts';
 
 const origin = { latitude: 49.25, longitude: -122.86 };
 const place = (id, latitude, discount) => ({ id, source: 'place', sourceId: id, cityId: 'vancouver', title: id, category: 'dining', label: id, latitude, longitude: origin.longitude, price: null, webshopDiscount: discount });
@@ -36,4 +36,12 @@ test('nearby place ordering uses the full input, stable ties and real user coord
   for(const bad of [null,{...fix,accuracy:1000},{...fix,measuredAt:now-120001},{...fix,latitude:91}]){const fallback=rankPlacesByDistance(places,bad,now);assert.deepEqual(fallback.map(row=>row.place.id),places.map(row=>row.id));assert.ok(fallback.every(row=>row.distance===null));}
   const tr=(message,...values)=>message.replace(/\{(\d+)\}/g,(_,index)=>values[index]);
   assert.equal(formatNearbyDistance(1.234,tr),'약 1.2km');assert.equal(formatNearbyDistance(.02,tr),'100m 이내');assert.equal(formatNearbyDistance(null,tr),null);assert.equal(formatNearbyDistance(Infinity,tr),null);
+});
+
+test('places members rated or saved lead in server order, then Gling visits, and everything else keeps its order', () => {
+  const rows = ['tower', 'aquarium', 'kimchi', 'visited', 'cafe'].map(id => ({ place: { id, ...(id === 'visited' ? { glingVisited: { sourceUrl: 'x' } } : {}) } }));
+  assert.deepEqual(preferVisitedPlaces(rows, ['cafe', 'kimchi']).map(row => row.place.id), ['cafe', 'kimchi', 'visited', 'tower', 'aquarium']);
+  assert.deepEqual(preferVisitedPlaces(rows, []).map(row => row.place.id), ['visited', 'tower', 'aquarium', 'kimchi', 'cafe']);
+  assert.deepEqual(preferVisitedPlaces(rows, ['not-in-catalog']).map(row => row.place.id), ['visited', 'tower', 'aquarium', 'kimchi', 'cafe']);
+  assert.deepEqual(rows.map(row => row.place.id), ['tower', 'aquarium', 'kimchi', 'visited', 'cafe'], 'input order is untouched');
 });

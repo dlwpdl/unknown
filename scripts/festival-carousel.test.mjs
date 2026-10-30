@@ -12,7 +12,7 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
   let windowDimensions = { width: 390, height: 844 };
   const formats = [];
   const hooks = [], pending = [], timers = new Map(), listeners = new Map(), requests = [], motion = [], scrolls = [], feedback = [];
-  const events = Array.from({ length: eventCount }, (_, index) => ({ id: `f${index}`, name: `f${index} Festival`, startsAt: `2099-01-${String(index + 1).padStart(2, '0')}T20:00:00Z`, localDate: `2099-01-${String(index + 1).padStart(2, '0')}`, status: 'onsale', timeUnconfirmed: false, city: 'Vancouver', country: 'CA', venue: 'Park', image: 'https://example.invalid/image.jpg', ticketUrl: null }));
+  const events = Array.from({ length: eventCount }, (_, index) => ({ id: `f${index}`, name: `f${index} Festival`, startsAt: `2099-01-${String(index + 1).padStart(2, '0')}T20:00:00Z`, localDate: `2099-01-${String(index + 1).padStart(2, '0')}`, status: 'onsale', timeUnconfirmed: false, city: 'Vancouver', country: 'CA', venue: 'Park', image: 'https://example.invalid/image.jpg', ticketUrl: null, price: index % 2 ? null : { min: 25, max: 90, currency: 'CAD' } }));
   const same = (a, b) => a && b && a.length === b.length && a.every((item, index) => Object.is(item, b[index]));
   const state = initial => {
     const index = hook++;
@@ -43,6 +43,7 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
     'react-native-reanimated': { useReducedMotion: () => reducedMotion }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'Symbol' },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
+    '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16, four: 24 } },
     '@/lib/event-videos': { eventVideo: event => event.id === 'f2' ? { youtubeId: 'video' } : null },
     '@/lib/ticketmaster': { ...ticketmaster, eventTime: (event, locale) => { formats.push(['time', locale]); return ticketmaster.eventTime(event); }, eventPriceLabel: (event, locale) => { formats.push(['price', locale]); return ticketmaster.eventPriceLabel(event); }, festivalLocalDay: city => ticketmaster.festivalLocalDay(city, time), loadTicketmasterEvents: load },
     '@/lib/public-web': { loadPublicFestivals: async (_, cityId) => { const data = await load({ cityId }); return { events: ticketmaster.spotlightLocalEvents(data.events, time, data.festivalSlots), nextRefreshAt: nextRefreshAt && Date.parse(nextRefreshAt) > time ? nextRefreshAt : undefined }; } },
@@ -52,7 +53,7 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
   const source = ts.transpileModule(fs.readFileSync(new URL(file, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const exports = {};
   const resolve = withLanguageImports(name => imports[name] ?? {});
-  vm.runInNewContext(source + (web ? '' : '\nexports.card = FeaturedEventCard;'), { exports, require: name => name === '@/hooks/use-language' ? { useLanguage: () => ({ t: translationsFor(language), tr: (key, ...args) => translateUi(language, key, ...args), locale: language === 'en' ? 'en-CA' : 'ko-KR' }) } : resolve(name), Date: Clock, document, window, setInterval: interval, clearInterval: id => timers.delete(id) });
+  vm.runInNewContext(source + (web ? '' : '\nexports.card = EventRowCard;'), { exports, require: name => name === '@/hooks/use-language' ? { useLanguage: () => ({ t: translationsFor(language), tr: (key, ...args) => translateUi(language, key, ...args), locale: language === 'en' ? 'en-CA' : 'ko-KR' }) } : resolve(name), Date: Clock, document, window, setInterval: interval, clearInterval: id => timers.delete(id) });
   const render = async (card = false) => {
     let count = 0;
     do {
@@ -60,7 +61,7 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
       tree = card ? exports.card({ event: events[0], cityId: 'vancouver', index: 0, active: activeCard, reducedMotion, onOpen() {} })
         : web ? exports.PublicFestivals({ cityId, cityName: ticketmaster.EVENT_CITIES[cityId] }) : exports.LocalEventsCarousel({ cityId, refreshKey: 0, cityLoading: false, onCityReady: ready });
       const scroll = elements(tree).find(node => node.props?.analyticsId === 'today.events.carousel');
-      if (scroll) scroll.props.ref.current = { scrollTo: position => scrolls.push(position) };
+      if (scroll?.props.ref) scroll.props.ref.current = { scrollTo: position => scrolls.push(position) };
       for (const callback of pending.splice(0)) callback();
       await new Promise(resolve => setImmediate(resolve));
     } while (dirty && ++count < 12);
@@ -108,124 +109,71 @@ test('native carousel re-reads the saved city feed when the local day changes', 
   await ui.tick(60000, 120000); assert.equal(ui.requests.length, 2);
   await ui.tick(60000); assert.equal(ui.requests.length, 2);
 });
-test('automatic rotation moves the scroll view without replacing its native page containers', async () => {
-  const ui = carousel(); await ui.render();
-  const keys = () => elements(ui.tree()).find(node => node.props?.analyticsId === 'today.events.carousel').props.children.map(node => node.key);
-  const original = keys();
-  const pages = elements(ui.tree()).find(node => node.props?.analyticsId === 'today.events.carousel').props.children;
-  assert.ok(pages.every(node => node.type === 'View' && node.props.collapsable === false));
-  await ui.tick(6000);
-  assert.equal(ui.scrolls.at(-1).x, 358);
-  assert.deepEqual(keys(), original);
-  for (let index = 0; index < 6; index++) await ui.tick(6000);
-  assert.equal(ui.scrolls.at(-1).x, 0);
-  assert.equal(ui.requests.length, 1);
-});
-test('foreground refresh preserves the selected event and its visible scroll position', async () => {
-  const ui = carousel(); await ui.render(); await ui.tick(6000);
-  await ui.emit('appState', 'background'); await ui.emit('appState', 'active');
-  assert.equal(ui.scrolls.at(-1).x, 358);
-  assert.equal(ui.scrolls.at(-1).animated, false);
-  assert.equal(elements(ui.tree()).find(node => node.props?.event && node.props.active)?.props.event.id, 'f7');
-  await ui.tick(6000); assert.equal(ui.scrolls.at(-1).x, 716);
-});
-
-test('native window resizing preserves the active event and realigns its page without restarting the selected city feed', async () => {
-  const ui = carousel({ reducedMotion: true });
-  const layouts = [
-    { window: { width: 466, height: 678 }, cardWidth: 422, offset: 2170 },
-    { window: { width: 951, height: 669 }, cardWidth: 596, offset: 3040 },
-    { window: { width: 669, height: 951 }, cardWidth: 596, offset: 3040 },
-    { window: { width: 466, height: 678 }, cardWidth: 422, offset: 2170 },
-  ];
-  ui.setWindowDimensions(layouts[0].window);
-  await ui.city('toronto');
-  for (let step = 0; step < 5; step++) {
-    elements(ui.tree()).find(node => node.props?.analyticsId === 'today.events.next').props.onPress();
-    await ui.render();
-  }
-  const pages = elements(ui.tree()).find(node => node.props?.analyticsId === 'today.events.carousel').props.children.map(node => node.key);
-  for (const layout of layouts) {
-    ui.setWindowDimensions(layout.window); await ui.render();
-    const active = elements(ui.tree()).filter(node => node.props?.event && node.props.active);
-    assert.equal(active.length, 1);
-    assert.equal(active[0].props.event.id, 'f4');
-    assert.equal(active[0].props.cityId, 'toronto');
-    const scroll = elements(ui.tree()).find(node => node.props?.analyticsId === 'today.events.carousel');
-    assert.deepEqual(scroll.props.children.map(node => node.key), pages, 'The same event pages remain mounted');
-    assert.equal(scroll.props.children[5].props.style.at(-1).width, layout.cardWidth);
-    assert.equal(ui.scrolls.at(-1).x, layout.offset, 'The selected page follows the new width');
-    assert.equal(ui.scrolls.at(-1).animated, false);
-    assert.deepEqual(ui.requests.map(query => query.cityId), ['toronto'], 'Resizing never restarts or changes the city feed');
-  }
-});
-
-for (const web of [false, true]) test(`${web ? 'public' : 'native'} carousel keeps seven large cards without a thumbnail strip and preserves selection for the same city`, async () => {
-  const ui = carousel({ web }); await ui.render();
-  const selected = () => web
-    ? elements(ui.tree()).find(node => node.type === 'article').props['aria-label'].split(': ')[1].replace(' Festival', '')
-    : elements(ui.tree()).find(node => node.props?.event && node.props.active)?.props.event.id;
+test('public carousel keeps seven large cards without a thumbnail strip and preserves selection for the same city', async () => {
+  const ui = carousel({ web: true }); await ui.render();
+  const selected = () => elements(ui.tree()).find(node => node.type === 'article').props['aria-label'].split(': ')[1].replace(' Festival', '');
   const moveTo = async id => {
-    if (web) {
-      for (let step = 0; selected() !== id && step < 7; step++) {
-        elements(ui.tree()).find(node => node.props?.['aria-label'] === '다음 페스티벌').props.onClick();
-        await ui.render();
-      }
-    } else {
-      const scroll = elements(ui.tree()).find(node => node.props?.analyticsId === 'today.events.carousel');
-      scroll.props.onScrollBeginDrag();
-      scroll.props.onMomentumScrollEnd({ nativeEvent: { contentOffset: { x: cards(ui.tree()).indexOf(id) * 358 } } });
+    for (let step = 0; selected() !== id && step < 7; step++) {
+      elements(ui.tree()).find(node => node.props?.['aria-label'] === '다음 페스티벌').props.onClick();
       await ui.render();
     }
   };
-  assert.equal(elements(ui.tree()).some(node => web ? node.props?.['data-event-id'] : node.props?.analyticsId === 'today.events.select'), false);
+  assert.equal(elements(ui.tree()).some(node => node.props?.['data-event-id']), false);
   assert.equal(elements(ui.tree()).some(node => node.props?.children === '다가오는 일정'), false);
-  if (web) assert.match(elements(ui.tree()).find(node => node.type === 'article').props['aria-label'], /^1\/7:/);
-  else {
-    assert.equal(cards(ui.tree()).length, 7);
-    assert.ok(elements(ui.tree()).some(node => node.props?.analyticsId === 'today.events.browse'));
-  }
+  assert.match(elements(ui.tree()).find(node => node.type === 'article').props['aria-label'], /^1\/7:/);
   await moveTo('f4'); assert.equal(selected(), 'f4');
-  if (web) assert.equal(ui.feedback.at(-1), 'selection');
-  await ui.emit(web ? 'focus' : 'appState', 'active');
+  assert.equal(ui.feedback.at(-1), 'selection');
+  await ui.emit('focus', 'active');
   assert.equal(selected(), 'f4');
-  if (!web) assert.equal(ui.scrolls.at(-1).x, 5 * 358);
   await ui.city('toronto'); assert.equal(selected(), 'f0');
-  await moveTo('f4'); ui.remove('f4'); await ui.emit(web ? 'focus' : 'appState', 'active');
+  await moveTo('f4'); ui.remove('f4'); await ui.emit('focus', 'active');
   assert.equal(selected(), 'f0', 'removed events fall back to the nearest event');
 });
 
-for (const web of [false, true]) test(`${web ? 'public' : 'native'} on-card arrows wrap all seven events and pause rotation without refetching`, async () => {
-  const ui = carousel({ web }); await ui.render();
-  const selected = () => web
-    ? elements(ui.tree()).find(node => node.type === 'article').props['aria-label'].split(': ')[1].replace(' Festival', '')
-    : elements(ui.tree()).find(node => node.props?.event && node.props.active)?.props.event.id;
-  const control = label => elements(ui.tree()).find(node => node.props?.[web ? 'aria-label' : 'accessibilityLabel'] === label);
+test('public on-card arrows wrap all seven events and pause rotation without refetching', async () => {
+  const ui = carousel({ web: true }); await ui.render();
+  const selected = () => elements(ui.tree()).find(node => node.type === 'article').props['aria-label'].split(': ')[1].replace(' Festival', '');
   for (const [label, expected] of [['이전 페스티벌', 'f5'], ['다음 페스티벌', 'f0'], ['다음 페스티벌', 'f7']]) {
-    const button = control(label);
+    const button = elements(ui.tree()).find(node => node.props?.['aria-label'] === label);
     assert.ok(button, `${label} must be available on the main card`);
-    if (web) assert.ok(elements(elements(ui.tree()).find(node => node.type === 'article')).includes(button));
-    else assert.equal(elements(elements(ui.tree()).find(node => node.props?.analyticsId === 'today.events.carousel')).includes(button), false, 'navigation must not be inside the event detail link');
-    button.props[web ? 'onClick' : 'onPress'](); await ui.render();
+    assert.ok(elements(elements(ui.tree()).find(node => node.type === 'article')).includes(button));
+    button.props.onClick(); await ui.render();
     assert.equal(selected(), expected);
   }
   assert.equal(ui.feedback.filter(kind => kind === 'selection').length, 3);
   await ui.tick(6000, 6000); assert.equal(selected(), 'f7');
-  if (!web) { await ui.tick(6000, 20000); assert.equal(selected(), 'f1'); }
   assert.equal(ui.requests.length, 1);
 });
 
-test('manual carousel arrows remain available with reduced motion and are hidden for zero or one event', async () => {
-  for (const web of [false, true]) {
-    const ui = carousel({ web, reducedMotion: true }); await ui.render();
-    const button = elements(ui.tree()).find(node => node.props?.[web ? 'aria-label' : 'accessibilityLabel'] === '다음 페스티벌');
-    assert.ok(button); button.props[web ? 'onClick' : 'onPress'](); await ui.render();
-    if (!web) { assert.equal(ui.scrolls.at(-1).x, 358); assert.equal(ui.scrolls.at(-1).animated, false); }
-    for (const eventCount of [0, 1]) {
-      const single = carousel({ web, eventCount }); await single.render();
-      assert.equal(elements(single.tree()).some(node => node.props?.[web ? 'aria-label' : 'accessibilityLabel'] === '다음 페스티벌'), false);
-    }
+test('public carousel arrows remain available with reduced motion and are hidden for zero or one event', async () => {
+  const ui = carousel({ web: true, reducedMotion: true }); await ui.render();
+  const button = elements(ui.tree()).find(node => node.props?.['aria-label'] === '다음 페스티벌');
+  assert.ok(button); button.props.onClick(); await ui.render();
+  for (const eventCount of [0, 1]) {
+    const single = carousel({ web: true, eventCount }); await single.render();
+    assert.equal(elements(single.tree()).some(node => node.props?.['aria-label'] === '다음 페스티벌'), false);
   }
+});
+
+test('native home lists every festival as a small card in one row, without rotation, arrows or an empty price line', async () => {
+  const ui = carousel(); await ui.render();
+  const row = elements(ui.tree()).find(node => node.props?.analyticsId === 'today.events.carousel');
+  assert.equal(row.props.horizontal, true);
+  assert.deepEqual(cards(ui.tree()), ['f0', 'f7', 'f1', 'f2', 'f3', 'f4', 'f5']);
+  assert.ok(elements(ui.tree()).some(node => node.props?.analyticsId === 'today.events.browse'));
+  assert.equal(elements(ui.tree()).some(node => ['이전 페스티벌', '다음 페스티벌'].includes(node.props?.accessibilityLabel)), false);
+  await ui.tick(6000, 6000); assert.equal(ui.scrolls.length, 0, 'the row never scrolls by itself');
+  assert.equal(ui.requests.length, 1);
+  const texts = tree => elements(tree).flatMap(node => typeof node.props?.children === 'string' ? [node.props.children] : []);
+  const priced = await ui.render(true);
+  assert.ok(texts(priced).includes('f0 Festival'));
+  assert.ok(texts(priced).some(text => text.includes('CA$25')));
+  ui.remove('f0');
+  const unpriced = await ui.render(true);
+  assert.ok(texts(unpriced).includes('f1 Festival'));
+  assert.equal(JSON.stringify(unpriced).includes('가격 정보 없음'), false, 'a missing price drops the line instead of saying so');
+  assert.equal(texts(unpriced).some(text => text.includes('CA$')), false);
+  assert.deepEqual(ui.motion, [], 'small cards run no photo animation');
 });
 
 for (const web of [false, true]) test(`${web ? 'public' : 'native'} daily refresh retries a transient error after fifteen minutes without user input`, async () => {
@@ -237,21 +185,6 @@ for (const web of [false, true]) test(`${web ? 'public' : 'native'} daily refres
   assert.ok(web ? elements(ui.tree()).some(node => node.type === 'article') : cards(ui.tree()).length === 7);
   await ui.tick(60000, 60000); assert.equal(ui.requests.length, 3);
 });
-test('two Vancouver cards alternate every six seconds without another data request', async () => {
-  const ui = carousel({ eventCount: 2 }); await ui.render();
-  for (const expected of [358, 0, 358, 0]) {
-    await ui.tick(6000); assert.equal(ui.scrolls.at(-1).x, expected);
-  }
-  assert.equal(ui.requests.length, 1);
-});
-test('a single event, reduced motion, a screen reader or a background app does not auto-scroll', async () => {
-  for (const options of [{ eventCount: 1 }, { reducedMotion: true }, { screenReader: true }]) {
-    const ui = carousel(options); await ui.render(); const count = ui.scrolls.length; await ui.tick(6000);
-    assert.equal(ui.scrolls.length, count);
-  }
-  const ui = carousel(); await ui.render(); const count = ui.scrolls.length; await ui.emit('appState', 'background'); await ui.tick(6000);
-  assert.equal(ui.scrolls.length, count);
-});
 test('public carousel refreshes on foreground and city-day rollover without fetching on rotation', async () => {
   const ui = carousel({ web: true }); await ui.render(); assert.equal(ui.requests.length, 1);
   await ui.tick(6000); assert.equal(ui.requests.length, 1);
@@ -259,11 +192,6 @@ test('public carousel refreshes on foreground and city-day rollover without fetc
   await ui.emit('visibilitychange', 'visible'); assert.equal(ui.requests.length, 2);
   await ui.tick(60000, 86400000); assert.equal(ui.requests.length, 3);
 });
-test('offscreen and reduced-motion cards do not run photo animation loops', async () => {
-  for (const options of [{ activeCard: false }, { reducedMotion: true }]) { const ui = carousel(options); await ui.render(true); assert.deepEqual(ui.motion, []); }
-  const visible = carousel(); await visible.render(true); assert.deepEqual(visible.motion, ['start']);
-});
-
 test('a loaded carousel rereads when a manual exposure ends before its festival starts', async () => {
   for (const web of [false, true]) {
     const ui = carousel({ web, now: '2026-10-12T19:59:00Z', nextRefreshAt: '2026-10-12T20:03:00Z' });

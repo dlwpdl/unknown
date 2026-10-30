@@ -119,7 +119,8 @@ test('explicit media appearance overrides the effective theme on native and fall
 });
 
 test('media callers retain dark glass around their fixed light foreground', () => {
-  for (const [file, count] of [['components/local-events-carousel.tsx', 3], ['app/events/[id].tsx', 2]]) {
+  // The home festival row became small cards with no overlay controls (2026-10-30); event detail keeps its dark glass.
+  for (const [file, count] of [['app/events/[id].tsx', 2]]) {
     const source = ts.createSourceFile(file, readFileSync(new URL(`../src/${file}`, import.meta.url), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
     let found = 0;
     const visit = node => {

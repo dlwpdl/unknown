@@ -30,8 +30,8 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>{t.tabs.today}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          sf="calendar"
-          md="today"
+          sf={{ default: 'house', selected: 'house.fill' }}
+          md="home"
         />
       </NativeTabs.Trigger>
 
