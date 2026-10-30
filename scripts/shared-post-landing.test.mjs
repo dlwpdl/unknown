@@ -186,7 +186,7 @@ test('a selected meetup invites signup and app participation while ordinary shar
 });
 
 test('loading and fetch errors never flip a prerendered post to noindex; removed posts and meetups do', () => {
-  const app = mount();
+  const app = mount({ href: `https://gling.ej-entertainment.com/posts/${id}` });
   const robots = props => nodes(app.render('SharedPostLandingContent', { postId: id, onRetry() {}, ...props })).find(node => node.type === 'meta' && node.props?.name === 'robots')?.props.content;
   assert.equal(robots({ preview: null, status: 'loading' }), undefined);
   assert.equal(robots({ preview: null, status: 'error' }), undefined);
@@ -194,4 +194,7 @@ test('loading and fetch errors never flip a prerendered post to noindex; removed
   assert.equal(robots({ preview: null, status: 'unavailable' }), 'noindex, follow');
   assert.equal(robots({ preview: { ...preview, kind: 'meetup' }, status: 'ready' }), 'noindex, follow');
   app.unmount();
+  const shell = mount({ href: canonical });
+  assert.equal(nodes(shell.render('SharedPostLandingContent', { postId: id, preview: null, status: 'loading', onRetry() {} })).find(node => node.type === 'meta' && node.props?.name === 'robots')?.props.content, 'noindex, follow', 'the /post?id= app shell stays noindex');
+  shell.unmount();
 });
