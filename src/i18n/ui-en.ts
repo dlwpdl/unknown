@@ -3935,4 +3935,10 @@ export const uiEnglish: Record<string, string> = {
   "배너·주소·영업시간을 채우면 더 잘 보여요": "Profiles with a banner, address and hours stand out more",
   "아직 비어 있어요: {0}": "Still empty: {0}",
   "주소와 소개는 {0}로 보내 주시면 넣어 드려요.": "Send your address and description to {0} and we’ll add them.",
+  "언어교환": "Language exchange",
+  "언어교환은 언어마다 한 명씩은 받아야 해서 정원은 호스트 포함 3명부터예요.": "A language exchange needs at least one person per language, so capacity starts at 3 including you.",
+  "이 언어 쪽 자리가 다 차서 승인하지 못했어요": "Couldn’t approve: this language side is full",
+  "고른 언어 쪽은 자리가 다 찼어요.": "The side for the language you chose is full.",
+  "할 줄 아는 말과 배우는 말을 다시 골라 주세요.": "Choose the language you speak and the one you’re learning again.",
+  "언어교환에 쓸 두 언어를 서로 다르게 골라 주세요.": "Choose two different languages for the exchange."
 };

@@ -1,5 +1,6 @@
 import type { Post } from './types.ts';
 import { chillingKind, type ChillingKind } from './chilling.ts';
+import { meetupCategoryOf } from './meetup-language.ts';
 export type ChillingDiscoveryKind = ChillingKind | 'all';
 export type ChillingDiscoveryView = 'browse' | 'mine';
 export function parseChillingDiscoveryPreference(raw: string | null): { kind: ChillingDiscoveryKind; view: ChillingDiscoveryView } {
@@ -11,7 +12,7 @@ export function chillingCreateKindParams(kind: ChillingDiscoveryKind) { return k
 
 export function matchesChilling(post: Pick<Post, 'room'>, kind: ChillingDiscoveryKind, category: string, now = Date.now()) {
   return !!post.room && !post.room.closed && (kind === 'all' || chillingKind(post.room) === kind)
-    && (category === 'all' || post.room.category === category)
+    && (category === 'all' || meetupCategoryOf(post.room) === category)
     && !(chillingKind(post.room) === 'once' && post.room.endsAt && Date.parse(post.room.endsAt) <= now);
 }
 
