@@ -15,7 +15,7 @@ import { refreshCityPlaces } from '@/lib/city-place-refresh';
 import { placeMapRoute } from '@/lib/discovery';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
-import { PUBLIC_SITE } from '@/lib/public-seo';
+import { jsonLd, PUBLIC_SITE } from '@/lib/public-seo';
 import { publicWebClient } from '@/lib/public-web-client';
 
 const wordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark.png')).uri;
@@ -62,11 +62,17 @@ export default function PublicVisited() {
   };
   const appMap = selected ? `gling://map?${new URLSearchParams({ cityId: city.id, placeId: selected.id, category: 'visited' })}` : null;
   const cityName = ko ? city.name : city.englishName;
-  const title = `${cityName} Gling Visited | ${ko ? '글링' : 'Gling'}`;
+  const title = ko ? `${city.name} 한인이 가 본 곳 | 글링` : `Places to go in ${cityName} | Gling`;
+  // The first city is the plain /visited page (the sitemap entry); other cities and a selected place keep their query.
+  const canonical = `${PUBLIC_SITE}/visited${city.id === cities[0].id && !selected ? '' : `?${new URLSearchParams({ city: city.id, ...(selected ? { placeId: selected.id } : {}) })}`}`;
+  const schema = places.length ? { '@context': 'https://schema.org', '@type': 'ItemList', name: title, url: canonical, itemListElement: places.map((place, index) => ({
+    '@type': 'ListItem', position: index + 1, item: { '@type': place.category === 'food' ? 'Restaurant' : place.category === 'cafe' ? 'CafeOrCoffeeShop' : 'Place', name: place.name,
+      ...(place.address ? { address: place.address } : {}), geo: { '@type': 'GeoCoordinates', latitude: place.latitude, longitude: place.longitude }, ...(place.sourceUrl ? { sameAs: place.sourceUrl } : {}) } })) } : null;
 
   return <div className="reader visited-page" style={palette} lang={language}>
     <Head><title>{title}</title><meta name="description" content={ko ? `${city.name}에서 글링이 직접 다녀온 장소를 지도에서 둘러보세요.` : `See the places Gling has visited in ${cityName} on a map.`} />
-      <link rel="canonical" href={`${PUBLIC_SITE}/visited?${new URLSearchParams({ city: city.id, ...(selected ? { placeId: selected.id } : {}) })}`} />
+      <link rel="canonical" href={canonical} />
+      {schema && <script type="application/ld+json">{jsonLd(schema)}</script>}
     </Head>
     <a className="reader-skip" href="#visited-main" onClick={() => play('selection')}>{ko ? '본문으로 바로가기' : 'Skip to content'}</a>
     <header className="reader-header">
@@ -75,10 +81,10 @@ export default function PublicVisited() {
         <a href="/meetups" onClick={() => play('selection')}>{ko ? '모임' : 'Meetups'}</a>
         <a href="/visited" aria-current="page" onClick={() => play('selection')}>Gling Visited</a>
       </nav>
-      <a className="reader-header-account" href="/merchant/" onClick={() => play('selection')}>{isAuthed ? ko ? '내 계정' : 'My account' : ko ? '로그인' : 'Sign in'}</a>
+      <a className="reader-header-account" href="/merchant/" rel="nofollow" onClick={() => play('selection')}>{isAuthed ? ko ? '내 계정' : 'My account' : ko ? '로그인' : 'Sign in'}</a>
     </header>
     <main id="visited-main" className="reader-main" tabIndex={-1}>
-      <div className="visited-heading"><div><h1>Gling Visited</h1><p>{ko ? '글링이 직접 다녀온 곳. 다음에는 함께 가요.' : 'Places Gling has been to. Next time, come with us.'}</p></div>
+      <div className="visited-heading"><div><h1>{ko ? `${city.name} 한인이 가 본 곳` : `Places to go in ${cityName}`}</h1><p>{ko ? '글링이 직접 다녀온 곳. 다음에는 함께 가요.' : 'Places Gling has been to. Next time, come with us.'}</p></div>
         <form action="/visited" method="get" className="visited-city">
           <label htmlFor="visited-city">{ko ? '도시' : 'City'}</label><select id="visited-city" name="city" defaultValue={city.id} key={city.id} onChange={() => play('selection')}>
             {cities.map(city => <option key={city.id} value={city.id}>{ko ? city.name : city.englishName}</option>)}

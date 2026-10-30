@@ -1,5 +1,5 @@
 import type { Metadata } from 'expo-router/server';
-import { PUBLIC_SITE, publicAboutGling, publicSiteName } from '@/lib/public-seo';
+import { PUBLIC_SITE, publicAboutGling, publicDisambiguation, publicSiteName } from '@/lib/public-seo';
 
 export const publicReaderDescription = '밴쿠버·토론토·몬트리올 한인 커뮤니티 글링에서 동네 이야기, 맛집, 렌트·구인·중고, 모임을 둘러보세요. 미리보기는 바로 보고, 로그인하면 전체 글을 읽을 수 있어요.';
 
@@ -15,10 +15,10 @@ export function publicMetadata(title: string, description: string, canonical: st
 
 export const publicHomeSchema = {
   '@context': 'https://schema.org', '@graph': [
-    { '@type': 'WebSite', '@id': `${PUBLIC_SITE}/#website`, name: publicSiteName(), alternateName: [publicSiteName('en'), '글링', 'Gling'],
+    { '@type': 'WebSite', '@id': `${PUBLIC_SITE}/#website`, name: '글링', alternateName: [publicSiteName(), publicSiteName('en'), 'Gling'],
       url: `${PUBLIC_SITE}/`, description: publicReaderDescription, inLanguage: 'ko', publisher: { '@id': `${PUBLIC_SITE}/#organization` } },
     { '@type': 'Organization', '@id': `${PUBLIC_SITE}/#organization`, name: 'Gling', alternateName: '글링', url: `${PUBLIC_SITE}/`,
-      logo: `${PUBLIC_SITE}/share-covers/post.png`, email: 'gling@ej-entertainment.com', areaServed: [{ '@type': 'City', name: 'Vancouver' }, { '@type': 'City', name: 'Toronto' }, { '@type': 'City', name: 'Montreal' }], description: publicAboutGling, sameAs: ['https://apps.apple.com/ca/app/id6809273242', 'https://www.instagram.com/gling.app/', 'https://www.threads.net/@gling.app'] },
+      logo: { '@type': 'ImageObject', url: `${PUBLIC_SITE}/gling-logo-512.png`, width: 512, height: 512 }, email: 'gling@ej-entertainment.com', areaServed: [{ '@type': 'City', name: 'Vancouver' }, { '@type': 'City', name: 'Toronto' }, { '@type': 'City', name: 'Montreal' }], description: `${publicAboutGling} ${publicDisambiguation}`, sameAs: ['https://apps.apple.com/ca/app/id6809273242', 'https://www.instagram.com/gling.app/', 'https://www.threads.net/@gling.app'] },
     { '@type': 'MobileApplication', name: 'Gling', alternateName: '글링', operatingSystem: 'iOS', applicationCategory: 'SocialNetworkingApplication',
       url: 'https://apps.apple.com/ca/app/id6809273242', offers: { '@type': 'Offer', price: '0', priceCurrency: 'CAD' }, publisher: { '@id': `${PUBLIC_SITE}/#organization` } },
   ],

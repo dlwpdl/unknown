@@ -83,7 +83,7 @@ test('public home, company and Visited routes export initial title, canonical an
   for (const [file, title, canonical] of [
     ['index', `${seo.publicSiteName()} · 밴쿠버·토론토·몬트리올`, 'https://gling.ej-entertainment.com/'],
     ['company', '글링 비즈니스 프로필', 'https://gling.ej-entertainment.com/company'],
-    ['visited', '밴쿠버 Gling Visited | 글링', 'https://gling.ej-entertainment.com/visited?city=vancouver'],
+    ['visited', '밴쿠버 한인이 가 본 곳 | 글링', 'https://gling.ej-entertainment.com/visited'],
     ['faq', '글링 자주 묻는 질문 | 캐나다 한인 커뮤니티', 'https://gling.ej-entertainment.com/faq'],
   ]) {
     const value = load(`web/${file}.tsx`, imports).generateMetadata();
