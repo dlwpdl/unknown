@@ -244,6 +244,12 @@
       ],
       "expo-apple-authentication",
       [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
+      [
         "@react-native-google-signin/google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps.326642098269-oa2a97trifhohih9d9tk8lotse14qnn4"

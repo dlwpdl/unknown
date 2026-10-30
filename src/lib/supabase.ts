@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import * as SecureStore from 'expo-secure-store';
 import { DeviceEventEmitter, Platform } from 'react-native';
 
 import { isReviewUser } from '@/lib/review-access';
@@ -31,6 +32,56 @@ const authAwareFetch: typeof fetch = async (input, init) => {
   return response;
 };
 
+// Native sessions live in the Keychain/Keystore. AFTER_FIRST_UNLOCK keeps background token refresh working while the phone is locked.
+const secureOptions = { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK };
+// 500 code points stay under the ~2048-byte value limit of older iOS keychains even at 4 UTF-8 bytes each.
+const SECURE_CHUNK = 500;
+const secureKey = (key: string) => key.replace(/[^A-Za-z0-9._-]/g, '_');
+const secureChunkCount = async (key: string) => Number(await SecureStore.getItemAsync(`${key}.n`, secureOptions)) || 0;
+
+async function readSecureSession(key: string) {
+  const count = await secureChunkCount(key);
+  if (!count) return null;
+  const parts = await Promise.all(Array.from({ length: count }, (_, i) => SecureStore.getItemAsync(`${key}.${i}`, secureOptions)));
+  return parts.some(part => part === null) ? null : parts.join('');
+}
+
+async function deleteSecureChunks(key: string, from: number, to: number) {
+  for (let i = from; i < to; i++) await SecureStore.deleteItemAsync(`${key}.${i}`, secureOptions);
+}
+
+async function writeSecureSession(key: string, value: string) {
+  const previous = await secureChunkCount(key);
+  const points = Array.from(value); // split on code points so no surrogate pair is cut in half
+  const parts = Array.from({ length: Math.max(1, Math.ceil(points.length / SECURE_CHUNK)) }, (_, i) => points.slice(i * SECURE_CHUNK, (i + 1) * SECURE_CHUNK).join(''));
+  for (let i = 0; i < parts.length; i++) await SecureStore.setItemAsync(`${key}.${i}`, parts[i], secureOptions);
+  await SecureStore.setItemAsync(`${key}.n`, String(parts.length), secureOptions);
+  await deleteSecureChunks(key, parts.length, previous);
+}
+
+export const nativeSessionStorage = {
+  async getItem(key: string) {
+    const stored = await readSecureSession(secureKey(key));
+    if (stored !== null) return stored;
+    // One-time move of a session saved by older app versions, so updating does not sign anyone out.
+    const legacy = await AsyncStorage.getItem(key);
+    if (legacy === null) return null;
+    try {
+      await writeSecureSession(secureKey(key), legacy);
+      await AsyncStorage.removeItem(key);
+    } catch {} // keep the AsyncStorage copy and retry on the next read rather than lose the session
+    return legacy;
+  },
+  setItem: (key: string, value: string) => writeSecureSession(secureKey(key), value),
+  async removeItem(key: string) {
+    const safeKey = secureKey(key);
+    const count = await secureChunkCount(safeKey);
+    await SecureStore.deleteItemAsync(`${safeKey}.n`, secureOptions);
+    await deleteSecureChunks(safeKey, 0, count);
+    await AsyncStorage.removeItem(key);
+  },
+};
+
 export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
   global: { fetch: authAwareFetch },
   auth: {
@@ -38,7 +89,7 @@ export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
       getItem: (key) => typeof window === 'undefined' ? null : window.localStorage.getItem(key),
       setItem: (key, value) => { if (typeof window !== 'undefined') window.localStorage.setItem(key, value); },
       removeItem: (key) => { if (typeof window !== 'undefined') window.localStorage.removeItem(key); },
-    } : AsyncStorage,
+    } : nativeSessionStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
