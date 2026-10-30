@@ -8,7 +8,7 @@ const source = ts.transpileModule(fs.readFileSync(new URL('../src/lib/ads.ts', i
   compilerOptions: { module: ts.ModuleKind.CommonJS },
 }).outputText;
 
-function load({ platform = 'ios', mode = 'live', dev = false, expoGo = false, status = 'granted', answer = 'granted', allowed = true, available = true, trackingError = false, activity = 'active' } = {}) {
+function load({ platform = 'ios', mode = 'live', dev = false, expoGo = false, status = 'granted', answer = 'granted', allowed = true, available = true, trackingError = false, activity = 'active', launch = Promise.resolve() } = {}) {
   const events = [], state = { status, allowed, activity };
   const permission = () => ({ status: state.status, granted: state.status === 'granted' });
   const sdk = { __esModule: true, default: () => ({
@@ -32,6 +32,7 @@ function load({ platform = 'ios', mode = 'live', dev = false, expoGo = false, st
         events.push('att'); state.status = answer; return permission();
       } };
     }
+    if (name === '@/lib/launch-state') return { launchSettled: launch };
     if (name === 'react-native-google-mobile-ads') { events.push('ad-sdk'); return sdk; }
     throw new Error(name);
   } });
@@ -134,4 +135,14 @@ test('development builds never select live ad units even when the environment sa
   assert.equal(ads.feedAdUnit(sdk), sdk.TestIds.NATIVE);
   assert.equal(await ads.prepareAds(), sdk);
   assert.ok(!events.includes('ump'));
+});
+
+test('the tracking prompt waits until the launch intro is off screen', async () => {
+  let settle; const launch = new Promise(resolve => { settle = resolve; });
+  const { ads, events } = load({ status: 'undetermined', launch });
+  const pending = ads.prepareAds();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(events.includes('att'), false, 'No system prompt may cover or block the launch intro.');
+  settle(); await pending;
+  assert.equal(events.filter(e => e === 'att').length, 1);
 });

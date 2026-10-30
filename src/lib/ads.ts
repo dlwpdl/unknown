@@ -1,6 +1,8 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { AppState, DeviceEventEmitter, Platform } from 'react-native';
 
+import { launchSettled } from '@/lib/launch-state';
+
 type AdSDK = typeof import('react-native-google-mobile-ads');
 export const testAds = __DEV__ || process.env.EXPO_PUBLIC_ADS_MODE !== 'live';
 export const adsSupported = Platform.OS !== 'web' && Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
@@ -12,6 +14,7 @@ let trackingPermission: Promise<boolean> | null = null;
 
 async function trackingAllowed(): Promise<boolean> {
   if (Platform.OS !== 'ios') return true;
+  await launchSettled;
   if (AppState.currentState !== 'active') return false;
   if (!trackingPermission) trackingPermission = (async () => {
     const tracking = await import('expo-tracking-transparency');
