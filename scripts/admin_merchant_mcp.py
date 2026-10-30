@@ -58,7 +58,9 @@ def save_merchant(id: UUID, name: str, city_id: str, contact: str, status: Liter
 
 @mcp.tool(annotations=WRITE)
 def link_merchant_post(merchant_id: UUID, post_id: UUID, original_url: str) -> dict:
-    """Connect an existing published post in this business's city to an approved public HTTPS original."""
+    """Connect an existing published post in this business's city to an approved public HTTPS original.
+    The admin's own non-meetup post then appears under the business profile without using its monthly posts;
+    another member's post stays a curated link."""
     return {'post_id': rpc('link_admin_merchant_post', arguments(merchant_id=merchant_id, post_id=post_id, original_url=original_url))}
 
 @mcp.tool(annotations=WRITE)
