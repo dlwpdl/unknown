@@ -16,6 +16,8 @@ export default function PublicFaq() {
         <p style={{ margin: '32px 0 0' }}>
           <a href="/" style={{ color: '#CBB9FF' }}>글링 공개 게시판 보기</a>
           {' · '}
+          <a href="/business" style={{ color: '#CBB9FF' }}>비즈니스 등록·요금제</a>
+          {' · '}
           <a href="https://apps.apple.com/ca/app/id6809273242" style={{ color: '#CBB9FF' }}>iPhone 앱 다운로드</a>
         </p>
       </main>

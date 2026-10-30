@@ -102,7 +102,7 @@ test('embedded discovery permits public HTTPS information and rejects invalid po
   const start = mapSource.indexOf('  const open = (item: DiscoveryItem) => {'), end = mapSource.indexOf('  const selectPin = ', start);
   const exports = {}, opened = [], routes = [];
   vm.runInNewContext(compile(mapSource.slice(start, end) + '\nexports.open = open;'), {
-    exports, onClose() {}, safeMerchantSourceUrl, safeTicketUrl, PUBLIC_SITE: 'https://gling.ej-entertainment.com',
+    exports, onClose() {}, safeMerchantSourceUrl, safeTicketUrl, PUBLIC_SITE: 'https://gling.ej-entertainment.com', publicCompanyUrl: id => `https://gling.ej-entertainment.com/company/${id}`,
     openBrowserAsync: async url => opened.push(url), router: { push: value => routes.push(value) },
     play() {}, tr: value => value, Alert: { alert() {} }, encodeURIComponent,
   });
@@ -124,7 +124,7 @@ test('every overlapping map filter opens the same explicitly linked business; em
   const start = mapSource.indexOf('  const open = (item: DiscoveryItem) => {'), end = mapSource.indexOf('  const selectPin = ', start);
   const exports = {}, routes = [], opened = [], context = {
     exports, onClose: undefined, city: { id: place.cityId }, router: { push: route => routes.push(route) }, play() {},
-    PUBLIC_SITE: 'https://gling.ej-entertainment.com', safeMerchantSourceUrl, safeTicketUrl,
+    PUBLIC_SITE: 'https://gling.ej-entertainment.com', publicCompanyUrl: id => `https://gling.ej-entertainment.com/company/${id}`, safeMerchantSourceUrl, safeTicketUrl,
     openBrowserAsync: async url => opened.push(url), Linking: { openURL: async url => opened.push(url) }, tr: value => value, Alert: { alert() {} },
   };
   vm.runInNewContext(compile(mapSource.slice(start, end) + '\nexports.open = open;'), context);
@@ -138,7 +138,7 @@ test('every overlapping map filter opens the same explicitly linked business; em
   context.onClose = () => {};
   exports.open(linked); await new Promise(setImmediate);
   assert.equal(routes.length, 5, 'embedded discovery cannot navigate the underlying chat route');
-  assert.deepEqual(opened, [`https://gling.ej-entertainment.com/company?id=${merchantId}`]);
+  assert.deepEqual(opened, [`https://gling.ej-entertainment.com/company/${merchantId}`]);
 });
 
 test('a partner detail map target and its curated marker use the same normalized discovery identity once', () => {

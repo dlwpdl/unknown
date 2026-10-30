@@ -1,10 +1,11 @@
 import { useLanguage } from '@/hooks/use-language';
 import { useEffect, useState, type ReactNode } from 'react';
-import { AppState, Platform, View } from 'react-native';
+import { AppState, Linking, Platform, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { CONTACT_EMAIL } from '@/lib/legal-documents';
 import { getMyBusinessWorkspaceAccess, getMyMerchantAccess } from '@/lib/merchant-workspace';
 import { supabase } from '@/lib/supabase';
 
@@ -35,6 +36,8 @@ export function MerchantAccessGate({ children, refreshSignal = 0, businessOnly =
     {retained && <View style={{ display: verified ? 'flex' : 'none', pointerEvents: verified ? 'auto' : 'none' }} accessibilityElementsHidden={!verified} importantForAccessibility={verified ? 'auto' : 'no-hide-descendants'} {...(Platform.OS === 'web' ? { inert: !verified } : {})}>{children}</View>}
     {!verified && <View style={{ gap: 12, padding: 20 }}>
     <ThemedText accessibilityRole={error ? 'alert' : 'text'}>{error ? tr("비즈니스 권한을 확인하지 못했어요.") : access?.user === me.id && !access.enabled ? tr("비즈니스 관리 권한이 아직 없어요. 관리자에게 비즈니스 계정 승인을 요청해 주세요.") : tr("비즈니스 권한을 확인하고 있어요.")}</ThemedText>
+    {!error && access?.user === me.id && !access.enabled && <Pressable analyticsId="merchant.action" accessibilityRole="link" accessibilityLabel={tr("{0}로 비즈니스 계정 승인 요청 메일 보내기", CONTACT_EMAIL)} style={{ minHeight: 44, justifyContent: 'center' }}
+      onPress={() => { play('selection'); void Linking.openURL(`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(tr("글링 비즈니스 계정 승인 요청"))}`).catch(() => {}); }}><ThemedText type="linkPrimary">{tr("메일로 승인 요청하기 ({0})", CONTACT_EMAIL)}</ThemedText></Pressable>}
     {(error || access?.user === me.id) && <Pressable analyticsId="merchant.access.retry" accessibilityRole="button" accessibilityLabel={tr("비즈니스 권한 다시 확인")} style={{ minHeight: 44, justifyContent: 'center' }} onPress={() => { play('selection'); setError(false); setRetry(v => v + 1); }}><ThemedText>{tr("다시 확인")}</ThemedText></Pressable>}
   </View>}
   </>;

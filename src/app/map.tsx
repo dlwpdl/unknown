@@ -45,7 +45,7 @@ import { isFreshLocation, type LocationFix } from '@/lib/location';
 import { postPublicAddress, type PostPin } from '@/lib/post-maps';
 import { supabase } from '@/lib/supabase';
 import { safeMerchantSourceUrl } from '@/lib/merchant-source';
-import { PUBLIC_SITE } from '@/lib/public-seo';
+import { PUBLIC_SITE, publicCompanyUrl } from '@/lib/public-seo';
 import { EVENT_CITIES, eventPriceLabel, eventTime, loadTicketmasterEvents, type EventCity } from '@/lib/ticketmaster';
 
 const filters: { id: DiscoveryFilter; label: string; color?: string }[] = [
@@ -222,7 +222,7 @@ function CityMap({ city, placeId, onClose, initialFilter }: { city: (typeof CITI
     play('selection');
     if (item.merchantId && !onClose) { router.push({ pathname: '/company/[id]', params: { id: item.merchantId } }); return; }
     if (onClose) {
-      const source = (item.merchantId ? `${PUBLIC_SITE}/company?id=${item.merchantId}` : null) ?? item.place?.sourceUrl ?? (item.event ? safeTicketUrl(item.event.ticketUrl) : null) ?? item.top25?.sourceUrl
+      const source = (item.merchantId ? publicCompanyUrl(item.merchantId) : null) ?? item.place?.sourceUrl ?? (item.event ? safeTicketUrl(item.event.ticketUrl) : null) ?? item.top25?.sourceUrl
         ?? (item.post && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(item.post.id) ? `${PUBLIC_SITE}/post?id=${encodeURIComponent(item.post.id)}` : '');
       const url = safeMerchantSourceUrl(source);
       if (url) void openBrowserAsync(url).catch(() => { play('warning'); Alert.alert(tr("장소 정보를 열지 못했어요"), tr("인터넷 연결을 확인하고 다시 시도해 주세요.")); });

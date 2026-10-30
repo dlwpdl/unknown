@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Alert, Platform, Share, StyleSheet, TextInput, View, type KeyDownEvent } from 'react-native';
+import { Alert, Linking, Platform, Share, StyleSheet, TextInput, View, type KeyDownEvent } from 'react-native';
 
 import { Pressable, Switch } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
@@ -42,6 +42,9 @@ import {
 } from '@/lib/merchant-workspace';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { supabase } from '@/lib/supabase';
+import { PUBLIC_BUSINESS_PRICING } from '@/lib/public-seo';
+
+const openPricing = () => { void Linking.openURL(PUBLIC_BUSINESS_PRICING).catch(() => {}); };
 
 const errorText = (error: unknown) => ({
   MERCHANT_ACCESS_REQUIRED: '이 비즈니스를 관리할 권한이 없어요.', ADMIN_REQUIRED: '관리자 2단계 인증을 다시 확인해 주세요.',
@@ -622,7 +625,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     <View style={sidebar ? merchantShellStyles.main : merchantShellStyles.plain}>
     {sidebar || activeTab === 'overview' ? null : <View style={styles.businessHeader}><Action label={tr("비즈니스 관리")} disabled={busy} onPress={() => { setNotice(''); setTab('overview'); }} /><ThemedText type="small" themeColor="textSecondary" style={styles.toolText}>{data.merchant.name}</ThemedText></View>}
     {sidebar && activeTab !== 'overview' && pageCopy[activeTab] && <MerchantPageHeader title={pageCopy[activeTab]![0]} subtitle={pageCopy[activeTab]![1]} action={newLabel ? <RaisedActionButton compact analyticsId="merchant.primary" label={newLabel} disabled={busy} onPress={() => { play('selection'); void openDraft(undefined, activeTab === 'posts' || !aiAllowed); }} /> : undefined} />}
-    {error && <><ThemedText accessibilityRole="alert">{tr(error)}</ThemedText><Action label={tr("자료 새로 확인")} disabled={busy} onPress={() => { setError(''); setRevision((v) => v + 1); }} /></>}{notice && <ThemedText accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
+    {error && <><ThemedText accessibilityRole="alert">{tr(error)}</ThemedText><Action label={tr("자료 새로 확인")} disabled={busy} onPress={() => { setError(''); setRevision((v) => v + 1); }} />{error === errorText(new Error('BUSINESS_MONTHLY_LIMIT_REACHED')) && <Action label={tr("요금제 보기")} onPress={openPricing} />}</>}{notice && <ThemedText accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
     {activeTab === 'overview' && sidebar && <MerchantHome name={data.merchant.name} place={`${tr(data.merchant.city_name)} · ${data.merchant.owner_verified_at ? tr('비즈니스 소유 확인됨') : tr('비즈니스 소유 확인 대기')}`} onChoose={onChoose}
       purposes={draftPurposes} purpose={purpose} onPurpose={value => setPurpose(value as (typeof draftPurposes)[number])} facts={facts} onFacts={setFacts}
       onGenerate={() => { void startHomeDraft(true); }} onWrite={() => { void openDraft(undefined, true); }} resume={dirty ? () => { setDraftView('composer'); setTab('drafts'); } : undefined}
@@ -867,11 +870,12 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
             {businessMembership.bumpLimit != null ? <MerchantMeter label={tr("끌어올리기")} value={businessMembership.bumpsUsed} max={businessMembership.bumpLimit} />
               : <ThemedText type="small">{tr("끌어올리기 {0}회 · 한도 없음", businessMembership.bumpsUsed)}</ThemedText>}
             <ThemedText type="small" themeColor="textSecondary">{tr("{0}에 초기화돼요. 직원·AI도 같은 한도를 써요.", new Date(businessMembership.resetsAt).toLocaleDateString(appLocale))}</ThemedText>
-            {businessMembership.tier === 'premium' && <ThemedText type="small" themeColor="textSecondary">{tr("전체 30편에 운영대행 신규 4편이 포함돼요. 대행 끌어올리기 8회와 보고서 1회도 함께 써요.")}</ThemedText>}
+            {businessMembership.tier === 'premium' && <ThemedText type="small" themeColor="textSecondary">{tr("프리미엄은 한 달 새 글 10편을 모두 직접 올려요. 글을 대신 맡기려면 글링 관리로 문의해 주세요.")}</ThemedText>}
+            <Action label={tr("요금제 보기")} onPress={openPricing} />
           </> : <ThemedText type="small">{tr("멤버십 사용량을 확인하지 못했어요. 비즈니스 연결 상태를 확인하고 다시 열어 주세요.")}</ThemedText>}
         </Section></View>
         <View style={styles.column}><Section title={tr("이용 상태")}>
-          <View style={styles.actions}><MerchantBadge label={({ basic: tr("기본 이용"), trial: tr("비즈니스 체험"), pro: tr("비즈니스 유료 운영") })[data.merchant.plan]} tone={data.merchant.plan === 'basic' ? 'neutral' : 'accent'} />
+          <View style={styles.actions}><MerchantBadge label={({ basic: tr("무료 기능"), trial: tr("14일 체험 중"), pro: tr("유료 기능 사용 중") })[data.merchant.plan]} tone={data.merchant.plan === 'basic' ? 'neutral' : 'accent'} />
             {data.merchant.plan !== 'basic' && planEnds && <ThemedText type="small" themeColor="textSecondary">{tr(data.merchant.plan === 'trial' ? "{0}까지 체험" : "{0}까지 운영", planEnds)}</ThemedText>}</View>
           <ThemedText type="small" themeColor="textSecondary">{data.merchant.plan === 'basic' ? tr("개별 초안·승인, 원가 계산, 품목별 입출고를 계속 이용할 수 있어요.") : tr("여러 건을 한 번에 승인하거나 입출고할 수 있어요.")}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{tr("기간이 끝나도 저장한 자료는 남아요.")}</ThemedText>
