@@ -1,7 +1,7 @@
 import { en } from './en.ts';
 import { t as ko, type Translations } from './ko.ts';
 import type { AppLanguage } from './language.ts';
-import { uiEnglish } from './ui-en.ts';
+import { loadUiEnglish } from './ui-en-source.ts';
 
 export { count } from './ko.ts';
 let activeLanguage: AppLanguage = 'ko';
@@ -13,7 +13,20 @@ function collect(source: unknown, translated: unknown) {
   }
 }
 collect(ko, en);
-for (const [text, translated] of Object.entries(uiEnglish)) englishText.set(text, translated);
+let uiEnglishLoaded = false, uiEnglishLoading: Promise<void> | null = null;
+const addUiEnglish = (entries: Record<string, string>) => { for (const [text, translated] of Object.entries(entries)) englishText.set(text, translated); };
+// Native reads the UI dictionary synchronously; web fetches it the first time someone switches to English.
+export function uiEnglishPending(): Promise<void> | null {
+  if (uiEnglishLoaded) return null;
+  if (!uiEnglishLoading) {
+    const entries = loadUiEnglish();
+    if (!(entries instanceof Promise)) { addUiEnglish(entries); uiEnglishLoaded = true; return null; }
+    // A failed fetch leaves English on the Korean source text, as for any missing entry.
+    uiEnglishLoading = entries.then(addUiEnglish, () => {}).then(() => { uiEnglishLoaded = true; uiEnglishLoading = null; });
+  }
+  return uiEnglishLoading;
+}
+if (process.env.EXPO_OS !== 'web') uiEnglishPending();
 
 export function setActiveLanguage(language: AppLanguage) { activeLanguage = language; }
 export function translationsFor(language: AppLanguage): Translations { return language === 'en' ? en : ko; }

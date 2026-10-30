@@ -1,3 +1,5 @@
+import { CONTACT_EMAIL } from './contact.ts';
+
 export type LegalSection = {
   title: string;
   paragraphs?: readonly string[];
@@ -12,7 +14,7 @@ export type LegalDocument = {
   sections: readonly LegalSection[];
 };
 
-export const CONTACT_EMAIL = 'gling@ej-entertainment.com';
+export { CONTACT_EMAIL };
 
 export const LEGAL_DOCUMENTS = {
   'child-safety': {

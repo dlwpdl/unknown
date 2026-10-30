@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, Image, type StyleProp, StyleSheet, Text, View, type ViewStyle } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { Colors } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 

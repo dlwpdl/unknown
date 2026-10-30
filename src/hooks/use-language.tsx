@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, type PropsWithChildren, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AppState, I18nManager, Platform, Settings } from 'react-native';
 
-import { setActiveLanguage, translateUi, translationsFor } from '@/i18n';
+import { setActiveLanguage, translateUi, translationsFor, uiEnglishPending } from '@/i18n';
 import { parseLanguagePreference, resolveLanguage, type AppLanguage, type LanguagePreference } from '@/i18n/language';
 
 const STORAGE_KEY = 'gling.language';
@@ -38,8 +38,13 @@ export function LanguagePreferenceProvider({ children, initialLanguage }: PropsW
   const apply = useCallback((next: LanguagePreference) => {
     const language = resolveLanguage(next, deviceLanguages());
     preference.current = next;
-    setActiveLanguage(language);
-    setSelection({ preference: next, language });
+    const commit = () => {
+      if (preference.current !== next) return;
+      setActiveLanguage(language);
+      setSelection({ preference: next, language });
+    };
+    const pending = language === 'en' ? uiEnglishPending() : null;
+    if (pending) void pending.then(commit); else commit();
   }, []);
 
   useEffect(() => {

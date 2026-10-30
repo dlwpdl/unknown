@@ -1,12 +1,10 @@
 import './reader.css';
 import SharedPostLanding from './shared-post-landing';
 import { PublicPostBody } from './shared-post-article';
-import { PublicFestivals } from './festivals';
 import { useReaderAnalytics } from './analytics';
-import { PublicMerchantProfile, PublicMerchantProfileLink } from './merchant-profile';
+import { FeedAd, PublicFestivals, PublicMerchantProfile, PublicMerchantProfileLink } from './lazy-sections';
 import { PublicMeetupList } from './meetup-list';
 import { AppStoreChoices, InstallAction, useDevice } from './app-store-choices';
-import { FeedAd } from '@/components/feed-ad';
 import { contentAdPosition } from '@/lib/content-ad-placement';
 
 import { Asset } from 'expo-asset';

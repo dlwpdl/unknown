@@ -23,7 +23,7 @@ function onboarding(existingProfile = null, appleSignIn = false) {
         return [state[i], value => { state[i] = typeof value === 'function' ? value(state[i]) : value; }]; },
     };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if (name === 'react-native-reanimated') return { useReducedMotion: () => false };
+    if (name === 'react-native-reanimated' || name === '@/hooks/use-reduced-motion') return { useReducedMotion: () => false };
     if ((name === 'react-native' || name === '@/components/analytics-controls')) return { Platform: { OS: 'web' }, StyleSheet: { create: x => x }, ...Object.fromEntries(['View','Pressable','TextInput','Modal','ScrollView'].map(x => [x,x])) };
     if (name === 'expo-linking') return { openURL: async url => { opened.push(url); } };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };

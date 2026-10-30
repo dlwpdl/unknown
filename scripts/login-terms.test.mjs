@@ -17,7 +17,7 @@ function panel(opened = []) {
     if (name === 'react') return { useCallback: fn => fn, useRef: current => ({ current }), useState(initial) { const i = index++; if (!(i in states)) states[i] = typeof initial === 'function' ? initial() : initial; return [states[i], value => { states[i] = typeof value === 'function' ? value(states[i]) : value; }]; } };
     if (name === 'expo-router') return { useFocusEffect() {} };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if (name === 'react-native-reanimated') return { useReducedMotion: () => false };
+    if (name === 'react-native-reanimated' || name === '@/hooks/use-reduced-motion') return { useReducedMotion: () => false };
     if ((name === 'react-native' || name === '@/components/analytics-controls')) return { Platform: { OS: 'ios' }, StyleSheet: { create: v => v }, Animated: { Value: class { interpolate() { return 1; } }, View: 'AnimatedView' }, ...Object.fromEntries(['View','Pressable','ScrollView','TextInput','KeyboardAvoidingView'].map(k => [k,k])) };
     if (name === 'expo-linking') return { openURL: async url => { opened.push(url); } };
     if (name === 'expo-font') return { useFonts: () => [true] };
