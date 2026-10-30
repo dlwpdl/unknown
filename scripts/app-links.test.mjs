@@ -41,8 +41,7 @@ test('association files claim only paths the app maps, for the release identitie
   assert.equal(link.target.package_name, 'com.dlwpdl.gling');
   for (const fingerprint of link.target.sha256_cert_fingerprints) assert.match(fingerprint, /^([0-9A-F]{2}:){31}[0-9A-F]{2}$/);
   const app = JSON.parse(readFileSync(new URL('../app.json', import.meta.url), 'utf8')).expo;
-  // iOS entitlement waits until Associated Domains is enabled on the App ID; a manual-signing build fails without it.
-  if (app.ios.associatedDomains) assert.deepEqual(app.ios.associatedDomains, ['applinks:gling.ej-entertainment.com']);
+  assert.deepEqual(app.ios.associatedDomains, ['applinks:gling.ej-entertainment.com']);
   const filter = app.android.intentFilters.find(item => item.autoVerify);
   assert.ok(filter.data.every(entry => entry.scheme === 'https' && entry.host === 'gling.ej-entertainment.com'));
   // Native mapping must agree with the URLs both platforms claim.
