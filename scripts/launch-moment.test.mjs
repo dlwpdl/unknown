@@ -46,7 +46,7 @@ function launch({ ready = true, reduced = false, animationFault = null } = {}) {
   return {
     animations, completed, get hideCalls() { return hideCalls; }, get time() { return now; }, get timerCount() { return timers.size; },
     layout() { tree.props.onLayout(); render(); },
-    async load(error = false) { for (const node of nodes(tree).filter(node => ['Image', 'AnimatedImage'].includes(node.type))) { const handler = node.props[error ? 'onError' : 'onLoad']; assert.equal(typeof handler, 'function', 'Every required splash image has a load/error readiness handler.'); handler(); } await settle(); },
+    get tree() { return tree; },
     async reveal() { hideResolve(); await settle(); }, async failHide() { hideReject(new Error('native hide unavailable')); await settle(); },
     async ready(value) { props.ready = value; render(); await settle(); },
     async advance(milliseconds) { const end = now + milliseconds; while (true) { const entry = [...timers.entries()].filter(([, value]) => value.at <= end).sort((a, b) => a[1].at - b[1].at)[0]; if (!entry) break; timers.delete(entry[0]); now = entry[1].at; entry[1].fn(); await settle(); } now = end; await settle(); },
@@ -54,68 +54,71 @@ function launch({ ready = true, reduced = false, animationFault = null } = {}) {
   };
 }
 
-test('fast data readiness cannot spend the visible intro behind native splash or an unloaded logo', async () => {
+const ENTRY = 700, HOLD = 250, EXIT = 300;
+
+test('the intro is a full-screen overlay that starts as soon as the native splash is gone', async () => {
   const view = launch(); view.layout(); view.layout();
   assert.equal(view.hideCalls, 1);
-  await view.advance(1000); assert.equal(view.animations.length, 0, 'Native splash is still covering the intro.');
-  await view.reveal(); assert.equal(view.animations.length, 0, 'Logo/glow have not loaded.');
-  await view.load(); const visibleAt = view.time;
-  await view.advance(1999); assert.equal(view.completed.length, 0, 'Fast data must still show the whole visible brand moment.');
-  await view.advance(1); assert.equal(view.completed.length, 1); assert.ok(view.completed[0] - visibleAt >= 2000);
+  assert.equal(view.tree.props.accessibilityViewIsModal, true);
+  await view.advance(500); assert.equal(view.animations.length, 0, 'Native splash is still covering the intro.');
+  await view.reveal(); assert.ok(view.animations.length > 0, 'Logo images must not hold the visible intro back.'); const visibleAt = view.time;
+  await view.advance(ENTRY + HOLD + EXIT - 1); assert.equal(view.completed.length, 0, 'Fast data still shows the whole brand moment.');
+  await view.advance(1); assert.equal(view.completed.length, 1); assert.equal(view.completed[0] - visibleAt, ENTRY + HOLD + EXIT);
+  assert.ok(view.completed[0] - visibleAt <= 1300, 'The brand moment stays short.');
   await view.advance(5000); assert.equal(view.completed.length, 1);
 });
 
 test('slow readiness holds the settled logo until content is allowed, then completes once', async () => {
-  const view = launch({ ready: false }); view.layout(); await view.load(); await view.reveal();
+  const view = launch({ ready: false }); view.layout(); await view.reveal();
   await view.advance(5000); assert.deepEqual(view.completed, []);
   await view.ready(true); await view.advance(1000); assert.equal(view.completed.length, 1);
   await view.ready(true); await view.advance(5000); assert.equal(view.completed.length, 1);
 });
 
-test('reduced motion retains an equivalent visible static logo without any animated transforms', async () => {
-  const view = launch({ reduced: true }); view.layout(); await view.load(); await view.reveal();
-  await view.advance(1999); assert.equal(view.completed.length, 0); assert.equal(view.animations.length, 0);
+test('reduced motion shows a short static logo without any animation', async () => {
+  const view = launch({ reduced: true }); view.layout(); await view.reveal();
+  await view.advance(599); assert.equal(view.completed.length, 0); assert.equal(view.animations.length, 0);
   await view.advance(1); assert.equal(view.completed.length, 1); assert.equal(view.animations.length, 0);
 });
 
-test('failed hide and images fail open, and missing native callbacks have a bounded escape', async () => {
-  const failed = launch(); failed.layout(); await failed.load(true); await failed.failHide(); await failed.advance(3000); assert.equal(failed.completed.length, 1);
-  const missing = launch(); missing.layout(); await missing.advance(5000); assert.equal(missing.completed.length, 1);
+test('a failed or missing native hide callback cannot hold startup', async () => {
+  const failed = launch(); failed.layout(); await failed.failHide(); await failed.advance(3000); assert.equal(failed.completed.length, 1);
+  const missing = launch(); missing.layout(); await missing.advance(3000); assert.equal(missing.completed.length, 1);
 });
 
 test('unmount cancels waiting, entry, settled hold and exit without completing a removed gate', async () => {
-  for (const elapsed of [0, 400, 1300, 1800]) {
-    const view = launch(); view.layout(); if (elapsed) { await view.load(); await view.reveal(); await view.advance(elapsed); }
+  for (const elapsed of [0, 300, ENTRY + 100, ENTRY + HOLD + 100]) {
+    const view = launch(); view.layout(); if (elapsed) { await view.reveal(); await view.advance(elapsed); }
     view.unmount(); await view.reveal(); await view.advance(10000);
     assert.equal(view.completed.length, 0, `Unmounted at ${elapsed}ms`); assert.equal(view.timerCount, 0);
   }
 });
 
 test('an interrupted exit never signals completion and a later ready transition can finish', async () => {
-  const view = launch(); view.layout(); await view.load(); await view.reveal(); await view.advance(1800);
+  const view = launch(); view.layout(); await view.reveal(); await view.advance(ENTRY + HOLD + 100);
   await view.ready(false); await view.advance(1000); assert.equal(view.completed.length, 0);
   await view.ready(true); await view.advance(1000); assert.equal(view.completed.length, 1);
 });
 
 test('an interrupted entry cannot leave a ready launch waiting forever', async () => {
-  const view = launch({ animationFault: 'interrupted-entry' }); view.layout(); await view.load(); await view.reveal();
-  await view.advance(1999); assert.equal(view.completed.length, 0, 'Recovery must retain the visible brand moment.');
+  const view = launch({ animationFault: 'interrupted-entry' }); view.layout(); await view.reveal();
+  await view.advance(1499); assert.equal(view.completed.length, 0, 'Recovery still shows the brand moment.');
   await view.advance(5000); assert.equal(view.completed.length, 1);
   await view.advance(10000); assert.equal(view.completed.length, 1);
 });
 
-test('a lost native exit callback cannot retain a transparent startup gate', async () => {
-  const view = launch({ animationFault: 'lost-exit' }); view.layout(); await view.load(); await view.reveal();
-  await view.advance(5000); assert.equal(view.completed.length, 1);
+test('a lost native exit callback cannot retain a transparent startup overlay', async () => {
+  const view = launch({ animationFault: 'lost-exit' }); view.layout(); await view.reveal();
+  await view.advance(3000); assert.equal(view.completed.length, 1);
   await view.advance(10000); assert.equal(view.completed.length, 1);
 });
 
 test('animation recovery still waits for content readiness and is cancelled on unmount', async () => {
   for (const animationFault of ['interrupted-entry', 'lost-exit']) {
-    const waiting = launch({ ready: false, animationFault }); waiting.layout(); await waiting.load(); await waiting.reveal();
+    const waiting = launch({ ready: false, animationFault }); waiting.layout(); await waiting.reveal();
     await waiting.advance(10000); assert.equal(waiting.completed.length, 0);
     await waiting.ready(true); await waiting.advance(5000); assert.equal(waiting.completed.length, 1);
-    const removed = launch({ animationFault }); removed.layout(); await removed.load(); await removed.reveal(); await removed.advance(1800);
+    const removed = launch({ animationFault }); removed.layout(); await removed.reveal(); await removed.advance(ENTRY + HOLD + 100);
     removed.unmount(); await removed.advance(10000); assert.equal(removed.completed.length, 0); assert.equal(removed.timerCount, 0);
   }
 });

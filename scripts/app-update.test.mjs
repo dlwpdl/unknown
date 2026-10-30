@@ -24,7 +24,7 @@ function updateGate({ dev = false, os = 'ios', environment = 'bare', build = '61
   const same = (a, b) => a && b && a.length === b.length && a.every((value, index) => Object.is(value, b[index]));
   const imports = {
     react: {
-      useState(initial) { const index = hook++; hooks[index] ??= { value: initial }; return [hooks[index].value, value => { if (!Object.is(hooks[index].value, value)) { hooks[index].value = value; dirty = true; } }]; },
+      useState(initial) { const index = hook++; hooks[index] ??= { value: initial }; return [hooks[index].value, value => { if (typeof value === 'function') value = value(hooks[index].value); if (!Object.is(hooks[index].value, value)) { hooks[index].value = value; dirty = true; } }]; },
       useRef(initial) { return hooks[hook++] ??= { current: initial }; },
       useCallback(callback) { return (hooks[hook++] ??= { value: callback }).value; },
       useEffect(callback, deps) { const index = hook++, old = hooks[index]; if (!same(old?.deps, deps)) { old?.cleanup?.(); hooks[index] = { deps }; pending.push(() => { hooks[index].cleanup = callback(); }); } },
@@ -36,7 +36,7 @@ function updateGate({ dev = false, os = 'ios', environment = 'bare', build = '61
     'react-native': { Platform: { OS: os }, AppState: { currentState: 'active', addEventListener: (_, callback) => { listeners.push(callback); return { remove() {} }; } }, Modal: 'Modal', View: 'View', StyleSheet: { create: value => value } },
     '@/constants/theme': { Spacing: { three: 12 } }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
-    '@/lib/app-update': { requiresAppUpdate }, '@/components/launch-moment': { LaunchMoment: 'LaunchMoment' }, '@/components/state-card': { StateCard: 'StateCard' },
+    '@/lib/app-update': { requiresAppUpdate }, '@/lib/launch-state': { markLaunchSettled() {} }, '@/components/launch-moment': { LaunchMoment: 'LaunchMoment' }, '@/components/state-card': { StateCard: 'StateCard' },
     '@/lib/supabase': { supabase: client(true) },
     '@supabase/supabase-js': { createClient: (_url, _key, options) => { publicClientOptions.push(options); return client(); } },
   };
@@ -45,6 +45,7 @@ function updateGate({ dev = false, os = 'ios', environment = 'bare', build = '61
   vm.runInNewContext(source, { exports, require: withLanguageImports(name => imports[name] ?? {}), __DEV__: dev, AbortController, process: { env: { EXPO_PUBLIC_SUPABASE_URL: 'https://example.supabase.co', EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'public-key' } },
     setTimeout: (callback, delay) => { const id = Symbol(); timers.set(id, { callback, delay }); return id; }, clearTimeout: id => timers.delete(id) });
   const modal = () => tree.props.children.find(node => node?.type === 'Modal');
+  const intro = () => tree.props.children.find(node => node?.type === 'LaunchMoment');
   const render = async () => {
     let count = 0;
     do {
@@ -54,10 +55,10 @@ function updateGate({ dev = false, os = 'ios', environment = 'bare', build = '61
       await new Promise(resolve => setImmediate(resolve));
     } while (dirty && ++count < 12);
     assert.ok(count < 12);
-    if (modal().props.children?.type === 'LaunchMoment') { modal().props.children.props.onComplete(); await render(); }
+    if (intro()?.props.ready) { intro().props.onComplete(); await render(); }
   };
   const nodes = node => !node || typeof node !== 'object' ? [] : Array.isArray(node) ? node.flatMap(nodes) : [node, ...nodes(node.props?.children)];
-  return { render, modal, publicClientOptions, title: () => nodes(tree).find(node => node.type === 'StateCard')?.props.title, requests: () => requests,
+  return { render, modal, intro, publicClientOptions, title: () => nodes(tree).find(node => node.type === 'StateCard')?.props.title, requests: () => requests,
     holdPolicy() { policyPending = true; },
     async completePolicy(nextMinimum = minimum, failed = false) { minimum = nextMinimum; failure = failed; policyPending = false; for (const reply of policyReplies.splice(0)) reply(); await render(); },
     async foreground(nextMinimum = minimum) { minimum = nextMinimum; for (const state of ['background','active']) for (const callback of listeners) callback(state); await render(); } };
@@ -73,8 +74,17 @@ test('release binaries remain blocked at startup and when the minimum rises in t
   const current = updateGate({ build: '64' }); await current.render(); assert.equal(current.modal().props.visible, false);
   await current.foreground(65); assert.equal(current.title(), '새 버전으로 업데이트해 주세요'); assert.equal(current.requests(), 2);
 });
-test('a release policy network error remains closed', async () => {
-  const ui = updateGate({ failure: true }); await ui.render(); assert.equal(ui.title(), '업데이트를 확인할 수 없어요'); assert.equal(ui.modal().props.visible, true);
+test('a release policy network error lets people in instead of locking the app', async () => {
+  const ui = updateGate({ failure: true }); await ui.render(); assert.equal(ui.modal().props.visible, false); assert.equal(ui.intro(), undefined);
+});
+
+test('the launch intro is an overlay above the app, never inside the update modal', async () => {
+  const ui = updateGate({ build: '64' }); ui.holdPolicy(); await ui.render();
+  assert.equal(ui.modal().props.visible, false, 'Checking must not present a Modal at launch.');
+  assert.equal(ui.intro().props.ready, false, 'The intro waits on screen while the policy is pending.');
+  await ui.completePolicy(); assert.equal(ui.intro(), undefined); assert.equal(ui.modal().props.visible, false);
+  const old = updateGate(); old.holdPolicy(); await old.render(); await old.completePolicy();
+  assert.equal(old.intro(), undefined, 'A blocked build replaces the intro with the update screen.'); assert.equal(old.modal().props.visible, true);
 });
 
 test('the public release policy does not wait on stored login-session initialization', async () => {
@@ -88,10 +98,10 @@ test('the public release policy does not wait on stored login-session initializa
   assert.equal(auth.storageKey, 'gling-release-policy');
 });
 
-test('missing or malformed public minimum-build data remains closed', async () => {
+test('missing or malformed public minimum-build data lets people in', async () => {
   for (const minimum of [null, -1, '69', NaN]) {
     const ui = updateGate({ minimum }); await ui.render();
-    assert.equal(ui.title(), '업데이트를 확인할 수 없어요');
+    assert.equal(ui.modal().props.visible, false);
   }
 });
 
@@ -104,11 +114,12 @@ test('a validated release keeps its screen visible while the foreground policy r
   await ui.completePolicy(); assert.equal(ui.modal().props.visible, false);
 });
 
-test('foreground policy results still block obsolete builds and show network failures', async () => {
-  for (const [minimum, failed, title] of [[65, false, '새 버전으로 업데이트해 주세요'], [64, true, '업데이트를 확인할 수 없어요']]) {
-    const ui = updateGate({ build: '64' }); await ui.render(); ui.holdPolicy(); await ui.foreground();
-    assert.equal(ui.modal().props.visible, false);
-    await ui.completePolicy(minimum, failed);
-    assert.equal(ui.modal().props.visible, true); assert.equal(ui.title(), title);
-  }
+test('foreground policy results still block obsolete builds, and a failed recheck keeps the current state', async () => {
+  const ui = updateGate({ build: '64' }); await ui.render(); ui.holdPolicy(); await ui.foreground();
+  assert.equal(ui.modal().props.visible, false);
+  await ui.completePolicy(65); assert.equal(ui.modal().props.visible, true); assert.equal(ui.title(), '새 버전으로 업데이트해 주세요');
+  ui.holdPolicy(); await ui.foreground(); await ui.completePolicy(65, true);
+  assert.equal(ui.modal().props.visible, true, 'A network failure must not unlock a build the server already blocked.');
+  const open = updateGate({ build: '64' }); await open.render(); open.holdPolicy(); await open.foreground(); await open.completePolicy(64, true);
+  assert.equal(open.modal().props.visible, false);
 });
