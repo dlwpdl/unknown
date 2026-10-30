@@ -13,6 +13,7 @@ import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { checkInMeetup, claimMeetupAttendance, confirmMeetupAttendance, createMeetupSession, loadMeetupReviews, loadMeetupSessions, writeMeetupReview, type MeetupReviewPage, type MeetupSessions, type MeetupSession } from '@/lib/meetup-reviews';
+import { askForStoreReviewSoon } from '@/lib/store-review';
 import { supabase } from '@/lib/supabase';
 
 // reviewsOnly: the meetup detail shows published reviews; host tools and attendance live on /meetup-tools.
@@ -121,7 +122,7 @@ function Session({ session, meId, onChanged, now }: { session: MeetupSession; me
   return <View style={[styles.review, { borderColor: theme.line }]}>
     <ThemedText type="smallBold">{new Intl.DateTimeFormat(appLocale, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(session.startsAt))} ~ {new Date(session.endsAt).toLocaleTimeString(appLocale, { hour: 'numeric', minute: '2-digit' })}</ThemedText>
     <ThemedText type="small">{session.verified ? tr("참석 확인됨") : session.checkedIn ? tr("체크인 완료 · 참석 확인 대기") : tr("참석 미확인")}</ThemedText>
-    {!ended && now >= Date.parse(session.startsAt) && !session.checkedIn && <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => void act(() => checkInMeetup(supabase, session.id), tr("체크인했어요. 종료 후 서로 참석을 확인해주세요."))} style={button}><ThemedText type="smallBold">{tr("현장 체크인")}</ThemedText></Pressable>}
+    {!ended && now >= Date.parse(session.startsAt) && !session.checkedIn && <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => void act(async () => { await checkInMeetup(supabase, session.id); askForStoreReviewSoon(); }, tr("체크인했어요. 종료 후 서로 참석을 확인해주세요."))} style={button}><ThemedText type="smallBold">{tr("현장 체크인")}</ThemedText></Pressable>}
     {inWindow && session.members.filter(member => member.id !== meId).map(member => <View key={member.id} style={styles.container}>
       <ThemedText type="small">{member.nickname} · {member.verified ? tr("참석 확인됨") : tr("참석 확인 대기")}</ThemedText>
       {session.checkedIn && member.checkedIn && !member.confirmedByMe && <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => confirm(member.id, member.nickname)} style={button}><ThemedText type="small">{member.nickname}{" " + tr("참석 확인")}</ThemedText></Pressable>}
@@ -140,7 +141,7 @@ function Session({ session, meId, onChanged, now }: { session: MeetupSession; me
       <View accessibilityRole="radiogroup" style={styles.row}>{Array.from({ length: 19 }, (_, i) => 1 + i / 2).map(value => <Pressable key={value} accessibilityRole="radio" accessibilityLabel={tr("{0}점", (value))} accessibilityState={{ selected: score === value, disabled: busy }} disabled={busy} onPress={() => { play('selection'); setScore(value); }} style={[button, score === value && { borderColor: theme.accent }]}><ThemedText type="small">{value}</ThemedText></Pressable>)}</View>
       <TextInput accessibilityLabel={tr("공개 모임 후기")} value={body} editable={!busy} onChangeText={setBody} onFocus={() => play('selection')} multiline maxLength={300} placeholder={tr("운영·분위기·설명과 같았는지 알려주세요. 개인을 비난하거나 개인정보를 적지 마세요.")} placeholderTextColor={theme.textSecondary} style={[styles.input, { color: theme.text, borderColor: theme.line }]} />
       <Pressable accessibilityRole="button" disabled={busy || score === null || (score <= 5 && body.trim().length < 10)} accessibilityState={{ disabled: busy || score === null || (score <= 5 && body.trim().length < 10) }} style={button}
-        onPress={() => void act(async () => { await writeMeetupReview(supabase, session.id, score!, body); setSubmitted(true); }, tr("후기를 제출했어요. 검토 후 모임에 반영됩니다."))}><ThemedText type="smallBold">{tr("후기 제출")}</ThemedText></Pressable>
+        onPress={() => void act(async () => { await writeMeetupReview(supabase, session.id, score!, body); setSubmitted(true); if (score! >= 4) askForStoreReviewSoon(); }, tr("후기를 제출했어요. 검토 후 모임에 반영됩니다."))}><ThemedText type="smallBold">{tr("후기 제출")}</ThemedText></Pressable>
     </>}
     {!!session.reviewStatus && <ThemedText type="small">{session.reviewStatus === 'published' ? tr('이 회차 후기는 반영되었어요.') : tr('이 회차 후기는 제출했어요. 검토 상태에 따라 공개돼요.')}</ThemedText>}
     {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite">{notice}</ThemedText>}
