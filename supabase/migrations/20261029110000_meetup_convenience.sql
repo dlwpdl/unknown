@@ -173,25 +173,8 @@ begin
     on conflict(host_id) do update set threshold=excluded.threshold,updated_at=now();
 end $$;
 
--- 3. Waitlist: plus+ members go first (participant perk); an offer may carry a reply deadline (pro promotion).
+-- 3. Waitlist stays in signup order; an offer may carry a reply deadline (pro promotion).
 alter table private.meetup_waitlist add column offer_expires_at timestamptz;
-
-create function private.meetup_waitlist_priority(p_user uuid) returns integer
-language sql stable security definer set search_path='' as $$
-  select case when private.meetup_tier_rank(p_user)>=1 then 0 else 1 end;
-$$;
-
-do $$
-declare d text;
-begin
-  d:=pg_get_functiondef('public.invite_next_meetup_waitlist(uuid)'::regprocedure);
-  if strpos(d,'order by w.joined_at,w.id limit 1 for update')=0 then raise exception 'WAITLIST_INVITE_ORDER_CHANGED'; end if;
-  execute replace(d,'order by w.joined_at,w.id limit 1 for update','order by private.meetup_waitlist_priority(w.user_id),w.joined_at,w.id limit 1 for update');
-  d:=pg_get_functiondef('public.get_meetup_host_tools(uuid)'::regprocedure);
-  if strpos(d,'and (other.joined_at,other.id)<=(w.joined_at,w.id)')=0 then raise exception 'WAITLIST_POSITION_CHANGED'; end if;
-  execute replace(d,'and (other.joined_at,other.id)<=(w.joined_at,w.id)',
-    'and (private.meetup_waitlist_priority(other.user_id),other.joined_at,other.id)<=(private.meetup_waitlist_priority(w.user_id),w.joined_at,w.id)');
-end $$;
 
 -- Offers the next free seat to the next eligible waitlisted member. p_hours null = plain invite (no deadline).
 create function private.offer_meetup_waitlist(p_post_id uuid, p_hours integer) returns boolean
@@ -208,7 +191,7 @@ begin
   if free_seats-open_offers<1 then return false; end if;
   select * into entry from private.meetup_waitlist w where w.post_id=event.id and w.cancelled_at is null and w.invited_at is null
     and private.meetup_waitlist_eligible(w.post_id,w.user_id)
-    order by private.meetup_waitlist_priority(w.user_id),w.joined_at,w.id limit 1 for update;
+    order by w.joined_at,w.id limit 1 for update;
   if entry.id is null then return false; end if;
   update private.meetup_waitlist set invited_at=clock_timestamp(),
     offer_expires_at=case when p_hours is null then null else clock_timestamp()+make_interval(hours=>p_hours) end where id=entry.id;
@@ -385,51 +368,6 @@ begin
   perform public.release_ai_draft(p_user_id);
 end $$;
 
--- 7. Plus+ members hear about a new meetup first; everyone else gets the usual notice 30 minutes later.
-create table private.early_meetup_alerts (post_id uuid primary key references public.posts(id) on delete cascade, sent_at timestamptz not null default now());
-alter table private.early_meetup_alerts enable row level security;
-revoke all on private.early_meetup_alerts from public, anon, authenticated, service_role;
-
-do $$
-declare d text; anchor text:='select q.* from private.discovery_post_queue q';
-begin
-  d:=pg_get_functiondef('private.process_discovery_posts(integer)'::regprocedure);
-  if array_length(string_to_array(d,anchor),1)<>2 then raise exception 'DISCOVERY_QUEUE_ANCHOR_CHANGED'; end if;
-  execute replace(d,anchor,anchor||' where not exists(select 1 from public.posts held where held.id=q.post_id
-      and held.room_preview is not null and held.created_at>clock_timestamp()-interval ''30 minutes'')');
-end $$;
-
-create function private.send_early_meetup_alerts() returns integer
-language plpgsql security definer set search_path='' as $$
-declare post public.posts; sent integer:=0; added integer;
-begin
-  for post in select p.* from public.posts p
-    where p.room_preview is not null and p.created_at>clock_timestamp()-interval '30 minutes'
-      and private.meetup_is_open(p.status,p.room_preview) and private.is_active_account(p.author_id)
-      and not exists(select 1 from private.early_meetup_alerts e where e.post_id=p.id)
-      and not exists(select 1 from auth.users a where a.id=p.author_id
-        and (a.email like '%@seed.gling.invalid' or a.raw_app_meta_data->'review_access'='true'::jsonb))
-    order by p.created_at limit 20
-  loop
-    insert into private.early_meetup_alerts(post_id) values(post.id);
-    -- Same rows and copy as process_discovery_posts; its later pass skips these through notifications_discovery_once_idx.
-    insert into public.notifications(user_id,kind,actor_id,target_type,target_id,body,route)
-    select prefs.user_id,case when match.interested then 'interest_post' else 'nearby_meetup' end,post.author_id,'post',post.id,
-      case when match.interested then '관심 있는 주제에 새 글이 올라왔어요. 한번 읽어볼까요?' else '우리 동네에 새 모임이 생겼어요. 어떤 모임인지 볼까요?' end,
-      '/post/'||post.id::text
-    from public.notification_preferences prefs
-    join public.profiles recipient on recipient.id=prefs.user_id and recipient.city_id=post.city_id and recipient.account_status='active'
-    cross join lateral (select prefs.interests and (post.tag_id=any(prefs.interest_tag_ids) or exists (
-      select 1 from unnest(post.hashtags) hashtag where lower(private.canonicalize_hashtag(hashtag))=any(prefs.interest_hashtags)
-    )) interested) match
-    where (prefs.interests or prefs.nearby) and prefs.user_id<>post.author_id and (match.interested or prefs.nearby)
-      and private.meetup_tier_rank(prefs.user_id)>=1
-    on conflict do nothing;
-    get diagnostics added=row_count; sent:=sent+added;
-  end loop;
-  return sent;
-end $$;
-
 -- 8. Empty meetups: no request 48 hours before start -> one suggestion to the host; none by the start -> off the list.
 -- Nothing here creates requests or members; empty seats are never filled automatically.
 create table private.meetup_empty_nudges (post_id uuid primary key references public.posts(id) on delete cascade, sent_at timestamptz not null default now());
@@ -483,9 +421,9 @@ begin
 end $$;
 
 revoke all on function private.meetup_tier_rank(uuid), private.meetup_next_start(public.posts), private.meetup_host_post(uuid),
-  private.meetup_waitlist_priority(uuid), private.offer_meetup_waitlist(uuid,integer), private.meetup_seat_freed(),
+  private.offer_meetup_waitlist(uuid,integer), private.meetup_seat_freed(),
   private.expire_meetup_waitlist_offers(), private.auto_approve_meetup_request(), private.record_meetup_absences(timestamptz),
-  private.guard_meetup_no_show_rule(), private.send_early_meetup_alerts(), private.tidy_empty_meetups(timestamptz),
+  private.guard_meetup_no_show_rule(), private.tidy_empty_meetups(timestamptz),
   private.purge_meetup_convenience_account_data(uuid) from public, anon, authenticated, service_role;
 revoke all on function public.get_meetup_rsvp(uuid), public.set_meetup_rsvp(uuid,boolean,boolean), public.get_meetup_automation(uuid),
   public.set_meetup_auto_approval(uuid,boolean,boolean,boolean), public.set_meetup_waitlist_promotion(uuid,boolean,integer),
@@ -496,7 +434,7 @@ grant execute on function public.get_meetup_rsvp(uuid), public.set_meetup_rsvp(u
   public.set_meetup_no_show_rule(integer), public.reserve_meetup_title_draft(uuid) to authenticated;
 grant execute on function public.release_meetup_title_draft(uuid,uuid) to service_role;
 
-select cron.schedule('gling-meetup-convenience','* * * * *',$job$ select private.send_early_meetup_alerts(); select private.expire_meetup_waitlist_offers(); $job$);
+select cron.schedule('gling-meetup-convenience','* * * * *',$job$ select private.expire_meetup_waitlist_offers(); $job$);
 select cron.schedule('gling-meetup-tidy','*/10 * * * *',$job$ select private.record_meetup_absences(); select private.tidy_empty_meetups(); $job$);
 
 insert into private.behavior_targets(id) values
