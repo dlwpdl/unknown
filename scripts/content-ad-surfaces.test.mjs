@@ -119,6 +119,7 @@ test('the independent public reader counts across appended pages without replaci
     '../../../supabase/functions/_shared/post-links': { splitPostAttachments: body => ({ body, urls: [] }) },
     '@/lib/public-web': { publicMerchantId: () => null, publicWebTarget: () => 'gling://' }, '@/lib/public-seo': { ...publicSeo, PUBLIC_SITE: 'https://gling.example', jsonLd: JSON.stringify },
     './analytics': { useReaderAnalytics() {} },
+    '@/hooks/use-language': { useLanguage: () => ({ language: 'en', tr: value => value }) },
   }, { window: { location: { pathname: '/' } } });
   await view.settle();
   const before = nodes(view.tree).filter(node => node.type === 'article' || node.type === 'FeedAd');
@@ -164,4 +165,26 @@ test('embedded discovery opens validated public place info above chat without hi
   assert.deepEqual(opened, [place.sourceUrl]); assert.equal(closes, 0);
   place.sourceUrl = 'javascript:alert(1)'; view.render(); card().props.onOpen(); await view.settle();
   assert.equal(opened.length, 1, 'untrusted public source cannot become a browser action');
+});
+
+
+test('Korean City Stories home preserves public pagination and existing ad-slot callbacks', async () => {
+  const posts = Array.from({ length: 33 }, (_, index) => ({ id: `post-${index}`, body: `Body ${index}`, title: `Title ${index}`, tag: { label: '동네' }, author: { nickname: '이웃' }, createdAt: '2026-10-17T12:00:00Z' }));
+  let calls = 0;
+  const view = mount('../src/components/public-web/reader.tsx', 'ReaderContent', {
+    '@/lib/feed-data': { appendUniquePosts, loadPublicFeed: async () => { if (++calls === 2) throw new Error('append failed'); return calls === 1 ? posts.slice(0, 30) : posts.slice(30); } },
+    '@/lib/mock': { CITIES: [city], TAGS: [] }, '@/lib/post-maps': { postMapBody: body => ({ body }) },
+    '../../../supabase/functions/_shared/post-links': { splitPostAttachments: body => ({ body, urls: [] }) },
+    '@/lib/public-web': { publicMerchantId: () => null, publicWebTarget: () => 'gling://' }, '@/lib/public-seo': { ...publicSeo, PUBLIC_SITE: 'https://gling.example', jsonLd: JSON.stringify },
+    './analytics': { useReaderAnalytics() {} },
+  }, { window: { location: { pathname: '/' } } });
+  await view.settle();
+  const home = () => nodes(view.tree).find(node => Array.isArray(node.props?.posts) && typeof node.props?.onMore === 'function').props;
+  const slots = () => home().posts.flatMap((_, index) => ads(home().renderAd(index, home().posts.length)));
+  assert.equal(home().posts.length, 30); assert.equal(slots().length, 7);
+  const before = home().posts.map(post => post.id);
+  await home().onMore(); await view.settle();
+  assert.equal(home().posts.length, 30); assert.equal(slots().length, 7); assert.deepEqual(home().posts.map(post => post.id), before);
+  await home().onMore(); await view.settle();
+  assert.equal(home().posts.length, 33); assert.equal(slots().length, 8); assert.deepEqual(home().posts.slice(0, 30).map(post => post.id), before);
 });

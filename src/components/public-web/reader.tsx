@@ -1,4 +1,5 @@
 import './reader.css';
+import CityStoriesHome from './city-stories-home';
 import SharedPostLanding from './shared-post-landing';
 import { PublicPostBody } from './shared-post-article';
 import { PublicFestivals } from './festivals';
@@ -147,6 +148,7 @@ function ReaderContent() {
   const meetupPage = path === '/meetups';
   const city = cities.find((item) => item.id === readyParams.city) ?? cities[0];
   const tag = TAGS.find((item) => item.slug === (path === '/meetups' ? 'meetup' : readyParams.tag));
+  const cityHome = path === '/' && ko && tag?.slug !== 'festival';
   const key = `${path}:${postId}:${merchantId}:${city.id}:${tag?.id ?? ''}`;
   const [result, setResult] = useState<{ key: string; posts: Post[]; more: boolean; failed: boolean } | null>(null);
   const [retry, setRetry] = useState(0);
@@ -206,7 +208,7 @@ function ReaderContent() {
     }
   }
 
-  return <div className="reader" style={palette} lang={language}>
+  return <div className={cityHome ? 'city-home' : 'reader'} style={cityHome ? undefined : palette} lang={language}>
     <Head><title>{detail && noindex ? ko ? '글을 찾을 수 없어요 | 글링' : 'Post unavailable | Gling' : pageTitle}</title>
       <meta name="description" content={description} />
       <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
@@ -225,6 +227,11 @@ function ReaderContent() {
       {metadata?.published && <meta property="article:published_time" content={metadata.published} />}
       {schema && <script type="application/ld+json">{jsonLd(schema)}</script>}
     </Head>
+    {cityHome ? <CityStoriesHome city={city} cities={cities} tags={TAGS} tag={tag} posts={current?.posts ?? []} loading={loading} failed={!!current?.failed} more={!!current?.more} busy={busy} isAuthed={isAuthed}
+      onMore={() => { void more(); }} onRetry={() => setRetry(value => value + 1)} renderAuthor={item => <PostAuthor post={item} />}
+      excerpt={item => { const attached = splitPostAttachments(postMapBody(item.body).body); return item.room ? visibleMeetupBody(attached.body) : attached.body; }}
+      renderExtras={item => { const mapped = postMapBody(item.body); const attached = splitPostAttachments(mapped.body); return <div className="city-story-extras">{item.room && <p className="reader-meta">{chillingSchedule(item.room)} · {recommendedAgeLabel(item.room)}</p>}{attached.urls.map((link, index) => <PostAttachmentLink key={`${link}-${index}`} url={link} />)}{mapped.url && <MapAction url={mapped.url} label={mapped.label} />}</div>; }}
+      renderAd={(index, total) => contentAdPosition(index, total) ? <div className="city-feed-ad"><FeedAd /></div> : null} /> : <>
     <a data-analytics="web_control_4" className="reader-skip" href="#reader-main">{ko ? '본문으로 바로가기' : 'Skip to content'}</a>
     <header className="reader-header">
       <a data-analytics="web_control_5" className="reader-brand" href="/" aria-label={ko ? '글링 홈' : 'Gling home'}><img src={wordmark} alt="gling" width="144" height="60" /></a>
@@ -288,5 +295,6 @@ function ReaderContent() {
       <aside id="app"><AppInvitation target={target} label={post?.room ? post.room.closed ? ko ? '앱에서 모임 보기' : 'View the meetup in the app' : ko ? '앱에서 참여하기' : 'Join in the app' : undefined} /></aside>
     </main>
     <footer className="reader-footer"><span>{ko ? 'gling · 같이 갈 사람, 같이 나눌 이야기' : 'gling · People to go with, stories to share'}</span><nav aria-label={ko ? '정책' : 'Policies'}><a href="/merchant/" onClick={() => play('selection')}>{ko ? '비즈니스 관리' : 'Manage your business'}</a><a data-analytics="web_control_18" href="/terms">{ko ? '이용약관' : 'Terms'}</a><a data-analytics="web_control_19" href="/privacy">{ko ? '개인정보처리방침' : 'Privacy'}</a><a data-analytics="web_control_20" href="/account-deletion">{ko ? '계정 삭제' : 'Delete account'}</a></nav></footer>
+    </>}
   </div>;
 }

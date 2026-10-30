@@ -10,7 +10,8 @@ assert.ok(existsSync(join(directory, 'meetups.html')), 'Public meetup discovery 
 assert.equal(readFileSync(join(directory, 'ads.txt'), 'utf8').trim(), 'google.com, pub-2361293253164911, DIRECT, f08c47fec0942fa0', 'Public web seller declaration is missing');
 for (const page of ['index', 'terms', 'privacy', 'account-deletion', 'child-safety']) {
   const html = readFileSync(join(directory, `${page}.html`), 'utf8');
-  assert.ok(html.includes('gling-night-wordmark.') && html.includes('--accent:#9283AC') && html.includes('#746486'), `${page} lost the cinematic night brand`);
+  if (page === 'index') assert.ok(html.includes('city-stories/logo.svg') && html.includes('city-hero-heading'), 'Approved City Stories home is missing');
+  else assert.ok(html.includes('gling-night-wordmark.') && html.includes('--accent:#9283AC') && html.includes('#746486'), `${page} lost the cinematic night brand`);
 }
 assert.ok(readFileSync(join(directory, 'index.html'), 'utf8').includes('https://apps.apple.com/ca/app/id6809273242'), 'Public web is missing the live iOS download');
 for (const file of ['robots.txt', 'sitemap.xml', 'llms.txt']) assert.ok(existsSync(join(directory, file)), `Public discovery file is missing: ${file}`);

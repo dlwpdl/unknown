@@ -1,0 +1,50 @@
+[
+  {
+    "key": "coal-harbour",
+    "placeName": "Coal Harbour, Vancouver, BC, Canada",
+    "artist": "Vlad D (hiking_corgi)",
+    "license": "Unsplash License",
+    "licenseUrl": "https://unsplash.com/license",
+    "sourceUrl": "https://unsplash.com/photos/a-harbor-with-many-boats-and-a-city-in-the-background-19aJ-K6fUmY"
+  },
+  {
+    "key": "gastown",
+    "placeName": "Gastown Steam Clock",
+    "artist": "Abhinaba Basu from Redmond, United States",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Gastown_Steam_Clock.jpg"
+  },
+  {
+    "key": "cn-tower",
+    "placeName": "CN Tower",
+    "artist": "Wladyslaw, Correction of perspective distortion: Niabot",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Toronto_-_ON_-_CN_Tower_bei_Nacht2.jpg"
+  },
+  {
+    "key": "kensington",
+    "placeName": "Kensington Market",
+    "artist": "Arild Vågen",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Kensington_Market_Toronto_August_2017_01.jpg"
+  },
+  {
+    "key": "palais",
+    "placeName": "Palais des congrès de Montréal",
+    "artist": "French Picman",
+    "license": "CC BY-SA 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Palais_des_congr%C3%A8s.jpg"
+  },
+  {
+    "key": "old-montreal",
+    "placeName": "Bonsecours Market",
+    "artist": "Dpalma01",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:March%C3%A9_Bonsecours_in_Old_Montreal.jpg"
+  }
+]

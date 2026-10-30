@@ -137,6 +137,8 @@ function readerMarkup(path, { mounted = false, search = '', directPost = false, 
     '@/lib/sharing': { sharedLinkTarget },
     '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.ej-entertainment.com', jsonLd: JSON.stringify, publicSiteName },
     '@/lib/public-web-client': { publicWebClient: {} },
+    '@/lib/hashtags': { hasAdLabel: () => false },
+    './city-stories-credits.json': JSON.parse(readFileSync(new URL('../src/components/public-web/city-stories-credits.json', import.meta.url), 'utf8')),
     './analytics': { useReaderAnalytics() {} },
   };
   function load(file) {
@@ -153,6 +155,7 @@ function readerMarkup(path, { mounted = false, search = '', directPost = false, 
   modules['./shared-post-landing'] = { __esModule: true, default: landing.default };
   modules['./app-store-choices'] = load('../src/components/public-web/app-store-choices.tsx');
   modules['./meetup-list'] = load('../src/components/public-web/meetup-list.tsx');
+  modules['./city-stories-home'] = { __esModule: true, default: load('../src/components/public-web/city-stories-home.tsx').default };
   const component = articlePost ? article.SharedPostArticle : directPost ? landing.default : load('../src/components/public-web/reader.tsx').default;
   return renderToStaticMarkup(React.createElement(component, articlePost ? { post: articlePost } : undefined));
 }
@@ -176,7 +179,7 @@ test('canonical post document retains its direct landing SSR and mounted post de
   assert.equal(readerMarkup('/post', options), readerMarkup('/post', { ...options, directPost: true }));
   assert.match(readerMarkup('/post', options), /class="shared-post-landing"/);
   assert.ok(readerMarkup('/post', { ...options, mounted: true }).includes(`href="gling://post/${id}"`));
-  assert.match(readerMarkup('/'), /<h1 id="stories">오늘<\/h1>/);
+  assert.match(readerMarkup('/'), /<h1 id="city-hero-heading">이 도시가/);
 });
 
 
@@ -216,9 +219,9 @@ test('home opens with the Today feed and visible account entry while meetup disc
   for (const language of ['ko', 'en']) {
     const markup = readerMarkup('/', { language });
     assert.doesNotMatch(markup, /reader-showcase|public-meetups-list|public-meetups-heading/);
-    assert.match(markup, /class="reader-header-account" href="\/merchant\/"/);
-    assert.match(markup, language === 'ko' ? />로그인<\/a>/ : />Sign in<\/a>/);
+    assert.match(markup, /href="\/merchant\/"/);
+    assert.match(markup, language === 'ko' ? /href="\/merchant\/"[^>]*>로그인/ : />Sign in<\/a>/);
     assert.match(markup, /href="\/meetups\?city=vancouver"/);
-    assert.match(markup, language === 'ko' ? /<h1 id="stories">오늘<\/h1>/ : /<h1 id="stories">Today<\/h1>/);
+    assert.match(markup, language === 'ko' ? /<h1 id="city-hero-heading">이 도시가/ : /<h1 id="stories">Today<\/h1>/);
   }
 });
