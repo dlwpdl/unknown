@@ -61,7 +61,7 @@ export function MeetupAutomation({ postId }: { postId: string }) {
 
     <View style={[styles.divider, { backgroundColor: theme.line }]} />
     <ThemedText type="smallBold">{tr('빈자리 대기자에게 넘기기')}</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary">{tr('자리가 나면 다음 대기자에게 알려요. 정한 시간 안에 신청하면 바로 승인되고, 답이 없으면 그다음 분께 넘어가요.')}</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary">{tr('자리가 나면 다음 대기자에게 알려요. 정한 시간 안에 신청하면 바로 승인되고, 답이 없으면 그다음 분께 넘어가요. 모임 6시간 전부터는 1시간만 기다려요.')}</ThemedText>
     {state.canPromote ? <>
       <SwitchRow id="meetup.automation.promote" label={tr('대기자에게 자동으로 넘기기')} value={state.promote} disabled={saving} onChange={value => promote(value)} />
       {state.promote && <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel={tr('답을 기다리는 시간')}>

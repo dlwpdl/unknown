@@ -138,5 +138,24 @@ select is((select room_preview->>'closed' from public.posts,ids where id=d),null
 select is((select count(*)::int from public.meetup_requests r,ids where r.post_id in (d,e)),0,'No seats filled by the tidy job');
 select is(private.notification_category('meetup_host_tip','post'),'meetups','Host tip files under meetups');
 
+-- 9. Owner 2026-10-30: a late offer gets 1 hour; free members join one meetup at a time once switched on.
+alter table public.posts disable trigger posts_meetup_abuse;
+update public.posts set room_preview=room_preview||jsonb_build_object('startsAt',now()+interval '4 hours','endsAt',now()+interval '6 hours') where id=(select d from ids);
+alter table public.posts enable trigger posts_meetup_abuse;
+insert into private.meetup_waitlist(post_id,user_id,joined_at) select d,m5,now()-interval '1 hour' from ids;
+select ok(private.offer_meetup_waitlist((select d from ids),3),'Late seat offered');
+select ok((select offer_expires_at between now()+interval '59 minutes' and now()+interval '61 minutes' from private.meetup_waitlist w,ids where w.post_id=d and w.user_id=m5),'Within 6 hours of the start the reply window is 1 hour');
+select ok(exists(select 1 from public.notifications n,ids where n.user_id=m5 and n.target_id=d and n.body like '%1시간 안에 신청하면%'),'Late offer notice says 1 hour');
+select is((select enabled from private.meetup_join_cap),false,'Free join cap ships switched off');
+update public.meetup_requests set status='cancelled',responded_at=now() where post_id=(select c from ids) and requester_id=(select m2 from ids);
+select lives_ok($$update public.meetup_requests set status='pending' where post_id=(select c from ids) and requester_id=(select m2 from ids)$$,'Switched off: a free member in two meetups can still ask');
+update public.meetup_requests set status='cancelled',responded_at=now() where post_id=(select c from ids) and requester_id=(select m2 from ids);
+update private.meetup_join_cap set enabled=true;
+select throws_ok($$update public.meetup_requests set status='pending' where post_id=(select c from ids) and requester_id=(select m2 from ids)$$,'P0001','MEETUP_LIMIT_REACHED','Switched on: a free member already in a meetup cannot ask for another');
+select lives_ok($$insert into public.meetup_requests(post_id,host_id,requester_id,status) select c,h,m3,'pending' from ids$$,'Plus members are not capped');
+select lives_ok($$insert into public.meetup_requests(post_id,host_id,requester_id,status) select c,h,m4,'pending' from ids$$,'A free member in no meetup can ask');
+insert into public.meetup_requests(post_id,host_id,requester_id,status,responded_at) select d,h,m4,'approved',now() from ids;
+select throws_ok($$update public.meetup_requests set status='approved',responded_at=now() where post_id=(select c from ids) and requester_id=(select m4 from ids)$$,'P0001','REQUESTER_MEETUP_LIMIT_REACHED','Approval rechecks: joined another meetup meanwhile');
+
 select * from finish();
 rollback;

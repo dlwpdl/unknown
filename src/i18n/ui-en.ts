@@ -3726,7 +3726,7 @@ export const uiEnglish: Record<string, string> = {
   "권장 나이에 맞는 분": "People in the recommended age range",
   "모임에 권장 나이를 정하면 쓸 수 있어요.": "Set recommended ages for this meetup to use this.",
   "빈자리 대기자에게 넘기기": "Pass open spots to the waitlist",
-  "자리가 나면 다음 대기자에게 알려요. 정한 시간 안에 신청하면 바로 승인되고, 답이 없으면 그다음 분께 넘어가요.": "When a spot opens, the next person on the waitlist hears about it. If they apply in time, they're approved right away. If not, it goes to the next person.",
+  "자리가 나면 다음 대기자에게 알려요. 정한 시간 안에 신청하면 바로 승인되고, 답이 없으면 그다음 분께 넘어가요. 모임 6시간 전부터는 1시간만 기다려요.": "When a spot opens, the next person on the waitlist hears about it. If they apply in time, they're approved right away. If not, it goes to the next person. Within 6 hours of the start, they get 1 hour.",
   "대기자에게 자동으로 넘기기": "Pass spots on automatically",
   "답을 기다리는 시간": "How long to wait for a reply",
   "노쇼 규칙": "No-show rule",
