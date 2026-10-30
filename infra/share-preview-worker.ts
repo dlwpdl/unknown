@@ -134,7 +134,7 @@ export async function handleSharePreview(request: Request, env: SharePreviewEnv,
 ${teaser ? `<p class="meta teaser">${escapeHtml(teaser)}</p>` : ''}
 ${city ? `<p class="meta">${escapeHtml(city)}</p>` : ''}${schedule ? `<p class="meta">${escapeHtml(schedule)}</p>` : ''}${closed ? '<p class="meta closed">모집 마감</p>' : ''}
 <p class="login">Google 또는 소셜 계정으로 로그인하면 자세한 내용을 확인할 수 있어요.</p><a id="share-primary-cta" class="cta" href="${escapeHtml(destination)}">${cta}</a></div></article>
-<p class="privacy">이야기와 대화는 로그인한 글링 멤버에게만 보여요.</p></main><script src="${app}/share-redirect.js" defer></script></body></html>`;
+<p class="privacy">이야기 전문과 대화는 로그인한 글링 멤버에게만 보여요.</p></main><script src="${app}/share-redirect.js" defer></script></body></html>`;
     return new Response(head ? null : html, { headers: headers(app, supabase) });
   } catch (error) {
     const name = error && typeof error === 'object' && 'name' in error ? error.name : undefined;
