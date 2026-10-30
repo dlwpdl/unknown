@@ -177,7 +177,7 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
           {onStatusChange && profile.account_status === 'deleted' && <View style={styles.helpRow}><AdminButton disabled={statusBusy} label="재가입 허용" onPress={() => void changeStatus('reactivation_pending')} /></View>}
           {!profile.account_status_note && !(onStatusChange && ['suspended', 'deleted'].includes(profile.account_status)) && <ThemedText type="small" style={styles.muted}>남은 상태 메모가 없어요.</ThemedText>}
         </AdminCard>
-        <AdminCard icon="★" tone="accent" title="신뢰 단계" info="배지와 노출 판단에만 써요. 실명인증 결과가 아니고, 바꾸면 감사 기록에 남아요.">
+        <AdminCard icon="★" tone="accent" title="신뢰 단계" info={['회원에게 2단계는 신분증 확인, 3단계는 믿을 수 있는 호스트 배지로 보여요. 여기서 직접 바꾼 단계는 실제 신분증 확인 결과가 아니고, 감사 기록에 남아요.', '2단계 회원이 모임 기준을 채우면 3단계가 자동으로 붙고, 기준에서 벗어나면 빠져요. 3단계를 여기서 내리면 자동으로 다시 붙지 않아요.']}>
           {onTrustLevelChange ? <View style={styles.trustRow}>
             {([1, 2, 3] as const).map((level) => (
               <Pressable key={level} accessibilityRole="button" disabled={trustBusy || level === profile.verification_level}
