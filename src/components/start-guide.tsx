@@ -28,7 +28,7 @@ const TOUR: { icon: Icon; title: string; body: string }[] = [
   { icon: { ios: 'location', android: 'location_on', web: 'location_on' }, title: '위쪽 도시 이름', body: '눌러서 사는 도시로 바꿀 수 있어요. 글·모임·장소가 모두 그 도시 기준으로 바뀌어요.' },
   { icon: { ios: 'magnifyingglass', android: 'search', web: 'search' }, title: '돋보기 (검색)', body: '제목·내용·해시태그로 이웃 글을 찾아요. "원베드", "알바"처럼 짧게 쳐 보세요.' },
   { icon: { ios: 'map', android: 'map', web: 'map' }, title: '지도', body: '렌트·매매 매물, 중고거래, 가볼 만한 곳, 행사를 지도에서 한눈에 봐요.' },
-  { icon: { ios: 'line.3.horizontal.decrease', android: 'filter_list', web: 'filter_list' }, title: '카테고리 줄', body: '조금 내리면 나와요. 부동산·구인구직·중고거래·맛집처럼 주제별로 모아 보고, 옆으로 넘기면 더 있어요.' },
+  { icon: { ios: 'line.3.horizontal.decrease', android: 'filter_list', web: 'filter_list' }, title: '카테고리 줄', body: "맨 위 로고 바로 밑 줄이에요. 부동산·구인구직·중고거래처럼 주제별로 모아 보고, 끝의 '더보기'에 나머지가 있어요." },
   { icon: { ios: 'person.2', android: 'groups', web: 'groups' }, title: '아래 모임 탭', body: '이번 주 열리는 모임을 보고 바로 신청해요. 직접 모임을 열 수도 있어요.' },
   { icon: { ios: 'square.and.pencil', android: 'edit_square', web: 'edit_square' }, title: '아래 글쓰기 탭', body: '궁금한 걸 묻거나 집·일자리·중고 글을 올려요. 주제를 고르면 맞는 칸이 나와요.' },
   { icon: { ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' }, title: '채팅 · 알림', body: '채팅은 1:1 대화와 모임 단톡방, 알림은 내 글에 달린 댓글과 모임 소식이에요.' },

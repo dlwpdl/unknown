@@ -71,8 +71,8 @@ test('business remains a news board; only its explicit directory action opens bu
   const app = screen(); app.list(); app.refresh();
   app.calls[0].resolve([post('ordinary')]); await new Promise(setImmediate);
   assert.equal(nodes(app.list().renderItem({ item: post('ordinary'), index: 2 })).find(n => n.type === 'PostCard')?.props.post.id, 'ordinary');
-  const header = app.list().renderItem({ item: null, index: 0 });
-  const business = nodes(header).find(n => n.props?.analyticsId === 'components_feed-screen.pressable.3' && nodes(n).some(child => child.props?.children === '비즈니스'));
+  // 비즈니스 is not one of the six pinned chips; it is picked from the "더보기" sheet in the header.
+  const business = nodes(app.render()).find(n => n.props?.analyticsId === 'feed.categories.pick' && nodes(n).some(child => child.props?.children === '비즈니스'));
   assert.ok(business); business.props.onPress();
   assert.equal(app.sort().title, '새 소식');
   assert.equal(app.routes.length, 0, 'choosing the category itself does not navigate to the directory');
@@ -119,9 +119,8 @@ test('category changes retain popular mode, and a failed new scope does not disp
   const app = screen(); app.list(); app.refresh();
   app.sort().onChange('popular'); app.list(); app.refresh();
   app.calls[1].resolve([post('popular')]); await new Promise(setImmediate);
-  const header = app.list().renderItem({ item: null, index: 0 });
-  const categories = nodes(header).filter(node => node.props?.analyticsId === 'components_feed-screen.pressable.3');
-  categories[3].props.onPress(); app.list(); app.refresh();
+  const food = nodes(app.render()).find(node => node.props?.analyticsId === 'components_feed-screen.pressable.3' && nodes(node).some(child => child.props?.children === '맛집'));
+  food.props.onPress(); app.list(); app.refresh();
   assert.equal(app.calls[2].args[2], 4);
   assert.equal(app.calls[2].args[5].sort, 'popular');
   app.calls[2].reject(new Error('network error')); await new Promise(setImmediate);
