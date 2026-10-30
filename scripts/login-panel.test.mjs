@@ -17,7 +17,7 @@ test('iOS and Android public login omit review access while the explicit review 
       if (name === 'react/jsx-runtime') return { jsx, jsxs };
       if (name === 'react') return { useCallback: fn => fn, useRef: value => ({ current: value }), useState: value => [typeof value === 'function' ? value() : value, () => {}] };
       if (name === 'expo-router') return { useFocusEffect() {} };
-      if (name === 'react-native-reanimated') return { useReducedMotion: () => false };
+      if (name === 'react-native-reanimated' || name === '@/hooks/use-reduced-motion') return { useReducedMotion: () => false };
       if (name === 'expo-font') return { useFonts: () => [true] };
       if (name === '@/i18n/ko') return { t };
       if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };

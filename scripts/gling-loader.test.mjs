@@ -36,7 +36,7 @@ test('the shared capsule uses the white logo on fixed dark colors and keeps redu
       react: { useEffect() {}, useState: fn => [fn()] },
       'react/jsx-runtime': { jsx: element, jsxs: element },
       'react-native': { View: 'View', Image: 'Image', Text: 'Text', ActivityIndicator: 'ActivityIndicator', Animated: { Value: class {} }, StyleSheet: { create: value => value } },
-      'react-native-reanimated': { useReducedMotion: () => reduced },
+      'react-native-reanimated': { useReducedMotion: () => reduced }, '@/hooks/use-reduced-motion': { useReducedMotion: () => reduced },
       '@/hooks/use-language': { useLanguage: () => ({ tr: value => value }) }, '@/hooks/use-theme': { useTheme: () => theme },
       '@/constants/theme': { Colors: { dark, light } },
     };

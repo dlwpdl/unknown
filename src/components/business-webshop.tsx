@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Share, StyleSheet, View } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';

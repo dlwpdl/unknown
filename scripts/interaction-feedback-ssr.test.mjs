@@ -18,7 +18,7 @@ function renderFeedback({ browser = false, platform = 'web' } = {}) {
     react: React, 'react/jsx-runtime': jsx,
     'react-native': { Platform: { OS: platform }, View: 'div', Text: 'span', Pressable: 'button', Modal: () => null,
       Animated: { Value: class { interpolate() { return 0; } }, View: 'div' }, Easing: {}, StyleSheet: { create: value => value } },
-    'react-native-reanimated': { useReducedMotion: () => false },
+    'react-native-reanimated': { useReducedMotion: () => false }, '@/hooks/use-reduced-motion': { useReducedMotion: () => false },
     'expo-audio': { useAudioPlayer() { players++; if (!browser && platform === 'web') throw new ReferenceError('Audio is not defined'); return {}; } },
     './interaction-feedback-preferences': preferences,
   };
