@@ -3713,6 +3713,7 @@ export const uiEnglish: Record<string, string> = {
   "못 가요": "Can't make it",
   "간다고 알렸어요. 일정이 바뀌면 다시 눌러 주세요.": "You said you're going. Tap again if your plans change.",
   "못 간다고 알렸어요.": "You said you can't make it.",
+  "알림에서 누른 답을 저장하지 못했어요. 모임 글에서 다시 골라 주세요.": "Couldn't save your answer from the notification. Open the meetup post to answer again.",
   "자리 비워 주기": "Give up my spot",
   "저장하지 못했어요. 다시 시도해 주세요.": "Couldn't save. Try again.",
   "자동 관리 설정을 불러오지 못했어요. 다시 불러오기": "Couldn't load these settings. Tap to try again",
