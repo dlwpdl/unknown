@@ -23,6 +23,7 @@ import { TicketmasterSourceLink } from '@/components/ticketmaster-source-link';
 import { MerchantSourceLink } from '@/components/merchant-source-link';
 import { MerchantReviews } from '@/components/merchant-reviews';
 import { MeetupReviews } from '@/components/meetup-reviews';
+import { MeetupFollowEncore } from '@/components/meetup-loyalty';
 import { PostPoll } from '@/components/post-poll';
 import { MeetupRsvp } from '@/components/meetup-rsvp';
 import { PostCard, PostReactionToggle } from '@/components/post-card';
@@ -784,6 +785,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               <ThemedText accessibilityRole="header" style={Typography.section}>{tr("후기")}</ThemedText>
               <MeetupReviews postId={post.id} kind="group" reviewsOnly onBeforeNavigate={onClose} />
             </View>}
+            {!postDraft && post.room && Platform.OS !== 'web' && <View style={[styles.meetupSection, { borderTopColor: theme.line }]}><MeetupFollowEncore post={post} /></View>}
             {!postDraft && post.room && <View style={[styles.meetupSection, styles.meetupSectionRow, { borderTopColor: theme.line }]}>
               <ThemedText accessibilityRole="header" style={[Typography.section, styles.flexText]}>{tr("질문·댓글")} <ThemedText themeColor="textSecondary" style={Typography.section}>{commentTotal}</ThemedText></ThemedText>
               <Pressable analyticsId="meetup.detail.ask" accessibilityRole="button" onPress={() => { play('selection'); setComposing(true); inputRef.current?.focus(); }} style={styles.askBtn}>

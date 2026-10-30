@@ -101,6 +101,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/components/manner-summary': { MannerSummary: 'MannerSummary' },
     '@/components/post-ad-label': { PostAdLabel: 'PostAdLabel' },
     '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' },
+    '@/components/meetup-loyalty': { MeetupFollowEncore: 'MeetupFollowEncore' },
     '@/constants/theme': { Depth: {}, Spacing: { one: 4, two: 8, three: 16 } }, '@/i18n/ko': { count, t },
     '@/lib/listing-details': { stripListingLead }, '@/components/listing-card': { ListingInfo: 'ListingInfo' },
     '@/lib/hashtags': { uniqueHashtags }, '@/lib/post-maps': { postLocationUrl, postMapBody }, '@/lib/meetup-ai': { visibleMeetupBody: body => body },

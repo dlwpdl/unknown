@@ -8,6 +8,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
 import { ChatMemberAvatar } from '@/components/chat-member-avatar';
+import { MeetupBadgeChips, useMeetupBadges } from '@/components/meetup-loyalty';
 import { IconSize } from '@/constants/design-system';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -65,6 +66,7 @@ export function ChatMembers({ conversationId, groupPostId, currentUserId, onMemb
     return () => { active = false; pendingRequest.current++; subscription.remove(); void supabase.removeChannel(channel); };
   }, [conversationId, currentUserId, groupPostId, refresh]);
   const visible = members?.filter((member) => !hidden('user', member.id, member.id));
+  const badges = useMeetupBadges(open && visible ? visible.map(member => member.id) : null);
   const managed = isHost && managing?.scope === scope ? visible?.find(member => member.id === managing.id && !member.is_host) : undefined;
   const shared = managed ? history?.get(managed.id) : undefined;
   const toggleHistory = async (member: ChatMember, share: boolean) => {
@@ -128,7 +130,7 @@ export function ChatMembers({ conversationId, groupPostId, currentUserId, onMemb
               <ChatMemberAvatar viewerId={currentUserId} roomId={conversationId} path={item.avatar_path}
                 active={open && viewable.scope === scope && viewable.ids.has(item.id)} style={styles.avatar}
                 fallback={<View style={[styles.avatar, { backgroundColor: theme.backgroundElement, borderColor: theme.line, borderWidth: 1 }]}><ThemedText type="smallBold" themeColor="accent">{item.nickname[0]}</ThemedText></View>} />
-              <ThemedText type="smallBold" style={styles.name}>{item.nickname}{item.id === currentUserId ? tr(" (나)") : ''}</ThemedText>
+              <View style={styles.name}><ThemedText type="smallBold">{item.nickname}{item.id === currentUserId ? tr(" (나)") : ''}</ThemedText><MeetupBadgeChips levels={badges[item.id]} /></View>
               {item.is_host && <ThemedText type="small" themeColor="accent">{tr("호스트")}</ThemedText>}
             </Pressable>;
               return manageable ? <View style={styles.memberRow}>{row}<Pressable analyticsId="chat.meetup-manage" accessibilityRole="button" accessibilityLabel={tr("{0} 멤버 관리", item.nickname)}

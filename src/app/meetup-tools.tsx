@@ -6,6 +6,7 @@ import { SymbolView } from 'expo-symbols';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MeetupReviews } from '@/components/meetup-reviews';
 import { MeetupAutomation } from '@/components/meetup-automation';
+import { MeetupLoyaltyTools } from '@/components/meetup-loyalty';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -27,7 +28,7 @@ export default function MeetupToolsRoute() {
     <View style={[styles.head, { backgroundColor: theme.background }]}><Pressable analyticsId="meetup.tools.back" accessibilityRole="button" accessibilityLabel={tr('뒤로가기')} onPress={() => { play('selection'); back(); }} style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable><ThemedText accessibilityRole="header" style={styles.headTitle}>{host === '1' ? tr('호스트 도구') : tr('참석 확인')}</ThemedText></View>
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       {!isAuthed ? <StateCard kind="blocked" title={tr('로그인 후 확인할 수 있어요')} body={tr('모임에 참여한 계정으로 로그인해 주세요.')} actionLabel={tr('로그인')} onAction={() => promptLogin('모임을 관리하려면 로그인해 주세요.')} />
-        : id ? <>{host === '1' && <MeetupAutomation key={`automation:${id}`} postId={id} />}<MeetupReviews key={id} postId={id} kind={kind === 'once' ? 'once' : 'group'} attendanceOnly /></>
+        : id ? <>{host === '1' && <MeetupAutomation key={`automation:${id}`} postId={id} />}<MeetupReviews key={id} postId={id} kind={kind === 'once' ? 'once' : 'group'} attendanceOnly /><MeetupLoyaltyTools key={`loyalty:${id}`} postId={id} /></>
         : <StateCard kind="empty" title={tr('이 모임을 찾을 수 없어요.')} body={tr('삭제되었거나 볼 수 없는 모임이에요.')} />}
     </ScrollView>
   </SafeAreaView>;

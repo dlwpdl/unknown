@@ -23,6 +23,7 @@ import { ChatMembers } from '@/components/chat-members';
 import { ChatMemberAvatar } from '@/components/chat-member-avatar';
 import { MeetupManageSheet } from '@/components/meetup-manage-sheet';
 import { MeetupRoomSummary } from '@/components/meetup-room-summary';
+import { MeetupPinnedNotice } from '@/components/meetup-loyalty';
 import { MeetupChatOverview } from '@/components/meetup-chat-overview';
 import { PostPinMap } from '@/components/post-pin-map';
 import { PostShareSheet } from '@/components/post-share-sheet';
@@ -805,6 +806,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       discoveryVisible.current = true; discoveryLastMessage.current = latestMessages.current.at(-1)?.id;
       Keyboard.dismiss(); setOverviewOpen(true);
     }} onManage={conversation.isGroupHost && access.write ? actions => { if (valid()) { Keyboard.dismiss(); setHostActions(actions); setManageOpen(true); } } : undefined} />}
+    {group && conversation.groupPostId && access.read && <MeetupPinnedNotice key={`notice:${currentUserId}:${conversation.groupPostId}`} postId={conversation.groupPostId} />}
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {access.read ? loading && messages.length === 0 ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} /></View> : <View ref={listRegion} style={styles.messageList} onLayout={closeMessageMenu}><FlatList ref={messageList} analyticsId="components_chat-room.flatlist.1" data={searchMatches} keyExtractor={(message) => message.id} contentContainerStyle={styles.scroll}
         onViewableItemsChanged={trackVisibleMessages} viewabilityConfig={viewability}

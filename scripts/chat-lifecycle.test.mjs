@@ -129,6 +129,7 @@ export function mount(file, exportName, data, props = {}, params = {}) {
       if (name === '@/lib/sharing') return { sharedLinkInMessage };
       if (name === '@/lib/chilling-data' && data.chillingData) return data.chillingData;
       if (name === '@/components/shared-link-card') return { SharedLinkCard: 'SharedLinkCard' };
+      if (name === '@/components/meetup-loyalty') return { MeetupPinnedNotice: 'MeetupPinnedNotice', MeetupBadgeChips: 'MeetupBadgeChips', useMeetupBadges: () => ({}) };
       if (name === '@/lib/chat-details') return { ...chatDetails, ...(data.loadChatMembers ? { loadChatMembers: data.loadChatMembers } : {}) };
       if (name === '@/lib/chilling-profile-media') return { loadMeetupProfilePhoto: data.loadMeetupProfilePhoto };
       if (name === '@/lib/chilling') return { chillingSchedule, chillingTimezoneLabel };
