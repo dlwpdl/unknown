@@ -860,7 +860,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 <ThemedText type="smallBold" themeColor="accent">{tr('비즈니스 찾기')}</ThemedText>
                 <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={IconSize.chevron} tintColor={theme.accent} />
               </Pressable> : listingCategory && listingCategory !== 'jobs' ? <ListingModeSwitch mode="list" onChange={mode => setListingMap(mode === 'map')} /> : undefined}>
-              {listingCategory && listingCategory !== 'jobs' && <ListingFilterBar category={listingCategory} filters={listingFilters} onChange={setListingFilters}
+              {listingCategory && <ListingFilterBar category={listingCategory} cityId={city.id} filters={listingFilters} onChange={setListingFilters}
                 view={listingView} onView={changeListingView} />}
               {businessCategory && <ListingViewSwitch view={businessView} onView={changeBusinessView} />}
             </FeedSortControl>

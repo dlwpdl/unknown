@@ -18,14 +18,17 @@ import { DISCOVERY_CATEGORIES } from '@/lib/discovery';
 import { localDay, parseLocalDay } from '@/lib/chilling-date';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import {
-  CONDITIONS, formatMoney, formatMoveIn, groupListingsByArea, inBounds, LISTING_LABELS, ROOMS, type ListingCategory, type ListingFilters, type ListingView, type MapBounds,
+  CONDITIONS, formatMoney, JOB_DEALS, JOB_TYPES, formatMoveIn, groupListingsByArea, inBounds, LISTING_LABELS, ROOMS, type ListingCategory, type ListingFilters, type ListingView, type MapBounds,
 } from '@/lib/listing-details';
+import { neighborhoodName, neighborhoodsFor } from '@/lib/neighborhoods';
 import type { City, Post } from '@/lib/types';
 
-type FilterKey = 'market' | 'rooms' | 'price' | 'moveIn' | 'deal' | 'condition';
-const FILTERS: Record<'housing' | 'used', FilterKey[]> = { housing: ['market', 'rooms', 'price', 'moveIn'], used: ['deal', 'price', 'condition'] };
+type FilterKey = 'market' | 'rooms' | 'price' | 'moveIn' | 'deal' | 'condition' | 'jobDeal' | 'jobTypes' | 'wage' | 'area';
+const FILTERS: Record<ListingCategory, FilterKey[]> = { housing: ['market', 'rooms', 'price', 'moveIn'], used: ['deal', 'price', 'condition'], jobs: ['jobDeal', 'jobTypes', 'wage', 'area'] };
+// 시급 floors around the BC/ON minimum wage.
+const WAGES = [17, 18, 20, 25, 30];
 // Monthly rent and sale prices live on different scales, so 매매 gets its own steps.
-const PRICES = { housing: [1500, 2000, 2500, 3000, 4000], sale: [500000, 800000, 1000000, 1500000, 2000000], used: [0, 20, 50, 100, 300] };
+const PRICES = { housing: [1500, 2000, 2500, 3000, 4000], sale: [500000, 800000, 1000000, 1500000, 2000000], used: [0, 20, 50, 100, 300], jobs: [] as number[] };
 const MARKETS = { rent: '렌트', sale: '매매' } as const;
 
 function Segment({ options, value, onChange, label }: { options: { key: string; label: string; icon?: SymbolViewProps['name'] }[]; value: string; onChange: (key: string) => void; label: string }) {
@@ -59,13 +62,13 @@ export function ListingViewSwitch({ view, onView }: { view: ListingView; onView:
 }
 
 // Filter chips shared by the list and the map, plus the 중고거래 list/grid toggle.
-export function ListingFilterBar({ category, filters, onChange, view, onView }: {
-  category: ListingCategory; filters: ListingFilters; onChange: (next: ListingFilters) => void; view?: ListingView; onView?: (view: ListingView) => void;
+export function ListingFilterBar({ category, cityId, filters, onChange, view, onView }: {
+  category: ListingCategory; cityId: string; filters: ListingFilters; onChange: (next: ListingFilters) => void; view?: ListingView; onView?: (view: ListingView) => void;
 }) {
   const theme = useTheme(), { tr, language } = useLanguage(), { play } = useInteractionFeedback();
   const [open, setOpen] = useState<FilterKey | null>(null);
   const [now] = useState(() => new Date());
-  if (category === 'jobs') return null;
+  const areas = neighborhoodsFor(cityId);
   // Before a date is chosen the picker shows the 1st of next month; only a chosen date filters.
   const moveInShown = filters.moveInBy ?? localDay(new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString());
   const priceLabel = (value: number) => category === 'used' && value === 0 ? tr('무료만') : tr('{0} 이하', formatMoney(value));
@@ -76,15 +79,21 @@ export function ListingFilterBar({ category, filters, onChange, view, onView }: 
     moveIn: filters.moveInBy ? tr('{0}까지 입주', formatMoveIn(filters.moveInBy, language)) : null,
     deal: filters.deal ? tr(LISTING_LABELS.used[filters.deal]) : null,
     condition: filters.conditions.length ? filters.conditions.map(item => tr(LISTING_LABELS.condition[item])).join(' · ') : null,
+    jobDeal: filters.jobDeal ? tr(LISTING_LABELS.jobs[filters.jobDeal]) : null,
+    jobTypes: filters.jobTypes.length ? filters.jobTypes.map(item => tr(LISTING_LABELS.jobTypes[item])).join(' · ') : null,
+    wage: filters.minWage != null ? tr('시급 {0} 이상', formatMoney(filters.minWage)) : null,
+    area: areas.find(item => item.id === filters.area) ? neighborhoodName(areas.find(item => item.id === filters.area)!, language) : null,
   };
-  const names: Record<FilterKey, string> = { market: tr('렌트·매매'), rooms: tr('방 구성'), price: tr('가격'), moveIn: tr('입주일'), deal: tr('팝니다·삽니다'), condition: tr('상태') };
+  const names: Record<FilterKey, string> = { market: tr('렌트·매매'), rooms: tr('방 구성'), price: tr('가격'), moveIn: tr('입주일'), deal: tr('팝니다·삽니다'), condition: tr('상태'),
+    jobDeal: tr('구인·구직'), jobTypes: tr('근무 형태'), wage: tr('시급'), area: tr('근무 동네') };
   const option = (key: string, label: string, selected: boolean, onPress: () => void, multi = false) => <SelectionChip key={key} analyticsId="listing.filter.option" selected={selected} baseColor={theme.card}
     accessibilityRole={multi ? 'checkbox' : 'radio'} accessibilityLabel={label} accessibilityState={{ selected, checked: selected }}
     onPress={() => { play('selection'); onPress(); }} style={[ControlStyles.pill, styles.optionChip, { borderColor: selected ? theme.accent : theme.line }]}>
     <ThemedText type="label" style={{ color: selected ? theme.accentInk : theme.text }}>{label}</ThemedText>
   </SelectionChip>;
   const toggle = <T extends string>(list: T[], item: T) => list.includes(item) ? list.filter(entry => entry !== item) : [...list, item];
-  const clear = (key: FilterKey) => onChange({ ...filters, ...(key === 'market' ? { market: null, maxPrice: null } : key === 'rooms' ? { rooms: [] } : key === 'price' ? { maxPrice: null } : key === 'moveIn' ? { moveInBy: null } : key === 'deal' ? { deal: null } : { conditions: [] }) });
+  const clear = (key: FilterKey) => onChange({ ...filters, ...(key === 'market' ? { market: null, maxPrice: null } : key === 'rooms' ? { rooms: [] } : key === 'price' ? { maxPrice: null } : key === 'moveIn' ? { moveInBy: null } : key === 'deal' ? { deal: null } : key === 'condition' ? { conditions: [] }
+    : key === 'jobDeal' ? { jobDeal: null } : key === 'jobTypes' ? { jobTypes: [] } : key === 'wage' ? { minWage: null } : { area: null }) });
 
   return <View style={styles.filterWrap}>
     <View style={styles.filterRow}>
@@ -109,6 +118,10 @@ export function ListingFilterBar({ category, filters, onChange, view, onView }: 
         {open === 'rooms' && ROOMS.map(room => option(room, tr(LISTING_LABELS.rooms[room]), filters.rooms.includes(room), () => onChange({ ...filters, rooms: toggle(filters.rooms, room) }), true))}
         {open === 'price' && PRICES[category === 'housing' && filters.market === 'sale' ? 'sale' : category].map(value => option(String(value), priceLabel(value), filters.maxPrice === value, () => onChange({ ...filters, maxPrice: filters.maxPrice === value ? null : value })))}
         {open === 'deal' && (['sell', 'buy'] as const).map(deal => option(deal, tr(LISTING_LABELS.used[deal]), filters.deal === deal, () => onChange({ ...filters, deal: filters.deal === deal ? null : deal })))}
+        {open === 'jobDeal' && JOB_DEALS.map(deal => option(deal, tr(LISTING_LABELS.jobs[deal]), filters.jobDeal === deal, () => onChange({ ...filters, jobDeal: filters.jobDeal === deal ? null : deal })))}
+        {open === 'jobTypes' && JOB_TYPES.map(item => option(item, tr(LISTING_LABELS.jobTypes[item]), filters.jobTypes.includes(item), () => onChange({ ...filters, jobTypes: toggle(filters.jobTypes, item) }), true))}
+        {open === 'wage' && WAGES.map(value => option(String(value), tr('{0} 이상', formatMoney(value)), filters.minWage === value, () => onChange({ ...filters, minWage: filters.minWage === value ? null : value })))}
+        {open === 'area' && areas.map(item => option(item.id, neighborhoodName(item, language), filters.area === item.id, () => onChange({ ...filters, area: filters.area === item.id ? null : item.id })))}
         {open === 'condition' && CONDITIONS.map(item => option(item, tr(LISTING_LABELS.condition[item]), filters.conditions.includes(item), () => onChange({ ...filters, conditions: toggle(filters.conditions, item) }), true))}
       </View>}
       {open === 'moveIn' && <ChillingDateInput dateOnly label={tr('이 날짜까지 들어갈 수 있는 집')} value={parseLocalDay(moveInShown)} minimumDate={now}
@@ -149,7 +162,7 @@ export function ListingMapScreen({ visible, category, city, posts, filters, onFi
         <ThemedText accessibilityRole="header" style={[Typography.menu, styles.flex]} numberOfLines={1}>{tr(city.name)} · {tr(category === 'housing' ? '부동산' : '중고거래')}</ThemedText>
         <ListingModeSwitch mode="map" onChange={mode => { if (mode === 'list') { setFree(false); setMoved(null); setRegion(null); setSelectedId(null); onClose(); } }} />
       </View>
-      <View style={styles.mapFilters}><ListingFilterBar category={category} filters={filters} onChange={next => { setSelectedId(null); onFilters(next); }} /></View>
+      <View style={styles.mapFilters}><ListingFilterBar category={category} cityId={city.id} filters={filters} onChange={next => { setSelectedId(null); onFilters(next); }} /></View>
       <View style={styles.flex}>
         {visible && <DiscoveryMap markers={markers} cityName={city.englishName} selectedId={selected?.id ?? null}
           center={focus} onSelect={id => { setFree(true); setSelectedId(id); }} onMoved={bounds => { setFree(true); setMoved(bounds); }} bottomInset={selected ? 300 : 72} />}

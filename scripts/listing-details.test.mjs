@@ -112,6 +112,14 @@ test('필터는 목록과 지도에 똑같이 걸린다', () => {
   assert.ok(matchesListingFilters(used, { ...NO_LISTING_FILTERS, deal: 'sell', conditions: ['like_new'] }, today));
   assert.ok(!matchesListingFilters(used, { ...NO_LISTING_FILTERS, deal: 'buy' }, today));
   assert.ok(!matchesListingFilters(legacy, { ...NO_LISTING_FILTERS, maxPrice: 100 }, today), 'a post without fields cannot prove it matches');
+  const job = { price: 20, listingDetails: { type: 'jobs', deal: 'hiring', payUnit: 'hour', pay: 20, jobTypes: ['part', 'weekend'], area: 'metrotown' } };
+  const salaried = { price: 4000, listingDetails: { type: 'jobs', deal: 'hiring', payUnit: 'month', pay: 4000, jobTypes: ['full'] } };
+  assert.ok(matchesListingFilters(job, { ...NO_LISTING_FILTERS, jobDeal: 'hiring', jobTypes: ['weekend', 'full'], minWage: 18, area: 'metrotown' }, today));
+  assert.ok(!matchesListingFilters(job, { ...NO_LISTING_FILTERS, jobDeal: 'seeking' }, today));
+  assert.ok(!matchesListingFilters(job, { ...NO_LISTING_FILTERS, jobTypes: ['full'] }, today));
+  assert.ok(!matchesListingFilters(job, { ...NO_LISTING_FILTERS, minWage: 25 }, today));
+  assert.ok(!matchesListingFilters(job, { ...NO_LISTING_FILTERS, area: 'burquitlam' }, today));
+  assert.ok(!matchesListingFilters(salaried, { ...NO_LISTING_FILTERS, minWage: 17 }, today), '월급 글은 시급 기준으로 비교하지 않는다');
   assert.ok(matchesListingFilters(housing, { ...NO_LISTING_FILTERS, market: 'rent' }, today), '렌트 includes 렌트 내놓음');
   assert.ok(!matchesListingFilters(housing, { ...NO_LISTING_FILTERS, market: 'sale' }, today), '매매 excludes rentals');
   assert.ok(matchesListingFilters({ ...housing, listingDetails: { ...housing.listingDetails, deal: 'buy' } }, { ...NO_LISTING_FILTERS, market: 'sale' }, today), '매매 includes 매매 구매');
