@@ -29,6 +29,8 @@ import { meetupFeeAmount, meetupFeeDue } from '@/lib/meetup-host-tools';
 import { CITIES } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
+import { useNewcomerStatus } from '@/components/newcomer';
+import { newcomerLocked } from '@/lib/newcomer';
 
 export type MeetupStatus = ReturnType<typeof useMeetupParticipation>;
 
@@ -169,6 +171,7 @@ export function MeetupActionBar({ post, status, onJoin, onBeforeNavigate }: { po
   const { tr } = useLanguage();
   const { isAuthed, me, promptLogin } = useAuth(), theme = useTheme(), router = useRouter(), insets = useSafeAreaInsets();
   const { play } = useInteractionFeedback(), business = useChatIdentity();
+  const newcomer = useNewcomerStatus(isAuthed && post.room?.newcomerOnly === true);
   const room = post.room;
   if (!room) return null;
   const { own, participation } = status;
@@ -181,7 +184,7 @@ export function MeetupActionBar({ post, status, onJoin, onBeforeNavigate }: { po
     <RaisedActionButton compact analyticsId="meetup.detail.switch-personal" label={tr('개인으로 바꾸기')} onPress={() => { play('selection'); selectChatBusiness(me.id, null); }} />
   </View>;
   const availability = chillingAvailability(room);
-  const bar = meetupBarAction({ own, participating: !!participation, loading: status.statusLoading, availability });
+  const bar = meetupBarAction({ own, participating: !!participation, loading: status.statusLoading || (isAuthed && room.newcomerOnly === true && newcomer.loading), availability, newcomerLocked: isAuthed && !!newcomer.status && newcomerLocked(room, newcomer.status) });
   const fee = room.fee ? meetupFeeAmount(room.fee.amount) : null;
   const seats = room.capacity ? tr('{0}자리 남음', Math.max(0, room.capacity - room.memberCount)) : tr('{0}명 참여 중', room.memberCount);
   const [title, detail] = own ? [tr('내가 연 모임'), seats]
@@ -194,14 +197,14 @@ export function MeetupActionBar({ post, status, onJoin, onBeforeNavigate }: { po
       <ThemedText style={Typography.menu}>{title}</ThemedText>
       {!!detail && <ThemedText type="small" themeColor="textSecondary">{detail}</ThemedText>}
     </View>
-    <RaisedActionButton compact analyticsId="components_chilling-host-profile.pressable.2" disabled={bar.disabled} busy={bar.busy} label={tr(bar.label)} onPress={() => {
+    {bar.action === 'locked' ? <ThemedText type="smallBold" themeColor="textSecondary" style={styles.lockedNote}>{tr(bar.label)}</ThemedText> : <RaisedActionButton compact analyticsId="components_chilling-host-profile.pressable.2" disabled={bar.disabled} busy={bar.busy} label={tr(bar.label)} onPress={() => {
       play('selection');
       if (bar.action === 'review') { onBeforeNavigate?.(); router.push({ pathname: '/chat', params: { view: 'requests' } }); }
       else if (bar.action === 'status') { onBeforeNavigate?.(); router.push({ pathname: '/meetup-join', params: { postId: post.id } }); }
       else if (onJoin) onJoin();
       else if (isAuthed) router.push({ pathname: '/meetup-join', params: { postId: post.id } });
       else promptLogin('이 모임에 참여하려면 로그인해 주세요.');
-    }} />
+    }} />}
   </View>;
 }
 
@@ -214,4 +217,5 @@ const styles = StyleSheet.create({
   row: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two }, notes: { borderTopWidth: 1, marginTop: Spacing.three, paddingBottom: Spacing.three, gap: Spacing.two },
   bar: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.three, paddingHorizontal: Spacing.three, paddingTop: Spacing.two, borderTopWidth: 1 },
   barMeta: { flexGrow: 1, flexShrink: 1, flexBasis: 160, minWidth: 0 },
+  lockedNote: { flexShrink: 1, maxWidth: 190, textAlign: 'right' },
 });

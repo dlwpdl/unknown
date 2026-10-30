@@ -204,7 +204,7 @@ export function ProfileOnboarding({
   return (
     <Modal visible={visible} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => {}}>
       <SafeAreaProvider style={[styles.screen, { backgroundColor: theme.background }]}>
-      {welcomeProfile ? <WelcomeMoment nickname={welcomeProfile.nickname} onContinue={() => onComplete(welcomeProfile)} /> : <>
+      {welcomeProfile ? <WelcomeMoment nickname={welcomeProfile.nickname} cityId={welcomeProfile.city_id} onContinue={() => onComplete(welcomeProfile)} /> : <>
         <SafeAreaView style={styles.safeArea}>
           <ScrollView analyticsId="components_profile-onboarding.scrollview.1" contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <ThemedText type="smallBold" style={{ color: theme.accent }}>{t.onboarding.step}</ThemedText>

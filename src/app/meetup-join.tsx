@@ -29,6 +29,8 @@ import { loadPublicPost } from '@/lib/feed-data';
 import { loadMeetupFeePayments } from '@/lib/meetup-host-tools';
 import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
+import { useNewcomerStatus } from '@/components/newcomer';
+import { newcomerLocked } from '@/lib/newcomer';
 
 export default function MeetupJoinRoute() {
 
@@ -42,7 +44,9 @@ function JoinForm({ postId }: { postId: string }) {
   const copy = (ko: string, en: string) => language === 'en' ? en : ko;
   const { isAuthed, promptLogin, me } = useAuth();
   const { play } = useInteractionFeedback();
-  const [post, setPost] = useState<Post | null>(null), [profile, setProfile] = useState<ChillingProfile | null>(null);
+  const [post, setPost] = useState<Post | null>(null);
+  const newcomer = useNewcomerStatus(isAuthed && post?.room?.newcomerOnly === true);
+  const [profile, setProfile] = useState<ChillingProfile | null>(null);
   const [participation, setParticipation] = useState<MeetupParticipation | null>(null), [feePaid, setFeePaid] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true), [error, setError] = useState(''), [retry, setRetry] = useState(0);
   const [recommendationAge, setRecommendationAge] = useState<number | null>(null);
@@ -90,6 +94,8 @@ function JoinForm({ postId }: { postId: string }) {
   const inactive = availability === 'ended' || availability === 'closed';
   // Host paused new requests: the meetup stays live, existing requests and members are unaffected.
   const paused = !inactive && (post?.room?.recruitingClosed === true || errorCode === 'MEETUP_RECRUITING_CLOSED');
+  // Newcomer-only meetups: the server rejects others too; this only replaces the form with a note.
+  const locked = !inactive && !paused && ((!!newcomer.status && newcomerLocked(post?.room, newcomer.status)) || errorCode === 'MEETUP_NEWCOMERS_ONLY');
   const own = post?.author.id === me.id;
   const modern = !!post?.room?.eventKind;
   const status = participation?.status;
@@ -126,7 +132,7 @@ function JoinForm({ postId }: { postId: string }) {
   };
   const submit = async () => {
     const scope = focusedScope.current;
-    if (!scope || !isAuthed || busy.current || unavailable || availability !== 'open' || paused || coolingDown || own || !post || result || !answer.trim() || (modern && (profile?.version !== 2 || !consent))) return;
+    if (!scope || !isAuthed || busy.current || unavailable || availability !== 'open' || paused || locked || coolingDown || own || !post || result || !answer.trim() || (modern && (profile?.version !== 2 || !consent))) return;
     busy.current = true; setSending(true); setError(''); setErrorCode(null);
     let submitted = false;
     try {
@@ -169,6 +175,7 @@ function JoinForm({ postId }: { postId: string }) {
                   : <>
                     <ThemedText type="subtitle">{post!.title}</ThemedText>
                     {paused && <StateCard kind="blocked" title={tr("모집 마감")} body={tr("지금은 새 참여 신청을 받지 않아요. 호스트가 모집을 다시 열면 신청할 수 있어요.")} />}
+                    {locked && <StateCard kind="blocked" title={tr('새 멤버만 신청할 수 있는 모임이에요')} body={tr('가입한 지 얼마 안 된 분만 받는 모임이에요. 다른 모임을 둘러봐 주세요.')} />}
                     {!paused && availability === 'full' && <StateCard kind="blocked" title={tr("정원이 모두 찼어요")} body={tr("현재 남은 자리가 없어 신청을 보낼 수 없어요. 작성한 답변은 유지돼요. 자리 현황을 다시 확인해 주세요.")} />}
                     {(status === 'rejected' || status === 'cancelled') && <StateCard kind={status === 'rejected' ? 'blocked' : 'empty'} title={status === 'rejected' ? tr("이전 신청이 거절됐어요") : tr("이전 신청은 취소된 상태예요")} body={coolingDown ? tr('이전 신청 처리 후 24시간 동안 재신청할 수 없어요. {0} 이후 다시 신청해 주세요.', new Intl.DateTimeFormat(appLocale, { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(reapplyAt))) : tr('현재 참여가 확정되지 않았어요. 답변과 공유 동의를 확인하고 다시 신청할 수 있어요.')} />}
                     {coolingDown && <Pressable analyticsId="app_meetup-join.pressable.9" accessibilityRole="button" onPress={() => { play('selection'); setRetry(v => v + 1); }} style={[styles.secondary, { borderColor: theme.accent }]}><ThemedText type="smallBold" style={styles.support} themeColor="accent">{tr('현재 상태 확인')}</ThemedText></Pressable>}
@@ -227,7 +234,7 @@ function JoinForm({ postId }: { postId: string }) {
         {!!error && !!post && <>{errorCode !== 'MEETUP_FULL' && errorCode !== 'MEETUP_RECRUITING_CLOSED' && <ThemedText style={styles.body} accessibilityRole="alert" themeColor="accent">{tr(error)}</ThemedText>}
           {membershipError && <Pressable analyticsId="app_meetup-join.pressable.10" accessibilityRole="button" onPress={() => { play('selection'); router.push('/profile/membership'); }} style={styles.button}><ThemedText type="smallBold" style={styles.support} themeColor="accent">{tr("멤버십과 모임 자리 보기 ›")}</ThemedText></Pressable>}
           <Pressable analyticsId="app_meetup-join.pressable.9" onPress={() => { play('selection'); setRetry(v => v + 1); }} accessibilityRole="button" style={[styles.secondary, { borderColor: theme.accent }]}><ThemedText type="smallBold" style={styles.support} themeColor="accent">{tr("다시 불러오기")}</ThemedText></Pressable></>}
-        <RaisedActionButton analyticsId="app_meetup-join.pressable.8" onPress={() => { play('selection'); void submit(); }} disabled={sending || availability !== 'open' || paused || coolingDown || !answer.trim() || (modern && (!consent || profile?.version !== 2))} busy={sending} label={sending ? tr("보내는 중…") : paused ? tr("지금은 새 신청을 받지 않아요") : availability === 'full' ? tr("정원이 모두 찼어요") : coolingDown ? tr("재신청 대기 중") : modern && profile?.version !== 2 ? tr("프로필 작성 후 신청 가능") : status ? tr("다시 신청하기") : modern ? tr("답변과 프로필 보내기") : tr("신청 답변 보내기")} />
+        <RaisedActionButton analyticsId="app_meetup-join.pressable.8" onPress={() => { play('selection'); void submit(); }} disabled={sending || availability !== 'open' || paused || locked || coolingDown || !answer.trim() || (modern && (!consent || profile?.version !== 2))} busy={sending} label={sending ? tr("보내는 중…") : paused ? tr("지금은 새 신청을 받지 않아요") : locked ? tr('새 멤버만 신청할 수 있는 모임이에요') : availability === 'full' ? tr("정원이 모두 찼어요") : coolingDown ? tr("재신청 대기 중") : modern && profile?.version !== 2 ? tr("프로필 작성 후 신청 가능") : status ? tr("다시 신청하기") : modern ? tr("답변과 프로필 보내기") : tr("신청 답변 보내기")} />
       </View>}
     </KeyboardAvoidingView>
   </SafeAreaView></ThemedView>;

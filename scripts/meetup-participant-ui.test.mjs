@@ -8,6 +8,7 @@ import * as chilling from '../src/lib/chilling.ts';
 import * as discovery from '../src/lib/chilling-discovery.ts';
 import * as designSystem from '../src/constants/design-system.ts';
 import * as hostTools from '../src/lib/meetup-host-tools.ts';
+import * as newcomer from '../src/lib/newcomer.ts';
 
 export const participantPost = { id: 'a1620000-0000-0000-0000-000000000001', cityId: 'vancouver', kind: 'story', title: '바닷길 따라 함께 걷기', body: '천천히 걷고 커피 한 잔 해요.', author: { id: 'host', nickname: '소라' }, tag: { id: 5, kind: 'meetup' }, createdAt: '2030-01-01', room: { eventKind: 'once', startsAt: '2031-06-12T17:00:00Z', endsAt: '2031-06-12T19:00:00Z', timezone: 'America/Vancouver', memberCount: 3, capacity: 8, applicationQuestion: '어떤 산책길을 좋아하세요?' } };
 export const participantProfile = { version: 2, revision: 'profile-r1', displayName: '하늘', intro: '주말에 걷는 것을 좋아해요.', shareWithMembers: false, interests: ['산책', '커피'], cityId: 'vancouver', promptOne: '', promptTwo: '' };
@@ -49,6 +50,7 @@ export function mountParticipant(screen, options = {}) {
     '@/lib/push-prompt': { requestPushPrompt: reason => calls.push(['push-prompt', reason]) },
     '@/lib/supabase': { supabase: { rpc: async name => name === 'get_meetup_fee_payments' && ctx.payments === 'error' ? { error: { message: 'offline' } } : { data: name === 'get_meetup_fee_payments' ? ctx.payments ?? [] : null, error: null } } }, '@/lib/meetup-host-tools': hostTools, '@/lib/personal-info': { ageForMeetupRecommendation: () => null },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 12, four: 16, six: 24 }, Depth: { control: {}, card: {} }, MaxContentWidth: 640, TabBarHeight: 60 }, '@/constants/design-system': designSystem,
+    '@/lib/newcomer': newcomer, '@/components/newcomer': { useNewcomerStatus: () => ({ status: ctx.newcomerStatus ?? null, loading: false, refresh: noop }) },
     '@/lib/chilling': chilling, '@/lib/chilling-discovery': discovery, '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [{ id: 5, kind: 'meetup' }] },
     '@/lib/city-places': { subscribeCityPlaces() {}, cityPlacesRevision() {} }, '@/lib/meetup-destination': { matchesMeetupDestination: () => true, meetupDestinationQuery: () => 'source' }, '@/lib/ticketmaster': { meetupAllowed: () => true, loadTicketmasterEvent: async () => ({ event: { id: ctx.destination?.eventId, name: '실제 행사' } }) },
     '@/lib/feed-data': { loadPublicFeed: async () => ctx.posts ?? [ctx.post], appendUniquePosts: (a, b) => [...a, ...b], loadPublicPost: async () => ctx.post },
@@ -202,6 +204,7 @@ test('the meetup card, schedule and fee line render the compact CAD fee in both 
       '@/hooks/use-language': { useLanguage: () => ({ language, locale: language === 'en' ? 'en-CA' : 'ko-KR', tr: (value, ...args) => translateUi(language, value, ...args) }) },
       '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/auth': { useAuth: () => ({ me: { id: 'viewer' }, isAuthed: true }) }, '@/lib/chilling': chilling, '@/lib/meetup-host-tools': hostTools,
       '@/lib/feed-data': { getPostImageSource: () => null }, '@/lib/community-data': {}, '@/lib/supabase': {}, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+      '@/components/newcomer': { MeetupLabelBadges: 'MeetupLabelBadges', useMeetupLabelPrefix: () => '' },
     };
     vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, { exports, require: name => {
       if (name in imports) return imports[name];
@@ -216,4 +219,12 @@ test('the meetup card, schedule and fee line render the compact CAD fee in both 
     assert.match(lines(exports.MeetupFeeLine({ fee: { amount: 20 }, paid: false }))[0], status);
     assert.equal(lines(exports.ChillingEventSchedule({ room: participantPost.room })).some(line => line.includes('$')), false);
   }
+});
+test('a newcomer-only meetup shows the newcomer note instead of the request form to longer-term members', async () => {
+  const post = { ...participantPost, room: { ...participantPost.room, newcomerWelcome: true, newcomerOnly: true } };
+  const note = tree => nodes(tree).some(node => node.props?.title === '새 멤버만 신청할 수 있는 모임이에요');
+  const ui = mountParticipant('join', { post, newcomerStatus: { newcomer: false, periodDays: 60, endsAt: null, requested: false, attended: false } }); await ui.flush();
+  assert.ok(note(ui.tree)); ui.unmount();
+  const fresh = mountParticipant('join', { post, newcomerStatus: { newcomer: true, periodDays: 60, endsAt: '2099-01-01T00:00:00Z', requested: false, attended: false } }); await fresh.flush();
+  assert.ok(!note(fresh.tree)); fresh.unmount();
 });

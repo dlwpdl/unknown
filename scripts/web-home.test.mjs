@@ -21,11 +21,12 @@ test('launch cities stay in order without presenting mock counts as live activit
   const edmonton = getWebHomeCitySummary('edmonton');
   const montreal = getWebHomeCitySummary('montreal');
 
-  // 몬트리올(0075)·캘거리(0092)가 열려 열린 도시는 다섯 곳이다.
-  assert.equal(openCities.length, 5);
-  assert.deepEqual(openCities.map((city) => city.id), ['vancouver', 'toronto', 'montreal', 'calgary', 'edmonton']);
+  // 2026-10-29 캘거리·에드먼튼을 닫아 열린 도시는 세 곳이다.
+  assert.equal(openCities.length, 3);
+  assert.deepEqual(openCities.map((city) => city.id), ['vancouver', 'toronto', 'montreal']);
+  assert.equal(edmonton.launchNote, '추후 검토');
   assert.doesNotMatch(montreal.headline + montreal.blurb, /후보|추후|아직/);
-  for (const city of [vancouver, toronto, montreal, edmonton]) {
+  for (const city of [vancouver, toronto, montreal]) {
     assert.equal(city.launchNote, '출시 준비 중');
     assert.equal(city.stateLabel, '출시 준비 중');
     assert.ok(!('postCount' in city));

@@ -15,6 +15,7 @@ import { chillingCountdown, chillingKind, chillingSchedule, recommendedAgeLabel,
 import { getPostImageSource } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { meetupFeeAmount, meetupFeeDue } from '@/lib/meetup-host-tools';
+import { MeetupLabelBadges, useMeetupLabelPrefix } from '@/components/newcomer';
 import type { Post, RoomPreview } from '@/lib/types';
 
 export function ChillingKindTabs({ value, onChange }: { value: ChillingKind; onChange: (kind: ChillingKind) => void }) {
@@ -72,14 +73,16 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
   const schedule = chillingSchedule(post.room ?? {}, appLocale);
   const categoryLabel = room?.category ? tr(CHILLING_CATEGORY_LABELS[room.category]) : null;
   const seatsLeft = room?.capacity ? Math.max(0, room.capacity - room.memberCount) : null;
+  const { labels, prefix } = useMeetupLabelPrefix(post);
   return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-    <Pressable analyticsId="components_chilling-event.pressable.2" onPress={() => { play('selection'); onOpen(); }} accessibilityRole="button" accessibilityLabel={`${post.title}, ${schedule}${room?.fee ? `, ${tr('회비 {0}', meetupFeeAmount(room.fee.amount))}` : ''}${room?.recruitingClosed ? `, ${tr('모집 마감')}` : ''}`} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
+    <Pressable analyticsId="components_chilling-event.pressable.2" onPress={() => { play('selection'); onOpen(); }} accessibilityRole="button" accessibilityLabel={`${prefix}${post.title}, ${schedule}${room?.fee ? `, ${tr('회비 {0}', meetupFeeAmount(room.fee.amount))}` : ''}${room?.recruitingClosed ? `, ${tr('모집 마감')}` : ''}`} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
       {source && source.uri !== failed ? <Image source={source} style={styles.photo} contentFit="cover" recyclingKey={post.id} onError={() => setFailed(source.uri)} /> :
         // Decorative only: the title right below already names the meetup.
         <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.poster, { backgroundColor: theme.card }]}>
           <View style={[styles.sun, { backgroundColor: theme.accent }]} />
           <View style={[styles.wave, { backgroundColor: theme.backgroundSelected }]} />
         </View>}
+      <MeetupLabelBadges labels={labels} />
       <View style={styles.copy}>
       <View style={styles.meta}>
         {countdown && <View style={[styles.countdown, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={[styles.support, { color: theme.accentInk }]}>{countdown}</ThemedText></View>}
