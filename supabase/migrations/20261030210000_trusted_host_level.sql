@@ -76,6 +76,7 @@ begin
     insert into private.trusted_host_auto(user_id,state)
     select p.id,'granted' from public.profiles p
     where p.verification_level=2 and p.account_status='active'
+      and not private.is_operated_character(p.id)  -- personas never host real members (20261030200000)
       and not exists(select 1 from private.trusted_host_auto a where a.user_id=p.id)
       and coalesce((private.trusted_host_progress(p.id)->>'eligible')::boolean,false)
     returning user_id)

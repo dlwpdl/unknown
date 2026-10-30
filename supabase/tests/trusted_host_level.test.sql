@@ -110,13 +110,13 @@ select is(pg_temp.auto(1),'granted','Fixture: auto grant before deletion');
 update public.profiles set account_status='deleted' where id=pg_temp.u(1);
 select is(pg_temp.auto(1),null,'Deleted account loses its trusted-host row');
 
--- 9. Known synthetic seed Lv2 returns to Lv1; an audited admin Lv2 stays (20261030180100).
+-- 9. Known synthetic seed Lv2 returns to Lv1; an audited admin Lv2 stays (20261030210100).
 update public.profiles set verification_level=2 where id='10000000-0000-0000-0000-000000000134';
 update public.profiles set verification_level=1 where id='10000000-0000-0000-0000-000000000141';
 select pg_temp.as_admin(); set local role authenticated;
 select lives_ok($$select public.set_admin_verification_level('10000000-0000-0000-0000-000000000141',2::smallint)$$,'Fixture: audited admin Lv2');
 reset role;
-\ir ../migrations/20261030180100_remove_unearned_synthetic_l2.sql
+\ir ../migrations/20261030210100_remove_unearned_synthetic_l2.sql
 select is((select verification_level::int from public.profiles where id='10000000-0000-0000-0000-000000000134'),1,'Unearned synthetic Lv2 returns to Lv1');
 select is((select verification_level::int from public.profiles where id='10000000-0000-0000-0000-000000000141'),2,'Audited admin Lv2 is preserved');
 
