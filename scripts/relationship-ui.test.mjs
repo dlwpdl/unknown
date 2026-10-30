@@ -94,6 +94,6 @@ test('readable direct conversations show a safety notice only for an unverified 
     const room = loadRoom('recipient', true);
     const conversation = { ...direct, kind, status, otherUser: { ...direct.otherUser, verificationLevel } };
     const tree = room.exports.ChatRoom({ conversation, currentUserId: 'recipient', onClose() {}, onChanged: async () => {} });
-    assert.equal(contains(tree, '상대방은 아직 실명 인증을 완료하지 않았어요.'), kind === 'direct' && ['active', 'ended'].includes(status) && verificationLevel === 1);
+    assert.equal(contains(tree, '상대방은 아직 신분증 확인을 하지 않았어요.'), kind === 'direct' && ['active', 'ended'].includes(status) && verificationLevel === 1);
   }
 });
