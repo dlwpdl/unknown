@@ -17,6 +17,6 @@ test('end dates are the member city day, not UTC', () => {
   const lateEvening = new Date('2026-10-31T05:30:00Z'); // 22:30 on Oct 30 in Vancouver
   assert.equal(membershipEndDate(0, lateEvening), '2026-10-30');
   assert.equal(membershipEndDate(30, lateEvening), '2026-11-29');
-  // A stored grant end (23:59:59 local) reads back as the same chosen day.
-  assert.equal(membershipEndDate(0, new Date('2026-12-01T07:59:59Z')), '2026-11-30');
+  // Late on the chosen day reads back as that day under either Pacific offset (tz data differs between machines).
+  assert.equal(membershipEndDate(0, new Date('2026-12-01T05:00:00Z')), '2026-11-30');
 });
