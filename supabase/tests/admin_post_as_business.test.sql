@@ -21,7 +21,11 @@ insert into public.posts(id,author_id,city_id,tag_id,title,body) values
  ('b1d20000-0000-4000-8000-000000000004','b1d00000-0000-4000-8000-000000000004','vancouver',1,'관리자 행사 글','합성 관리자 행사 글'),
  ('b1d20000-0000-4000-8000-000000000005','b1d00000-0000-4000-8000-000000000004','vancouver',1,'관리자 개인 글','합성 관리자 개인 글'),
  ('b1d20000-0000-4000-8000-000000000006','b1d00000-0000-4000-8000-000000000003','vancouver',1,'회원 글','합성 회원 글'),
- ('b1d20000-0000-4000-8000-000000000007','b1d00000-0000-4000-8000-000000000004','vancouver',1,'관리자 예전 연결 글','합성 관리자 예전 연결 글');
+ ('b1d20000-0000-4000-8000-000000000007','b1d00000-0000-4000-8000-000000000004','vancouver',1,'관리자 예전 연결 글','합성 관리자 예전 연결 글'),
+ ('b1d20000-0000-4000-8000-000000000008','b1d00000-0000-4000-8000-000000000004','vancouver',1,'관리자 미연결 비즈니스 글','합성 관리자 미연결 비즈니스 글');
+-- A business whose real owner has not connected a verified profile.
+insert into private.merchants(id,name,city_id,contact,status,consent,consent_note,record_kind)
+ values('b1d10000-0000-4000-8000-000000000002','미연결비즈니스검사','vancouver','','lead','granted','synthetic fixture','business');
 select set_config('request.jwt.claims','{"sub":"b1d00000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 insert into private.merchant_posts(post_id,merchant_id,published_as_business) values('b1d20000-0000-4000-8000-000000000001','b1d10000-0000-4000-8000-000000000001',true);
 select is((private.business_membership_details('b1d10000-0000-4000-8000-000000000001')->>'postsUsed')::int,1,'the free post is used');
@@ -56,7 +60,10 @@ select lives_ok($$select public.link_admin_merchant_post('b1d10000-0000-4000-800
  'admin links its own post to the business past the cap');
 select lives_ok($$select public.link_admin_merchant_post('b1d10000-0000-4000-8000-000000000001','b1d20000-0000-4000-8000-000000000006','https://example.com/member')$$,
  'admin can still curate a member post');
+select lives_ok($$select public.link_admin_merchant_post('b1d10000-0000-4000-8000-000000000002','b1d20000-0000-4000-8000-000000000008','https://example.com/unclaimed')$$,
+ 'admin links its own post to a business with no connected owner');
 reset role;
+select is((select business_author_id from public.posts where id='b1d20000-0000-4000-8000-000000000008'),null::uuid,'business without a connected owner leaves the post under the admin profile');
 select is((select business_author_id from public.posts where id='b1d20000-0000-4000-8000-000000000004'),'b1d10000-0000-4000-8000-000000000001'::uuid,'admin post now appears as the business');
 select is((select author_id from public.posts where id='b1d20000-0000-4000-8000-000000000004'),'b1d00000-0000-4000-8000-000000000004'::uuid,'real admin author stays recorded for moderation');
 select ok((select managed from private.merchant_membership_usage where post_id='b1d20000-0000-4000-8000-000000000004'),'admin link is recorded as managed usage');
