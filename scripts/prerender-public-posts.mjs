@@ -15,14 +15,17 @@ async function rpc(url, key, name, args, fetcher) {
   return response.json();
 }
 
-export async function loadPublicPosts({ url, key, cities, fetcher = fetch }) {
+export async function loadPublicPosts({ url, key, cities, searchToken, fetcher = fetch }) {
   const rows = new Map();
+  // Gling-operated character posts stay out of the sitemap and prerender (owner 2026-10-30); a missing token fails the deploy.
+  if (!searchToken) throw new Error('GLING_SEARCH_BUILD_TOKEN is required to prerender public posts');
+  const excluded = new Set((await rpc(url, key, 'get_search_excluded_post_ids', { p_token: searchToken }, fetcher)).map(id => String(id).toLowerCase()));
   for (const city of cities) {
     let before = null, beforeId = null;
     while (true) {
       const page = await rpc(url, key, 'get_public_feed_page_v2', { p_city_id: city, p_tag_id: null, p_query: null, p_before_sort: before, p_before_id: beforeId, p_limit: 30 }, fetcher);
       // 20000000-… rows are the 0002 seed fixtures, not real posts.
-      for (const row of page) if (UUID.test(row.id) && !row.id.startsWith('20000000-0000-0000-0000-') && !rows.has(row.id)) rows.set(row.id, { id: row.id, cityId: city, lastmod: row.sort_at ?? row.created_at });
+      for (const row of page) if (UUID.test(row.id) && !row.id.startsWith('20000000-0000-0000-0000-') && !excluded.has(row.id) && !rows.has(row.id)) rows.set(row.id, { id: row.id, cityId: city, lastmod: row.sort_at ?? row.created_at });
       if (page.length < 30 || rows.size >= 45000) break;
       const last = page.at(-1); before = last.sort_at ?? last.created_at; beforeId = last.id;
     }
@@ -76,7 +79,8 @@ export function renderPublicPost(template, post, related = []) {
     + `<p style="margin:16px 0 0"><a href="/post?id=${post.id}" style="color:#CBB9FF">글링에서 전체 글 읽기</a> · <a href="${hub ? `/${post.cityId}` : '/'}" style="color:#CBB9FF">${escapeHtml(post.city ? `${post.city} 동네 이야기 더 보기` : '동네 이야기 더 보기')}</a></p>`
     + (related.length ? `<h2 style="margin:24px 0 8px;font-size:17px">${escapeHtml(post.city ? `${post.city} 다른 이야기` : '다른 이야기')}</h2><ul style="margin:0;padding-left:20px">${related.map(item => `<li><a href="/posts/${item.id}" style="color:#CBB9FF">${escapeHtml(item.title)}</a></li>`).join('')}</ul>` : '')
     + '</article>';
-  const stripped = template.replace(/<title[^>]*>[^<]*<\/title>|<meta (?:name="(?:description|robots|twitter:[^"]*)"|property="og:[^"]*")[^>]*\/?>|<link rel="canonical"[^>]*\/?>|<script type="application\/ld\+json"[^>]*>[\s\S]*?<\/script>/g, '');
+  // Attribute order differs between Expo versions (data-rh may come first), so match the attribute anywhere in the tag.
+  const stripped = template.replace(/<title[^>]*>[^<]*<\/title>|<meta\b[^>]*\b(?:name="(?:description|robots|twitter:[^"]*)"|property="og:[^"]*")[^>]*\/?>|<link\b[^>]*\brel="canonical"[^>]*\/?>|<script\b[^>]*\btype="application\/ld\+json"[^>]*>[\s\S]*?<\/script>/g, '');
   if (!/<\/head>/.test(stripped) || !/<body[^>]*>/.test(stripped)) throw new Error('Unexpected web shell for prerendered posts');
   return stripped.replace('</head>', `${head}</head>`).replace(/<body[^>]*>/, match => `${match}${body}`);
 }

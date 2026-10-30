@@ -52,19 +52,22 @@ test('공개 글은 검색용 정적 페이지와 sitemap 항목으로 만들고
   const { prerenderPublicPosts } = await import('./prerender-public-posts.mjs');
   const directory = mkdtempSync(join(tmpdir(), 'gling-seo-posts-'));
   const visible = '11111111-1111-4111-8111-111111111111', meetup = '22222222-2222-4222-8222-222222222222', removed = '33333333-3333-4333-8333-333333333333';
+  const character = '44444444-4444-4444-8444-444444444444';
   const calls = [];
   const fetcher = async (url, init) => {
     const name = url.split('/rpc/')[1], args = JSON.parse(init.body);
     calls.push([name, init.headers.apikey, args.p_post_id]);
+    if (name === 'get_search_excluded_post_ids') { assert.equal(args.p_token, 'build-token'); return { ok: true, json: async () => [character.toUpperCase()] }; }
     const data = name === 'get_public_feed_page_v2'
-      ? args.p_city_id === 'vancouver' ? [visible, meetup, removed, '20000000-0000-0000-0000-000000000014'].map(id => ({ id, created_at: '2026-10-20T00:00:00Z' })) : []
+      ? args.p_city_id === 'vancouver' ? [visible, meetup, removed, character, '20000000-0000-0000-0000-000000000014'].map(id => ({ id, created_at: '2026-10-20T00:00:00Z' })) : []
       : args.p_post_id === visible ? { id: visible, kind: 'post', title: '코퀴틀람 <카페>', teaser: '창가 자리가 예뻐요 & 조용해요', city: '밴쿠버', label: '맛집', imagePath: 'p/1.jpg' }
         : args.p_post_id === meetup ? { id: meetup, kind: 'meetup', title: '모임', city: '밴쿠버', label: '모임' } : null;
     return { ok: true, json: async () => data };
   };
   try {
     writeFileSync(join(directory, '+not-found.html'), '<html><head><meta charSet="utf-8"/><title data-rh="true">old</title><meta name="robots" content="noindex, nofollow" data-rh="true"/></head><body><div id="root">app</div></body></html>');
-    const posts = await prerenderPublicPosts(directory, { url: 'https://db.example', key: 'anon', cities: ['vancouver', 'toronto'], fetcher });
+    await assert.rejects(prerenderPublicPosts(directory, { url: 'https://db.example', key: 'anon', cities: ['vancouver'], fetcher }), /GLING_SEARCH_BUILD_TOKEN/);
+    const posts = await prerenderPublicPosts(directory, { url: 'https://db.example', key: 'anon', cities: ['vancouver', 'toronto'], searchToken: 'build-token', fetcher });
     assert.deepEqual(posts.map(post => post.id), [visible]);
     assert.ok(calls.every(([, key]) => key === 'anon'));
     const page = readFileSync(join(directory, 'posts', `${visible}.html`), 'utf8');
@@ -74,6 +77,7 @@ test('공개 글은 검색용 정적 페이지와 sitemap 항목으로 만들고
     assert.ok(page.includes('id="gling-static-post"') && page.includes('<div id="root">app</div>'));
     assert.ok(page.includes(`"item":"${PUBLIC_SITE}/vancouver"`) && page.includes('href="/vancouver"') && page.includes('<title data-rh="true">코퀴틀람 &#60;카페&#62; | 글링</title>'));
     assert.ok(!calls.some(([name, , id]) => id === '20000000-0000-0000-0000-000000000014'), 'seed fixtures are never prerendered');
+    assert.ok(!calls.some(([, , id]) => id === character), 'excluded character posts are never fetched or prerendered');
     finishPublicWeb(directory, posts);
     const sitemap = readFileSync(join(directory, 'sitemap.xml'), 'utf8');
     assert.ok(sitemap.includes(`<loc>${PUBLIC_SITE}/posts/${visible}</loc><lastmod>2026-10-20</lastmod>`) && !sitemap.includes(meetup));

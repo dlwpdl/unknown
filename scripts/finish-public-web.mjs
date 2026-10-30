@@ -49,7 +49,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   // Only the Pages deploy prerenders (CI exports against a stub project); there a failed fetch fails the deploy and keeps the previous site live.
   const prerender = process.env.GLING_PRERENDER_POSTS === '1';
   if (prerender && (!url || !key)) throw new Error('Supabase public env is required to prerender public posts');
-  const posts = prerender ? await prerenderPublicPosts(directory, { url: url.replace(/\/+$/, ''), key, cities: CITIES.filter(city => city.state === 'open').map(city => city.id) }) : [];
+  const posts = prerender ? await prerenderPublicPosts(directory, { url: url.replace(/\/+$/, ''), key, cities: CITIES.filter(city => city.state === 'open').map(city => city.id), searchToken: process.env.GLING_SEARCH_BUILD_TOKEN }) : [];
   finishPublicWeb(directory, posts);
   console.log(`Prerendered ${posts.length} public posts.`);
 }
