@@ -40,7 +40,7 @@ import { PostCard } from '@/components/post-card';
 import { BusinessNewsCard } from '@/components/business-news-card';
 import { ListingCard, type DetailedPost } from '@/components/listing-card';
 import { ListingFields } from '@/components/listing-fields';
-import { ListingFilterBar, ListingMapScreen, ListingModeSwitch } from '@/components/listing-browse';
+import { ListingFilterBar, ListingMapScreen, ListingModeSwitch, ListingViewSwitch } from '@/components/listing-browse';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PostBodyEditor } from '@/components/post-body-editor';
 import { PollDraftFields } from '@/components/poll-draft-fields';
@@ -83,7 +83,7 @@ import { TAGS } from '@/lib/mock';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { googlePinUrl, postMapBody, withPostMap } from '@/lib/post-maps';
 import {
-  emptyListingDraft, isListingCategory, LISTING_VIEW_KEY, listingFiltersActive, listingFromDraft, matchesListingFilters, NO_LISTING_FILTERS, parseListingView, withListingLead,
+  BUSINESS_VIEW_KEY, emptyListingDraft, isListingCategory, LISTING_VIEW_KEY, listingFiltersActive, listingFromDraft, matchesListingFilters, NO_LISTING_FILTERS, parseListingView, withListingLead,
   type ListingCategory, type ListingDraft, type ListingFilters, type ListingView,
 } from '@/lib/listing-details';
 import { findNeighborhood, neighborhoodName } from '@/lib/neighborhoods';
@@ -133,6 +133,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [listingTried, setListingTried] = useState(false);
   const [listingFilters, setListingFilters] = useState<ListingFilters>(NO_LISTING_FILTERS);
   const [listingView, setListingView] = useState<ListingView>('list');
+  const [businessView, setBusinessView] = useState<ListingView>('list');
   const [listingMap, setListingMap] = useState(false);
   const [listingQuota, setListingQuota] = useState<DailyQuota | null>(null);
   const [title, setTitle] = useState('');
@@ -261,6 +262,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   );
 
   const showFeedSort = cityOpen && !meetupsOnly;
+  const businessCategory = !meetupsOnly && TAGS.find(item => item.id === tagFilter)?.slug === 'business';
   const listingCategory = !meetupsOnly && isListingCategory(TAGS.find(item => item.id === tagFilter)?.slug) ? TAGS.find(item => item.id === tagFilter)!.slug as ListingCategory : null;
   const listingPosts = useMemo(() => {
     if (!listingCategory || !listingFiltersActive(listingFilters)) return feedData;
@@ -268,8 +270,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     return feedData.filter(post => matchesListingFilters(post, listingFilters, today));
   }, [feedData, listingCategory, listingFilters]);
   const usedGrid = listingCategory === 'used' && listingView === 'grid';
-  // 중고거래 grid: two tiles per list row so the sticky header and paging keep working.
-  const feedRows: (Post | Post[])[] = usedGrid
+  const businessGrid = businessCategory && businessView === 'grid';
+  // 중고거래·비즈니스 grid: two tiles per list row so the sticky header and paging keep working.
+  const feedRows: (Post | Post[])[] = usedGrid || businessGrid
     ? listingPosts.reduce<Post[][]>((rows, post, index) => (index % 2 ? rows[rows.length - 1].push(post) : rows.push([post]), rows), [])
     : listingPosts;
   const feedLoading = categoryLoading || loadedFeedKey !== feedKey;
@@ -280,7 +283,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const q = query.replace(/#/g, '').trim().toLowerCase();
   const canonicalQuery = canonicalizeHashtag(q).toLocaleLowerCase();
   const selectedFilterTag = tagFilter == null ? null : TAGS.find((item) => item.id === tagFilter);
-  const businessCategory = !meetupsOnly && selectedFilterTag?.slug === 'business';
   const popularTags = useMemo(
     () => getSuggestedHashtags(cityPosts, selectedFilterTag, 10, trendingTags),
     [cityPosts, selectedFilterTag, trendingTags],
@@ -388,9 +390,14 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     setListingView(next);
     AsyncStorage.setItem(LISTING_VIEW_KEY, next).catch(() => {});
   };
+  const changeBusinessView = (next: ListingView) => {
+    setBusinessView(next);
+    AsyncStorage.setItem(BUSINESS_VIEW_KEY, next).catch(() => {});
+  };
   useEffect(() => {
     let active = true;
     AsyncStorage.getItem(LISTING_VIEW_KEY).then(value => { if (active) setListingView(parseListingView(value)); }).catch(() => {});
+    AsyncStorage.getItem(BUSINESS_VIEW_KEY).then(value => { if (active) setBusinessView(parseListingView(value)); }).catch(() => {});
     return () => { active = false; };
   }, []);
 
@@ -802,7 +809,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           }}
           keyExtractor={(p, index) => Array.isArray(p) ? `grid:${p[0].id}` : p?.id ?? (index === 0 ? 'journal-intro' : 'feed-sort')}
           contentContainerStyle={[styles.listContent, { paddingBottom: bottomClear + Spacing.three }]}
-          ItemSeparatorComponent={({ leadingItem }) => leadingItem == null ? null : <View style={{ height: businessCategory || (listingCategory && !usedGrid) ? 0 : Spacing.four }} />}
+          ItemSeparatorComponent={({ leadingItem }) => leadingItem == null ? null : <View style={{ height: (businessCategory && !businessGrid) || (listingCategory && !usedGrid) ? 0 : Spacing.four }} />}
           ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : feedState ?? undefined}
           renderItem={({ item, index }) => item == null && index === 1 && showFeedSort ? (
             <FeedSortControl sort={activeSort} title={businessCategory ? tr('새 소식') : selectedFilterTag ? tr("{0} 글", (selectedFilterTag.label)) : tr("오늘 글")} onChange={changeFeedSort}
@@ -815,6 +822,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               </Pressable> : listingCategory && listingCategory !== 'jobs' ? <ListingModeSwitch mode="list" onChange={mode => setListingMap(mode === 'map')} /> : undefined}>
               {listingCategory && listingCategory !== 'jobs' && <ListingFilterBar category={listingCategory} filters={listingFilters} onChange={setListingFilters}
                 view={listingView} onView={changeListingView} />}
+              {businessCategory && <ListingViewSwitch view={businessView} onView={changeBusinessView} />}
             </FeedSortControl>
           ) : item == null ? (
             <View style={styles.header} onLayout={event => { feedIntroHeight.current = event.nativeEvent.layout.height; }}>
@@ -859,7 +867,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             </View>
           ) : (
             Array.isArray(item) ? <Animated.View style={[styles.listingGrid, { opacity: feedOpacity }]}>
-              {item.map(post => post.listingDetails ? <ListingCard key={post.id} variant="tile" post={post as DetailedPost} onPress={() => openDetail(post)} />
+              {item.map(post => businessGrid ? <BusinessNewsCard key={post.id} variant="tile" post={post} onPress={() => openDetail(post)} onAuthor={() => openAuthor(post)}
+                translationVisible={visibleFeedIds.has(post.id) && !searching && !detailVisible && !writing} />
+                : post.listingDetails ? <ListingCard key={post.id} variant="tile" post={post as DetailedPost} onPress={() => openDetail(post)} />
                 : <View key={post.id} style={styles.flexText}><PostCard flat post={post} onPress={() => openDetail(post)} onJoin={() => void onJoin(post)} onHashtag={openSearch} onAuthor={() => openAuthor(post)} /></View>)}
               {item.length === 1 && <View style={styles.flexText} />}
             </Animated.View> :
