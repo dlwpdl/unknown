@@ -3525,6 +3525,11 @@ export const uiEnglish: Record<string, string> = {
   "목록으로 보기": "View as list",
   "사진 그리드로 보기": "View as photo grid",
   "이 조건 지우기": "Clear this filter",
+  // 구인구직 필터 (2026-10-30)
+  "구인·구직": "Hiring or job seeking",
+  "근무 동네": "Work area",
+  "시급 {0} 이상": "{0}/hr or more",
+  "{0} 이상": "{0} or more",
   "목록으로 돌아가기": "Back to list",
   "이 지역에서 다시 찾기": "Search this area",
   "이 근처": "Nearby",

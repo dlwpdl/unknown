@@ -275,15 +275,18 @@ export const inBounds = (bounds: MapBounds, point: { latitude: number; longitude
 // 부동산 렌트·매매: rent covers 렌트 내놓음/구함, sale covers 매매 판매/구매.
 export type HousingMarket = 'rent' | 'sale';
 export const housingMarket = (deal: HousingDeal): HousingMarket => deal === 'rent_offer' || deal === 'rent_wanted' ? 'rent' : 'sale';
-export type ListingFilters = { market: HousingMarket | null; rooms: Room[]; maxPrice: number | null; moveInBy: string | null; deal: UsedDeal | null; conditions: Condition[] };
-export const NO_LISTING_FILTERS: ListingFilters = { market: null, rooms: [], maxPrice: null, moveInBy: null, deal: null, conditions: [] };
-export const listingFiltersActive = (filters: ListingFilters) => filters.market != null || filters.rooms.length > 0 || filters.maxPrice != null || filters.moveInBy != null || filters.deal != null || filters.conditions.length > 0;
+export type ListingFilters = { market: HousingMarket | null; rooms: Room[]; maxPrice: number | null; moveInBy: string | null; deal: UsedDeal | null; conditions: Condition[];
+  jobDeal: JobDeal | null; jobTypes: JobType[]; minWage: number | null; area: string | null };
+export const NO_LISTING_FILTERS: ListingFilters = { market: null, rooms: [], maxPrice: null, moveInBy: null, deal: null, conditions: [], jobDeal: null, jobTypes: [], minWage: null, area: null };
+export const listingFiltersActive = (filters: ListingFilters) => filters.market != null || filters.rooms.length > 0 || filters.maxPrice != null || filters.moveInBy != null || filters.deal != null || filters.conditions.length > 0
+  || filters.jobDeal != null || filters.jobTypes.length > 0 || filters.minWage != null || filters.area != null;
 
 export function matchesListingFilters(post: Pick<Post, 'price' | 'listingDetails'>, filters: ListingFilters, today: string) {
   if (!listingFiltersActive(filters)) return true;
   const details = post.listingDetails;
   if (!details) return false; // a post without fields cannot prove it matches
   if (filters.maxPrice != null && (post.price == null || post.price > filters.maxPrice)) return false;
+  if (filters.area && details.area !== filters.area) return false;
   if (details.type === 'housing') {
     if (filters.market && housingMarket(details.deal) !== filters.market) return false;
     if (filters.rooms.length && (!details.rooms || !filters.rooms.includes(details.rooms))) return false;
@@ -292,6 +295,13 @@ export function matchesListingFilters(post: Pick<Post, 'price' | 'listingDetails
   if (details.type === 'used') {
     if (filters.deal && details.deal !== filters.deal) return false;
     if (filters.conditions.length && (!details.condition || !filters.conditions.includes(details.condition))) return false;
+  }
+  if (details.type === 'jobs') {
+    if (filters.jobDeal && details.deal !== filters.jobDeal) return false;
+    if (filters.jobTypes.length && !details.jobTypes?.some(item => filters.jobTypes.includes(item))) return false;
+    // Only hourly pay can be compared with a 시급 floor; 월급·연봉·협의 posts drop out.
+    const pay = details.pay ?? post.price;
+    if (filters.minWage != null && (details.payUnit !== 'hour' || pay == null || pay < filters.minWage)) return false;
   }
   return true;
 }
