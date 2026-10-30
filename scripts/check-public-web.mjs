@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkMerchantWeb } from './check-merchant-web.mjs';
+import { checkWebChunks } from './check-web-chunks.mjs';
 
 const directory = process.argv[2] ?? 'dist';
 assert.ok(existsSync(join(directory, 'index.html')), 'Public web export is missing');
@@ -61,4 +62,8 @@ for (const file of readdirSync(directory, { recursive: true })) {
   }
 }
 for (const page of ['post.html', 'chat.html', 'meetup-join.html', 'meetup-profile.html', 'meetup-application.html', 'auth/callback.html', 'profile/membership.html']) assert.ok(existsSync(join(directory, page)), `Shared participant route missing: ${page}`);
+// Every exported route template (posts and company pages reuse +not-found.html) must carry a complete chunk plan.
+for (const file of readdirSync(directory, { recursive: true })) {
+  if (/\.html$/.test(file) && !/^(merchant|posts|company)\//.test(file) && /<script\b[^>]*\bsrc="[^"]*_expo\/static\/js\//.test(readFileSync(join(directory, file), 'utf8'))) checkWebChunks(directory, file);
+}
 console.log('Public discovery, login and participant routes are present; admin-only code remains excluded.');
