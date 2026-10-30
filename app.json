@@ -21,6 +21,9 @@
       "icon": "./assets/brand/gling-night-app-icon.png",
       "bundleIdentifier": "com.dlwpdl.gling",
       "appleTeamId": "P3X3452TDZ",
+      "associatedDomains": [
+        "applinks:gling.ej-entertainment.com"
+      ],
       "buildNumber": "69",
       "usesAppleSignIn": true,
       "entitlements": {
@@ -147,6 +150,58 @@
     },
     "android": {
       "package": "com.dlwpdl.gling",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "gling.ej-entertainment.com",
+              "pathPrefix": "/posts/"
+            },
+            {
+              "scheme": "https",
+              "host": "gling.ej-entertainment.com",
+              "pathPrefix": "/post/"
+            },
+            {
+              "scheme": "https",
+              "host": "gling.ej-entertainment.com",
+              "path": "/post"
+            },
+            {
+              "scheme": "https",
+              "host": "gling.ej-entertainment.com",
+              "path": "/company"
+            },
+            {
+              "scheme": "https",
+              "host": "gling.ej-entertainment.com",
+              "pathPrefix": "/company/"
+            },
+            {
+              "scheme": "https",
+              "host": "gling.ej-entertainment.com",
+              "path": "/meetups"
+            },
+            {
+              "scheme": "https",
+              "host": "gling.ej-entertainment.com",
+              "path": "/invite"
+            },
+            {
+              "scheme": "https",
+              "host": "gling.ej-entertainment.com",
+              "path": "/meetup-join"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
       "versionCode": 67,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",

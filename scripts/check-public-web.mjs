@@ -13,6 +13,12 @@ for (const page of ['index', 'terms', 'privacy', 'account-deletion', 'child-safe
   assert.ok(html.includes('gling-night-wordmark.') && html.includes('--accent:#9283AC') && html.includes('#746486'), `${page} lost the cinematic night brand`);
 }
 assert.ok(readFileSync(join(directory, 'index.html'), 'utf8').includes('https://apps.apple.com/ca/app/id6809273242'), 'Public web is missing the live iOS download');
+// Universal/App Links: both files must ship at these exact paths (served by Pages without redirect) for the app to open shared links.
+for (const file of ['apple-app-site-association', 'assetlinks.json']) {
+  const path = join(directory, '.well-known', file);
+  assert.ok(existsSync(path), `App link association file is missing: .well-known/${file}`);
+  JSON.parse(readFileSync(path, 'utf8'));
+}
 for (const file of ['robots.txt', 'sitemap.xml', 'llms.txt']) assert.ok(existsSync(join(directory, file)), `Public discovery file is missing: ${file}`);
 const robots = readFileSync(join(directory, 'robots.txt'), 'utf8');
 assert.ok(robots.includes('Sitemap: https://gling.ej-entertainment.com/sitemap.xml'), 'Public sitemap is missing');

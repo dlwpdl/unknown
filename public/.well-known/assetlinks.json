@@ -1,0 +1,17 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.dlwpdl.gling",
+      "sha256_cert_fingerprints": [
+        "89:9F:05:E1:DA:2D:68:33:E3:F2:70:08:62:9D:13:E6:D0:88:8E:BA:09:E7:3F:58:71:F7:E3:4F:FA:F7:32:C0",
+        "B9:56:92:48:82:3D:62:D6:D7:72:B6:5E:9E:11:08:02:17:BB:B4:18:53:64:A0:E6:6C:29:DA:41:76:A5:04:D9",
+        "0F:24:5D:4E:C0:E2:8F:42:1E:F6:A2:9F:3F:10:69:97:FF:71:B5:6B:EF:BA:2F:D6:28:C1:F3:A7:52:22:96:70",
+        "41:3E:75:95:7C:F6:04:FD:22:5A:37:52:7C:CE:90:B7:37:9F:32:26:B5:72:F2:B5:89:C7:73:96:DC:BF:EF:BD"
+      ]
+    }
+  }
+]

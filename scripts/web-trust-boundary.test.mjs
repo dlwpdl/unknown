@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { cpSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -26,6 +26,7 @@ function fixture(t) {
   for (const page of ['index', 'meetups', 'company', 'terms', 'privacy', 'account-deletion', 'child-safety', 'post', 'chat', 'meetup-join', 'meetup-profile', 'meetup-application', 'auth/callback', 'profile/membership']) writeFileSync(join(publicDir, `${page}.html`), publicHtml);
   writeFileSync(join(publicDir, 'robots.txt'), 'Sitemap: https://gling.ej-entertainment.com/sitemap.xml format=sitemap&city= Disallow: /merchant/ Disallow: /admin');
   for (const file of ['sitemap.xml', 'llms.txt']) writeFileSync(join(publicDir, file), 'public discovery');
+  cpSync(fileURLToPath(new URL('../public/.well-known', import.meta.url)), join(publicDir, '.well-known'), { recursive: true });
   writeFileSync(join(publicDir, 'ads.txt'), 'google.com, pub-2361293253164911, DIRECT, f08c47fec0942fa0\n');
   const merchantHtml = '<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><script src="/merchant/_expo/entry.js"></script>';
   for (const page of ['index', 'terms', 'privacy', 'auth/callback', 'auth/kakao']) writeFileSync(join(merchantDir, `${page}.html`), merchantHtml);
@@ -46,6 +47,14 @@ test('public and merchant exports preserve public review getters and merchant as
   writeFileSync(files.publicBundle, publicRpcs); writeFileSync(files.merchantBundle, `${publicRpcs} get_my_merchant_access`);
   checkMerchantWeb(files.merchantDir);
   const result = checkPublic(files.publicDir); assert.equal(result.status, 0, result.stderr);
+});
+
+test('public export fails without the app link association files', t => {
+  const files = fixture(t);
+  writeFileSync(files.publicBundle, 'public client'); writeFileSync(files.merchantBundle, 'merchant client');
+  rmSync(join(files.publicDir, '.well-known', 'assetlinks.json'));
+  const result = checkPublic(files.publicDir);
+  assert.notEqual(result.status, 0); assert.match(result.stderr, /assetlinks\.json/);
 });
 
 test('exports reject static HTML that lost its client hydration scripts', t => {
