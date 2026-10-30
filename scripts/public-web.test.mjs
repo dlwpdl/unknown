@@ -167,7 +167,7 @@ test('legacy static 404 and initial client render agree before the exact post ha
     const mounted = readerMarkup(path, { mounted: true });
     assert.match(mounted, /class="shared-post-landing"/);
     assert.ok(mounted.includes(`href="gling://post/${id}"`), 'Mounted legacy route preserves the original native post destination');
-    assert.ok(mounted.includes(`https://gling.ej-entertainment.com/post?id=${id}`), 'QR/copy canonical destination preserves that same post');
+    assert.ok(mounted.includes(`https://gling.ej-entertainment.com/posts/${id}`), 'QR/copy canonical destination preserves that same post');
     assert.doesNotMatch(mounted, /Google로 로그인|카카오 로그인/);
   }
 });

@@ -11,6 +11,7 @@ import { CITIES, TAGS } from '../src/lib/mock.ts';
 
 const id='c8f9cd5e-b0a8-46e3-a9d5-462f0c3a24b8',other='70000000-0000-4000-8000-000000000001';
 const canonical=`https://gling.ej-entertainment.com/post?id=${id}`;
+const postUrl=`https://gling.ej-entertainment.com/posts/${id}`;
 const preview={id,title:'공유한 공개 제목',teaser:'서버가 허용한 짧은 소개',kind:'post',city:'밴쿠버',label:'비즈니스',schedule:null,imagePath:null,closed:false};
 const nodes=root=>!root||typeof root!=='object'?[]:[root,...Object.values(root).flatMap(value=>Array.isArray(value)?value.flatMap(nodes):nodes(value))];
 const text=root=>root==null||typeof root==='boolean'?'':typeof root==='string'||typeof root==='number'?String(root):Array.isArray(root)?root.map(text).join(' '):text(root.props?.children);
@@ -55,9 +56,9 @@ test('route changes and unmount reject late preview responses, while errors offe
 });
 test('preview copy and explicit app link preserve the exact post before any store choice',async()=>{
   const app=mount();let tree=app.render('SharedPostLandingContent',{postId:id,preview,status:'ready',onRetry(){}});
-  assert.equal(action(tree,'shared.web.open_app').props.href,`gling://post/${id}`);assert.equal(action(tree,'shared.web.same_post').props.href,canonical);assert.deepEqual(app.encoded,[]);
+  assert.equal(action(tree,'shared.web.open_app').props.href,`gling://post/${id}`);assert.equal(action(tree,'shared.web.same_post').props.href,postUrl);assert.deepEqual(app.encoded,[]);
   assert.equal(nodes(tree).some(node=>node.type==='svg'),false,'A store QR appears only after an explicit choice');
-  await action(tree,'shared.web.copy_link').props.onClick();await settle();tree=app.render('SharedPostLandingContent',{postId:id,preview,status:'ready',onRetry(){}});assert.deepEqual(app.calls,[['copy',canonical]]);assert.match(text(tree),/복사했어요/);assert.ok(app.feedback.includes('selection'));app.unmount();
+  await action(tree,'shared.web.copy_link').props.onClick();await settle();tree=app.render('SharedPostLandingContent',{postId:id,preview,status:'ready',onRetry(){}});assert.deepEqual(app.calls,[['copy',postUrl]]);assert.match(text(tree),/복사했어요/);assert.ok(app.feedback.includes('selection'));app.unmount();
 });
 test('guest preview offers normal web login while full body and comments stay private',()=>{
   const app=mount();const tree=app.render('SharedPostLandingContent',{postId:id,preview:{...preview,body:'PRIVATE_FULL_BODY',comments:['PRIVATE_COMMENT']},status:'ready',onRetry(){}});
@@ -85,7 +86,7 @@ test('public providers retain normal login, signup and profile onboarding gates 
 test('valid private or failed previews retain exact app destination and explicit web access gate',async()=>{
   for(const load of [async()=>null,async()=>{throw Error('PRIVATE preview error');}]){
     const route=mount({load});route.render();await settle();const props=route.render().props;const app=mount();const tree=app.render('SharedPostLandingContent',props);
-    assert.equal(action(tree,'shared.web.open_app').props.href,`gling://post/${id}`);assert.equal(action(tree,'shared.web.same_post').props.href,canonical);assert.deepEqual(app.encoded,[]);assert.doesNotMatch(text(tree),/PRIVATE|공유한 공개 제목/);assert.match(text(tree),/로그인|권한/);assert.match(text(tree),/삭제/);route.unmount();app.unmount();
+    assert.equal(action(tree,'shared.web.open_app').props.href,`gling://post/${id}`);assert.equal(action(tree,'shared.web.same_post').props.href,postUrl);assert.deepEqual(app.encoded,[]);assert.doesNotMatch(text(tree),/PRIVATE|공유한 공개 제목/);assert.match(text(tree),/로그인|권한/);assert.match(text(tree),/삭제/);route.unmount();app.unmount();
   }
 });
 test('invalid or missing destinations have invalid-link copy and never create a QR or app handoff',()=>{

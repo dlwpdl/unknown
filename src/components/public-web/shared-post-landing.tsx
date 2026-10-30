@@ -95,7 +95,7 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
   const { language } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), ko = language === 'ko';
   const id = postId && UUID.test(postId) ? postId.toLowerCase() : null;
   const ready = status === 'ready' && !!id && (authenticated ? post?.id === id : preview?.id === id);
-  const canonical = id ? `${PUBLIC_SITE}/post?id=${id}${invite ? '&invite=1' : ''}` : null;
+  const canonical = id ? `${PUBLIC_SITE}/posts/${id}${invite ? '?invite=1' : ''}` : null;
   // Guests see only the vetted title, teaser and cover, so those pages may be indexed; meetups and invites stay out.
   const indexable = ready && !authenticated && !!preview && preview.kind !== 'meetup' && !invite;
   const prerendered = typeof window !== 'undefined' && /^\/posts\/[^/]+\/?$/.test(window.location?.pathname ?? '');
