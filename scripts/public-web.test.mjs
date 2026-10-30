@@ -9,7 +9,7 @@ import * as jsxRuntime from 'react/jsx-runtime';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { toQR } from 'toqr';
 import { sharedLinkTarget } from '../src/lib/sharing.ts';
-import { publicSiteName } from '../src/lib/public-seo.ts';
+import { publicCitySubpage, publicCitySubpageMeta, publicPostDescription, publicPostSchema, publicSiteName } from '../src/lib/public-seo.ts';
 import { instagramPostLink, splitPostAttachments, splitPostLinks } from '../supabase/functions/_shared/post-links.ts';
 import { publicWebTarget, publicWebFetch, publicMerchantId } from '../src/lib/public-web.ts';
 import { ControlMetrics, ControlMotion, Typography } from '../src/constants/design-system.ts';
@@ -135,7 +135,8 @@ function readerMarkup(path, { mounted = false, search = '', directPost = false, 
     '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [] },
     '@/lib/public-web': { publicMerchantId, publicWebTarget },
     '@/lib/sharing': { sharedLinkTarget },
-    '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.ej-entertainment.com', jsonLd: JSON.stringify, publicSiteName },
+    '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.ej-entertainment.com', jsonLd: JSON.stringify, publicSiteName, publicCitySubpage, publicCitySubpageMeta, publicPostDescription, publicPostSchema },
+    './static-slot': { adoptStatic: () => () => {} }, './metadata': { publicHomeSchema: { '@type': 'WebSite' } },
     '@/lib/public-web-client': { publicWebClient: {} },
     './analytics': { useReaderAnalytics() {} },
   };
@@ -176,7 +177,7 @@ test('canonical post document retains its direct landing SSR and mounted post de
   assert.equal(readerMarkup('/post', options), readerMarkup('/post', { ...options, directPost: true }));
   assert.match(readerMarkup('/post', options), /class="shared-post-landing"/);
   assert.ok(readerMarkup('/post', { ...options, mounted: true }).includes(`href="gling://post/${id}"`));
-  assert.match(readerMarkup('/'), /<h1 id="stories">오늘<\/h1>/);
+  assert.match(readerMarkup('/'), /<h1 id="stories">캐나다 한인 커뮤니티 글링<\/h1>/);
 });
 
 
@@ -196,7 +197,7 @@ test('reader title, metadata and language follow KO/EN while authored post text 
   assert.match(ko,/<title>글링 \| 캐나다 한인 커뮤니티 · 밴쿠버·토론토·몬트리올<\/title>/);
   assert.match(en,/<title>Gling \| Korean Community in Canada · Vancouver, Toronto, Montreal<\/title>/);
   assert.match(en,/property="og:site_name" content="Gling \| Korean Community in Canada"/);
-  assert.match(en,/class="reader"[^>]+lang="en"/);assert.match(en,/"inLanguage":"en-CA"/);
+  assert.match(en,/class="reader"[^>]+lang="en"/);assert.match(en,/"@type":"WebSite"/, 'home keeps the shared WebSite/Organization graph after hydration');
   const post={id,cityId:'vancouver',title:'작성한 제목은 원문 그대로',body:'회원이 쓴 원문 본문',tag:{label:'원문 분류'},author:{id:'author',nickname:'원문 닉네임'}};
   const article=readerMarkup('/post',{language:'en',articlePost:post});assert.match(article,/작성한 제목은 원문 그대로/);assert.match(article,/회원이 쓴 원문 본문/);
 });
@@ -219,6 +220,6 @@ test('home opens with the Today feed and visible account entry while meetup disc
     assert.match(markup, /class="reader-header-account" href="\/merchant\/"/);
     assert.match(markup, language === 'ko' ? />로그인<\/a>/ : />Sign in<\/a>/);
     assert.match(markup, /href="\/meetups\?city=vancouver"/);
-    assert.match(markup, language === 'ko' ? /<h1 id="stories">오늘<\/h1>/ : /<h1 id="stories">Today<\/h1>/);
+    assert.match(markup, language === 'ko' ? /<h1 id="stories">캐나다 한인 커뮤니티 글링<\/h1>/ : /<h1 id="stories">Gling, the Korean community in Canada<\/h1>/);
   }
 });

@@ -31,7 +31,9 @@ import { hasAdLabel } from '@/lib/hashtags';
 import { publicMerchantId, publicWebTarget } from '@/lib/public-web';
 import { buildSharedPostUrl } from '@/lib/sharing';
 import { publicWebClient } from '@/lib/public-web-client';
-import { jsonLd, postSeo, publicSiteName, PUBLIC_SITE } from '@/lib/public-seo';
+import { jsonLd, postSeo, publicCitySubpage, publicCitySubpageMeta, publicSiteName, PUBLIC_SITE } from '@/lib/public-seo';
+import { adoptStatic } from './static-slot';
+import { publicHomeSchema } from './metadata';
 import { InteractionFeedbackProvider, useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadMerchantSource, merchantSourceActionLabel, trackPublicMerchantSourceClick, type MerchantSource } from '@/lib/merchant-source';
 import type { Post } from '@/lib/types';
@@ -145,9 +147,13 @@ function ReaderContent() {
   const merchantId = publicMerchantId(path, readyParams.id);
   // /vancouver, /toronto, /montreal are the indexable city hubs; `/?city=` canonicalizes to them.
   const cityPage = cities.find((item) => path === `/${item.id}`);
+  // /vancouver/2, /vancouver/rent, /vancouver/meetups are build-time pages; the reader keeps their static copy in place.
+  const sub = publicCitySubpage(path, cities.map((item) => item.id));
+  const subCity = sub ? cities.find((item) => item.id === sub.cityId) : undefined;
+  const subMeta = sub && subCity ? publicCitySubpageMeta(sub, subCity.name) : null;
   const browse = path === '/' || path === '/meetups' || !!cityPage;
   const meetupPage = path === '/meetups';
-  const city = cityPage ?? cities.find((item) => item.id === readyParams.city) ?? cities[0];
+  const city = cityPage ?? subCity ?? cities.find((item) => item.id === readyParams.city) ?? cities[0];
   const tag = TAGS.find((item) => item.slug === (path === '/meetups' ? 'meetup' : readyParams.tag));
   const key = `${path}:${postId}:${merchantId}:${city.id}:${tag?.id ?? ''}`;
   const [result, setResult] = useState<{ key: string; posts: Post[]; more: boolean; failed: boolean } | null>(null);
@@ -160,19 +166,22 @@ function ReaderContent() {
   const metadata = post ? postSeo(post, tr(CITIES.find((item) => item.id === post.cityId)?.name ?? ''), language) : null;
   const filters = new URLSearchParams();
   if (!cityPage && cities.some((item) => item.id === readyParams.city)) filters.set('city', city.id);
-  if (tag) filters.set('tag', tag.slug);
+  if (tag && !meetupPage) filters.set('tag', tag.slug);
   const cityHub = !!cityPage || (path === '/' && !tag && filters.has('city'));
-  const canonical = metadata?.canonical ?? (cityHub ? `${PUBLIC_SITE}/${city.id}` : browse ? `${PUBLIC_SITE}${meetupPage ? '/meetups' : '/'}${filters.size ? `?${filters}` : ''}` : postId ? `${PUBLIC_SITE}/post?id=${postId}` : merchantId ? `${PUBLIC_SITE}/company?id=${merchantId}` : null);
-  const pageTitle = metadata?.title ?? (cityHub ? ko ? `${city.name} 한인 커뮤니티 · 동네 이야기와 모임 | 글링` : `Korean community in ${city.englishName} | Gling` : browse ? `${filters.size ? `${tr(city.name)} · ${tr(tag?.label ?? '동네 이야기')} | ` : ''}${publicSiteName(language)}${!filters.size && !meetupPage ? ko ? ' · 밴쿠버·토론토·몬트리올' : ' · Vancouver, Toronto, Montreal' : ''}`
+  const canonical = subMeta ? `${PUBLIC_SITE}${path}` : metadata?.canonical ?? (cityHub ? `${PUBLIC_SITE}/${city.id}` : browse ? `${PUBLIC_SITE}${meetupPage ? '/meetups' : '/'}${filters.size ? `?${filters}` : ''}` : postId ? `${PUBLIC_SITE}/post?id=${postId}` : merchantId ? `${PUBLIC_SITE}/company?id=${merchantId}` : null);
+  const pageTitle = subMeta?.title ?? metadata?.title ?? (cityHub ? ko ? `${city.name} 한인 커뮤니티 · 동네 이야기와 모임 | 글링` : `Korean community in ${city.englishName} | Gling`
+    : meetupPage ? ko ? `${filters.has('city') ? `${city.name} 한인 모임` : '캐나다 한인 모임 · 밴쿠버·토론토·몬트리올'} | 글링` : `${filters.has('city') ? `Meetups in ${city.englishName}` : 'Korean meetups in Canada'} | Gling`
+    : browse ? filters.size ? `${tr(city.name)} · ${tr(tag?.label ?? '동네 이야기')} | ${ko ? '글링' : 'Gling'}` : `${publicSiteName(language)}${ko ? ' · 밴쿠버·토론토·몬트리올' : ' · Vancouver, Toronto, Montreal'}`
     : detail ? ko ? '글링 공개 글' : 'Public post | Gling' : company ? ko ? '글링 비즈니스 프로필' : 'Business profile | Gling' : ko ? '글링 | 앱에서 이어가기' : 'Gling | Continue in the app');
-  const description = metadata?.description ?? (ko ? '밴쿠버·토론토·몬트리올 한인 커뮤니티 글링에서 동네 이야기, 비즈니스와 모임을 둘러보세요. 로그인하면 공개 글의 전체 본문을 웹에서 읽을 수 있어요.'
+  const description = subMeta?.description ?? metadata?.description ?? (ko ? '밴쿠버·토론토·몬트리올 한인 커뮤니티 글링에서 동네 이야기, 비즈니스와 모임을 둘러보세요. 로그인하면 공개 글의 전체 본문을 웹에서 읽을 수 있어요.'
     : 'Explore neighbourhood stories, businesses and meetups on Gling, the Korean community app for Vancouver, Toronto and Montreal. Sign in to read the full public post on the web.');
   // Static /post.html has no query parameters yet; let Google render before marking a missing post.
-  const noindex = (!browse && !detail && !company) || (detail && hydrated && (!postId || (current && !post))) || (company && hydrated && !merchantId);
-  const schema = metadata?.schema ?? (browse ? { '@context': 'https://schema.org', '@type': filters.size ? 'CollectionPage' : 'WebSite', name: publicSiteName(language), url: canonical, description, inLanguage: ko ? 'ko-KR' : 'en-CA' } : null);
+  const noindex = !sub && ((!browse && !detail && !company) || (detail && hydrated && (!postId || (current && !post))) || (company && hydrated && !merchantId));
+  // City pages and their subpages carry CollectionPage/ItemList from the build; don't add a second, thinner graph.
+  const schema = sub || cityPage ? null : path === '/' && !filters.size ? publicHomeSchema : metadata?.schema ?? (browse ? { '@context': 'https://schema.org', '@type': filters.size ? 'CollectionPage' : 'WebSite', name: publicSiteName(language), url: canonical, description, inLanguage: ko ? 'ko-KR' : 'en-CA' } : null);
   const loading = (browse || Boolean(postId)) && !current;
   const target = publicWebTarget(path, (company ? merchantId : postId) ?? undefined, readyParams);
-  useReaderAnalytics(detail ? 'post' : browse ? 'feed' : 'app-invitation', key, hydrated);
+  useReaderAnalytics(detail ? 'post' : browse || sub ? 'feed' : 'app-invitation', key, hydrated);
 
   useEffect(() => {
     // The build-time home/city copy (scripts/finish-public-web.mjs) is for crawlers without JavaScript; drop it once the live feed is in.
@@ -242,12 +251,13 @@ function ReaderContent() {
         <a data-analytics="web_control_6" href={`/?city=${city.id}&tag=festival#stories`} aria-current={tag?.slug === 'festival' ? 'page' : undefined} onClick={() => play('selection')}>{ko ? '페스티벌' : 'Festivals'}</a>
         <a href="/visited" onClick={() => play('selection')}>Gling Visited</a>
       </nav>
-      <a className="reader-header-account" href="/merchant/" onClick={() => play('selection')}>{isAuthed ? ko ? '내 계정' : 'My account' : ko ? '로그인' : 'Sign in'}</a>
+      <a className="reader-header-account" href="/merchant/" rel="nofollow" onClick={() => play('selection')}>{isAuthed ? ko ? '내 계정' : 'My account' : ko ? '로그인' : 'Sign in'}</a>
     </header>
     <main id="reader-main" className={`reader-main${company ? ' reader-main-company' : ''}`} tabIndex={-1}>
       <div className="reader-content">
         {browse ? <>
-          <div className="reader-section-heading"><div><h1 id="stories">{meetupPage ? ko ? '모임' : 'Meetups' : cityHub ? ko ? `${city.name} 한인 동네 이야기` : `Korean stories in ${city.englishName}` : ko ? '오늘' : 'Today'}</h1><p>{meetupPage ? ko ? '모임을 살펴보고 앱에서 함께해요.' : 'Explore a meetup, then join in the app.' : ko ? '이 도시에서 나누는 이야기' : 'Stories from your city'}</p></div><span>{tr(city.name)} · {tr(tag?.label ?? '전체 이야기')}</span></div>
+          <div className="reader-section-heading"><div><h1 id="stories">{meetupPage ? ko ? '모임' : 'Meetups' : cityHub ? ko ? `${city.name} 한인 커뮤니티` : `Korean community in ${city.englishName}` : path === '/' && !filters.size ? ko ? '캐나다 한인 커뮤니티 글링' : 'Gling, the Korean community in Canada' : ko ? '오늘' : 'Today'}</h1><p>{meetupPage ? ko ? '모임을 살펴보고 앱에서 함께해요.' : 'Explore a meetup, then join in the app.' : ko ? '이 도시에서 나누는 이야기' : 'Stories from your city'}</p></div><span>{tr(city.name)} · {tr(tag?.label ?? '전체 이야기')}</span></div>
+          {cityPage && <div ref={adoptStatic('gling-static-city')} />}
           <form key={`${city.id}:${tag?.id ?? ''}`} className="reader-filters" action={meetupPage ? '/meetups' : '/'} method="get">
             <label>{ko ? '도시' : 'City'}<select name="city" defaultValue={city.id} onChange={() => play('selection')}>{cities.map((item) => <option value={item.id} key={item.id}>{tr(item.name)}</option>)}</select></label>
             {!meetupPage && <label>{ko ? '주제' : 'Topic'}<select name="tag" defaultValue={tag?.slug ?? ''} onChange={() => play('selection')}><option value="">{ko ? '전체 이야기' : 'All stories'}</option>{TAGS.map((item) => <option value={item.slug} key={item.id}>{tr(item.label)}</option>)}</select></label>}
@@ -287,7 +297,7 @@ function ReaderContent() {
             <p role="status">{tr(shareMessage)}</p>
             {!!post.commentList?.length && <section className="reader-comments"><h2>{ko ? '공개 댓글' : 'Public comments'}</h2>{post.commentList.map((comment) => <article key={comment.id}><strong>{comment.nickname}</strong><p>{comment.body}</p></article>)}<a data-analytics="web_control_15" href={target}>{ko ? '앱에서 댓글 남기기 ↗' : 'Comment in the app ↗'}</a></section>}
           </article></InteractionFeedbackProvider>}
-        </> : <section className="reader-hero"><h1>{ko ? '앱에서 이어가세요.' : 'Continue in the app.'}</h1><p>{ko ? '웹에서는 공개 이야기와 모임을 둘러볼 수 있어요. 작성·참여·대화와 내 정보 관리는 앱에서 이용해 주세요.' : 'You can browse public stories and meetups on the web. To post, join, chat or manage your account, use the app.'}</p><a data-analytics="web_control_16" href="/">{ko ? '공개 이야기 둘러보기 →' : 'Browse public stories →'}</a></section>}
+        </> : sub ? <div ref={adoptStatic('gling-static-hub')} /> : <section className="reader-hero"><h1>{ko ? '앱에서 이어가세요.' : 'Continue in the app.'}</h1><p>{ko ? '웹에서는 공개 이야기와 모임을 둘러볼 수 있어요. 작성·참여·대화와 내 정보 관리는 앱에서 이용해 주세요.' : 'You can browse public stories and meetups on the web. To post, join, chat or manage your account, use the app.'}</p><a data-analytics="web_control_16" href="/">{ko ? '공개 이야기 둘러보기 →' : 'Browse public stories →'}</a></section>}
         {!meetupPage && loading && <p role="status" className="reader-notice">{ko ? '이야기를 불러오고 있어요…' : 'Loading stories…'}</p>}
         {!meetupPage && current?.failed && <div role="alert" className="reader-notice"><p>{ko ? '이야기를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.' : 'Couldn’t load stories. Try again in a moment.'}</p><button data-analytics="web_control_17" onClick={() => setRetry((value) => value + 1)}>{ko ? '다시 시도' : 'Try again'}</button></div>}
         {!meetupPage && !loading && !current?.failed && (browse || detail) && !current?.posts.length && <div className="reader-notice">{detail ? <h1>{ko ? '글을 찾을 수 없어요' : 'Post not found'}</h1> : <h2>{ko ? '아직 공개된 이야기가 없어요' : 'No public stories yet'}</h2>}<p>{ko ? detail ? '삭제되었거나 공개되지 않은 글이에요.' : tag?.slug === 'festival' ? '위에서 Ticketmaster의 예정 페스티벌을 확인하거나, 다른 공개 이야기도 둘러보세요.' : '다른 도시나 주제의 이야기도 둘러보세요.'
@@ -295,6 +305,6 @@ function ReaderContent() {
       </div>
       <aside id="app"><AppInvitation target={target} label={post?.room ? post.room.closed ? ko ? '앱에서 모임 보기' : 'View the meetup in the app' : ko ? '앱에서 참여하기' : 'Join in the app' : undefined} /></aside>
     </main>
-    <footer className="reader-footer"><span>{ko ? 'gling · 같이 갈 사람, 같이 나눌 이야기' : 'gling · People to go with, stories to share'}</span><nav aria-label={ko ? '정책' : 'Policies'}><a href="/merchant/" onClick={() => play('selection')}>{ko ? '비즈니스 관리' : 'Manage your business'}</a><a data-analytics="web_control_18" href="/terms">{ko ? '이용약관' : 'Terms'}</a><a data-analytics="web_control_19" href="/privacy">{ko ? '개인정보처리방침' : 'Privacy'}</a><a data-analytics="web_control_20" href="/account-deletion">{ko ? '계정 삭제' : 'Delete account'}</a></nav></footer>
+    <footer className="reader-footer"><span>{ko ? 'gling · 같이 갈 사람, 같이 나눌 이야기' : 'gling · People to go with, stories to share'}</span><nav aria-label={ko ? '정책' : 'Policies'}><a href="/merchant/" rel="nofollow" onClick={() => play('selection')}>{ko ? '비즈니스 관리' : 'Manage your business'}</a><a data-analytics="web_control_18" href="/terms">{ko ? '이용약관' : 'Terms'}</a><a data-analytics="web_control_19" href="/privacy">{ko ? '개인정보처리방침' : 'Privacy'}</a><a data-analytics="web_control_20" href="/account-deletion">{ko ? '계정 삭제' : 'Delete account'}</a></nav></footer>
   </div>;
 }
