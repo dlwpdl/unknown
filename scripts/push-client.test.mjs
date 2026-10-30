@@ -78,7 +78,7 @@ test('a legacy topic push opens today search once and ignores another account', 
       addNotificationResponseReceivedListener: callback => { receive = callback; return subscription(); }, addPushTokenListener: subscription, clearLastNotificationResponseAsync: async () => {} },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: 'member' } }) },
     '@/lib/community-data': {}, '@/lib/product-analytics': product, '@/lib/notification-preferences': preferences,
-    '@/lib/push-notifications': { pushSupported: true, pushConfigured: false },
+    '@/lib/push-notifications': { pushSupported: true, pushConfigured: false }, '@/lib/meetup-push-rsvp': { registerMeetupRsvpCategory: async () => {}, answerMeetupRsvpFromPush: () => false },
     '@/lib/supabase': { supabase: { rpc: async () => ({ data: { push_enabled: false } }) } },
   });
   NotificationObserver();
@@ -112,6 +112,7 @@ test('an in-flight preference refresh cannot restore foreground push after optin
     '@/lib/product-analytics': product,
     '@/lib/notification-preferences': preferences,
     '@/lib/push-notifications': { pushSupported: true, pushConfigured: true, registerPushDevice: async () => { registrations++; } },
+    '@/lib/meetup-push-rsvp': { registerMeetupRsvpCategory: async () => {}, answerMeetupRsvpFromPush: () => false },
     '@/lib/supabase': { supabase: { rpc: () => new Promise(resolve => { resolveRead = resolve; }) } },
   });
   NotificationObserver();

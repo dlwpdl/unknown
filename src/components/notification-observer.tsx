@@ -3,9 +3,11 @@ import * as Notifications from 'expo-notifications';
 import { useEffect } from 'react';
 import { AppState, DeviceEventEmitter, Linking, Platform } from 'react-native';
 
+import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/auth';
 import { markNotificationsRead } from '@/lib/community-data';
 import { loadAdminDashboardOrigin, loadNotificationPreferences, openNotificationTarget, NOTIFICATION_PREFERENCES_CHANGED, type NotificationCategory, type NotificationPreferences } from '@/lib/notification-preferences';
+import { answerMeetupRsvpFromPush, registerMeetupRsvpCategory } from '@/lib/meetup-push-rsvp';
 import { pushConfigured, pushSupported, registerPushDevice } from '@/lib/push-notifications';
 import { recordProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
@@ -15,6 +17,10 @@ export function NotificationObserver() {
   const userId = isAuthed ? me.id : null;
   const navigation = useRootNavigationState();
   const router = useRouter();
+  const { language } = useLanguage();
+
+  // At launch and after login; again when the app language changes so the button labels follow it.
+  useEffect(() => { if (pushSupported) void registerMeetupRsvpCategory().catch(() => {}); }, [language, userId]);
 
   useEffect(() => {
     if (!pushSupported || !userId || !navigation?.key) return;
@@ -43,6 +49,7 @@ export function NotificationObserver() {
       return { shouldShowBanner: enabled, shouldShowList: enabled, shouldPlaySound: enabled, shouldSetBadge: false };
     } });
     const open = (response: Notifications.NotificationResponse) => {
+      if (active && answerMeetupRsvpFromPush(supabase, userId, response)) return;
       const data = response.notification.request.content.data ?? {};
       if (!active || response.actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER || data.userId !== userId || opened === response.notification.request.identifier) return;
       opened = response.notification.request.identifier;

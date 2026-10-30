@@ -9,6 +9,8 @@ type PushJob = {
   event_title?: string | null;
   // Added 2026-10-27; older claims omit them and keep Korean copy without a badge.
   kind?: string | null; locale?: string | null; badge?: number | null;
+  // Added 2026-10-30 (migration 20261030161000): set only when the reminder's recipient can answer it.
+  rsvp_post_id?: string | null;
 };
 type WorkerOptions = {
   secret?: string; expoAccessToken?: string; fetcher?: typeof fetch;
@@ -23,6 +25,7 @@ const routePattern = new RegExp(`^(?:/post/${UUID}(?:\\?commentId=${UUID})?|/com
 const json = (value: unknown, status = 200) => Response.json(value, { status });
 const RECOMMENDATIONS = ['trending', 'city_food', 'city_places', 'merchant_updates', 'weekly_ranking', 'interests', 'nearby'];
 const ROUNDS = 5; // ~500 sends per invocation, in Expo's 100-message batches
+const MEETUP_RSVP_CATEGORY = 'meetup_rsvp'; // registered on the device by src/lib/meetup-push-rsvp.ts
 const translateEnglish = (text: string) => uiEnglish[text] ?? text;
 const object = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -84,6 +87,8 @@ export async function handlePushNotifications(request: Request, options: WorkerO
           const english = job.locale === 'en' && !admin;
           const body = postPreview ? postBodyPreview(job.post_title!, job.post_preview!)
             : english ? englishNotificationBody({ kind: job.kind ?? '', body: job.body }, translateEnglish) : job.body;
+          // '갈게요 / 못 가요' buttons. Apps that never registered the category (1.4.6 and older) show the plain push.
+          const rsvp = job.kind === 'meetup_reminder' && typeof job.rsvp_post_id === 'string' && route === `/post/${job.rsvp_post_id}`;
           return {
             to: job.token, title: eventPreview ? job.event_title : postPreview ? job.post_title : admin ? '글링 관리자' : english ? 'Gling' : '글링',
             body, sound: 'default', channelId: 'gling-activity',
@@ -92,7 +97,8 @@ export async function handlePushNotifications(request: Request, options: WorkerO
             ...(job.locale && Number.isInteger(job.badge) ? { badge: job.badge } : {}),
             // Expo has no send idempotency key. Stable IDs collapse ambiguous retry copies on devices.
             collapseId: job.notification_id, tag: job.notification_id,
-            data: { notificationId: job.notification_id, userId: job.user_id, category: job.category, route },
+            ...(rsvp ? { categoryId: MEETUP_RSVP_CATEGORY } : {}),
+            data: { notificationId: job.notification_id, userId: job.user_id, category: job.category, route, ...(rsvp ? { postId: job.rsvp_post_id } : {}) },
           };
         })),
       });
