@@ -26,7 +26,7 @@ export function finishPublicWeb(directory = 'dist', posts = []) {
     const target = join(directory, file);
     if (!existsSync(target)) continue;
     writeFileSync(target, readFileSync(target, 'utf8')
-      .replace('</head>', `<link rel="alternate" type="application/rss+xml" title="글링 새 글" href="${PUBLIC_SITE}/rss.xml"/></head>`)
+      .replace('</head>', `<meta name="naver-site-verification" content="3840dfdac2db5fd4f65e9c9160c31225d7e05db5"/><link rel="alternate" type="application/rss+xml" title="글링 새 글" href="${PUBLIC_SITE}/rss.xml"/></head>`)
       .replace(/<body[^>]*>/, match => `${match}${staticHub(cities, posts, city)}`));
   }
   const day = value => { const time = Date.parse(value); return Number.isFinite(time) ? `<lastmod>${new Date(time).toISOString().slice(0, 10)}</lastmod>` : ''; };
