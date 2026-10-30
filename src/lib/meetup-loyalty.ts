@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { MembershipTier } from './membership.ts';
 
-// Server contract: supabase/migrations/20261029130000_host_loyalty.sql. Badge counts arrive as levels (0/1/5/10/25).
+// Server contract: supabase/migrations/20261029140000_host_loyalty.sql. Badge counts arrive as levels (0/1/5/10/25).
 export type BadgeLevels = { attended: number; hosted: number };
 export type AnnouncementAudience = 'members' | 'pending' | 'waitlist';
 export type MeetupLoyalty = {

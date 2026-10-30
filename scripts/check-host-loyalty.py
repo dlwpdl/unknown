@@ -8,7 +8,7 @@ import uuid
 ROOT = Path(__file__).resolve().parents[1]
 helper = runpy.run_path(str(ROOT / 'scripts/check-admin-partnerships.py'))
 command, sql = helper['command'], helper['sql']
-MIGRATION = ROOT / 'supabase/migrations/20261029130000_host_loyalty.sql'
+MIGRATION = ROOT / 'supabase/migrations/20261029140000_host_loyalty.sql'
 H, A, B, C, D = (f'71910000-0000-4000-8000-{n:012}' for n in range(1, 6))
 OLD, NEW, GROUP = (f'71920000-0000-4000-8000-{n:012}' for n in range(1, 4))
 ROOM, S_LIVE, S_DONE = (f'71930000-0000-4000-8000-{n:012}' for n in range(1, 4))

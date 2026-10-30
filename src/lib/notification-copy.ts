@@ -48,7 +48,7 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
   meetup_cancelled: [[/^(.+) 모임이 마감되거나 취소됐어요\. 모임 글에서 확인해 주세요\.$/, m => `“${m[1]}” was closed or cancelled. Check the meetup post for details.`]],
   meetup_changed: [
     [/^(.+) 모임의 시간이나 장소가 바뀌었어요\. 바뀐 내용을 확인해 주세요\.$/, m => `The time or place for “${m[1]}” changed. Check the updated details.`],
-    // Host loyalty copy: 20261029130000_host_loyalty.sql. Encore before follower: the follower pattern would also match it.
+    // Host loyalty copy: 20261029140000_host_loyalty.sql. Encore before follower: the follower pattern would also match it.
     [/^또 열어 달라고 했던 (.+?)님이 새 모임을 열었어요\. ([\s\S]+)$/, m => `You asked ${m[1]} to host again, and they just did: ${m[2]}`],
     [/^(.+?)님이 새 모임을 열었어요\. ([\s\S]+)$/, m => `${m[1]} just opened a new meetup: ${m[2]}`],
     [/^「(.+?)」 공지: ([\s\S]+)$/, m => `Note from the host of “${m[1]}”: ${m[2]}`],
