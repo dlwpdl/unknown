@@ -33,7 +33,7 @@ export function mount(file, exportName, data, props = {}, params = {}) {
   const hooks = [], setters = [], appListeners = new Set(), channels = new Set(), timers = new Map(), animations = [];
   let index = 0, effects = [], dirty = true, tree, timerId = 0;
   const auth = { isAuthed: true, me: { id: 'me', nickname: '나' }, ...data.auth };
-  const refreshMembership = async () => {};
+  const refreshMembership = async () => { data.membershipRefreshes = (data.membershipRefreshes ?? 0) + 1; };
   const jsx = (type, props, key) => ({ type, props, key });
   const effect = (fn, deps) => {
     const slot = index++, previous = hooks[slot];
@@ -1930,6 +1930,22 @@ test('the actual private inbox channel refreshes on reconnect without a broadcas
   });
   context.after(h.cleanup); await h.settle(); assert.equal(reads.length, 1);
   h.reconnect(); await h.timers(); assert.deepEqual(reads, [[userId, businessId], [userId, businessId]]);
+});
+
+test('a hidden chat tab skips realtime reloads, and realtime changes reload the list without membership', async context => {
+  let reads = 0;
+  const data = { loadPendingMeetupRequests: async () => [],
+    loadConversations: async () => { reads++; return { conversations: [], selectedConversation: null, pendingCount: 0, cursor: null }; } };
+  const h = mount('../src/app/(tabs)/chat.tsx', 'default', data);
+  context.after(h.cleanup); await h.settle();
+  assert.equal(reads, 1); assert.equal(data.membershipRefreshes, 1, 'focus still refreshes membership');
+  data.privateChanged({}); await h.timers();
+  assert.equal(reads, 2); assert.equal(data.membershipRefreshes, 1, 'a realtime change does not refetch membership or store products');
+  data.focused = false; h.rerender(); await h.settle();
+  data.privateChanged({}); h.foreground(); await h.timers();
+  assert.equal(reads, 2, 'no reload while another tab is showing');
+  data.focused = true; h.rerender(); await h.settle();
+  assert.equal(reads, 3); assert.equal(data.membershipRefreshes, 2, 'returning to the tab reloads the list and membership once');
 });
 
 test('a failed text send retries with the same client id; a delivered one starts fresh', async (context) => {

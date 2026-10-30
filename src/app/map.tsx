@@ -23,7 +23,7 @@ import { contentAdPosition } from '@/lib/content-ad-placement';
 import { GlingLoader } from '@/components/gling-loader';
 import { StateCard } from '@/components/state-card';
 import { TranslationControl } from '@/components/content-translation';
-import { useContentTranslation } from '@/hooks/use-content-translation';
+import { useContentTranslation, useTranslationVisibleIds } from '@/hooks/use-content-translation';
 import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
 import { visibleTranslationSource } from '@/lib/translation-source';
 import { ThemedText } from '@/components/themed-text';
@@ -101,9 +101,9 @@ function CityMap({ city, placeId, onClose, initialFilter }: { city: (typeof CITI
   const [userLocation, setUserLocation] = useState<PostPin | null>(null);
   const [cardHeight, setCardHeight] = useState(0);
   const [mapFiltersHeight, setMapFiltersHeight] = useState(0);
-  const [visibleResultIds, setVisibleResultIds] = useState<Set<string>>(new Set());
+  const [visibleResultIds, setVisibleResultIds] = useTranslationVisibleIds();
   const trackTranslationResults = useCallback(({ viewableItems }: { viewableItems: { item: DiscoveryItem }[] }) =>
-    setVisibleResultIds(new Set(viewableItems.map(({ item }) => item.id))), []);
+    setVisibleResultIds(viewableItems.map(({ item }) => item.id)), [setVisibleResultIds]);
   const [locating, setLocating] = useState(false), [locationError, setLocationError] = useState('');
   const [attempt, setAttempt] = useState(0), [now, setNow] = useState(() => Date.now());
   const [result, setResult] = useState<Result | null>(null), [pendingKey, setPendingKey] = useState<string | null>(null);

@@ -18,6 +18,7 @@ import { SavedEntryButton, useSavedEntry } from '@/components/saved-entry';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
+import { useTranslationPreference } from '@/hooks/use-content-translation';
 import { useCommunityCity } from '@/lib/community-city';
 import { CITY_PLACES_COLLECTED_AT, getCityPlaces, type CityPlace } from '@/lib/city-places';
 import { deliveryPartnerPlace } from '@/lib/delivery-partners';
@@ -35,6 +36,8 @@ export default function PlaceDetailScreen() {
   useCityPlacesRevision();
   const { tr, language, locale: appLocale } = useLanguage();
   const [viewport, setViewport] = useState({ y: 0, height: 0 });
+  // The scroll position only decides which reviews auto-translate; other modes skip a re-render per scroll event.
+  const trackViewport = useTranslationPreference().mode === 'auto';
   const { cityId, id } = useLocalSearchParams<{ cityId?: string; id?: string }>();
   const { isAuthed, isAuthLoading, me } = useAuth();
   const hidden = useContentVisibility();
@@ -86,7 +89,7 @@ export default function PlaceDetailScreen() {
     {!!saved.error && <ThemedText type="small" accessibilityRole="alert" style={styles.saveError}>{saved.error}</ThemedText>}
     <ScrollView analyticsId="places.detail.scroll" contentContainerStyle={styles.content} scrollEventThrottle={100}
       onLayout={({ nativeEvent: { layout: { height } } }) => setViewport(previous => previous.height === height ? previous : { ...previous, height })}
-      onScroll={({ nativeEvent }) => setViewport({ y: nativeEvent.contentOffset.y, height: nativeEvent.layoutMeasurement.height })}>
+      onScroll={trackViewport ? ({ nativeEvent }) => setViewport({ y: nativeEvent.contentOffset.y, height: nativeEvent.layoutMeasurement.height }) : undefined}>
       {!place || !city ? <StateCard kind="error" title={tr("장소를 찾지 못했어요")} body={tr("선택한 도시의 장소 목록에서 다시 열어 주세요.")} /> : <>
         <CityPlacePhoto place={place} style={styles.photo} contentFit="contain" />
         {!!place.photo && <PostPhotoCredits credits={[

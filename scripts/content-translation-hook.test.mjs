@@ -63,8 +63,27 @@ function mount() {
   return { calls, preference, render, flushEffects: () => effects.forEach(fn => fn()), async settle() { await new Promise(resolve => setImmediate(resolve)); return render(); },
     language: value => { language = value; }, viewer: value => { viewer = value; }, body: value => { source = { ...source, body: value }; },
     focus: value => { focused = value; }, appState: value => { appState = value; appListener?.(value); },
-    visible: value => { visible = value; }, cleanup: () => hooks.forEach(hook => hook?.cleanup?.()) };
+    visible: value => { visible = value; }, cleanup: () => hooks.forEach(hook => hook?.cleanup?.()),
+    visibleIds() {
+      index = 0; effects = []; layout = [];
+      const result = exports.useTranslationVisibleIds();
+      layout.forEach(fn => fn()); effects.forEach(fn => fn());
+      return result;
+    } };
 }
+
+test('visible ids change state only in automatic mode and catch up when auto turns on', () => {
+  const ui = mount();
+  ui.preference.mode = 'manual';
+  const [initial, track] = ui.visibleIds();
+  track(['a', 'b']);
+  assert.equal(ui.visibleIds()[0], initial, 'scrolling in manual/off mode does not re-render the list');
+  ui.preference.mode = 'auto';
+  ui.visibleIds();
+  assert.deepEqual([...ui.visibleIds()[0]], ['a', 'b'], 'auto starts from the items already on screen');
+  ui.visibleIds()[1](['c']);
+  assert.deepEqual([...ui.visibleIds()[0]], ['c']);
+});
 
 test('switching en → ko → en during a pending translation cannot strand automatic translation', async () => {
   const ui = mount();

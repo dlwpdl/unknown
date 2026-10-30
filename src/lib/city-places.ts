@@ -92,6 +92,8 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
   if (next.recommendationTheme !== 'photo-spots') return false;
   const nextSelection = next.selectionRevision ?? 0, currentSelection = catalog.selectionRevision ?? 0;
   if (!Number.isSafeInteger(nextSelection) || nextSelection < 0) invalid();
+  // A catalog that would not replace the current one skips the full per-city validation below.
+  if (nextSelection < currentSelection || (nextSelection === currentSelection && Date.parse(next.collectedAt) <= Date.parse(catalog.collectedAt))) return false;
   for (const city of CITIES) {
     const data = next.cities[city.id];
     if (next.photoCatalog && (!next.photoCatalog.cities || Object.keys(next.photoCatalog.cities).length !== CITIES.length)) invalid();
@@ -165,7 +167,6 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
       optional[field] = extra;
     } catch { /* An invalid optional group must not discard the compatible Commons catalog. */ }
   }
-  if (nextSelection < currentSelection || (nextSelection === currentSelection && Date.parse(next.collectedAt) <= Date.parse(catalog.collectedAt))) return false;
   if (next.externalRatings !== undefined) {
     if (!Array.isArray(next.externalRatings) || next.externalRatings.some(row => !row || typeof row !== 'object'
       || !next.cities[row.cityId]?.places.some(place => place.id === row.placeId && place.name === row.placeName))
