@@ -63,7 +63,7 @@ test('public root HTML retains SDK 58 metadata, hydration scripts and document a
   const [site, organization, app] = schema['@graph'];
   assert.equal(site.url, 'https://gling.ej-entertainment.com/');
   assert.equal(site.inLanguage, 'ko');
-  assert.match(site.description, /로그인 후/);
+  assert.match(site.description, /로그인하면 전체 글/);
   assert.equal(site.publisher['@id'], organization['@id']);
   assert.equal(app.url, 'https://apps.apple.com/ca/app/id6809273242');
 });
@@ -81,7 +81,7 @@ test('public root escapes JSON-LD script boundaries and omits the home schema on
 
 test('public home, company and Visited routes export initial title, canonical and preview metadata', () => {
   for (const [file, title, canonical] of [
-    ['index', seo.publicSiteName(), 'https://gling.ej-entertainment.com/'],
+    ['index', `${seo.publicSiteName()} · 밴쿠버·토론토·몬트리올`, 'https://gling.ej-entertainment.com/'],
     ['company', '글링 비즈니스 프로필', 'https://gling.ej-entertainment.com/company'],
     ['visited', '밴쿠버 Gling Visited | 글링', 'https://gling.ej-entertainment.com/visited?city=vancouver'],
     ['faq', '글링 자주 묻는 질문 | 캐나다 한인 커뮤니티', 'https://gling.ej-entertainment.com/faq'],
