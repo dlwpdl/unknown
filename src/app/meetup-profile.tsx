@@ -11,6 +11,7 @@ import { Alert, AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Modal
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
+import { MeetupProfileLoyalty } from '@/components/meetup-loyalty';
 import { InfoNote, MoreDetails, WhoSees } from '@/components/notice-blocks';
 import { CityPicker } from '@/components/city-picker';
 import { RaisedActionButton } from '@/components/raised-action-button';
@@ -198,7 +199,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
     <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {loading && isAuthed ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={tr("프로필 불러오는 중")} /></View> : <ScrollView ref={scroll} analyticsId="app_meetup-profile.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
         {!isAuthed ? <Pressable analyticsId="app_meetup-profile.pressable.2" onPress={() => { play('selection'); promptLogin('모임 프로필을 확인하려면 로그인해 주세요.'); }} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent" style={styles.bodyText}>{tr("로그인하기")}</ThemedText></Pressable>
-          : postId ? loaded && !error && <ChillingProfileCard profile={profile} />
+          : postId ? loaded && !error && <><ChillingProfileCard profile={profile} /><MeetupProfileLoyalty postId={postId} userId={userId} /></>
               : loaded && <>
                 <View style={styles.field}>
                   <ThemedText type="subtitle" style={styles.stepTitle}>{tr(steps[step])}</ThemedText>

@@ -35,7 +35,15 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
   ],
   meetup_morning: [[/^(.+) 모임은 오늘 (\d{2}):(\d{2})에 시작해요\. \(모임 장소 기준\)$/, m => `“${m[1]}” starts today at ${clock(m[2], m[3])} local time.`]],
   meetup_cancelled: [[/^(.+) 모임이 마감되거나 취소됐어요\. 모임 글에서 확인해 주세요\.$/, m => `“${m[1]}” was closed or cancelled. Check the meetup post for details.`]],
-  meetup_changed: [[/^(.+) 모임의 시간이나 장소가 바뀌었어요\. 바뀐 내용을 확인해 주세요\.$/, m => `The time or place for “${m[1]}” changed. Check the updated details.`]],
+  meetup_changed: [
+    [/^(.+) 모임의 시간이나 장소가 바뀌었어요\. 바뀐 내용을 확인해 주세요\.$/, m => `The time or place for “${m[1]}” changed. Check the updated details.`],
+    // Host loyalty copy: 20261029130000_host_loyalty.sql. Encore before follower: the follower pattern would also match it.
+    [/^또 열어 달라고 했던 (.+?)님이 새 모임을 열었어요\. ([\s\S]+)$/, m => `You asked ${m[1]} to host again, and they just did: ${m[2]}`],
+    [/^(.+?)님이 새 모임을 열었어요\. ([\s\S]+)$/, m => `${m[1]} just opened a new meetup: ${m[2]}`],
+    [/^「(.+?)」 공지: ([\s\S]+)$/, m => `Note from the host of “${m[1]}”: ${m[2]}`],
+    [/^「(.+?)」 다음 모임 날짜가 잡혔어요\. (\d{2})\/(\d{2}) (\d{2}):(\d{2}) \(모임 현지 시간\)$/, m => `The next “${m[1]}” is set for ${monthDay(m[2], m[3])} at ${clock(m[4], m[5])} (local time).`],
+    [/^「(.+?)」 체크인을 맡게 됐어요\./, m => `You’re on check-in for “${m[1]}”. When the meetup starts, check people in from the attendance screen.`],
+  ],
   trending_post: [[/^오늘 (.+?) 소식, 같이 읽어볼까요\? (.+)$/, (m, translate) => `Today in ${translate(m[1])}: ${m[2]}`], eventPattern],
   city_places: [eventPattern],
   // First-week newcomer nudges (private.send_newcomer_nudges) reuse the trending_meetup kind.
