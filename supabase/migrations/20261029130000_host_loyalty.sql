@@ -264,6 +264,15 @@ begin
   select * into event from public.posts where id=a.post_id;
   if event.id is null or event.author_id<>a.host_id or not private.meetup_is_open(event.status,event.room_preview) then raise exception 'MEETUP_CLOSED'; end if;
   route:='/post/'||event.id::text;
+  -- ADR-0001: targeted notices skip the room, so they wait for the shared safety review and never go out once flagged.
+  if a.audience<>'members' then
+    if exists(select 1 from public.safety_alerts s where s.target_type='meetup_announcement' and s.target_id=a.id)
+      or exists(select 1 from public.safety_review_queue q where q.target_type='meetup_announcement' and q.target_id=a.id and q.risk_level in('high','critical')) then
+      update private.meetup_announcements set cancelled_at=clock_timestamp(),failed_reason='SAFETY_BLOCKED' where id=a.id;
+      return 0;
+    end if;
+    if not exists(select 1 from public.safety_review_queue q where q.target_type='meetup_announcement' and q.target_id=a.id and q.status='reviewed') then return 0; end if;
+  end if;
   if a.audience='members' then
     select id into room from public.conversations where group_post_id=event.id;
     if room is not null then
@@ -310,7 +319,8 @@ begin
     then raise exception 'ANNOUNCEMENT_SCHEDULE_LIMIT'; end if;
   perform private.enforce_rate_limit('meetup_announcement',12,interval '1 day',interval '20 seconds');
   insert into private.meetup_announcements(post_id,host_id,body,audience,send_at) values(event.id,u,clean,p_audience,target) returning id into announcement;
-  if p_send_at is null then perform private.deliver_meetup_announcement(announcement); end if;
+  -- Targeted notices go out from the scheduler once the safety review is clean.
+  if p_send_at is null and p_audience='members' then perform private.deliver_meetup_announcement(announcement); end if;
   return announcement;
 end $$;
 
@@ -333,8 +343,10 @@ create function private.send_due_meetup_announcements() returns integer
 language plpgsql security definer set search_path='' as $$
 declare item record; saved text:=current_setting('request.jwt.claims',true); sent integer:=0;
 begin
-  for item in select id,host_id from private.meetup_announcements where sent_at is null and cancelled_at is null and send_at<=now()
-    order by send_at,id limit 50 for update skip locked
+  for item in select a.id,a.host_id from private.meetup_announcements a where a.sent_at is null and a.cancelled_at is null and a.send_at<=now()
+      and (a.audience='members' or exists(select 1 from public.safety_review_queue q where q.target_type='meetup_announcement' and q.target_id=a.id
+        and (q.status='reviewed' or q.risk_level in('high','critical'))) or exists(select 1 from public.safety_alerts s where s.target_type='meetup_announcement' and s.target_id=a.id))
+    order by a.send_at,a.id limit 50 for update of a skip locked
   loop
     begin
       -- Deliver as the host so send_message keeps every membership, closure and rate check (precedent: 0142).
@@ -349,6 +361,74 @@ begin
   perform set_config('request.jwt.claims',coalesce(saved,''),true);
   return sent;
 end $$;
+
+-- 8b. ADR-0001 coverage for notices sent to pending requesters or the waitlist (member notices are room messages).
+create function private.meetup_announcement_safety_content(p_id uuid) returns jsonb
+language sql stable security definer set search_path='' as $$
+  select jsonb_build_object('authorId',a.host_id,'postId',a.post_id,'audience',a.audience,'createdAt',a.created_at,
+    'text',concat_ws(E'\n','모임 호스트 공지 · 받는 사람: '||case a.audience when 'pending' then '신청 대기자' else '대기 명단' end,a.body))
+  from private.meetup_announcements a where a.id=p_id;
+$$;
+create function public.get_meetup_announcement_safety_content(p_target_id uuid) returns jsonb
+language plpgsql stable security definer set search_path='' as $$
+begin
+  if auth.role() is distinct from 'service_role' then raise exception 'SERVICE_ROLE_REQUIRED'; end if;
+  return private.meetup_announcement_safety_content(p_target_id);
+end $$;
+create function public.get_admin_meetup_announcement_content(p_target_id uuid) returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare content jsonb;
+begin
+  if not private.is_admin() then raise exception 'ADMIN_REQUIRED'; end if;
+  content:=private.meetup_announcement_safety_content(p_target_id);
+  if content is null then raise exception 'TARGET_NOT_FOUND'; end if;
+  perform public.log_admin_access('safety',(content->>'authorId')::uuid,p_target_id);
+  return content;
+end $$;
+
+do $$ declare tbl text; definition text; anchor text;
+begin
+  foreach tbl in array array['safety_review_queue','safety_alerts','notifications'] loop
+    select pg_get_constraintdef(oid) into definition from pg_constraint where conrelid=('public.'||tbl)::regclass and conname=tbl||'_target_type_check';
+    if definition is null or left(definition,7)<>'CHECK (' then raise exception 'target type check missing: %',tbl; end if;
+    execute format('alter table public.%I drop constraint %I',tbl,tbl||'_target_type_check');
+    execute format('alter table public.%I add constraint %I check ((%s) or target_type=''meetup_announcement'')',tbl,tbl||'_target_type_check',substring(definition from 8 for char_length(definition)-8));
+  end loop;
+  definition:=pg_get_functiondef('private.enqueue_safety_review()'::regprocedure);
+  anchor:='when ''chilling_applications'' then ''chilling_application''';
+  if strpos(definition,anchor)=0 then raise exception 'safety queue kind anchor missing'; end if;
+  definition:=replace(definition,anchor,anchor||' when ''meetup_announcements'' then ''meetup_announcement''');
+  anchor:='when ''messages'' then private.message_safety_content(new.id)->>''text''';
+  if strpos(definition,anchor)=0 then raise exception 'safety queue content anchor missing'; end if;
+  execute replace(definition,anchor,'when ''meetup_announcements'' then private.meetup_announcement_safety_content(new.id)->>''text'' '||anchor);
+  definition:=pg_get_functiondef('private.scan_watch_terms()'::regprocedure);
+  anchor:='when ''chilling_applications'' then ''chilling_application''';
+  if strpos(definition,anchor)=0 then raise exception 'watch terms target anchor missing'; end if;
+  definition:=replace(definition,anchor,anchor||' when ''meetup_announcements'' then ''meetup_announcement''');
+  anchor:='(row_json->>''author_id'')::uuid,';
+  if strpos(definition,anchor)=0 then raise exception 'watch terms author anchor missing'; end if;
+  execute replace(definition,anchor,anchor||'(row_json->>''host_id'')::uuid,');
+  definition:=pg_get_functiondef('private.notification_target_visible(uuid,text,uuid)'::regprocedure);
+  anchor:='when ''meetup_attendance'' then private.is_admin_id(p_user_id)';
+  if strpos(definition,anchor)=0 then raise exception 'notification target anchor missing'; end if;
+  execute replace(definition,anchor,anchor||' when ''meetup_announcement'' then private.is_admin_id(p_user_id)');
+  definition:=pg_get_functiondef('public.export_admin_safety_evidence(bigint)'::regprocedure);
+  anchor:='when ''post'' then (select to_jsonb(p) from public.posts p where p.id = a.target_id)';
+  if strpos(definition,anchor)=0 then raise exception 'evidence target anchor missing'; end if;
+  execute replace(definition,anchor,'when ''meetup_announcement'' then private.meetup_announcement_safety_content(a.target_id) '||anchor);
+end $$;
+
+create trigger meetup_announcements_safety_review after insert on private.meetup_announcements
+  for each row when (new.audience<>'members') execute function private.enqueue_safety_review();
+create trigger meetup_announcements_watch_terms after insert on private.meetup_announcements
+  for each row when (new.audience<>'members') execute function private.scan_watch_terms();
+alter function private.meetup_announcement_safety_content(uuid) owner to postgres;
+alter function public.get_meetup_announcement_safety_content(uuid) owner to postgres;
+alter function public.get_admin_meetup_announcement_content(uuid) owner to postgres;
+revoke all on function private.meetup_announcement_safety_content(uuid) from public,anon,authenticated,service_role;
+revoke all on function public.get_meetup_announcement_safety_content(uuid),public.get_admin_meetup_announcement_content(uuid) from public,anon,authenticated;
+grant execute on function public.get_meetup_announcement_safety_content(uuid) to service_role;
+grant execute on function public.get_admin_meetup_announcement_content(uuid) to authenticated;
 
 -- 9. Member roster (pro): attendance with this host, 단골 (3+), host-only note and 정회원.
 create function public.get_meetup_roster(p_post_id uuid) returns jsonb
@@ -559,7 +639,7 @@ begin
 end $$;
 
 select cron.unschedule(jobid) from cron.job where jobname in('gling-meetup-announcements','gling-meetup-next-session');
-select cron.schedule('gling-meetup-announcements','*/5 * * * *',$job$ select private.send_due_meetup_announcements(); $job$);
+select cron.schedule('gling-meetup-announcements','* * * * *',$job$ select private.send_due_meetup_announcements(); $job$);
 select cron.schedule('gling-meetup-next-session','21 * * * *',$job$ select private.open_next_meetup_sessions(); $job$);
 
 insert into private.behavior_targets(id) values

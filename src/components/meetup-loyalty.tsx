@@ -184,7 +184,7 @@ function NoticeComposer({ postId, state, onChanged }: { postId: string; state: M
     pending.current = true; setBusy(true); setMessage(''); play('selection');
     try {
       await postMeetupAnnouncement(supabase, postId, body, audience, scheduled ? sendAt : null);
-      setBody(''); setMessage(scheduled ? '공지를 예약했어요.' : '공지를 보냈어요.'); play('success'); onChanged();
+      setBody(''); setMessage(scheduled ? '공지를 예약했어요.' : audience === 'members' ? '공지를 보냈어요.' : '안전 확인을 마치면 바로 보내 드려요.'); play('success'); onChanged();
     } catch (failure) { setMessage(loyaltyError(failure, '공지를 보내지 못했어요. 잠시 뒤 다시 해 주세요.')); play('warning'); }
     finally { pending.current = false; setBusy(false); }
   };

@@ -3753,4 +3753,5 @@ export const uiEnglish: Record<string, string> = {
   "호스트 팔로우": "Follow host",
   "호스트는 500명까지 팔로우할 수 있어요.": "You can follow up to 500 hosts.",
   "회차가 끝나면 같은 요일·시간으로 다음 회차를 열고 멤버와 팔로워에게 알려요.": "When a session ends, we open the next one on the same day and time and let members and followers know.",
+  "안전 확인을 마치면 바로 보내 드려요.": "It’ll go out as soon as our safety check is done.",
 };

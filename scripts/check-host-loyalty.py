@@ -37,7 +37,7 @@ def setup(database):
     migration = MIGRATION.read_text()
     # The schema-only dump has no pg_cron; the schedules are checked as text below.
     head, cron = migration.split("select cron.unschedule", 1)
-    assert "gling-meetup-announcements" in cron and "*/5 * * * *" in cron and "gling-meetup-next-session" in cron
+    assert "gling-meetup-announcements" in cron and "'* * * * *'" in cron and "gling-meetup-next-session" in cron
     tail = cron.split("$job$);", 2)[-1]
     sql(database, """
 -- Fixture stand-ins for things this local snapshot predates or that depend on store receipts.
@@ -120,8 +120,37 @@ def scenario(database):
     fails(database, H, f"select public.post_meetup_announcement('{GROUP}','예약 공지','members',now()+interval '1 day')", 'PLUS_REQUIRED')
     fails(database, A, f"select public.post_meetup_announcement('{GROUP}','멤버가 보내는 공지')", 'HOST_REQUIRED')
     sql(database, f"insert into private.test_tiers values('{H}','plus')")
+    # ADR-0001: a targeted notice is queued for the shared safety review and goes out only after a clean result.
     as_user(database, H, f"select public.post_meetup_announcement('{GROUP}','신청하신 분들 확인 중이에요','pending')")
+    held = "(select id from private.meetup_announcements where body='신청하신 분들 확인 중이에요')"
+    assert value(database, f"select status from public.safety_review_queue where target_type='meetup_announcement' and target_id={held}") == 'pending'
+    assert value(database, 'select private.send_due_meetup_announcements()') == '0'
+    assert '신청하신 분들' not in notices(database, D)
+    content = json.loads(value(database, f"begin; select set_config('request.jwt.claims','{{\"role\":\"service_role\"}}',true); select public.get_meetup_announcement_safety_content({held}); commit;").splitlines()[-1])
+    assert content['authorId'] == H and '신청 대기자' in content['text'] and '신청하신 분들' in content['text'], content
+    held_id = value(database, f"select {held}")
+    fails(database, H, f"select public.get_meetup_announcement_safety_content('{held_id}')", 'permission denied')
+    fails(database, H, f"select public.get_admin_meetup_announcement_content('{held_id}')", 'ADMIN_REQUIRED')
+    sql(database, f"update public.safety_review_queue set status='reviewed',risk_level='low',risk_score=0.1,reviewed_at=now() where target_type='meetup_announcement' and target_id={held}")
+    assert value(database, 'select private.send_due_meetup_announcements()') == '1'
     assert '신청하신 분들' in notices(database, D) and '신청하신 분들' not in notices(database, A)
+    # A high-risk review cancels it unsent (cancelled notices do not count toward the daily 3).
+    as_user(database, H, f"select public.post_meetup_announcement('{GROUP}','위험 판정 공지','pending')")
+    risky = "(select id from private.meetup_announcements where body='위험 판정 공지')"
+    sql(database, f"update public.safety_review_queue set status='reviewed',risk_level='high',risk_score=0.9,reviewed_at=now() where target_type='meetup_announcement' and target_id={risky}")
+    assert value(database, 'select private.send_due_meetup_announcements()') == '1'
+    assert value(database, f"select failed_reason from private.meetup_announcements where id={risky}") == 'SAFETY_BLOCKED'
+    assert '위험 판정 공지' not in notices(database, D)
+    # A watch-term hit raises the admin alert at insert and blocks delivery even after a clean AI result.
+    sql(database, "insert into private.watch_terms(term,category,severity) values('감시테스트어','violence','high') on conflict do nothing")
+    as_user(database, H, f"select public.post_meetup_announcement('{GROUP}','감시테스트어 들어간 공지','waitlist')")
+    flagged = "(select id from private.meetup_announcements where body='감시테스트어 들어간 공지')"
+    assert value(database, f"select author_id from public.safety_alerts where target_type='meetup_announcement' and target_id={flagged}") == H
+    sql(database, f"update public.safety_review_queue set status='reviewed',risk_level='low',risk_score=0.1,reviewed_at=now() where target_type='meetup_announcement' and target_id={flagged}")
+    sql(database, "select private.send_due_meetup_announcements()")
+    assert value(database, f"select failed_reason from private.meetup_announcements where id={flagged}") == 'SAFETY_BLOCKED'
+    # Members-only notices stay on the room-message path, not the notice queue.
+    assert value(database, "select count(*) from public.safety_review_queue q join private.meetup_announcements a on a.id=q.target_id where q.target_type='meetup_announcement' and a.audience='members'") == '0'
     as_user(database, H, f"select public.post_meetup_announcement('{GROUP}','다음 주 장소 바뀌어요','members',now()+interval '2 hours')")
     fails(database, H, f"select public.post_meetup_announcement('{GROUP}','네 번째')", 'ANNOUNCEMENT_DAILY_LIMIT')
     sql(database, "update private.meetup_announcements set send_at=now()-interval '1 minute' where body='다음 주 장소 바뀌어요'")
