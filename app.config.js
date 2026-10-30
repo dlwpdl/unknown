@@ -13,6 +13,8 @@ module.exports = ({ config }) => {
       ...(localAdmin ? { typedRoutes: false, baseUrl: '' }
         : merchantWeb ? { typedRoutes: false, baseUrl: process.env.GLING_WEB_BASE_URL ?? '' }
         : process.env.GLING_WEB_BASE_URL ? { baseUrl: process.env.GLING_WEB_BASE_URL } : {}),
+      // Public pages load only the chunks their route uses instead of one shared chunk of everything two routes have in common.
+      ...(publicWeb ? { chunking: { mode: 'granular' } } : {}),
     },
     ...(process.env.EXPO_PUBLIC_EAS_PROJECT_ID ? {
       extra: { ...config.extra, eas: { ...config.extra?.eas, projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID } },

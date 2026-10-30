@@ -21,8 +21,6 @@ import { useAuth } from '@/lib/auth';
 import { chillingSchedule, recommendedAgeLabel } from '@/lib/chilling';
 import { appendUniquePosts, loadPublicFeed, loadPublicPost, type FeedCursor } from '@/lib/feed-data';
 import { CITIES, TAGS } from '@/lib/mock';
-import { visibleMeetupBody } from '@/lib/meetup-ai';
-import { splitPlaceMeetupBody } from '@/lib/meetup-destination';
 import { placeMapRoute } from '@/lib/discovery';
 import { googleMapsUrl, postMapBody } from '@/lib/post-maps';
 import { hasAdLabel } from '@/lib/hashtags';
@@ -41,6 +39,14 @@ const BRAND_CARD = `${PUBLIC_SITE}/share-covers/post.png`;
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const palette = Object.fromEntries(Object.entries(WebNightColors).map(([key, value]) => [`--${key}`, value])) as CSSProperties;
 const cities = CITIES.filter((city) => city.state === 'open');
+// Meetup place checks pull the ~150 KB gzip city place catalog, so it loads only once loaded posts include a meetup.
+let meetupPlaces: typeof import('./meetup-place') | null = null;
+const splitPlaceMeetupBody = (body: string, cityId?: string) => meetupPlaces?.splitPlaceMeetupBody(body, cityId) ?? null;
+const visibleMeetupBody = (body: string) => meetupPlaces?.visibleMeetupBody(body) ?? body;
+async function withMeetupPlaces(posts: Post[]) {
+  if (!meetupPlaces && posts.some((post) => post.room)) meetupPlaces = await import('./meetup-place').catch(() => null);
+  return posts;
+}
 
 function MerchantSourceAction({ postId }: { postId: string }) {
   const { play } = useInteractionFeedback(), { tr, language } = useLanguage(), ko = language === 'ko';
@@ -212,7 +218,7 @@ function ReaderContent() {
     if (!hydrated || (!browse && !postId)) return;
     const load = postId ? loadPublicPost(publicWebClient, postId).then((item) => item ? [item] : [])
       : loadPublicFeed(publicWebClient, city.id, tag?.id ?? null, null, null, { viewerScope: 'guest' });
-    void load.then((posts) => {
+    void load.then(withMeetupPlaces).then((posts) => {
       if (active) setResult({ key, posts, more: !postId && posts.length === 30, failed: false });
     }).catch(() => { if (active) setResult({ key, posts: [], more: false, failed: true }); });
     return () => { active = false; };
@@ -225,7 +231,7 @@ function ReaderContent() {
     setBusy(true);
     const cursor: FeedCursor = { id: last.id, createdAt: last.createdAt, sortAt: last.sortAt };
     try {
-      const posts = await loadPublicFeed(publicWebClient, city.id, tag?.id ?? null, null, cursor, { viewerScope: 'guest' });
+      const posts = await loadPublicFeed(publicWebClient, city.id, tag?.id ?? null, null, cursor, { viewerScope: 'guest' }).then(withMeetupPlaces);
       setResult((previous) => previous?.key === key ? { key, posts: appendUniquePosts(previous.posts, posts), more: posts.length === 30, failed: false } : previous);
     } catch { setResult((previous) => previous?.key === key ? { ...previous, failed: true } : previous); }
     finally { setBusy(false); }

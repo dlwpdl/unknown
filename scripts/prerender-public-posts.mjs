@@ -112,7 +112,8 @@ export function renderPublicPost(template, post, related = [], hub = null) {
     + crumbs
     + `<h1 style="margin:0;font-size:24px;line-height:1.35">${escapeHtml(post.title)}</h1>`
     + `<p style="margin:8px 0 0;color:#B7B4C3;font-size:13px">${meta}</p>`
-    + (post.imageUrl ? `<img src="${escapeHtml(post.imageUrl)}" alt="${escapeHtml(post.title)}" style="display:block;width:100%;margin-top:16px;border-radius:12px" loading="lazy"/>` : '')
+    // The cover sits right under the title, so it is usually the largest paint: fetch it first rather than lazily.
+    + (post.imageUrl ? `<img src="${escapeHtml(post.imageUrl)}" alt="${escapeHtml(post.title)}" style="display:block;width:100%;margin-top:16px;border-radius:12px" fetchpriority="high" decoding="async"/>` : '')
     + (text ? `<p style="margin:16px 0 0;white-space:pre-line">${escapeHtml(text)}</p>` : '')
     + `<p style="margin:16px 0 0"><a href="/post?id=${post.id}" style="${LINK}">글링에서 전체 글 읽기</a> · <a href="${topicPath ?? '/'}" style="${LINK}">${escapeHtml(hub ? `${post.city} ${post.label} 이야기 더 보기` : post.city ? `${post.city} 동네 이야기 더 보기` : '동네 이야기 더 보기')}</a></p>`
     + (related.length ? `<h2 style="margin:24px 0 8px;font-size:17px">${escapeHtml(post.city ? `${post.city} 다른 이야기` : '다른 이야기')}</h2><ul style="margin:0;padding-left:20px">${related.map(item => `<li><a href="/posts/${item.id}" style="${LINK}">${escapeHtml(item.title)}</a></li>`).join('')}</ul>` : '')

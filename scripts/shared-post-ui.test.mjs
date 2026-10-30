@@ -91,7 +91,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/components/post-body': { PostBody: 'PostBody' },
     '@/components/content-translation': { TranslationControl: 'TranslationControl', TranslatedCommentBody: 'TranslatedCommentBody' },
     '@/hooks/use-content-translation': { useContentTranslation: (_kind, _id, source) => ({ display: source, translated: false, original: true }) },
-    '@/lib/translation-source': translationSource,
+    '@/lib/translation-source': translationSource, '@/lib/business-disclosure': translationSource,
     '@/lib/post-photo-credits': { splitPostPhotoCredits },
     '@/lib/post-reactions': postReactions,
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
