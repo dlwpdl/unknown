@@ -96,3 +96,18 @@ test('공개 글은 검색용 정적 페이지와 sitemap 항목으로 만들고
     assert.ok(home.includes('type="application/rss+xml"'));
   } finally { rmSync(directory, { recursive: true }); }
 });
+
+test('정적 글 페이지는 큰 공유 카드 메타와 사진 없는 글의 도시 표지를 넣는다', async () => {
+  const { renderPublicPost } = await import('./prerender-public-posts.mjs');
+  const shell = '<html><head><meta name="twitter:card" content="summary" data-rh="true"/></head><body></body></html>';
+  const plain = renderPublicPost(shell, { id: '11111111-1111-4111-8111-111111111111', cityId: 'toronto', city: '토론토', title: '이사 팁', teaser: '박스는 미리' });
+  assert.ok(plain.includes(`<meta property="og:image" content="${PUBLIC_SITE}/share-covers/toronto.png"`));
+  assert.ok(plain.includes('<meta property="og:image:width" content="1200"') && plain.includes('<meta property="og:image:height" content="630"'));
+  assert.ok(plain.includes('<meta property="og:locale" content="ko_KR"') && plain.includes('<meta name="twitter:title" content="이사 팁"') && plain.includes('<meta name="twitter:description" content="박스는 미리"'));
+  assert.equal(plain.match(/twitter:card/g).length, 1);
+  assert.ok(plain.includes('<meta name="twitter:card" content="summary_large_image"'));
+  const other = renderPublicPost(shell, { id: '11111111-1111-4111-8111-111111111111', cityId: 'calgary', title: 't' });
+  assert.ok(other.includes(`${PUBLIC_SITE}/share-covers/post.png`));
+  const photo = renderPublicPost(shell, { id: '11111111-1111-4111-8111-111111111111', cityId: 'toronto', title: 't', imageUrl: 'https://db.example/p.jpg' });
+  assert.ok(photo.includes('content="https://db.example/p.jpg"') && !photo.includes('og:image:width'), 'photo dimensions are unknown, so none are declared');
+});

@@ -41,6 +41,10 @@ export async function loadPublicPosts({ url, key, cities, searchToken, fetcher =
   return posts.sort((a, b) => String(b.lastmod).localeCompare(String(a.lastmod)));
 }
 
+// Photo-less posts share their city's 1200×630 cover (public/share-covers/); per-post title cards would need a Korean font and a text renderer in CI.
+const CITY_COVERS = new Set(['vancouver', 'toronto', 'montreal']);
+export const postCover = cityId => `${PUBLIC_SITE}/share-covers/${CITY_COVERS.has(cityId) ? cityId : 'post'}.png`;
+
 export function renderPublicPost(template, post, related = []) {
   const url = publicPostUrl(post.id), title = `${post.title} | 글링`;
   const hub = post.cityId ? `${PUBLIC_SITE}/${post.cityId}` : null;
@@ -66,8 +70,14 @@ export function renderPublicPost(template, post, related = []) {
     `<meta property="og:title" content="${escapeHtml(post.title)}" data-rh="true"/>`,
     `<meta property="og:description" content="${escapeHtml(description)}" data-rh="true"/>`,
     `<meta property="og:url" content="${url}" data-rh="true"/>`,
-    `<meta property="og:image" content="${escapeHtml(post.imageUrl ?? `${PUBLIC_SITE}/share-covers/post.png`)}" data-rh="true"/>`,
-    `<meta name="twitter:card" content="${post.imageUrl ? 'summary_large_image' : 'summary'}" data-rh="true"/>`,
+    '<meta property="og:locale" content="ko_KR" data-rh="true"/>',
+    `<meta property="og:image" content="${escapeHtml(post.imageUrl ?? postCover(post.cityId))}" data-rh="true"/>`,
+    // Photo sizes are unknown here, so only the fixed-size covers declare dimensions.
+    ...(post.imageUrl ? [] : ['<meta property="og:image:width" content="1200" data-rh="true"/>', '<meta property="og:image:height" content="630" data-rh="true"/>']),
+    `<meta property="og:image:alt" content="${escapeHtml(post.imageUrl ? post.title : `${post.city || '글링'} 동네 이야기`)}" data-rh="true"/>`,
+    '<meta name="twitter:card" content="summary_large_image" data-rh="true"/>',
+    `<meta name="twitter:title" content="${escapeHtml(post.title)}" data-rh="true"/>`,
+    `<meta name="twitter:description" content="${escapeHtml(description)}" data-rh="true"/>`,
     `<script type="application/ld+json" data-rh="true">${jsonLd(schema)}</script>`,
   ].join('');
   // Removed by the shared-post landing once the live preview has rendered.
