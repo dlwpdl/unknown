@@ -4,12 +4,16 @@ import { PUBLIC_SITE, publicAboutGling, publicSiteName } from '@/lib/public-seo'
 export const publicReaderDescription = '밴쿠버·토론토·몬트리올 한인 커뮤니티 글링에서 동네 이야기, 맛집, 렌트·구인·중고, 모임을 둘러보세요. 미리보기는 바로 보고, 로그인하면 전체 글을 읽을 수 있어요.';
 
 
-export function publicMetadata(title: string, description: string, canonical: string): Metadata {
+// 1200×630 covers in public/share-covers/ (rendered by scripts/render-share-covers.py).
+export type ShareCover = 'home' | 'post' | 'vancouver' | 'toronto' | 'montreal' | 'business' | 'meetup' | 'festival';
+export const shareCoverUrl = (cover: ShareCover) => `${PUBLIC_SITE}/share-covers/${cover}.png`;
+
+export function publicMetadata(title: string, description: string, canonical: string, cover: ShareCover = 'home'): Metadata {
   return {
     title, description, robots: 'index, follow, max-image-preview:large',
     alternates: { canonical },
-    openGraph: { type: 'website', siteName: publicSiteName(), title, description, url: canonical, images: [{ url: `${PUBLIC_SITE}/share-covers/post.png`, alt: publicSiteName() }] },
-    twitter: { card: 'summary_large_image', title, description, images: [`${PUBLIC_SITE}/share-covers/post.png`] },
+    openGraph: { type: 'website', siteName: publicSiteName(), locale: 'ko_KR', title, description, url: canonical, images: [{ url: shareCoverUrl(cover), width: 1200, height: 630, alt: title }] },
+    twitter: { card: 'summary_large_image', title, description, images: [{ url: shareCoverUrl(cover), alt: title }] },
   };
 }
 
