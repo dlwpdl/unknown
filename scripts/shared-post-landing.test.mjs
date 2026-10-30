@@ -6,7 +6,8 @@ import ts from 'typescript';
 import { toQR } from 'toqr';
 import { sharedLinkTarget, SHARED_POST_RETURN_KEY } from '../src/lib/sharing.ts';
 import { publicWebTarget } from '../src/lib/public-web.ts';
-import { publicSiteName } from '../src/lib/public-seo.ts';
+import { publicPostDescription, publicPostSchema, publicSiteName } from '../src/lib/public-seo.ts';
+import { CITIES, TAGS } from '../src/lib/mock.ts';
 
 const id='c8f9cd5e-b0a8-46e3-a9d5-462f0c3a24b8',other='70000000-0000-4000-8000-000000000001';
 const canonical=`https://gling.ej-entertainment.com/post?id=${id}`;
@@ -33,7 +34,7 @@ function mount({href=canonical,load=async()=>preview,language='ko',copy=async()=
     '@/hooks/use-theme':{useTheme:()=>({background:'#0B0B12',card:'#171722',text:'#F6F3F0',textSecondary:'#B7B4C3',line:'#343443',accent:'#CBB9FF',accentInk:'#171123',backgroundSelected:'#343443'})},
     '@/hooks/use-language':{useLanguage:()=>({language})},'@/lib/interaction-feedback':{useInteractionFeedback:()=>({play:kind=>feedback.push(kind)})},
     '@/lib/shared-link-preview':{loadSharedLinkPost:(client,postId)=>{calls.push(['post',client,postId,auth.me.id]);return loadPost(postId);},loadSharedLinkPreview:(client,postId)=>{calls.push(['preview',client,postId]);return load(postId);}},
-    '@/lib/public-web-client':{publicWebClient:'ANON_ONLY'},'@/lib/public-seo':{publicSiteName,jsonLd:JSON.stringify,PUBLIC_SITE:'https://gling.ej-entertainment.com'},
+    '@/lib/public-web-client':{publicWebClient:'ANON_ONLY'},'@/lib/public-seo':{publicSiteName,publicPostDescription,publicPostSchema,jsonLd:JSON.stringify,PUBLIC_SITE:'https://gling.ej-entertainment.com'},'@/lib/mock':{CITIES,TAGS},'./static-slot':{adoptStatic:()=>()=>{}},
     '@/lib/auth':{useAuth:()=>({...auth,promptLogin:reason=>calls.push(['login',reason])})},'@/hooks/use-content-visibility':{useContentVisibility:()=>hidden},'@/lib/supabase':{supabase:'AUTHENTICATED'},'./shared-post-article':{SharedPostArticle:'SharedPostArticle'},'@/lib/sharing':{sharedLinkTarget,SHARED_POST_RETURN_KEY},'@/lib/public-web':{publicWebTarget},'./analytics':{useReaderAnalytics(){}}};
   const exported={},source=ts.transpileModule(readFileSync(new URL('../src/components/public-web/shared-post-landing.tsx',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
   vm.runInNewContext(source,{exports:exported,require:name=>{if(name.includes('assets/brand/'))return'brand';assert.ok(name in modules,`Known preview-only import: ${name}`);return modules[name];},window:{location,addEventListener(){},removeEventListener(){},sessionStorage:{setItem:(key,value)=>{if(storageFailure)throw Error('PRIVATE_STORAGE_ERROR');stored.set(key,value);}}},document:{visibilityState:'visible',addEventListener(){},removeEventListener(){}},navigator:{clipboard:{writeText:value=>{calls.push(['copy',value]);return copy(value);}}},URL,URLSearchParams,Math,Map});

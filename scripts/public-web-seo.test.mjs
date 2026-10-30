@@ -67,7 +67,7 @@ test('공개 글은 검색용 정적 페이지와 sitemap 항목으로 만들고
   try {
     writeFileSync(join(directory, '+not-found.html'), '<html><head><meta charSet="utf-8"/><title data-rh="true">old</title><meta name="robots" content="noindex, nofollow" data-rh="true"/></head><body><div id="root">app</div></body></html>');
     await assert.rejects(prerenderPublicPosts(directory, { url: 'https://db.example', key: 'anon', cities: ['vancouver'], fetcher }), /GLING_SEARCH_BUILD_TOKEN/);
-    const posts = await prerenderPublicPosts(directory, { url: 'https://db.example', key: 'anon', cities: ['vancouver', 'toronto'], searchToken: 'build-token', fetcher });
+    const { posts } = await prerenderPublicPosts(directory, { url: 'https://db.example', key: 'anon', cities: ['vancouver', 'toronto'], searchToken: 'build-token', fetcher });
     assert.deepEqual(posts.map(post => post.id), [visible]);
     assert.ok(calls.every(([, key]) => key === 'anon'));
     const page = readFileSync(join(directory, 'posts', `${visible}.html`), 'utf8');
