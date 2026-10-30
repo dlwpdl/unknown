@@ -8,7 +8,7 @@ import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Animated, Easing, LayoutAnimation, Platform, Share, StyleSheet, UIManager, View } from 'react-native';
+import { Alert, Animated, Easing, LayoutAnimation, Platform, StyleSheet, UIManager, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 
@@ -123,35 +123,13 @@ export default function ProfileScreen() {
     }
   };
 
-  const shareAppInvite = async () => {
-    play('selection');
-    const url = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/+$/, '');
-    const message = tr('글링에서 동네 이야기와 모임을 함께 나눠요.');
-    try {
-      if (Platform.OS === 'web') {
-        if (navigator.share) await navigator.share({ title: tr('글링에 초대해요'), text: message, url });
-        else if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(url);
-          window.alert(tr('초대 링크를 복사했어요.'));
-        } else window.prompt(tr('초대 링크를 복사하세요'), url);
-        return;
-      }
-      await Share.share({ title: tr('글링에 초대해요'), message: `${message}\n${url}`, url });
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') return;
-      play('warning');
-      if (Platform.OS === 'web') window.alert(tr('초대 링크를 공유하지 못했어요. 다시 시도해 주세요.'));
-      else Alert.alert(tr("공유할 수 없어요"), tr("잠시 후 다시 시도해 주세요."));
-    }
-  };
-
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen options={{ headerShown: true, title: tr('내 프로필'), headerRight: () => (
         <View style={styles.headerActions}>
           <ChatIdentitySwitcher target="business" />
-          <Pressable analyticsId="app_profile_index.invite" accessibilityRole="button" accessibilityLabel={tr('친구 초대하기')} accessibilityHint={tr('글링 초대 링크를 다른 앱으로 공유합니다')}
-            onPress={() => { void shareAppInvite(); }} style={styles.headerButton}>
+          <Pressable analyticsId="app_profile_index.invite" accessibilityRole="button" accessibilityLabel={tr('친구 초대하기')} accessibilityHint={tr('초대 링크와 받은 이용권을 봐요')}
+            onPress={() => { play('selection'); router.push('/profile/invite'); }} style={styles.headerButton}>
             <SymbolView name={{ ios: 'square.and.arrow.up', android: 'share', web: 'share' }} size={22} tintColor={theme.text} />
           </Pressable>
           <Pressable analyticsId="app_profile_index.pressable.8" accessibilityRole="button" accessibilityLabel={t.profile.settings}
@@ -234,6 +212,13 @@ export default function ProfileScreen() {
               <ThemedText type="smallBold">{tr('모임 후기 · 매너 평가')}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">{tr('내 후기와 매너 평가 관리')}</ThemedText>
             </View>
+            <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
+          </Pressable>
+          <Pressable analyticsId="profile.invite" accessibilityRole="button" accessibilityLabel={tr('친구 초대')}
+            onPress={() => { play('selection'); router.push('/profile/invite'); }}
+            style={({ pressed }) => [styles.accountRow, { backgroundColor: pressed ? theme.backgroundSelected : theme.card }]}>
+            <View style={[styles.accountIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'gift', android: 'redeem', web: 'redeem' }} size={22} tintColor={theme.navy} /></View>
+            <View style={styles.accountText}><ThemedText type="smallBold">{tr('친구 초대')}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('친구가 첫 모임에 오면 플러스 2주 이용권')}</ThemedText></View>
             <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
           </Pressable>
           <MerchantAccountEntry />

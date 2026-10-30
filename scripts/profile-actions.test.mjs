@@ -51,7 +51,7 @@ test('profile header offers the shared switcher before invite and settings, then
   assert.equal(app.routes.at(-1), '/profile/settings');
   assert.equal(app.feedback.at(-1), 'selection');
   nodes(header).find(n => n.props.analyticsId === 'app_profile_index.invite').props.onPress();
-  assert.equal(app.shares.length, 1); assert.match(app.shares[0].message, /https:\/\/gling\.ej-entertainment\.com/);
+  assert.equal(app.routes.at(-1), '/profile/invite', 'The invite button opens the invite page with the personal link and passes.');
   assert.equal(nodes(tree).filter(n => n.type === 'ScrollView').length, 1);
   app.signOut();
   const guest = app.render();

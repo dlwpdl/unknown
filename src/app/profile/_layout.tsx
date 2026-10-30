@@ -39,6 +39,7 @@ export default function ProfileLayout() {
       <Stack.Screen name="membership" options={{ title: tr('멤버십'), presentation: 'modal', animation: reducedMotion ? 'none' : 'slide_from_bottom' }} />
       <Stack.Screen name="merchant" options={{ title: tr('비즈니스') }} />
       <Stack.Screen name="meetup-reviews" options={{ title: tr('모임 후기') }} />
+      <Stack.Screen name="invite" options={{ title: tr('친구 초대') }} />
       <Stack.Screen name="trust" options={{ title: tr('인증 단계') }} />
       <Stack.Screen name="saved" options={{ title: t.profile.saved }} />
       <Stack.Screen name="promotions" options={{ title: tr(PROMOTIONS_PREVIEW_ENABLED ? '홍보 크레딧' : ''), headerShown: PROMOTIONS_PREVIEW_ENABLED }} />

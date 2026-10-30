@@ -140,7 +140,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
         if (offer.planVersion === 2 && verified.billingPolicyVersion !== 2) throw new Error('MEMBERSHIP_SCHEMA_NOT_READY');
       }
       const nativeStore = Platform.OS === 'ios' ? 'app_store' : 'play_store';
-      if (offer && before.tier !== 'free' && before.store !== nativeStore && before.store !== 'test_store') {
+      if (offer && before.tier !== 'free' && before.store !== nativeStore && before.store !== 'test_store' && before.store !== 'reward') {
         setNotice("이미 다른 스토어에서 구독 중이에요. 구독 관리에서 변경해 주세요."); return;
       }
       if (offer && kind === 'business') {
@@ -154,7 +154,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
         const item = packages.current?.userId === userId ? packages.current.values.get(offer.id) : null;
         if (!item || item.product.identifier !== offer.productId) throw new Error('OFFER_UNAVAILABLE');
         if (before.productId === offer.productId && before.tier !== 'free') throw new Error('ALREADY_SUBSCRIBED');
-        const change = Platform.OS === 'android' && before.tier !== 'free' && before.productId
+        const change = Platform.OS === 'android' && before.tier !== 'free' && before.store !== 'reward' && before.productId
           ? { oldProductIdentifier: before.productId, prorationMode: sdk.PRORATION_MODE.DEFERRED }
           : null;
         await sdk.purchasePackage(item, null, change);
@@ -202,7 +202,9 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
   const manage = useCallback(async (kind?: MembershipKind) => {
     try {
       const family = kind ?? (pending?.userId === userId ? pending.kind : 'general');
-      const store = (membership ? subscription(membership, family).store : null) ?? (Platform.OS === 'ios' ? 'app_store' : 'play_store');
+      const current = membership ? subscription(membership, family).store : null;
+      // An invite pass has no store page; open this phone's own subscription list.
+      const store = current && current !== 'reward' ? current : Platform.OS === 'ios' ? 'app_store' : 'play_store';
       await Linking.openURL(store === 'app_store' ? 'https://apps.apple.com/account/subscriptions'
         : 'https://play.google.com/store/account/subscriptions?package=com.dlwpdl.gling');
     } catch { setError("구독 관리를 열지 못했어요. 결제한 스토어에서 구독을 확인해 주세요."); }

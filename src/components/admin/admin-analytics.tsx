@@ -68,7 +68,7 @@ export function AdminAnalyticsView({ localPreview, onUser, refreshSignal = 0 }: 
           {loading && <View accessibilityRole="progressbar" accessibilityLabel="분석 데이터 불러오는 중" style={styles.notice}><ThemedText style={styles.muted}>선택한 조건으로 분석하고 있어요.</ThemedText></View>}
           {error && <View accessibilityRole="alert" style={styles.notice}><ThemedText style={styles.accent}>분석 데이터를 불러오지 못했어요. 관리자 권한과 연결 상태를 확인해 주세요.</ThemedText><Action label="다시 시도" onPress={() => setRetry((value) => value + 1)} /></View>}
           {!loading && !error && <>
-            {tab === 'growth' && <Members data={data} />}
+            {tab === 'growth' && <><Members data={data} /><InviteLinks refreshSignal={refreshSignal + retry} /></>}
             {tab === 'activity' && <><Traffic data={data} onUser={onUser} /><Behavior data={data} /></>}
             {tab === 'revenue' && <Revenue data={data} onUser={onUser} />}
             {tab === 'quality' && <Logs data={data} />}
@@ -87,6 +87,27 @@ function Members({ data }: { data: AdminAnalytics | null }) {
       <Distribution title="선호 지역별 회원" rows={data?.cities} label={cityLabel} />
       <Distribution title="연령대" rows={data?.ages} label={ageLabel} />
     </View>
+  </Card>;
+}
+
+type InviteLinkRow = { code: string; createdAt: string; ownerNickname: string; businessName: string | null; joined: number; attended: number; businessPosted: number; rewarded: number; notCounted: number };
+// Per invite link (a member's link or a business's QR link): who signed up and what happened next.
+function InviteLinks({ refreshSignal }: { refreshSignal: number }) {
+  const [state, setState] = useState<{ rows: InviteLinkRow[] | null; error: boolean }>({ rows: null, error: false });
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve(supabase.rpc('get_admin_invite_links')).then(({ data, error }) => { if (active) setState({ rows: error ? null : (data as InviteLinkRow[]), error: !!error }); },
+      () => { if (active) setState({ rows: null, error: true }); });
+    return () => { active = false; };
+  }, [refreshSignal]);
+  return <Card title="초대 링크" icon="↗" tone="accent" count={state.rows ? `${number(state.rows.length)}개` : undefined} info={[
+    '회원 초대 링크와 가게 QR 링크마다 몇 명이 가입했고 그다음 무엇을 했는지 보여요. 가입한 사람이 많은 순으로 300개까지예요.',
+    '첫 모임: 그 링크로 가입한 사람 중 모임 참석이 확인된 사람 수예요. 첫 글: 가입한 사람의 가게가 직접 첫 글을 올린 수예요.',
+    '이용권 지급: 초대한 쪽에 이용권이 나간 수예요. 인정 안 됨: 같은 기기·같은 연락처, 자기 초대, 8주 상한 때문에 이용권이 나가지 않은 수예요.',
+  ]}>
+    {state.error ? <Notice title="초대 링크 기록을 불러오지 못했어요" text="관리자 로그인과 연결 상태를 확인한 뒤 새로고침해 주세요." />
+      : <DataTable headers={['링크', '만든 사람 / 가게', '가입', '첫 모임', '첫 글', '이용권 지급', '인정 안 됨']} rows={(state.rows ?? []).map((row) => ({ key: row.code,
+        cells: [row.code, row.businessName ? `${row.businessName} (${row.ownerNickname})` : row.ownerNickname, number(row.joined), number(row.attended), number(row.businessPosted), number(row.rewarded), number(row.notCounted)] }))} />}
   </Card>;
 }
 
