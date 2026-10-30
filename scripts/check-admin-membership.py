@@ -50,7 +50,7 @@ try:
         "create or replace function cron.unschedule(id bigint) returns boolean language sql as $$ delete from cron.job where jobid=id returning true $$;")
     # The local source DB already carries the business-membership bodies this builds on (its history table lags);
     # only invite rewards and this migration are replayed, as in check-invite-rewards.py.
-    replayed = ['20261029120000_invite_rewards.sql', '20261030090000_admin_membership_grants.sql']
+    replayed = ['20261029120000_invite_rewards.sql', '20261030100000_admin_membership_grants.sql']
     for name in replayed:
         sql((ROOT / 'supabase/migrations' / name).read_text())
     passed = {}
