@@ -90,5 +90,9 @@ test('공개 글은 검색용 정적 페이지와 sitemap 항목으로 만들고
     assert.match(home, /<body class="x"><section id="gling-static-home"[^]*한인을 위한 무료 커뮤니티 앱[^]*href="\/posts\/11111111/);
     assert.ok(home.includes('href="/montreal"') && vancouver.includes('밴쿠버 한인 최근 이야기') && vancouver.includes(`/posts/${visible}`));
     assert.ok(toronto.includes('id="gling-static-home"') && !toronto.includes(`/posts/${visible}`), 'city hubs list only their own posts');
+    const rss = readFileSync(join(directory, 'rss.xml'), 'utf8');
+    assert.ok(rss.startsWith('<?xml') && rss.includes(`<link>${PUBLIC_SITE}/montreal</link>`) && rss.includes(`<link>${PUBLIC_SITE}/posts/${visible}</link>`));
+    assert.ok(rss.includes('코퀴틀람 &#60;카페&#62;') && !rss.includes('<카페>'), 'feed text is escaped');
+    assert.ok(home.includes('type="application/rss+xml"'));
   } finally { rmSync(directory, { recursive: true }); }
 });
