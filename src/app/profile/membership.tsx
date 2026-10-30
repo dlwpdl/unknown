@@ -19,7 +19,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CONTACT_EMAIL } from '@/lib/legal-documents';
-import { BUSINESS_LIMITS, GENERAL_BUMP_HOURS, MEMBERSHIP_LIMITS, yearlyListPrice, type BusinessMembershipSnapshot, type MembershipKind, type MembershipOffer } from '@/lib/membership';
+import { BUSINESS_LIMITS, GENERAL_BUMP_HOURS, MEETUP_TOOL_PERKS, MEMBERSHIP_LIMITS, yearlyListPrice, type BusinessMembershipSnapshot, type MembershipKind, type MembershipOffer } from '@/lib/membership';
 import { useMembership } from '@/lib/membership-provider';
 import { loadMyMerchants, type BusinessMerchant } from '@/lib/merchant-workspace';
 import { supabase } from '@/lib/supabase';
@@ -234,7 +234,7 @@ export default function MembershipScreen() {
                   <ThemedText type="smallBold" themeColor={kind === 'business' && index < 2 ? 'accent' : undefined} style={styles.center}>{value}</ThemedText>
                 </View>)}
               </View>
-              {kind === 'general' && <ThemedText type="small" themeColor="textSecondary">{tr("모임 도구")} · {tr(plan.tier === 'plus' ? '템플릿 · 질문 재사용' : plan.tier === 'pro' ? '플러스 + 반복 회차 · 대기 명단' : '프로 + 신청·참석 통계')}</ThemedText>}
+              {kind === 'general' && <ThemedText type="small" themeColor="textSecondary">{tr("모임 도구")} · {MEETUP_TOOL_PERKS[plan.tier].map(perk => tr(perk)).join(' · ')}</ThemedText>}
             </Pressable>;
           })}
           <View style={[styles.free, { borderColor: theme.line }]}>
@@ -261,7 +261,11 @@ export default function MembershipScreen() {
                   [tr("공동 호스트"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => MEMBERSHIP_LIMITS[tier].cohosts ? String(MEMBERSHIP_LIMITS[tier].cohosts) : '–')],
                   [tr("모임 자리"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => String(MEMBERSHIP_LIMITS[tier].meetups))],
                   [tr("템플릿"), '–', '✓', '✓', '✓'],
+                  [tr("조건 맞는 신청 바로 승인"), '–', '✓', '✓', '✓'],
+                  [tr("참석 인원 미리 보기 · 노쇼 규칙"), '–', '✓', '✓', '✓'],
+                  [tr("대기 순서 우선 · 새 모임 소식 먼저"), '–', '✓', '✓', '✓'],
                   [tr("반복·대기 명단"), '–', '–', '✓', '✓'],
+                  [tr("빈자리 대기자에게 자동으로 넘기기"), '–', '–', '✓', '✓'],
                   [tr("신청·참석 통계"), '–', '–', '–', '✓'],
                   [tr("판매·구인 글"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => String(MEMBERSHIP_LIMITS[tier].listings))],
                   [tr("글 끌올 간격"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => tr("{0}시간", GENERAL_BUMP_HOURS[tier]))],

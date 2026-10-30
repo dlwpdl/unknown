@@ -19,7 +19,7 @@ const FAILURES: Record<string, string> = { client_error: '앱 화면 오류', ph
 const NOTIFICATION_KINDS: Record<string, string> = {
   comment: '내 글 댓글', reply: '내 댓글 답글', post_like: '내 글 좋아요', comment_like: '댓글·답글 좋아요', message: '새 메시지', message_reaction: '메시지 반응',
   meetup_request: '모임 신청', meetup_approved: '모임 신청 승인', meetup_rejected: '모임 신청 거절', meetup_reminder: '모임 일정 안내',
-  meetup_morning: '모임 당일 안내', meetup_changed: '모임 변경', meetup_cancelled: '모임 취소', meetup_review_request: '모임 후기 요청',
+  meetup_morning: '모임 당일 안내', meetup_changed: '모임 변경', meetup_cancelled: '모임 취소', meetup_review_request: '모임 후기 요청', meetup_host_tip: '빈 모임 호스트 안내',
   interest_post: '관심 태그의 새 글', nearby_meetup: '내 지역의 새로운 모임', trending_post: '내 도시에서 지금 뜨는 글', trending_meetup: '인기 모임',
   trending_hashtag: '인기 주제', weekly_ranking: '주간 인기 글 순위', city_food: '내 도시의 맛집·레스토랑', city_places: '내 도시의 가볼 만한 곳·행사',
   saved_merchant_post: '저장한 비즈니스 새 소식', merchant_review_received: '비즈니스 후기', merchant_review_verified: '비즈니스 후기 인증',

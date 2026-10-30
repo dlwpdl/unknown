@@ -310,7 +310,7 @@ test('failed OAuth exchange preserves the invitation and shows a retry explanati
 });
 
 test('the exported PostDetail guest wrapper renders only a login gate and never loads comments or the supplied body', async context => {
-  const requests = [], components = ['TicketmasterSourceLink','MerchantSourceLink','MerchantReviews','MeetupReviews','PostPoll','PostCard','PostBodyEditor','PostPhotoGallery','PostPhotoEditor','PostPhotoCredits','ChillingHostProfile','ReportSheet','TrustBadge','UserSheet'];
+  const requests = [], components = ['TicketmasterSourceLink','MerchantSourceLink','MerchantReviews','MeetupReviews','PostPoll','MeetupRsvp','PostCard','PostBodyEditor','PostPhotoGallery','PostPhotoEditor','PostPhotoCredits','ChillingHostProfile','ReportSheet','TrustBadge','UserSheet'];
   const imports = Object.fromEntries(components.map(name => [`@/components/${name.replace(/[A-Z]/g, (letter, index) => `${index ? '-' : ''}${letter.toLowerCase()}`)}`, { [name]: name }]));
   Object.assign(imports, {
     'expo-image-picker': {}, '@/constants/theme': { Depth: {}, Spacing: {} }, '@/i18n/ko': { t: {}, count: () => '' },
@@ -321,7 +321,7 @@ test('the exported PostDetail guest wrapper renders only a login gate and never 
   const harness = mount('../src/components/post-detail.tsx', 'PostDetail', { auth: { isAuthed: false }, imports }, { post: post(), onClose() {} }); context.after(() => harness.unmount()); await harness.settle();
   assert.deepEqual(requests, []); assert.equal(harness.calls.filter(call => call[0] === 'full-post').length, 0);
   assert.equal(harness.calls.filter(call => call[0] === 'rpc').length, 0, 'guest gate never requests private review or poll data');
-  assert.ok(!harness.nodes().some(node => ['MerchantReviews', 'MeetupReviews', 'PostPoll'].includes(node.type)), 'guest gate does not mount review or voting controls');
+  assert.ok(!harness.nodes().some(node => ['MerchantReviews', 'MeetupReviews', 'PostPoll', 'MeetupRsvp'].includes(node.type)), 'guest gate does not mount review or voting controls');
   assert.ok(!JSON.stringify(harness.render()).includes('private-body-and-venue-sentinel'));
   const gate = harness.nodes().find(node => node.type === 'StateCard'); assert.ok(gate); gate.props.onAction(); assert.equal(harness.calls.filter(call => call[0] === 'login').length, 1);
 });
