@@ -19,6 +19,7 @@ import { displayName } from '@/lib/admin-labels';
 import { NicknameEditor } from '@/components/nickname-editor';
 import { changeProfileNickname } from '@/lib/nickname';
 import { AdminUserBusiness } from './admin-user-business';
+import { AdminUserMembership } from './admin-user-membership';
 import { AdminButton, AdminCard, AdminFacts, AdminInfo, AdminPill, AdminTrace, type AdminTone } from './admin-ui';
 
 const MAIN_ACTIVITY_KINDS: ActivityKind[] = ['all', 'post', 'comment', 'message', 'meetup', 'report'];
@@ -189,6 +190,9 @@ export function AdminUserReview({ userId, profiles, onStatusChange, onTrustLevel
             ))}
             {trustBusy && <ThemedText type="small" accessibilityLiveRegion="polite" style={styles.muted}>바꾸는 중…</ThemedText>}
           </View> : <ThemedText type="smallBold">{profile.verification_level}단계</ThemedText>}
+        </AdminCard>
+        <AdminCard icon="◆" tone="accent" title="멤버십" info={['관리자 지급은 스토어 결제와 별개예요. 자동으로 결제되거나 갱신되지 않고, 끝나는 날 밤까지만 적용돼요.', '스토어 결제나 초대 이용권이 더 높으면 그쪽이 적용돼요. 지급·해제는 누가 언제 했는지 변경 기록에 남아요.']}>
+          <AdminUserMembership key={userId} userId={userId} active={profile.account_status === 'active'} />
         </AdminCard>
         <View style={styles.cardRow}>
           <AdminCard icon="✎" tone="navy" title="닉네임" style={styles.halfCard}>
