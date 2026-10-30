@@ -13,6 +13,7 @@ import { ThemedText } from '@/components/themed-text';
 import { NearbyCityCard } from '@/components/nearby-city-card';
 import { ContentTranslationSettings } from '@/components/content-translation';
 import { PersonalInfoCard } from '@/components/personal-info-card';
+import { resetStartGuide } from '@/components/start-guide';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme, useThemePreference } from '@/hooks/use-theme';
@@ -187,6 +188,12 @@ export default function SettingsScreen() {
 
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{tr("도움말 및 정책")}</ThemedText>
           <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+            <Pressable analyticsId="settings.start-guide.reset" accessibilityRole="button"
+              onPress={() => { play('selection'); void resetStartGuide().then(() => router.navigate('/')); }}
+              style={({ pressed }) => [styles.navRow, pressed && { backgroundColor: theme.backgroundSelected }]}>
+              <View style={styles.navCopy}><ThemedText type="smallBold">{tr("처음 안내 다시 보기")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("오늘 화면 위에 도시 고르기·화면 안내·모임 구경 카드를 다시 띄워요")}</ThemedText></View><ThemedText themeColor="textSecondary">›</ThemedText>
+            </Pressable>
+            <View style={[styles.divider, { backgroundColor: theme.line }]} />
             <Pressable analyticsId="app_profile_settings.pressable.3" onPress={() => { play('selection'); openSupport(); }} accessibilityRole="link" style={({ pressed }) => [styles.navRow, pressed && { backgroundColor: theme.backgroundSelected }]}>
               <View style={styles.navCopy}><ThemedText type="smallBold">{t.profile.support}</ThemedText><ThemedText type="small" themeColor="textSecondary">{supportEmail ?? t.profile.supportNeedsSetup}</ThemedText></View><ThemedText themeColor="textSecondary">›</ThemedText>
             </Pressable>
