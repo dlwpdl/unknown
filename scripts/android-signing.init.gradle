@@ -17,6 +17,11 @@ allprojects { p ->
             releaseBuild.setProguardFiles(releaseBuild.proguardFiles.collect { rules ->
                 rules == defaultRules ? optimizedRules : rules
             })
+            // Room builds WorkManager's database by reflection; full R8 dropped its constructor and 1.4.5 crashed at launch.
+            def keepRules = new File(p.buildDir, 'gling-keep-rules.pro')
+            keepRules.parentFile.mkdirs()
+            keepRules.text = '-keep class * extends androidx.room.RoomDatabase { <init>(...); }\n'
+            releaseBuild.proguardFile(keepRules)
         }
     }
 }
