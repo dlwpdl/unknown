@@ -17,7 +17,7 @@ test('the shared language provider updates web document language and leaves nati
       'react/jsx-runtime': { jsx: (type, props) => ({ type, props }) },
       'react-native': { Platform: { OS: platform }, I18nManager: {}, Settings: {}, AppState: { addEventListener: () => ({ remove() {} }) } },
       '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async () => language } },
-      '@/i18n': { setActiveLanguage() {}, translateUi: value => value, translationsFor: () => ({}) },
+      '@/i18n': { setActiveLanguage() {}, uiEnglishPending: () => null, translateUi: value => value, translationsFor: () => ({}) },
       '@/i18n/language': { parseLanguagePreference, resolveLanguage },
     };
     vm.runInNewContext(code, { exports: exported, document, navigator: { languages: [language] }, require: name => modules[name] });

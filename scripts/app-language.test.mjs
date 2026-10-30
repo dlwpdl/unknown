@@ -130,7 +130,7 @@ test('public SSR language seed renders immediately, then restores saved or devic
       react: hooks, 'react/jsx-runtime': { jsx: (type, props) => ({ type, props }) },
       '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async key => { assert.equal(key, 'gling.language'); return stored; }, setItem: async (...args) => { writes.push(args); } } },
       'react-native': { Platform: { OS: 'web' }, AppState: { addEventListener: () => ({ remove() {} }) } },
-      '@/i18n': { setActiveLanguage() {} }, '@/i18n/language': { resolveLanguage, parseLanguagePreference },
+      '@/i18n': { setActiveLanguage() {}, uiEnglishPending: () => null }, '@/i18n/language': { resolveLanguage, parseLanguagePreference },
     };
     vm.runInNewContext(code, { exports, Intl, navigator: { languages: ['en-CA'] }, require: name => modules[name] ?? {} });
     return { writes, render() { index = 0; return exports.LanguagePreferenceProvider({ children: 'SSR_CONTENT', ...props }); }, async flush() { effects.splice(0).forEach(effect => effect()); await new Promise(setImmediate); } };
@@ -145,4 +145,25 @@ test('public SSR language seed renders immediately, then restores saved or devic
   const saved = mount('ko', { initialLanguage: 'ko' });saved.render();await saved.flush();
   assert.equal(saved.render().props.value.language, 'ko', 'Saved choice continues to outrank device language');
   assert.deepEqual(seeded.writes, []);assert.deepEqual(saved.writes, [], 'Restoring language never overwrites the saved preference');
+});
+
+test('web fetches the English UI dictionary only on demand and translates once it arrives', async () => {
+  const { readFileSync } = await import('node:fs');
+  const vm = await import('node:vm');
+  const ts = (await import('typescript')).default;
+  const source = readFileSync(new URL('../src/i18n/index.ts', import.meta.url), 'utf8');
+  let loads = 0, finish;
+  const exports = {}, modules = {
+    './en.ts': { en: {} }, './ko.ts': { t: {}, count: () => '' },
+    './ui-en-source.ts': { loadUiEnglish: () => { loads++; return new Promise(resolve => { finish = resolve; }); } },
+  };
+  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText,
+    { exports, Proxy, Map, Promise, Object, String, Number, process: { env: { EXPO_OS: 'web' } }, require: name => modules[name] });
+  assert.equal(loads, 0, 'Korean pages never fetch the English dictionary');
+  const pending = exports.uiEnglishPending();
+  assert.ok(pending && exports.uiEnglishPending() === pending && loads === 1);
+  assert.equal(exports.translateUi('en', '설정'), '설정');
+  finish({ 설정: 'Settings' }); await pending;
+  assert.equal(exports.translateUi('en', '설정'), 'Settings');
+  assert.equal(exports.uiEnglishPending(), null);
 });
