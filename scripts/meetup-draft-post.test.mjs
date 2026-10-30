@@ -9,9 +9,9 @@ import * as contract from '../supabase/functions/draft-post/meetup-draft.ts';
 const draft = { categorySlug: 'meetup', title: '산책하며 이야기해요', body: '가볍게 걸을 이웃을 찾아요.', hashtags: [], purpose: '서로 알아가요.', activities: ['인사를 나눠요.', '편한 속도로 걸어요.'], fit: '걷기를 좋아하는 분', preparation: [], applicationQuestion: '어떤 산책을 좋아하세요?' };
 const input = { cityName: '밴쿠버', selectedCategory: 'meetup', intent: 'meetup', topic: '주말 산책', language: 'ko' };
 
-function setup({ output = draft, user = true, consent = true, quotaError, providerOk = true } = {}) {
+function setup({ output = draft, user = true, consent = true, quotaError, quotaData, providerOk = true } = {}) {
   let handler;
-  const calls = [], requests = [];
+  const calls = [], requests = [], rpcArgs = [];
   const source = ts.transpileModule(readFileSync(new URL('../supabase/functions/draft-post/index.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
   vm.runInNewContext(source, {
     exports: {}, Request, Response, console: { error() {} },
@@ -19,14 +19,14 @@ function setup({ output = draft, user = true, consent = true, quotaError, provid
     require: name => name.includes('meetup-draft') ? contract : name.includes('post-draft') ? postDraftContract : ({ createClient: () => ({
       auth: { getUser: async () => ({ data: { user: user ? { id: 'member' } : null } }) },
       from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: consent ? { ai_safety_consent_at: '2026-09-11' } : null }) }) }) }),
-      rpc: async name => { calls.push(name); return { error: quotaError }; },
+      rpc: async (name, args) => { calls.push(name); rpcArgs.push(args); return name.startsWith('release') ? { error: null } : { data: quotaData, error: quotaError }; },
     }) }),
     fetch: async (url, options) => {
       requests.push({ url, ...JSON.parse(options.body) });
       return providerOk ? Response.json({ output: [{ content: [{ type: 'output_text', text: JSON.stringify(output) }] }] }) : new Response('upstream unavailable', { status: 503 });
     },
   });
-  return { calls, requests, request: (body = input, auth = true) => handler(new Request('https://example.test/draft-post', { method: 'POST', headers: auth ? { Authorization: 'Bearer test' } : {}, body: JSON.stringify(body) })) };
+  return { calls, rpcArgs, requests, request: (body = input, auth = true) => handler(new Request('https://example.test/draft-post', { method: 'POST', headers: auth ? { Authorization: 'Bearer test' } : {}, body: JSON.stringify(body) })) };
 }
 
 test('one topic uses the existing authenticated provider and quota with an explicit bounded meetup schema', async () => {
@@ -98,4 +98,39 @@ test('photo-only generation and category-only meetup feed drafts retain their ex
   const meetup = setup(); assert.equal((await meetup.request({ ...base, intent: 'meetup', selectedCategory: 'meetup' })).status, 200);
   assert.equal(meetup.requests[0].input[0].content[1].image_url, 'data:image/png;base64,aGVsbG8=');
   assert.equal(JSON.parse(meetup.requests[0].input[0].content[0].text).mode, 'create_meetup');
+});
+
+const titleInput = { cityName: '밴쿠버', selectedCategory: 'meetup', intent: 'meetup_title', titleHint: '  퇴근 후 보드게임  ', draftKey: '11111111-2222-4333-8444-555555555555', language: 'ko' };
+
+test('a title-only draft reserves per meetup screen, keeps the typed title and reports regeneration', async () => {
+  const app = setup({ quotaData: { dailyUsed: 2, canRegenerate: false } });
+  const response = await app.request(titleInput);
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.draft.title, '퇴근 후 보드게임');
+  assert.equal(body.draft.applicationQuestion, draft.applicationQuestion);
+  assert.equal(body.remaining, 3); assert.equal(body.canRegenerate, false);
+  assert.deepEqual(app.calls, ['reserve_meetup_title_draft']);
+  assert.deepEqual({ ...app.rpcArgs[0] }, { p_draft_key: titleInput.draftKey });
+  assert.equal(JSON.parse(app.requests[0].input[0].content[0].text).mode, 'create_meetup_from_title');
+});
+
+test('title-only drafts reject long titles and extra input before any quota or provider call', async () => {
+  for (const change of [{ titleHint: 'x'.repeat(31) }, { titleHint: '   ' }, { draftKey: 'nope' }, { bodyHint: '소개' }, { selectedCategory: 'life' }]) {
+    const app = setup();
+    assert.equal((await app.request({ ...titleInput, ...change })).status, 400);
+    assert.equal(app.calls.length, 0); assert.equal(app.requests.length, 0);
+  }
+});
+
+test('a free member regenerating gets PLUS_REQUIRED, and a failed title draft refunds the same screen key', async () => {
+  const locked = setup({ quotaError: { message: 'MEETUP_TITLE_DRAFT_PLUS_REQUIRED' } });
+  const response = await locked.request(titleInput);
+  assert.equal(response.status, 403);
+  assert.equal((await response.json()).error.code, 'PLUS_REQUIRED');
+  assert.equal(locked.requests.length, 0);
+  const failed = setup({ quotaData: { dailyUsed: 1, canRegenerate: true }, providerOk: false });
+  assert.equal((await failed.request(titleInput)).status, 500);
+  assert.deepEqual(failed.calls, ['reserve_meetup_title_draft', 'release_meetup_title_draft']);
+  assert.deepEqual({ ...failed.rpcArgs[1] }, { p_user_id: 'member', p_draft_key: titleInput.draftKey });
 });

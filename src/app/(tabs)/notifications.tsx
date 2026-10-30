@@ -264,7 +264,8 @@ export default function NotificationsScreen() {
     const time = relativeTime(row.created_at, undefined, appLocale);
     const tag = activeTab === 'city' ? tr(row.kind === 'trending_hashtag' ? '지금 뜨는 주제' : row.kind === 'trending_meetup' ? '지금 뜨는 모임' : CITY_LABELS[row.category] ?? '글링 안내') : null;
     const people = item.kind === 'likes' ? likeActors(item).slice(0, 2).map(id => ({ id, actor: actorAllowed(row) && extras?.token === cache ? extras.people.get(id) : undefined })) : [];
-    const chip = row.kind === 'comment' || row.kind === 'reply' ? tr("답글 달기") : row.kind === 'meetup_request' ? tr("신청 보기") : null;
+    const rsvp = row.kind === 'meetup_reminder' || row.kind === 'meetup_morning';
+    const chip = row.kind === 'comment' || row.kind === 'reply' ? tr("답글 달기") : row.kind === 'meetup_request' ? tr("신청 보기") : rsvp ? tr("참석 알려 주기") : null;
     const label = [tag, title, body, snippet, time, unread ? tr("읽지 않음") : null].filter(Boolean).join(', ');
     return <Pressable analyticsId="app_tabs_notifications.pressable.2" onPress={() => open(item)} accessibilityRole="button" accessibilityLabel={label}
       style={({ pressed }) => [styles.row, { backgroundColor: unread ? theme.backgroundSelected : 'transparent', opacity: pressed ? 0.82 : 1 }]}>
@@ -280,7 +281,7 @@ export default function NotificationsScreen() {
         {body !== title && <ThemedText>{body}</ThemedText>}
         {snippet && snippet !== title && snippet !== body && <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{snippet}</ThemedText>}
         <ThemedText type="small" themeColor="textSecondary">{time}</ThemedText>
-        {chip && <Pressable analyticsId="app_tabs_notifications.pressable.4" accessibilityRole="button" accessibilityLabel={chip} onPress={() => open(item)}
+        {chip && <Pressable analyticsId={rsvp ? 'notifications.meetup-rsvp' : 'app_tabs_notifications.pressable.4'} accessibilityRole="button" accessibilityLabel={chip} onPress={() => open(item)}
           style={({ pressed }) => [ControlStyles.pill, styles.chip, controlPresentation(theme, { tone: row.kind === 'meetup_request' ? 'primary' : 'secondary', pressed }).container]}>
           <ThemedText type="smallBold" style={controlPresentation(theme, { tone: row.kind === 'meetup_request' ? 'primary' : 'secondary' }).text}>{chip}</ThemedText>
         </Pressable>}

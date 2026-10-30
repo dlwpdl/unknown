@@ -182,6 +182,7 @@ const chillingErrors: Record<string, string> = {
     MEETUP_FULL: '정원이 모두 찼어요.', MEETUP_NOT_FOUND: '이 모임을 찾을 수 없어요.',
     MEETUP_RECRUITING_CLOSED: '지금은 새 참여 신청을 받지 않아요. 호스트가 모집을 다시 열면 신청할 수 있어요.',
     MEETUP_NEWCOMERS_ONLY: '새 멤버만 신청할 수 있는 모임이에요.',
+    MEETUP_WAITLIST_ONLY: '이 호스트의 모임에 말없이 빠진 적이 여러 번 있어서 지금은 대기 명단으로만 신청할 수 있어요.',
     INVALID_NEWCOMER_OPTION: '‘새 멤버만’은 처음 오는 분 환영을 켠 모임에서만 고를 수 있어요.',
     REQUEST_COOLDOWN: '이 모임의 이전 신청이 거절되거나 취소된 뒤 24시간이 지나야 다시 신청할 수 있어요.',
     REQUEST_ALREADY_RESOLVED: '이 참여 신청은 이미 처리됐어요. 현재 상태를 다시 확인해 주세요.',

@@ -34,6 +34,17 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
     [/^(.+) 모임이 1시간 뒤에 시작해요\.$/, m => `“${m[1]}” starts in an hour.`],
   ],
   meetup_morning: [[/^(.+) 모임은 오늘 (\d{2}):(\d{2})에 시작해요\. \(모임 장소 기준\)$/, m => `“${m[1]}” starts today at ${clock(m[2], m[3])} local time.`]],
+  // Meetup convenience (20261029110000): waitlist offers, auto-approvals and the empty-meetup tip.
+  meetup_request: [
+    [/^기다리던 모임에 자리가 났어요\. 지금 신청하면 호스트가 확인해요\.$/, () => 'A spot opened up in a meetup you’re waiting for. Apply now and the host will review it.'],
+    [/^기다리던 모임에 자리가 났어요\. (\d+)시간 안에 신청하면 바로 함께할 수 있어요\.$/, m => `A spot opened up in a meetup you’re waiting for. Apply within ${m[1]} ${m[1] === '1' ? 'hour' : 'hours'} and you’re in.`],
+    [/^대기하던 분이 시간 안에 신청해서 바로 승인됐어요\.$/, () => 'Someone from your waitlist applied in time and was approved.'],
+    [/^자동 승인 조건에 맞는 신청이라 바로 승인됐어요\.$/, () => 'A request matched your auto-approval rules and was approved.'],
+  ],
+  meetup_host_tip: [
+    [/^(.+) 모임에 아직 신청이 없어요\. 날짜를 바꾸거나 '처음 와도 돼요'를 켜 보세요\.$/, m => `No one has applied to “${m[1]}” yet. Try another date, or turn on “First-timers welcome”.`],
+    [/^(.+) 모임에 아직 신청이 없어요\. 날짜를 바꿔 보는 건 어때요\?$/, m => `No one has applied to “${m[1]}” yet. How about another date?`],
+  ],
   meetup_cancelled: [[/^(.+) 모임이 마감되거나 취소됐어요\. 모임 글에서 확인해 주세요\.$/, m => `“${m[1]}” was closed or cancelled. Check the meetup post for details.`]],
   meetup_changed: [[/^(.+) 모임의 시간이나 장소가 바뀌었어요\. 바뀐 내용을 확인해 주세요\.$/, m => `The time or place for “${m[1]}” changed. Check the updated details.`]],
   trending_post: [[/^오늘 (.+?) 소식, 같이 읽어볼까요\? (.+)$/, (m, translate) => `Today in ${translate(m[1])}: ${m[2]}`], eventPattern],

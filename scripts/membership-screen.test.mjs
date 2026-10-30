@@ -6,7 +6,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 import { t } from '../src/i18n/ko.ts';
-import { MEMBERSHIP_LIMITS, GENERAL_BUMP_HOURS, BUSINESS_LIMITS, yearlyListPrice } from '../src/lib/membership.ts';
+import { MEMBERSHIP_LIMITS, GENERAL_BUMP_HOURS, BUSINESS_LIMITS, MEETUP_TOOL_PERKS, yearlyListPrice } from '../src/lib/membership.ts';
 
 test('membership keeps stories and direct chat free while preserving meetup and listing plans', () => {
   let states = [], cursor = 0, restored = 0, confirmed = 0, feedback = 0, confirmation, reducedMotion = false;
@@ -50,7 +50,7 @@ test('membership keeps stories and direct chat free while preserving meetup and 
     if (name === '@/i18n/ko') return { t };
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true, me:{id:'member'} }) };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() { feedback++; } }) };
-    if (name === '@/lib/membership') return { MEMBERSHIP_LIMITS, GENERAL_BUMP_HOURS, BUSINESS_LIMITS, yearlyListPrice };
+    if (name === '@/lib/membership') return { MEMBERSHIP_LIMITS, GENERAL_BUMP_HOURS, BUSINESS_LIMITS, MEETUP_TOOL_PERKS, yearlyListPrice };
     if (name === '@/lib/merchant-workspace') return {loadMyMerchants:async()=>[]};
     if (name === '@/lib/supabase') return {supabase:{rpc:async()=>({data:null})}};
     if (name === '@/lib/membership-provider') return { useMembership: () => value };
@@ -64,7 +64,7 @@ test('membership keeps stories and direct chat free while preserving meetup and 
   let tree = render();
   assert.deepEqual(planOrder(tree), ['플러스', '프로', '프리미엄'], 'general plans follow Basic, Plus, Pro, Premium');
   const card = (tree, name) => nodes(tree).find(node => node.props?.analyticsId === 'app_profile_membership.pressable.4' && text(node).startsWith(name));
-  for (const [name, facts, tools] of [['플러스', '모임 정원30명공동 호스트1명모임 자리5개', '템플릿 · 질문 재사용'], ['프로', '모임 정원100명공동 호스트3명모임 자리10개', '플러스 + 반복 회차 · 대기 명단'], ['프리미엄', '모임 정원500명공동 호스트5명모임 자리20개', '프로 + 신청·참석 통계']]) {
+  for (const [name, facts, tools] of [['플러스', '모임 정원30명공동 호스트1명모임 자리5개', '템플릿 · 질문 재사용 · 조건 맞는 신청 바로 승인'], ['프로', '모임 정원100명공동 호스트3명모임 자리10개', '플러스 + 반복 회차 · 대기 명단 · 빈자리 대기자에게 자동으로 넘기기'], ['프리미엄', '모임 정원500명공동 호스트5명모임 자리20개', '프로 + 신청·참석 통계']]) {
     assert.ok(text(card(tree, name)).includes(facts), `${name} shows seats, cohosts and meetup slots`);
     assert.ok(text(card(tree, name)).includes(tools), `${name} explains its meetup tools`);
   }

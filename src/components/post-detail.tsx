@@ -24,6 +24,7 @@ import { MerchantSourceLink } from '@/components/merchant-source-link';
 import { MerchantReviews } from '@/components/merchant-reviews';
 import { MeetupReviews } from '@/components/meetup-reviews';
 import { PostPoll } from '@/components/post-poll';
+import { MeetupRsvp } from '@/components/meetup-rsvp';
 import { PostCard, PostReactionToggle } from '@/components/post-card';
 import { TranslatedCommentBody } from '@/components/content-translation';
 import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
@@ -778,6 +779,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               }}
             />}
             {!postDraft && post.kind === 'story' && !post.room && <PostPoll postId={post.id} />}
+            {!postDraft && post.room && <MeetupRsvp postId={post.id} />}
             {!postDraft && post.room && post.room.eventKind !== 'once' && Platform.OS !== 'web' && <View style={[styles.meetupSection, { borderTopColor: theme.line }]}>
               <ThemedText accessibilityRole="header" style={Typography.section}>{tr("후기")}</ThemedText>
               <MeetupReviews postId={post.id} kind="group" reviewsOnly onBeforeNavigate={onClose} />
