@@ -21,9 +21,6 @@
       "icon": "./assets/brand/gling-night-app-icon.png",
       "bundleIdentifier": "com.dlwpdl.gling",
       "appleTeamId": "P3X3452TDZ",
-      "associatedDomains": [
-        "applinks:gling.ej-entertainment.com"
-      ],
       "buildNumber": "69",
       "usesAppleSignIn": true,
       "entitlements": {
