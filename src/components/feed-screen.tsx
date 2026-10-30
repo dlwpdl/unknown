@@ -96,7 +96,7 @@ import { splitPostAttachments, withPostAttachments } from '../../supabase/functi
 
 
 // 처음 보이는 카테고리 칩: 전체·부동산·구인구직·중고거래·정착·맛집 (owner 2026-10-29).
-const PRIMARY_TAGS: (number | null)[] = [null, 14, 18, 19, 12, 4];
+const PRIMARY_TAGS: (number | null)[] = [null, 1, 4, 14, 18, 12];
 const TAG_HINTS: Record<string, string> = {
   housing: '렌트·매매·쉐어 구하기', jobs: '알바·채용·구직', used: '물건 사고팔기', settlement: '비자·PR·보험·은행',
   food: '식당·카페 후기와 추천', meetup: '같이 할 사람 찾기', life: '일상 이야기·잡담', business: '한인 가게 소식',
@@ -802,7 +802,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         {cityOpen && !meetupsOnly && (
           <View style={styles.categoryHead}>
             <GlassSurface tone="control" style={styles.chipGlass}><ScrollView analyticsId="components_feed-screen.scrollview.1" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
-              {/* 처음 보이는 칩은 많이 찾는 6개; 나머지는 '더보기' 시트 (owner 2026-10-29). */}
+              {/* 처음 보이는 칩 6개(전체·라이프·맛집·부동산·구인구직·정착, owner 2026-10-30); 나머지는 '더보기' 시트. */}
               {[...PRIMARY_TAGS, ...(tagFilter != null && !PRIMARY_TAGS.includes(tagFilter) ? [tagFilter] : [])].map((id) => {
                 const label = id == null ? t.feed.filterAll : tr(TAGS.find((tg) => tg.id === id)!.label);
                 const active = tagFilter === id;
