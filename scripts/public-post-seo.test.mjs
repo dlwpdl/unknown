@@ -82,6 +82,14 @@ test('AI 미리보기는 제목·도시·주제만 읽고 로그인 원문 경�
   assert.ok(!text.includes('undefined'));
 });
 
+test('AI 마크다운은 공개 첫 문단과 정식 /posts 주소를 담는다', async () => {
+  const opening = '이번 달 렌트를 내고 나니 생활비가 빠듯해요.\n다들 고정비를 어떻게 줄이셨는지 궁금해요.';
+  const text = await (await handler(async () => ({ data: { ...preview, preview: opening, createdAt: '2026-10-29T18:00:00Z', body: 'PRIVATE-BODY' } }))(request(`format=markdown&id=${id}`))).text();
+  assert.ok(text.includes(`원문: ${seo.PUBLIC_SITE}/posts/${id}`) && !text.includes('/post?id='));
+  assert.ok(text.includes(opening) && text.includes('작성일: 2026-10-29'));
+  assert.doesNotMatch(text, /PRIVATE-/);
+});
+
 test('공개 HTML과 AI 미리보기는 본문·작성자·상세 지도 링크를 노출하지 않는다', async () => {
   const map = 'https://maps.google.com/?q=Vancouver';
   const serve = handler(async () => ({ data: { ...preview, body: row.body+'\n\nGoogle 지도: '+map, author_nickname: row.author_nickname } }));
@@ -118,7 +126,7 @@ test('도시 sitemap은 cursor 끝까지 공개 글만 모으고 중복·순회 
   assert.equal(response.status, 200);
   assert.match(response.headers.get('content-type'), /application\/xml/);
   const xml = await response.text(); assert.equal((xml.match(/<loc>/g) ?? []).length, 31);
-  assert.ok(xml.includes(`${seo.PUBLIC_SITE}/post?id=${second.id}`));
+  assert.ok(xml.includes(`${seo.PUBLIC_SITE}/posts/${second.id}`), 'catalog sitemap lists the canonical post address');
   const repeated = await handler(async () => ({ data: rows }))(request('format=sitemap&city=vancouver'));
   assert.equal(repeated.status, 503);
 });

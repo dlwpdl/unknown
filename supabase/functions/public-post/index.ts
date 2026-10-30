@@ -43,8 +43,8 @@ Deno.serve(async (request) => {
         for (const row of rows) {
           if (ids.has(row.id) || !UUID.test(row.id) || ids.size === 50000) return unavailable(503);
           ids.add(row.id);
-          entries.push(format === 'sitemap' ? `<url><loc>${PUBLIC_SITE}/post?id=${row.id}</loc></url>`
-            : `- [${String(row.title).replace(/[\\[\]\n\r]/g, ' ')}](${PUBLIC_SOURCE}?format=markdown&id=${row.id})`);
+          entries.push(format === 'sitemap' ? `<url><loc>${PUBLIC_SITE}/posts/${row.id}</loc></url>`
+            : `- [${String(row.title).replace(/[\\[\]\n\r]/g, ' ')}](${PUBLIC_SITE}/posts/${row.id}) ([마크다운](${PUBLIC_SOURCE}?format=markdown&id=${row.id}))`);
         }
         const last = rows.at(-1);
         if (format === 'markdown') {
@@ -61,7 +61,9 @@ Deno.serve(async (request) => {
     if (result.error) return unavailable(503);
     if (!preview || preview.id !== id) return unavailable(404);
     const metadata = postSeo({ id, title: preview.title, body: '', author: { nickname: '' }, tag: { label: preview.label ?? '글링' } }, preview.city ?? '');
-    if (format === 'markdown') return new Response(`# ${preview.title.replace(/[\r\n]/g, ' ')}\n\n원문: ${metadata.canonical}\n도시: ${preview.city ?? ''}\n주제: ${preview.label ?? ''}\n\n전체 내용은 글링에서 로그인 후 확인해주세요.\n`, { headers: { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'no-store', 'Link': `<${metadata.canonical}>; rel="canonical"`, 'X-Robots-Tag': 'noindex, follow', 'X-Content-Type-Options': 'nosniff' } });
+    // The opening paragraph guests may read (preview from 20261030120000, else the one-line teaser); the rest stays behind login.
+    const opening = String(preview.preview || preview.teaser || '').trim();
+    if (format === 'markdown') return new Response(`# ${preview.title.replace(/[\r\n]/g, ' ')}\n\n원문: ${metadata.canonical}\n도시: ${preview.city ?? ''}\n주제: ${preview.label ?? ''}\n${preview.createdAt ? `작성일: ${String(preview.createdAt).slice(0, 10)}\n` : ''}\n${opening ? `${opening}\n\n` : ''}전체 내용은 글링에서 로그인 후 확인해주세요.\n`, { headers: { 'Content-Type': 'text/markdown; charset=utf-8', 'Cache-Control': 'no-store', 'Link': `<${metadata.canonical}>; rel="canonical"`, 'X-Robots-Tag': 'noindex, follow', 'X-Content-Type-Options': 'nosniff' } });
     const imageUrl = previewImageCover(preview.imagePath, id) ? `${PUBLIC_SOURCE}?format=preview-image&id=${id}` : '';
     return page(preview.title, 200, id, imageUrl, metadata);
 
