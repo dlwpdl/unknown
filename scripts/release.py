@@ -278,6 +278,10 @@ def build(platform, env, directory, local, number):
         if "413e75957cf604fd225a37527cce90b7379f3226b572f2b589c77396dcbfefbd" not in verified:
             raise ValueError("Android upload signing identity has changed; submission stopped.")
         run([str(tools / "zipalign"), "-c", "-P", "16", "4", str(apk)])
+        # 1.4.5 shipped WorkManager's Room database without a constructor and crashed at launch.
+        work_db = subprocess.run([str(tools / "dexdump"), "-h", str(apk)], capture_output=True, check=True).stdout.decode(errors="replace").partition("'Landroidx/work/impl/WorkDatabase_Impl;'")[2].split("Class #", 1)[0]
+        if work_db and "'<init>'" not in work_db:
+            raise ValueError("R8 removed WorkManager's database constructor; the app would crash at launch.")
     else:
         run(["npx", "pod-install", "ios"], env=env)
         profile = plistlib.loads(run(["security", "cms", "-D", "-i", profile_path], True).encode())
