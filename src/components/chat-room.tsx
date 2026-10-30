@@ -454,6 +454,11 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     ? <View accessible style={[styles.safetyNotice, { backgroundColor: theme.backgroundElement }]}>
       <ThemedText type="smallBold">{t.chat.unverifiedNotice}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{t.chat.unverifiedSafety}</ThemedText>
+    </View>
+    // Owner 2026-10-29: every meetup room and 1:1 chat keeps a standing caution about meeting one-on-one.
+    : !business ? <View accessible style={[styles.safetyNotice, { backgroundColor: theme.backgroundElement }]}>
+      <ThemedText type="smallBold">{t.chat.oneOnOneNotice}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{group ? t.chat.oneOnOneSafety : t.chat.unverifiedSafety}</ThemedText>
     </View> : null;
 
   const readMessagesByIds = useCallback(async (ids: string[]) => {

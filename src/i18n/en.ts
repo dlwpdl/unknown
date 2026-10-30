@@ -114,6 +114,7 @@ export const en: Translations = {
     loadMessagesError: 'Couldn’t load messages.', loadOlder: 'Load earlier messages', emptyTitle: 'No chats yet',
     emptyBody: 'Find a post you like in the feed or join a meetup. Your chats will show up here.', newConversation: 'No messages yet. Say hi!',
     unverifiedNotice: 'This person hasn’t verified their ID.', unverifiedSafety: 'For a first meetup, pick a public place, and be careful if anyone asks for personal info or money.',
+    oneOnOneNotice: 'Meeting one-on-one? Stay safe', oneOnOneSafety: 'If someone from a meetup asks to meet one-on-one, pick a busy public place the first time. If they bring up money or push for personal details, report them right away.',
     messagePlaceholder: 'Send a message…', send: 'Send', sending: 'Sending…', sendError: 'Couldn’t send your message. Check your connection or block settings.',
     meetupRequest: (title) => `I’d like to join “${title}”.`, ownMeetupTitle: 'You’re hosting this meetup',
     ownMeetupBody: 'You can end it from My meetups in the Meetups tab. Join requests are in the Chats tab.', startErrorTitle: 'Couldn’t open the chat',
