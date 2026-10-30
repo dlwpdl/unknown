@@ -41,7 +41,7 @@ export function renderPublicCompany(template, company) {
   const schema = {
     '@context': 'https://schema.org', '@type': 'LocalBusiness', '@id': `${url}#business`, url, name: company.name, description: intro || undefined,
     ...(logo || banner ? { image: [banner, logo].filter(Boolean) } : {}), ...(logo ? { logo } : {}),
-    ...(company.address ? { address: { '@type': 'PostalAddress', streetAddress: company.address, addressLocality: company.city_name, addressCountry: 'CA' } } : { areaServed: { '@type': 'City', name: company.city_name } }),
+    ...(company.address ? { address: { '@type': 'PostalAddress', streetAddress: company.address, addressCountry: 'CA' } } : { areaServed: { '@type': 'City', name: company.city_name } }),
     ...(company.public_phone ? { telephone: company.public_phone } : {}),
     // Hours are free text the owner types; schema.org accepts a human-readable openingHours string.
     ...(company.business_hours ? { openingHours: company.business_hours } : {}),
