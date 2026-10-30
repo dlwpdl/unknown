@@ -65,13 +65,15 @@ test('공개 글은 검색용 정적 페이지와 sitemap 항목으로 만들고
     return { ok: true, json: async () => data };
   };
   try {
-    writeFileSync(join(directory, '+not-found.html'), '<html><head><meta charSet="utf-8"/><title data-rh="true">old</title><meta name="robots" content="noindex, nofollow" data-rh="true"/></head><body><div id="root">app</div></body></html>');
+    writeFileSync(join(directory, '+not-found.html'), '<html><head><meta charSet="utf-8"/><meta name="apple-itunes-app" content="app-id=6809273242"/><title data-rh="true">old</title><meta name="robots" content="noindex, nofollow" data-rh="true"/></head><body><div id="root">app</div></body></html>');
     await assert.rejects(prerenderPublicPosts(directory, { url: 'https://db.example', key: 'anon', cities: ['vancouver'], fetcher }), /GLING_SEARCH_BUILD_TOKEN/);
     const posts = await prerenderPublicPosts(directory, { url: 'https://db.example', key: 'anon', cities: ['vancouver', 'toronto'], searchToken: 'build-token', fetcher });
     assert.deepEqual(posts.map(post => post.id), [visible]);
     assert.ok(calls.every(([, key]) => key === 'anon'));
     const page = readFileSync(join(directory, 'posts', `${visible}.html`), 'utf8');
     assert.ok(!page.includes('noindex') && !page.includes('>old<'));
+    assert.equal(page.match(/name="apple-itunes-app"/g)?.length, 1, 'the shell banner is replaced, not duplicated');
+    assert.ok(page.includes(`content="app-id=6809273242, app-argument=gling://post/${visible}"`));
     assert.ok(page.includes(`<link rel="canonical" href="${PUBLIC_SITE}/posts/${visible}"`));
     assert.ok(page.includes('코퀴틀람 &#60;카페&#62;') && page.includes('창가 자리가 예뻐요 &#38; 조용해요') && !page.includes('<카페>'));
     assert.ok(page.includes('id="gling-static-post"') && page.includes('<div id="root">app</div>'));
