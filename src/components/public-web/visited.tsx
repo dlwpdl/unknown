@@ -70,7 +70,7 @@ export default function PublicVisited() {
       ...(place.address ? { address: place.address } : {}), geo: { '@type': 'GeoCoordinates', latitude: place.latitude, longitude: place.longitude }, ...(place.sourceUrl ? { sameAs: place.sourceUrl } : {}) } })) } : null;
 
   return <div className="reader visited-page" style={palette} lang={language}>
-    <Head><title>{title}</title><meta name="description" content={ko ? `${city.name}에서 글링이 직접 다녀온 장소를 지도에서 둘러보세요.` : `See the places Gling has visited in ${cityName} on a map.`} />
+    <Head><title>{title}</title><meta name="description" content={ko ? `${city.name}에서 글링이 직접 다녀온 식당·카페·가 볼 곳을 주소와 지도로 모았어요. 마음에 드는 곳은 글링 앱 지도에서 바로 열어 볼 수 있어요.` : `See the places Gling has visited in ${cityName} on a map.`} />
       <link rel="canonical" href={canonical} />
       {schema && <script type="application/ld+json">{jsonLd(schema)}</script>}
     </Head>

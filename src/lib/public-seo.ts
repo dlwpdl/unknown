@@ -80,11 +80,11 @@ export function publicCitySubpage(path: string, cityIds: string[]) {
 export function publicCitySubpageMeta(sub: NonNullable<ReturnType<typeof publicCitySubpage>>, city: string) {
   if (sub.kind === 'meetups') return {
     title: `${city} 한인 모임 | 글링`,
-    description: `${city}에 사는 한인들이 글링에서 여는 모임이에요. 일정과 참여 인원을 미리 보고, 참여 신청과 대화는 글링 앱에서 이어가요.`,
+    description: `${city}에 사는 한인들이 글링에서 여는 모임을 모았어요. 일정과 참여 인원을 미리 보고, 참여 신청과 대화는 글링 앱에서 이어가요.`,
   };
   if (sub.kind === 'page') return {
     title: `${city} 한인 커뮤니티 · 지난 이야기 ${sub.page}쪽 | 글링`,
-    description: `${city} 한인들이 글링에 올린 지난 이야기 ${sub.page}쪽이에요. 렌트, 구인구직, 중고거래, 맛집, 정착 이야기를 시간순으로 모았어요.`,
+    description: `${city} 한인들이 글링에 올린 지난 이야기 ${sub.page}쪽이에요. 렌트, 구인구직, 중고거래, 맛집, 정착 이야기를 올라온 순서대로 모아 뒀어요.`,
   };
   const name = TOPIC_HUBS[sub.tagSlug].name(city);
   return {
