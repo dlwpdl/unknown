@@ -95,9 +95,11 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
   const canonical = id ? `${PUBLIC_SITE}/post?id=${id}${invite ? '&invite=1' : ''}` : null;
   // Guests see only the vetted title, teaser and cover, so those pages may be indexed; meetups and invites stay out.
   const indexable = ready && !authenticated && !!preview && preview.kind !== 'meetup' && !invite;
+  const prerendered = typeof window !== 'undefined' && /^\/posts\/[^/]+\/?$/.test(window.location?.pathname ?? '');
   useEffect(() => {
     // The build-time copy of this preview (scripts/prerender-public-posts.mjs) is for crawlers without JavaScript.
-    if (status !== 'loading') globalThis.document?.getElementById?.('gling-static-post')?.remove();
+    // Keep it on errors so a slow or failed fetch never leaves crawlers an empty page.
+    if (status === 'ready' || status === 'unavailable') globalThis.document?.getElementById?.('gling-static-post')?.remove();
   }, [status]);
   const appUrl = id ? `gling://post/${id}${invite ? '?invite=1' : ''}` : null;
   const [copyMessage, setCopyMessage] = useState(''), [failedImage, setFailedImage] = useState<string | null>(null);
@@ -128,7 +130,8 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
   return <div className="shared-post-landing" lang={ko ? 'ko' : 'en'} style={palette}>
     <Head><title>{ready ? `${title} | ${ko ? '글링' : 'Gling'}` : ko ? '글링 공유 글' : 'Shared post | Gling'}</title>
       <meta property="og:site_name" content={publicSiteName(language)} /><meta property="og:locale" content={ko ? 'ko_KR' : 'en_CA'} />
-      <meta name="robots" content={indexable ? 'index, follow, max-image-preview:large' : 'noindex, follow'} />
+      {/* On prerendered /posts/:id pages, loading and fetch errors keep the static robots tag; only a removed post, meetup, invite or signed-in view opts out. */}
+      {(ready || status === 'unavailable' || !prerendered) && <meta name="robots" content={indexable ? 'index, follow, max-image-preview:large' : 'noindex, follow'} />}
       <meta name="description" content={indexable && preview!.teaser ? preview!.teaser : description} />
       <meta property="og:title" content={ready ? title : ko ? '글링 공유 글' : 'Shared post | Gling'} />
       <meta property="og:description" content={indexable && preview!.teaser ? preview!.teaser : description} />

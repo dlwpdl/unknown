@@ -1,7 +1,7 @@
 import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html';
 import { Children, cloneElement, isValidElement, type PropsWithChildren } from 'react';
 import { WebNightColors } from '@/constants/theme';
-import { publicHomeSchema } from '@/components/public-web/metadata';
+import { publicFaqSchema, publicHomeSchema } from '@/components/public-web/metadata';
 import { jsonLd } from '@/lib/public-seo';
 
 export default function RootHtml({ children, pathname }: PropsWithChildren<{ pathname: string }>) {
@@ -23,6 +23,7 @@ export default function RootHtml({ children, pathname }: PropsWithChildren<{ pat
           return managed ? cloneElement(node, { 'data-rh': true }) : node;
         })}
         {pathname === '/' && <script data-rh="true" type="application/ld+json">{jsonLd(publicHomeSchema)}</script>}
+        {pathname === '/faq' && <script data-rh="true" type="application/ld+json">{jsonLd(publicFaqSchema)}</script>}
       </head>
       <body {...bodyAttributes} style={{ ...bodyAttributes?.style, backgroundColor: WebNightColors.background }}>{children}{bodyNodes}</body>
     </html>

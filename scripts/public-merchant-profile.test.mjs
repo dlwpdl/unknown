@@ -39,7 +39,7 @@ function app(file = '../src/components/public-web/merchant-profile.tsx', { rpc =
     '@/lib/merchant-profile': { loadMerchantProfile: loadProfile, loadMerchantProfilePosts: (...args) => { postCalls.push(args.slice(1)); return loadPosts(...args); } }, '@/lib/public-web': { publicMerchantId, publicWebTarget },
     '@/lib/merchant-source': { merchantPhoneUrl, merchantMapsUrl }, '@/lib/translation-source': translationSource,
     '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value }) }, '@/constants/theme': { WebNightColors: {} }, '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [] },
-    '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.example', publicSiteName: () => '글링 | 캐나다 모임 커뮤니티' }, '@/i18n/ko': { t: {} },
+    '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.example', publicSiteName: () => '글링 | 캐나다 한인 커뮤니티' }, '@/i18n/ko': { t: {} },
     './shared-post-landing': { __esModule: true, default: 'SharedPostLanding' }, './analytics': { useReaderAnalytics() {} }, './merchant-profile': { PublicMerchantProfile: 'CompanyProfile', PublicMerchantProfileLink: 'CompanyLink' },
   };
   const exports = {}, source = ts.transpileModule(readFileSync(new URL(file, import.meta.url), 'utf8') + (file.endsWith('/merchant-profile.tsx') ? '\nexports.ProfilePage=ProfilePage;exports.PublicReviews=PublicReviews;exports.ProfileRatings=typeof ProfileRatings===\"function\"?ProfileRatings:null;exports.RatingVisual=typeof RatingVisual===\"function\"?RatingVisual:null;exports.PublicProfilePosts=typeof PublicProfilePosts===\"function\"?PublicProfilePosts:null;' : ''), {
