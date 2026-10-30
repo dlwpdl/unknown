@@ -63,6 +63,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useAuth } from '@/lib/auth';
 import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
+import { useTranslationVisibleIds } from '@/hooks/use-content-translation';
 import { useCommunityCity } from '@/lib/community-city';
 import type { LocationFix } from '@/lib/location';
 import { useCommunityLocation } from '@/lib/location-provider';
@@ -120,12 +121,12 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const insets = useSafeAreaInsets();
   const bottomClear = insets.bottom + TabBarHeight; // 탭바 + 홈 인디케이터 실측 높이
   const [posts, setPosts] = useState<Post[]>([]);
-  const [visibleFeedIds, setVisibleFeedIds] = useState<Set<string>>(new Set());
-  const [visibleSearchIds, setVisibleSearchIds] = useState<Set<string>>(new Set());
+  const [visibleFeedIds, setVisibleFeedIds] = useTranslationVisibleIds();
+  const [visibleSearchIds, setVisibleSearchIds] = useTranslationVisibleIds();
   const trackTranslationFeed = useCallback(({ viewableItems }: { viewableItems: { item: Post | Post[] | null }[] }) =>
-    setVisibleFeedIds(new Set(viewableItems.flatMap(({ item }) => Array.isArray(item) ? item.map(post => post.id) : item ? [item.id] : []))), []);
+    setVisibleFeedIds(viewableItems.flatMap(({ item }) => Array.isArray(item) ? item.map(post => post.id) : item ? [item.id] : [])), [setVisibleFeedIds]);
   const trackTranslationSearch = useCallback(({ viewableItems }: { viewableItems: { item: Post }[] }) =>
-    setVisibleSearchIds(new Set(viewableItems.map(({ item }) => item.id))), []);
+    setVisibleSearchIds(viewableItems.map(({ item }) => item.id)), [setVisibleSearchIds]);
   const { city, setCity } = useCommunityCity();
   const location = useCommunityLocation();
   const [draftCity, setDraftCity] = useState(city);

@@ -1,3 +1,4 @@
+import { translationHookDefaults } from './test-language-imports.mjs';
 import * as discoverySort from '../src/lib/discovery-sort.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -45,7 +46,7 @@ function mount(file, component, imports, globals = {}, props = {}) {
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     'expo-router': { Link: 'Link', useIsFocused: () => true, useFocusEffect: fn => effect(fn, [fn]), useLocalSearchParams: () => ({}), useRouter: () => ({}), usePathname: () => '/' },
     'expo-asset': { Asset: { fromModule: () => ({ uri: 'local.png' }) } },
-    '@/lib/discovery-sort': discoverySort,
+    '@/lib/discovery-sort': discoverySort, '@/hooks/use-content-translation': translationHookDefaults,
     '@/lib/delivery-partners': { DELIVERY_PARTNERS: [], deliveryPartnerPlace: () => undefined },
     '@/lib/webshops': { bindBusinessPlaces, loadCityBusinessLinks: async () => ({}), loadCityBusinessMapPhotos: async () => ({}), loadCityWebshops: async () => [] },
     '@/components/selection-chip': { SelectionChip: 'Pressable' },

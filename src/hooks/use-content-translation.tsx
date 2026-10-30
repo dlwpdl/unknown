@@ -94,6 +94,20 @@ export function useTranslationPreference() {
   return context;
 }
 
+/** On-screen ids for automatic translation. Other modes never read them, so scrolling skips the list-wide re-render. */
+export function useTranslationVisibleIds() {
+  const auto = useTranslationPreference().mode === 'auto';
+  const latest = useRef(new Set<string>());
+  const [visible, setVisible] = useState(() => new Set<string>());
+  // Turning auto on (or its saved preference loading after the list) starts from what is on screen now.
+  useEffect(() => { if (auto) setVisible(previous => previous.size || latest.current.size ? latest.current : previous); }, [auto]);
+  const track = useCallback((ids: string[]) => {
+    latest.current = new Set(ids);
+    if (auto) setVisible(latest.current);
+  }, [auto]);
+  return [visible, track] as const;
+}
+
 type State = { key: string; status: 'idle' | 'loading' | 'ready' | 'error'; translation?: TranslationSource; error?: string; original?: boolean };
 
 export function useContentTranslation(kind: TranslationKind, id: string, source: TranslationSource, visible = true) {

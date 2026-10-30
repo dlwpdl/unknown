@@ -19,6 +19,7 @@ import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { count } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
+import { useTranslationVisibleIds } from '@/hooks/use-content-translation';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { appendUniquePosts } from '@/lib/feed-data';
 import { loadPublicUserActivity, loadPublicUserProfile, type PublicUserProfile } from '@/lib/user-profile';
@@ -42,9 +43,9 @@ export default function AuthorPostsRoute() {
   const [more, setMore] = useState(false), pending = useRef(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [detail, setDetail] = useState<{ key: string; post: Post } | null>(null);
-  const [visiblePostIds, setVisiblePostIds] = useState<Set<string>>(new Set());
+  const [visiblePostIds, setVisiblePostIds] = useTranslationVisibleIds();
   const trackTranslationPosts = useCallback(({ viewableItems }: { viewableItems: { item: Post }[] }) =>
-    setVisiblePostIds(new Set(viewableItems.map(({ item }) => item.id))), []);
+    setVisiblePostIds(viewableItems.map(({ item }) => item.id)), [setVisiblePostIds]);
 
   const requestKey = `${authorId}:${viewerScope}:${kind}:${retry}`;
   const current = state?.key === requestKey ? state : null;

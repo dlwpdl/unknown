@@ -29,6 +29,7 @@ import { MeetupRsvp } from '@/components/meetup-rsvp';
 import { PostCard, PostReactionToggle } from '@/components/post-card';
 import { TranslatedCommentBody } from '@/components/content-translation';
 import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
+import { useTranslationVisibleIds } from '@/hooks/use-content-translation';
 import { PostShareSheet } from '@/components/post-share-sheet';
 import { PostBodyEditor } from '@/components/post-body-editor';
 import { PostPhotoGallery } from '@/components/post-photo-gallery';
@@ -119,9 +120,9 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const canManagePost = isAuthed && (post.author.id === me.id || !!management);
   const { play } = useInteractionFeedback();
   const [comments, setComments] = useState<PostComment[]>([]);
-  const [visibleCommentIds, setVisibleCommentIds] = useState<Set<string>>(new Set());
+  const [visibleCommentIds, setVisibleCommentIds] = useTranslationVisibleIds();
   const trackTranslationComments = useCallback(({ viewableItems }: { viewableItems: { item: CommentListRow }[] }) =>
-    setVisibleCommentIds(new Set(viewableItems.flatMap(({ item }) => item.type === 'comment' ? [item.comment.id] : []))), []);
+    setVisibleCommentIds(viewableItems.flatMap(({ item }) => item.type === 'comment' ? [item.comment.id] : [])), [setVisibleCommentIds]);
   const [pages, setPages] = useState<Record<string, PageState>>({});
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [replyTo, setReplyTo] = useState<PostComment | null>(null);

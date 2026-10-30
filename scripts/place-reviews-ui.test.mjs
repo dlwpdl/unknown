@@ -1,3 +1,4 @@
+import { translationHookDefaults } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -244,7 +245,7 @@ test('F1: paginated rows start unmeasured, then enter/leave independently withou
   assert.equal(translates(tree, 'two'), false);
 });
 
-function detailViewport() {
+function detailViewport(mode = 'auto') {
   const exports = {}, states = [], jsx = (type, props, key) => ({ type, props, key });
   const hidden = () => false;
   let index = 0;
@@ -260,6 +261,7 @@ function detailViewport() {
     '@/hooks/use-language': { useLanguage: () => ({ tr, locale: 'en-CA' }) }, '@/i18n': { tr, getLocale: () => 'en-CA' },
     '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
+    '@/hooks/use-content-translation': { ...translationHookDefaults, useTranslationPreference: () => ({ mode }) },
     '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'toronto' } }) },
@@ -295,6 +297,14 @@ test('F1: real outer detail onLayout/scroll drives visible cards with modest thr
   assert.equal(translates(ui.render(), 'one'), true);
   scroll.props.onScroll({ nativeEvent: { contentOffset: { y: 1800 }, layoutMeasurement: { height: 420 } } });
   ui.viewport(reviews().props.viewport); assert.equal(translates(ui.render(), 'one'), false);
+});
+
+test('F1: without automatic translation the detail screen does not re-render on scroll', () => {
+  for (const mode of ['off', 'manual']) {
+    const scroll = nodes(detailViewport(mode).render()).find(n => n.type === 'ScrollView');
+    assert.equal(scroll.props.onScroll, undefined, mode);
+    assert.equal(typeof scroll.props.onLayout, 'function', 'layout height is still tracked');
+  }
 });
 
 test('F1: a tall review is eligible at half of the smaller row/viewport height', async () => {
