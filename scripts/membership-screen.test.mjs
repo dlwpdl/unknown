@@ -37,10 +37,10 @@ test('membership keeps stories and direct chat free while preserving meetup and 
     if (name === 'react-native-reanimated') return { useReducedMotion: () => reducedMotion };
     if ((name === 'react-native' || name === '@/components/analytics-controls')) return { View: 'View', ScrollView: 'ScrollView', Pressable: 'Pressable', Alert: { alert: (...args) => { confirmation = args; } }, Linking: { openURL: async url => { opened.push(url); } }, Animated: { Value: AnimatedValue, View: 'View', timing: (value, options) => ({ start() { value.setValue(options.toValue); } }) }, StyleSheet: { create: styles => styles } };
     if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView' };
-    if (name === '@/components/login-panel') return { LoginPanel: 'LoginPanel' };
+    if (name === '@/components/login-panel' || name === '@/components/auth-panels') return { LoginPanel: 'LoginPanel' };
     if (name === '@/components/gling-loader') return { GlingLoader: 'GlingLoader' };
     if (name === '@/components/relationship-slot-card') return { relationshipSlotData: (membership) => membership?.meetupLimit ? { active: membership.meetupsUsed, locked: 0, available: membership.meetupLimit - membership.meetupsUsed, limit: membership.meetupLimit } : null };
-    if (name === '@/lib/legal-documents') return { CONTACT_EMAIL: 'gling@example.com' };
+    if (name === '@/lib/legal-documents' || name === '@/lib/contact') return { CONTACT_EMAIL: 'gling@example.com' };
     if (name === '@/components/meetup-policy-notice') return { MeetupPolicyNotice: 'MeetupPolicyNotice' };
     if (name === '@/components/notice-blocks') return { InfoNote: 'InfoNote' };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };

@@ -10,8 +10,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState, DeviceEventEmitter, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { LoginPanel } from '@/components/login-panel';
-import { ProfileOnboarding, type CompletedProfile } from '@/components/profile-onboarding';
+import { LoginPanel, ProfileOnboarding } from '@/components/auth-panels';
+import type { CompletedProfile } from '@/components/profile-onboarding';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
@@ -21,7 +21,7 @@ import { registerSecurityDevice } from '@/lib/account-security-device';
 import { claimRememberedInvite } from '@/lib/invites';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { canUseDevPasswordLogin, getKakaoAuthSessionUrl, getOAuthCallbackPath, getOAuthCode } from '@/lib/kakao-auth';
-import { CONTACT_EMAIL } from '@/lib/legal-documents';
+import { CONTACT_EMAIL } from '@/lib/contact';
 import { CommunityLocationProvider } from '@/lib/location-provider';
 import { CITIES } from '@/lib/mock';
 import { AUTH_EXPIRED_EVENT, signInAdminAccount, signInReviewAccount, supabase } from '@/lib/supabase';

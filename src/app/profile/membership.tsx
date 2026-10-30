@@ -8,7 +8,7 @@ import { Alert, Animated, LayoutAnimation, Linking, Platform, StyleSheet, UIMana
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { LoginPanel } from '@/components/login-panel';
+import { LoginPanel } from '@/components/auth-panels';
 import { relationshipSlotData } from '@/components/relationship-slot-card';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
 import { InfoNote, WhoSees } from '@/components/notice-blocks';
@@ -18,7 +18,7 @@ import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { CONTACT_EMAIL } from '@/lib/legal-documents';
+import { CONTACT_EMAIL } from '@/lib/contact';
 import { BUSINESS_LIMITS, GENERAL_BUMP_HOURS, MEETUP_TOOL_PERKS, MEMBERSHIP_LIMITS, yearlyListPrice, type BusinessMembershipSnapshot, type MembershipKind, type MembershipOffer } from '@/lib/membership';
 import { useMembership } from '@/lib/membership-provider';
 import { loadMyMerchants, type BusinessMerchant } from '@/lib/merchant-workspace';
