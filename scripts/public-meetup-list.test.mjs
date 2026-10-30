@@ -16,13 +16,16 @@ const elements = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(
 const text = tree => tree == null || typeof tree === 'boolean' ? '' : typeof tree !== 'object' ? String(tree) : Array.isArray(tree) ? tree.map(text).join(' ') : text(tree.props?.children);
 function mount(file, name, initialProps = {}) {
   const slots = [], feedback = [], qrCalls = [];
-  let cursor = 0, language = 'ko', props = initialProps, failQr = false;
+  let cursor = 0, language = 'ko', props = initialProps, failQr = false, hydrated = false;
+  const navigator = { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', maxTouchPoints: 0 };
   const hooks = {
+    useSyncExternalStore(subscribe, client, server) { return hydrated ? client() : server(); },
     useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = { value: typeof initial === 'function' ? initial() : initial }; return [slots[i].value, next => { slots[i].value = typeof next === 'function' ? next(slots[i].value) : next; }]; },
     useMemo(fn, deps) { const i = cursor++; if (!slots[i] || deps.some((value, n) => !Object.is(value, slots[i].deps[n]))) slots[i] = { value: fn(), deps }; return slots[i].value; },
   };
   const exports = {};
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL(`../src/components/public-web/${file}`, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
+    navigator, window: { location: { pathname: '/vancouver' } },
     exports, require(name) {
       if (name.endsWith('.css')) return {};
       if (name === 'react') return hooks;
@@ -39,7 +42,8 @@ function mount(file, name, initialProps = {}) {
       throw Error(`Unexpected import ${name}`);
     },
   });
-  return { render(next) { if (next) props = next; cursor = 0; return exports[name](props); }, feedback, qrCalls, language(value) { language = value; }, failQr() { failQr = true; } };
+  return { render(next) { if (next) props = next; cursor = 0; return exports[name](props); }, feedback, qrCalls, language(value) { language = value; }, failQr() { failQr = true; },
+    device(userAgent, maxTouchPoints = 0) { hydrated = true; Object.assign(navigator, { userAgent, maxTouchPoints }); } };
 }
 const props = (patch = {}) => ({ posts: [meetup()], cityName: 'Vancouver', loading: false, failed: false, onRetry() {}, ...patch });
 
@@ -118,6 +122,7 @@ test('a missing cover is honest and retains the same invitation link in either l
   }
 });
 
+const play = 'https://play.google.com/store/apps/details?id=com.dlwpdl.gling';
 test('store choices start unselected and encode only the explicitly selected store, with a four-cell quiet zone', () => {
   const ui = mount('app-store-choices.tsx', 'AppStoreChoices'); let tree = ui.render();
   assert.equal(elements(tree).some(n => n.type === 'svg'), false); assert.equal(ui.qrCalls.length, 0);
@@ -127,7 +132,7 @@ test('store choices start unselected and encode only the explicitly selected sto
   const path = elements(svg).find(n => n.type === 'path').props.d; const points = [...path.matchAll(/M(\d+) (\d+)h1v1h-1z/g)].map(m => [Number(m[1]), Number(m[2])]);
   assert.ok(points.length > 0 && points.every(([x, y]) => x >= 4 && y >= 4 && x < size + 4 && y < size + 4));
   elements(tree).find(n => n.type === 'button' && text(n) === 'Google Play').props.onClick(); tree = ui.render();
-  assert.ok(elements(tree).some(n => n.props?.href === 'https://play.google.com/store/apps/details?id=com.dlwpdl.gling')); assert.match(text(tree), /비공개 테스트/); assert.deepEqual(ui.feedback, ['selection', 'selection']);
+  assert.ok(elements(tree).some(n => n.props?.href === `${play}&referrer=utm_source%3Dweb%26utm_campaign%3Dvancouver`)); assert.match(text(tree), /비공개 테스트/); assert.deepEqual(ui.feedback, ['selection', 'selection']);
 });
 
 test('store copy follows language changes, link feedback is present and QR failure retains a usable store link', () => {
@@ -141,16 +146,32 @@ test('static no-script fallback retains both real store links and Android eligib
   const ui = mount('app-store-choices.tsx', 'AppStoreChoices'); ui.language('en'); const tree = ui.render();
   const fallback = elements(tree).find(n => n.type === 'noscript'); assert.ok(fallback);
   assert.ok(elements(fallback).some(n => n.props?.href === 'https://apps.apple.com/ca/app/id6809273242'));
-  assert.ok(elements(fallback).some(n => n.props?.href === 'https://play.google.com/store/apps/details?id=com.dlwpdl.gling'));
+  assert.ok(elements(fallback).some(n => n.props?.href === play));
   assert.match(text(fallback), /private testing/); assert.equal(elements(tree).some(n => n.type === 'svg'), false);
+  assert.equal(elements(fallback).some(n => n.props?.['data-analytics']), false);
   const list = mount('meetup-list.tsx', 'PublicMeetupList', props()).render();
-  assert.equal([...elements(tree), ...elements(list)].some(n => n.props?.['data-analytics']), false, 'unknown behavior targets must not invalidate an otherwise valid event batch');
+  assert.equal(elements(list).some(n => n.props?.['data-analytics']), false, 'unknown behavior targets must not invalidate an otherwise valid event batch');
+});
+
+// Renders nested function components too (InstallAction), which the plain element walk leaves unexpanded.
+const rendered = tree => elements(tree).flatMap(n => typeof n.type === 'function' ? rendered(n.type(n.props)) : [n]);
+test('phones get one tap to their own install path without a QR code', () => {
+  const iphone = mount('app-store-choices.tsx', 'AppStoreChoices'); iphone.device('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)');
+  let tree = iphone.render();
+  assert.equal(rendered(tree).some(n => n.type === 'button' || n.type === 'svg'), false); assert.doesNotMatch(text(tree), /QR/);
+  const ios = rendered(tree).find(n => n.type === 'a'); assert.equal(ios.props.href, 'https://apps.apple.com/ca/app/id6809273242'); assert.equal(ios.props['data-analytics'], 'web.install.ios');
+  const ipad = mount('app-store-choices.tsx', 'AppStoreChoices'); ipad.device('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)', 5);
+  assert.equal(rendered(ipad.render()).find(n => n.type === 'a').props.href, 'https://apps.apple.com/ca/app/id6809273242', 'iPadOS reports a Mac user agent');
+  const android = mount('app-store-choices.tsx', 'AppStoreChoices'); android.device('Mozilla/5.0 (Linux; Android 15; Pixel 9)');
+  tree = android.render(); const links = rendered(tree).filter(n => n.type === 'a');
+  assert.match(links[0].props.href, /^mailto:gling@ej-entertainment\.com\?subject=Android%20/); assert.equal(links[0].props['data-analytics'], 'web.install.android');
+  assert.equal(links[1].props.href, `${play}&referrer=utm_source%3Dweb%26utm_campaign%3Dvancouver`); assert.match(text(tree), /비공개 테스트/); assert.doesNotMatch(text(tree), /QR/);
 });
 
 
 test('a public first-photo preview remains visible when guest storage signing yields no URL', () => {
   const ui=mount('meetup-list.tsx','PublicMeetupList',props({posts:[meetup({imageThumbs:[],imageUris:[],imagePaths:['PRIVATE_ACTOR/first.webp']})]}));
-  const tree=ui.render(),image=elements(tree).find(n=>n.type==='img');
+  const tree=ui.render(),image=rendered(tree).find(n=>n.type==='img');
   assert.equal(image?.props.src,`https://preview.example.invalid?format=preview-image&id=${id}`);
   assert.doesNotMatch(JSON.stringify(tree),/PRIVATE_ACTOR/);
 });

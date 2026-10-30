@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { AdminButton, AdminCard, AdminFacts, AdminInfo, AdminPill, type AdminTone } from './admin-ui';
 
 const PLATFORMS = { all: '모든 기기', ios: '아이폰', android: '안드로이드', web: '웹' } as const;
-const SOURCES = { unknown: '미분류', direct: '직접 링크', instagram: 'Instagram', threads: 'Threads', search: '검색 링크', facebook: 'Facebook', website: '웹사이트 링크' } as const;
+const SOURCES = { unknown: '미분류', direct: '직접 링크', instagram: 'Instagram', threads: 'Threads', search: '검색 링크', facebook: 'Facebook', website: '웹사이트 링크', kakao: '카카오톡', naver: '네이버', share: '공유 링크' } as const;
 const STEPS: Record<string, string> = { signup_complete: '가입 완료', consent_complete: '필수 동의 완료', meetup_request_complete: '모임 신청 완료' };
 const FAILURES: Record<string, string> = { client_error: '앱 화면 오류', photo_upload_error: '사진 업로드 실패', map_error: '지도 오류' };
 const NOTIFICATION_KINDS: Record<string, string> = {

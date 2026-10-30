@@ -13,6 +13,8 @@ export default function RootHtml({ children, pathname }: PropsWithChildren<{ pat
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
         <meta name="theme-color" content={WebNightColors.background} />
+        {/* iPhone Safari's Smart App Banner on every public page; prerendered posts add their own app-argument. */}
+        <meta name="apple-itunes-app" content="app-id=6809273242" />
         <ScrollViewStyleReset />
         {/* Let the existing client Head replace only its static metadata after hydration. */}
         {Children.map(headNodes, node => {

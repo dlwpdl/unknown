@@ -24,7 +24,8 @@ import type { Post } from '@/lib/types';
 const wordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark.png')).uri;
 const lightWordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark-light.png')).uri;
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
-const stores = { ios: 'https://apps.apple.com/ca/app/id6809273242', android: 'https://play.google.com/store/apps/details?id=com.dlwpdl.gling' };
+// The Play referrer names this landing; App Store campaign links need a provider token we don't have yet.
+const stores = { ios: 'https://apps.apple.com/ca/app/id6809273242', android: 'https://play.google.com/store/apps/details?id=com.dlwpdl.gling&referrer=utm_source%3Dweb%26utm_campaign%3Dshared-post' };
 type Status = 'loading' | 'ready' | 'error' | 'unavailable';
 function subscribeLocation(onChange: () => void) {
   window.addEventListener('popstate', onChange);
@@ -141,7 +142,7 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
     <style>{styles}</style>
     <header><a data-analytics="shared.web.home" href="/" aria-label={ko ? '글링 홈' : 'Gling home'} onClick={() => play('selection')}>
       <img src={theme === Colors.dark ? wordmark : lightWordmark} alt="gling" width={132} height={55} /></a><span>{ko ? '함께 나눈 이야기' : 'A story shared with you'}</span>
-      <a href="/merchant/" onClick={() => play('selection')}>{authenticated ? ko ? '내 계정' : 'My account' : ko ? '로그인' : 'Sign in'}</a></header>
+      <a href="/merchant/" onClick={() => play('selection')}>{authenticated ? ko ? '비즈니스 관리' : 'Manage business' : ko ? '비즈니스 로그인' : 'Business sign-in'}</a></header>
     <main>
       <div className="shared-story">
         {ready ? authenticated && post ? <SharedPostArticle post={post} /> : <section className="shared-preview" aria-label={ko ? '공개 미리보기' : 'Public preview'}>

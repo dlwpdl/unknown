@@ -1,14 +1,27 @@
 import { useEffect } from 'react';
 import { behavior, behaviorScreen, configureBehavior, flushBehavior, scrollThresholds } from '@/lib/behavior-analytics';
+import { ACQUISITION_SOURCES, getAcquisitionSource, type AcquisitionSource } from '@/lib/product-analytics';
+
+// First tagged entry for this tab, so a campaign link still counts after the visitor moves to another page.
+export function webEntrySource(): AcquisitionSource {
+  const source = getAcquisitionSource(window.location.href);
+  try {
+    const saved = sessionStorage.getItem('gling.entry-source');
+    if (saved !== 'unknown' && (ACQUISITION_SOURCES as readonly string[]).includes(saved ?? '')) return saved as AcquisitionSource;
+    if (source !== 'unknown') sessionStorage.setItem('gling.entry-source', source);
+  } catch { /* Private mode: fall back to this page's link. */ }
+  return source;
+}
 
 export function useReaderAnalytics(screen: string, viewKey: string, ready = true) {
   useEffect(() => {
+    const source = webEntrySource();
     configureBehavior(async ({ session, events }) => {
       // Dedicated telemetry transport; public content client remains read-only.
       const response = await fetch(`${process.env.EXPO_PUBLIC_SUPABASE_URL}/rest/v1/rpc/record_behavior_events`, {
         method: 'POST', credentials: 'omit', keepalive: true,
         headers: { 'Content-Type': 'application/json', apikey: process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY! },
-        body: JSON.stringify({ p_session: session, p_events: events, p_platform: 'web' }),
+        body: JSON.stringify({ p_session: session, p_events: events, p_platform: 'web', p_source: source }),
       });
       return response.ok;
     });

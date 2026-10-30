@@ -64,6 +64,8 @@ export function renderPublicPost(template, post, related = []) {
     `<title data-rh="true">${escapeHtml(title)}</title>`,
     `<meta name="description" content="${escapeHtml(description)}" data-rh="true"/>`,
     '<meta name="robots" content="index, follow, max-image-preview:large" data-rh="true"/>',
+    // Smart App Banner "Open" hands this post to the installed app.
+    `<meta name="apple-itunes-app" content="app-id=6809273242, app-argument=gling://post/${post.id}"/>`,
     `<link rel="canonical" href="${url}" data-rh="true"/>`,
     '<meta property="og:type" content="article" data-rh="true"/>',
     `<meta property="og:site_name" content="${escapeHtml(publicSiteName())}" data-rh="true"/>`,
@@ -95,7 +97,7 @@ export function renderPublicPost(template, post, related = []) {
 // Swaps the shell's page metadata for `head` and puts the crawler copy `body` first in <body>.
 export function withStaticPage(template, head, body) {
   // Attribute order differs between Expo versions (data-rh may come first), so match the attribute anywhere in the tag.
-  const stripped = template.replace(/<title[^>]*>[^<]*<\/title>|<meta\b[^>]*\b(?:name="(?:description|robots|twitter:[^"]*)"|property="og:[^"]*")[^>]*\/?>|<link\b[^>]*\brel="canonical"[^>]*\/?>|<script\b[^>]*\btype="application\/ld\+json"[^>]*>[\s\S]*?<\/script>/g, '');
+  const stripped = template.replace(/<title[^>]*>[^<]*<\/title>|<meta\b[^>]*\b(?:name="(?:description|robots|apple-itunes-app|twitter:[^"]*)"|property="og:[^"]*")[^>]*\/?>|<link\b[^>]*\brel="canonical"[^>]*\/?>|<script\b[^>]*\btype="application\/ld\+json"[^>]*>[\s\S]*?<\/script>/g, '');
   if (!/<\/head>/.test(stripped) || !/<body[^>]*>/.test(stripped)) throw new Error('Unexpected web shell for prerendered posts');
   return stripped.replace('</head>', `${head}</head>`).replace(/<body[^>]*>/, match => `${match}${body}`);
 }
