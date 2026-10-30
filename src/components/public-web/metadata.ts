@@ -4,12 +4,16 @@ import { PUBLIC_SITE, publicAboutGling, publicDisambiguation, publicSiteName } f
 export const publicReaderDescription = '밴쿠버·토론토·몬트리올 한인 커뮤니티 글링에서 동네 이야기, 맛집, 렌트·구인·중고, 모임을 둘러보세요. 미리보기는 바로 보고, 로그인하면 전체 글을 읽을 수 있어요.';
 
 
-export function publicMetadata(title: string, description: string, canonical: string): Metadata {
+// 1200×630 covers in public/share-covers/ (rendered by scripts/render-share-covers.py).
+export type ShareCover = 'home' | 'post' | 'vancouver' | 'toronto' | 'montreal' | 'business' | 'meetup' | 'festival';
+export const shareCoverUrl = (cover: ShareCover) => `${PUBLIC_SITE}/share-covers/${cover}.png`;
+
+export function publicMetadata(title: string, description: string, canonical: string, cover: ShareCover = 'home'): Metadata {
   return {
     title, description, robots: 'index, follow, max-image-preview:large',
     alternates: { canonical },
-    openGraph: { type: 'website', siteName: publicSiteName(), title, description, url: canonical, images: [{ url: `${PUBLIC_SITE}/share-covers/post.png`, alt: publicSiteName() }] },
-    twitter: { card: 'summary_large_image', title, description, images: [`${PUBLIC_SITE}/share-covers/post.png`] },
+    openGraph: { type: 'website', siteName: publicSiteName(), locale: 'ko_KR', title, description, url: canonical, images: [{ url: shareCoverUrl(cover), width: 1200, height: 630, alt: title }] },
+    twitter: { card: 'summary_large_image', title, description, images: [{ url: shareCoverUrl(cover), alt: title }] },
   };
 }
 
@@ -25,12 +29,15 @@ export const publicHomeSchema = {
 };
 
 export const FAQ_ITEMS: { question: string; answer: string }[] = [
-  { question: '글링이 뭐예요?', answer: '밴쿠버·토론토·몬트리올에 사는 한인을 위한 커뮤니티 앱이에요. 동네 이야기(생활, 맛집, 여행, 쇼핑, 정착, 이사, 주거, 교육)를 나누고, 축제나 콘서트에 함께 갈 사람을 찾고, 파티·운동·취미·여행 모임을 만들고 참여할 수 있어요.' },
+  { question: '글링이 뭐예요?', answer: '밴쿠버·토론토·몬트리올에 사는 한인을 위한 커뮤니티 앱이에요. 라이프, 맛집, 여행, 쇼핑, 정착, 부동산, 교육, 구인구직, 중고거래, 비즈니스 같은 주제로 동네 이야기를 나누고, 축제나 콘서트에 함께 갈 사람을 찾고, 파티·운동·취미·여행 모임을 만들고 참여할 수 있어요.' },
   { question: '가입하지 않고도 볼 수 있나요?', answer: '공개 게시판은 웹에서 미리보기로 둘러볼 수 있어요. 글 전체를 읽거나 댓글을 달고 모임에 참여하려면 로그인 후 앱에서 이용하세요.' },
   { question: '어떤 도시에서 쓸 수 있나요?', answer: '지금은 밴쿠버, 토론토, 몬트리올에서 쓸 수 있어요. 다른 도시는 사람이 모이는 대로 차례로 열어요.' },
   { question: '모임은 어떻게 찾고 참여하나요?', answer: '앱에서 모임 목록을 보고 참여할 수 있어요. 직접 모임을 만들 수도 있고, 축제나 콘서트 동행도 찾을 수 있어요.' },
   { question: '글은 한국어로만 써야 하나요?', answer: '아니요. 한국어와 영어로 모두 쓸 수 있고, 번역 보기로 다른 언어로 읽을 수 있어요.' },
   { question: '글링은 무료인가요?', answer: '무료로 쓸 수 있어요. 일부 기능은 인앱 구매가 있어요.' },
+  { question: '가게나 회사를 글링에 어떻게 등록하나요?', answer: '글링 비즈니스 웹(gling.ej-entertainment.com/merchant)에 로그인해서 비즈니스를 등록하면 돼요. 소유 확인이 끝나면 프로필을 꾸미고 소식이나 직원 구하는 글을 올릴 수 있어요. 자세한 내용은 gling.ej-entertainment.com/business에 있어요.' },
+  { question: '비즈니스 등록은 얼마예요?', answer: '등록과 기본 기능은 무료예요. 무료 요금제로 한 달에 새 글 1편을 올릴 수 있고, 더 자주 올리려면 플러스(월 CA$19.99), 프로(월 CA$49.99), 프리미엄(월 CA$149.99)으로 바꿀 수 있어요. 유료 요금제는 앱에서 App Store나 Google Play 구독으로 결제해요.' },
+  { question: 'AI로 비즈니스 글을 쓸 수 있나요?', answer: '유료 비즈니스 요금제에서는 Claude나 ChatGPT를 글링에 연결해 소식 초안을 만들 수 있어요. 초안은 글링 웹에서 직접 확인한 뒤에 게시돼요.' },
   { question: '캐나다 워홀러도 쓸 수 있나요?', answer: '네. 정착 정보나 동네 모임을 찾는 워홀러도 쓸 수 있어요. 집, 일자리, 생활 정보는 동네 이야기에서 나눠요.' },
 ];
 

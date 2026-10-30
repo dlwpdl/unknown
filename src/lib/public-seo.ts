@@ -14,6 +14,14 @@ export function publicPostUrl(id: string) {
   return `${PUBLIC_SITE}/posts/${encodeURIComponent(id.toLowerCase())}`;
 }
 
+// Prerendered per public business (scripts/prerender-public-companies.mjs); `/company?id=` is the noindex app shell.
+export function publicCompanyUrl(id: string) {
+  return `${PUBLIC_SITE}/company/${encodeURIComponent(id.toLowerCase())}`;
+}
+
+// Business plans and the 글링 관리 contact, linked from the merchant web where a limit or paid feature comes up.
+export const PUBLIC_BUSINESS_PRICING = `${PUBLIC_SITE}/business#pricing`;
+
 export function jsonLd(value: unknown) {
   return JSON.stringify(value).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 }

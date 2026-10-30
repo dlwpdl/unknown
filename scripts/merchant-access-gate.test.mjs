@@ -22,7 +22,7 @@ function mount(initialProps = {}) {
     'react-native': { View: 'View', Platform: { OS: 'web' }, AppState: { addEventListener: (_event, fn) => { foreground = fn; return { remove() {} }; } } },
     '@/hooks/use-language': { useLanguage: () => ({ tr: value => value }) }, '@/lib/auth': { useAuth: () => auth },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
-    '@/lib/merchant-workspace': { getMyMerchantAccess: () => api.load(), getMyBusinessWorkspaceAccess: () => api.business() }, '@/lib/supabase': { supabase: {} },
+    '@/lib/merchant-workspace': { getMyMerchantAccess: () => api.load(), getMyBusinessWorkspaceAccess: () => api.business() }, '@/lib/supabase': { supabase: {} }, '@/lib/legal-documents': { CONTACT_EMAIL: 'gling@ej-entertainment.com' },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'Text' },
   };
   vm.runInNewContext(compiled, { exports, require: name => { assert.ok(imports[name], name); return imports[name]; }, Error });

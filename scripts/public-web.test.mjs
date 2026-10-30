@@ -218,7 +218,9 @@ test('home opens with the Today feed and visible account entry while meetup disc
     const markup = readerMarkup('/', { language });
     assert.doesNotMatch(markup, /reader-showcase|public-meetups-list|public-meetups-heading/);
     assert.match(markup, /class="reader-header-account" href="\/merchant\/"/);
-    assert.match(markup, language === 'ko' ? />로그인<\/a>/ : />Sign in<\/a>/);
+    assert.match(markup, language === 'ko' ? />비즈니스 로그인<\/a>/ : />Business sign-in<\/a>/);
+    assert.match(markup, /<div class="reader-intro"><p>[^<]+<\/p><a data-analytics="web.install.desktop" class="reader-primary" href="#app">/);
+    assert.match(markup, /<a href="\/business">/);
     assert.match(markup, /href="\/meetups\?city=vancouver"/);
     assert.match(markup, language === 'ko' ? /<h1 id="stories">캐나다 한인 커뮤니티 글링<\/h1>/ : /<h1 id="stories">Gling, the Korean community in Canada<\/h1>/);
   }

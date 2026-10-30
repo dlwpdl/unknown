@@ -17,6 +17,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 import { jsonLd, PUBLIC_SITE } from '@/lib/public-seo';
 import { publicWebClient } from '@/lib/public-web-client';
+import { useReaderAnalytics } from './analytics';
 
 const wordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark.png')).uri;
 const visitWordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark-light.png')).uri;
@@ -35,6 +36,7 @@ export default function PublicVisited() {
   const selected = places.find(place => place.id === params.placeId) ?? null;
   const [mode, setMode] = useState<'list' | 'map'>(params.placeId ? 'map' : 'list');
   const [catalogState, setCatalogState] = useState<'loading' | 'ready' | 'error'>('loading');
+  useReaderAnalytics('visited', `${city.id}:${selected?.id ?? ''}`, hydrated);
   useEffect(() => {
     let active = true, failed = false;
     void refreshCityPlaces(AsyncStorage, async () => {
@@ -81,7 +83,7 @@ export default function PublicVisited() {
         <a href="/meetups" onClick={() => play('selection')}>{ko ? '모임' : 'Meetups'}</a>
         <a href="/visited" aria-current="page" onClick={() => play('selection')}>Gling Visited</a>
       </nav>
-      <a className="reader-header-account" href="/merchant/" rel="nofollow" onClick={() => play('selection')}>{isAuthed ? ko ? '내 계정' : 'My account' : ko ? '로그인' : 'Sign in'}</a>
+      <a className="reader-header-account" href="/merchant/" rel="nofollow" onClick={() => play('selection')}>{isAuthed ? ko ? '비즈니스 관리' : 'Manage business' : ko ? '비즈니스 로그인' : 'Business sign-in'}</a>
     </header>
     <main id="visited-main" className="reader-main" tabIndex={-1}>
       <div className="visited-heading"><div><h1>{ko ? `${city.name} 한인이 가 본 곳` : `Places to go in ${cityName}`}</h1><p>{ko ? '글링이 직접 다녀온 곳. 다음에는 함께 가요.' : 'Places Gling has been to. Next time, come with us.'}</p></div>
@@ -130,7 +132,7 @@ export default function PublicVisited() {
       </>}
     </main>
     <footer className="reader-footer"><span>{ko ? 'gling · 같이 갈 사람, 같이 나눌 이야기' : 'gling · People to go with, stories to share'}</span><nav aria-label={ko ? '정책' : 'Policies'}>
-      <a href="/terms" onClick={() => play('selection')}>{ko ? '이용약관' : 'Terms'}</a><a href="/privacy" onClick={() => play('selection')}>{ko ? '개인정보처리방침' : 'Privacy'}</a>
+      <a href="/business" onClick={() => play('selection')}>{ko ? '비즈니스 등록·관리' : 'List or manage your business'}</a><a href="/terms" onClick={() => play('selection')}>{ko ? '이용약관' : 'Terms'}</a><a href="/privacy" onClick={() => play('selection')}>{ko ? '개인정보처리방침' : 'Privacy'}</a>
     </nav></footer>
   </div>;
 }

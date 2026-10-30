@@ -31,7 +31,7 @@ const imports = {
   react: React, 'react/jsx-runtime': jsxRuntime, 'expo-router': {},
   '@/components/public-web/metadata': metadata, '@/lib/public-seo': seo, '@/lib/mock': mock, '@/lib/legal-documents': legal,
   '@/components/public-web/reader': { default: () => null }, '@/components/public-web/visited': { default: () => null },
-  '@/components/public-web/faq': { default: () => null },
+  '@/components/public-web/faq': { default: () => null }, '@/components/public-web/business': { default: () => null },
   '@/components/public-web/shared-post-landing': { default: () => null }, '../app/[document].web': { default: () => null },
 };
 
@@ -79,10 +79,10 @@ test('public root escapes JSON-LD script boundaries and omits the home schema on
   }
 });
 
-test('public home, company and Visited routes export initial title, canonical and preview metadata', () => {
+test('public home, business and Visited routes export initial title, canonical and preview metadata', () => {
   for (const [file, title, canonical] of [
     ['index', `${seo.publicSiteName()} · 밴쿠버·토론토·몬트리올`, 'https://gling.ej-entertainment.com/'],
-    ['company', '글링 비즈니스 프로필', 'https://gling.ej-entertainment.com/company'],
+    ['business', '글링 비즈니스 등록 · 캐나다 한인 고객에게 가게 알리기', 'https://gling.ej-entertainment.com/business'],
     ['visited', '밴쿠버 한인이 가 본 곳 | 글링', 'https://gling.ej-entertainment.com/visited'],
     ['faq', '글링 자주 묻는 질문 | 캐나다 한인 커뮤니티', 'https://gling.ej-entertainment.com/faq'],
   ]) {
@@ -95,6 +95,10 @@ test('public home, company and Visited routes export initial title, canonical an
     assert.equal(value.openGraph.url, canonical);
     assert.equal(value.twitter.card, 'summary_large_image');
   }
+  // Business profiles are prerendered at /company/<id>; the id-less shell must not canonicalize every business to one page.
+  const company = load('web/company.tsx', imports).generateMetadata();
+  assert.equal(company.robots, 'noindex, follow');
+  assert.equal(company.alternates, undefined);
 });
 
 test('legal metadata follows the matched policy while malformed and unknown document routes stay noindex', () => {

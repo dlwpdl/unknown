@@ -41,6 +41,7 @@ function app({ query = {}, places = [visit], hydrated = true, catalogError = fal
     '@/lib/discovery': { placeMapRoute },
     '@/lib/public-web-client': { publicWebClient: { rpc: name => { reads.push(name); return { abortSignal: async () => ({ data: catalogError ? null : { publicFixture: true }, error: catalogError ? Error('offline') : null }) }; } } },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
+    './analytics': { useReaderAnalytics() {} },
     '@/components/city-place-photo': { CityPlacePhoto: 'PlacePhoto' }, '@/components/discovery-map': { DiscoveryMap: 'DiscoveryMap' },
   };
   const exports = {};

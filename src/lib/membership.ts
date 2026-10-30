@@ -87,15 +87,29 @@ export function membershipOffer(item: { identifier: string; product: { identifie
   return { id: item.identifier, tier: match[1] as 'plus' | 'premium', period: match[2] === 'monthly' ? 'month' : 'year', price: item.product.priceString, productId: item.product.identifier };
 }
 
-// 연간 상품 옆 취소선 가격(월 가격 × 12). 스토어 가격 문자열의 통화·서식을 그대로 쓴다: CA$9.99 → CA$119.88, ₩11,000 → ₩132,000, 9,99 € → 119,88 €.
-export function yearlyListPrice(monthlyPrice: string): string | null {
-  const match = /(\d[\d.,]*\d|\d)/.exec(monthlyPrice);
+function storePrice(price: string) {
+  const match = /(\d[\d.,]*\d|\d)/.exec(price);
   if (!match) return null;
   const raw = match[1];
   const decimalSep = /[.,]\d{2}$/.test(raw) ? raw[raw.length - 3] : null;
   const thousandsSep = raw.replace(decimalSep ? new RegExp(`\\${decimalSep}\\d{2}$`) : /$/, '').match(/[.,]/)?.[0] ?? null;
   const value = Number(raw.replace(/[.,]/g, (ch) => (ch === decimalSep ? '.' : '')));
-  if (!Number.isFinite(value) || value <= 0) return null;
+  return Number.isFinite(value) && value > 0 ? { raw, decimalSep, thousandsSep, value } : null;
+}
+
+// 연간 배지: 월 가격 × 12 대비 아끼는 비율. 두 달 치에 가까우면 '2달 무료', 아니면 실제 % (예: 비즈니스 프리미엄 22%).
+export function yearlySavings(monthlyPrice: string, yearlyPrice: string): { freeMonths: 2 } | { percent: number } | null {
+  const month = storePrice(monthlyPrice)?.value, year = storePrice(yearlyPrice)?.value;
+  if (!month || !year || year >= month * 12) return null;
+  const saved = month * 12 - year;
+  return Math.abs(saved / month - 2) < 0.1 ? { freeMonths: 2 } : { percent: Math.round(saved / (month * 12) * 100) };
+}
+
+// 연간 상품 옆 취소선 가격(월 가격 × 12). 스토어 가격 문자열의 통화·서식을 그대로 쓴다: CA$9.99 → CA$119.88, ₩11,000 → ₩132,000, 9,99 € → 119,88 €.
+export function yearlyListPrice(monthlyPrice: string): string | null {
+  const price = storePrice(monthlyPrice);
+  if (!price) return null;
+  const { raw, decimalSep, thousandsSep, value } = price;
   const [whole, fraction] = (value * 12).toFixed(decimalSep ? 2 : 0).split('.');
   const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSep ?? ',');
   return monthlyPrice.replace(raw, fraction ? `${grouped}${decimalSep}${fraction}` : grouped);

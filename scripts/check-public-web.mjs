@@ -13,6 +13,12 @@ for (const page of ['index', 'terms', 'privacy', 'account-deletion', 'child-safe
   assert.ok(html.includes('gling-night-wordmark.') && html.includes('--accent:#9283AC') && html.includes('#746486'), `${page} lost the cinematic night brand`);
 }
 assert.ok(readFileSync(join(directory, 'index.html'), 'utf8').includes('https://apps.apple.com/ca/app/id6809273242'), 'Public web is missing the live iOS download');
+// Universal/App Links: both files must ship at these exact paths (served by Pages without redirect) for the app to open shared links.
+for (const file of ['apple-app-site-association', 'assetlinks.json']) {
+  const path = join(directory, '.well-known', file);
+  assert.ok(existsSync(path), `App link association file is missing: .well-known/${file}`);
+  JSON.parse(readFileSync(path, 'utf8'));
+}
 for (const file of ['robots.txt', 'sitemap.xml', 'llms.txt']) assert.ok(existsSync(join(directory, file)), `Public discovery file is missing: ${file}`);
 const robots = readFileSync(join(directory, 'robots.txt'), 'utf8');
 assert.ok(robots.includes('Sitemap: https://gling.ej-entertainment.com/sitemap.xml'), 'Public sitemap is missing');
@@ -24,12 +30,19 @@ if (process.env.GLING_PRERENDER_POSTS === '1') {
   assert.ok(posts.length > 0 && sitemap.includes('https://gling.ej-entertainment.com/posts/'), 'Public post pages were not prerendered');
   const page = readFileSync(join(directory, 'posts', posts[0]), 'utf8');
   assert.ok(page.includes('content="index, follow') && page.includes('id="gling-static-post"') && !/noindex/.test(page), 'Prerendered post must be indexable with static content');
+  assert.ok(sitemap.includes('https://gling.ej-entertainment.com/business<'), 'Business page is missing from the sitemap');
+  const companies = existsSync(join(directory, 'company')) ? readdirSync(join(directory, 'company')).filter(file => file.endsWith('.html')) : [];
+  assert.ok(companies.length > 0 && sitemap.includes('https://gling.ej-entertainment.com/company/'), 'Public business profiles were not prerendered');
+  const company = readFileSync(join(directory, 'company', companies[0]), 'utf8');
+  assert.ok(company.includes(`rel="canonical" href="https://gling.ej-entertainment.com/company/${companies[0].replace(/\.html$/, '')}"`) && company.includes('"LocalBusiness"') && company.includes('id="gling-static-company"') && !/noindex/.test(company), 'Prerendered business profile must be indexable with its own canonical');
 }
 assert.ok(robots.includes('Disallow: /merchant/') && robots.includes('Disallow: /admin'), 'Private surfaces must remain outside public discovery');
 assert.ok(readFileSync(join(directory, 'index.html'), 'utf8').includes('application/ld+json'), 'Public home structured data is missing');
 assert.match(readFileSync(join(directory, 'index.html'), 'utf8'), /<script\b[^>]*src=[^>]*_expo\/[^>]*\.js/, 'Public web hydration scripts are missing');
 assert.ok(/name="robots"[^>]*content="noindex/.test(readFileSync(join(directory, 'post.html'), 'utf8')), 'Login-protected detail route must not index private content');
 assert.ok(existsSync(join(directory, 'company.html')), 'Public company reader route is missing');
+assert.ok(/name="robots"[^>]*content="noindex/.test(readFileSync(join(directory, 'company.html'), 'utf8')), 'The id-less /company shell must stay noindex');
+assert.ok(existsSync(join(directory, 'business.html')), 'Public business page is missing');
 const childSafety = readFileSync(join(directory, 'child-safety.html'), 'utf8');
 assert.ok(childSafety.includes('--bg:') && childSafety.includes('--text:'), 'Legal page must define readable background/text colors');
 for (const text of ['아동 안전 표준', 'CSAE', 'CSAM', 'gling@ej-entertainment.com', 'Cybertip.ca']) {

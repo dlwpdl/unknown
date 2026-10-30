@@ -16,7 +16,7 @@ export const NEIGHBORHOODS: Record<string, readonly Neighborhood[]> = {
     n('north-vancouver', '노스밴쿠버', 'North Vancouver', 49.32, -123.072), n('west-vancouver', '웨스트밴쿠버', 'West Vancouver', 49.328, -123.16),
     n('metrotown', '메트로타운', 'Metrotown', 49.226, -123.004), n('brentwood', '브렌트우드', 'Brentwood', 49.267, -123.001),
     n('joyce', '조이스', 'Joyce–Collingwood', 49.238, -123.032), n('edmonds', '에드먼즈', 'Edmonds', 49.212, -122.959),
-    n('burquitlam', '버퀴틀람', 'Burquitlam', 49.261, -122.89), n('coquitlam-centre', '코퀴틀람 센터', 'Coquitlam Centre', 49.277, -122.8),
+    n('burquitlam', '버퀴틀람', 'Burquitlam', 49.261, -122.89), n('coquitlam', '코퀴틀람', 'Coquitlam', 49.25, -122.85), n('coquitlam-centre', '코퀴틀람 센터', 'Coquitlam Centre', 49.277, -122.8),
     n('port-moody', '포트무디', 'Port Moody', 49.284, -122.832), n('new-westminster', '뉴웨스트민스터', 'New Westminster', 49.206, -122.911),
     n('richmond', '리치먼드', 'Richmond', 49.167, -123.134), n('surrey', '써리', 'Surrey', 49.19, -122.849),
     n('langley', '랭리', 'Langley', 49.104, -122.66),

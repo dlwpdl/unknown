@@ -1,0 +1,43 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "P3X3452TDZ.com.dlwpdl.gling"
+        ],
+        "components": [
+          {
+            "/": "/posts/*"
+          },
+          {
+            "/": "/post/*"
+          },
+          {
+            "/": "/post",
+            "?": {
+              "id": "?*"
+            }
+          },
+          {
+            "/": "/company"
+          },
+          {
+            "/": "/company/*"
+          },
+          {
+            "/": "/meetups"
+          },
+          {
+            "/": "/invite"
+          },
+          {
+            "/": "/meetup-join",
+            "?": {
+              "postId": "?*"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

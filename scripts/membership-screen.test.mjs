@@ -6,7 +6,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 import { t } from '../src/i18n/ko.ts';
-import { MEMBERSHIP_LIMITS, GENERAL_BUMP_HOURS, BUSINESS_LIMITS, MEETUP_TOOL_PERKS, yearlyListPrice } from '../src/lib/membership.ts';
+import { MEMBERSHIP_LIMITS, GENERAL_BUMP_HOURS, BUSINESS_LIMITS, MEETUP_TOOL_PERKS, yearlyListPrice, yearlySavings } from '../src/lib/membership.ts';
 
 test('membership keeps stories and direct chat free while preserving meetup and listing plans', () => {
   let states = [], cursor = 0, restored = 0, confirmed = 0, feedback = 0, confirmation, reducedMotion = false;
@@ -50,7 +50,7 @@ test('membership keeps stories and direct chat free while preserving meetup and 
     if (name === '@/i18n/ko') return { t };
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true, me:{id:'member'} }) };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() { feedback++; } }) };
-    if (name === '@/lib/membership') return { MEMBERSHIP_LIMITS, GENERAL_BUMP_HOURS, BUSINESS_LIMITS, MEETUP_TOOL_PERKS, yearlyListPrice };
+    if (name === '@/lib/membership') return { MEMBERSHIP_LIMITS, GENERAL_BUMP_HOURS, BUSINESS_LIMITS, MEETUP_TOOL_PERKS, yearlyListPrice, yearlySavings };
     if (name === '@/lib/merchant-workspace') return {loadMyMerchants:async()=>[]};
     if (name === '@/lib/supabase') return {supabase:{rpc:async()=>({data:null})}};
     if (name === '@/lib/membership-provider') return { useMembership: () => value };

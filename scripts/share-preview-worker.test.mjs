@@ -181,10 +181,10 @@ test('static continuation rejects external, forged and ambiguous destinations', 
 });
 
 test('every kind gets its own cover and fixed same-origin destination', async () => {
-  for (const kind of ['post', 'festival', 'meetup']) {
-    const response = await handleSharePreview(new Request(`https://evil.example/share/${id}?next=https://evil.example`), env, async () => json({ ...preview, kind }));
+  for (const [kind, city, cover] of [['post', '토론토', 'toronto'], ['post', '캘거리', 'post'], ['festival', '토론토', 'festival'], ['meetup', '토론토', 'meetup']]) {
+    const response = await handleSharePreview(new Request(`https://evil.example/share/${id}?next=https://evil.example`), env, async () => json({ ...preview, kind, city }));
     const html = await response.text();
-    assert.ok(html.includes(`https://gling.example/share-covers/${kind}.png`));
+    assert.ok(html.includes(`<meta property="og:image" content="https://gling.example/share-covers/${cover}.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">`), `${kind} ${city}`);
     assert.ok(html.includes(`<meta property="og:url" content="https://gling.example/share/${id}">`));
     assert.equal(html.includes('&amp;invite=1'), kind === 'meetup');
     assert.doesNotMatch(html, /evil\.example/);
@@ -200,7 +200,7 @@ test('a valid first cover uses the bounded id-only preview image egress without 
   const html = await response.text();
   assert.equal(count, 1);
   assert.ok(html.includes(`https://project.supabase.co/functions/v1/public-post?format=preview-image&amp;id=${id}`));
-  assert.doesNotMatch(html, /PRIVATE-UPLOADER|storage\/v1|token=/);
+  assert.doesNotMatch(html, /PRIVATE-UPLOADER|storage\/v1|token=|og:image:width/);
 });
 
 test('invalid cover paths never trigger a second request', async () => {

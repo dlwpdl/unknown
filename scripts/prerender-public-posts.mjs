@@ -7,7 +7,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export const escapeHtml = value => String(value).replace(/[&<>"']/g, character => `&#${character.charCodeAt(0)};`);
 
 // Same public RPCs the guest web reader calls, with the publishable key only.
-async function rpc(url, key, name, args, fetcher) {
+export async function rpc(url, key, name, args, fetcher) {
   const response = await fetcher(`${url}/rest/v1/rpc/${name}`, {
     method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(args),
   });
@@ -65,19 +65,14 @@ export function topicHubs(posts) {
   }));
 }
 
-// Swap the shell's head tags for the page's own and put the static copy first in <body>.
-// The 404 shell carries the reader's "앱에서 이어가세요." heading; demote it so the page has a single H1.
-export function staticPage(template, head, body) {
-  const stripped = template.replace(/<title[^>]*>[^<]*<\/title>|<meta\b[^>]*\b(?:name="(?:description|robots|twitter:[^"]*)"|property="og:[^"]*")[^>]*\/?>|<link\b[^>]*\brel="canonical"[^>]*\/?>|<script\b[^>]*\btype="application\/ld\+json"[^>]*>[\s\S]*?<\/script>/g, '')
-    .replace(/<h1\b/g, '<p').replace(/<\/h1>/g, '</p>');
-  if (!/<\/head>/.test(stripped) || !/<body[^>]*>/.test(stripped)) throw new Error('Unexpected web shell for prerendered pages');
-  return stripped.replace('</head>', `${head}</head>`).replace(/<body[^>]*>/, match => `${match}${body}`);
-}
-
 const LINK = 'color:#CBB9FF';
 export const koreanDate = value => { const time = Date.parse(value); return Number.isFinite(time) ? new Intl.DateTimeFormat('ko-KR', { timeZone: 'America/Vancouver', year: 'numeric', month: 'long', day: 'numeric' }).format(time) : ''; };
 export const isoDate = value => { const time = Date.parse(value); return Number.isFinite(time) ? new Date(time).toISOString() : ''; };
 export const breadcrumbHtml = items => `<nav aria-label="경로" style="margin:0 0 8px;font-size:13px">${items.map(([name, href]) => href ? `<a href="${href}" style="${LINK}">${escapeHtml(name)}</a>` : `<span>${escapeHtml(name)}</span>`).join(' › ')}</nav>`;
+
+// Photo-less posts share their city's 1200×630 cover (public/share-covers/); per-post title cards would need a Korean font and a text renderer in CI.
+const CITY_COVERS = new Set(['vancouver', 'toronto', 'montreal']);
+export const postCover = cityId => `${PUBLIC_SITE}/share-covers/${CITY_COVERS.has(cityId) ? cityId : 'post'}.png`;
 
 export function renderPublicPost(template, post, related = [], hub = null) {
   const url = publicPostUrl(post.id), title = `${post.title} | 글링`;
@@ -89,14 +84,22 @@ export function renderPublicPost(template, post, related = [], hub = null) {
     `<title data-rh="true">${escapeHtml(title)}</title>`,
     `<meta name="description" content="${escapeHtml(description)}" data-rh="true"/>`,
     '<meta name="robots" content="index, follow, max-image-preview:large" data-rh="true"/>',
+    // Smart App Banner "Open" hands this post to the installed app.
+    `<meta name="apple-itunes-app" content="app-id=6809273242, app-argument=gling://post/${post.id}"/>`,
     `<link rel="canonical" href="${url}" data-rh="true"/>`,
     '<meta property="og:type" content="article" data-rh="true"/>',
     `<meta property="og:site_name" content="${escapeHtml(publicSiteName())}" data-rh="true"/>`,
     `<meta property="og:title" content="${escapeHtml(post.title)}" data-rh="true"/>`,
     `<meta property="og:description" content="${escapeHtml(description)}" data-rh="true"/>`,
     `<meta property="og:url" content="${url}" data-rh="true"/>`,
-    `<meta property="og:image" content="${escapeHtml(post.imageUrl ?? `${PUBLIC_SITE}/share-covers/post.png`)}" data-rh="true"/>`,
-    `<meta name="twitter:card" content="${post.imageUrl ? 'summary_large_image' : 'summary'}" data-rh="true"/>`,
+    '<meta property="og:locale" content="ko_KR" data-rh="true"/>',
+    `<meta property="og:image" content="${escapeHtml(post.imageUrl ?? postCover(post.cityId))}" data-rh="true"/>`,
+    // Photo sizes are unknown here, so only the fixed-size covers declare dimensions.
+    ...(post.imageUrl ? [] : ['<meta property="og:image:width" content="1200" data-rh="true"/>', '<meta property="og:image:height" content="630" data-rh="true"/>']),
+    `<meta property="og:image:alt" content="${escapeHtml(post.imageUrl ? post.title : `${post.city || '글링'} 동네 이야기`)}" data-rh="true"/>`,
+    '<meta name="twitter:card" content="summary_large_image" data-rh="true"/>',
+    `<meta name="twitter:title" content="${escapeHtml(post.title)}" data-rh="true"/>`,
+    `<meta name="twitter:description" content="${escapeHtml(description)}" data-rh="true"/>`,
     // No data-rh: the hydrated landing leaves this block alone instead of swapping in a thinner copy.
     `<script type="application/ld+json">${jsonLd(schema)}</script>`,
   ].join('');
@@ -114,13 +117,23 @@ export function renderPublicPost(template, post, related = [], hub = null) {
     + `<p style="margin:16px 0 0"><a href="/post?id=${post.id}" style="${LINK}">글링에서 전체 글 읽기</a> · <a href="${topicPath ?? '/'}" style="${LINK}">${escapeHtml(hub ? `${post.city} ${post.label} 이야기 더 보기` : post.city ? `${post.city} 동네 이야기 더 보기` : '동네 이야기 더 보기')}</a></p>`
     + (related.length ? `<h2 style="margin:24px 0 8px;font-size:17px">${escapeHtml(post.city ? `${post.city} 다른 이야기` : '다른 이야기')}</h2><ul style="margin:0;padding-left:20px">${related.map(item => `<li><a href="/posts/${item.id}" style="${LINK}">${escapeHtml(item.title)}</a></li>`).join('')}</ul>` : '')
     + '</article>';
-  return staticPage(template, head, body);
+  return withStaticPage(template, head, body);
 }
 
 // Old addresses (/post/<id>, /share/<id>, /posts/<id>/) as tiny pages pointing at the canonical post.
 // GitHub Pages cannot send a 301; Google treats an immediate meta refresh plus canonical as a permanent move.
 export function redirectPage(target, title = '글링') {
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><meta name="robots" content="noindex, follow"><link rel="canonical" href="${escapeHtml(target)}"><meta http-equiv="refresh" content="0; url=${escapeHtml(target)}"></head><body><p><a href="${escapeHtml(target)}">${escapeHtml(title)}</a></p></body></html>\n`;
+}
+
+// Swaps the shell's page metadata for `head` and puts the crawler copy `body` first in <body>.
+// The 404 shell carries the reader's "앱에서 이어가세요." heading; demote it so the page keeps the body's single H1.
+export function withStaticPage(template, head, body) {
+  // Attribute order differs between Expo versions (data-rh may come first), so match the attribute anywhere in the tag.
+  const stripped = template.replace(/<title[^>]*>[^<]*<\/title>|<meta\b[^>]*\b(?:name="(?:description|robots|apple-itunes-app|twitter:[^"]*)"|property="og:[^"]*")[^>]*\/?>|<link\b[^>]*\brel="canonical"[^>]*\/?>|<script\b[^>]*\btype="application\/ld\+json"[^>]*>[\s\S]*?<\/script>/g, '')
+    .replace(/<h1\b/g, '<p').replace(/<\/h1>/g, '</p>');
+  if (!/<\/head>/.test(stripped) || !/<body[^>]*>/.test(stripped)) throw new Error('Unexpected web shell for prerendered pages');
+  return stripped.replace('</head>', `${head}</head>`).replace(/<body[^>]*>/, match => `${match}${body}`);
 }
 
 export async function prerenderPublicPosts(directory, options) {

@@ -143,7 +143,7 @@ test('store picker creates only the selected store QR while the explicit post ap
   assert.equal(nodes(tree).filter(node=>node.type==='svg').length,1);
   assert.equal(action(tree,'shared.web.ios_store').props.href,'https://apps.apple.com/ca/app/id6809273242');
   action(tree,'shared.web.store.android').props.onClick();tree=app.render('SharedPostLandingContent',props);
-  assert.equal(app.encoded.at(-1),'https://play.google.com/store/apps/details?id=com.dlwpdl.gling');
+  assert.equal(app.encoded.at(-1),'https://play.google.com/store/apps/details?id=com.dlwpdl.gling&referrer=utm_source%3Dweb%26utm_campaign%3Dshared-post');
   assert.equal(nodes(tree).filter(node=>node.type==='svg').length,1);
   assert.equal(action(tree,'shared.web.ios_store'),undefined);
   assert.match(text(tree),/비공개 테스트|private testing/);assert.match(text(tree),/공개 출시.*준비|public release on the way/);

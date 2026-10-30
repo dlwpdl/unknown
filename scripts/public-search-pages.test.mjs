@@ -84,7 +84,7 @@ test('검색용 글·허브·옛 주소 페이지는 H1 하나, 70자 이상 설
       assert.match(html, new RegExp(`http-equiv="refresh" content="0; url=${PUBLIC_SITE}/posts/${uuid(1)}"`));
     }
 
-    const { hubs } = finishPublicWeb(directory, posts, meetups, NOW);
+    const { hubs } = finishPublicWeb(directory, posts, [], { meetups, now: NOW });
     assert.deepEqual([...hubs.keys()].sort(), ['vancouver/housing', 'vancouver/life'], 'only city × topic with 5+ posts');
     assert.ok(!existsSync(join(directory, 'vancouver', 'jobs.html')) && !existsSync(join(directory, 'toronto', 'life.html')));
     const rent = readFileSync(join(directory, 'vancouver', 'rent.html'), 'utf8');
@@ -135,7 +135,7 @@ test('검색용 글·허브·옛 주소 페이지는 H1 하나, 70자 이상 설
     }
     assert.match(sitemap, new RegExp(`<loc>${PUBLIC_SITE}/vancouver/rent</loc><lastmod>2026-10-30</lastmod>`));
     assert.ok(!sitemap.includes('?city=') && !sitemap.includes('/vancouver/jobs'));
-    assert.equal((sitemap.match(/<url>/g) ?? []).length, 41 + 16, '41 posts + home, 3 cities, page 2, 2 hubs, city meetups, meetups, visited, faq, en, 4 legal');
+    assert.equal((sitemap.match(/<url>/g) ?? []).length, 41 + 17, '41 posts + home, 3 cities, page 2, 2 hubs, city meetups, meetups, visited, faq, business, en, 4 legal');
 
     const notFound = readFileSync(join(directory, '404.html'), 'utf8');
     assert.match(notFound, /l\.replace\(t\+l\.search\+l\.hash\)/, 'the 404 page sends old links to the canonical address');

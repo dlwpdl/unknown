@@ -3,9 +3,10 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CITIES, TAGS } from '../src/lib/mock.ts';
 import {
-  CITY_PAGE_SIZE, jsonLd, PUBLIC_SITE, PUBLIC_SOURCE, publicAboutGling, publicAboutGlingEn, publicCitySubpageMeta, publicDisambiguation, publicPostUrl, TOPIC_HUBS,
+  CITY_PAGE_SIZE, jsonLd, PUBLIC_SITE, publicSiteName, PUBLIC_SOURCE, publicAboutGling, publicAboutGlingEn, publicCitySubpageMeta, publicCompanyUrl, publicDisambiguation, publicPostUrl, TOPIC_HUBS,
 } from '../src/lib/public-seo.ts';
-import { breadcrumbHtml, escapeHtml, isoDate, koreanDate, prerenderPublicPosts, redirectPage, staticPage, topicHubs } from './prerender-public-posts.mjs';
+import { breadcrumbHtml, escapeHtml, isoDate, koreanDate, postCover, prerenderPublicPosts, redirectPage, withStaticPage, topicHubs } from './prerender-public-posts.mjs';
+import { prerenderPublicCompanies } from './prerender-public-companies.mjs';
 
 const LINK = 'color:#CBB9FF';
 const SECTION = 'max-width:720px;margin:24px auto;padding:20px;color:#F6F3F0;font:16px/1.6 system-ui,sans-serif';
@@ -71,13 +72,18 @@ function cityBlock(city, facts, hubs, pages, meetupPage) {
     + '</section>';
 }
 
-const hubHead = (path, meta) => [
+const hubHead = (path, meta, cover) => [
   `<title data-rh="true">${escapeHtml(meta.title)}</title>`,
   `<meta name="description" content="${escapeHtml(meta.description)}" data-rh="true"/>`,
   '<meta name="robots" content="index, follow, max-image-preview:large" data-rh="true"/>',
   `<link rel="canonical" href="${PUBLIC_SITE}${path}" data-rh="true"/>`,
-  // Base share tags for the new hub pages; the share-image work owns their final shape.
-  `<meta property="og:type" content="website" data-rh="true"/><meta property="og:title" content="${escapeHtml(meta.title)}" data-rh="true"/><meta property="og:description" content="${escapeHtml(meta.description)}" data-rh="true"/><meta property="og:url" content="${PUBLIC_SITE}${path}" data-rh="true"/><meta property="og:image" content="${PUBLIC_SITE}/share-covers/post.png" data-rh="true"/>`,
+  // The shell's smart banner is stripped with the other page tags; hubs open the app's home.
+  '<meta name="apple-itunes-app" content="app-id=6809273242"/>',
+  // Same share scheme as the posts: the city's (or meetup) 1200×630 cover.
+  `<meta property="og:type" content="website" data-rh="true"/><meta property="og:site_name" content="${escapeHtml(publicSiteName())}" data-rh="true"/><meta property="og:locale" content="ko_KR" data-rh="true"/>`,
+  `<meta property="og:title" content="${escapeHtml(meta.title)}" data-rh="true"/><meta property="og:description" content="${escapeHtml(meta.description)}" data-rh="true"/><meta property="og:url" content="${PUBLIC_SITE}${path}" data-rh="true"/>`,
+  `<meta property="og:image" content="${cover}" data-rh="true"/><meta property="og:image:width" content="1200" data-rh="true"/><meta property="og:image:height" content="630" data-rh="true"/><meta property="og:image:alt" content="${escapeHtml(meta.title)}" data-rh="true"/>`,
+  `<meta name="twitter:card" content="summary_large_image" data-rh="true"/><meta name="twitter:title" content="${escapeHtml(meta.title)}" data-rh="true"/><meta name="twitter:description" content="${escapeHtml(meta.description)}" data-rh="true"/>`,
 ].join('');
 
 // Official facts for a hub's guide box. Only facts checked against the official page, with the date checked.
@@ -117,7 +123,7 @@ function topicHubPage(template, city, hub, posts, hubs, cities) {
     + '</section>';
   const schema = collectionSchema(`${PUBLIC_SITE}${hub.path}`, name, meta.description, list, crumbs);
   schema['@graph'].push({ '@type': 'FAQPage', '@id': `${PUBLIC_SITE}${hub.path}#faq`, mainEntity: faq.map(item => ({ '@type': 'Question', name: item.question, acceptedAnswer: { '@type': 'Answer', text: item.answer } })) });
-  return staticPage(template, hubHead(hub.path, meta) + ldScript(schema), body);
+  return withStaticPage(template, hubHead(hub.path, meta, postCover(city.id)) + ldScript(schema), body);
 }
 
 function cityPage(template, city, page, pages, posts) {
@@ -128,7 +134,7 @@ function cityPage(template, city, page, pages, posts) {
     + `<h1 style="margin:0;font-size:26px;line-height:1.35">${escapeHtml(`${city.name} 한인 커뮤니티 지난 이야기 ${page}쪽`)}</h1>`
     + `<div style="margin:16px 0 0">${postItems(posts)}</div>${pageList(city, pages, page)}`
     + '</section>';
-  return staticPage(template, hubHead(path, meta) + ldScript(collectionSchema(`${PUBLIC_SITE}${path}`, `${city.name} 한인 커뮤니티 지난 이야기 ${page}쪽`, meta.description, posts, crumbs)), body);
+  return withStaticPage(template, hubHead(path, meta, postCover(city.id)) + ldScript(collectionSchema(`${PUBLIC_SITE}${path}`, `${city.name} 한인 커뮤니티 지난 이야기 ${page}쪽`, meta.description, posts, crumbs)), body);
 }
 
 export function meetupEvents(city, meetups, now = Date.now()) {
@@ -159,13 +165,13 @@ function meetupPage(template, city, list) {
     { '@type': 'CollectionPage', '@id': `${PUBLIC_SITE}${path}`, url: `${PUBLIC_SITE}${path}`, name: `${city.name} 한인 모임`, inLanguage: 'ko', mainEntity: { '@type': 'ItemList', itemListElement: events.map((event, index) => ({ '@type': 'ListItem', position: index + 1, item: event })) } },
     { '@type': 'BreadcrumbList', itemListElement: crumbs.map(([name, item], index) => ({ '@type': 'ListItem', position: index + 1, name, item: `${PUBLIC_SITE}${item}` })) },
   ] };
-  return staticPage(template, hubHead(path, meta) + ldScript(schema), body);
+  return withStaticPage(template, hubHead(path, meta, `${PUBLIC_SITE}/share-covers/meetup.png`) + ldScript(schema), body);
 }
 
 // GitHub Pages serves 404.html (HTTP 404) for unknown paths: send old post links and trailing slashes to the real page.
 const LEGACY_REDIRECT = '<script>(function(l){var p=l.pathname,m=p.match(/^\\/(?:posts?|share)\\/([0-9a-fA-F-]{36})\\/?$/),t=m?"/posts/"+m[1].toLowerCase():p.length>1&&/\\/$/.test(p)?p.replace(/\\/+$/,""):null;if(t&&t!==p)l.replace(t+l.search+l.hash)})(location)</script>';
 
-export function finishPublicWeb(directory = 'dist', posts = [], meetups = [], now = Date.now()) {
+export function finishPublicWeb(directory = 'dist', posts = [], companies = [], { meetups = [], now = Date.now() } = {}) {
   // GitHub Pages serves this for app-only paths and existing /post/:id links.
   copyFileSync(join(directory, '+not-found.html'), join(directory, '404.html'));
   writeFileSync(join(directory, '404.html'), readFileSync(join(directory, '404.html'), 'utf8').replace(/<head[^>]*>/, match => `${match}${LEGACY_REDIRECT}`));
@@ -222,8 +228,8 @@ export function finishPublicWeb(directory = 'dist', posts = [], meetups = [], no
   }
   const day = value => { const time = Date.parse(value); return Number.isFinite(time) ? `<lastmod>${new Date(time).toISOString().slice(0, 10)}</lastmod>` : ''; };
   // `/?city=` pages canonicalize to `/`, so only distinct pages are listed. /visited canonicalizes to itself for the first city.
-  const paths = [...entries, ['/meetups', newest(meetups.map(item => ({ lastmod: item.createdAt })))], ['/visited'], ['/faq'], ['/en'], ['/terms'], ['/privacy'], ['/account-deletion'], ['/child-safety']];
-  writeFileSync(join(directory, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${paths.map(([path, lastmod]) => `<url><loc>${PUBLIC_SITE}${path}</loc>${day(lastmod)}</url>`).join('')}${posts.map(post => `<url><loc>${publicPostUrl(post.id)}</loc>${day(post.lastmod)}</url>`).join('')}</urlset>\n`);
+  const paths = [...entries, ['/meetups', newest(meetups.map(item => ({ lastmod: item.createdAt })))], ['/visited'], ['/faq'], ['/business'], ['/en'], ['/terms'], ['/privacy'], ['/account-deletion'], ['/child-safety']];
+  writeFileSync(join(directory, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${paths.map(([path, lastmod]) => `<url><loc>${PUBLIC_SITE}${path}</loc>${day(lastmod)}</url>`).join('')}${posts.map(post => `<url><loc>${publicPostUrl(post.id)}</loc>${day(post.lastmod)}</url>`).join('')}${companies.map(company => `<url><loc>${publicCompanyUrl(company.id)}</loc></url>`).join('')}</urlset>\n`);
   const protectedPaths = ['/merchant/', '/auth/', '/admin', '/chat', '/compose', '/profile', '/notifications', '/user/', '/meetup-create', '/meetup-join', '/meetup-application', '/meetup-profile'];
   writeFileSync(join(directory, 'robots.txt'), `User-agent: *\nAllow: /\n${protectedPaths.map(path => `Disallow: ${path}`).join('\n')}\n\nSitemap: ${PUBLIC_SITE}/sitemap.xml\n`);
   const recent = city => posts.filter(post => post.cityId === city.id).slice(0, 20)
@@ -235,7 +241,7 @@ export function finishPublicWeb(directory = 'dist', posts = [], meetups = [], no
     '- 앱: iPhone은 App Store에서 받을 수 있고, Android는 비공개 테스트 중',
     `- 도시 페이지: ${cities.map(city => `[${city.name} 한인 커뮤니티](${PUBLIC_SITE}/${city.id})`).join(' · ')}`,
     ...(hubs.size ? [`- 주제별 페이지: ${[...hubs.values()].map(hub => `[${TOPIC_HUBS[hub.tagSlug].name(CITIES.find(city => city.id === hub.cityId).name)}](${PUBLIC_SITE}${hub.path})`).join(' · ')}`] : []),
-    `- 비즈니스: 가게 프로필, 소식·채용 글, 영수증 인증 후기를 글링에서 관리할 수 있어요. 비즈니스 로그인은 ${PUBLIC_SITE}/merchant/ 에서 해요.`,
+    `- 비즈니스: 가게 프로필, 소식·채용 글, 영수증 인증 후기를 글링에서 관리할 수 있어요. 등록과 요금제는 ${PUBLIC_SITE}/business 에서 볼 수 있어요.`,
   ].join('\n');
   // Core answers from the /faq page (src/components/public-web/metadata.ts FAQ_ITEMS), kept short for AI answers.
   const faq = [
@@ -245,7 +251,7 @@ export function finishPublicWeb(directory = 'dist', posts = [], meetups = [], no
     ['글링은 무료인가요?', '무료로 쓸 수 있어요. 일부 기능은 인앱 구매가 있어요.'],
   ].map(([question, answer]) => `- **${question}** ${answer}`).join('\n');
   const updated = new Date(now).toISOString().slice(0, 10);
-  writeFileSync(join(directory, 'llms.txt'), `# 글링 Gling: 캐나다 한인 커뮤니티 (${cities.map(city => city.name).join('·')})\n\n마지막 갱신 ${updated}\n\n> ${publicAboutGlingEn}\n\n${publicDisambiguation}\n\n${publicAboutGling}\n\n${facts}\n\n## 자주 묻는 질문\n\n${faq}\n\n공개 미리보기는 작성자의 게시물 정보이며 글링의 공식 사실 확인이나 비즈니스 소유 인증을 뜻하지 않습니다. 게스트는 허용된 대표 이미지 한 장과 짧은 소개를 볼 수 있습니다. 로그인하거나 정상 가입을 마치면 현재 공개 상태와 열람 권한을 확인한 뒤 공개 글의 전체 본문을 웹에서 읽을 수 있습니다. 댓글 작성·대화·모임 참여는 앱에서 이용합니다. 아래 원문은 현재 공개 상태를 조회합니다. 삭제·비공개 글의 내용, 개인 대화와 계정 정보는 제공하지 않습니다. 공개 미리보기를 전체 원문으로 간주하지 마세요.\n\n## 공개 이야기\n\n- [글링 공개 게시판](${PUBLIC_SITE}/)\n${cities.map(city => `- [${city.name} 공개 미리보기 · 다음 페이지](${PUBLIC_SOURCE}?format=markdown&city=${city.id})`).join('\n')}\n${cities.map(city => recent(city) && `\n## ${city.name} 최근 글\n\n${recent(city)}\n`).filter(Boolean).join('')}\n## 이용 안내\n\n- [자주 묻는 질문](${PUBLIC_SITE}/faq)\n- [English](${PUBLIC_SITE}/en)\n- [iPhone 앱](https://apps.apple.com/ca/app/id6809273242)\n- [이용약관](${PUBLIC_SITE}/terms)\n- [개인정보처리방침](${PUBLIC_SITE}/privacy)\n- [계정 삭제](${PUBLIC_SITE}/account-deletion)\n`);
+  writeFileSync(join(directory, 'llms.txt'), `# 글링 Gling: 캐나다 한인 커뮤니티 (${cities.map(city => city.name).join('·')})\n\n마지막 갱신 ${updated}\n\n> ${publicAboutGlingEn}\n\n${publicDisambiguation}\n\n${publicAboutGling}\n\n${facts}\n\n## 자주 묻는 질문\n\n${faq}\n\n공개 미리보기는 작성자의 게시물 정보이며 글링의 공식 사실 확인이나 비즈니스 소유 인증을 뜻하지 않습니다. 게스트는 허용된 대표 이미지 한 장과 짧은 소개를 볼 수 있습니다. 로그인하거나 정상 가입을 마치면 현재 공개 상태와 열람 권한을 확인한 뒤 공개 글의 전체 본문을 웹에서 읽을 수 있습니다. 댓글 작성·대화·모임 참여는 앱에서 이용합니다. 아래 원문은 현재 공개 상태를 조회합니다. 삭제·비공개 글의 내용, 개인 대화와 계정 정보는 제공하지 않습니다. 공개 미리보기를 전체 원문으로 간주하지 마세요.\n\n## 공개 이야기\n\n- [글링 공개 게시판](${PUBLIC_SITE}/)\n${cities.map(city => `- [${city.name} 공개 미리보기 · 다음 페이지](${PUBLIC_SOURCE}?format=markdown&city=${city.id})`).join('\n')}\n${cities.map(city => recent(city) && `\n## ${city.name} 최근 글\n\n${recent(city)}\n`).filter(Boolean).join('')}\n## 이용 안내\n\n- [자주 묻는 질문](${PUBLIC_SITE}/faq)\n- [비즈니스 등록·요금제](${PUBLIC_SITE}/business)\n- [English](${PUBLIC_SITE}/en)\n- [iPhone 앱](https://apps.apple.com/ca/app/id6809273242)\n- [이용약관](${PUBLIC_SITE}/terms)\n- [개인정보처리방침](${PUBLIC_SITE}/privacy)\n- [계정 삭제](${PUBLIC_SITE}/account-deletion)\n`);
   // Naver Search Advisor and other feed readers pick up new public posts from this (teasers only, same as the post pages).
   const date = value => { const time = Date.parse(value); return Number.isFinite(time) ? `<pubDate>${new Date(time).toUTCString()}</pubDate>` : ''; };
   const item = ({ title, link, description, lastmod }) => `<item><title>${escapeHtml(title)}</title><link>${link}</link><guid isPermaLink="true">${link}</guid><description>${escapeHtml(description)}</description>${date(lastmod)}</item>`;
@@ -263,6 +269,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const prerender = process.env.GLING_PRERENDER_POSTS === '1';
   if (prerender && (!url || !key)) throw new Error('Supabase public env is required to prerender public posts');
   const { posts, meetups } = prerender ? await prerenderPublicPosts(directory, { url: url.replace(/\/+$/, ''), key, cities: CITIES.filter(city => city.state === 'open').map(city => city.id), searchToken: process.env.GLING_SEARCH_BUILD_TOKEN }) : { posts: [], meetups: [] };
-  const { hubs } = finishPublicWeb(directory, posts, meetups);
-  console.log(`Prerendered ${posts.length} public posts and ${hubs.size} topic hubs.`);
+  const companies = prerender ? await prerenderPublicCompanies(directory, { url: url.replace(/\/+$/, ''), key, cities: CITIES.filter(city => city.state === 'open').map(city => city.id) }) : [];
+  const { hubs } = finishPublicWeb(directory, posts, companies, { meetups });
+  console.log(`Prerendered ${posts.length} public posts, ${hubs.size} topic hubs and ${companies.length} business profiles.`);
 }

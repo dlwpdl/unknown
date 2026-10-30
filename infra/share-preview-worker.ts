@@ -60,8 +60,12 @@ function unavailable(status: number, head = false): Response {
   return new Response(head ? null : message, { status, headers: { ...headers(), 'Content-Type': 'text/plain; charset=utf-8', ...(status === 405 ? { Allow: 'GET, HEAD' } : {}) } });
 }
 
-function coverUrl(path: unknown, id: string, kind: Kind, app: string, supabase: string): string {
-  return previewImageCover(path, id) ? `${supabase}/functions/v1/public-post?format=preview-image&id=${id}` : `${app}/share-covers/${kind}.png`;
+// get_shared_link_preview returns the city display name; photo-less stories use that city's 1200×630 cover.
+const cityCovers: Record<string, string> = { 밴쿠버: 'vancouver', 토론토: 'toronto', 몬트리올: 'montreal' };
+
+function coverUrl(path: unknown, id: string, kind: Kind, city: string, app: string): string | null {
+  if (previewImageCover(path, id)) return null;
+  return `${app}/share-covers/${kind === 'post' && Object.hasOwn(cityCovers, city) ? cityCovers[city] : kind}.png`;
 }
 
 export async function handleSharePreview(request: Request, env: SharePreviewEnv, fetcher: typeof fetch = fetch): Promise<Response> {
@@ -108,7 +112,8 @@ export async function handleSharePreview(request: Request, env: SharePreviewEnv,
       : teaser || [kinds[kind], city, schedule, '로그인한 뒤 자세한 내용을 볼 수 있어요.'].filter(Boolean).join(' · ');
     const canonical = `${share}/${route[1]}/${route[1] === 's' ? route[2] : id}`;
     const destination = `${app}/post?id=${id}&shared=1${kind === 'meetup' ? '&invite=1' : ''}`;
-    const image = coverUrl(preview.imagePath, id, kind, app, supabase);
+    const cover = coverUrl(preview.imagePath, id, kind, city, app);
+    const image = cover ?? `${supabase}/functions/v1/public-post?format=preview-image&id=${id}`;
     const safeTitle = escapeHtml(title);
     const safeCardTitle = escapeHtml(cardTitle);
     const safeDescription = escapeHtml(description);
@@ -119,7 +124,7 @@ export async function handleSharePreview(request: Request, env: SharePreviewEnv,
 <title>${safeCardTitle} · 글링</title><meta name="description" content="${safeDescription}"><link rel="canonical" href="${canonical}">
 <meta property="og:type" content="website"><meta property="og:site_name" content="글링"><meta property="og:locale" content="ko_KR">
 <meta property="og:url" content="${canonical}"><meta property="og:title" content="${safeCardTitle}"><meta property="og:description" content="${safeDescription}">
-<meta property="og:image" content="${safeImage}"><meta property="og:image:alt" content="${escapeHtml(kinds[kind])} 미리보기">
+<meta property="og:image" content="${safeImage}">${cover ? '<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">' : ''}<meta property="og:image:alt" content="${escapeHtml(kinds[kind])} 미리보기">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${safeCardTitle}"><meta name="twitter:description" content="${safeDescription}"><meta name="twitter:image" content="${safeImage}">
 <style>
 :root{color-scheme:dark;font:100%/1.5 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",system-ui,sans-serif;background:#0B0B12;color:#F6F3F0}*{box-sizing:border-box}body{margin:0}main{width:min(100%,36rem);margin:auto;padding:2rem 1.25rem 3rem}.brand{color:#CBB9FF;font-size:1.5rem;font-weight:800;letter-spacing:-.04em}.intro{margin:1.75rem 0 .75rem;color:#B7B4C3;font-size:.875rem}article{overflow:hidden;border:1px solid #343443;border-radius:1.5rem;background:#171722}.hero{position:relative;aspect-ratio:16/10;overflow:hidden;background:#222231}.hero img{width:100%;height:100%;object-fit:cover}.hero:after{content:"";position:absolute;inset:50% 0 0;background:linear-gradient(transparent,#171722)}.details{position:relative;padding:1.5rem}.kind{display:inline-block;color:#CBB9FF;font-size:.8125rem;font-weight:700}h1{font-size:clamp(1.75rem,5vw,2.25rem);line-height:1.25;letter-spacing:-.025em;margin:.625rem 0 1rem;overflow-wrap:anywhere}.meta{margin:.35rem 0;color:#B7B4C3;font-size:.9375rem;overflow-wrap:anywhere}.closed{color:#CBB9FF;font-weight:700}.login{margin:1.5rem 0 .875rem;color:#B7B4C3;font-size:.875rem}.cta{display:flex;align-items:center;justify-content:center;min-height:3.25rem;padding:.875rem 1rem;background:#CBB9FF;color:#171123;border-radius:1rem;font-weight:750;text-decoration:none;text-align:center;transition:opacity .15s,transform .15s}.cta:hover{opacity:.9}.cta:active{transform:scale(.98);opacity:.75}.cta:focus-visible{outline:3px solid #F6F3F0;outline-offset:4px}.privacy{text-align:center;color:#B7B4C3;font-size:.75rem;margin:1rem 0 0}@media(prefers-reduced-motion:reduce){.cta{transition:none}.cta:active{transform:none}}

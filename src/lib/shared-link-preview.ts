@@ -15,7 +15,7 @@ export function previewImage(id: string) {
 
 export type SharedLinkPreview = {
   id: string; title: string; teaser?: string | null; kind: 'post' | 'festival' | 'meetup'; city: string; label: string;
-  // From 20261030120000_shared_link_preview_paragraph; absent until that migration is applied.
+  // From 20261030121000_shared_link_preview_paragraph; absent until that migration is applied.
   preview?: string | null; createdAt?: string | null; commentCount?: number | null; author?: string | null; authorIsBusiness?: boolean;
   schedule: ChillingSchedule | null; imagePath: string | null; imageUrl?: string; closed: boolean;
 };

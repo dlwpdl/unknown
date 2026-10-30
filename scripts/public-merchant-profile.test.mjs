@@ -40,7 +40,7 @@ function app(file = '../src/components/public-web/merchant-profile.tsx', { rpc =
     '@/lib/merchant-profile': { loadMerchantProfile: loadProfile, loadMerchantProfilePosts: (...args) => { postCalls.push(args.slice(1)); return loadPosts(...args); } }, '@/lib/public-web': { publicMerchantId, publicWebTarget },
     '@/lib/merchant-source': { merchantPhoneUrl, merchantMapsUrl }, '@/lib/translation-source': translationSource,
     '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value }) }, '@/constants/theme': { WebNightColors: {} }, '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [] },
-    '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.example', publicSiteName: () => '글링 | 캐나다 한인 커뮤니티', publicCitySubpage, publicCitySubpageMeta },
+    '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.example', publicCompanyUrl: id => `https://gling.example/company/${id}`, publicSiteName: () => '글링 | 캐나다 한인 커뮤니티', publicCitySubpage, publicCitySubpageMeta },
     './static-slot': { adoptStatic: () => () => {} }, './metadata': { publicHomeSchema: {} }, '@/i18n/ko': { t: {} },
     './shared-post-landing': { __esModule: true, default: 'SharedPostLanding' }, './analytics': { useReaderAnalytics() {} }, './merchant-profile': { PublicMerchantProfile: 'CompanyProfile', PublicMerchantProfileLink: 'CompanyLink' },
   };
@@ -114,7 +114,7 @@ test('post links use the server-returned company even when there is no external 
   const view = app(); view.render('PublicMerchantProfileLink', { postId }); await settle();
   const root = view.render('PublicMerchantProfileLink', { postId });
   const link = nodes(root).find(node => node.type === 'a');
-  assert.equal(link.props.href, `/company?id=${merchantId}`);
+  assert.equal(link.props.href, `/company/${merchantId}`);
   const rating = nodes(root).find(node => typeof node.type === 'function' && node.props.page);
   const summary = text(rating.type(rating.props));
   assert.ok(text(root).includes('동네 가게') && summary.includes('8.3') && summary.includes('4'));
@@ -182,7 +182,7 @@ test('a late response for a previous post cannot restore its company link', asyn
   resolves[0]({ data: page }); await settle();
   assert.equal(view.render('PublicMerchantProfileLink', { postId: nextPostId }), null);
   resolves[1]({ data: page }); await settle();
-  assert.equal(nodes(view.render('PublicMerchantProfileLink', { postId: nextPostId })).find(node => node.type === 'a').props.href, `/company?id=${merchantId}`);
+  assert.equal(nodes(view.render('PublicMerchantProfileLink', { postId: nextPostId })).find(node => node.type === 'a').props.href, `/company/${merchantId}`);
 });
 
 test('a mismatched company review response stays hidden and a failed read can retry', async () => {
