@@ -209,6 +209,15 @@ test('a newer daily payload cannot restore selections from an older editorial re
   }
 });
 
+test('a catalog that would not replace the current one skips per-city validation; a newer one is still fully validated', () => {
+  const api = data(), current = catalog();
+  // The same saved/server snapshot again: not newer, so its places are never walked.
+  const same = structuredClone(current); same.cities.vancouver.places[0].sourceUrl = 'http://not-checked.example';
+  assert.equal(api.replaceCityPlacesCatalog(same, fixtureNow), false);
+  const newer = dailyCatalog(); newer.selectionRevision = current.selectionRevision; newer.cities.vancouver.places[0].sourceUrl = 'http://invalid.example';
+  assert.throws(() => api.replaceCityPlacesCatalog(newer, fixtureNow), /INVALID_PLACE_CATALOG/);
+});
+
 test('a newer revision-4 server or cached catalog cannot shrink the shipped Vancouver 50 back to 17', () => {
   const snapshot = catalog(), api = data(snapshot);
   assert.ok(snapshot.selectionRevision >= 5);

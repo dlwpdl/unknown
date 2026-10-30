@@ -16,7 +16,7 @@ function disk(initial = null) {
   return { getItem: async () => value, setItem: async (_key, next) => { value = next; } };
 }
 const beforeMidnight = Date.parse('2026-10-18T06:59:00Z'), afterMidnight = Date.parse('2026-10-18T07:01:00Z');
-test('readers share one DB request and a restart shows saved data before checking for an incremental update', async () => {
+test('readers share one DB request and a same-day restart shows saved data without asking the DB again', async () => {
   const refresh = refreshModule(), storage = disk(), applied = [];
   let calls = 0, finish;
   const fetch = () => { calls++; return new Promise(resolve => { finish = resolve; }); };
@@ -25,8 +25,18 @@ test('readers share one DB request and a restart shows saved data before checkin
   for (let i = 0; i < 10; i++) await Promise.resolve();
   assert.equal(calls, 1);
   finish({ version: 'one' }); await Promise.all([a, b]);
-  await refreshModule()(storage, async () => { calls++; assert.equal(applied.at(-1).version, 'one'); return { version: 'two' }; }, apply, beforeMidnight);
+  await refreshModule()(storage, async () => { calls++; return { version: 'two' }; }, apply, beforeMidnight);
+  assert.equal(calls, 1); assert.equal(applied.at(-1).version, 'one');
+  await refreshModule()(storage, async () => { calls++; return { version: 'two' }; }, apply, afterMidnight);
   assert.equal(calls, 2); assert.equal(applied.at(-1).version, 'two');
+});
+test('a restart still asks when today\'s check only found an earlier day\'s catalog', async () => {
+  const storage = disk(); let calls = 0;
+  const early = Date.parse('2026-10-18T08:00:00Z');
+  const fetch = async () => { calls++; return { recommendationTheme: 'photo-spots', collectedAt: '2026-10-17T11:10:00Z' }; };
+  await refreshModule()(storage, fetch, () => true, early);
+  await refreshModule()(storage, fetch, () => false, early + 16 * 60_000);
+  assert.equal(calls, 2);
 });
 test('the next Vancouver day refreshes even across a short midnight interval', async () => {
   const refresh = refreshModule(), storage = disk(); let calls = 0;
