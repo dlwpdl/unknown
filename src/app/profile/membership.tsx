@@ -172,6 +172,7 @@ export default function MembershipScreen() {
             {activeMembership?.expiresAt && activeMembership.tier !== 'free' && activeMembership.tier !== 'admin' && <ThemedText type="small" themeColor="textSecondary">
               {tr(activeMembership.willRenew === true ? '{0} 갱신 예정' : activeMembership.willRenew === false ? '{0} 까지 이용 가능' : '{0} 이용 기간 종료 예정', new Date(activeMembership.expiresAt).toLocaleDateString(appLocale))}
             </ThemedText>}
+            {activeMembership?.store === 'reward' && activeMembership.tier !== 'free' && <ThemedText type="small" themeColor="accent">{tr("초대 보상 이용권이에요. 자동으로 결제되지 않아요.")}</ThemedText>}
             {kind === 'general' && auth.isAdmin && <ThemedText type="small" themeColor="accent">{tr("관리자 계정 · 모임을 제한 없이 이용해요.")}</ThemedText>}
             {kind === 'general' && membership?.planVersion === 1 && <ThemedText type="small" themeColor="textSecondary">{tr("기존 구독 가격과 더 빠른 끌어올리기 혜택을 유지해요.")}</ThemedText>}
             {usage.length > 0 && <View style={styles.usage}>

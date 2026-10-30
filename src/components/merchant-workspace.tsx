@@ -12,6 +12,7 @@ import { MerchantAccountInvitations, MerchantAccountManagement } from '@/compone
 import { MerchantAccessGate } from '@/components/merchant-access-gate';
 import { MerchantNaverCafe } from '@/components/merchant-naver-cafe';
 import { MerchantOperatorInvites } from '@/components/merchant-operator-invites';
+import { BusinessInviteCard } from '@/components/business-invite-card';
 import { MerchantWebPosts } from '@/components/merchant-web-posts';
 import { MerchantBadge, merchantToneColor, MerchantHelp, MerchantMeter, MerchantPageHeader, MerchantSegments, MerchantStat, MerchantStats, MerchantSteps } from '@/components/merchant-ui';
 import { MerchantChannelList, MerchantHome, MerchantSidebar, merchantShellStyles, useMerchantSidebar, type MerchantNavItem, type MerchantRecentItem } from '@/components/merchant-web-shell';
@@ -850,6 +851,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     </>}
     {activeTab === 'accounts' && <MerchantAccountManagement bare={sidebar} merchantName={data.merchant.name} merchantId={id} refreshSignal={refreshSignal + revision} onChanged={() => { setRevision(v => v + 1); onConnectionsChanged?.(); }} />}
     {activeTab === 'accounts' && data.merchant.owner_id === me.id && !!data.merchant.owner_verified_at && <MerchantOperatorInvites merchantId={id} refreshSignal={refreshSignal + revision} onChanged={() => setRevision(v => v + 1)} />}
+    {activeTab === 'accounts' && data.merchant.owner_id === me.id && !!data.merchant.owner_verified_at && <BusinessInviteCard merchantId={id} />}
     {activeTab === 'membership' && (data.metrics ? <>
       <MerchantStats>
         <MerchantStat label={tr("새 글")} value={tr("{0}편", data.metrics.new_posts)} />

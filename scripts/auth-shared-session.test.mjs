@@ -53,7 +53,7 @@ function mount(initialSession = session('member')) {
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },
     '@/constants/theme': { Spacing: {} }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/i18n/ko': { t: { auth: { loginError: '로그인 오류', sessionExpired: '세션 만료' } } }, '@/lib/admin': { isAdminRole: () => false },
-    '@/lib/account-security-device': { registerSecurityDevice: async () => {} }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play }) },
+    '@/lib/account-security-device': { registerSecurityDevice: async () => {} }, '@/lib/invites': { claimRememberedInvite: async () => null }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play }) },
     '@/lib/feed-data': { setBusinessImageSession }, '@/lib/chat-identity': chatIdentity, '@/lib/nickname': nickname, '@/lib/kakao-auth': kakao, '@/lib/legal-documents': { CONTACT_EMAIL: 'fixture@example.invalid' },
     '@/lib/location-provider': { CommunityLocationProvider: 'CommunityLocationProvider' }, '@/lib/mock': { CITIES: [{ id: 'vancouver' }] },
     '@/lib/supabase': { supabase, AUTH_EXPIRED_EVENT: 'authExpired' }, '@/lib/push-notifications': { unregisterPushDevice: async () => {} },

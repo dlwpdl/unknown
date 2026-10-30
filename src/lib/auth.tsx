@@ -18,6 +18,7 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { isAdminRole } from '@/lib/admin';
 import { registerSecurityDevice } from '@/lib/account-security-device';
+import { claimRememberedInvite } from '@/lib/invites';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { canUseDevPasswordLogin, getKakaoAuthSessionUrl, getOAuthCallbackPath, getOAuthCode } from '@/lib/kakao-auth';
 import { CONTACT_EMAIL } from '@/lib/legal-documents';
@@ -432,6 +433,8 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     void registerSecurityDevice(supabase, activeProfile.id, AsyncStorage).catch(() => {
       if (registeredSecurityLogin.current === securityLogin) registeredSecurityLogin.current = null;
     });
+    // An invite code kept from a deep link links once the member has signed up; network errors keep it for next time.
+    void claimRememberedInvite(supabase, AsyncStorage).catch(() => {});
   }, [activeProfile?.id, securityLogin]);
 
   useEffect(() => {
