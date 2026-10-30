@@ -7,7 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { postLinkLabel } from '@/lib/post-info';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { INSTAGRAM_LINK_SVG, instagramPostLink, safePostLink } from '../../supabase/functions/_shared/post-links';
 
 // `row` is the post-detail info card form: short name, kind, and the same safety confirm.
