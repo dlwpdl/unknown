@@ -4,6 +4,7 @@ import { getLocale, t, tr } from '../i18n/index.ts';
 import { meetupRestrictionError } from './meetup-policy.ts';
 import { removePostImages, uploadPostImage, type PostDraftImage } from './community-data.ts';
 import { loadMeetupProfilePhoto } from './chilling-profile-media.ts';
+import type { LanguageChoice } from './meetup-language.ts';
 
 export const CHILLING_PROMPTS = {
   meet: '나랑 만나면 주로…', weekend: '내가 좋아하는 주말은', comfort: '내가 편해지는 순간은',
@@ -120,13 +121,15 @@ export async function loadChillingApplication(client: SupabaseClient, requestId:
   }
   return { ...result.data, profile, request };
 }
-export async function requestChillingJoin(client: SupabaseClient, postId: string, answer: string, consent: boolean, profileRevision: string) {
+// A language exchange sends the applicant's side through request_language_exchange_join, which wraps the same v2 request.
+export async function requestChillingJoin(client: SupabaseClient, postId: string, answer: string, consent: boolean, profileRevision: string, language?: LanguageChoice | null) {
   if (!consent) throw new Error('CHILLING_CONSENT_REQUIRED');
   if (!answer.trim() || answer.trim().length > 300) throw new Error('INVALID_CHILLING_ANSWER');
   if (typeof profileRevision !== 'string' || !profileRevision.trim() || profileRevision.length > 80) throw new Error('CHILLING_PROFILE_CHANGED');
-  const result = await client.rpc('request_chilling_join_v2', {
-    p_post_id: postId, p_answer: answer.trim(), p_consent_version: CHILLING_CONSENT_VERSION, p_profile_revision: profileRevision,
-  });
+  const request = { p_post_id: postId, p_answer: answer.trim(), p_consent_version: CHILLING_CONSENT_VERSION, p_profile_revision: profileRevision };
+  const result = language
+    ? await client.rpc('request_language_exchange_join', { ...request, p_speaks: language.speaks, p_learns: language.learns })
+    : await client.rpc('request_chilling_join_v2', request);
   if (result.error) throw result.error;
   return result.data as string;
 }
@@ -195,6 +198,10 @@ const chillingErrors: Record<string, string> = {
     INVALID_CAPACITY: '정원은 2명 이상으로 설정해 주세요. 무료는 최대 50명, 유료 멤버십은 최대 5,000명이에요.',
     INVALID_EVENT_CAPACITY: '정원은 2명 이상으로 설정해 주세요. 무료는 최대 50명, 유료 멤버십은 최대 5,000명이에요.',
     INVALID_CADENCE: '활동 주기를 1~80자로 입력해 주세요.', INVALID_EVENT_CADENCE: '활동 주기를 1~80자로 입력해 주세요.',
+    LANGUAGE_SIDE_FULL: '고른 언어 쪽은 자리가 다 찼어요.',
+    INVALID_LANGUAGE_CHOICE: '할 줄 아는 말과 배우는 말을 다시 골라 주세요.',
+    INVALID_LANGUAGE_EXCHANGE: '언어교환에 쓸 두 언어를 서로 다르게 골라 주세요.',
+    LANGUAGE_EXCHANGE_CAPACITY: '언어교환은 언어마다 한 명씩은 받아야 해서 정원은 호스트 포함 3명부터예요.',
 };
 
 export function getChillingErrorCode(error: unknown): string | null {

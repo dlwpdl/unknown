@@ -8,6 +8,7 @@ import * as chilling from '../src/lib/chilling.ts';
 import * as discovery from '../src/lib/chilling-discovery.ts';
 import * as designSystem from '../src/constants/design-system.ts';
 import * as hostTools from '../src/lib/meetup-host-tools.ts';
+import * as meetupLanguage from '../src/lib/meetup-language.ts';
 import * as newcomer from '../src/lib/newcomer.ts';
 
 export const participantPost = { id: 'a1620000-0000-0000-0000-000000000001', cityId: 'vancouver', kind: 'story', title: '바닷길 따라 함께 걷기', body: '천천히 걷고 커피 한 잔 해요.', author: { id: 'host', nickname: '소라' }, tag: { id: 5, kind: 'meetup' }, createdAt: '2030-01-01', room: { eventKind: 'once', startsAt: '2031-06-12T17:00:00Z', endsAt: '2031-06-12T19:00:00Z', timezone: 'America/Vancouver', memberCount: 3, capacity: 8, applicationQuestion: '어떤 산책길을 좋아하세요?' } };
@@ -48,10 +49,10 @@ export function mountParticipant(screen, options = {}) {
     '@/lib/membership-provider': { useMembership: () => ({ membership: {}, refresh: noop }) }, '@/components/relationship-slot-card': { relationshipSlotData: () => null },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => calls.push(['feedback', value]) }) },
     '@/lib/push-prompt': { requestPushPrompt: reason => calls.push(['push-prompt', reason]) },
-    '@/lib/supabase': { supabase: { rpc: async name => name === 'get_meetup_fee_payments' && ctx.payments === 'error' ? { error: { message: 'offline' } } : { data: name === 'get_meetup_fee_payments' ? ctx.payments ?? [] : null, error: null } } }, '@/lib/meetup-host-tools': hostTools, '@/lib/personal-info': { ageForMeetupRecommendation: () => null },
+    '@/lib/supabase': { supabase: { rpc: async name => name === 'get_meetup_fee_payments' && ctx.payments === 'error' ? { error: { message: 'offline' } } : { data: name === 'get_meetup_fee_payments' ? ctx.payments ?? [] : name === 'get_meetup_languages' ? ctx.languages ?? null : null, error: null } } }, '@/lib/meetup-host-tools': hostTools, '@/lib/personal-info': { ageForMeetupRecommendation: () => null },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 12, four: 16, six: 24 }, Depth: { control: {}, card: {} }, MaxContentWidth: 640, TabBarHeight: 60 }, '@/constants/design-system': designSystem,
     '@/lib/newcomer': newcomer, '@/components/newcomer': { useNewcomerStatus: () => ({ status: ctx.newcomerStatus ?? null, loading: false, refresh: noop }) },
-    '@/lib/chilling': chilling, '@/lib/chilling-discovery': discovery, '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [{ id: 5, kind: 'meetup' }] },
+    '@/lib/chilling': chilling, '@/lib/meetup-language': meetupLanguage, '@/lib/chilling-discovery': discovery, '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [{ id: 5, kind: 'meetup' }] },
     '@/lib/city-places': { subscribeCityPlaces() {}, cityPlacesRevision() {} }, '@/lib/meetup-destination': { matchesMeetupDestination: () => true, meetupDestinationQuery: () => 'source' }, '@/lib/ticketmaster': { meetupAllowed: () => true, loadTicketmasterEvent: async () => ({ event: { id: ctx.destination?.eventId, name: '실제 행사' } }) },
     '@/lib/feed-data': { loadPublicFeed: async () => ctx.posts ?? [ctx.post], appendUniquePosts: (a, b) => [...a, ...b], loadPublicPost: async () => ctx.post },
     '@/lib/community-data': { loadMyMeetups: async () => ctx.myItems ?? [{ ...ctx.post, authorId: ctx.post.author.id, role: 'approved', conversationId: 'conversation' }], recordPostShare: async () => {}, loadPendingMeetupRequests: async () => [], MEETUPS_CHANGED_EVENT: 'changed', leaveMeetup: async () => calls.push(['leave']), requestMeetupJoin: async () => calls.push(['legacy-join']) },
@@ -152,6 +153,27 @@ test('an unavailable profile photo keeps the meetup and status visible, blocks s
   const pending = mountParticipant('join', { profileError: 'CHILLING_PROFILE_PHOTOS_UNAVAILABLE', request: { id: 'request', status: 'pending' } }); await pending.flush();
   assert.ok(nodes(pending.tree).some(node => node.type === 'StateCard' && node.props.kind === 'pending')); pending.unmount();
 });
+test('a language exchange asks which side you speak, sends it, and moves only a full side to the waitlist', async () => {
+  const exchange = { ...participantPost, room: { ...participantPost.room, capacity: 5, category: 'casual', languageExchange: { languages: ['ko', 'en'], share: 50 } } };
+  const languages = { sides: [{ language: 'ko', seats: 2, approved: 1, pending: null, waiting: null }, { language: 'en', seats: 2, approved: 2, pending: null, waiting: null }], mine: null, requests: null, unknown: null };
+  const ui = mountParticipant('join', { post: exchange, languages }); await ui.flush(); await fill(ui);
+  const cta = () => ui.control('app_meetup-join.pressable.8'), picker = () => nodes(ui.tree).find(node => node.type === 'MeetupLanguagePicker');
+  assert.equal(cta().props.disabled, true); assert.equal(cta().props.label, '할 줄 아는 말을 골라 주세요');
+  assert.equal(nodes(ui.tree).some(node => node.type === 'MeetupWaitlist'), false, 'an open meetup shows no waitlist before a side is chosen');
+  picker().props.onChange('en'); await ui.flush();
+  assert.equal(cta().props.disabled, true); assert.equal(cta().props.label, '고른 언어 쪽은 자리가 다 찼어요');
+  assert.deepEqual({ ...nodes(ui.tree).find(node => node.type === 'MeetupWaitlist').props.language }, { speaks: 'en', learns: 'ko' });
+  picker().props.onChange('ko'); await ui.flush();
+  assert.equal(cta().props.disabled, false); assert.equal(nodes(ui.tree).some(node => node.type === 'MeetupWaitlist'), false);
+  cta().props.onPress(); await ui.flush();
+  assert.deepEqual({ ...ui.calls.find(([name]) => name === 'join').at(-1) }, { speaks: 'ko', learns: 'en' }); ui.unmount();
+  // The server's side check still wins when the counts were stale.
+  const late = mountParticipant('join', { post: exchange, languages: null, submit: () => { throw new Error('LANGUAGE_SIDE_FULL'); } }); await late.flush(); await fill(late);
+  nodes(late.tree).find(node => node.type === 'MeetupLanguagePicker').props.onChange('ko'); await late.flush();
+  late.control('app_meetup-join.pressable.8').props.onPress(); await late.flush();
+  assert.equal(late.control('app_meetup-join.pressable.8').props.label, '고른 언어 쪽은 자리가 다 찼어요');
+  assert.equal(nodes(late.tree).some(node => node.props?.accessibilityRole === 'alert' && text(node) === 'LANGUAGE_SIDE_FULL'), false); late.unmount();
+});
 test('full or host-capacity rejection disables submit without repeating the full message as a footer alert', async () => {
   for (const code of ['MEETUP_FULL', 'MEETUP_HOST_CAPACITY_LIMIT']) {
     const ui = mountParticipant('join', { submit: () => { throw new Error(code); } }); await ui.flush(); await fill(ui);
@@ -202,7 +224,7 @@ test('the meetup card, schedule and fee line render the compact CAD fee in both 
       react: { memo: value => value, useState: value => [value, () => {}] }, 'react/jsx-runtime': { jsx: (type, props) => typeof type === 'function' ? type(props) : { type, props }, jsxs: (type, props) => typeof type === 'function' ? type(props) : { type, props }, Fragment: 'Fragment' },
       'react-native': { StyleSheet: { create: value => value, hairlineWidth: 1 }, View: 'View' }, 'expo-image': { Image: 'Image' },
       '@/hooks/use-language': { useLanguage: () => ({ language, locale: language === 'en' ? 'en-CA' : 'ko-KR', tr: (value, ...args) => translateUi(language, value, ...args) }) },
-      '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/auth': { useAuth: () => ({ me: { id: 'viewer' }, isAuthed: true }) }, '@/lib/chilling': chilling, '@/lib/meetup-host-tools': hostTools,
+      '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/auth': { useAuth: () => ({ me: { id: 'viewer' }, isAuthed: true }) }, '@/lib/chilling': chilling, '@/lib/meetup-language': meetupLanguage, '@/lib/meetup-host-tools': hostTools,
       '@/lib/feed-data': { getPostImageSource: () => null }, '@/lib/community-data': {}, '@/lib/supabase': {}, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
       '@/components/newcomer': { MeetupLabelBadges: 'MeetupLabelBadges', useMeetupLabelPrefix: () => '' },
     };

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getLocale } from '../i18n/index.ts';
+import { normalizeLanguageExchange, type LanguageExchange } from './meetup-language.ts';
 
 export type ChillingKind = 'once' | 'group';
 export type ChillingSchedule = {
@@ -21,6 +22,7 @@ export type ChillingEventDraft = {
   category?: 'casual' | 'hobby' | 'travel' | 'party' | 'festival' | 'sports';
   recommendedAgeMin?: number | null;
   recommendedAgeMax?: number | null;
+  languageExchange?: LanguageExchange | null;
 };
 
 export function chillingKind(room: ChillingSchedule): ChillingKind {
@@ -123,6 +125,7 @@ export function normalizeChillingEvent(draft: ChillingEventDraft, maxCapacity = 
   if (draft.category && !['casual', 'hobby', 'travel', 'party', 'festival', 'sports'].includes(draft.category)) throw new Error('INVALID_EVENT_CATEGORY');
   if (!Number.isInteger(maxCapacity) || maxCapacity < 2 || maxCapacity > 5000
     || !Number.isInteger(draft.capacity) || draft.capacity < 2 || draft.capacity > maxCapacity) throw new Error('INVALID_CAPACITY');
+  const exchange = draft.languageExchange ? normalizeLanguageExchange(draft.languageExchange, draft.capacity) : null;
   const { recommendedAgeMin: min, recommendedAgeMax: max } = draft;
   if ((min != null || max != null) && (!Number.isInteger(min) || !Number.isInteger(max) || min! < 0 || max! > 120 || min! > max!)) throw new Error('INVALID_RECOMMENDED_AGE');
   let startsAt: string | null = null;
@@ -141,8 +144,8 @@ export function normalizeChillingEvent(draft: ChillingEventDraft, maxCapacity = 
     startsAt = new Date(start).toISOString(); endsAt = new Date(end).toISOString();
   } else if (!cadence || cadence.length > 80) throw new Error('INVALID_CADENCE');
   return { eventKind: draft.kind, startsAt, endsAt, timezone: draft.kind === 'once' ? timezone : null,
-    cadence: draft.kind === 'group' ? cadence : null, capacity: draft.capacity, category: draft.category ?? 'casual',
-    ...(min != null ? { recommendedAgeMin: min, recommendedAgeMax: max } : {}) };
+    cadence: draft.kind === 'group' ? cadence : null, capacity: draft.capacity, category: exchange ? 'casual' : draft.category ?? 'casual',
+    ...(min != null ? { recommendedAgeMin: min, recommendedAgeMax: max } : {}), ...(exchange ? { languageExchange: exchange } : {}) };
 }
 
 export async function configureChillingEvent(client: SupabaseClient, postId: string, draft: ChillingEventDraft) {

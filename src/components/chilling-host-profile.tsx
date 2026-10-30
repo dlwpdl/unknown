@@ -7,6 +7,7 @@ import { DeviceEventEmitter, Platform, StyleSheet, useWindowDimensions, View } f
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
 import { CHILLING_CATEGORY_LABELS, SeatBar } from '@/components/chilling-event';
+import { languagePairLabel, meetupCategoryOf, parseLanguageExchange } from '@/lib/meetup-language';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { MeetupWaitlist } from '@/components/meetup-host-tools';
 import { RaisedActionButton } from '@/components/raised-action-button';
@@ -65,10 +66,12 @@ export function MeetupChips({ post }: { post: Post }) {
   const theme = useTheme();
   if (!post.room) return null;
   const availability = chillingAvailability(post.room);
+  const category = meetupCategoryOf(post.room), exchange = parseLanguageExchange(post.room);
   const chip = [styles.badge, { backgroundColor: theme.backgroundElement }];
   return <View style={styles.badges}>
     <View style={chip}><ThemedText type="smallBold" themeColor="accent">{chillingKind(post.room) === 'once' ? tr('칠링') : tr('정기모임')}</ThemedText></View>
-    {!!post.room.category && <View style={chip}><ThemedText type="smallBold">{tr(CHILLING_CATEGORY_LABELS[post.room.category])}</ThemedText></View>}
+    {!!category && <View style={chip}><ThemedText type="smallBold">{tr(CHILLING_CATEGORY_LABELS[category])}</ThemedText></View>}
+    {exchange && <View style={chip}><ThemedText type="smallBold">{languagePairLabel(exchange)}</ThemedText></View>}
     <View style={chip}><ThemedText type="smallBold">{{ open: tr('모집 중'), full: tr('정원 마감'), closed: tr('모집 마감'), ended: tr('종료된 모임') }[availability]}</ThemedText></View>
   </View>;
 }

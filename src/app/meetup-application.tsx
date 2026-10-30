@@ -12,6 +12,7 @@ import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { InfoNote } from '@/components/notice-blocks';
 import { MannerSummary } from '@/components/manner-summary';
 import { MeetupHistoryChoice } from '@/components/meetup-room-summary';
+import { MeetupLanguageCounts } from '@/components/meetup-language';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
@@ -72,7 +73,7 @@ function Application({ requestId }: { requestId: string }) {
   const visible = application && !hidden('post', application.postId, application.requesterId);
   const own = application?.requesterId === me.id || requestStatus?.requester_id === me.id;
   const canRespond = visible && application.request?.host_id === me.id && application.request.status === 'pending' && !own;
-  const approvalBlocked = !!actionCode && ['MEETUP_FULL', 'MEETUP_HOST_CAPACITY_LIMIT', 'MEETUP_CLOSED', 'MEETUP_EXPIRED', 'MEETUP_LIMIT_REACHED', 'RELATIONSHIP_LIMIT', 'MEETUP_JOIN_RESTRICTED'].includes(actionCode);
+  const approvalBlocked = !!actionCode && ['MEETUP_FULL', 'MEETUP_HOST_CAPACITY_LIMIT', 'MEETUP_CLOSED', 'MEETUP_EXPIRED', 'MEETUP_LIMIT_REACHED', 'RELATIONSHIP_LIMIT', 'MEETUP_JOIN_RESTRICTED', 'LANGUAGE_SIDE_FULL'].includes(actionCode);
   const identity = application?.request?.requester;
   const respond = async (response: 'approved' | 'rejected') => {
     if (busy.current || !canRespond || (response === 'approved' && approvalBlocked)) return;
@@ -110,7 +111,7 @@ function Application({ requestId }: { requestId: string }) {
       <View style={styles.back} />
     </View>
     {loading ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={tr("신청 정보 불러오는 중")} /></View> : <ScrollView analyticsId="app_meetup-application.scrollview.1" contentContainerStyle={styles.content}>
-    {!!actionError && <StateCard kind="error" title={actionCode === 'MEETUP_FULL' ? tr("정원이 차서 승인하지 못했어요") : tr("처리 결과를 확인해 주세요")} body={tr(actionError)} />}
+    {!!actionError && <StateCard kind="error" title={actionCode === 'MEETUP_FULL' ? tr("정원이 차서 승인하지 못했어요") : actionCode === 'LANGUAGE_SIDE_FULL' ? tr("이 언어 쪽 자리가 다 차서 승인하지 못했어요") : tr("처리 결과를 확인해 주세요")} body={tr(actionError)} />}
     {outcome ? <StateCard kind={outcome === 'approved' ? 'success' : 'empty'} title={outcome === 'approved' ? tr("참여를 승인했어요") : tr("신청을 거절했어요")} body={tr("신청자가 참여 신청 화면에서 결과를 확인할 수 있어요.")} actionLabel={tr("신청함 보기")} onAction={() => router.replace({ pathname: '/chat', params: { view: 'requests' } })} />
       : !isAuthed ? <StateCard kind="blocked" title={tr("로그인이 필요해요")} body={tr("참여 신청을 확인하려면 로그인해 주세요.")} actionLabel={tr("로그인하기")} onAction={() => promptLogin('참여 신청을 확인하려면 로그인해 주세요.')} />
       : visible ? <>
@@ -123,6 +124,7 @@ function Application({ requestId }: { requestId: string }) {
           {application.request && <ThemedText type="smallBold" themeColor="accent">{{ pending: tr("승인 대기"), approved: tr("참여 승인"), rejected: tr("신청 거절"), cancelled: tr("신청 취소됨") }[application.request.status]}</ThemedText>}
         </View>
       </View>
+      {application.request?.host_id === me.id && <MeetupLanguageCounts postId={application.postId} requestId={requestId} />}
       <View style={[styles.answerCard, { backgroundColor: theme.card }]}><ThemedText type="smallBold" themeColor="accent">{tr("모임장 질문에 대한 답변")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{application.question}</ThemedText><ThemedText style={styles.answer}>{application.answer}</ThemedText></View>
       <View style={styles.headingRow}><ThemedText type="smallBold">{tr("함께할 사람의 모임 프로필")}</ThemedText>
         <View style={[styles.tag, { backgroundColor: theme.backgroundSelected }]}><ThemedText type="small" themeColor="accent">{tr("신청 당시")}</ThemedText></View></View>

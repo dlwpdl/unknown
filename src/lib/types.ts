@@ -53,6 +53,7 @@ export interface RoomPreview {
   newcomerOnly?: boolean; // only members still in their newcomer period may request; needs newcomerWelcome
   eventKind?: 'once' | 'group';
   category?: 'casual' | 'hobby' | 'travel' | 'party' | 'festival' | 'sports';
+  languageExchange?: { languages: string[]; share: number }; // category stays 'casual'; read with parseLanguageExchange
   startsAt?: string | null;
   endsAt?: string | null;
   timezone?: string | null;

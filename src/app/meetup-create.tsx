@@ -22,6 +22,8 @@ import { MeetupAiDraftPreview } from '@/components/meetup-ai-draft-preview';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { MeetupTemplatePicker } from '@/components/meetup-template-picker';
 import { MeetupKindSwitch } from '@/components/meetup-kind-switch';
+import { MeetupLanguageSetup } from '@/components/meetup-language';
+import { DEFAULT_LANGUAGE_EXCHANGE, type LanguageExchange } from '@/lib/meetup-language';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { RelationshipSlotCard, relationshipSlotData } from '@/components/relationship-slot-card';
 import { InfoNote, MoreDetails } from '@/components/notice-blocks';
@@ -104,6 +106,8 @@ function MeetupCreateForm() {
   const [capacity, setCapacity] = useState('6');
   const [ageMin, setAgeMin] = useState(''), [ageMax, setAgeMax] = useState('');
   const [newcomer, setNewcomer] = useState({ welcome: false, only: false });
+  // 언어교환 is a category pill in the form; on the server category stays 'casual' and this rides beside it.
+  const [exchange, setExchange] = useState<LanguageExchange | null>(null);
   const [saving, setSaving] = useState(false), [error, setError] = useState(''), [touched, setTouched] = useState(false);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
@@ -262,8 +266,9 @@ function MeetupCreateForm() {
     if (!body.trim()) { showValidation(aiCopy('모임 소개를 적어주세요.', 'Add an introduction.'), tr('모임 소개')); return; }
     if (!question.trim()) { showValidation(aiCopy('신청 질문을 적어주세요.', 'Add an application question.'), tr('신청할 때 물어볼 질문')); return; }
     if (!/^\d+$/.test(capacity) || Number(capacity) < 2 || Number(capacity) > capacityLimit) { showValidation(capacityError, 'capacity'); return; }
+    if (exchange && Number(capacity) < 3) { showValidation(tr('언어교환은 언어마다 한 명씩은 받아야 해서 정원은 호스트 포함 3명부터예요.'), 'capacity'); return; }
     if ((ageMin || ageMax) && (!/^\d+$/.test(ageMin) || !/^\d+$/.test(ageMax) || Number(ageMin) > Number(ageMax) || Number(ageMax) > 120)) { showValidation(aiCopy('권장 연령은 만 0~120세 안에서 최소·최대 나이를 함께 입력해주세요.', 'Enter both recommended ages, from 0 to 120, with the minimum first.'), 'age'); return; }
-    try { normalizeChillingEvent({ ...event, capacity: Number(capacity) }, capacityLimit); }
+    try { normalizeChillingEvent({ ...event, capacity: Number(capacity), languageExchange: exchange }, capacityLimit); }
     catch (cause) { showValidation(getChillingError(cause), event.kind === 'group' ? tr('활동 주기') : 'schedule'); return; }
     busy.current = true; setSaving(true); setError(''); setErrorCode(null); setErrorField(null);
     const request = ++profileRead.current;
@@ -284,7 +289,7 @@ function MeetupCreateForm() {
         showValidation(aiCopy('이 모임에서 공개할 소개와 선택한 사진을 확인하고 동의해 주세요.', 'Review and consent to the introduction and selected photo shared for this meetup.'), 'profile');
         return;
       }
-      const id = await createChillingEvent(supabase, { userId: me.id, image: cover ?? undefined, cityId: meetupCity.id, title: title.trim(), body: body.trim() + eventDetails, question: question.trim(), hostProfileRevision: profile.revision, event: { ...event, capacity: Number(capacity), ...(ageMin ? { recommendedAgeMin: Number(ageMin), recommendedAgeMax: Number(ageMax) } : {}) } });
+      const id = await createChillingEvent(supabase, { userId: me.id, image: cover ?? undefined, cityId: meetupCity.id, title: title.trim(), body: body.trim() + eventDetails, question: question.trim(), hostProfileRevision: profile.revision, event: { ...event, capacity: Number(capacity), ...(ageMin ? { recommendedAgeMin: Number(ageMin), recommendedAgeMax: Number(ageMax) } : {}), ...(exchange ? { languageExchange: exchange } : {}) } });
       // A failed label save leaves the meetup open without labels; the host can retry from edit.
       const newcomerSaved = !newcomer.welcome || await setMeetupNewcomer(supabase, id, true, newcomer.only).then(() => true, () => false);
       // The meetup exists even if the host already left this screen, so lists refresh first.
@@ -389,7 +394,8 @@ function MeetupCreateForm() {
         <SymbolView name={{ ios: advancedOpen ? 'chevron.up' : 'chevron.down', android: advancedOpen ? 'expand_less' : 'expand_more', web: advancedOpen ? 'expand_less' : 'expand_more' }} size={16} tintColor={theme.accent} />
       </Pressable>
       {advancedOpen && <>
-      <View style={styles.field}><ThemedText type="smallBold" style={styles.label}>{tr("카테고리")}</ThemedText><View style={styles.categories} accessibilityRole="radiogroup" accessibilityLabel={tr("카테고리")}>{(['casual', 'party', 'festival', 'sports', 'hobby', 'travel'] as const).map((category, i) => <Pressable analyticsId="app_meetup-create.pressable.3" key={category} disabled={saving} accessibilityRole="radio" accessibilityState={{ checked: event.category === category, disabled: saving }} onPress={() => { play('selection'); sourceEdited.current = true; setTouched(true); setEvent(current => ({ ...current, category })); }} style={({ pressed }) => [styles.category, Depth.control, { borderColor: event.category === category ? theme.accentDepth : theme.line, backgroundColor: event.category === category ? theme.accent : theme.card, }]}><ThemedText type="small" style={[styles.helper, { color: event.category === category ? theme.accentInk : theme.text }]}>{[tr("가볍게"), tr("파티"), tr("페스티벌"), tr("스포츠"), tr("취미"), tr("여행")][i]}</ThemedText></Pressable>)}</View></View>
+      <View style={styles.field}><ThemedText type="smallBold" style={styles.label}>{tr("카테고리")}</ThemedText><View style={styles.categories} accessibilityRole="radiogroup" accessibilityLabel={tr("카테고리")}>{(['casual', 'party', 'festival', 'sports', 'hobby', 'travel', 'language'] as const).map((category, i) => { const checked = category === 'language' ? !!exchange : !exchange && event.category === category; return <Pressable analyticsId="app_meetup-create.pressable.3" key={category} disabled={saving} accessibilityRole="radio" accessibilityState={{ checked, disabled: saving }} onPress={() => { play('selection'); sourceEdited.current = true; setTouched(true); setExchange(current => category === 'language' ? current ?? DEFAULT_LANGUAGE_EXCHANGE : null); setEvent(current => ({ ...current, category: category === 'language' ? 'casual' : category })); }} style={({ pressed }) => [styles.category, Depth.control, { borderColor: checked ? theme.accentDepth : theme.line, backgroundColor: checked ? theme.accent : theme.card, }]}><ThemedText type="small" style={[styles.helper, { color: checked ? theme.accentInk : theme.text }]}>{[tr("가볍게"), tr("파티"), tr("페스티벌"), tr("스포츠"), tr("취미"), tr("여행"), tr("언어교환")][i]}</ThemedText></Pressable>; })}</View>
+        {exchange && <MeetupLanguageSetup value={exchange} onChange={next => { sourceEdited.current = true; setTouched(true); setExchange(next); }} capacity={Number(capacity)} disabled={saving} />}</View>
       <View onLayout={event => { fieldY.current.age = event.nativeEvent.layout.y; if (errorField === 'age') { scroll.current?.scrollTo({ y: event.nativeEvent.layout.y, animated: !reducedMotion }); inputs.current.age?.focus(); } }} style={styles.field}>
         <ThemedText type="smallBold" style={styles.label}>{tr("권장 연령대 · 선택")}</ThemedText>
         <View style={styles.categories}>
