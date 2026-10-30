@@ -9,3 +9,4 @@
 .public-app-store-result{display:flex;flex-direction:column;gap:var(--store-gap);margin-top:var(--store-gap);min-width:0}
 .public-app-store-result svg{display:block;width:180px;max-width:100%;height:auto;align-self:center;background:#fff}
 .public-app-store-result p{margin:0;overflow-wrap:anywhere}
+.public-app-store-result>a.public-app-store-primary{border-color:var(--accent);background:var(--accent);color:var(--accentInk)}

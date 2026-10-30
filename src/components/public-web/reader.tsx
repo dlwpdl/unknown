@@ -5,7 +5,7 @@ import { PublicFestivals } from './festivals';
 import { useReaderAnalytics } from './analytics';
 import { PublicMerchantProfile, PublicMerchantProfileLink } from './merchant-profile';
 import { PublicMeetupList } from './meetup-list';
-import { AppStoreChoices } from './app-store-choices';
+import { AppStoreChoices, InstallAction, useDevice } from './app-store-choices';
 import { FeedAd } from '@/components/feed-ad';
 import { contentAdPosition } from '@/lib/content-ad-placement';
 
@@ -88,15 +88,36 @@ function PostAuthor({ post }: { post: Post }) {
     {post.business.name} · {ko ? '비즈니스' : 'Business'}</a> : <>{post.author.nickname}</>;
 }
 
-function AppInvitation({ target, label }: { target: string; label?: string }) {
+function AppInvitation({ target }: { target: string }) {
   const { language } = useLanguage(), ko = language === 'ko';
-  const { play } = useInteractionFeedback();
+  const { play } = useInteractionFeedback(), device = useDevice(), phone = device === 'ios' || device === 'android';
   return <section className="reader-invitation" aria-label={ko ? '앱에서 이어가기' : 'Continue in the app'}>
     <h2>{ko ? '글링에서 함께해요.' : 'Meet people on Gling.'}</h2>
-    <p>{ko ? '글을 쓰고, 모임에 참여하고, 대화를 이어가세요. 앱이 없다면 스토어를 선택하고 휴대폰으로 QR 코드를 읽어 주세요.' : 'Write posts, join meetups and keep the conversation going. Choose a store and scan its QR code with your phone to get the app.'}</p>
-    <a data-analytics="web_control_1" className="reader-primary" href={target} onClick={() => play('selection')}>{label ?? (ko ? '앱에서 이어가기' : 'Continue in the app')} ↗</a>
+    <p>{ko ? `글을 쓰고, 모임에 참여하고, 대화를 이어가세요.${phone ? '' : ' 앱이 없다면 스토어를 선택하고 휴대폰으로 QR 코드를 읽어 주세요.'}` : `Write posts, join meetups and keep the conversation going.${phone ? '' : ' Choose a store and scan its QR code with your phone to get the app.'}`}</p>
     <AppStoreChoices />
+    <a data-analytics="web_control_1" className="reader-secondary reader-open-app" href={target} onClick={() => play('selection')}>{ko ? '이미 앱이 있으면 앱에서 열기' : 'Already have the app? Open it'} ↗</a>
   </section>;
+}
+
+const INSTALL_BAR_CLOSED = 'gling.install-bar.closed';
+function readInstallBarClosed() {
+  try { return sessionStorage.getItem(INSTALL_BAR_CLOSED) === '1'; } catch { return false; }
+}
+
+/** Phones only (CSS): the sidebar invitation sits below the whole feed there. */
+function InstallBar() {
+  const { language } = useLanguage(), ko = language === 'ko';
+  const { play } = useInteractionFeedback(), device = useDevice();
+  const [closed, setClosed] = useState(readInstallBarClosed);
+  if (!device || closed) return null;
+  return <div className="reader-install-bar" role="region" aria-label={ko ? '글링 앱 설치' : 'Get the Gling app'}>
+    <p>{ko ? '모임 참여와 대화는 앱에서 해요' : 'Join meetups and chat in the app'}</p>
+    <InstallAction className="reader-primary" onPress={() => play('selection')} />
+    <button data-analytics="web.install.close" type="button" aria-label={ko ? '앱 설치 안내 닫기' : 'Close app install bar'} onClick={() => {
+      play('selection'); setClosed(true);
+      try { sessionStorage.setItem(INSTALL_BAR_CLOSED, '1'); } catch { /* Closes for this page only. */ }
+    }}>×</button>
+  </div>;
 }
 
 function MeetupInfo({ post }: { post: Post }) {
@@ -242,11 +263,13 @@ function ReaderContent() {
         <a data-analytics="web_control_6" href={`/?city=${city.id}&tag=festival#stories`} aria-current={tag?.slug === 'festival' ? 'page' : undefined} onClick={() => play('selection')}>{ko ? '페스티벌' : 'Festivals'}</a>
         <a href="/visited" onClick={() => play('selection')}>Gling Visited</a>
       </nav>
-      <a className="reader-header-account" href="/merchant/" onClick={() => play('selection')}>{isAuthed ? ko ? '내 계정' : 'My account' : ko ? '로그인' : 'Sign in'}</a>
+      <a className="reader-header-account" href="/merchant/" onClick={() => play('selection')}>{isAuthed ? ko ? '비즈니스 관리' : 'Manage business' : ko ? '비즈니스 로그인' : 'Business sign-in'}</a>
     </header>
     <main id="reader-main" className={`reader-main${company ? ' reader-main-company' : ''}`} tabIndex={-1}>
       <div className="reader-content">
         {browse ? <>
+          <div className="reader-intro"><p>{ko ? '밴쿠버·토론토·몬트리올 한인이 동네 정보를 묻고 모임을 찾는 무료 앱, 글링이에요.' : 'Gling is a free app where Koreans in Vancouver, Toronto and Montreal ask about their neighbourhood and find meetups.'}</p>
+            <InstallAction className="reader-primary" onPress={() => play('selection')} /></div>
           <div className="reader-section-heading"><div><h1 id="stories">{meetupPage ? ko ? '모임' : 'Meetups' : cityHub ? ko ? `${city.name} 한인 동네 이야기` : `Korean stories in ${city.englishName}` : ko ? '오늘' : 'Today'}</h1><p>{meetupPage ? ko ? '모임을 살펴보고 앱에서 함께해요.' : 'Explore a meetup, then join in the app.' : ko ? '이 도시에서 나누는 이야기' : 'Stories from your city'}</p></div><span>{tr(city.name)} · {tr(tag?.label ?? '전체 이야기')}</span></div>
           <form key={`${city.id}:${tag?.id ?? ''}`} className="reader-filters" action={meetupPage ? '/meetups' : '/'} method="get">
             <label>{ko ? '도시' : 'City'}<select name="city" defaultValue={city.id} onChange={() => play('selection')}>{cities.map((item) => <option value={item.id} key={item.id}>{tr(item.name)}</option>)}</select></label>
@@ -293,8 +316,9 @@ function ReaderContent() {
         {!meetupPage && !loading && !current?.failed && (browse || detail) && !current?.posts.length && <div className="reader-notice">{detail ? <h1>{ko ? '글을 찾을 수 없어요' : 'Post not found'}</h1> : <h2>{ko ? '아직 공개된 이야기가 없어요' : 'No public stories yet'}</h2>}<p>{ko ? detail ? '삭제되었거나 공개되지 않은 글이에요.' : tag?.slug === 'festival' ? '위에서 Ticketmaster의 예정 페스티벌을 확인하거나, 다른 공개 이야기도 둘러보세요.' : '다른 도시나 주제의 이야기도 둘러보세요.'
           : detail ? 'This post was deleted or isn’t public.' : tag?.slug === 'festival' ? 'Check upcoming festivals from Ticketmaster above, or browse other public stories.' : 'Try another city or topic.'}</p>{browse && tag?.slug === 'festival' && <a className="reader-secondary" href="/#stories">{ko ? '전체 이야기 보기' : 'See all stories'}</a>}</div>}
       </div>
-      <aside id="app"><AppInvitation target={target} label={post?.room ? post.room.closed ? ko ? '앱에서 모임 보기' : 'View the meetup in the app' : ko ? '앱에서 참여하기' : 'Join in the app' : undefined} /></aside>
+      <aside id="app"><AppInvitation target={target} /></aside>
     </main>
-    <footer className="reader-footer"><span>{ko ? 'gling · 같이 갈 사람, 같이 나눌 이야기' : 'gling · People to go with, stories to share'}</span><nav aria-label={ko ? '정책' : 'Policies'}><a href="/merchant/" onClick={() => play('selection')}>{ko ? '비즈니스 관리' : 'Manage your business'}</a><a data-analytics="web_control_18" href="/terms">{ko ? '이용약관' : 'Terms'}</a><a data-analytics="web_control_19" href="/privacy">{ko ? '개인정보처리방침' : 'Privacy'}</a><a data-analytics="web_control_20" href="/account-deletion">{ko ? '계정 삭제' : 'Delete account'}</a></nav></footer>
+    <InstallBar />
+    <footer className="reader-footer"><span>{ko ? 'gling · 같이 갈 사람, 같이 나눌 이야기' : 'gling · People to go with, stories to share'}</span><nav aria-label={ko ? '정책' : 'Policies'}><a href="/business" onClick={() => play('selection')}>{ko ? '비즈니스 등록·관리' : 'List or manage your business'}</a><a data-analytics="web_control_18" href="/terms">{ko ? '이용약관' : 'Terms'}</a><a data-analytics="web_control_19" href="/privacy">{ko ? '개인정보처리방침' : 'Privacy'}</a><a data-analytics="web_control_20" href="/account-deletion">{ko ? '계정 삭제' : 'Delete account'}</a></nav></footer>
   </div>;
 }

@@ -1,6 +1,8 @@
 import { FAQ_ITEMS } from './metadata';
+import { useReaderAnalytics } from './analytics';
 
 export default function PublicFaq() {
+  useReaderAnalytics('faq', 'faq');
   return (
     <div style={{ backgroundColor: '#0D0C10', color: '#F6F3F0', minHeight: '100%' }}>
       <main style={{ maxWidth: 640, margin: '0 auto', padding: '32px 20px 48px', font: '16px/1.7 system-ui, sans-serif' }}>
