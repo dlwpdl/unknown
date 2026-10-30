@@ -34,7 +34,8 @@ export async function loadPublicCompanies({ url, key, cities, fetcher = fetch })
 export function renderPublicCompany(template, company) {
   const url = publicCompanyUrl(company.id), title = `${company.name} | ${company.city_name} 한인 비즈니스 · 글링`;
   const intro = String(company.services ?? '').trim();
-  const description = [`${company.city_name} · ${company.industry}`, intro.slice(0, 140) || '글링 비즈니스 프로필에서 소식과 영수증 인증 후기를 확인하세요.'].join('. ');
+  const base = [`${company.city_name} · ${company.industry}`, intro.slice(0, 140) || '글링 비즈니스 프로필에서 소식과 영수증 인증 후기를 확인하세요.'].join('. ');
+  const description = base.length < 70 ? `${base} 주소·영업시간·소식과 영수증 인증 후기를 글링에서 볼 수 있어요.` : base;
   const logo = company.avatar_path && businessMediaUrl(company.avatar_path), banner = company.banner_path && businessMediaUrl(company.banner_path);
   const image = banner || logo || `${PUBLIC_SITE}/share-covers/business.png`;
   const sameAs = [...new Set((company.source_urls ?? []).map(value => typeof value === 'string' ? safeMerchantSourceUrl(value) : null).filter(Boolean))];
@@ -53,6 +54,8 @@ export function renderPublicCompany(template, company) {
     `<title data-rh="true">${escapeHtml(title)}</title>`,
     `<meta name="description" content="${escapeHtml(description)}" data-rh="true"/>`,
     '<meta name="robots" content="index, follow, max-image-preview:large" data-rh="true"/>',
+    `<meta name="apple-itunes-app" content="app-id=6809273242, app-argument=gling://company/${company.id}"/>`,
+    '<meta property="og:locale" content="ko_KR" data-rh="true"/>',
     `<link rel="canonical" href="${url}" data-rh="true"/>`,
     '<meta property="og:type" content="profile" data-rh="true"/>',
     `<meta property="og:site_name" content="${escapeHtml(publicSiteName())}" data-rh="true"/>`,
