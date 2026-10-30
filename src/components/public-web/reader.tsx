@@ -31,7 +31,7 @@ import { hasAdLabel } from '@/lib/hashtags';
 import { publicMerchantId, publicWebTarget } from '@/lib/public-web';
 import { buildSharedPostUrl } from '@/lib/sharing';
 import { publicWebClient } from '@/lib/public-web-client';
-import { jsonLd, postSeo, publicSiteName, PUBLIC_SITE } from '@/lib/public-seo';
+import { jsonLd, postSeo, publicCompanyUrl, publicSiteName, PUBLIC_SITE } from '@/lib/public-seo';
 import { InteractionFeedbackProvider, useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadMerchantSource, merchantSourceActionLabel, trackPublicMerchantSourceClick, type MerchantSource } from '@/lib/merchant-source';
 import type { Post } from '@/lib/types';
@@ -183,7 +183,7 @@ function ReaderContent() {
   if (!cityPage && cities.some((item) => item.id === readyParams.city)) filters.set('city', city.id);
   if (tag) filters.set('tag', tag.slug);
   const cityHub = !!cityPage || (path === '/' && !tag && filters.has('city'));
-  const canonical = metadata?.canonical ?? (cityHub ? `${PUBLIC_SITE}/${city.id}` : browse ? `${PUBLIC_SITE}${meetupPage ? '/meetups' : '/'}${filters.size ? `?${filters}` : ''}` : postId ? `${PUBLIC_SITE}/post?id=${postId}` : merchantId ? `${PUBLIC_SITE}/company?id=${merchantId}` : null);
+  const canonical = metadata?.canonical ?? (cityHub ? `${PUBLIC_SITE}/${city.id}` : browse ? `${PUBLIC_SITE}${meetupPage ? '/meetups' : '/'}${filters.size ? `?${filters}` : ''}` : postId ? `${PUBLIC_SITE}/post?id=${postId}` : merchantId ? publicCompanyUrl(merchantId) : null);
   const pageTitle = metadata?.title ?? (cityHub ? ko ? `${city.name} 한인 커뮤니티 · 동네 이야기와 모임 | 글링` : `Korean community in ${city.englishName} | Gling` : browse ? `${filters.size ? `${tr(city.name)} · ${tr(tag?.label ?? '동네 이야기')} | ` : ''}${publicSiteName(language)}${!filters.size && !meetupPage ? ko ? ' · 밴쿠버·토론토·몬트리올' : ' · Vancouver, Toronto, Montreal' : ''}`
     : detail ? ko ? '글링 공개 글' : 'Public post | Gling' : company ? ko ? '글링 비즈니스 프로필' : 'Business profile | Gling' : ko ? '글링 | 앱에서 이어가기' : 'Gling | Continue in the app');
   const description = metadata?.description ?? (ko ? '밴쿠버·토론토·몬트리올 한인 커뮤니티 글링에서 동네 이야기, 비즈니스와 모임을 둘러보세요. 로그인하면 공개 글의 전체 본문을 웹에서 읽을 수 있어요.'
