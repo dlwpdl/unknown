@@ -191,7 +191,7 @@ export default function SettingsScreen() {
             <Pressable analyticsId="settings.start-guide.reset" accessibilityRole="button"
               onPress={() => { play('selection'); void resetStartGuide().then(() => router.navigate('/')); }}
               style={({ pressed }) => [styles.navRow, pressed && { backgroundColor: theme.backgroundSelected }]}>
-              <View style={styles.navCopy}><ThemedText type="smallBold">{tr("처음 안내 다시 보기")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("오늘 화면 위에 도시 고르기·화면 안내·모임 구경 카드를 다시 띄워요")}</ThemedText></View><ThemedText themeColor="textSecondary">›</ThemedText>
+              <View style={styles.navCopy}><ThemedText type="smallBold">{tr("처음 안내 다시 보기")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("내 도시 고르기·화면 둘러보기·모임 구경하기 안내가 홈에 다시 나와요")}</ThemedText></View><ThemedText themeColor="textSecondary">›</ThemedText>
             </Pressable>
             <View style={[styles.divider, { backgroundColor: theme.line }]} />
             <Pressable analyticsId="app_profile_settings.pressable.3" onPress={() => { play('selection'); openSupport(); }} accessibilityRole="link" style={({ pressed }) => [styles.navRow, pressed && { backgroundColor: theme.backgroundSelected }]}>

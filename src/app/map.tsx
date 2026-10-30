@@ -78,7 +78,9 @@ function CityMap({ city, placeId, onClose, initialFilter }: { city: (typeof CITI
   const { play } = useInteractionFeedback();
   const { category, placeRequest } = useLocalSearchParams<{ category?: string; placeRequest?: string }>();
   const initialCategory = initialFilter ?? (onClose ? 'all' : category);
-  const [selectedFilters, setSelectedFilters] = useState<DiscoveryFilter[]>(initialCategory !== 'all' && filters.some(value => value.id === initialCategory) ? [initialCategory as DiscoveryFilter] : []);
+  // A comma list opens with the same union the chips make (home 'Rent·used map' sends housing,used).
+  const [selectedFilters, setSelectedFilters] = useState<DiscoveryFilter[]>(() => (initialCategory ?? '').split(',')
+    .filter((id): id is DiscoveryFilter => id !== 'all' && filters.some(value => value.id === id)));
   const filter: DiscoveryFilter = selectedFilters.length === 1 ? selectedFilters[0] : 'all';
   const top25Only = selectedFilters.length === 1 && selectedFilters[0] === 'top25';
   const deliveryOnly = selectedFilters.length === 1 && selectedFilters[0] === 'delivery';

@@ -11,7 +11,7 @@ export const en: Translations = {
     accessibilityLabel: (level) => `Level ${level} verification · ${level === 1 ? 'Social account checked' : level === 2 ? 'Phone verified' : 'ID and selfie matched'}`,
     short: (level) => level === 1 ? 'Social account checked' : level === 2 ? 'Phone verified' : 'ID verified',
   },
-  tabs: { today: 'Today', meetups: 'Meetups', write: 'Write', chat: 'Chats', profile: 'Profile', notifications: 'Notifications' },
+  tabs: { today: 'Home', meetups: 'Meetups', write: 'Write', chat: 'Chats', profile: 'Profile', notifications: 'Notifications' },
   notifications: {
     title: 'Notifications', open: 'View notifications', loading: 'Loading notifications', empty: 'No notifications yet',
     loadError: 'Couldn’t load notifications.', emptyBody: 'Comments, requests and meetup updates will show up here.',

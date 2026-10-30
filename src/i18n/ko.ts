@@ -22,7 +22,7 @@ export const t = {
   },
 
   tabs: {
-    today: '오늘',
+    today: '홈',
     meetups: '모임',
     write: '글쓰기',
     chat: '채팅',

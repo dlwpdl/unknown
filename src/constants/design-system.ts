@@ -9,6 +9,9 @@ export const ControlMetrics = {
 
 export const IconSize = { toolbar: 21, inline: 16, chevron: 14, avatar: 28 } as const;
 
+// Small content card in a home row (가볼 곳·행사): one photo height and corner for both rows.
+export const MiniCard = { width: 148, photoHeight: 80, radius: 12 } as const;
+
 export const ControlMotion = { pressedOpacity: 0.82, disabledOpacity: 0.45, settleMs: 180 } as const;
 
 export const ControlStyles = {
