@@ -39,6 +39,7 @@ jobs:
           EXPO_PUBLIC_APP_URL: https://gling.ej-entertainment.com
           EXPO_PUBLIC_SUPPORT_EMAIL: gling@ej-entertainment.com
           GLING_PRERENDER_POSTS: '1'
+          GLING_SEARCH_BUILD_TOKEN: ${{ secrets.GLING_SEARCH_BUILD_TOKEN }}
       - run: npm run check:public-web
         env:
           GLING_PRERENDER_POSTS: '1'

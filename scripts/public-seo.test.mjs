@@ -42,26 +42,26 @@ test('사진 서명 실패 자리의 빈 URL은 공개 검색 메타데이터에
 test('the exact Korean and English web names follow the existing saved/device language priority', () => {
   assert.equal(typeof publicSeo.publicSiteName, 'function');
   for (const [saved, device, expected] of [
-    ['system', ['ko-KR'], '글링 | 캐나다 모임 커뮤니티'],
-    ['system', ['en-CA'], 'Gling | Canada Meetup Community'],
-    ['en', ['ko-KR'], 'Gling | Canada Meetup Community'],
-    ['ko', ['en-CA'], '글링 | 캐나다 모임 커뮤니티'],
-    [null, ['fr-CA'], 'Gling | Canada Meetup Community'],
-    ['invalid', ['ja-JP', 'ko_KR'], '글링 | 캐나다 모임 커뮤니티'],
+    ['system', ['ko-KR'], '글링 | 캐나다 한인 커뮤니티'],
+    ['system', ['en-CA'], 'Gling | Korean Community in Canada'],
+    ['en', ['ko-KR'], 'Gling | Korean Community in Canada'],
+    ['ko', ['en-CA'], '글링 | 캐나다 한인 커뮤니티'],
+    [null, ['fr-CA'], 'Gling | Korean Community in Canada'],
+    ['invalid', ['ja-JP', 'ko_KR'], '글링 | 캐나다 한인 커뮤니티'],
   ]) {
     const language = resolveLanguage(parseLanguagePreference(saved), device);
     assert.equal(publicSeo.publicSiteName(language), expected);
-    assert.equal(translateUi(language, '글링 | 캐나다 모임 커뮤니티'), expected);
+    assert.equal(translateUi(language, '글링 | 캐나다 한인 커뮤니티'), expected);
   }
-  assert.equal(publicSeo.publicSiteName(), '글링 | 캐나다 모임 커뮤니티');
+  assert.equal(publicSeo.publicSiteName(), '글링 | 캐나다 한인 커뮤니티');
 });
 
 test('localized post metadata keeps original post content and existing call compatibility without exposing the body', () => {
   const original = JSON.stringify(post);
   for (const language of ['ko', 'en']) {
     const seo = postSeo(post, '밴쿠버', language);
-    const site = language === 'ko' ? '글링 | 캐나다 모임 커뮤니티' : 'Gling | Canada Meetup Community';
-    assert.equal(seo.title, `${post.title} | ${site}`);
+    const site = language === 'ko' ? '글링 | 캐나다 한인 커뮤니티' : 'Gling | Korean Community in Canada';
+    assert.equal(seo.title, `${post.title} | ${language === 'ko' ? '글링' : 'Gling'}`);
     assert.equal(seo.schema.inLanguage, language);
     assert.equal(seo.schema.mainEntity.inLanguage, language);
     assert.equal(seo.schema.mainEntity.headline, post.title);

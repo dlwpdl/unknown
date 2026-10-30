@@ -193,9 +193,9 @@ test('authorized shared article renders read-only text and only the first attach
 
 test('reader title, metadata and language follow KO/EN while authored post text stays original', () => {
   const ko=readerMarkup('/',{language:'ko'}),en=readerMarkup('/',{language:'en'});
-  assert.match(ko,/<title>글링 \| 캐나다 모임 커뮤니티<\/title>/);
-  assert.match(en,/<title>Gling \| Canada Meetup Community<\/title>/);
-  assert.match(en,/property="og:site_name" content="Gling \| Canada Meetup Community"/);
+  assert.match(ko,/<title>글링 \| 캐나다 한인 커뮤니티 · 밴쿠버·토론토·몬트리올<\/title>/);
+  assert.match(en,/<title>Gling \| Korean Community in Canada · Vancouver, Toronto, Montreal<\/title>/);
+  assert.match(en,/property="og:site_name" content="Gling \| Korean Community in Canada"/);
   assert.match(en,/class="reader"[^>]+lang="en"/);assert.match(en,/"inLanguage":"en-CA"/);
   const post={id,cityId:'vancouver',title:'작성한 제목은 원문 그대로',body:'회원이 쓴 원문 본문',tag:{label:'원문 분류'},author:{id:'author',nickname:'원문 닉네임'}};
   const article=readerMarkup('/post',{language:'en',articlePost:post});assert.match(article,/작성한 제목은 원문 그대로/);assert.match(article,/회원이 쓴 원문 본문/);

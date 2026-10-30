@@ -4,7 +4,7 @@ export default function PublicFaq() {
   return (
     <div style={{ backgroundColor: '#0D0C10', color: '#F6F3F0', minHeight: '100%' }}>
       <main style={{ maxWidth: 640, margin: '0 auto', padding: '32px 20px 48px', font: '16px/1.7 system-ui, sans-serif' }}>
-        <p style={{ margin: '0 0 8px', color: '#CBB9FF', fontSize: 13, fontWeight: 700 }}>글링 | 캐나다 모임 커뮤니티</p>
+        <p style={{ margin: '0 0 8px', color: '#CBB9FF', fontSize: 13, fontWeight: 700 }}>글링 | 캐나다 한인 커뮤니티</p>
         <h1 style={{ margin: '0 0 8px', fontSize: 28, lineHeight: 1.35 }}>자주 묻는 질문</h1>
         <p style={{ margin: '0 0 32px', color: '#B9B2C8' }}>캐나다 한인 모임 커뮤니티 글링에 대해 많이 묻는 질문을 모았어요.</p>
         {FAQ_ITEMS.map(item => (

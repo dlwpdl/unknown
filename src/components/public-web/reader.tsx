@@ -143,9 +143,11 @@ function ReaderContent() {
   const detail = path === '/post' || path.startsWith('/post/');
   const company = path === '/company' || path.startsWith('/company/');
   const merchantId = publicMerchantId(path, readyParams.id);
-  const browse = path === '/' || path === '/meetups';
+  // /vancouver, /toronto, /montreal are the indexable city hubs; `/?city=` canonicalizes to them.
+  const cityPage = cities.find((item) => path === `/${item.id}`);
+  const browse = path === '/' || path === '/meetups' || !!cityPage;
   const meetupPage = path === '/meetups';
-  const city = cities.find((item) => item.id === readyParams.city) ?? cities[0];
+  const city = cityPage ?? cities.find((item) => item.id === readyParams.city) ?? cities[0];
   const tag = TAGS.find((item) => item.slug === (path === '/meetups' ? 'meetup' : readyParams.tag));
   const key = `${path}:${postId}:${merchantId}:${city.id}:${tag?.id ?? ''}`;
   const [result, setResult] = useState<{ key: string; posts: Post[]; more: boolean; failed: boolean } | null>(null);
@@ -157,19 +159,25 @@ function ReaderContent() {
   const mappedPost = post ? postMapBody(post.body) : null;
   const metadata = post ? postSeo(post, tr(CITIES.find((item) => item.id === post.cityId)?.name ?? ''), language) : null;
   const filters = new URLSearchParams();
-  if (cities.some((item) => item.id === readyParams.city)) filters.set('city', city.id);
+  if (!cityPage && cities.some((item) => item.id === readyParams.city)) filters.set('city', city.id);
   if (tag) filters.set('tag', tag.slug);
-  const canonical = metadata?.canonical ?? (browse ? `${PUBLIC_SITE}${meetupPage ? '/meetups' : '/'}${filters.size ? `?${filters}` : ''}` : postId ? `${PUBLIC_SITE}/post?id=${postId}` : merchantId ? `${PUBLIC_SITE}/company?id=${merchantId}` : null);
-  const pageTitle = metadata?.title ?? (browse ? `${filters.size ? `${tr(city.name)} · ${tr(tag?.label ?? '동네 이야기')} | ` : ''}${publicSiteName(language)}`
+  const cityHub = !!cityPage || (path === '/' && !tag && filters.has('city'));
+  const canonical = metadata?.canonical ?? (cityHub ? `${PUBLIC_SITE}/${city.id}` : browse ? `${PUBLIC_SITE}${meetupPage ? '/meetups' : '/'}${filters.size ? `?${filters}` : ''}` : postId ? `${PUBLIC_SITE}/post?id=${postId}` : merchantId ? `${PUBLIC_SITE}/company?id=${merchantId}` : null);
+  const pageTitle = metadata?.title ?? (cityHub ? ko ? `${city.name} 한인 커뮤니티 · 동네 이야기와 모임 | 글링` : `Korean community in ${city.englishName} | Gling` : browse ? `${filters.size ? `${tr(city.name)} · ${tr(tag?.label ?? '동네 이야기')} | ` : ''}${publicSiteName(language)}${!filters.size && !meetupPage ? ko ? ' · 밴쿠버·토론토·몬트리올' : ' · Vancouver, Toronto, Montreal' : ''}`
     : detail ? ko ? '글링 공개 글' : 'Public post | Gling' : company ? ko ? '글링 비즈니스 프로필' : 'Business profile | Gling' : ko ? '글링 | 앱에서 이어가기' : 'Gling | Continue in the app');
-  const description = metadata?.description ?? (ko ? '캐나다 모임 커뮤니티 글링에서 동네 이야기, 비즈니스와 모임을 둘러보세요. 로그인하면 공개 글의 전체 본문을 웹에서 읽을 수 있어요.'
-    : 'Explore neighbourhood stories, businesses and meetups on Gling, Canada’s meetup community. Sign in to read the full public post on the web.');
+  const description = metadata?.description ?? (ko ? '밴쿠버·토론토·몬트리올 한인 커뮤니티 글링에서 동네 이야기, 비즈니스와 모임을 둘러보세요. 로그인하면 공개 글의 전체 본문을 웹에서 읽을 수 있어요.'
+    : 'Explore neighbourhood stories, businesses and meetups on Gling, the Korean community app for Vancouver, Toronto and Montreal. Sign in to read the full public post on the web.');
   // Static /post.html has no query parameters yet; let Google render before marking a missing post.
   const noindex = (!browse && !detail && !company) || (detail && hydrated && (!postId || (current && !post))) || (company && hydrated && !merchantId);
   const schema = metadata?.schema ?? (browse ? { '@context': 'https://schema.org', '@type': filters.size ? 'CollectionPage' : 'WebSite', name: publicSiteName(language), url: canonical, description, inLanguage: ko ? 'ko-KR' : 'en-CA' } : null);
   const loading = (browse || Boolean(postId)) && !current;
   const target = publicWebTarget(path, (company ? merchantId : postId) ?? undefined, readyParams);
   useReaderAnalytics(detail ? 'post' : browse ? 'feed' : 'app-invitation', key, hydrated);
+
+  useEffect(() => {
+    // The build-time home/city copy (scripts/finish-public-web.mjs) is for crawlers without JavaScript; drop it once the live feed is in.
+    if (current && !current.failed) globalThis.document?.getElementById?.('gling-static-home')?.remove();
+  }, [current]);
 
   useEffect(() => {
     let active = true;
@@ -229,7 +237,7 @@ function ReaderContent() {
     <header className="reader-header">
       <a data-analytics="web_control_5" className="reader-brand" href="/" aria-label={ko ? '글링 홈' : 'Gling home'}><img src={wordmark} alt="gling" width="144" height="60" /></a>
       <nav aria-label={ko ? '주요 메뉴' : 'Main navigation'}>
-        <a href={`/?city=${city.id}`} aria-current={browse && !meetupPage && !tag ? 'page' : undefined} onClick={() => play('selection')}>{ko ? '오늘' : 'Today'}</a>
+        <a href={`/${city.id}`} aria-current={browse && !meetupPage && !tag ? 'page' : undefined} onClick={() => play('selection')}>{ko ? '오늘' : 'Today'}</a>
         <a data-analytics="web_control_7" href={`/meetups?city=${city.id}`} aria-current={meetupPage ? 'page' : undefined} onClick={() => play('selection')}>{ko ? '모임' : 'Meetups'}</a>
         <a data-analytics="web_control_6" href={`/?city=${city.id}&tag=festival#stories`} aria-current={tag?.slug === 'festival' ? 'page' : undefined} onClick={() => play('selection')}>{ko ? '페스티벌' : 'Festivals'}</a>
         <a href="/visited" onClick={() => play('selection')}>Gling Visited</a>
@@ -239,7 +247,7 @@ function ReaderContent() {
     <main id="reader-main" className={`reader-main${company ? ' reader-main-company' : ''}`} tabIndex={-1}>
       <div className="reader-content">
         {browse ? <>
-          <div className="reader-section-heading"><div><h1 id="stories">{meetupPage ? ko ? '모임' : 'Meetups' : ko ? '오늘' : 'Today'}</h1><p>{meetupPage ? ko ? '모임을 살펴보고 앱에서 함께해요.' : 'Explore a meetup, then join in the app.' : ko ? '이 도시에서 나누는 이야기' : 'Stories from your city'}</p></div><span>{tr(city.name)} · {tr(tag?.label ?? '전체 이야기')}</span></div>
+          <div className="reader-section-heading"><div><h1 id="stories">{meetupPage ? ko ? '모임' : 'Meetups' : cityHub ? ko ? `${city.name} 한인 동네 이야기` : `Korean stories in ${city.englishName}` : ko ? '오늘' : 'Today'}</h1><p>{meetupPage ? ko ? '모임을 살펴보고 앱에서 함께해요.' : 'Explore a meetup, then join in the app.' : ko ? '이 도시에서 나누는 이야기' : 'Stories from your city'}</p></div><span>{tr(city.name)} · {tr(tag?.label ?? '전체 이야기')}</span></div>
           <form key={`${city.id}:${tag?.id ?? ''}`} className="reader-filters" action={meetupPage ? '/meetups' : '/'} method="get">
             <label>{ko ? '도시' : 'City'}<select name="city" defaultValue={city.id} onChange={() => play('selection')}>{cities.map((item) => <option value={item.id} key={item.id}>{tr(item.name)}</option>)}</select></label>
             {!meetupPage && <label>{ko ? '주제' : 'Topic'}<select name="tag" defaultValue={tag?.slug ?? ''} onChange={() => play('selection')}><option value="">{ko ? '전체 이야기' : 'All stories'}</option>{TAGS.map((item) => <option value={item.slug} key={item.id}>{tr(item.label)}</option>)}</select></label>}
