@@ -102,9 +102,10 @@ export default function ChatScreen() {
     setPresentationOwner(scopeKey); setSelection(null); setModalConversation(undefined);
   }
   const presentation = useRef(modalConversation);
+  const focusedRef = useRef(false);
   useFocusEffect(useCallback(() => {
-    setFocused(true);
-    return () => { setFocused(false); presentation.current = undefined; setModalConversation(undefined); setSelection(null); };
+    setFocused(true); focusedRef.current = true;
+    return () => { setFocused(false); focusedRef.current = false; presentation.current = undefined; setModalConversation(undefined); setSelection(null); };
   }, []));
   const presentConversation = useCallback((conversation: NonNullable<typeof openConversation>) => {
     const next = { userId: scopeKey!, conversation, key: ++presentationSequence.current };
@@ -184,14 +185,16 @@ export default function ChatScreen() {
     let active = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let revision = 0;
+    // Native tabs keep this screen mounted; while hidden, skip reloads because focusing it reloads everything.
+    // Realtime changes reload only the list; membership is refreshed on focus, pull and approval.
     const schedule = () => {
-      if (!active || currentUser.current !== scopeKey || activeFilter.current !== filter) return;
+      if (!active || !focusedRef.current || currentUser.current !== scopeKey || activeFilter.current !== filter) return;
       const next = ++revision;
       clearTimeout(timer);
       timer = setTimeout(() => {
         void (async () => {
           await inFlight.current?.promise;
-          if (active && currentUser.current === scopeKey && activeFilter.current === filter && revision === next) await changed();
+          if (active && focusedRef.current && currentUser.current === scopeKey && activeFilter.current === filter && revision === next) await refresh();
         })();
       }, 150);
     };
@@ -218,7 +221,7 @@ export default function ChatScreen() {
     const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, schedule);
     const appState = AppState.addEventListener('change', (next) => { if (next === 'active') schedule(); });
     return () => { active = false; clearTimeout(timer); listener.remove(); appState.remove(); stopBusiness(); if (channel) void supabase.removeChannel(channel); };
-  }, [changed, userId, channelId, asBusinessId, scopeKey, filter]);
+  }, [refresh, userId, channelId, asBusinessId, scopeKey, filter]);
 
   const loadMore = async () => {
     if (!userId || pageBusy.current || loading || !inbox?.cursor || inbox.userId !== scopeKey || inbox.filter !== filter) return;
