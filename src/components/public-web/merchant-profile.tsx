@@ -10,7 +10,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { merchantMapsUrl, merchantPhoneUrl } from '@/lib/merchant-source';
 import { loadMerchantProfile, loadMerchantProfilePosts, type MerchantProfile, type MerchantProfilePostKind, type MerchantProfilePostPage } from '@/lib/merchant-profile';
 import type { MerchantReviewPage, MerchantReviewReply } from '@/lib/merchant-reviews';
-import { PUBLIC_SITE } from '@/lib/public-seo';
+import { publicCompanyUrl } from '@/lib/public-seo';
 import { localizeBusinessDisclosure } from '@/lib/translation-source';
 import { publicMerchantId, publicWebTarget } from '@/lib/public-web';
 import { publicWebClient } from '@/lib/public-web-client';
@@ -121,7 +121,7 @@ export function PublicMerchantProfileLink({ postId }: { postId: string }) {
     return () => { active = false; };
   }, [postId]);
   if (result?.postId !== postId) return null;
-  return <a className="reader-company-link" href={`/company?id=${result.page.merchantId}`} onClick={() => play('selection')}
+  return <a className="reader-company-link" href={`/company/${result.page.merchantId}`} onClick={() => play('selection')}
     aria-label={ko ? `${result.page.merchantName} 비즈니스 프로필과 인증 이용 리뷰 보기` : `See ${result.page.merchantName}’s business profile and verified customer reviews`}>
     <span><strong>{result.page.merchantName}</strong><Rating page={result.page} /></span><span aria-hidden="true">↗</span>
   </a>;
@@ -300,6 +300,8 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
   }, [merchantId, retry]);
   const current = result?.key === merchantId ? result : null;
   const profile = current?.profile;
+  // The build-time copy (scripts/prerender-public-companies.mjs) is for crawlers without JavaScript; drop it once the live profile is in.
+  useEffect(() => { if (current && !current.failed) globalThis.document?.getElementById?.('gling-static-company')?.remove(); }, [current]);
   const webshop = usePublicWebshop(publicWebClient, profile?.id, retry);
   const [orderOpen, setOrderOpen] = useState(false);
   const busy = !current || current.attempt !== retry;
@@ -315,7 +317,7 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
   const panelId = (id: ProfileTab) => `company-panel-${merchantId}-${id}`;
   return <article className="reader-company" aria-busy={busy}>
     <Head>{profile && <><title>{`${profile.name} | ${ko ? '글링 비즈니스 프로필' : 'Gling business profile'}`}</title><meta name="description" content={`${profile.city_name} · ${profile.industry}. ${profile.services.slice(0, 150)}`} /></>}
-      <link rel="canonical" href={`${PUBLIC_SITE}/company?id=${merchantId}`} />
+      <link rel="canonical" href={publicCompanyUrl(merchantId)} />
       {unavailable && <meta name="robots" content="noindex, nofollow" />}</Head>
     <a className="reader-back" href="/" onClick={() => play('selection')}>{ko ? '← 동네 이야기로' : '← Back to stories'}</a>
     {busy && <p role="status">{ko ? '비즈니스 프로필을 불러오고 있어요…' : 'Loading business profile…'}</p>}

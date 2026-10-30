@@ -7,7 +7,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 export const escapeHtml = value => String(value).replace(/[&<>"']/g, character => `&#${character.charCodeAt(0)};`);
 
 // Same public RPCs the guest web reader calls, with the publishable key only.
-async function rpc(url, key, name, args, fetcher) {
+export async function rpc(url, key, name, args, fetcher) {
   const response = await fetcher(`${url}/rest/v1/rpc/${name}`, {
     method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(args),
   });
@@ -79,6 +79,11 @@ export function renderPublicPost(template, post, related = []) {
     + `<p style="margin:16px 0 0"><a href="/post?id=${post.id}" style="color:#CBB9FF">글링에서 전체 글 읽기</a> · <a href="${hub ? `/${post.cityId}` : '/'}" style="color:#CBB9FF">${escapeHtml(post.city ? `${post.city} 동네 이야기 더 보기` : '동네 이야기 더 보기')}</a></p>`
     + (related.length ? `<h2 style="margin:24px 0 8px;font-size:17px">${escapeHtml(post.city ? `${post.city} 다른 이야기` : '다른 이야기')}</h2><ul style="margin:0;padding-left:20px">${related.map(item => `<li><a href="/posts/${item.id}" style="color:#CBB9FF">${escapeHtml(item.title)}</a></li>`).join('')}</ul>` : '')
     + '</article>';
+  return withStaticPage(template, head, body);
+}
+
+// Swaps the shell's page metadata for `head` and puts the crawler copy `body` first in <body>.
+export function withStaticPage(template, head, body) {
   // Attribute order differs between Expo versions (data-rh may come first), so match the attribute anywhere in the tag.
   const stripped = template.replace(/<title[^>]*>[^<]*<\/title>|<meta\b[^>]*\b(?:name="(?:description|robots|twitter:[^"]*)"|property="og:[^"]*")[^>]*\/?>|<link\b[^>]*\brel="canonical"[^>]*\/?>|<script\b[^>]*\btype="application\/ld\+json"[^>]*>[\s\S]*?<\/script>/g, '');
   if (!/<\/head>/.test(stripped) || !/<body[^>]*>/.test(stripped)) throw new Error('Unexpected web shell for prerendered posts');
