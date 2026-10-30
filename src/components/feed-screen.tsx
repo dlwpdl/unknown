@@ -50,6 +50,7 @@ import { BusinessWriter } from '@/components/business-writer';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { StateCard } from '@/components/state-card';
+import { StartGuide } from '@/components/start-guide';
 import { WeeklyRanking } from '@/components/weekly-ranking';
 import { UserSheet, type SheetUser } from '@/components/user-sheet';
 import { PostDetail } from '@/components/post-detail';
@@ -93,6 +94,14 @@ import type { DailyQuota, Post, PostKind, Tag } from '@/lib/types';
 import { splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
 
 
+
+// 처음 보이는 카테고리 칩: 전체·부동산·구인구직·중고거래·정착·맛집 (owner 2026-10-29).
+const PRIMARY_TAGS: (number | null)[] = [null, 14, 18, 19, 12, 4];
+const TAG_HINTS: Record<string, string> = {
+  housing: '렌트·매매·쉐어 구하기', jobs: '알바·채용·구직', used: '물건 사고팔기', settlement: '비자·PR·보험·은행',
+  food: '식당·카페 후기와 추천', meetup: '같이 할 사람 찾기', life: '일상 이야기·잡담', business: '한인 가게 소식',
+  festival: '행사·공연·축제', education: '학교·학원·유학', shopping: '세일·장보기 정보', travel: '근교·여행 후기',
+};
 
 export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: boolean }) {
   const { tr, t, language, locale: appLocale } = useLanguage();
@@ -169,6 +178,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [categoryLoading, setCategoryLoading] = useState(false);
   const [feedOpacity] = useState(() => new Animated.Value(1));
   const [chipLift] = useState(() => new Animated.Value(1));
+  const [categorySheet, setCategorySheet] = useState(false);
   const feedListRef = useRef<NativeFlatList<Post | Post[] | null>>(null);
   const feedIntroHeight = useRef(0);
   const scrollToResults = useRef(false);
@@ -789,6 +799,35 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           </Pressable></View>}
           <ProfileAvatarButton onBusinessSwitchAvailabilityChange={setHasBusinessSwitch} />
         </View>
+        {cityOpen && !meetupsOnly && (
+          <View style={styles.categoryHead}>
+            <GlassSurface tone="control" style={styles.chipGlass}><ScrollView analyticsId="components_feed-screen.scrollview.1" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
+              {/* 처음 보이는 칩은 많이 찾는 6개; 나머지는 '더보기' 시트 (owner 2026-10-29). */}
+              {[...PRIMARY_TAGS, ...(tagFilter != null && !PRIMARY_TAGS.includes(tagFilter) ? [tagFilter] : [])].map((id) => {
+                const label = id == null ? t.feed.filterAll : tr(TAGS.find((tg) => tg.id === id)!.label);
+                const active = tagFilter === id;
+                return (
+                  <Animated.View key={id ?? 'all'} style={active && { borderRadius: 999, transform: [{ scale: chipLift }] }}><Pressable analyticsId="components_feed-screen.pressable.3"
+                    onPress={() => changeTagFilter(id)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    style={({ pressed }) => [
+                      styles.filterChip,
+                      { backgroundColor: active ? theme.accent : pressed ? 'rgba(255,255,255,0.12)' : 'transparent', borderBottomColor: 'transparent', },
+                    ]}>
+                    <ThemedText type="smallBold" style={{ color: active ? theme.accentInk : theme.textSecondary }}>{label}</ThemedText>
+                  </Pressable></Animated.View>
+                );
+              })}
+              <Pressable analyticsId="feed.categories.more" accessibilityRole="button" accessibilityLabel={tr('카테고리 전체 보기')}
+                onPress={() => { play('selection'); setCategorySheet(true); }}
+                style={({ pressed }) => [styles.filterChip, { flexDirection: 'row', gap: 4, borderBottomColor: 'transparent', backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
+                <ThemedText type="smallBold" themeColor="accent">{tr('더보기')}</ThemedText>
+                <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={IconSize.chevron} tintColor={theme.accent} />
+              </Pressable>
+            </ScrollView></GlassSurface>
+          </View>
+        )}
         <FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
           onViewableItemsChanged={trackTranslationFeed}
           viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY}
@@ -832,8 +871,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   <ThemedText type="smallBold" themeColor="textSecondary" style={styles.journalDate}>{todayLabel(appLocale)}</ThemedText>
                   {cityLoading && <View style={styles.cityLoadingStatus}><GlingLoader color={theme.accent} size={18} accessibilityLabel={tr("{0} 소식 불러오는 중", (city.name))} /><ThemedText type="small" themeColor="textSecondary">{tr("소식 불러오는 중")}</ThemedText></View>}
                 </View>
-                <ThemedText accessibilityRole="header" style={styles.journalTitle}>{meetupsOnly ? t.feed.meetupTitle : t.feed.journalTitle}</ThemedText>
+                {meetupsOnly && <ThemedText accessibilityRole="header" style={styles.journalTitle}>{t.feed.meetupTitle}</ThemedText>}
               </View>
+              {!meetupsOnly && <StartGuide cityName={city.name} onPickCity={() => setCityPicker(true)} onOpenMeetups={() => router.navigate('/meetups')} />}
               {!meetupsOnly && isAuthed && <NewcomerProgressCard />}
               {cityOpen && !meetupsOnly && <LocalEventsCarousel cityId={city.id} refreshKey={rankingRefresh} cityLoading={cityLoading} onCityReady={setLoadedEventsCityId} />}
               {cityOpen && !meetupsOnly && <CityPopularPlaces cityId={city.id} />}
@@ -845,26 +885,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 }} />
                 {cityOpen && <ThemedText accessibilityRole="header" style={styles.sectionTitle}>{t.meetup.discover}</ThemedText>}
               </>}
-              {cityOpen && !meetupsOnly && (
-                <GlassSurface tone="control" style={styles.chipGlass}><ScrollView analyticsId="components_feed-screen.scrollview.1" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
-                  {[null, ...TAGS.map((tg) => tg.id)].map((id) => {
-                    const label = id == null ? t.feed.filterAll : tr(TAGS.find((tg) => tg.id === id)!.label);
-                    const active = tagFilter === id;
-                    return (
-                      <Animated.View key={id ?? 'all'} style={active && { borderRadius: 999, transform: [{ scale: chipLift }] }}><Pressable analyticsId="components_feed-screen.pressable.3"
-                        onPress={() => changeTagFilter(id)}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: active }}
-                        style={({ pressed }) => [
-                          styles.filterChip,
-                          { backgroundColor: active ? theme.accent : pressed ? 'rgba(255,255,255,0.12)' : 'transparent', borderBottomColor: 'transparent', },
-                        ]}>
-                        <ThemedText type="smallBold" style={{ color: active ? theme.accentInk : theme.textSecondary }}>{label}</ThemedText>
-                      </Pressable></Animated.View>
-                    );
-                  })}
-                </ScrollView></GlassSurface>
-              )}
               {!feedLoading && weeklyRanking}
             </View>
           ) : (
@@ -892,6 +912,33 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
       </View></SafeAreaView>
 
+      <Modal visible={categorySheet} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" onRequestClose={() => setCategorySheet(false)}>
+        <SafeAreaView style={[styles.categorySheet, { backgroundColor: theme.background }]}>
+          <View style={styles.categorySheetHead}>
+            <View style={{ flex: 1 }}>
+              <ThemedText accessibilityRole="header" style={Typography.sheetTitle}>{tr('카테고리')}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{tr('무엇을 올리는 곳인지 보고 골라 보세요. 자주 쓰는 6개는 위 줄에 늘 있어요.')}</ThemedText>
+            </View>
+            <Pressable analyticsId="feed.categories.close" accessibilityRole="button" onPress={() => { play('selection'); setCategorySheet(false); }}
+              style={({ pressed }) => [ControlStyles.pill, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
+              <ThemedText type="smallBold" themeColor="textSecondary">{tr('닫기')}</ThemedText>
+            </Pressable>
+          </View>
+          <ScrollView analyticsId="feed.categories.sheet" contentContainerStyle={styles.categoryGrid}>
+            {TAGS.map(tg => {
+              const active = tagFilter === tg.id;
+              return (
+                <Pressable key={tg.id} analyticsId="feed.categories.pick" accessibilityRole="button" accessibilityState={{ selected: active }}
+                  onPress={() => { setCategorySheet(false); changeTagFilter(tg.id); }}
+                  style={({ pressed }) => [styles.categoryCell, { backgroundColor: active ? theme.backgroundSelected : theme.card, borderColor: active ? theme.accent : theme.line }, pressed && { opacity: 0.82 }]}>
+                  <ThemedText type="smallBold" style={active && { color: theme.accent }}>{tr(tg.label)}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">{tr(TAG_HINTS[tg.slug] ?? '')}</ThemedText>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
       {(listingCategory === 'housing' || listingCategory === 'used') && <ListingMapScreen visible={listingMap} category={listingCategory} city={city} posts={listingPosts}
         filters={listingFilters} onFilters={setListingFilters} onClose={() => setListingMap(false)}
         onOpenPost={post => { setListingMap(false); setTimeout(() => openDetail(post), Platform.OS === 'ios' ? 350 : 0); }} />}
@@ -1389,6 +1436,11 @@ const styles = StyleSheet.create({
   },
   header: { paddingTop: Spacing.two, paddingBottom: Spacing.four },
   categoryLoading: { minHeight: 280, alignItems: 'center', justifyContent: 'center' },
+  categoryHead: { paddingHorizontal: Spacing.three, paddingBottom: Spacing.two },
+  categorySheet: { flex: 1 },
+  categorySheetHead: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two, padding: Spacing.four, paddingBottom: Spacing.two },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, padding: Spacing.four, paddingTop: Spacing.two },
+  categoryCell: { width: '48%', minHeight: 72, borderWidth: 1, borderRadius: 16, padding: Spacing.three, gap: 2 },
   headRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, paddingHorizontal: Spacing.three, paddingTop: Spacing.one, paddingBottom: Spacing.two },
   headRowLarge: { flexWrap: 'wrap' },
   wordmark: { width: 88, height: 38 },
