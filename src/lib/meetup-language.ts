@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { RoomPreview } from './types.ts';
 
-// Language exchange meetups (20261030170000 migration). room.category stays 'casual' so published apps show 가볍게.
+// Language exchange meetups (20261030221000 migration). room.category stays 'casual' so published apps show 가볍게.
 export const MEETUP_LANGUAGES = ['ko', 'en', 'fr'] as const;
 export type MeetupLanguage = typeof MEETUP_LANGUAGES[number];
 // Each language is written in itself, the way people look for it, in both app languages.

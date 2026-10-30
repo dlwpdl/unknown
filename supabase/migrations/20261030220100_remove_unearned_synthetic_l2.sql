@@ -1,4 +1,4 @@
--- New apps show Lv2 as "신분증 확인" (20261030210000). Seed and persona accounts (private.is_operated_character, 20261030200000)
+-- New apps show Lv2 as "신분증 확인" (20261030220000). Seed and persona accounts (private.is_operated_character, 20261030200000)
 -- never showed an ID, and the 45 in production carry gling_persona metadata that 0154's empty-metadata guard skipped.
 -- They return to Lv1 with 0154's other guards: admin trust grants, real identities, personal data and phone stay untouched.
 update public.profiles p

@@ -31,7 +31,7 @@
 
 ## 적용 전 확인 (운영 DB)
 
-새 앱에서 Lv2는 "신분증 확인"으로 보인다. 지금 Lv2·Lv3인 계정은 실제 신분증 확인 없이 관리자가 주었거나 예시 계정이다. `20261030210100`은 0154와 같은 보호 조건으로 예시 계정의 Lv2만 Lv1로 돌린다. 나머지는 적용 전에 숫자를 본다.
+새 앱에서 Lv2는 "신분증 확인"으로 보인다. 지금 Lv2·Lv3인 계정은 실제 신분증 확인 없이 관리자가 주었거나 예시 계정이다. `20261030220100`은 0154와 같은 보호 조건으로 예시 계정의 Lv2만 Lv1로 돌린다. 나머지는 적용 전에 숫자를 본다.
 
 ```sql
 select p.verification_level,
@@ -43,7 +43,7 @@ from public.profiles p join auth.users u on u.id=p.id
 where p.verification_level>1 group by 1;
 ```
 
-페르소나·공식 계정이 Lv2·Lv3라면 남길지 사장님이 정한다. `20261030210000`은 `20261029110000`(노쇼 기록)과 `20261029140000`(`meetup_hosted_count`) 뒤에 적용해야 한다.
+페르소나·공식 계정이 Lv2·Lv3라면 남길지 사장님이 정한다. `20261030220000`은 `20261029110000`(노쇼 기록)과 `20261029140000`(`meetup_hosted_count`) 뒤에 적용해야 한다.
 
 ## 문자 인증을 붙일 때 (Lv1)
 
@@ -75,5 +75,5 @@ Lv2 시작 화면에 약관과 분리된 동의 체크를 둔다. 아래는 법�
 
 ## 바뀐 파일
 
-- 서버: `supabase/migrations/20261030210000_trusted_host_level.sql`, `20261030210100_remove_unearned_synthetic_l2.sql`, 확인 SQL `supabase/tests/trusted_host_level.test.sql`
+- 서버: `supabase/migrations/20261030220000_trusted_host_level.sql`, `20261030220100_remove_unearned_synthetic_l2.sql`, 확인 SQL `supabase/tests/trusted_host_level.test.sql`
 - 앱: `src/app/profile/trust.tsx`, `src/lib/trust.ts`, 배지·프로필·1:1 대화방 문구(`src/i18n/ko.ts`, `en.ts`, `ui-en.ts`), 관리자 신뢰 단계 안내(`src/components/admin/admin-user-review.tsx`)
