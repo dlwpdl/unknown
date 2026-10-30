@@ -7,7 +7,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 import { parseMeetupSections } from '@/lib/meetup-sections';
 import { postMapBody } from '@/lib/post-maps';
-import { localizeBusinessDisclosure } from '@/lib/translation-source';
+import { localizeBusinessDisclosure } from '@/lib/business-disclosure';
 import type { Post } from '@/lib/types';
 
 export function PublicPostBody({ body }: { body: string }) {
