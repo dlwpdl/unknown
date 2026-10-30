@@ -9,7 +9,7 @@ function card({ fontScale = 1 } = {}) {
   const slots = [], feedback = [], scopes = []; let cursor = 0;
   const jsx = (type, props) => ({ type, props });
   const imports = {
-    react: { useState: initial => { const i = cursor++; if (!(i in slots)) slots[i] = initial; return [slots[i], value => { slots[i] = value; }]; } },
+    react: { useState: initial => { const i = cursor++; if (!(i in slots)) slots[i] = initial; return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; } },
     'react/jsx-runtime': { jsx, jsxs: jsx }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'SymbolView' },
     'react-native': { View: 'View', StyleSheet: { create: value => value, hairlineWidth: 1 }, useWindowDimensions: () => ({ fontScale }) },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'ThemedText' },
@@ -57,4 +57,18 @@ test('large text can wrap fully and business identity does not replace a general
   const title = nodes(tree).find(n => n.props?.children === post.title);
   assert.equal(title.props.numberOfLines, undefined);
   assert.ok(nodes(tree).some(n => n.props?.children === '실제 비즈니스'));
+});
+test('grid tile opens the post, shows business name and title, and falls back photo → logo → symbol', () => {
+  const app = card(); let opened = 0;
+  const props = { variant: 'tile', post: { ...post, business: { id: 'b', name: '실제 비즈니스', avatarUri: 'https://example.invalid/logo.png' } }, onPress: () => opened++, onAuthor() {} };
+  let tree = app.render(props), all = nodes(tree);
+  assert.equal(tree.props.analyticsId, 'business.news.post');
+  tree.props.onPress(); assert.equal(opened, 1); assert.deepEqual(app.feedback, ['selection']);
+  assert.ok(all.some(n => n.props?.children === '실제 비즈니스'));
+  assert.equal(all.find(n => n.props?.children === post.title).props.numberOfLines, 2);
+  assert.equal(all.find(n => n.type === 'Image').props.source.uri, post.imageUris[0]);
+  all.find(n => n.type === 'Image').props.onError(); tree = app.render(props); all = nodes(tree);
+  assert.equal(all.find(n => n.type === 'Image').props.source.uri, 'https://example.invalid/logo.png');
+  all.find(n => n.type === 'Image').props.onError(); tree = app.render(props); all = nodes(tree);
+  assert.ok(!all.some(n => n.type === 'Image') && all.some(n => n.type === 'SymbolView'));
 });

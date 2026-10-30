@@ -18,16 +18,31 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { visibleTranslationSource } from '@/lib/translation-source';
 import type { Post } from '@/lib/types';
 
-export function BusinessNewsCard({ post, onPress, onAuthor, translationVisible = true }: {
-  post: Post; onPress: () => void; onAuthor: () => void; translationVisible?: boolean;
+export function BusinessNewsCard({ post, onPress, onAuthor, translationVisible = true, variant = 'row' }: {
+  post: Post; onPress: () => void; onAuthor: () => void; translationVisible?: boolean; variant?: 'row' | 'tile';
 }) {
   const theme = useTheme(), { tr, locale } = useLanguage(), { play } = useInteractionFeedback();
   const { isAuthed, me } = useAuth(), { fontScale } = useWindowDimensions();
   const photo = getPostImageSource(post, isAuthed ? me.id : 'guest');
-  const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
+  const [failed, setFailed] = useState<string[]>([]);
+  const fail = (uri: string) => setFailed(list => [...list, uri]);
   const source = visibleTranslationSource('post', post.title, post.body, !!post.room);
   const translation = useContentTranslation('post', post.id, source, translationVisible);
   const name = post.business?.name ?? post.author.nickname;
+  // Grid tile: one tap target opens the post like the row; the profile stays one tap away in the detail.
+  if (variant === 'tile') {
+    const logo = post.business?.avatarUri ? { uri: post.business.avatarUri } : null;
+    const tileImage = [photo, logo].find(item => item && !failed.includes(item.uri)) ?? null;
+    return <Pressable analyticsId="business.news.post" accessibilityRole="button" accessibilityLabel={`${name}, ${tr('{0} 글 보기', translation.display.title)}`}
+      onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.tile, { opacity: pressed ? ControlMotion.pressedOpacity : 1 }]}>
+      {tileImage ? <Image source={tileImage} contentFit="cover" style={styles.square} accessible={false} onError={() => fail(tileImage.uri)} />
+        : <View style={[styles.square, styles.fallback, { backgroundColor: theme.backgroundElement }]} accessible={false}>
+          <SymbolView name={{ ios: 'storefront', android: 'storefront', web: 'storefront' }} size={28} tintColor={theme.textSecondary} />
+        </View>}
+      <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>{name}</ThemedText>
+      <ThemedText type="supporting" numberOfLines={fontScale > 1.2 ? 3 : 2} style={styles.tileTitle}>{translation.display.title}</ThemedText>
+    </Pressable>;
+  }
   return <View style={[styles.row, { borderBottomColor: theme.line }]}>
     <View style={styles.byline}>
       <Pressable analyticsId="business.news.author" accessibilityRole="button" accessibilityLabel={tr('{0} 프로필 보기', name)}
@@ -46,8 +61,8 @@ export function BusinessNewsCard({ post, onPress, onAuthor, translationVisible =
           <ThemedText type="small" themeColor="textSecondary">{tr('조회 {0}', post.views)}</ThemedText>
         </View>
       </View>
-      {photo && failedPhoto !== photo.uri ? <Image source={photo} contentFit="cover" style={styles.photo} accessible={false}
-        onError={() => setFailedPhoto(photo.uri)} /> : <View style={[styles.photo, styles.fallback, { backgroundColor: theme.backgroundElement }]} accessible={false}>
+      {photo && !failed.includes(photo.uri) ? <Image source={photo} contentFit="cover" style={styles.photo} accessible={false}
+        onError={() => fail(photo.uri)} /> : <View style={[styles.photo, styles.fallback, { backgroundColor: theme.backgroundElement }]} accessible={false}>
         <SymbolView name={{ ios: 'text.bubble', android: 'article', web: 'article' }} size={22} tintColor={theme.textSecondary} />
       </View>}
     </Pressable>
@@ -67,4 +82,7 @@ const styles = StyleSheet.create({
   meta: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   photo: { width: 72, height: 72, borderRadius: 12 },
   fallback: { alignItems: 'center', justifyContent: 'center' },
+  tile: { flex: 1, gap: 4, minWidth: 0 },
+  square: { width: '100%', aspectRatio: 1, borderRadius: 12 },
+  tileTitle: { fontWeight: '700' },
 });

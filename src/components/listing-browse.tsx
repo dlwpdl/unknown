@@ -49,6 +49,15 @@ export function ListingModeSwitch({ mode, onChange }: { mode: 'list' | 'map'; on
   return <Segment label={tr('보기 방식')} value={mode} onChange={key => onChange(key as 'list' | 'map')} options={[{ key: 'list', label: tr('목록') }, { key: 'map', label: tr('지도') }]} />;
 }
 
+// 목록 | 사진 그리드, used by 중고거래 and the 비즈니스 feed.
+export function ListingViewSwitch({ view, onView }: { view: ListingView; onView: (view: ListingView) => void }) {
+  const { tr } = useLanguage();
+  return <Segment label={tr('목록 모양')} value={view} onChange={key => onView(key as ListingView)} options={[
+    { key: 'list', label: tr('목록으로 보기'), icon: { ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' } },
+    { key: 'grid', label: tr('사진 그리드로 보기'), icon: { ios: 'square.grid.2x2', android: 'grid_view', web: 'grid_view' } },
+  ]} />;
+}
+
 // Filter chips shared by the list and the map, plus the 중고거래 list/grid toggle.
 export function ListingFilterBar({ category, filters, onChange, view, onView }: {
   category: ListingCategory; filters: ListingFilters; onChange: (next: ListingFilters) => void; view?: ListingView; onView?: (view: ListingView) => void;
@@ -90,10 +99,7 @@ export function ListingFilterBar({ category, filters, onChange, view, onView }: 
           </Pressable>;
         })}
       </ScrollView>
-      {category === 'used' && view && onView && <Segment label={tr('목록 모양')} value={view} onChange={key => onView(key as ListingView)} options={[
-        { key: 'list', label: tr('목록으로 보기'), icon: { ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' } },
-        { key: 'grid', label: tr('사진 그리드로 보기'), icon: { ios: 'square.grid.2x2', android: 'grid_view', web: 'grid_view' } },
-      ]} />}
+      {category === 'used' && view && onView && <ListingViewSwitch view={view} onView={onView} />}
     </View>
     {open && <View style={[styles.panel, { borderColor: theme.line, backgroundColor: theme.backgroundElement }]}>
       {open !== 'moveIn' && <View style={styles.options}>

@@ -299,4 +299,6 @@ export function matchesListingFilters(post: Pick<Post, 'price' | 'listingDetails
 // ---- 중고거래 list/grid choice, remembered per device ----------------------------------------
 export type ListingView = 'list' | 'grid';
 export const LISTING_VIEW_KEY = 'gling.listing.used.view';
+// Separate from 중고거래: photo-first goods and text-first business news are chosen independently.
+export const BUSINESS_VIEW_KEY = 'gling.business.view';
 export const parseListingView = (value: string | null): ListingView => value === 'grid' ? 'grid' : 'list';
