@@ -113,7 +113,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const expandedHeader = fontScale > 1.2 || (hasBusinessSwitch && viewportWidth < 380);
   const router = useRouter();
   const { compose, hashtag } = useLocalSearchParams<{ compose?: string; hashtag?: string }>();
-  const { isAuthed, promptLogin, me, isAdmin } = useAuth();
+  const { isAuthed, isAuthLoading, promptLogin, me, isAdmin } = useAuth();
   const business = useChatIdentity();
   const [businessWriting, setBusinessWriting] = useState(false);
   const { play } = useInteractionFeedback();
@@ -200,6 +200,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const viewerScope = isAuthed ? me.id : 'guest';
   const feedKey = `${viewerScope}:${city.id}:${tagFilter ?? 'all'}:${activeSort}`;
   const [loadedFeedKey, setLoadedFeedKey] = useState<string | null>(null);
+  // Wait for the session/profile before the first load so a signed-in launch does not load a guest/default-city feed first.
+  const feedReady = !isAuthLoading || loadedFeedKey !== null;
   const [loadedFeedCityId, setLoadedFeedCityId] = useState<string | null>(null);
   const [loadedEventsCityId, setLoadedEventsCityId] = useState<string | null>(null);
   const [feedError, setFeedError] = useState(false);
@@ -254,12 +256,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   }, [refreshFeed]);
 
   useEffect(() => {
+    if (!feedReady) return;
     feedCursorPost.current = undefined;
     void refreshFeed().catch(() => {
       // Visibility must come from the server; never fall back to unfiltered seed posts.
     });
     return cancelFeedRequests;
-  }, [cancelFeedRequests, refreshFeed]);
+  }, [cancelFeedRequests, feedReady, refreshFeed]);
 
   const cityOpen = city.state === 'open';
   const cityPosts = posts.filter((p) => p.cityId === city.id && !hidden('post', p.id, p.author.id));

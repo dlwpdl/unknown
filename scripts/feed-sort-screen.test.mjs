@@ -15,7 +15,7 @@ import * as neighborhoods from '../src/lib/neighborhoods.ts';
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = false, width = 390, fontScale = 1 } = {}) {
   const slots = [], effects = [], calls = [], writes = [], drafts = [], routes = [], feedback = [], params = {};
-  let viewer = 'viewer';
+  let viewer = 'viewer', authLoading = false;
   let at = 0;
   const slot = initial => { const index = at++; if (!(index in slots)) slots[index] = typeof initial === 'function' ? initial() : initial; return index; };
   class Value { constructor(value) { this.value = value; } setValue(value) { this.value = value; } stopAnimation() {} interpolate() { return 0; } }
@@ -32,7 +32,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '@/components/daily-chip': { todayLabel: () => '10월 12일 월요일' },
     '@/lib/image-upload': { canAddPostImage: () => true, MAX_POST_IMAGES: 10 },
     '@/constants/theme': { Colors: { light: {} }, Depth: { control: {}, card: {} }, Spacing: { one: 4, two: 8, three: 16, four: 24, five: 32 }, TabBarHeight: 64 },
-    '@/i18n/ko': { t }, '@/lib/mock': { TAGS }, '@/lib/auth': { useAuth: () => ({ isAuthed: viewer !== null, me: { id: viewer ?? 'guest' }, promptLogin() {} }) },
+    '@/i18n/ko': { t }, '@/lib/mock': { TAGS }, '@/lib/auth': { useAuth: () => ({ isAuthed: viewer !== null, isAuthLoading: authLoading, me: { id: viewer ?? 'guest' }, promptLogin() {} }) },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버', state: 'open' }, setCity() {} }) },
     '@/lib/location-provider': { useCommunityLocation: () => ({ record() {}, capture: async () => null }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/community-data': { loadListingQuota: async () => ({ used: 0, max: 3 }), createCommunityPost: () => deferPublish ? new Promise(resolve => writes.push({ resolve })) : Promise.resolve({ id: createdPost.id, post: createdPost }), getCommunityActionError: () => null, isContentRejected: () => false },
@@ -55,7 +55,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
   const render = () => { at = 0; effects.length = 0; return exports.default({ meetupsOnly }); };
   const refresh = () => { cleanup?.(); cleanup = effects.find(fn => String(fn).includes('return cancelFeedRequests'))(); };
   const list = () => nodes(render()).find(n => n.props?.analyticsId === 'components_feed-screen.flatlist.1').props;
-  return { calls, writes, drafts, routes, feedback, list, refresh, params, render, openWriter() { params.compose = '1'; render(); effects.find(fn => String(fn).includes("compose !== '1'"))(); return render(); }, openTopic: () => { render(); effects.find(fn => String(fn).includes('hashtag: undefined'))(); }, setViewer: next => { viewer = next; }, sort: () => { const props = list(); return props.renderItem({ item: null, index: 1 }).props; },
+  return { calls, writes, drafts, routes, feedback, list, refresh, params, render, openWriter() { params.compose = '1'; render(); effects.find(fn => String(fn).includes("compose !== '1'"))(); return render(); }, openTopic: () => { render(); effects.find(fn => String(fn).includes('hashtag: undefined'))(); }, setViewer: next => { viewer = next; }, setAuthLoading: next => { authLoading = next; }, sort: () => { const props = list(); return props.renderItem({ item: null, index: 1 }).props; },
     publish: async () => {
       const inputs = nodes(render());
       inputs.find(n => n.props?.accessibilityLabel === t.write.titlePlaceholder).props.onChangeText('새 글');
@@ -81,6 +81,18 @@ test('business remains a news board; only its explicit directory action opens bu
   assert.ok(card.props.onPress && card.props.onAuthor, 'existing detail and profile navigation remain available');
   app.sort().action.props.onPress();
   assert.equal(app.routes.at(-1), '/businesses');
+});
+
+test('the first feed load waits for auth to settle, so a signed-in launch loads once in its own scope', async () => {
+  const app = screen(); app.setViewer(null); app.setAuthLoading(true);
+  app.list(); app.refresh();
+  assert.equal(app.calls.length, 0, 'no guest/default-city load while the session and profile are still resolving');
+  app.setViewer('member'); app.setAuthLoading(false); app.list(); app.refresh();
+  assert.equal(app.calls.length, 1);
+  assert.equal(app.calls[0].args[5].viewerScope, 'member');
+  app.calls[0].resolve([post('first')]); await new Promise(setImmediate);
+  app.setAuthLoading(true);
+  assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => p.id), ['first'], 'a later sign-in spinner does not hide the loaded feed');
 });
 
 test('a topic notification opens today search and consumes its parameter so closing stays closed', () => {
