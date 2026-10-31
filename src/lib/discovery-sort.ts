@@ -32,3 +32,9 @@ export function formatNearbyDistance(distance: number | null, tr: (text: string,
   return distance !== null && Number.isFinite(distance) && distance >= 0
     ? distance < .1 ? tr('100m 이내') : tr('약 {0}km', distance.toFixed(1)) : null;
 }
+
+// Places Gling members actually go to come first: server-ranked ratings/saves, then Gling's own visits; the rest keep their order.
+export function preferVisitedPlaces<T extends { place: { id: string; glingVisited?: unknown } }>(rows: readonly T[], signalIds: readonly string[]) {
+  const rank = ({ place }: T) => { const index = signalIds.indexOf(place.id); return index >= 0 ? index : place.glingVisited ? signalIds.length : signalIds.length + 1; };
+  return [...rows].sort((a, b) => rank(a) - rank(b));
+}

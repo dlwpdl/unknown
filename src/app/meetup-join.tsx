@@ -10,6 +10,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { InfoNote, WhoSees } from '@/components/notice-blocks';
 import { MeetupWaitlist } from '@/components/meetup-host-tools';
+import { MeetupLanguagePicker } from '@/components/meetup-language';
+import { MEETUP_LANGUAGE_NAMES, loadMeetupLanguages, otherLanguage, parseLanguageExchange, sideOpen, type MeetupLanguage, type MeetupLanguages } from '@/lib/meetup-language';
 import { StateCard } from '@/components/state-card';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
@@ -50,6 +52,7 @@ function JoinForm({ postId }: { postId: string }) {
   const [participation, setParticipation] = useState<MeetupParticipation | null>(null), [feePaid, setFeePaid] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true), [error, setError] = useState(''), [retry, setRetry] = useState(0);
   const [recommendationAge, setRecommendationAge] = useState<number | null>(null);
+  const [languages, setLanguages] = useState<MeetupLanguages | null>(null), [speaks, setSpeaks] = useState<MeetupLanguage | null>(null);
   const [answer, setAnswer] = useState(''), [consent, setConsent] = useState(false), [sending, setSending] = useState(false), [sent, setSent] = useState(false);
   const [errorCode, setErrorCode] = useState<string | null>(null), [profileError, setProfileError] = useState('');
   const [previewOpen, setPreviewOpen] = useState(true), [policyOpen, setPolicyOpen] = useState(false);
@@ -66,21 +69,23 @@ function JoinForm({ postId }: { postId: string }) {
     focusedScope.current = scope;
     busy.current = false; setSending(false);
     setNow(Date.now());
-    setConsent(false); setLoading(true); setError(''); setErrorCode(null); setProfileError(''); setPost(null); setProfile(null); setParticipation(null); setFeePaid(null); setRecommendationAge(null);
+    setConsent(false); setLoading(true); setError(''); setErrorCode(null); setProfileError(''); setPost(null); setProfile(null); setParticipation(null); setFeePaid(null); setRecommendationAge(null); setLanguages(null); setSpeaks(null);
     if (!isAuthed) { setLoading(false); return () => { active = false; if (focusedScope.current === scope) focusedScope.current = null; }; }
     void supabase.rpc('get_my_personal_info').then(({ data, error: failure }) => {
       if (active && !failure) setRecommendationAge(ageForMeetupRecommendation(data));
     }, () => {});
     void loadPublicPost(supabase, postId).then(async value => {
       if (!active) return;
-      const [ownProfile, request] = await Promise.all([
+      const [ownProfile, request, sides] = await Promise.all([
         // A profile failure (e.g. unavailable photos) only blocks submit; the meetup and request status still load.
         value?.room?.eventKind ? loadChillingProfile(supabase, 'application').catch(e => { if (active) setProfileError(getChillingError(e)); return null; }) : null,
         value?.room && value.author.id !== me.id ? loadMeetupParticipation(supabase, postId, me.id) : null,
+        // Unreadable counts leave the choice open; the server still refuses a full side.
+        parseLanguageExchange(value?.room) && value!.author.id !== me.id ? loadMeetupLanguages(supabase, postId).catch(() => null) : null,
       ]);
       // An unverified payment read shows the fee without a status rather than guessing.
       const payments = value?.room?.fee && request?.status === 'approved' ? await loadMeetupFeePayments(supabase, postId).catch(() => null) : null;
-      if (active) { setPost(value); setProfile(ownProfile); setParticipation(request); setFeePaid(payments && payments.some(row => row.user_id === me.id)); setSent(false); }
+      if (active) { setPost(value); setProfile(ownProfile); setParticipation(request); setFeePaid(payments && payments.some(row => row.user_id === me.id)); setSent(false); setLanguages(sides); setSpeaks(sides?.mine?.speaks ?? null); }
     }).catch(e => { if (active) { setError(getChillingError(e)); setErrorCode(getChillingErrorCode(e)); } })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; if (focusedScope.current === scope) focusedScope.current = null; };
@@ -102,6 +107,9 @@ function JoinForm({ postId }: { postId: string }) {
   const result = status === 'pending' || status === 'approved' || (sent && !status);
   const reapplyAt = (status === 'rejected' || status === 'cancelled') && participation ? Date.parse(participation.responded_at ?? participation.created_at) + 86400000 : 0;
   const coolingDown = reapplyAt > now;
+  const exchange = parseLanguageExchange(post?.room);
+  const choice = exchange && speaks ? { speaks, learns: otherLanguage(exchange, speaks) } : null;
+  const sideFull = !!choice && (!sideOpen(languages, choice.speaks) || errorCode === 'LANGUAGE_SIDE_FULL');
   useFocusEffect(useCallback(() => {
     const deadlines = [post?.room?.eventKind === 'once' ? Date.parse(post.room.endsAt ?? '') : NaN, reapplyAt];
     let timer: ReturnType<typeof setTimeout>;
@@ -132,11 +140,11 @@ function JoinForm({ postId }: { postId: string }) {
   };
   const submit = async () => {
     const scope = focusedScope.current;
-    if (!scope || !isAuthed || busy.current || unavailable || availability !== 'open' || paused || locked || coolingDown || own || !post || result || !answer.trim() || (modern && (profile?.version !== 2 || !consent))) return;
+    if (!scope || !isAuthed || busy.current || unavailable || availability !== 'open' || paused || locked || coolingDown || own || !post || result || !answer.trim() || (modern && (profile?.version !== 2 || !consent)) || (exchange && (!choice || sideFull))) return;
     busy.current = true; setSending(true); setError(''); setErrorCode(null);
     let submitted = false;
     try {
-      if (modern) await requestChillingJoin(supabase, post.id, answer, consent, profile!.revision ?? '');
+      if (modern) await requestChillingJoin(supabase, post.id, answer, consent, profile!.revision ?? '', choice);
       else await requestMeetupJoin(supabase, post.id, answer);
       if (focusedScope.current !== scope) return;
       submitted = true; setSent(true); play('meetup'); DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT); requestPushPrompt('meetup_request');
@@ -180,13 +188,15 @@ function JoinForm({ postId }: { postId: string }) {
                     {(status === 'rejected' || status === 'cancelled') && <StateCard kind={status === 'rejected' ? 'blocked' : 'empty'} title={status === 'rejected' ? tr("이전 신청이 거절됐어요") : tr("이전 신청은 취소된 상태예요")} body={coolingDown ? tr('이전 신청 처리 후 24시간 동안 재신청할 수 없어요. {0} 이후 다시 신청해 주세요.', new Intl.DateTimeFormat(appLocale, { month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(reapplyAt))) : tr('현재 참여가 확정되지 않았어요. 답변과 공유 동의를 확인하고 다시 신청할 수 있어요.')} />}
                     {coolingDown && <Pressable analyticsId="app_meetup-join.pressable.9" accessibilityRole="button" onPress={() => { play('selection'); setRetry(v => v + 1); }} style={[styles.secondary, { borderColor: theme.accent }]}><ThemedText type="smallBold" style={styles.support} themeColor="accent">{tr('현재 상태 확인')}</ThemedText></Pressable>}
                     <View style={[styles.summary, { borderColor: theme.line }]}><ChillingEventSchedule room={post!.room!} /></View>
+                    {exchange && <MeetupLanguagePicker exchange={exchange} state={languages} value={speaks} disabled={sending} onChange={value => { setSpeaks(value); if (errorCode === 'LANGUAGE_SIDE_FULL') { setError(''); setErrorCode(null); } }} />}
+                    {sideFull && !paused && availability === 'open' && <StateCard kind="blocked" title={copy(`${MEETUP_LANGUAGE_NAMES[choice!.speaks]} 쪽은 자리가 다 찼어요`, `The ${MEETUP_LANGUAGE_NAMES[choice!.speaks]} side is full`)} body={copy('이쪽 멤버가 빠지면 자리가 다시 열려요. 쓴 답변은 그대로 남아 있어요.', 'A seat opens again when someone on this side leaves. Your answer stays here.')} />}
                     {post!.room!.recommendedAgeMin != null && <>
                       <ThemedText type="small" style={styles.support} themeColor="textSecondary">{recommendedAgeMessage(post!.room!, recommendationAge, appLocale)}</ThemedText>
                       {recommendationAge == null && Platform.OS !== 'web' && <Pressable analyticsId="app_meetup-join.pressable.4" onPress={() => { play('selection'); router.push('/profile/settings'); }} accessibilityRole="button" style={styles.button}><ThemedText type="small" style={styles.support} themeColor="accent">{tr("계정 정보·이용 목적 확인하기")}</ThemedText></Pressable>}
                     </>}
                     <Pressable analyticsId="meetup.join.policy" accessibilityRole="button" accessibilityState={{ expanded: policyOpen }} onPress={() => { play('selection'); setPolicyOpen(value => !value); }} style={styles.button}><ThemedText style={styles.support} themeColor="textSecondary">{copy('신청·취소 안내', 'Application and cancellation details')}{policyOpen ? ' −' : ' +'}</ThemedText></Pressable>
                     {policyOpen && <MeetupPolicyNotice mode="join" />}
-                    {availability === 'full' && !own && !result && <MeetupWaitlist postId={postId} />}
+                    {(availability === 'full' || sideFull) && !own && !result && <MeetupWaitlist postId={postId} language={choice} />}
                     {modern && <ThemedText accessibilityRole="header" style={styles.sectionTitle}>{copy('1. 내 모임 프로필 확인', '1. Review your meetup profile')}</ThemedText>}
                     {modern && profile?.version !== 2 ? <>
                       <ThemedText style={styles.body} accessibilityRole={profileError ? 'alert' : undefined}>{profileError ? tr(profileError) : profile ? tr('모임에서 쓸 이름과 공개 범위를 확인해 주세요. 기존 소개는 남아 있어요.') : tr("함께할 사람들에게 나를 소개할 모임 프로필이 필요해요.")}</ThemedText>
@@ -231,10 +241,10 @@ function JoinForm({ postId }: { postId: string }) {
           <Pressable analyticsId="app_meetup-join.pressable.9" onPress={() => { play('selection'); setRetry(v => v + 1); }} accessibilityRole="button" style={styles.button}><ThemedText style={styles.body}>{tr("다시 불러오기")}</ThemedText></Pressable></>}
       </ScrollView>
       {isAuthed && !loading && !unavailable && !own && !inactive && !result && <View style={[styles.footer, { backgroundColor: theme.background, borderColor: theme.line }]}>
-        {!!error && !!post && <>{errorCode !== 'MEETUP_FULL' && errorCode !== 'MEETUP_RECRUITING_CLOSED' && <ThemedText style={styles.body} accessibilityRole="alert" themeColor="accent">{tr(error)}</ThemedText>}
+        {!!error && !!post && <>{errorCode !== 'MEETUP_FULL' && errorCode !== 'MEETUP_RECRUITING_CLOSED' && errorCode !== 'LANGUAGE_SIDE_FULL' && <ThemedText style={styles.body} accessibilityRole="alert" themeColor="accent">{tr(error)}</ThemedText>}
           {membershipError && <Pressable analyticsId="app_meetup-join.pressable.10" accessibilityRole="button" onPress={() => { play('selection'); router.push('/profile/membership'); }} style={styles.button}><ThemedText type="smallBold" style={styles.support} themeColor="accent">{tr("멤버십과 모임 자리 보기 ›")}</ThemedText></Pressable>}
           <Pressable analyticsId="app_meetup-join.pressable.9" onPress={() => { play('selection'); setRetry(v => v + 1); }} accessibilityRole="button" style={[styles.secondary, { borderColor: theme.accent }]}><ThemedText type="smallBold" style={styles.support} themeColor="accent">{tr("다시 불러오기")}</ThemedText></Pressable></>}
-        <RaisedActionButton analyticsId="app_meetup-join.pressable.8" onPress={() => { play('selection'); void submit(); }} disabled={sending || availability !== 'open' || paused || locked || coolingDown || !answer.trim() || (modern && (!consent || profile?.version !== 2))} busy={sending} label={sending ? tr("보내는 중…") : paused ? tr("지금은 새 신청을 받지 않아요") : locked ? tr('새 멤버만 신청할 수 있는 모임이에요') : availability === 'full' ? tr("정원이 모두 찼어요") : coolingDown ? tr("재신청 대기 중") : modern && profile?.version !== 2 ? tr("프로필 작성 후 신청 가능") : status ? tr("다시 신청하기") : modern ? tr("답변과 프로필 보내기") : tr("신청 답변 보내기")} />
+        <RaisedActionButton analyticsId="app_meetup-join.pressable.8" onPress={() => { play('selection'); void submit(); }} disabled={sending || availability !== 'open' || paused || locked || coolingDown || !answer.trim() || (modern && (!consent || profile?.version !== 2)) || (!!exchange && (!choice || sideFull))} busy={sending} label={sending ? tr("보내는 중…") : paused ? tr("지금은 새 신청을 받지 않아요") : locked ? tr('새 멤버만 신청할 수 있는 모임이에요') : availability === 'full' ? tr("정원이 모두 찼어요") : coolingDown ? tr("재신청 대기 중") : sideFull ? copy('고른 언어 쪽은 자리가 다 찼어요', 'This language side is full') : exchange && !choice ? copy('할 줄 아는 말을 골라 주세요', 'Choose the language you speak') : modern && profile?.version !== 2 ? tr("프로필 작성 후 신청 가능") : status ? tr("다시 신청하기") : modern ? tr("답변과 프로필 보내기") : tr("신청 답변 보내기")} />
       </View>}
     </KeyboardAvoidingView>
   </SafeAreaView></ThemedView>;

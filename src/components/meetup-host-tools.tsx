@@ -10,11 +10,13 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
+import { setLanguageExchangeWaitlist, type LanguageChoice } from '@/lib/meetup-language';
 import { confirmMeetupOccurrence, inviteMeetupCohost, inviteNextMeetupWaitlist, loadMeetupHostAggregates, loadMeetupHostRoster,
   loadMeetupFee, loadMeetupFeePayments, loadMeetupHostTools, meetupFeeAmount, meetupFeeDueIso, meetupFeeDueOn, meetupFeeInput, proposeMeetupDates,
   removeMeetupCohost, respondMeetupCohost, setMeetupFee, setMeetupFeePaid, setMeetupWaitlist, type MeetupFee, type MeetupHostAggregates, type MeetupHostIdentity, type MeetupHostToolsState, type MeetupOccurrence } from '@/lib/meetup-host-tools';
 
-export type MeetupHostToolsProps = { postId: string; onChanged?: () => void };
+// language: the side a language-exchange applicant chose, so the waitlist offers them that side's seats.
+export type MeetupHostToolsProps = { postId: string; onChanged?: () => void; language?: LanguageChoice | null };
 
 export function MeetupHostTools(props: MeetupHostToolsProps) {
   const { isAuthed, me } = useAuth();
@@ -45,7 +47,7 @@ const feeErrors: Record<string, readonly [string, string]> = {
   REQUEST_NOT_FOUND: ['승인된 멤버만 회비 낸 사람으로 표시할 수 있어요.', 'Only approved members can be marked as paid.'],
 };
 
-function HostTools({ postId, onChanged, waitlistOnly }: MeetupHostToolsProps & { waitlistOnly: boolean }) {
+function HostTools({ postId, onChanged, waitlistOnly, language: side }: MeetupHostToolsProps & { waitlistOnly: boolean }) {
   const { language, tr, locale } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), { me, isAuthed } = useAuth();
   const viewer = isAuthed ? me.id : '', focused = useIsFocused();
   const say = (ko: string, en: string) => tr(language === 'ko' ? ko : en);
@@ -147,7 +149,7 @@ function HostTools({ postId, onChanged, waitlistOnly }: MeetupHostToolsProps & {
       <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{say('초대 알림을 받을 때까지 기다려요. 대기·초대는 참여 승인이나 자리 예약이 아니에요.', 'We’ll notify you if you’re invited. The waitlist and invitations don’t approve you or hold a spot.')}</ThemedText>
       {state.waitlist && <ThemedText type="small" style={styles.bodyText}>{state.waitlist.invitedAt ? say('참여 제안이 도착했어요. 모임에서 신청을 확인해주세요.', 'You’ve been invited. Check your request on this meetup.') : say(`현재 대기 순서 ${state.waitlist.position}번`, `Your waitlist position: ${state.waitlist.position}`)}</ThemedText>}
       <Pressable analyticsId="meetup_host_tools.control.1" accessibilityRole="button" disabled={locked || (!state.waitlist && !state.canJoinWaitlist)} accessibilityState={{ disabled: locked || (!state.waitlist && !state.canJoinWaitlist) }} style={button}
-        onPress={() => void act(() => setMeetupWaitlist(supabase, postId, !state.waitlist), state.waitlist ? 'cancelled' : 'joined', value => state.waitlist ? !!value.waitlist : value.canJoinWaitlist && !value.waitlist)}>
+        onPress={() => void act(() => !state.waitlist && side ? setLanguageExchangeWaitlist(supabase, postId, side) : setMeetupWaitlist(supabase, postId, !state.waitlist), state.waitlist ? 'cancelled' : 'joined', value => state.waitlist ? !!value.waitlist : value.canJoinWaitlist && !value.waitlist)}>
         <ThemedText type="smallBold" style={styles.label}>{state.waitlist ? say('대기 신청 취소', 'Leave waitlist') : say('초대 알림 받기', 'Join waitlist')}</ThemedText>
       </Pressable>
     </>}

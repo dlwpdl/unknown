@@ -132,3 +132,16 @@ test('the real result pipeline applies city, hidden author, listing expiry and e
   context.query = 'ordinary';
   assert.deepEqual(Array.from(exports.run(), item => item.sourceId), ['ordinary']);
 });
+
+test('a home link opens the map with a union of categories and ignores unknown ones', () => {
+  const source = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
+  const filterStart = source.indexOf('const filters:'), filterEnd = source.indexOf('type Result = ', filterStart);
+  const marker = 'useState<DiscoveryFilter[]>(', start = source.indexOf(marker) + marker.length, end = source.indexOf(');\n  const filter: DiscoveryFilter', start);
+  assert.ok(filterStart > 0 && start > marker.length && end > start);
+  const exports = {};
+  vm.runInNewContext(ts.transpileModule(`${source.slice(filterStart, filterEnd)}\nexports.initial = initialCategory => (${source.slice(start, end)})();`, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, { exports, TOP25_GOLD: '#F4CA78' });
+  assert.deepEqual(Array.from(exports.initial('housing,used')), ['housing', 'used']);
+  assert.deepEqual(Array.from(exports.initial('top25')), ['top25']);
+  assert.deepEqual(Array.from(exports.initial('housing,unknown')), ['housing']);
+  for (const value of ['all', '', undefined]) assert.deepEqual(Array.from(exports.initial(value)), []);
+});

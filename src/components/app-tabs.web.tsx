@@ -31,7 +31,7 @@ export default function AppTabs() {
       <TabList asChild style={pathname === '/' ? { display: 'none' } : undefined}>
         <CustomTabList>
           <TabTrigger name="home" href="/" asChild>
-            <TabButton icon="today">{t.tabs.today}</TabButton>
+            <TabButton icon="home">{t.tabs.today}</TabButton>
           </TabTrigger>
           <TabTrigger name="meetups" href="/meetups" asChild>
             <TabButton icon="groups">{t.tabs.meetups}</TabButton>
@@ -80,7 +80,7 @@ function AnimatedTabSlot() {
   );
 }
 
-export function TabButton({ children, icon, badge = 0, isFocused, onPress, ...props }: Omit<TabTriggerSlotProps, 'ref'> & { ref?: React.Ref<ViewInstance>; icon: 'today' | 'groups' | 'edit_square' | 'forum' | 'notifications'; badge?: number }) {
+export function TabButton({ children, icon, badge = 0, isFocused, onPress, ...props }: Omit<TabTriggerSlotProps, 'ref'> & { ref?: React.Ref<ViewInstance>; icon: 'home' | 'groups' | 'edit_square' | 'forum' | 'notifications'; badge?: number }) {
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   return (

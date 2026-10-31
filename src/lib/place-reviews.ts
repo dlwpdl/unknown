@@ -79,6 +79,14 @@ export async function loadPlaceRatingSummaries(client: SupabaseClient, cityId: s
   return result;
 }
 
+// Place ids two or more active members rated or saved in this city, most people first (20261030190000).
+export async function loadCityPlaceSignals(client: SupabaseClient, cityId: string): Promise<string[]> {
+  const { data, error } = await client.rpc('get_city_place_signals', { p_city_id: cityId });
+  if (error) throw error;
+  if (!Array.isArray(data) || data.length > 20 || data.some(id => typeof id !== 'string' || !/^osm:(node|way|relation):[1-9][0-9]*$/.test(id))) throw new Error('INVALID_PLACE_SIGNALS');
+  return data;
+}
+
 export async function loadPlaceRatingState(client: SupabaseClient, scope: PlaceReviewScope, postIds: string[] = []): Promise<PlaceRatingState> {
   catalogPlace(scope.cityId, scope.placeId);
   const ids = [...new Set(postIds)];

@@ -16,6 +16,7 @@ import { getPostImageSource } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { meetupFeeAmount, meetupFeeDue } from '@/lib/meetup-host-tools';
 import { MeetupLabelBadges, useMeetupLabelPrefix } from '@/components/newcomer';
+import { languagePairLabel, meetupCategoryOf, parseLanguageExchange } from '@/lib/meetup-language';
 import type { Post, RoomPreview } from '@/lib/types';
 
 export function ChillingKindTabs({ value, onChange }: { value: ChillingKind; onChange: (kind: ChillingKind) => void }) {
@@ -45,7 +46,8 @@ export function ChillingEventSchedule({ room }: { room: ChillingSchedule & Pick<
   </View>;
 }
 
-export const CHILLING_CATEGORY_LABELS = { casual: '가볍게', party: '파티', festival: '페스티벌', sports: '스포츠', hobby: '취미', travel: '여행' } as const;
+// language is app-side only: the server keeps category 'casual' and stores room.languageExchange (see meetupCategoryOf).
+export const CHILLING_CATEGORY_LABELS = { casual: '가볍게', party: '파티', festival: '페스티벌', sports: '스포츠', hobby: '취미', travel: '여행', language: '언어교환' } as const;
 
 export function SeatBar({ room }: { room: Pick<RoomPreview, 'memberCount' | 'capacity'> }) {
   const theme = useTheme();
@@ -71,11 +73,13 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
   const countdown = chillingCountdown(post.room ?? {}, undefined, appLocale);
   const room = post.room;
   const schedule = chillingSchedule(post.room ?? {}, appLocale);
-  const categoryLabel = room?.category ? tr(CHILLING_CATEGORY_LABELS[room.category]) : null;
+  const category = meetupCategoryOf(room);
+  const categoryLabel = category ? tr(CHILLING_CATEGORY_LABELS[category]) : null;
+  const exchange = parseLanguageExchange(room);
   const seatsLeft = room?.capacity ? Math.max(0, room.capacity - room.memberCount) : null;
   const { labels, prefix } = useMeetupLabelPrefix(post);
   return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-    <Pressable analyticsId="components_chilling-event.pressable.2" onPress={() => { play('selection'); onOpen(); }} accessibilityRole="button" accessibilityLabel={`${prefix}${post.title}, ${schedule}${room?.fee ? `, ${tr('회비 {0}', meetupFeeAmount(room.fee.amount))}` : ''}${room?.recruitingClosed ? `, ${tr('모집 마감')}` : ''}`} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
+    <Pressable analyticsId="components_chilling-event.pressable.2" onPress={() => { play('selection'); onOpen(); }} accessibilityRole="button" accessibilityLabel={`${prefix}${post.title}, ${exchange ? `${languagePairLabel(exchange)}, ` : ''}${schedule}${room?.fee ? `, ${tr('회비 {0}', meetupFeeAmount(room.fee.amount))}` : ''}${room?.recruitingClosed ? `, ${tr('모집 마감')}` : ''}`} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
       {source && source.uri !== failed ? <Image source={source} style={styles.photo} contentFit="cover" recyclingKey={post.id} onError={() => setFailed(source.uri)} /> :
         // Decorative only: the title right below already names the meetup.
         <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.poster, { backgroundColor: theme.card }]}>
@@ -87,6 +91,7 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
       <View style={styles.meta}>
         {countdown && <View style={[styles.countdown, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={[styles.support, { color: theme.accentInk }]}>{countdown}</ThemedText></View>}
         <ThemedText type="smallBold" style={styles.support} themeColor="accent">{categoryLabel ? `${categoryLabel} · ` : ''}{group ? tr('정기모임') : tr('칠링')}</ThemedText>
+        {exchange && <View style={[styles.countdown, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" style={styles.support}>{languagePairLabel(exchange)}</ThemedText></View>}
         {room?.recruitingClosed && <View style={[styles.countdown, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" style={styles.support} themeColor="textSecondary">{tr('모집 마감')}</ThemedText></View>}
       </View>
       <ThemedText accessibilityRole="header" style={styles.title}>{post.title}</ThemedText>

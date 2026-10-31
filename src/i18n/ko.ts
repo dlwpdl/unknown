@@ -17,12 +17,12 @@ export const t = {
 
   trust: {
     accessibilityLabel: (level: 1 | 2 | 3) =>
-      `Lv${level} 인증 · ${level === 1 ? '소셜 계정 확인' : level === 2 ? '전화번호 확인 완료' : '신분증과 본인 촬영 대조 완료'}`,
-    short: (level: 1 | 2 | 3) => (level === 1 ? '소셜 계정 확인' : level === 2 ? '전화번호 인증' : '신분증 인증'),
+      `Lv${level} 인증 · ${level === 1 ? '소셜 계정 확인' : level === 2 ? '신분증·얼굴 확인 완료' : '믿을 수 있는 호스트'}`,
+    short: (level: 1 | 2 | 3) => (level === 1 ? '소셜 계정 확인' : level === 2 ? '신분증 확인' : '믿을 수 있는 호스트'),
   },
 
   tabs: {
-    today: '오늘',
+    today: '홈',
     meetups: '모임',
     write: '글쓰기',
     chat: '채팅',
@@ -250,7 +250,7 @@ export const t = {
     emptyTitle: '아직 대화가 없어요',
     emptyBody: '피드에서 마음에 드는 글을 찾거나 모임에 참여하면 모임 대화가 여기에 열려요.',
     newConversation: '아직 메시지가 없어요. 먼저 인사해보세요.',
-    unverifiedNotice: '상대방은 아직 실명 인증을 완료하지 않았어요.',
+    unverifiedNotice: '상대방은 아직 신분증 확인을 하지 않았어요.',
     unverifiedSafety: '처음엔 사람 많은 곳에서 만나요. 돈 얘기를 꺼내거나 개인정보를 캐물으면 신고해 주세요.',
     oneOnOneNotice: '따로 1:1로 만날 땐 조심하세요',
     oneOnOneSafety: '모임 밖에서 둘이 보자는 연락이 오면, 처음엔 사람 많은 곳에서 만나요. 돈 얘기를 꺼내거나 개인정보를 캐물으면 바로 신고해 주세요.',
@@ -458,8 +458,8 @@ export const t = {
     cancelRequest: '요청 취소',
     requested: '대화 요청을 보냈어요. 상대가 수락하면 양쪽이 각각 자리 1개를 사용해요.',
     verifiedL1: '소셜 계정을 확인한 이웃이에요',
-    verifiedL2: '전화번호 확인을 마친 이웃이에요. 생년월일 확인을 뜻하지는 않아요',
-    verifiedL3: '신분증과 본인 촬영 대조를 마친 이웃이에요',
+    verifiedL2: '신분증과 얼굴 대조를 마친 이웃이에요',
+    verifiedL3: '신분증 확인을 마치고 모임 기록도 쌓인 믿을 수 있는 호스트예요',
     self: '내 부캐예요',
   },
 

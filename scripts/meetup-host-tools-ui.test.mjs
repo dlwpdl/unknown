@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import * as designSystem from '../src/constants/design-system.ts';
 import * as tools from '../src/lib/meetup-host-tools.ts';
+import * as language from '../src/lib/meetup-language.ts';
 
 const postId = 'a1620000-0000-0000-0000-000000000001';
 const ownerId = 'a1610000-0000-0000-0000-000000000001';
@@ -68,7 +69,7 @@ export function mount(file, exportName, initialProps = {}, options = {}) {
     '@/constants/design-system': designSystem,
     'expo-router': { useIsFocused: () => ctx.focused !== false },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) },
-    '@/lib/supabase': { supabase: { rpc, from } }, '@/lib/meetup-host-tools': tools,
+    '@/lib/supabase': { supabase: { rpc, from } }, '@/lib/meetup-host-tools': tools, '@/lib/meetup-language': language,
   };
   const source = readFileSync(new URL(`../src/components/${file}.tsx`, import.meta.url), 'utf8');
   const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;

@@ -312,3 +312,17 @@ test('Home magnifier opens the common search route without clearing the current 
   assert.equal(nodes(app.render()).some(node=>node.type==='Modal'&&node.props.visible),false,'Ordinary search no longer opens the old post-only modal');
   assert.ok(app.feedback.includes('selection'));
 });
+
+test('Home search box says what it finds and the rent·used button opens the existing map filtered to both', () => {
+  const app = screen(), tree = app.render();
+  const search = nodes(tree).find(node => node.props?.analyticsId === 'components_feed-screen.pressable.2');
+  assert.equal(search.props.accessibilityRole, 'search');
+  assert.equal(search.props.accessibilityLabel, '밴쿠버에서 집·일자리·중고 찾기');
+  assert.ok(nodes(search).some(node => node.props?.children === '밴쿠버에서 집·일자리·중고 찾기'), 'the hint is visible, not only spoken');
+  assert.equal(nodes(tree).some(node => node.props?.analyticsId === 'discovery.open'), false, 'no unlabeled map icon stays in the header');
+  const map = nodes(app.list().renderItem({ item: null, index: 0 })).find(node => node.props?.analyticsId === 'discovery.open');
+  assert.equal(map.props.accessibilityLabel, '렌트·중고 지도로 보기');
+  map.props.onPress();
+  assert.deepEqual(JSON.parse(JSON.stringify(app.routes.at(-1))), { pathname: '/map', params: { category: 'housing,used' } });
+  assert.equal(app.feedback.at(-1), 'reaction');
+});

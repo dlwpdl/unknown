@@ -329,6 +329,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   }, [canonicalQuery, city.id, q, searching, viewerScope]);
 
 
+  const searchHint = tr('{0}에서 집·일자리·중고 찾기', tr(city.name));
   const openSearch = (initial?: string) => {
     router.push({ pathname: '/search', params: { ...(initial ? { query: initial } : {}), ...(meetupsOnly ? { kind: 'meetup' } : {}) } });
   };
@@ -791,18 +792,15 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             <ThemedText type="smallBold" numberOfLines={1} style={styles.city}>{tr(city.name)}</ThemedText>
             <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.text} />
           </Pressable></GlassSurface>
-          <View style={styles.iconGlass}><Pressable analyticsId="components_feed-screen.pressable.2"
-            onPress={() => { play('selection'); openSearch(); }} accessibilityRole="button" accessibilityLabel={appLocale === 'en-CA' ? 'Search Gling' : '통합검색'}
-            style={({ pressed }) => [styles.iconButton, controlPresentation(theme, { tone: 'ghost', pressed, reducedMotion }).container]}>
-            <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={IconSize.toolbar} tintColor={theme.text} />
-          </Pressable></View>
-          {!meetupsOnly && <View style={styles.iconGlass}><Pressable analyticsId="discovery.open"
-            onPress={() => { play('reaction'); router.push('/map'); }} accessibilityRole="button" accessibilityLabel={tr('부동산·중고거래·장소·행사 통합 지도')}
-            style={({ pressed }) => [styles.iconButton, controlPresentation(theme, { tone: 'ghost', pressed, reducedMotion }).container]}>
-            <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={IconSize.toolbar} tintColor={theme.text} />
-          </Pressable></View>}
           <ProfileAvatarButton onBusinessSwitchAvailabilityChange={setHasBusinessSwitch} />
         </View>
+        {/* 돋보기 대신 무엇을 찾는지 보이는 검색창 (owner 2026-10-30); 누르면 기존 통합 검색 화면. */}
+        <GlassSurface tone="control" interactive style={styles.searchGlass}><Pressable analyticsId="components_feed-screen.pressable.2"
+          onPress={() => { play('selection'); openSearch(); }} accessibilityRole="search" accessibilityLabel={searchHint} accessibilityHint={tr('검색 화면이 열려요')}
+          style={({ pressed }) => [styles.searchEntry, controlPresentation(theme, { tone: 'ghost', pressed, reducedMotion }).container]}>
+          <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={IconSize.inline} tintColor={theme.textSecondary} />
+          <ThemedText type="supporting" themeColor="textSecondary" style={styles.searchHint}>{searchHint}</ThemedText>
+        </Pressable></GlassSurface>
         {cityOpen && !meetupsOnly && (
           <View style={styles.categoryHead}>
             <GlassSurface tone="control" style={styles.chipGlass}><ScrollView analyticsId="components_feed-screen.scrollview.1" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
@@ -874,6 +872,14 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 <View style={styles.journalStatusRow}>
                   <ThemedText type="smallBold" themeColor="textSecondary" style={styles.journalDate}>{todayLabel(appLocale)}</ThemedText>
                   {cityLoading && <View style={styles.cityLoadingStatus}><GlingLoader color={theme.accent} size={18} accessibilityLabel={tr("{0} 소식 불러오는 중", (city.name))} /><ThemedText type="small" themeColor="textSecondary">{tr("소식 불러오는 중")}</ThemedText></View>}
+                  {/* 글자 없던 위쪽 지도 아이콘을 렌트·중고 버튼으로 옮김 (owner 2026-10-30), 같은 /map 화면을 렌트·중고만 골라 연다. */}
+                  {!meetupsOnly && <Pressable analyticsId="discovery.open" accessibilityRole="button" accessibilityLabel={tr('렌트·중고 지도로 보기')}
+                    onPress={() => { play('reaction'); router.push({ pathname: '/map', params: { category: 'housing,used' } }); }}
+                    style={({ pressed }) => [ControlStyles.pill, styles.mapEntry, controlPresentation(theme, { pressed, reducedMotion }).container]}>
+                    <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={IconSize.inline} tintColor={theme.accent} />
+                    <ThemedText type="label">{tr('렌트·중고')}</ThemedText>
+                    <ThemedText type="supporting" themeColor="accent">{tr('지도로 보기')}</ThemedText>
+                  </Pressable>}
                 </View>
                 {meetupsOnly && <ThemedText accessibilityRole="header" style={styles.journalTitle}>{t.feed.meetupTitle}</ThemedText>}
               </View>
@@ -1454,14 +1460,16 @@ const styles = StyleSheet.create({
   homeButtonLarge: { width: '100%', alignItems: 'flex-start' },
   cityGlass: { marginLeft: 'auto', borderRadius: ControlStyles.pill.borderRadius, flexShrink: 1 },
   cityGlassLarge: { marginLeft: 0, flex: 1, minWidth: 0 },
-  iconGlass: { borderRadius: ControlStyles.icon.borderRadius },
+  searchGlass: { marginHorizontal: Spacing.three, borderRadius: ControlStyles.field.borderRadius },
+  searchEntry: { ...ControlStyles.field, borderWidth: 0, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  searchHint: { flex: 1 },
   cityButton: { ...ControlStyles.pill, flexDirection: 'row', gap: Spacing.one, flexShrink: 1, paddingHorizontal: 12 },
   city: { ...Typography.label, flexShrink: 1 },
-  iconButton: ControlStyles.icon,
   unreadBadge: { position: 'absolute', top: 0, right: 0, minWidth: 18, borderRadius: 9, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
   unreadText: { fontSize: 10, lineHeight: 14, fontVariant: ['tabular-nums'] },
   journalIntro: { paddingTop: Spacing.three, gap: Spacing.one },
-  journalStatusRow: { minHeight: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  journalStatusRow: { minHeight: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
+  mapEntry: { flexDirection: 'row', gap: Spacing.one, marginLeft: 'auto', borderWidth: 1 },
   cityLoadingStatus: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   journalDate: { fontSize: 12, lineHeight: 18, letterSpacing: 0.8 },
   feedPlaceholder: { width: '100%', height: 180, borderRadius: 16 },

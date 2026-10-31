@@ -74,6 +74,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     'react-native-reanimated': { useReducedMotion: () => true }, 'react-native-webview': { __esModule: true, default: 'WebView' },
     '@/lib/auth': { useAuth: () => ctx.auth }, '@/lib/product-analytics': product, '@/lib/notification-preferences': preferences,
     '@/lib/push-notifications': { pushSupported: true, pushConfigured: true, registerPushDevice: async () => {} },
+    '@/lib/meetup-push-rsvp': { registerMeetupRsvpCategory: async () => {}, answerMeetupRsvpFromPush: () => false },
     '@/lib/supabase': { supabase }, '@/lib/analytics': { analyticsScreen },
     '@/lib/kakao-auth': { getOAuthCallbackPath },
     '@/lib/community-data': { loadNotifications: async () => ctx.rows, loadNotificationActors: async () => new Map(), loadNotificationSnippets: async () => new Map(), markNotificationsRead: async (_client, ids) => read.push(plain(ids)) },

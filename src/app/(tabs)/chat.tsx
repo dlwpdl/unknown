@@ -33,6 +33,8 @@ import { useAuth } from '@/lib/auth';
 import { getCommunityActionError, loadConversations, loadPendingMeetupRequests, MEETUPS_CHANGED_EVENT, type ConversationPage, type ConversationFilter, type MeetupRequest } from '@/lib/community-data';
 import { meetupRestrictionError } from '@/lib/meetup-policy';
 import { getChillingError, respondMeetupRequestV2 } from '@/lib/chilling-data';
+import { parseLanguageExchange } from '@/lib/meetup-language';
+import { MeetupLanguageCounts } from '@/components/meetup-language';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useMembership } from '@/lib/membership-provider';
 import { supabase } from '@/lib/supabase';
@@ -319,6 +321,7 @@ export default function ChatScreen() {
               <View style={styles.roomBody}><ThemedText style={styles.requestName}>{request.requester?.nickname || t.chat.member}</ThemedText><ThemedText type="small" themeColor="textSecondary">{request.post?.title}</ThemedText><ThemedText type="small" themeColor="accent">{tr("승인 대기")}</ThemedText></View>
             </View>
             <ThemedText type="small" themeColor="textSecondary">{request.post?.room?.eventKind ? tr("모임 프로필과 질문 답변이 도착했어요.") : request.message || t.chat.requestMessageEmpty}</ThemedText>
+            {parseLanguageExchange(request.post?.room) && <MeetupLanguageCounts postId={request.post_id} requestId={request.id} />}
             {request.post?.room?.eventKind ? <Pressable analyticsId="app_tabs_chat.pressable.4" onPress={() => { play('selection'); router.push({ pathname: '/meetup-application', params: { requestId: request.id } }); }} accessibilityRole="button" accessibilityLabel={tr("{0}님의 프로필과 신청 답변 검토", (request.requester?.nickname || t.chat.member))} style={styles.action}><ThemedText type="smallBold" themeColor="accent">{tr("프로필과 답변 검토하기 ›")}</ThemedText></Pressable> : <>
             {approveId === request.id && <><ThemedText type="small" themeColor="textSecondary">{tr("승인하면 신청자의 모임 자리 1개를 사용하고 모임 대화에 참여해요. 기존 멤버의 자리는 추가로 사용하지 않아요.")}</ThemedText>
               <MeetupHistoryChoice value={shareHistory} onChange={setShareHistory} disabled={requestBusy !== null} /></>}

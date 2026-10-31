@@ -8,10 +8,10 @@ export const en: Translations = {
     saving: 'Saving language', saveError: 'Couldn’t save your language. Choose it again.', close: 'Close',
   },
   trust: {
-    accessibilityLabel: (level) => `Level ${level} verification · ${level === 1 ? 'Social account checked' : level === 2 ? 'Phone verified' : 'ID and selfie matched'}`,
-    short: (level) => level === 1 ? 'Social account checked' : level === 2 ? 'Phone verified' : 'ID verified',
+    accessibilityLabel: (level) => `Level ${level} verification · ${level === 1 ? 'Social account checked' : level === 2 ? 'ID and selfie matched' : 'Trusted host'}`,
+    short: (level) => level === 1 ? 'Social account checked' : level === 2 ? 'ID verified' : 'Trusted host',
   },
-  tabs: { today: 'Today', meetups: 'Meetups', write: 'Write', chat: 'Chats', profile: 'Profile', notifications: 'Notifications' },
+  tabs: { today: 'Home', meetups: 'Meetups', write: 'Write', chat: 'Chats', profile: 'Profile', notifications: 'Notifications' },
   notifications: {
     title: 'Notifications', open: 'View notifications', loading: 'Loading notifications', empty: 'No notifications yet',
     loadError: 'Couldn’t load notifications.', emptyBody: 'Comments, requests and meetup updates will show up here.',
@@ -113,7 +113,7 @@ export const en: Translations = {
     conversationCount: (n) => `${n} ${n === 1 ? 'chat' : 'chats'}`, refresh: 'Refresh', loading: 'Loading chats', loadError: 'Couldn’t load chats. Try again in a moment.',
     loadMessagesError: 'Couldn’t load messages.', loadOlder: 'Load earlier messages', emptyTitle: 'No chats yet',
     emptyBody: 'Find a post you like in the feed or join a meetup. Your chats will show up here.', newConversation: 'No messages yet. Say hi!',
-    unverifiedNotice: 'This person hasn’t verified their ID.', unverifiedSafety: 'For a first meetup, pick a public place, and be careful if anyone asks for personal info or money.',
+    unverifiedNotice: 'This person hasn’t verified their ID yet.', unverifiedSafety: 'For a first meetup, pick a public place, and be careful if anyone asks for personal info or money.',
     oneOnOneNotice: 'Meeting one-on-one? Stay safe', oneOnOneSafety: 'If someone from a meetup asks to meet one-on-one, pick a busy public place the first time. If they bring up money or push for personal details, report them right away.',
     messagePlaceholder: 'Send a message…', send: 'Send', sending: 'Sending…', sendError: 'Couldn’t send your message. Check your connection or block settings.',
     meetupRequest: (title) => `I’d like to join “${title}”.`, ownMeetupTitle: 'You’re hosting this meetup',
@@ -189,7 +189,7 @@ export const en: Translations = {
     chatRequest: 'Start a chat', pending: 'Requested · Tap to cancel', pendingCancelTitle: 'Cancel this chat request?',
     pendingCancelBody: 'No slot is used or locked until they accept.', keepWaiting: 'Keep waiting', cancelRequest: 'Cancel request',
     requested: 'Chat request sent. If they accept, you’ll each use 1 slot.', verifiedL1: 'Social account checked',
-    verifiedL2: 'Phone number verified. This doesn’t confirm their date of birth', verifiedL3: 'ID and selfie matched', self: 'This is your profile',
+    verifiedL2: 'ID and selfie matched', verifiedL3: 'Trusted host · ID verified, with a solid meetup record', self: 'This is your profile',
   },
   authorPosts: {
     back: 'Back', open: 'View posts', title: (nickname) => `Posts by ${nickname}`, fallbackTitle: 'Neighbour’s posts', count: (posts) => `${posts} ${posts === '1' ? 'post' : 'posts'}`,
