@@ -9,6 +9,7 @@ import { SymbolView } from 'expo-symbols';
 import { CHILLING_CATEGORY_LABELS, SeatBar } from '@/components/chilling-event';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { MeetupWaitlist } from '@/components/meetup-host-tools';
+import { MeetupPartnerLine } from '@/components/meetup-partner-line';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ReportSheet } from '@/components/report-sheet';
 import { ThemedText } from '@/components/themed-text';
@@ -133,6 +134,7 @@ export function MeetupSummary({ post, status, onClose, onBeforeNavigate }: { pos
         {index === 2 && <SeatBar room={room} />}
       </View>)}
     </View>
+    <MeetupPartnerLine partner={room.partner} onBeforeNavigate={onClose} />
     {!!statusNote && <View style={[styles.status, { backgroundColor: theme.backgroundSelected }]}><ThemedText type="small">{statusNote}</ThemedText></View>}
     {tools && <Pressable analyticsId="meetup.detail.tools" accessibilityRole="button" accessibilityLabel={tools} style={[styles.row, { borderColor: theme.line }]}
       onPress={() => { play('selection'); onBeforeNavigate?.(); router.push({ pathname: '/meetup-tools', params: { postId: post.id, kind: room.eventKind ?? 'group', host: own ? '1' : '0' } }); }}>

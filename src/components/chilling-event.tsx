@@ -16,6 +16,7 @@ import { getPostImageSource } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { meetupFeeAmount, meetupFeeDue } from '@/lib/meetup-host-tools';
 import { MeetupLabelBadges, useMeetupLabelPrefix } from '@/components/newcomer';
+import { MeetupPartnerLine } from '@/components/meetup-partner-line';
 import type { Post, RoomPreview } from '@/lib/types';
 
 export function ChillingKindTabs({ value, onChange }: { value: ChillingKind; onChange: (kind: ChillingKind) => void }) {
@@ -101,6 +102,8 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
       {room ? <SeatBar room={room} /> : null}
       </View>
     </Pressable>
+    {/* Outside the card's open button so screen readers reach the business link on its own. */}
+    <MeetupPartnerLine partner={room?.partner} style={styles.partner} />
     <View style={[styles.footer, styles.cardActions, { borderTopColor: theme.line }]}>
       <Pressable analyticsId="components_chilling-event.pressable.3" onPress={() => { play('selection'); onAuthor(); }} accessibilityRole="button" accessibilityLabel={tr("{0} 프로필", (post.author.nickname))} style={styles.author}><TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} /><ThemedText type="small" style={[styles.support, styles.flex]} themeColor="textSecondary" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{tr("{0}님이 열었어요 ›", post.author.nickname)}</ThemedText></Pressable>
       <Pressable analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={post.author.id === me.id ? tr("내 모임에 초대하기") : tr("모임 공유하기")} style={styles.action}
@@ -126,5 +129,6 @@ const styles = StyleSheet.create({
   schedule: { fontSize: 16, lineHeight: 24 }, support: { fontSize: 14, lineHeight: 20 },
   footer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   seat: { height: 6, borderRadius: 999, overflow: 'hidden', marginTop: 8 }, seatFill: { height: '100%', borderRadius: 999 },
+  partner: { paddingHorizontal: 16 },
   flex: { flex: 1, minWidth: 0 }, author: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }, action: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });
