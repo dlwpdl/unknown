@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { SymbolView } from 'expo-symbols';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { Pressable, Switch } from '@/components/analytics-controls';
 import { ChillingDateInput } from '@/components/chilling-date-input';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-import { ControlStyles, Typography, controlPresentation } from '@/constants/design-system';
+import { ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
@@ -13,8 +14,8 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadMeetupSessions, type MeetupSession } from '@/lib/meetup-reviews';
 import {
   ANNOUNCEMENT_MAX, ANNOUNCEMENTS_PER_DAY, REGULAR_ATTENDANCE, badgeLabels, loadMeetupBadges, loadMeetupLoyalty, loadMeetupRoster, loyaltyError,
-  postMeetupAnnouncement, saveMemberNote, setCheckinStaff, setHostFollow, setMeetupAutoNext, setMeetupEncore, staffCheckIn, tierAtLeast,
-  updateMeetupAnnouncement, type AnnouncementAudience, type BadgeLevels, type MeetupLoyalty, type RosterMember,
+  pinnedNotices, postMeetupAnnouncement, saveMemberNote, setCheckinStaff, setHostFollow, setMeetupAutoNext, setMeetupEncore, staffCheckIn, tierAtLeast,
+  updateMeetupAnnouncement, type AnnouncementAudience, type BadgeLevels, type MeetupLoyalty, type PinnedNotice, type RosterMember,
 } from '@/lib/meetup-loyalty';
 import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
@@ -133,25 +134,54 @@ export function MeetupProfileLoyalty({ postId, userId }: { postId: string; userI
   </View>;
 }
 
-/** Group chat: the host's latest member-wide notice stays on top for 14 days. */
+/** Group chat: the host's member-wide notices from the last 14 days stay on top, newest first (up to 5). Two or more fold into one line. */
 export function MeetupPinnedNotice({ postId }: { postId: string }) {
   const { tr, locale } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const { state, refresh } = useMeetupLoyalty(postId);
-  const [busy, setBusy] = useState(false);
-  if (!state?.pinned) return null;
-  const pinned = state.pinned;
-  return <View accessible={!state.isHost} accessibilityLabel={tr('호스트 공지: {0}', pinned.body)} style={[styles.pinned, { backgroundColor: theme.backgroundElement }]}>
-    <View style={styles.pinnedHead}>
-      <ThemedText type="smallBold" themeColor="accent">{tr('공지')} · {new Date(pinned.sentAt).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}</ThemedText>
-      {state.isHost && <Pressable analyticsId="meetup.notice.unpin" accessibilityRole="button" accessibilityLabel={tr('공지 내리기')} accessibilityState={{ busy, disabled: busy }} disabled={busy}
-        onPress={async () => { play('selection'); setBusy(true); try { await updateMeetupAnnouncement(supabase, pinned.id, 'unpin'); refresh(); } catch { play('warning'); } finally { setBusy(false); } }}
-        style={({ pressed }) => [ControlStyles.icon, styles.unpin, controlPresentation(theme, { tone: 'ghost', pressed, busy }).container]}>
-        <ThemedText type="smallBold" themeColor="textSecondary">{tr('내리기')}</ThemedText>
-      </Pressable>}
-    </View>
-    <ThemedText type="small" numberOfLines={4}>{pinned.body}</ThemedText>
+  const [busy, setBusy] = useState(''), [open, setOpen] = useState(false);
+  const notices = pinnedNotices(state);
+  if (!state || !notices.length) return null;
+  const day = (notice: PinnedNotice) => new Date(notice.sentAt).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+  const unpin = (notice: PinnedNotice, label: string) => state.isHost && <Pressable analyticsId="meetup.notice.unpin" accessibilityRole="button" accessibilityLabel={label}
+    accessibilityState={{ busy: busy === notice.id, disabled: !!busy }} disabled={!!busy}
+    onPress={async () => { play('selection'); setBusy(notice.id); try { await updateMeetupAnnouncement(supabase, notice.id, 'unpin'); refresh(); } catch { play('warning'); } finally { setBusy(''); } }}
+    style={({ pressed }) => [ControlStyles.icon, styles.unpin, controlPresentation(theme, { tone: 'ghost', pressed, busy: busy === notice.id, disabled: !!busy && busy !== notice.id }).container]}>
+    <ThemedText type="smallBold" themeColor="textSecondary">{tr('내리기')}</ThemedText>
+  </Pressable>;
+  if (notices.length === 1) {
+    const pinned = notices[0];
+    return <View accessible={!state.isHost} accessibilityLabel={tr('호스트 공지: {0}', pinned.body)} style={[styles.pinned, { backgroundColor: theme.backgroundElement }]}>
+      <View style={styles.pinnedHead}>
+        <ThemedText type="smallBold" themeColor="accent">{tr('공지')} · {day(pinned)}</ThemedText>
+        {unpin(pinned, tr('공지 내리기'))}
+      </View>
+      <ThemedText type="small" numberOfLines={4}>{pinned.body}</ThemedText>
+    </View>;
+  }
+  return <View style={[styles.pinned, styles.pinnedStack, { backgroundColor: theme.backgroundElement }]}>
+    <Pressable analyticsId="meetup.notice.expand" accessibilityRole="button" accessibilityState={{ expanded: open }}
+      accessibilityLabel={open ? tr('고정된 공지 {0}개, 접기', notices.length) : tr('고정된 공지 {0}개, 눌러서 모두 보기', notices.length)}
+      onPress={() => { play('selection'); setOpen(value => !value); }}
+      style={({ pressed }) => [styles.pinnedBar, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
+      <ThemedText type="smallBold" themeColor="accent">{tr('공지 {0}', notices.length)}</ThemedText>
+      <ThemedText type="small" numberOfLines={1} style={styles.flex}>{open ? '' : notices[0].body}</ThemedText>
+      {open && <ThemedText type="small" themeColor="textSecondary">{tr('접기')}</ThemedText>}
+      <SymbolView name={{ ios: open ? 'chevron.up' : 'chevron.down', android: open ? 'expand_less' : 'expand_more', web: open ? 'expand_less' : 'expand_more' }}
+        size={IconSize.chevron} tintColor={theme.textSecondary} />
+    </Pressable>
+    {open && notices.map((notice, index) => <View key={notice.id} accessible={!state.isHost} accessibilityLabel={tr('호스트 공지: {0}', notice.body)}
+      style={[styles.pinnedItem, { borderTopColor: theme.line }]}>
+      <View style={styles.pinnedHead}>
+        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.flex}>{day(notice)}</ThemedText>
+        {index === 0 && <ThemedText type="smallBold" themeColor="accent">{tr('최신')}</ThemedText>}
+        {unpin(notice, tr('{0} 공지 내리기', day(notice)))}
+      </View>
+      <ThemedText type="small" numberOfLines={4}>{notice.body}</ThemedText>
+    </View>)}
+    {open && state.isHost && <ThemedText type="small" themeColor="textSecondary" style={[styles.pinnedItem, { borderTopColor: theme.line }]}>
+      {tr('최근 2주 안에 보낸 공지 중 최신 5개까지 고정돼요.')}</ThemedText>}
   </View>;
 }
 
@@ -346,6 +376,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   pinned: { marginHorizontal: Spacing.three, marginBottom: Spacing.two, borderRadius: 12, padding: Spacing.three, gap: Spacing.one },
   pinnedHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  pinnedStack: { padding: 0, gap: 0, overflow: 'hidden' },
+  pinnedBar: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44, paddingHorizontal: Spacing.three, borderRadius: 12 },
+  pinnedItem: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: Spacing.one },
   unpin: { width: 'auto', paddingHorizontal: Spacing.two },
   tools: { gap: Spacing.three },
   section: { gap: Spacing.two, paddingTop: Spacing.three, borderTopWidth: StyleSheet.hairlineWidth },
