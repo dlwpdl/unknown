@@ -24,4 +24,4 @@ export const localDay = (iso: string) => localDateInput(iso).slice(0, 10);
 export const parseLocalDay = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) ? parseLocalDateInput(`${value}T12:00`) : '';
 
 // dateOnly hides the time; callers read the day with localDay.
-export type ChillingDateInputProps = { label: string; value: string; onChange: (iso: string) => void; disabled?: boolean; dateOnly?: boolean };
+export type ChillingDateInputProps = { analyticsId?: string; label: string; value: string; onChange: (iso: string) => void; disabled?: boolean; dateOnly?: boolean };
