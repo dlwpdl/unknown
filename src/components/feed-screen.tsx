@@ -877,6 +877,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 </View>
                 {meetupsOnly && <ThemedText accessibilityRole="header" style={styles.journalTitle}>{t.feed.meetupTitle}</ThemedText>}
               </View>
+              {/* 이번 주 많이 읽은 글(탑10)은 카테고리·날짜 바로 아래, 다른 섹션보다 먼저 (owner 2026-10-30). */}
+              {!feedLoading && weeklyRanking}
               {!meetupsOnly && <StartGuide cityName={city.name} onPickCity={() => setCityPicker(true)} onOpenMeetups={() => router.navigate('/meetups')} />}
               {!meetupsOnly && isAuthed && <NewcomerProgressCard />}
               {cityOpen && !meetupsOnly && <LocalEventsCarousel cityId={city.id} refreshKey={rankingRefresh} cityLoading={cityLoading} onCityReady={setLoadedEventsCityId} />}
@@ -889,7 +891,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 }} />
                 {cityOpen && <ThemedText accessibilityRole="header" style={styles.sectionTitle}>{t.meetup.discover}</ThemedText>}
               </>}
-              {!feedLoading && weeklyRanking}
             </View>
           ) : (
             Array.isArray(item) ? <Animated.View style={[styles.listingGrid, { opacity: feedOpacity }]}>

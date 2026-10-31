@@ -8,13 +8,22 @@ export type MeetupLoyalty = {
   isHost: boolean; hostTier: MembershipTier; kind: 'once' | 'group'; ended: boolean;
   following: boolean; canEncore: boolean; encored: boolean; isStaff: boolean;
   hostBadges: { hosted: number };
-  pinned: { id: string; body: string; sentAt: string } | null;
+  pinned: PinnedNotice | null;
+  // Newest first, up to 5 (20261030230000); absent until that migration is live.
+  pinnedNotices?: PinnedNotice[];
   // Host only.
   followerCount?: number; encoreCount?: number; sentToday?: number;
   scheduled?: { id: string; body: string; audience: AnnouncementAudience; sendAt: string }[];
   autoNext?: { enabled: boolean; cadence: 'weekly' | 'fortnightly' } | null;
 };
+export type PinnedNotice = { id: string; body: string; sentAt: string };
 export type RosterMember = { userId: string; nickname: string; attended: number; lastAttendedAt: string | null; note: string; regular: boolean; staff: boolean };
+
+/** Notices pinned at the top of the meetup chat, newest first; falls back to the single notice from an older server. */
+export function pinnedNotices(state: Pick<MeetupLoyalty, 'pinned' | 'pinnedNotices'> | null): PinnedNotice[] {
+  if (!state) return [];
+  return state.pinnedNotices ?? (state.pinned ? [state.pinned] : []);
+}
 
 export const ANNOUNCEMENT_MAX = 500;
 export const ANNOUNCEMENTS_PER_DAY = 3;
