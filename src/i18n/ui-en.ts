@@ -3917,4 +3917,5 @@ export const uiEnglish: Record<string, string> = {
   "배너·주소·영업시간을 채우면 더 잘 보여요": "Profiles with a banner, address and hours stand out more",
   "아직 비어 있어요: {0}": "Still empty: {0}",
   "주소와 소개는 {0}로 보내 주시면 넣어 드려요.": "Send your address and description to {0} and we’ll add them.",
+  "제휴 혜택": "Partner perk",
 };

@@ -62,6 +62,7 @@ export interface RoomPreview {
   applicationQuestion?: string | null;
   hostDisplayName?: string | null;
   fee?: { amount: number; note?: string; dueOn?: string }; // dueOn: YYYY-MM-DD; public so applicants see it
+  partner?: { businessId: string; name: string; benefit?: string; percent?: number }; // admin-only write (admin_set_meetup_partner)
 }
 
 export interface PostComment {
