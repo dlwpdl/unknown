@@ -55,11 +55,14 @@ export async function loadPublicPosts({ url, key, cities, searchToken, fetcher =
   return { posts, meetups: [...meetups.values()] };
 }
 
+// Settlement hubs carry an official guide box (finish-public-web.mjs HUB_GUIDES), so they stand with fewer than 5 posts (owner 2026-11-01).
+export const GUIDE_HUBS = ['vancouver/settlement', 'toronto/settlement', 'montreal/settlement'];
+
 // City × topic combinations with enough public posts to stand as their own page.
 export function topicHubs(posts) {
-  const counts = new Map();
+  const counts = new Map(GUIDE_HUBS.map(key => [key, 0]));
   for (const post of posts) if (post.cityId && TOPIC_HUBS[post.tagSlug]) counts.set(`${post.cityId}/${post.tagSlug}`, (counts.get(`${post.cityId}/${post.tagSlug}`) ?? 0) + 1);
-  return new Map([...counts].filter(([, count]) => count >= MIN_TOPIC_HUB_POSTS).map(([key, count]) => {
+  return new Map([...counts].filter(([key, count]) => count >= MIN_TOPIC_HUB_POSTS || GUIDE_HUBS.includes(key)).map(([key, count]) => {
     const [cityId, tagSlug] = key.split('/');
     return [key, { cityId, tagSlug, count, path: `/${cityId}/${TOPIC_HUBS[tagSlug].slug}` }];
   }));

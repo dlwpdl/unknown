@@ -64,8 +64,8 @@ export const TOPIC_HUBS: Record<string, { slug: string; name: (city: string) => 
   used: { slug: 'used', name: city => `${city} 한인 중고거래` },
   food: { slug: 'food', name: city => `${city} 한인 맛집 이야기` },
   life: { slug: 'life', name: city => `${city} 한인 생활 이야기` },
-  settlement: { slug: 'settlement', name: city => `${city} 한인 정착 이야기` },
-  education: { slug: 'education', name: city => `${city} 한인 교육·학교 이야기` },
+  settlement: { slug: 'settlement', name: city => `${city} 한인 정착 정보·가이드` },
+  education: { slug: 'education', name: city => `${city} 한인 유학·교육 이야기` },
   travel: { slug: 'travel', name: city => `${city} 한인 여행 이야기` },
   shopping: { slug: 'shopping', name: city => `${city} 한인 쇼핑 이야기` },
   festival: { slug: 'festival', name: city => `${city} 한인 축제·공연 동행` },
@@ -87,19 +87,38 @@ export function publicCitySubpage(path: string, cityIds: string[]) {
 // Title and description shared by the static page and the hydrated reader, so the head never changes after load.
 export function publicCitySubpageMeta(sub: NonNullable<ReturnType<typeof publicCitySubpage>>, city: string) {
   if (sub.kind === 'meetups') return {
-    title: `${city} 한인 모임 | 글링`,
-    description: `${city}에 사는 한인들이 글링에서 여는 모임을 모았어요. 일정과 참여 인원을 미리 보고, 참여 신청과 대화는 글링 앱에서 이어가요.`,
+    title: `${city} 한인 모임 · 소모임·동행 | 글링`,
+    description: `${city} 한인 소모임과 축제·공연 동행을 글링에서 찾아요. 일정과 참여 인원은 여기서 미리 보고, 신청과 대화는 글링 앱에서 해요.`,
   };
   if (sub.kind === 'page') return {
     title: `${city} 한인 커뮤니티 · 지난 이야기 ${sub.page}쪽 | 글링`,
     description: `${city} 한인들이 글링에 올린 지난 이야기 ${sub.page}쪽이에요. 렌트, 구인구직, 중고거래, 맛집, 정착 이야기를 올라온 순서대로 모아 뒀어요.`,
   };
   const name = TOPIC_HUBS[sub.tagSlug].name(city);
+  if (sub.tagSlug === 'settlement') return {
+    title: `${name} | 글링`,
+    description: `${city}에 막 온 한인이 처음 챙기는 의료보험, SIN, 운전면허, 무료 정착 서비스를 정부 공식 페이지 링크로 모았어요. 링크마다 어떤 곳인지 한 줄씩 적어 뒀어요.`,
+  };
   return {
     title: `${name} | 글링`,
     description: `${name}. ${city}에 사는 한인들이 글링에 직접 올린 공개 글을 모았어요. 미리보기는 바로 보고, 로그인하면 전체 글을 읽을 수 있어요.`,
   };
 }
+
+// /meetups: the static route head and the hydrated reader use the same words.
+export const publicMeetupsMeta = {
+  title: '캐나다 한인 모임·소모임 · 밴쿠버·토론토·몬트리올 | 글링',
+  description: '밴쿠버·토론토·몬트리올 한인 모임과 소모임, 축제·공연 동행을 모았어요. 일정과 참여 인원은 웹에서 미리 보고, 참여 신청과 대화는 글링 앱에서 해요.',
+  heading: '캐나다 한인 모임·소모임',
+};
+
+// /immigration (src/components/public-web/immigration.tsx): official IRCC and provincial links only, re-checked on `checked`.
+export const publicImmigrationMeta = {
+  title: '캐나다 이민·유학·배우자 비자 공식 안내 모음 | 글링',
+  description: '캐나다 이민(영주권), 유학, 워킹홀리데이, 배우자 비자를 알아볼 때 먼저 열어 볼 IRCC·주정부 공식 페이지를 모았어요. Express Entry, PNP, 학업 허가, IEC, 배우자 초청 페이지가 각각 어떤 곳인지 한 줄씩 설명해요.',
+  heading: '캐나다 이민·유학·배우자 비자 길잡이',
+  checked: '2026-11-01',
+};
 
 export type PublicPostFacts = {
   id: string; title: string; city?: string | null; cityId?: string | null; label?: string | null; tagSlug?: string | null;

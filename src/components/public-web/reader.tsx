@@ -27,7 +27,7 @@ import { hasAdLabel } from '@/lib/hashtags';
 import { publicMerchantId, publicWebTarget } from '@/lib/public-web';
 import { buildSharedPostUrl } from '@/lib/sharing';
 import { publicWebClient } from '@/lib/public-web-client';
-import { jsonLd, postSeo, publicCitySubpage, publicCitySubpageMeta, publicCompanyUrl, publicSiteName, PUBLIC_SITE } from '@/lib/public-seo';
+import { jsonLd, postSeo, publicCitySubpage, publicCitySubpageMeta, publicCompanyUrl, publicMeetupsMeta, publicSiteName, PUBLIC_SITE } from '@/lib/public-seo';
 import { adoptStatic } from './static-slot';
 import { publicHomeSchema } from './metadata';
 import { InteractionFeedbackProvider, useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -193,12 +193,14 @@ function ReaderContent() {
   if (!cityPage && cities.some((item) => item.id === readyParams.city)) filters.set('city', city.id);
   if (tag && !meetupPage) filters.set('tag', tag.slug);
   const cityHub = !!cityPage || (path === '/' && !tag && filters.has('city'));
-  const canonical = subMeta ? `${PUBLIC_SITE}${path}` : metadata?.canonical ?? (cityHub ? `${PUBLIC_SITE}/${city.id}` : browse ? `${PUBLIC_SITE}${meetupPage ? '/meetups' : '/'}${filters.size ? `?${filters}` : ''}` : postId ? `${PUBLIC_SITE}/post?id=${postId}` : merchantId ? publicCompanyUrl(merchantId) : null);
+  // /meetups?city= canonicalizes to the always-built /<city>/meetups page, as `/?city=` does to /<city>.
+  const cityMeetupMeta = meetupPage && filters.has('city') ? publicCitySubpageMeta({ kind: 'meetups', cityId: city.id }, city.name) : null;
+  const canonical = subMeta ? `${PUBLIC_SITE}${path}` : metadata?.canonical ?? (cityHub ? `${PUBLIC_SITE}/${city.id}` : cityMeetupMeta ? `${PUBLIC_SITE}/${city.id}/meetups` : browse ? `${PUBLIC_SITE}${meetupPage ? '/meetups' : '/'}${filters.size ? `?${filters}` : ''}` : postId ? `${PUBLIC_SITE}/post?id=${postId}` : merchantId ? publicCompanyUrl(merchantId) : null);
   const pageTitle = subMeta?.title ?? metadata?.title ?? (cityHub ? ko ? `${city.name} 한인 커뮤니티 · 동네 이야기와 모임 | 글링` : `Korean community in ${city.englishName} | Gling`
-    : meetupPage ? ko ? `${filters.has('city') ? `${city.name} 한인 모임` : '캐나다 한인 모임 · 밴쿠버·토론토·몬트리올'} | 글링` : `${filters.has('city') ? `Meetups in ${city.englishName}` : 'Korean meetups in Canada'} | Gling`
+    : meetupPage ? ko ? cityMeetupMeta?.title ?? publicMeetupsMeta.title : `${filters.has('city') ? `Meetups in ${city.englishName}` : 'Korean meetups in Canada'} | Gling`
     : browse ? filters.size ? `${tr(city.name)} · ${tr(tag?.label ?? '동네 이야기')} | ${ko ? '글링' : 'Gling'}` : `${publicSiteName(language)}${ko ? ' · 밴쿠버·토론토·몬트리올' : ' · Vancouver, Toronto, Montreal'}`
     : detail ? ko ? '글링 공개 글' : 'Public post | Gling' : company ? ko ? '글링 비즈니스 프로필' : 'Business profile | Gling' : ko ? '글링 | 앱에서 이어가기' : 'Gling | Continue in the app');
-  const description = subMeta?.description ?? metadata?.description ?? (ko ? '밴쿠버·토론토·몬트리올 한인 커뮤니티 글링에서 동네 이야기, 비즈니스와 모임을 둘러보세요. 로그인하면 공개 글의 전체 본문을 웹에서 읽을 수 있어요.'
+  const description = subMeta?.description ?? metadata?.description ?? (meetupPage && ko ? cityMeetupMeta?.description ?? publicMeetupsMeta.description : undefined) ?? (ko ? '밴쿠버·토론토·몬트리올 한인 커뮤니티 글링에서 동네 이야기, 비즈니스와 모임을 둘러보세요. 로그인하면 공개 글의 전체 본문을 웹에서 읽을 수 있어요.'
     : 'Explore neighbourhood stories, businesses and meetups on Gling, the Korean community app for Vancouver, Toronto and Montreal. Sign in to read the full public post on the web.');
   // Static /post.html has no query parameters yet; let Google render before marking a missing post.
   const noindex = !sub && ((!browse && !detail && !company) || (detail && hydrated && (!postId || (current && !post))) || (company && hydrated && !merchantId));
@@ -283,7 +285,7 @@ function ReaderContent() {
         {browse ? <>
           <div className="reader-intro"><p>{ko ? '밴쿠버·토론토·몬트리올 한인이 동네 정보를 묻고 모임을 찾는 무료 앱, 글링이에요.' : 'Gling is a free app where Koreans in Vancouver, Toronto and Montreal ask about their neighbourhood and find meetups.'}</p>
             <InstallAction className="reader-primary" onPress={() => play('selection')} /></div>
-          <div className="reader-section-heading"><div><h1 id="stories">{meetupPage ? ko ? '모임' : 'Meetups' : cityHub ? ko ? `${city.name} 한인 커뮤니티` : `Korean community in ${city.englishName}` : path === '/' && !filters.size ? ko ? '캐나다 한인 커뮤니티 글링' : 'Gling, the Korean community in Canada' : ko ? '오늘' : 'Today'}</h1><p>{meetupPage ? ko ? '모임을 살펴보고 앱에서 함께해요.' : 'Explore a meetup, then join in the app.' : ko ? '이 도시에서 나누는 이야기' : 'Stories from your city'}</p></div><span>{tr(city.name)} · {tr(tag?.label ?? '전체 이야기')}</span></div>
+          <div className="reader-section-heading"><div><h1 id="stories">{meetupPage ? ko ? publicMeetupsMeta.heading : 'Meetups' : cityHub ? ko ? `${city.name} 한인 커뮤니티` : `Korean community in ${city.englishName}` : path === '/' && !filters.size ? ko ? '캐나다 한인 커뮤니티 글링' : 'Gling, the Korean community in Canada' : ko ? '오늘' : 'Today'}</h1><p>{meetupPage ? ko ? '소모임이든 축제 동행이든 여기서 둘러보고, 참여는 앱에서 해요.' : 'Explore a meetup, then join in the app.' : ko ? '이 도시에서 나누는 이야기' : 'Stories from your city'}</p></div><span>{tr(city.name)} · {tr(tag?.label ?? '전체 이야기')}</span></div>
           {cityPage && <div ref={adoptStatic('gling-static-city')} />}
           <form key={`${city.id}:${tag?.id ?? ''}`} className="reader-filters" action={meetupPage ? '/meetups' : '/'} method="get">
             <label>{ko ? '도시' : 'City'}<select name="city" defaultValue={city.id} onChange={() => play('selection')}>{cities.map((item) => <option value={item.id} key={item.id}>{tr(item.name)}</option>)}</select></label>
@@ -333,6 +335,6 @@ function ReaderContent() {
       <aside id="app"><AppInvitation target={target} /></aside>
     </main>
     <InstallBar />
-    <footer className="reader-footer"><span>{ko ? 'gling · 같이 갈 사람, 같이 나눌 이야기' : 'gling · People to go with, stories to share'}</span><nav aria-label={ko ? '정책' : 'Policies'}><a href="/business" onClick={() => play('selection')}>{ko ? '비즈니스 등록·관리' : 'List or manage your business'}</a><a data-analytics="web_control_18" href="/terms">{ko ? '이용약관' : 'Terms'}</a><a data-analytics="web_control_19" href="/privacy">{ko ? '개인정보처리방침' : 'Privacy'}</a><a data-analytics="web_control_20" href="/account-deletion">{ko ? '계정 삭제' : 'Delete account'}</a></nav></footer>
+    <footer className="reader-footer"><span>{ko ? 'gling · 같이 갈 사람, 같이 나눌 이야기' : 'gling · People to go with, stories to share'}</span><nav aria-label={ko ? '정책' : 'Policies'}><a href="/immigration" onClick={() => play('selection')}>{ko ? '이민·유학 길잡이' : 'Immigration guide (Korean)'}</a><a href="/business" onClick={() => play('selection')}>{ko ? '비즈니스 등록·관리' : 'List or manage your business'}</a><a data-analytics="web_control_18" href="/terms">{ko ? '이용약관' : 'Terms'}</a><a data-analytics="web_control_19" href="/privacy">{ko ? '개인정보처리방침' : 'Privacy'}</a><a data-analytics="web_control_20" href="/account-deletion">{ko ? '계정 삭제' : 'Delete account'}</a></nav></footer>
   </div>;
 }

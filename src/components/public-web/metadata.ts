@@ -1,5 +1,5 @@
 import type { Metadata } from 'expo-router/server';
-import { PUBLIC_SITE, publicAboutGling, publicDisambiguation, publicSiteName } from '@/lib/public-seo';
+import { PUBLIC_SITE, publicAboutGling, publicDisambiguation, publicImmigrationMeta, publicSiteName } from '@/lib/public-seo';
 
 export const publicReaderDescription = '밴쿠버·토론토·몬트리올 한인 커뮤니티 글링에서 동네 이야기, 맛집, 렌트·구인·중고, 모임을 둘러보세요. 미리보기는 바로 보고, 로그인하면 전체 글을 읽을 수 있어요.';
 
@@ -48,6 +48,55 @@ export const publicFaqSchema = {
     '@type': 'Question', name: item.question,
     acceptedAnswer: { '@type': 'Answer', text: item.answer },
   })),
+};
+
+// Owner 2026-11-01: official IRCC and provincial pages with one line each and the date checked.
+// No fees, ages, processing times or eligibility numbers on the page: they change, and this is not legal advice.
+export const IMMIGRATION_SECTIONS: { id: string; title: string; links: { name: string; url: string; about: string }[] }[] = [
+  { id: 'pr', title: '영주권(이민)', links: [
+    { name: 'Express Entry · IRCC', url: 'https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry.html',
+      about: '숙련 인력이 영주권을 신청할 때 쓰는 연방 정부 온라인 시스템이에요. 캐나다 경험 이민(CEC), 연방 숙련 인력 이민(FSW) 같은 프로그램이 이 시스템으로 운영돼요.' },
+    { name: '주정부 이민(PNP) · IRCC', url: 'https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/provincial-nominees.html',
+      about: '각 주가 필요한 사람을 골라 영주권 대상으로 추천하는 제도예요. 조건은 주마다 달라요.' },
+    { name: 'BC PNP · WelcomeBC', url: 'https://www.welcomebc.ca/immigrate-to-b-c', about: '밴쿠버가 있는 BC주의 주정부 이민 안내예요.' },
+    { name: 'OINP · 온타리오 정부', url: 'https://www.ontario.ca/page/ontario-immigrant-nominee-program-oinp', about: '토론토가 있는 온타리오주의 주정부 이민 안내예요.' },
+    { name: '퀘벡 이민 · 퀘벡 정부', url: 'https://www.quebec.ca/en/immigration/permanent',
+      about: '퀘벡은 PNP 대신 주정부가 숙련 인력 이민을 따로 선발해요. 몬트리올로 갈 생각이면 여기부터 봐요.' },
+  ] },
+  { id: 'study', title: '유학', links: [
+    { name: '학업 허가(Study permit) · IRCC', url: 'https://www.canada.ca/en/immigration-refugees-citizenship/services/study-canada/study-permit.html',
+      about: '외국인은 대부분 학업 허가가 있어야 캐나다에서 공부할 수 있어요. 필요한 서류와 신청 순서가 나와 있어요.' },
+    { name: '지정 교육기관(DLI) 목록 · IRCC', url: 'https://www.canada.ca/en/immigration-refugees-citizenship/services/study-canada/study-permit/prepare/designated-learning-institutions-list.html',
+      about: '학업 허가로 다니는 학교는 지정 교육기관이어야 해서, 가려는 학교가 목록에 있는지 여기서 찾아봐요.' },
+  ] },
+  { id: 'iec', title: '워킹홀리데이', links: [
+    { name: 'International Experience Canada(IEC) · IRCC', url: 'https://www.canada.ca/en/immigration-refugees-citizenship/services/work-canada/iec.html',
+      about: '워킹홀리데이는 IEC 프로그램으로 신청해요. 한국도 협정 국가라서 나이 같은 조건이 맞으면 지원할 수 있어요.' },
+  ] },
+  { id: 'spouse', title: '배우자 비자·초청', links: [
+    { name: '배우자·파트너 초청 · IRCC', url: 'https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/family-sponsorship/spouse-partner-children.html',
+      about: '배우자나 사실혼 파트너가 영주권을 받도록 후원하는 프로그램이에요. 누가 후원할 수 있는지도 같은 페이지에 있어요.' },
+    { name: '유학생·근로자 배우자의 취업 허가 · IRCC', url: 'https://ircc.canada.ca/english/helpcentre/answer.asp?qnum=199&top=17',
+      about: '유학생이나 근로자로 와 있는 사람의 배우자도 캐나다에서 일하려면 보통 취업 허가(워크퍼밋)를 따로 받아요. 오픈 워크퍼밋을 받을 수 있는 경우는 이 도움말에 나와 있어요.' },
+  ] },
+  { id: 'before', title: '신청하기 전에', links: [
+    { name: '처리 기간 조회 · IRCC', url: 'https://www.canada.ca/en/immigration-refugees-citizenship/services/application/check-processing-times.html',
+      about: '신청 종류별로 지금 처리에 얼마나 걸리는지 IRCC가 직접 보여 줘요.' },
+    { name: '등록 이민 컨설턴트 명단 · CICC', url: 'https://register.college-ic.ca/Public-Register-EN/Public-Register-EN/Default.aspx',
+      about: '돈을 받고 이민 상담을 하려면 자격이 있어야 해요. 대행을 맡기기 전에 등록된 컨설턴트인지 이 명단에서 확인할 수 있어요.' },
+  ] },
+];
+
+export const publicImmigrationSchema = {
+  '@context': 'https://schema.org', '@graph': [
+    { '@type': 'WebPage', '@id': `${PUBLIC_SITE}/immigration`, url: `${PUBLIC_SITE}/immigration`, name: publicImmigrationMeta.heading,
+      description: publicImmigrationMeta.description, inLanguage: 'ko', lastReviewed: publicImmigrationMeta.checked, isPartOf: { '@id': `${PUBLIC_SITE}/#website` },
+      significantLink: IMMIGRATION_SECTIONS.flatMap(section => section.links.map(link => link.url)) },
+    { '@type': 'BreadcrumbList', itemListElement: [
+      { '@type': 'ListItem', position: 1, name: '글링', item: `${PUBLIC_SITE}/` },
+      { '@type': 'ListItem', position: 2, name: publicImmigrationMeta.heading, item: `${PUBLIC_SITE}/immigration` },
+    ] },
+  ],
 };
 
 export function generatePrivateMetadata(): Metadata {

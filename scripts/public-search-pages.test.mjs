@@ -3,8 +3,8 @@ import test from 'node:test';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { finishPublicWeb } from './finish-public-web.mjs';
-import { prerenderPublicPosts, topicHubs } from './prerender-public-posts.mjs';
+import { finishPublicWeb, HUB_GUIDES } from './finish-public-web.mjs';
+import { GUIDE_HUBS, prerenderPublicPosts, topicHubs } from './prerender-public-posts.mjs';
 import { PUBLIC_SITE, publicCitySubpage, publicPostDescription } from '../src/lib/public-seo.ts';
 
 // The real 404 shell carries the reader's own H1; prerendered pages must not inherit it.
@@ -85,7 +85,7 @@ test('검색용 글·허브·옛 주소 페이지는 H1 하나, 70자 이상 설
     }
 
     const { hubs } = finishPublicWeb(directory, posts, [], { meetups, now: NOW });
-    assert.deepEqual([...hubs.keys()].sort(), ['vancouver/housing', 'vancouver/life'], 'only city × topic with 5+ posts');
+    assert.deepEqual([...hubs.keys()].sort(), ['montreal/settlement', 'toronto/settlement', 'vancouver/housing', 'vancouver/life', 'vancouver/settlement'], 'city × topic with 5+ posts, plus the settlement guides');
     assert.ok(!existsSync(join(directory, 'vancouver', 'jobs.html')) && !existsSync(join(directory, 'toronto', 'life.html')));
     const rent = readFileSync(join(directory, 'vancouver', 'rent.html'), 'utf8');
     assert.equal(h1s(rent), 1);
@@ -119,8 +119,10 @@ test('검색용 글·허브·옛 주소 페이지는 H1 하나, 70자 이상 설
     assert.doesNotMatch(toronto.match(/id="gling-static-city"[\s\S]*?<\/section>/)[0], /최근 30일 동안 밴쿠버/, 'city copy differs per city');
 
     const meetupPage = readFileSync(join(directory, 'vancouver', 'meetups.html'), 'utf8');
-    assert.match(meetupPage, /<h1[^>]*>밴쿠버 한인 모임<\/h1>/);
-    assert.match(meetupPage, /<title data-rh="true">밴쿠버 한인 모임 \| 글링<\/title>/);
+    assert.equal(h1s(meetupPage), 1);
+    assert.match(meetupPage, /<h1[^>]*>밴쿠버 한인 모임·소모임<\/h1>/);
+    assert.match(meetupPage, /<title data-rh="true">밴쿠버 한인 모임 · 소모임·동행 \| 글링<\/title>/);
+    assert.match(meetupPage, /소모임[\s\S]*동행/);
     const event = graphs(meetupPage)[0]['@graph'][0].mainEntity.itemListElement[0].item;
     assert.equal(event['@type'], 'Event');
     assert.equal(event.startDate, '2026-11-07T17:00:00.000Z');
@@ -129,13 +131,44 @@ test('검색용 글·허브·옛 주소 페이지는 H1 하나, 70자 이상 설
     assert.match(meetupPage, /트레킹 모임<\/a> <small>매주 토요일 오전 · 계속 만나는 모임/);
     assert.equal(graphs(meetupPage)[0]['@graph'][0].mainEntity.itemListElement.filter(item => item.item['@type'] === 'Event').length, 1, 'an undated group is not an Event');
 
+    // No meetup open in Toronto: the page still opens, explains how meetups work, and claims no Event.
+    const torontoMeetups = readFileSync(join(directory, 'toronto', 'meetups.html'), 'utf8');
+    assert.equal(h1s(torontoMeetups), 1);
+    assert.match(torontoMeetups, /<h1[^>]*>토론토 한인 모임·소모임<\/h1>/);
+    assert.match(torontoMeetups, /지금 신청받는 토론토 모임은 없어요/);
+    assert.match(torontoMeetups, new RegExp(`<link rel="canonical" href="${PUBLIC_SITE}/toronto/meetups"`));
+    assert.doesNotMatch(torontoMeetups, /noindex|"Event"|"ItemList"/);
+    assert.match(torontoMeetups, /href="\/vancouver\/meetups"/, 'links the other cities');
+    assert.match(readFileSync(join(directory, 'meetups.html'), 'utf8'), /href="\/montreal\/meetups"[\s\S]*지금 신청받는 몬트리올 모임은 없어요/);
+
+    // Settlement guides: official links with the date checked, also where there are no settlement posts yet.
+    assert.deepEqual(GUIDE_HUBS.filter(key => !HUB_GUIDES[key]), [], 'every forced hub has a guide');
+    for (const guide of Object.values(HUB_GUIDES)) for (const [text, url, name] of guide.items) assert.ok(text && name && url.startsWith('https://'), url);
+    const montreal = readFileSync(join(directory, 'montreal', 'settlement.html'), 'utf8');
+    assert.equal(h1s(montreal), 1);
+    assert.match(montreal, /<h1[^>]*>몬트리올 한인 정착 정보·가이드<\/h1>/);
+    assert.match(montreal, /ramq\.gouv\.qc\.ca/);
+    assert.match(montreal, /확인 날짜 2026-11-01/);
+    assert.ok(!montreal.includes('이 글들은 누가 썼어요?'), 'no question about posts that do not exist');
+    assert.match(montreal, /href="\/immigration"/);
+    const montrealGraph = graphs(montreal)[0]['@graph'];
+    assert.deepEqual(montrealGraph.map(item => item['@type']), ['CollectionPage', 'BreadcrumbList', 'FAQPage']);
+    assert.equal(montrealGraph[0].lastReviewed, '2026-11-01');
+    assert.equal(montrealGraph[0].mainEntity, undefined, 'no empty ItemList');
+    assert.match(readFileSync(join(directory, 'vancouver', 'settlement.html'), 'utf8'), /www2\.gov\.bc\.ca\/gov\/content\/health/);
+    assert.match(vancouver, /href="\/vancouver\/settlement"[^>]*>밴쿠버 정착 가이드<\/a>/);
+    assert.match(vancouver, /href="\/vancouver\/meetups"/);
+
+    const rss = readFileSync(join(directory, 'rss.xml'), 'utf8');
+    for (const path of ['/vancouver/rent', '/montreal/settlement', '/immigration']) assert.ok(rss.includes(`<link>${PUBLIC_SITE}${path}</link>`), path);
+
     const sitemap = readFileSync(join(directory, 'sitemap.xml'), 'utf8');
-    for (const path of ['/', '/vancouver', '/vancouver/2', '/vancouver/rent', '/vancouver/life', '/vancouver/meetups', '/meetups', '/visited', '/en', '/faq']) {
+    for (const path of ['/', '/vancouver', '/vancouver/2', '/vancouver/rent', '/vancouver/life', '/vancouver/meetups', '/toronto/meetups', '/montreal/settlement', '/immigration', '/meetups', '/visited', '/en', '/faq']) {
       assert.match(sitemap, new RegExp(`<loc>${PUBLIC_SITE}${path === '/' ? '/' : path}</loc>`), path);
     }
     assert.match(sitemap, new RegExp(`<loc>${PUBLIC_SITE}/vancouver/rent</loc><lastmod>2026-10-30</lastmod>`));
     assert.ok(!sitemap.includes('?city=') && !sitemap.includes('/vancouver/jobs'));
-    assert.equal((sitemap.match(/<url>/g) ?? []).length, 41 + 17, '41 posts + home, 3 cities, page 2, 2 hubs, city meetups, meetups, visited, faq, business, en, 4 legal');
+    assert.equal((sitemap.match(/<url>/g) ?? []).length, 41 + 23, '41 posts + home, 3 cities, page 2, 2 hubs, 3 settlement guides, 3 city meetups, meetups, visited, immigration, faq, business, en, 4 legal');
 
     const notFound = readFileSync(join(directory, '404.html'), 'utf8');
     assert.match(notFound, /l\.replace\(t\+l\.search\+l\.hash\)/, 'the 404 page sends old links to the canonical address');
@@ -145,7 +178,8 @@ test('검색용 글·허브·옛 주소 페이지는 H1 하나, 70자 이상 설
     const llms = readFileSync(join(directory, 'llms.txt'), 'utf8');
     assert.match(llms, /^# .*\n\n마지막 갱신 2026-10-30\n/);
     assert.ok(llms.includes('not the Gling AI video editor') && llms.includes('## 자주 묻는 질문') && llms.includes('- 비즈니스:'));
-    assert.ok(llms.includes(`${PUBLIC_SITE}/vancouver/rent`));
+    assert.ok(llms.includes(`${PUBLIC_SITE}/vancouver/rent`) && llms.includes(`${PUBLIC_SITE}/immigration`) && llms.includes(`${PUBLIC_SITE}/toronto/meetups`));
+    assert.match(home, /href="\/immigration"/);
     for (const file of ['index.html', 'vancouver.html', join('vancouver', 'rent.html'), join('vancouver', '2.html'), join('vancouver', 'meetups.html'), join('posts', `${uuid(3)}.html`)]) graphs(readFileSync(join(directory, file), 'utf8'));
   } finally { rmSync(directory, { recursive: true }); }
 });
@@ -159,5 +193,5 @@ test('설명은 짧은 미리보기에 도시·주제를 붙여 70자 이상으�
   assert.deepEqual(publicCitySubpage('/toronto/3/', ids), { cityId: 'toronto', kind: 'page', page: 3 });
   assert.deepEqual(publicCitySubpage('/vancouver/meetups', ids), { cityId: 'vancouver', kind: 'meetups' });
   for (const path of ['/vancouver/1', '/vancouver/housing', '/calgary/rent', '/vancouver', '/merchant/rent', '/vancouver/rent/x']) assert.equal(publicCitySubpage(path, ids), null, path);
-  assert.equal(topicHubs([{ cityId: 'vancouver', tagSlug: 'meetup' }, ...Array(5).fill({ cityId: 'vancouver', tagSlug: 'meetup' })]).size, 0, 'meetup posts never form a hub');
+  assert.ok(!topicHubs([{ cityId: 'vancouver', tagSlug: 'meetup' }, ...Array(5).fill({ cityId: 'vancouver', tagSlug: 'meetup' })]).has('vancouver/meetup'), 'meetup posts never form a hub');
 });
