@@ -11,12 +11,14 @@ export type MeetupLoyalty = {
   pinned: PinnedNotice | null;
   // Newest first, up to 5 (20261030230000); absent until that migration is live.
   pinnedNotices?: PinnedNotice[];
+  // True once 20261031090000 is live, so an older server is never asked for must-read.
+  noticeBoard?: boolean;
   // Host only.
   followerCount?: number; encoreCount?: number; sentToday?: number;
   scheduled?: { id: string; body: string; audience: AnnouncementAudience; sendAt: string }[];
   autoNext?: { enabled: boolean; cadence: 'weekly' | 'fortnightly' } | null;
 };
-export type PinnedNotice = { id: string; body: string; sentAt: string };
+export type PinnedNotice = { id: string; body: string; sentAt: string; mustRead?: boolean };
 export type RosterMember = { userId: string; nickname: string; attended: number; lastAttendedAt: string | null; note: string; regular: boolean; staff: boolean };
 
 /** Notices pinned at the top of the meetup chat, newest first; falls back to the single notice from an older server. */
@@ -25,7 +27,13 @@ export function pinnedNotices(state: Pick<MeetupLoyalty, 'pinned' | 'pinnedNotic
   return state.pinnedNotices ?? (state.pinned ? [state.pinned] : []);
 }
 
+/** Notices this viewer has not opened yet. `seen` is null on the first visit to this room. */
+export function unreadNotices(notices: PinnedNotice[], seen: string[] | null) {
+  return notices.filter(notice => !seen?.includes(notice.id));
+}
+
 export const ANNOUNCEMENT_MAX = 500;
+export const MUST_READ_MAX = 3;
 export const ANNOUNCEMENTS_PER_DAY = 3;
 // 단골 = 3+ attended sessions with this host (roster badge, host-only).
 export const REGULAR_ATTENDANCE = 3;
@@ -51,6 +59,7 @@ const ERRORS: Record<string, string> = {
   CONTENT_NOT_ALLOWED: '보낼 수 없는 표현이 들어 있어요. 고쳐서 다시 보내 주세요.',
   MEETUP_CLOSED: '끝났거나 마감된 모임이에요.',
   MEETUP_EXPIRED: '끝났거나 마감된 모임이에요.',
+  MUST_READ_LIMIT: '필독은 3개까지 걸 수 있어요. 다른 필독을 풀고 다시 해 주세요.',
   STAFF_LIMIT: '체크인 담당은 3명까지 정할 수 있어요.',
   FOLLOW_LIMIT: '호스트는 500명까지 팔로우할 수 있어요.',
   RATE_LIMITED: '잠깐 쉬었다가 다시 해 주세요.',
@@ -75,7 +84,7 @@ export const setHostFollow = (client: SupabaseClient, postId: string, follow: bo
 export const setMeetupEncore = (client: SupabaseClient, postId: string, encore: boolean) => rpc<boolean>(client, 'set_meetup_encore', { p_post_id: postId, p_encore: encore });
 export const postMeetupAnnouncement = (client: SupabaseClient, postId: string, body: string, audience: AnnouncementAudience, sendAt: string | null) =>
   rpc<string>(client, 'post_meetup_announcement', { p_post_id: postId, p_body: body.trim(), p_audience: audience, p_send_at: sendAt });
-export const updateMeetupAnnouncement = (client: SupabaseClient, id: string, action: 'cancel' | 'unpin') => rpc<null>(client, 'update_meetup_announcement', { p_announcement_id: id, p_action: action });
+export const updateMeetupAnnouncement = (client: SupabaseClient, id: string, action: 'cancel' | 'unpin' | 'must_read' | 'must_read_off') => rpc<null>(client, 'update_meetup_announcement', { p_announcement_id: id, p_action: action });
 export const loadMeetupRoster = (client: SupabaseClient, postId: string) => rpc<RosterMember[]>(client, 'get_meetup_roster', { p_post_id: postId });
 export const saveMemberNote = (client: SupabaseClient, postId: string, memberId: string, note: string, regular: boolean) =>
   rpc<null>(client, 'set_meetup_member_note', { p_post_id: postId, p_member_id: memberId, p_note: note.trim(), p_regular: regular });

@@ -12,9 +12,10 @@ type Props = {
   disabled?: boolean;
   busy?: boolean;
   compact?: boolean;
+  tone?: 'primary' | 'secondary';
 };
 
-export function RaisedActionButton({ analyticsId, label, onPress, disabled = false, busy = false, compact = false }: Props) {
+export function RaisedActionButton({ analyticsId, label, onPress, disabled = false, busy = false, compact = false, tone = 'primary' }: Props) {
   const theme = useTheme();
   const blocked = disabled || busy;
 
@@ -22,8 +23,8 @@ export function RaisedActionButton({ analyticsId, label, onPress, disabled = fal
     <View style={compact ? styles.compact : styles.wide}>
       <Pressable analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: blocked, busy }} disabled={blocked}
         onPress={() => { if (!blocked) onPress(); }}
-        style={({ pressed }) => [styles.touch, compact ? styles.compactTouch : styles.wideTouch, controlPresentation(theme, { tone: 'primary', pressed, disabled, busy }).container]}>
-        <ThemedText type="smallBold" style={[styles.label, !compact && styles.wideLabel, { color: theme.accentInk }]}>{label}</ThemedText>
+        style={({ pressed }) => [styles.touch, compact ? styles.compactTouch : styles.wideTouch, controlPresentation(theme, { tone, pressed, disabled, busy }).container, tone === 'secondary' && { backgroundColor: 'transparent' }]}>
+        <ThemedText type="smallBold" style={[styles.label, !compact && styles.wideLabel, { color: tone === 'primary' ? theme.accentInk : theme.text }]}>{label}</ThemedText>
       </Pressable>
     </View>
   </View>;

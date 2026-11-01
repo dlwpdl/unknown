@@ -7,5 +7,7 @@ export function useMeetupBadges(_userIds: string[] | null, _postId?: string): Re
 export function MeetupBadgeChips(_props: { levels: Partial<BadgeLevels> | undefined }) { return null; }
 export function MeetupFollowEncore(_props: { post: Post }) { return null; }
 export function MeetupProfileLoyalty(_props: { postId: string; userId?: string }) { return null; }
-export function MeetupPinnedNotice(_props: { postId: string }) { return null; }
-export function MeetupLoyaltyTools(_props: { postId: string }) { return null; }
+export function MeetupRoomTop(_props: { postId: string }) { return null; }
+export function MeetupNoticeManager(_props: { postId: string }) { return null; }
+export function MeetupAutoNext(_props: { postId: string }) { return null; }
+export function MeetupMemberList(_props: { postId: string }) { return null; }

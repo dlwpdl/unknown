@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { Pressable, Switch } from '@/components/analytics-controls';
 import { ChillingDateInput } from '@/components/chilling-date-input';
+import { DragSheet } from '@/components/drag-sheet';
+import { InitialAvatar, ListCard, ListLoading, ListRow, SectionLabel, Tag } from '@/components/list-card';
 import { RaisedActionButton } from '@/components/raised-action-button';
+import { SelectionChip } from '@/components/selection-chip';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
@@ -11,10 +16,12 @@ import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { loadMeetupSessions, type MeetupSession } from '@/lib/meetup-reviews';
+import { loadMeetupRsvp, setMeetupRsvp, type MeetupRsvp as Rsvp } from '@/lib/meetup-convenience';
+import { loadMeetupHostRoster, type MeetupHostIdentity } from '@/lib/meetup-host-tools';
+import { sessionWhen } from '@/lib/meetup-host-home';
 import {
   ANNOUNCEMENT_MAX, ANNOUNCEMENTS_PER_DAY, REGULAR_ATTENDANCE, badgeLabels, loadMeetupBadges, loadMeetupLoyalty, loadMeetupRoster, loyaltyError,
-  pinnedNotices, postMeetupAnnouncement, saveMemberNote, setCheckinStaff, setHostFollow, setMeetupAutoNext, setMeetupEncore, staffCheckIn, tierAtLeast,
+  pinnedNotices, postMeetupAnnouncement, saveMemberNote, setCheckinStaff, setHostFollow, setMeetupAutoNext, setMeetupEncore, tierAtLeast, unreadNotices,
   updateMeetupAnnouncement, type AnnouncementAudience, type BadgeLevels, type MeetupLoyalty, type PinnedNotice, type RosterMember,
 } from '@/lib/meetup-loyalty';
 import { supabase } from '@/lib/supabase';
@@ -134,256 +141,341 @@ export function MeetupProfileLoyalty({ postId, userId }: { postId: string; userI
   </View>;
 }
 
-/** Group chat: the host's member-wide notices from the last 14 days stay on top, newest first (up to 5). Two or more fold into one line. */
-export function MeetupPinnedNotice({ postId }: { postId: string }) {
-  const { tr, locale } = useLanguage();
-  const theme = useTheme();
-  const { play } = useInteractionFeedback();
+/** Next session and the host's notices, on top of the group chat. Answers and reading happen here, so nobody scrolls the chat for them. */
+export function MeetupRoomTop({ postId }: { postId: string }) {
   const { state, refresh } = useMeetupLoyalty(postId);
-  const [busy, setBusy] = useState(''), [open, setOpen] = useState(false);
+  const theme = useTheme();
+  const [rsvp, setRsvp] = useState<Rsvp | null>(null);
+  useEffect(() => {
+    let active = true;
+    loadMeetupRsvp(supabase, postId).then(value => { if (active) setRsvp(value); }, () => {});
+    return () => { active = false; };
+  }, [postId]);
   const notices = pinnedNotices(state);
-  if (!state || !notices.length) return null;
+  const hasSession = !!rsvp?.available && !!rsvp.startsAt;
+  if (!hasSession && !(state && notices.length)) return null;
+  return <View style={[styles.roomTop, { backgroundColor: theme.backgroundElement }]}>
+    {hasSession && <NextSessionLine postId={postId} rsvp={rsvp!} onChange={setRsvp} />}
+    {!!state && notices.length > 0 && <View style={hasSession ? [styles.boardLine, { borderTopColor: theme.line }] : undefined}><NoticeBoard postId={postId} state={state} notices={notices} onChanged={refresh} /></View>}
+  </View>;
+}
+
+function NextSessionLine({ postId, rsvp, onChange }: { postId: string; rsvp: Rsvp; onChange: (next: Rsvp) => void }) {
+  const { tr, locale } = useLanguage();
+  const { play } = useInteractionFeedback();
+  const [saving, setSaving] = useState(false), [failed, setFailed] = useState(false);
+  const answer = async (going: boolean) => {
+    if (saving) return;
+    setSaving(true); setFailed(false);
+    try { onChange(await setMeetupRsvp(supabase, postId, going, false)); play('reaction'); }
+    catch { setFailed(true); play('warning'); }
+    finally { setSaving(false); }
+  };
+  const when = sessionWhen(rsvp.startsAt!, locale, Date.now(), tr);
+  return <View style={styles.nextLine}>
+    <View style={styles.flex}>
+      <ThemedText style={Typography.label}>{tr('다음 회차')} · {when}</ThemedText>
+      {rsvp.isHost && rsvp.canSeeCounts && rsvp.counts && <ThemedText themeColor="textSecondary" accessibilityLiveRegion="polite" style={Typography.caption}>{tr('갈게요 {0}명 · 못 가요 {1}명 · 아직 답 없음 {2}명', rsvp.counts.going, rsvp.counts.notGoing, rsvp.counts.noAnswer)}</ThemedText>}
+      {failed && <ThemedText themeColor="danger" accessibilityRole="alert" style={Typography.caption}>{tr('저장하지 못했어요. 다시 시도해 주세요.')}</ThemedText>}
+    </View>
+    {!rsvp.isHost && <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel={tr('참석 알려 주기')}>
+      {([[true, 'meetup.rsvp.going', '갈게요'], [false, 'meetup.rsvp.not_going', '못 가요']] as const).map(([going, id, label]) => {
+        const selected = rsvp.mine === (going ? 'going' : 'not_going');
+        return <SelectionChip key={id} analyticsId={id} selected={selected} disabled={saving} accessibilityRole="radio" accessibilityState={{ checked: selected, disabled: saving, busy: saving }}
+          baseColor="transparent" label={tr(label)} onPress={() => { play('selection'); if (!selected) void answer(going); }} />;
+      })}
+    </View>}
+  </View>;
+}
+
+function NoticeBoard({ postId, state, notices, onChanged }: { postId: string; state: MeetupLoyalty; notices: PinnedNotice[]; onChanged: () => void }) {
+  const { tr, locale } = useLanguage();
+  const theme = useTheme(), router = useRouter(), { me } = useAuth();
+  const { play } = useInteractionFeedback();
+  const { width: screen } = useWindowDimensions();
+  const storageKey = `meetup-notices-seen:${me.id}:${postId}`;
+  // undefined: still reading the device. null: this person has never opened this room's notices.
+  const [seen, setSeen] = useState<string[] | null | undefined>(undefined);
+  const [open, setOpen] = useState(false), [welcome, setWelcome] = useState(false), [page, setPage] = useState(0), [width, setWidth] = useState(0);
+  const [busy, setBusy] = useState(''), [message, setMessage] = useState('');
+  useEffect(() => {
+    let active = true;
+    AsyncStorage.getItem(storageKey).then(raw => { if (active) setSeen(raw ? JSON.parse(raw) as string[] : null); }).catch(() => { if (active) setSeen([]); });
+    return () => { active = false; };
+  }, [storageKey]);
+  const markSeen = () => {
+    const ids = [...new Set([...(seen ?? []), ...notices.map(notice => notice.id)])];
+    setSeen(ids);
+    void AsyncStorage.setItem(storageKey, JSON.stringify(ids)).catch(() => {});
+  };
+  // A new member reads what the host pinned before anything else. Shown once, and never to the host who wrote them.
+  useEffect(() => {
+    if (seen !== null || state.isHost) return;
+    const timer = setTimeout(() => { setWelcome(true); setOpen(true); }, 450);
+    return () => clearTimeout(timer);
+  }, [seen, state.isHost]);
+  const unread = state.isHost ? [] : unreadNotices(notices, seen ?? []);
+  const shown = () => { play('selection'); setMessage(''); setOpen(true); markSeen(); };
+  const closed = () => { setOpen(false); setWelcome(false); if (seen === null) markSeen(); };
+  const update = async (notice: PinnedNotice, action: 'unpin' | 'must_read' | 'must_read_off') => {
+    if (busy) return;
+    play('selection'); setBusy(notice.id); setMessage('');
+    try { await updateMeetupAnnouncement(supabase, notice.id, action); onChanged(); }
+    catch (failure) { setMessage(loyaltyError(failure)); play('warning'); }
+    finally { setBusy(''); }
+  };
+  // Text first laid out without a width keeps painting past its frame on iOS, so the first render already knows the page width.
+  const pageWidth = width || screen - Spacing.three * 2;
   const day = (notice: PinnedNotice) => new Date(notice.sentAt).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
-  const unpin = (notice: PinnedNotice, label: string) => state.isHost && <Pressable analyticsId="meetup.notice.unpin" accessibilityRole="button" accessibilityLabel={label}
-    accessibilityState={{ busy: busy === notice.id, disabled: !!busy }} disabled={!!busy}
-    onPress={async () => { play('selection'); setBusy(notice.id); try { await updateMeetupAnnouncement(supabase, notice.id, 'unpin'); refresh(); } catch { play('warning'); } finally { setBusy(''); } }}
-    style={({ pressed }) => [ControlStyles.icon, styles.unpin, controlPresentation(theme, { tone: 'ghost', pressed, busy: busy === notice.id, disabled: !!busy && busy !== notice.id }).container]}>
-    <ThemedText type="smallBold" themeColor="textSecondary">{tr('내리기')}</ThemedText>
-  </Pressable>;
-  if (notices.length === 1) {
-    const pinned = notices[0];
-    return <View accessible={!state.isHost} accessibilityLabel={tr('호스트 공지: {0}', pinned.body)} style={[styles.pinned, { backgroundColor: theme.backgroundElement }]}>
-      <View style={styles.pinnedHead}>
-        <ThemedText type="smallBold" themeColor="accent">{tr('공지')} · {day(pinned)}</ThemedText>
-        {unpin(pinned, tr('공지 내리기'))}
-      </View>
-      <ThemedText type="small" numberOfLines={4}>{pinned.body}</ThemedText>
-    </View>;
-  }
-  return <View style={[styles.pinned, styles.pinnedStack, { backgroundColor: theme.backgroundElement }]}>
-    <Pressable analyticsId="meetup.notice.expand" accessibilityRole="button" accessibilityState={{ expanded: open }}
-      accessibilityLabel={open ? tr('고정된 공지 {0}개, 접기', notices.length) : tr('고정된 공지 {0}개, 눌러서 모두 보기', notices.length)}
-      onPress={() => { play('selection'); setOpen(value => !value); }}
-      style={({ pressed }) => [styles.pinnedBar, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
-      <ThemedText type="smallBold" themeColor="accent">{tr('공지 {0}', notices.length)}</ThemedText>
-      <ThemedText type="small" numberOfLines={1} style={styles.flex}>{open ? '' : notices[0].body}</ThemedText>
-      {open && <ThemedText type="small" themeColor="textSecondary">{tr('접기')}</ThemedText>}
-      <SymbolView name={{ ios: open ? 'chevron.up' : 'chevron.down', android: open ? 'expand_less' : 'expand_more', web: open ? 'expand_less' : 'expand_more' }}
-        size={IconSize.chevron} tintColor={theme.textSecondary} />
-    </Pressable>
-    {open && notices.map((notice, index) => <View key={notice.id} accessible={!state.isHost} accessibilityLabel={tr('호스트 공지: {0}', notice.body)}
-      style={[styles.pinnedItem, { borderTopColor: theme.line }]}>
-      <View style={styles.pinnedHead}>
-        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.flex}>{day(notice)}</ThemedText>
-        {index === 0 && <ThemedText type="smallBold" themeColor="accent">{tr('최신')}</ThemedText>}
-        {unpin(notice, tr('{0} 공지 내리기', day(notice)))}
-      </View>
-      <ThemedText type="small" numberOfLines={4}>{notice.body}</ThemedText>
-    </View>)}
-    {open && state.isHost && <ThemedText type="small" themeColor="textSecondary" style={[styles.pinnedItem, { borderTopColor: theme.line }]}>
-      {tr('최근 2주 안에 보낸 공지 중 최신 5개까지 고정돼요.')}</ThemedText>}
+  const label = (notice: PinnedNotice) => notice.mustRead ? tr('필독') : tr('공지');
+  return <View>
+    <ScrollView onLayout={event => setWidth(event.nativeEvent.layout.width)} horizontal pagingEnabled scrollEnabled={notices.length > 1} showsHorizontalScrollIndicator={false}
+      onMomentumScrollEnd={event => setPage(Math.round(event.nativeEvent.contentOffset.x / pageWidth))}>
+      {notices.map((notice, index) => <View key={notice.id} style={{ width: pageWidth }}><Pressable analyticsId="meetup.notice.open" accessibilityRole="button"
+        accessibilityLabel={tr('{0} {1}/{2}: {3}, 눌러서 전체 보기', label(notice), index + 1, notices.length, notice.body)} onPress={shown}
+        style={styles.noticePage}>
+        <Tag label={label(notice)} tone={notice.mustRead ? 'accent' : 'quiet'} />
+        <View style={styles.flex}><ThemedText numberOfLines={1} style={Typography.supporting}>{notice.body}</ThemedText></View>
+        {unread.some(item => item.id === notice.id) && <View accessibilityLabel={tr('안 읽음')} style={[styles.dot, { backgroundColor: theme.accent }]} />}
+        <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={IconSize.chevron} tintColor={theme.textSecondary} />
+      </Pressable></View>)}
+    </ScrollView>
+    {notices.length > 1 && <View style={styles.dots} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      {notices.map((notice, index) => <View key={notice.id} style={[styles.pageDot, { backgroundColor: index === page ? theme.accent : theme.line }]} />)}
+    </View>}
+    <DragSheet visible={open} onClose={closed} title={tr('공지 {0}개', notices.length)}>
+      <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetList}>
+        {welcome && <ThemedText themeColor="textSecondary" style={Typography.body}>{tr('처음 오셨네요. 호스트가 걸어 둔 공지예요. 먼저 읽어 주세요.')}</ThemedText>}
+        {notices.map(notice => <NoticeItem key={notice.id} notice={notice} label={label(notice)} day={day(notice)}>
+          {state.isHost && <View style={styles.row}>
+            {state.noticeBoard && <ToggleChip analyticsId="meetup.notice.must-read" label={notice.mustRead ? tr('필독 풀기') : tr('필독으로')} selected={false} busy={busy === notice.id} disabled={!!busy && busy !== notice.id} onPress={() => void update(notice, notice.mustRead ? 'must_read_off' : 'must_read')} />}
+            <ToggleChip analyticsId="meetup.notice.unpin" label={tr('내리기')} selected={false} busy={busy === notice.id} disabled={!!busy && busy !== notice.id} onPress={() => void update(notice, 'unpin')} />
+          </View>}
+        </NoticeItem>)}
+        {!!message && <ThemedText type="small" accessibilityRole="alert" themeColor="danger">{tr(message)}</ThemedText>}
+        {state.isHost && <ThemedText themeColor="textSecondary" style={Typography.supporting}>{state.noticeBoard ? tr('필독은 내릴 때까지 맨 위에 남고, 일반 공지는 2주 뒤 내려가요. 5개까지 보여요.') : tr('최근 2주 안에 보낸 공지 중 최신 5개까지 고정돼요.')}</ThemedText>}
+      </ScrollView>
+      {welcome && <RaisedActionButton analyticsId="meetup.notice.read" label={tr('다 읽었어요')} onPress={() => { play('selection'); closed(); }} />}
+      {state.isHost && <RaisedActionButton analyticsId="meetup.notice.write" tone="secondary" label={tr('새 공지 쓰기')} onPress={() => { play('selection'); closed(); router.push({ pathname: '/meetup-tools', params: { postId, kind: state.kind, host: '1', section: 'notices' } }); }} />}
+    </DragSheet>
+  </View>;
+}
+
+function NoticeItem({ notice, label, day, children }: { notice: PinnedNotice; label: string; day: string; children?: React.ReactNode }) {
+  const { tr } = useLanguage();
+  const { play } = useInteractionFeedback();
+  const [full, setFull] = useState(false);
+  const long = [...notice.body].length > 140;
+  return <View style={styles.noticeItem}>
+    <View style={styles.row}>
+      <Tag label={label} tone={notice.mustRead ? 'accent' : 'quiet'} />
+      <ThemedText themeColor="textSecondary" style={Typography.caption}>{day}</ThemedText>
+    </View>
+    <ThemedText selectable numberOfLines={long && !full ? 5 : undefined} style={Typography.body}>{notice.body}</ThemedText>
+    {long && <Pressable analyticsId="meetup.notice.more" accessibilityRole="button" accessibilityState={{ expanded: full }} onPress={() => { play('selection'); setFull(value => !value); }} style={styles.more}>
+      <ThemedText type="smallBold" themeColor="accent">{full ? tr('접기') : tr('더 보기')}</ThemedText>
+    </Pressable>}
+    {children}
   </View>;
 }
 
 const AUDIENCES: [AnnouncementAudience, string][] = [['members', '참여 멤버 전체'], ['pending', '신청 대기 중인 분'], ['waitlist', '대기 명단']];
 
-/** /meetup-tools: notices, auto next session and roster for the host; check-in for the host and staff. */
-export function MeetupLoyaltyTools({ postId }: { postId: string }) {
-  const { state, refresh } = useMeetupLoyalty(postId);
-  if (!state || (!state.isHost && !state.isStaff)) return null;
-  const pro = tierAtLeast(state.hostTier, 'pro');
-  return <View style={styles.tools}>
-    {state.isHost && <NoticeComposer postId={postId} state={state} onChanged={refresh} />}
-    {state.isHost && state.kind === 'group' && <AutoNext postId={postId} state={state} onChanged={refresh} />}
-    {state.isHost && <Roster postId={postId} pro={pro} />}
-    {(state.isStaff || (state.isHost && pro)) && <StaffCheckIn postId={postId} />}
-  </View>;
-}
-
-function NoticeComposer({ postId, state, onChanged }: { postId: string; state: MeetupLoyalty; onChanged: () => void }) {
+/** /meetup-tools notices: write one, then see what is pinned and what is scheduled. */
+export function MeetupNoticeManager({ postId }: { postId: string }) {
   const { tr, locale } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
-  const plus = tierAtLeast(state.hostTier, 'plus');
-  const [body, setBody] = useState(''), [audience, setAudience] = useState<AnnouncementAudience>('members');
+  const { state, refresh } = useMeetupLoyalty(postId);
+  const [body, setBody] = useState(''), [audience, setAudience] = useState<AnnouncementAudience>('members'), [mustRead, setMustRead] = useState(false);
   const [scheduled, setScheduled] = useState(false), [sendAt, setSendAt] = useState(() => new Date(Date.now() + 3600000).toISOString());
-  const [busy, setBusy] = useState(false), [message, setMessage] = useState(''), pending = useRef(false);
+  const [busy, setBusy] = useState(false), [rowBusy, setRowBusy] = useState(''), [message, setMessage] = useState(''), pending = useRef(false);
+  if (!state) return <ListLoading label={tr('불러오는 중이에요')} />;
+  if (!state.isHost) return null;
+  const plus = tierAtLeast(state.hostTier, 'plus');
   const left = Math.max(0, ANNOUNCEMENTS_PER_DAY - (state.sentToday ?? 0));
+  const canMustRead = !!state.noticeBoard && audience === 'members' && !scheduled;
+  const notices = pinnedNotices(state);
   const send = async () => {
     if (pending.current || !body.trim()) return;
     pending.current = true; setBusy(true); setMessage(''); play('selection');
+    let sent = false;
     try {
-      await postMeetupAnnouncement(supabase, postId, body, audience, scheduled ? sendAt : null);
-      setBody(''); setMessage(scheduled ? '공지를 예약했어요.' : audience === 'members' ? '공지를 보냈어요.' : '안전 확인을 마치면 바로 보내 드려요.'); play('success'); onChanged();
-    } catch (failure) { setMessage(loyaltyError(failure, '공지를 보내지 못했어요. 잠시 뒤 다시 해 주세요.')); play('warning'); }
+      const id = await postMeetupAnnouncement(supabase, postId, body, audience, scheduled ? sendAt : null);
+      sent = true;
+      if (canMustRead && mustRead) await updateMeetupAnnouncement(supabase, id, 'must_read');
+      setBody(''); setMustRead(false);
+      setMessage(scheduled ? '공지를 예약했어요.' : audience === 'members' ? '공지를 보냈어요.' : '안전 확인을 마치면 바로 보내 드려요.'); play('success'); refresh();
+    } catch (failure) {
+      if (sent) { setBody(''); setMustRead(false); refresh(); }
+      setMessage(sent ? `공지는 보냈지만 필독으로 걸지 못했어요. ${loyaltyError(failure)}` : loyaltyError(failure, '공지를 보내지 못했어요. 잠시 뒤 다시 해 주세요.')); play('warning');
+    }
     finally { pending.current = false; setBusy(false); }
   };
-  return <View style={[styles.section, { borderTopColor: theme.line }]}>
-    <ThemedText accessibilityRole="header" style={Typography.section}>{tr('단체 공지')}</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary">{tr('멤버 전체 공지는 모임 대화방 맨 위에 고정되고 알림으로도 가요. 오늘 {0}번 더 보낼 수 있어요.', left)}</ThemedText>
+  const update = async (id: string, action: 'unpin' | 'must_read' | 'must_read_off' | 'cancel') => {
+    if (rowBusy) return;
+    play('selection'); setRowBusy(id); setMessage('');
+    try { await updateMeetupAnnouncement(supabase, id, action); refresh(); }
+    catch (failure) { setMessage(loyaltyError(failure)); play('warning'); }
+    finally { setRowBusy(''); }
+  };
+  return <View>
     <TextInput accessibilityLabel={tr('공지 내용')} placeholder={tr('예) 내일은 7시에 역 앞에서 만나요')} placeholderTextColor={theme.textSecondary}
       multiline maxLength={ANNOUNCEMENT_MAX} editable={!busy} value={body} onChangeText={setBody}
-      style={[ControlStyles.field, styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
-    <ThemedText type="smallBold">{tr('받는 사람')}</ThemedText>
+      style={[ControlStyles.field, styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]} />
+    <SectionLabel>{tr('받는 사람')}</SectionLabel>
     <View style={styles.row}>{AUDIENCES.map(([value, label]) =>
-      <ToggleChip key={value} analyticsId="meetup.notice.audience" label={tr(label)} selected={audience === value} disabled={value !== 'members' && !plus}
+      <SelectionChip key={value} analyticsId="meetup.notice.audience" label={tr(label)} selected={audience === value} disabled={value !== 'members' && !plus} accessibilityRole="radio" accessibilityState={{ checked: audience === value, disabled: value !== 'members' && !plus }}
         onPress={() => { play('selection'); setAudience(value); }} />)}</View>
+    <SectionLabel>{tr('보내는 때')}</SectionLabel>
     <View style={styles.row}>
-      <ToggleChip analyticsId="meetup.notice.schedule" label={tr('지금 보내기')} selected={!scheduled} onPress={() => { play('selection'); setScheduled(false); }} />
-      <ToggleChip analyticsId="meetup.notice.schedule" label={tr('시간 정해서 보내기')} selected={scheduled} disabled={!plus} onPress={() => { play('selection'); setScheduled(true); }} />
+      <SelectionChip analyticsId="meetup.notice.schedule" label={tr('지금 보내기')} selected={!scheduled} accessibilityRole="radio" accessibilityState={{ checked: !scheduled }} onPress={() => { play('selection'); setScheduled(false); }} />
+      <SelectionChip analyticsId="meetup.notice.schedule" label={tr('시간 정해서 보내기')} selected={scheduled} disabled={!plus} accessibilityRole="radio" accessibilityState={{ checked: scheduled, disabled: !plus }} onPress={() => { play('selection'); setScheduled(true); }} />
     </View>
-    {!plus && <ThemedText type="small" themeColor="textSecondary">{tr('받는 사람 고르기와 예약 보내기는 플러스 멤버십부터 쓸 수 있어요.')}</ThemedText>}
+    {!plus && <ThemedText themeColor="textSecondary" style={[Typography.supporting, styles.note]}>{tr('받는 사람 고르기와 예약 보내기는 플러스 멤버십부터 쓸 수 있어요.')}</ThemedText>}
     {scheduled && <ChillingDateInput label={tr('보낼 시간')} value={sendAt} disabled={busy} minimumDate={new Date()} onChange={value => { play('selection'); setSendAt(value); }} />}
-    <RaisedActionButton analyticsId="meetup.notice.send" label={scheduled ? tr('공지 예약하기') : tr('공지 보내기')} busy={busy} disabled={!body.trim() || (!scheduled && left === 0)} onPress={() => void send()} />
-    {!!message && <ThemedText type="small" accessibilityLiveRegion="polite">{tr(message)}</ThemedText>}
-    {state.scheduled?.map(item => <View key={item.id} style={[styles.listRow, { borderColor: theme.line }]}>
-      <View style={styles.flex}>
-        <ThemedText type="smallBold">{new Date(item.sendAt).toLocaleString(locale, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · {tr(AUDIENCES.find(([value]) => value === item.audience)?.[1] ?? '')}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{item.body}</ThemedText>
-      </View>
-      <ToggleChip analyticsId="meetup.notice.cancel" label={tr('예약 취소')} selected={false} disabled={busy}
-        onPress={async () => { play('selection'); try { await updateMeetupAnnouncement(supabase, item.id, 'cancel'); onChanged(); } catch { play('warning'); } }} />
-    </View>)}
+    {canMustRead && <View style={styles.listRow}>
+      <ThemedText style={[Typography.body, styles.flex]}>{tr('필독으로 걸기')}</ThemedText>
+      <Switch analyticsId="meetup.notice.compose-must-read" accessibilityLabel={tr('필독으로 걸기')} value={mustRead} disabled={busy} onValueChange={value => { play('selection'); setMustRead(value); }} />
+    </View>}
+    <View style={styles.send}><RaisedActionButton analyticsId="meetup.notice.send" label={scheduled ? tr('공지 예약하기') : tr('공지 보내기')} busy={busy} disabled={!body.trim() || (!scheduled && left === 0)} onPress={() => void send()} /></View>
+    <ThemedText themeColor="textSecondary" style={[Typography.supporting, styles.note]}>{tr('멤버 전체 공지는 대화방 맨 위에 걸리고 알림도 가요. 오늘 {0}번 더 보낼 수 있어요.', left)}</ThemedText>
+    {!!message && <ThemedText type="small" accessibilityLiveRegion="polite" style={styles.note}>{tr(message)}</ThemedText>}
+    <SectionLabel>{tr('걸려 있는 공지 {0}개', notices.length)}</SectionLabel>
+    {notices.length ? <ListCard>{notices.map(notice => <View key={notice.id} style={styles.noticeRow}>
+      <NoticeItem notice={notice} label={notice.mustRead ? tr('필독') : tr('공지')} day={new Date(notice.sentAt).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}>
+        <View style={styles.row}>
+          {state.noticeBoard && <ToggleChip analyticsId="meetup.notice.must-read" label={notice.mustRead ? tr('필독 풀기') : tr('필독으로')} selected={false} busy={rowBusy === notice.id} disabled={!!rowBusy && rowBusy !== notice.id} onPress={() => void update(notice.id, notice.mustRead ? 'must_read_off' : 'must_read')} />}
+          <ToggleChip analyticsId="meetup.notice.unpin" label={tr('내리기')} selected={false} busy={rowBusy === notice.id} disabled={!!rowBusy && rowBusy !== notice.id} onPress={() => void update(notice.id, 'unpin')} />
+        </View>
+      </NoticeItem>
+    </View>)}</ListCard> : <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('아직 걸려 있는 공지가 없어요.')}</ThemedText>}
+    {!!state.scheduled?.length && <>
+      <SectionLabel>{tr('예약한 공지 {0}개', state.scheduled.length)}</SectionLabel>
+      <ListCard>{state.scheduled.map(item => <View key={item.id} style={styles.noticeRow}>
+        <ThemedText style={Typography.label}>{new Date(item.sendAt).toLocaleString(locale, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} · {tr(AUDIENCES.find(([value]) => value === item.audience)?.[1] ?? '')}</ThemedText>
+        <ThemedText themeColor="textSecondary" numberOfLines={2} style={Typography.supporting}>{item.body}</ThemedText>
+        <View style={styles.row}><ToggleChip analyticsId="meetup.notice.cancel" label={tr('예약 취소')} selected={false} busy={rowBusy === item.id} disabled={!!rowBusy && rowBusy !== item.id} onPress={() => void update(item.id, 'cancel')} /></View>
+      </View>)}</ListCard>
+    </>}
   </View>;
 }
 
-function AutoNext({ postId, state, onChanged }: { postId: string; state: MeetupLoyalty; onChanged: () => void }) {
+/** /meetup-tools schedule: open the next session by itself. Group meetups only; the host's Pro tier is checked by the server too. */
+export function MeetupAutoNext({ postId }: { postId: string }) {
   const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
+  const { state, refresh } = useMeetupLoyalty(postId);
+  const [busy, setBusy] = useState(false), [error, setError] = useState('');
+  if (!state?.isHost || state.kind !== 'group') return null;
   const pro = tierAtLeast(state.hostTier, 'pro');
   const enabled = !!state.autoNext?.enabled, cadence = state.autoNext?.cadence ?? 'weekly';
-  const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const save = async (next: boolean, nextCadence: 'weekly' | 'fortnightly') => {
     setBusy(true); setError('');
-    try { await setMeetupAutoNext(supabase, postId, next, nextCadence); play('success'); onChanged(); }
+    try { await setMeetupAutoNext(supabase, postId, next, nextCadence); refresh(); }
     catch (failure) { setError(loyaltyError(failure)); play('warning'); }
     finally { setBusy(false); }
   };
-  return <View style={[styles.section, { borderTopColor: theme.line }]}>
-    <View style={styles.listRow}>
-      <View style={styles.flex}>
-        <ThemedText accessibilityRole="header" style={Typography.section}>{tr('다음 회차 자동으로 열기')}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">{pro ? tr('회차가 끝나면 같은 요일·시간으로 다음 회차를 열고 멤버와 팔로워에게 알려요.') : tr('프로 멤버십부터 쓸 수 있어요.')}</ThemedText>
-      </View>
-      <Switch analyticsId="meetup.auto-next" accessibilityLabel={tr('다음 회차 자동으로 열기')} value={enabled} disabled={busy || (!pro && !enabled)}
-        onValueChange={next => { play('selection'); void save(next, cadence); }} />
-    </View>
-    {enabled && <View style={styles.row}>{(['weekly', 'fortnightly'] as const).map(value =>
-      <ToggleChip key={value} analyticsId="meetup.auto-next.cadence" label={value === 'weekly' ? tr('매주') : tr('2주마다')} selected={cadence === value} busy={busy}
-        onPress={() => { play('selection'); void save(true, value); }} />)}</View>}
-    {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
+  return <View>
+    <SectionLabel>{tr('반복')}</SectionLabel>
+    <ListCard>
+      <ListRow title={tr('다음 회차 자동으로 열기')} detail={tr('끝나면 같은 요일, 같은 시간으로 열고 멤버와 팔로워에게 알려요.')}
+        trailing={pro || enabled ? <Switch analyticsId="meetup.auto-next" accessibilityLabel={tr('다음 회차 자동으로 열기')} value={enabled} disabled={busy || (!pro && !enabled)} onValueChange={next => { play('selection'); void save(next, cadence); }} /> : <Tag label={tr('프로')} />} />
+      {enabled && <View style={[styles.row, styles.rowPad]}>{(['weekly', 'fortnightly'] as const).map(value =>
+        <SelectionChip key={value} analyticsId="meetup.auto-next.cadence" label={value === 'weekly' ? tr('매주') : tr('2주마다')} selected={cadence === value} disabled={busy} accessibilityRole="radio" accessibilityState={{ checked: cadence === value, disabled: busy }} baseColor={theme.backgroundElement}
+          onPress={() => { play('selection'); void save(true, value); }} />)}</View>}
+    </ListCard>
+    {!!error && <ThemedText type="small" accessibilityRole="alert" themeColor="danger" style={styles.note}>{tr(error)}</ThemedText>}
   </View>;
 }
 
-function Roster({ postId, pro }: { postId: string; pro: boolean }) {
+/** /meetup-tools members. Every host sees who is in; attendance counts, notes, regulars and check-in staff are Pro. */
+export function MeetupMemberList({ postId }: { postId: string }) {
   const { tr } = useLanguage();
-  const theme = useTheme();
-  const [members, setMembers] = useState<RosterMember[] | null>(null), [error, setError] = useState(''), [revision, setRevision] = useState(0);
+  const { state } = useMeetupLoyalty(postId);
+  const pro = tierAtLeast(state?.hostTier, 'pro');
+  const known = !!state;
+  const [names, setNames] = useState<MeetupHostIdentity[] | null>(null), [members, setMembers] = useState<RosterMember[] | null>(null), [error, setError] = useState(''), [revision, setRevision] = useState(0);
+  const [selected, setSelected] = useState<string | null>(null);
   useEffect(() => {
-    if (!pro) return;
+    if (!known) return;
     let active = true;
-    loadMeetupRoster(supabase, postId).then(value => { if (active) { setMembers(value); setError(''); } },
-      failure => { if (active) setError(loyaltyError(failure, '명부를 불러오지 못했어요.')); });
+    (pro ? loadMeetupRoster(supabase, postId).then(value => { if (active) { setMembers(value); setError(''); } })
+      : loadMeetupHostRoster(supabase, postId).then(value => { if (active) { setNames(value.filter(person => !person.isHost)); setError(''); } }))
+      .catch(failure => { if (active) setError(loyaltyError(failure, '명단을 불러오지 못했어요.')); });
     return () => { active = false; };
-  }, [pro, postId, revision]);
+  }, [known, pro, postId, revision]);
   const refresh = useCallback(() => setRevision(value => value + 1), []);
-  return <View style={[styles.section, { borderTopColor: theme.line }]}>
-    <ThemedText accessibilityRole="header" style={Typography.section}>{tr('멤버 명부')}</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary">{pro ? tr('메모와 정회원 표시는 호스트에게만 보여요. 멤버에게는 알리지 않아요.') : tr('프로 멤버십부터 참석 횟수, 단골, 나만 보는 메모, 정회원, 체크인 담당을 쓸 수 있어요.')}</ThemedText>
-    {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
-    {pro && members?.length === 0 && <ThemedText type="small" themeColor="textSecondary">{tr('아직 승인한 멤버가 없어요.')}</ThemedText>}
-    {pro && members?.map(member => <RosterRow key={member.userId} postId={postId} member={member} onChanged={refresh} />)}
+  if (!state) return <ListLoading label={tr('불러오는 중이에요')} />;
+  if (!state.isHost) return null;
+  const count = pro ? members?.length : names?.length;
+  const current = members?.find(member => member.userId === selected) ?? null;
+  return <View>
+    <SectionLabel>{count == null ? tr('참여 멤버') : tr('호스트 빼고 {0}명', count)}</SectionLabel>
+    {!!error && <ThemedText type="small" accessibilityRole="alert" themeColor="danger">{tr(error)}</ThemedText>}
+    {count === 0 && <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('아직 승인한 멤버가 없어요.')}</ThemedText>}
+    {!!count && <ListCard>
+      {pro ? members?.map(member => <ListRow key={member.userId} analyticsId="meetup.roster.open" title={member.nickname} leading={<InitialAvatar name={member.nickname} />}
+        detail={[tr('참석 {0}번', member.attended), member.attended >= REGULAR_ATTENDANCE ? tr('단골') : ''].filter(Boolean).join(' · ')}
+        trailing={member.regular ? <Tag label={tr('정회원')} /> : undefined} onPress={() => setSelected(member.userId)} />)
+        : names?.map(person => <ListRow key={person.userId} title={person.displayName || tr('모임 멤버')} leading={<InitialAvatar name={person.displayName || tr('모임 멤버')} />} />)}
+    </ListCard>}
+    {!pro && <ThemedText themeColor="textSecondary" style={[Typography.supporting, styles.note]}>{tr('참석 횟수, 단골, 나만 보는 메모, 정회원, 체크인 담당은 프로 멤버십부터 쓸 수 있어요.')}</ThemedText>}
+    <MemberSheet key={selected ?? 'none'} postId={postId} member={current} onClose={() => setSelected(null)} onChanged={refresh} />
   </View>;
 }
 
-function RosterRow({ postId, member, onChanged }: { postId: string; member: RosterMember; onChanged: () => void }) {
+function MemberSheet({ postId, member, onClose, onChanged }: { postId: string; member: RosterMember | null; onClose: () => void; onChanged: () => void }) {
   const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
-  const [open, setOpen] = useState(false), [note, setNote] = useState(member.note), [busy, setBusy] = useState(false), [error, setError] = useState('');
-  const save = async (action: () => Promise<unknown>) => {
+  const [note, setNote] = useState(member?.note ?? ''), [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const save = async (action: () => Promise<unknown>, done?: () => void) => {
     setBusy(true); setError('');
-    try { await action(); play('success'); onChanged(); }
+    try { await action(); onChanged(); done?.(); }
     catch (failure) { setError(loyaltyError(failure)); play('warning'); }
     finally { setBusy(false); }
   };
-  return <View style={[styles.member, { borderColor: theme.line }]}>
-    <View style={styles.listRow}>
-      <View style={styles.flex}>
-        <ThemedText type="smallBold">{member.nickname}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">{[tr('참석 {0}번', member.attended), member.attended >= REGULAR_ATTENDANCE ? tr('단골') : '', member.regular ? tr('정회원') : ''].filter(Boolean).join(' · ')}</ThemedText>
-      </View>
-      <ToggleChip analyticsId="meetup.roster.note" label={open ? tr('접기') : tr('메모')} selected={open} onPress={() => { play('selection'); setOpen(value => !value); }} />
-    </View>
-    {open && <>
-      <View style={styles.listRow}><ThemedText type="small" style={styles.flex}>{tr('정회원')}</ThemedText>
+  return <DragSheet visible={!!member} onClose={onClose} dismissible={!busy} title={member?.nickname}>
+    {member && <View style={styles.sheetList}>
+      <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('메모와 정회원 표시는 호스트에게만 보여요. 멤버에게는 알리지 않아요.')}</ThemedText>
+      <View style={styles.listRow}><ThemedText style={[Typography.body, styles.flex]}>{tr('정회원')}</ThemedText>
         <Switch analyticsId="meetup.roster.regular" accessibilityLabel={tr('{0}님 정회원', member.nickname)} value={member.regular} disabled={busy}
-          onValueChange={next => { play('selection'); void save(() => saveMemberNote(supabase, postId, member.userId, note, next)); }} /></View>
-      <View style={styles.listRow}><ThemedText type="small" style={styles.flex}>{tr('체크인 담당 (최대 3명)')}</ThemedText>
+          onValueChange={next => { play('selection'); void save(() => saveMemberNote(supabase, postId, member.userId, member.note, next)); }} /></View>
+      <View style={styles.listRow}><ThemedText style={[Typography.body, styles.flex]}>{tr('체크인 담당 (최대 3명)')}</ThemedText>
         <Switch analyticsId="meetup.roster.staff" accessibilityLabel={tr('{0}님 체크인 담당', member.nickname)} value={member.staff} disabled={busy}
           onValueChange={next => { play('selection'); void save(() => setCheckinStaff(supabase, postId, member.userId, next)); }} /></View>
       <TextInput accessibilityLabel={tr('{0}님 메모', member.nickname)} placeholder={tr('나만 보는 메모')} placeholderTextColor={theme.textSecondary}
         multiline maxLength={500} editable={!busy} value={note} onChangeText={setNote}
         style={[ControlStyles.field, styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
-      <ToggleChip analyticsId="meetup.roster.note.save" label={tr('메모 저장')} selected={false} busy={busy} disabled={note.trim() === member.note}
-        onPress={() => { play('selection'); void save(() => saveMemberNote(supabase, postId, member.userId, note, member.regular)); }} />
-    </>}
-    {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
-  </View>;
-}
-
-function StaffCheckIn({ postId }: { postId: string }) {
-  const { tr } = useLanguage();
-  const theme = useTheme();
-  const { me } = useAuth();
-  const { play } = useInteractionFeedback();
-  const [live, setLive] = useState<MeetupSession | null | undefined>(undefined), [busy, setBusy] = useState<string | null>(null), [error, setError] = useState('');
-  const [revision, setRevision] = useState(0);
-  useEffect(() => {
-    let active = true;
-    loadMeetupSessions(supabase, postId).then(value => {
-      const now = Date.now();
-      if (active) setLive(value.sessions.find(session => Date.parse(session.startsAt) <= now && now < Date.parse(session.endsAt)) ?? null);
-    }, () => { if (active) setLive(null); });
-    return () => { active = false; };
-  }, [postId, revision]);
-  const checkIn = async (sessionId: string, attendeeId: string) => {
-    if (busy) return;
-    setBusy(attendeeId); setError(''); play('selection');
-    try { await staffCheckIn(supabase, sessionId, attendeeId); play('success'); setRevision(value => value + 1); }
-    catch (failure) { setError(loyaltyError(failure, '체크인하지 못했어요.')); play('warning'); }
-    finally { setBusy(null); }
-  };
-  const waiting = live?.members.filter(member => !member.checkedIn && member.id !== me.id) ?? [];
-  return <View style={[styles.section, { borderTopColor: theme.line }]}>
-    <ThemedText accessibilityRole="header" style={Typography.section}>{tr('멤버 체크인')}</ThemedText>
-    {live === undefined ? null : !live ? <ThemedText type="small" themeColor="textSecondary">{tr('모임 시간이 되면 여기서 온 사람을 체크인할 수 있어요.')}</ThemedText>
-      : !waiting.length ? <ThemedText type="small" themeColor="textSecondary">{tr('모두 체크인했어요.')}</ThemedText>
-      : waiting.map(member => <View key={member.id} style={styles.listRow}>
-        <ThemedText type="smallBold" style={styles.flex}>{member.nickname}</ThemedText>
-        <ToggleChip analyticsId="meetup.staff.check-in" label={tr('체크인')} hint={tr('{0}님이 왔다고 표시해요', member.nickname)} selected={false} busy={busy === member.id} disabled={!!busy && busy !== member.id}
-          onPress={() => void checkIn(live.id, member.id)} />
-      </View>)}
-    {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
-  </View>;
+      {!!error && <ThemedText type="small" accessibilityRole="alert" themeColor="danger">{tr(error)}</ThemedText>}
+      <RaisedActionButton analyticsId="meetup.roster.note.save" label={tr('메모 저장')} busy={busy} disabled={note.trim() === member.note} onPress={() => { play('selection'); void save(() => saveMemberNote(supabase, postId, member.userId, note, member.regular), () => { play('success'); onClose(); }); }} />
+    </View>}
+  </DragSheet>;
 }
 
 const styles = StyleSheet.create({
   block: { gap: Spacing.two },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   chip: { borderRadius: 999, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  pinned: { marginHorizontal: Spacing.three, marginBottom: Spacing.two, borderRadius: 12, padding: Spacing.three, gap: Spacing.one },
-  pinnedHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
-  pinnedStack: { padding: 0, gap: 0, overflow: 'hidden' },
-  pinnedBar: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44, paddingHorizontal: Spacing.three, borderRadius: 12 },
-  pinnedItem: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: Spacing.one },
-  unpin: { width: 'auto', paddingHorizontal: Spacing.two },
-  tools: { gap: Spacing.three },
-  section: { gap: Spacing.two, paddingTop: Spacing.three, borderTopWidth: StyleSheet.hairlineWidth },
+  row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
+  rowPad: { paddingHorizontal: Spacing.three, paddingBottom: Spacing.two },
+  roomTop: { marginHorizontal: Spacing.three, marginBottom: Spacing.two, borderRadius: 12, overflow: 'hidden' },
+  nextLine: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 52, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
+  boardLine: { borderTopWidth: StyleSheet.hairlineWidth },
+  noticePage: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44, paddingHorizontal: Spacing.three },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  dots: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.one, paddingBottom: Spacing.one },
+  pageDot: { width: 5, height: 5, borderRadius: 3 },
+  sheetScroll: { flexShrink: 1 },
+  sheetList: { gap: Spacing.three, paddingBottom: Spacing.three },
+  noticeItem: { gap: Spacing.one },
+  noticeRow: { padding: Spacing.three, gap: Spacing.one },
+  more: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
+  send: { marginTop: Spacing.three },
+  note: { marginTop: Spacing.two },
   input: { minHeight: 88, paddingTop: Spacing.two, textAlignVertical: 'top' },
   listRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44 },
-  member: { borderWidth: 1, borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
   flex: { flex: 1, minWidth: 0 },
 });

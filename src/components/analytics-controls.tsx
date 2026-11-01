@@ -6,7 +6,7 @@ import { FlatPressable } from '@/components/flat-pressable';
 type Tracking = { analyticsId: string };
 export function Pressable({ analyticsId, onPress, style, lens: _legacyLens, ...props }: ComponentProps<typeof NativePressable> & Tracking & { lens?: boolean }) {
   return <FlatPressable {...props}
-    style={typeof style === 'function' ? style : ({ pressed }) => [style, pressed && { opacity: 0.65 }]}
+    style={style}
     onPress={onPress ? (event) => { behavior('press', analyticsId); onPress(event); } : undefined} />;
 }
 function useScroll(id: string, horizontal?: boolean | null, original?: ScrollViewProps['onScroll']) {

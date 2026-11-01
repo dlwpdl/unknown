@@ -58,35 +58,55 @@ function view(file, name, { rpc = async () => ({ data: null }), storage = {}, us
 }
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 
+const sessionImports = () => ({
+  'expo-router': { useRouter: () => ({ push() {} }) },
+  '@/components/disclosure': { Disclosure: 'Disclosure' }, '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' },
+  '@/components/list-card': { InitialAvatar: 'Avatar', ListCard: 'ListCard', ListRow: 'ListRow', SectionLabel: 'SectionLabel', Tag: 'Tag' },
+  '@/components/manner-review': { MannerReviewButton: 'MannerReviewButton' }, '@/components/meetup-host-tools': { MeetupHostTools: 'HostTools' }, '@/components/meetup-rsvp': { MeetupRsvp: 'Rsvp' },
+  '@/lib/meetup-host-home': module('../src/lib/meetup-host-home.ts'), '@/lib/meetup-loyalty': module('../src/lib/meetup-loyalty.ts'), '@/lib/meetup-reviews': module('../src/lib/meetup-reviews.ts'),
+});
+
 test('a meetup session keeps check-in, attendance confirmation and personal feedback within their distinct windows', () => {
-  const component = view('../src/components/meetup-reviews.tsx', 'Session', {
-    extra: '\nexports.Session = Session;', imports: { '@/components/manner-review': { MannerReviewButton: 'MannerReviewButton' } },
-  });
+  const component = view('../src/components/meetup-reviews.tsx', 'Session', { extra: '\nexports.Session = Session;', imports: sessionImports() });
   const start = Date.parse('2026-10-10T18:00:00Z'), end = start + 3600000;
   const session = { id: 'session', startsAt: new Date(start).toISOString(), endsAt: new Date(end).toISOString(), checkedIn: false, verified: false, claimStatus: 'none', canReview: false,
     members: [{ id: 'peer', nickname: '이웃', checkedIn: true, verified: true, confirmedByMe: false }] };
-  const render = (now, changes = {}) => component.render({ session: { ...session, ...changes }, meId: 'me', onChanged() {}, now });
-  const has = (tree, label) => nodes(tree).some(node => node.type === 'Text' && [node.props.children].flat(Infinity).join('') === label);
-  assert.equal(has(render(start - 1), '현장 체크인'), false);
-  assert.equal(has(render(start), '현장 체크인'), true);
-  assert.equal(has(render(end), '현장 체크인'), false);
-  assert.equal(has(render(end), '이웃 참석 확인'), false, 'no own check-in, no peer confirmation');
-  assert.equal(has(render(end, { checkedIn: true }), '이웃 참석 확인'), true);
+  const render = (now, changes = {}) => component.render({ session: { ...session, ...changes }, meId: 'me', kind: 'once', isHost: false, canStaffCheckIn: false, onChanged() {}, now });
+  const checkIn = tree => nodes(tree).some(node => node.props?.analyticsId === 'meetup.attendance.check-in');
+  const confirm = tree => nodes(tree).some(node => node.props?.accessibilityLabel === '이웃님 참석 확인');
+  assert.equal(checkIn(render(start - 1)), false);
+  assert.equal(checkIn(render(start)), true);
+  assert.equal(checkIn(render(end)), false);
+  assert.equal(confirm(render(end)), false, 'no own check-in, no peer confirmation');
+  assert.equal(confirm(render(end, { checkedIn: true })), true);
   assert.equal(nodes(render(end, { verified: true })).some(node => node.type === 'MannerReviewButton'), true);
   assert.equal(nodes(render(end + 7 * 86400000, { verified: true })).some(node => node.type === 'MannerReviewButton'), false);
-  assert.equal(has(render(end, { verified: true }), '후기 제출'), false, 'one-off/private attendance does not acquire a public group review');
+  assert.equal(nodes(render(end, { verified: true })).some(node => node.props?.analyticsId === 'meetup.review.submit'), false, 'one-off/private attendance does not acquire a public group review');
+});
+
+test('only checked-in hosts with the right tier mark others as here; everyone else sees status only', () => {
+  const component = view('../src/components/meetup-reviews.tsx', 'Session', { extra: '\nexports.Session = Session;', imports: sessionImports() });
+  const start = Date.parse('2026-10-10T18:00:00Z');
+  const session = { id: 'session', startsAt: new Date(start).toISOString(), endsAt: new Date(start + 3600000).toISOString(), checkedIn: true, verified: false, claimStatus: 'none', canReview: false,
+    members: [{ id: 'peer', nickname: '이웃', checkedIn: false, verified: false, confirmedByMe: false }] };
+  const render = changes => component.render({ session, meId: 'me', kind: 'group', isHost: false, canStaffCheckIn: false, onChanged() {}, now: start + 1, ...changes });
+  const mark = tree => nodes(tree).some(node => node.props?.accessibilityLabel === '이웃님이 왔다고 표시해요');
+  const upsell = tree => nodes(tree).some(node => node.props?.title === '호스트가 대신 체크인하기');
+  assert.equal(mark(render({})), false); assert.equal(upsell(render({})), false, 'a member is not sold a host feature');
+  assert.equal(mark(render({ isHost: true })), false); assert.equal(upsell(render({ isHost: true })), true);
+  assert.equal(mark(render({ isHost: true, canStaffCheckIn: true })), true); assert.equal(upsell(render({ isHost: true, canStaffCheckIn: true })), false);
 });
 
 test('public group feedback requires a negative reason, prevents double taps and preserves an ambiguous submission', async () => {
   const id = 'bf000000-0000-0000-0000-000000000001', writes = []; let fail = true;
   const component = view('../src/components/meetup-reviews.tsx', 'Session', {
-    extra: '\nexports.Session = Session;', imports: { '@/lib/meetup-reviews': module('../src/lib/meetup-reviews.ts') },
+    extra: '\nexports.Session = Session;', imports: sessionImports(),
     rpc: async (name, args) => { writes.push([name, args]); return fail ? { error: { message: 'lost response' } } : { data: id }; },
   });
-  const props = { session: { id, startsAt: '2026-10-10T18:00:00Z', endsAt: '2026-10-10T19:00:00Z', checkedIn: true, verified: true, claimStatus: 'none', canReview: true, reviewStatus: null, members: [] }, meId: 'me', onChanged() {}, now: Date.parse('2026-10-10T20:00:00Z') };
-  const submit = tree => nodes(tree).find(node => node.type === 'Pressable' && nodes(node).some(child => child.props?.children === '후기 제출'));
+  const props = { session: { id, startsAt: '2026-10-10T18:00:00Z', endsAt: '2026-10-10T19:00:00Z', checkedIn: true, verified: true, claimStatus: 'none', canReview: true, reviewStatus: null, members: [] }, meId: 'me', kind: 'group', isHost: false, canStaffCheckIn: false, onChanged() {}, now: Date.parse('2026-10-10T20:00:00Z') };
+  const submit = tree => nodes(tree).find(node => node.props?.analyticsId === 'meetup.review.submit');
   let tree = component.render(props);
-  nodes(tree).find(node => node.props?.accessibilityLabel === '4.5점').props.onPress(); tree = component.render(props);
+  nodes(tree).find(node => node.props && 'score' in node.props).props.onChange(4.5); tree = component.render(props);
   assert.equal(submit(tree).props.disabled, true);
   nodes(tree).find(node => node.props?.accessibilityLabel === '공개 모임 후기').props.onChangeText('알려주신 준비물과 실제 진행 방식이 달랐습니다.'); tree = component.render(props);
   submit(tree).props.onPress(); submit(tree).props.onPress(); await new Promise(resolve => setImmediate(resolve)); tree = component.render(props);

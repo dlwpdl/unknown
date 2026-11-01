@@ -23,7 +23,7 @@ type Tr = ReturnType<typeof useLanguage>['tr'];
 
 /** 모임장 관리 시트에 넣는 모집 마감/재개·정보 수정. 내 모임 ⋯ 메뉴와 모임 대화의 관리 시트가 함께 쓴다. */
 export function meetupHostActions({ postId, room, tr, play, router, onChanged }: {
-  postId: string; room: Pick<RoomPreview, 'closed' | 'recruitingClosed'>; tr: Tr; play: ReturnType<typeof useInteractionFeedback>['play'];
+  postId: string; room: Pick<RoomPreview, 'closed' | 'recruitingClosed' | 'eventKind'>; tr: Tr; play: ReturnType<typeof useInteractionFeedback>['play'];
   router: Pick<ReturnType<typeof useRouter>, 'push'>; onChanged?: () => void;
 }): ManageAction[] {
   if (room.closed) return [];
@@ -46,6 +46,7 @@ export function meetupHostActions({ postId, room, tr, play, router, onChanged }:
     else Alert.alert(title, body, [{ text: tr('돌아가기'), style: 'cancel' }, { text: tr('모집 마감하기'), onPress: () => void run() }]);
   };
   return [
+    { key: 'host-tools', analyticsId: 'meetup.manage.host-tools', label: tr('호스트 관리'), hint: tr('일정·멤버·공지·회비'), icon: { ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }, onPress: () => router.push({ pathname: '/meetup-tools', params: { postId, kind: room.eventKind ?? 'group', host: '1' } }) },
     { key: 'edit', analyticsId: 'meetup.manage.edit', label: tr('모임 정보 수정'), icon: { ios: 'pencil', android: 'edit', web: 'edit' }, onPress: () => router.push({ pathname: '/meetup-edit', params: { postId } }) },
     { key: 'recruiting', analyticsId: 'meetup.manage.recruiting', label: paused ? tr('모집 다시 열기') : tr('모집 마감하기'), hint: paused ? tr('새 참여 신청을 다시 받아요') : tr('멤버와 대기 중인 신청은 그대로예요'),
       icon: paused ? { ios: 'person.badge.plus', android: 'person_add', web: 'person_add' } : { ios: 'pause.circle', android: 'pause_circle', web: 'pause_circle' }, onPress: toggle },

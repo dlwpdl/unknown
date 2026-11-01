@@ -104,7 +104,7 @@ export function MeetupSummary({ post, status, onClose, onBeforeNavigate }: { pos
   const statusNote = participation?.status === 'pending' && availability === 'full' ? tr('신청은 대기 중이에요. 지금은 정원이 차서 승인할 수 없어요.')
     : participation?.status === 'approved' && (availability === 'ended' || availability === 'closed') ? tr('이전 승인 기록이에요. 현재 모임은 종료되거나 마감됐어요.') : '';
   // Web has no attendance UI (meetup-reviews.web.tsx renders nothing), so the row stays native-only.
-  const tools = Platform.OS === 'web' ? null : own ? tr('호스트 도구') : participation?.status === 'approved' ? tr('참석 확인') : null;
+  const tools = Platform.OS === 'web' ? null : own ? tr('호스트 관리') : participation?.status === 'approved' ? tr('참석 확인') : null;
   return <View style={styles.summary}>
     <View style={styles.host}>
       <View style={[styles.avatar, { backgroundColor: theme.backgroundSelected }]}><ThemedText type="smallBold">{post.author.nickname[0]}</ThemedText></View>

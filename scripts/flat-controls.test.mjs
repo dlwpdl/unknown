@@ -3,8 +3,18 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { flatControlStyle } from '../src/lib/flat-control.ts';
+import { fillsParent, flatControlStyle, pressedScale } from '../src/lib/flat-control.ts';
 import * as designSystem from '../src/constants/design-system.ts';
+
+test('press shrink is a few points on any size and never moves a stretched dismiss layer', () => {
+  assert.equal(pressedScale(44), 0.97);
+  assert.equal(pressedScale(0), 0.97);
+  assert.ok(Math.abs(pressedScale(390) - (1 - 6 / 390)) < 1e-9);
+  assert.ok(pressedScale(390) > pressedScale(120));
+  assert.equal(fillsParent({ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }), true);
+  assert.equal(fillsParent({ position: 'absolute', left: 16 }), false);
+  assert.equal(fillsParent({ minHeight: 44 }), false);
+});
 
 test('flat controls keep geometry, shape, colors and state without any raised paint', () => {
   for (const style of [
@@ -48,7 +58,10 @@ test('flat controls forward native refs, accessibility, disabled state, callback
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, { exports, require(name) {
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) };
+    if (name === 'react') return {};
     if (name === 'react-native') return { Pressable: 'NativePressable', Platform: { OS: 'web' }, StyleSheet: { flatten } };
+    if (name === 'react-native-reanimated') return {};
+    if (name === '@/constants/design-system') return designSystem;
     if (name === '@/lib/flat-control') return { flatControlStyle };
     throw new Error(name);
   } });

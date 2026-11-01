@@ -36,10 +36,10 @@ export function mountParticipant(screen, options = {}) {
   };
   class Value { constructor(value) { this.value = value; } setValue(value) { this.value = value; } interpolate() { return 1; } stopAnimation() {} }
   const animated = { Value, View: 'View', timing: () => ({ start: fn => fn?.() }), spring: () => ({ start: fn => fn?.() }), parallel: () => ({ start: fn => fn?.() }) };
-  const native = { StyleSheet: { create: value => value, hairlineWidth: 1 }, View: 'View', TextInput: 'TextInput', KeyboardAvoidingView: 'View', Modal: 'Modal', Animated: animated, Easing: { out: value => value }, Keyboard: { dismiss() {} }, LayoutAnimation: { configureNext() {}, Presets: { easeInEaseOut: {} } }, Platform: { OS: 'ios' }, useWindowDimensions: () => ({ width: ctx.width ?? 390, height: 844, fontScale: ctx.fontScale ?? 1 }), Alert: { alert: (...args) => alerts.push(args) }, AppState: { addEventListener: () => ({ remove() {} }) }, DeviceEventEmitter: { addListener: () => ({ remove() {} }), emit: value => calls.push(['emit', value]) } };
+  const native = { StyleSheet: { create: value => value, hairlineWidth: 1 }, View: 'View', TextInput: 'TextInput', RefreshControl: 'RefreshControl', KeyboardAvoidingView: 'View', Modal: 'Modal', Animated: animated, Easing: { out: value => value }, Keyboard: { dismiss() {} }, LayoutAnimation: { configureNext() {}, Presets: { easeInEaseOut: {} } }, Platform: { OS: 'ios' }, useWindowDimensions: () => ({ width: ctx.width ?? 390, height: 844, fontScale: ctx.fontScale ?? 1 }), Alert: { alert: (...args) => alerts.push(args) }, AppState: { addEventListener: () => ({ remove() {} }) }, DeviceEventEmitter: { addListener: () => ({ remove() {} }), emit: value => calls.push(['emit', value]) } };
   const imports = {
     react, 'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }), Fragment: 'Fragment' }, 'react-native': native,
-    'expo-router': { useFocusEffect: fn => effect(fn, [fn]), useRouter: () => ({ push: route => calls.push(['push', JSON.parse(JSON.stringify(route))]), replace: route => calls.push(['replace', JSON.parse(JSON.stringify(route))]), back: () => calls.push(['back']), canGoBack: () => !!ctx.canGoBack, setParams: value => calls.push(['params', value]) }) },
+    'expo-router': { useFocusEffect: fn => effect(fn, [fn]), usePreventRemove: (active, fn) => { ctx.preventRemove = active ? fn : null; }, useRouter: () => ({ push: route => calls.push(['push', JSON.parse(JSON.stringify(route))]), replace: route => calls.push(['replace', JSON.parse(JSON.stringify(route))]), back: () => calls.push(['back']), canGoBack: () => !!ctx.canGoBack, setParams: value => calls.push(['params', value]) }) },
     'react-native-reanimated': { __esModule: true, default: { View: 'View' }, FadeInDown: { delay: () => ({ duration() {} }) }, useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'View', useSafeAreaInsets: () => ({ bottom: 0, right: 0 }) }, 'expo-symbols': { SymbolView: 'Symbol' },
     '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async key => { calls.push(['read-pref', key]); return ctx.readPreference ? ctx.readPreference(key) : ctx.preference ?? null; }, setItem: async (key, value) => calls.push(['write-pref', key, JSON.parse(value)]) } },
@@ -94,15 +94,40 @@ test('place context stays browse despite saved My and preserves exact source whe
   assert.ok(nodes(ui.tree).some(node => node.type === 'FlatList')); ui.control('app_tabs_meetups.pressable.3').props.onPress();
   assert.deepEqual(ui.calls.at(-1)[1].params, { placeCityId: 'vancouver', placeId: 'exact-place' }); ui.unmount();
 });
-test('application previews the same global profile before answer and requires fresh per-post consent', async () => {
+test('application shows the same global profile one tap away and requires fresh per-post consent', async () => {
   const ui = mountParticipant('join'); await ui.flush();
-  const all = nodes(ui.tree), preview = all.findIndex(node => node.type === 'ChillingProfileCard'), answer = all.findIndex(node => node.type === 'TextInput');
-  assert.ok(preview >= 0 && preview < answer); assert.equal(all[preview].props.profile, participantProfile);
-  all[answer].props.onChangeText('함께 걷고 싶어요.'); await ui.flush(); assert.equal(ui.control('app_meetup-join.pressable.8').props.disabled, true);
+  const sheet = () => nodes(ui.tree).find(node => node.type === 'DragSheet');
+  assert.equal(sheet().props.visible, false);
+  ui.control('app_meetup-join.pressable.13').props.onPress(); await ui.flush();
+  assert.equal(sheet().props.visible, true); assert.equal(nodes(sheet()).find(node => node.type === 'ChillingProfileCard').props.profile, participantProfile);
+  nodes(ui.tree).find(node => node.type === 'TextInput').props.onChangeText('함께 걷고 싶어요.'); await ui.flush(); assert.equal(ui.control('app_meetup-join.pressable.8').props.disabled, true);
   ui.control('app_meetup-join.pressable.7').props.onPress(); await ui.flush(); assert.equal(ui.control('app_meetup-join.pressable.8').props.disabled, false);
-  ui.control('app_meetup-join.pressable.6').props.onPress(); assert.deepEqual(ui.calls.at(-1), ['push', { pathname: '/meetup-profile', params: { returnPostId: participantPost.id } }]);
+  // The edit screen opens only once the sheet has really gone.
+  ui.control('app_meetup-join.pressable.6').props.onPress(); await ui.flush(); assert.equal(sheet().props.visible, false); assert.equal(ui.calls.some(([name]) => name === 'push'), false);
+  sheet().props.onDismissed(); assert.deepEqual(ui.calls.at(-1), ['push', { pathname: '/meetup-profile', params: { returnPostId: participantPost.id } }]);
+  sheet().props.onDismissed(); assert.equal(ui.calls.filter(([name]) => name === 'push').length, 1, 'closing it again does not reopen the editor');
   ui.control('app_meetup-join.pressable.8').props.onPress(); await ui.flush(); assert.equal(ui.calls.find(([name]) => name === 'join')[4], 'profile-r1');
   assert.ok(nodes(ui.tree).some(node => node.type === 'StateCard' && node.props.kind === 'pending')); ui.unmount();
+});
+test('the footer says what is left, and leaving asks first only while an unsent answer exists', async () => {
+  const ui = mountParticipant('join'); await ui.flush();
+  const hint = () => nodes(ui.tree).find(node => node.props?.accessibilityLiveRegion === 'polite' && node.type === 'ThemedText');
+  assert.equal(text(hint()), '답변을 쓰고 동의하면 보낼 수 있어요'); assert.equal(ui.ctx.preventRemove, null);
+  nodes(ui.tree).find(node => node.type === 'TextInput').props.onChangeText('답변'); await ui.flush();
+  assert.equal(text(hint()), '동의에 체크하면 보낼 수 있어요');
+  let left = 0; ui.ctx.preventRemove({ repeat: () => { left++; } });
+  const [heading, , buttons] = ui.alerts.at(-1); assert.equal(heading, '쓰던 답변이 사라져요');
+  assert.equal(buttons.find(button => button.style === 'cancel').text, '계속 쓰기'); assert.equal(left, 0);
+  buttons.find(button => button.style === 'destructive').onPress(); assert.equal(left, 1);
+  ui.control('app_meetup-join.pressable.7').props.onPress(); await ui.flush(); assert.equal(text(hint()), '호스트에게만 보내요');
+  ui.control('app_meetup-join.pressable.8').props.onPress(); await ui.flush();
+  assert.equal(ui.ctx.preventRemove, null, 'a sent answer never asks'); ui.unmount();
+});
+test('a request shows where it is on a step line, and approval moves it on', async () => {
+  for (const [status, states] of [['pending', ['done', 'now', 'next']], ['approved', ['done', 'done', 'now']]]) {
+    const ui = mountParticipant('join', { request: { id: 'request', status } }); await ui.flush();
+    assert.deepEqual([...nodes(ui.tree).find(node => node.props?.steps).props.steps].map(step => step.state), states); ui.unmount();
+  }
 });
 test('pending and approved remain distinct, and retained cancellation cannot run after leaving screen', async () => {
   for (const status of ['pending', 'approved']) {
@@ -147,11 +172,18 @@ test('pending applicant goes to the meetups tab, never the host request inbox; h
 });
 test('an unavailable profile photo keeps the meetup and status visible, blocks submit and offers the profile', async () => {
   const ui = mountParticipant('join', { profileError: 'CHILLING_PROFILE_PHOTOS_UNAVAILABLE' }); await ui.flush();
-  assert.ok(text(ui.tree).includes(participantPost.title)); assert.equal(ui.control('app_meetup-join.pressable.8').props.disabled, true);
-  const open = ui.control('app_meetup-join.pressable.5'); assert.equal(text(open), '모임 프로필 열기');
+  assert.ok(text(ui.tree).includes(participantPost.title)); assert.equal(ui.control('app_meetup-join.pressable.8'), undefined);
+  const open = ui.control('app_meetup-join.pressable.5'); assert.equal(open.props.label, '모임 프로필 열기');
   open.props.onPress(); assert.deepEqual(ui.calls.at(-1), ['push', { pathname: '/meetup-profile', params: { returnPostId: participantPost.id } }]); ui.unmount();
   const pending = mountParticipant('join', { profileError: 'CHILLING_PROFILE_PHOTOS_UNAVAILABLE', request: { id: 'request', status: 'pending' } }); await pending.flush();
   assert.ok(nodes(pending.tree).some(node => node.type === 'StateCard' && node.props.kind === 'pending')); pending.unmount();
+});
+test('without a profile the big button makes one and the answer stays', async () => {
+  const ui = mountParticipant('join', { profile: null }); await ui.flush();
+  nodes(ui.tree).find(node => node.type === 'TextInput').props.onChangeText('쓰던 답변'); await ui.flush();
+  assert.equal(ui.control('app_meetup-join.pressable.5').props.label, '모임 프로필 만들기');
+  ui.control('app_meetup-join.pressable.5').props.onPress(); await ui.flush();
+  assert.equal(nodes(ui.tree).find(node => node.type === 'TextInput').props.value, '쓰던 답변'); ui.unmount();
 });
 test('a language exchange asks which side you speak, sends it, and moves only a full side to the waitlist', async () => {
   const exchange = { ...participantPost, room: { ...participantPost.room, capacity: 5, category: 'casual', languageExchange: { languages: ['ko', 'en'], share: 50 } } };
@@ -162,7 +194,7 @@ test('a language exchange asks which side you speak, sends it, and moves only a 
   assert.equal(nodes(ui.tree).some(node => node.type === 'MeetupWaitlist'), false, 'an open meetup shows no waitlist before a side is chosen');
   picker().props.onChange('en'); await ui.flush();
   assert.equal(cta().props.disabled, true); assert.equal(cta().props.label, '고른 언어 쪽은 자리가 다 찼어요');
-  assert.deepEqual({ ...nodes(ui.tree).find(node => node.type === 'MeetupWaitlist').props.language }, { speaks: 'en', learns: 'ko' });
+  assert.deepEqual({ ...nodes(ui.tree).find(node => node.type === 'MeetupWaitlist').props.language }, { speaks: 'en', learns: 'ko' }); assert.equal(nodes(ui.tree).find(node => node.type === 'MeetupWaitlist').props.cta, 'secondary');
   picker().props.onChange('ko'); await ui.flush();
   assert.equal(cta().props.disabled, false); assert.equal(nodes(ui.tree).some(node => node.type === 'MeetupWaitlist'), false);
   cta().props.onPress(); await ui.flush();
@@ -174,29 +206,34 @@ test('a language exchange asks which side you speak, sends it, and moves only a 
   assert.equal(late.control('app_meetup-join.pressable.8').props.label, '고른 언어 쪽은 자리가 다 찼어요');
   assert.equal(nodes(late.tree).some(node => node.props?.accessibilityRole === 'alert' && text(node) === 'LANGUAGE_SIDE_FULL'), false); late.unmount();
 });
-test('full or host-capacity rejection disables submit without repeating the full message as a footer alert', async () => {
+test('full or host-capacity rejection replaces the form with the waitlist and keeps the answer', async () => {
   for (const code of ['MEETUP_FULL', 'MEETUP_HOST_CAPACITY_LIMIT']) {
     const ui = mountParticipant('join', { submit: () => { throw new Error(code); } }); await ui.flush(); await fill(ui);
     ui.control('app_meetup-join.pressable.8').props.onPress(); await ui.flush();
-    assert.equal(ui.control('app_meetup-join.pressable.8').props.disabled, true); assert.equal(ui.control('app_meetup-join.pressable.8').props.label, '정원이 모두 찼어요');
+    assert.equal(ui.control('app_meetup-join.pressable.8'), undefined); assert.equal(nodes(ui.tree).some(node => node.type === 'TextInput'), false);
+    assert.ok(nodes(ui.tree).some(node => node.type === 'StateCard' && node.props.title === '정원이 모두 찼어요'));
+    const waitlist = nodes(ui.tree).find(node => node.type === 'MeetupWaitlist'); assert.equal(waitlist.props.cta, 'primary'); assert.equal(waitlist.props.fallback.props.label, '다른 모임 찾기');
+    assert.match(text(ui.tree), /쓴 답변은 남아 있어요/);
     assert.equal(nodes(ui.tree).some(node => node.props?.accessibilityRole === 'alert' && text(node) === code), code !== 'MEETUP_FULL'); ui.unmount();
   }
 });
-test('reapply cooldown shows minutes only with a secondary status check', async () => {
+test('reapply cooldown says when it opens, offers other meetups, and can be pulled to refresh', async () => {
   const ui = mountParticipant('join', { request: { id: 'request', status: 'rejected', created_at: new Date().toISOString(), responded_at: new Date().toISOString() } }); await ui.flush();
   const card = nodes(ui.tree).find(node => node.type === 'StateCard' && node.props.kind === 'blocked');
-  assert.equal(card.props.actionLabel, undefined); assert.doesNotMatch(card.props.body, /\d+:\d{2}:\d{2}/);
-  assert.ok(nodes(ui.tree).some(node => node.props?.analyticsId === 'app_meetup-join.pressable.9' && text(node) === '현재 상태 확인')); ui.unmount();
+  assert.equal(card.props.actionLabel, undefined); assert.doesNotMatch(card.props.body, /\d+:\d{2}:\d{2}/); assert.match(card.props.body, /이 화면에서 다시 신청할 수 있어요/);
+  assert.equal(nodes(ui.tree).some(node => node.type === 'TextInput'), false);
+  assert.equal(ui.control('app_meetup-join.pressable.3').props.label, '다른 모임 찾기');
+  const before = ui.calls.length; ui.control('app_meetup-join.scrollview.1').props.refreshControl.props.onRefresh(); await ui.flush(); assert.ok(ui.calls.length > before); ui.unmount();
+  const writing = mountParticipant('join'); await writing.flush(); assert.equal(writing.control('app_meetup-join.scrollview.1').props.refreshControl, undefined, 'pulling never reloads over a half-written answer'); writing.unmount();
 });
-test('a paused meetup shows 모집 마감 and disables the request; a host pause during submit reads the same', async () => {
-  const paused = mountParticipant('join', { post: { ...participantPost, room: { ...participantPost.room, recruitingClosed: true } } }); await paused.flush(); await fill(paused);
-  assert.ok(nodes(paused.tree).some(node => node.type === 'StateCard' && node.props.title === '모집 마감'));
-  const cta = paused.control('app_meetup-join.pressable.8');
-  assert.equal(cta.props.disabled, true); assert.equal(cta.props.label, '지금은 새 신청을 받지 않아요');
-  cta.props.onPress(); await paused.flush(); assert.equal(paused.calls.some(([name]) => name === 'join'), false); paused.unmount();
+test('a paused meetup offers no form; a host pause during submit reads the same', async () => {
+  const paused = mountParticipant('join', { post: { ...participantPost, room: { ...participantPost.room, recruitingClosed: true } } }); await paused.flush();
+  assert.ok(nodes(paused.tree).some(node => node.type === 'StateCard' && node.props.title === '지금은 새 신청을 받지 않아요'));
+  assert.equal(paused.control('app_meetup-join.pressable.8'), undefined); assert.equal(nodes(paused.tree).some(node => node.type === 'TextInput'), false);
+  paused.control('app_meetup-join.pressable.3').props.onPress(); assert.deepEqual(paused.calls.at(-1), ['replace', '/(tabs)/meetups']); paused.unmount();
   const late = mountParticipant('join', { submit: () => { throw new Error('MEETUP_RECRUITING_CLOSED'); } }); await late.flush(); await fill(late);
   late.control('app_meetup-join.pressable.8').props.onPress(); await late.flush();
-  assert.equal(late.control('app_meetup-join.pressable.8').props.disabled, true);
+  assert.equal(late.control('app_meetup-join.pressable.8'), undefined);
   assert.equal(nodes(late.tree).some(node => node.props?.accessibilityRole === 'alert' && text(node) === 'MEETUP_RECRUITING_CLOSED'), false, 'the card explains it once');
   late.unmount();
   const host = mountParticipant('join', { post: { ...participantPost, room: { ...participantPost.room, recruitingClosed: true } }, auth: { isAuthed: true, me: { id: 'host', nickname: '소라' }, promptLogin() {} } }); await host.flush();
@@ -204,16 +241,18 @@ test('a paused meetup shows 모집 마감 and disables the request; a host pause
 });
 
 const feeRoom = { ...participantPost.room, fee: { amount: 15.5, note: 'e-Transfer', dueOn: '2031-11-01' } };
-test('applicants see the fee with the schedule and approved members see their own mark', async () => {
+test('applicants see the fee on the meetup card and approved members see their own mark', async () => {
   const applicant = mountParticipant('join', { post: { ...participantPost, room: feeRoom } }); await applicant.flush();
-  assert.deepEqual(nodes(applicant.tree).find(node => node.type === 'ChillingEventSchedule').props.room.fee, feeRoom.fee); applicant.unmount();
-  for (const [status, payments, paid] of [['approved', [{ user_id: 'viewer', paid_at: '2031-01-01' }], true], ['approved', [], false], ['approved', 'error', null], ['pending', [{ user_id: 'viewer' }], null]]) {
-    const ui = mountParticipant('join', { post: { ...participantPost, room: feeRoom }, request: { id: 'request', status }, payments }); await ui.flush();
-    const line = nodes(ui.tree).find(node => node.type === 'MeetupFeeLine');
-    assert.equal(line.props.fee, feeRoom.fee); assert.equal(line.props.paid, paid, `${status} ${JSON.stringify(payments)}`); ui.unmount();
+  assert.match(text(applicant.tree), /회비 \$15\.50/); assert.match(text(applicant.tree), /e-Transfer · 11월 1일까지/); applicant.unmount();
+  const feeRow = ui => nodes(ui.tree).find(node => node.type === 'ListRow' && /회비/.test(node.props.title));
+  for (const [payments, mark] of [[[{ user_id: 'viewer', paid_at: '2031-01-01' }], /냈음$/], [[], /아직 안 냈어요$/], ['error', /까지$/]]) {
+    const ui = mountParticipant('join', { post: { ...participantPost, room: feeRoom }, request: { id: 'request', status: 'approved' }, payments }); await ui.flush();
+    assert.match(feeRow(ui).props.detail, mark, JSON.stringify(payments)); ui.unmount();
   }
+  const pending = mountParticipant('join', { post: { ...participantPost, room: feeRoom }, request: { id: 'request', status: 'pending' }, payments: [{ user_id: 'viewer' }] }); await pending.flush();
+  assert.equal(feeRow(pending), undefined); assert.doesNotMatch(text(pending.tree), /냈음/); pending.unmount();
   const none = mountParticipant('join', { request: { id: 'request', status: 'approved' } }); await none.flush();
-  assert.equal(nodes(none.tree).some(node => node.type === 'MeetupFeeLine'), false); none.unmount();
+  assert.equal(feeRow(none), undefined); none.unmount();
 });
 
 test('the meetup card, schedule and fee line render the compact CAD fee in both languages', () => {
