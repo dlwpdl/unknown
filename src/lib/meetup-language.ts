@@ -4,8 +4,9 @@ import type { RoomPreview } from './types.ts';
 // Language exchange meetups (20261030221000 migration). room.category stays 'casual' so published apps show 가볍게.
 export const MEETUP_LANGUAGES = ['ko', 'en', 'fr'] as const;
 export type MeetupLanguage = typeof MEETUP_LANGUAGES[number];
-// Each language is written in itself, the way people look for it, in both app languages.
+// Pickers write each language in itself, the way people look for it; English sentences name it in English (owner 2026-11-01).
 export const MEETUP_LANGUAGE_NAMES: Record<MeetupLanguage, string> = { ko: '한국어', en: 'English', fr: 'Français' };
+export const MEETUP_LANGUAGE_ENGLISH_NAMES: Record<MeetupLanguage, string> = { ko: 'Korean', en: 'English', fr: 'French' };
 export type LanguageExchange = { languages: [MeetupLanguage, MeetupLanguage]; share: number };
 export type LanguageChoice = { speaks: MeetupLanguage; learns: MeetupLanguage };
 // Share of member seats for the first language: half each, 2:1, 1:2.

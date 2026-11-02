@@ -7,13 +7,14 @@ import { Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { LANGUAGE_SHARES, MEETUP_LANGUAGE_NAMES, languagePairLabel, languageSeats, loadMeetupLanguages, otherLanguage,
+import { LANGUAGE_SHARES, MEETUP_LANGUAGE_ENGLISH_NAMES, MEETUP_LANGUAGE_NAMES, languagePairLabel, languageSeats, loadMeetupLanguages, otherLanguage,
   type LanguageExchange, type MeetupLanguage, type MeetupLanguages } from '@/lib/meetup-language';
 import { supabase } from '@/lib/supabase';
 
 // shortcut: three languages make three pairs, so the host picks a pair; switch to two pickers when a fourth language arrives.
 const PAIRS: LanguageExchange['languages'][] = [['ko', 'en'], ['ko', 'fr'], ['en', 'fr']];
 const name = (language: MeetupLanguage) => MEETUP_LANGUAGE_NAMES[language];
+const english = (language: MeetupLanguage) => MEETUP_LANGUAGE_ENGLISH_NAMES[language];
 
 // Same chip as the listing fields: shared pill size, label type and fading selected fill.
 function Chip({ label, selected, onPress, disabled, analyticsId, accessibilityLabel }: {
@@ -34,7 +35,7 @@ export function MeetupLanguageSetup({ value, onChange, capacity, disabled }: { v
   const [first, second] = value.languages;
   const seats = languageSeats(value, capacity);
   const shareLabel = (share: number) => share === 50 ? say('반반', 'Half and half')
-    : share > 50 ? say(`${name(first)} 쪽 많이`, `More ${name(first)}`) : say(`${name(second)} 쪽 많이`, `More ${name(second)}`);
+    : share > 50 ? say(`${name(first)} 쪽 많이`, `More ${english(first)} speakers`) : say(`${name(second)} 쪽 많이`, `More ${english(second)} speakers`);
   return <View style={styles.group}>
     <ThemedText type="label">{say('교환할 두 언어', 'Languages to exchange')}</ThemedText>
     <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel={say('교환할 두 언어', 'Languages to exchange')}>
@@ -49,7 +50,7 @@ export function MeetupLanguageSetup({ value, onChange, capacity, disabled }: { v
     </View>
     <ThemedText type="supporting" themeColor="textSecondary">{seats
       ? say(`호스트 빼고 ${name(first)} ${seats[0]}명, ${name(second)} ${seats[1]}명까지 받아요. 한쪽이 먼저 차면 그쪽 신청만 마감돼요.`,
-        `Up to ${seats[0]} ${name(first)} and ${seats[1]} ${name(second)} speakers, not counting you. If one side fills first, only that side stops taking requests.`)
+        `Up to ${seats[0]} ${english(first)} and ${seats[1]} ${english(second)} speakers, not counting you. If one side fills first, only that side stops taking requests.`)
       : say('정원을 3명 이상으로 정하면 언어별 인원을 나눠 드려요.', 'Set the capacity to 3 or more to split seats by language.')}</ThemedText>
   </View>;
 }
@@ -75,7 +76,7 @@ export function MeetupLanguagePicker({ exchange, state, value, onChange, disable
     {/* 로/를 fit all three names: 한국어, English(잉글리시), Français(프랑세) end in a vowel sound. */}
     <ThemedText type="supporting" themeColor="textSecondary">{value
       ? say(`${name(value)}로 도와주고 ${name(otherLanguage(exchange, value))}를 배우는 쪽으로 신청해요.`,
-        `You’ll join the ${name(value)} side and practise ${name(otherLanguage(exchange, value))}.`)
+        `You’ll join the ${english(value)} side and practise ${english(otherLanguage(exchange, value))}.`)
       : say('어느 쪽 자리로 신청할지 골라 주세요.', 'Choose which side you’re joining.')}</ThemedText>
   </View>;
 }
@@ -99,11 +100,11 @@ export function MeetupLanguageCounts({ postId, requestId }: { postId: string; re
   return <View style={[styles.counts, { backgroundColor: theme.backgroundElement }]}>
     <ThemedText type="label">{say('언어별 인원', 'By language')}</ThemedText>
     {requestId && <ThemedText type="supporting">{choice
-      ? say(`할 줄 아는 말 ${name(choice.speaks)} · 배우는 말 ${name(choice.learns)}`, `Speaks ${name(choice.speaks)} · Learning ${name(choice.learns)}`)
+      ? say(`할 줄 아는 말 ${name(choice.speaks)} · 배우는 말 ${name(choice.learns)}`, `Speaks ${english(choice.speaks)} · Learning ${english(choice.learns)}`)
       : say('언어를 고르지 않고 신청했어요.', 'Applied without choosing a language.')}</ThemedText>}
     {state.sides.map(side => <ThemedText key={side.language} type="supporting" themeColor="textSecondary">
       {say(`${name(side.language)} · 승인 ${side.approved}${side.seats != null ? `/${side.seats}` : ''}명 · 검토 중 ${side.pending ?? 0}명 · 대기 ${side.waiting ?? 0}명`,
-        `${name(side.language)} · ${side.approved}${side.seats != null ? `/${side.seats}` : ''} approved · ${side.pending ?? 0} to review · ${side.waiting ?? 0} waiting`)}
+        `${english(side.language)} · ${side.approved}${side.seats != null ? `/${side.seats}` : ''} approved · ${side.pending ?? 0} to review · ${side.waiting ?? 0} waiting`)}
     </ThemedText>)}
     {unknown && <ThemedText type="supporting" themeColor="textSecondary">{say(`언어 없이 신청 · 승인 ${unknown.approved}명 · 검토 중 ${unknown.pending}명`,
       `No language chosen · ${unknown.approved} approved · ${unknown.pending} to review`)}</ThemedText>}

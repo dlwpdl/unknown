@@ -48,7 +48,7 @@ export default function MeetupEditRoute() {
 }
 
 function MeetupEditForm({ postId }: { postId: string }) {
-  const { tr } = useLanguage();
+  const { tr, language } = useLanguage();
   const theme = useTheme(), router = useRouter();
   const { isAuthed, me, promptLogin } = useAuth();
   const { membership } = useMembership();
@@ -175,7 +175,7 @@ function MeetupEditForm({ postId }: { postId: string }) {
 
   const blocked = !isAuthed ? <StateCard kind="blocked" title={tr('로그인 후 모임을 수정할 수 있어요')} body={tr('모임을 연 호스트 계정으로 로그인해 주세요.')} actionLabel={tr('로그인')} onAction={() => promptLogin('모임을 수정하려면 로그인해 주세요.')} />
     : loading ? <GlingLoader />
-    : loadError ? <StateCard kind="error" title={tr('모임을 불러오지 못했어요')} body={tr(loadError)} actionLabel={tr('다시 시도')} onAction={() => { setLoadError(''); setLoading(true); setRetry(value => value + 1); }} />
+    : loadError ? <StateCard kind="error" title={language === 'en' ? 'Couldn’t load this meetup' : '모임을 불러오지 못했어요'} body={tr(loadError)} actionLabel={tr('다시 시도')} onAction={() => { setLoadError(''); setLoading(true); setRetry(value => value + 1); }} />
     : !meetup || !room ? <StateCard kind="empty" title={tr('이 모임을 찾을 수 없어요.')} body={tr('삭제되었거나 볼 수 없는 모임이에요.')} />
     : meetup.authorId !== me.id ? <StateCard kind="blocked" title={tr('호스트만 수정할 수 있어요')} body={tr('모임을 연 호스트만 정보를 바꿀 수 있어요.')} />
     : ended ? <StateCard kind="blocked" title={tr('종료된 모임이에요')} body={tr('종료된 모임은 정보를 수정할 수 없어요.')} />

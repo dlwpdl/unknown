@@ -15,7 +15,7 @@ import { postInfoParts } from '@/lib/post-info';
 import { CITIES } from '@/lib/mock';
 import { TranslationControl } from '@/components/content-translation';
 import { useContentTranslation } from '@/hooks/use-content-translation';
-import { businessDisclosureLines, visibleTranslationSource } from '@/lib/translation-source';
+import { businessDisclosureLines, splitProxyDisclosure, visibleTranslationSource } from '@/lib/translation-source';
 import { splitPostPhotoCredits } from '@/lib/post-photo-credits';
 import { instagramPostLink, splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
 import { ReportSheet } from '@/components/report-sheet';
@@ -104,8 +104,10 @@ export function PostCard({
   const photo = hidePhoto || (failedPhoto?.postId === post.id && failedPhoto.uri === firstPhoto) ? undefined : firstPhoto;
   const photoCount = post.imagePaths?.length ?? 0;
   const chips = uniqueHashtags([post.author.neighborhood, ...(post.hashtags ?? [])]);
-  const mapped = postMapBody(post.body);
-  const source = visibleTranslationSource('post', post.title, post.body, !!post.room);
+  // Gling's proxy-post line becomes a mark under the author; the meetup summary has no author row, so there it stays in the body.
+  const proxied = meetupDetail ? { body: post.body, proxy: false } : splitProxyDisclosure(post.body);
+  const mapped = postMapBody(proxied.body);
+  const source = visibleTranslationSource('post', post.title, proxied.body, !!post.room);
   const translation = useContentTranslation('post', post.id, source, translationVisible);
   const originalBody = post.room ? visibleMeetupBody(mapped.body) : mapped.body;
   const attached = splitPostAttachments(originalBody);
@@ -205,6 +207,7 @@ export function PostCard({
               <ThemedText type="small" themeColor="textSecondary" style={styles.meta}>
                 {post.createdAt ? relativeTime(post.createdAt, undefined, appLocale) : post.createdAtLabel}{post.bumpedAt ? ` · ${t.detail.bumpedLabel}` : ''}{postDetail ? ` · ${t.feed.views(post.views)}` : ''}
               </ThemedText>
+              {proxied.proxy && <ThemedText type="small" themeColor="textSecondary" style={styles.meta}>{tr('글링이 비즈니스 허락을 받고 대신 올렸어요')}</ThemedText>}
             </View>
           </Pressable>
           {!mine && (

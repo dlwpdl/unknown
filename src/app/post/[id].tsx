@@ -124,7 +124,7 @@ export default function SharedPostRoute() {
             <View style={styles.center}>
               {!isAuthed && preview?.key === requestKey && preview.value ? <View style={styles.gate}>
                 <SharedPreviewContent preview={preview.value} />
-                <ThemedText type="small" themeColor="textSecondary">{tr("로그인 후 전체 내용을 확인해요. 모임 초대는 기존 참여 신청과 모임장 승인을 거쳐요.")}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">{tr("로그인 후 전체 내용을 확인해요. 모임 초대는 기존 참여 신청과 호스트 승인을 거쳐요.")}</ThemedText>
                 <Pressable analyticsId="shared.post.login" accessibilityRole="button" accessibilityLabel={tr("로그인하고 공유 내용 보기")}
                   disabled={savingReturn || isAuthLoading} accessibilityState={{ disabled: savingReturn || isAuthLoading, busy: savingReturn }}
                   onPress={() => void beginLogin()} style={[styles.login, { backgroundColor: theme.accent, opacity: savingReturn || isAuthLoading ? 0.45 : 1 }]}>

@@ -247,7 +247,7 @@ test('both themes and languages render actual controls with accessible labels an
   for (const language of ['ko', 'en']) for (const theme of Object.values(themes)) {
     const ui = mount('meetup-host-tools', 'MeetupHostTools', { postId }, { language, theme });
     await ui.flush();
-    assert.match(text(ui.tree), language === 'ko' ? /공동 호스트/ : /cohost/i);
+    assert.match(text(ui.tree), language === 'ko' ? /공동 호스트/ : /co-host/i);
     const controls = nodes(ui.tree).filter(node => node.type === 'Pressable');
     assert.ok(controls.length > 5);
     assert.ok(controls.every(node => ['button', 'radio'].includes(node.props.accessibilityRole)));

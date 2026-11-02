@@ -467,7 +467,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       await requestMeetupJoin(supabase, joinPost.id, joinMessage);
       DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       requestPushPrompt('meetup_request');
-      play('meetup');
+      play('meetupRequested');
       setJoinPost(null);
       setJoinMessage('');
       Alert.alert(t.chat.joinDoneTitle, t.chat.joinDoneBody);

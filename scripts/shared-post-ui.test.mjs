@@ -400,7 +400,7 @@ test('share sheet stays over the post and keeps external sharing, status and app
   assert.equal(harness.nodes().find(node => node.type === 'Modal').props.transparent, true);
   const scroll = control(harness, 'post.share.sheet');
   assert.ok(!nodes(scroll).some(node => node.props?.analyticsId === 'post.share.external'), 'external sharing remains available when recipients scroll');
-  assert.ok(!text(scroll).includes('참여 신청과 모임장 승인이 필요해요'), 'approval notice stays visible');
+  assert.ok(!text(scroll).includes('참여 신청과 호스트 승인이 필요해요'), 'approval notice stays visible');
   control(harness, 'post.share.conversation').props.onPress(); await harness.settle();
   assert.ok(!text(control(harness, 'post.share.sheet')).includes('chat-a 대화로 보냈어요.'), 'send result stays outside recipient scroll');
   assert.ok(text(harness.render()).includes('chat-a 대화로 보냈어요.'));
@@ -548,7 +548,7 @@ test('host invites and closed meetups share a link while preserving join applica
   assert.ok(text(harness.render()).includes('내 모임에 초대하기'));
   harness.props.post = { ...harness.props.post, room: { ...harness.props.post.room, closed: true } }; await harness.settle();
   assert.ok(text(harness.render()).includes('모집 마감'));
-  assert.ok(text(harness.render()).includes('참여 신청과 모임장 승인이 필요해요'));
+  assert.ok(text(harness.render()).includes('참여 신청과 호스트 승인이 필요해요'));
   control(harness, 'post.share.conversation').props.onPress(); await harness.settle();
   const outbound = harness.calls.find(call => call[0] === 'send'); assert.equal(outbound[2].split('\n').at(-1), gatewayLink); assert.ok(!outbound[2].includes('private-'));
   assert.equal(harness.calls.filter(call => call[0] === 'send').length, 1);

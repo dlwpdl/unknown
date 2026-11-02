@@ -351,6 +351,21 @@ test('business author uses its logo, report target and business fallback after p
  post.business.avatarUri='opaque-logo-v2';assert.equal(image(render()).props.source.uri,'opaque-logo-v2');
 });
 
+test('a post Gling wrote for a business shows that by the author, not at the end of the preview or the detail', () => {
+  const card = cardRenderer();
+  const mark = '글링이 비즈니스 허락을 받고 대신 올렸어요';
+  const post = { id: 'proxy', title: '금요일 생면', body: '금요일마다 생면을 뽑아요.\n\n비즈니스의 허락을 받아 글링에서 대신 게시한 안내입니다.',
+    author: { id: 'admin', nickname: '글링' }, business: { id: 'business', name: '지모코' }, tag: { kind: 'post', label: '맛집' }, likes: 0, saves: 0, comments: 0, views: 0 };
+  const preview = card.render({ post, onPress: () => {} });
+  assert.equal(nodes(preview).find(node => node.type === 'PostBody').props.body, '금요일마다 생면을 뽑아요.');
+  assert.ok(nodes(preview).some(node => node.type === 'ThemedText' && node.props.children === mark));
+  const detail = card.render({ post, postDetail: true });
+  assert.deepEqual(nodes(detail).find(node => node.props?.paragraphs).props.paragraphs, ['금요일마다 생면을 뽑아요.']);
+  assert.ok(nodes(detail).some(node => node.type === 'ThemedText' && node.props.children === mark));
+  const own = card.render({ post: { ...post, body: '금요일마다 생면을 뽑아요.' }, onPress: () => {} });
+  assert.ok(!nodes(own).some(node => node.props?.children === mark), 'only proxy posts carry the mark');
+});
+
 test('profile logo/banner failures retain only the business fallback and recover on new images',()=>{
  const renderer=cardRenderer('MerchantProfileHeader');
  const profile={name:'지모코',city_name:'밴쿠버',industry:'카페',services:'',address:'',links:[],avatarUri:'logo',bannerUri:'banner'};

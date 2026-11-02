@@ -14,7 +14,7 @@ import { DragSheet } from '@/components/drag-sheet';
 import { InitialAvatar, ListCard, ListRow } from '@/components/list-card';
 import { MeetupWaitlist } from '@/components/meetup-host-tools';
 import { MeetupLanguagePicker } from '@/components/meetup-language';
-import { MEETUP_LANGUAGE_NAMES, loadMeetupLanguages, otherLanguage, parseLanguageExchange, sideOpen, type MeetupLanguage, type MeetupLanguages } from '@/lib/meetup-language';
+import { MEETUP_LANGUAGE_ENGLISH_NAMES, MEETUP_LANGUAGE_NAMES, loadMeetupLanguages, otherLanguage, parseLanguageExchange, sideOpen, type MeetupLanguage, type MeetupLanguages } from '@/lib/meetup-language';
 import { PopIn, StateCard } from '@/components/state-card';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
@@ -217,7 +217,7 @@ function JoinForm({ postId }: { postId: string }) {
   </View>;
   const languagePicker = () => exchange && <>
     <MeetupLanguagePicker exchange={exchange} state={languages} value={speaks} disabled={sending} onChange={value => { setSpeaks(value); if (errorCode === 'LANGUAGE_SIDE_FULL') { setError(''); setErrorCode(null); } }} />
-    {sideFull && <StateCard layout="start" kind="blocked" title={copy(`${MEETUP_LANGUAGE_NAMES[choice!.speaks]} 쪽은 자리가 다 찼어요`, `The ${MEETUP_LANGUAGE_NAMES[choice!.speaks]} side is full`)} body={copy('이쪽 멤버가 빠지면 자리가 다시 열려요. 쓴 답변은 그대로 남아 있어요.', 'A seat opens again when someone on this side leaves. Your answer stays here.')}>
+    {sideFull && <StateCard layout="start" kind="blocked" title={copy(`${MEETUP_LANGUAGE_NAMES[choice!.speaks]} 쪽은 자리가 다 찼어요`, `${MEETUP_LANGUAGE_ENGLISH_NAMES[choice!.speaks]} spots are full`)} body={copy('이쪽 멤버가 빠지면 자리가 다시 열려요. 쓴 답변은 그대로 남아 있어요.', 'A seat opens again when someone on this side leaves. Your answer stays here.')}>
       <MeetupWaitlist postId={postId} language={choice} cta="secondary" />
     </StateCard>}
   </>;

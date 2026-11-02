@@ -121,3 +121,13 @@ test('business disclosure lines are translated for display only and kept out of 
   assert.equal(localizeBusinessDisclosure(body, text => translateUi('ko', text)), body);
   assert.equal(plain(visibleTranslationSource('post', '제목', '일반 글 ')).body, '일반 글 ', 'posts without a marker keep their exact source');
 });
+
+test('the line Gling adds to posts it wrote for a business comes out of the body; the business’s own line stays', async () => {
+  const { translateUi } = await import('../src/i18n/index.ts');
+  const { splitProxyDisclosure } = translationSource;
+  assert.deepEqual(plain(splitProxyDisclosure('Fresh pasta every Friday.\n\n비즈니스의 허락을 받아 글링에서 대신 게시한 안내입니다.')), { body: 'Fresh pasta every Friday.', proxy: true });
+  assert.deepEqual(plain(splitProxyDisclosure('지모코 안내\n업체의 허락을 받아 글링에서 대신 게시한 안내입니다.\n\n금요일마다 생면')), { body: '지모코 안내\n\n금요일마다 생면', proxy: true }, 'older posts carry it near the top');
+  const own = 'Fresh pasta every Friday.\n\n비즈니스에서 직접 게시한 안내입니다.';
+  assert.deepEqual(plain(splitProxyDisclosure(own)), { body: own, proxy: false });
+  assert.equal(translateUi('en', '글링이 비즈니스 허락을 받고 대신 올렸어요'), 'Posted by Gling on behalf of this business');
+});

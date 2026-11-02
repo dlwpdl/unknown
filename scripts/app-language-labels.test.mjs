@@ -118,3 +118,18 @@ test('the meetup slot summary shows the existing administrator exemption without
   const scope = { isAdmin: true, slots: { active: 3, limit: 3, available: 0 } };
   assert.equal(renderedText('src/components/my-meetups.tsx', ['slots.active', 'slots.limit'], scope), 'Admin account · unlimited');
 });
+
+test('English wording the owner picked from the 2026-11-01 audit reaches the dictionary', () => {
+  for (const [ko, en, ...values] of [
+    ['{0}에서 집·일자리·중고 찾기', 'Search homes, jobs & more in Vancouver', 'Vancouver'],
+    ['이번 모임 참석 확인 열기', 'Start attendance check'],
+    ['회비', 'Dues'],
+    ['로그인 후 확인할 수 있어요', 'Sign in to see this'],
+    ['{0}자리 남음', 'Spots left: 2', 2],
+    ['호스트 빼고 {0}명', '5 members + host', 5],
+    ['매너 평가', 'Manners rating'],
+    ['Lv{0} · {1}', 'Level 2 · ID check', 2, translateUi('en', '신분증 확인')],
+    ['현재 등록된 단계 · Lv{0}', 'Current level: 2', 2],
+  ]) assert.equal(translateUi('en', ko, ...values), en, ko);
+  assert.equal(translateUi('ko', '현재 등록된 단계 · Lv{0}', 2), '현재 등록된 단계 · Lv2', 'the Korean line reads as before');
+});

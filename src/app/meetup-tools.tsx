@@ -23,14 +23,15 @@ const TITLES: Record<string, string> = { schedule: '일정·참석', session: '�
 /** Host management and attendance. Each area is the same route with a section, so the back gesture and transitions are the platform's. The server still decides what each viewer may do. */
 export default function MeetupToolsRoute() {
   const { postId, kind: kindParam, host, section, sessionId } = useLocalSearchParams<{ postId: string; kind: string; host: string; section?: string; sessionId?: string }>();
-  const { tr } = useLanguage();
+  const { tr, language } = useLanguage();
   const theme = useTheme(), router = useRouter();
   const { isAuthed, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
   const back = () => { if (router.canGoBack()) router.back(); else router.replace(Platform.OS === 'web' ? '/?tag=meetup' : '/(tabs)/meetups'); };
   const id = typeof postId === 'string' ? postId : '';
   const kind = kindParam === 'once' ? 'once' : 'group', own = host === '1';
-  const title = section && TITLES[section] ? tr(TITLES[section]) : own ? tr('호스트 관리') : tr('참석 확인');
+  // 공지 is also the tag on a single notice ("Notice"); this screen lists them.
+  const title = section === 'notices' && language === 'en' ? 'Notices' : section && TITLES[section] ? tr(TITLES[section]) : own ? tr('호스트 관리') : tr('참석 확인');
   const home = own && !section && isAuthed && !!id;
   const body = !isAuthed ? <StateCard kind="blocked" title={tr('로그인 후 확인할 수 있어요')} body={tr('모임에 참여한 계정으로 로그인해 주세요.')} actionLabel={tr('로그인')} onAction={() => promptLogin('모임을 관리하려면 로그인해 주세요.')} />
     : !id ? <StateCard kind="empty" title={tr('이 모임을 찾을 수 없어요.')} body={tr('삭제되었거나 볼 수 없는 모임이에요.')} />

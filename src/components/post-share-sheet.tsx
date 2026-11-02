@@ -136,7 +136,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
         </ScrollView>
         <View style={[styles.footer, { borderColor: theme.line }]}>
           {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite" themeColor="textSecondary">{typeof notice === 'string' ? tr(notice) : tr('{0} 대화로 보냈어요.', notice.conversationTitle)}</ThemedText>}
-          <ThemedText type="small" themeColor="textSecondary">{tr(invite ? tr("초대받은 사람도 로그인 후 참여 신청과 모임장 승인이 필요해요. 상세 집결 정보는 승인된 모임 대화에서만 확인해요.") : tr("글링에서 로그인 후 전체 내용을 확인해요."))}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr(invite ? tr("초대받은 사람도 로그인 후 참여 신청과 호스트 승인이 필요해요. 상세 집결 정보는 승인된 모임 대화에서만 확인해요.") : tr("글링에서 로그인 후 전체 내용을 확인해요."))}</ThemedText>
           <Pressable analyticsId="post.share.external" accessibilityRole="button" accessibilityLabel={tr(invite ? tr("초대 링크 공유") : tr("다른 앱으로 공유"))} disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => void external()}
             style={[styles.button, styles.external, { backgroundColor: theme.accent, borderColor: theme.accent }]}><SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={20} tintColor={theme.accentInk} accessible={false} /><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr(invite ? tr("초대 링크 공유") : tr("다른 앱으로 공유"))}</ThemedText></Pressable>
           {Platform.OS === 'web' && <Pressable analyticsId="post.share.copy" accessibilityRole="button" disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => void external(true)} style={control}><ThemedText type="smallBold">{tr("링크 복사")}</ThemedText></Pressable>}

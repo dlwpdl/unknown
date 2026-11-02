@@ -2,7 +2,7 @@ import { visibleMeetupBody } from './meetup-ai.ts';
 import { postMapBody } from './post-maps.ts';
 import { splitPostPhotoCredits } from './post-photo-credits.ts';
 import { splitPostAttachments } from '../../supabase/functions/_shared/post-links.ts';
-import { BUSINESS_DISCLOSURES, businessDisclosureLines, localizeBusinessDisclosure } from './business-disclosure.ts';
+import { BUSINESS_DISCLOSURES, businessDisclosureLines, localizeBusinessDisclosure, splitProxyDisclosure } from './business-disclosure.ts';
 
 export type TranslationLanguage = 'ko' | 'en';
 export type TranslationKind = 'post' | 'comment';
@@ -24,7 +24,7 @@ export function validateTranslationRequest(value: unknown): TranslationRequest {
   return { kind: input.kind as TranslationKind, id: input.id, language: input.language as TranslationLanguage, source: { title: source.title, body: source.body } };
 }
 
-export { businessDisclosureLines, localizeBusinessDisclosure };
+export { businessDisclosureLines, localizeBusinessDisclosure, splitProxyDisclosure };
 
 export function visibleTranslationSource(kind: TranslationKind, title: string | null, body: string, meetup = false): TranslationSource {
   if (kind === 'comment') return { title: null, body };

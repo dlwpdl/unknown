@@ -39,9 +39,9 @@ const notices = {
   cancelled: ['대기 신청을 취소했어요.', 'You left the waitlist.'],
   invited: ['다음 대기자에게 참여를 제안했어요. 승인되거나 자리가 예약되지는 않아요.', 'Invited the next person on the waitlist. This doesn’t approve them or hold a spot.'],
   empty: ['지금 초대할 대기자가 없어요.', 'No one to invite from the waitlist right now.'],
-  role: ['공동 호스트 상태를 변경했어요.', 'Cohost status updated.'],
-  feeSaved: ['회비를 저장했어요.', 'The fee was saved.'],
-  feeCleared: ['회비를 없앴어요.', 'The fee was removed.'],
+  role: ['공동 호스트 상태를 변경했어요.', 'Co-host updated.'],
+  feeSaved: ['회비를 저장했어요.', 'Dues saved.'],
+  feeCleared: ['회비를 없앴어요.', 'Dues removed.'],
   feePaid: ['회비 낸 사람을 표시했어요.', 'Payment status updated.'],
 } as const;
 const feeErrors: Record<string, readonly [string, string]> = {
@@ -157,8 +157,8 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
   const field = [styles.search, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }];
   const managing = !!state && (state.isHost || state.isCohost);
   const feeOpen = () => { play('selection'); setFeeSheet(true); };
-  const cohostLabel = state?.cohostLimit == null ? say('공동 호스트 · 프로', 'Cohosts · Pro') : state.cohostLimit === 0 ? say('공동 호스트 · 플러스부터', 'Cohosts · Plus and up') : state.cohostLimit >= 100 ? say(`공동 호스트 ${(state.cohosts ?? []).length}명`, `Cohosts: ${(state.cohosts ?? []).length}`) : say(`공동 호스트 ${(state.cohosts ?? []).length}/${state.cohostLimit}명`, `Cohosts ${(state.cohosts ?? []).length}/${state.cohostLimit}`);
-  const errorText = error === 'MEETUP_COHOST_LIMIT' ? say('공동 호스트 자리가 다 찼어요. 멤버십을 올리면 더 둘 수 있어요.', 'All cohost spots are taken. Upgrade your membership to add more.') : error === 'PLUS_REQUIRED' ? say('공동 호스트는 플러스 멤버십부터 둘 수 있어요.', 'Cohosts are available from Plus.') : feeErrors[error] ? say(...feeErrors[error]) : say('상태를 확인하지 못했어요. 연결과 권한, 멤버십을 확인해 주세요.', 'Couldn’t check the status. Check your connection, access and membership.');
+  const cohostLabel = state?.cohostLimit == null ? say('공동 호스트 · 프로', 'Co-hosts · Pro') : state.cohostLimit === 0 ? say('공동 호스트 · 플러스부터', 'Co-hosts · Plus and up') : state.cohostLimit >= 100 ? say(`공동 호스트 ${(state.cohosts ?? []).length}명`, `Co-hosts: ${(state.cohosts ?? []).length}`) : say(`공동 호스트 ${(state.cohosts ?? []).length}/${state.cohostLimit}명`, `Co-hosts ${(state.cohosts ?? []).length}/${state.cohostLimit}`);
+  const errorText = error === 'MEETUP_COHOST_LIMIT' ? say('공동 호스트 자리가 다 찼어요. 멤버십을 올리면 더 둘 수 있어요.', 'All co-host spots are taken. Upgrade your membership to add more.') : error === 'PLUS_REQUIRED' ? say('공동 호스트는 플러스 멤버십부터 둘 수 있어요.', 'Co-hosts are available from Plus.') : feeErrors[error] ? say(...feeErrors[error]) : say('상태를 확인하지 못했어요. 연결과 권한, 멤버십을 확인해 주세요.', 'Couldn’t check the status. Check your connection, access and membership.');
   const refresh = (error || metricError) && <Pressable analyticsId="meetup_host_tools.control.11" accessibilityRole="button" disabled={locked} accessibilityState={{ disabled: locked }} style={button} onPress={() => { play('selection'); setLoading(true); setMetricError(false); setRetry(value => value + 1); }}><ThemedText type="small" style={styles.bodyText}>{say('다시 불러오기', 'Try again')}</ThemedText></Pressable>;
   const status = <>
     {!!error && <ThemedText type="small" accessibilityRole="alert" themeColor="danger" style={styles.helper}>{errorText}</ThemedText>}
@@ -182,15 +182,15 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
     {loading && !state && <ThemedText type="small" accessibilityLiveRegion="polite" style={styles.helper}>{say('운영 상태 불러오는 중…', 'Loading meetup status…')}</ThemedText>}
     {state && <>
       {show('role') && ownInvitation && <View style={[styles.panel, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        <ThemedText type="small" style={styles.bodyText}>{say('공동 호스트로 초대받았어요. 수락하면 회차, 참석 확인, 대기자 초대를 함께 해요. 비공개 신청 답변과 계정 권한은 공유되지 않아요.', 'You were invited to cohost. Accept to help with sessions, attendance and waitlist invitations. Private application answers and account access stay private.')}</ThemedText>
+        <ThemedText type="small" style={styles.bodyText}>{say('공동 호스트로 초대받았어요. 수락하면 회차, 참석 확인, 대기자 초대를 함께 해요. 비공개 신청 답변과 계정 권한은 공유되지 않아요.', 'You were invited to co-host. Accept to help with sessions, attendance and waitlist invitations. Private application answers and account access stay private.')}</ThemedText>
         <View style={styles.row}>
-          <HostPill analyticsId="meetup_host_tools.control.2" label={say('공동 호스트 수락', 'Accept cohost invitation')} onPress={() => void act(() => respondMeetupCohost(supabase, postId, true), 'role', value => value.available && value.cohosts.some(member => member.userId === viewer && member.status === 'pending'))} disabled={!state.available} selected locked={locked} />
+          <HostPill analyticsId="meetup_host_tools.control.2" label={say('공동 호스트 수락', 'Accept co-host invitation')} onPress={() => void act(() => respondMeetupCohost(supabase, postId, true), 'role', value => value.available && value.cohosts.some(member => member.userId === viewer && member.status === 'pending'))} disabled={!state.available} selected locked={locked} />
           <HostPill analyticsId="meetup_host_tools.control.3" label={say('초대 거절', 'Decline invitation')} onPress={() => void act(() => respondMeetupCohost(supabase, postId, false), 'role', value => value.available && value.cohosts.some(member => member.userId === viewer && member.status === 'pending'))} locked={locked} />
         </View>
       </View>}
       {show('role') && state.isCohost && <View style={[styles.panel, { backgroundColor: theme.card, borderColor: theme.line }]}>
-        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{say('공동 호스트예요. 회차 등록, 참석 확인, 대기자 초대를 함께해요. 신청 승인과 비공개 답변은 호스트만 관리해요.', 'You’re a cohost. You help add sessions, check attendance and invite from the waitlist. Only the host handles requests and private answers.')}</ThemedText>
-        <HostPill analyticsId="meetup_host_tools.control.4" label={say('공동 호스트 그만하기', 'Stop cohosting')} onPress={() => confirmRemoval(say('공동 호스트 그만하기', 'Stop cohosting'), say('공동 호스트를 그만할까요? 회차와 참석 확인을 더 이상 함께 관리하지 않아요.', 'Stop cohosting? You will no longer help with sessions and attendance.'), () => void act(() => removeMeetupCohost(supabase, postId, me.id), 'role', value => value.isCohost))} danger locked={locked} />
+        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{say('공동 호스트예요. 회차 등록, 참석 확인, 대기자 초대를 함께해요. 신청 승인과 비공개 답변은 호스트만 관리해요.', 'You’re a co-host. You help add sessions, check attendance and invite from the waitlist. Only the host handles requests and private answers.')}</ThemedText>
+        <HostPill analyticsId="meetup_host_tools.control.4" label={say('공동 호스트 그만하기', 'Stop co-hosting')} onPress={() => confirmRemoval(say('공동 호스트 그만하기', 'Stop co-hosting'), say('공동 호스트를 그만할까요? 회차와 참석 확인을 더 이상 함께 관리하지 않아요.', 'Stop co-hosting? You will no longer help with sessions and attendance.'), () => void act(() => removeMeetupCohost(supabase, postId, me.id), 'role', value => value.isCohost))} danger locked={locked} />
       </View>}
       {show('waitlist') && managing && <View>
         <SectionLabel>{say(`대기 ${state.waitlistCount ?? '—'}명`, `${state.waitlistCount ?? '—'} waiting`)}</SectionLabel>
@@ -228,11 +228,11 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
         </View>}
         {show('cohosts') && <View>
           <SectionLabel>{cohostLabel}</SectionLabel>
-          <ThemedText type="small" themeColor="textSecondary" style={styles.helperGap}>{say('승인된 멤버가 수락하면 회차와 참석 확인을 함께 맡아요. 비공개 답변과 계정 권한은 공유하지 않아요.', 'Approved members can cohost once they accept. Private answers and account access aren’t shared.')}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.helperGap}>{say('승인된 멤버가 수락하면 회차와 참석 확인을 함께 맡아요. 비공개 답변과 계정 권한은 공유하지 않아요.', 'Approved members can co-host once they accept. Private answers and account access aren’t shared.')}</ThemedText>
           {state.cohosts.some(member => identityById.has(member.userId)) && <ListCard>{state.cohosts.map(member => {
             const identity = identityById.get(member.userId);
             return identity ? person(identity.displayName, member.status === 'accepted' ? say('수락함', 'Accepted') : say('수락 대기', 'Awaiting acceptance'),
-              <View key={member.userId}><HostPill analyticsId="meetup_host_tools.control.9" label={say('해제', 'Remove')} onPress={() => confirmRemoval(say('공동 호스트 해제', 'Remove cohost'), say(`${identity.displayName}님을 공동 호스트에서 해제할까요?`, `Remove ${identity.displayName} as cohost?`), () => void act(() => removeMeetupCohost(supabase, postId, member.userId), 'role', value => value.isHost && value.cohosts.some(current => current.userId === member.userId)))} danger a11y={say(`${identity.displayName} 공동 호스트 해제`, `Remove ${identity.displayName} as cohost`)} locked={locked} /></View>) : null;
+              <View key={member.userId}><HostPill analyticsId="meetup_host_tools.control.9" label={say('해제', 'Remove')} onPress={() => confirmRemoval(say('공동 호스트 해제', 'Remove co-host'), say(`${identity.displayName}님을 공동 호스트에서 해제할까요?`, `Remove ${identity.displayName} as co-host?`), () => void act(() => removeMeetupCohost(supabase, postId, member.userId), 'role', value => value.isHost && value.cohosts.some(current => current.userId === member.userId)))} danger a11y={say(`${identity.displayName} 공동 호스트 해제`, `Remove ${identity.displayName} as co-host`)} locked={locked} /></View>) : null;
           })}</ListCard>}
           {state.candidates.length > 0 && <View style={styles.gapTop}><HostWide analyticsId="meetup.cohost.invite-open" label={say('멤버 중에서 초대', 'Invite a member')} onPress={() => { play('selection'); setInviteSheet(true); }} disabled={!canInviteCohost} locked={locked} /></View>}
           {state.candidates.length === 0 && state.cohosts.length === 0 && <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{say('승인된 멤버가 생기면 초대할 수 있어요.', 'You can invite members after approving them.')}</ThemedText>}

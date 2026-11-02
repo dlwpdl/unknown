@@ -53,7 +53,7 @@ function Stat({ label, value, total }: { label: string; value: string; total?: s
 
 /** Host home: where the meetup stands, the one thing to do next, and the five areas to manage. */
 export function MeetupHostHome({ postId, kind }: { postId: string; kind: 'once' | 'group' }) {
-  const { tr, locale } = useLanguage();
+  const { tr, locale, language } = useLanguage();
   const router = useRouter(), { play } = useInteractionFeedback();
   const [home, setHome] = useState<Home | null>(null), [failed, setFailed] = useState(false), [revision, setRevision] = useState(0);
   // Times on this screen are judged at the time the home data arrived.
@@ -109,7 +109,7 @@ export function MeetupHostHome({ postId, kind }: { postId: string; kind: 'once' 
         <ListCard>
           <ListRow analyticsId="meetup.home.schedule" title={tr('일정·참석')} detail={next ? tr('{0} {1}', live ? tr('이번 회차') : tr('다음 회차'), sessionWhen(next.startsAt, locale, now, tr)) : tr('회차를 추가해 보세요')} onPress={() => section('schedule')} />
           <ListRow analyticsId="meetup.home.members" title={tr('멤버')} detail={tr('{0}명 · 대기 {1}명', room?.memberCount ?? members.length + 1, home.tools.waitlistCount ?? 0)} onPress={() => section('members')} />
-          <ListRow analyticsId="meetup.home.notices" title={tr('공지')} detail={scheduled ? tr('걸린 공지 {0}개 · 예약 {1}개', notices.length, scheduled) : tr('걸린 공지 {0}개', notices.length)} onPress={() => section('notices')} />
+          <ListRow analyticsId="meetup.home.notices" title={language === 'en' ? 'Notices' : '공지'} detail={scheduled ? tr('걸린 공지 {0}개 · 예약 {1}개', notices.length, scheduled) : tr('걸린 공지 {0}개', notices.length)} onPress={() => section('notices')} />
           {home.tools.available && <ListRow analyticsId="meetup.home.dues" title={tr('회비')} detail={home.fee ? (unpaid ? tr('{0} · {1}명 아직', meetupFeeAmount(home.fee.amount), unpaid) : tr('{0} · 다 냈어요', meetupFeeAmount(home.fee.amount))) : tr('받지 않아요')} onPress={() => section('dues')} />}
           <ListRow analyticsId="meetup.home.settings" title={tr('운영 설정')} detail={[!home.tools.cohostLimit ? tr('공동 호스트 없음') : home.tools.cohostLimit >= 100 ? tr('공동 호스트 {0}명', home.tools.cohosts.length) : tr('공동 호스트 {0}/{1}', home.tools.cohosts.length, home.tools.cohostLimit), auto ? tr('자동 승인 켜짐') : tr('자동 승인 꺼짐')].join(' · ')} onPress={() => section('settings')} />
         </ListCard>

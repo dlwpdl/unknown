@@ -67,7 +67,7 @@ export default function TrustScreen() {
         <View style={styles.heroHead}>
           <View style={styles.flex}>
             <ThemedText type="small" themeColor="textSecondary">{tr("현재 단계")}</ThemedText>
-            <ThemedText accessibilityRole="header" style={styles.heroTitle}>Lv{auth.trustLevel} · {current.title}</ThemedText>
+            <ThemedText accessibilityRole="header" style={styles.heroTitle}>{tr('Lv{0} · {1}', auth.trustLevel, current.title)}</ThemedText>
           </View>
           <View style={[styles.heroIcon, { backgroundColor: theme.backgroundElement }]}>
             <SymbolView name={{ ios: 'checkmark.seal', android: 'verified', web: 'verified' }} size={28} tintColor={theme.accent} />
@@ -80,7 +80,7 @@ export default function TrustScreen() {
         </ThemedText>
         <View style={[styles.account, { borderTopColor: theme.line }]}>
           <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold">{auth.me.nickname.trim().slice(0, 1)}</ThemedText></View>
-          <View style={styles.flex}><ThemedText type="smallBold">{auth.me.nickname}</ThemedText><ThemedText type="small" themeColor="textSecondary">{auth.trustLevel === 1 ? tr("확인된 조건 · 소셜 계정 로그인") : tr("현재 등록된 단계 · Lv") + auth.trustLevel}</ThemedText></View>
+          <View style={styles.flex}><ThemedText type="smallBold">{auth.me.nickname}</ThemedText><ThemedText type="small" themeColor="textSecondary">{auth.trustLevel === 1 ? tr("확인된 조건 · 소셜 계정 로그인") : tr('현재 등록된 단계 · Lv{0}', auth.trustLevel)}</ThemedText></View>
           {auth.trustLevel === 1 && <SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} size={20} tintColor={theme.accent} />}
         </View>
       </View>
