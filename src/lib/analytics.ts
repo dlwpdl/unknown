@@ -5,7 +5,7 @@ export function analyticsScreen(pathname: string): string | null {
   if (/^\/events\/[^/]+$/.test(path)) return 'event-detail';
   if (/^\/places\/[^/]+$/.test(path)) return 'place-detail';
   const screens: Record<string, string> = {
-    '': 'feed', '/map': 'discovery', '/events': 'events', '/places': 'places', '/meetups': 'meetups', '/compose': 'write', '/chat': 'chat',
+    '': 'feed', '/map': 'discovery', '/discover': 'discovery', '/events': 'events', '/places': 'places', '/meetups': 'meetups', '/compose': 'write', '/chat': 'chat',
     '/post': 'post', '/meetup-create': 'meetup-create', '/meetup-join': 'meetup-join',
     '/meetup-profile': 'meetup-profile', '/meetup-application': 'meetup-application',
     '/profile/inbox': 'inbox', '/profile/notifications': 'notification-settings',

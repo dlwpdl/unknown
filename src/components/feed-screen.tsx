@@ -58,7 +58,7 @@ import { TabContent } from '@/components/tab-content';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
-import { ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
+import { ControlMetrics, ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useAuth } from '@/lib/auth';
@@ -120,6 +120,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const { play } = useInteractionFeedback();
   const insets = useSafeAreaInsets();
   const bottomClear = insets.bottom + TabBarHeight; // 탭바 + 홈 인디케이터 실측 높이
+  // 글쓰기 탭 대신 떠 있는 버튼 (owner 2026-11-01 A안). 웹은 아래 탭에 글쓰기가 그대로 있다.
+  const writeFab = Platform.OS !== 'web' && !meetupsOnly;
+  const writeFabCompact = viewportWidth < 380; // 폴드 바깥 화면 같은 좁은 폭에서는 + 하나만
+  // 실측: iOS 탭 화면의 insets.bottom은 이미 탭바까지 포함(탭마다 SafeAreaProvider), 안드로이드 탭 내용은 탭바 위에서 끝난다.
   const [posts, setPosts] = useState<Post[]>([]);
   const [visibleFeedIds, setVisibleFeedIds] = useTranslationVisibleIds();
   const [visibleSearchIds, setVisibleSearchIds] = useTranslationVisibleIds();
@@ -850,7 +854,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             void refreshFeed().catch(() => Alert.alert(t.feed.refreshErrorTitle, t.feed.refreshErrorBody)).finally(() => setRefreshing(false));
           }}
           keyExtractor={(p, index) => Array.isArray(p) ? `grid:${p[0].id}` : p?.id ?? (index === 0 ? 'journal-intro' : 'feed-sort')}
-          contentContainerStyle={[styles.listContent, { paddingBottom: bottomClear + Spacing.three }]}
+          contentContainerStyle={[styles.listContent, { paddingBottom: bottomClear + Spacing.three + (writeFab ? ControlMetrics.action + Spacing.three : 0) }]}
           ItemSeparatorComponent={({ leadingItem }) => leadingItem == null ? null : <View style={{ height: (businessCategory && !businessGrid) || (listingCategory && !usedGrid) ? 0 : Spacing.four }} />}
           ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : feedState ?? undefined}
           renderItem={({ item, index }) => item == null && index === 1 && showFeedSort ? (
@@ -872,14 +876,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 <View style={styles.journalStatusRow}>
                   <ThemedText type="smallBold" themeColor="textSecondary" style={styles.journalDate}>{todayLabel(appLocale)}</ThemedText>
                   {cityLoading && <View style={styles.cityLoadingStatus}><GlingLoader color={theme.accent} size={18} accessibilityLabel={tr("{0} 소식 불러오는 중", tr(city.name))} /><ThemedText type="small" themeColor="textSecondary">{tr("소식 불러오는 중")}</ThemedText></View>}
-                  {/* 글자 없던 위쪽 지도 아이콘을 렌트·중고 버튼으로 옮김 (owner 2026-10-30), 같은 /map 화면을 렌트·중고만 골라 연다. */}
-                  {!meetupsOnly && <Pressable analyticsId="discovery.open" accessibilityRole="button" accessibilityLabel={tr('렌트·중고 지도로 보기')}
-                    onPress={() => { play('reaction'); router.push({ pathname: '/map', params: { category: 'housing,used' } }); }}
-                    style={({ pressed }) => [ControlStyles.pill, styles.mapEntry, controlPresentation(theme, { pressed, reducedMotion }).container]}>
-                    <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={IconSize.inline} tintColor={theme.accent} />
-                    <ThemedText type="label">{tr('렌트·중고')}</ThemedText>
-                    <ThemedText type="supporting" themeColor="accent">{tr('지도로 보기')}</ThemedText>
-                  </Pressable>}
                 </View>
                 {meetupsOnly && <ThemedText accessibilityRole="header" style={styles.journalTitle}>{t.feed.meetupTitle}</ThemedText>}
               </View>
@@ -920,7 +916,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             />}{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !detailVisible && !writing && !searching)) && feedAdPosition(index - (showFeedSort ? 2 : 1), feedRows.length) && <FeedAd key={`ad-after-${item.id}`} />}</Animated.View></Reanimated.View>
           )}
         />
-
+        {writeFab && <Pressable analyticsId="feed.write" accessibilityRole="button" accessibilityLabel={t.tabs.write} onPress={openWriter}
+          style={({ pressed }) => [ControlStyles.pill, styles.writeFab, writeFabCompact && styles.writeFabCompact, { bottom: (Platform.OS === 'ios' ? insets.bottom : 0) + Spacing.three }, controlPresentation(theme, { tone: 'primary', pressed, reducedMotion }).container]}>
+          <SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} size={IconSize.toolbar} tintColor={theme.accentInk} />
+          {!writeFabCompact && <ThemedText type="label" style={{ color: theme.accentInk }}>{t.tabs.write}</ThemedText>}
+        </Pressable>}
       </View></SafeAreaView>
 
       <Modal visible={categorySheet} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" onRequestClose={() => setCategorySheet(false)}>
@@ -1469,7 +1469,8 @@ const styles = StyleSheet.create({
   unreadText: { fontSize: 10, lineHeight: 14, fontVariant: ['tabular-nums'] },
   journalIntro: { paddingTop: Spacing.three, gap: Spacing.one },
   journalStatusRow: { minHeight: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
-  mapEntry: { flexDirection: 'row', gap: Spacing.one, marginLeft: 'auto', borderWidth: 1 },
+  writeFab: { position: 'absolute', right: Spacing.three, minHeight: ControlMetrics.action, flexDirection: 'row', gap: Spacing.one, borderWidth: 1 },
+  writeFabCompact: { width: ControlMetrics.action, paddingHorizontal: 0 },
   cityLoadingStatus: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   journalDate: { fontSize: 12, lineHeight: 18, letterSpacing: 0.8 },
   feedPlaceholder: { width: '100%', height: 180, borderRadius: 16 },

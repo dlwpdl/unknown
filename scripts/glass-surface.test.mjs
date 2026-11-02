@@ -145,7 +145,7 @@ test('native tabs follow the palette and preserve feedback, badges and Android b
       'react-native': { Platform: { OS: platform } },
       '@/constants/theme': { Colors },
       '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => Colors[scheme] },
-      '@/i18n/ko': { t: { tabs: { today: 'Today', meetups: 'Meetups', write: 'Write', chat: 'Chat', notifications: 'Notifications' } } },
+      '@/i18n/ko': { t: { tabs: { today: 'Today', meetups: 'Meetups', write: 'Write', map: 'Map', chat: 'Chat', notifications: 'Notifications' } } },
       '@/hooks/use-unread-count': { useUnreadCount: type => type === 'chat' ? 120 : 3 },
       '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     });
@@ -161,9 +161,12 @@ test('native tabs follow the palette and preserve feedback, badges and Android b
     assert.equal(props.shadowColor, colors.line);
     assert.equal(props.indicatorColor, colors.backgroundElement);
     assert.equal(props.disableTransparentOnScrollEdge, true);
-    for (const name of ['compose', 'chat']) props.screenListeners({ route: { name } }).tabPress();
-    assert.deepEqual(feedback, ['reaction', 'selection']);
-    assert.deepEqual(Array.from(props.children, child => child.props.name), ['index', 'meetups', 'compose', 'chat', 'notifications']);
+    for (const name of ['discover', 'chat']) props.screenListeners({ route: { name } }).tabPress();
+    assert.deepEqual(feedback, ['selection', 'selection']);
+    // The map took the compose slot (owner 2026-11-01); compose stays only as a hidden route for old links.
+    assert.deepEqual(Array.from(props.children, child => child.props.name), ['index', 'meetups', 'discover', 'chat', 'notifications', 'compose']);
+    assert.equal(props.children[2].props.children[0].props.children, 'Map');
+    assert.equal(props.children[5].props.hidden, true);
     assert.equal(props.children[3].props.children[2].props.children, '99+');
     assert.equal(props.children[4].props.children[2].props.children, '3');
   }

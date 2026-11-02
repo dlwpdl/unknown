@@ -18,7 +18,7 @@ export default function AppTabs() {
 
   return (
     <NativeTabs
-      screenListeners={({ route }) => ({ tabPress: () => play(route.name === 'compose' ? 'reaction' : 'selection') })}
+      screenListeners={({ route }) => ({ tabPress: () => play('selection') })}
       disableTransparentOnScrollEdge
       backgroundColor={Platform.OS === 'ios' ? undefined : colors.background}
       blurEffect={Platform.OS === 'ios' ? colors === Colors.dark ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight' : undefined}
@@ -41,11 +41,12 @@ export default function AppTabs() {
         {business ? <NativeTabs.Trigger.Icon sf="storefront" md="storefront" /> : <NativeTabs.Trigger.Icon sf={{ default: 'person.2', selected: 'person.2.fill' }} md="groups" />}
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="compose">
-        <NativeTabs.Trigger.Label>{t.tabs.write}</NativeTabs.Trigger.Label>
+      {/* 지도가 글쓰기 탭 자리로 (owner 2026-11-01 A안). 글쓰기는 오늘 화면의 떠 있는 버튼. */}
+      <NativeTabs.Trigger name="discover">
+        <NativeTabs.Trigger.Label>{t.tabs.map}</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          sf="square.and.pencil"
-          md="edit_square"
+          sf={{ default: 'map', selected: 'map.fill' }}
+          md="map"
         />
       </NativeTabs.Trigger>
 
@@ -66,6 +67,9 @@ export default function AppTabs() {
         />
         {unreadCount > 0 && <NativeTabs.Trigger.Badge>{unreadCount > 99 ? '99+' : String(unreadCount)}</NativeTabs.Trigger.Badge>}
       </NativeTabs.Trigger>
+
+      {/* 옛 /compose 링크는 +native-intent가 오늘 화면 글쓰기로 바꾼다. */}
+      <NativeTabs.Trigger name="compose" hidden />
     </NativeTabs>
   );
 }

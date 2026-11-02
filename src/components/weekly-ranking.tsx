@@ -173,15 +173,14 @@ function Row({ entry, last, onPress }: { entry: WeeklyRankingEntry; last: boolea
   return (
     <Pressable analyticsId="components_weekly-ranking.pressable.2" onPress={async () => { if (busy) return; setBusy(true); try { await onPress(); } finally { setBusy(false); } }} accessibilityRole="button"
       accessibilityState={{ busy }}
-      accessibilityLabel={tr("{0}위 {1}, {2}, 조회 {3}", (entry.rank), (entry.title), (entry.nickname), (count(entry.views)))}
+      accessibilityLabel={tr("{0}위 {1}, {2}", (entry.rank), (entry.title), (entry.nickname))}
       style={({ pressed }) => [styles.row, !last && { borderBottomWidth: 1, borderBottomColor: theme.line },
         pressed && { backgroundColor: theme.backgroundSelected, transform: [{ scale: reducedMotion ? 1 : 0.985 }] }]}>
       <ThemedText type="smallBold" style={[styles.rank, { color: entry.rank <= 3 ? theme.accent : theme.textSecondary }]}>
         {entry.rank}
       </ThemedText>
       <ThemedText type="small" numberOfLines={1} style={styles.title}>{entry.title}</ThemedText>
-      {busy ? <GlingLoader color={theme.accent} size={18} accessibilityLabel={tr("글 여는 중")} />
-        : <ThemedText type="small" themeColor="textSecondary" style={styles.views}>{count(entry.views)}</ThemedText>}
+      {busy && <GlingLoader color={theme.accent} size={18} accessibilityLabel={tr("글 여는 중")} />}
     </Pressable>
   );
 }
@@ -199,5 +198,4 @@ const styles = StyleSheet.create({
   row: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
   rank: { width: 18, textAlign: 'center', fontVariant: ['tabular-nums'] },
   title: { flex: 1, minWidth: 0 },
-  views: { fontSize: 12, fontVariant: ['tabular-nums'] },
 });

@@ -313,16 +313,21 @@ test('Home magnifier opens the common search route without clearing the current 
   assert.ok(app.feedback.includes('selection'));
 });
 
-test('Home search box says what it finds and the rent·used button opens the existing map filtered to both', () => {
+test('Home search box says what it finds; the map is a tab, and writing is a floating button on native', () => {
   const app = screen(), tree = app.render();
   const search = nodes(tree).find(node => node.props?.analyticsId === 'components_feed-screen.pressable.2');
   assert.equal(search.props.accessibilityRole, 'search');
   assert.equal(search.props.accessibilityLabel, '밴쿠버에서 집·일자리·중고 찾기');
   assert.ok(nodes(search).some(node => node.props?.children === '밴쿠버에서 집·일자리·중고 찾기'), 'the hint is visible, not only spoken');
-  assert.equal(nodes(tree).some(node => node.props?.analyticsId === 'discovery.open'), false, 'no unlabeled map icon stays in the header');
-  const map = nodes(app.list().renderItem({ item: null, index: 0 })).find(node => node.props?.analyticsId === 'discovery.open');
-  assert.equal(map.props.accessibilityLabel, '렌트·중고 지도로 보기');
-  map.props.onPress();
-  assert.deepEqual(JSON.parse(JSON.stringify(app.routes.at(-1))), { pathname: '/map', params: { category: 'housing,used' } });
-  assert.equal(app.feedback.at(-1), 'reaction');
+  assert.equal(nodes(tree).some(node => node.props?.analyticsId === 'discovery.open'), false, 'no map icon stays in the header');
+  assert.equal(nodes(app.list().renderItem({ item: null, index: 0 })).some(node => node.props?.analyticsId === 'discovery.open'), false, 'the rent·used map pill is gone; the map is a tab');
+  assert.equal(nodes(tree).some(node => node.props?.analyticsId === 'feed.write'), false, 'web keeps its write tab');
+  for (const [width, compact] of [[390, false], [344, true]]) {
+    const native = screen({ os: 'ios', width });
+    const write = nodes(native.render()).find(node => node.props?.analyticsId === 'feed.write');
+    assert.equal(write.props.accessibilityLabel, t.tabs.write);
+    assert.equal(nodes(write).some(node => node.props?.children === t.tabs.write), !compact, 'a narrow screen (Fold cover) keeps only the + icon');
+    write.props.onPress();
+    assert.equal(native.feedback.at(-1), 'reaction');
+  }
 });

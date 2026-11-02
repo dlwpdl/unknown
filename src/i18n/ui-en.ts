@@ -2067,7 +2067,7 @@ export const uiEnglish: Record<string, string> = {
   "이번 주 많이 읽은 글 {0}편, 눌러서 전체 보기": "Top {0} stories this week. Tap to see all",
   "이번 주": "This week · No.",
   "위": "",
-  "{0}위 {1}, {2}, 조회 {3}": "No. {0}: {1}, {2}, {3} views",
+  "{0}위 {1}, {2}": "No. {0}: {1}, {2}",
   "글 여는 중": "Opening post",
   "글링에 오신 걸 환영해요,": "Welcome to Gling,",
   "님!": "!",

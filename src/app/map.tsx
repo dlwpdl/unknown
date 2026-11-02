@@ -61,14 +61,14 @@ type Result = { key: string; page: number; items: DiscoveryItem[]; cursor: FeedC
 const freshMapFix = (fix: LocationFix) => isFreshLocation(fix) && fix.accuracy! <= 250 && Date.now() - fix.measuredAt <= 120000;
 const located = (item: DiscoveryItem): item is DiscoveryItem & PostPin => item.latitude !== null && item.longitude !== null;
 
-export default function MapScreen({ onClose, initialFilter }: { onClose?: () => void; initialFilter?: DiscoveryFilter } = {}) {
+export default function MapScreen({ onClose, initialFilter, tab = false }: { onClose?: () => void; initialFilter?: DiscoveryFilter; tab?: boolean } = {}) {
   const { city: selectedCity } = useCommunityCity();
   const { cityId, placeId } = useLocalSearchParams<{ cityId?: string; placeId?: string }>();
   const city = (!onClose && CITIES.find(value => value.id === cityId)) || selectedCity;
   const { isAuthed, me } = useAuth();
-  return <CityMap key={`${city.id}:${isAuthed ? me.id : 'guest'}`} city={city} placeId={onClose ? undefined : placeId} onClose={onClose} initialFilter={initialFilter} />;
+  return <CityMap key={`${city.id}:${isAuthed ? me.id : 'guest'}`} city={city} placeId={onClose ? undefined : placeId} onClose={onClose} initialFilter={initialFilter} tab={tab} />;
 }
-function CityMap({ city, placeId, onClose, initialFilter }: { city: (typeof CITIES)[number]; placeId?: string; onClose?: () => void; initialFilter?: DiscoveryFilter }) {
+function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof CITIES)[number]; placeId?: string; onClose?: () => void; initialFilter?: DiscoveryFilter; tab: boolean }) {
   const { tr, language } = useLanguage();
   const searchLabel = language === 'en' ? 'Search businesses, places and people' : '비즈니스·장소·사람·이야기 검색';
   const theme = useTheme(), router = useRouter(), reduced = useReducedMotion();
@@ -295,9 +295,10 @@ function CityMap({ city, placeId, onClose, initialFilter }: { city: (typeof CITI
   </>;
   const chooseNearest = () => { play('selection'); setSortBy('near'); if (!userLocation) void locate(); };
   const chooseDiscount = () => { play('selection'); setSortBy('discount'); };
+  // As a tab there is no back button; the bottom edge already stops above the tab bar (iOS inset includes it, Android content ends at it).
   return <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]} edges={['top', 'bottom', 'left', 'right']}>
-    <View style={styles.header}>
-      <Pressable analyticsId="discovery.back" accessibilityRole="button" accessibilityLabel={tr("지도를 닫고 이전 화면으로")} onPress={() => { play('selection'); if (onClose) onClose(); else if (router.canGoBack()) router.back(); else router.replace('/'); }} style={styles.icon}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={21} tintColor={theme.text} /></Pressable>
+    <View style={[styles.header, tab && styles.tabHeader]}>
+      {!tab && <Pressable analyticsId="discovery.back" accessibilityRole="button" accessibilityLabel={tr("지도를 닫고 이전 화면으로")} onPress={() => { play('selection'); if (onClose) onClose(); else if (router.canGoBack()) router.back(); else router.replace('/'); }} style={styles.icon}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={21} tintColor={theme.text} /></Pressable>}
       <View style={styles.heading}><ThemedText accessibilityRole="header" style={styles.title}>{tr('{0} 지도', tr(city.name))}</ThemedText></View>
       {mode === 'list' && <Pressable analyticsId="discovery.refresh" accessibilityRole="button" accessibilityLabel={tr("지도 결과 새로고침")} onPress={() => { play('selection'); refresh(); }} style={styles.icon}><SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={21} tintColor={theme.text} /></Pressable>}
       <Pressable analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={mode === 'map' ? tr("리스트 보기") : tr("지도 보기")} onPress={() => changeMode(mode === 'map' ? 'list' : 'map')} style={styles.icon}><SymbolView name={mode === 'map' ? { ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' } : { ios: 'map', android: 'map', web: 'map' }} size={21} tintColor={theme.text} /></Pressable>
@@ -441,7 +442,7 @@ function Directions({ item }: { item: DiscoveryItem & PostPin }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 }, header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 8 },
+  screen: { flex: 1 }, header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 8 }, tabHeader: { paddingLeft: 16 },
   icon: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }, heading: { flex: 1, gap: 2 }, title: { fontSize: 20, lineHeight: 28, fontWeight: '800', letterSpacing: -0.5 },
   unifiedSearch: { flex: 1, minWidth: 0, minHeight: 46, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }, unifiedSearchText: { flex: 1, minWidth: 0 },
   search: { marginHorizontal: 16, marginBottom: 10, borderWidth: StyleSheet.hairlineWidth, borderRadius: 14, flexDirection: 'row', alignItems: 'center', paddingLeft: 14, paddingRight: 4 }, input: { minHeight: 46, flex: 1, minWidth: 0, paddingHorizontal: 10, fontSize: 14 },
@@ -466,7 +467,7 @@ const styles = StyleSheet.create({
   content: { flex: 1, minHeight: 180 }, mapControls: { position: 'absolute', right: 22, top: 22, gap: 8 }, mapControl: { minWidth: 44, minHeight: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   listLinkText: { flexShrink: 1, alignItems: 'center' },
   listLink: { position: 'absolute', alignSelf: 'center', minHeight: 56, maxWidth: '55%', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  selected: { position: 'absolute', bottom: 56, left: 16, right: 16, maxHeight: '45%', borderRadius: 18, borderWidth: 1, padding: 12, gap: 12, shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 }, selectedScroll: { flexShrink: 1, minHeight: 0 }, selectedContent: { gap: 12 },
+  selected: { position: 'absolute', bottom: 56, left: 16, right: 16, maxWidth: 560, maxHeight: '45%', borderRadius: 18, borderWidth: 1, padding: 12, gap: 12, shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 }, selectedScroll: { flexShrink: 1, minHeight: 0 }, selectedContent: { gap: 12 },
   cardBody: { minHeight: 84, flexDirection: 'row', alignItems: 'center', gap: 12 }, thumbnail: { width: 72, height: 84, borderRadius: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, cardText: { flex: 1, minWidth: 0, gap: 3 }, badge: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
   housingPrice: { fontSize: 18, lineHeight: 25, fontWeight: '700' },
   directions: { flexDirection: 'row', gap: 8 }, direction: { flex: 1, minHeight: 37, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },

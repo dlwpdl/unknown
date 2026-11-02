@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { appPathForLink } from '../src/lib/app-links.ts';
+import vm from 'node:vm';
+import ts from 'typescript';
 
 const site = 'https://gling.ej-entertainment.com';
 const id = 'B20B2F28-5902-461D-8FFC-FFEF3F23B2C0', lower = id.toLowerCase();
@@ -30,6 +32,15 @@ test('unknown or malformed site links land on home without throwing', () => {
 test('scheme links, other hosts and in-app paths pass through unchanged', () => {
   for (const link of ['gling://invite?code=ABCDEFGH', 'gling://auth/callback?code=x', 'https://example.com/posts/x', 'http://gling.ej-entertainment.com/posts/x',
     '/notifications', '/post/abc', 'com.googleusercontent.apps.x:/oauth']) assert.equal(appPathForLink(link), link, link);
+});
+
+test('old compose-tab links open the writer on home now that the tab is the map', () => {
+  const exports = {};
+  const source = ts.transpileModule(readFileSync(new URL('../src/app/+native-intent.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+  vm.runInNewContext(source, { exports, require: () => ({ appPathForLink }) });
+  const open = path => exports.redirectSystemPath({ path, initial: true });
+  for (const link of ['gling://compose', '/compose', '/compose?x=1']) assert.equal(open(link), '/?compose=1', link);
+  for (const link of ['gling://composer', '/compose-draft', `${site}/compose`, '/notifications']) assert.notEqual(open(link), '/?compose=1', link);
 });
 
 test('association files claim only paths the app maps, for the release identities', () => {

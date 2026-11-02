@@ -25,6 +25,7 @@ export const t = {
     today: '홈',
     meetups: '모임',
     write: '글쓰기',
+    map: '지도',
     chat: '채팅',
     profile: '나',
     notifications: '알림',
