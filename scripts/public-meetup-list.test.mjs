@@ -25,7 +25,7 @@ function mount(file, name, initialProps = {}) {
   };
   const exports = {};
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL(`../src/components/public-web/${file}`, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
-    navigator, window: { location: { pathname: '/vancouver' } },
+    navigator, window: { location: { pathname: '/vancouver' } }, process: { env: {} },
     exports, require(name) {
       if (name.endsWith('.css')) return {};
       if (name === 'react') return hooks;

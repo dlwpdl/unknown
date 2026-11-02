@@ -19,6 +19,13 @@ export function publicCompanyUrl(id: string) {
   return `${PUBLIC_SITE}/company/${encodeURIComponent(id.toLowerCase())}`;
 }
 
+// Gling's own channels (each checked 2026-11-01): the public footer and the Organization sameAs both use this list.
+export const PUBLIC_CHANNELS = [
+  { name: 'Instagram', url: 'https://www.instagram.com/gling.app/' },
+  { name: 'Threads', url: 'https://www.threads.com/@gling.app' },
+  { name: '네이버 블로그', url: 'https://blog.naver.com/glingapp' },
+] as const;
+
 // Business plans and the 글링 관리 contact, linked from the merchant web where a limit or paid feature comes up.
 export const PUBLIC_BUSINESS_PRICING = `${PUBLIC_SITE}/business#pricing`;
 

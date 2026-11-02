@@ -2,12 +2,13 @@ import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html
 import { Children, cloneElement, isValidElement, type PropsWithChildren } from 'react';
 import { WebNightColors } from '@/constants/theme';
 import { publicFaqSchema, publicHomeSchema, publicImmigrationSchema } from '@/components/public-web/metadata';
+import { publicEnglishSchema } from '@/components/public-web/english';
 import { jsonLd } from '@/lib/public-seo';
 
 export default function RootHtml({ children, pathname }: PropsWithChildren<{ pathname: string }>) {
   const { htmlAttributes, bodyAttributes, headNodes, bodyNodes } = useServerDocumentContext();
   return (
-    <html {...htmlAttributes} lang="ko" style={{ ...htmlAttributes?.style, backgroundColor: WebNightColors.background, colorScheme: 'dark' }}>
+    <html {...htmlAttributes} lang={pathname === '/en' ? 'en' : 'ko'} style={{ ...htmlAttributes?.style, backgroundColor: WebNightColors.background, colorScheme: 'dark' }}>
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
@@ -27,6 +28,8 @@ export default function RootHtml({ children, pathname }: PropsWithChildren<{ pat
         {pathname === '/' && <script data-rh="true" type="application/ld+json">{jsonLd(publicHomeSchema)}</script>}
         {pathname === '/faq' && <script data-rh="true" type="application/ld+json">{jsonLd(publicFaqSchema)}</script>}
         {pathname === '/immigration' && <script data-rh="true" type="application/ld+json">{jsonLd(publicImmigrationSchema)}</script>}
+        {/* The English page's own Head runs only after hydration; its language links are added by scripts/finish-public-web.mjs. */}
+        {pathname === '/en' && <script data-rh="true" type="application/ld+json">{jsonLd(publicEnglishSchema)}</script>}
       </head>
       <body {...bodyAttributes} style={{ ...bodyAttributes?.style, backgroundColor: WebNightColors.background }}>{children}{bodyNodes}</body>
     </html>

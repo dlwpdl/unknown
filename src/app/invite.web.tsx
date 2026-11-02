@@ -4,7 +4,7 @@ import Head from 'expo-router/head';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { AppStoreChoices } from '@/components/public-web/app-store-choices';
+import { AppStoreChoices, AppStoreRating } from '@/components/public-web/app-store-choices';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -24,7 +24,7 @@ export default function InviteLandingPage() {
   const [saved, setSaved] = useState<string | null | undefined>(undefined);
   useEffect(() => { void rememberInviteCode(AsyncStorage, code).then(setSaved, () => setSaved(null)); }, [code]);
   return <ThemedView style={styles.container}>
-    <Head><title>{tr('글링 초대')}</title><meta name="robots" content="noindex" /></Head>
+    <Head><title>{tr('친구가 글링에 초대했어요')}</title><meta name="robots" content="noindex, follow" /></Head>
     <View style={styles.content}>
       <ThemedText accessibilityRole="header" style={Typography.screenTitle}>{saved === null ? tr('초대 링크가 올바르지 않아요') : tr('친구가 글링에 초대했어요')}</ThemedText>
       {saved && <>
@@ -35,9 +35,11 @@ export default function InviteLandingPage() {
         </View>
         <RaisedActionButton analyticsId="invite.open_app" label={tr('앱에서 열기')} onPress={() => { play('selection'); window.location.href = inviteAppUrl(saved); }} />
         <ThemedText type="small" themeColor="textSecondary">{tr('앱에서는 프로필 → 친구 초대에서 코드를 넣을 수 있어요.')}</ThemedText>
-        <AppStoreChoices />
       </>}
       {saved === null && <ThemedText themeColor="textSecondary">{tr('링크를 보낸 분께 다시 받아 주세요.')}</ThemedText>}
+      {/* Also in the static HTML (before the code is read) and for a bad code: installing never depends on the invite. */}
+      <AppStoreChoices />
+      <AppStoreRating />
     </View>
   </ThemedView>;
 }

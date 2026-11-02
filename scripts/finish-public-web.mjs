@@ -255,6 +255,9 @@ export function finishPublicWeb(directory = 'dist', posts = [], companies = [], 
     // /vancouver/ (with the slash) now hits the folder above; serve the same page there, canonical to /vancouver.
     if (city && existsSync(join(directory, city.id))) writeFileSync(join(directory, city.id, 'index.html'), html);
   }
+  // /en lists the same language versions as the home page (its client Head only runs after hydration).
+  const english = join(directory, 'en.html');
+  if (existsSync(english)) writeFileSync(english, readFileSync(english, 'utf8').replace('</head>', `${languages}</head>`));
   // /posts redirects to /posts/ (a folder); there is no list page, so point it home.
   if (existsSync(join(directory, 'posts'))) writeFileSync(join(directory, 'posts', 'index.html'), redirectPage(`${PUBLIC_SITE}/`, '글링 | 캐나다 한인 커뮤니티'));
   const meetupsFile = join(directory, 'meetups.html');

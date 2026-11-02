@@ -33,6 +33,7 @@ const imports = {
   '@/components/public-web/reader': { default: () => null }, '@/components/public-web/visited': { default: () => null },
   '@/components/public-web/faq': { default: () => null }, '@/components/public-web/business': { default: () => null },
   '@/components/public-web/shared-post-landing': { default: () => null }, '../app/[document].web': { default: () => null },
+  '@/components/public-web/english': { publicEnglishSchema: { '@context': 'https://schema.org', '@type': 'FAQPage', inLanguage: 'en' } },
 };
 
 function renderDocument(pathname, schema = metadata.publicHomeSchema, headNodes = serializeMetadataToReact({ description: 'Generated route metadata' })) {
@@ -157,4 +158,11 @@ test('static metadata adopts legacy Head ownership without giving Helmet control
     assert.ok(tag, `${attribute} survives server rendering`);
     assert.ok(!tag.includes('data-rh'), `Helmet must not remove ${attribute}`);
   }
+});
+
+test('the English page is lang="en" with its FAQ in the static HTML; every other page stays Korean', () => {
+  const english = renderDocument('/en');
+  assert.match(english, /<html[^>]*lang="en"/);
+  assert.match(english, /<script data-rh="true" type="application\/ld\+json">\{"@context":"https:\/\/schema.org","@type":"FAQPage","inLanguage":"en"\}<\/script>/);
+  for (const path of ['/', '/faq', '/invite']) assert.match(renderDocument(path), /<html[^>]*lang="ko"/, path);
 });

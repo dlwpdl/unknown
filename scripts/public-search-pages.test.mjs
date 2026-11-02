@@ -49,7 +49,7 @@ test('검색용 글·허브·옛 주소 페이지는 H1 하나, 70자 이상 설
   const directory = mkdtempSync(join(tmpdir(), 'gling-search-pages-'));
   try {
     writeFileSync(join(directory, '+not-found.html'), SHELL);
-    for (const page of ['index', 'vancouver', 'toronto', 'montreal', 'meetups']) writeFileSync(join(directory, `${page}.html`), `<html><head></head><body><div id="root"><h1>${page}</h1></div></body></html>`);
+    for (const page of ['index', 'vancouver', 'toronto', 'montreal', 'meetups', 'en']) writeFileSync(join(directory, `${page}.html`), `<html><head></head><body><div id="root"><h1>${page}</h1></div></body></html>`);
     const { posts, meetups } = await prerenderPublicPosts(directory, { url: 'https://db.example', key: 'anon', cities: ['vancouver', 'toronto'], searchToken: 'token', fetcher: fixture() });
     assert.equal(posts.length, 41);
     assert.deepEqual(meetups.map(item => item.id).sort(), [uuid(98), uuid(99)]);
@@ -175,6 +175,8 @@ test('검색용 글·허브·옛 주소 페이지는 H1 하나, 70자 이상 설
     assert.match(readFileSync(join(directory, 'posts', 'index.html'), 'utf8'), /url=https:\/\/gling\.ej-entertainment\.com\//);
     const home = readFileSync(join(directory, 'index.html'), 'utf8');
     assert.match(home, /hreflang="en" href="https:\/\/gling\.ej-entertainment\.com\/en"/);
+    const english = readFileSync(join(directory, 'en.html'), 'utf8');
+    assert.ok(english.includes(`hreflang="ko" href="${PUBLIC_SITE}/"`) && english.includes(`hreflang="en" href="${PUBLIC_SITE}/en"`) && english.includes(`hreflang="x-default" href="${PUBLIC_SITE}/"`), 'the English page points back to the Korean home');
     const llms = readFileSync(join(directory, 'llms.txt'), 'utf8');
     assert.match(llms, /^# .*\n\n마지막 갱신 2026-10-30\n/);
     assert.ok(llms.includes('not the Gling AI video editor') && llms.includes('## 자주 묻는 질문') && llms.includes('- 비즈니스:'));

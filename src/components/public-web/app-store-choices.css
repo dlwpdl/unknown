@@ -10,3 +10,5 @@
 .public-app-store-result svg{display:block;width:180px;max-width:100%;height:auto;align-self:center;background:#fff}
 .public-app-store-result p{margin:0;overflow-wrap:anywhere}
 .public-app-store-result>a.public-app-store-primary{border-color:var(--accent);background:var(--accent);color:var(--accentInk)}
+.public-app-rating{margin:0;color:var(--textSecondary,#B4ADB8);font-size:13px;font-weight:600;line-height:1.45}
+.public-app-rating span{color:var(--accent,#9283AC)}

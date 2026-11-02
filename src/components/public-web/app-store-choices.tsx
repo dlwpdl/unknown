@@ -34,6 +34,15 @@ export function InstallAction({ className, onPress }: { className?: string; onPr
       : <a data-analytics="web.install.desktop" className={className} href="#app" onClick={onPress}>{ko ? '휴대폰에 앱 받기' : 'Get the app on your phone'}</a>;
 }
 
+// Live App Store score baked in at build (scripts/app-store-rating.mjs); empty when the lookup failed, and then nothing shows.
+const appStoreRating = /^([1-5]\.\d):([1-9]\d*)$/.exec(process.env.EXPO_PUBLIC_APP_STORE_RATING ?? '');
+export function AppStoreRating() {
+  const { language } = useLanguage(), ko = language === 'ko';
+  if (!appStoreRating) return null;
+  const [, score, count] = appStoreRating;
+  return <p className="public-app-rating"><span aria-hidden="true">★</span> {ko ? `App Store 평점 ${score} · 평가 ${count}개` : `App Store rating ${score} · ${count} ${count === '1' ? 'rating' : 'ratings'}`}</p>;
+}
+
 export function AppStoreChoices() {
   const { language } = useLanguage(), ko = language === 'ko';
   const theme = useTheme(), { play } = useInteractionFeedback(), device = useDevice();

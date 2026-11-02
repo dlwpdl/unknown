@@ -9,7 +9,8 @@ import * as jsxRuntime from 'react/jsx-runtime';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { toQR } from 'toqr';
 import { sharedLinkTarget } from '../src/lib/sharing.ts';
-import { publicCitySubpage, publicCitySubpageMeta, publicPostDescription, publicPostSchema, publicSiteName } from '../src/lib/public-seo.ts';
+import { PUBLIC_CHANNELS, publicCitySubpage, publicCitySubpageMeta, publicPostDescription, publicPostSchema, publicSiteName } from '../src/lib/public-seo.ts';
+import { CONTACT_EMAIL } from '../src/lib/contact.ts';
 import { instagramPostLink, splitPostAttachments, splitPostLinks } from '../supabase/functions/_shared/post-links.ts';
 import { publicWebTarget, publicWebFetch, publicMerchantId } from '../src/lib/public-web.ts';
 import { ControlMetrics, ControlMotion, Typography } from '../src/constants/design-system.ts';
@@ -113,7 +114,7 @@ test('shared preview permits the exact anonymous getter while retaining the publ
 
 // renderToStaticMarkup uses the same getServerSnapshot contract as initial hydration.
 // The mounted pass supplies browser snapshots; actual browser hydration is verified separately.
-function readerMarkup(path, { mounted = false, search = '', directPost = false, articlePost = null, language = 'ko' } = {}) {
+function readerMarkup(path, { mounted = false, search = '', directPost = false, articlePost = null, language = 'ko', rating = '' } = {}) {
   const dark = {}, window = { location: { pathname: path, search } };
   const hooks = mounted ? { ...React, useSyncExternalStore: (_subscribe, snapshot) => snapshot() } : React;
   const modules = {
@@ -135,7 +136,8 @@ function readerMarkup(path, { mounted = false, search = '', directPost = false, 
     '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [] },
     '@/lib/public-web': { publicMerchantId, publicWebTarget },
     '@/lib/sharing': { sharedLinkTarget },
-    '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.ej-entertainment.com', jsonLd: JSON.stringify, publicSiteName, publicCitySubpage, publicCitySubpageMeta, publicPostDescription, publicPostSchema },
+    '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.ej-entertainment.com', PUBLIC_CHANNELS, jsonLd: JSON.stringify, publicSiteName, publicCitySubpage, publicCitySubpageMeta, publicPostDescription, publicPostSchema },
+    '@/lib/contact': { CONTACT_EMAIL },
     './static-slot': { adoptStatic: () => () => {} }, './metadata': { publicHomeSchema: { '@type': 'WebSite' } },
     '@/lib/public-web-client': { publicWebClient: {} },
     './analytics': { useReaderAnalytics() {} },
@@ -145,7 +147,7 @@ function readerMarkup(path, { mounted = false, search = '', directPost = false, 
     const code = ts.transpileModule(readFileSync(new URL(file, import.meta.url), 'utf8'), {
       compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
     }).outputText;
-    vm.runInNewContext(code, { exports, window, URLSearchParams, require: name => modules[name] ?? {} });
+    vm.runInNewContext(code, { exports, window, URLSearchParams, process: { env: { EXPO_PUBLIC_APP_STORE_RATING: rating } }, require: name => modules[name] ?? {} });
     return exports;
   }
   const article = load('../src/components/public-web/shared-post-article.tsx');
@@ -219,9 +221,19 @@ test('home opens with the Today feed and visible account entry while meetup disc
     assert.doesNotMatch(markup, /reader-showcase|public-meetups-list|public-meetups-heading/);
     assert.match(markup, /class="reader-header-account" href="\/merchant\/"/);
     assert.match(markup, language === 'ko' ? />비즈니스 로그인<\/a>/ : />Business sign-in<\/a>/);
-    assert.match(markup, /<div class="reader-intro"><p>[^<]+<\/p><a data-analytics="web.install.desktop" class="reader-primary" href="#app">/);
+    assert.match(markup, /<div class="reader-intro"><p>[^<]+<\/p><div class="reader-intro-action"><a data-analytics="web.install.desktop" class="reader-primary" href="#app">/);
     assert.match(markup, /<a href="\/business">/);
     assert.match(markup, /href="\/meetups\?city=vancouver"/);
     assert.match(markup, language === 'ko' ? /<h1 id="stories">캐나다 한인 커뮤니티 글링<\/h1>/ : /<h1 id="stories">Gling, the Korean community in Canada<\/h1>/);
   }
+});
+
+test('footer shows the contact mail and Gling channels, and the install button carries only a real App Store rating', () => {
+  const markup = readerMarkup('/', { rating: '5.0:3' });
+  assert.match(markup, /<nav aria-label="글링 연락처와 SNS"><a href="mailto:gling@ej-entertainment.com">gling@ej-entertainment.com<\/a>/);
+  for (const url of ['https://www.instagram.com/gling.app/', 'https://www.threads.com/@gling.app', 'https://blog.naver.com/glingapp']) assert.ok(markup.includes(`href="${url}" rel="me noopener"`), url);
+  assert.match(markup, /class="reader-intro-action"><a [^>]+>[^<]+<\/a><p class="public-app-rating"><span aria-hidden="true">★<\/span> App Store 평점 5.0 · 평가 3개<\/p>/);
+  assert.match(readerMarkup('/', { rating: '5.0:3', language: 'en' }), /App Store rating 5.0 · 3 ratings/);
+  // Empty (lookup failed) or malformed values never render a score.
+  for (const rating of ['', '9.9:3', '5.0:0', 'abc']) assert.doesNotMatch(readerMarkup('/', { rating }), /public-app-rating/, rating);
 });

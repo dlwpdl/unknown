@@ -44,6 +44,11 @@ assert.ok(/name="robots"[^>]*content="noindex/.test(readFileSync(join(directory,
 assert.ok(existsSync(join(directory, 'company.html')), 'Public company reader route is missing');
 assert.ok(/name="robots"[^>]*content="noindex/.test(readFileSync(join(directory, 'company.html'), 'utf8')), 'The id-less /company shell must stay noindex');
 assert.ok(existsSync(join(directory, 'business.html')), 'Public business page is missing');
+// Shared invite links must answer 200 with a share preview, stay out of search and still offer the install path without JS.
+const invite = readFileSync(join(directory, 'invite.html'), 'utf8');
+assert.ok(/name="robots"[^>]*content="noindex/.test(invite) && invite.includes('property="og:title"') && invite.includes('property="og:image"') && invite.includes('https://apps.apple.com/ca/app/id6809273242'), 'Invite page needs noindex, a share preview and an install link');
+const english = readFileSync(join(directory, 'en.html'), 'utf8');
+assert.ok(/<html[^>]*lang="en"/.test(english) && english.includes('hreflang="ko" href="https://gling.ej-entertainment.com/"') && english.includes('"FAQPage"'), 'English page must declare lang="en", link the Korean home and carry its FAQ');
 const childSafety = readFileSync(join(directory, 'child-safety.html'), 'utf8');
 assert.ok(childSafety.includes('--bg:') && childSafety.includes('--text:'), 'Legal page must define readable background/text colors');
 for (const text of ['아동 안전 표준', 'CSAE', 'CSAM', 'gling@ej-entertainment.com', 'Cybertip.ca']) {

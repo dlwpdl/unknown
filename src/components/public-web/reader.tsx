@@ -4,7 +4,7 @@ import { PublicPostBody } from './shared-post-article';
 import { useReaderAnalytics } from './analytics';
 import { FeedAd, PublicFestivals, PublicMerchantProfile, PublicMerchantProfileLink } from './lazy-sections';
 import { PublicMeetupList } from './meetup-list';
-import { AppStoreChoices, InstallAction, useDevice } from './app-store-choices';
+import { AppStoreChoices, AppStoreRating, InstallAction, useDevice } from './app-store-choices';
 import { contentAdPosition } from '@/lib/content-ad-placement';
 
 import { Asset } from 'expo-asset';
@@ -27,7 +27,8 @@ import { hasAdLabel } from '@/lib/hashtags';
 import { publicMerchantId, publicWebTarget } from '@/lib/public-web';
 import { buildSharedPostUrl } from '@/lib/sharing';
 import { publicWebClient } from '@/lib/public-web-client';
-import { jsonLd, postSeo, publicCitySubpage, publicCitySubpageMeta, publicCompanyUrl, publicMeetupsMeta, publicSiteName, PUBLIC_SITE } from '@/lib/public-seo';
+import { jsonLd, postSeo, publicCitySubpage, publicCitySubpageMeta, publicCompanyUrl, publicMeetupsMeta, publicSiteName, PUBLIC_CHANNELS, PUBLIC_SITE } from '@/lib/public-seo';
+import { CONTACT_EMAIL } from '@/lib/contact';
 import { adoptStatic } from './static-slot';
 import { publicHomeSchema } from './metadata';
 import { InteractionFeedbackProvider, useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -284,7 +285,7 @@ function ReaderContent() {
       <div className="reader-content">
         {browse ? <>
           <div className="reader-intro"><p>{ko ? '밴쿠버·토론토·몬트리올 한인이 동네 정보를 묻고 모임을 찾는 무료 앱, 글링이에요.' : 'Gling is a free app where Koreans in Vancouver, Toronto and Montreal ask about their neighbourhood and find meetups.'}</p>
-            <InstallAction className="reader-primary" onPress={() => play('selection')} /></div>
+            <div className="reader-intro-action"><InstallAction className="reader-primary" onPress={() => play('selection')} /><AppStoreRating /></div></div>
           <div className="reader-section-heading"><div><h1 id="stories">{meetupPage ? ko ? publicMeetupsMeta.heading : 'Meetups' : cityHub ? ko ? `${city.name} 한인 커뮤니티` : `Korean community in ${city.englishName}` : path === '/' && !filters.size ? ko ? '캐나다 한인 커뮤니티 글링' : 'Gling, the Korean community in Canada' : ko ? '오늘' : 'Today'}</h1><p>{meetupPage ? ko ? '소모임이든 축제 동행이든 여기서 둘러보고, 참여는 앱에서 해요.' : 'Explore a meetup, then join in the app.' : ko ? '이 도시에서 나누는 이야기' : 'Stories from your city'}</p></div><span>{tr(city.name)} · {tr(tag?.label ?? '전체 이야기')}</span></div>
           {cityPage && <div ref={adoptStatic('gling-static-city')} />}
           <form key={`${city.id}:${tag?.id ?? ''}`} className="reader-filters" action={meetupPage ? '/meetups' : '/'} method="get">
@@ -335,6 +336,7 @@ function ReaderContent() {
       <aside id="app"><AppInvitation target={target} /></aside>
     </main>
     <InstallBar />
-    <footer className="reader-footer"><span>{ko ? 'gling · 같이 갈 사람, 같이 나눌 이야기' : 'gling · People to go with, stories to share'}</span><nav aria-label={ko ? '정책' : 'Policies'}><a href="/immigration" onClick={() => play('selection')}>{ko ? '이민·유학 길잡이' : 'Immigration guide (Korean)'}</a><a href="/business" onClick={() => play('selection')}>{ko ? '비즈니스 등록·관리' : 'List or manage your business'}</a><a data-analytics="web_control_18" href="/terms">{ko ? '이용약관' : 'Terms'}</a><a data-analytics="web_control_19" href="/privacy">{ko ? '개인정보처리방침' : 'Privacy'}</a><a data-analytics="web_control_20" href="/account-deletion">{ko ? '계정 삭제' : 'Delete account'}</a></nav></footer>
+    <footer className="reader-footer"><div className="reader-footer-brand"><span>{ko ? 'gling · 같이 갈 사람, 같이 나눌 이야기' : 'gling · People to go with, stories to share'}</span>
+      <nav aria-label={ko ? '글링 연락처와 SNS' : 'Contact and social links'}><a href={`mailto:${CONTACT_EMAIL}`} onClick={() => play('selection')}>{CONTACT_EMAIL}</a>{PUBLIC_CHANNELS.map(channel => <a key={channel.url} href={channel.url} rel="me noopener" onClick={() => play('selection')}>{channel.name}</a>)}</nav></div><nav aria-label={ko ? '정책' : 'Policies'}><a href="/immigration" onClick={() => play('selection')}>{ko ? '이민·유학 길잡이' : 'Immigration guide (Korean)'}</a><a href="/business" onClick={() => play('selection')}>{ko ? '비즈니스 등록·관리' : 'List or manage your business'}</a><a data-analytics="web_control_18" href="/terms">{ko ? '이용약관' : 'Terms'}</a><a data-analytics="web_control_19" href="/privacy">{ko ? '개인정보처리방침' : 'Privacy'}</a><a data-analytics="web_control_20" href="/account-deletion">{ko ? '계정 삭제' : 'Delete account'}</a></nav></footer>
   </div>;
 }

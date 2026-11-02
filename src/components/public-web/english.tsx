@@ -9,7 +9,7 @@ const FAQ = [
   { question: 'Can I read without signing up?', answer: 'Public posts can be previewed on the web. Sign in to read full posts; commenting, chatting and joining meetups happen in the app.' },
   { question: 'Which phones are supported?', answer: 'The iPhone app is on the App Store. Android is in closed testing.' },
 ];
-const schema = { '@context': 'https://schema.org', '@type': 'FAQPage', '@id': `${PUBLIC_SITE}/en#faq`, url: `${PUBLIC_SITE}/en`, inLanguage: 'en',
+export const publicEnglishSchema = { '@context': 'https://schema.org', '@type': 'FAQPage', '@id': `${PUBLIC_SITE}/en#faq`, url: `${PUBLIC_SITE}/en`, inLanguage: 'en',
   mainEntity: FAQ.map(item => ({ '@type': 'Question', name: item.question, acceptedAnswer: { '@type': 'Answer', text: item.answer } })) };
 const link = { color: '#CBB9FF' };
 
@@ -18,8 +18,7 @@ export default function PublicEnglish() {
   const { play } = useInteractionFeedback();
   return <div lang="en" style={{ backgroundColor: '#0D0C10', color: '#F6F3F0', minHeight: '100%' }}>
     <Head>
-      <link rel="alternate" hrefLang="ko" href={`${PUBLIC_SITE}/`} /><link rel="alternate" hrefLang="en" href={`${PUBLIC_SITE}/en`} /><link rel="alternate" hrefLang="x-default" href={`${PUBLIC_SITE}/`} />
-      <script type="application/ld+json">{jsonLd(schema)}</script>
+      <script type="application/ld+json">{jsonLd(publicEnglishSchema)}</script>
     </Head>
     <main style={{ maxWidth: 640, margin: '0 auto', padding: '32px 20px 48px', font: '16px/1.7 system-ui, sans-serif' }}>
       <p style={{ margin: '0 0 8px', color: '#CBB9FF', fontSize: 13, fontWeight: 700 }}>Gling · 글링</p>
