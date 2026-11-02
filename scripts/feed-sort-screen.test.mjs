@@ -313,12 +313,17 @@ test('Home magnifier opens the common search route without clearing the current 
   assert.ok(app.feedback.includes('selection'));
 });
 
-test('Home search box says what it finds; the map is a tab, and writing is a floating button on native', () => {
+test('Home search is a magnifier next to the profile that still says what it finds; the map is a tab, and writing is a floating button on native', () => {
   const app = screen(), tree = app.render();
   const search = nodes(tree).find(node => node.props?.analyticsId === 'components_feed-screen.pressable.2');
-  assert.equal(search.props.accessibilityRole, 'search');
-  assert.equal(search.props.accessibilityLabel, '밴쿠버에서 집·일자리·중고 찾기');
-  assert.ok(nodes(search).some(node => node.props?.children === '밴쿠버에서 집·일자리·중고 찾기'), 'the hint is visible, not only spoken');
+  assert.equal(search.props.accessibilityRole, 'button');
+  assert.equal(search.props.accessibilityLabel, '밴쿠버에서 집·일자리·중고 찾기', 'the icon still tells screen readers what it finds');
+  assert.equal(nodes(search).some(node => node.props?.children === '밴쿠버에서 집·일자리·중고 찾기'), false, 'no wide search box above the category chips (owner 2026-11-01)');
+  const row = nodes(tree).find(node => [node.props?.children].flat(Infinity).some(child => child?.props?.analyticsId === 'feed.home'));
+  const items = [row.props.children].flat(Infinity).filter(Boolean);
+  const at = items.findIndex(child => nodes(child).includes(search));
+  assert.ok(at > 0, 'the magnifier sits in the same top row as the logo');
+  assert.equal(typeof items[at + 1]?.props?.onBusinessSwitchAvailabilityChange, 'function', 'right before the profile button');
   assert.equal(nodes(tree).some(node => node.props?.analyticsId === 'discovery.open'), false, 'no map icon stays in the header');
   assert.equal(nodes(app.list().renderItem({ item: null, index: 0 })).some(node => node.props?.analyticsId === 'discovery.open'), false, 'the rent·used map pill is gone; the map is a tab');
   assert.equal(nodes(tree).some(node => node.props?.analyticsId === 'feed.write'), false, 'web keeps its write tab');
