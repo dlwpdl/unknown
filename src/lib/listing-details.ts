@@ -276,17 +276,17 @@ export const inBounds = (bounds: MapBounds, point: { latitude: number; longitude
 export type HousingMarket = 'rent' | 'sale';
 export const housingMarket = (deal: HousingDeal): HousingMarket => deal === 'rent_offer' || deal === 'rent_wanted' ? 'rent' : 'sale';
 export type ListingFilters = { market: HousingMarket | null; rooms: Room[]; maxPrice: number | null; moveInBy: string | null; deal: UsedDeal | null; conditions: Condition[];
-  jobDeal: JobDeal | null; jobTypes: JobType[]; minWage: number | null; maxWage: number | null; area: string | null };
-export const NO_LISTING_FILTERS: ListingFilters = { market: null, rooms: [], maxPrice: null, moveInBy: null, deal: null, conditions: [], jobDeal: null, jobTypes: [], minWage: null, maxWage: null, area: null };
+  jobDeal: JobDeal | null; jobTypes: JobType[]; minWage: number | null; maxWage: number | null; areas: string[] };
+export const NO_LISTING_FILTERS: ListingFilters = { market: null, rooms: [], maxPrice: null, moveInBy: null, deal: null, conditions: [], jobDeal: null, jobTypes: [], minWage: null, maxWage: null, areas: [] };
 export const listingFiltersActive = (filters: ListingFilters) => filters.market != null || filters.rooms.length > 0 || filters.maxPrice != null || filters.moveInBy != null || filters.deal != null || filters.conditions.length > 0
-  || filters.jobDeal != null || filters.jobTypes.length > 0 || filters.minWage != null || filters.maxWage != null || filters.area != null;
+  || filters.jobDeal != null || filters.jobTypes.length > 0 || filters.minWage != null || filters.maxWage != null || filters.areas.length > 0;
 
 export function matchesListingFilters(post: Pick<Post, 'price' | 'listingDetails'>, filters: ListingFilters, today: string) {
   if (!listingFiltersActive(filters)) return true;
   const details = post.listingDetails;
   if (!details) return false; // a post without fields cannot prove it matches
   if (filters.maxPrice != null && (post.price == null || post.price > filters.maxPrice)) return false;
-  if (filters.area && details.area !== filters.area) return false;
+  if (filters.areas.length && (!details.area || !filters.areas.includes(details.area))) return false;
   if (details.type === 'housing') {
     if (filters.market && housingMarket(details.deal) !== filters.market) return false;
     if (filters.rooms.length && (!details.rooms || !filters.rooms.includes(details.rooms))) return false;

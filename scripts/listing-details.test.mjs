@@ -5,7 +5,7 @@ import {
   buildListingLead, emptyListingDraft, groupListingsByArea, listingExtras, listingFromDraft, listingPin, listingPriceLabel, matchesListingFilters,
   NO_LISTING_FILTERS, parseListingDetails, parseListingView, stripListingLead, withListingLead,
 } from '../src/lib/listing-details.ts';
-import { coarseListingPin, findNeighborhood, NEIGHBORHOODS } from '../src/lib/neighborhoods.ts';
+import { coarseListingPin, findNeighborhood, NEIGHBORHOODS, neighborhoodGroups } from '../src/lib/neighborhoods.ts';
 import { hydratePublicPosts } from '../src/lib/feed-data.ts';
 import { localDay, parseLocalDay } from '../src/lib/chilling-date.ts';
 import { googlePinUrl, withPostMap } from '../src/lib/post-maps.ts';
@@ -114,7 +114,7 @@ test('필터는 목록과 지도에 똑같이 걸린다', () => {
   assert.ok(!matchesListingFilters(legacy, { ...NO_LISTING_FILTERS, maxPrice: 100 }, today), 'a post without fields cannot prove it matches');
   const job = { price: 20, listingDetails: { type: 'jobs', deal: 'hiring', payUnit: 'hour', pay: 20, jobTypes: ['part', 'weekend'], area: 'metrotown' } };
   const salaried = { price: 4000, listingDetails: { type: 'jobs', deal: 'hiring', payUnit: 'month', pay: 4000, jobTypes: ['full'] } };
-  assert.ok(matchesListingFilters(job, { ...NO_LISTING_FILTERS, jobDeal: 'hiring', jobTypes: ['weekend', 'full'], minWage: 18, area: 'metrotown' }, today));
+  assert.ok(matchesListingFilters(job, { ...NO_LISTING_FILTERS, jobDeal: 'hiring', jobTypes: ['weekend', 'full'], minWage: 18, areas: ['metrotown'] }, today));
   assert.ok(!matchesListingFilters(job, { ...NO_LISTING_FILTERS, jobDeal: 'seeking' }, today));
   assert.ok(!matchesListingFilters(job, { ...NO_LISTING_FILTERS, jobTypes: ['full'] }, today));
   assert.ok(!matchesListingFilters(job, { ...NO_LISTING_FILTERS, minWage: 25 }, today));
@@ -122,7 +122,9 @@ test('필터는 목록과 지도에 똑같이 걸린다', () => {
   assert.ok(matchesListingFilters(job, { ...NO_LISTING_FILTERS, minWage: 20, maxWage: 20 }, today), '범위 끝값 포함');
   assert.ok(!matchesListingFilters(job, { ...NO_LISTING_FILTERS, maxWage: 19 }, today), '최고 시급보다 높으면 빠진다');
   assert.ok(!matchesListingFilters(salaried, { ...NO_LISTING_FILTERS, maxWage: 30 }, today), '월급 글은 시급 상한으로도 비교하지 않는다');
-  assert.ok(!matchesListingFilters(job, { ...NO_LISTING_FILTERS, area: 'burquitlam' }, today));
+  assert.ok(!matchesListingFilters(job, { ...NO_LISTING_FILTERS, areas: ['burquitlam'] }, today));
+  assert.ok(matchesListingFilters(job, { ...NO_LISTING_FILTERS, areas: ['burquitlam', 'metrotown'] }, today), '고른 동네 중 하나면 나온다');
+  assert.ok(!matchesListingFilters(salaried, { ...NO_LISTING_FILTERS, areas: ['metrotown'] }, today), '동네가 없는 글은 동네 필터에서 빠진다');
   assert.ok(!matchesListingFilters(salaried, { ...NO_LISTING_FILTERS, minWage: 17 }, today), '월급 글은 시급 기준으로 비교하지 않는다');
   assert.ok(matchesListingFilters(housing, { ...NO_LISTING_FILTERS, market: 'rent' }, today), '렌트 includes 렌트 내놓음');
   assert.ok(!matchesListingFilters(housing, { ...NO_LISTING_FILTERS, market: 'sale' }, today), '매매 excludes rentals');
@@ -222,4 +224,10 @@ test('입주일 필터는 고른 날짜까지 들어갈 수 있는 집만 남긴
 test('델타 등 메트로 밴쿠버 동네를 고를 수 있다', () => {
   for (const id of ['delta', 'ladner', 'tsawwassen', 'port-coquitlam', 'maple-ridge', 'white-rock']) assert.match(findNeighborhood('vancouver', id).id, /^[a-z0-9-]{1,40}$/);
   assert.equal(new Set(NEIGHBORHOODS.vancouver.map(item => item.id)).size, NEIGHBORHOODS.vancouver.length);
+});
+
+test('Vancouver job areas are grouped so every neighborhood sits in exactly one group', () => {
+  const ids = neighborhoodGroups('vancouver').flatMap(group => group.items.map(item => item.id));
+  assert.deepEqual([...ids].sort(), NEIGHBORHOODS.vancouver.map(item => item.id).sort());
+  assert.equal(neighborhoodGroups('toronto'), null, 'a short list stays flat');
 });

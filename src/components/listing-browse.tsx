@@ -20,7 +20,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import {
   CONDITIONS, formatMoney, JOB_DEALS, JOB_TYPES, formatMoveIn, groupListingsByArea, inBounds, LISTING_LABELS, ROOMS, type ListingCategory, type ListingFilters, type ListingView, type MapBounds,
 } from '@/lib/listing-details';
-import { neighborhoodName, neighborhoodsFor } from '@/lib/neighborhoods';
+import { neighborhoodGroups, neighborhoodName, neighborhoodsFor } from '@/lib/neighborhoods';
 import type { City, Post } from '@/lib/types';
 
 type FilterKey = 'market' | 'rooms' | 'price' | 'moveIn' | 'deal' | 'condition' | 'jobDeal' | 'jobTypes' | 'wage' | 'area';
@@ -67,9 +67,14 @@ export function ListingFilterBar({ category, cityId, filters, onChange, view, on
   category: ListingCategory; cityId: string; filters: ListingFilters; onChange: (next: ListingFilters) => void; view?: ListingView; onView?: (view: ListingView) => void;
 }) {
   const theme = useTheme(), { tr, language } = useLanguage(), { play } = useInteractionFeedback();
-  const [open, setOpen] = useState<FilterKey | null>(null);
+  const [open, setOpen] = useState<FilterKey | null>(null), [openGroups, setOpenGroups] = useState<string[]>([]);
   const [now] = useState(() => new Date());
-  const areas = neighborhoodsFor(cityId);
+  const areas = neighborhoodsFor(cityId), groups = neighborhoodGroups(cityId);
+  const groupName = (group: { ko: string; en: string }) => language === 'en' ? group.en : group.ko;
+  // A fully picked group reads as its name ("버나비·뉴웨스트"), otherwise each picked neighborhood.
+  const picked = groups ? groups.flatMap(group => group.items.every(item => filters.areas.includes(item.id)) ? [groupName(group)]
+    : group.items.filter(item => filters.areas.includes(item.id)).map(item => neighborhoodName(item, language)))
+    : areas.filter(item => filters.areas.includes(item.id)).map(item => neighborhoodName(item, language));
   // Before a date is chosen the picker shows the 1st of next month; only a chosen date filters.
   const moveInShown = filters.moveInBy ?? localDay(new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString());
   const priceLabel = (value: number) => category === 'used' && value === 0 ? tr('무료만') : tr('{0} 이하', formatMoney(value));
@@ -84,18 +89,18 @@ export function ListingFilterBar({ category, cityId, filters, onChange, view, on
     jobTypes: filters.jobTypes.length ? filters.jobTypes.map(item => tr(LISTING_LABELS.jobTypes[item])).join(' · ') : null,
     wage: filters.minWage != null && filters.maxWage != null ? tr('시급 {0}~{1}', formatMoney(filters.minWage), formatMoney(filters.maxWage))
       : filters.minWage != null ? tr('시급 {0} 이상', formatMoney(filters.minWage)) : filters.maxWage != null ? tr('시급 {0} 이하', formatMoney(filters.maxWage)) : null,
-    area: areas.find(item => item.id === filters.area) ? neighborhoodName(areas.find(item => item.id === filters.area)!, language) : null,
+    area: picked.length > 1 ? tr('{0} 외 {1}', picked[0], picked.length - 1) : picked[0] ?? null,
   };
   const names: Record<FilterKey, string> = { market: tr('렌트·매매'), rooms: tr('방 구성'), price: tr('가격'), moveIn: tr('입주일'), deal: tr('팝니다·삽니다'), condition: tr('상태'),
     jobDeal: tr('구인·구직'), jobTypes: tr('근무 형태'), wage: tr('시급'), area: tr('근무 동네') };
-  const option = (key: string, label: string, selected: boolean, onPress: () => void, multi = false) => <SelectionChip key={key} analyticsId="listing.filter.option" selected={selected} baseColor={theme.card}
-    accessibilityRole={multi ? 'checkbox' : 'radio'} accessibilityLabel={label} accessibilityState={{ selected, checked: selected }}
+  const option = (key: string, label: string, selected: boolean, onPress: () => void, multi = false, spoken = label) => <SelectionChip key={key} analyticsId="listing.filter.option" selected={selected} baseColor={theme.card}
+    accessibilityRole={multi ? 'checkbox' : 'radio'} accessibilityLabel={spoken} accessibilityState={{ selected, checked: selected }}
     onPress={() => { play('selection'); onPress(); }} style={[ControlStyles.pill, styles.optionChip, { borderColor: selected ? theme.accent : theme.line }]}>
     <ThemedText type="label" style={{ color: selected ? theme.accentInk : theme.text }}>{label}</ThemedText>
   </SelectionChip>;
   const toggle = <T extends string>(list: T[], item: T) => list.includes(item) ? list.filter(entry => entry !== item) : [...list, item];
   const clear = (key: FilterKey) => onChange({ ...filters, ...(key === 'market' ? { market: null, maxPrice: null } : key === 'rooms' ? { rooms: [] } : key === 'price' ? { maxPrice: null } : key === 'moveIn' ? { moveInBy: null } : key === 'deal' ? { deal: null } : key === 'condition' ? { conditions: [] }
-    : key === 'jobDeal' ? { jobDeal: null } : key === 'jobTypes' ? { jobTypes: [] } : key === 'wage' ? { minWage: null, maxWage: null } : { area: null }) });
+    : key === 'jobDeal' ? { jobDeal: null } : key === 'jobTypes' ? { jobTypes: [] } : key === 'wage' ? { minWage: null, maxWage: null } : { areas: [] }) });
 
   return <View style={styles.filterWrap}>
     <View style={styles.filterRow}>
@@ -103,7 +108,10 @@ export function ListingFilterBar({ category, cityId, filters, onChange, view, on
         {FILTERS[category].filter(key => !(key === 'moveIn' && filters.market === 'sale')).map(key => {
           const active = summary[key] != null, expanded = open === key;
           return <Pressable key={key} analyticsId={`listing.filter.${key}`} accessibilityRole="button" accessibilityLabel={`${names[key]}${active ? `, ${summary[key]}` : ''}`} accessibilityState={{ expanded, selected: active }}
-            onPress={() => { play('selection'); setOpen(expanded ? null : key); }}
+            onPress={() => {
+              play('selection'); setOpen(expanded ? null : key);
+              if (key === 'area') setOpenGroups(groups?.filter(group => group.items.some(item => filters.areas.includes(item.id))).map(group => group.key) ?? []);
+            }}
             style={({ pressed }) => [ControlStyles.pill, styles.filterChip, { borderColor: active || expanded ? theme.accent : theme.line, backgroundColor: active ? theme.backgroundSelected : theme.card, opacity: pressed ? 0.82 : 1 }]}>
             <ThemedText type="label" numberOfLines={1} style={{ color: active ? theme.accent : theme.text }}>{summary[key] ?? names[key]}</ThemedText>
             <SymbolView name={{ ios: expanded ? 'chevron.up' : 'chevron.down', android: expanded ? 'expand_less' : 'expand_more', web: expanded ? 'expand_less' : 'expand_more' }} size={IconSize.chevron} tintColor={active ? theme.accent : theme.textSecondary} />
@@ -113,7 +121,7 @@ export function ListingFilterBar({ category, cityId, filters, onChange, view, on
       {category === 'used' && view && onView && <ListingViewSwitch view={view} onView={onView} />}
     </View>
     {open && <View style={[styles.panel, { borderColor: theme.line, backgroundColor: theme.backgroundElement }]}>
-      {open !== 'moveIn' && open !== 'wage' && <View style={styles.options}>
+      {open !== 'moveIn' && open !== 'wage' && !(open === 'area' && groups) && <View style={styles.options}>
         {open === 'market' && (['rent', 'sale'] as const).map(market => option(market, tr(MARKETS[market]), filters.market === market,
           // Switching market resets the price step (different scale); 매매 has no move-in date.
           () => onChange({ ...filters, market: filters.market === market ? null : market, maxPrice: null, moveInBy: market === 'sale' ? null : filters.moveInBy })))}
@@ -122,8 +130,28 @@ export function ListingFilterBar({ category, cityId, filters, onChange, view, on
         {open === 'deal' && (['sell', 'buy'] as const).map(deal => option(deal, tr(LISTING_LABELS.used[deal]), filters.deal === deal, () => onChange({ ...filters, deal: filters.deal === deal ? null : deal })))}
         {open === 'jobDeal' && JOB_DEALS.map(deal => option(deal, tr(LISTING_LABELS.jobs[deal]), filters.jobDeal === deal, () => onChange({ ...filters, jobDeal: filters.jobDeal === deal ? null : deal })))}
         {open === 'jobTypes' && JOB_TYPES.map(item => option(item, tr(LISTING_LABELS.jobTypes[item]), filters.jobTypes.includes(item), () => onChange({ ...filters, jobTypes: toggle(filters.jobTypes, item) }), true))}
-        {open === 'area' && areas.map(item => option(item.id, neighborhoodName(item, language), filters.area === item.id, () => onChange({ ...filters, area: filters.area === item.id ? null : item.id })))}
+        {open === 'area' && areas.map(item => option(item.id, neighborhoodName(item, language), filters.areas.includes(item.id), () => onChange({ ...filters, areas: toggle(filters.areas, item.id) }), true))}
         {open === 'condition' && CONDITIONS.map(item => option(item, tr(LISTING_LABELS.condition[item]), filters.conditions.includes(item), () => onChange({ ...filters, conditions: toggle(filters.conditions, item) }), true))}
+      </View>}
+      {open === 'area' && groups && <View>
+        {/* 28 neighborhoods in one wall was hard to scan: one row per group, opened to pick the whole group or single neighborhoods (owner 2026-11-01). */}
+        {groups.map((group, index) => {
+          const name = groupName(group), ids = group.items.map(item => item.id), count = ids.filter(id => filters.areas.includes(id)).length;
+          const all = count === ids.length, expanded = openGroups.includes(group.key);
+          return <View key={group.key} style={index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.line }}>
+            {/* Reuses the area chip's server target: a new id needs a DB row first or the whole analytics batch is rejected. */}
+            <Pressable analyticsId="listing.filter.area" accessibilityRole="button" accessibilityLabel={count ? `${name}, ${tr('{0}곳 선택', count)}` : name} accessibilityState={{ expanded }}
+              onPress={() => { play('selection'); setOpenGroups(toggle(openGroups, group.key)); }} style={({ pressed }) => [styles.areaHead, { opacity: pressed ? 0.82 : 1 }]}>
+              <ThemedText style={[Typography.menu, styles.flex]}>{name}</ThemedText>
+              {count > 0 && <ThemedText type="label" themeColor="accent">{all ? tr('전체') : tr('{0}곳 선택', count)}</ThemedText>}
+              <SymbolView name={{ ios: expanded ? 'chevron.up' : 'chevron.down', android: expanded ? 'expand_less' : 'expand_more', web: expanded ? 'expand_less' : 'expand_more' }} size={IconSize.chevron} tintColor={theme.textSecondary} />
+            </Pressable>
+            {expanded && <View style={[styles.options, styles.areaOptions]}>
+              {option(`${group.key}.all`, tr('전체'), all, () => onChange({ ...filters, areas: all ? filters.areas.filter(id => !ids.includes(id)) : [...new Set([...filters.areas, ...ids])] }), true, tr('{0} 전체', name))}
+              {group.items.map(item => option(item.id, neighborhoodName(item, language), filters.areas.includes(item.id), () => onChange({ ...filters, areas: toggle(filters.areas, item.id) }), true))}
+            </View>}
+          </View>;
+        })}
       </View>}
       {open === 'wage' && <WageRange key={`${filters.minWage}-${filters.maxWage}`} min={filters.minWage} max={filters.maxWage} onChange={(minWage, maxWage) => onChange({ ...filters, minWage, maxWage })} />}
       {open === 'moveIn' && <ChillingDateInput dateOnly label={tr('이 날짜까지 들어갈 수 있는 집')} value={parseLocalDay(moveInShown)} minimumDate={now}
@@ -257,6 +285,8 @@ const styles = StyleSheet.create({
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   optionChip: { borderWidth: 1 },
   clear: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
+  areaHead: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.one },
+  areaOptions: { paddingBottom: Spacing.three },
   wage: { gap: Spacing.two, paddingHorizontal: Spacing.one },
   wageTrack: { height: 44, justifyContent: 'center' },
   wageRail: { position: 'absolute', left: THUMB / 2, right: THUMB / 2, height: 4, borderRadius: 2 },

@@ -60,6 +60,22 @@ export const neighborhoodsFor = (cityId: string): readonly Neighborhood[] => Obj
 export const findNeighborhood = (cityId: string, id: string | null | undefined) => id ? neighborhoodsFor(cityId).find(item => item.id === id) ?? null : null;
 export const neighborhoodName = (item: Neighborhood, language: 'ko' | 'en') => language === 'en' ? item.en : item.ko;
 
+// Filter headings for a long city list, by the municipalities people search jobs in (owner 2026-11-01). Short lists stay flat.
+export type NeighborhoodGroup = { key: string; ko: string; en: string; items: readonly Neighborhood[] };
+const GROUPS: Record<string, readonly { key: string; ko: string; en: string; ids: readonly string[] }[]> = {
+  vancouver: [
+    { key: 'vancouver', ko: '밴쿠버', en: 'Vancouver', ids: ['downtown', 'west-end', 'yaletown', 'kitsilano', 'mount-pleasant', 'commercial-drive', 'oakridge', 'joyce', 'ubc'] },
+    { key: 'north-shore', ko: '노스쇼어', en: 'North Shore', ids: ['north-vancouver', 'west-vancouver'] },
+    { key: 'burnaby', ko: '버나비·뉴웨스트', en: 'Burnaby & New West', ids: ['metrotown', 'brentwood', 'edmonds', 'new-westminster'] },
+    { key: 'tri-cities', ko: '트라이시티·메이플리지', en: 'Tri-Cities & Maple Ridge', ids: ['burquitlam', 'coquitlam', 'coquitlam-centre', 'port-moody', 'port-coquitlam', 'maple-ridge'] },
+    { key: 'richmond', ko: '리치먼드·델타', en: 'Richmond & Delta', ids: ['richmond', 'delta', 'ladner', 'tsawwassen'] },
+    { key: 'surrey', ko: '써리·랭리', en: 'Surrey & Langley', ids: ['surrey', 'langley', 'white-rock'] },
+  ],
+};
+export const neighborhoodGroups = (cityId: string): NeighborhoodGroup[] | null => Object.hasOwn(GROUPS, cityId)
+  ? GROUPS[cityId].map(({ ids, ...group }) => ({ ...group, items: ids.map(id => findNeighborhood(cityId, id)).filter(item => item != null) }))
+  : null;
+
 const distanceKm = (a: PostPin, b: PostPin) => {
   const rad = Math.PI / 180, dLat = (b.latitude - a.latitude) * rad, dLng = (b.longitude - a.longitude) * rad;
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.latitude * rad) * Math.cos(b.latitude * rad) * Math.sin(dLng / 2) ** 2;
