@@ -118,6 +118,10 @@ test('필터는 목록과 지도에 똑같이 걸린다', () => {
   assert.ok(!matchesListingFilters(job, { ...NO_LISTING_FILTERS, jobDeal: 'seeking' }, today));
   assert.ok(!matchesListingFilters(job, { ...NO_LISTING_FILTERS, jobTypes: ['full'] }, today));
   assert.ok(!matchesListingFilters(job, { ...NO_LISTING_FILTERS, minWage: 25 }, today));
+  assert.ok(matchesListingFilters(job, { ...NO_LISTING_FILTERS, minWage: 18, maxWage: 22 }, today), '시급 범위 안');
+  assert.ok(matchesListingFilters(job, { ...NO_LISTING_FILTERS, minWage: 20, maxWage: 20 }, today), '범위 끝값 포함');
+  assert.ok(!matchesListingFilters(job, { ...NO_LISTING_FILTERS, maxWage: 19 }, today), '최고 시급보다 높으면 빠진다');
+  assert.ok(!matchesListingFilters(salaried, { ...NO_LISTING_FILTERS, maxWage: 30 }, today), '월급 글은 시급 상한으로도 비교하지 않는다');
   assert.ok(!matchesListingFilters(job, { ...NO_LISTING_FILTERS, area: 'burquitlam' }, today));
   assert.ok(!matchesListingFilters(salaried, { ...NO_LISTING_FILTERS, minWage: 17 }, today), '월급 글은 시급 기준으로 비교하지 않는다');
   assert.ok(matchesListingFilters(housing, { ...NO_LISTING_FILTERS, market: 'rent' }, today), '렌트 includes 렌트 내놓음');

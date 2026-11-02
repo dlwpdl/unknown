@@ -276,10 +276,10 @@ export const inBounds = (bounds: MapBounds, point: { latitude: number; longitude
 export type HousingMarket = 'rent' | 'sale';
 export const housingMarket = (deal: HousingDeal): HousingMarket => deal === 'rent_offer' || deal === 'rent_wanted' ? 'rent' : 'sale';
 export type ListingFilters = { market: HousingMarket | null; rooms: Room[]; maxPrice: number | null; moveInBy: string | null; deal: UsedDeal | null; conditions: Condition[];
-  jobDeal: JobDeal | null; jobTypes: JobType[]; minWage: number | null; area: string | null };
-export const NO_LISTING_FILTERS: ListingFilters = { market: null, rooms: [], maxPrice: null, moveInBy: null, deal: null, conditions: [], jobDeal: null, jobTypes: [], minWage: null, area: null };
+  jobDeal: JobDeal | null; jobTypes: JobType[]; minWage: number | null; maxWage: number | null; area: string | null };
+export const NO_LISTING_FILTERS: ListingFilters = { market: null, rooms: [], maxPrice: null, moveInBy: null, deal: null, conditions: [], jobDeal: null, jobTypes: [], minWage: null, maxWage: null, area: null };
 export const listingFiltersActive = (filters: ListingFilters) => filters.market != null || filters.rooms.length > 0 || filters.maxPrice != null || filters.moveInBy != null || filters.deal != null || filters.conditions.length > 0
-  || filters.jobDeal != null || filters.jobTypes.length > 0 || filters.minWage != null || filters.area != null;
+  || filters.jobDeal != null || filters.jobTypes.length > 0 || filters.minWage != null || filters.maxWage != null || filters.area != null;
 
 export function matchesListingFilters(post: Pick<Post, 'price' | 'listingDetails'>, filters: ListingFilters, today: string) {
   if (!listingFiltersActive(filters)) return true;
@@ -299,9 +299,10 @@ export function matchesListingFilters(post: Pick<Post, 'price' | 'listingDetails
   if (details.type === 'jobs') {
     if (filters.jobDeal && details.deal !== filters.jobDeal) return false;
     if (filters.jobTypes.length && !details.jobTypes?.some(item => filters.jobTypes.includes(item))) return false;
-    // Only hourly pay can be compared with a 시급 floor; 월급·연봉·협의 posts drop out.
+    // Only hourly pay can be compared with a 시급 range; 월급·연봉·협의 posts drop out.
     const pay = details.pay ?? post.price;
-    if (filters.minWage != null && (details.payUnit !== 'hour' || pay == null || pay < filters.minWage)) return false;
+    if ((filters.minWage != null || filters.maxWage != null) && (details.payUnit !== 'hour' || pay == null
+      || (filters.minWage != null && pay < filters.minWage) || (filters.maxWage != null && pay > filters.maxWage))) return false;
   }
   return true;
 }

@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { useLayoutEffect, useMemo, useState } from 'react';
+import { Modal, PanResponder, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -25,8 +25,9 @@ import type { City, Post } from '@/lib/types';
 
 type FilterKey = 'market' | 'rooms' | 'price' | 'moveIn' | 'deal' | 'condition' | 'jobDeal' | 'jobTypes' | 'wage' | 'area';
 const FILTERS: Record<ListingCategory, FilterKey[]> = { housing: ['market', 'rooms', 'price', 'moveIn'], used: ['deal', 'price', 'condition'], jobs: ['jobDeal', 'jobTypes', 'wage', 'area'] };
-// 시급 floors around the BC/ON minimum wage.
-const WAGES = [17, 18, 20, 25, 30];
+// 시급 range (owner 2026-11-01 "레인지로해야지"): BC/ON minimum wage to $40+, $1 steps; either end means no limit.
+const WAGE = { min: 17, max: 40 } as const;
+const THUMB = 28;
 // Monthly rent and sale prices live on different scales, so 매매 gets its own steps.
 const PRICES = { housing: [1500, 2000, 2500, 3000, 4000], sale: [500000, 800000, 1000000, 1500000, 2000000], used: [0, 20, 50, 100, 300], jobs: [] as number[] };
 const MARKETS = { rent: '렌트', sale: '매매' } as const;
@@ -81,7 +82,8 @@ export function ListingFilterBar({ category, cityId, filters, onChange, view, on
     condition: filters.conditions.length ? filters.conditions.map(item => tr(LISTING_LABELS.condition[item])).join(' · ') : null,
     jobDeal: filters.jobDeal ? tr(LISTING_LABELS.jobs[filters.jobDeal]) : null,
     jobTypes: filters.jobTypes.length ? filters.jobTypes.map(item => tr(LISTING_LABELS.jobTypes[item])).join(' · ') : null,
-    wage: filters.minWage != null ? tr('시급 {0} 이상', formatMoney(filters.minWage)) : null,
+    wage: filters.minWage != null && filters.maxWage != null ? tr('시급 {0}~{1}', formatMoney(filters.minWage), formatMoney(filters.maxWage))
+      : filters.minWage != null ? tr('시급 {0} 이상', formatMoney(filters.minWage)) : filters.maxWage != null ? tr('시급 {0} 이하', formatMoney(filters.maxWage)) : null,
     area: areas.find(item => item.id === filters.area) ? neighborhoodName(areas.find(item => item.id === filters.area)!, language) : null,
   };
   const names: Record<FilterKey, string> = { market: tr('렌트·매매'), rooms: tr('방 구성'), price: tr('가격'), moveIn: tr('입주일'), deal: tr('팝니다·삽니다'), condition: tr('상태'),
@@ -93,7 +95,7 @@ export function ListingFilterBar({ category, cityId, filters, onChange, view, on
   </SelectionChip>;
   const toggle = <T extends string>(list: T[], item: T) => list.includes(item) ? list.filter(entry => entry !== item) : [...list, item];
   const clear = (key: FilterKey) => onChange({ ...filters, ...(key === 'market' ? { market: null, maxPrice: null } : key === 'rooms' ? { rooms: [] } : key === 'price' ? { maxPrice: null } : key === 'moveIn' ? { moveInBy: null } : key === 'deal' ? { deal: null } : key === 'condition' ? { conditions: [] }
-    : key === 'jobDeal' ? { jobDeal: null } : key === 'jobTypes' ? { jobTypes: [] } : key === 'wage' ? { minWage: null } : { area: null }) });
+    : key === 'jobDeal' ? { jobDeal: null } : key === 'jobTypes' ? { jobTypes: [] } : key === 'wage' ? { minWage: null, maxWage: null } : { area: null }) });
 
   return <View style={styles.filterWrap}>
     <View style={styles.filterRow}>
@@ -111,7 +113,7 @@ export function ListingFilterBar({ category, cityId, filters, onChange, view, on
       {category === 'used' && view && onView && <ListingViewSwitch view={view} onView={onView} />}
     </View>
     {open && <View style={[styles.panel, { borderColor: theme.line, backgroundColor: theme.backgroundElement }]}>
-      {open !== 'moveIn' && <View style={styles.options}>
+      {open !== 'moveIn' && open !== 'wage' && <View style={styles.options}>
         {open === 'market' && (['rent', 'sale'] as const).map(market => option(market, tr(MARKETS[market]), filters.market === market,
           // Switching market resets the price step (different scale); 매매 has no move-in date.
           () => onChange({ ...filters, market: filters.market === market ? null : market, maxPrice: null, moveInBy: market === 'sale' ? null : filters.moveInBy })))}
@@ -120,16 +122,59 @@ export function ListingFilterBar({ category, cityId, filters, onChange, view, on
         {open === 'deal' && (['sell', 'buy'] as const).map(deal => option(deal, tr(LISTING_LABELS.used[deal]), filters.deal === deal, () => onChange({ ...filters, deal: filters.deal === deal ? null : deal })))}
         {open === 'jobDeal' && JOB_DEALS.map(deal => option(deal, tr(LISTING_LABELS.jobs[deal]), filters.jobDeal === deal, () => onChange({ ...filters, jobDeal: filters.jobDeal === deal ? null : deal })))}
         {open === 'jobTypes' && JOB_TYPES.map(item => option(item, tr(LISTING_LABELS.jobTypes[item]), filters.jobTypes.includes(item), () => onChange({ ...filters, jobTypes: toggle(filters.jobTypes, item) }), true))}
-        {open === 'wage' && WAGES.map(value => option(String(value), tr('{0} 이상', formatMoney(value)), filters.minWage === value, () => onChange({ ...filters, minWage: filters.minWage === value ? null : value })))}
         {open === 'area' && areas.map(item => option(item.id, neighborhoodName(item, language), filters.area === item.id, () => onChange({ ...filters, area: filters.area === item.id ? null : item.id })))}
         {open === 'condition' && CONDITIONS.map(item => option(item, tr(LISTING_LABELS.condition[item]), filters.conditions.includes(item), () => onChange({ ...filters, conditions: toggle(filters.conditions, item) }), true))}
       </View>}
+      {open === 'wage' && <WageRange key={`${filters.minWage}-${filters.maxWage}`} min={filters.minWage} max={filters.maxWage} onChange={(minWage, maxWage) => onChange({ ...filters, minWage, maxWage })} />}
       {open === 'moveIn' && <ChillingDateInput dateOnly label={tr('이 날짜까지 들어갈 수 있는 집')} value={parseLocalDay(moveInShown)} minimumDate={now}
         onChange={iso => { const day = localDay(iso); if (day) { play('selection'); onChange({ ...filters, moveInBy: day }); } }} />}
       {summary[open] != null && <Pressable analyticsId="listing.filter.clear" accessibilityRole="button" onPress={() => { play('selection'); clear(open); }} style={styles.clear}>
         <ThemedText type="label" themeColor="accent">{tr('이 조건 지우기')}</ThemedText>
       </Pressable>}
     </View>}
+  </View>;
+}
+
+// Two thumbs on one track. Drag or use VoiceOver adjust; the list filters when a thumb is let go.
+// `live` is a plain object like drag-sheet's SheetLive: the pan handlers read and write it outside render.
+function WageRange({ min, max, onChange }: { min: number | null; max: number | null; onChange: (min: number | null, max: number | null) => void }) {
+  const theme = useTheme(), { tr } = useLanguage(), { play } = useInteractionFeedback();
+  const [values, setValues] = useState({ lo: min ?? WAGE.min, hi: max ?? WAGE.max });
+  const [track, setTrack] = useState(0);
+  const [live] = useState(() => ({ ...values, track: 0, start: 0, onChange, play }));
+  useLayoutEffect(() => { Object.assign(live, { track, onChange, play }); });
+  const span = WAGE.max - WAGE.min;
+  const [api] = useState(() => {
+    const place = (which: 'lo' | 'hi', raw: number) => {
+      if (which === 'lo') live.lo = Math.min(Math.max(raw, WAGE.min), live.hi);
+      else live.hi = Math.max(Math.min(raw, WAGE.max), live.lo);
+      setValues({ lo: live.lo, hi: live.hi });
+    };
+    const commit = () => { live.play('selection'); live.onChange(live.lo > WAGE.min ? live.lo : null, live.hi < WAGE.max ? live.hi : null); };
+    const pans = (['lo', 'hi'] as const).map(which => PanResponder.create({
+      onStartShouldSetPanResponder: () => true, onMoveShouldSetPanResponder: () => true,
+      onPanResponderTerminationRequest: () => false, // the feed scroll must not steal a sideways drag
+      onPanResponderGrant: () => { live.start = live[which]; },
+      onPanResponderMove: (_, g) => { if (live.track) place(which, Math.round(live.start + g.dx / live.track * span)); },
+      onPanResponderRelease: commit, onPanResponderTerminate: commit,
+    }));
+    return { pans, step: (which: 'lo' | 'hi', by: number) => { place(which, live[which] + by); commit(); } };
+  });
+  const x = (value: number) => (value - WAGE.min) / span * track;
+  const top = (value: number) => value >= WAGE.max ? `${formatMoney(value)}+` : formatMoney(value);
+  return <View style={styles.wage}>
+    <ThemedText type="label" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">{`${formatMoney(values.lo)} ~ ${top(values.hi)}`}</ThemedText>
+    <View style={styles.wageTrack} onLayout={event => setTrack(Math.max(0, event.nativeEvent.layout.width - THUMB))}>
+      <View style={[styles.wageRail, { backgroundColor: theme.line }]} />
+      <View style={[styles.wageRail, { backgroundColor: theme.accent, left: x(values.lo) + THUMB / 2, width: Math.max(0, x(values.hi) - x(values.lo)) }]} />
+      {(['lo', 'hi'] as const).map((which, index) => <View key={which} {...api.pans[index].panHandlers} hitSlop={8}
+        accessible accessibilityRole="adjustable" accessibilityLabel={which === 'lo' ? tr('최저 시급') : tr('최고 시급')}
+        accessibilityValue={{ min: WAGE.min, max: WAGE.max, now: values[which], text: top(values[which]) }}
+        accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+        onAccessibilityAction={event => api.step(which, event.nativeEvent.actionName === 'increment' ? 1 : -1)}
+        style={[styles.wageThumb, { left: x(values[which]), backgroundColor: theme.card, borderColor: theme.accent }]} />)}
+    </View>
+    <View style={styles.wageEnds}><ThemedText type="small" themeColor="textSecondary">{formatMoney(WAGE.min)}</ThemedText><ThemedText type="small" themeColor="textSecondary">{top(WAGE.max)}</ThemedText></View>
   </View>;
 }
 
@@ -212,6 +257,11 @@ const styles = StyleSheet.create({
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   optionChip: { borderWidth: 1 },
   clear: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
+  wage: { gap: Spacing.two, paddingHorizontal: Spacing.one },
+  wageTrack: { height: 44, justifyContent: 'center' },
+  wageRail: { position: 'absolute', left: THUMB / 2, right: THUMB / 2, height: 4, borderRadius: 2 },
+  wageThumb: { position: 'absolute', width: THUMB, height: THUMB, borderRadius: THUMB / 2, borderWidth: 2 },
+  wageEnds: { flexDirection: 'row', justifyContent: 'space-between' },
   mapHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.two, minHeight: 56 },
   mapFilters: { paddingHorizontal: Spacing.three, paddingBottom: Spacing.two },
   searchHere: { position: 'absolute', top: 12, alignSelf: 'center', minHeight: 44, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
