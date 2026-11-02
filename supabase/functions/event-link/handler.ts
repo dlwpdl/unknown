@@ -3,6 +3,7 @@
 export const PUBLIC_ORIGIN = 'https://gling.ej-entertainment.com';
 const SLUG = /^[a-z0-9][a-z0-9-]{2,59}$/;
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const HEADERS = {
   'Cache-Control': 'no-store',
   'X-Content-Type-Options': 'nosniff',
@@ -74,16 +75,23 @@ export async function handleEventLink(request: Request, { rpc, ipSalt, origins =
       const status = APPLY_STATUS[result?.error ?? ''];
       return status ? reply(status, { error: result!.error }) : reply(503, { error: 'unavailable' });
     }
-    if (typeof body.store === 'string' && only('store', 'handle')) {
+    if (typeof body.store === 'string' && only('store', 'handle', 'undo') && keys.length <= 2) {
       if (!TOKEN.test(body.store)) return notFound();
       const token = await sha256(body.store);
       if (keys.length === 1) {
         const view = await rpc('event_store_view', { p_token_sha256: token });
         return view ? reply(200, { view }) : notFound();
       }
+      if ('undo' in body) {
+        if (typeof body.undo !== 'string' || !UUID.test(body.undo)) return reply(400, { error: 'invalid' });
+        const undone = await rpc('event_store_undo', { p_token_sha256: token, p_use_id: body.undo }) as { ok?: boolean } | null;
+        return undone ? reply(200, { undone: undone.ok === true }) : notFound();
+      }
       if (!text(body.handle, 64)) return reply(400, { error: 'invalid' });
-      const found = await rpc('event_store_lookup', { p_token_sha256: token, p_handle: body.handle }) as { status?: string } | null;
-      return found?.status ? reply(200, { status: found.status }) : notFound();
+      // A check that finds the person is recorded as one use; the same person again within 3 hours is the same use.
+      const found = await rpc('event_store_check', { p_token_sha256: token, p_handle: body.handle }) as
+        { status?: string; use_id?: string; uses?: number; meal_used?: boolean } | null;
+      return found?.status ? reply(200, { status: found.status, use_id: found.use_id, uses: found.uses, meal_used: found.meal_used }) : notFound();
     }
     return reply(400, { error: 'invalid' });
   } catch {

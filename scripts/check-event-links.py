@@ -15,7 +15,7 @@ SOURCE = 'supabase_db_gling'
 CONTAINER = 'gling-event-link-check-' + uuid.uuid4().hex[:12]
 IMAGE = 'public.ecr.aws/supabase/postgres:17.6.1.165'
 # Same column definition as the admin board migration, nothing else from it.
-MIGRATIONS = ['20261102120000_event_links.sql', '20261102130000_event_board_phase2.sql']
+MIGRATIONS = ['20261102120000_event_links.sql', '20261102130000_event_board_phase2.sql', '20261102150000_event_store_uses.sql']
 TESTS = ['event_links.test.sql', 'event_board_phase2.test.sql']
 BOARD = """alter table private.partnership_participations
   add column outreach_stage text not null default 'candidate'

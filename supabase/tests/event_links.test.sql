@@ -69,16 +69,16 @@ select throws_ok($$insert into private.partnership_campaign_links(campaign_id,ki
 -- Nobody but the edge function's service role may call these.
 select ok(has_function_privilege('service_role',f,'execute') and not has_function_privilege('anon',f,'execute') and not has_function_privilege('authenticated',f,'execute'),
   'only service_role may execute '||f) from unnest(array['public.event_apply_info(text)','public.event_apply(text,text,jsonb,integer,text,integer,text,text)','public.event_store_view(text)',
-  'public.event_store_lookup(text,text)','public.create_event_link(uuid,text,text,text,date)',
+  'public.event_store_lookup(text,text)','public.event_store_check(text,text)','public.event_store_undo(text,uuid)','public.create_event_link(uuid,text,text,text,date)',
   'public.set_event_apply_settings(uuid,date[],text[],integer,integer,jsonb,boolean)','public.revoke_event_link(uuid)']) f;
 select ok(not has_function_privilege(r,f,'execute'),r||' cannot execute '||f) from unnest(array['anon','authenticated','service_role']) r,
   unnest(array['private.event_handle(text)','private.event_link_campaign(text,text)','private.event_winner(private.partnership_participations)',
     'private.event_entry_late(private.partnership_participations)',
     'private.event_support_ok(jsonb)','private.event_slots_ok(jsonb,date[],text[],date)']) f;
 select ok(not has_table_privilege(r,t,'select') and not has_table_privilege(r,t,'insert'),r||' has no access to '||t) from unnest(array['anon','authenticated','service_role']) r,
-  unnest(array['private.partnership_campaign_links','private.partnership_apply_attempts','private.partnership_apply_settings']) t;
+  unnest(array['private.partnership_campaign_links','private.partnership_apply_attempts','private.partnership_apply_settings','private.partnership_store_uses']) t;
 select ok((select relrowsecurity from pg_class where oid=t::regclass),'row level security is on for '||t)
-  from unnest(array['private.partnership_campaign_links','private.partnership_apply_attempts','private.partnership_apply_settings']) t;
+  from unnest(array['private.partnership_campaign_links','private.partnership_apply_attempts','private.partnership_apply_settings','private.partnership_store_uses']) t;
 set local role anon;
 select throws_ok($$select public.event_apply_info('open-event')$$,'42501',null,'anon cannot read apply info');
 select throws_ok($$select public.event_apply('open-event','someone','[]',1,null,1,'en',pg_temp.ip(1))$$,'42501',null,'anon cannot apply directly');
@@ -291,6 +291,49 @@ select is(public.event_store_lookup(pg_temp.sha('good-token'),'board.dropped'),
 select is(public.event_store_lookup(pg_temp.sha('wrong-token'),'winner.one'),null,'wrong token learns nothing about a handle');
 select is(public.event_store_lookup(pg_temp.sha('revoked-token'),'winner.one'),null,'revoked token learns nothing about a handle');
 select is((select array_agg(k) from jsonb_object_keys(public.event_store_lookup(pg_temp.sha('good-token'),'winner.one')) k),array['status'],'lookup answers with the status alone, never a list');
+
+-- Each check that finds someone is one use (owner 2026-11-02 "가게 링크 버튼으로 세기"); the same person within 3 hours is the same visit.
+create function pg_temp.store_check(handle text) returns jsonb language sql as $$ select public.event_store_check(pg_temp.sha('good-token'),handle) $$;
+create function pg_temp.uses(handle text) returns setof private.partnership_store_uses language sql as $$
+  select u.* from private.partnership_store_uses u join private.partnership_creators r on r.id=u.creator_id
+  where private.partnership_profile_key(r.profile_url)='https://instagram.com/'||handle order by u.used_at $$;
+set local role service_role;
+select is(pg_temp.store_check('@Gling.Tester')-'use_id','{"status":"discount","uses":1}'::jsonb,'service role checks a handle and it counts as one use');
+reset role;
+select is((select jsonb_build_object('kind',kind,'link',link_id=(select id from private.partnership_campaign_links where token_sha256=pg_temp.sha('good-token')),
+  'entry',participation_id=(select p.id from private.partnership_participations p join private.partnership_creators r on r.id=p.creator_id
+    where p.campaign_id='e1530000-0000-0000-0000-000000000001' and r.display_name='gling.tester'),'undone',cancelled_at) from pg_temp.uses('gling.tester')),
+  '{"kind":"discount","link":true,"entry":true,"undone":null}'::jsonb,'the use records the link, the person and their entry');
+select is(pg_temp.store_check('gling.tester')->>'use_id',(select id::text from pg_temp.uses('gling.tester')),'checking again within 3 hours answers the same use');
+select is((select count(*) from pg_temp.uses('gling.tester')),1::bigint,'and records nothing new');
+select is(pg_temp.store_check('coupon.only')-'use_id','{"status":"discount","uses":1}'::jsonb,'a coupon holder counts too');
+select is((select participation_id from pg_temp.uses('coupon.only')),null,'without an entry the use has no participation');
+select is(pg_temp.store_check('nobody.here'),'{"status":"none"}'::jsonb,'someone not on the list is answered without a use');
+select is(public.event_store_check(pg_temp.sha('wrong-token'),'gling.tester'),null,'a wrong token checks nothing');
+select is(public.event_store_check(pg_temp.sha('revoked-token'),'gling.tester'),null,'a revoked token checks nothing');
+select is((select count(*) from private.partnership_store_uses),2::bigint,'only the two people on the list were recorded');
+
+-- A wrong check can be undone for a day, only from a live store link of the same event.
+select is(public.event_store_undo(pg_temp.sha('closed-store'),(select id from pg_temp.uses('gling.tester'))),'{"ok":false}'::jsonb,'another event''s store link cannot undo it');
+select is(public.event_store_undo(pg_temp.sha('revoked-token'),(select id from pg_temp.uses('gling.tester'))),null,'a revoked link cannot undo it');
+select is(public.event_store_undo(pg_temp.sha('good-token'),(select id from pg_temp.uses('gling.tester'))),'{"ok":true,"uses":0}'::jsonb,'staff undo a wrong check');
+select isnt((select cancelled_at from pg_temp.uses('gling.tester')),null,'the record stays, marked undone');
+select is(public.event_store_undo(pg_temp.sha('good-token'),(select id from pg_temp.uses('gling.tester'))),'{"ok":false,"uses":0}'::jsonb,'undoing twice changes nothing');
+select isnt(pg_temp.store_check('gling.tester')->>'use_id',(select id::text from pg_temp.uses('gling.tester') limit 1),'after an undo the next check is a new use');
+update private.partnership_store_uses set used_at=used_at-interval '25 hours' where id=(select id from pg_temp.uses('gling.tester') where cancelled_at is null);
+select is(public.event_store_undo(pg_temp.sha('good-token'),(select id from pg_temp.uses('gling.tester') where cancelled_at is null))->>'ok','false','a check older than a day stays');
+select is(pg_temp.store_check('gling.tester')->>'uses','2','a later visit is another use');
+
+-- A winner's free meal is once: a later check, or a board that already shows them posted, is flagged for staff.
+select is(pg_temp.store_check('winner.one')-'use_id','{"status":"winner","uses":1}'::jsonb,'a winner''s first check is the meal visit');
+update private.partnership_store_uses set used_at=used_at-interval '4 hours' where id=(select id from pg_temp.uses('winner.one'));
+select is(pg_temp.store_check('winner.one')-'use_id','{"status":"winner","uses":2,"meal_used":true}'::jsonb,'a winner checked on a later visit is flagged as having had the meal');
+do $$ begin
+  if pg_temp.board() then
+    execute $u$update private.partnership_participations set outreach_stage='posted' where creator_id='e1510000-0000-0000-0000-000000000014'$u$;
+  end if;
+end $$;
+select is(pg_temp.store_check('board.ok')->'meal_used',case when pg_temp.board() then 'true'::jsonb end,'a winner who already posted is flagged on the first check');
 
 -- Script-side link making and revoking.
 select isnt(public.create_event_link('e1530000-0000-0000-0000-000000000001','store',null,pg_temp.sha('new-token'),(select d+3 from today)),null,'service role makes a store link');

@@ -84,26 +84,38 @@ test('entry problems map to clear statuses and bad input never reaches the datab
   assert.equal(calls.length, 0);
 });
 
-test('the store token is hashed before the database sees it, and lookups return one status', async () => {
+test('the store token is hashed before the database sees it, and a check returns its status and recorded use', async () => {
   const view = { title: 'Open event', winners: [], applicant_count: 3, benefits: [] };
-  const { calls, send } = setup({ event_store_view: view, event_store_lookup: { status: 'winner', extra: 'ignored' } });
+  const use = '0b6d5a4e-1f2a-4c3b-9d8e-7f6a5b4c3d2e';
+  const { calls, send } = setup({ event_store_view: view, event_store_check: { status: 'winner', use_id: use, uses: 2, meal_used: true, extra: 'ignored' },
+    event_store_undo: { ok: true, uses: 1 } });
   const opened = await send({ store: token });
   assert.equal(opened.status, 200);
   assert.deepEqual(await opened.json(), { view });
   const looked = await send({ store: token, handle: 'winner.one' });
-  assert.deepEqual(await looked.json(), { status: 'winner' });
+  assert.deepEqual(await looked.json(), { status: 'winner', use_id: use, uses: 2, meal_used: true });
+  const undone = await send({ store: token, undo: use });
+  assert.deepEqual(await undone.json(), { undone: true });
   assert.deepEqual(calls, [
     { name: 'event_store_view', args: { p_token_sha256: hex(token) } },
-    { name: 'event_store_lookup', args: { p_token_sha256: hex(token), p_handle: 'winner.one' } },
+    { name: 'event_store_check', args: { p_token_sha256: hex(token), p_handle: 'winner.one' } },
+    { name: 'event_store_undo', args: { p_token_sha256: hex(token), p_use_id: use } },
   ]);
   assert.ok(!JSON.stringify(calls).includes(token), 'the raw token never leaves the function');
+  const none = setup({ event_store_check: { status: 'none' }, event_store_undo: { ok: false } });
+  assert.deepEqual(await (await none.send({ store: token, handle: 'nobody' })).json(), { status: 'none' });
+  assert.deepEqual(await (await none.send({ store: token, undo: use })).json(), { undone: false });
   const missing = setup();
   assert.equal((await missing.send({ store: token })).status, 404);
   assert.equal((await missing.send({ store: token, handle: 'someone' })).status, 404);
+  assert.equal((await missing.send({ store: token, undo: use })).status, 404);
   assert.equal((await missing.send({ store: 'short' })).status, 404);
   assert.equal((await missing.send({ store: token, handle: ['x'] })).status, 400);
   assert.equal((await missing.send({ store: token, extra: 1 })).status, 400);
-  assert.equal(missing.calls.length, 2);
+  assert.equal((await missing.send({ store: token, undo: 'not-a-use' })).status, 400);
+  assert.equal((await missing.send({ store: token, undo: use.toUpperCase() })).status, 400);
+  assert.equal((await missing.send({ store: token, handle: 'someone', undo: use })).status, 400);
+  assert.equal(missing.calls.length, 3, 'bad input never reaches the database');
 });
 
 test('a database failure answers 503 without details', async () => {
