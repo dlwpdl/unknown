@@ -1,5 +1,7 @@
-The Today tab is now Home. Search for homes, jobs and used items from the bar at the top, and tap the button next to the date to see rentals and used items on a map.
+The Today tab is now Home. Tap the magnifier next to your profile at the top to search for homes, jobs and used items.
+The Write tab is now a Map tab, with places to go, events, rentals and used items all on one map. To write a post, tap "+ Write" at the bottom right of Home.
 This week's most-read posts sit right under the categories, and places to go and events take up less room.
+In Jobs, set an hourly pay range and pick more than one neighbourhood at once.
 Meetup chats can now hold up to five pinned notices. Must-read notices stay on top until the host takes them down, and new members see the pinned notices once when they join.
 You can host a language exchange meetup. Pick two languages and a seat split, and people choose the language they speak when they ask to join.
 Answer a meetup reminder with "I'm going" or "Can't make it" right from the notification.

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useCallback, useState } from 'react';
-import { Modal, StyleSheet, View } from 'react-native';
+import { Modal, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
@@ -24,13 +24,17 @@ export function resetStartGuide() {
 }
 
 type Icon = SymbolViewProps['name'];
+const WEB = Platform.OS === 'web';
+// 앱은 지도 탭·떠 있는 글쓰기 버튼(owner 2026-11-01 A안), 웹은 아래 탭에 글쓰기가 그대로이고 지도 탭이 없어요.
 const TOUR: { icon: Icon; title: string; body: string }[] = [
   { icon: { ios: 'location', android: 'location_on', web: 'location_on' }, title: '위쪽 도시 이름', body: '눌러서 사는 도시로 바꿀 수 있어요. 글·모임·장소가 모두 그 도시 기준으로 바뀌어요.' },
-  { icon: { ios: 'magnifyingglass', android: 'search', web: 'search' }, title: '검색창', body: '도시 이름 아래에 있어요. 글·모임·장소·비즈니스를 한 번에 찾아요. "원베드", "알바"처럼 짧게 쳐 보세요.' },
-  { icon: { ios: 'line.3.horizontal.decrease', android: 'filter_list', web: 'filter_list' }, title: '카테고리 줄', body: "검색창 바로 아래 줄이에요. 부동산·구인구직처럼 주제별로 골라 볼 수 있어요. 나머지 주제는 맨 끝 '더보기'에 있어요." },
-  { icon: { ios: 'map', android: 'map', web: 'map' }, title: '렌트·중고 지도', body: "날짜 옆 '렌트·중고' 버튼을 누르면 집 매물과 중고 물건이 지도에 한꺼번에 나와요. 가볼 만한 곳과 행사는 지도 위쪽에서 같이 고를 수 있어요." },
+  { icon: { ios: 'magnifyingglass', android: 'search', web: 'search' }, title: '맨 위 돋보기', body: '프로필 옆에 있어요. 글·모임·장소·비즈니스를 한 번에 찾아요. "원베드", "알바"처럼 짧게 쳐 보세요.' },
+  { icon: { ios: 'line.3.horizontal.decrease', android: 'filter_list', web: 'filter_list' }, title: '카테고리 줄', body: "도시 이름 바로 아래 줄이에요. 부동산·맛집처럼 주제별로 골라 볼 수 있어요. 나머지 주제는 맨 끝 '더보기'에 있어요." },
+  ...(WEB ? [] : [{ icon: { ios: 'map', android: 'map', web: 'map' }, title: '아래 지도 탭', body: '집 매물, 중고 물건, 가볼 만한 곳, 행사가 지도 한 장에 다 나와요. 보고 싶은 것만 지도 위쪽에서 골라도 돼요.' } as const]),
   { icon: { ios: 'person.2', android: 'groups', web: 'groups' }, title: '아래 모임 탭', body: '이번 주 열리는 모임을 보고 바로 신청해요. 직접 모임을 열 수도 있어요.' },
-  { icon: { ios: 'square.and.pencil', android: 'edit_square', web: 'edit_square' }, title: '아래 글쓰기 탭', body: '궁금한 걸 묻거나 집·일자리·중고 글을 올려요. 주제를 고르면 맞는 칸이 나와요.' },
+  WEB
+    ? { icon: { ios: 'square.and.pencil', android: 'edit_square', web: 'edit_square' }, title: '아래 글쓰기 탭', body: '궁금한 걸 묻거나 집·일자리·중고 글을 올려요. 주제를 고르면 맞는 칸이 나와요.' }
+    : { icon: { ios: 'plus', android: 'add', web: 'add' }, title: "'+ 글쓰기' 버튼", body: '홈 오른쪽 아래에 떠 있어요. 궁금한 걸 묻거나 집·일자리·중고 글을 올려요. 주제를 고르면 맞는 칸이 나와요.' },
   { icon: { ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' }, title: '채팅 · 알림', body: '채팅은 1:1 대화와 모임 단톡방, 알림은 내 글에 달린 댓글과 모임 소식이에요.' },
 ];
 
