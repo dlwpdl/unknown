@@ -27,7 +27,9 @@ function NativeFlatPressable({ style, onPressIn, onPressOut, onLayout, ...props 
   const [wasBlocked, setWasBlocked] = useState(blocked);
   if (blocked !== wasBlocked) { setWasBlocked(blocked); if (blocked) setPressed(false); }
   useEffect(() => { if (blocked) scale.setValue(1); }, [blocked, scale]);
-  const original = typeof style === 'function' ? style({ pressed, hovered: false }) : style;
+  // Web style callbacks may read hovered; native Pressable types only know pressed, so pass a variable, not a literal.
+  const state = { pressed, hovered: false };
+  const original = typeof style === 'function' ? style(state) : style;
   const flat = StyleSheet.flatten(original) ?? undefined;
   const shrinks = !reduced && !blocked && !!(props.onPress || props.onLongPress) && !fillsParent(flat);
   const settle = (toValue: number, duration: number) => Animated.timing(scale, { toValue, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
