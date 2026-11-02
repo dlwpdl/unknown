@@ -26,17 +26,25 @@ Deno.serve(async (request) => {
     const input = validate(await request.json().catch(() => null));
     if (!input) return jsonError('INVALID_INPUT', 400);
 
+    const service = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     // The viewer's own RLS decides visibility, and the text must come from that row,
     // so the endpoint can't be used as a general translator.
-    const row = input.kind === 'post'
+    let row = input.kind === 'post'
       ? await viewer.from('posts').select('title,body').eq('id', input.id).eq('status', 'published').maybeSingle()
       : await viewer.from('comments').select('body').eq('id', input.id).is('deleted_at', null).maybeSingle();
+    if (input.kind === 'comment' && !row.error && !row.data) {
+      // A business comment row holds the operator's id, so RLS hides it from other members; the viewer's
+      // definer lookup confirms they can see that comment before the body is read without RLS.
+      const business = await viewer.rpc('get_public_comment_businesses', { p_comment_ids: [input.id] });
+      if (!business.error && business.data?.length) {
+        row = await service.from('comments').select('body').eq('id', input.id).is('deleted_at', null).maybeSingle();
+      }
+    }
     if (row.error || !row.data) return jsonError('NOT_FOUND', 404);
     const original = [row.data.title ?? '', row.data.body].join('\n');
     const lines = [input.source.title ?? '', ...input.source.body.split(/\r?\n/)].map(line => line.trim()).filter(Boolean);
     if (!lines.length || lines.some(line => !original.includes(line))) return jsonError('SOURCE_MISMATCH', 409);
 
-    const service = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     const hash = await sha256(JSON.stringify([input.source.title, input.source.body]));
     const key = { p_kind: input.kind, p_id: input.id, p_language: input.language, p_hash: hash };
     const cached = await service.rpc('get_content_translation', { ...key, p_user: user.id });
