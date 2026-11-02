@@ -216,7 +216,7 @@
   "components_chat-room.pressable.1": "src/components/chat-room.tsx",
   "components_chat-room.pressable.2": "src/components/chat-room.tsx",
   "components_chat-room.flatlist.1": "src/components/chat-room.tsx",
-  "components_chilling-host-profile.pressable.1": "src/components/chilling-host-profile.tsx",
+  "components_chilling-host-profile.pressable.1": "src/components/post-detail.tsx",
   "components_chilling-host-profile.pressable.2": "src/components/chilling-host-profile.tsx",
   "components_chilling-host-profile.pressable.3": "src/components/chilling-host-profile.tsx",
   "components_post-photo-gallery.scrollview.1": "src/components/post-photo-gallery.tsx",
@@ -284,5 +284,14 @@
   "chat.peer-profile": "src/components/chat-room.tsx",
   "chat.sender-profile": "src/components/chat-room.tsx",
   "chat.identity.business": "src/components/chat-identity-switcher.tsx",
-  "components_feed-screen.ai-undo": "src/components/feed-screen.tsx"
+  "components_feed-screen.ai-undo": "src/components/feed-screen.tsx",
+  "meetup-create.profile-preview": "src/app/meetup-create.tsx",
+  "meetup.detail.my-request": "src/components/post-detail.tsx",
+  "app_tabs_meetups.scrollview.1": "src/app/(tabs)/meetups.tsx",
+  "meetup-profile.edit-item": "src/app/meetup-profile.tsx",
+  "meetup-profile.preview": "src/app/meetup-profile.tsx",
+  "meetup-profile.move-photo": "src/app/meetup-profile.tsx",
+  "meetup.application.decide": "src/app/meetup-application.tsx",
+  "meetup.application.next": "src/app/meetup-application.tsx",
+  "meetup.application.inbox": "src/app/meetup-application.tsx"
 }

@@ -83,6 +83,7 @@ export function form({ params = {}, sourceEvent, catalogReady = true, membership
     '@/lib/community-data': { getCommunityActionError: () => null, MEETUPS_CHANGED_EVENT: 'meetups.changed' },
     '@/lib/behavior-analytics': { behavior() {} },
     '@/components/relationship-slot-card': { relationshipSlotData: () => ({ available: 3, active: 0, limit: 3 }) },
+    '@/components/disclosure': { Disclosure: 'Disclosure', animateLayout() {} },
     '@/lib/ai-draft': aiDraft, '@/lib/meetup-ai': { splitEventMeetupBody },
     '@/lib/meetup-destination': destinations, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
     '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }, { id: 'toronto', name: '토론토', state: 'open' }] },
@@ -129,12 +130,15 @@ test('generic creation requires an explicit type, while a valid type handoff ini
   assert.equal(nodes(malformed.render()).find(node => node.type === 'MeetupKindSwitch').props.value, null);
 });
 
-test('host form starts with readable sections while optional help and advanced settings remain accessible', () => {
+test('host form starts with the profile check and readable cards while optional help and advanced settings remain accessible', () => {
   const app = form(), tree = app.render();
-  const headings = nodes(tree).filter(node => node.props?.accessibilityRole === 'header');
-  assert.ok(headings.some(node => node.props.children === '01. 어떤 모임인가요?'));
-  assert.ok(headings.some(node => node.props.children === '02. 언제, 어디서 만나요?'));
-  assert.ok(headings.some(node => node.props.children === '내 모임 프로필'));
+  const headings = nodes(tree).filter(node => node.props?.accessibilityRole === 'header').map(node => node.props.children);
+  assert.ok(headings.includes('어떤 모임인가요?'));
+  assert.ok(headings.includes('언제, 어디서 만나요?'));
+  assert.ok(headings.includes('누구와 함께해요?'));
+  const order = nodes(tree).map(node => node.props?.analyticsId);
+  assert.ok(order.indexOf('meetup-create.profile-edit') < order.indexOf('app_meetup-create.pressable.3'), 'The required profile check comes before the first card.');
+  assert.ok(order.indexOf('app_meetup-create.pressable.3') < nodes(tree).findIndex(node => node.props?.accessibilityLabel === '모임 제목'), 'Category sits at the top of the first card.');
   assert.equal(app.find('app_meetup-create.ai-draft'), undefined);
   app.openAssistance(); assert.ok(app.find('app_meetup-create.ai-draft'));
   assert.equal(app.find('권장 최소 나이, 만 나이'), undefined);
@@ -167,8 +171,10 @@ test('invalid capacity is shown at the input and fixed CTA, focuses that input, 
   const tree = app.render();
   const input = app.find('정원, 2명부터 10명');
   input.props.ref?.({ focus: () => moves.push('focus') });
-  const field = nodes(tree).find(node => node.props?.onLayout && nodes(node).some(child => child.props?.accessibilityLabel === '정원, 2명부터 10명'));
-  field?.props.onLayout({ nativeEvent: { layout: { y: 640 } } });
+  // The field's y is relative to its card, so the target is the card's y plus the field's.
+  const [card, field] = nodes(tree).filter(node => node.props?.onLayout && nodes(node).some(child => child.props?.accessibilityLabel === '정원, 2명부터 10명'));
+  card.props.onLayout({ nativeEvent: { layout: { y: 600 } } });
+  field.props.onLayout({ nativeEvent: { layout: { y: 40 } } });
   const scroll = nodes(tree).find(node => node.props?.analyticsId === 'app_meetup-create.scrollview.1');
   if (scroll.props.ref) scroll.props.ref.current = { scrollTo: value => moves.push(value.y) };
   app.find('app_meetup-create.pressable.4').props.onPress(); await settle();
@@ -404,10 +410,10 @@ test('the event bridge preserves its seeded schedule and saved source when apply
   app.requests[0].resolve({ data: { draft: generated } }); await settle();
   app.preview().props.onApply();
   assert.deepEqual(nodes(app.render()).filter(n => n.type === 'ChillingDateInput').map(n => n.props.value), before);
-  nodes(app.render()).find(n => n.type === 'RaisedActionButton').props.onPress(); await settle();
+  app.find('app_meetup-create.pressable.4').props.onPress(); await settle();
   assert.equal(app.writes.length, 0, 'first publish only reveals the public host profile');
   app.find('meetup-create.host-consent').props.onPress();
-  nodes(app.render()).find(n => n.type === 'RaisedActionButton').props.onPress(); await settle();
+  app.find('app_meetup-create.pressable.4').props.onPress(); await settle();
   assert.equal(app.writes.length, 1);
   assert.ok(app.writes[0].body.endsWith('\n\n행사 ID: event-example'));
   assert.equal(app.writes[0].event.startsAt, sourceEvent.startsAt);
@@ -454,7 +460,7 @@ test('an imported event rejects an oversized template atomically and keeps the e
 
 test('a sports category and title chosen during generation are preserved and a result after unmount is ignored', async () => {
   const app = form(); app.edit('모임 주제', '운동'); app.generate(); app.find('meetup-create.advanced').props.onPress();
-  const sports = nodes(app.render()).find(n => n.props?.accessibilityRole === 'radio' && nodes(n).some(child => child.props?.children === '스포츠'));
+  const sports = nodes(app.render()).find(n => n.props?.accessibilityRole === 'radio' && n.props.label === '스포츠');
   sports.props.onPress(); assert.equal(app.find('app_meetup-create.sport'), undefined, 'Sport chips had no persisted effect and were removed.');
   app.edit('모임 제목', '테니스 같이해요');
   app.requests[0].resolve({ data: { draft: generated } }); await settle(); app.preview().props.onApply();

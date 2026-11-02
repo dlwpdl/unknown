@@ -82,7 +82,7 @@ export function MeetupHostHome({ postId, kind }: { postId: string; kind: 'once' 
   };
   const todoCopy = (todo: HostTodo): { cta: string; title: string; detail: string } => {
     if (todo.kind === 'live') { const came = todo.session.members.filter(member => member.checkedIn).length; return { cta: tr('체크인 시작'), title: tr('지금 체크인 {0}/{1}명', came, todo.session.members.length), detail: tr('모임이 시작됐어요') }; }
-    if (todo.kind === 'requests') return { cta: tr('신청 {0}명 확인하기', todo.count), title: tr('신청 {0}명이 기다려요', todo.count), detail: tr('대화 탭 요청함에서 승인해요') };
+    if (todo.kind === 'requests') return { cta: tr('신청 {0}명 확인하기', todo.count), title: tr('신청 {0}명이 기다려요', todo.count), detail: tr('대화 탭 참여 신청에서 승인해요') };
     if (todo.kind === 'confirm') return { cta: tr('{0} 참석 확인하기', dateOf(todo.session)), title: tr('참석 확인할 회차가 있어요'), detail: tr('{0} 회차 · {1}일 남았어요', dateOf(todo.session), daysLeftToConfirm(todo.session, now)) };
     return { cta: '', title: tr('회비 안 낸 분이 {0}명이에요', todo.count), detail: home.fee ? meetupFeeAmount(home.fee.amount) : '' };
   };

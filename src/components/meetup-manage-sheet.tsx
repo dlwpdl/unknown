@@ -1,4 +1,3 @@
-import { Typography } from '@/constants/design-system';
 import { useLanguage } from '@/hooks/use-language';
 import { StyleSheet, View } from 'react-native';
 import { useRef, useState } from 'react';
@@ -40,11 +39,7 @@ export function MeetupManageSheet({ visible, onClose, actions, title }: { visibl
 }
 
 const styles = StyleSheet.create({
-  label: { ...Typography.menu }, helper: { fontSize: 14, lineHeight: 22 }, bodyText: { fontSize: 16, lineHeight: 24 },
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-  sheet: { paddingHorizontal: Spacing.three, paddingTop: Spacing.two, borderTopWidth: 1, borderTopLeftRadius: 20, borderTopRightRadius: 20, gap: Spacing.two },
-  grab: { width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: Spacing.three },
-  title: { marginBottom: Spacing.two },
+  helper: { fontSize: 14, lineHeight: 22 }, bodyText: { fontSize: 16, lineHeight: 24 },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 64, paddingHorizontal: Spacing.two, borderRadius: 14 },
   icon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   labels: { flex: 1 },

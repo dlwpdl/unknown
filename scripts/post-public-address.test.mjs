@@ -5,6 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { withLanguageImports } from './test-language-imports.mjs';
 import { buildCommentListRows } from '../src/lib/comment-list.ts';
+import { chillingAvailability } from '../src/lib/chilling.ts';
 import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 import * as maps from '../src/lib/post-maps.ts';
 
@@ -52,7 +53,7 @@ const source = ts.transpileModule(readFileSync(new URL('../src/components/post-d
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 const text = tree => nodes(tree).filter(node => node.type === 'ThemedText').map(node => node.props.children).flat(Infinity).filter(value => typeof value === 'string').join(' ');
 
-function renderDetail(post, { isAuthed = true, hidden = false } = {}) {
+function renderDetail(post, { isAuthed = true, hidden = false, status = {}, business = null } = {}) {
   const exports = {}, jsx = (type, props, key) => ({ type, props, key });
   const imports = {
     'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
@@ -61,7 +62,7 @@ function renderDetail(post, { isAuthed = true, hidden = false } = {}) {
     'expo-router': { useRouter: () => ({ push() {} }) },
     'react-native-safe-area-context': { useSafeAreaInsets: () => ({ bottom: 0 }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed, me: { id: 'viewer' }, promptLogin() {} }) },
-    '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/hooks/use-chat-identity': { useChatIdentity: () => business }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/hooks/use-content-visibility': { useContentVisibility: () => () => hidden },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16 }, Depth: {} },
@@ -69,8 +70,9 @@ function renderDetail(post, { isAuthed = true, hidden = false } = {}) {
     '@/lib/post-photo-credits': { splitPostPhotoCredits },
     '@/lib/post-maps': maps,
     '@/lib/promotions': { PROMOTIONS_PREVIEW_ENABLED: false },
-    '@/components/chilling-host-profile': { useMeetupParticipation: () => ({ own: false, participation: null, statusLoading: false, statusError: '', retry() {} }),
-      MeetupActionBar: 'MeetupActionBar', MeetupChips: 'MeetupChips', MeetupNotes: 'MeetupNotes', MeetupSummary: 'MeetupSummary' },
+    '@/components/chilling-host-profile': { useMeetupParticipation: () => ({ own: false, participation: null, statusLoading: false, statusError: '', retry() {}, ...status }),
+      MeetupActionBar: 'MeetupActionBar', MeetupChips: 'MeetupChips', MeetupNotes: 'MeetupNotes' },
+    '@/lib/chilling': { chillingAvailability },
     '@/lib/meetup-destination': { splitPlaceMeetupBody: () => null },
     '../../supabase/functions/_shared/ticketmaster': { ticketmasterReference: () => null },
   };
@@ -119,4 +121,43 @@ test('a meetup detail shows one action bar instead of the comment composer while
   assert.equal(nodes(plain).find(node => node.type === 'PostCard').props.postDetail, true);
   assert.deepEqual(nodes(plain).filter(node => node.type === 'PostReactionToggle').map(node => node.props.kind), ['like', 'save'], 'like and save sit beside the comment input');
   assert.deepEqual(nodes(tree).filter(node => node.type === 'PostReactionToggle').map(node => node.props.kind), ['save'], 'meetups keep only the header save');
+});
+
+test('the meetup detail bar and notes follow the viewer: member chat, full waitlist, paused and unchanged business/rejected rules', () => {
+  const meetup = (room = {}) => ({ ...listing('소개'), id: 'meetup', kind: 'story', tag: { slug: 'meetup', kind: 'meetup', label: '모임' },
+    room: { id: 'room', title: '모임', memberCount: 3, capacity: 6, verifiedOnly: false, eventKind: 'group', ...room } });
+  const detail = (room, options) => { const tree = renderDetail(meetup(room), options); return { tree, labels: nodes(tree).filter(node => node.type === 'RaisedActionButton').map(node => node.props.label), bar: nodes(tree).some(node => node.type === 'MeetupActionBar'),
+    notes: nodes(nodes(tree).find(node => node.type === 'PostCard').props.meetupDetail.afterTitle).some(node => node.type === 'MeetupNotes') }; };
+  const approved = { participation: { status: 'approved' } };
+
+  const member = detail({}, { status: approved });
+  assert.deepEqual(member.labels, ['모임 대화 보기']); assert.equal(member.bar, false); assert.equal(member.notes, false, 'members are past 참여 전에 알아둘 것');
+  assert.deepEqual(detail({ capacity: 3 }, { status: approved }).labels, ['모임 대화 보기'], 'a member of a full meetup still enters the chat');
+  // A closed room has no chat to enter, so an old approval keeps the request screen.
+  assert.equal(detail({ closed: true }, { status: approved }).bar, true);
+  for (const status of ['rejected', 'cancelled', 'pending']) {
+    const other = detail({}, { status: { participation: { status } } });
+    assert.equal(other.bar, true, `${status} keeps 내 신청 보기`); assert.equal(other.notes, true);
+  }
+
+  const full = detail({ capacity: 3 });
+  const waitlist = nodes(full.tree).find(node => node.type === 'MeetupWaitlist');
+  assert.equal(waitlist.props.cta, 'primary'); assert.equal(waitlist.props.postId, 'meetup'); assert.equal(waitlist.props.fallback.props.label, '다른 모임 찾기');
+  assert.ok(text(full.tree).includes('초대가 와도 참여 신청과 호스트 승인은 필요해요'), 'the waitlist safety note survives moving to the bar');
+  assert.equal(full.notes, true);
+
+  assert.deepEqual(detail({ recruitingClosed: true }).labels, ['다른 모임 찾기']);
+  assert.equal(nodes(detail({ recruitingClosed: true }).tree).find(node => node.type === 'MeetupChips').props.post.room.closed, true, 'the chip reads 모집 마감');
+  assert.equal(nodes(detail({}).tree).find(node => node.type === 'MeetupChips').props.post.room.closed, undefined);
+
+  // Status still loading or failed: never offer the waitlist or the chat on a guess.
+  assert.equal(detail({ capacity: 3 }, { status: { statusLoading: true } }).bar, true);
+  assert.equal(detail({ capacity: 3 }, { status: { statusError: 'x' } }).bar, true);
+  // Acting as a business: only the switch-back bar, even for a member or a full meetup.
+  for (const options of [{ status: approved }, {}]) assert.equal(detail({ capacity: 3 }, { ...options, business: { id: 'b', name: '메이플 카페' } }).bar, true);
+
+  const host = detail({ recruitingClosed: true }, { status: { own: true } });
+  assert.deepEqual(host.labels, ['신청자 검토']); assert.equal(nodes(host.tree).find(node => node.type === 'RaisedActionButton').props.tone, 'secondary');
+  assert.equal(host.notes, false);
+  assert.equal(detail({}, { status: { own: true } }).bar, true);
 });

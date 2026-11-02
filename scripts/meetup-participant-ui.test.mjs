@@ -66,8 +66,8 @@ export function mountParticipant(screen, options = {}) {
     if (name in imports) return imports[name];
     if (name.startsWith('@/components/')) return new Proxy({}, { get: (_, key) => key });
     throw new Error(`Unexpected import ${name}`);
-  }, Date, Intl, JSON, setTimeout: () => 0, clearTimeout() {} });
-  const render = () => { dirty = false; cursor = 0; tree = exports[exportName](screen === 'discovery' ? { destination: ctx.destination, sourceInvalid: ctx.sourceInvalid } : screen === 'mine' ? { onOpen: noop } : { postId: ctx.post.id }); effects.splice(0).forEach(fn => fn()); return tree; };
+  }, Date, Intl, JSON, setTimeout: () => 0, clearTimeout() {}, requestAnimationFrame: fn => fn() });
+  const render = () => { dirty = false; cursor = 0; tree = exports[exportName](screen === 'discovery' ? { destination: ctx.destination, sourceInvalid: ctx.sourceInvalid, routedMine: ctx.routedMine } : screen === 'mine' ? { onOpen: noop } : { postId: ctx.post.id }); effects.splice(0).forEach(fn => fn()); return tree; };
   const flush = async () => { for (let i = 0; i < 15; i++) { if (dirty && mounted) render(); await new Promise(resolve => setImmediate(resolve)); if (!dirty || !mounted) return tree; } throw new Error('component did not settle'); };
   return { ctx, calls, alerts, get tree() { return tree; }, render, flush, control: id => nodes(tree).find(node => node.props?.analyticsId === id), unmountLayout() { mounted = false; hooks.filter(hook => hook?.phase === 'layout').forEach(hook => hook.cleanup?.()); }, unmount() { mounted = false; hooks.forEach(hook => hook?.cleanup?.()); }, rerender() { dirty = true; } };
 }
@@ -87,6 +87,36 @@ test('stored state restores, a slow preference read cannot override a tap, and u
   let resolve; const ui = mountParticipant('discovery', { readPreference: () => new Promise(yes => { resolve = yes; }) }); await ui.flush();
   const oldMine = ui.control('meetup.discovery.mine'); oldMine.props.onPress(); await ui.flush(); resolve(JSON.stringify({ kind: 'group', view: 'browse' })); await ui.flush();
   assert.ok(nodes(ui.tree).some(node => node.type === 'MyMeetups')); const before = ui.calls.length; ui.unmount(); oldMine.props.onPress(); assert.equal(ui.calls.length, before);
+});
+test('the join screen opens My directly: the route beats a saved view, keeps the saved kind, is cleared after use, and works on a live tab', async () => {
+  const hasMine = ui => nodes(ui.tree).some(node => node.type === 'MyMeetups');
+  const browse = JSON.stringify({ kind: 'once', view: 'browse' });
+  const cold = mountParticipant('discovery', { routedMine: true, preference: browse }); await cold.flush();
+  assert.ok(hasMine(cold)); assert.equal(nodes(cold.tree).find(node => node.type === 'MeetupKindSwitch').props.value, 'once');
+  assert.equal(cold.calls.find(([name]) => name === 'params')[1].view, '');
+  assert.equal(cold.calls.some(([name]) => name === 'write-pref'), false, 'a route visit does not overwrite the saved view'); cold.unmount();
+  const live = mountParticipant('discovery', { preference: browse }); await live.flush(); assert.equal(hasMine(live), false);
+  live.ctx.routedMine = true; live.rerender(); await live.flush(); assert.ok(hasMine(live));
+  assert.equal(live.calls.find(([name]) => name === 'params')[1].view, ''); live.unmount();
+});
+test('search keeps the filter row and opens beside it, and My keeps every entry in its summary rows', async () => {
+  const ui = mountParticipant('discovery'); ui.render();
+  const header = () => nodes(ui.tree).find(node => node.type === 'FlatList').props.ListHeaderComponent;
+  assert.ok(nodes(header()).some(node => node.type === 'MeetupKindSwitch'), 'the filter row is there while the list is still loading'); await ui.flush();
+  ui.control('app_tabs_meetups.pressable.13').props.onPress(); await ui.flush();
+  assert.ok(nodes(header()).some(node => node.type === 'TextInput'), 'the search field scrolls with the button that opened it');
+  ui.control('meetup.discovery.mine').props.onPress(); await ui.flush();
+  const row = nodes(ui.tree).find(node => node.type === 'MyMeetups').props.summaryRows.find(item => item?.props?.analyticsId === 'app_tabs_meetups.pressable.2');
+  row.props.onPress(); assert.deepEqual(ui.calls.at(-1), ['push', '/meetup-profile']); ui.unmount();
+});
+test('filters open in the shared drag sheet and close from its action', async () => {
+  const ui = mountParticipant('discovery'); await ui.flush();
+  const sheet = () => nodes(ui.tree).find(node => node.type === 'DragSheet');
+  assert.equal(sheet().props.visible, false);
+  ui.control('app_tabs_meetups.pressable.14').props.onPress(); await ui.flush(); assert.equal(sheet().props.visible, true);
+  sheet().props.onClose(); await ui.flush(); assert.equal(sheet().props.visible, false);
+  ui.control('app_tabs_meetups.pressable.14').props.onPress(); await ui.flush();
+  ui.control('app_tabs_meetups.pressable.15').props.onPress(); await ui.flush(); assert.equal(sheet().props.visible, false); ui.unmount();
 });
 test('place context stays browse despite saved My and preserves exact source when creating', async () => {
   const destination = { kind: 'place', cityId: 'vancouver', place: { id: 'exact-place', name: '실제 장소' } };
@@ -165,7 +195,7 @@ const fill = async ui => { nodes(ui.tree).find(node => node.type === 'TextInput'
 test('pending applicant goes to the meetups tab, never the host request inbox; host gets the review action', async () => {
   const ui = mountParticipant('join', { request: { id: 'request', status: 'pending' } }); await ui.flush();
   const cta = ui.control('app_meetup-join.pressable.3'); assert.equal(cta.props.label, '내 모임에서 보기');
-  cta.props.onPress(); assert.deepEqual(ui.calls.at(-1), ['replace', '/(tabs)/meetups']); ui.unmount();
+  cta.props.onPress(); assert.deepEqual(ui.calls.at(-1), ['replace', { pathname: '/(tabs)/meetups', params: { view: 'mine' } }]); ui.unmount();
   const host = mountParticipant('join', { auth: { isAuthed: true, me: { id: 'host', nickname: '소라' }, promptLogin() {} } }); await host.flush();
   const review = host.control('app_meetup-join.pressable.3'); assert.equal(review.props.label, '참여 신청자 검토하기');
   review.props.onPress(); assert.deepEqual(host.calls.at(-1), ['push', { pathname: '/chat', params: { view: 'requests' } }]); host.unmount();

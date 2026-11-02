@@ -2,10 +2,13 @@ import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable } from '@/components/analytics-controls';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert, DeviceEventEmitter, Platform, StyleSheet, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
+import { useReducedMotion } from 'react-native-reanimated';
 
+import { animateLayout, Disclosure } from '@/components/disclosure';
+import { ListCard } from '@/components/list-card';
 import { ThemedText } from '@/components/themed-text';
 import { PostShareSheet } from '@/components/post-share-sheet';
 import { MeetupManageSheet } from '@/components/meetup-manage-sheet';
@@ -26,15 +29,16 @@ import { CITIES } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
 
-type MyMeetupsProps = { onOpen: (postId: string) => Promise<void>; showLoadingIndicator?: boolean; hideTitle?: boolean };
+// summaryRows: the caller's own rows, shown with the cancellation notice in one card under the meetups.
+type MyMeetupsProps = { onOpen: (postId: string) => Promise<void>; showLoadingIndicator?: boolean; hideTitle?: boolean; summaryRows?: ReactNode[] };
 export function MyMeetups(props: MyMeetupsProps) {
 
   const { isAuthed, me } = useAuth();
   return <MyMeetupsContent key={isAuthed ? me.id : 'guest'} {...props} />;
 }
-function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = false }: MyMeetupsProps) {
+function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = false, summaryRows = [] }: MyMeetupsProps) {
   const { tr, t, language, locale: appLocale } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), reduced = useReducedMotion();
   const hidden = useContentVisibility();
   const router = useRouter();
   const { isAuthed, isAdmin, me, promptLogin } = useAuth();
@@ -50,7 +54,6 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = fal
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [sharedPost, setSharedPost] = useState<Post | null>(null);
-  const [policyOpen, setPolicyOpen] = useState(false);
   const [menuFor, setMenuFor] = useState<MyMeetup | null>(null);
   const shareBusy = useRef(false), active = useRef(true);
   useLayoutEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
@@ -84,6 +87,7 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = fal
     try {
       await leaveMeetup(supabase, meetup.id);
       if (!active.current || currentUser.current !== userId) return;
+      animateLayout(reduced); // The card fades out and the ones below close the gap.
       setResult(current => current?.userId === userId ? { ...current, items: current.items.flatMap(item => item.id !== meetup.id ? [item] : meetup.role === 'host' ? [] : [{ ...item, role: 'cancelled' as const, conversationId: null }]) } : current);
       play('selection');
       DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
@@ -136,16 +140,18 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = fal
     } finally { shareBusy.current = false; if (active.current) setBusy(null); }
   };
 
+  const summary = [...summaryRows, isAuthed && <View key="policy" style={styles.policy}>
+    <Disclosure analyticsId="meetup.mine.policy" title={language === 'en' ? 'Cancellation, leaving and ending' : '취소·탈퇴·종료 안내'}>
+      <MeetupPolicyNotice mode="leave" /><MeetupPolicyNotice mode="close" />
+    </Disclosure>
+  </View>].filter(Boolean);
   return <View style={styles.section}>
-    <View style={styles.heading}>
-      {!hideTitle && <ThemedText type="smallBold" accessibilityRole="header" style={styles.title}>{t.meetup.mine}</ThemedText>}
+    {!hideTitle && <View style={styles.heading}>
+      <ThemedText type="smallBold" accessibilityRole="header" style={styles.title}>{t.meetup.mine}</ThemedText>
       {isAuthed && slots && <ThemedText type="small" themeColor="textSecondary" accessibilityLabel={isAdmin ? tr('관리자 계정 · 제한 없음') : tr("모임 자리 {0} / {1}", (slots.active), (slots.limit))} style={[styles.support, { fontVariant: ['tabular-nums'] }]}>
         {isAdmin ? tr('관리자 계정 · 제한 없음') : <>{tr("모임 자리") + " "}<ThemedText type="smallBold" style={styles.support}>{slots.active}/{slots.limit}</ThemedText></>}
       </ThemedText>}
-    </View>
-    {isAuthed && <><Pressable analyticsId="meetup.mine.policy" accessibilityRole="button" accessibilityState={{ expanded: policyOpen }} onPress={() => { play('selection'); setPolicyOpen(value => !value); }} style={styles.policy}>
-      <ThemedText style={styles.support} themeColor="textSecondary">{language === 'en' ? 'Cancellation, leaving and ending' : '취소·탈퇴·종료 안내'}{policyOpen ? ' −' : ' +'}</ThemedText>
-    </Pressable>{policyOpen && <><MeetupPolicyNotice mode="leave" /><MeetupPolicyNotice mode="close" /></>}</>}
+    </View>}
     {!isAuthed ? <Pressable analyticsId="components_my-meetups.pressable.1" onPress={() => { play('selection'); promptLogin(t.auth.reasonJoinLogin); }} accessibilityRole="button" style={[styles.empty, { borderColor: theme.line }]}>
       <ThemedText type="small" style={styles.body} themeColor="accent">{tr("로그인하고 내 모임 보기")}</ThemedText>
     </Pressable> : <>
@@ -169,7 +175,7 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = fal
                   <ThemedText type="small" style={styles.support} themeColor="textSecondary">{tr(meetup.room.capacity ? "{0} · {1}/{2}명" : "{0} · {1}명", tr(CITIES.find(({ id }) => id === meetup.cityId)?.name ?? meetup.cityId), meetup.room.memberCount ?? 0, meetup.room.capacity)}{meetup.room.recruitingClosed ? tr(' · 모집 마감') : ''}</ThemedText>
                   {busy === meetup.id && <GlingLoader color={theme.accent} accessibilityLabel={tr("모임 처리 중")} />}
                 </Pressable>
-                {canChange && <Pressable analyticsId="components_my-meetups.pressable.4" accessibilityRole="button" accessibilityLabel={tr("{0} 더보기", meetup.title)} disabled={!!busy}
+                {canChange && <Pressable analyticsId="components_my-meetups.pressable.4" accessibilityRole="button" accessibilityLabel={tr("{0} 더보기", meetup.title)} disabled={!!busy} accessibilityState={{ disabled: !!busy }}
                   onPress={() => { play('selection'); setMenuFor(meetup); }}
                   style={({ pressed }) => [styles.more, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
                   <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={18} tintColor={theme.text} />
@@ -200,6 +206,7 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = fal
       {shareTarget && <PostShareSheet post={shareTarget} visible onClose={() => setSharedPost(null)}
         onShared={() => { void recordPostShare(supabase, shareTarget.id).catch(() => {}); }} />}
     </>}
+    {summary.length > 0 && <View style={styles.summary}><ListCard>{summary}</ListCard></View>}
   </View>;
 }
 
@@ -216,7 +223,8 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 20, lineHeight: 28, fontWeight: '600' },
   body: { ...Typography.body, fontSize: 16, lineHeight: 24 }, support: { ...Typography.supporting, fontSize: 14, lineHeight: 20 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  policy: { minHeight: 44, justifyContent: 'center' },
+  policy: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
+  summary: { marginTop: Spacing.two },
   action: { minHeight: 44, minWidth: 44, padding: Spacing.two, alignItems: 'center', justifyContent: 'center' },
   empty: { minHeight: 44, borderWidth: 1, borderRadius: 12, padding: Spacing.three },
 });

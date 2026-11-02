@@ -18,8 +18,10 @@ import { loadMyMerchantConnections } from '@/lib/merchant-connections';
 import { ChatRoom } from '@/components/chat-room';
 import { MeetupHistoryChoice } from '@/components/meetup-room-summary';
 import { GlassSurface } from '@/components/glass-surface';
+import { InitialAvatar, ListCard, ListRow, SectionLabel } from '@/components/list-card';
 import { ProfileAvatarButton } from '@/components/profile-avatar-button';
 import { RaisedActionButton } from '@/components/raised-action-button';
+import { SelectionChip } from '@/components/selection-chip';
 import { LoginPanel } from '@/components/login-panel';
 import { relationshipSlotData } from '@/components/relationship-slot-card';
 import { StateCard } from '@/components/state-card';
@@ -27,7 +29,8 @@ import { ThemedText } from '@/components/themed-text';
 import { chatListTime, meetupChatIcon } from '@/lib/chat-details';
 import { TabContent } from '@/components/tab-content';
 import { TrustBadge } from '@/components/trust-badge';
-import { Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
+import { IconSize } from '@/constants/design-system';
+import { MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { getCommunityActionError, loadConversations, loadPendingMeetupRequests, MEETUPS_CHANGED_EVENT, type ConversationPage, type ConversationFilter, type MeetupRequest } from '@/lib/community-data';
@@ -307,36 +310,43 @@ export default function ChatScreen() {
       ListFooterComponent={!initialLoading && loadingMore ? <GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} /> : undefined}
       refreshing={pullRefreshing} onRefresh={() => void pullRefresh()}
       ListHeaderComponent={<View style={styles.header}>
-        {!asBusinessId && <View style={[styles.safety, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">{t.safety.meetTitle}</ThemedText><ThemedText type="small" themeColor="textSecondary">{t.safety.meetBody}</ThemedText></View>}
+        {!asBusinessId && <ListCard><ListRow leading={<SymbolView name={{ ios: 'shield', android: 'shield', web: 'shield' }} size={IconSize.toolbar} tintColor={theme.accent} />} title={t.safety.meetTitle} detail={t.safety.meetBody} /></ListCard>}
         {/* 자리(슬롯)는 상태라 칩 안의 숫자와 한 줄 안내로만 보여준다. 큰 카드는 대화 목록을 밀어냈다. */}
         <View style={styles.filters}>{([['all', t.chat.all],
           // 관리자에게는 자리 한도가 적용되지 않으므로 숫자 대신 제한 없음을 알린다.
           ['group', auth.isAdmin ? tr("{0} 제한 없음", (t.chat.groups)) : `${t.chat.groups}${meetupSlots ? ` ${meetupSlots.active}/${meetupSlots.limit}` : ''}`],
           ['direct', t.chat.direct],
-          ['requests', `${t.chat.requestTab} ${pendingCount}${moreRequests ? '+' : ''}`]] as const).filter(([key]) => !asBusinessId || key === 'all' || key === 'direct').map(([key, label]) => <Pressable analyticsId="app_tabs_chat.pressable.2" key={key} onPress={() => { play('selection'); if (key !== filter) { animateList(); setLoading(true); setFilter(key); } }} accessibilityRole="tab" accessibilityState={{ selected: filter === key }} style={({ pressed }) => [styles.filter, Depth.control, { backgroundColor: filter === key ? theme.accent : theme.backgroundElement, borderBottomColor: filter === key ? theme.accentDepth : theme.backgroundSelected, }]}><ThemedText type="smallBold" style={{ color: filter === key ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>)}</View>
+          ['requests', `${t.chat.requestTab} ${pendingCount}${moreRequests ? '+' : ''}`]] as const).filter(([key]) => !asBusinessId || key === 'all' || key === 'direct').map(([key, label]) => <SelectionChip analyticsId="app_tabs_chat.pressable.2" key={key} label={label} selected={filter === key} onPress={() => { play('selection'); if (key !== filter) { animateList(); setLoading(true); setFilter(key); } }} accessibilityRole="tab" accessibilityState={{ selected: filter === key }} />)}</View>
         {filter === 'requests' && <>
-          {requests.length > 0 && <ThemedText type="smallBold">{t.chat.requestsTitle}</ThemedText>}
-          {requests.map((request) => <View key={request.id} style={[styles.request, Depth.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-            <View style={styles.requestIdentity}><View style={[styles.requestAvatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle" themeColor="accent">{(request.requester?.nickname || t.chat.member).slice(0, 1)}</ThemedText></View>
-              <View style={styles.roomBody}><ThemedText style={styles.requestName}>{request.requester?.nickname || t.chat.member}</ThemedText><ThemedText type="small" themeColor="textSecondary">{request.post?.title}</ThemedText><ThemedText type="small" themeColor="accent">{tr("승인 대기")}</ThemedText></View>
-            </View>
-            <ThemedText type="small" themeColor="textSecondary">{request.post?.room?.eventKind ? tr("모임 프로필과 질문 답변이 도착했어요.") : request.message || t.chat.requestMessageEmpty}</ThemedText>
-            {parseLanguageExchange(request.post?.room) && <MeetupLanguageCounts postId={request.post_id} requestId={request.id} />}
-            {request.post?.room?.eventKind ? <Pressable analyticsId="app_tabs_chat.pressable.4" onPress={() => { play('selection'); router.push({ pathname: '/meetup-application', params: { requestId: request.id } }); }} accessibilityRole="button" accessibilityLabel={tr("{0}님의 프로필과 신청 답변 검토", (request.requester?.nickname || t.chat.member))} style={styles.action}><ThemedText type="smallBold" themeColor="accent">{tr("프로필과 답변 검토하기 ›")}</ThemedText></Pressable> : <>
-            {approveId === request.id && <><ThemedText type="small" themeColor="textSecondary">{tr("승인하면 신청자의 모임 자리 1개를 사용하고 모임 대화에 참여해요. 기존 멤버의 자리는 추가로 사용하지 않아요.")}</ThemedText>
-              <MeetupHistoryChoice value={shareHistory} onChange={setShareHistory} disabled={requestBusy !== null} /></>}
-            <View style={styles.requestActions}><Pressable analyticsId="app_tabs_chat.pressable.5" onPress={() => confirmReject(request)} disabled={requestBusy !== null} accessibilityRole="button" accessibilityState={{ disabled: requestBusy !== null }} style={({ pressed }) => [styles.requestButton, Depth.control, { borderColor: theme.line, backgroundColor: theme.card, }]}><ThemedText type="smallBold">{t.chat.reject}</ThemedText></Pressable>
-              {approveId === request.id
-                ? <RaisedActionButton compact analyticsId="app_tabs_chat.pressable.6" onPress={() => { play('selection'); void handleRequest(request, 'approved'); }} disabled={requestBusy !== null} busy={requestBusy === request.id} label={tr("확인하고 승인")} />
-                : <Pressable analyticsId="app_tabs_chat.pressable.6" onPress={() => { play('selection'); setShareHistory(false); setApproveId(request.id); }} disabled={requestBusy !== null} accessibilityRole="button" accessibilityState={{ disabled: requestBusy !== null }} style={({ pressed }) => [styles.requestButton, Depth.control, { borderColor: theme.accentDepth, backgroundColor: theme.accent, borderBottomWidth: 3, }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{t.chat.approve}</ThemedText></Pressable>}</View></>}
-          </View>)}
-          {moreRequests && <Pressable analyticsId="meetup.requests.more" accessibilityRole="button" disabled={loadingMore} style={styles.requestButton} onPress={() => { play('selection'); void loadOlderRequests(); }}><ThemedText type="smallBold" themeColor="accent">{loadingMore ? tr('신청 불러오는 중…') : tr('이전 모임 신청 더 보기')}</ThemedText></Pressable>}
+          {requests.length > 0 && <View><SectionLabel>{t.chat.requestsTitle}</SectionLabel><ListCard>{requests.map((request) => {
+            const name = request.requester?.nickname || t.chat.member, summary = [request.post?.title, tr("승인 대기")].filter(Boolean).join(' · ');
+            const languageCounts = parseLanguageExchange(request.post?.room) && <MeetupLanguageCounts postId={request.post_id} requestId={request.id} />;
+            if (request.post?.room?.eventKind) return <View key={request.id}>
+              <ListRow analyticsId="app_tabs_chat.pressable.4" leading={<InitialAvatar name={name} />} title={name} detail={`${summary}\n${tr("모임 프로필과 질문 답변이 도착했어요.")}`} label={tr("{0}님의 프로필과 신청 답변 검토", name)} onPress={() => router.push({ pathname: '/meetup-application', params: { requestId: request.id } })} />
+              {languageCounts && <View style={styles.requestBody}>{languageCounts}</View>}
+            </View>;
+            const approving = approveId === request.id;
+            return <View key={request.id}>
+              <ListRow leading={<InitialAvatar name={name} />} title={name} detail={summary} />
+              <View style={styles.requestBody}>
+                <ThemedText type="small" themeColor="textSecondary">{request.message || t.chat.requestMessageEmpty}</ThemedText>
+                {languageCounts}
+                {approving && <><ThemedText type="small" themeColor="textSecondary">{tr("승인하면 신청자의 모임 자리 1개를 사용하고 모임 대화에 참여해요. 기존 멤버의 자리는 추가로 사용하지 않아요.")}</ThemedText>
+                  <MeetupHistoryChoice value={shareHistory} onChange={setShareHistory} disabled={requestBusy !== null} /></>}
+                <View style={styles.requestActions}>
+                  <RaisedActionButton compact tone="secondary" analyticsId="app_tabs_chat.pressable.5" onPress={() => confirmReject(request)} disabled={requestBusy !== null} label={t.chat.reject} />
+                  <RaisedActionButton compact analyticsId="app_tabs_chat.pressable.6" onPress={() => { play('selection'); if (approving) void handleRequest(request, 'approved'); else { setShareHistory(false); setApproveId(request.id); } }} disabled={requestBusy !== null} busy={requestBusy === request.id} label={approving ? tr("확인하고 승인") : t.chat.approve} />
+                </View>
+              </View>
+            </View>;
+          })}</ListCard></View>}
+          {moreRequests && <RaisedActionButton compact tone="secondary" analyticsId="meetup.requests.more" disabled={loadingMore} onPress={() => { play('selection'); void loadOlderRequests(); }} label={loadingMore ? tr('신청 불러오는 중…') : tr('이전 참여 신청 더 보기')} />}
         </>}
         {error?.userId === scopeKey && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{tr(error.text)}</ThemedText>}
       </View>}
       ListEmptyComponent={initialLoading ? <GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} />
         : loading ? undefined
-        : filter === 'requests' ? (requests.length ? undefined : <StateCard title={tr("대기 중인 모임 신청이 없어요")} body={tr("모임에 신청이 들어오면 여기서 수락하거나 거절할 수 있어요.")} />)
+        : filter === 'requests' ? (requests.length ? undefined : <StateCard title={tr("대기 중인 참여 신청이 없어요")} body={tr("모임에 신청이 들어오면 여기서 승인하거나 거절할 수 있어요.")} />)
           : <StateCard title={t.chat.emptyTitle} body={t.chat.emptyBody} />}
       renderItem={({ item, index }) => <Pressable analyticsId="app_tabs_chat.pressable.7" onPress={() => { play('selection'); presentConversation(item); }} accessibilityRole="button" style={({ pressed }) => [styles.room, { borderBottomColor: theme.line, backgroundColor: pressed ? theme.backgroundElement : 'transparent', transform: [{ scale: pressed && !reducedMotion ? 0.985 : 1 }] }]}>
         <ChatAvatar kind={item.kind} title={item.title} meetupCategory={item.meetupCategory} initial={item.kind !== 'group' ? item.otherUser.nickname[0] : ''} avatarUri={item.otherIdentity?.avatarUri} active={focused && !shownConversation && index < 8} delay={index * 260} />
@@ -397,16 +407,11 @@ const styles = StyleSheet.create({
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
   headFixed: { paddingBottom: Spacing.two },
   heading: { flex: 1, fontSize: 22, lineHeight: 30, fontWeight: 700, paddingVertical: Spacing.two },
-  safety: { borderWidth: 1, borderRadius: 10, padding: Spacing.three, gap: Spacing.one },
-  action: { minWidth: 44, minHeight: 44, padding: Spacing.two, justifyContent: 'center' },
   refreshAction: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   refreshGlass: { borderRadius: 22 },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  filter: { minHeight: 44, paddingHorizontal: Spacing.three, borderRadius: 999, borderBottomWidth: 3, alignItems: 'center', justifyContent: 'center' },
-  request: { borderWidth: 1, borderRadius: 12, padding: Spacing.three, gap: Spacing.two },
-  requestIdentity: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three }, requestAvatar: { width: 52, height: 52, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }, requestName: { fontSize: 20, lineHeight: 28, fontWeight: '700' },
+  requestBody: { paddingHorizontal: Spacing.three, paddingBottom: Spacing.three, gap: Spacing.two },
   requestActions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: Spacing.two },
-  requestButton: { minHeight: 44, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 22 },
   room: { minHeight: 76, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: Spacing.two, paddingHorizontal: Spacing.one, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   avatar: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
   partyIcon: { width: 52, height: 52 },

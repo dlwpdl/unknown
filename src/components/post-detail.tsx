@@ -1,17 +1,19 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Pressable, FlatList } from '@/components/analytics-controls';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
 import {
   Alert,
+  DeviceEventEmitter,
   KeyboardAvoidingView,
   Platform,
   Modal,
   StyleSheet,
   UIManager,
   TextInput,
+  useWindowDimensions,
   View,
   type FlatList as NativeFlatList,
   type TextInputInstance,
@@ -26,6 +28,14 @@ import { MeetupReviews } from '@/components/meetup-reviews';
 import { MeetupFollowEncore } from '@/components/meetup-loyalty';
 import { PostPoll } from '@/components/post-poll';
 import { MeetupRsvp } from '@/components/meetup-rsvp';
+import { MeetupManageSheet } from '@/components/meetup-manage-sheet';
+import { meetupHostActions } from '@/components/meetup-room-summary';
+import { MeetupWaitlist } from '@/components/meetup-host-tools';
+import { SeatBar } from '@/components/chilling-event';
+import { ChillingProfileCard } from '@/components/chilling-profile-card';
+import { GlingLoader } from '@/components/gling-loader';
+import { ListCard, ListRow } from '@/components/list-card';
+import { RaisedActionButton } from '@/components/raised-action-button';
 import { PostCard, PostReactionToggle } from '@/components/post-card';
 import { TranslatedCommentBody } from '@/components/content-translation';
 import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
@@ -35,7 +45,7 @@ import { PostBodyEditor } from '@/components/post-body-editor';
 import { PostPhotoGallery } from '@/components/post-photo-gallery';
 import { PostPhotoEditor, type EditablePostImage } from '@/components/post-photo-editor';
 import { PostPhotoCredits } from '@/components/post-photo-credits';
-import { MeetupActionBar, MeetupChips, MeetupNotes, MeetupSummary, useMeetupParticipation } from '@/components/chilling-host-profile';
+import { MeetupActionBar, MeetupChips, MeetupNotes, useMeetupParticipation, type MeetupStatus } from '@/components/chilling-host-profile';
 import { ReportSheet } from '@/components/report-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -49,7 +59,7 @@ import { count } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { buildCommentListRows, type CommentListRow } from '@/lib/comment-list';
 import { createThreadComment, loadCommentThreadContext, loadCommentThreadPage, type CommentCursor } from '@/lib/comment-threads';
-import { bumpListing, deleteComment, deletePost, editComment, editPost, getCommunityActionError, isContentRejected, recordPostShare, recordPostView, setListingStatus, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
+import { bumpListing, deleteComment, deletePost, editComment, editPost, getCommunityActionError, isContentRejected, loadPendingMeetupRequests, MEETUPS_CHANGED_EVENT, recordPostShare, recordPostView, setListingStatus, toggleCommentReaction, type ReportTarget } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadPublicPost } from '@/lib/feed-data';
 import { MAX_POST_IMAGES } from '@/lib/image-upload';
@@ -66,6 +76,9 @@ import { ControlStyles, Typography, controlPresentation } from '@/constants/desi
 import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 import { supabase } from '@/lib/supabase';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
+import { chillingAvailability, chillingSchedule, chillingTimezoneLabel, recommendedAgeLabel } from '@/lib/chilling';
+import { getChillingError, loadChillingHostProfile, type ChillingProfile } from '@/lib/chilling-data';
+import { meetupFeeAmount, meetupFeeDue } from '@/lib/meetup-host-tools';
 import type { Post, PostComment } from '@/lib/types';
 import { ticketmasterReference } from '../../supabase/functions/_shared/ticketmaster';
 
@@ -148,6 +161,15 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   // Meetups swap the action bar for the composer only while asking, replying or editing.
   const [composing, setComposing] = useState(false);
   const meetupStatus = useMeetupParticipation(post);
+  const [meetupMenuOpen, setMeetupMenuOpen] = useState(false), [openingChat, setOpeningChat] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState(0), [requestsRevision, setRequestsRevision] = useState(0);
+  const ownMeetup = !!post.room && meetupStatus.own;
+  const beforeNavigate = onJoin ? onClose : undefined;
+  const meetupAvailability = post.room ? chillingAvailability(post.room) : null;
+  // The host paused new requests: the meetup stays live, and members and pending requests stay.
+  const recruitingPaused = post.room?.recruitingClosed === true && (meetupAvailability === 'open' || meetupAvailability === 'full');
+  // Ended or closed meetups have no room to enter, so an old approval keeps the request screen.
+  const canEnterChat = meetupStatus.participation?.status === 'approved' && (meetupAvailability === 'open' || meetupAvailability === 'full');
   const postEditBusy = useRef(false);
   const sendBusy = useRef(false);
   const likeBusy = useRef(false);
@@ -206,6 +228,26 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   }, [post.id]);
 
   useEffect(() => { void Promise.resolve().then(() => loadPage()); }, [loadPage]);
+
+  // shortcut: the inbox query returns the newest 50 across all my meetups, so a busier host can see a lower count here; the requests tab stays exact.
+  useEffect(() => {
+    if (!ownMeetup) return;
+    let current = true;
+    void loadPendingMeetupRequests(supabase).then((rows) => { if (current) setPendingRequests(rows.filter((row) => row.post_id === post.id).length); }).catch(() => {});
+    return () => { current = false; };
+  }, [ownMeetup, post.id, requestsRevision]);
+
+  // The host can now edit or pause from here, so this screen has to pick up what they saved.
+  const hasRoom = !!post.room;
+  useEffect(() => {
+    if (!hasRoom) return;
+    let current = true;
+    const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, () => {
+      setRequestsRevision((value) => value + 1);
+      void loadPublicPost(supabase, post.id).then((saved) => { if (current && saved) { setPost(saved); onPostChanged?.(saved); } }).catch(() => {});
+    });
+    return () => { current = false; listener.remove(); };
+  }, [hasRoom, onPostChanged, post.id]);
 
   useEffect(() => {
     if (!commentId) return;
@@ -626,6 +668,48 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     return <ThemedText type="small" themeColor="textSecondary">{tr("첫 댓글을 남겨 보세요.")}</ThemedText>;
   };
 
+  const openMeetupChat = async () => {
+    if (openingChat) return;
+    setOpeningChat(true);
+    // Same read as 내 모임. Without a room id the group list still gets them there in one more tap.
+    const room = await supabase.from('conversations').select('id').eq('kind', 'group').eq('status', 'active').eq('group_post_id', post.id).maybeSingle().then((result) => result.data, () => null);
+    if (!active.current) return;
+    setOpeningChat(false);
+    beforeNavigate?.();
+    router.push({ pathname: '/chat', params: room?.id ? { conversationId: room.id } : { view: 'group' } });
+  };
+  const browseMeetups = () => { play('selection'); beforeNavigate?.(); router.replace(Platform.OS === 'web' ? '/?tag=meetup' : '/(tabs)/meetups'); };
+  const browseButton = (compact: boolean) => <RaisedActionButton analyticsId="app_meetup-join.pressable.3" tone="secondary" compact={compact} label={tr('다른 모임 찾기')} onPress={browseMeetups} />;
+  const reviewButton = (tone: 'primary' | 'secondary') => <RaisedActionButton compact analyticsId="components_chilling-host-profile.pressable.2" tone={tone} label={tr('신청자 검토')}
+    onPress={() => { play('selection'); beforeNavigate?.(); router.push({ pathname: '/chat', params: { view: 'requests' } }); }} />;
+  // The states the 시안 changes. Everything else, including acting as a business, stays with MeetupActionBar.
+  const meetupBarCopy = (): { title: string; detail: string; action: ReactNode } | null => {
+    const room = post.room;
+    if (!room || (business && !meetupStatus.own)) return null;
+    if (meetupStatus.own) {
+      if (recruitingPaused) return { title: tr('모집을 마감했어요'), detail: tr('내 모임 관리에서 다시 열 수 있어요'), action: reviewButton('secondary') };
+      if (!pendingRequests) return null;
+      return { title: tr('새 신청 {0}건', pendingRequests), detail: room.capacity ? tr('{0}자리 남음', Math.max(0, room.capacity - room.memberCount)) : tr('{0}명 참여 중', room.memberCount), action: reviewButton('primary') };
+    }
+    if (meetupStatus.statusLoading || meetupStatus.statusError) return null;
+    if (canEnterChat) return { title: tr('참여가 승인됐어요'), detail: tr('집결 안내는 대화에서 확인해요'), action: <RaisedActionButton compact analyticsId="components_chilling-host-profile.pressable.2" busy={openingChat} label={tr('모임 대화 보기')} onPress={() => { play('selection'); void openMeetupChat(); }} /> };
+    if (meetupStatus.participation) return null;
+    if (recruitingPaused || meetupAvailability === 'closed') return { title: tr('모집이 마감됐어요'), detail: tr('호스트가 다시 열면 신청할 수 있어요'), action: browseButton(true) };
+    if (meetupAvailability === 'full') return { title: tr('정원이 모두 찼어요'), detail: tr('자리가 나면 순서대로 알려 드려요. 초대가 와도 참여 신청과 호스트 승인은 필요해요.'), action: <MeetupWaitlist postId={post.id} cta="primary" fallback={browseButton(false)} /> };
+    return null;
+  };
+  const meetupBar = () => {
+    const copy = meetupBarCopy();
+    if (!copy) return <MeetupActionBar post={post} status={meetupStatus} onJoin={onJoin} onBeforeNavigate={beforeNavigate} />;
+    return <View style={[styles.meetupBar, { borderTopColor: theme.line, backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>
+      <View style={styles.meetupBarMeta} accessibilityLiveRegion="polite">
+        <ThemedText style={Typography.menu}>{copy.title}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{copy.detail}</ThemedText>
+      </View>
+      {copy.action}
+    </View>;
+  };
+
   if (postHidden) return null;
   return (
     <ThemedView style={{ flex: 1, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' }}
@@ -636,6 +720,15 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           else target.measureInWindow((_x, y) => setKeyboardOffset(y));
         }
       }}>
+      {ownMeetup && meetupMenuOpen && <MeetupManageSheet visible title={tr('내 모임 관리')} onClose={() => setMeetupMenuOpen(false)} actions={[
+        ...meetupHostActions({ postId: post.id, room: post.room!, tr, play,
+          router: { push: (...args) => { beforeNavigate?.(); router.push(...args); } },
+          onChanged: () => setPost((current) => current.room ? { ...current, room: { ...current.room, recruitingClosed: !current.room.recruitingClosed } } : current),
+        }).filter((action) => action.key !== 'host-tools'),
+        ...(PROMOTIONS_PREVIEW_ENABLED && Platform.OS !== 'web' ? [{ key: 'promote', analyticsId: 'components_post-detail.pressable.16', label: tr('이 글 끌어올리기'), icon: { ios: 'arrow.up.circle', android: 'arrow_circle_up', web: 'arrow_circle_up' } as const, onPress: () => { onClose(); router.push({ pathname: '/profile/promotions', params: { postId: post.id } }); } }] : []),
+        { key: 'post-edit', analyticsId: 'components_post-detail.pressable.14', label: tr('소개·사진 수정'), icon: { ios: 'photo', android: 'image', web: 'image' }, onPress: () => startEditPost() },
+        { key: 'post-delete', analyticsId: 'post.manage.delete', label: tr('글 삭제'), icon: { ios: 'trash', android: 'delete', web: 'delete' }, danger: true, onPress: () => setDeletePostOpen(true) },
+      ]} />}
       <Modal visible={postMenuOpen || deletePostOpen} transparent animationType="fade" onRequestClose={() => { if (!savingPost) { play('selection'); setPostMenuOpen(false); setDeletePostOpen(false); } }}>
         <View style={styles.menuOverlay}>
           <Pressable analyticsId="post.manage.dismiss" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}
@@ -657,7 +750,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               </Pressable>}
               <Pressable analyticsId="components_post-detail.pressable.14" accessibilityRole="button" accessibilityLabel={tr(management ? tr("비즈니스 글 수정") : tr("내 글 수정"))} onPress={() => { play('selection'); startEditPost(); }} style={styles.menuRow}>
                 <SymbolView name={{ ios: 'pencil', android: 'edit', web: 'edit' }} size={20} tintColor={theme.text} />
-                <ThemedText>{tr("글·사진 수정")}</ThemedText>
+                <ThemedText>{tr(post.room ? "소개·사진 수정" : "글·사진 수정")}</ThemedText>
               </Pressable>
               <Pressable analyticsId="post.manage.delete" accessibilityRole="button" accessibilityLabel={tr(management ? tr("비즈니스 글 삭제") : tr("내 글 삭제"))} onPress={() => { play('warning'); setPostMenuOpen(false); setDeletePostOpen(true); }} style={styles.menuRow}>
                 <SymbolView name={{ ios: 'trash', android: 'delete', web: 'delete' }} size={20} tintColor={theme.danger} />
@@ -676,18 +769,18 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
         </Pressable>
         {!commentId && !postDraft
           ? <View accessible accessibilityRole="header" accessibilityLabel={tr(post.room ? "모임 상세" : "글 상세")} style={styles.headSpacer} />
-          : <ThemedText accessibilityRole="header" style={styles.headTitle}>{tr(postDraft ? tr("글 수정") : commentId ? t.detail.commentsTitle(commentTotal) : tr("글 상세"))}</ThemedText>}
+          : <ThemedText accessibilityRole="header" style={styles.headTitle}>{tr(postDraft ? tr(post.room ? "소개·사진 수정" : "글 수정") : commentId ? t.detail.commentsTitle(commentTotal) : tr("글 상세"))}</ThemedText>}
         {post.room && !postDraft && <PostReactionToggle post={post} kind="save" />}
         {!postDraft && <Pressable analyticsId="post.detail.share" accessibilityRole="button" accessibilityLabel={tr(post.room ? tr("모임 초대 링크 공유") : tr("게시물 링크 공유"))}
           onPress={() => { play('selection'); setShareOpen(true); }} style={({ pressed }) => [styles.shareBtn, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
           <SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={20} tintColor={theme.accent} />
           <ThemedText type="smallBold" themeColor="accent">{tr(post.room ? tr("초대") : tr("공유"))}</ThemedText>
         </Pressable>}
-        <Pressable analyticsId="post.manage.open" accessibilityRole="button" accessibilityLabel={tr("글 관리 메뉴")} disabled={!canManagePost || savingPost || pickingPostImages || !!postDraft}
+        <Pressable analyticsId="post.manage.open" accessibilityRole="button" accessibilityLabel={tr(ownMeetup ? "내 모임 관리" : "글 관리 메뉴")} disabled={!canManagePost || savingPost || pickingPostImages || !!postDraft}
           style={({ pressed }) => [styles.closeBtn, { opacity: canManagePost ? 1 : 0, backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}
           accessibilityElementsHidden={!canManagePost}
           importantForAccessibility={!canManagePost ? 'no-hide-descendants' : 'auto'}
-          onPress={() => { if (canManagePost) { play('selection'); setPostMenuOpen(true); } }}>
+          onPress={() => { if (canManagePost) { play('selection'); if (ownMeetup) setMeetupMenuOpen(true); else setPostMenuOpen(true); } }}>
           <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={22} tintColor={theme.text} />
         </Pressable>
       </View>
@@ -755,7 +848,14 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               // The info card shows the summary line and the neighborhood map, so the body drops both.
               post={{ ...post, body: post.listingDetails ? postMapBody(stripListingLead(photoCredits.body, post.listingDetails)).body : photoCredits.body, views: viewCount }}
               beforeBody={post.listingDetails ? <ListingInfo post={post as DetailedPost} /> : undefined}
-              meetupDetail={post.room ? { beforeTitle: <MeetupChips post={post} />, afterTitle: <MeetupSummary post={post} status={meetupStatus} onClose={onClose} onBeforeNavigate={onJoin ? onClose : undefined} /> } : undefined}
+              meetupDetail={post.room ? {
+                beforeTitle: <MeetupChips post={recruitingPaused ? { ...post, room: { ...post.room, closed: true } } : post} />,
+                // 참여 전에 알아둘 것 sits above 소개 for people still deciding; members and the host are past it.
+                afterTitle: <>
+                  <MeetupDetailSummary post={post} status={meetupStatus} canEnterChat={canEnterChat} onClose={onClose} onBeforeNavigate={beforeNavigate} />
+                  {!meetupStatus.statusLoading && !canEnterChat && !meetupStatus.own && <MeetupNotes post={post} />}
+                </>,
+              } : undefined}
               afterBody={<>
                 {post.kind === 'listing' && post.tag.slug === 'housing' && !post.listingDetails && <View style={{ gap: Spacing.one }}>
                   <ThemedText type="smallBold" accessibilityRole="header">{tr("주소·위치")}</ThemedText>
@@ -781,7 +881,6 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               }}
             />}
             {!postDraft && post.kind === 'story' && !post.room && <PostPoll postId={post.id} />}
-            {!postDraft && post.room && <MeetupRsvp postId={post.id} />}
             {!postDraft && post.room && post.room.eventKind !== 'once' && Platform.OS !== 'web' && <View style={[styles.meetupSection, { borderTopColor: theme.line }]}>
               <ThemedText accessibilityRole="header" style={Typography.section}>{tr("후기")}</ThemedText>
               <MeetupReviews postId={post.id} kind="group" reviewsOnly onBeforeNavigate={onClose} />
@@ -795,10 +894,9 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
             </View>}
             {canManagePost && post.kind === 'listing' && <ListingControls post={post} onChanged={onListingChanged} />}
           </View>}
-          ListFooterComponent={post.room && !postDraft ? <MeetupNotes post={post} /> : undefined}
         />
 
-        {!postDraft && post.room && !composing && !replyTo && !editing && <MeetupActionBar post={post} status={meetupStatus} onJoin={onJoin} onBeforeNavigate={onJoin ? onClose : undefined} />}
+        {!postDraft && post.room && !composing && !replyTo && !editing && meetupBar()}
         {!postDraft && (!post.room || composing || !!replyTo || !!editing) && <View
           style={[
             styles.composer,
@@ -879,6 +977,20 @@ const styles = StyleSheet.create({
   },
   headTitle: { flex: 1, textAlign: 'center', fontSize: 17, lineHeight: 22, fontWeight: '600' },
   headSpacer: { flex: 1, minHeight: 44 },
+  meetupBar: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.three, paddingHorizontal: Spacing.three, paddingTop: Spacing.two, borderTopWidth: 1 },
+  meetupBarMeta: { flexGrow: 1, flexShrink: 1, flexBasis: 160, minWidth: 0 },
+  summary: { gap: Spacing.three, marginTop: Spacing.three },
+  host: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44 },
+  hostAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  hostName: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  hostNameText: { flexShrink: 1 },
+  hostLink: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.one },
+  facts: { flexDirection: 'row', flexWrap: 'wrap', borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
+  fact: { padding: Spacing.three, gap: 2 },
+  factTop: { borderTopWidth: 1 },
+  factLeft: { borderLeftWidth: 1 },
+  factValue: { fontSize: 16, lineHeight: 24, fontWeight: '600' },
+  statusNote: { borderRadius: 16, padding: Spacing.three },
   meetupSection: { gap: Spacing.two, paddingTop: Spacing.three, borderTopWidth: StyleSheet.hairlineWidth },
   meetupSectionRow: { flexDirection: 'row', alignItems: 'center' },
   flexText: { flex: 1 },
@@ -967,6 +1079,80 @@ const styles = StyleSheet.create({
   },
 });
 
+
+// 모임 상세의 호스트 줄·사실 표와 그 바로 밑의 '내가 할 일'. 정원 찬 사람의 대기 명단은 맨 아래 버튼이 맡는다.
+function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavigate }: { post: Post; status: MeetupStatus; canEnterChat: boolean; onClose: () => void; onBeforeNavigate?: () => void }) {
+  const { tr, t, locale: appLocale } = useLanguage();
+  const { isAuthed, promptLogin } = useAuth(), theme = useTheme(), router = useRouter();
+  const { play } = useInteractionFeedback();
+  const stacked = useWindowDimensions().fontScale >= 1.3;
+  const [profile, setProfile] = useState<ChillingProfile | null>(null), [loading, setLoading] = useState(false), [error, setError] = useState(''), [report, setReport] = useState(false);
+  const room = post.room;
+  if (!room) return null;
+  const { own, participation, statusError } = status;
+  const availability = chillingAvailability(room);
+  const load = async () => {
+    if (!isAuthed) return promptLogin('호스트 모임 프로필을 보려면 로그인해 주세요.');
+    if (loading) return;
+    setLoading(true); setError('');
+    try { const value = await loadChillingHostProfile(supabase, post.id); setProfile(value); if (!value) setError("지금은 프로필을 볼 수 없어요."); }
+    catch (e) { setError(getChillingError(e)); }
+    finally { setLoading(false); }
+  };
+  const facts: [string, string, string?][] = [
+    // Members and the host don't get 참여 전에 알아둘 것, so its time zone line moves here for them.
+    [tr('언제'), chillingSchedule(room, appLocale), (canEnterChat || own) && room.timezone ? tr('{0} 기준', chillingTimezoneLabel(room, appLocale)) : undefined],
+    [tr('어디'), tr(CITIES.find(city => city.id === post.cityId)?.name ?? post.cityId), canEnterChat ? tr('집결지는 모임 대화에서') : own ? tr('집결지는 모임 대화에서 알려요') : tr('집결지는 승인 후')],
+    [tr('인원'), tr(room.capacity ? '{0} / {1}명' : '{0}명', room.memberCount, room.capacity)],
+    room.fee ? [tr('회비'), meetupFeeAmount(room.fee.amount), room.fee.dueOn ? tr('{0}까지', meetupFeeDue(room.fee.dueOn, appLocale)) : room.fee.note]
+      : [tr('나이'), recommendedAgeLabel(room, appLocale)],
+  ];
+  const statusNote = participation?.status === 'pending' && availability === 'full' ? tr('신청은 대기 중이에요. 지금은 정원이 차서 승인할 수 없어요.')
+    : participation?.status === 'approved' && (availability === 'ended' || availability === 'closed') ? tr('이전 승인 기록이에요. 현재 모임은 종료되거나 마감됐어요.') : '';
+  // Web has no attendance UI (meetup-reviews.web.tsx renders nothing), so the row stays native-only.
+  const tools = Platform.OS === 'web' ? null : own ? tr('호스트 관리') : participation?.status === 'approved' ? tr('참석 확인') : null;
+  return <View style={styles.summary}>
+    <View style={styles.host}>
+      <View style={[styles.hostAvatar, { backgroundColor: theme.backgroundSelected }]}><ThemedText type="smallBold">{post.author.nickname[0]}</ThemedText></View>
+      <View style={styles.hostName}><ThemedText type="smallBold" style={styles.hostNameText}>{post.author.nickname}</ThemedText><TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} /></View>
+      <Pressable analyticsId="components_chilling-host-profile.pressable.1" accessibilityRole="button" accessibilityLabel={tr('{0} 모임 프로필', post.author.nickname)}
+        accessibilityState={room.eventKind ? { expanded: !!profile, busy: loading } : undefined} style={styles.hostLink}
+        onPress={() => {
+          play('selection');
+          // Event meetups expand the host's shared profile in place; legacy rooms keep the profile route.
+          if (!room.eventKind) { onClose(); router.push({ pathname: '/meetup-profile', params: { postId: post.id } }); }
+          else if (profile) setProfile(null); else void load();
+        }}>
+        <ThemedText type="smallBold" themeColor="accent">{profile ? tr('접기') : tr('프로필')}</ThemedText>
+      </Pressable>
+      {!own && <Pressable analyticsId="meetup.detail.report" accessibilityRole="button" accessibilityLabel={t.report.title(post.author.nickname)} style={styles.hostLink}
+        onPress={() => { play('selection'); if (isAuthed) setReport(true); else promptLogin(t.auth.reasonReport); }}>
+        <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={21} tintColor={theme.textSecondary} />
+      </Pressable>}
+    </View>
+    {loading && <GlingLoader color={theme.accent} />}
+    {isAuthed && profile && <ChillingProfileCard profile={profile} />}
+    {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
+    <View style={[styles.facts, { borderColor: theme.line }]}>
+      {facts.map(([label, value, note], index) => <View key={label} style={[styles.fact, { width: stacked ? '100%' : '50%', backgroundColor: theme.card, borderColor: theme.line },
+        index >= (stacked ? 1 : 2) && styles.factTop, !stacked && index % 2 === 1 && styles.factLeft]}>
+        <ThemedText type="small" themeColor="textSecondary">{label}</ThemedText>
+        <ThemedText style={styles.factValue}>{value}</ThemedText>
+        {!!note && <ThemedText type="small" themeColor="textSecondary">{note}</ThemedText>}
+        {index === 2 && <SeatBar room={room} />}
+      </View>)}
+    </View>
+    {!!statusNote && <View style={[styles.statusNote, { backgroundColor: theme.backgroundSelected }]}><ThemedText type="small">{statusNote}</ThemedText></View>}
+    {!!statusError && <StateCard kind="error" title={tr('신청 상태를 불러오지 못했어요')} body={tr(statusError)} actionLabel={tr('다시 불러오기')} onAction={status.retry} />}
+    <MeetupRsvp postId={post.id} flush />
+    {(!!tools || canEnterChat) && <ListCard>
+      {!!tools && <ListRow analyticsId="meetup.detail.tools" title={tools} onPress={() => { onBeforeNavigate?.(); router.push({ pathname: '/meetup-tools', params: { postId: post.id, kind: room.eventKind ?? 'group', host: own ? '1' : '0' } }); }} />}
+      {canEnterChat && <ListRow analyticsId="meetup.detail.my-request" title={tr('내 신청 보기')} onPress={() => { onBeforeNavigate?.(); router.push({ pathname: '/meetup-join', params: { postId: post.id } }); }} />}
+    </ListCard>}
+    {report && <ReportSheet visible targetType="post" targetId={post.id} reportedUserId={post.business ? undefined : post.author.id} reportedBusinessId={post.business?.id}
+      reportedNickname={post.business?.name ?? post.author.nickname} onClose={() => setReport(false)} />}
+  </View>;
+}
 
 // ponytail: 작성자 전용 리스팅 액션. 쿨다운·한도 판정은 서버가 하고 여기선 결과만 반영한다.
 // 저널 톤: 채운 버튼 대신 얇은 선 위의 텍스트 액션, 인주는 첫 번째 액션에만.

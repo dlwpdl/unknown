@@ -9,7 +9,7 @@ export const NOTIFICATION_CATEGORIES = [
   { key: 'replies', label: '내 글 댓글·내 댓글 답글' },
   { key: 'direct_requests', label: '과거 1:1 요청 알림' },
   { key: 'messages', label: '새 메시지' },
-  { key: 'meetups', label: '모임 신청·승인·일정' },
+  { key: 'meetups', label: '참여 신청·승인·일정' },
   { key: 'merchant_reviews', label: '비즈니스 후기·인증·답변' },
   { key: 'interests', label: '관심 태그의 새 글' },
   { key: 'nearby', label: '내 지역의 새로운 모임' },

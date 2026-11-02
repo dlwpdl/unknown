@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Platform, StyleSheet, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { Pressable } from '@/components/analytics-controls';
+import { animateLayout } from '@/components/disclosure';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles, Typography, controlPresentation } from '@/constants/design-system';
 import { Spacing } from '@/constants/theme';
@@ -13,14 +15,14 @@ import { loadMeetupRsvp, setMeetupRsvp, type MeetupRsvp as Rsvp } from '@/lib/me
 import { supabase } from '@/lib/supabase';
 
 /** "갈게요 / 못 가요" for the next session. Free for members; the head count is shown to plus+ hosts by the server. */
-export function MeetupRsvp({ postId }: { postId: string }) {
+export function MeetupRsvp({ postId, flush = false }: { postId: string; flush?: boolean }) {
   const { isAuthed, me } = useAuth();
-  return isAuthed ? <RsvpBlock key={`${me.id}:${postId}`} postId={postId} /> : null;
+  return isAuthed ? <RsvpBlock key={`${me.id}:${postId}`} postId={postId} flush={flush} /> : null;
 }
 
-function RsvpBlock({ postId }: { postId: string }) {
+function RsvpBlock({ postId, flush }: { postId: string; flush: boolean }) {
   const { tr, locale } = useLanguage();
-  const theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
+  const theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback(), reduced = useReducedMotion();
   const [rsvp, setRsvp] = useState<Rsvp | null>(null), [failed, setFailed] = useState(false), [saving, setSaving] = useState(false), [error, setError] = useState(false);
   const [reload, setReload] = useState(0);
   const active = useRef(true);
@@ -40,7 +42,9 @@ function RsvpBlock({ postId }: { postId: string }) {
     try {
       const next = await setMeetupRsvp(supabase, postId, going, release);
       if (!active.current) return;
-      setRsvp(next); play('success');
+      animateLayout(reduced); setRsvp(next);
+      // Tapping an answer already gave its selection tick; only giving up the seat is a bigger finish.
+      if (release) play('success');
     } catch { if (active.current) { setError(true); play('warning'); } }
     finally { if (active.current) setSaving(false); }
   };
@@ -51,7 +55,7 @@ function RsvpBlock({ postId }: { postId: string }) {
     Alert.alert(title, message, [{ text: tr('그대로 두기'), style: 'cancel' }, { text: tr('자리 비우기'), style: 'destructive', onPress: () => void answer(false, true) }]);
   };
   const counts = rsvp.counts;
-  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.card, !flush && styles.spaced, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <ThemedText accessibilityRole="header" style={Typography.section}>{rsvp.isHost ? tr('참석 현황') : tr('참석 알려 주기')}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">{tr('다음 만남 {0}', when)}</ThemedText>
     {rsvp.isHost ? rsvp.canSeeCounts && counts
@@ -60,7 +64,6 @@ function RsvpBlock({ postId }: { postId: string }) {
         <ThemedText type="small" themeColor="accent">{tr('누가 오는지 미리 보려면 플러스 멤버십이 필요해요. 멤버십 보기')}</ThemedText>
       </Pressable>
       : <>
-        <ThemedText type="small" themeColor="textSecondary">{tr('호스트가 인원을 미리 챙길 수 있어요.')}</ThemedText>
         <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel={tr('참석 알려 주기')}>
           {([[true, 'meetup.rsvp.going', '갈게요'], [false, 'meetup.rsvp.not_going', '못 가요']] as const).map(([going, id, label]) => {
             const selected = rsvp.mine === (going ? 'going' : 'not_going');
@@ -71,7 +74,7 @@ function RsvpBlock({ postId }: { postId: string }) {
             </Pressable>;
           })}
         </View>
-        {rsvp.mine && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{rsvp.mine === 'going' ? tr('간다고 알렸어요. 일정이 바뀌면 다시 눌러 주세요.') : tr('못 간다고 알렸어요.')}</ThemedText>}
+        <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{rsvp.mine === 'going' ? tr('간다고 알렸어요. 일정이 바뀌면 다시 눌러 주세요.') : rsvp.mine ? tr('못 간다고 알렸어요.') : tr('호스트가 인원을 미리 챙길 수 있어요.')}</ThemedText>
         {rsvp.mine === 'not_going' && rsvp.kind === 'once' && <Pressable analyticsId="meetup.rsvp.release" accessibilityRole="button" disabled={saving} onPress={release} style={styles.retry}>
           <ThemedText type="smallBold" themeColor="accent">{tr('자리 비워 주기')}</ThemedText>
         </Pressable>}
@@ -81,7 +84,7 @@ function RsvpBlock({ postId }: { postId: string }) {
 }
 
 const styles = StyleSheet.create({
-  card: { borderWidth: 1, borderRadius: 16, padding: Spacing.three, gap: Spacing.two, marginVertical: Spacing.three },
+  card: { borderWidth: 1, borderRadius: 16, padding: Spacing.three, gap: Spacing.two }, spaced: { marginVertical: Spacing.three },
   row: { flexDirection: 'row', gap: Spacing.two }, choice: { flex: 1 },
   retry: { minHeight: 44, justifyContent: 'center' },
 });

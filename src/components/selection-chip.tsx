@@ -17,7 +17,8 @@ export function SelectionChip({ selected, disabled, onPress, style, baseColor, a
   const [fill] = useState(() => new Animated.Value(selected ? 1 : 0));
   useEffect(() => {
     if (reducedMotion) fill.setValue(selected ? 1 : 0);
-    else Animated.timing(fill, { toValue: selected ? 1 : 0, duration: 160, useNativeDriver: true }).start();
+    // JS-driven: a list LayoutAnimation committing in the same tap (chat filters) drops a native-driven update and strands the fill.
+    else Animated.timing(fill, { toValue: selected ? 1 : 0, duration: 160, useNativeDriver: false }).start();
   }, [fill, reducedMotion, selected]);
   return <Pressable {...rest} analyticsId={analyticsId} disabled={disabled} onPress={onPress}
     style={({ pressed }) => [label ? ControlStyles.pill : null, style, styles.chip, { backgroundColor: baseColor ?? (label ? theme.backgroundElement : 'transparent'), opacity: pressed ? 0.82 : disabled ? 0.45 : 1 }]}>

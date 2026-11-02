@@ -320,7 +320,7 @@ function JoinForm({ postId }: { postId: string }) {
       {view !== 'login' && view !== 'loading' && view !== 'failed' && view !== 'unavailable' && <View style={[styles.footer, { backgroundColor: theme.background, borderColor: theme.line }]}>
         {view !== 'own' && view !== 'inactive' && view !== 'result' && footerError}
         {view === 'own' && <RaisedActionButton analyticsId="app_meetup-join.pressable.3" onPress={() => { play('selection'); router.push({ pathname: '/chat', params: { view: 'requests' } }); }} label={tr("참여 신청자 검토하기")} />}
-        {view === 'result' && <RaisedActionButton analyticsId="app_meetup-join.pressable.3" onPress={() => { play('selection'); if (status === 'approved') router.replace({ pathname: '/chat', params: { view: 'group' } }); else router.replace('/(tabs)/meetups'); }} label={status === 'approved' ? tr("모임 대화 보기") : tr("내 모임에서 보기")} />}
+        {view === 'result' && <RaisedActionButton analyticsId="app_meetup-join.pressable.3" onPress={() => { play('selection'); if (status === 'approved') router.replace({ pathname: '/chat', params: { view: 'group' } }); else router.replace({ pathname: '/(tabs)/meetups', params: { view: 'mine' } }); }} label={status === 'approved' ? tr("모임 대화 보기") : tr("내 모임에서 보기")} />}
         {(view === 'inactive' || view === 'paused' || view === 'locked' || view === 'cooling') && browseButton}
         {view === 'full' && <MeetupWaitlist postId={postId} language={choice} cta="primary" fallback={browseButton} />}
         {view === 'noprofile' && <RaisedActionButton analyticsId="app_meetup-join.pressable.5" onPress={() => { play('selection'); profileRoute(); }} label={profileError ? tr("모임 프로필 열기") : profile ? tr('모임 프로필 확인하기') : tr("모임 프로필 만들기")} />}

@@ -11,7 +11,7 @@ test('모임 탭은 헤더를 목록 밖에 고정하고 필터를 한 줄 + 시
   assert.ok(meetups.includes('app_tabs_meetups.switch.1'), '자리 남음은 칩이 아니라 스위치로 둔다');
   assert.ok(!meetups.includes('pressable.11'), '한 줄에 섞여 있던 자리 남음 칩은 없어야 한다');
   // 선택 색은 홈과 같은 브랜드 레드 하나로 통일한다(검정 선택 칩은 홈과 어긋났다).
-  assert.ok(meetups.includes('category === value ? theme.accent : theme.line'), '분위기 선택은 브랜드 색을 쓴다');
+  assert.ok(meetups.includes('selected={category === value}'), '분위기 선택은 공통 칩의 브랜드 색을 쓴다');
 });
 
 test('목록·대화·알림의 빈 상태와 오류는 같은 카드 규격을 쓴다', () => {

@@ -871,7 +871,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               <View style={styles.journalIntro}>
                 <View style={styles.journalStatusRow}>
                   <ThemedText type="smallBold" themeColor="textSecondary" style={styles.journalDate}>{todayLabel(appLocale)}</ThemedText>
-                  {cityLoading && <View style={styles.cityLoadingStatus}><GlingLoader color={theme.accent} size={18} accessibilityLabel={tr("{0} 소식 불러오는 중", (city.name))} /><ThemedText type="small" themeColor="textSecondary">{tr("소식 불러오는 중")}</ThemedText></View>}
+                  {cityLoading && <View style={styles.cityLoadingStatus}><GlingLoader color={theme.accent} size={18} accessibilityLabel={tr("{0} 소식 불러오는 중", tr(city.name))} /><ThemedText type="small" themeColor="textSecondary">{tr("소식 불러오는 중")}</ThemedText></View>}
                   {/* 글자 없던 위쪽 지도 아이콘을 렌트·중고 버튼으로 옮김 (owner 2026-10-30), 같은 /map 화면을 렌트·중고만 골라 연다. */}
                   {!meetupsOnly && <Pressable analyticsId="discovery.open" accessibilityRole="button" accessibilityLabel={tr('렌트·중고 지도로 보기')}
                     onPress={() => { play('reaction'); router.push({ pathname: '/map', params: { category: 'housing,used' } }); }}
@@ -1082,7 +1082,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
       <Modal visible={joinPost != null} transparent animationType="fade" onRequestClose={() => setJoinPost(null)}>
         <View style={styles.joinBackdrop}>
-          <Pressable analyticsId="components_feed-screen.pressable.10" style={StyleSheet.absoluteFill} onPress={() => { play('selection'); setJoinPost(null); }} accessibilityRole="button" accessibilityLabel={tr("모임 신청 닫기")} />
+          <Pressable analyticsId="components_feed-screen.pressable.10" style={StyleSheet.absoluteFill} onPress={() => { play('selection'); setJoinPost(null); }} accessibilityRole="button" accessibilityLabel={tr("참여 신청 닫기")} />
           <ThemedView style={[styles.joinSheet, { backgroundColor: theme.card }]}>
             <ThemedText type="subtitle">{t.chat.joinFormTitle}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{t.chat.joinFormBody}</ThemedText>

@@ -28,7 +28,7 @@ vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/lib/meetup-de
 });
 const screenSource = ts.transpileModule(readFileSync(new URL('../src/app/meetup-edit.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
 
-function screen({ meId = 'host', meetup = { id: 'p1', cityId: 'vancouver', title: '노을 보러 가요', body: `같이 걸어요.${placeTail}`, room: onceRoom, authorId: 'host' }, configure, edit } = {}) {
+function screen({ meId = 'host', meetup = { id: 'p1', cityId: 'vancouver', title: '노을 보러 가요', body: `같이 걸어요.${placeTail}`, room: onceRoom, authorId: 'host' }, configure, edit, photos = async () => ({ imagePaths: ['host/a.jpg'], imageUris: ['https://x/a.jpg'] }) } = {}) {
   const slots = [], effects = [], layouts = [], feedback = [], alerts = [], events = [], routes = [], configured = [], edited = [];
   let at = 0, guard = { enabled: false };
   const slot = initial => { const i = at++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial; return i; };
@@ -50,8 +50,9 @@ function screen({ meId = 'host', meetup = { id: 'p1', cityId: 'vancouver', title
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/chilling-data': { getChillingError: error => error.message, getChillingErrorCode: error => error.message },
     '@/lib/chilling': { ...chilling, configureChillingEvent: async (_client, postId, draft) => { configured.push({ postId, draft }); if (configure) await configure(draft); } },
-    '@/lib/community-data': { MEETUPS_CHANGED_EVENT: 'meetups.changed', editPost: async (_client, postId, patch) => { edited.push({ postId, patch }); if (edit) await edit(patch); } },
-    '@/lib/feed-data': { loadPublicMeetupContext: async () => meetup },
+    '@/lib/community-data': { MEETUPS_CHANGED_EVENT: 'meetups.changed', editPost: async (_client, postId, patch, replacement) => { edited.push({ postId, patch, replacement }); if (edit) await edit(patch); } },
+    '@/lib/feed-data': { loadPublicMeetupContext: async () => meetup, loadPublicPost: photos },
+    'react-native-reanimated': { useReducedMotion: () => true },
     '@/lib/meetup-ai': { splitEventMeetupBody }, '@/lib/meetup-sections': meetupSections,
     '@/lib/meetup-destination': destinations,
     '@/lib/supabase': { supabase: {} },
@@ -142,4 +143,64 @@ test('discard guard engages only after an edit and confirms before leaving', asy
   actions.find(action => action.style === 'destructive').onPress(); assert.equal(left, 1);
   app.edit('모임 제목', '노을 보러 가요');
   assert.equal(app.guard().enabled, false, 'reverting the edit clears the guard');
+});
+
+test('a save blocked by a field above scrolls to that field, focuses it and shows the error there', async () => {
+  const app = screen(); await app.flush();
+  const moves = [], tree = app.render();
+  nodes(tree).find(node => node.props?.analyticsId === 'app_meetup-create.scrollview.1').props.ref.current = { scrollTo: value => moves.push(value.y) };
+  const [card, field] = nodes(tree).filter(node => node.props?.onLayout && nodes(node).some(child => child.props?.accessibilityLabel === '정원 (호스트 포함)'));
+  card.props.onLayout({ nativeEvent: { layout: { y: 300 } } });
+  field.props.onLayout({ nativeEvent: { layout: { y: 200 } } });
+  app.find('정원 (호스트 포함)').props.ref({ focus: () => moves.push('focus') });
+  app.edit('정원 (호스트 포함)', '1');
+  const result = await app.save();
+  assert.deepEqual(moves, [500, 'focus']);
+  assert.equal(nodes(result).filter(node => node.props?.accessibilityRole === 'alert').length, 1);
+  const footer = nodes(result).find(node => node.type === 'View' && node.props?.children?.some?.(child => child?.props?.analyticsId === 'meetup.manage.edit'));
+  assert.equal(nodes(footer).some(node => node.props?.accessibilityRole === 'alert'), false, 'The error is at its field, not repeated in the footer.');
+});
+
+test('an intro error stays visible when the sections editor replaces the plain field', async () => {
+  const app = screen(); await app.flush();
+  app.edit('모임 소개', '   ');
+  const result = await app.save();
+  const editor = nodes(result).find(node => node.type === 'MeetupSectionsEditor');
+  assert.equal(nodes(editor).some(node => node.props?.accessibilityRole === 'alert'), false, 'Not inside children the editor may drop.');
+  assert.equal(nodes(result).find(node => node.props?.accessibilityRole === 'alert').props.children, '모임 소개를 적어주세요.');
+});
+
+test('photos are edited here through the existing save and untouched photos are not resent', async () => {
+  const app = screen(); await app.flush();
+  const editor = () => nodes(app.render()).find(node => node.type === 'PostPhotoEditor');
+  assert.deepEqual(JSON.parse(JSON.stringify(editor().props.images)), [{ path: 'host/a.jpg', uri: 'https://x/a.jpg' }]);
+  app.edit('모임 제목', '새 제목'); await app.save();
+  assert.equal(app.edited[0].replacement, undefined);
+
+  const removed = screen(); await removed.flush();
+  assert.equal(removed.guard().enabled, false);
+  nodes(removed.render()).find(node => node.type === 'PostPhotoEditor').props.onChange([]);
+  removed.render();
+  assert.equal(removed.guard().enabled, true, 'A photo change is protected like a text change.');
+  assert.ok(nodes(removed.render()).some(node => node.type === 'MeetupCoverPicker'), 'With no photo left the picker offers a new one.');
+  await removed.save();
+  assert.deepEqual(JSON.parse(JSON.stringify(removed.edited[0].replacement)), { userId: 'host', images: [] });
+  assert.equal(removed.edited[0].patch.title, '노을 보러 가요');
+});
+
+test('photos that fail to load offer no photo editing and keep the rest of the form working', async () => {
+  for (const photos of [async () => { throw new Error('offline'); }, async () => ({ imagePaths: ['host/a.jpg'], imageUris: [''] })]) {
+    const app = screen({ photos }); await app.flush();
+    const tree = app.render();
+    assert.equal(nodes(tree).some(node => node.type === 'PostPhotoEditor' || node.type === 'MeetupCoverPicker'), false);
+    app.edit('모임 제목', '새 제목'); await app.save();
+    assert.equal(app.edited[0].replacement, undefined, 'A partial photo read can never replace the saved photos.');
+  }
+});
+
+test('the application question is shown but has no editable field', async () => {
+  const app = screen({ meetup: { id: 'p1', cityId: 'vancouver', title: 't', body: 'b', room: { ...onceRoom, applicationQuestion: '어떤 분위기를 기대하세요?' }, authorId: 'host' } });
+  const tree = await app.flush();
+  assert.ok(nodes(tree).some(node => node.props?.children === '어떤 분위기를 기대하세요?'));
+  assert.equal(nodes(tree).some(node => node.type === 'TextInput' && node.props.value === '어떤 분위기를 기대하세요?'), false);
 });

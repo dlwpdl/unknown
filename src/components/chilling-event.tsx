@@ -40,7 +40,7 @@ export function ChillingEventSchedule({ room }: { room: ChillingSchedule & Pick<
   return <View style={{ gap: 4 }}>
     <ThemedText type="smallBold" style={styles.support} themeColor="accent">{once ? tr('칠링') : tr('정기모임')}</ThemedText>
     <ThemedText style={styles.schedule}>{chillingSchedule(room, appLocale)}</ThemedText>
-    <ThemedText type="small" style={styles.support} themeColor="textSecondary">{recommendedAgeLabel(room, appLocale)}{room.recommendedAgeMin != null ? tr(" · 권장 범위 밖이어도 신청 가능") : ''}</ThemedText>
+    <ThemedText type="small" style={styles.support} themeColor="textSecondary">{recommendedAgeLabel(room, appLocale)}{room.recommendedAgeMin != null ? ` · ${tr('범위 밖이어도 신청할 수 있어요')}` : ''}</ThemedText>
     {once && room.timezone ? <ThemedText type="small" style={styles.support} themeColor="textSecondary">{tr("{0} 기준", chillingTimezoneLabel(room, appLocale))}</ThemedText> : null}
     {room.fee ? <MeetupFeeLine fee={room.fee} /> : null}
   </View>;
