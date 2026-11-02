@@ -3828,7 +3828,7 @@ export const uiEnglish: Record<string, string> = {
   "홈으로": "Back to home",
   "글링 초대": "Gling invite",
   "친구가 글링에 초대했어요": "A friend invited you to Gling",
-  "앱을 설치하고 가입하면 초대가 연결돼요. 앱에서 이 페이지를 다시 열거나 코드를 직접 넣어도 돼요.": "Install the app and sign up to accept the invite. You can also reopen this page in the app, or enter the code yourself.",
+  "앱을 설치하고 아래 '앱에서 열기'를 눌러 주세요. 그다음 가입하면 초대가 바로 연결돼요.": "Install the app, then tap 'Open in app' below. Your invite links as soon as you sign up.",
   "앱에서 열기": "Open in app",
   "앱에서는 프로필 → 친구 초대에서 코드를 넣을 수 있어요.": "In the app, go to Profile → Invite friends to enter the code.",
   "비즈니스 2주 이용권": "2-week Business pass",

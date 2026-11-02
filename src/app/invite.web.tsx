@@ -28,7 +28,7 @@ export default function InviteLandingPage() {
     <View style={styles.content}>
       <ThemedText accessibilityRole="header" style={Typography.screenTitle}>{saved === null ? tr('초대 링크가 올바르지 않아요') : tr('친구가 글링에 초대했어요')}</ThemedText>
       {saved && <>
-        <ThemedText themeColor="textSecondary">{tr('앱을 설치하고 가입하면 초대가 연결돼요. 앱에서 이 페이지를 다시 열거나 코드를 직접 넣어도 돼요.')}</ThemedText>
+        <ThemedText themeColor="textSecondary">{tr("앱을 설치하고 아래 '앱에서 열기'를 눌러 주세요. 그다음 가입하면 초대가 바로 연결돼요.")}</ThemedText>
         <View style={[styles.codeBox, { backgroundColor: theme.backgroundElement }]}>
           <ThemedText type="small" themeColor="textSecondary">{tr('초대 코드')}</ThemedText>
           <ThemedText selectable style={styles.code}>{saved}</ThemedText>
