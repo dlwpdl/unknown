@@ -11,6 +11,7 @@ import { animateLayout, Disclosure } from '@/components/disclosure';
 import { ListCard } from '@/components/list-card';
 import { ThemedText } from '@/components/themed-text';
 import { PostShareSheet } from '@/components/post-share-sheet';
+import { StateCard } from '@/components/state-card';
 import { MeetupManageSheet } from '@/components/meetup-manage-sheet';
 import { meetupHostActions } from '@/components/meetup-room-summary';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
@@ -156,7 +157,7 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = fal
       <ThemedText type="small" style={styles.body} themeColor="accent">{tr("로그인하고 내 모임 보기")}</ThemedText>
     </Pressable> : <>
       {loading && items.length === 0 && showLoadingIndicator && <GlingLoader color={theme.accent} accessibilityLabel={tr("내 모임 불러오는 중")} />}
-      {error && <ThemedText type="small" style={styles.support} themeColor="accent" accessibilityRole="alert">{t.meetup.loadError}</ThemedText>}
+      {error && <StateCard kind="error" title={tr('모임을 불러오지 못했어요')} body={tr('연결이 잠시 끊겼어요. 다시 시도해 주세요.')} actionLabel={tr('다시 불러오기')} onAction={() => void refresh()} />}
       {!loading && !error && items.length === 0 && <ThemedText type="small" style={styles.support} themeColor="textSecondary">{t.meetup.empty}</ThemedText>}
       {/* 내가 연 모임 → 참여 중 → 신청 내역 순서. 종료·나가기 같은 되돌릴 수 없는 동작은 ⋯ 메뉴 안에만 둔다. */}
       {([['host', tr('내가 연 모임')], ['approved', tr('참여 중')], ['other', tr('신청 내역')], ['closed', tr('지난 모임')]] as const).map(([group, heading]) => {

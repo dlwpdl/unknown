@@ -82,8 +82,9 @@ export function chillingTimezoneLabel(room: ChillingSchedule, locale = getLocale
 export function recommendedAgeLabel(room: ChillingSchedule, locale = getLocale()): string {
   if (locale === 'en-CA') return room.recommendedAgeMin != null && room.recommendedAgeMax != null
     ? `Recommended ages ${room.recommendedAgeMin}–${room.recommendedAgeMax}` : 'All ages';
+  // U+2060 word joiner: a narrow fact cell may wrap before the range but never splits "39" from "세".
   return room.recommendedAgeMin != null && room.recommendedAgeMax != null
-    ? `권장 만 ${room.recommendedAgeMin}~${room.recommendedAgeMax}세` : '연령대 무관';
+    ? `권장 만 ${room.recommendedAgeMin}~${room.recommendedAgeMax}\u2060세` : '연령대 무관';
 }
 
 // 다가오는 일회성 모임에만 붙는 임박 표시. 기기 기준 하루 경계로 센다.

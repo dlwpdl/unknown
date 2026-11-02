@@ -76,7 +76,8 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
   const theme = useTheme(), router = useRouter(), insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
   const { width: screenWidth, fontScale } = useWindowDimensions();
-  const compactHeader = fontScale > 1.2 || screenWidth < 360;
+  // Large text stacks the header on purpose; at other sizes the controls stay beside the title and wrap only when they don't fit.
+  const compactHeader = fontScale > 1.2;
   const { city: preferredCity } = useCommunityCity();
   const city = CITIES.find(city => city.id === destination?.cityId) ?? preferredCity;
   const { me, isAuthed, isAdmin, promptLogin } = useAuth();
@@ -168,7 +169,7 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
   }, [fetchPage]));
   const [refreshing, setRefreshing] = useState(false);
   const refresh = () => { setRefreshing(true); void fetchPage().finally(() => setRefreshing(false)); };
-  // 호스트가 처리할 승인 대기만 헤더에 알린다. 승인·거절은 대화 탭 요청함에서 한다.
+  // 호스트가 처리할 승인 대기만 헤더에 알린다. 승인·거절은 채팅 탭 참여 신청에서 한다.
   useFocusEffect(useCallback(() => {
     if (!isAuthed || !me.id) { setPendingCount(0); return; }
     let active = true;
@@ -250,16 +251,18 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
   const createDisabled = sourceInvalid || (destination?.kind === 'event' && !sourceLabel);
   return <TabContent style={styles.root}><SafeAreaView edges={['top', 'left', 'right']} style={[styles.root, { backgroundColor: theme.background }]}>
     {/* 헤더는 스크롤과 함께 사라지면 안 된다(홈과 동일). 목록 밖에 두고 고정한다. */}
-    <View style={[styles.head, styles.headFixed, compactHeader && styles.headLarge, { backgroundColor: theme.background }]}>
+    <View style={[styles.head, styles.headFixed, { backgroundColor: theme.background }]}>
       <ThemedText accessibilityRole="header" style={[styles.title, compactHeader && styles.titleLarge]}>{t.tabs.meetups}</ThemedText>
-      <GlassSurface tone="control" interactive={!destination} style={[styles.cityGlass, compactHeader && styles.cityGlassLarge]}>{destination ? <View style={styles.city}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.cityText}>{tr("{0}에서", tr(city.name))}</ThemedText></View> : <Pressable analyticsId="app_tabs_meetups.pressable.1" onPress={() => { play('selection'); setCityPicker(true); }} accessibilityRole="button" accessibilityLabel={tr("{0} 활동 지역 선택", tr(city.name))} style={({ pressed }) => [styles.city, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.cityText}>{tr("{0}에서", tr(city.name))}</ThemedText><SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={IconSize.chevron} tintColor={theme.textSecondary} /></Pressable>}</GlassSurface>
-      {/* 만들기는 화면당 하나뿐인 primary. 하단에 떠 있으면 카드를 가려서 헤더에 고정한다. */}
-      <Pressable analyticsId="app_tabs_meetups.pressable.3" accessibilityRole="button" accessibilityLabel={destination ? copy('이곳에 갈 모임 만들기', 'Start a meetup here') : tr("모임 만들기")} accessibilityState={{ disabled: createDisabled }} disabled={createDisabled}
-        onPress={() => { play('selection'); action('/meetup-create'); }}
-        style={({ pressed }) => [styles.circle, { backgroundColor: theme.accent, opacity: createDisabled ? 0.4 : pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] }]}>
-        <SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} size={20} tintColor={theme.accentInk} />
-      </Pressable>
-      <ProfileAvatarButton />
+      <View style={[styles.headActions, compactHeader && styles.headActionsLarge]}>
+        <GlassSurface tone="control" interactive={!destination} style={[styles.cityGlass, compactHeader && styles.cityGlassLarge]}>{destination ? <View style={styles.city}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.cityText}>{tr("{0}에서", tr(city.name))}</ThemedText></View> : <Pressable analyticsId="app_tabs_meetups.pressable.1" onPress={() => { play('selection'); setCityPicker(true); }} accessibilityRole="button" accessibilityLabel={tr("{0} 활동 지역 선택", tr(city.name))} style={({ pressed }) => [styles.city, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.cityText}>{tr("{0}에서", tr(city.name))}</ThemedText><SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={IconSize.chevron} tintColor={theme.textSecondary} /></Pressable>}</GlassSurface>
+        {/* 만들기는 화면당 하나뿐인 primary. 하단에 떠 있으면 카드를 가려서 헤더에 고정한다. */}
+        <Pressable analyticsId="app_tabs_meetups.pressable.3" accessibilityRole="button" accessibilityLabel={destination ? copy('이곳에 갈 모임 만들기', 'Start a meetup here') : tr("모임 만들기")} accessibilityState={{ disabled: createDisabled }} disabled={createDisabled}
+          onPress={() => { play('selection'); action('/meetup-create'); }}
+          style={({ pressed }) => [styles.circle, { backgroundColor: theme.accent, opacity: createDisabled ? 0.4 : pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] }]}>
+          <SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} size={20} tintColor={theme.accentInk} />
+        </Pressable>
+        <ProfileAvatarButton />
+      </View>
     </View>
     <View accessibilityRole="tablist" accessibilityLabel={copy('모임 보기', 'Meetup views')} style={[styles.viewTabs, { borderBottomColor: theme.line }]}>
       {([['browse', copy('둘러보기', 'Browse')], ['mine', copy('내 모임', 'My meetups')]] as const).map(([value, label]) => <Pressable key={value}
@@ -374,7 +377,9 @@ const styles = StyleSheet.create({
   loadingState: { minHeight: 160, alignItems: 'center', justifyContent: 'center' },
   flexText: { flexShrink: 1, gap: 2 },
   // 목록 밖에 고정되는 헤더: 좌우 여백은 목록과 맞춘다.
-  headFixed: { marginBottom: 0, paddingHorizontal: 22, paddingTop: Spacing.one, paddingBottom: 10, width: '100%', maxWidth: 640, alignSelf: 'center' }, headLarge: { flexWrap: 'wrap' }, titleLarge: { width: '100%' },
+  headFixed: { marginBottom: 0, paddingHorizontal: 22, paddingTop: Spacing.one, paddingBottom: 10, width: '100%', maxWidth: 640, alignSelf: 'center', flexWrap: 'wrap' }, titleLarge: { width: '100%' },
+  // City, create and profile move together; on their own line the city label shrinks (one line, truncated) before anything else.
+  headActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 'auto', flexShrink: 1 }, headActionsLarge: { flexGrow: 1 },
   city: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.one, borderRadius: 12, paddingHorizontal: Spacing.two, flexShrink: 1 }, cityText: { fontSize: 14, lineHeight: 20, flexShrink: 1 }, cityGlass: { marginLeft: 'auto', flexShrink: 1, borderRadius: 12 }, cityGlassLarge: { flex: 1, minWidth: 0 }, title: Typography.screenTitle, circle: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }, circleGlass: { borderRadius: 22 }, filterGlass: { borderRadius: 12 },
   filterRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 20 },
   // Row direction keeps the switch's flex:1 horizontal; narrow screens wrap filter+search together.

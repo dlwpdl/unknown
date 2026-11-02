@@ -40,7 +40,7 @@ function mount(data = {}) {
       if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: value => calls.push(['feedback', value]) }) };
       if (name === '@/lib/membership-provider') return { useMembership: () => ({ refresh: noop }) };
       if (name === '@/components/relationship-slot-card') return { relationshipSlotData: () => null };
-      if (name === '@/lib/community-data') return { loadMyMeetups: async () => data.items ?? [meetup], recordPostShare: async (_client, id) => calls.push(['shared', id]), leaveMeetup: async (_client, id) => calls.push(['leave', id]) };
+      if (name === '@/lib/community-data') return { loadMyMeetups: async () => { if (data.fail?.()) throw new Error('offline'); return data.items ?? [meetup]; }, recordPostShare: async (_client, id) => calls.push(['shared', id]), leaveMeetup: async (_client, id) => calls.push(['leave', id]) };
       if (name === '@/lib/feed-data') return { loadPublicPost: async (_client, id) => { calls.push(['load-post', id]); return data.loadPost ? data.loadPost() : post; } };
       if (name === '@/lib/chilling') return { chillingKind: room => room.eventKind === 'once' ? 'once' : 'group', chillingSchedule };
       if (name === '@/lib/mock') return { CITIES: [] };
@@ -66,6 +66,18 @@ function mount(data = {}) {
   return { auth, calls, render, control, sheet, menu, async settle() { await tick(); render(); }, unmount() { hooks.forEach(hook => hook?.cleanup?.()); } };
 }
 const noop = () => {};
+
+test('a failed My Meetups load shows the shared error card, and its reload button loads again', async () => {
+  let failures = 1;
+  const ui = mount({ fail: () => failures-- > 0 }); await ui.settle();
+  const card = nodes(ui.render()).find(node => node.type === 'StateCard');
+  assert.equal(card?.props.kind, 'error');
+  assert.equal(card.props.actionLabel, '다시 불러오기');
+  assert.equal(ui.control('components_my-meetups.pressable.2'), undefined);
+  card.props.onAction(); await ui.settle(); await ui.settle();
+  assert.equal(nodes(ui.render()).some(node => node.type === 'StateCard'), false);
+  assert.ok(ui.control('components_my-meetups.pressable.2'), 'the reload brings the meetup back'); ui.unmount();
+});
 
 test('hosts and approved members open the existing invitation sheet directly from My Meetups', async () => {
   for (const role of ['host', 'approved']) {

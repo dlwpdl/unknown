@@ -13,7 +13,8 @@ import {
   type InteractionPreferences,
 } from './interaction-feedback-preferences';
 
-type FeedbackKind = 'selection' | 'reaction' | 'message' | 'success' | 'meetup' | 'meetupCreated' | 'postPublished' | 'verification2' | 'verification3' | 'warning';
+// meetup: a host handled a join request; meetupRequested: the member just sent one and still waits for the host.
+type FeedbackKind = 'selection' | 'reaction' | 'message' | 'success' | 'meetup' | 'meetupRequested' | 'meetupCreated' | 'postPublished' | 'verification2' | 'verification3' | 'warning';
 
 type InteractionFeedbackValue = InteractionPreferences & {
   play: (kind: FeedbackKind) => void;
@@ -50,7 +51,7 @@ export function InteractionFeedbackProvider({ children }: { children: ReactNode 
 function InteractiveFeedbackProvider({ children }: { children: ReactNode }) {
   const { tr } = useLanguage();
   const [preferences, setPreferences] = useState(DEFAULT_INTERACTION_PREFERENCES);
-  const [commit, setCommit] = useState<'success' | 'meetup' | null>(null);
+  const [commit, setCommit] = useState<'success' | 'meetup' | 'meetupRequested' | null>(null);
   const [celebrating, setCelebrating] = useState<'meetup' | 'post' | 'verification2' | 'verification3' | null>(null);
   const reducedMotion = useReducedMotion();
   const [commitOpacity] = useState(() => new Animated.Value(0));
@@ -108,7 +109,7 @@ function InteractiveFeedbackProvider({ children }: { children: ReactNode }) {
     if (kind === 'meetupCreated' || kind === 'postPublished' || kind === 'verification2' || kind === 'verification3') {
       setCelebrating(kind === 'meetupCreated' ? 'meetup' : kind === 'postPublished' ? 'post' : kind);
     }
-    if (kind === 'success' || kind === 'meetup') {
+    if (kind === 'success' || kind === 'meetup' || kind === 'meetupRequested') {
       if (commitTimer.current) clearTimeout(commitTimer.current);
       commitOpacity.stopAnimation(); commitScale.stopAnimation();
       setCommit(kind);
@@ -126,7 +127,7 @@ function InteractiveFeedbackProvider({ children }: { children: ReactNode }) {
           ? messagePlayer
           : kind === 'success' || kind === 'postPublished' || kind === 'verification2' || kind === 'verification3'
             ? successPlayer
-            : kind === 'meetup' || kind === 'meetupCreated'
+            : kind === 'meetup' || kind === 'meetupRequested' || kind === 'meetupCreated'
               ? meetupPlayer
               : null;
       if (player) {
@@ -150,6 +151,7 @@ function InteractiveFeedbackProvider({ children }: { children: ReactNode }) {
     void haptic.catch(() => {});
   }, [commitOpacity, commitScale, meetupPlayer, messagePlayer, preferences, reactionPlayer, reducedMotion, successPlayer]);
 
+  const commitLabel = commit === 'meetup' ? tr("참여 신청을 처리했어요") : commit === 'meetupRequested' ? tr('신청을 보냈어요') : tr("완료했어요");
   return (
     <InteractionFeedbackContext.Provider
       value={{
@@ -160,12 +162,12 @@ function InteractiveFeedbackProvider({ children }: { children: ReactNode }) {
       }}>
       <View style={styles.root}>
         {children}
-        {commit && <Animated.View pointerEvents="none" accessibilityLiveRegion="polite" accessibilityLabel={commit === 'meetup' ? tr("참여 신청을 처리했어요") : tr("완료했어요")} style={[styles.commitOverlay, { opacity: commitOpacity, transform: [{ scale: commitScale }] }]}>
+        {commit && <Animated.View pointerEvents="none" accessibilityLiveRegion="polite" accessibilityLabel={commitLabel} style={[styles.commitOverlay, { opacity: commitOpacity, transform: [{ scale: commitScale }] }]}>
           <View style={styles.commitRing}>
             {[[5, -22, '#F9C76C', '-30deg'], [54, -38, '#F35CBB', '24deg'], [103, -14, '#83D9E7', '42deg'], [-25, 30, '#CBB9FF', '19deg'], [125, 39, '#F9C76C', '-18deg'], [-29, 89, '#F35CBB', '35deg'], [120, 101, '#83D9E7', '-40deg'], [20, 128, '#F9C76C', '28deg'], [76, 136, '#CBB9FF', '-22deg']].map(([left, top, color, rotate], index) => <View key={index} style={[styles.commitParticle, { left: left as number, top: top as number, backgroundColor: color as string, transform: [{ rotate: rotate as string }] }]} />)}
-            <View style={styles.commitCore}><Text style={styles.commitGlyph}>{commit === 'meetup' ? '✦' : '✓'}</Text></View>
+            <View style={styles.commitCore}><Text style={styles.commitGlyph}>{commit === 'success' ? '✓' : '✦'}</Text></View>
           </View>
-          <Text style={styles.commitLabel}>{commit === 'meetup' ? tr("참여 신청을 처리했어요") : tr("완료했어요")}</Text>
+          <Text style={styles.commitLabel}>{commitLabel}</Text>
         </Animated.View>}
         <Modal visible={celebrating !== null} transparent animationType="none" statusBarTranslucent onRequestClose={() => setCelebrating(null)}>
           <Animated.View style={[styles.celebrationScreen, { opacity: celebrationOpacity }]}>

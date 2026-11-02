@@ -83,7 +83,7 @@ test('invalid schedule and capacity never reach the server; server denial is pre
 test('recommended ages validate whole inclusive bounds and never imply an admission gate', async () => {
   const { normalizeChillingEvent, recommendedAgeLabel, recommendedAgeMessage } = await import('../src/lib/chilling.ts');
   const room = { recommendedAgeMin: 20, recommendedAgeMax: 39 };
-  assert.equal(recommendedAgeLabel(room), '권장 만 20~39세');
+  assert.equal(recommendedAgeLabel(room), '권장 만 20~39\u2060세');
   assert.equal(recommendedAgeLabel({}), '연령대 무관');
   assert.equal(normalizeChillingEvent({ ...once, ...room }).recommendedAgeMax, 39);
   let sent;

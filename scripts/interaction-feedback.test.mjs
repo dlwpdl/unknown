@@ -28,6 +28,9 @@ test('모임 생성 완료는 참여 신청과 다른, 화면 이동 위의 축�
   const joined = readFileSync(new URL('../src/app/meetup-join.tsx', import.meta.url), 'utf8');
   const feedback = readFileSync(new URL('../src/lib/interaction-feedback.tsx', import.meta.url), 'utf8');
   assert.match(created, /createChillingEvent[\s\S]*play\('meetupCreated'\)/);
-  assert.match(joined, /play\('meetup'\)/);
+  assert.match(joined, /play\('meetupRequested'\)/);
+  assert.doesNotMatch(joined, /play\('meetup'\)/, '보낸 직후에는 호스트 처리 표시를 쓰지 않는다');
+  assert.match(feedback, /commit === 'meetupRequested' \? tr\('신청을 보냈어요'\)/);
+  for (const file of ['../src/app/(tabs)/chat.tsx', '../src/app/meetup-application.tsx']) assert.match(readFileSync(new URL(file, import.meta.url), 'utf8'), /play\(response === 'approved' \? 'meetup'/, file);
   assert.match(feedback, /<Modal visible=\{celebrating !== null\}/);
 });

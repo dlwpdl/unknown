@@ -173,7 +173,7 @@ function JoinForm({ postId }: { postId: string }) {
       if (modern) await requestChillingJoin(supabase, post.id, answer, consent, profile!.revision ?? '', choice);
       else await requestMeetupJoin(supabase, post.id, answer);
       if (focusedScope.current !== scope) return;
-      submitted = true; setAnswer(''); setSent(true); play('meetup'); DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT); requestPushPrompt('meetup_request');
+      submitted = true; setAnswer(''); setSent(true); play('meetupRequested'); DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT); requestPushPrompt('meetup_request');
       const next = await loadMeetupParticipation(supabase, post.id, me.id);
       if (focusedScope.current === scope) setParticipation(next);
     } catch (e) { if (focusedScope.current === scope) { play('warning'); setError(submitted ? "신청은 접수됐어요. 현재 상태를 다시 불러와 주세요." : getChillingError(e)); setErrorCode(submitted ? null : getChillingErrorCode(e)); if (!submitted && getChillingErrorCode(e) === 'CHILLING_PROFILE_CHANGED') { setConsent(false); setRetry(value => value + 1); } } }
@@ -244,7 +244,7 @@ function JoinForm({ postId }: { postId: string }) {
               : <Rise key={view}>
                 {view === 'own' && <>
                   {meetCard()}
-                  <ThemedText style={styles.body}>{tr("내가 개최한 모임이에요. 대화 탭에서 신청자를 확인할 수 있어요.")}</ThemedText>
+                  <ThemedText style={styles.body}>{tr("내가 연 모임이에요. 채팅 탭에서 신청자를 볼 수 있어요.")}</ThemedText>
                 </>}
                 {view === 'inactive' && <>
                   <StateCard layout="start" kind="blocked" mark="minus" title={availability === 'ended' ? tr("종료된 모임이에요") : tr("모집이 마감됐어요")} body={`${status ? tr('내 신청 · {0}. ', tr({ pending: '승인 대기', approved: '이전에 승인됨', rejected: '거절됨', cancelled: '취소됨' }[status])) : ''}${tr('새 참여 신청과 승인을 할 수 없어요.')}${status === 'approved' ? tr('승인 기록이 있어도 종료된 모임 대화에는 입장할 수 없어요.') : ''}`} />

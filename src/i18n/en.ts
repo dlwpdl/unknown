@@ -78,7 +78,7 @@ export const en: Translations = {
     leaveTitle: 'Leave this meetup?',
     leaveBody: 'Your slot comes back right away. If you leave 3 different meetups you were approved for within 24 hours, you can’t join new ones for 12 hours. Meetups that end on their own don’t count. Other members can keep chatting.',
     cancelTitle: 'Cancel your request to join?', cancelBody: 'This withdraws your request to the host. Pending requests don’t use or lock a slot.',
-    loadError: 'Couldn’t load your meetups. Try again.', changeError: 'Couldn’t update this meetup. Try again in a moment.',
+    changeError: 'Couldn’t update this meetup. Try again in a moment.',
     openChat: 'Meetup chat', pendingNote: 'You won’t use a slot until you’re approved.',
   },
   membership: { listingBenefits: { free: '5 active listings · bump every 48 hours', plus: '10 active listings · bump every 36 hours', pro: '20 active listings · bump every 30 hours', premium: '20 active listings · bump every 24 hours' } },
