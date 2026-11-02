@@ -35,9 +35,13 @@ class GatewayTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'OWNER_SESSION_REQUIRED'): gateway.rpc(name, {'p_merchant_id': 'm'})
             for status in ['paid', 'paused', None]:
                 with self.assertRaisesRegex(ValueError, 'OWNER_SESSION_REQUIRED'): gateway.rpc('save_admin_merchant', {'p_id': None, 'p_status': status})
-            with patch.object(gateway, 'direct_sql', return_value=[{'status': 'paid'}]):
+            with patch.object(gateway, 'direct_sql', return_value=[{'status': 'paid', 'trial_ends_at': None}]):
                 with self.assertRaisesRegex(ValueError, 'OWNER_SESSION_REQUIRED'): gateway.rpc('save_admin_merchant_record', {'p_id': 'm', 'p_status': 'trial'})
-            with patch.object(gateway, 'direct_sql', return_value=[{'status': 'lead'}]):
+            with self.assertRaisesRegex(ValueError, 'OWNER_SESSION_REQUIRED'):
+                gateway.rpc('save_admin_merchant', {'p_id': None, 'p_status': 'trial', 'p_trial_ends_at': '2099-12-31'})
+            with patch.object(gateway, 'direct_sql', return_value=[{'status': 'trial', 'trial_ends_at': '2026-12-01'}]):
+                with self.assertRaisesRegex(ValueError, 'OWNER_SESSION_REQUIRED'): gateway.rpc('save_admin_merchant', {'p_id': 'm', 'p_status': 'trial'})
+            with patch.object(gateway, 'direct_sql', return_value=[{'status': 'lead', 'trial_ends_at': None}]):
                 gateway.check_automation_scope('save_admin_merchant', {'p_id': 'm', 'p_status': 'trial'})
             gateway.check_automation_scope('save_admin_merchant_record', {'p_id': None, 'p_status': 'lead'})
             gateway.check_automation_scope('link_admin_merchant_post', {'p_merchant_id': 'm'})

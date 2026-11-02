@@ -145,9 +145,11 @@ def check_automation_scope(name, args):
     if os.environ.get('GLING_ADMIN_FULL') == '1': return
     if name not in AUTOMATION_RPCS: raise ValueError('OWNER_SESSION_REQUIRED')
     if name in ('save_admin_merchant', 'save_admin_merchant_record'):
-        if args.get('p_status') not in REGISTER_STATUSES: raise ValueError('OWNER_SESSION_REQUIRED')
-        current = direct_sql(f"select status from private.merchants where id = {lit(args['p_id'])}::uuid") if args.get('p_id') else []
-        if current and current[0]['status'] not in REGISTER_STATUSES: raise ValueError('OWNER_SESSION_REQUIRED')
+        # A trial end date unlocks paid-level limits, so automations never set or replace one (all trials so far have none).
+        if args.get('p_status') not in REGISTER_STATUSES or args.get('p_trial_ends_at') is not None: raise ValueError('OWNER_SESSION_REQUIRED')
+        current = direct_sql(f"select status, trial_ends_at from private.merchants where id = {lit(args['p_id'])}::uuid") if args.get('p_id') else []
+        if current and (current[0]['status'] not in REGISTER_STATUSES or current[0]['trial_ends_at'] is not None):
+            raise ValueError('OWNER_SESSION_REQUIRED')
 
 def rpc(name, args):
     if name not in RPCS: raise ValueError('UNKNOWN_MERCHANT_OPERATION')
