@@ -3,10 +3,29 @@ from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import json
+import subprocess
 from admin_merchant_gateway import connect, connection_status, disconnect, same_origin
 
 
+def lookup_tailnet_host():
+    """The name `tailscale serve` forwards as Host, looked up at start so it never lands in this public repo."""
+    try:
+        status = json.loads(subprocess.run(['tailscale', 'status', '--json'], capture_output=True, text=True, timeout=10).stdout)
+        return status['Self']['DNSName'].rstrip('.') or None
+    except Exception: return None  # No Tailscale: loopback only.
+
+
 class AdminHandler(SimpleHTTPRequestHandler):
+    tailnet_host = None
+
+    def parse_request(self):
+        # DNS rebinding: a hostile page resolved to 127.0.0.1 still sends its own Host, so every request is checked.
+        if not super().parse_request(): return False
+        host, port = self.headers.get('Host'), self.server.server_port
+        if host and host in (f'127.0.0.1:{port}', f'localhost:{port}', self.tailnet_host): return True
+        self.json_response(403, {'error': 'HOST_NOT_ALLOWED'})
+        return False
+
     def json_response(self, status, value):
         self.send_response(status)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
@@ -54,4 +73,8 @@ class AdminHandler(SimpleHTTPRequestHandler):
 
 if __name__ == '__main__':
     directory = Path(__file__).resolve().parents[1] / '.admin-dist'
+    AdminHandler.tailnet_host = lookup_tailnet_host()
+    print('Tailscale name allowed' if AdminHandler.tailnet_host else 'Tailscale name not found: loopback only', flush=True)
+    # The page requests ~20 assets at once; the default listen backlog (5) drops some and Tailscale returns 502.
+    ThreadingHTTPServer.request_queue_size = 128
     ThreadingHTTPServer(('127.0.0.1', 54321), partial(AdminHandler, directory=directory)).serve_forever()

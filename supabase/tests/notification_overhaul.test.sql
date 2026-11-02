@@ -135,12 +135,21 @@ select is((select count(*)::int from private.push_delivery_queue q join public.n
 select is(private.send_admin_digests(pg_temp.vancouver_next('09:45')),0,'one digest per slot');
 select is(private.send_admin_digests(pg_temp.vancouver_next('09:30')+interval '9 hours'),0,'nothing new means no 18:00 digest');
 
--- 8. Admin dashboard origin is server-side and admin-only.
+-- 8. Admin dashboard origin comes from Vault (never the public repo) and is admin-only.
+select ok((select prosrc !~ 'https?://' from pg_proc where oid='public.get_admin_dashboard_origin()'::regprocedure),'no address in the function source');
+delete from vault.secrets where name='gling_admin_dashboard_origin';
+select vault.create_secret('https://admin-dashboard.example.ts.net','gling_admin_dashboard_origin');
 select set_config('request.jwt.claims','{"sub":"92000000-0000-4000-8000-000000000009","session_id":"92100000-0000-4000-8000-000000000009","aal":"aal2","role":"authenticated","app_metadata":{"role":"admin"}}',true);
 set local role authenticated;
-select is(public.get_admin_dashboard_origin(),'https://cayden-macbookpro.tailb6648f.ts.net','admins get the dashboard origin');
+select is(public.get_admin_dashboard_origin(),'https://admin-dashboard.example.ts.net','admins get the dashboard origin');
 select set_config('request.jwt.claims','{"sub":"92000000-0000-4000-8000-000000000001","session_id":"92100000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select is(public.get_admin_dashboard_origin(),null,'members get nothing');
+select throws_ok($$select * from vault.decrypted_secrets$$,'42501',null,'members cannot read Vault directly');
+reset role;
+delete from vault.secrets where name='gling_admin_dashboard_origin';
+select set_config('request.jwt.claims','{"sub":"92000000-0000-4000-8000-000000000009","session_id":"92100000-0000-4000-8000-000000000009","aal":"aal2","role":"authenticated","app_metadata":{"role":"admin"}}',true);
+set local role authenticated;
+select is(public.get_admin_dashboard_origin(),null,'no stored address means null');
 reset role;
 select ok(not has_function_privilege('anon','public.get_admin_dashboard_origin()','execute'),'guests cannot ask');
 
