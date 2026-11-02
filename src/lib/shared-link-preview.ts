@@ -45,6 +45,9 @@ export async function loadSharedLinkPost(client: SupabaseClient, postId: string)
       id: room.id, title: room.title, memberCount: room.memberCount, verifiedOnly: room.verifiedOnly,
       capacity: room.capacity, closed: room.closed, eventKind: room.eventKind,
       startsAt: room.startsAt, endsAt: room.endsAt, timezone: room.timezone, cadence: room.cadence,
+      category: room.category, recommendedAgeMin: room.recommendedAgeMin, recommendedAgeMax: room.recommendedAgeMax,
+      // For meetup rows the server already puts the host's meetup name (not the account nickname) in author_nickname.
+      hostDisplayName: row.author_nickname,
     } } : {}),
   }], []);
   const images = post.imagePaths?.[0] ? [previewImage(id)] : [];

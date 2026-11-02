@@ -49,6 +49,7 @@ export function mountParticipant(screen, options = {}) {
     '@/lib/membership-provider': { useMembership: () => ({ membership: {}, refresh: noop }) }, '@/components/relationship-slot-card': { relationshipSlotData: () => null },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => calls.push(['feedback', value]) }) },
     '@/lib/push-prompt': { requestPushPrompt: reason => calls.push(['push-prompt', reason]) },
+    '@/lib/shared-link-preview': { loadSharedLinkPost: async () => { calls.push(['guest-read']); return ctx.guestPost ?? ctx.post; } }, '@/lib/sharing': { SHARED_POST_RETURN_KEY: 'gling.sharedPostReturn' }, 'expo-image': { Image: 'Image' },
     '@/lib/supabase': { supabase: { rpc: async name => name === 'get_meetup_fee_payments' && ctx.payments === 'error' ? { error: { message: 'offline' } } : { data: name === 'get_meetup_fee_payments' ? ctx.payments ?? [] : name === 'get_meetup_languages' ? ctx.languages ?? null : null, error: null } } }, '@/lib/meetup-host-tools': hostTools, '@/lib/personal-info': { ageForMeetupRecommendation: () => null },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 12, four: 16, six: 24 }, Depth: { control: {}, card: {} }, MaxContentWidth: 640, TabBarHeight: 60 }, '@/constants/design-system': designSystem,
     '@/lib/newcomer': newcomer, '@/components/newcomer': { useNewcomerStatus: () => ({ status: ctx.newcomerStatus ?? null, loading: false, refresh: noop }) },
@@ -255,6 +256,31 @@ test('reapply cooldown says when it opens, offers other meetups, and can be pull
   assert.equal(ui.control('app_meetup-join.pressable.3').props.label, '다른 모임 찾기');
   const before = ui.calls.length; ui.control('app_meetup-join.scrollview.1').props.refreshControl.props.onRefresh(); await ui.flush(); assert.ok(ui.calls.length > before); ui.unmount();
   const writing = mountParticipant('join'); await writing.flush(); assert.equal(writing.control('app_meetup-join.scrollview.1').props.refreshControl, undefined, 'pulling never reloads over a half-written answer'); writing.unmount();
+});
+test('logged out (시안 A): guest read, meetup head and one bottom action per state', async () => {
+  const guest = (room, extra = {}) => { const asked = []; const guestPost = { ...participantPost, imageUris: [], room: { ...participantPost.room, ...room }, ...extra };
+    const ui = mountParticipant('join', { guestPost, post: { ...participantPost, title: 'AUTHED_ONLY_READ' }, auth: { isAuthed: false, me: { id: '' }, promptLogin: reason => asked.push(reason) } }); return { ui, asked }; };
+  const bar = ui => { const action = ['app_meetup-join.pressable.2', 'app_meetup-join.pressable.3'].map(ui.control).find(Boolean); return { action, text: text(nodes(ui.tree).find(node => node.props?.accessibilityLiveRegion === 'polite')) }; };
+  const open = guest({}, { imageUris: ['https://example.test/cover'] }); await open.ui.flush();
+  assert.ok(open.ui.calls.some(([name]) => name === 'guest-read')); assert.ok(text(open.ui.tree).includes(participantPost.title)); assert.ok(!text(open.ui.tree).includes('AUTHED_ONLY_READ'));
+  assert.equal(nodes(open.ui.tree).find(node => node.type === 'Image').props.accessibilityLabel, `${participantPost.title} 사진`);
+  assert.equal(nodes(open.ui.tree).find(node => node.type === 'MeetupChips').props.hideOpen, true);
+  assert.deepEqual({ ...nodes(open.ui.tree).find(node => node.type === 'MeetupFacts').props, post: undefined }, { post: undefined, canEnterChat: false, own: false });
+  assert.ok(text(open.ui.tree).includes('로그인하면 소라님이 남긴 질문에 답하고 신청을 보낼 수 있어요.'));
+  let { action, text: meta } = bar(open.ui); assert.equal(meta, '5자리 남음승인 후 참여'); assert.equal(action.props.label, '로그인하고 신청하기'); assert.equal(action.props.compact, true);
+  action.props.onPress(); assert.deepEqual(open.asked, ['참여하려면 로그인해 주세요.']); assert.ok(open.ui.calls.some(([name, kind]) => name === 'feedback' && kind === 'selection'));
+  assert.equal(nodes(open.ui.tree).some(node => node.props?.analyticsId === 'app_meetup-join.pressable.8'), false, 'no request form before login'); open.ui.unmount();
+
+  const full = guest({ memberCount: 8 }); await full.ui.flush();
+  ({ action, text: meta } = bar(full.ui)); assert.equal(meta, '정원이 모두 찼어요자리가 나면 순서대로 알려 드려요.'); assert.equal(action.props.label, '로그인하고 빈자리 알림 받기');
+  assert.equal(nodes(full.ui.tree).some(node => node.type === 'Image'), false, 'no photo, no photo slot'); assert.ok(!text(full.ui.tree).includes('남긴 질문')); action.props.onPress(); assert.equal(full.asked.length, 1); full.ui.unmount();
+
+  const ended = guest({ startsAt: '2020-06-12T17:00:00Z', endsAt: '2020-06-12T19:00:00Z' }); await ended.ui.flush();
+  ({ action, text: meta } = bar(ended.ui)); assert.equal(meta, '종료된 모임이에요새 참여 신청과 승인을 할 수 없어요.'); assert.equal(action.props.label, '다른 모임 찾기');
+  action.props.onPress(); assert.deepEqual(ended.ui.calls.at(-1), ['replace', '/(tabs)/meetups']); assert.equal(ended.asked.length, 0); ended.ui.unmount();
+
+  const gone = guest({}); gone.ui.ctx.guestPost = { ...participantPost, room: undefined }; await gone.ui.flush();
+  assert.equal(nodes(gone.ui.tree).find(node => node.type === 'StateCard').props.title, '이 모임을 볼 수 없어요'); assert.equal(gone.ui.control('app_meetup-join.pressable.2'), undefined); gone.ui.unmount();
 });
 test('a paused meetup offers no form; a host pause during submit reads the same', async () => {
   const paused = mountParticipant('join', { post: { ...participantPost, room: { ...participantPost.room, recruitingClosed: true } } }); await paused.flush();

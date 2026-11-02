@@ -53,7 +53,8 @@ export function useMeetupParticipation(post: Post) {
   return { own, participation, statusLoading, statusError, retry: () => setRetry(value => value + 1) };
 }
 
-export function MeetupChips({ post }: { post: Post }) {
+// hideOpen: logged-out readers can't see a host's pause, so '모집 중' could be wrong there.
+export function MeetupChips({ post, hideOpen = false }: { post: Post; hideOpen?: boolean }) {
   const { tr } = useLanguage();
   const theme = useTheme();
   if (!post.room) return null;
@@ -64,7 +65,7 @@ export function MeetupChips({ post }: { post: Post }) {
     <View style={chip}><ThemedText type="smallBold" themeColor="accent">{chillingKind(post.room) === 'once' ? tr('칠링') : tr('정기모임')}</ThemedText></View>
     {!!category && <View style={chip}><ThemedText type="smallBold">{tr(CHILLING_CATEGORY_LABELS[category])}</ThemedText></View>}
     {exchange && <View style={chip}><ThemedText type="smallBold">{languagePairLabel(exchange)}</ThemedText></View>}
-    <View style={chip}><ThemedText type="smallBold">{{ open: tr('모집 중'), full: tr('정원 마감'), closed: tr('모집 마감'), ended: tr('종료된 모임') }[availability]}</ThemedText></View>
+    {!(hideOpen && availability === 'open') && <View style={chip}><ThemedText type="smallBold">{{ open: tr('모집 중'), full: tr('정원 마감'), closed: tr('모집 마감'), ended: tr('종료된 모임') }[availability]}</ThemedText></View>}
   </View>;
 }
 

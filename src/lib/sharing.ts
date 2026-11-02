@@ -52,8 +52,11 @@ export function sharedPostReturnPath(value: string | null) {
   if (!value) return '/';
   try {
     const parsed = new URL(value, 'https://gling.ej-entertainment.com');
-    const id = parsed.searchParams.get('id');
-    if (parsed.origin !== 'https://gling.ej-entertainment.com' || parsed.pathname !== '/post' || parsed.searchParams.getAll('id').length !== 1 || !id || !uuid.test(id)) return '/';
+    // The logged-out meetup join screen (meetup-join.tsx) returns to itself after web sign-in.
+    const join = parsed.pathname === '/meetup-join', key = join ? 'postId' : 'id';
+    const id = parsed.searchParams.get(key);
+    if (parsed.origin !== 'https://gling.ej-entertainment.com' || (!join && parsed.pathname !== '/post') || parsed.searchParams.getAll(key).length !== 1 || !id || !uuid.test(id)) return '/';
+    if (join) return `/meetup-join?postId=${id.toLowerCase()}`;
     return `/post?id=${id.toLowerCase()}${parsed.searchParams.get('invite') === '1' ? '&invite=1' : ''}`;
   } catch { return '/'; }
 }

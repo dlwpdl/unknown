@@ -7,8 +7,11 @@ import { Alert, Animated, AppState, DeviceEventEmitter, Easing, KeyboardAvoiding
 import { useReducedMotion } from 'react-native-reanimated';
 import { requestPushPrompt } from '@/lib/push-prompt';
 import { SymbolView } from 'expo-symbols';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
+import { MeetupChips } from '@/components/chilling-host-profile';
+import { MeetupFacts } from '@/components/post-detail';
 import { Disclosure } from '@/components/disclosure';
 import { DragSheet } from '@/components/drag-sheet';
 import { InitialAvatar, ListCard, ListRow } from '@/components/list-card';
@@ -31,6 +34,8 @@ import { chillingProfilePreview, getChillingError, getChillingErrorCode, loadChi
 import { leaveMeetup, MEETUPS_CHANGED_EVENT, requestMeetupJoin } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadPublicPost } from '@/lib/feed-data';
+import { loadSharedLinkPost } from '@/lib/shared-link-preview';
+import { SHARED_POST_RETURN_KEY } from '@/lib/sharing';
 import { loadMeetupFeePayments, meetupFeeAmount, meetupFeeDue } from '@/lib/meetup-host-tools';
 import { CITIES } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
@@ -99,8 +104,8 @@ function JoinForm({ postId }: { postId: string }) {
     busy.current = false; setSending(false);
     setNow(Date.now());
     setConsent(false); setLoading(true); setError(''); setErrorCode(null); setProfileError(''); setPost(null); setProfile(null); setParticipation(null); setFeePaid(null); setLanguages(null); setSpeaks(null);
-    if (!isAuthed) { setLoading(false); return () => { active = false; if (focusedScope.current === scope) focusedScope.current = null; }; }
-    void loadPublicPost(supabase, postId).then(async value => {
+    // Logged out, loadPublicPost fails (it also reads comments); the guest read gives the first photo and the public meetup fields.
+    const read = !isAuthed ? loadSharedLinkPost(supabase, postId).then(value => { if (active) setPost(value); }) : loadPublicPost(supabase, postId).then(async value => {
       if (!active) return;
       const [ownProfile, request, sides] = await Promise.all([
         // A profile failure (e.g. unavailable photos) only blocks submit; the meetup and request status still load.
@@ -112,7 +117,8 @@ function JoinForm({ postId }: { postId: string }) {
       // An unverified payment read shows the fee without a status rather than guessing.
       const payments = value?.room?.fee && request?.status === 'approved' ? await loadMeetupFeePayments(supabase, postId).catch(() => null) : null;
       if (active) { setPost(value); setProfile(ownProfile); setParticipation(request); setFeePaid(payments && payments.some(row => row.user_id === me.id)); setSent(false); setLanguages(sides); setSpeaks(sides?.mine?.speaks ?? null); }
-    }).catch(e => { if (active) { setError(getChillingError(e)); setErrorCode(getChillingErrorCode(e)); } })
+    });
+    void read.catch(e => { if (active) { setError(getChillingError(e)); setErrorCode(getChillingErrorCode(e)); } })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; if (focusedScope.current === scope) focusedScope.current = null; };
   // retry deliberately re-runs the focused screen's load after an explicit retry.
@@ -179,7 +185,7 @@ function JoinForm({ postId }: { postId: string }) {
     } catch (e) { if (focusedScope.current === scope) { play('warning'); setError(submitted ? "신청은 접수됐어요. 현재 상태를 다시 불러와 주세요." : getChillingError(e)); setErrorCode(submitted ? null : getChillingErrorCode(e)); if (!submitted && getChillingErrorCode(e) === 'CHILLING_PROFILE_CHANGED') { setConsent(false); setRetry(value => value + 1); } } }
     finally { if (focusedScope.current === scope) { busy.current = false; setSending(false); } }
   };
-  const view = !isAuthed ? 'login' : loading ? 'loading' : error && !post ? 'failed' : unavailable ? 'unavailable' : own ? 'own' : inactive ? 'inactive' : result ? 'result'
+  const view = loading ? 'loading' : error && !post ? 'failed' : unavailable ? 'unavailable' : !isAuthed ? 'guest' : own ? 'own' : inactive ? 'inactive' : result ? 'result'
     : paused ? 'paused' : locked ? 'locked' : availability === 'full' ? 'full' : coolingDown ? 'cooling' : modern && profile?.version !== 2 ? 'noprofile' : 'form';
   const writing = (view === 'form' || view === 'noprofile') && !!answer.trim() && !sending;
   usePreventRemove(writing, ({ repeat }) => {
@@ -227,6 +233,43 @@ function JoinForm({ postId }: { postId: string }) {
     {membershipError && <Pressable analyticsId="app_meetup-join.pressable.10" accessibilityRole="button" onPress={() => { play('selection'); router.push('/profile/membership'); }} style={styles.button}><ThemedText type="smallBold" style={[styles.support, styles.center]} themeColor="accent">{tr("멤버십과 모임 자리 보기 ›")}</ThemedText></Pressable>}
     <RaisedActionButton analyticsId="app_meetup-join.pressable.9" tone="secondary" onPress={() => { play('selection'); reload(); }} label={tr("다시 불러오기")} />
   </>;
+  // 로그인 전 (시안 A): 모임 상세와 같은 머리와 아래 고정 막대. 회비·모집 멈춤·질문은 로그인 전에 읽을 수 없어 넣지 않는다.
+  const login = () => {
+    play('selection');
+    // Web sign-in can finish on /auth/callback; bring it back to this meetup instead of home.
+    if (Platform.OS === 'web') { try { window.sessionStorage.setItem(SHARED_POST_RETURN_KEY, `/meetup-join?postId=${postId}`); } catch {} }
+    promptLogin('참여하려면 로그인해 주세요.');
+  };
+  const guestHead = () => {
+    const host = post!.author.nickname;
+    return <>
+      {!!post!.imageUris?.[0] && <Image source={{ uri: post!.imageUris[0] }} style={styles.photo} contentFit="cover" accessible accessibilityRole="image" accessibilityLabel={tr('{0} 사진', post!.title)} />}
+      <MeetupChips post={post!} hideOpen />
+      <ThemedText accessibilityRole="header" style={Typography.sheetTitle}>{post!.title}</ThemedText>
+      <View style={styles.host}>
+        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.hostAvatar, { backgroundColor: theme.backgroundSelected }]}><ThemedText type="smallBold">{[...host][0]}</ThemedText></View>
+        <ThemedText type="smallBold" style={styles.flexShrink}>{host}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{tr('호스트')}</ThemedText>
+      </View>
+      <MeetupFacts post={post!} canEnterChat={false} own={false} />
+      {availability === 'open' && <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('로그인하면 {0}님이 남긴 질문에 답하고 신청을 보낼 수 있어요.', host)}</ThemedText>}
+    </>;
+  };
+  const guestBar = () => {
+    const room = post!.room!;
+    const [title, detail] = availability === 'open' ? [room.capacity ? tr('{0}자리 남음', Math.max(0, room.capacity - room.memberCount)) : tr('{0}명 참여 중', room.memberCount), tr('승인 후 참여')]
+      : availability === 'full' ? [tr('정원이 모두 찼어요'), tr('자리가 나면 순서대로 알려 드려요.')]
+      : [availability === 'ended' ? tr('종료된 모임이에요') : tr('모집이 마감됐어요'), tr('새 참여 신청과 승인을 할 수 없어요.')];
+    return <View style={[styles.guestBar, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      <View style={styles.guestMeta} accessibilityLiveRegion="polite">
+        <ThemedText style={Typography.menu}>{title}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{detail}</ThemedText>
+      </View>
+      {availability === 'open' ? <RaisedActionButton compact analyticsId="app_meetup-join.pressable.2" onPress={login} label={tr('로그인하고 신청하기')} />
+        : availability === 'full' ? <RaisedActionButton analyticsId="app_meetup-join.pressable.2" onPress={login} label={tr('로그인하고 빈자리 알림 받기')} />
+        : browseButton}
+    </View>;
+  };
   const sendHint = !answered && modern && !consent ? tr('답변을 쓰고 동의하면 보낼 수 있어요') : !answered ? tr('답변을 쓰면 보낼 수 있어요') : modern && !consent ? tr('동의에 체크하면 보낼 수 있어요') : tr('호스트에게만 보내요');
   const pullable = view === 'result' || view === 'paused' || view === 'locked' || view === 'full' || view === 'cooling' || view === 'inactive';
   return <ThemedView style={styles.fill}><SafeAreaView style={styles.fill}>
@@ -237,11 +280,11 @@ function JoinForm({ postId }: { postId: string }) {
     <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView analyticsId="app_meetup-join.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}
         refreshControl={pullable ? <RefreshControl refreshing={false} tintColor={theme.accent} onRefresh={() => { play('selection'); reload(); }} /> : undefined}>
-        {view === 'login' ? <Pressable analyticsId="app_meetup-join.pressable.2" onPress={() => { play('selection'); promptLogin('참여하려면 로그인해 주세요.'); }} style={styles.button} accessibilityRole="button"><ThemedText style={styles.body} themeColor="accent">{tr("로그인하기")}</ThemedText></Pressable>
-          : view === 'loading' ? <GlingLoader color={theme.accent} accessibilityLabel={tr("신청 정보 불러오는 중")} />
+        {view === 'loading' ? <GlingLoader color={theme.accent} accessibilityLabel={tr("신청 정보 불러오는 중")} />
             : view === 'failed' ? <StateCard kind="error" title={tr("신청 정보를 불러오지 못했어요")} body={tr(error)} actionLabel={tr("다시 불러오기")} onAction={reload} />
             : view === 'unavailable' ? <StateCard kind={error ? 'error' : 'blocked'} title={error ? tr('모임 정보를 불러오지 못했어요') : tr("이 모임을 볼 수 없어요")} body={tr(error || "삭제됐거나 현재 열람할 수 없는 모임이에요.")} actionLabel={error ? tr('다시 불러오기') : undefined} onAction={error ? reload : undefined} />
               : <Rise key={view}>
+                {view === 'guest' && guestHead()}
                 {view === 'own' && <>
                   {meetCard()}
                   <ThemedText style={styles.body}>{tr("내가 연 모임이에요. 채팅 탭에서 신청자를 볼 수 있어요.")}</ThemedText>
@@ -317,7 +360,8 @@ function JoinForm({ postId }: { postId: string }) {
           {membershipError && <Pressable analyticsId="app_meetup-join.pressable.10" accessibilityRole="button" onPress={() => { play('selection'); router.push('/profile/membership'); }} style={styles.button}><ThemedText type="smallBold" style={styles.support} themeColor="accent">{tr("멤버십과 모임 자리 보기 ›")}</ThemedText></Pressable>}
           <Pressable analyticsId="app_meetup-join.pressable.9" onPress={() => { play('selection'); reload(); }} accessibilityRole="button" style={styles.button}><ThemedText style={styles.body}>{tr("다시 불러오기")}</ThemedText></Pressable></>}
       </ScrollView>
-      {view !== 'login' && view !== 'loading' && view !== 'failed' && view !== 'unavailable' && <View style={[styles.footer, { backgroundColor: theme.background, borderColor: theme.line }]}>
+      {view === 'guest' && guestBar()}
+      {view !== 'guest' && view !== 'loading' && view !== 'failed' && view !== 'unavailable' && <View style={[styles.footer, { backgroundColor: theme.background, borderColor: theme.line }]}>
         {view !== 'own' && view !== 'inactive' && view !== 'result' && footerError}
         {view === 'own' && <RaisedActionButton analyticsId="app_meetup-join.pressable.3" onPress={() => { play('selection'); router.push({ pathname: '/chat', params: { view: 'requests' } }); }} label={tr("참여 신청자 검토하기")} />}
         {view === 'result' && <RaisedActionButton analyticsId="app_meetup-join.pressable.3" onPress={() => { play('selection'); if (status === 'approved') router.replace({ pathname: '/chat', params: { view: 'group' } }); else router.replace({ pathname: '/(tabs)/meetups', params: { view: 'mine' } }); }} label={status === 'approved' ? tr("모임 대화 보기") : tr("내 모임에서 보기")} />}
@@ -359,4 +403,10 @@ const styles = StyleSheet.create({
   stepLabel: { flex: 1, paddingTop: 1 }, stepGap: { paddingBottom: Spacing.three }, stepNow: { fontWeight: '600' },
   footer: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', borderTopWidth: 1, paddingHorizontal: Spacing.three, paddingTop: Spacing.two, paddingBottom: Spacing.two, gap: Spacing.one + Spacing.half },
   sheetBody: { gap: Spacing.three, paddingBottom: Spacing.two },
+  // 로그인 전 머리·막대: post-detail.tsx의 host·meetupBar 값과 같다.
+  photo: { width: '100%', aspectRatio: 16 / 9, borderRadius: 16 },
+  host: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44 }, flexShrink: { flexShrink: 1 },
+  hostAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  guestBar: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.three, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, borderTopWidth: 1 },
+  guestMeta: { flexGrow: 1, flexShrink: 1, flexBasis: 160, minWidth: 0 },
 });

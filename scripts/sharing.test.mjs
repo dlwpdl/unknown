@@ -70,6 +70,10 @@ test('login resumes only a validated local post, never an external redirect', ()
   for (const path of [`//evil.test/post?id=${id}`, `https://evil.test/post?id=${id}`, `/auth/callback?next=${id}`, `/post?id=${id}&id=other`, '/post?id=invalid', null]) assert.equal(sharedPostReturnPath(path), '/');
   assert.equal(sharedPostReturnPath(`/post?id=${id}&next=https://evil.test`), `/post?id=${id}`);
 });
+test('the logged-out meetup join screen returns to itself, with the same checks', () => {
+  assert.equal(sharedPostReturnPath(`/meetup-join?postId=${id.toUpperCase()}&next=https://evil.test`), `/meetup-join?postId=${id}`);
+  for (const path of [`https://evil.test/meetup-join?postId=${id}`, `/meetup-join?id=${id}`, `/meetup-join?postId=${id}&postId=other`, '/meetup-join?postId=invalid', `/post?postId=${id}`]) assert.equal(sharedPostReturnPath(path), '/');
+});
 
 test('short UUID routes round trip without accepting malformed or noncanonical aliases', () => {
   const gateway = 'https://gling-share-preview.vercel.app';

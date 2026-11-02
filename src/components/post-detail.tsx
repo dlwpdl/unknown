@@ -1080,12 +1080,39 @@ const styles = StyleSheet.create({
 });
 
 
+// 언제·어디·인원·나이(회비) 네 칸. 로그인 전 참여 신청 화면(meetup-join)도 같은 칸을 쓴다.
+export function MeetupFacts({ post, canEnterChat, own }: { post: Post; canEnterChat: boolean; own: boolean }) {
+  const { tr, locale: appLocale } = useLanguage();
+  const theme = useTheme();
+  const stacked = useWindowDimensions().fontScale >= 1.3;
+  const room = post.room;
+  if (!room) return null;
+  const facts: [string, string, string?][] = [
+    // Members and the host don't get 참여 전에 알아둘 것, so its time zone line moves here for them.
+    [tr('언제'), chillingSchedule(room, appLocale), (canEnterChat || own) && room.timezone ? tr('{0} 기준', chillingTimezoneLabel(room, appLocale)) : undefined],
+    [tr('어디'), tr(CITIES.find(city => city.id === post.cityId)?.name ?? post.cityId), canEnterChat ? tr('집결지는 모임 대화에서') : own ? tr('집결지는 모임 대화에서 알려요') : tr('집결지는 승인 후')],
+    [tr('인원'), tr(room.capacity ? '{0} / {1}명' : '{0}명', room.memberCount, room.capacity)],
+    room.fee ? [tr('회비'), meetupFeeAmount(room.fee.amount), room.fee.dueOn ? tr('{0}까지', meetupFeeDue(room.fee.dueOn, appLocale)) : room.fee.note]
+      : [tr('나이'), recommendedAgeLabel(room, appLocale)],
+  ];
+  return (
+    <View style={[styles.facts, { borderColor: theme.line }]}>
+      {facts.map(([label, value, note], index) => <View key={label} style={[styles.fact, { width: stacked ? '100%' : '50%', backgroundColor: theme.card, borderColor: theme.line },
+        index >= (stacked ? 1 : 2) && styles.factTop, !stacked && index % 2 === 1 && styles.factLeft]}>
+        <ThemedText type="small" themeColor="textSecondary">{label}</ThemedText>
+        <ThemedText style={styles.factValue}>{value}</ThemedText>
+        {!!note && <ThemedText type="small" themeColor="textSecondary">{note}</ThemedText>}
+        {index === 2 && <SeatBar room={room} />}
+      </View>)}
+    </View>
+  );
+}
+
 // 모임 상세의 호스트 줄·사실 표와 그 바로 밑의 '내가 할 일'. 정원 찬 사람의 대기 명단은 맨 아래 버튼이 맡는다.
 function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavigate }: { post: Post; status: MeetupStatus; canEnterChat: boolean; onClose: () => void; onBeforeNavigate?: () => void }) {
-  const { tr, t, locale: appLocale } = useLanguage();
+  const { tr, t } = useLanguage();
   const { isAuthed, promptLogin } = useAuth(), theme = useTheme(), router = useRouter();
   const { play } = useInteractionFeedback();
-  const stacked = useWindowDimensions().fontScale >= 1.3;
   const [profile, setProfile] = useState<ChillingProfile | null>(null), [loading, setLoading] = useState(false), [error, setError] = useState(''), [report, setReport] = useState(false);
   const room = post.room;
   if (!room) return null;
@@ -1099,14 +1126,6 @@ function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavi
     catch (e) { setError(getChillingError(e)); }
     finally { setLoading(false); }
   };
-  const facts: [string, string, string?][] = [
-    // Members and the host don't get 참여 전에 알아둘 것, so its time zone line moves here for them.
-    [tr('언제'), chillingSchedule(room, appLocale), (canEnterChat || own) && room.timezone ? tr('{0} 기준', chillingTimezoneLabel(room, appLocale)) : undefined],
-    [tr('어디'), tr(CITIES.find(city => city.id === post.cityId)?.name ?? post.cityId), canEnterChat ? tr('집결지는 모임 대화에서') : own ? tr('집결지는 모임 대화에서 알려요') : tr('집결지는 승인 후')],
-    [tr('인원'), tr(room.capacity ? '{0} / {1}명' : '{0}명', room.memberCount, room.capacity)],
-    room.fee ? [tr('회비'), meetupFeeAmount(room.fee.amount), room.fee.dueOn ? tr('{0}까지', meetupFeeDue(room.fee.dueOn, appLocale)) : room.fee.note]
-      : [tr('나이'), recommendedAgeLabel(room, appLocale)],
-  ];
   const statusNote = participation?.status === 'pending' && availability === 'full' ? tr('신청은 대기 중이에요. 지금은 정원이 차서 승인할 수 없어요.')
     : participation?.status === 'approved' && (availability === 'ended' || availability === 'closed') ? tr('이전 승인 기록이에요. 현재 모임은 종료되거나 마감됐어요.') : '';
   // Web has no attendance UI (meetup-reviews.web.tsx renders nothing), so the row stays native-only.
@@ -1133,15 +1152,7 @@ function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavi
     {loading && <GlingLoader color={theme.accent} />}
     {isAuthed && profile && <ChillingProfileCard profile={profile} />}
     {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
-    <View style={[styles.facts, { borderColor: theme.line }]}>
-      {facts.map(([label, value, note], index) => <View key={label} style={[styles.fact, { width: stacked ? '100%' : '50%', backgroundColor: theme.card, borderColor: theme.line },
-        index >= (stacked ? 1 : 2) && styles.factTop, !stacked && index % 2 === 1 && styles.factLeft]}>
-        <ThemedText type="small" themeColor="textSecondary">{label}</ThemedText>
-        <ThemedText style={styles.factValue}>{value}</ThemedText>
-        {!!note && <ThemedText type="small" themeColor="textSecondary">{note}</ThemedText>}
-        {index === 2 && <SeatBar room={room} />}
-      </View>)}
-    </View>
+    <MeetupFacts post={post} canEnterChat={canEnterChat} own={own} />
     {!!statusNote && <View style={[styles.statusNote, { backgroundColor: theme.backgroundSelected }]}><ThemedText type="small">{statusNote}</ThemedText></View>}
     {!!statusError && <StateCard kind="error" title={tr('신청 상태를 불러오지 못했어요')} body={tr(statusError)} actionLabel={tr('다시 불러오기')} onAction={status.retry} />}
     <MeetupRsvp postId={post.id} flush />
