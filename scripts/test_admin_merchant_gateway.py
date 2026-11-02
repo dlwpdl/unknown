@@ -12,7 +12,7 @@ spec.loader.exec_module(gateway)
 class GatewayTests(unittest.TestCase):
     def test_bridge_requires_same_origin_and_bounded_json(self):
         self.assertTrue(gateway.same_origin('http://127.0.0.1:54321', '127.0.0.1:54321'))
-        self.assertTrue(gateway.same_origin('https://cayden-macbookpro.tailb6648f.ts.net', 'cayden-macbookpro.tailb6648f.ts.net'))
+        self.assertTrue(gateway.same_origin('https://admin-dashboard.example.ts.net', 'admin-dashboard.example.ts.net'))
         for origin in ['https://evil.example', 'null', '', 'http://127.0.0.1:54321.evil.example', 'http://user@127.0.0.1:54321']:
             self.assertFalse(gateway.same_origin(origin, '127.0.0.1:54321'))
 
@@ -29,9 +29,29 @@ class GatewayTests(unittest.TestCase):
     def test_only_merchant_rpcs_can_be_called(self):
         with self.assertRaisesRegex(ValueError, 'UNKNOWN_MERCHANT_OPERATION'): gateway.rpc('delete_account', {})
 
+    def test_automations_only_register_link_and_read(self):
+        with patch.dict(gateway.os.environ, {}, clear=True):
+            for name in ['set_admin_merchant_workspace_owner', 'create_admin_merchant_post', 'get_admin_creator_directory']:
+                with self.assertRaisesRegex(ValueError, 'OWNER_SESSION_REQUIRED'): gateway.rpc(name, {'p_merchant_id': 'm'})
+            for status in ['paid', 'paused', None]:
+                with self.assertRaisesRegex(ValueError, 'OWNER_SESSION_REQUIRED'): gateway.rpc('save_admin_merchant', {'p_id': None, 'p_status': status})
+            with patch.object(gateway, 'direct_sql', return_value=[{'status': 'paid', 'trial_ends_at': None}]):
+                with self.assertRaisesRegex(ValueError, 'OWNER_SESSION_REQUIRED'): gateway.rpc('save_admin_merchant_record', {'p_id': 'm', 'p_status': 'trial'})
+            with self.assertRaisesRegex(ValueError, 'OWNER_SESSION_REQUIRED'):
+                gateway.rpc('save_admin_merchant', {'p_id': None, 'p_status': 'trial', 'p_trial_ends_at': '2099-12-31'})
+            with patch.object(gateway, 'direct_sql', return_value=[{'status': 'trial', 'trial_ends_at': '2026-12-01'}]):
+                with self.assertRaisesRegex(ValueError, 'OWNER_SESSION_REQUIRED'): gateway.rpc('save_admin_merchant', {'p_id': 'm', 'p_status': 'trial'})
+            with patch.object(gateway, 'direct_sql', return_value=[{'status': 'lead', 'trial_ends_at': None}]):
+                gateway.check_automation_scope('save_admin_merchant', {'p_id': 'm', 'p_status': 'trial'})
+            gateway.check_automation_scope('save_admin_merchant_record', {'p_id': None, 'p_status': 'lead'})
+            gateway.check_automation_scope('link_admin_merchant_post', {'p_merchant_id': 'm'})
+        with patch.dict(gateway.os.environ, {'GLING_ADMIN_FULL': '1'}):
+            gateway.check_automation_scope('set_admin_merchant_workspace_owner', {})
+            gateway.check_automation_scope('save_admin_merchant', {'p_id': 'm', 'p_status': 'paid'})
+
     def test_creator_vendor_operations_run_as_the_admin_account(self):
         for name in ['get_admin_creator_directory', 'get_admin_creator_deal', 'link_admin_creator_deal_merchant', 'get_admin_merchant_creator_deals']:
-            with patch.object(gateway, 'direct_sql', return_value=[{'args': 'p_id uuid, p_offset integer'}]), \
+            with patch.dict(gateway.os.environ, {'GLING_ADMIN_FULL': '1'}), patch.object(gateway, 'direct_sql', return_value=[{'args': 'p_id uuid, p_offset integer'}]), \
                     patch.object(gateway, 'as_admin', return_value=[{'result': {'rows': []}}]) as admin, patch.object(gateway, 'request') as request:
                 self.assertEqual(gateway.rpc(name, {'p_id': 'record'}), {'rows': []})
                 admin.assert_called_once_with(f'select to_jsonb(public.{name}(p_id => $g$record$g$::uuid)) as result')
