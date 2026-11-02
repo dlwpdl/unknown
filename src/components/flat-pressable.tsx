@@ -23,7 +23,10 @@ function NativeFlatPressable({ style, onPressIn, onPressOut, onLayout, ...props 
   const [scale] = useState(() => new Animated.Value(1)), [pressed, setPressed] = useState(false);
   const width = useRef(0);
   const blocked = !!props.disabled;
-  useEffect(() => { if (blocked) { setPressed(false); scale.setValue(1); } }, [blocked, scale]);
+  // Becoming disabled mid-press drops the pressed look right away; the scale resets after the render.
+  const [wasBlocked, setWasBlocked] = useState(blocked);
+  if (blocked !== wasBlocked) { setWasBlocked(blocked); if (blocked) setPressed(false); }
+  useEffect(() => { if (blocked) scale.setValue(1); }, [blocked, scale]);
   const original = typeof style === 'function' ? style({ pressed, hovered: false }) : style;
   const flat = StyleSheet.flatten(original) ?? undefined;
   const shrinks = !reduced && !blocked && !!(props.onPress || props.onLongPress) && !fillsParent(flat);

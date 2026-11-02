@@ -146,21 +146,24 @@ export function MeetupRoomTop({ postId }: { postId: string }) {
   const { state, refresh } = useMeetupLoyalty(postId);
   const theme = useTheme();
   const [rsvp, setRsvp] = useState<Rsvp | null>(null);
+  // "Today/tomorrow" is judged at the time the answer arrived or changed.
+  const [now, setNow] = useState(() => Date.now());
+  const showRsvp = (next: Rsvp) => { setRsvp(next); setNow(Date.now()); };
   useEffect(() => {
     let active = true;
-    loadMeetupRsvp(supabase, postId).then(value => { if (active) setRsvp(value); }, () => {});
+    loadMeetupRsvp(supabase, postId).then(value => { if (active) showRsvp(value); }, () => {});
     return () => { active = false; };
   }, [postId]);
   const notices = pinnedNotices(state);
   const hasSession = !!rsvp?.available && !!rsvp.startsAt;
   if (!hasSession && !(state && notices.length)) return null;
   return <View style={[styles.roomTop, { backgroundColor: theme.backgroundElement }]}>
-    {hasSession && <NextSessionLine postId={postId} rsvp={rsvp!} onChange={setRsvp} />}
+    {hasSession && <NextSessionLine postId={postId} rsvp={rsvp!} now={now} onChange={showRsvp} />}
     {!!state && notices.length > 0 && <View style={hasSession ? [styles.boardLine, { borderTopColor: theme.line }] : undefined}><NoticeBoard postId={postId} state={state} notices={notices} onChanged={refresh} /></View>}
   </View>;
 }
 
-function NextSessionLine({ postId, rsvp, onChange }: { postId: string; rsvp: Rsvp; onChange: (next: Rsvp) => void }) {
+function NextSessionLine({ postId, rsvp, now, onChange }: { postId: string; rsvp: Rsvp; now: number; onChange: (next: Rsvp) => void }) {
   const { tr, locale } = useLanguage();
   const { play } = useInteractionFeedback();
   const [saving, setSaving] = useState(false), [failed, setFailed] = useState(false);
@@ -171,7 +174,7 @@ function NextSessionLine({ postId, rsvp, onChange }: { postId: string; rsvp: Rsv
     catch { setFailed(true); play('warning'); }
     finally { setSaving(false); }
   };
-  const when = sessionWhen(rsvp.startsAt!, locale, Date.now(), tr);
+  const when = sessionWhen(rsvp.startsAt!, locale, now, tr);
   return <View style={styles.nextLine}>
     <View style={styles.flex}>
       <ThemedText style={Typography.label}>{tr('다음 회차')} · {when}</ThemedText>

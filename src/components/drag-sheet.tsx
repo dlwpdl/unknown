@@ -12,6 +12,16 @@ import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
+type Latest = { onClose: () => void; onDismissed?: () => void; dismissible: boolean; reduced: boolean; play: ReturnType<typeof useInteractionFeedback>['play'] };
+
+/** The latest props and measured height. The pan handlers are built on the first render and read this only while a finger moves. */
+class SheetLive {
+  props: Latest; height = 0;
+  constructor(props: Latest) { this.props = props; }
+  update(props: Latest) { this.props = props; }
+  measure(height: number) { this.height = height; }
+}
+
 type Props = {
   visible: boolean; onClose: () => void;
   // Runs once the sheet is really gone: iOS drops an Alert or Modal presented while another is still leaving.
@@ -29,9 +39,8 @@ export function DragSheet({ visible, onClose, onDismissed, dismissible = true, t
   const [y] = useState(() => new Animated.Value(screen)), [fade] = useState(() => new Animated.Value(0));
   const [mounted, setMounted] = useState(visible);
   if (visible && !mounted) setMounted(true);
-  const height = useRef(0);
-  const latest = useRef({ onClose, onDismissed, dismissible, reduced, play });
-  useLayoutEffect(() => { latest.current = { onClose, onDismissed, dismissible, reduced, play }; });
+  const [live] = useState(() => new SheetLive({ onClose, onDismissed, dismissible, reduced, play }));
+  useLayoutEffect(() => { live.update({ onClose, onDismissed, dismissible, reduced, play }); });
   const settle = () => Animated.parallel([
     Animated.spring(y, { toValue: 0, damping: 28, stiffness: 320, mass: 0.9, overshootClamping: true, useNativeDriver: true }),
     Animated.timing(fade, { toValue: 1, duration: ControlMotion.settleMs, useNativeDriver: true }),
@@ -41,43 +50,43 @@ export function DragSheet({ visible, onClose, onDismissed, dismissible = true, t
     if (visible === wasVisible.current) return;
     wasVisible.current = visible;
     if (visible) {
-      if (latest.current.reduced) { y.setValue(0); Animated.timing(fade, { toValue: 1, duration: ControlMotion.settleMs, useNativeDriver: true }).start(); }
-      else { y.setValue(height.current || screen); fade.setValue(0); settle(); }
+      if (live.props.reduced) { y.setValue(0); Animated.timing(fade, { toValue: 1, duration: ControlMotion.settleMs, useNativeDriver: true }).start(); }
+      else { y.setValue(live.height || screen); fade.setValue(0); settle(); }
       return;
     }
-    const finish = () => { setMounted(false); if (Platform.OS !== 'ios') latest.current.onDismissed?.(); };
-    if (latest.current.reduced) Animated.timing(fade, { toValue: 0, duration: ControlMotion.settleMs, useNativeDriver: true }).start(finish);
+    const finish = () => { setMounted(false); if (Platform.OS !== 'ios') live.props.onDismissed?.(); };
+    if (live.props.reduced) Animated.timing(fade, { toValue: 0, duration: ControlMotion.settleMs, useNativeDriver: true }).start(finish);
     else Animated.parallel([
-      Animated.timing(y, { toValue: height.current || screen, duration: ControlMotion.sheetCloseMs, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(y, { toValue: live.height || screen, duration: ControlMotion.sheetCloseMs, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
       Animated.timing(fade, { toValue: 0, duration: ControlMotion.sheetCloseMs, useNativeDriver: true }),
     ]).start(finish);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only the visible flag starts a transition
   }, [visible]);
   const [pan] = useState(() => {
-    const claim = (_: unknown, g: { dx: number; dy: number }) => latest.current.dismissible && Math.abs(g.dy) > 4 && Math.abs(g.dy) > Math.abs(g.dx);
+    const claim = (_: unknown, g: { dx: number; dy: number }) => live.props.dismissible && Math.abs(g.dy) > 4 && Math.abs(g.dy) > Math.abs(g.dx);
     return PanResponder.create({
       // RN's Modal takes every touch no child takes, and then never offers the move to us: the title only drags if we take the touch first.
-      onStartShouldSetPanResponder: () => latest.current.dismissible,
+      onStartShouldSetPanResponder: () => live.props.dismissible,
       onMoveShouldSetPanResponder: claim, onMoveShouldSetPanResponderCapture: claim,
       onPanResponderGrant: () => y.stopAnimation(),
       onPanResponderMove: (_, g) => {
         const dy = Math.max(0, g.dy);
-        y.setValue(dy); fade.setValue(1 - dy / Math.max(height.current || screen, 1));
+        y.setValue(dy); fade.setValue(1 - dy / Math.max(live.height || screen, 1));
       },
       onPanResponderRelease: (_, g) => {
-        if (g.dy > Math.min(96, (height.current || screen) * 0.25) || g.vy > 0.9) { latest.current.play('selection'); latest.current.onClose(); }
+        if (g.dy > Math.min(96, (live.height || screen) * 0.25) || g.vy > 0.9) { live.props.play('selection'); live.props.onClose(); }
         else settle();
       },
       onPanResponderTerminate: () => settle(),
     });
   });
   const close = () => { play('selection'); onClose(); };
-  return <Modal visible={mounted} transparent animationType="none" statusBarTranslucent onRequestClose={() => { if (dismissible) onClose(); }} onDismiss={() => latest.current.onDismissed?.()}>
+  return <Modal visible={mounted} transparent animationType="none" statusBarTranslucent onRequestClose={() => { if (dismissible) onClose(); }} onDismiss={() => live.props.onDismissed?.()}>
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.root}>
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: fade }]} />
       <Pressable analyticsId="sheet.dismiss" accessibilityRole="button" accessibilityLabel={tr('닫기')} disabled={!dismissible} style={StyleSheet.absoluteFill} onPress={close} />
       <Animated.View accessibilityViewIsModal onAccessibilityEscape={() => { if (dismissible) onClose(); }}
-        onLayout={event => { height.current = event.nativeEvent.layout.height; }}
+        onLayout={event => live.measure(event.nativeEvent.layout.height)}
         style={[styles.sheet, { backgroundColor: theme.card, borderTopColor: theme.line, paddingBottom: Math.max(insets.bottom, Spacing.three), opacity: reduced ? fade : 1, transform: [{ translateY: y }] }]}>
         <View {...pan.panHandlers}>
           <Pressable analyticsId="sheet.grip" accessibilityRole="button" accessibilityLabel={tr('닫기')} disabled={!dismissible} onPress={close} style={styles.gripZone}>
