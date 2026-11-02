@@ -84,14 +84,15 @@ export function MeetupLanguagePicker({ exchange, state, value, onChange, disable
 export function MeetupLanguageCounts({ postId, requestId }: { postId: string; requestId?: string }) {
   const { language } = useLanguage(), theme = useTheme();
   const say = (ko: string, en: string) => language === 'en' ? en : ko;
-  const [state, setState] = useState<MeetupLanguages | null>(null);
+  const [result, setResult] = useState<{ key: string; value: MeetupLanguages | null } | null>(null);
   useEffect(() => {
     let active = true;
-    setState(null);
     // A failed read only hides the counts; approval still goes through the server's side check.
-    loadMeetupLanguages(supabase, postId).then(value => { if (active) setState(value); }, () => undefined);
+    loadMeetupLanguages(supabase, postId).then(value => { if (active) setResult({ key: postId, value }); }, () => undefined);
     return () => { active = false; };
   }, [postId]);
+  // Counts loaded for another meetup stay hidden until this one's arrive.
+  const state = result?.key === postId ? result.value : null;
   if (!state) return null;
   const choice = requestId ? state.requests?.[requestId] : undefined;
   const unknown = state.unknown && state.unknown.approved + state.unknown.pending > 0 ? state.unknown : null;
