@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       operation:
-        description: Build checks or published-store update enforcement
+        description: Build checks, published-store update enforcement, or an Android-only retry from a release tag
         type: choice
-        options: [build, sync-policy]
+        options: [build, sync-policy, android-only]
         default: build
   schedule:
     - cron: '*/15 * * * *'
@@ -80,6 +80,7 @@ jobs:
           GLING_PUBLIC_ENV_JSON: ${{ secrets.GLING_PUBLIC_ENV_JSON }}
           RELEASE_REF_TYPE: ${{ github.ref_type }}
           RELEASE_REF_NAME: ${{ github.ref_name }}
+          RELEASE_ANDROID_ONLY: ${{ inputs.operation == 'android-only' }}
         run: |
           if [ "$RELEASE_REF_TYPE" = tag ]; then
             RELEASE_TAG="$RELEASE_REF_NAME"
@@ -89,7 +90,8 @@ jobs:
           python3 scripts/release.py prepare --tag "$RELEASE_TAG"
 
   ios:
-    if: ${{ github.event.repository.private == false }}
+    # android-only retries a failed Play submission while the same version is already in App Store review.
+    if: ${{ github.event.repository.private == false && inputs.operation != 'android-only' }}
     needs: prepare
     runs-on: xcode-27
     timeout-minutes: 120

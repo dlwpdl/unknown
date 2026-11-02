@@ -157,7 +157,9 @@ test('release policy checks reuse the workflow without building or submitting an
   const workflow = parse(readFileSync(new URL('../.github/workflows/mobile-release.yml', import.meta.url), 'utf8'));
   assert.equal(workflow.on.schedule[0].cron, '*/15 * * * *');
   assert.equal(workflow.on.workflow_dispatch.inputs.operation.default, 'build');
-  assert.deepEqual(workflow.on.workflow_dispatch.inputs.operation.options, ['build', 'sync-policy']);
+  assert.deepEqual(workflow.on.workflow_dispatch.inputs.operation.options, ['build', 'sync-policy', 'android-only']);
+  assert.match(workflow.jobs.ios.if, /inputs.operation != 'android-only'/, 'an Android-only retry never builds or submits iOS');
+  assert.equal(workflow.jobs.android.if, "${{ github.event.repository.private == false }}");
   assert.match(workflow.jobs.verify.if, /event_name != 'schedule'/);
   assert.match(workflow.jobs.verify.if, /inputs.operation != 'sync-policy'/);
   const policy = workflow.jobs['sync-policy'];
@@ -179,7 +181,7 @@ with tempfile.TemporaryDirectory() as directory:
     os.chdir(directory)
     Path('app.json').write_text(json.dumps({'expo': {'version': '1.2.0'}}))
     Path('release-notes').mkdir()
-    Path('release-notes/1.2.0.ko.txt').write_text('투표와 모임 후기를 추가했어요.')
+    Path('release-notes/1.2.0.ko.txt').write_text('투표와 모임 후기를 추가했어요.\\n' + '가' * 300 + '\\n' + '나' * 300)
     Path('release-notes/1.2.0.en-CA.txt').write_text('Added polls and meetup reviews.')
     r.OUT.mkdir(); (r.OUT / 'app.aab').write_bytes(b'verified-bundle')
     r.google_token = lambda *args: 'test-publisher'
@@ -199,6 +201,7 @@ with tempfile.TemporaryDirectory() as directory:
             release = data['releases'][0]
             assert release['versionCodes'] == ['64'] and release['status'] == 'completed'
             assert release['releaseNotes'][0]['language'] == 'ko-KR'
+            assert release['releaseNotes'][0]['text'] == '투표와 모임 후기를 추가했어요.\\n' + '가' * 300, 'Play caps notes at 500 characters; whole leading lines only'
             actions.append('closed-review'); return data
         if path.endswith(':validate'):
             assert actions[-1] == 'closed-review'; actions.append('validate'); return {}

@@ -217,7 +217,8 @@ def prepare(env, google, directory, tag):
     app = json.loads(Path("app.json").read_text())
     version = release_version(tag, app["expo"]["version"], json.loads(Path("package.json").read_text())["version"])
     release_notes(version)
-    if env.get("RELEASE_REF_TYPE") == "tag":
+    # The App Store check guards the iOS submission, which an Android-only retry skips.
+    if env.get("RELEASE_REF_TYPE") == "tag" and env.get("RELEASE_ANDROID_ONLY") != "true":
         check_store_state(apple_versions(env)[1], version)
     apple = json.loads(run(["asc", "builds", "next-build-number", "--app", APP, "--output", "json"], True, env))
     token = google_token(google, directory)
@@ -339,7 +340,10 @@ def submit(platform, env, google, directory):
         edit = play(token, "/edits", {}, "POST")["id"]
         try:
             bundle = request(f"https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/{PACKAGE}/edits/{edit}/bundles?uploadType=media", token, (OUT / "app.aab").read_bytes(), "POST", "application/octet-stream")
-            release = {"name": f'{version} ({bundle["versionCode"]})', "versionCodes": [str(bundle["versionCode"])], "status": "completed", "releaseNotes": [{"language": "ko-KR", "text": notes["ko"]}]}
+            # Play rejects notes over 500 characters at validate (HTTP 403); send the leading whole lines that fit.
+            lines = notes["ko"].splitlines()
+            play_notes = next("\n".join(lines[:n]) for n in range(len(lines), 0, -1) if len("\n".join(lines[:n])) <= 500 or n == 1)[:500]
+            release = {"name": f'{version} ({bundle["versionCode"]})', "versionCodes": [str(bundle["versionCode"])], "status": "completed", "releaseNotes": [{"language": "ko-KR", "text": play_notes}]}
             play(token, f"/edits/{edit}/tracks/alpha", {"track": "alpha", "releases": [release]}, "PUT")
             play(token, f"/edits/{edit}:validate", {}, "POST")
             summary(f'Android submission started: edit {edit}, build {bundle["versionCode"]}. Check store state before retrying an interrupted submission.')
