@@ -1,9 +1,14 @@
 The Today tab is now Home. Search for homes, jobs and used items from the bar at the top, and tap the button next to the date to see rentals and used items on a map.
 This week's most-read posts sit right under the categories, and places to go and events take up less room.
-Meetup group chats can keep up to five notices pinned. Two or more fold into one line that opens when you tap it.
+Meetup chats can now hold up to five pinned notices. Must-read notices stay on top until the host takes them down, and new members see the pinned notices once when they join.
 You can host a language exchange meetup. Pick two languages and a seat split, and people choose the language they speak when they ask to join.
 Answer a meetup reminder with "I'm going" or "Can't make it" right from the notification.
 When a waitlist spot opens less than 6 hours before a meetup, you have 1 hour to take it.
+We refreshed the meetup detail, My meetups, browse and create screens. The button at the bottom of a meetup now changes to "Open meetup chat" once you're approved, "Join waitlist" when it's full, or "Review requests" on your own meetup.
+The join request screen shows how far along your request is.
+Host tools now open with your next session, waiting requests and a to-do list. After you handle a request, tap "View next request" to keep going.
+Reorder your meetup profile photos by dragging them or tapping the arrows.
+If you start creating a meetup before signing in, you can sign in when you're done and your draft will still be there.
 The trust level screen shows what each level checks and what we don't keep.
 Gling links from friends now open in the app instead of the browser.
 Posts Gling shares for a business, with its permission, now show a short note saying so.
