@@ -35,6 +35,14 @@ test('tiers and server error codes', () => {
   assert.equal(loyaltyError(new Error('boom'), '실패'), '실패');
 });
 
+test('English host counts avoid plurals ("1 requests"); the must-read failure joins two translated sentences', () => {
+  const source = readFileSync(new URL('../src/components/meetup-loyalty.tsx', import.meta.url), 'utf8');
+  assert.match(source, /tr\('공지는 보냈지만 필독으로 걸지 못했어요\.'\)} \$\{tr\(loyaltyError\(failure\)\)}/);
+  assert.equal(uiEnglish['공지는 보냈지만 필독으로 걸지 못했어요.'], 'Notice sent, but we couldn\'t pin it as a must-read.');
+  for (const [ko, en] of [['신청 {0}명 확인하기', 'Review requests ({0})'], ['새 신청 {0}건', 'New requests: {0}'], ['{0}명 · 대기 {1}명', 'Members: {0} · Waitlist: {1}'],
+    ['걸려 있는 공지 {0}개', 'Pinned ({0})'], ['회차 {0}개를 등록했어요.', 'Sessions added: {0}'], ['{0}일 남음', '{0}d left']]) assert.equal(uiEnglish[ko], en, ko);
+});
+
 test('pinned notices: the server list wins, an older server still shows its one notice', () => {
   const a = { id: 'a', body: '새 공지', sentAt: '2026-10-30T10:00:00Z' }, b = { id: 'b', body: '지난 공지', sentAt: '2026-10-27T10:00:00Z' };
   assert.deepEqual(pinnedNotices(null), []);

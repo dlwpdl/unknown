@@ -29,6 +29,10 @@ export function meetupChatIcon(category: string | null | undefined, title: strin
   if (/공연|콘서트|라이브|노래방|밴드|live|concert|karaoke/i.test(title)) return 'microphone';
   return 'ticket';
 }
+// Host notices are stored as '[공지] body' (private.deliver_meetup_announcement); older apps show them as sent, so only the label is translated here.
+export function chatMessageText(body: string, translate: (text: string, ...values: unknown[]) => string = tr) {
+  return body.startsWith('[공지] ') ? translate('[공지] {0}', body.slice('[공지] '.length)) : body;
+}
 export function firstUnreadMessageIndex(messages: TimedMessage[], readAt: string | null, userId: string) {
   const time = readAt ? Date.parse(readAt) : 0;
   return messages.findIndex((message) => message.sender_id !== userId && Date.parse(message.created_at) > time);

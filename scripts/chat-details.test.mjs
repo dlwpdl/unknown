@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { chatMessageTime, chatDateLabel, chatListTime, showChatMessageTime, loadChatMembers, firstUnreadMessageIndex, meetupChatIcon } from '../src/lib/chat-details.ts';
 import * as details from '../src/lib/chat-details.ts';
+import { translateUi } from '../src/i18n/index.ts';
 
 test('message action menus follow the bubble and remain inside the visible conversation', () => {
   assert.equal(typeof details.messageMenuPosition, 'function');
@@ -127,4 +128,12 @@ test('chat dates and times follow an explicit selected locale and keep local-day
   assert.equal(chatDateLabel('2026-09-15T23:59:00', '2026-09-15T01:00:00', now, 'en-CA'), null);
   assert.equal(chatListTime('2026-09-15T09:05:00', now, 'ko-KR'), '9월 15일');
   assert.equal(chatListTime('not-a-date', now, 'en-CA'), '');
+});
+
+test('host notice label follows the reader language; the body and other messages stay as sent', () => {
+  const en = (text, ...values) => translateUi('en', text, ...values), ko = (text, ...values) => translateUi('ko', text, ...values);
+  assert.equal(details.chatMessageText('[공지] 내일은 7시에 역 앞에서 만나요', ko), '[공지] 내일은 7시에 역 앞에서 만나요');
+  assert.equal(details.chatMessageText('[공지] 내일은 7시에 역 앞에서 만나요', en), 'Notice · 내일은 7시에 역 앞에서 만나요');
+  assert.equal(details.chatMessageText('[공지] {0} 그대로', en), 'Notice · {0} 그대로');
+  for (const body of ['내일 봬요 [공지] 아님', '[공지]붙여 쓴 말', ' [공지] 앞 공백']) assert.equal(details.chatMessageText(body, en), body);
 });

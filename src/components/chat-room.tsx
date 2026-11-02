@@ -44,7 +44,7 @@ import { useAuth } from '@/lib/auth';
 import { chatSuggestions, loadChatSuggestionContext, sendSuggestedMessage, type ChatSuggestionContext } from '@/lib/chat-suggestions';
 import { merchantEventId } from '@/lib/merchant-source';
 import { refreshUnreadCount } from '@/lib/notification-refresh';
-import { chatDateLabel, chatImagePaths, chatMessageTime, firstUnreadMessageIndex, messageMenuPosition, showChatMessageTime, type ChatRect, type ChatMember } from '@/lib/chat-details';
+import { chatDateLabel, chatImagePaths, chatMessageText, chatMessageTime, firstUnreadMessageIndex, messageMenuPosition, showChatMessageTime, type ChatRect, type ChatMember } from '@/lib/chat-details';
 import { loadPublicPost } from '@/lib/feed-data';
 import type { Post } from '@/lib/types';
 import { blockUser, endConversation, editChatMessage, deleteChatMessage, loadListingReviewState, writeListingReview, type ListingReviewState, isContentRejected, loadChatReadPosition, loadConversationMessages, loadConversationMessagesByIds, loadMessageReactions, markChatRead, mergeChatMessages, sendChatAttachment, sendDirectMessage, setMessageReaction, uploadChatImage, type ChatMessageRecord, type ConversationPreview, type MessageReaction, type ReportTarget } from '@/lib/community-data';
@@ -86,7 +86,7 @@ function BubblePressable({ message, onMenu, ...props }: ComponentProps<typeof Pr
     } : {})} />;
 }
 function messagePreview(message: Pick<ChatMessageRecord, 'body' | 'kind' | 'deleted_at'>, translate = tr) {
-  return message.deleted_at ? translate('삭제된 메시지입니다.') : message.kind === 'image' ? translate('사진') : message.kind === 'location' ? translate('공유한 위치') : message.body;
+  return message.deleted_at ? translate('삭제된 메시지입니다.') : message.kind === 'image' ? translate('사진') : message.kind === 'location' ? translate('공유한 위치') : chatMessageText(message.body, translate);
 }
 function RoomAction({ label, onPress, disabled = false, primary = false, danger = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean; danger?: boolean }) {
 
@@ -845,7 +845,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
               : <ThemedText type="small" themeColor="textSecondary">{tr("사진을 불러오지 못했어요")}</ThemedText>
             : message.kind === 'location' && message.latitude != null && message.longitude != null
               ? <ChatLocationMessage latitude={message.latitude} longitude={message.longitude} label={message.location_label} />
-              : <ThemedText type="small" style={mine ? { color: theme.accentInk } : undefined}>{message.body}</ThemedText>;
+              : <ThemedText type="small" style={mine ? { color: theme.accentInk } : undefined}>{chatMessageText(message.body, tr)}</ThemedText>;
           const quote = message.reply_to_id ? message.reply && !hidden('message', message.reply.id, message.reply.sender_id)
             ? messagePreview(message.reply, tr) : tr('원본 메시지를 볼 수 없어요.') : null;
           const content = <>{quote && <ThemedText type="small" numberOfLines={2} style={[styles.quoteText, { color: mine && !attachment ? theme.accentInk : theme.textSecondary, borderLeftColor: mine && !attachment ? theme.accentInk : theme.line }]}>{quote}</ThemedText>}{messageContent}

@@ -311,7 +311,8 @@ export function MeetupNoticeManager({ postId }: { postId: string }) {
       setMessage(scheduled ? '공지를 예약했어요.' : audience === 'members' ? '공지를 보냈어요.' : '안전 확인을 마치면 바로 보내 드려요.'); play('success'); refresh();
     } catch (failure) {
       if (sent) { setBody(''); setMustRead(false); refresh(); }
-      setMessage(sent ? `공지는 보냈지만 필독으로 걸지 못했어요. ${loyaltyError(failure)}` : loyaltyError(failure, '공지를 보내지 못했어요. 잠시 뒤 다시 해 주세요.')); play('warning');
+      // Two dictionary sentences joined after translation; tr(message) below passes the joined text through unchanged.
+      setMessage(sent ? `${tr('공지는 보냈지만 필독으로 걸지 못했어요.')} ${tr(loyaltyError(failure))}` : loyaltyError(failure, '공지를 보내지 못했어요. 잠시 뒤 다시 해 주세요.')); play('warning');
     }
     finally { pending.current = false; setBusy(false); }
   };
