@@ -528,9 +528,10 @@ revoke all on function public.register_push_device(text,uuid,text,text) from pub
 grant execute on function public.register_push_device(text,uuid,text,text) to authenticated;
 
 -- 8. The admin dashboard address stays on the server.
+-- Placeholder address: 20261102210000_admin_dashboard_origin_from_vault.sql reads the real one from Vault.
 create function public.get_admin_dashboard_origin()
 returns text language sql stable security definer set search_path='' as $$
-  select case when private.is_admin() then 'https://cayden-macbookpro.tailb6648f.ts.net' end;
+  select case when private.is_admin() then 'https://admin-dashboard.invalid' end;
 $$;
 revoke all on function public.get_admin_dashboard_origin() from public,anon,authenticated,service_role;
 grant execute on function public.get_admin_dashboard_origin() to authenticated;

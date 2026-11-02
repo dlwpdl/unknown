@@ -12,7 +12,7 @@ spec.loader.exec_module(gateway)
 class GatewayTests(unittest.TestCase):
     def test_bridge_requires_same_origin_and_bounded_json(self):
         self.assertTrue(gateway.same_origin('http://127.0.0.1:54321', '127.0.0.1:54321'))
-        self.assertTrue(gateway.same_origin('https://cayden-macbookpro.tailb6648f.ts.net', 'cayden-macbookpro.tailb6648f.ts.net'))
+        self.assertTrue(gateway.same_origin('https://admin-dashboard.example.ts.net', 'admin-dashboard.example.ts.net'))
         for origin in ['https://evil.example', 'null', '', 'http://127.0.0.1:54321.evil.example', 'http://user@127.0.0.1:54321']:
             self.assertFalse(gateway.same_origin(origin, '127.0.0.1:54321'))
 
