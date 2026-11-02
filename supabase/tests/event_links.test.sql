@@ -26,14 +26,14 @@ create function pg_temp.apply(slug text,handle text,ip integer) returns jsonb la
   select public.event_apply(slug,handle,jsonb_build_array(pg_temp.pick(1,'18:00')),2,null,5,'en',pg_temp.ip(ip)) $$;
 -- Settings go through the script's RPC: dates and times come back sorted without repeats, yesterday included to see it drop off.
 select public.set_event_apply_settings(v.id::uuid,array[d+2,d+1,d+2,d-1],array['19:00','18:00','19:00'],4,7,
-  '[{"key":"meal","covered":true,"note_en":"Dinner for two","note_ko":"2인 식사"},{"key":"parking","covered":false}]',' @Galbi.House ') from today,(values
+  '[{"key":"meal","covered":true,"note_en":"Dinner for two","note_ko":"2인 식사"},{"key":"parking","covered":false}]') from today,(values
  ('e1530000-0000-0000-0000-000000000001'),('e1530000-0000-0000-0000-000000000002'),('e1530000-0000-0000-0000-000000000003'),
  ('e1530000-0000-0000-0000-000000000004')) v(id);
-select is((select jsonb_build_object('dates',visit_dates,'times',time_slots,'instagram',instagram) from private.partnership_apply_settings where campaign_id='e1530000-0000-0000-0000-000000000001'),
-  (select jsonb_build_object('dates',array[d-1,d+1,d+2],'times',array['18:00','19:00'],'instagram','galbi.house') from today),'settings are stored sorted without repeats, the handle as Instagram writes it');
+select is((select jsonb_build_object('dates',visit_dates,'times',time_slots) from private.partnership_apply_settings where campaign_id='e1530000-0000-0000-0000-000000000001'),
+  (select jsonb_build_object('dates',array[d-1,d+1,d+2],'times',array['18:00','19:00']) from today),'settings are stored sorted without repeats');
 select public.set_event_apply_settings('e1530000-0000-0000-0000-000000000005',array[current_date],array['18:00'],2);
-select is((select jsonb_build_object('reel',reel_days_max,'support',support,'instagram',instagram) from private.partnership_apply_settings where campaign_id='e1530000-0000-0000-0000-000000000005'),
-  '{"reel":7,"support":[],"instagram":null}'::jsonb,'a Reel is due within 7 days unless set shorter');
+select is((select jsonb_build_object('reel',reel_days_max,'support',support,'late',late_gets_benefit) from private.partnership_apply_settings where campaign_id='e1530000-0000-0000-0000-000000000005'),
+  '{"reel":7,"support":[],"late":false}'::jsonb,'a Reel is due within 7 days unless set shorter, and late entries get no benefit unless set');
 delete from private.partnership_apply_settings where campaign_id='e1530000-0000-0000-0000-000000000005';
 select throws_ok(format($$select public.set_event_apply_settings('e1530000-0000-0000-0000-000000000005',array[current_date],array[%L],%s,%s,%L)$$,v.at,v.party,v.reel,v.support),
   v.code,null,'settings refused: '||v.why) from (values
@@ -45,7 +45,6 @@ select throws_ok(format($$select public.set_event_apply_settings('e1530000-0000-
  ('18:00',4,7,'[{"key":"meal","covered":true,"price":20}]','23514','an extra field'),
  ('18:00',4,7,'[{"key":"meal","covered":true,"note_en":7}]','23514','a note that is not text'),
  ('18:00',4,7,'["meal"]','23514','an item that is not an object'),('18:00',4,7,'{"key":"meal"}','23514','support that is not a list')) v(at,party,reel,support,code,why);
-select throws_ok($$select public.set_event_apply_settings('e1530000-0000-0000-0000-000000000005','{2030-01-01}','{18:00}',4,7,'[]','not a handle')$$,'23514',null,'settings refused: a business handle Instagram would not accept');
 select throws_ok($$select public.set_event_apply_settings('e1530000-0000-0000-0000-000000000005','{}','{18:00}',4,7,'[]')$$,'23502',null,'settings refused: no visit dates');
 select throws_ok($$select public.set_event_apply_settings('e1530000-0000-0000-0000-000000000005','{2030-01-01}','{}',4,7,'[]')$$,'23502',null,'settings refused: no times');
 select is((select count(*) from private.partnership_apply_settings where campaign_id='e1530000-0000-0000-0000-000000000005'),0::bigint,'refused settings write nothing');
@@ -71,9 +70,10 @@ select throws_ok($$insert into private.partnership_campaign_links(campaign_id,ki
 select ok(has_function_privilege('service_role',f,'execute') and not has_function_privilege('anon',f,'execute') and not has_function_privilege('authenticated',f,'execute'),
   'only service_role may execute '||f) from unnest(array['public.event_apply_info(text)','public.event_apply(text,text,jsonb,integer,text,integer,text,text)','public.event_store_view(text)',
   'public.event_store_lookup(text,text)','public.create_event_link(uuid,text,text,text,date)',
-  'public.set_event_apply_settings(uuid,date[],text[],integer,integer,jsonb,text)','public.revoke_event_link(uuid)']) f;
+  'public.set_event_apply_settings(uuid,date[],text[],integer,integer,jsonb,boolean)','public.revoke_event_link(uuid)']) f;
 select ok(not has_function_privilege(r,f,'execute'),r||' cannot execute '||f) from unnest(array['anon','authenticated','service_role']) r,
   unnest(array['private.event_handle(text)','private.event_link_campaign(text,text)','private.event_winner(private.partnership_participations)',
+    'private.event_entry_late(private.partnership_participations)',
     'private.event_support_ok(jsonb)','private.event_slots_ok(jsonb,date[],text[],date)']) f;
 select ok(not has_table_privilege(r,t,'select') and not has_table_privilege(r,t,'insert'),r||' has no access to '||t) from unnest(array['anon','authenticated','service_role']) r,
   unnest(array['private.partnership_campaign_links','private.partnership_apply_attempts','private.partnership_apply_settings']) t;
@@ -140,7 +140,7 @@ reset role;
 select is(public.event_apply_info('open-event')->>'terms','Post one reel','apply info carries the terms');
 select is((select array_agg(k order by k) from jsonb_object_keys(public.event_apply_info('open-event')) k),
   array['avatar','business','closes_on','deadline_note','instagram','party_max','reel_days_max','support','terms','time_slots','title','visit_dates'],'apply info shows only public event fields');
-select is(public.event_apply_info('open-event')->>'instagram','galbi.house','the business handle for the hosted-by line');
+select is(public.event_apply_info('open-event')->>'instagram',null,'without an event profile the hosted-by line names the business');
 select is(public.event_apply_info('open-event')->'visit_dates',(select to_jsonb(array[d+1,d+2]) from today),'visit dates already past are not offered');
 select is(public.event_apply_info('open-event')->'time_slots','["18:00","19:00"]'::jsonb,'times to pick from');
 select is((select jsonb_build_object('party',i->'party_max','reel',i->'reel_days_max') from public.event_apply_info('open-event') i),'{"party":4,"reel":7}'::jsonb,'party and reel limits');
@@ -149,7 +149,8 @@ select is(public.event_apply_info('open-event')->'support',
 select is((public.event_apply_info('open-event')->>'closes_on')::date,(select d+10 from today),'applications close when the campaign ends');
 select is((public.event_apply_info('soon-link')->>'closes_on')::date,(select d+3 from today),'or sooner, when the link expires first');
 select is(public.event_apply_info('closed-event'),null,'closed campaign link is not found');
-select is(public.event_apply_info('ended-event'),null,'campaign past its end date is not found');
+select is((select jsonb_build_object('open',i is not null,'closes_on',i->'closes_on') from public.event_apply_info('ended-event') i),'{"open":true,"closes_on":null}'::jsonb,
+  'past its end date a live link stays open for late entries, without a closing date');
 select is(public.event_apply_info('draft-event'),null,'draft campaign is not found');
 select is(public.event_apply_info('expired-link'),null,'expired link is not found');
 select is(public.event_apply_info('revoked-link'),null,'revoked link is not found');
@@ -188,7 +189,8 @@ select throws_ok($$select public.event_apply('open-event','someone','[]',1,null,
 
 select is(public.event_apply('open-event',' @Gling.Tester ',jsonb_build_array(pg_temp.pick(1,'18:00'),pg_temp.pick(2,'19:00')),3,'  Peanuts ',7,'ko',pg_temp.ip(4)),
   '{"ok":true,"already":false}'::jsonb,'first entry is accepted');
-select is((select to_jsonb(r)-array['id','created_at','updated_at','platforms','contact_name','content_summary','activity_regions','category','contact','reference_url','reference_views','metrics_note','notes','member_id'] from private.partnership_creators r where city_id='event-link-test'),
+select is((select to_jsonb(r)-array['id','created_at','updated_at','platforms','contact_name','content_summary','activity_regions','category','contact','reference_url','reference_views','metrics_note','notes','member_id',
+  'followers_count','is_private','recent_reel_avg_views','uses_korean','profile_checked_at'] from private.partnership_creators r where city_id='event-link-test'),
   '{"display_name":"gling.tester","city_id":"event-link-test","profile_url":"https://www.instagram.com/gling.tester/","status":"active"}'::jsonb,'entry creates the Instagram creator in the business city');
 select is((select jsonb_build_object('stage',stage,'via',applied_via,'language',language,'applied',applied_at is not null,'slots',preferred_slots,
     'party',party_size,'has_allergies',has_allergies,'allergies',allergies,'reel',reel_within_days)

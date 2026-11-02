@@ -31,8 +31,8 @@ alter table private.partnership_participations
 -- What an applicant picks from, all shown on the public apply page (owner 2026-11-02 "날짜랑 시간이랑 인원이랑 알러지랑
 -- … 언제 릴스 올릴수 있냐? 몇일내에? … 우리가 지원하는게 잇으면 잇다 없으면 없다"). One row per campaign, set by
 -- scripts/event-links.mjs settings. support lists fixed items (their labels live in the page copy) as covered or not.
--- A Reel is due within 7 days at most (owner 2026-11-02 "7일이 맥시멈으로하자"). instagram is the business's own handle for
--- the "Hosted by @gling.app with @…" line; without it the page names the business instead.
+-- A Reel is due within 7 days at most (owner 2026-11-02 "7일이 맥시멈으로하자"). late_gets_benefit: whether entries after the
+-- campaign's ends_on (the application deadline) still get the discount, decided once per event (board idea 3, owner 2026-11-02).
 create table private.partnership_apply_settings (
   campaign_id uuid primary key references private.partnership_campaigns(id),
   visit_dates date[] not null check(cardinality(visit_dates) between 1 and 60 and array_position(visit_dates,null) is null),
@@ -41,7 +41,7 @@ create table private.partnership_apply_settings (
   party_max integer not null check(party_max between 1 and 10),
   reel_days_max integer not null default 7 check(reel_days_max between 1 and 7),
   support jsonb not null default '[]',
-  instagram text check(instagram ~ '^[a-z0-9._]{1,30}$'),
+  late_gets_benefit boolean not null default false,
   updated_at timestamptz not null default clock_timestamp()
 );
 
@@ -68,8 +68,9 @@ language sql immutable set search_path='' as $$
   where h ~ '^[a-z0-9._]{1,30}$' and h !~ '^[.]|[.]$|[.][.]'
 $$;
 
--- The campaign behind a live link. Applying also needs the campaign open and not ended;
--- a store keeps seeing a closed campaign (visits come after applications) until its own link expires.
+-- The campaign behind a live link. Applying also needs the campaign open. Past the campaign's ends_on (the deadline) a live
+-- apply link still takes entries, marked late by event_entry_late, so the link's own expiry is when entries stop.
+-- A store keeps seeing a closed campaign (visits come after applications) until its own link expires.
 create function private.event_link_campaign(p_kind text,p_key text) returns uuid
 language sql stable set search_path='' as $$
   select c.id from private.partnership_campaign_links l
@@ -78,7 +79,7 @@ language sql stable set search_path='' as $$
   where l.kind=p_kind and (case p_kind when 'apply' then l.slug else l.token_sha256 end)=p_key
     and l.revoked_at is null and m.deleted_at is null
     and l.expires_on>=(clock_timestamp() at time zone z.timezone)::date
-    and (p_kind='store' or (c.status='open' and c.ends_on>=(clock_timestamp() at time zone z.timezone)::date))
+    and (p_kind='store' or c.status='open')
 $$;
 
 -- Selected (strict stage) or confirmed/posted on the board, unless cancelled, declined or dropped.
@@ -89,23 +90,31 @@ language sql stable set search_path='' as $$
     and p.stage not in ('declined','cancelled') and coalesce(to_jsonb(p)->>'outreach_stage','')<>'dropped'
 $$;
 
+-- Entered through the apply link after the campaign's ends_on in the business's time zone (board "늦은 신청").
+create function private.event_entry_late(p private.partnership_participations) returns boolean
+language sql stable set search_path='' as $$
+  select coalesce((select (p.applied_at at time zone z.timezone)::date>c.ends_on from private.partnership_campaigns c
+    join private.merchants m on m.id=c.merchant_id join public.cities z on z.id=m.city_id where c.id=p.campaign_id),false)
+$$;
+
 -- The approved page (galbi example 2026-11-02): business name and logo, what the event covers, what to do (terms),
--- when (applications close on the earlier of the link's expiry and the campaign's end) and the choices for the form.
+-- when (applications close on the earlier of the link's expiry and the campaign's end; no date once that has passed and
+-- the link only takes late entries) and the choices for the form.
 -- Visit dates already past drop off; with none left there is no page.
 -- The logo is the business profile's own public avatar path (public-post?format=business-image), only while that
 -- profile is public. The page always shows the real logo (owner 2026-11-02 "항상 로고로해야지 맞는듯"), so without
 -- one there is no page. There is no business Instagram field to show; nothing else about the business leaves.
 create function public.event_apply_info(p_slug text) returns jsonb
 language sql stable security definer set search_path='' as $$
-  select jsonb_build_object('title',c.title,'business',m.name,'avatar',a.path,'instagram',s.instagram,'support',s.support,
+  select jsonb_build_object('title',c.title,'business',m.name,'avatar',a.path,'support',s.support,
     'visit_dates',v.dates,'time_slots',s.time_slots,'party_max',s.party_max,'reel_days_max',s.reel_days_max,
-    'terms',c.terms,'closes_on',least(l.expires_on,c.ends_on),'deadline_note',c.deadline_note)
+    'terms',c.terms,'closes_on',case when coalesce(c.ends_on>=t.today,true) then least(l.expires_on,c.ends_on) end,'deadline_note',c.deadline_note)
   from private.partnership_campaign_links l join private.partnership_campaigns c on c.id=l.campaign_id
     join private.merchants m on m.id=c.merchant_id join public.cities z on z.id=m.city_id
     join private.partnership_apply_settings s on s.campaign_id=c.id
     cross join lateral (select public.get_merchant_profile(m.id)->>'avatar_path' path) a
-    cross join lateral (select array_agg(d order by d) dates from unnest(s.visit_dates) d
-      where d>=(clock_timestamp() at time zone z.timezone)::date) v
+    cross join lateral (select (clock_timestamp() at time zone z.timezone)::date today) t
+    cross join lateral (select array_agg(d order by d) dates from unnest(s.visit_dates) d where d>=t.today) v
   where l.kind='apply' and l.slug=p_slug and c.id=private.event_link_campaign('apply',p_slug) and a.path is not null and v.dates is not null
 $$;
 
@@ -167,14 +176,15 @@ begin
   select id into crid from private.partnership_creators where private.partnership_profile_key(profile_url)=private.partnership_profile_key(url);
   -- New rows take the board defaults (stage applied, outreach candidate). A repeat entry refreshes what the person picked only
   -- while they are still a candidate: anyone typing a picked person's handle must not change the visit, party or allergies
-  -- the business sees. Either way the answer is the same, so it does not reveal who was picked.
+  -- the business sees. Either way the answer is the same, so it does not reveal who was picked. applied_at keeps the first
+  -- entry, so re-sending the form after the deadline does not turn an on-time applicant into a late one.
   insert into private.partnership_participations(id,campaign_id,creator_id,applied_via,language,applied_at,
       preferred_slots,party_size,has_allergies,allergies,reel_within_days)
     values(gen_random_uuid(),cid,crid,'apply_link',p_language,clock_timestamp(),p_slots,p_party,p_allergies is not null,allergy,p_reel_days)
     on conflict(campaign_id,creator_id) do nothing returning id into pid;
   if pid is null then
     again:=true;
-    update private.partnership_participations p set applied_via='apply_link',language=p_language,applied_at=clock_timestamp(),
+    update private.partnership_participations p set applied_via='apply_link',language=p_language,applied_at=coalesce(p.applied_at,clock_timestamp()),
       preferred_slots=p_slots,party_size=p_party,has_allergies=p_allergies is not null,allergies=allergy,reel_within_days=p_reel_days,
       updated_at=greatest(clock_timestamp(),p.updated_at+interval '1 microsecond')
       where p.campaign_id=cid and p.creator_id=crid and p.stage='applied'
@@ -207,7 +217,8 @@ language sql stable security definer set search_path='' as $$
   where c.id=private.event_link_campaign('store',p_token_sha256)
 $$;
 
--- Only this one handle's status leaves the function, never the list it was checked against.
+-- Only this one handle's status leaves the function, never the list it was checked against. A late entry gets the discount
+-- only when the event says so.
 create function public.event_store_lookup(p_token_sha256 text,p_handle text) returns jsonb
 language plpgsql stable security definer set search_path='' as $$
 declare cid uuid:=private.event_link_campaign('store',p_token_sha256); crid uuid; today date;
@@ -221,7 +232,8 @@ begin
   select (clock_timestamp() at time zone z.timezone)::date into today from private.partnership_campaigns c
     join private.merchants m on m.id=c.merchant_id join public.cities z on z.id=m.city_id where c.id=cid;
   if exists(select 1 from private.partnership_participations p where p.campaign_id=cid and p.creator_id=crid
-      and coalesce(to_jsonb(p)->>'outreach_stage','')<>'dropped')
+      and coalesce(to_jsonb(p)->>'outreach_stage','')<>'dropped' and (not private.event_entry_late(p)
+        or coalesce((select s.late_gets_benefit from private.partnership_apply_settings s where s.campaign_id=cid),false)))
     or exists(select 1 from private.partnership_coupons q join private.partnership_benefits b on b.id=q.benefit_id
       where b.campaign_id=cid and q.creator_id=crid and q.status='issued' and q.expires_on>=today) then
     return jsonb_build_object('status','discount');
@@ -254,15 +266,15 @@ end $$;
 
 -- Dates and times are de-duplicated and sorted; anything else out of range fails on the table's checks.
 create function public.set_event_apply_settings(p_campaign_id uuid,p_visit_dates date[],p_time_slots text[],p_party_max integer,
-  p_reel_days_max integer default 7,p_support jsonb default '[]',p_instagram text default null) returns void
+  p_reel_days_max integer default 7,p_support jsonb default '[]',p_late_gets_benefit boolean default false) returns void
 language plpgsql security definer set search_path='' as $$
 begin
-  insert into private.partnership_apply_settings(campaign_id,visit_dates,time_slots,party_max,reel_days_max,support,instagram)
+  insert into private.partnership_apply_settings(campaign_id,visit_dates,time_slots,party_max,reel_days_max,support,late_gets_benefit)
     values(p_campaign_id,(select array_agg(distinct d order by d) from unnest(p_visit_dates) d),
       (select array_agg(distinct t order by t) from unnest(p_time_slots) t),p_party_max,coalesce(p_reel_days_max,7),coalesce(p_support,'[]'),
-      case when btrim(p_instagram)<>'' then coalesce(private.event_handle(p_instagram),p_instagram) end)
+      coalesce(p_late_gets_benefit,false))
     on conflict(campaign_id) do update set visit_dates=excluded.visit_dates,time_slots=excluded.time_slots,party_max=excluded.party_max,
-      reel_days_max=excluded.reel_days_max,support=excluded.support,instagram=excluded.instagram,updated_at=clock_timestamp();
+      reel_days_max=excluded.reel_days_max,support=excluded.support,late_gets_benefit=excluded.late_gets_benefit,updated_at=clock_timestamp();
   insert into private.partnership_events(actor_id,resource_id,action,details)
     values(null,p_campaign_id,'campaign_apply_settings_saved',jsonb_build_object('kind','campaign','campaign_id',p_campaign_id));
 end $$;
@@ -282,10 +294,10 @@ do $$
 declare f text;
 begin
   foreach f in array array['private.event_handle(text)','private.event_link_campaign(text,text)',
-    'private.event_winner(private.partnership_participations)','private.event_support_ok(jsonb)',
+    'private.event_winner(private.partnership_participations)','private.event_entry_late(private.partnership_participations)','private.event_support_ok(jsonb)',
     'private.event_slots_ok(jsonb,date[],text[],date)','public.event_apply_info(text)',
     'public.event_apply(text,text,jsonb,integer,text,integer,text,text)','public.event_store_view(text)','public.event_store_lookup(text,text)',
-    'public.create_event_link(uuid,text,text,text,date)','public.set_event_apply_settings(uuid,date[],text[],integer,integer,jsonb,text)',
+    'public.create_event_link(uuid,text,text,text,date)','public.set_event_apply_settings(uuid,date[],text[],integer,integer,jsonb,boolean)',
     'public.revoke_event_link(uuid)'] loop
     execute format('alter function %s owner to postgres',f);
     execute format('revoke all on function %s from public,anon,authenticated,service_role',f);
@@ -293,5 +305,5 @@ begin
 end $$;
 grant execute on function public.event_apply_info(text),public.event_apply(text,text,jsonb,integer,text,integer,text,text),
   public.event_store_view(text),public.event_store_lookup(text,text),public.create_event_link(uuid,text,text,text,date),
-  public.set_event_apply_settings(uuid,date[],text[],integer,integer,jsonb,text),public.revoke_event_link(uuid) to service_role;
+  public.set_event_apply_settings(uuid,date[],text[],integer,integer,jsonb,boolean),public.revoke_event_link(uuid) to service_role;
 notify pgrst,'reload schema';

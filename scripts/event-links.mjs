@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // The supervisor's tool for event links; there is no admin screen for them yet.
 //   node scripts/event-links.mjs settings --campaign <uuid> --file <settings.json> [--dry-run]
-//     {"visit_dates":["2026-11-23"],"time_slots":["18:00"],"party_max":2,"reel_days_max":7,"instagram":"shop.handle",
-//      "support":[{"key":"meal","covered":true,"note_en":"","note_ko":""}]}   (reel_days_max, instagram, support optional)
+//     {"visit_dates":["2026-11-23"],"time_slots":["18:00"],"party_max":2,"reel_days_max":7,"late_gets_benefit":false,
+//      "support":[{"key":"meal","covered":true,"note_en":"","note_ko":""}]}   (reel_days_max, late_gets_benefit, support optional)
 //   node scripts/event-links.mjs create --campaign <uuid> --kind apply|store --expires YYYY-MM-DD [--slug <slug>] [--dry-run]
 //   node scripts/event-links.mjs revoke --id <uuid> [--dry-run]
 // A store link's token is printed once and never stored: the database keeps only its SHA-256.
@@ -59,17 +59,17 @@ export function parse(argv) {
 
 /** Same limits as the table checks, so a typo is caught before anything is sent. */
 export function settings(input) {
-  const { visit_dates, time_slots, party_max, reel_days_max = 7, support = [], instagram = null, ...rest } = input ?? {};
+  const { visit_dates, time_slots, party_max, reel_days_max = 7, support = [], late_gets_benefit = false, ...rest } = input ?? {};
   if (Object.keys(rest).length) fail(`모르는 설정: ${Object.keys(rest).join(', ')}`);
   if (!Array.isArray(visit_dates) || !visit_dates.length || !visit_dates.every(realDay)) fail('visit_dates는 YYYY-MM-DD 날짜 목록이에요(하나 이상).');
   if (!Array.isArray(time_slots) || !time_slots.length || !time_slots.every(value => TIME.test(value))) fail('time_slots는 HH:MM 시간 목록이에요(하나 이상).');
   if (!Number.isInteger(party_max) || party_max < 1 || party_max > 10) fail('party_max는 1~10이에요.');
   if (!Number.isInteger(reel_days_max) || reel_days_max < 1 || reel_days_max > 7) fail('reel_days_max는 1~7일이에요.');
-  if (instagram !== null && (typeof instagram !== 'string' || !/^@?[A-Za-z0-9._]{1,30}$/.test(instagram.trim()))) fail('instagram은 가게 인스타 아이디예요.');
+  if (typeof late_gets_benefit !== 'boolean') fail('late_gets_benefit은 true 또는 false예요(마감 뒤 신청에도 혜택).');
   const keys = Array.isArray(support) ? support.map(item => item?.key) : null;
   if (!keys || new Set(keys).size !== keys.length || !support.every(item => SUPPORT.includes(item?.key) && typeof item.covered === 'boolean'))
     fail(`support는 [{key, covered}] 목록이에요. key는 ${SUPPORT.join(', ')} 중 하나씩.`);
-  return { visit_dates, time_slots, party_max, reel_days_max, support, instagram };
+  return { visit_dates, time_slots, party_max, reel_days_max, support, late_gets_benefit };
 }
 
 /** A new link. An apply slug is public (it goes in DMs); a store token is a 32-byte secret, kept only as its SHA-256. */
@@ -109,9 +109,10 @@ export async function main(argv, env = process.env, out = console.log) {
   const task = parse(argv);
   if (task.command === 'settings') {
     if (task.dryRun) return out(JSON.stringify({ dryRun: true, campaign: task.campaign, settings: task.settings }));
-    const { visit_dates, time_slots, party_max, reel_days_max, support, instagram } = task.settings;
+    const { visit_dates, time_slots, party_max, reel_days_max, support, late_gets_benefit } = task.settings;
     await rpc(env, await serviceKey(env), 'set_event_apply_settings', { p_campaign_id: task.campaign, p_visit_dates: visit_dates,
-      p_time_slots: time_slots, p_party_max: party_max, p_reel_days_max: reel_days_max, p_support: support, p_instagram: instagram });
+      p_time_slots: time_slots, p_party_max: party_max, p_reel_days_max: reel_days_max, p_support: support,
+      p_late_gets_benefit: late_gets_benefit });
     return out('신청 설정을 저장했어요.');
   }
   if (task.command === 'revoke') {

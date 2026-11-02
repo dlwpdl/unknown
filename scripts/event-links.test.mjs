@@ -46,11 +46,11 @@ test('arguments are checked before anything is sent', () => {
 
 test('settings follow the table limits, with a Reel due within 7 days at most', () => {
   const ok = { visit_dates: ['2030-01-02'], time_slots: ['18:00'], party_max: 2 };
-  assert.deepEqual(settings(ok), { ...ok, reel_days_max: 7, support: [], instagram: null });
+  assert.deepEqual(settings(ok), { ...ok, reel_days_max: 7, support: [], late_gets_benefit: false });
   for (const bad of [{ ...ok, visit_dates: [] }, { ...ok, visit_dates: ['2030-13-01'] }, { ...ok, time_slots: ['6pm'] }, { ...ok, party_max: 11 },
     { ...ok, reel_days_max: 8 }, { ...ok, reel_days_max: 0 }, { ...ok, support: [{ key: 'spa', covered: true }] },
     { ...ok, support: [{ key: 'meal', covered: true }, { key: 'meal', covered: false }] }, { ...ok, support: [{ key: 'meal', covered: 'yes' }] },
-    { ...ok, instagram: 'not a handle' }, { ...ok, lede: 'x' }]) assert.throws(() => settings(bad), JSON.stringify(bad));
+    { ...ok, instagram: 'galbi.house' }, { ...ok, late_gets_benefit: 'yes' }, { ...ok, lede: 'x' }]) assert.throws(() => settings(bad), JSON.stringify(bad));
 });
 
 test('a store token is a 43-character secret kept only as its SHA-256; an apply slug is public', () => {
@@ -113,12 +113,13 @@ test('a store link prints its token once and sends only the hash', async () => {
 test('settings go through the settings function as typed', async () => {
   const { requests, script, close } = await fakeSupabase(() => [200, null]);
   const file = join(mkdtempSync(join(tmpdir(), 'event-links-')), 'settings.json');
-  writeFileSync(file, JSON.stringify({ visit_dates: ['2030-01-02'], time_slots: ['18:00'], party_max: 2, instagram: '@Galbi.House',
+  writeFileSync(file, JSON.stringify({ visit_dates: ['2030-01-02'], time_slots: ['18:00'], party_max: 2, late_gets_benefit: true,
     support: [{ key: 'meal', covered: true, note_en: 'Dinner for two', note_ko: '2인 식사' }] }));
   try {
     const result = await script('settings', '--campaign', campaign, '--file', file);
     assert.equal(result.code, 0, result.stderr);
     assert.deepEqual(requests[0].body, { p_campaign_id: campaign, p_visit_dates: ['2030-01-02'], p_time_slots: ['18:00'], p_party_max: 2, p_reel_days_max: 7,
-      p_support: [{ key: 'meal', covered: true, note_en: 'Dinner for two', note_ko: '2인 식사' }], p_instagram: '@Galbi.House' });
+      p_support: [{ key: 'meal', covered: true, note_en: 'Dinner for two', note_ko: '2인 식사' }],
+      p_late_gets_benefit: true });
   } finally { close(); }
 });
