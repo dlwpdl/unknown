@@ -37,8 +37,8 @@ export function PopIn({ children, style }: { children: ReactNode; style?: Compon
 }
 
 /** layout="start" is the state at the top of a task screen: left-aligned, with what's next under it. */
-export function StateCard({ kind = 'empty', title, body, actionLabel, onAction, layout = 'center', mark, children }: {
-  kind?: StateKind; title: string; body: string; actionLabel?: string; onAction?: () => void; layout?: 'center' | 'start'; mark?: keyof typeof marks; children?: ReactNode;
+export function StateCard({ kind = 'empty', title, body, actionLabel, onAction, layout = 'center', mark, children, analyticsId = 'components_state-card.pressable.1' }: {
+  kind?: StateKind; title: string; body: string; actionLabel?: string; onAction?: () => void; layout?: 'center' | 'start'; mark?: keyof typeof marks; children?: ReactNode; analyticsId?: string;
 }) {
   const theme = useTheme();
   const { play } = useInteractionFeedback();
@@ -55,7 +55,7 @@ export function StateCard({ kind = 'empty', title, body, actionLabel, onAction, 
     </View>
     <ThemedText type="smallBold" style={styles.title}>{title}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary" style={styles.body}>{body}</ThemedText>
-    {actionLabel && onAction && <Pressable lens analyticsId="components_state-card.pressable.1" accessibilityRole="button" accessibilityLabel={actionLabel}
+    {actionLabel && onAction && <Pressable lens analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={actionLabel}
       onPress={() => { play(kind === 'error' ? 'warning' : 'selection'); onAction(); }}
       style={({ pressed }) => [styles.action, { backgroundColor: theme.accent, opacity: pressed ? 0.8 : 1 }]}>
       <ThemedText type="smallBold" style={[Typography.menu, { color: theme.accentInk }]}>{actionLabel}</ThemedText>

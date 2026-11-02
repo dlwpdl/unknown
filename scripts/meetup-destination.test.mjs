@@ -164,7 +164,7 @@ test('a late event prefill keeps actual manual draft edits while still attaching
   };
   vm.runInNewContext(ts.transpileModule(editor + '\n' + effect + '\n' + field + '\nexports.edit=editDraftField;exports.field=field;', { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, context);
   const cleanup = callback();
-  const edit = (name, value) => exports.field(name, '', next => exports.edit(name, next), '', 60).props.children[1].props.onChangeText(value);
+  const edit = (name, value) => exports.field(`meetup.create.${name}`, name, '', next => exports.edit(name, next), '', 60).props.children[1].props.onChangeText(value);
   edit('title', 'My manual title'); edit('body', 'Keep my writing');
   resolve({ event: { id: 'EV_1', name: 'Verified event' } }); await new Promise(setImmediate);
   assert.equal(title, 'My manual title'); assert.equal(body, 'Keep my writing'); assert.equal(details, '\n\n행사 ID: EV_1'); assert.equal(eventReady, true); cleanup();

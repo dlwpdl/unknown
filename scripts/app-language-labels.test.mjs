@@ -22,7 +22,7 @@ function evaluate(node, language, scope = {}) {
 }
 function meetupLabel() {
   const component = nodes(tree('src/app/meetup-create.tsx')).find(node => (ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node))
-    && node.attributes.properties.some(attr => ts.isJsxAttribute(attr) && attr.name.text === 'analyticsId' && attr.initializer?.text === 'app_meetup-create.pressable.4'));
+    && node.attributes.properties.some(attr => ts.isJsxAttribute(attr) && attr.name.text === 'analyticsId' && attr.initializer?.text === 'meetup.create.submit'));
   return component.attributes.properties.find(attr => attr.name?.text === 'label').initializer.expression;
 }
 

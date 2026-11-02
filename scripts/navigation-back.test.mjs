@@ -28,7 +28,7 @@ function backHandler(path, analyticsId, context) {
 }
 
 for (const [path, analyticsId, fallback] of [
-  ['meetup-create.tsx', 'app_meetup-create.pressable.1', '/(tabs)/meetups'],
+  ['meetup-create.tsx', 'meetup.create.back', '/(tabs)/meetups'],
   ['events/index.tsx', 'ticketmaster.back', '/'],
   ['events/[id].tsx', 'ticketmaster.detail.back', '/events'],
   ['places/index.tsx', 'places.back', '/'],
