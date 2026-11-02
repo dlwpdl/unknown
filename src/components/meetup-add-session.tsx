@@ -42,10 +42,13 @@ export function MeetupAddSession({ postId, visible, canRepeat, canSingle = true,
   const end = new Date(endsAt).toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
   const repeating = repeat !== 'none';
 
+  // A new repeating preview starts loading in the same render that asks for it.
+  const previewKey = visible && repeating ? [postId, startsAt, endsAt, repeat].join('|') : '';
+  const [shownKey, setShownKey] = useState('');
+  if (previewKey !== shownKey) { setShownKey(previewKey); if (previewKey) { setLoadingDates(true); setError(''); } }
   useEffect(() => {
     if (!visible || !repeating) return;
     let active = true;
-    setLoadingDates(true); setError('');
     proposeMeetupDates(supabase, postId, startsAt, endsAt, repeat as 'weekly' | 'fortnightly').then(result => {
       if (active) { setDates(result); setPicked(result.map(date => date.startsAt)); }
     }, failure => { if (active) { setDates([]); setPicked([]); setError((failure as Error)?.message || 'unknown'); play('warning'); } })

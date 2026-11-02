@@ -174,8 +174,6 @@ function Session({ session, meId, kind, isHost, canStaffCheckIn, onChanged, now 
     catch { setNotice(tr('체크인하지 못했어요.')); play('warning'); }
     finally { setStaffBusy(''); }
   };
-  const pill = (label: string, onPress: () => void, { a11y, selected = false, blocked = false }: { a11y: string; selected?: boolean; blocked?: boolean }) => <Pressable accessibilityRole="button" accessibilityLabel={a11y} disabled={blocked} accessibilityState={{ disabled: blocked }} onPress={onPress}
-    style={({ pressed }) => [ControlStyles.pill, styles.pillBorder, controlPresentation(theme, { selected, pressed, disabled: blocked }).container]}><ThemedText type="smallBold" style={controlPresentation(theme, { selected }).text}>{label}</ThemedText></Pressable>;
   const reasonMissing = score <= 5 && body.trim().length < 10;
   const stage = !ended ? 0 : !session.verified ? 1 : session.reviewStatus || submitted ? 3 : 2;
   const card = (title: string, detail?: string) => <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText style={Typography.menu}>{title}</ThemedText>{!!detail && <ThemedText themeColor="textSecondary" style={Typography.supporting}>{detail}</ThemedText>}</View>;
@@ -192,7 +190,7 @@ function Session({ session, meId, kind, isHost, canStaffCheckIn, onChanged, now 
       <ThemedText style={Typography.body}>{tr('{0}명 중 {1}명 왔어요', others.length, arrived)}</ThemedText>
       <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.bar, { backgroundColor: theme.backgroundElement }]}><View style={[styles.barFill, { backgroundColor: theme.accent, width: `${others.length ? arrived / others.length * 100 : 0}%` }]} /></View>
       {others.length > 0 && <ListCard>{others.map(member => <ListRow key={member.id} title={member.nickname} leading={<InitialAvatar name={member.nickname} />}
-        trailing={member.checkedIn ? <Tag label={tr('왔어요')} /> : canStaffCheckIn ? pill(tr('체크인'), () => void checkIn(member.id), { a11y: tr('{0}님이 왔다고 표시해요', member.nickname), selected: true, blocked: !!staffBusy }) : <Tag label={tr('아직')} tone="quiet" />} />)}</ListCard>}
+        trailing={member.checkedIn ? <Tag label={tr('왔어요')} /> : canStaffCheckIn ? <ReviewPill label={tr('체크인')} onPress={() => void checkIn(member.id)} accessibilityLabel={tr('{0}님이 왔다고 표시해요', member.nickname)} selected blocked={!!staffBusy} /> : <Tag label={tr('아직')} tone="quiet" />} />)}</ListCard>}
       {isHost && !canStaffCheckIn && <View style={styles.gapTop}><ListCard><ListRow analyticsId="meetup.automation.membership" title={tr('호스트가 대신 체크인하기')} detail={tr('멤버는 각자 화면에서 체크인할 수 있어요.')} trailing={<Tag label={tr('프로')} />} onPress={() => router.push('/profile/membership')} /></ListCard></View>}
     </View>}
     {ended && !inWindow && card(session.verified ? tr("참석 확인됨") : tr('확인 기간이 끝났어요'), tr('참석 확인은 끝나고 7일 안에 할 수 있어요.'))}
@@ -200,7 +198,7 @@ function Session({ session, meId, kind, isHost, canStaffCheckIn, onChanged, now 
       <SectionLabel>{session.checkedIn ? tr('함께한 분을 확인해 주세요') : tr('이 회차에 온 분')}</SectionLabel>
       <ListCard>{others.map(member => <View key={member.id}>
         <ListRow title={member.nickname} leading={<InitialAvatar name={member.nickname} />} detail={member.verified ? tr("참석 확인됨") : member.confirmedByMe ? tr('확인했어요. 상대 확인을 기다려요.') : member.checkedIn ? tr('체크인함') : tr('체크인 안 함')}
-          trailing={session.checkedIn && member.checkedIn && !member.confirmedByMe ? pill(tr('만났어요'), () => confirm(member.id, member.nickname), { a11y: tr('{0}님 참석 확인', member.nickname), blocked: busy }) : member.confirmedByMe ? <Tag label={tr('확인함')} /> : undefined} />
+          trailing={session.checkedIn && member.checkedIn && !member.confirmedByMe ? <ReviewPill label={tr('만났어요')} onPress={() => confirm(member.id, member.nickname)} accessibilityLabel={tr('{0}님 참석 확인', member.nickname)} blocked={busy} /> : member.confirmedByMe ? <Tag label={tr('확인함')} /> : undefined} />
         {session.verified && member.verified && <View style={styles.manner}><MannerReviewButton subjectId={member.id} nickname={member.nickname} context={{ sessionId: session.id }} /></View>}
       </View>)}</ListCard>
     </View>}
@@ -224,6 +222,12 @@ function Session({ session, meId, kind, isHost, canStaffCheckIn, onChanged, now 
     </Disclosure>
   </View>;
 }
+function ReviewPill({ label, onPress, accessibilityLabel, selected = false, blocked = false }: { label: string; onPress: () => void; accessibilityLabel: string; selected?: boolean; blocked?: boolean }) {
+  const theme = useTheme();
+  return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} disabled={blocked} accessibilityState={{ disabled: blocked }} onPress={onPress}
+    style={({ pressed }) => [ControlStyles.pill, styles.pillBorder, controlPresentation(theme, { selected, pressed, disabled: blocked }).container]}><ThemedText type="smallBold" style={controlPresentation(theme, { selected }).text}>{label}</ThemedText></Pressable>;
+}
+
 const styles = StyleSheet.create({ container: { gap: 12, marginVertical: 8 }, review: { gap: 8, padding: 12, borderWidth: 1, borderRadius: 12 },
   button: { minHeight: 44, minWidth: 44, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, justifyContent: 'center' },
   input: { borderWidth: 1, borderRadius: 12, padding: 12, minHeight: 80, textAlignVertical: 'top' },

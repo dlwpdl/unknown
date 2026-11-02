@@ -56,16 +56,17 @@ export function MeetupHostHome({ postId, kind }: { postId: string; kind: 'once' 
   const { tr, locale } = useLanguage();
   const router = useRouter(), { play } = useInteractionFeedback();
   const [home, setHome] = useState<Home | null>(null), [failed, setFailed] = useState(false), [revision, setRevision] = useState(0);
+  // Times on this screen are judged at the time the home data arrived.
+  const [now, setNow] = useState(() => Date.now());
   useFocusEffect(useCallback(() => {
     let active = true;
-    loadHome(postId).then(value => { if (active) { setHome(value); setFailed(false); } }, () => { if (active) setFailed(true); });
+    loadHome(postId).then(value => { if (active) { setHome(value); setNow(Date.now()); setFailed(false); } }, () => { if (active) setFailed(true); });
     return () => { active = false; };
   }, [postId, revision]));
   if (failed && !home) return <View style={styles.pad}><StateCard kind="error" title={tr('호스트 관리를 불러오지 못했어요')} body={tr('연결을 확인하고 다시 시도해 주세요.')} actionLabel={tr('다시 불러오기')} onAction={() => setRevision(value => value + 1)} /></View>;
   if (!home) return <ListLoading label={tr('불러오는 중이에요')} />;
   // The server decides: anyone who is not the host gets the attendance screen.
   if (!home.tools.isHost) return <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}><MeetupReviews postId={postId} kind={kind} attendanceOnly /></ScrollView>;
-  const now = Date.now();
   const section = (name: string, extra: Record<string, string> = {}) => router.push({ pathname: '/meetup-tools', params: { postId, kind, host: '1', section: name, ...extra } });
   const members = home.roster.filter(person => !person.isHost);
   const unpaid = home.fee ? members.filter(person => !home.paid.includes(person.userId)).length : 0;

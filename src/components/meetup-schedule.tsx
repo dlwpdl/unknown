@@ -36,15 +36,17 @@ export function MeetupSchedule({ postId, kind, host }: { postId: string; kind: '
   const router = useRouter(), { play } = useInteractionFeedback();
   const [sessions, setSessions] = useState<MeetupSessions | null>(null), [tools, setTools] = useState<MeetupHostToolsState | null>(null);
   const [failed, setFailed] = useState(false), [adding, setAdding] = useState(false), [revision, setRevision] = useState(0), [added, setAdded] = useState(0);
+  // Live/upcoming/past are judged at the time the sessions arrived.
+  const [now, setNow] = useState(() => Date.now());
   useFocusEffect(useCallback(() => {
     let active = true;
     Promise.all([loadMeetupSessions(supabase, postId), loadMeetupHostTools(supabase, postId)])
-      .then(([nextSessions, nextTools]) => { if (active) { setSessions(nextSessions); setTools(nextTools); setFailed(false); } }, () => { if (active) setFailed(true); });
+      .then(([nextSessions, nextTools]) => { if (active) { setSessions(nextSessions); setTools(nextTools); setNow(Date.now()); setFailed(false); } }, () => { if (active) setFailed(true); });
     return () => { active = false; };
   }, [postId, revision]));
   if (failed) return <StateCard kind="error" title={tr('일정을 불러오지 못했어요')} body={tr('연결을 확인하고 다시 시도해 주세요.')} actionLabel={tr('다시 불러오기')} onAction={() => setRevision(value => value + 1)} />;
   if (!sessions || !tools) return <ListLoading label={tr('불러오는 중이에요')} />;
-  const now = Date.now(), live = liveSession(sessions.sessions, now);
+  const live = liveSession(sessions.sessions, now);
   const upcoming = upcomingSessions(sessions.sessions, now), past = pastSessions(sessions.sessions, now);
   const open = (session: MeetupSession) => router.push({ pathname: '/meetup-tools', params: { postId, kind, host: host ? '1' : '0', section: 'session', sessionId: session.id } });
   const canAdd = kind === 'group' && (sessions.isHost || tools.canManageSessions);
