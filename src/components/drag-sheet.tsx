@@ -56,6 +56,8 @@ export function DragSheet({ visible, onClose, onDismissed, dismissible = true, t
   const [pan] = useState(() => {
     const claim = (_: unknown, g: { dx: number; dy: number }) => latest.current.dismissible && Math.abs(g.dy) > 4 && Math.abs(g.dy) > Math.abs(g.dx);
     return PanResponder.create({
+      // RN's Modal takes every touch no child takes, and then never offers the move to us: the title only drags if we take the touch first.
+      onStartShouldSetPanResponder: () => latest.current.dismissible,
       onMoveShouldSetPanResponder: claim, onMoveShouldSetPanResponderCapture: claim,
       onPanResponderGrant: () => y.stopAnimation(),
       onPanResponderMove: (_, g) => {
