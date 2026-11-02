@@ -311,13 +311,13 @@ test('failed OAuth exchange preserves the invitation and shows a retry explanati
 });
 
 test('the exported PostDetail guest wrapper renders only a login gate and never loads comments or the supplied body', async context => {
-  const requests = [], components = ['TicketmasterSourceLink','MerchantSourceLink','MerchantReviews','MeetupReviews','PostPoll','MeetupRsvp','PostCard','PostBodyEditor','PostPhotoGallery','PostPhotoEditor','PostPhotoCredits','ChillingHostProfile','ReportSheet','TrustBadge','UserSheet'];
+  const requests = [], components = ['TicketmasterSourceLink','MerchantSourceLink','MerchantReviews','MeetupReviews','PostPoll','MeetupRsvp','PostCard','PostBodyEditor','PostPhotoGallery','PostPhotoEditor','PostPhotoCredits','ChillingHostProfile','ReportSheet','TrustBadge','UserSheet','MeetupManageSheet','MeetupRoomSummary','MeetupHostTools','ChillingEvent','ChillingProfileCard','ListCard','RaisedActionButton'];
   const imports = Object.fromEntries(components.map(name => [`@/components/${name.replace(/[A-Z]/g, (letter, index) => `${index ? '-' : ''}${letter.toLowerCase()}`)}`, { [name]: name }]));
   Object.assign(imports, {
     'expo-image-picker': {}, '@/constants/theme': { Depth: {}, Spacing: {} }, '@/i18n/ko': { t: {}, count: () => '' },
     '@/lib/comment-list': {}, '@/lib/comment-threads': { loadCommentThreadPage: () => requests.push('comments'), loadCommentThreadContext: () => requests.push('comment-context') },
     '@/lib/image-upload': {}, '@/lib/post-photo-credits': {}, '@/lib/post-image-picker': {}, '@/lib/meetup-ai': {}, '@/lib/mock': { CITIES: [] }, '@/lib/promotions': {}, '../../supabase/functions/_shared/ticketmaster': {},
-    '@/lib/meetup-destination': { splitPlaceMeetupBody: () => { throw Error('Guest must not parse supplied body'); } }, '@/lib/discovery': {}, '@/constants/design-system': {},
+    '@/lib/meetup-destination': { splitPlaceMeetupBody: () => { throw Error('Guest must not parse supplied body'); } }, '@/lib/discovery': {}, '@/constants/design-system': {}, '@/lib/chilling': {}, '@/lib/chilling-data': {}, '@/lib/meetup-host-tools': {},
   });
   const harness = mount('../src/components/post-detail.tsx', 'PostDetail', { auth: { isAuthed: false }, imports }, { post: post(), onClose() {} }); context.after(() => harness.unmount()); await harness.settle();
   assert.deepEqual(requests, []); assert.equal(harness.calls.filter(call => call[0] === 'full-post').length, 0);

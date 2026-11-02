@@ -40,7 +40,7 @@ export function ChillingEventSchedule({ room }: { room: ChillingSchedule & Pick<
   return <View style={{ gap: 4 }}>
     <ThemedText type="smallBold" style={styles.support} themeColor="accent">{once ? tr('칠링') : tr('정기모임')}</ThemedText>
     <ThemedText style={styles.schedule}>{chillingSchedule(room, appLocale)}</ThemedText>
-    <ThemedText type="small" style={styles.support} themeColor="textSecondary">{recommendedAgeLabel(room, appLocale)}{room.recommendedAgeMin != null ? tr(" · 권장 범위 밖이어도 신청 가능") : ''}</ThemedText>
+    <ThemedText type="small" style={styles.support} themeColor="textSecondary">{recommendedAgeLabel(room, appLocale)}{room.recommendedAgeMin != null ? ` · ${tr('범위 밖이어도 신청할 수 있어요')}` : ''}</ThemedText>
     {once && room.timezone ? <ThemedText type="small" style={styles.support} themeColor="textSecondary">{tr("{0} 기준", chillingTimezoneLabel(room, appLocale))}</ThemedText> : null}
     {room.fee ? <MeetupFeeLine fee={room.fee} /> : null}
   </View>;
@@ -49,11 +49,11 @@ export function ChillingEventSchedule({ room }: { room: ChillingSchedule & Pick<
 // language is app-side only: the server keeps category 'casual' and stores room.languageExchange (see meetupCategoryOf).
 export const CHILLING_CATEGORY_LABELS = { casual: '가볍게', party: '파티', festival: '페스티벌', sports: '스포츠', hobby: '취미', travel: '여행', language: '언어교환' } as const;
 
-export function SeatBar({ room }: { room: Pick<RoomPreview, 'memberCount' | 'capacity'> }) {
+export function SeatBar({ room, flush = false }: { room: Pick<RoomPreview, 'memberCount' | 'capacity'>; flush?: boolean }) {
   const theme = useTheme();
   if (!room.capacity) return null;
   return <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden
-    style={[styles.seat, { backgroundColor: theme.backgroundElement }]}>
+    style={[styles.seat, flush && styles.seatFlush, { backgroundColor: theme.backgroundElement }]}>
     <View style={[styles.seatFill, { width: `${Math.min(100, Math.round(((room.memberCount ?? 0) / room.capacity) * 100))}%`, backgroundColor: room.memberCount >= room.capacity ? theme.textSecondary : theme.navy }]} />
   </View>;
 }
@@ -130,6 +130,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '700', lineHeight: 28 },
   schedule: { fontSize: 16, lineHeight: 24 }, support: { fontSize: 14, lineHeight: 20 },
   footer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
-  seat: { height: 6, borderRadius: 999, overflow: 'hidden', marginTop: 8 }, seatFill: { height: '100%', borderRadius: 999 },
+  seat: { height: 6, borderRadius: 999, overflow: 'hidden', marginTop: 8 }, seatFlush: { marginTop: 0 }, seatFill: { height: '100%', borderRadius: 999 },
   flex: { flex: 1, minWidth: 0 }, author: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }, action: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });

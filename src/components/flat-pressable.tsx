@@ -1,12 +1,40 @@
-import type { ComponentProps } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { useEffect, useRef, useState, type ComponentProps } from 'react';
+import { Animated, Easing, Platform, Pressable, StyleSheet } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 
-import { flatControlStyle } from '@/lib/flat-control';
+import { ControlMotion } from '@/constants/design-system';
+import { fillsParent, flatControlStyle, pressedScale } from '@/lib/flat-control';
 
-export function FlatPressable({ style, ...props }: ComponentProps<typeof Pressable>) {
+type Props = ComponentProps<typeof Pressable>;
+
+function WebFlatPressable({ style, ...props }: Props) {
   return <Pressable {...props} style={state => {
     const original = typeof style === 'function' ? style(state) : style;
     const flat = StyleSheet.flatten(original);
-    return [original, state.pressed && (flat?.opacity == null || flat.opacity === 1) && { opacity: 0.82 }, flatControlStyle(flat ?? undefined)];
+    return [original, state.pressed && (flat?.opacity == null || flat.opacity === 1) && { opacity: ControlMotion.pressedOpacity }, flatControlStyle(flat ?? undefined)];
   }} />;
 }
+
+const AnimatedPressable = Platform.OS === 'web' ? null : Animated.createAnimatedComponent(Pressable);
+
+/** Every tappable control shrinks slightly while held, with no extra layout container. Reduced motion keeps only the opacity response. */
+function NativeFlatPressable({ style, onPressIn, onPressOut, onLayout, ...props }: Props) {
+  const reduced = useReducedMotion();
+  const [scale] = useState(() => new Animated.Value(1)), [pressed, setPressed] = useState(false);
+  const width = useRef(0);
+  const blocked = !!props.disabled;
+  useEffect(() => { if (blocked) { setPressed(false); scale.setValue(1); } }, [blocked, scale]);
+  const original = typeof style === 'function' ? style({ pressed, hovered: false }) : style;
+  const flat = StyleSheet.flatten(original) ?? undefined;
+  const shrinks = !reduced && !blocked && !!(props.onPress || props.onLongPress) && !fillsParent(flat);
+  const settle = (toValue: number, duration: number) => Animated.timing(scale, { toValue, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  const Control = AnimatedPressable!;
+  return <Control {...props}
+    onLayout={event => { width.current = event.nativeEvent.layout.width; onLayout?.(event); }}
+    onPressIn={event => { setPressed(true); if (shrinks) settle(pressedScale(width.current), ControlMotion.pressMs); onPressIn?.(event); }}
+    onPressOut={event => { setPressed(false); settle(1, ControlMotion.settleMs); onPressOut?.(event); }}
+    style={[original, pressed && !blocked && (flat?.opacity == null || flat.opacity === 1) && { opacity: ControlMotion.pressedOpacity }, flatControlStyle(flat),
+      shrinks && { transform: [...(Array.isArray(flat?.transform) ? flat.transform : []), { scale }] }]} />;
+}
+
+export const FlatPressable = Platform.OS === 'web' ? WebFlatPressable : NativeFlatPressable;

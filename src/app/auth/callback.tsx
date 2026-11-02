@@ -14,6 +14,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { getOAuthCallbackPath, getOAuthCode } from '@/lib/kakao-auth';
+import { takeMeetupLoginResume } from '@/lib/meetup-create-draft';
 import { clearSharedPostReturn, readSharedPostReturn } from '@/lib/shared-post-return';
 import { sharedPostReturnPath } from '@/lib/sharing';
 import { supabase } from '@/lib/supabase';
@@ -55,10 +56,15 @@ export default function AuthCallbackRoute() {
       const path = await readSharedPostReturn(AsyncStorage);
       const web = path ? sharedPostReturnPath(path.replace('/post/', '/post?id=').replace('?invite=1', '&invite=1')) : null;
       if (web === '/') throw new Error('INVALID_SHARED_POST_RETURN');
+      // A login started from the meetup draft returns to that draft instead of home.
+      const meetup = web ? null : await takeMeetupLoginResume(AsyncStorage).catch(() => null);
       if (!valid()) return;
       const destination = web ? web.replace('/post?id=', '/post/').replace('&invite=1', '?invite=1') : '/';
       returned.current = true;
-      try { router.replace(destination as Href); } catch (failure) { returned.current = false; throw failure; }
+      try {
+        if (meetup) router.dismissTo({ pathname: '/meetup-create', params: meetup });
+        else router.replace(destination as Href);
+      } catch (failure) { returned.current = false; throw failure; }
       if (mode === 'resume' && web) {
         try { await clearSharedPostReturn(AsyncStorage, web); }
         catch { /* The destination post route retries this same matching cleanup. */ }

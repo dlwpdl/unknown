@@ -47,6 +47,8 @@ function mount(data = {}) {
       if (name === '@/i18n/ko') return { t };
       if (name === '@/constants/theme') return { Spacing: {} };
       if (name === '@/constants/design-system') return designSystem;
+      if (name === 'react-native-reanimated') return { useReducedMotion: () => false };
+      if (name === '@/components/disclosure') return { Disclosure: 'Disclosure', animateLayout: reduced => calls.push(['animate-layout', reduced]) };
       // The real host actions are covered in meetup-host-controls.test.mjs; here only who receives them.
       if (name === '@/components/meetup-room-summary') return { meetupHostActions: ({ postId, room }) => { calls.push(['host-actions', postId, room]); return [{ key: 'edit' }, { key: 'recruiting' }]; } };
       return new Proxy({}, { get: (_value, key) => key });
@@ -87,6 +89,17 @@ test('My Meetups keeps role destinations and destructive actions truthful withou
   }
   const ui = mount({ items: Array.from({ length: 65 }, (_, i) => ({ ...meetup, id: String(i) })) }); await ui.settle();
   assert.equal(nodes(ui.render()).filter(node => node.props?.analyticsId === 'components_my-meetups.pressable.2').length, 65); ui.unmount();
+});
+test('ending a meetup animates the card out before it leaves the list, and the summary card sits under the meetups', async () => {
+  const ui = mount(); await ui.settle();
+  const order = id => nodes(ui.render()).findIndex(node => node.props?.analyticsId === id);
+  assert.ok(order('components_my-meetups.pressable.2') >= 0 && order('components_my-meetups.pressable.2') < order('meetup.mine.policy'));
+  ui.control('components_my-meetups.pressable.4').props.onPress(); ui.render();
+  ui.menu().props.actions.find(({ key }) => key === 'my-change').onPress();
+  ui.calls.find(([name]) => name === 'alert')[3].find(button => button.style === 'destructive').onPress();
+  await ui.settle();
+  assert.ok(ui.calls.findIndex(([name]) => name === 'leave') < ui.calls.findIndex(([name]) => name === 'animate-layout'));
+  assert.equal(ui.control('components_my-meetups.pressable.2'), undefined); ui.unmount();
 });
 test('a retained cancel or end confirmation cannot write after account switch or unmount', async () => {
   for (const change of ['account', 'unmount']) {

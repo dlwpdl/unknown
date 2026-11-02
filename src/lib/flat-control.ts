@@ -8,3 +8,13 @@ export function flatControlStyle(style: ViewStyle = {}): ViewStyle {
       ? { borderBottomColor: style.backgroundColor } : {}),
   };
 }
+
+// About the same few points of shrink on any size, so a small pill and a full-width card both read as pressed.
+export function pressedScale(width: number) {
+  return Math.max(0.97, 1 - 6 / Math.max(width, 1));
+}
+
+// A dismiss layer stretched over its parent must not shrink and reveal what is behind its edges.
+export function fillsParent(style: ViewStyle = {}) {
+  return style.position === 'absolute' && style.top === 0 && style.bottom === 0;
+}

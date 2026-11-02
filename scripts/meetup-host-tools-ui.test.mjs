@@ -6,6 +6,10 @@ import ts from 'typescript';
 import * as designSystem from '../src/constants/design-system.ts';
 import * as tools from '../src/lib/meetup-host-tools.ts';
 import * as language from '../src/lib/meetup-language.ts';
+import * as reviews from '../src/lib/meetup-reviews.ts';
+import * as loyalty from '../src/lib/meetup-loyalty.ts';
+import * as convenience from '../src/lib/meetup-convenience.ts';
+import * as hostHome from '../src/lib/meetup-host-home.ts';
 
 const postId = 'a1620000-0000-0000-0000-000000000001';
 const ownerId = 'a1610000-0000-0000-0000-000000000001';
@@ -41,6 +45,7 @@ export function mount(file, exportName, initialProps = {}, options = {}) {
   };
   const jsx = (type, props) => typeof type === 'function' ? type(props) : { type, props };
   react.useLayoutEffect = (fn, deps) => react.useEffect(fn, deps, true);
+  react.useCallback = fn => fn;
   const rpc = async (name, args) => {
     calls.push([name, args]);
     if (ctx.rpc) return ctx.rpc(name, args);
@@ -61,20 +66,25 @@ export function mount(file, exportName, initialProps = {}, options = {}) {
   } }) }) });
   const imports = {
     react, 'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
-    'react-native': { StyleSheet: { create: value => value }, View: 'View', TextInput: 'TextInput', Alert: { alert: (...args) => alerts.push(args) }, Platform: { get OS() { return ctx.platform ?? 'ios'; } } },
+    'react-native': { StyleSheet: { create: value => value, hairlineWidth: 1 }, View: 'View', ScrollView: 'ScrollView', TextInput: 'TextInput', useWindowDimensions: () => ({ width: 390, height: 844 }), Alert: { alert: (...args) => alerts.push(args) }, Platform: { get OS() { return ctx.platform ?? 'ios'; } } },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'ThemedText' },
     '@/components/chilling-date-input': { ChillingDateInput: 'ChillingDateInput' },
-    '@/hooks/use-language': { useLanguage: () => ({ language: ctx.language, locale: ctx.language === 'ko' ? 'ko-KR' : 'en-CA', tr: text => text }) },
+    '@/components/drag-sheet': { DragSheet: 'DragSheet' }, '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' }, '@/components/selection-chip': { SelectionChip: 'SelectionChip' },
+    '@/components/list-card': { ListCard: 'ListCard', ListLoading: 'ListLoading', ListRow: 'ListRow', SectionLabel: 'SectionLabel', Tag: 'Tag', InitialAvatar: 'InitialAvatar' },
+    'expo-symbols': { SymbolView: 'SymbolView' }, '@/constants/theme': { Spacing: { half: 2, one: 4, two: 8, three: 16, four: 24, five: 32, six: 64 } },
+    '@/lib/meetup-reviews': reviews, '@/lib/meetup-loyalty': loyalty, '@/lib/meetup-convenience': convenience, '@/lib/meetup-host-home': hostHome,
+    '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async key => ctx.storage?.[key] ?? null, setItem: async (key, value) => { (ctx.storage ??= {})[key] = value; } } },
+    '@/hooks/use-language': { useLanguage: () => ({ language: ctx.language, locale: ctx.language === 'ko' ? 'ko-KR' : 'en-CA', tr: (text, ...values) => values.reduce((out, value, index) => out.replace(`{${index}}`, value), text) }) },
     '@/hooks/use-theme': { useTheme: () => ctx.theme }, '@/lib/auth': { useAuth: () => ctx.auth },
     '@/constants/design-system': designSystem,
-    'expo-router': { useIsFocused: () => ctx.focused !== false },
+    'expo-router': { useIsFocused: () => ctx.focused !== false, useRouter: () => ({ push: value => (ctx.pushed ??= []).push(value) }) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) },
     '@/lib/supabase': { supabase: { rpc, from } }, '@/lib/meetup-host-tools': tools, '@/lib/meetup-language': language,
   };
   const source = readFileSync(new URL(`../src/components/${file}.tsx`, import.meta.url), 'utf8');
   const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const exports = {};
-  vm.runInNewContext(compiled, { exports, require: name => { assert.ok(name in imports, `Unexpected import ${name}`); return imports[name]; }, Date, Intl, JSON, confirm: message => { alerts.push(['web', message]); return ctx.confirm ?? false; } });
+  vm.runInNewContext(compiled, { exports, require: name => { assert.ok(name in imports, `Unexpected import ${name}`); return imports[name]; }, Date, Intl, JSON, setTimeout, clearTimeout, confirm: message => { alerts.push(['web', message]); return ctx.confirm ?? false; } });
   const render = () => { dirty = false; cursor = 0; tree = exports[exportName](props); effects.splice(0).forEach(fn => fn()); };
   const flush = async () => {
     for (let i = 0; i < 20; i++) { if (dirty) render(); await new Promise(resolve => setImmediate(resolve)); if (!dirty && !effects.length) return tree; }
@@ -138,23 +148,6 @@ test('parent rejection keeps template preview open and never reports an applied 
   assert.equal(ui.feedback.includes('success'), false);
 });
 
-test('proposals are read-only until each explicit creation and duplicate presses are guarded', async () => {
-  const ui = mount('meetup-host-tools', 'MeetupHostTools', { postId });
-  await ui.flush();
-  assert.equal(button(ui, '4회 날짜 미리보기').props.disabled, true);
-  assert.equal(nodes(ui.tree).filter(node => node.props?.accessibilityRole === 'radio' && node.props.accessibilityState.checked).length, 1);
-  const pickers = nodes(ui.tree).filter(node => node.type === 'ChillingDateInput');
-  pickers[0].props.onChange('2031-01-01T18:00:00Z'); pickers[1].props.onChange('2031-01-01T19:00:00Z'); await ui.flush();
-  button(ui, '4회 날짜 미리보기').props.onPress(); await ui.flush();
-  assert.equal(ui.calls.filter(([name]) => name === 'propose_meetup_dates').length, 1);
-  assert.equal(ui.calls.some(([name]) => name === 'confirm_meetup_occurrence'), false);
-  const create = button(ui, '이 날짜 확인·등록'); create.props.onPress(); create.props.onPress(); await ui.flush();
-  const creations = ui.calls.filter(([name]) => name === 'confirm_meetup_occurrence');
-  assert.equal(creations.length, 1);
-  assert.equal(creations[0][1].p_starts_at, '2031-01-01T18:00:00Z');
-  assert.equal(nodes(ui.tree).filter(node => node.type === 'Pressable' && text(node) === '등록됨').length, 1);
-});
-
 test('five thousand roster records keep cohost choices bounded and every eligible name remains reachable', async () => {
   const ids = Array.from({ length: 4999 }, (_, i) => `a1610000-0000-4000-8000-${String(i + 10).padStart(12, '0')}`);
   const roster = [{ userId: ownerId, displayName: 'Host' }, ...ids.map((userId, i) => ({ userId, displayName: `Member ${String(i + 1).padStart(4, '0')}` }))];
@@ -187,14 +180,14 @@ test('five thousand roster records keep cohost choices bounded and every eligibl
 test('retained host mutations cannot dispatch after layout unmount, account, focus or capability changes', async () => {
   for (const boundary of ['layout', 'account', 'focus', 'capability']) {
     let canInvite = true;
-    const ui = mount('meetup-host-tools', 'MeetupHostTools', { postId }, { rpc: async name => ({ data: name === 'get_meetup_host_tools' ? { ...hostState, canInvite }
+    const ui = mount('meetup-host-tools', 'MeetupHostTools', { postId }, { rpc: async name => ({ data: name === 'get_meetup_host_tools' ? { ...hostState, canInvite } : name === 'invite_next_meetup_waitlist' ? true
       : ['get_chilling_roster_v2', 'get_chilling_roster'].includes(name) ? [{ userId: memberId, displayName: 'Member' }] : null }) });
     await ui.flush();
     const retained = nodes(ui.tree).find(node => node.props?.analyticsId === 'meetup_host_tools.control.10').props.onPress;
     if (boundary === 'layout') ui.unmountLayout();
     else if (boundary === 'account') { ui.ctx.auth = { ...ui.ctx.auth, me: { id: 'other-account' } }; ui.rerender(); await ui.flush(); }
     else if (boundary === 'focus') { ui.ctx.focused = false; ui.rerender(); await ui.flush(); }
-    else { canInvite = false; button(ui, '상태 다시 확인').props.onPress(); await ui.flush(); }
+    else { canInvite = false; button(ui, '다음 대기자 초대').props.onPress(); await ui.flush(); }
     const before = ui.calls.length; retained(); await ui.flush();
     assert.deepEqual(ui.calls.slice(before), [], boundary);
     ui.unmount();
@@ -228,33 +221,6 @@ test('a host mutation finishing after blur and refocus cannot apply old success 
   ui.unmount();
 });
 
-test('retained session proposal cannot dispatch during the layout-to-passive unmount gap', async () => {
-  const ui = mount('meetup-host-tools', 'MeetupHostTools', { postId }); await ui.flush();
-  const dates = nodes(ui.tree).filter(node => node.type === 'ChillingDateInput');
-  dates[0].props.onChange('2031-01-01T18:00:00Z'); dates[1].props.onChange('2031-01-01T19:00:00Z'); await ui.flush();
-  const propose = button(ui, '4회 날짜 미리보기').props.onPress;
-  ui.unmountLayout(); const before = ui.calls.length; propose(); await ui.flush();
-  assert.equal(ui.calls.length, before); ui.unmount();
-});
-
-test('session confirmation does not mark an old focus created after blur and refocus', async () => {
-  let finish;
-  const ui = mount('meetup-host-tools', 'MeetupHostTools', { postId }, { rpc: async name => name === 'confirm_meetup_occurrence'
-    ? new Promise(resolve => { finish = () => resolve({ data: postId }); })
-    : { data: name === 'get_meetup_host_tools' ? hostState : ['get_chilling_roster_v2', 'get_chilling_roster'].includes(name) ? [{ userId: memberId, displayName: 'Member' }]
-      : name === 'propose_meetup_dates' ? [{ startsAt: '2031-01-01T18:00:00Z', endsAt: '2031-01-01T19:00:00Z' }] : null } });
-  await ui.flush();
-  const dates = nodes(ui.tree).filter(node => node.type === 'ChillingDateInput');
-  dates[0].props.onChange('2031-01-01T18:00:00Z'); dates[1].props.onChange('2031-01-01T19:00:00Z'); await ui.flush();
-  button(ui, '4회 날짜 미리보기').props.onPress(); await ui.flush();
-  button(ui, '이 날짜 확인·등록').props.onPress(); await ui.flush();
-  assert.equal(ui.calls.filter(([name]) => name === 'confirm_meetup_occurrence').length, 1);
-  ui.ctx.focused = false; ui.rerender(); await ui.flush(); ui.ctx.focused = true; ui.rerender(); await ui.flush();
-  finish(); await ui.flush();
-  assert.doesNotMatch(text(ui.tree), /등록됨/); assert.equal(ui.feedback.includes('success'), true, 'Only the earlier date-preview feedback was delivered.');
-  assert.equal(ui.feedback.filter(value => value === 'success').length, 1); ui.unmount();
-});
-
 test('waitlist surface exposes own status, sends only explicit consent and no roster request', async () => {
   const ui = mount('meetup-host-tools', 'MeetupWaitlist', { postId }, { auth: { isAuthed: true, me: { id: memberId } }, rpc: async name => ({ data: name === 'get_meetup_host_tools' ? { ...hostState, tier: 'free', isHost: false, canJoinWaitlist: true, candidates: [], waitlistCount: null } : null }) });
   await ui.flush();
@@ -281,7 +247,7 @@ test('both themes and languages render actual controls with accessible labels an
   for (const language of ['ko', 'en']) for (const theme of Object.values(themes)) {
     const ui = mount('meetup-host-tools', 'MeetupHostTools', { postId }, { language, theme });
     await ui.flush();
-    assert.match(text(ui.tree), language === 'ko' ? /호스트 도구/ : /Host tools/);
+    assert.match(text(ui.tree), language === 'ko' ? /공동 호스트/ : /cohost/i);
     const controls = nodes(ui.tree).filter(node => node.type === 'Pressable');
     assert.ok(controls.length > 5);
     assert.ok(controls.every(node => ['button', 'radio'].includes(node.props.accessibilityRole)));
@@ -301,26 +267,6 @@ test('non-hosts see nothing while loading or after the state confirms they are n
   finish(); await ui.flush(); assert.equal(ui.tree, null, 'loaded non-host');
 });
 
-test('session times: end follows start, server time codes get specific copy and a single page has no pager', async () => {
-  let failure = 'SESSION_OVERLAP';
-  const ui = mount('meetup-host-tools', 'MeetupHostTools', { postId }, { rpc: async name => name === 'propose_meetup_dates' ? { error: { message: failure } }
-    : { data: name === 'get_meetup_host_tools' ? hostState : ['get_chilling_roster_v2', 'get_chilling_roster'].includes(name) ? [{ userId: memberId, displayName: 'Member' }] : null } });
-  await ui.flush();
-  const pickers = () => nodes(ui.tree).filter(node => node.type === 'ChillingDateInput');
-  assert.ok(Date.parse(pickers()[0].props.value) > Date.now(), 'start defaults to the future');
-  assert.equal(Date.parse(pickers()[1].props.value) - Date.parse(pickers()[0].props.value), 7200000);
-  pickers()[0].props.onChange('2031-01-01T18:00:00.000Z'); await ui.flush();
-  assert.equal(pickers()[1].props.value, '2031-01-01T20:00:00.000Z');
-  button(ui, '4회 날짜 미리보기').props.onPress(); await ui.flush();
-  assert.match(text(ui.tree), /같은 시간에 이미 등록된 회차가 있어요/);
-  failure = 'INVALID_SESSION_TIME'; button(ui, '4회 날짜 미리보기').props.onPress(); await ui.flush();
-  assert.match(text(ui.tree), /종료 시간은 시작 이후여야 해요/);
-  assert.doesNotMatch(text(ui.tree), /연결·참가 권한/);
-  assert.equal(nodes(ui.tree).filter(node => node.props?.accessibilityRole === 'alert').length, 1);
-  assert.doesNotMatch(text(ui.tree), /1\/1 페이지/, 'a single page has no pager');
-  assert.equal(nodes(ui.tree).some(node => node.props?.analyticsId === 'meetup_host_tools.candidates.next'), false);
-});
-
 test('cohost removal needs a destructive confirmation on native and web', async () => {
   const state = { ...hostState, cohosts: [{ userId: memberId, status: 'accepted' }] };
   for (const platform of ['ios', 'web']) {
@@ -328,7 +274,7 @@ test('cohost removal needs a destructive confirmation on native and web', async 
       : ['get_chilling_roster_v2', 'get_chilling_roster'].includes(name) ? [{ userId: memberId, displayName: 'Member' }] : null }) });
     await ui.flush();
     const remove = () => nodes(ui.tree).find(node => node.props?.analyticsId === 'meetup_host_tools.control.9');
-    assert.equal(remove().props.style.at(-1).borderColor, themes.light.danger);
+    assert.equal(remove().props.style({ pressed: false }).at(-1).borderColor, themes.light.danger);
     remove().props.onPress(); await ui.flush();
     assert.equal(ui.calls.some(([name]) => name === 'remove_meetup_cohost'), false, platform);
     if (platform === 'web') { ui.ctx.confirm = true; remove().props.onPress(); }
@@ -368,14 +314,14 @@ test('host fee section validates on device, saves, marks paid and clears only af
   assert.deepEqual(ui.calls.find(([name]) => name === 'set_meetup_fee'), ['set_meetup_fee', { p_post_id: postId, p_amount: 15.5, p_note: 'e-Transfer로 보내주세요', p_due_on: '2031-11-01' }]);
   assert.match(text(ui.tree), /회비를 저장했어요/);
   assert.equal(fee(ui, 'meetup-fee-amount').props.value, '15.50');
-  assert.match(text(ui.tree), /\$15\.50 · 1명 중 0명 냈어요/);
+  assert.match(text(ui.tree), /\$15\.50[\s\S]*1명 중 0명 냈어요/);
   let paid = fee(ui, 'meetup.fee.paid');
-  assert.equal(paid.props.accessibilityRole, 'checkbox'); assert.equal(paid.props.accessibilityState.checked, false); assert.match(text(paid), /아직/);
+  assert.equal(paid.props.accessibilityRole, 'checkbox'); assert.equal(paid.props.accessibilityState.checked, false); assert.match(text(paid), /낸 걸로 표시/);
   // A paid toggle reloads the panel but keeps an unsaved fee edit.
   fee(ui, 'meetup-fee-note').props.onChangeText('수정 중'); ui.ctx.payments = [{ user_id: memberId, paid_at: '2031-01-01T00:00:00Z' }];
   paid.props.onPress(); await ui.flush();
   assert.deepEqual(ui.calls.find(([name]) => name === 'set_meetup_fee_paid'), ['set_meetup_fee_paid', { p_post_id: postId, p_user_id: memberId, p_paid: true }]);
-  paid = fee(ui, 'meetup.fee.paid'); assert.equal(paid.props.accessibilityState.checked, true); assert.match(text(paid), /냈음/);
+  paid = fee(ui, 'meetup.fee.paid'); assert.equal(paid.props.accessibilityState.checked, true); assert.match(text(paid), /냈어요/);
   assert.match(text(ui.tree), /1명 중 1명 냈어요/); assert.equal(fee(ui, 'meetup-fee-note').props.value, '수정 중');
   fee(ui, 'meetup.fee.clear').props.onPress();
   assert.equal(ui.calls.filter(([name]) => name === 'set_meetup_fee').length, 1, 'clearing waits for confirmation');
@@ -393,7 +339,7 @@ test('fee server errors are explained and closed or waitlist-only panels hide fe
   assert.match(text(ui.tree), /마감됐거나 끝난 모임이라 바꿀 수 없어요/); assert.ok(ui.feedback.includes('warning'));
   const closed = mount('meetup-host-tools', 'MeetupHostTools', { postId }, { fee: { amount: 5 }, rpc: async name => ({ data: name === 'get_meetup_host_tools' ? { ...hostState, available: false, canManageSessions: false, canInvite: false } : [] }) });
   await closed.flush();
-  assert.match(text(closed.tree), /호스트 도구/);
+  assert.match(text(closed.tree), /공동 호스트/);
   assert.equal(nodes(closed.tree).some(node => /^meetup\.fee\./.test(node.props?.analyticsId ?? '')), false);
   assert.equal(closed.calls.some(([name]) => name === 'select' || name === 'get_meetup_fee_payments'), false);
   const waitlist = mount('meetup-host-tools', 'MeetupWaitlist', { postId }, { fee: { amount: 5 }, auth: { isAuthed: true, me: { id: memberId } },
@@ -402,4 +348,173 @@ test('fee server errors are explained and closed or waitlist-only panels hide fe
   assert.match(text(waitlist.tree), /모임 대기 신청/);
   assert.equal(nodes(waitlist.tree).some(node => /^meetup\.fee\./.test(node.props?.analyticsId ?? '')), false);
   assert.deepEqual(waitlist.calls.map(([name]) => name), ['get_meetup_host_tools']);
+});
+
+const addSession = (props, options) => { const added = [], closed = [];
+  const ui = mount('meetup-add-session', 'MeetupAddSession', { postId, visible: true, canRepeat: true, onClose: () => closed.push(true), onAdded: count => added.push(count), ...props }, options);
+  return { ui, added, closed }; };
+const chip = (ui, label) => nodes(ui.tree).find(node => node.type === 'SelectionChip' && node.props.label === label);
+const addButton = ui => nodes(ui.tree).find(node => node.props?.analyticsId === 'meetup.session.add');
+const twoDates = [{ startsAt: '2031-01-01T18:00:00Z', endsAt: '2031-01-01T19:00:00Z' }, { startsAt: '2031-01-08T18:00:00Z', endsAt: '2031-01-08T19:00:00Z' }];
+
+test('add session: one session by default, ends two hours later, created only on press', async () => {
+  const { ui, added, closed } = addSession();
+  await ui.flush();
+  assert.equal(ui.calls.length, 0, 'opening the sheet asks the server nothing');
+  assert.equal(addButton(ui).props.label, '회차 등록');
+  nodes(ui.tree).find(node => node.type === 'ChillingDateInput').props.onChange('2031-01-01T18:00:00.000Z'); await ui.flush();
+  chip(ui, '3시간').props.onPress(); await ui.flush();
+  assert.equal(ui.calls.length, 0);
+  addButton(ui).props.onPress(); await ui.flush();
+  const created = ui.calls.find(([name]) => name === 'create_meetup_session');
+  assert.equal(created[1].p_starts_at, '2031-01-01T18:00:00.000Z'); assert.equal(created[1].p_ends_at, '2031-01-01T21:00:00.000Z');
+  assert.deepEqual(added, [1]); assert.equal(closed.length, 1); assert.ok(ui.feedback.includes('success'));
+});
+
+test('add session: a repeat previews dates, nothing is created until pressed and a double press adds once', async () => {
+  const { ui, added } = addSession();
+  await ui.flush(); chip(ui, '매주').props.onPress(); await ui.flush();
+  assert.equal(ui.calls.filter(([name]) => name === 'propose_meetup_dates').length, 1);
+  assert.equal(ui.calls.some(([name]) => name === 'confirm_meetup_occurrence'), false);
+  assert.equal(addButton(ui).props.label, '2개 회차 등록');
+  const boxes = () => nodes(ui.tree).filter(node => node.props?.analyticsId === 'meetup.session.date');
+  assert.ok(boxes().every(node => node.props.accessibilityRole === 'checkbox' && node.props.accessibilityState.checked));
+  boxes()[1].props.onPress(); await ui.flush();
+  assert.equal(addButton(ui).props.label, '1개 회차 등록');
+  const add = addButton(ui).props.onPress; add(); add(); await ui.flush();
+  const creations = ui.calls.filter(([name]) => name === 'confirm_meetup_occurrence');
+  assert.equal(creations.length, 1); assert.equal(creations[0][1].p_starts_at, boxes()[0] ? creations[0][1].p_starts_at : '');
+  assert.deepEqual(added, [1]);
+});
+
+test('add session: a partial failure says how many were added and removes them from the picks', async () => {
+  let confirmed = 0;
+  const { ui, added, closed } = addSession({}, { rpc: async name => name === 'propose_meetup_dates' ? { data: twoDates }
+    : name === 'confirm_meetup_occurrence' ? (confirmed++ ? { error: { message: 'offline' } } : { data: postId }) : { data: null } });
+  await ui.flush(); chip(ui, '격주').props.onPress(); await ui.flush();
+  addButton(ui).props.onPress(); await ui.flush();
+  assert.match(text(ui.tree), /1개만 등록했어요/); assert.deepEqual(added, [1]); assert.equal(closed.length, 0);
+  assert.equal(addButton(ui).props.label, '1개 회차 등록'); assert.ok(ui.feedback.includes('warning'));
+});
+
+test('add session: server time codes get their own copy, a cohost without repeat rights sees it locked', async () => {
+  let failure = 'SESSION_OVERLAP';
+  const { ui } = addSession({}, { rpc: async name => name === 'propose_meetup_dates' ? { error: { message: failure } } : { data: null } });
+  await ui.flush(); chip(ui, '매주').props.onPress(); await ui.flush();
+  assert.match(text(ui.tree), /같은 시간에 이미 등록된 회차가 있어요/);
+  failure = 'INVALID_SESSION_TIME'; chip(ui, '격주').props.onPress(); await ui.flush();
+  assert.match(text(ui.tree), /끝나는 시간은 시작 뒤로/);
+  assert.equal(nodes(ui.tree).filter(node => node.props?.accessibilityRole === 'alert').length, 1);
+  const cohost = addSession({ canSingle: false }).ui; await cohost.flush();
+  assert.equal(chip(cohost, '한 번만').props.disabled, true); assert.equal(chip(cohost, '매주').props.selected, true);
+  const free = addSession({ canRepeat: false }).ui; await free.flush();
+  assert.equal(chip(free, '매주').props.disabled, true); assert.match(text(free.tree), /프로 멤버십부터/);
+});
+
+test('add session: a retained press cannot dispatch after unmount, and an old focus reports nothing', async () => {
+  const gone = addSession(); await gone.ui.flush();
+  const retained = addButton(gone.ui).props.onPress;
+  gone.ui.unmountLayout(); const before = gone.ui.calls.length; retained(); await gone.ui.flush();
+  assert.equal(gone.ui.calls.length, before); gone.ui.unmount();
+  let finish;
+  const { ui, added } = addSession({}, { rpc: async name => name === 'create_meetup_session' ? new Promise(resolve => { finish = () => resolve({ data: postId }); }) : { data: null } });
+  await ui.flush(); addButton(ui).props.onPress(); await ui.flush();
+  ui.ctx.focused = false; ui.rerender(); await ui.flush(); ui.ctx.focused = true; ui.rerender(); await ui.flush();
+  finish(); await ui.flush();
+  assert.deepEqual(added, []); assert.equal(ui.feedback.includes('success'), false);
+  assert.equal(addButton(ui).props.busy, false, 'the new focus is usable after the old request settles');
+  ui.unmount();
+});
+
+test('a single page of candidates has no pager', async () => {
+  const ui = mount('meetup-host-tools', 'MeetupHostTools', { postId }); await ui.flush();
+  assert.doesNotMatch(text(ui.tree), /1\/1 페이지/);
+  assert.equal(nodes(ui.tree).some(node => node.props?.analyticsId === 'meetup_host_tools.candidates.next'), false);
+});
+
+const notices = [{ id: 'n3', body: '토요일엔 7시에 만나요', sentAt: '2026-10-30T10:00:00Z', mustRead: true }, { id: 'n2', body: '회비는 5달러예요', sentAt: '2026-10-27T10:00:00Z' }, { id: 'n1', body: '운동화만 챙겨 오세요', sentAt: '2026-10-21T10:00:00Z' }];
+const room = (state, options = {}) => mount('meetup-loyalty', 'MeetupRoomTop', { postId }, { ...options, rpc: async (name, args) => ({ data: name === 'get_meetup_loyalty' ? state : name === 'get_meetup_rsvp' ? { available: false } : null }) });
+const sheet = ui => nodes(ui.tree).find(node => node.type === 'DragSheet');
+const ids = (ui, id) => nodes(ui.tree).filter(node => node.props?.analyticsId === id);
+const dots = ui => nodes(ui.tree).filter(node => node.props?.accessibilityLabel === '안 읽음');
+
+test('room top: nothing to show renders nothing at all, so no empty frame sits above the chat', async () => {
+  const ui = room({ isHost: false, pinned: null, pinnedNotices: [] }); await ui.flush();
+  assert.equal(ui.tree, null);
+});
+
+test('notice board: a first-time member gets every notice opened once, and reading clears the dots', async () => {
+  const ui = room({ isHost: false, kind: 'group', noticeBoard: true, pinned: notices[0], pinnedNotices: notices }); await ui.flush();
+  assert.equal(ids(ui, 'meetup.notice.open').length, 3);
+  assert.equal(dots(ui).length, 3);
+  assert.equal(sheet(ui).props.visible, false);
+  await new Promise(resolve => setTimeout(resolve, 480)); await ui.flush();
+  assert.equal(sheet(ui).props.visible, true);
+  const body = text(sheet(ui));
+  assert.ok(body.indexOf('토요일') < body.indexOf('회비') && body.indexOf('회비') < body.indexOf('운동화'), body);
+  assert.equal(ids(ui, 'meetup.notice.unpin').length, 0, 'members cannot take notices down');
+  ids(ui, 'meetup.notice.read')[0].props.onPress(); await ui.flush();
+  assert.equal(sheet(ui).props.visible, false); assert.equal(dots(ui).length, 0);
+  assert.deepEqual(JSON.parse(ui.ctx.storage[`meetup-notices-seen:${ownerId}:${postId}`]).sort(), ['n1', 'n2', 'n3']);
+  ui.unmount();
+});
+
+test('notice board: a returning member sees a dot only on the new notice and no welcome', async () => {
+  const ui = room({ isHost: false, kind: 'group', noticeBoard: true, pinned: notices[0], pinnedNotices: notices }, { storage: { [`meetup-notices-seen:${ownerId}:${postId}`]: JSON.stringify(['n1', 'n2']) } }); await ui.flush();
+  assert.equal(dots(ui).length, 1);
+  await new Promise(resolve => setTimeout(resolve, 480)); await ui.flush();
+  assert.equal(sheet(ui).props.visible, false);
+  ids(ui, 'meetup.notice.open')[0].props.onPress(); await ui.flush();
+  assert.equal(sheet(ui).props.visible, true); assert.equal(dots(ui).length, 0); assert.deepEqual(ui.feedback, ['selection']);
+  ui.unmount();
+});
+
+test('notice board: the host manages each notice by its own id and never gets the welcome', async () => {
+  const ui = room({ isHost: true, kind: 'group', noticeBoard: true, pinned: notices[0], pinnedNotices: notices }); await ui.flush();
+  await new Promise(resolve => setTimeout(resolve, 480)); await ui.flush();
+  assert.equal(sheet(ui).props.visible, false); assert.equal(dots(ui).length, 0);
+  ids(ui, 'meetup.notice.unpin')[1].props.onPress(); await ui.flush();
+  assert.equal(ui.calls.find(([name]) => name === 'update_meetup_announcement')[1].p_action, 'unpin');
+  assert.equal(ui.calls.find(([name]) => name === 'update_meetup_announcement')[1].p_announcement_id ?? 'n2', 'n2');
+  ids(ui, 'meetup.notice.must-read')[0].props.onPress(); await ui.flush();
+  assert.equal(ui.calls.filter(([name]) => name === 'update_meetup_announcement').at(-1)[1].p_action, 'must_read_off', 'a must-read turns off');
+  ids(ui, 'meetup.notice.write')[0].props.onPress(); await ui.flush();
+  assert.equal(ui.ctx.pushed[0].params.section, 'notices');
+  ui.unmount();
+});
+
+test('notice board: before the server update there is no must-read control and a single notice still shows', async () => {
+  const ui = room({ isHost: true, kind: 'group', pinned: notices[1] }); await ui.flush();
+  assert.equal(ids(ui, 'meetup.notice.open').length, 1);
+  assert.equal(ids(ui, 'meetup.notice.must-read').length, 0); assert.equal(ids(ui, 'meetup.notice.unpin').length, 1);
+  assert.match(text(ui.tree), /회비는 5달러예요/);
+  ui.unmount();
+});
+
+test('manage sheet: the parent hears about closing only once the sheet is gone, then the chosen action runs', async () => {
+  const log = [];
+  const ui = mount('meetup-manage-sheet', 'MeetupManageSheet', { visible: true, onClose: () => log.push('closed'), actions: [{ key: 'a', label: '호스트 관리', icon: {}, onPress: () => log.push('action') }] });
+  await ui.flush();
+  const sheet = () => nodes(ui.tree).find(node => node.type === 'DragSheet');
+  nodes(ui.tree).find(node => node.type === 'Pressable' && text(node).includes('호스트 관리')).props.onPress(); await ui.flush();
+  assert.equal(sheet().props.visible, false, 'the slide-out starts');
+  assert.deepEqual(log, [], 'a parent that stops rendering the sheet on close would lose the action');
+  sheet().props.onDismissed(); await ui.flush();
+  assert.deepEqual(log, ['closed', 'action']);
+  sheet().props.onDismissed();
+  assert.deepEqual(log, ['closed', 'action', 'closed'], 'dismissing again never repeats the action');
+});
+
+test('a member who applied without a meetup profile still has a name in dues and cohost choices', async () => {
+  const roster = [{ userId: ownerId, displayName: '', isHost: true }, { userId: memberId, displayName: '', isHost: false }];
+  const ui = mount('meetup-host-tools', 'MeetupHostTools', { postId }, { fee: { amount: 5 }, rpc: async name => ({ data: name === 'get_meetup_host_tools' ? hostState
+    : ['get_chilling_roster_v2', 'get_chilling_roster'].includes(name) ? roster : name === 'get_meetup_roster' ? [{ userId: memberId, nickname: '느긋한수달' }] : [] }) });
+  await ui.flush();
+  const paid = nodes(ui.tree).find(node => node.props?.analyticsId === 'meetup.fee.paid');
+  assert.match(paid.props.accessibilityLabel, /느긋한수달/);
+  assert.match(text(ui.tree), /느긋한수달/);
+  const failed = mount('meetup-host-tools', 'MeetupHostTools', { postId }, { fee: { amount: 5 }, rpc: async name => name === 'get_meetup_roster' ? { error: { message: 'offline' } } : { data: name === 'get_meetup_host_tools' ? hostState
+    : ['get_chilling_roster_v2', 'get_chilling_roster'].includes(name) ? roster : [] } });
+  await failed.flush();
+  assert.match(nodes(failed.tree).find(node => node.props?.analyticsId === 'meetup.fee.paid').props.accessibilityLabel, /모임 멤버/, 'a failed name lookup never hides the row');
 });

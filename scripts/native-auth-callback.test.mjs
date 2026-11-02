@@ -6,6 +6,7 @@ import ts from 'typescript';
 import * as oauth from '../src/lib/kakao-auth.ts';
 import * as sharing from '../src/lib/sharing.ts';
 import * as returns from '../src/lib/shared-post-return.ts';
+import * as meetupDraft from '../src/lib/meetup-create-draft.ts';
 
 const post = 'e23b0000-0000-4000-8000-000000000001', other = 'e23b0000-0000-4000-8000-000000000002';
 const web = `/post?id=${post}&invite=1`, native = `/post/${post}?invite=1`, nextWeb = `/post?id=${other}`;
@@ -21,7 +22,7 @@ function mount(options = {}) {
     async setItem(key, value) { values.set(key, value); },
     async removeItem(key) { events.push('clear'); if (env.clearFailure) throw new Error('private-clear-detail'); values.delete(key); },
   };
-  const router = { replace(path) { events.push('navigate'); routes.push(path); } };
+  const router = { replace(path) { events.push('navigate'); routes.push(path); }, dismissTo(path) { events.push('navigate'); routes.push(path); } };
   const hooks = [], queued = [];
   let index = 0, dirty = true, alive = true, tree, updatesAfterUnmount = 0;
   const effect = (fn, deps, layout) => {
@@ -52,6 +53,7 @@ function mount(options = {}) {
     if (name === '@/lib/kakao-auth') return oauth;
     if (name === '@/lib/sharing') return sharing;
     if (name === '@/lib/shared-post-return') return returns;
+    if (name === '@/lib/meetup-create-draft') return meetupDraft;
     if (name === '@/lib/supabase') return { supabase: { auth: { async exchangeCodeForSession(code) { exchanges.push(code); if (env.exchangeGate) await env.exchangeGate; if (env.exchangeFailures) { env.exchangeFailures--; return { error: { message: 'private-provider-detail' } }; } return { error: null }; } } } };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) };
     if (name === '@/constants/theme') return { Spacing: { two: 8, three: 16, four: 24 }, Colors: { light: { background: '#ffffff' } } };
@@ -190,4 +192,13 @@ test('a newer intent survives the old handoff cleanup and a failed cleanup is re
 test('missing saved intent falls back home once after complete authentication', async t => {
   const h = mount({ intent: null }); t.after(() => h.cleanup()); await h.settle(); h.rerender(); await h.settle();
   assert.deepEqual(h.routes, ['/']); assert.deepEqual(h.exchanges, []);
+});
+test('a login started from the meetup draft returns to that draft once instead of home', async t => {
+  const h = mount({ intent: null }); t.after(() => h.cleanup());
+  const params = { placeCityId: 'vancouver', placeId: 'osm:node:42' };
+  await meetupDraft.saveMeetupCreateDraft(h.storage, { params, awaitingLogin: true, kindChosen: true, kind: 'once', startsAt: '2030-01-01T00:00:00.000Z', endsAt: '2030-01-01T01:00:00.000Z', cadence: '', category: 'casual', title: '같이 가요', body: '소개', question: '질문', topic: '', capacity: '6', ageMin: '', ageMax: '', newcomer: { welcome: false, only: false }, pickedPlaceId: null, cover: null, coverDropped: false });
+  await h.settle(); h.rerender(); await h.settle();
+  assert.deepEqual(JSON.parse(JSON.stringify(h.routes)), [{ pathname: '/meetup-create', params }]);
+  assert.equal((await meetupDraft.readMeetupCreateDraft(h.storage, meetupDraft.meetupDraftScope(params)))?.title, '같이 가요', 'the draft stays for the screen');
+  assert.equal(await meetupDraft.takeMeetupLoginResume(h.storage), null, 'the resume is used once');
 });

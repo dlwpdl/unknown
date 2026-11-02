@@ -66,11 +66,8 @@ test('actual Meetups uses the common account avatar and keeps a separate guarded
   const source = ts.createSourceFile('meetups.tsx', readFileSync(new URL('../src/app/(tabs)/meetups.tsx', import.meta.url), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   let header, action, profileEntry;
   function visit(node) {
-    if (ts.isJsxElement(node)) {
-      const attributes = node.openingElement.attributes.properties;
-      if (attributes.some(attribute => ts.isJsxAttribute(attribute) && attribute.name.getText(source) === 'style' && attribute.initializer?.getText(source).includes('styles.headFixed'))) header = node;
-      if (attributes.some(attribute => ts.isJsxAttribute(attribute) && attribute.name.getText(source) === 'analyticsId' && attribute.initializer?.getText(source) === '"app_tabs_meetups.pressable.2"')) profileEntry = node;
-    }
+    if (ts.isJsxElement(node) && node.openingElement.attributes.properties.some(attribute => ts.isJsxAttribute(attribute) && attribute.name.getText(source) === 'style' && attribute.initializer?.getText(source).includes('styles.headFixed'))) header = node;
+    if (ts.isJsxSelfClosingElement(node) && node.attributes.properties.some(attribute => ts.isJsxAttribute(attribute) && attribute.name.getText(source) === 'analyticsId' && attribute.initializer?.getText(source) === '"app_tabs_meetups.pressable.2"')) profileEntry = node;
     if (ts.isVariableDeclaration(node) && node.name.getText(source) === 'action') action = node;
     ts.forEachChild(node, visit);
   }
@@ -83,7 +80,7 @@ test('actual Meetups uses the common account avatar and keeps a separate guarded
       compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
     }).outputText, {
       exports, require: () => ({ jsx, jsxs: jsx }),
-      View: 'View', GlassSurface: 'GlassSurface', Pressable: 'Pressable', ThemedText: 'Text', SymbolView: 'Symbol', ProfileAvatarButton: 'ProfileAvatarButton',
+      View: 'View', GlassSurface: 'GlassSurface', Pressable: 'Pressable', ListRow: 'ListRow', ThemedText: 'Text', SymbolView: 'Symbol', ProfileAvatarButton: 'ProfileAvatarButton',
       styles: {}, Typography: { menu: {} }, theme: {}, compactHeader: true, city: { name: '밴쿠버' }, IconSize: { chevron: 14 },
       preferenceScope: { current: 'viewer' }, scope: 'viewer', destination: null, createDisabled: false, copy: value => value, sourceInvalid: false, sourceLabel: '', isAuthed, tr: value => value, t: { tabs: { meetups: '모임' } },
       router: { push: value => routes.push(value) }, play: value => feedback.push(value), promptLogin: value => login.push(value), setCityPicker() {},
@@ -92,10 +89,10 @@ test('actual Meetups uses the common account avatar and keeps a separate guarded
     assert.ok(nodes(head).some(node => node.type === 'ProfileAvatarButton' && node.props.enableBusinessSwitch !== false), 'Common avatar includes its existing business switcher by default.');
     assert.equal(nodes(head).some(node => node.type === 'ChatIdentitySwitcher'), false, 'No duplicate manual switcher.');
     assert.equal(nodes(head).some(node => node.props?.analyticsId === 'app_tabs_meetups.pressable.2'), false);
-    assert.ok(nodes(profile).some(node => node.props?.children?.includes?.('내 모임 프로필')));
+    assert.equal(profile.props.title, '내 모임 프로필');
     profile.props.onPress();
     assert.deepEqual(routes, isAuthed ? ['/meetup-profile'] : []);
     assert.equal(login.length, isAuthed ? 0 : 1);
-    assert.deepEqual(feedback, ['selection']);
+    assert.deepEqual(feedback, [], 'ListRow itself plays the selection feedback');
   }
 });

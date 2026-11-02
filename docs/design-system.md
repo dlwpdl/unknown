@@ -41,13 +41,27 @@
 | secondary 기본 | `card` / `text`, `line` 테두리 |
 | secondary 선택 | primary와 같은 배경·글자, selected 접근성 상태도 함께 지정 |
 | ghost 기본·선택 | 기본은 투명·text, 선택은 `backgroundSelected`·accent |
-| 눌림 | FlatPressable과 같은 opacity0.82를 즉시 적용한다. 공통 컨트롤에는 크기·깊이·주변 배치를 바꾸는 모션을 추가하지 않는다 |
-| 감소된 모션 | 동일한 opacity 반응을 유지한다. 컨트롤에 scale/translate 모션을 추가하지 않는다 |
+| 눌림 | `controlPresentation`은 색만 맡고, 크기 반응은 `FlatPressable`이 맡는다. 네이티브에서 90ms 안에 살짝 작아지고(`pressedScale`, 너비에 따라 최대 6px·최소 0.97) 180ms로 돌아온다. 사용자 승인 2026-10-31. 행 전체처럼 부모를 채우는 컨트롤과 disabled·누를 수 없는 요소는 줄이지 않는다. 깊이·주변 배치를 바꾸는 모션은 쓰지 않는다 |
+| 감소된 모션 | 크기 반응을 끄고 opacity0.82만 쓴다. 시트·펼침의 이동도 끈다 |
 | disabled·busy | opacity0.45, 눌림 효과와 재실행 금지. 접근성 상태·disabled도 실제 컴포넌트에 전달 |
 | 키보드 초점 | 숨기지 않는다. 네이티브 초점은 플랫폼 표현 유지, 웹은 테마 accent로 명확한 외곽선 제공 |
 | 오류·위험 | 선택 상태로 표현하지 않는다. 기존 오류/위험 의미와 확인 절차 유지 |
 
 색만으로 상태를 구분하지 않는다. selected·disabled·busy·expanded 같은 접근성 상태와 필요한 체크 표시/설명을 함께 둔다. 저장 중에는 선택 상태를 잃거나 다른 계정의 결과를 붙이지 않는다. 디자인 변경으로 데이터 흐름을 바꾸지 않는다.
+
+## 시트·펼침·목록
+
+| 부품 | 쓰는 곳 |
+| --- | --- |
+| `DragSheet` | 아래에서 올라오는 모든 시트. 손잡이·제목을 끌거나 바깥을 누르면 닫힌다. 진행 중에는 `dismissible={false}`. 닫힌 뒤 할 일은 `onDismissed`에 둔다 |
+| `Disclosure` | 드물게 필요한 설명과 이의제기처럼 접어 둘 내용. 펼침은 `animateLayout`이 맡는다 |
+| `ListCard`·`ListRow` | 글자만으로 나눈 구역 대신 쓰는 묶음 목록. 작은 제목은 `SectionLabel`, 상태·등급은 `Tag`, 사람은 `InitialAvatar` |
+| `SelectionChip`의 `label` | 글자만 있는 알약형 선택. 자식을 직접 그리지 않는다 |
+| `RaisedActionButton`의 `tone="secondary"` | 같은 화면의 보조 행동 |
+| `StateCard`의 `layout="start"` | 할 일 화면 맨 위의 현재 상태. 왼쪽 정렬이고 `mark`(느낌표·빼기·체크)와 아래 내용(단계 표시 등)을 받는다. 화면 전체가 비었거나 오류일 때는 기본 가운데 정렬을 쓴다 |
+| `PopIn` | 체크처럼 확인된 순간의 짧은 반응. 동작 줄이기면 바로 보인다 |
+
+호스트 화면에서 호스트 관리는 상태·할 일 하나·관리 다섯 줄의 순서를 유지하고, 맨 아래 큰 버튼은 그때 가장 급한 일 하나만 맡는다.
 
 ## 아이콘
 
@@ -81,7 +95,7 @@ CityPicker는 도시를 섹션마다 테두리 없는 연속 목록으로 묶고
 
 ## 반응·소리·햅틱
 
-기존 `useInteractionFeedback().play(kind)`만 사용한다. 선택·탭·일반 도구는 selection, 주요 행동은 기존 reaction, 오류는 warning, 실제 저장/게시 성공은 기존 success/전용 완료 피드백을 유지한다. 동일 동작의 중복 피드백을 추가하지 않는다. 컴포넌트와 호출자 중 누가 play를 담당하는지 기존 계약을 확인한다. 소리·햅틱 사용자 설정과 reduced motion을 존중한다. 새 오디오 엔진·저장 키·전역 애니메이션을 만들지 않는다.
+기존 `useInteractionFeedback().play(kind)`만 사용한다. 선택·탭·일반 도구는 selection, 주요 행동은 기존 reaction, 오류는 warning, 실제 저장/게시 성공은 기존 success/전용 완료 피드백을 유지한다. 동일 동작의 중복 피드백을 추가하지 않는다. 스위치·칩 같은 작은 조작은 selection만 쓰고, 실제 저장이 끝난 큰 행동만 success를 쓴다. 컴포넌트와 호출자 중 누가 play를 담당하는지 기존 계약을 확인한다. 소리·햅틱 사용자 설정과 reduced motion을 존중한다. 새 오디오 엔진·저장 키·전역 애니메이션을 만들지 않는다.
 
 ## 새 기능을 만들 때
 

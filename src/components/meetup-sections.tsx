@@ -69,7 +69,7 @@ export function MeetupSectionsEditor({ value, onChange, disabled, children, maxL
         <View style={[styles.badge, { backgroundColor: theme.backgroundSelected }]}>{key === 'activities'
           ? <ThemedText style={[Typography.label, { color: theme.accent }]}>{index + 1}</ThemedText>
           : <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={13} tintColor={theme.accent} />}</View>
-        <TextInput accessibilityLabel={`${tr(label)} ${index + 1}`} value={row} onChangeText={text => set(rows.map((item, at) => at === index ? text : item))} editable={!disabled} maxLength={120} style={[...inputStyle, styles.flex]} />
+        <TextInput accessibilityLabel={`${tr(label)} ${index + 1}`} value={row} onChangeText={text => set(rows.map((item, at) => at === index ? text.replace(/\n/g, ' ') : item))} editable={!disabled} multiline submitBehavior="blurAndSubmit" maxLength={120} style={[...inputStyle, styles.wrap, styles.flex]} />
         <Pressable analyticsId={`meetup.sections.${key}.remove`} accessibilityRole="button" accessibilityLabel={tr('{0} {1} 지우기', tr(label), index + 1)} disabled={disabled}
           onPress={() => { play('selection'); set(rows.filter((_, at) => at !== index)); }}
           style={({ pressed }) => [styles.remove, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
@@ -86,7 +86,7 @@ export function MeetupSectionsEditor({ value, onChange, disabled, children, maxL
   };
   return <>
     {field('짧은 소개', 'intro', true)}
-    {heading && <ThemedText accessibilityRole="header" type="subtitle" style={styles.title}>{tr('모임 내용')}</ThemedText>}
+    {heading && <ThemedText accessibilityRole="header" style={[Typography.section, styles.title]}>{tr('모임 내용')}</ThemedText>}
     {field('모임 목적', 'purpose')}
     {list('함께할 활동', 'activities', '활동 추가')}
     {field('이런 분과 맞아요', 'fit')}

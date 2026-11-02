@@ -144,7 +144,7 @@ export function NewcomerProgressCard() {
     <ThemedText type="small" themeColor="textSecondary">{tr('다음 모임도 마음 가는 대로 골라 보세요.')}</ThemedText>
     {link(tr('모임 보기 ›'))}
   </View>;
-  const steps = [['가입', true], ['프로필', true], ['첫 모임 신청', status.requested], ['첫 모임 참석', false]] as const;
+  const steps = [['가입', true], ['프로필', true], ['첫 참여 신청', status.requested], ['첫 모임 참석', false]] as const;
   const remaining = steps.filter(([, done]) => !done).length;
   return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <View style={styles.cardHead}>
