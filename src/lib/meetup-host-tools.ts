@@ -6,6 +6,7 @@ export type MeetupTemplate = { id: string; name: string; draft: MeetupTemplateDr
 export type MeetupOccurrence = { startsAt: string; endsAt: string };
 export type MeetupHostAggregates = { applications: number; approvals: number; confirmedAttendance: number; repeatParticipants: number };
 export type MeetupHostIdentity = { userId: string; displayName: string; photoPaths: string[]; isHost: boolean };
+export type RosterMember = { userId: string; nickname: string; attended: number; lastAttendedAt: string | null; note: string; regular: boolean; staff: boolean };
 export type MeetupHostToolsState = {
   tier: 'free' | 'plus' | 'pro' | 'premium' | 'admin'; isHost: boolean; isCohost: boolean; canManageSessions: boolean;
   // canInvite = waitlist invitations (host or acting cohost); cohost invitations use canInviteCohost/cohostLimit, absent before 2026-10-26.
@@ -21,6 +22,8 @@ async function rpc<T>(client: SupabaseClient, name: string, args: Record<string,
   if (result.error) throw new Error(result.error.message);
   return result.data as T;
 }
+
+export const loadMeetupRoster = (client: SupabaseClient, postId: string) => rpc<RosterMember[]>(client, 'get_meetup_roster', { p_post_id: postId });
 
 /** Logistics are deliberately excluded: applying a template cannot set a booking fact. */
 export function templateDraft(value: Partial<MeetupTemplateDraft>): MeetupTemplateDraft {

@@ -19,7 +19,8 @@ export type MeetupLoyalty = {
   autoNext?: { enabled: boolean; cadence: 'weekly' | 'fortnightly' } | null;
 };
 export type PinnedNotice = { id: string; body: string; sentAt: string; mustRead?: boolean };
-export type RosterMember = { userId: string; nickname: string; attended: number; lastAttendedAt: string | null; note: string; regular: boolean; staff: boolean };
+// The roster loader lives in the web-safe host-tools module: the merchant web export must not carry this file's check-in RPC names.
+export { loadMeetupRoster, type RosterMember } from './meetup-host-tools.ts';
 
 /** Notices pinned at the top of the meetup chat, newest first; falls back to the single notice from an older server. */
 export function pinnedNotices(state: Pick<MeetupLoyalty, 'pinned' | 'pinnedNotices'> | null): PinnedNotice[] {
@@ -85,7 +86,6 @@ export const setMeetupEncore = (client: SupabaseClient, postId: string, encore: 
 export const postMeetupAnnouncement = (client: SupabaseClient, postId: string, body: string, audience: AnnouncementAudience, sendAt: string | null) =>
   rpc<string>(client, 'post_meetup_announcement', { p_post_id: postId, p_body: body.trim(), p_audience: audience, p_send_at: sendAt });
 export const updateMeetupAnnouncement = (client: SupabaseClient, id: string, action: 'cancel' | 'unpin' | 'must_read' | 'must_read_off') => rpc<null>(client, 'update_meetup_announcement', { p_announcement_id: id, p_action: action });
-export const loadMeetupRoster = (client: SupabaseClient, postId: string) => rpc<RosterMember[]>(client, 'get_meetup_roster', { p_post_id: postId });
 export const saveMemberNote = (client: SupabaseClient, postId: string, memberId: string, note: string, regular: boolean) =>
   rpc<null>(client, 'set_meetup_member_note', { p_post_id: postId, p_member_id: memberId, p_note: note.trim(), p_regular: regular });
 export const setCheckinStaff = (client: SupabaseClient, postId: string, userId: string, staff: boolean) => rpc<null>(client, 'set_meetup_checkin_staff', { p_post_id: postId, p_user_id: userId, p_staff: staff });

@@ -14,8 +14,7 @@ import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 import { setLanguageExchangeWaitlist, type LanguageChoice } from '@/lib/meetup-language';
-import { loadMeetupRoster } from '@/lib/meetup-loyalty';
-import { inviteMeetupCohost, inviteNextMeetupWaitlist, loadMeetupHostAggregates, loadMeetupHostRoster,
+import { inviteMeetupCohost, inviteNextMeetupWaitlist, loadMeetupHostAggregates, loadMeetupHostRoster, loadMeetupRoster,
   loadMeetupFee, loadMeetupFeePayments, loadMeetupHostTools, meetupFeeAmount, meetupFeeDueIso, meetupFeeDue, meetupFeeDueOn, meetupFeeInput,
   removeMeetupCohost, respondMeetupCohost, setMeetupFee, setMeetupFeePaid, setMeetupWaitlist, type MeetupFee, type MeetupHostAggregates, type MeetupHostIdentity, type MeetupHostToolsState } from '@/lib/meetup-host-tools';
 
