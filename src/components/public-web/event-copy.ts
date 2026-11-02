@@ -2,6 +2,7 @@
 // Apply page: keys and wording from the supervisor-reviewed galbi copy.json (output/reviews/influencer-event-automation-2026-11-02/
 // galbi-example, 2026-11-02); its example values (galbi, dates, 2 people, 7 days, covered items) come from the campaign here.
 // `done` is the approved follow notice word for word (title + ' ' + body). Keys marked "draft" are not in copy.json yet.
+// `privacy` is the supervisor's corrected line (2026-11-02): entries stay in the creator list and winners' details reach the business.
 export type EventLanguage = 'en' | 'ko';
 export type EventLookupStatus = 'winner' | 'discount' | 'none';
 export type SupportKey = 'meal' | 'drinks' | 'alcohol' | 'parking' | 'fee';
@@ -35,7 +36,7 @@ export const EVENT_COPY = {
     l_reel: (max: number) => `How soon after your visit can you post the Reel? (${max} days max)`,
     reel: (days: number) => `Within ${days} day${days === 1 ? '' : 's'}`,
     l_lang: 'Language',
-    privacy: 'We only use your details to run this event.',
+    privacy: "We use your details to run this event. If you're picked, the restaurant sees your visit time, party size and allergies. We keep your Instagram handle in our creator list.",
     btn_submit: 'Apply',
     done: ['Got your entry!', "We'll check on draw day that you're following @gling.app. If you're not, your entry won't count."],
     btn_profile2: 'Open @gling.app',
@@ -101,7 +102,7 @@ export const EVENT_COPY = {
     l_reel: (max: number) => `다녀와서 며칠 안에 릴스를 올릴 수 있어요? (최대 ${max}일)`,
     reel: (days: number) => `${days}일 안`,
     l_lang: '언어',
-    privacy: '이 정보는 이번 이벤트 진행에만 써요.',
+    privacy: '적어 주신 정보는 이 이벤트를 진행하는 데 써요. 당첨되면 방문 시간, 인원, 알레르기를 가게에서 볼 수 있어요. 인스타 아이디는 글링 크리에이터 목록에 남아요.',
     btn_submit: '지원하기',
     done: ['신청받았어요!', '추첨하는 날 @gling.app 팔로우를 한 번 확인해요. 그날 팔로우가 안 되어 있으면 추첨에서 빠져요.'],
     btn_profile2: '@gling.app 열기',

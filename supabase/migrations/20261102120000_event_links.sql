@@ -84,7 +84,8 @@ $$;
 -- Selected (strict stage) or confirmed/posted on the board, unless cancelled, declined or dropped.
 create function private.event_winner(p private.partnership_participations) returns boolean
 language sql stable set search_path='' as $$
-  select (p.stage in ('selected','visited','submitted','completed') or to_jsonb(p)->>'outreach_stage' in ('confirmed','posted'))
+  -- coalesce: without the board column the outreach test is null, and "not event_winner" must still be true for applicants.
+  select (p.stage in ('selected','visited','submitted','completed') or coalesce(to_jsonb(p)->>'outreach_stage' in ('confirmed','posted'),false))
     and p.stage not in ('declined','cancelled') and coalesce(to_jsonb(p)->>'outreach_stage','')<>'dropped'
 $$;
 
@@ -164,20 +165,26 @@ begin
   insert into private.partnership_creators(id,display_name,city_id,profile_url) values(gen_random_uuid(),handle,city,url)
     on conflict ((private.partnership_profile_key(profile_url))) do nothing;
   select id into crid from private.partnership_creators where private.partnership_profile_key(profile_url)=private.partnership_profile_key(url);
-  -- New rows take the board defaults (stage applied, outreach candidate); a repeat entry only refreshes what the person wrote.
+  -- New rows take the board defaults (stage applied, outreach candidate). A repeat entry refreshes what the person picked only
+  -- while they are still a candidate: anyone typing a picked person's handle must not change the visit, party or allergies
+  -- the business sees. Either way the answer is the same, so it does not reveal who was picked.
   insert into private.partnership_participations(id,campaign_id,creator_id,applied_via,language,applied_at,
       preferred_slots,party_size,has_allergies,allergies,reel_within_days)
     values(gen_random_uuid(),cid,crid,'apply_link',p_language,clock_timestamp(),p_slots,p_party,p_allergies is not null,allergy,p_reel_days)
     on conflict(campaign_id,creator_id) do nothing returning id into pid;
   if pid is null then
     again:=true;
-    update private.partnership_participations set applied_via='apply_link',language=p_language,applied_at=clock_timestamp(),
+    update private.partnership_participations p set applied_via='apply_link',language=p_language,applied_at=clock_timestamp(),
       preferred_slots=p_slots,party_size=p_party,has_allergies=p_allergies is not null,allergies=allergy,reel_within_days=p_reel_days,
-      updated_at=greatest(clock_timestamp(),updated_at+interval '1 microsecond')
-      where campaign_id=cid and creator_id=crid returning id into pid;
+      updated_at=greatest(clock_timestamp(),p.updated_at+interval '1 microsecond')
+      where p.campaign_id=cid and p.creator_id=crid and p.stage='applied'
+        and coalesce(to_jsonb(p)->>'outreach_stage','candidate') in ('candidate','proposed','replied') and not private.event_winner(p)
+      returning p.id into pid;
   end if;
-  insert into private.partnership_events(actor_id,resource_id,action,details) values(null,pid,'participation_applied',
-    jsonb_build_object('kind','participation','campaign_id',cid,'creator_id',crid,'stage','applied','source','apply_link','again',again));
+  if pid is not null then
+    insert into private.partnership_events(actor_id,resource_id,action,details) values(null,pid,'participation_applied',
+      jsonb_build_object('kind','participation','campaign_id',cid,'creator_id',crid,'stage','applied','source','apply_link','again',again));
+  end if;
   return jsonb_build_object('ok',true,'already',again);
 end $$;
 

@@ -241,6 +241,18 @@ do $$ begin
       where creator_id in ('e1510000-0000-0000-0000-000000000014','e1510000-0000-0000-0000-000000000015')$u$;
   end if;
 end $$;
+-- Someone typing a picked or board-confirmed person's handle changes nothing the business sees, and is told nothing different.
+select is(public.event_apply('open-event',h,jsonb_build_array(pg_temp.pick(2,'19:00')),1,null,3,'en',pg_temp.ip(20)),'{"ok":true,"already":true}'::jsonb,
+  're-entry for '||h||' answers like any repeat') from unnest(array['winner.one','board.ok','board.dropped']) h;
+select is((select jsonb_build_object('party',party_size,'has',has_allergies,'allergies',allergies,'slots',preferred_slots,'reel',reel_within_days,'via',applied_via)
+  from private.partnership_participations where creator_id='e1510000-0000-0000-0000-000000000011'),
+  '{"party":2,"has":true,"allergies":"Shellfish","slots":null,"reel":null,"via":"admin"}'::jsonb,'a winner keeps their party, allergies and visit');
+select is((select party_size from private.partnership_participations where creator_id='e1510000-0000-0000-0000-000000000015'),null,'a selected person is left alone too');
+-- Without the board, board.ok is still a plain applicant and may update; with it, confirmed people are locked.
+select is((select party_size from private.partnership_participations where creator_id='e1510000-0000-0000-0000-000000000014'),
+  case when pg_temp.board() then null else 1 end,'a board-confirmed person stays as they are');
+select is((select count(*) from private.partnership_events where action='participation_applied'
+  and details->>'creator_id' in ('e1510000-0000-0000-0000-000000000011','e1510000-0000-0000-0000-000000000015')),0::bigint,'locked re-entries leave no entry record');
 insert into private.partnership_benefits(id,merchant_id,campaign_id,title,audience,status,discount_percent,terms,terms_confirmed,expires_on)
 select v.id::uuid,'e1520000-0000-0000-0000-000000000001','e1530000-0000-0000-0000-000000000001',v.title,'creators',v.status,20,'Dine-in only',true,d+10 from today,(values
  ('e1550000-0000-0000-0000-000000000001','Event discount','active'),('e1550000-0000-0000-0000-000000000002','Draft perk','draft')) v(id,title,status);
