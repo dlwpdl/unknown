@@ -6,6 +6,8 @@
 //   node scripts/event-links.mjs create --campaign <uuid> --kind apply|store --expires YYYY-MM-DD [--slug <slug>] [--dry-run]
 //   node scripts/event-links.mjs revoke --id <uuid> [--dry-run]
 // A store link's token is printed once and never stored: the database keeps only its SHA-256.
+// Dates (--expires, visit dates, deadlines) are days in the business's time zone. Until Supabase's tzdata has B.C.'s permanent
+// UTC-7, the database counts 00:00-01:00 Vancouver time as the day before (supervisor 2026-11-02: leave it, report real problems).
 // The service-role key comes from GLING_SUPABASE_SERVICE_ROLE_KEY, else the operator's Supabase CLI login, the same way
 // as scripts/release.py. It is never printed. --dry-run checks the input and touches nothing.
 import { execFileSync } from 'node:child_process';
