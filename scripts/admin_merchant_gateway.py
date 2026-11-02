@@ -2,6 +2,7 @@
 (private.is_admin accepts session user postgres); the Keychain "AI 연결" session is only for the dashboard's own status."""
 import base64
 import json
+import os
 import runpy
 from pathlib import Path
 import re
@@ -133,8 +134,24 @@ def as_admin(statement):
     claims = json.dumps({'sub': actor, 'role': 'authenticated'})
     return direct_sql(f"begin; select set_config('request.jwt.claims', {lit(claims)}, true); set local role authenticated; {statement}; commit;")
 
+# Owner 2026-11-02 "관리자 도구: 등록 3가지만": automations read external posts and DMs, so outside the owner's own session
+# they may only register a business (as lead/trial), link a post and read. Paid status, ownership and workspace changes
+# need GLING_ADMIN_FULL=1, which only the owner's MCP config sets.
+# shortcut: an environment flag, not a hard boundary (this Mac's management token is); revisit if automations get their own credentials.
+AUTOMATION_RPCS = {'get_admin_merchants', 'get_admin_merchant', 'save_admin_merchant', 'save_admin_merchant_record', 'link_admin_merchant_post'}
+REGISTER_STATUSES = ('lead', 'trial')
+
+def check_automation_scope(name, args):
+    if os.environ.get('GLING_ADMIN_FULL') == '1': return
+    if name not in AUTOMATION_RPCS: raise ValueError('OWNER_SESSION_REQUIRED')
+    if name in ('save_admin_merchant', 'save_admin_merchant_record'):
+        if args.get('p_status') not in REGISTER_STATUSES: raise ValueError('OWNER_SESSION_REQUIRED')
+        current = direct_sql(f"select status from private.merchants where id = {lit(args['p_id'])}::uuid") if args.get('p_id') else []
+        if current and current[0]['status'] not in REGISTER_STATUSES: raise ValueError('OWNER_SESSION_REQUIRED')
+
 def rpc(name, args):
     if name not in RPCS: raise ValueError('UNKNOWN_MERCHANT_OPERATION')
+    check_automation_scope(name, args)
     signatures = direct_sql("select pg_get_function_identity_arguments(p.oid) args from pg_proc p "
                             f"where p.pronamespace = 'public'::regnamespace and p.proname = {lit(name)}")
     overloads = [dict(part.split(' ', 1) for part in row['args'].split(', ') if part) for row in signatures]

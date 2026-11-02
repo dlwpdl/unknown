@@ -29,9 +29,25 @@ class GatewayTests(unittest.TestCase):
     def test_only_merchant_rpcs_can_be_called(self):
         with self.assertRaisesRegex(ValueError, 'UNKNOWN_MERCHANT_OPERATION'): gateway.rpc('delete_account', {})
 
+    def test_automations_only_register_link_and_read(self):
+        with patch.dict(gateway.os.environ, {}, clear=True):
+            for name in ['set_admin_merchant_workspace_owner', 'create_admin_merchant_post', 'get_admin_creator_directory']:
+                with self.assertRaisesRegex(ValueError, 'OWNER_SESSION_REQUIRED'): gateway.rpc(name, {'p_merchant_id': 'm'})
+            for status in ['paid', 'paused', None]:
+                with self.assertRaisesRegex(ValueError, 'OWNER_SESSION_REQUIRED'): gateway.rpc('save_admin_merchant', {'p_id': None, 'p_status': status})
+            with patch.object(gateway, 'direct_sql', return_value=[{'status': 'paid'}]):
+                with self.assertRaisesRegex(ValueError, 'OWNER_SESSION_REQUIRED'): gateway.rpc('save_admin_merchant_record', {'p_id': 'm', 'p_status': 'trial'})
+            with patch.object(gateway, 'direct_sql', return_value=[{'status': 'lead'}]):
+                gateway.check_automation_scope('save_admin_merchant', {'p_id': 'm', 'p_status': 'trial'})
+            gateway.check_automation_scope('save_admin_merchant_record', {'p_id': None, 'p_status': 'lead'})
+            gateway.check_automation_scope('link_admin_merchant_post', {'p_merchant_id': 'm'})
+        with patch.dict(gateway.os.environ, {'GLING_ADMIN_FULL': '1'}):
+            gateway.check_automation_scope('set_admin_merchant_workspace_owner', {})
+            gateway.check_automation_scope('save_admin_merchant', {'p_id': 'm', 'p_status': 'paid'})
+
     def test_creator_vendor_operations_run_as_the_admin_account(self):
         for name in ['get_admin_creator_directory', 'get_admin_creator_deal', 'link_admin_creator_deal_merchant', 'get_admin_merchant_creator_deals']:
-            with patch.object(gateway, 'direct_sql', return_value=[{'args': 'p_id uuid, p_offset integer'}]), \
+            with patch.dict(gateway.os.environ, {'GLING_ADMIN_FULL': '1'}), patch.object(gateway, 'direct_sql', return_value=[{'args': 'p_id uuid, p_offset integer'}]), \
                     patch.object(gateway, 'as_admin', return_value=[{'result': {'rows': []}}]) as admin, patch.object(gateway, 'request') as request:
                 self.assertEqual(gateway.rpc(name, {'p_id': 'record'}), {'rows': []})
                 admin.assert_called_once_with(f'select to_jsonb(public.{name}(p_id => $g$record$g$::uuid)) as result')
