@@ -47,6 +47,8 @@ assert.ok(existsSync(join(directory, 'business.html')), 'Public business page is
 // Shared invite links must answer 200 with a share preview, stay out of search and still offer the install path without JS.
 const invite = readFileSync(join(directory, 'invite.html'), 'utf8');
 assert.ok(/name="robots"[^>]*content="noindex/.test(invite) && invite.includes('property="og:title"') && invite.includes('property="og:image"') && invite.includes('https://apps.apple.com/ca/app/id6809273242'), 'Invite page needs noindex, a share preview and an install link');
+// Event pages are reached only from a DM or a private link: present, and never in search.
+for (const page of ['apply.html', 'partner.html']) assert.ok(existsSync(join(directory, page)) && /name="robots"[^>]*content="noindex/.test(readFileSync(join(directory, page), 'utf8')), `Event page missing or indexable: ${page}`);
 const english = readFileSync(join(directory, 'en.html'), 'utf8');
 assert.ok(/<html[^>]*lang="en"/.test(english) && english.includes('hreflang="ko" href="https://gling.ej-entertainment.com/"') && english.includes('"FAQPage"'), 'English page must declare lang="en", link the Korean home and carry its FAQ');
 const childSafety = readFileSync(join(directory, 'child-safety.html'), 'utf8');
