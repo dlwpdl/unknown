@@ -204,7 +204,40 @@ language sql stable set search_path='' as $$
     and (p_kind in ('store','report') or c.status='open')
 $$;
 
--- 5. The only builder of the report. p_for_business=false adds what only admins see: creator handles and entries, store notes
+-- 5. Who counts as having applied, on the report and on the store page alike.
+-- Someone the board added is an applicant only once they apply through the link; once confirmed they count in confirmed, visited and posted.
+create function private.event_applicant(p private.partnership_participations) returns boolean
+language sql stable set search_path='' as $$
+  select p.applied_via='apply_link' or not exists(select 1 from private.partnership_events e
+    where e.resource_id=p.id and e.action='participation_created' and e.details->>'source'='event_board')
+$$;
+
+-- The body below is 20261102130000's and the grants are its original ones (20261102120000), with only applicant_count
+-- counting event_applicant.
+-- As step 1, plus each benefit's conditions so the business sees the same rules the DMs state.
+create or replace function public.event_store_view(p_token_sha256 text) returns jsonb
+language sql stable security definer set search_path='' as $$
+  select jsonb_build_object('title',c.title,'business',m.name,'avatar',public.get_merchant_profile(m.id)->>'avatar_path',
+    'ends_on',c.ends_on,'deadline_note',c.deadline_note,'timezone',z.timezone,
+    'applicant_count',(select count(*) from private.partnership_participations p where p.campaign_id=c.id and private.event_applicant(p)),
+    'winners',(select coalesce(jsonb_agg(jsonb_build_object('handle',w.handle,'name',w.display_name,'scheduled_at',w.scheduled_at,
+          'party_size',w.party_size,'has_allergies',w.has_allergies,'allergies',w.allergies)
+        order by w.scheduled_at nulls last,w.display_name),'[]')
+      from (select r.display_name,p.scheduled_at,p.party_size,p.has_allergies,p.allergies,substring(private.partnership_profile_key(r.profile_url) from '^https://instagram[.]com/([^/]+)$') handle
+        from private.partnership_participations p join private.partnership_creators r on r.id=p.creator_id
+        where p.campaign_id=c.id and private.event_winner(p)) w),
+    'benefits',(select coalesce(jsonb_agg(jsonb_build_object('title',b.title,'discount_percent',b.discount_percent,'expires_on',b.expires_on,'terms',b.terms,
+          'starts_on',b.starts_on,'max_discount_cents',b.max_discount_cents,'weekdays',b.weekdays,'dine_in_only',b.dine_in_only,'checkout_note',b.checkout_note)
+        order by b.created_at,b.id),'[]')
+      from private.partnership_benefits b where b.campaign_id=c.id and b.status='active'))
+  from private.partnership_campaigns c join private.merchants m on m.id=c.merchant_id join public.cities z on z.id=m.city_id
+  where c.id=private.event_link_campaign('store',p_token_sha256)
+$$;
+alter function public.event_store_view(text) owner to postgres;
+revoke all on function public.event_store_view(text) from public,anon,authenticated,service_role;
+grant execute on function public.event_store_view(text) to service_role;
+
+-- 6. The only builder of the report. p_for_business=false adds what only admins see: creator handles and entries, store notes
 -- and row ids, and our minutes. The business never gets notes, alerts, candidate or hold counts, creator names, or minutes.
 create function private.campaign_report(p_campaign uuid,p_for_business boolean) returns jsonb
 language sql stable security definer set search_path='' as $$
@@ -262,7 +295,7 @@ language sql stable security definer set search_path='' as $$
       ||case when not p_for_business then jsonb_build_object('id',id,'note',note) else '{}' end
       order by period_start,period_end,metric,observed_at,id),'[]') from live where subject='store'),
     -- Head counts only; how many are still candidates, on hold or dropped stays on the admin board.
-    'people',(select jsonb_build_object('applied',count(*),'confirmed',count(*) filter (where x.w),
+    'people',(select jsonb_build_object('applied',count(*) filter (where private.event_applicant(p)),'confirmed',count(*) filter (where x.w),
         'visited',count(*) filter (where x.w and (p.visited_at is not null or p.stage in ('visited','submitted','completed'))),
         'posted',count(*) filter (where x.w and (p.outreach_stage='posted' or p.content_url<>'' or p.stage in ('submitted','completed')
           or exists(select 1 from live where live.participation_id=p.id and live.subject='creator_content'))))
@@ -283,7 +316,7 @@ language sql stable security definer set search_path='' as $$
   where x.cid is not null
 $$;
 
--- 6. Admin functions (admin with a live AAL2 session, checked like the other partnership functions).
+-- 7. Admin functions (admin with a live AAL2 session, checked like the other partnership functions).
 
 -- The admin report, the whole log with corrected and withdrawn rows marked, the report link without its token, and the report row.
 create function public.get_admin_campaign_report(p_campaign uuid) returns jsonb
@@ -402,7 +435,7 @@ end $$;
 -- Start date, lessons and the business's permission; fix=true freezes the business view once, from day 30 in its time zone.
 create function public.save_admin_campaign_report(p_campaign uuid,p_fields jsonb) returns jsonb
 language plpgsql security definer set search_path='' as $$
-declare f jsonb:=p_fields; r private.partnership_reports; today date; fix boolean;
+declare f jsonb:=p_fields; r private.partnership_reports; today date; fix boolean; was date;
 begin
   perform private.lock_partnership_actor();
   if p_campaign is null or jsonb_typeof(f) is distinct from 'object' or exists(select 1 from jsonb_each(f) x
@@ -416,10 +449,12 @@ begin
   if today is null then raise exception 'PARTNERSHIP_NOT_FOUND'; end if;
   perform private.assert_partnership_admin();
   select * into r from private.partnership_reports where campaign_id=p_campaign for update;
+  was:=r.starts_on;
   r:=jsonb_populate_record(r,f-'fix');
   r.campaign_id:=p_campaign; r.consent:=coalesce(r.consent,'closed'); r.updated_at:=now();
   fix:=coalesce((f->>'fix')::boolean,false);
-  if fix and r.fixed_at is not null then raise exception 'REPORT_ALREADY_FIXED'; end if;
+  -- A fixed report keeps its start date; lessons and permission can still change.
+  if r.fixed_at is not null and (fix or r.starts_on is distinct from was) then raise exception 'REPORT_ALREADY_FIXED'; end if;
   if fix and (r.starts_on is null or today<r.starts_on+29) then raise exception 'REPORT_NOT_DUE'; end if;
   insert into private.partnership_reports select r.*
     on conflict(campaign_id) do update set starts_on=excluded.starts_on,lessons=excluded.lessons,consent=excluded.consent,
@@ -441,7 +476,8 @@ end $$;
 do $$
 declare f text;
 begin
-  foreach f in array array['private.event_link_campaign(text,text)','private.campaign_report(uuid,boolean)','public.event_report_view(text)',
+  foreach f in array array['private.event_link_campaign(text,text)','private.event_applicant(private.partnership_participations)',
+    'private.campaign_report(uuid,boolean)','public.event_report_view(text)',
     'public.get_admin_campaign_report(uuid)','public.add_admin_campaign_ledger(uuid,jsonb)','public.revoke_admin_report_link(uuid)',
     'public.issue_admin_report_link(uuid)','public.save_admin_campaign_report(uuid,jsonb)'] loop
     execute format('alter function %s owner to postgres',f);

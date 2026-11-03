@@ -333,10 +333,15 @@ select is((select a->'report_row'->>'consent' from adm),'anon','and the report r
 set local role authenticated;
 create temp table fixed on commit drop as select public.save_admin_campaign_report('e1930000-0000-0000-0000-000000000001','{"fix":true}') r;
 select throws_ok($$select public.save_admin_campaign_report('e1930000-0000-0000-0000-000000000001','{"fix":true}')$$,'P0001','REPORT_ALREADY_FIXED','a fixed report stays fixed');
+select throws_ok(format('select public.save_admin_campaign_report(%L,%L)','e1930000-0000-0000-0000-000000000001',(select jsonb_build_object('starts_on',s+1) from d)),
+  'P0001','REPORT_ALREADY_FIXED','a fixed report keeps its start date');
 select lives_ok($$select public.add_admin_campaign_ledger('e1930000-0000-0000-0000-000000000001','{"subject":"our_post","metric":"views","value":9999,"url":"https://www.instagram.com/p/RptOurs01/","source":"owner"}')$$,
   'numbers can still be added after the fix');
-select lives_ok($$select public.save_admin_campaign_report('e1930000-0000-0000-0000-000000000001','{"lessons":"30일 뒤에 다시 보자"}')$$,'lessons can still be written');
+select lives_ok(format('select public.save_admin_campaign_report(%L,%L)','e1930000-0000-0000-0000-000000000001',(select jsonb_build_object('starts_on',s,'lessons','30일 뒤에 다시 보자',
+  'consent','open','consent_on',today,'consent_evidence','DM 캡처 · 운영 폴더') from d)),'the same start date again, lessons and permission still save');
 reset role;
+select is((select jsonb_build_object('starts_on',starts_on,'lessons',lessons,'consent',consent) from private.partnership_reports where campaign_id='e1930000-0000-0000-0000-000000000001'),
+  (select jsonb_build_object('starts_on',s,'lessons','30일 뒤에 다시 보자','consent','open') from d),'and they are saved');
 select ok((select (r->>'fixed_at') is not null and (r->'fixed')-'synced_at'=(select b-'synced_at' from biz) from fixed),'the snapshot is the business view at the fix');
 set local role service_role;
 create temp table after on commit drop as select public.event_report_view((select h3 from d)) b;
@@ -358,5 +363,32 @@ insert into private.partnership_campaign_links(campaign_id,kind,slug,expires_on)
 update private.merchants set deleted_at=null where id='e1920000-0000-0000-0000-000000000001';
 select is(private.event_link_campaign('apply','report-closed-apply'),null,'an apply link of a closed campaign still opens nothing');
 select isnt(private.event_link_campaign('report',(select h3 from d)),null,'while its report link does');
+
+-- Who applied: someone the board added counts only once they send the form through the link, on the report and the store page.
+insert into private.partnership_apply_settings(campaign_id,visit_dates,time_slots,party_max) select 'e1930000-0000-0000-0000-000000000002',array[today+3],array['18:00'],4 from d;
+insert into private.partnership_campaign_links(campaign_id,kind,slug,token_sha256,expires_on) values
+ ('e1930000-0000-0000-0000-000000000002','apply','report-open-apply',null,current_date+10),('e1930000-0000-0000-0000-000000000002','store',null,repeat('b',64),current_date+30);
+set local role authenticated;
+select is(public.add_admin_event_candidates('e1930000-0000-0000-0000-000000000002',array['e1910000-0000-0000-0000-000000000002','e1910000-0000-0000-0000-000000000003',
+  'e1910000-0000-0000-0000-000000000004','e1910000-0000-0000-0000-000000000005']::uuid[]),4,'the board adds four candidates to the open campaign');
+reset role;
+-- Bravo is left as a candidate, Charlie was messaged, Delta was confirmed, and Echo then sends the form through the link.
+update private.partnership_participations p set outreach_stage=v.stage,contacted=true
+  from (values ('e1910000-0000-0000-0000-000000000003'::uuid,'proposed'),('e1910000-0000-0000-0000-000000000004'::uuid,'confirmed')) v(creator,stage)
+  where p.campaign_id='e1930000-0000-0000-0000-000000000002' and p.creator_id=v.creator;
+set local role service_role;
+select is(public.event_apply('report-open-apply','report.echo',(select jsonb_build_array(jsonb_build_object('date',to_char(today+3,'YYYY-MM-DD'),'time','18:00')) from d),
+  2,null,5,'en',null),'{"ok":true,"already":true}'::jsonb,'Echo, already on the board, applies through the link');
+reset role;
+select is((select jsonb_object_agg(r.display_name,private.event_applicant(p)) from private.partnership_participations p
+    join private.partnership_creators r on r.id=p.creator_id where p.campaign_id='e1930000-0000-0000-0000-000000000002'),
+  '{"Alpha Secret":true,"Bravo Secret":false,"Charlie Secret":false,"Delta Secret":false,"Echo Secret":true}'::jsonb,
+  'a row an admin entered and a board candidate who sent the form are applicants; untouched, messaged and confirmed board candidates are not');
+select is(private.campaign_report('e1930000-0000-0000-0000-000000000002',true)->'people','{"applied":2,"confirmed":1,"visited":0,"posted":0}'::jsonb,
+  'the report counts those two as applied, and the confirmed board candidate as confirmed');
+set local role service_role;
+select is((public.event_store_view(repeat('b',64))->>'applicant_count')::int,2,'the store page counts the same two applicants');
+select is((public.event_store_view(repeat('a',64))->>'applicant_count')::int,6,'and the same six as the closed campaign''s report');
+reset role;
 select * from finish();
 rollback;
