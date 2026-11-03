@@ -230,6 +230,11 @@ test('Today card: author row, short text, place card, swipeable photos, then lik
     assert.equal(row.props.snapToInterval, width + 8);
     assert.deepEqual(slides().map(slide => nodes(slide).filter(node => node.type === 'ThemedText').map(textOf)),
       [1, 2, 3].map(at => [`${at}/3`, '사진: Kim Lee 외 1명']));
+    for (const slide of slides()) {
+      assert.equal(image(slide).props.contentFit, 'cover', 'photos fill the shared tile, edges cropped (owner 2026-11-03 꽉 채우기)');
+      const order = nodes(slide).map(node => node.type);
+      assert.ok(order.indexOf('Image') < order.indexOf('ThemedText'), 'the number and credit draw over the filled photo');
+    }
     assert.deepEqual(slides().map(slide => !!image(slide).props.source), [true, true, false], 'only photos next to the one in view load');
     row.props.onScroll({ nativeEvent: { contentOffset: { x: width + 8 } } });
     assert.deepEqual(slides().map(slide => !!image(slide).props.source), [true, true, true]);

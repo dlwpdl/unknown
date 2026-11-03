@@ -147,7 +147,8 @@ export function PostCard({
   const firstRatio = loadedPhoto?.key === slideKey ? loadedPhoto.aspectRatio : null;
   // The list pads cards by Spacing.three; the photo row runs to the list edges and starts under the text column, the next photo peeking in.
   const slideWidth = Math.max(0, (photoRowWidth || Math.min(windowWidth, MaxContentWidth)) - FEED_PHOTO_INSET - Spacing.three - (slides.length > 1 ? FEED_PEEK : 0));
-  // One photo keeps its own shape; a row of them shares the first one's, kept between 4:5 and 16:9. Neither crops.
+  // One photo keeps its own shape; a row of them shares the first one's, kept between 4:5 and 16:9, and each photo fills it,
+  // edges cropped (owner 2026-11-03 "꽉 채우기"). The post detail still shows every photo whole.
   const slideRatio = slides.length > 1 ? Math.min(16 / 9, Math.max(4 / 5, firstRatio ?? 4 / 5)) : firstRatio ?? 16 / 10;
   const creditNames = feed ? photoCreditNames(credited.credits) : [];
   const photoCredit = !credited.credits ? '' : creditNames.length > 1 ? tr('사진: {0} 외 {1}명', creditNames[0], creditNames.length - 1)
@@ -333,7 +334,7 @@ export function PostCard({
             accessibilityRole={onPress ? 'button' : undefined} accessibilityLabel={[tr('사진 {0}/{1}', index + 1, slides.length), title, photoCredit].filter(Boolean).join(' · ')}
             style={[styles.slide, { width: slideWidth, aspectRatio: slideRatio, backgroundColor: theme.backgroundElement }]}>
             {/* Only the photos next to the one in view load, as in the detail gallery. */}
-            <Image source={Math.abs(index - photoPage) <= 1 ? source : null} style={StyleSheet.absoluteFill} contentFit="contain" cachePolicy="memory-disk"
+            <Image source={Math.abs(index - photoPage) <= 1 ? source : null} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="memory-disk"
               recyclingKey={`${viewerScope}:${post.id}:${index}`} transition={0}
               onLoad={index ? undefined : ({ source: { width, height } }) => {
                 if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) setLoadedPhoto({ key: slideKey, aspectRatio: width / height });
