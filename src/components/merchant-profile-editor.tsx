@@ -166,7 +166,7 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
         else router.push({ pathname: '/company/[id]', params: { id: merchantId } });
       }} disabled={busy} />}
     </View>}
-    {loading ? <GlingLoader color={theme.accent} accessibilityLabel={tr("프로필을 불러오는 중")} style={{ alignSelf: 'center', marginVertical: Spacing.four }} />
+    {loading ? <GlingLoader color={theme.accent} accessibilityLabel={tr("프로필을 불러오는 중…")} style={{ alignSelf: 'center', marginVertical: Spacing.four }} />
       : profile && photos && <>
         {profile.can_edit && missing.length > 0 && <View style={card} accessibilityRole="summary">
           <ThemedText type="smallBold">{tr("배너·주소·영업시간을 채우면 더 잘 보여요")}</ThemedText>

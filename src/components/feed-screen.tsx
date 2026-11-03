@@ -176,7 +176,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     if (post.room) { router.push({ pathname: '/meetup-profile', params: { postId: post.id } }); return; }
     setSheetUser({ id: post.author.id, nickname: post.author.nickname, neighborhood: post.author.neighborhood, verified: post.author.verified, trustLevel: post.author.trustLevel, mine: post.author.id === me.id });
   };
-  const [pendingPost, setPendingPost] = useState<Post | null>(null); // 로그인 후 이어서 열 글
+  const [pendingPostId, setPendingPostId] = useState<string | null>(null); // 로그인 후 이어서 열 글
   const [tagFilter, setTagFilter] = useState<number | null>(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null); // 카테고리 칩
   const [feedSort, setFeedSort] = useState<FeedSort>('latest');
   const activeSort = meetupsOnly ? 'latest' : feedSort;
@@ -361,7 +361,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   // 게스트는 피드만 훑고, 상세·글쓰기·참여는 로그인 후 사용한다.
   const openDetail = (post: Post) => {
     if (!isAuthed) {
-      setPendingPost(post); // 로그인 성공하면 이어서 열기
+      setPendingPostId(post.id); // 로그인 성공하면 이어서 열기
       return promptLogin(t.auth.reasonDetail);
     }
     handOffPost(me.id, post);
@@ -371,13 +371,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const zoomCard = (post: Post, card: ReactElement<{ onPress?: () => void }>) => isAuthed ? <PostZoomLink key={post.id} id={post.id} post={post}>{card}</PostZoomLink> : card;
   const pressCard = (post: Post) => { if (!isAuthed) openDetail(post); };
   const weeklyRanking = cityOpen && !meetupsOnly && tagFilter == null && <WeeklyRanking cityId={city.id} refreshKey={rankingRefresh} linked={isAuthed} onOpen={async (postId) => {
-    try {
-      const post = await loadPublicPost(supabase, postId);
-      if (post) openDetail(post);
-      else Alert.alert(tr("글을 찾을 수 없어요"), tr("삭제되었거나 공개되지 않은 글이에요."));
-    } catch {
-      Alert.alert(tr("글을 불러오지 못했어요"), tr("잠시 후 다시 시도해 주세요."));
-    }
+    // Only guests reach here (signed-in rows are links). Comments are members-only since 2026-10-26, so loading the
+    // post first failed with an alert; ask for login and let the detail load it, including the not-found state.
+    setPendingPostId(postId);
+    promptLogin(t.auth.reasonDetail);
   }} />;
   const animateLayout = () => {
     if (reducedMotion) return;
@@ -434,15 +431,15 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
   // 로그인 직후 보려던 글을 이어서 연다.
   useEffect(() => {
-    if (isAuthed && pendingPost) {
+    // No hand-off: the guest copy lacks the member view (likes, meetup details), so the detail loads it fresh.
+    if (isAuthed && pendingPostId) {
       const timer = setTimeout(() => {
-        handOffPost(me.id, pendingPost);
-        router.push({ pathname: '/post/[id]', params: { id: pendingPost.id } });
-        setPendingPost(null);
+        router.push({ pathname: '/post/[id]', params: { id: pendingPostId } });
+        setPendingPostId(null);
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [isAuthed, me.id, pendingPost, router]);
+  }, [isAuthed, pendingPostId, router]);
   const showActionError = useCallback((code: keyof typeof t.actionErrors) => {
     const message = t.actionErrors[code];
     Alert.alert(message.title, message.body, [
