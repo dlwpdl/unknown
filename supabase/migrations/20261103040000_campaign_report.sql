@@ -3,7 +3,7 @@
 -- on day 30 the same link shows them fixed. The number log only grows: a wrong number is never deleted, a row that corrects it
 -- is added. Gling's own working minutes per step go in the same log. Runs after 20261103030000.
 
--- 1. The number log takes the store's starting values, the hosted meals, our minutes per step and POS numbers.
+-- 1. The log takes store base values, hosted meals, guest_sales_cents (what discount guests paid, unlike sales_cents), our minutes and POS numbers.
 -- corrects: the row this one corrects (at most one correction per row). withdrawn: this row voids the one it corrects and holds 0.
 alter table private.partnership_metrics
   drop constraint partnership_metrics_subject_check,
@@ -14,7 +14,7 @@ alter table private.partnership_metrics
   add constraint partnership_metrics_metric_check check(metric in ('views','likes','comments','shares','saves','google_searches',
     'google_directions','google_calls','ig_profile_visits','ig_follows','customers','sales_cents','discount_total_cents',
     'ig_followers','google_reviews','hosted_meals_cents','minutes_setup','minutes_discovery','minutes_outreach','minutes_schedule',
-    'minutes_visit','minutes_content','minutes_report','minutes_exceptions')),
+    'minutes_visit','minutes_content','minutes_report','minutes_exceptions','guest_sales_cents')),
   add constraint partnership_metrics_source_check check(source in ('graph_api','creator_capture','store_report','owner','pos')),
   -- As before, plus: our minutes are gling rows with a period, and only gling rows hold minutes.
   add constraint partnership_metrics_check1 check(case subject
@@ -250,10 +250,11 @@ language sql stable security definer set search_path='' as $$
   -- Counter checks on the store link that were not undone, by the business's day.
   uses as (select u.kind,(u.used_at at time zone c.tz)::date d from private.partnership_store_uses u,c
     where u.campaign_id=c.id and u.cancelled_at is null),
-  -- What the store spent: its discounts plus the winners' meals it hosted.
+  -- What the store spent: its discounts plus the winners' meals it hosted. What the discount guests paid is sales, not spend.
   money as (select *,case when discount is not null or meals is not null then coalesce(discount,0)+coalesce(meals,0) end spend
     from (select sum(value) filter (where metric='discount_total_cents') discount,sum(value) filter (where metric='hosted_meals_cents') meals,
-        coalesce(bool_and(confirmed) filter (where metric in ('discount_total_cents','hosted_meals_cents')),false) confirmed
+        sum(value) filter (where metric='guest_sales_cents') guest_sales,
+        coalesce(bool_and(confirmed) filter (where metric in ('discount_total_cents','hosted_meals_cents','guest_sales_cents')),false) confirmed
       from live where subject='store') x),
   -- Per Instagram link: the latest live value of each number, and when the link was first measured.
   latest as (
@@ -277,7 +278,7 @@ language sql stable security definer set search_path='' as $$
         'winner',count(*) filter (where kind='winner'),
         'by_day',coalesce((select jsonb_agg(jsonb_build_object('day',d,'n',n) order by d) from (select d,count(*) n from uses group by d) x),'[]'))
       from uses),
-    'money',(select jsonb_build_object('discount_total_cents',discount,'hosted_meals_cents',meals,'store_spend_cents',spend,
+    'money',(select jsonb_build_object('discount_total_cents',discount,'hosted_meals_cents',meals,'guest_sales_cents',guest_sales,'store_spend_cents',spend,
         'per_guest_cents',round(spend/nullif((select count(*) from uses),0))::bigint,'confirmed',confirmed) from money),
     'contents',(select coalesce(jsonb_agg(jsonb_build_object('label',case when subject='our_post' then '우리 글 '||nth
           when person<=26 then chr(64+person::int) else chr(64+((person-1)/26)::int)||chr(65+((person-1)%26)::int) end,

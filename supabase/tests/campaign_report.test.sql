@@ -83,7 +83,8 @@ insert into private.partnership_metrics(id,campaign_id,participation_id,subject,
    ('13',2,null,'store','google_calls',3,null,0,1,1,'store_report',true,''),
    ('14',1,'1','creator_content','views',50000,'https://www.instagram.com/reel/RptReelA1/',null,null,7,'owner',true,''),
    ('15',2,null,'store','google_directions',4,null,0,1,1,'store_report',true,''),
-   ('16',2,null,'store','customers',10,null,0,1,1,'store_report',true,'')) v(m,c,p,subject,metric,value,url,ps,pe,at,source,ok,note);
+   ('16',2,null,'store','customers',10,null,0,1,1,'store_report',true,''),
+   ('17',1,null,'store','guest_sales_cents',120000,null,0,27,28,'store_report',true,'')) v(m,c,p,subject,metric,value,url,ps,pe,at,source,ok,note);
 
 -- The log's new rules, straight on the table.
 create function pg_temp.row(subject text,metric text,value bigint,period boolean,corrects uuid default null,withdrawn boolean default false) returns void
@@ -97,10 +98,15 @@ select throws_ok(format('select pg_temp.row(%L,%L,%s,%L,%L,%L)',v.subject,v.metr
     ('store','minutes_visit',10,true,null,false,'minutes on a store row'),
     ('our_post','minutes_visit',10,true,null,false,'minutes on our post'),
     ('store','google_calls',0,true,null,true,'a withdrawal that corrects nothing'),
-    ('store','google_calls',5,true,'e1980000-0000-0000-0000-000000000016',true,'a withdrawal that is not 0')) v(subject,metric,value,period,corrects,withdrawn,why);
+    ('store','google_calls',5,true,'e1980000-0000-0000-0000-000000000016',true,'a withdrawal that is not 0'),
+    ('gling','guest_sales_cents',10,true,null,false,'guest sales on our minutes row')) v(subject,metric,value,period,corrects,withdrawn,why);
 select throws_ok($$insert into private.partnership_metrics(campaign_id,subject,metric,value,url,period_start,period_end,source)
   values('e1930000-0000-0000-0000-000000000002','gling','minutes_setup',5,'https://www.instagram.com/p/RptOurs01/',current_date,current_date,'owner')$$,
   '23514',null,'refused: our minutes with a link');
+select throws_ok(format($$insert into private.partnership_metrics(campaign_id,participation_id,subject,metric,value,url,source)
+  values('e1930000-0000-0000-0000-000000000001',%L,%L,'guest_sales_cents',5,%L,'owner')$$,v.p,v.subject,v.url),'23514',null,'refused: guest sales on '||v.subject)
+  from (values ('e1950000-0000-0000-0000-000000000001','creator_content','https://www.instagram.com/reel/RptReelA1/'),
+    (null,'our_post','https://www.instagram.com/p/RptOurs01/')) v(p,subject,url);
 select lives_ok($$select pg_temp.row('gling','minutes_exceptions',20,true)$$,'our minutes with a period are kept');
 select lives_ok($$select pg_temp.row('store','hosted_meals_cents',15000,true)$$,'the store''s hosted meals are kept');
 select lives_ok($$insert into private.partnership_metrics(campaign_id,subject,metric,value,period_start,period_end,source)
@@ -177,7 +183,8 @@ create temp table added on commit drop as select n,public.add_admin_campaign_led
  (2,'{"corrects":"e1980000-0000-0000-0000-000000000009","value":40000,"source":"pos","note":"secret-note-pos"}'::jsonb),
  (3,'{"corrects":"e1980000-0000-0000-0000-000000000007","withdrawn":true,"source":"owner"}'),
  (4,'{"corrects":"e1980000-0000-0000-0000-000000000014","withdrawn":true,"source":"owner","confirmed":false}'),
- (5,(select jsonb_build_object('subject','gling','metric','minutes_report','value',30,'period_start',s+27,'period_end',s+28,'source','owner') from d))) v(n,e);
+ (5,(select jsonb_build_object('subject','gling','metric','minutes_report','value',30,'period_start',s+27,'period_end',s+28,'source','owner') from d)),
+ (6,'{"corrects":"e1980000-0000-0000-0000-000000000017","value":125000,"source":"pos"}')) v(n,e);
 select is((select r-array['id','observed_at','created_at'] from added where n=1),'{"campaign_id":"e1930000-0000-0000-0000-000000000001",
   "participation_id":"e1950000-0000-0000-0000-000000000002","subject":"creator_content","metric":"views","value":500,"url":"https://www.instagram.com/reel/RptReelB1/",
   "period_start":null,"period_end":null,"source":"creator_capture","confirmed":true,"note":"secret-note-capture","corrects":"e1980000-0000-0000-0000-000000000005","withdrawn":false}'::jsonb,
@@ -192,7 +199,7 @@ select throws_ok($$select public.add_admin_campaign_ledger('e1930000-0000-0000-0
 select lives_ok(format('select public.add_admin_campaign_ledger(%L,%L)','e1930000-0000-0000-0000-000000000002',
   jsonb_build_object('corrects','e1990000-0000-0000-0000-000000000002','value',8,'source','store_report')),'the latest correction can be corrected');
 reset role;
-select is((select count(*)::int from private.partnership_events where action='campaign_ledger_added'),6,'each added row is logged');
+select is((select count(*)::int from private.partnership_events where action='campaign_ledger_added'),7,'each added row is logged');
 select is((select count(*)::int from private.partnership_events where action='campaign_ledger_added' and details::text like '%secret-note%'),0,
   'the log event leaves the note out');
 select is((select details-'kind'-'campaign_id' from private.partnership_events where action='campaign_ledger_added' and resource_id=(select (r->>'id')::uuid from added where n=4)),
@@ -207,7 +214,8 @@ select is((select array_agg((x->>'id')::uuid order by x->>'id') from board,jsonb
   (select array_agg(id order by id::text) from private.partnership_metrics_live where campaign_id='e1930000-0000-0000-0000-000000000001'),
   'the dashboard lists only live numbers');
 select is((select count(*)::int from board,jsonb_array_elements(l->'metrics') x
-    where x->>'id' in ('e1980000-0000-0000-0000-000000000005','e1980000-0000-0000-0000-000000000009','e1980000-0000-0000-0000-000000000014')),0,
+    where x->>'id' in ('e1980000-0000-0000-0000-000000000005','e1980000-0000-0000-0000-000000000009','e1980000-0000-0000-0000-000000000014',
+      'e1980000-0000-0000-0000-000000000017')),0,
   'corrected and voided numbers are gone from the dashboard');
 select is((select jsonb_agg(jsonb_build_object('name',p->>'name','views',(p->>'views')::int) order by p->>'views') from board,jsonb_array_elements(l->'alerts') a,
     jsonb_array_elements(a->'people') p where a->>'kind'='content_low_views'),
@@ -279,8 +287,10 @@ select ok((select (b->>'synced_at')::timestamptz>=now() from biz),'and when it w
 select is((select b->'guests' from biz),(select jsonb_build_object('total',6,'discount',4,'winner',2,'by_day',jsonb_build_array(
   jsonb_build_object('day',s+2,'n',3),jsonb_build_object('day',s+3,'n',2),jsonb_build_object('day',s+5,'n',1))) from d),
   'guests are the counter checks not undone, by the business''s day');
-select is((select b->'money' from biz),'{"discount_total_cents":40000,"hosted_meals_cents":30000,"store_spend_cents":70000,"per_guest_cents":11667,"confirmed":false}'::jsonb,
-  'what the store spent is the corrected discount plus the hosted meals, per guest, and an estimate makes the money unconfirmed');
+select is((select b->'money' from biz),'{"discount_total_cents":40000,"hosted_meals_cents":30000,"guest_sales_cents":125000,"store_spend_cents":70000,
+    "per_guest_cents":11667,"confirmed":false}'::jsonb,
+  'money has exactly these keys: guest sales are the corrected POS total and stay apart from what the store spent (corrected discount plus hosted meals, '
+  'per guest), and an estimate makes the money unconfirmed');
 select is((select b->'contents' from biz),(select jsonb_build_array(
   jsonb_build_object('label','A','kind','creator_content','url','https://www.instagram.com/reel/RptReelA1/','first_seen',s+3,'views',900,
     'views_at',((s+5)+time '12:00') at time zone 'America/Vancouver','likes',40,'comments',null,'shares',null,'saves',null,'confirmed',false),
@@ -294,6 +304,7 @@ select is((select b->'contents' from biz),(select jsonb_build_array(
 select is((select b->'store' from biz),(select jsonb_build_array(
   jsonb_build_object('metric','ig_followers','value',1200,'period_start',s-31,'period_end',s-1,'source','owner','confirmed',true,'before_start',true),
   jsonb_build_object('metric','discount_total_cents','value',40000,'period_start',s,'period_end',s+27,'source','pos','confirmed',true,'before_start',false),
+  jsonb_build_object('metric','guest_sales_cents','value',125000,'period_start',s,'period_end',s+27,'source','pos','confirmed',true,'before_start',false),
   jsonb_build_object('metric','hosted_meals_cents','value',30000,'period_start',s,'period_end',s+27,'source','store_report','confirmed',false,'before_start',false)) from d),
   'store numbers are the live ones, and a period ending before the start is a base value');
 select is((select b->'people' from biz),'{"applied":6,"confirmed":2,"visited":2,"posted":2}'::jsonb,
@@ -314,16 +325,17 @@ select is((select jsonb_agg(jsonb_build_object('label',x->>'label','handle',x->>
     {"label":"B","handle":"report.bravo","entry":"e1950000-0000-0000-0000-000000000002"},{"label":"우리 글 1","handle":null,"entry":null}]'::jsonb,
   'the admin sees who each letter is');
 select is((select jsonb_agg(x->>'note' order by n) from adm,jsonb_array_elements(a->'report'->'store') with ordinality s(x,n)),
-  '["secret-note-before","secret-note-pos",""]'::jsonb,'the admin sees the live store notes');
+  '["secret-note-before","secret-note-pos","",""]'::jsonb,'the admin sees the live store notes');
 select is((select a->'report'->'minutes' from adm),'{"total":165,"by_step":{"minutes_setup":90,"minutes_outreach":45,"minutes_report":30}}'::jsonb,
   'our minutes per step and in total');
 select is((select (a->'report')-'minutes'-'synced_at'-'contents'-'store' from adm),(select b-'synced_at'-'contents'-'store' from biz),
   'everything else matches what the business sees');
-select is((select jsonb_array_length(a->'ledger') from adm),18,'the log lists every row, corrected and voided ones too');
+select is((select jsonb_array_length(a->'ledger') from adm),20,'the log lists every row, corrected and voided ones too');
 select is((select jsonb_object_agg(right(x->>'id',2),right(x->>'corrected_by',2)) from adm,jsonb_array_elements(a->'ledger') x
     where x->>'corrected_by' is not null),
   (select jsonb_object_agg(right(corrects::text,2),right(id::text,2)) from private.partnership_metrics
-    where corrects in ('e1980000-0000-0000-0000-000000000005','e1980000-0000-0000-0000-000000000007','e1980000-0000-0000-0000-000000000009','e1980000-0000-0000-0000-000000000014')),
+    where corrects in ('e1980000-0000-0000-0000-000000000005','e1980000-0000-0000-0000-000000000007','e1980000-0000-0000-0000-000000000009','e1980000-0000-0000-0000-000000000014',
+      'e1980000-0000-0000-0000-000000000017')),
   'each corrected or voided row points at the row that replaced it');
 select is((select (a->'link')-'created_at' from adm),(select jsonb_build_object('expires_on',today+365,'revoked_at',null) from d),'the live link''s expiry');
 select is((select count(*)::int from adm,d where position(d.t3 in a::text)>0 or position(d.h3 in a::text)>0),0,'the admin report never holds the token or its hash');
@@ -390,5 +402,24 @@ set local role service_role;
 select is((public.event_store_view(repeat('b',64))->>'applicant_count')::int,2,'the store page counts the same two applicants');
 select is((public.event_store_view(repeat('a',64))->>'applicant_count')::int,6,'and the same six as the closed campaign''s report');
 reset role;
+
+-- Guest sales on the open campaign, whose other money number (hosted meals) is confirmed: an estimate makes the money unconfirmed
+-- until the POS total corrects it, and what the store spent never moves with it.
+select is(private.campaign_report('e1930000-0000-0000-0000-000000000002',true)->'money','{"discount_total_cents":null,"hosted_meals_cents":15000,"guest_sales_cents":null,
+    "store_spend_cents":15000,"per_guest_cents":null,"confirmed":true}'::jsonb,'with no guest sales row the total is empty');
+set local role authenticated;
+create temp table guest on commit drop as select public.add_admin_campaign_ledger('e1930000-0000-0000-0000-000000000002',jsonb_build_object('subject','store',
+  'metric','guest_sales_cents','value',8000,'period_start',today,'period_end',today,'source','store_report','confirmed',false)) r from d;
+reset role;
+select is(jsonb_build_object('business',private.campaign_report('e1930000-0000-0000-0000-000000000002',true)->'money','admin',private.campaign_report('e1930000-0000-0000-0000-000000000002',false)->'money'),
+  jsonb_build_object('business',m,'admin',m),'an estimated guest sales total reaches the business and the admin money, unconfirmed')
+  from (select '{"discount_total_cents":null,"hosted_meals_cents":15000,"guest_sales_cents":8000,"store_spend_cents":15000,"per_guest_cents":null,
+    "confirmed":false}'::jsonb m) x;
+set local role authenticated;
+select lives_ok(format('select public.add_admin_campaign_ledger(%L,%L)','e1930000-0000-0000-0000-000000000002',(select jsonb_build_object('corrects',r->>'id','value',9000,'source','pos') from guest)),
+  'the POS total corrects the estimate');
+reset role;
+select is(private.campaign_report('e1930000-0000-0000-0000-000000000002',true)->'money','{"discount_total_cents":null,"hosted_meals_cents":15000,"guest_sales_cents":9000,
+    "store_spend_cents":15000,"per_guest_cents":null,"confirmed":true}'::jsonb,'after the correction the total is the POS number, confirmed');
 select * from finish();
 rollback;
