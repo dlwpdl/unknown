@@ -161,7 +161,8 @@ function Sheet({ report, fresh }: { report: Report; fresh: ReadonlySet<string> }
   const business = [
     (guests.discount > 0 || money.discount_total_cents !== null) && [COPY.setDiscount, ''],
     guests.total > 0 && [COPY.checkGuests, firstDay ? COPY.since(md(firstDay)) : ''],
-    (guests.winner > 0 || money.hosted_meals_cents !== null) && [COPY.hostMeals, money.hosted_meals_cents !== null ? pay(money.hosted_meals_cents) : ''],
+    // A winner the board marked as visited was hosted too, even before the store link existed.
+    (guests.winner > 0 || people.visited > 0 || money.hosted_meals_cents !== null) && [COPY.hostMeals, money.hosted_meals_cents !== null ? pay(money.hosted_meals_cents) : ''],
   ].filter((item): item is [string, string] => !!item);
   const gling = [
     people.reviewed > 0 && [COPY.reviewed(count(people.reviewed)), ''],
@@ -195,25 +196,7 @@ function Sheet({ report, fresh }: { report: Report; fresh: ReadonlySet<string> }
     <p className="rpt-biz">{[report.business, report.starts_on && COPY.since(md(report.starts_on))].filter(Boolean).join(' · ')}</p>
     {!!summary && <p className="rpt-sum">{summary}</p>}
 
-    <Question title={COPY.guestsQ} sure>
-      <div className="rpt-kpis">
-        <Kpi title={COPY.guests} value={guests.total > 0 || fixedAt ? COPY.people(count(guests.total)) : null} blank={COPY.none}
-          how={guests.total > 0 || fixedAt ? COPY.guestsHow : COPY.guestsWait} source={COPY.storeLink} />
-      </div>
-    </Question>
-
-    {/* With no money rows the contract says confirmed: false; the panel kept 확인값 over its empty cards */}
-    <Question title={COPY.moneyQ} sure={money.confirmed || (sales === null && money.store_spend_cents === null)}>
-      <div className="rpt-kpis">
-        <Kpi title={COPY.sales} value={sales === null ? null : pay(sales)} blank={COPY.none} how={COPY.salesHow} source={COPY.pos} />
-        <Kpi title={COPY.spend} value={money.store_spend_cents === null ? null : pay(money.store_spend_cents)} blank={COPY.noRecord}
-          how={spendHow || `${COPY.meals} + ${COPY.discount}`} source={COPY.spendSource} />
-        <Kpi title={COPY.perGuest} value={money.per_guest_cents === null ? null : pay(money.per_guest_cents)} blank={COPY.notYet}
-          how={money.per_guest_cents !== null && money.store_spend_cents !== null ? COPY.perGuestHow(pay(money.store_spend_cents), count(guests.total)) : COPY.perGuestWait}
-          source={COPY.auto} />
-      </div>
-    </Question>
-
+    {/* Owner 2026-11-03: reel views lead the report ("릴스 조회수가 아닐까"); guests and money follow. */}
     <Question title={COPY.viewsQ} sure={!contents.length || contents.some(item => item.confirmed)}>
       {contents.length > 0 && <div className="rpt-kpis"><Kpi title={COPY.views} value={count(report.views_total)} how={fixedAt ? COPY.viewsFixed : undefined} /></div>}
       <ul className="rpt-vlist">
@@ -234,6 +217,25 @@ function Sheet({ report, fresh }: { report: Report; fresh: ReadonlySet<string> }
           <div className="rpt-when"><Chip tone="dash">{COPY.waiting}</Chip></div></li>}
         {!!fixedAt && !contents.length && <li className="rpt-wait"><div><strong>{COPY.videos}</strong></div><div className="rpt-when"><Chip>{COPY.noVideo}</Chip></div></li>}
       </ul>
+    </Question>
+
+    <Question title={COPY.guestsQ} sure>
+      <div className="rpt-kpis">
+        <Kpi title={COPY.guests} value={guests.total > 0 || fixedAt ? COPY.people(count(guests.total)) : null} blank={COPY.none}
+          how={guests.total > 0 || fixedAt ? COPY.guestsHow : COPY.guestsWait} source={COPY.storeLink} />
+      </div>
+    </Question>
+
+    {/* With no money rows the contract says confirmed: false; the panel kept 확인값 over its empty cards */}
+    <Question title={COPY.moneyQ} sure={money.confirmed || (sales === null && money.store_spend_cents === null)}>
+      <div className="rpt-kpis">
+        <Kpi title={COPY.sales} value={sales === null ? null : pay(sales)} blank={COPY.none} how={COPY.salesHow} source={COPY.pos} />
+        <Kpi title={COPY.spend} value={money.store_spend_cents === null ? null : pay(money.store_spend_cents)} blank={COPY.noRecord}
+          how={spendHow || `${COPY.meals} + ${COPY.discount}`} source={COPY.spendSource} />
+        <Kpi title={COPY.perGuest} value={money.per_guest_cents === null ? null : pay(money.per_guest_cents)} blank={COPY.notYet}
+          how={money.per_guest_cents !== null && money.store_spend_cents !== null ? COPY.perGuestHow(pay(money.store_spend_cents), count(guests.total)) : COPY.perGuestWait}
+          source={COPY.auto} />
+      </div>
     </Question>
 
     <Question title={COPY.whoQ} sure>
