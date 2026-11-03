@@ -63,7 +63,7 @@ select lives_ok($$select public.link_admin_merchant_post('b1d10000-0000-4000-800
 select lives_ok($$select public.link_admin_merchant_post('b1d10000-0000-4000-8000-000000000002','b1d20000-0000-4000-8000-000000000008','https://example.com/unclaimed')$$,
  'admin links its own post to a business with no connected owner');
 reset role;
-select is((select business_author_id from public.posts where id='b1d20000-0000-4000-8000-000000000008'),null::uuid,'business without a connected owner leaves the post under the admin profile');
+select is((select business_author_id from public.posts where id='b1d20000-0000-4000-8000-000000000008'),'b1d10000-0000-4000-8000-000000000002'::uuid,'admin post shows as the business even before an owner connects');
 select is((select business_author_id from public.posts where id='b1d20000-0000-4000-8000-000000000004'),'b1d10000-0000-4000-8000-000000000001'::uuid,'admin post now appears as the business');
 select is((select author_id from public.posts where id='b1d20000-0000-4000-8000-000000000004'),'b1d00000-0000-4000-8000-000000000004'::uuid,'real admin author stays recorded for moderation');
 select ok((select managed from private.merchant_membership_usage where post_id='b1d20000-0000-4000-8000-000000000004'),'admin link is recorded as managed usage');
