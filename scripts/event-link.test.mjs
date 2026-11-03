@@ -142,6 +142,28 @@ test('the store token is hashed before the database sees it, and a check returns
   assert.equal(missing.calls.length, 3, 'bad input never reaches the database');
 });
 
+test('the report token is hashed before the database sees it, and only a lone well-formed token is read', async () => {
+  const report = { title: 'Open event', business: 'Shop', views_total: 2400, fixed_at: null };
+  const { calls, send } = setup({ event_report_view: report });
+  const opened = await send({ report: token });
+  assert.equal(opened.status, 200);
+  assert.deepEqual(await opened.json(), { report });
+  assert.equal(opened.headers.get('cache-control'), 'no-store');
+  assert.equal(opened.headers.get('x-robots-tag'), 'noindex, nofollow');
+  assert.equal(opened.headers.get('referrer-policy'), 'no-referrer');
+  assert.deepEqual(calls, [{ name: 'event_report_view', args: { p_token_sha256: hex(token) } }]);
+  assert.ok(!JSON.stringify(calls).includes(token), 'the raw token never leaves the function');
+  const missing = setup();
+  assert.equal((await missing.send({ report: token })).status, 404, 'a revoked, expired or unknown link');
+  assert.equal((await missing.send({ report: 'short' })).status, 404);
+  assert.equal((await missing.send({ report: token.slice(1) + '=' })).status, 404);
+  for (const body of [{ report: 7 }, { report: [token] }, { report: null }, { report: token, store: token }, { report: token, handle: 'someone' },
+    { report: token, undo: '0b6d5a4e-1f2a-4c3b-9d8e-7f6a5b4c3d2e' }, { report: token, apply: 'open-event' }, { report: token, extra: 1 }]) {
+    assert.equal((await missing.send(body)).status, 400, JSON.stringify(body).slice(0, 80));
+  }
+  assert.equal(missing.calls.length, 1, 'only the well-formed lone token reaches the database');
+});
+
 test('a database failure answers 503 without details', async () => {
   const response = await handleEventLink(new Request('https://example.test', { method: 'POST', body: JSON.stringify({ apply: 'open-event' }) }),
     { rpc: async () => { throw new Error('connection details'); }, ipSalt: 'salt' });

@@ -112,7 +112,7 @@ export default function EventPartnerPage() {
               winner.party_size ? copy.party(winner.party_size) : '',
               winner.has_allergies ? copy.allergies(winner.allergies ?? '') : winner.has_allergies === false ? copy.noAllergies : ''].filter(Boolean).join(' · ')} />)}
         </ListCard> : <ThemedText themeColor="textSecondary" style={Typography.body}>{copy.noWinners}</ThemedText>}
-        <ThemedText themeColor="textSecondary" style={Typography.supporting}>{copy.applicants(view.applicant_count)}</ThemedText>
+        {view.applicant_count > 0 && <ThemedText themeColor="textSecondary" style={Typography.supporting}>{copy.applicants(view.applicant_count)}</ThemedText>}
       </View>
 
       {view.benefits.length > 0 && <View style={eventStyles.section}>

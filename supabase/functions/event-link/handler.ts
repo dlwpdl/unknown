@@ -1,5 +1,5 @@
-// Public event links: the apply page (/apply?event=<slug>) and the store page (/partner#<token>).
-// POST only, so neither the store token nor anything typed lands in a URL or a request log.
+// Public event links: the apply page (/apply?event=<slug>), the store page (/partner#<token>) and the campaign report page
+// (/report#<token>). POST only, so no token and nothing typed lands in a URL or a request log.
 export const PUBLIC_ORIGIN = 'https://gling.ej-entertainment.com';
 const SLUG = /^[a-z0-9][a-z0-9-]{2,59}$/;
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;
@@ -106,6 +106,11 @@ export async function handleEventLink(request: Request, { rpc, ipSalt, origins =
       const found = await rpc('event_store_check', { p_token_sha256: token, p_handle: body.handle }) as
         { status?: string; use_id?: string; uses?: number; meal_used?: boolean } | null;
       return found?.status ? reply(200, { status: found.status, use_id: found.use_id, uses: found.uses, meal_used: found.meal_used }) : notFound();
+    }
+    if (keys.length === 1 && typeof body.report === 'string') {
+      if (!TOKEN.test(body.report)) return notFound();
+      const report = await rpc('event_report_view', { p_token_sha256: await sha256(body.report) });
+      return report ? reply(200, { report }) : notFound();
     }
     return reply(400, { error: 'invalid' });
   } catch {
