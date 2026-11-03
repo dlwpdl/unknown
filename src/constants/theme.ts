@@ -32,6 +32,11 @@ export const Colors = {
     accentInk: '#171123',
     navy: '#B9C8FF',
     danger: '#FF8585',
+    // Measured / estimated marks on the dark campaign report (/report); its light screen uses Colors.admin's. 7:1+ on their backgrounds.
+    success: '#7FD4A6',
+    successBackground: '#173B2B',
+    warning: '#F0C674',
+    warningBackground: '#3D3015',
   },
   admin: {
     text: '#252631',
