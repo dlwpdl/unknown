@@ -103,6 +103,7 @@ export default function EventApplyPage() {
   return <EventPage language={language} onLanguage={setLanguage} title={`${info.title} · Gling`}>
     <EventHeader language={language} title={info.title} business={info.business} avatar={info.avatar} instagram={info.instagram} />
     {done ? <StateCard layout="start" kind="success" mark="check" title={copy.done[0]} body={copy.done[1]}>
+      <ThemedText type="small" themeColor="textSecondary">{copy.doneChange}</ThemedText>
       <RaisedActionButton analyticsId="event.apply.follow" tone="secondary" label={copy.btn_profile2}
         onPress={() => { play('selection'); window.open('https://www.instagram.com/gling.app/', '_blank', 'noopener'); }} />
     </StateCard> : <>

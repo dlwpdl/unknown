@@ -202,15 +202,31 @@ select is((select to_jsonb(p)->>'outreach_stage' from private.partnership_partic
 select is(public.event_apply('open-event','GLING.TESTER',jsonb_build_array(pg_temp.pick(2,'18:00')),1,null,3,'en',pg_temp.ip(4)),'{"ok":true,"already":true}'::jsonb,'same handle again is accepted as a repeat');
 select is((select count(*) from private.partnership_participations where campaign_id='e1530000-0000-0000-0000-000000000001'),1::bigint,'repeat entry keeps one row');
 select is((select count(*) from private.partnership_creators where city_id='event-link-test'),1::bigint,'repeat entry keeps one creator');
+-- Anyone can type a handle, so a repeat must not change what the person first sent (security review 2026-11-03); they DM us instead.
 select is((select jsonb_build_object('slots',preferred_slots,'party',party_size,'has_allergies',has_allergies,'allergies',allergies,'reel',reel_within_days,'language',language)
   from private.partnership_participations where campaign_id='e1530000-0000-0000-0000-000000000001'),
-  jsonb_build_object('slots',jsonb_build_array(pg_temp.pick(2,'18:00')),'party',1,'has_allergies',false,'allergies',null,'reel',3,'language','en'),'repeat entry refreshes what the person picked');
-select is((select count(*) from private.partnership_events where action='participation_applied' and details->>'campaign_id'='e1530000-0000-0000-0000-000000000001'),2::bigint,'every entry is in the audit trail');
+  jsonb_build_object('slots',jsonb_build_array(pg_temp.pick(1,'18:00'),pg_temp.pick(2,'19:00')),'party',3,'has_allergies',true,'allergies','Peanuts','reel',7,'language','ko'),
+  'a repeat entry leaves what the person first sent');
+select is((select count(*) from private.partnership_events where action='participation_applied' and details->>'campaign_id'='e1530000-0000-0000-0000-000000000001'),1::bigint,
+  'the first entry is in the audit trail; a repeat that changes nothing is not');
 insert into private.partnership_creators(id,display_name,city_id,profile_url) values
  ('e1510000-0000-0000-0000-000000000001','Known Creator','event-link-test','https://instagram.com/Known_One');
 select is(pg_temp.apply('open-event','known_one',5)->>'ok','true','a creator already on file can apply');
 select is((select count(*) from private.partnership_creators where city_id='event-link-test'),2::bigint,'existing creator is reused by profile key, not duplicated');
 select is((select display_name from private.partnership_creators where id='e1510000-0000-0000-0000-000000000001'),'Known Creator','applying does not rename an existing creator');
+-- Someone added on the board before sending the form gets their answers filled in once; after that they stay.
+insert into private.partnership_creators(id,display_name,city_id,profile_url) values
+ ('e1510000-0000-0000-0000-000000000002','Board Added','event-link-test','https://www.instagram.com/board.added/');
+insert into private.partnership_participations(id,campaign_id,creator_id,stage) values
+ ('e1540000-0000-0000-0000-000000000002','e1530000-0000-0000-0000-000000000001','e1510000-0000-0000-0000-000000000002','applied');
+select is(public.event_apply('open-event','board.added',jsonb_build_array(pg_temp.pick(2,'19:00')),4,'Shellfish',6,'ko',pg_temp.ip(5)),'{"ok":true,"already":true}'::jsonb,
+  'a board-added person sends the form');
+select is(public.event_apply('open-event','board.added',jsonb_build_array(pg_temp.pick(1,'18:00')),1,null,2,'en',pg_temp.ip(5)),'{"ok":true,"already":true}'::jsonb,
+  'and sends it again');
+select is((select jsonb_build_object('via',applied_via,'applied',applied_at is not null,'slots',preferred_slots,'party',party_size,'allergies',allergies,'reel',reel_within_days,'language',language)
+  from private.partnership_participations where id='e1540000-0000-0000-0000-000000000002'),
+  jsonb_build_object('via','apply_link','applied',true,'slots',jsonb_build_array(pg_temp.pick(2,'19:00')),'party',4,'allergies','Shellfish','reel',6,'language','ko'),
+  'their first form fills the board row and the second changes nothing');
 
 -- Ten tries an hour per IP, bad tries included.
 select is(pg_temp.apply('open-event','spam'||n,6)->>'ok','true','try '||n||' within the hourly cap') from generate_series(1,9) n;
@@ -221,6 +237,22 @@ select is(pg_temp.apply('open-event','other_ip',7)->>'ok','true','another IP is 
 update private.partnership_apply_attempts set created_at=created_at-interval '61 minutes' where ip_sha256=pg_temp.ip(6);
 select is(pg_temp.apply('open-event','spam11',6)->>'ok','true','the cap resets after an hour');
 select is((select count(*) from private.partnership_apply_attempts where created_at<clock_timestamp()-interval '1 hour'),0::bigint,'old attempts are pruned');
+select is(public.event_apply('open-event','no.ip',jsonb_build_array(pg_temp.pick(1,'18:00')),2,null,5,'en',null)->>'ok','true',
+  'with no client IP the entry is taken and only the event cap applies');
+
+-- Thirty link entries an hour per event whatever the IPs: what a flood from changing IPs can write.
+insert into private.partnership_creators(id,display_name,city_id,profile_url)
+select gen_random_uuid(),'flood'||n,'event-link-test','https://www.instagram.com/flood'||n||'/' from generate_series(1,30) n;
+insert into private.partnership_participations(id,campaign_id,creator_id,applied_via,applied_at)
+select gen_random_uuid(),'e1530000-0000-0000-0000-000000000001',id,'apply_link',clock_timestamp() from private.partnership_creators where display_name like 'flood%'
+limit (select 30-count(*) from private.partnership_participations where campaign_id='e1530000-0000-0000-0000-000000000001'
+  and applied_via='apply_link' and applied_at>clock_timestamp()-interval '1 hour');
+select is(pg_temp.apply('open-event','one.too.many',30)->>'error','busy','the 31st link entry in an hour is refused, from a fresh IP too');
+select is(pg_temp.apply('open-event','gling.tester',31)->>'error','busy','over the cap a repeat gets the same answer as a new name');
+select is((select count(*) from private.partnership_creators where display_name='one.too.many'),0::bigint,'an entry over the event cap writes nothing');
+update private.partnership_participations set applied_at=applied_at-interval '61 minutes'
+  where creator_id in (select id from private.partnership_creators where display_name like 'flood%');
+select is(pg_temp.apply('open-event','gling.tester',32),'{"ok":true,"already":true}'::jsonb,'an hour later the event takes entries again');
 
 -- Store view: winners, applicant count and active benefits only.
 insert into private.partnership_creators(id,display_name,city_id,profile_url) values

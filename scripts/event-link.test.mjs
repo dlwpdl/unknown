@@ -9,9 +9,10 @@ const entry = { apply: 'open-event', handle: 'someone', slots: [{ date: '2030-01
 function setup(answers = {}) {
   const calls = [];
   const rpc = async (name, args) => { calls.push({ name, args }); return name in answers ? answers[name] : null; };
-  const send = (body, { method = 'POST', origin = PUBLIC_ORIGIN, ip = '203.0.113.9, 10.0.0.1', salt = 'salt' } = {}) => handleEventLink(
+  // The caller writes X-Forwarded-For's first value; Cloudflare sets CF-Connecting-IP.
+  const send = (body, { method = 'POST', origin = PUBLIC_ORIGIN, ip = '203.0.113.9', forwarded = '198.51.100.7, 203.0.113.9', salt = 'salt' } = {}) => handleEventLink(
     new Request('https://example.test/functions/v1/event-link', {
-      method, headers: { ...(origin ? { origin } : {}), 'x-forwarded-for': ip, 'content-type': 'application/json' },
+      method, headers: { ...(origin ? { origin } : {}), ...(ip ? { 'cf-connecting-ip': ip } : {}), 'x-forwarded-for': forwarded, 'content-type': 'application/json' },
       ...(method === 'POST' ? { body: typeof body === 'string' ? body : JSON.stringify(body) } : {}),
     }), { rpc, ipSalt: salt });
   return { calls, send };
@@ -61,8 +62,21 @@ test('an entry sends only a salted IP hash and answers ok without saying whether
   assert.ok(!JSON.stringify(calls).includes('203.0.113.9'), 'the raw IP never leaves the function');
 });
 
+test('the hourly IP cap keys on the address Cloudflare saw, never on a forwarded value the caller wrote', async () => {
+  const { calls, send } = setup({ event_apply: { ok: true, already: false } });
+  await send(entry, { forwarded: '198.51.100.1' });
+  await send(entry, { forwarded: '198.51.100.2' });
+  assert.deepEqual(calls.map(call => call.args.p_ip_sha256), [hex('salt:203.0.113.9'), hex('salt:203.0.113.9')]);
+  const warn = console.warn;
+  console.warn = () => {};
+  try {
+    assert.equal((await send(entry, { ip: '' })).status, 200);
+  } finally { console.warn = warn; }
+  assert.equal(calls[2].args.p_ip_sha256, null, 'no Cloudflare address: the database applies only the per-event cap');
+});
+
 test('entry problems map to clear statuses and bad input never reaches the database', async () => {
-  for (const [error, status] of [['not_found', 404], ['invalid', 400], ['rate_limited', 429], ['surprise', 503]]) {
+  for (const [error, status] of [['not_found', 404], ['invalid', 400], ['rate_limited', 429], ['busy', 503], ['surprise', 503]]) {
     const { send } = setup({ event_apply: { ok: false, error } });
     assert.equal((await send(entry)).status, status, error);
   }

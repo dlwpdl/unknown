@@ -65,11 +65,14 @@ export async function handleEventLink(request: Request, { rpc, ipSalt, origins =
         || (allergies !== null && !text(allergies, 200)) || (language !== 'en' && language !== 'ko')) return reply(400, { error: 'invalid' });
       if (!SLUG.test(apply as string)) return notFound();
       if (!ipSalt) return reply(503, { error: 'unavailable' });
-      // Only a salted hash of the caller's IP reaches the database, for the hourly cap.
-      const ip = (request.headers.get('x-forwarded-for') ?? '').split(',')[0].trim();
+      // Only a salted hash of the caller's IP reaches the database, for the hourly cap. Cloudflare, in front of Supabase, sets
+      // CF-Connecting-IP to the address that connected to it; the first X-Forwarded-For value is whatever the caller wrote
+      // (security review 2026-11-03). Without it the database applies only the per-event cap.
+      const ip = request.headers.get('cf-connecting-ip')?.trim();
+      if (!ip) console.warn('event-link: no CF-Connecting-IP, only the per-event hourly cap applies');
       const result = await rpc('event_apply', {
         p_slug: apply, p_handle: handle, p_slots: slots, p_party: party, p_allergies: allergies, p_reel_days: reel_days, p_language: language,
-        p_ip_sha256: await sha256(`${ipSalt}:${ip}`),
+        p_ip_sha256: ip ? await sha256(`${ipSalt}:${ip}`) : null,
       }) as { ok?: boolean; error?: string } | null;
       if (result?.ok === true) return reply(200, { ok: true });
       const status = APPLY_STATUS[result?.error ?? ''];

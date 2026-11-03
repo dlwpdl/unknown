@@ -90,7 +90,7 @@ select is((select jsonb_build_object('via',applied_via,'channel',dm_channel,'lan
 select is(public.event_apply('late-event','on.time',jsonb_build_array(jsonb_build_object('date',to_char(d+2,'YYYY-MM-DD'),'time','18:00')),1,null,3,'en',pg_temp.ip(1)),
   '{"ok":true,"already":true}'::jsonb,'an on-time applicant sends the form again after the deadline') from today;
 select is((select jsonb_build_object('party',party_size,'early',applied_at<clock_timestamp()-interval '2 days') from private.partnership_participations where id=pg_temp.pid('on.time')),
-  '{"party":1,"early":true}'::jsonb,'the repeat refreshes the picks but keeps the first entry time');
+  '{"party":null,"early":true}'::jsonb,'the repeat changes nothing and keeps the first entry time');
 select is((select jsonb_object_agg(r.display_name,private.event_entry_late(p)) from private.partnership_participations p join private.partnership_creators r on r.id=p.creator_id
   where r.display_name in ('late.one','on.time','admin.added')),'{"late.one":true,"on.time":false,"admin.added":false}'::jsonb,
   'late means entered through the link after ends_on; people added by hand are never late');

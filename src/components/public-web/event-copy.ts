@@ -39,6 +39,8 @@ export const EVENT_COPY = {
     privacy: "We use your details to run this event. If you're picked, the restaurant sees your visit time, party size and allergies. We keep your Instagram handle in our creator list.",
     btn_submit: 'Apply',
     done: ['Got your entry!', "We'll check on draw day that you're following @gling.app. If you're not, your entry won't count."],
+    // draft: under `done`. Sending the form again changes nothing (security review 2026-11-03), so changes come by DM.
+    doneChange: "Applying again won't update your entry. Need to change something? DM us at @gling.app.",
     btn_profile2: 'Open @gling.app',
     foot: 'Gling · gling.ej-entertainment.com',
     // draft: the "when" line built from campaign dates (copy.json's example adds weekdays and a winner date the campaign does not store)
@@ -111,6 +113,7 @@ export const EVENT_COPY = {
     privacy: '적어 주신 정보는 이 이벤트를 진행하는 데 써요. 당첨되면 방문 시간, 인원, 알레르기를 가게에서 볼 수 있어요. 인스타 아이디는 글링 크리에이터 목록에 남아요.',
     btn_submit: '지원하기',
     done: ['신청받았어요!', '추첨하는 날 @gling.app 팔로우를 한 번 확인해요. 그날 팔로우가 안 되어 있으면 추첨에서 빠져요.'],
+    doneChange: '다시 신청해도 처음 적어 주신 내용은 안 바뀌어요. 바꿀 게 있으면 @gling.app으로 DM 주세요.',
     btn_profile2: '@gling.app 열기',
     foot: '글링 · gling.ej-entertainment.com',
     // Korean dates here always end in 일, so 이에요 fits.
