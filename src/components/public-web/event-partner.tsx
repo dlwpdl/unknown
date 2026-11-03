@@ -27,8 +27,10 @@ export default function EventPartnerPage() {
   const [attempt, setAttempt] = useState(0);
   const [handle, setHandle] = useState('');
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ handle: string; status: EventLookupStatus } | null>(null);
-  const [notice, setNotice] = useState<'badHandle' | 'sendFailed' | null>(null);
+  // A check that finds someone is recorded as one use (owner 2026-11-02 "가게 링크 버튼으로 세기"); staff can undo a wrong one.
+  const [result, setResult] = useState<{ handle: string; status: EventLookupStatus; useId?: string; uses?: number; mealUsed?: boolean; undone?: boolean } | null>(null);
+  const [undoing, setUndoing] = useState(false);
+  const [notice, setNotice] = useState<'badHandle' | 'sendFailed' | 'undoFailed' | null>(null);
   const copy = EVENT_COPY[language];
 
   useEffect(() => {
@@ -49,9 +51,28 @@ export default function EventPartnerPage() {
     const checked = eventHandle(handle);
     if (!checked) { play('warning'); setResult(null); setNotice('badHandle'); return; }
     setBusy(true); setNotice(null);
-    const { status, data } = await callEventLink<{ status: EventLookupStatus }>({ store: token, handle: checked });
+    const { status, data } = await callEventLink<{ status: EventLookupStatus; use_id?: string; uses?: number; meal_used?: boolean }>({ store: token, handle: checked });
     setBusy(false);
-    if (status === 200 && data?.status) { play(data.status === 'none' ? 'warning' : 'success'); setResult({ handle: checked, status: data.status }); return; }
+    if (status === 200 && data?.status) {
+      play(data.status === 'none' || data.meal_used ? 'warning' : 'success');
+      setResult({ handle: checked, status: data.status, useId: data.use_id, uses: data.uses, mealUsed: data.meal_used });
+      return;
+    }
+    play('warning');
+    if (status === 404) { setView(null); setLoad('expired'); } else setNotice('sendFailed');
+  };
+
+  const undo = async () => {
+    const token = window.location.hash.slice(1);
+    if (undoing || !token || !result?.useId) return;
+    setUndoing(true); setNotice(null);
+    const { status, data } = await callEventLink<{ undone: boolean }>({ store: token, undo: result.useId });
+    setUndoing(false);
+    if (status === 200 && data) {
+      play(data.undone ? 'success' : 'warning');
+      if (data.undone) setResult(value => value && { ...value, undone: true }); else setNotice('undoFailed');
+      return;
+    }
     play('warning');
     if (status === 404) { setView(null); setLoad('expired'); } else setNotice('sendFailed');
   };
@@ -72,9 +93,14 @@ export default function EventPartnerPage() {
             style={[eventStyles.input, Typography.menu, { color: theme.text }]} />
         </View>
         <RaisedActionButton analyticsId="event.partner.check" tone="secondary" label={copy.checkButton} busy={busy} disabled={!handle.trim()} onPress={() => void check()} />
-        {result && <View accessibilityLiveRegion="polite"><ListCard>
-          <ListRow title={copy.result[result.status](result.handle)} />
-        </ListCard></View>}
+        {result && <View accessibilityLiveRegion="polite" style={eventStyles.section}><ListCard>
+          <ListRow title={copy.result[result.status](result.handle)}
+            detail={result.useId ? result.undone ? copy.useUndone : copy.useLogged(result.uses ?? 1) : undefined}
+            trailing={result.useId && !result.undone ? <RaisedActionButton analyticsId="event.partner.undo" compact tone="secondary" label={copy.undo}
+              busy={undoing} onPress={() => void undo()} /> : undefined} />
+        </ListCard>
+        {result.mealUsed && !result.undone && <ThemedText style={[Typography.supporting, { color: theme.danger }]}>{copy.mealUsed}</ThemedText>}
+        </View>}
         {notice && <ThemedText accessibilityLiveRegion="polite" style={[Typography.supporting, { color: theme.danger }]}>{copy[notice]}</ThemedText>}
       </View>
 
