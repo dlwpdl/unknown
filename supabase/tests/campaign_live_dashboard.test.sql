@@ -101,5 +101,13 @@ update private.partnership_benefits set status='active',starts_on=current_date w
 update private.partnership_campaigns set team_limit=4 where id='e1730000-0000-0000-0000-000000000001';
 select is((select count(*)::int from jsonb_array_elements(private.campaign_alerts('e1730000-0000-0000-0000-000000000001')) a
   where a->>'kind' in ('pipeline_low','benefit_missing')),0,'red rules clear once fixed');
+-- Someone who has been is not missing a visit date: a visit time or a store check takes them off the list.
+update private.partnership_participations set scheduled_at=null where id='e1750000-0000-0000-0000-000000000003';
+select is((select jsonb_agg(p->>'name') from jsonb_array_elements(private.campaign_alerts('e1730000-0000-0000-0000-000000000001')) a,
+  jsonb_array_elements(a->'people') p where a->>'kind'='confirmed_no_date'),'["live.1"]'::jsonb,'a visited person with no date is not named');
+insert into private.partnership_store_uses(campaign_id,link_id,creator_id,participation_id,kind,used_at) values
+ ('e1730000-0000-0000-0000-000000000001','e1770000-0000-0000-0000-000000000001','e1710000-0000-0000-0000-000000000001','e1750000-0000-0000-0000-000000000001','discount',now());
+select is((select count(*)::int from jsonb_array_elements(private.campaign_alerts('e1730000-0000-0000-0000-000000000001')) a
+  where a->>'kind'='confirmed_no_date'),0,'a store check counts as having been');
 select * from finish();
 rollback;
