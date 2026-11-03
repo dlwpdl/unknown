@@ -147,8 +147,12 @@ def check_automation_scope(name, args):
     if name in ('save_admin_merchant', 'save_admin_merchant_record'):
         # A trial end date unlocks paid-level limits, so automations never set or replace one (all trials so far have none).
         if args.get('p_status') not in REGISTER_STATUSES or args.get('p_trial_ends_at') is not None: raise ValueError('OWNER_SESSION_REQUIRED')
-        current = direct_sql(f"select status, trial_ends_at from private.merchants where id = {lit(args['p_id'])}::uuid") if args.get('p_id') else []
-        if current and (current[0]['status'] not in REGISTER_STATUSES or current[0]['trial_ends_at'] is not None):
+        # An owner-connected business and a withdrawn consent are the owner's to change (GitHub security review, PR #82).
+        current = direct_sql("select status, trial_ends_at, consent, owner_id from private.merchants "
+                             f"where id = {lit(args['p_id'])}::uuid") if args.get('p_id') else []
+        if current and (current[0]['status'] not in REGISTER_STATUSES or current[0]['trial_ends_at'] is not None
+                        or current[0]['owner_id'] is not None
+                        or (current[0]['consent'] == 'revoked' and args.get('p_consent') != 'revoked')):
             raise ValueError('OWNER_SESSION_REQUIRED')
 
 def rpc(name, args):
