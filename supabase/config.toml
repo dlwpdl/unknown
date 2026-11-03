@@ -103,3 +103,7 @@ verify_jwt = false
 # Public registry redirect; only the function's service client may record outbound clicks.
 [functions.webshop-redirect]
 verify_jwt = false
+
+# Public event apply/store links; the function validates input, hashes tokens and IPs, and calls service-role-only RPCs.
+[functions.event-link]
+verify_jwt = false
