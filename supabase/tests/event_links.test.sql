@@ -253,19 +253,30 @@ select is((select count(*) from private.partnership_apply_attempts where created
 select is(public.event_apply('open-event','no.ip',jsonb_build_array(pg_temp.pick(1,'18:00')),2,null,5,'en',null)->>'ok','true',
   'with no client IP the entry is taken and only the event cap applies');
 
--- Thirty link entries an hour per event whatever the IPs: what a flood from changing IPs can write.
+-- Past 30 link entries an hour, whatever the IPs, an event still takes entries but each waits on the board's check-again list
+-- (three IPs must not be able to shut the link); at 300 it stops, which bounds what a flood can write.
 insert into private.partnership_creators(id,display_name,city_id,profile_url)
-select gen_random_uuid(),'flood'||n,'event-link-test','https://www.instagram.com/flood'||n||'/' from generate_series(1,30) n;
-insert into private.partnership_participations(id,campaign_id,creator_id,applied_via,applied_at)
-select gen_random_uuid(),'e1530000-0000-0000-0000-000000000001',id,'apply_link',clock_timestamp() from private.partnership_creators where display_name like 'flood%'
-limit (select 30-count(*) from private.partnership_participations where campaign_id='e1530000-0000-0000-0000-000000000001'
-  and applied_via='apply_link' and applied_at>clock_timestamp()-interval '1 hour');
-select is(pg_temp.apply('open-event','one.too.many',30)->>'error','busy','the 31st link entry in an hour is refused, from a fresh IP too');
-select is(pg_temp.apply('open-event','gling.tester',31)->>'error','busy','over the cap a repeat gets the same answer as a new name');
+select gen_random_uuid(),'flood'||n,'event-link-test','https://www.instagram.com/flood'||n||'/' from generate_series(1,300) n;
+create function pg_temp.flood_to(total integer) returns void language sql as $$
+  insert into private.partnership_participations(id,campaign_id,creator_id,applied_via,applied_at)
+  select gen_random_uuid(),'e1530000-0000-0000-0000-000000000001',r.id,'apply_link',clock_timestamp() from private.partnership_creators r
+  where r.display_name like 'flood%' and not exists(select 1 from private.partnership_participations p where p.creator_id=r.id)
+  limit greatest(0,total-(select count(*) from private.partnership_participations where campaign_id='e1530000-0000-0000-0000-000000000001'
+    and applied_via='apply_link' and applied_at>clock_timestamp()-interval '1 hour')) $$;
+select pg_temp.flood_to(30);
+select is(pg_temp.apply('open-event','past.thirty',30)->>'ok','true','the 31st link entry in an hour is still taken');
+select is((select p.needs_check from private.partnership_participations p join private.partnership_creators r on r.id=p.creator_id where r.display_name='past.thirty'),true,
+  'and waits on the board''s check-again list');
+select pg_temp.flood_to(300);
+select is(pg_temp.apply('open-event','one.too.many',31)->>'error','busy','at 300 link entries in an hour the event stops, from a fresh IP too');
+select is(pg_temp.apply('open-event','gling.tester',32)->>'error','busy','over the cap a repeat gets the same answer as a new name');
 select is((select count(*) from private.partnership_creators where display_name='one.too.many'),0::bigint,'an entry over the event cap writes nothing');
 update private.partnership_participations set applied_at=applied_at-interval '61 minutes'
-  where creator_id in (select id from private.partnership_creators where display_name like 'flood%');
-select is(pg_temp.apply('open-event','gling.tester',32),'{"ok":true,"already":true}'::jsonb,'an hour later the event takes entries again');
+  where creator_id in (select id from private.partnership_creators where display_name like 'flood%' or display_name='past.thirty');
+select is(pg_temp.apply('open-event','gling.tester',33),'{"ok":true,"already":true}'::jsonb,'an hour later the event takes entries again');
+select is(pg_temp.apply('open-event','after.burst',33)->>'ok','true','including new ones');
+select is((select p.needs_check from private.partnership_participations p join private.partnership_creators r on r.id=p.creator_id where r.display_name='after.burst'),false,
+  'which no longer wait on a check');
 
 -- Store view: winners, applicant count and active benefits only.
 insert into private.partnership_creators(id,display_name,city_id,profile_url) values

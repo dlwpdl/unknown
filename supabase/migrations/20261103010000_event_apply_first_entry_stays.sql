@@ -8,13 +8,14 @@
 --   puts the row in the board's "check again" (needs_check) and keeps the new answers in partnership_events as
 --   participation_apply_conflict, once until the board clears the flag. The board then confirms by DM.
 -- - p_ip_sha256 is null when no client IP reached the function; then only the per-event cap applies.
--- - Each event takes at most 30 link entries an hour whatever the IPs, which bounds what a flood can write. Past that the answer
---   is 'busy' (the page says it could not send).
+-- - Past 30 link entries an hour, whatever the IPs, an event still takes entries but each one goes to the board's check-again
+--   list (re-review 2026-11-03: refusing at 30 let three IPs shut the link). At 300 an hour it stops ('busy', the page says it
+--   could not send), which bounds what a flood can write.
 create or replace function public.event_apply(p_slug text,p_handle text,p_slots jsonb,p_party integer,p_allergies text,p_reel_days integer,
   p_language text,p_ip_sha256 text) returns jsonb
 language plpgsql security definer set search_path='' as $$
 declare cid uuid; handle text; city text; today date; cfg private.partnership_apply_settings; allergy text:=btrim(p_allergies);
-  url text; crid uuid; pid uuid; flagged uuid; again boolean:=false;
+  url text; crid uuid; pid uuid; flagged uuid; again boolean:=false; capped boolean; burst boolean;
 begin
   if p_ip_sha256 !~ '^[0-9a-f]{64}$' then raise exception 'INVALID_EVENT_LINK'; end if;
   if p_ip_sha256 is not null then
@@ -40,24 +41,24 @@ begin
   end if;
   -- Before the handle is looked up, so over the cap a repeat and a new name get the same answer.
   perform pg_advisory_xact_lock(hashtextextended('event_apply_campaign:'||cid,0));
-  if (select count(*) from private.partnership_participations
-      where campaign_id=cid and applied_via='apply_link' and applied_at>clock_timestamp()-interval '1 hour')>=30 then
-    return jsonb_build_object('ok',false,'error','busy');
-  end if;
+  select count(*)>=300,count(*)>=30 into capped,burst from private.partnership_participations
+    where campaign_id=cid and applied_via='apply_link' and applied_at>clock_timestamp()-interval '1 hour';
+  if capped then return jsonb_build_object('ok',false,'error','busy'); end if;
   url:='https://www.instagram.com/'||handle||'/';
   insert into private.partnership_creators(id,display_name,city_id,profile_url) values(gen_random_uuid(),handle,city,url)
     on conflict ((private.partnership_profile_key(profile_url))) do nothing;
   select id into crid from private.partnership_creators where private.partnership_profile_key(profile_url)=private.partnership_profile_key(url);
   insert into private.partnership_participations(id,campaign_id,creator_id,applied_via,language,applied_at,
-      preferred_slots,party_size,has_allergies,allergies,reel_within_days,dm_channel)
-    values(gen_random_uuid(),cid,crid,'apply_link',p_language,clock_timestamp(),p_slots,p_party,p_allergies is not null,allergy,p_reel_days,'instagram')
+      preferred_slots,party_size,has_allergies,allergies,reel_within_days,dm_channel,needs_check)
+    values(gen_random_uuid(),cid,crid,'apply_link',p_language,clock_timestamp(),p_slots,p_party,p_allergies is not null,allergy,p_reel_days,'instagram',burst)
     on conflict(campaign_id,creator_id) do nothing returning id into pid;
   if pid is null then
     again:=true;
     -- Only a board-added person who has never sent the form (no applied_at), and only while nobody has picked them.
     update private.partnership_participations p set applied_via='apply_link',language=p_language,applied_at=clock_timestamp(),
       preferred_slots=p_slots,party_size=p_party,has_allergies=p_allergies is not null,allergies=allergy,reel_within_days=p_reel_days,
-      dm_channel=coalesce(p.dm_channel,'instagram'),updated_at=greatest(clock_timestamp(),p.updated_at+interval '1 microsecond')
+      dm_channel=coalesce(p.dm_channel,'instagram'),needs_check=p.needs_check or burst,
+      updated_at=greatest(clock_timestamp(),p.updated_at+interval '1 microsecond')
       where p.campaign_id=cid and p.creator_id=crid and p.applied_at is null and p.stage='applied'
         and coalesce(to_jsonb(p)->>'outreach_stage','candidate') in ('candidate','proposed','replied') and not private.event_winner(p)
       returning p.id into pid;
