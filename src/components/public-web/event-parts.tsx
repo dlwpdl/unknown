@@ -44,25 +44,29 @@ export function EventPage({ language, onLanguage, title, children }: {
   </div>;
 }
 
+/** The warm band of the approved apply-page example (owner 2026-11-02 "머리 모양 시안처럼 고치고 켜기"). Its colours are fixed,
+ * so it reads the same in light and dark; docs/design-system.md lists it as a web-only exception. */
+const BAND = { background: 'radial-gradient(120% 90% at 20% 10%, #7a2e1c 0%, #3a1209 55%, #140604 100%)', title: '#ffffff', host: '#ead9cc',
+  times: '#e9d6c8', badge: '#f3e6d6', ring: 'rgba(255, 255, 255, 0.7)' };
+
 /** Gling wordmark × the business's real logo (owner 2026-11-02 "항상 로고로해야지 맞는듯": never a letter badge), who runs it, the title.
  * The hosted-by line names the business's Instagram handle when the campaign has one, else the business. */
 export function EventHeader({ language, title, business, avatar, instagram }: {
   language: EventLanguage; title: string; business: string; avatar: string | null; instagram?: string | null;
 }) {
-  const theme = useTheme();
   const logo = avatar ? businessMediaUrl(avatar) : null;
-  return <View style={[styles.hero, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <div style={{ display: 'flex', flexDirection: 'column', gap: Spacing.two, borderRadius: 20, background: BAND.background,
+    padding: `${Spacing.four}px ${Spacing.three}px ${Spacing.three}px` }}>
     <View accessible accessibilityRole="image" accessibilityLabel={logo ? `Gling × ${business}` : 'Gling'} style={styles.lockup}>
       <Image source={wordmark} style={styles.wordmark} contentFit="contain" accessible={false} />
       {logo && <>
-        <ThemedText themeColor="textSecondary" style={Typography.menu}>×</ThemedText>
-        <Image source={{ uri: logo }} contentFit="cover" accessible={false}
-          style={[styles.logo, { borderColor: theme.text, backgroundColor: theme.backgroundElement }]} />
+        <ThemedText style={[Typography.menu, { color: BAND.times }]}>×</ThemedText>
+        <Image source={{ uri: logo }} contentFit="cover" accessible={false} style={[styles.logo, { borderColor: BAND.ring, backgroundColor: BAND.badge }]} />
       </>}
     </View>
-    <ThemedText themeColor="textSecondary" style={Typography.supporting}>{EVENT_COPY[language].host(instagram ? `@${instagram}` : business)}</ThemedText>
-    <ThemedText accessibilityRole="header" style={Typography.sheetTitle}>{title}</ThemedText>
-  </View>;
+    <ThemedText style={[Typography.supporting, { color: BAND.host }]}>{EVENT_COPY[language].host(instagram ? `@${instagram}` : business)}</ThemedText>
+    <ThemedText accessibilityRole="header" style={[Typography.sheetTitle, { color: BAND.title }]}>{title}</ThemedText>
+  </div>;
 }
 
 /** One line of event facts, the emoji marking what it is (as in the approved example). */
@@ -108,7 +112,6 @@ const styles = StyleSheet.create({
   content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', padding: Spacing.four, gap: Spacing.four },
   top: { alignItems: 'flex-end' },
   chips: { flexDirection: 'row', gap: Spacing.two },
-  hero: { borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, padding: Spacing.four, gap: Spacing.two },
   lockup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, marginBottom: Spacing.two },
   wordmark: { width: 72, height: 30 },
   logo: { width: LOGO, height: LOGO, borderRadius: LOGO / 2, borderWidth: 2 },
