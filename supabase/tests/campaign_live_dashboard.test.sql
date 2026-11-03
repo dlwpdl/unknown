@@ -3,7 +3,7 @@ set local search_path=public,extensions;
 select no_plan();
 select has_function('public','get_admin_campaign_live',array['uuid'],'dashboard read exists');
 select has_function('public','add_admin_campaign_metric',array['uuid','uuid','text','text','bigint','text','date','date','text','boolean','text'],'number entry exists');
-select has_function('public','delete_admin_campaign_metric',array['uuid'],'number undo exists');
+select hasnt_function('public','delete_admin_campaign_metric',array['uuid'],'numbers are withdrawn through the ledger, never deleted');
 select ok(not has_function_privilege('anon','public.get_admin_campaign_live(uuid)','execute'),'anon cannot read the dashboard');
 select ok(not has_function_privilege('service_role','public.add_admin_campaign_metric(uuid,uuid,text,text,bigint,text,date,date,text,boolean,text)','execute'),'service role cannot type numbers');
 select ok(not has_function_privilege('authenticated','private.campaign_alerts(uuid)','execute'),'signed-in users cannot call the rules directly');
@@ -66,7 +66,6 @@ reset role;
 select set_config('request.jwt.claims','{"sub":"e1700000-0000-0000-0000-000000000001","role":"authenticated","aal":"aal1","session_id":"e1760000-0000-0000-0000-000000000002","app_metadata":{"role":"admin"}}',true);
 set local role authenticated;
 select throws_ok($$select public.get_admin_campaign_live('e1730000-0000-0000-0000-000000000001')$$,'P0001','ADMIN_REQUIRED','AAL1 administrator cannot read the dashboard');
-select throws_ok($$select public.delete_admin_campaign_metric('e1780000-0000-0000-0000-000000000001')$$,'P0001','ADMIN_REQUIRED','AAL1 administrator cannot delete numbers');
 reset role;
 select set_config('request.jwt.claims','{"sub":"e1700000-0000-0000-0000-000000000001","role":"authenticated","aal":"aal2","session_id":"e1760000-0000-0000-0000-000000000001","app_metadata":{"role":"admin"}}',true);
 set local role authenticated;
@@ -80,7 +79,6 @@ select lives_ok($$select public.add_admin_campaign_metric('e1730000-0000-0000-00
   'the owner types what the business reported');
 select lives_ok($$select public.add_admin_campaign_metric('e1730000-0000-0000-0000-000000000001',null,'our_post','views',700,'https://www.instagram.com/p/LiveRes01/',null,null,'owner',true,'')$$,
   'the owner types our result post views');
-select throws_ok($$select public.delete_admin_campaign_metric('e1780000-0000-0000-0000-000000000001')$$,'P0001','INVALID_PARTNERSHIP','API rows cannot be deleted by hand');
 
 create temp table live on commit drop as select public.get_admin_campaign_live('e1730000-0000-0000-0000-000000000001') l;
 create temp view al as select a from jsonb_array_elements((select l from live)->'alerts') a;
@@ -96,11 +94,6 @@ select is((select jsonb_array_length(l->'metrics') from live),4,'API and typed n
 select is((select l->'support'->>'terms' from live),'식사: $150까지','what the business gives comes back');
 select ok((select (x->>'visited_at') is not null from live,jsonb_array_elements(l->'entries') x where x->>'id'='e1750000-0000-0000-0000-000000000003'),'visit time comes back');
 
-reset role;
-create temp table typed on commit drop as select id from private.partnership_metrics where source='owner';
-grant select on typed to authenticated;
-set local role authenticated;
-select lives_ok($$select public.delete_admin_campaign_metric((select id from typed))$$,'a typed number can be taken back');
 reset role;
 select is((select count(*)::int from private.partnership_events where action='campaign_metric_added'),2,'typed numbers are logged');
 -- With a live benefit and enough people waiting, the two red rules go quiet.
