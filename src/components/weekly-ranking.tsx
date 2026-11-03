@@ -1,6 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { Animated, LayoutAnimation, Platform, StyleSheet, UIManager, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
@@ -42,13 +42,17 @@ export function WeeklyRanking({ cityId, refreshKey, linked = false, onOpen }: { 
   const [at, setAt] = useState(0);
   const [fade] = useState(() => new Animated.Value(1));
   const [arrow] = useState(() => new Animated.Value(0));
+  const foldedCity = useRef(cityId);
 
   // 순위는 스냅샷이지만 그 안의 글은 지워질 수 있다. 서버가 읽을 때 걸러내므로
   // 화면으로 돌아올 때마다 다시 읽어야 지운 글이 사라진다. 한 번만 읽으면 남아 있게 된다.
   const load = useCallback(async (signal: { active: boolean }) => {
     try {
       const next = await loadWeeklyRanking(supabase, cityId);
-      if (signal.active) { setRanking(next); setAt(0); setOpen(false); arrow.setValue(0); }
+      if (!signal.active) return;
+      setRanking(next); setAt(0);
+      // Only a new city starts folded. Coming back from a post keeps the list open, so the post shrinks back into its row.
+      if (foldedCity.current !== cityId) { foldedCity.current = cityId; setOpen(false); arrow.setValue(0); }
     } catch { if (signal.active) setRanking(null); }
   }, [arrow, cityId]);
 

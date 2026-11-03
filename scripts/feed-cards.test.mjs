@@ -19,7 +19,7 @@ test('weekly ranking groups its expanded heading inside the card, away from the 
     let state = 0;
     const entries = Array.from({ length: total }, (_, i) => ({ postId: `post-${i}`, authorId: 'author', rank: i + 1, title: '동네 소식', nickname: '이웃', views: 10 }));
     const { WeeklyRanking } = load('weekly-ranking', {
-      react: { useCallback: fn => fn, useEffect() {}, useState: () => [[{ entries }, expanded, 0, {}, { interpolate: () => '0deg' }][state++], () => {}] },
+      react: { useCallback: fn => fn, useEffect() {}, useRef: current => ({ current }), useState: () => [[{ entries }, expanded, 0, {}, { interpolate: () => '0deg' }][state++], () => {}] },
       'expo-router': { useFocusEffect() {} },
       'react-native': { View: 'View', Pressable: 'Pressable', Animated: { View: 'AnimatedView' }, StyleSheet: { create: x => x } },
       'react-native-reanimated': { useReducedMotion: () => true },
