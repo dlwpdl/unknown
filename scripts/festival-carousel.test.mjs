@@ -59,7 +59,7 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
     do {
       hook = 0; dirty = false;
       tree = card ? exports.card({ event: events[0], cityId: 'vancouver', index: 0, active: activeCard, reducedMotion, onOpen() {} })
-        : web ? exports.PublicFestivals({ cityId, cityName: ticketmaster.EVENT_CITIES[cityId] }) : exports.LocalEventsCarousel({ cityId, refreshKey: 0, cityLoading: false, onCityReady: ready });
+        : web ? exports.PublicFestivals({ cityId, cityName: ticketmaster.EVENT_CITIES[cityId] }) : exports.LocalEventsCarousel({ cityId, refreshKey: 0, cityLoading: false });
       const scroll = elements(tree).find(node => node.props?.analyticsId === 'today.events.carousel');
       if (scroll?.props.ref) scroll.props.ref.current = { scrollTo: position => scrolls.push(position) };
       for (const callback of pending.splice(0)) callback();
@@ -68,7 +68,6 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
     assert.ok(count < 12, 'render must settle');
     return tree;
   };
-  const ready = () => {};
   return { requests, motion, scrolls, feedback, formats, language(value) { language = value; }, setWindowDimensions(value) { windowDimensions = value; }, render, tree: () => tree, remove(id) { events.splice(events.findIndex(event => event.id === id), 1); }, async city(value) { cityId = value; await render(); }, async focus(value) { focus = value; await render(); }, async emit(name, value) { if (name === 'appState') appState.currentState = value; if (name === 'visibilitychange') document.visibilityState = value; for (const callback of [...(listeners.get(name) ?? [])]) callback(value); await render(); }, async tick(delay, advance = 0) { time += advance; for (const timer of [...timers.values()]) if (timer.delay === delay) timer.callback(); await render(); } };
 }
 

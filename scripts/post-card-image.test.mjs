@@ -11,12 +11,13 @@ import { googleMapsPin, googleMapsUrl, postLocationUrl, postMapBody } from '../s
 import { postInfoParts } from '../src/lib/post-info.ts';
 import { parseMeetupSections } from '../src/lib/meetup-sections.ts';
 import { translationSource } from './test-meetup-source-imports.mjs';
-import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
+import { photoCreditNames, splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 import * as postLinks from '../supabase/functions/_shared/post-links.ts';
 import * as product from '../src/lib/product-analytics.ts';
 
 // Native image events and React state are supplied here; sizing/rendering runs the real components.
 let sharedReactions;
+let feedPlace = null; // the catalog place a Today fixture post is tied to
 function reactionModule() {
   if (!sharedReactions) {
     const exports = {};
@@ -70,7 +71,7 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     '@/components/content-translation': { TranslationControl: 'TranslationControl', TranslatedCommentBody: 'TranslatedCommentBody' },
     '@/hooks/use-content-translation': { useContentTranslation: (_kind, _id, source) => ({ display: translatedBody == null ? source : { ...source, body: translatedBody }, translated: translatedBody != null, original: translatedBody == null }) },
     '@/lib/translation-source': translationSource,
-    '@/lib/post-photo-credits': { splitPostPhotoCredits },
+    '@/lib/post-photo-credits': { photoCreditNames, splitPostPhotoCredits },
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
     '../../supabase/functions/_shared/post-links': postLinks,
     '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
@@ -81,7 +82,11 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' },
     '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
-    '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16 } },
+    '@/constants/theme': { MaxContentWidth: 800, Spacing: { one: 4, two: 8, three: 16, four: 24 } },
+    '@/components/meetup-manage-sheet': { MeetupManageSheet: 'MeetupManageSheet' },
+    '@/components/post-place-card': { PostPlaceCard: 'PostPlaceCard' },
+    '@/lib/meetup-destination': { splitPlaceMeetupBody: () => null },
+    '@/lib/place-reviews': { placeReviewPlace: () => feedPlace, placeReviewText: body => body },
     '@/hooks/use-theme': { useTheme: () => ({ backgroundElement: '#222231' }) },
     '@/i18n/ko': { count, t },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: viewer } }) },
@@ -190,6 +195,81 @@ test('피드 사진 전체를 원본 비율로 표시하고 글·사진·뷰어 
   props = { ...props, post: { ...props.post, imageUris: ['signed:recovered'] } };
   assert.ok(image(card.render(props)));
   assert.equal(image(card.render({ ...props, hidePhoto: true })), undefined);
+});
+
+test('Today card: author row, short text, place card, swipeable photos, then like/comment/share; save and report sit in the ··· menu', () => {
+  const card = cardRenderer();
+  let opened = 0;
+  const credits = '\n\n사진 출처·이용 조건\n1. Kim Lee · CC BY 2.0 · https://commons.wikimedia.org/wiki/File:A.jpg\n2. Park · CC BY 2.0 · https://commons.wikimedia.org/wiki/File:B.jpg';
+  const post = { id: 'feed-1', cityId: 'vancouver', title: '토요일 브런치', body: `창가 자리가 좋았어요.${credits}`, author: { id: 'author', nickname: '하늘' }, tag: { kind: 'post', label: '맛집' },
+    imagePaths: ['a/1.webp', 'a/2.webp', 'a/3.webp'], imageUris: ['signed:1', 'signed:2', 'signed:3'], likes: 2, saves: 0, comments: 1, views: 9, createdAtLabel: '방금' };
+  const props = { post, feed: true, flat: true, onPress: () => { opened++; } };
+  feedPlace = { id: 'osm:node:1', name: '창가 카페' };
+  try {
+    let tree = nodes(card.render(props));
+    const textOf = node => [node?.props?.children].flat(Infinity).filter(child => typeof child === 'string').join('');
+    const avatar = tree.find(node => node.props?.analyticsId === 'components_post-card.pressable.4' && node.props.accessibilityElementsHidden);
+    assert.equal(textOf(nodes(avatar).find(node => node.type === 'ThemedText')), '하', 'first-letter avatar until feeds carry profile photos');
+    assert.ok(tree.some(node => node.type === 'ThemedText' && textOf(node) === '· 맛집 · 방금'));
+    const types = tree.map(node => node.type);
+    const order = ['PostBody', 'PostPlaceCard', 'ScrollView', 'SymbolView'].map(type => types.indexOf(type, types.indexOf('PostBody')));
+    assert.ok(order.every((at, i) => at >= 0 && (i === 0 || at > order[i - 1])), 'text → place card → photos → reactions');
+    const body = tree.find(node => node.type === 'PostBody');
+    assert.equal(body.props.lead, '토요일 브런치');
+    assert.equal(body.props.body, '창가 자리가 좋았어요.', 'credits move from the text to the photos');
+    assert.equal(body.props.numberOfLines, 3);
+    assert.equal(tree.find(node => node.type === 'PostPlaceCard').props.place, feedPlace);
+
+    const row = tree.find(node => node.type === 'ScrollView');
+    assert.equal(row.props.analyticsId, 'components_post-photo-gallery.scrollview.1');
+    assert.equal(row.props.horizontal, true);
+    const slides = () => nodes(card.render(props)).filter(node => node.props?.analyticsId === 'components_post-card.pressable.2' && nodes(node).some(child => child.type === 'Image'));
+    assert.equal(slides().length, 3, 'every photo is in the row');
+    const width = style(slides()[0]).width;
+    assert.equal(width, 390 - 66 - 16 - 20, 'the next photo peeks in on the right');
+    assert.equal(row.props.snapToInterval, width + 8);
+    assert.deepEqual(slides().map(slide => nodes(slide).filter(node => node.type === 'ThemedText').map(textOf)),
+      [1, 2, 3].map(at => [`${at}/3`, '사진: Kim Lee 외 1명']));
+    assert.deepEqual(slides().map(slide => !!image(slide).props.source), [true, true, false], 'only photos next to the one in view load');
+    row.props.onScroll({ nativeEvent: { contentOffset: { x: width + 8 } } });
+    assert.deepEqual(slides().map(slide => !!image(slide).props.source), [true, true, true]);
+    slides()[1].props.onPress();
+    assert.equal(opened, 1, 'a photo opens the post');
+
+    tree = nodes(card.render(props));
+    const ids = tree.map(node => node.props?.analyticsId).filter(Boolean);
+    for (const id of ['components_post-card.pressable.7', 'components_post-card.pressable.8', 'components_post-card.pressable.10']) assert.ok(ids.includes(id), id);
+    assert.ok(!ids.includes('components_post-card.pressable.9'), 'saving moved to the ··· menu');
+    assert.ok(!tree.some(node => node.type === 'SymbolView' && node.props.name?.ios === 'eye'), 'no view count on Today');
+    assert.ok(!tree.some(node => node.type === 'MeetupManageSheet'));
+    tree.find(node => node.props?.analyticsId === 'post.manage.open').props.onPress();
+    const menu = nodes(card.render(props)).find(node => node.type === 'MeetupManageSheet');
+    assert.equal(menu.props.title, '글 메뉴');
+    assert.deepEqual(Array.from(menu.props.actions, action => `${action.analyticsId} ${action.label}`),
+      ['components_post-card.pressable.9 글 저장', `components_post-card.pressable.5 ${t.report.title('하늘')}`]);
+    assert.ok(card.feedback.includes('selection'));
+  } finally { feedPlace = null; }
+});
+
+test('Today card: a post without photos stays a small text card, and 더 보기 shows only when the text is cut', () => {
+  const card = cardRenderer();
+  const props = { post: { id: 'feed-text', cityId: 'vancouver', title: '오늘 비 와요', body: '우산 챙기세요.', author: { id: 'author', nickname: '비' }, tag: { kind: 'post', label: '일상' },
+    likes: 0, saves: 0, comments: 0, views: 0, createdAtLabel: '1분 전' }, feed: true, flat: true, onPress() {} };
+  let tree = nodes(card.render(props));
+  assert.ok(!tree.some(node => node.type === 'ScrollView'), 'no photo row');
+  const box = tree.find(node => node.props?.analyticsId === 'components_post-card.pressable.2');
+  assert.equal(style(box).borderRadius, 20);
+  assert.ok(nodes(box).some(node => node.type === 'ThemedText' && node.props.type === 'menu'), 'title on its own line');
+  const more = () => nodes(card.render(props)).find(node => node.props?.analyticsId === 'components_post-card.pressable.1');
+  const measure = () => nodes(card.render(props)).find(node => node.type === 'PostBody' && node.props.onTextLayout);
+  assert.equal(more(), undefined);
+  measure().props.onTextLayout({ nativeEvent: { lines: [1, 2, 3] } });
+  assert.equal(more(), undefined, 'three lines fit');
+  measure().props.onTextLayout({ nativeEvent: { lines: [1, 2, 3, 4] } });
+  more().props.onPress();
+  tree = nodes(card.render(props));
+  assert.equal(tree.find(node => node.type === 'PostBody').props.numberOfLines, undefined, 'the whole text opens in place');
+  assert.equal(more(), undefined);
 });
 
 test('상세 갤러리는 사진을 자르지 않고 고정 비율과 좌우 페이지를 유지한다', () => {

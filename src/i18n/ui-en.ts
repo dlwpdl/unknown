@@ -4167,5 +4167,10 @@ export const uiEnglish: Record<string, string> = {
   "다음 신청": "Next request",
   "다음 신청 보기": "View next request",
   "다음 신청을 찾는 중…": "Looking for the next request…",
-  "참여 신청 목록으로": "Back to join requests"
+  "참여 신청 목록으로": "Back to join requests",
+  "글 메뉴": "Post menu",
+  "글 저장": "Save post",
+  "저장 취소": "Remove from saved",
+  "사진: {0}": "Photo: {0}",
+  "사진: {0} 외 {1}명": "Photos: {0} and {1} more"
 };

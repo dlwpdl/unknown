@@ -1,9 +1,9 @@
 import { useLanguage } from '@/hooks/use-language';
-import { Pressable } from '@/components/analytics-controls';
-import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import { Alert, Animated, Easing, StyleSheet, View } from 'react-native';
+import { Alert, Animated, Easing, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
@@ -16,18 +16,22 @@ import { CITIES } from '@/lib/mock';
 import { TranslationControl } from '@/components/content-translation';
 import { useContentTranslation } from '@/hooks/use-content-translation';
 import { businessDisclosureLines, splitProxyDisclosure, visibleTranslationSource } from '@/lib/translation-source';
-import { splitPostPhotoCredits } from '@/lib/post-photo-credits';
+import { photoCreditNames, splitPostPhotoCredits } from '@/lib/post-photo-credits';
 import { instagramPostLink, splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
 import { ReportSheet } from '@/components/report-sheet';
 import { TrustBadge } from '@/components/trust-badge';
-import { Spacing } from '@/constants/theme';
-import { Typography } from '@/constants/design-system';
+import { MeetupManageSheet } from '@/components/meetup-manage-sheet';
+import { PostPlaceCard } from '@/components/post-place-card';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { ControlStyles, IconSize, Typography } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { count } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { recordPostShare, togglePostReaction } from '@/lib/community-data';
 import { getPostImageSource, relativeTime } from '@/lib/feed-data';
 import { visibleMeetupBody } from '@/lib/meetup-ai';
+import { splitPlaceMeetupBody } from '@/lib/meetup-destination';
+import { placeReviewPlace, placeReviewText } from '@/lib/place-reviews';
 import { uniqueHashtags } from '@/lib/hashtags';
 import { postLocationUrl, postMapBody } from '@/lib/post-maps';
 import { changePostReaction, postReactionsSnapshot, subscribePostReactions, syncPostReactions } from '@/lib/post-reactions';
@@ -37,6 +41,9 @@ import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
 import { parseMeetupSections } from '@/lib/meetup-sections';
 import { MeetupSectionsView } from '@/components/meetup-sections';
+
+// Today feed card (owner 2026-11-03 mockup): a 40pt avatar column; text, place card, photos and reactions line up after it.
+const FEED_AVATAR = 40, FEED_TEXT_INSET = FEED_AVATAR + 10, FEED_PHOTO_INSET = Spacing.three + FEED_TEXT_INSET, FEED_PEEK = 20;
 
 export function PostCard({
   post,
@@ -52,6 +59,7 @@ export function PostCard({
   translationVisible = true,
   meetupDetail,
   postDetail = false,
+  feed = false,
 }: {
   post: Post;
   onJoin?: () => void;
@@ -66,6 +74,7 @@ export function PostCard({
   translationVisible?: boolean;
   meetupDetail?: { beforeTitle: ReactNode; afterTitle: ReactNode }; // 모임 상세: 작성자 줄·분류·반응 줄 대신 요약을 끼운다
   postDetail?: boolean; // 일반 글 상세: 장소·링크는 정보 카드, 본문은 문단, 출처는 접고, 반응은 하단 바로 옮긴다
+  feed?: boolean; // 오늘 탭 목록 (owner 2026-11-03): 프로필 줄 → 짧은 글 → 장소 카드 → 넘기는 사진 → 공감·댓글·공유. 저장·신고는 ··· 메뉴
 }) {
   const { tr, t, locale: appLocale } = useLanguage();
   const theme = useTheme();
@@ -94,6 +103,10 @@ export function PostCard({
   const [loadedPhoto, setLoadedPhoto] = useState<{ key: string; aspectRatio: number } | null>(null);
   const [introLines, setIntroLines] = useState<{ body: string; lines: number } | null>(null), [introOpen, setIntroOpen] = useState(false);
   const [creditsOpen, setCreditsOpen] = useState(false);
+  const { width: windowWidth } = useWindowDimensions();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [textLines, setTextLines] = useState<{ text: string; lines: number } | null>(null), [textOpen, setTextOpen] = useState(false);
+  const [photoPage, setPhotoPage] = useState(0), [photoRowWidth, setPhotoRowWidth] = useState(0), [failedSlides, setFailedSlides] = useState<string[]>([]);
   const isMeetup = post.tag.kind === 'meetup';
   const isListing = post.kind === 'listing';
   const viewerScope = isAuthed ? me.id : 'guest';
@@ -105,7 +118,10 @@ export function PostCard({
   const photoCount = post.imagePaths?.length ?? 0;
   const chips = uniqueHashtags([post.author.neighborhood, ...(post.hashtags ?? [])]);
   // Gling's proxy-post line becomes a mark under the author; the meetup summary has no author row, so there it stays in the body.
-  const proxied = meetupDetail ? { body: post.body, proxy: false } : splitProxyDisclosure(post.body);
+  // The feed shows the place a post is already tied to (a place meetup or a place review) as a card; a review's text then drops its score and reference lines.
+  const reviewPlace = useMemo(() => feed && !post.room ? placeReviewPlace(post) : null, [feed, post]);
+  const linkedPlace = useMemo(() => feed && post.room ? splitPlaceMeetupBody(post.body, post.cityId)?.place ?? null : reviewPlace, [feed, post, reviewPlace]);
+  const proxied = meetupDetail ? { body: post.body, proxy: false } : splitProxyDisclosure(reviewPlace ? placeReviewText(post.body) : post.body);
   const mapped = postMapBody(proxied.body);
   const source = visibleTranslationSource('post', post.title, proxied.body, !!post.room);
   const translation = useContentTranslation('post', post.id, source, translationVisible);
@@ -124,6 +140,21 @@ export function PostCard({
   const infoLinks = info ? [...new Set([...shown.urls.map(url => instagramPostLink(url)?.url ?? url), ...info.links])] : [];
   const infoPlace = !info ? null : mapped.url ? { url: mapped.url, label: mapped.label }
     : info.place ? { url: postLocationUrl(info.place, CITIES.find(city => city.id === post.cityId)?.englishName), label: info.place } : null;
+  const slideCount = feed && !hidePhoto ? Math.max(post.imagePaths?.length ?? 0, post.imageUris?.length ?? 0) : 0;
+  const slides = Array.from({ length: slideCount }, (_, index) => getPostImageSource(post, viewerScope, 'feed', index))
+    .filter((source): source is NonNullable<typeof source> => !!source && !failedSlides.includes(source.uri));
+  const slideKey = `${viewerScope}:${post.id}:${slides[0]?.uri}`;
+  const firstRatio = loadedPhoto?.key === slideKey ? loadedPhoto.aspectRatio : null;
+  // The list pads cards by Spacing.three; the photo row runs to the list edges and starts under the text column, the next photo peeking in.
+  const slideWidth = Math.max(0, (photoRowWidth || Math.min(windowWidth, MaxContentWidth)) - FEED_PHOTO_INSET - Spacing.three - (slides.length > 1 ? FEED_PEEK : 0));
+  // One photo keeps its own shape; a row of them shares the first one's, kept between 4:5 and 16:9. Neither crops.
+  const slideRatio = slides.length > 1 ? Math.min(16 / 9, Math.max(4 / 5, firstRatio ?? 4 / 5)) : firstRatio ?? 16 / 10;
+  const creditNames = feed ? photoCreditNames(credited.credits) : [];
+  const photoCredit = !credited.credits ? '' : creditNames.length > 1 ? tr('사진: {0} 외 {1}명', creditNames[0], creditNames.length - 1)
+    : creditNames.length ? tr('사진: {0}', creditNames[0]) : tr('사진 출처');
+  const feedText = splitPostPhotoCredits(shown.body).body;
+  const textKey = `${translation.display.title}\n${feedText}`;
+  const textLong = textLines?.text === textKey && textLines.lines > 3;
   const bodyText = <PostBody
     themeColor={meetupDetail || info ? 'text' : 'textSecondary'}
     paragraphs={info?.paragraphs}
@@ -170,6 +201,178 @@ export function PostCard({
     if (!isAuthed) return promptLogin(t.auth.reasonShare);
     setShareOpen(true);
   };
+
+  const roomModule = post.room && !hideRoom && (
+    <View style={[styles.module, { backgroundColor: theme.backgroundElement }]}>
+      <View style={styles.roomInfo}>
+        <SymbolView
+          name={{ ios: 'person.2', android: 'group', web: 'group' }}
+          size={28}
+          tintColor={theme.accent}
+        />
+        <View style={styles.roomCopy}>
+          <ThemedText type="smallBold" style={styles.roomTitle}>
+            {post.room.title}
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.meta}>
+            {[
+              post.room.closed ? t.meetup.closed : null,
+              post.room.verifiedOnly ? t.feed.roomGate : null,
+              t.feed.members(post.room.memberCount, post.room.capacity),
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </ThemedText>
+        </View>
+      </View>
+      {onJoin && !post.room.closed && (
+        <Pressable lens analyticsId="components_post-card.pressable.6"
+          onPress={() => { play('selection'); onJoin(); }}
+          style={({ pressed }) => [styles.join, { backgroundColor: theme.accent }, pressed && styles.pressed]}
+          accessibilityRole="button"
+          accessibilityLabel={t.feed.joinRoom}>
+          <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
+            {t.feed.joinRoom}
+          </ThemedText>
+        </Pressable>
+      )}
+    </View>
+  );
+  const sheets = <>
+    {shareOpen && <PostShareSheet key={`${post.id}:${me.id}`} post={post} visible={shareOpen} onClose={() => setShareOpen(false)}
+      onShared={() => { void recordPostShare(supabase, post.id).then(setShareCount).catch(() => {}); }} />}
+    <ReportSheet
+      visible={reportOpen}
+      targetType="post"
+      targetId={post.id}
+      reportedUserId={post.business ? undefined : post.author.id}
+      reportedBusinessId={post.business?.id}
+      reportedNickname={post.business?.name ?? post.author.nickname}
+      onClose={() => setReportOpen(false)}
+    />
+  </>;
+
+  const listingLine = isListing && !beforeBody && (post.price != null || (post.listingStatus && post.listingStatus !== 'open')) && (
+    <View style={styles.listingLine}>
+      {post.price != null && <ThemedText style={styles.price}>{t.detail.price(post.price)}</ThemedText>}
+      {post.listingStatus && post.listingStatus !== 'open' && (
+        <ThemedText type="small" themeColor="textSecondary">{t.detail.listingStatus[post.listingStatus]}</ThemedText>
+      )}
+    </View>
+  );
+
+  if (feed && !meetupDetail && !postDetail) {
+    const name = post.business?.name ?? post.author.nickname;
+    const kind = post.business ? tr('비즈니스') : post.room ? tr('모임 호스트') : `${tr(post.tag.label)}${isListing ? ` · ${t.detail.listingBadge}` : ''}`;
+    const time = `${post.createdAt ? relativeTime(post.createdAt, undefined, appLocale) : post.createdAtLabel ?? ''}${post.bumpedAt ? ` · ${t.detail.bumpedLabel}` : ''}`;
+    const title = translation.display.title ?? post.title;
+    const logo = post.business?.avatarUri && failedBusinessLogo !== post.business.avatarUri ? post.business.avatarUri : null;
+    const openAuthor = () => { play('reaction'); onAuthor?.(); };
+    // A hidden copy without the line limit counts lines, so 더 보기 shows only when the text is cut. Web cannot measure lines and keeps the plain limit.
+    const text = (lead?: string) => <View>
+      <PostBody lead={lead} body={withPostAttachments(feedText, shown.urls)} themeColor="text" numberOfLines={textOpen ? undefined : 3} linksEnabled={!onPress} />
+      {!textOpen && Platform.OS !== 'web' && <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.measure}>
+        <PostBody lead={lead} body={feedText} themeColor="text" linksEnabled={false}
+          onTextLayout={({ nativeEvent: { lines } }) => { if (textLines?.text !== textKey || textLines.lines !== lines.length) setTextLines({ text: textKey, lines: lines.length }); }} />
+      </View>}
+    </View>;
+    return (
+      // One native root for the zoom link, as below.
+      <View collapsable={false} style={styles.feedCard}>
+        <View style={styles.feedGrid}>
+          {/* The nickname beside it is the screen-reader control for the same profile. */}
+          <Pressable analyticsId="components_post-card.pressable.4" onPress={openAuthor} disabled={!onAuthor} hitSlop={2}
+            accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+            style={[styles.feedAvatar, { backgroundColor: theme.backgroundSelected }]}>
+            {logo ? <Image source={{ uri: logo }} style={StyleSheet.absoluteFill} contentFit="cover" accessibilityIgnoresInvertColors onError={() => setFailedBusinessLogo(logo)} />
+              : <ThemedText type="menu" style={{ color: theme.accent }}>{[...name][0]}</ThemedText>}
+          </Pressable>
+          <View style={styles.feedMain}>
+            <View style={styles.feedHead}>
+              <View style={styles.feedMeta}>
+                <Pressable analyticsId="components_post-card.pressable.4" onPress={openAuthor} disabled={!onAuthor}
+                  accessibilityRole={onAuthor ? 'button' : undefined} style={styles.feedAuthor}>
+                  <ThemedText type="smallBold" numberOfLines={1} style={styles.nickname}>{name}</ThemedText>
+                  {!post.business && !post.room && <TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} />}
+                </Pressable>
+                <ThemedText type="small" themeColor="textSecondary">{[kind, time].filter(Boolean).map(part => `· ${part}`).join(' ')}</ThemedText>
+                <PostAdLabel hashtags={post.hashtags} />
+                {mine && <ThemedText type="smallBold" style={{ color: theme.accent }}>{t.feed.mineBadge}</ThemedText>}
+              </View>
+              <Pressable analyticsId="post.manage.open" accessibilityRole="button" accessibilityLabel={tr('글 메뉴')}
+                onPress={() => { play('selection'); setMenuOpen(true); }} style={[ControlStyles.icon, styles.feedMore]}>
+                <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
+              </Pressable>
+            </View>
+            {proxied.proxy && <ThemedText type="small" themeColor="textSecondary">{tr('글링이 비즈니스 허락을 받고 대신 올렸어요')}</ThemedText>}
+            <Pressable analyticsId="components_post-card.pressable.2" onPress={openPost} disabled={!onPress}
+              accessibilityRole={onPress ? 'button' : undefined} accessibilityLabel={onPress ? `${tr(post.tag.label)} · ${title}` : undefined}
+              style={slides.length ? undefined : [styles.textOnly, { backgroundColor: theme.backgroundElement }]}>
+              {slides.length ? text(title) : <>
+                <ThemedText type="menu">{title}</ThemedText>
+                {!!feedText && text()}
+              </>}
+            </Pressable>
+            {textLong && !textOpen && <Pressable analyticsId="components_post-card.pressable.1" accessibilityRole="button" accessibilityState={{ expanded: false }}
+              onPress={() => { play('selection'); setTextOpen(true); }} style={styles.moreText}>
+              <ThemedText type="smallBold" themeColor="textSecondary">{tr('더 보기')}</ThemedText>
+            </Pressable>}
+            {listingLine}
+            <TranslationControl translation={translation} />
+            {linkedPlace ? <PostPlaceCard place={linkedPlace} /> : !!mapped.url && <PostMapLink url={mapped.url} label={mapped.label} />}
+            {afterBody}
+            {roomModule}
+          </View>
+        </View>
+        {slides.length > 0 && <ScrollView analyticsId="components_post-photo-gallery.scrollview.1" horizontal scrollEnabled={slides.length > 1} showsHorizontalScrollIndicator={false}
+          decelerationRate="fast" snapToInterval={slideWidth + Spacing.two} snapToAlignment="start" disableIntervalMomentum
+          onLayout={({ nativeEvent: { layout } }) => setPhotoRowWidth(layout.width)}
+          onScroll={({ nativeEvent: { contentOffset } }) => setPhotoPage(Math.round(contentOffset.x / (slideWidth + Spacing.two)))} scrollEventThrottle={100}
+          accessibilityLabel={tr('사진 {0}장', slides.length)} style={styles.feedPhotos} contentContainerStyle={styles.feedPhotoRow}>
+          {slides.map((source, index) => <Pressable key={`${viewerScope}:${post.id}:${index}`} analyticsId="components_post-card.pressable.2" onPress={openPost} disabled={!onPress}
+            accessibilityRole={onPress ? 'button' : undefined} accessibilityLabel={[tr('사진 {0}/{1}', index + 1, slides.length), title, photoCredit].filter(Boolean).join(' · ')}
+            style={[styles.slide, { width: slideWidth, aspectRatio: slideRatio, backgroundColor: theme.backgroundElement }]}>
+            {/* Only the photos next to the one in view load, as in the detail gallery. */}
+            <Image source={Math.abs(index - photoPage) <= 1 ? source : null} style={StyleSheet.absoluteFill} contentFit="contain" cachePolicy="memory-disk"
+              recyclingKey={`${viewerScope}:${post.id}:${index}`} transition={0}
+              onLoad={index ? undefined : ({ source: { width, height } }) => {
+                if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) setLoadedPhoto({ key: slideKey, aspectRatio: width / height });
+              }}
+              onError={() => setFailedSlides(previous => [...previous, source.uri])} />
+            {slides.length > 1 && <View pointerEvents="none" style={[styles.photoBadge, styles.slideIndex]}>
+              <ThemedText type="caption" style={styles.photoBadgeText}>{`${index + 1}/${slides.length}`}</ThemedText>
+            </View>}
+            {!!photoCredit && <View pointerEvents="none" style={[styles.photoBadge, styles.slideCredit, { maxWidth: slideWidth - 20 }]}>
+              <ThemedText type="caption" numberOfLines={1} style={styles.photoBadgeText}>{photoCredit}</ThemedText>
+            </View>}
+          </Pressable>)}
+        </ScrollView>}
+        <View style={styles.feedActs}>
+          <Pressable analyticsId="components_post-card.pressable.7" onPress={toggleLike} disabled={!!busyReaction} accessibilityRole="button" accessibilityLabel={t.feed.likes(likeCount)}
+            accessibilityState={{ selected: likedOn, disabled: !!busyReaction, busy: busyReaction === 'like' }} style={styles.feedAct}>
+            <SymbolView name={{ ios: likedOn ? 'heart.fill' : 'heart', android: 'favorite', web: 'favorite' }} size={IconSize.toolbar} tintColor={likedOn ? theme.accent : theme.textSecondary} />
+            <ThemedText type={likedOn ? 'smallBold' : 'small'} style={[styles.footItem, { color: likedOn ? theme.accent : theme.textSecondary }]}>{count(likeCount)}</ThemedText>
+          </Pressable>
+          <Pressable analyticsId="components_post-card.pressable.8" onPress={openPost} disabled={!onPress} accessibilityRole={onPress ? 'button' : undefined}
+            accessibilityLabel={t.feed.comments(post.comments)} style={styles.feedAct}>
+            <SymbolView name={{ ios: 'bubble.right', android: 'chat_bubble', web: 'chat_bubble' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
+            <ThemedText type="small" themeColor="textSecondary" style={styles.footItem}>{count(post.comments)}</ThemedText>
+          </Pressable>
+          <Pressable analyticsId="components_post-card.pressable.10" onPress={() => void share()} accessibilityRole="button"
+            accessibilityLabel={tr("{0} · {1}", (tr(post.room ? '모임 초대 링크 공유' : '게시물 링크 공유')), (t.feed.shares(shareCount)))} style={styles.feedAct}>
+            <SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
+          </Pressable>
+        </View>
+        {menuOpen && <MeetupManageSheet visible title={tr('글 메뉴')} onClose={() => setMenuOpen(false)} actions={[
+          { key: 'save', analyticsId: 'components_post-card.pressable.9', label: savedOn ? tr('저장 취소') : tr('글 저장'), onPress: () => void toggleSave(),
+            icon: { ios: savedOn ? 'bookmark.slash' : 'bookmark', android: savedOn ? 'bookmark_remove' : 'bookmark', web: savedOn ? 'bookmark_remove' : 'bookmark' } },
+          ...(mine ? [] : [{ key: 'report', analyticsId: 'components_post-card.pressable.5', label: t.report.title(name), danger: true,
+            icon: { ios: 'flag', android: 'flag', web: 'flag' } as const, onPress: () => { if (isAuthed) setReportOpen(true); else promptLogin(t.auth.reasonReport); } }]),
+        ]} />}
+        {sheets}
+      </View>
+    );
+  }
 
   return (
     // collapsable={false}: a flat card's root is layout-only, and Fabric would flatten it away inside PostZoomLink,
@@ -288,14 +491,7 @@ export function PostCard({
           </View>}
           {beforeBody}
           {!meetupDetail && (info ? <View style={styles.detailBodyWrap}>{bodyText}</View> : bodyText)}
-          {isListing && !beforeBody && (post.price != null || (post.listingStatus && post.listingStatus !== 'open')) && (
-            <View style={styles.listingLine}>
-              {post.price != null && <ThemedText style={styles.price}>{t.detail.price(post.price)}</ThemedText>}
-              {post.listingStatus && post.listingStatus !== 'open' && (
-                <ThemedText type="small" themeColor="textSecondary">{t.detail.listingStatus[post.listingStatus]}</ThemedText>
-              )}
-            </View>
-          )}
+          {listingLine}
         </Pressable>
         {meetupDetail && <>
           {meetupDetail.afterTitle}
@@ -346,42 +542,7 @@ export function PostCard({
           {creditsOpen && <PostBody body="" paragraphs={info.credits} type="small" themeColor="textSecondary" />}
         </View>}
 
-        {post.room && !hideRoom && (
-          <View style={[styles.module, { backgroundColor: theme.backgroundElement }]}>
-            <View style={styles.roomInfo}>
-              <SymbolView
-                name={{ ios: 'person.2', android: 'group', web: 'group' }}
-                size={28}
-                tintColor={theme.accent}
-              />
-              <View style={styles.roomCopy}>
-                <ThemedText type="smallBold" style={styles.roomTitle}>
-                  {post.room.title}
-                </ThemedText>
-                <ThemedText type="small" themeColor="textSecondary" style={styles.meta}>
-                  {[
-                    post.room.closed ? t.meetup.closed : null,
-                    post.room.verifiedOnly ? t.feed.roomGate : null,
-                    t.feed.members(post.room.memberCount, post.room.capacity),
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </ThemedText>
-              </View>
-            </View>
-            {onJoin && !post.room.closed && (
-              <Pressable lens analyticsId="components_post-card.pressable.6"
-                onPress={() => { play('selection'); onJoin(); }}
-                style={({ pressed }) => [styles.join, { backgroundColor: theme.accent }, pressed && styles.pressed]}
-                accessibilityRole="button"
-                accessibilityLabel={t.feed.joinRoom}>
-                <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
-                  {t.feed.joinRoom}
-                </ThemedText>
-              </Pressable>
-            )}
-          </View>
-        )}
+        {roomModule}
 
         {!meetupDetail && !postDetail && <View style={[styles.foot, flat && styles.flatFoot, { borderTopColor: theme.line }]}>
           <Pressable lens analyticsId="components_post-card.pressable.7"
@@ -471,17 +632,7 @@ export function PostCard({
           </View>
         </View>}
       </View>
-      {shareOpen && <PostShareSheet key={`${post.id}:${me.id}`} post={post} visible={shareOpen} onClose={() => setShareOpen(false)}
-        onShared={() => { void recordPostShare(supabase, post.id).then(setShareCount).catch(() => {}); }} />}
-      <ReportSheet
-        visible={reportOpen}
-        targetType="post"
-        targetId={post.id}
-        reportedUserId={post.business ? undefined : post.author.id}
-        reportedBusinessId={post.business?.id}
-        reportedNickname={post.business?.name ?? post.author.nickname}
-        onClose={() => setReportOpen(false)}
-      />
+      {sheets}
     </View>
   );
 }
@@ -578,4 +729,24 @@ const styles = StyleSheet.create({
   saveMark: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
   saveSpark: { position: 'absolute', left: 9, top: 8, width: 4, height: 8, borderRadius: 2 },
   footItem: { fontVariant: ['tabular-nums'] },
+  feedCard: { paddingTop: Spacing.one },
+  feedGrid: { flexDirection: 'row', gap: FEED_TEXT_INSET - FEED_AVATAR },
+  feedAvatar: { width: FEED_AVATAR, height: FEED_AVATAR, borderRadius: FEED_AVATAR / 2, marginTop: 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  feedMain: { flex: 1, minWidth: 0 },
+  feedHead: { flexDirection: 'row', alignItems: 'center', minHeight: 44 },
+  feedMeta: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: Spacing.one },
+  feedAuthor: { flexShrink: 1, minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  feedMore: { marginRight: -12 },
+  measure: { position: 'absolute', left: 0, right: 0, top: 0, opacity: 0 },
+  textOnly: { marginTop: Spacing.one, borderRadius: 20, paddingHorizontal: Spacing.three, paddingVertical: 14, gap: Spacing.one },
+  moreText: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center', marginTop: -8, marginBottom: -14 },
+  feedPhotos: { marginTop: 12, marginHorizontal: -Spacing.three },
+  feedPhotoRow: { paddingLeft: FEED_PHOTO_INSET, paddingRight: Spacing.three, gap: Spacing.two },
+  slide: { borderRadius: 12, overflow: 'hidden' },
+  photoBadge: { position: 'absolute', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: 'rgba(22,22,24,0.66)' },
+  slideIndex: { top: 10, right: 10 },
+  slideCredit: { left: 10, bottom: 10 },
+  photoBadgeText: { color: '#FFFFFF', fontVariant: ['tabular-nums'] },
+  feedActs: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: FEED_TEXT_INSET - 8, paddingTop: 6 },
+  feedAct: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, minWidth: 44, minHeight: 44, paddingHorizontal: 8, borderRadius: 999 },
 });

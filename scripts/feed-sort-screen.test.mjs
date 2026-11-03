@@ -7,7 +7,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { t } from '../src/i18n/ko.ts';
 import { TAGS } from '../src/lib/mock.ts';
-import { groupJournalPosts, appendUniquePosts, limitBusinessPosts } from '../src/lib/feed-data.ts';
+import { groupJournalPosts, appendUniquePosts, limitBusinessPosts, todaySectionsAfter } from '../src/lib/feed-data.ts';
 import { withPostMap, postMapBody, googlePinUrl } from '../src/lib/post-maps.ts';
 import * as listingDetails from '../src/lib/listing-details.ts';
 import * as neighborhoods from '../src/lib/neighborhoods.ts';
@@ -41,7 +41,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '@/lib/hashtags': { getSuggestedHashtags: () => [], parseHashtags: () => [], canonicalizeHashtag: value => value },
     '@/lib/ads': { adsSupported: false }, '@/lib/supabase': { supabase: { functions: { invoke: (...args) => new Promise((resolve, reject) => drafts.push({ args, resolve, reject })) } } },
     '@/hooks/use-chat-identity': { useChatIdentity: () => null },
-    '@/lib/feed-data': { groupJournalPosts, appendUniquePosts, limitBusinessPosts, loadPublicFeed: (...args) => new Promise((resolve, reject) => calls.push({ args, resolve, reject })) },
+    '@/lib/feed-data': { groupJournalPosts, appendUniquePosts, limitBusinessPosts, todaySectionsAfter, loadPublicFeed: (...args) => new Promise((resolve, reject) => calls.push({ args, resolve, reject })) },
     '../../supabase/functions/_shared/post-links': { splitPostAttachments: body => ({ body }) },
     '@/lib/ai-draft': aiDraft,
   };
@@ -223,6 +223,42 @@ test('an old publish completion cannot refresh or overwrite a feed after account
   app.writes[0].resolve({ id: 'old-member-publish', post: post('old-member-publish') }); await new Promise(setImmediate);
   assert.equal(app.calls.length, 3, 'previous account must not start a new feed request');
   assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => p.id), ['guest-post']);
+});
+
+test('today 전체 puts festivals and places after the second post, drops the date line and uses the photo-feed card (owner 2026-11-03)', async () => {
+  assert.deepEqual([0, 1, 2, 5].map(todaySectionsAfter), [-1, 0, 1, 1], 'after the second post, after the only one, or under the empty state');
+  const sectionTypes = tree => nodes(tree).filter(n => n.type === 'LocalEventsCarousel' || n.type === 'CityPopularPlaces').map(n => n.type);
+  const app = screen({ os: 'ios' }); app.list(); app.refresh();
+  assert.equal(app.list().accessibilityElementsHidden, true, 'the city cover shows while the first page loads');
+  const posts = [post('one'), post('two'), post('three')];
+  app.calls[0].resolve(posts); await new Promise(setImmediate);
+  const props = app.list();
+  assert.equal(props.accessibilityElementsHidden, false, 'the city cover lifts with the posts, without waiting for festivals');
+  assert.deepEqual(posts.map((item, index) => sectionTypes(props.renderItem({ item, index: index + 2 }))), [[], ['LocalEventsCarousel', 'CityPopularPlaces'], []]);
+  const header = props.renderItem({ item: null, index: 0 });
+  assert.deepEqual(sectionTypes(header), []);
+  assert.ok(!nodes(header).some(n => n.props?.children === '10월 12일 월요일'), 'no date line on Today');
+  assert.equal(nodes(props.renderItem({ item: posts[0], index: 2 })).find(n => n.type === 'PostCard').props.feed, true);
+
+  const one = screen({ os: 'ios' }); one.list(); one.refresh();
+  one.calls[0].resolve([post('only')]); await new Promise(setImmediate);
+  assert.deepEqual(sectionTypes(one.list().renderItem({ item: post('only'), index: 2 })), ['LocalEventsCarousel', 'CityPopularPlaces']);
+
+  const empty = screen({ os: 'ios' }); empty.list(); empty.refresh();
+  empty.calls[0].resolve([]); await new Promise(setImmediate);
+  const footer = empty.list().ListFooterComponent;
+  assert.ok(nodes(footer).some(n => n.props?.children === t.feed.emptyTitle));
+  assert.deepEqual(sectionTypes(footer), ['LocalEventsCarousel', 'CityPopularPlaces'], 'with no posts they follow the empty state');
+
+  const food = nodes(app.render()).find(node => node.props?.analyticsId === 'components_feed-screen.pressable.3' && nodes(node).some(child => child.props?.children === '맛집'));
+  food.props.onPress(); app.list(); app.refresh();
+  app.calls.at(-1).resolve(posts); await new Promise(setImmediate);
+  assert.deepEqual(posts.flatMap((item, index) => sectionTypes(app.list().renderItem({ item, index: index + 2 }))), [], 'a category list shows posts only');
+
+  const meetups = screen({ os: 'ios', meetupsOnly: true });
+  const meetupProps = meetups.list();
+  assert.ok(nodes(meetupProps.renderItem({ item: null, index: 0 })).some(n => n.props?.children === '10월 12일 월요일'), 'the meetups tab keeps its title rows');
+  assert.equal(nodes(meetupProps.renderItem({ item: post('meetup', { room: { id: 'room' } }), index: 1 })).find(n => n.type === 'PostCard').props.feed, false);
 });
 
 test('error and empty states appear below the sorting control, where results normally appear', async () => {

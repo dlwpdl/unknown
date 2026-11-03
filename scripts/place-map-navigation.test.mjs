@@ -25,6 +25,7 @@ test('Home, full list and detail map controls preserve the canonical city/place 
   assert.equal(typeof discovery.placeMapRoute, 'function');
   for (const [path, analyticsId] of [
     ['src/components/city-popular-places.tsx', 'today.places.place-open'],
+    ['src/components/post-place-card.tsx', 'today.places.place-open'],
     ['src/app/places/index.tsx', 'places.open'],
     ['src/app/places/[id].tsx', 'places.open'],
   ]) {

@@ -17,7 +17,7 @@ import { supabase } from '@/lib/supabase';
 import { EVENT_CITIES, eventPriceLabel, eventTime, festivalLocalDay, type EventCity, type TicketmasterEvent } from '@/lib/ticketmaster';
 
 // 큰 회전 카드 대신 작은 가로 줄 (owner 2026-10-30). 불러오기·하루 바뀜·앱 복귀 때 다시 읽는 동작은 그대로다.
-export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityReady }: { cityId: string; refreshKey: number; cityLoading: boolean; onCityReady: (cityId: string) => void }) {
+export function LocalEventsCarousel({ cityId, refreshKey, cityLoading }: { cityId: string; refreshKey: number; cityLoading: boolean }) {
   const { tr } = useLanguage();
   const theme = useTheme();
   const router = useRouter();
@@ -29,18 +29,15 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityRea
   const current = result?.key === key ? result : null;
 
   useFocusEffect(useCallback(() => {
-    if (!Object.hasOwn(EVENT_CITIES, cityId)) { onCityReady(cityId); return; }
+    if (!Object.hasOwn(EVENT_CITIES, cityId)) return;
     let active = true;
     loadPublicFestivals(supabase, cityId)
       .then(data => {
-        if (active) {
-          setResult({ key, events: data.events, error: '', nextRefreshAt: data.nextRefreshAt });
-          onCityReady(cityId);
-        }
+        if (active) setResult({ key, events: data.events, error: '', nextRefreshAt: data.nextRefreshAt });
       })
-      .catch(() => { if (active) { setResult({ key, events: [], error: '행사 정보를 불러오지 못했어요.', nextRefreshAt: new Date(Date.now() + 15 * 60000).toISOString() }); onCityReady(cityId); } });
+      .catch(() => { if (active) setResult({ key, events: [], error: '행사 정보를 불러오지 못했어요.', nextRefreshAt: new Date(Date.now() + 15 * 60000).toISOString() }); });
     return () => { active = false; };
-  }, [cityId, key, onCityReady]));
+  }, [cityId, key]));
 
   useEffect(() => {
     if (!isFocused || !Object.hasOwn(EVENT_CITIES, cityId)) return;

@@ -14,7 +14,7 @@ const renderCityRow = (list, item) => {
   return list.renderItem({ item, section, index: section.data.indexOf(item) });
 };
 
-test('weekly ranking groups its expanded heading inside the card, away from the journal title', () => {
+test('weekly ranking: a thin folded pill under the categories, the expanded heading inside its card', () => {
   for (const [total, expanded] of [[2, false], [5, true], [5, false], [0, false]]) {
     let state = 0;
     const entries = Array.from({ length: total }, (_, i) => ({ postId: `post-${i}`, authorId: 'author', rank: i + 1, title: '동네 소식', nickname: '이웃', views: 10 }));
@@ -30,11 +30,23 @@ test('weekly ranking groups its expanded heading inside the card, away from the 
     });
     const tree = WeeklyRanking({ cityId: 'vancouver', onOpen() {} });
     if (!total) { assert.equal(tree, null); continue; }
-    assert.equal(tree.props.style.marginTop, 24, 'ranking must leave breathing room below the journal title');
-    const card = nodes(tree).find(n => [n.props?.style].flat().some(s => s?.overflow === 'hidden'));
-    assert.ok(card);
+    const style = node => Object.assign({}, ...[node.props?.style].flat(Infinity).filter(s => s && typeof s === 'object'));
+    // Owner 2026-11-03 ("공간낭비"): no outer margins, no stacked card behind the folded line.
+    assert.equal(style(tree).marginTop, undefined);
+    assert.ok(!nodes(tree).some(n => style(n).position === 'absolute'), 'no stacked card behind the ranking');
     const headings = nodes(tree).filter(n => n.props?.accessibilityRole === 'header');
     assert.equal(headings.length, total < 4 || expanded ? 1 : 0);
+    if (total >= 4 && !expanded) {
+      const fold = nodes(tree).find(n => n.props?.analyticsId === 'components_weekly-ranking.pressable.1');
+      const pill = nodes(fold).find(n => style(n).borderRadius === 999);
+      const row = nodes(pill).find(n => style(n).minHeight);
+      assert.equal(style(pill).borderWidth, undefined, 'the folded line is a filled pill, not a bordered card');
+      assert.equal(row.props.style.flat(Infinity).find(s => s?.minHeight).minHeight + 2 * style(fold).paddingVertical, 44, 'a 36pt pill keeps a 44pt touch area');
+      assert.equal(style(fold).marginVertical, -style(fold).paddingVertical, 'the touch area takes no extra layout space');
+      continue;
+    }
+    const card = nodes(tree).find(n => [n.props?.style].flat().some(s => s?.overflow === 'hidden'));
+    assert.ok(card);
     for (const heading of headings) {
       assert.ok(nodes(card).includes(heading), 'heading belongs to the ranking card, not the journal intro');
       assert.equal(heading.props.numberOfLines, undefined, 'heading can wrap with larger text');

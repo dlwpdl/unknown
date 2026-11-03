@@ -72,6 +72,9 @@ export function setBusinessImageSession(viewer: string | null, token: string | n
   businessImageSessionRevision++;
 }
 
+// Owner 2026-11-03: 오늘 '전체' shows the festival and place rows after the second post, after the only one, and at -1 (under the empty state) with none.
+export const todaySectionsAfter = (postCount: number) => Math.min(postCount, 2) - 1;
+
 // Owner 2026-10-25: 오늘 '전체' carries at most one business post per five; business hiring stays in 구인구직.
 export function limitBusinessPosts<T extends { business?: unknown; tag: { slug: string } }>(posts: readonly T[]) {
   let sinceBusiness = 4;

@@ -78,7 +78,7 @@ import {
   MEETUPS_CHANGED_EVENT,
   requestMeetupJoin,
 } from '@/lib/community-data';
-import { appendUniquePosts, limitBusinessPosts, loadPublicFeed, loadPublicPost, type FeedSort } from '@/lib/feed-data';
+import { appendUniquePosts, limitBusinessPosts, loadPublicFeed, loadPublicPost, todaySectionsAfter, type FeedSort } from '@/lib/feed-data';
 import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, hasAdLabel, MAX_HASHTAGS, parseHashtags, toggleAdLabel } from '@/lib/hashtags';
 import { canAddPostImage, MAX_POST_IMAGES } from '@/lib/image-upload';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -208,7 +208,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   // Wait for the session/profile before the first load so a signed-in launch does not load a guest/default-city feed first.
   const feedReady = !isAuthLoading || loadedFeedKey !== null;
   const [loadedFeedCityId, setLoadedFeedCityId] = useState<string | null>(null);
-  const [loadedEventsCityId, setLoadedEventsCityId] = useState<string | null>(null);
   const [feedError, setFeedError] = useState(false);
   const feedRevision = useRef(0);
   const feedCursorPost = useRef<Post | undefined>(undefined);
@@ -303,7 +302,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     ? listingPosts.reduce<Post[][]>((rows, post, index) => (index % 2 ? rows[rows.length - 1].push(post) : rows.push([post]), rows), [])
     : listingPosts;
   const feedLoading = categoryLoading || loadedFeedKey !== feedKey;
-  const cityLoading = cityOpen && !meetupsOnly && (loadedFeedCityId !== city.id || loadedEventsCityId !== city.id);
+  const cityLoading = cityOpen && !meetupsOnly && loadedFeedCityId !== city.id;
+  // Festivals and popular places sit after the second post in '전체' (owner 2026-11-03), so the city cover no longer waits for them.
+  const showTodaySections = cityOpen && !meetupsOnly && tagFilter == null;
+  const todaySections = showTodaySections && <>
+    <LocalEventsCarousel cityId={city.id} refreshKey={rankingRefresh} cityLoading={cityLoading} />
+    <CityPopularPlaces cityId={city.id} />
+  </>;
 
   // 검색: 제목·내용·닉네임·동네·해시태그 부분일치 ('#' 입력은 무시)
   // 영문 동네명도 매칭 (Coquitlam → 코퀴틀람) — 표기 파편화 방지
@@ -857,7 +862,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           keyExtractor={(p, index) => Array.isArray(p) ? `grid:${p[0].id}` : p?.id ?? (index === 0 ? 'journal-intro' : 'feed-sort')}
           contentContainerStyle={[styles.listContent, { paddingBottom: bottomClear + Spacing.three + (writeFab ? ControlMetrics.action + Spacing.three : 0) }]}
           ItemSeparatorComponent={({ leadingItem }) => leadingItem == null ? null : <View style={{ height: (businessCategory && !businessGrid) || (listingCategory && !usedGrid) ? 0 : Spacing.four }} />}
-          ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText> : feedState ?? undefined}
+          ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText>
+            : !feedLoading && todaySections && todaySectionsAfter(feedRows.length) < 0 ? <>{feedState}{todaySections}</> : feedState ?? undefined}
           renderItem={({ item, index }) => item == null && index === 1 && showFeedSort ? (
             <FeedSortControl sort={activeSort} title={businessCategory ? tr('새 소식') : selectedFilterTag ? tr("{0} 글", (selectedFilterTag.label)) : tr("오늘 글")} onChange={changeFeedSort}
               action={businessCategory ? <Pressable analyticsId="business.directory.open" accessibilityRole="button" accessibilityLabel={tr('비즈니스 찾기')}
@@ -872,19 +878,18 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               {businessCategory && <ListingViewSwitch view={businessView} onView={changeBusinessView} />}
             </FeedSortControl>
           ) : item == null ? (
-            <View style={styles.header} onLayout={event => { feedIntroHeight.current = event.nativeEvent.layout.height; }}>
-              <View style={styles.journalIntro}>
+            <View style={[styles.header, !meetupsOnly && styles.todayHeader]} onLayout={event => { feedIntroHeight.current = event.nativeEvent.layout.height; }}>
+              {/* 오늘 탭은 날짜 줄 없이 바로 많이 읽은 글 (owner 2026-11-03 "공간낭비"). 모임 탭 제목 줄은 그대로. */}
+              {meetupsOnly && <View style={styles.journalIntro}>
                 <View style={styles.journalStatusRow}>
                   <ThemedText type="smallBold" themeColor="textSecondary" style={styles.journalDate}>{todayLabel(appLocale)}</ThemedText>
                 </View>
-                {meetupsOnly && <ThemedText accessibilityRole="header" style={styles.journalTitle}>{t.feed.meetupTitle}</ThemedText>}
-              </View>
-              {/* 이번 주 많이 읽은 글(탑10)은 카테고리·날짜 바로 아래, 다른 섹션보다 먼저 (owner 2026-10-30). */}
+                <ThemedText accessibilityRole="header" style={styles.journalTitle}>{t.feed.meetupTitle}</ThemedText>
+              </View>}
+              {/* 이번 주 많이 읽은 글(탑10)은 카테고리 바로 아래, 다른 섹션보다 먼저 (owner 2026-10-30). */}
               {!feedLoading && weeklyRanking}
               {!meetupsOnly && <StartGuide cityName={city.name} onPickCity={() => setCityPicker(true)} onOpenMeetups={() => router.navigate('/meetups')} />}
               {!meetupsOnly && isAuthed && <NewcomerProgressCard />}
-              {cityOpen && !meetupsOnly && <LocalEventsCarousel cityId={city.id} refreshKey={rankingRefresh} cityLoading={cityLoading} onCityReady={setLoadedEventsCityId} />}
-              {cityOpen && !meetupsOnly && <CityPopularPlaces cityId={city.id} />}
               {meetupsOnly && <>
                 <MyMeetups onOpen={async (postId) => {
                   const post = await loadPublicPost(supabase, postId);
@@ -907,13 +912,15 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               post={item} onPress={() => pressCard(item)} onAuthor={() => openAuthor(item)}
               translationVisible={visibleFeedIds.has(item.id) && !searching && !writing} /> : <PostCard
               flat
+              feed={!meetupsOnly}
               post={item}
               translationVisible={visibleFeedIds.has(item.id) && !searching && !writing}
               onPress={() => pressCard(item)}
               onJoin={() => void onJoin(item)}
               onHashtag={openSearch}
               onAuthor={() => openAuthor(item)}
-            />)}{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !writing && !searching)) && feedAdPosition(index - (showFeedSort ? 2 : 1), feedRows.length) && <FeedAd key={`ad-after-${item.id}`} />}</Animated.View></Reanimated.View>
+            />)}{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !writing && !searching)) && feedAdPosition(index - (showFeedSort ? 2 : 1), feedRows.length) && <FeedAd key={`ad-after-${item.id}`} />}
+              {todaySections && index - (showFeedSort ? 2 : 1) === todaySectionsAfter(feedRows.length) && todaySections}</Animated.View></Reanimated.View>
           )}
         />
         {/* 덮개가 아래 회색 자리표시와 이전 글을 가리고, 다 불러오면 서서히 걷힌다. 첫 화면은 덮개째 바로 그린다. */}
@@ -1445,6 +1452,7 @@ const styles = StyleSheet.create({
   unreadBadge: { position: 'absolute', top: 0, right: 0, minWidth: 18, borderRadius: 9, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
   unreadText: { fontSize: 10, lineHeight: 14, fontVariant: ['tabular-nums'] },
   journalIntro: { paddingTop: Spacing.three, gap: Spacing.one },
+  todayHeader: { paddingBottom: Spacing.one },
   journalStatusRow: { minHeight: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
   writeFab: { position: 'absolute', right: Spacing.three, minHeight: ControlMetrics.action, flexDirection: 'row', gap: Spacing.one, borderWidth: 1 },
   writeFabCompact: { width: ControlMetrics.action, paddingHorizontal: 0 },
