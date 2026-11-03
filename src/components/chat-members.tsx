@@ -89,7 +89,7 @@ export function ChatMembers({ conversationId, groupPostId, currentUserId, onMemb
     const title = tr("{0}님을 모임에서 내보낼까요?", member.nickname);
     const message = tr("이 대화방을 더 이상 볼 수 없게 돼요. 24시간이 지나면 다시 참여 신청할 수 있어요.");
     if (Platform.OS === 'web') { if (globalThis.confirm(`${title}\n${message}`)) void remove(member); return; }
-    Alert.alert(title, message, [{ text: tr("돌아가기"), style: 'cancel' }, { text: tr("내보내기"), style: 'destructive', onPress: () => void remove(member) }]);
+    Alert.alert(title, message, [{ text: tr("돌아가기"), style: 'cancel', onPress: () => play('selection') }, { text: tr("내보내기"), style: 'destructive', onPress: () => void remove(member) }]);
   };
   return <>
     <Pressable analyticsId="components_chat-members.pressable.1" accessibilityRole="button" accessibilityLabel={tr("대화 멤버 목록")} onPress={() => { play('selection'); setManaging(null); setActionError(null); setOpen(true); void refresh(); }} style={[styles.button, styles.roster]}>
@@ -101,7 +101,7 @@ export function ChatMembers({ conversationId, groupPostId, currentUserId, onMemb
       </View>
       <ThemedText type="smallBold" themeColor="textSecondary">{visible ? tr("멤버 {0}명", (visible.length)) : tr("멤버 보기")} ›</ThemedText>
     </Pressable>
-    <Modal visible={open} transparent animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setOpen(false)}>
+    <Modal visible={open} transparent animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => { play('selection'); setOpen(false); }}>
       <View style={styles.backdrop}>
         <Pressable analyticsId="components_chat-members.pressable.2" accessibilityRole="button" accessibilityLabel={tr("멤버 목록 닫기")} style={StyleSheet.absoluteFill} onPress={() => { play('selection'); setOpen(false); }} />
         <View accessibilityViewIsModal style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.three) }]}>

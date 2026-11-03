@@ -31,7 +31,8 @@ function mount(file, exported, props, extra = {}) {
     '@/constants/theme': { Colors: { admin: theme }, Spacing: { one: 4, two: 8, three: 12 } },
     '@/hooks/use-language': { useLanguage: () => ({ tr: value => value }) }, '@/hooks/use-theme': { useTheme: () => theme },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) },
-    '@/lib/nickname': { nicknameError, normalizeNickname }, ...extra,
+    '@/lib/nickname': { nicknameError, normalizeNickname },
+    '@/components/disclosure': { animateLayout() {} }, 'react-native-reanimated': { useReducedMotion: () => true }, ...extra,
   };
   const exports = {}, source = readFileSync(new URL(file, import.meta.url), 'utf8');
   const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;

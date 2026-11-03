@@ -26,7 +26,7 @@ test('weekly ranking groups its expanded heading inside the card, away from the 
       '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
       '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
       '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
-      '@/lib/community-data': {}, '@/lib/supabase': {}, '@/i18n/ko': { count: String },
+      '@/lib/community-data': {}, '@/lib/supabase': {}, '@/i18n/ko': { count: String }, '@/components/post-zoom-link': { PostZoomLink: 'PostZoomLink' },
     });
     const tree = WeeklyRanking({ cityId: 'vancouver', onOpen() {} });
     if (!total) { assert.equal(tree, null); continue; }
@@ -102,6 +102,7 @@ test('location collection requires the visible disclosure and a separate consent
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/location-provider': { useCommunityLocation: () => location },
     '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버' }] },
+    '@/components/disclosure': { animateLayout() {} }, 'react-native-reanimated': { useReducedMotion: () => true },
   });
   const render = () => NearbyCityCard({ onSelect: id => { selected = id; }, onChooseCity: () => { manual++; }, onFix: value => { received = value; } });
   const button = (tree, label) => nodes(tree).find(node => node.type === 'Pressable' && text(node) === label);

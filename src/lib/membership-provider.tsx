@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import { AppState, Linking, Platform } from 'react-native';
 
 import { useAuth } from '@/lib/auth';
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { membershipOffer, type MembershipKind, type MembershipOffer, type MembershipSnapshot } from '@/lib/membership';
 import { purchaseUnavailableReason, withPurchases } from '@/lib/purchases';
 import { supabase } from '@/lib/supabase';
@@ -45,6 +46,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
   const refreshing = useRef<string | null>(null);
   const [pending, setPending] = useState<{ userId: string; kind: MembershipKind; previousProductId: string | null; awaitingApproval: boolean } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { play } = useInteractionFeedback();
   const [notice, setNotice] = useState<string | null>(null);
   const [syncReadyUser, setSyncReadyUser] = useState<string | null>(null);
   const membership = state?.userId === userId ? state.value : null;
@@ -164,6 +166,7 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       const after = subscription(await sync(requestGeneration), kind);
       // A successful paid-plan change may be deferred by the store until renewal.
       if (offer && after.tier !== 'free') setPending(null);
+      if (currentUser.current === userId && after.tier !== 'free') play('success');
       if (currentUser.current === userId) setNotice(after.tier === 'free'
         ? offer ? "구매를 확인하고 있어요. 잠시 후 다시 확인해 주세요." : pending?.userId === userId
           ? "현재 활성 구독은 없어요. 이전 구매의 승인 대기 상태는 결제한 스토어에서 확인해 주세요." : "복원할 활성 구독이 없어요."
@@ -174,12 +177,15 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       else if (String((failure as { code?: string })?.code) === '20') {
         setPending({ userId, kind, previousProductId, awaitingApproval: true }); setNotice("스토어에서 결제 승인을 기다리고 있어요. 승인되면 멤버십이 반영돼요.");
       }
-      else if (storeCompleted) setError("스토어 처리는 완료됐지만 멤버십 반영을 확인하지 못했어요. 다시 결제하지 말고 잠시 후 다시 확인해 주세요.");
-      else if ((failure as Error)?.message === 'MEMBERSHIP_SCHEMA_NOT_READY') setError("새 멤버십 연결을 준비 중이에요. 현재 구독은 그대로 이용할 수 있어요.");
-      else if (kind === 'business') setError("비즈니스 소유 확인과 구독 연결을 확인해 주세요. 결제 내역이 있다면 다시 결제하지 말고 구매 복원을 이용해 주세요.");
-      else setError("구독을 처리하지 못했어요. 결제 내역이 있다면 구매 복원을 이용해 주세요.");
+      else {
+        play('warning');
+        if (storeCompleted) setError("스토어 처리는 완료됐지만 멤버십 반영을 확인하지 못했어요. 다시 결제하지 말고 잠시 후 다시 확인해 주세요.");
+        else if ((failure as Error)?.message === 'MEMBERSHIP_SCHEMA_NOT_READY') setError("새 멤버십 연결을 준비 중이에요. 현재 구독은 그대로 이용할 수 있어요.");
+        else if (kind === 'business') setError("비즈니스 소유 확인과 구독 연결을 확인해 주세요. 결제 내역이 있다면 다시 결제하지 말고 구매 복원을 이용해 주세요.");
+        else setError("구독을 처리하지 못했어요. 결제 내역이 있다면 구매 복원을 이용해 주세요.");
+      }
     } finally { processing.current = false; setBusy(false); }
-  }, [offersState, pending, sync, userId]);
+  }, [offersState, pending, play, sync, userId]);
 
   const confirmPendingCancellation = useCallback(async () => {
     if (!userId || currentUser.current !== userId || processing.current || refreshing.current === userId || pending?.userId !== userId || !pending.awaitingApproval) return;

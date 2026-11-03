@@ -194,7 +194,7 @@ export function NeighborhoodPicker({ visible, cityId, initial, onClose, onConfir
     if (move) setCenter(current => ({ latitude: item.latitude, longitude: item.longitude, requestId: (current?.requestId ?? 0) + 1 }));
   };
   const current = findNeighborhood(cityId, selected);
-  return <Modal visible={visible} animationType={reduced ? 'none' : 'slide'} presentationStyle="pageSheet" onRequestClose={onClose}>
+  return <Modal visible={visible} animationType={reduced ? 'fade' : 'slide'} presentationStyle="pageSheet" onRequestClose={onClose}>
     <SafeAreaProvider style={styles.flex}>
     <SafeAreaView edges={['top', 'bottom']} style={[styles.screen, { backgroundColor: theme.background }]}>
       <View style={styles.header}>

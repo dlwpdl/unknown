@@ -4,7 +4,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { Disclosure } from '@/components/disclosure';
-import { InitialAvatar, ListCard, ListRow, SectionLabel, Tag } from '@/components/list-card';
+import { InitialAvatar, ListCard, ListLoading, ListRow, SectionLabel, Tag } from '@/components/list-card';
 import { MannerReviewButton } from '@/components/manner-review';
 import { MeetupHostTools } from '@/components/meetup-host-tools';
 import { MeetupRsvp } from '@/components/meetup-rsvp';
@@ -36,7 +36,7 @@ function Reviews({ postId, kind, attendanceOnly = false, reviewsOnly = false, on
   const hidden = useContentVisibility();
   const [page, setPage] = useState<MeetupReviewPage | null>(null), [sessions, setSessions] = useState<MeetupSessions | null>(null);
   const [error, setError] = useState(''), [retry, setRetry] = useState(0), [busy, setBusy] = useState(false), pending = useRef(false);
-  const [canStaffCheckIn, setCanStaffCheckIn] = useState(false);
+  const [canStaffCheckIn, setCanStaffCheckIn] = useState(false), [loaded, setLoaded] = useState(false);
   const [report, setReport] = useState<MeetupReviewPage['reviews'][number] | null>(null);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -50,8 +50,8 @@ function Reviews({ postId, kind, attendanceOnly = false, reviewsOnly = false, on
       try {
         const [next, participation, loyalty] = await Promise.all([kind === 'group' && !attendanceOnly ? loadMeetupReviews(supabase, postId) : null, isAuthed && !reviewsOnly ? loadMeetupSessions(supabase, postId) : null,
           isAuthed && attendanceOnly ? loadMeetupLoyalty(supabase, postId).catch(() => null) : null]);
-        if (active) { setPage(next); setSessions(participation); setCanStaffCheckIn(!!loyalty && (loyalty.isStaff || (loyalty.isHost && tierAtLeast(loyalty.hostTier, 'pro')))); setNow(Date.now()); setError(''); }
-      } catch { if (active) setError("모임 후기·참석 정보를 불러오지 못했어요."); }
+        if (active) { setPage(next); setSessions(participation); setCanStaffCheckIn(!!loyalty && (loyalty.isStaff || (loyalty.isHost && tierAtLeast(loyalty.hostTier, 'pro')))); setNow(Date.now()); setError(''); setLoaded(true); }
+      } catch { if (active) { setError("모임 후기·참석 정보를 불러오지 못했어요."); setLoaded(true); } }
     })();
     return () => { active = false; };
   }, [postId, kind, attendanceOnly, reviewsOnly, isAuthed, retry]);
@@ -75,6 +75,7 @@ function Reviews({ postId, kind, attendanceOnly = false, reviewsOnly = false, on
   const button = [styles.button, { borderColor: theme.line, backgroundColor: theme.backgroundElement }];
   return <View style={styles.container}>
     {isAuthed && !reviewsOnly && !sessionId && <MeetupHostTools postId={postId} sections={['role', 'waitlist']} onChanged={() => setRetry(value => value + 1)} />}
+    {!loaded && <ListLoading label={tr('불러오는 중이에요')} />}
     {kind === 'group' && !attendanceOnly && <>
       {page && <ThemedText type="small" themeColor={page.participants ? undefined : 'textSecondary'}>{page.participants ? tr("{0}/10 · 서로 다른 {1}명", (page.score), (page.participants)) : tr("아직 후기가 없어요.")}</ThemedText>}
       {page?.reviews.filter(review => !hidden('meetup_review', review.id, review.authorId)).map(review => <View key={review.id} style={[styles.review, { borderColor: theme.line }]}>

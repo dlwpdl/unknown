@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { appendUniquePosts } from '../src/lib/feed-data.ts';
 import { count, t } from '../src/i18n/ko.ts';
+import * as postOpen from '../src/lib/post-open.ts';
 
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
@@ -30,13 +31,13 @@ function mount(file, name, data, props = {}, params = {}) {
   const jsx = (type, props, key) => ({ type, props, key });
   const imports = {
     react, 'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': { FlatList: 'FlatList', View: 'View', Modal: 'Modal', Platform: { OS: data.os ?? 'ios' }, StyleSheet: { create: x => x }, Alert: { alert: (...args) => calls.push(['alert', ...args]) } },
+    'react-native': { FlatList: 'FlatList', View: 'View', Modal: 'Modal', DeviceEventEmitter: { addListener: (name, listener) => { calls.push(['listen', name, listener]); return { remove() {} }; } }, Platform: { OS: data.os ?? 'ios' }, StyleSheet: { create: x => x }, Alert: { alert: (...args) => calls.push(['alert', ...args]) } },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) },
     'expo-symbols': { SymbolView: 'SymbolView' },
     'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ canGoBack: () => true, back() {}, replace() {}, push: path => calls.push(['navigate', path]) }) },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/gling-loader': { GlingLoader: 'Loader' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },
-    '@/components/post-card': { PostCard: 'PostCard' }, '@/components/post-detail': { PostDetail: 'PostDetail' },
+    '@/components/post-card': { PostCard: 'PostCard' }, '@/components/post-detail': { PostDetail: 'PostDetail' }, '@/components/post-zoom-link': { PostZoomLink: 'PostZoomLink' }, '@/lib/post-open': postOpen,
     '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: (target, visible) => { calls.push(['savedEntry', target, visible]); return { state: null, error: '', loading: false, busy: false, visible, onPress() {} }; } },
     '@/components/manner-summary': { MannerSummary: 'MannerSummary' }, '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/drag-sheet': { DragSheet: 'DragSheet' },
     '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
@@ -161,16 +162,34 @@ test('closing, signing out or returning to a profile cannot revive its old chat 
   }
 });
 
-test('profile detail closes immediately when the author or viewer changes', async context => {
+test('signed-in profile posts open the post screen from the card and pick up its edits', async context => {
+  const harness = mount('../src/app/user/[id].tsx', 'default', {
+    loadPublicUserActivity: async () => [post('a'), post('b')], loadPublicUserProfile: async (_client, id) => profile(id),
+  }, {}, { id: 'author' });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const row = list(harness).props.renderItem({ item: post('a') });
+  assert.equal(row.type, 'PostZoomLink'); assert.equal(row.props.id, 'a'); assert.equal(row.props.post.id, 'a', 'the card hands its post to the detail');
+  assert.equal(row.props.children.type, 'PostCard');
+  const [, name, changed] = harness.calls.findLast(call => call[0] === 'listen');
+  assert.equal(name, postOpen.POST_CHANGED_EVENT);
+  changed({ id: 'a', removed: true }); harness.render();
+  assert.deepEqual(list(harness).props.data.map(item => item.id), ['b'], 'a post deleted on its screen leaves the profile list');
+  assert.equal(detail(harness), undefined);
+});
+
+test('guest profile detail gate closes immediately when the author or viewer changes', async context => {
   const params = { id: 'author' }, response = deferred(); let delay = false;
   const harness = mount('../src/app/user/[id].tsx', 'default', {
     loadPublicUserActivity: async () => delay ? response.promise : [post('old-post')],
     loadPublicUserProfile: async (_client, id) => delay ? response.promise : profile(id),
   }, {}, params);
+  harness.auth.isAuthed = false;
   context.after(() => harness.cleanup()); await harness.settle();
   list(harness).props.renderItem({ item: post('old-post') }).props.onPress(); await harness.settle(); assert.ok(detail(harness));
-  delay = true; harness.auth.me.id = 'other-viewer'; harness.render();
-  assert.equal(detail(harness), undefined, 'previous viewer cannot keep an old open detail during reload');
+  delay = true; harness.auth.isAuthed = true; harness.render();
+  assert.equal(detail(harness), undefined, 'signing in cannot keep the old gate open during reload');
+  harness.auth.isAuthed = false; harness.render();
+  list(harness).props.renderItem({ item: post('old-post') }).props.onPress(); harness.render();
   params.id = 'different-author'; harness.render(); assert.equal(detail(harness), undefined);
 });
 

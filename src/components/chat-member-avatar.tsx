@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { useMemo, useSyncExternalStore, type ComponentProps, type ReactNode } from 'react';
 
+import { ControlMotion } from '@/constants/design-system';
 import { createChatMemberPhotoQueue } from '@/lib/chat-details';
 import { loadMeetupProfilePhoto } from '@/lib/chilling-profile-media';
 import { supabase } from '@/lib/supabase';
@@ -22,6 +23,6 @@ export function ChatMemberAvatar({ viewerId, roomId, path, active = true, style,
     };
   }, [viewerId, roomId, path, active]);
   const uri = useSyncExternalStore(photo.subscribe, photo.read, () => undefined);
-  return uri ? <Image source={{ uri }} cachePolicy="none" recyclingKey={JSON.stringify([viewerId, roomId, path])}
+  return uri ? <Image source={{ uri }} cachePolicy="none" transition={ControlMotion.settleMs} recyclingKey={JSON.stringify([viewerId, roomId, path])}
     style={style} contentFit="cover" accessibilityLabel={accessibilityLabel} accessibilityIgnoresInvertColors /> : fallback;
 }

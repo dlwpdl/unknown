@@ -2,6 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Share, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
+import { useReducedMotion } from 'react-native-reanimated';
 import { SymbolView } from 'expo-symbols';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,6 +32,8 @@ export function PostShareSheet(props: ShareSheetProps) {
 function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps) {
   const { tr, locale: appLocale } = useLanguage();
   const theme = useTheme(), { me, isAuthed } = useAuth(), { play } = useInteractionFeedback(), router = useRouter();
+  // Reduced motion: the sheet fades in instead of sliding (owner 2026-11-02).
+  const reducedMotion = useReducedMotion();
   const business = useChatIdentity(), asBusinessId = business?.id ?? null;
   const insets = useSafeAreaInsets();
   const [inbox, setInbox] = useState<ConversationPage | null>(null), [notice, setNotice] = useState<string | { conversationTitle: string }>('');
@@ -92,7 +95,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
     } catch { if (active.current) { setNotice("다음 대화를 불러오지 못했어요. 다시 눌러주세요."); play('warning'); } }
     finally { pending.current = false; if (active.current) setLoading(false); }
   }
-  return <Modal visible={visible && isAuthed} transparent animationType="slide" presentationStyle="overFullScreen" onRequestClose={dismiss}>
+  return <Modal visible={visible && isAuthed} transparent animationType={reducedMotion ? 'fade' : 'slide'} presentationStyle="overFullScreen" onRequestClose={dismiss}>
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.page}>
       <View accessibilityViewIsModal onAccessibilityEscape={dismiss} style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.line, paddingBottom: Math.max(insets.bottom, 16) }]}>
         <View accessible={false} style={[styles.handle, { backgroundColor: theme.line }]} />

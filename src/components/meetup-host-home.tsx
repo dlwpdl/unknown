@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import { Pressable } from '@/components/analytics-controls';
@@ -54,7 +54,7 @@ function Stat({ label, value, total }: { label: string; value: string; total?: s
 /** Host home: where the meetup stands, the one thing to do next, and the five areas to manage. */
 export function MeetupHostHome({ postId, kind }: { postId: string; kind: 'once' | 'group' }) {
   const { tr, locale, language } = useLanguage();
-  const router = useRouter(), { play } = useInteractionFeedback();
+  const router = useRouter(), { play } = useInteractionFeedback(), theme = useTheme();
   const [home, setHome] = useState<Home | null>(null), [failed, setFailed] = useState(false), [revision, setRevision] = useState(0);
   // Times on this screen are judged at the time the home data arrived.
   const [now, setNow] = useState(() => Date.now());
@@ -90,7 +90,8 @@ export function MeetupHostHome({ postId, kind }: { postId: string; kind: 'once' 
   const primary = todos[0]?.kind === 'unpaid' ? null : todos[0] ?? null;
   const rest = primary ? todos.slice(1) : todos;
   return <View style={styles.root}>
-    <ScrollView contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content}
+      refreshControl={<RefreshControl refreshing={false} tintColor={theme.accent} onRefresh={() => { play('selection'); setRevision(value => value + 1); }} />}>
       <View>
         {!!home.context?.title && <ThemedText accessibilityRole="header" style={Typography.sheetTitle}>{home.context.title}</ThemedText>}
         <ThemedText themeColor="textSecondary" style={Typography.supporting}>{next ? tr('{0} · {1}', live ? tr('이번 회차') : tr('다음 회차'), sessionWhen(next.startsAt, locale, now, tr)) : tr('아직 잡힌 회차가 없어요.')}</ThemedText>

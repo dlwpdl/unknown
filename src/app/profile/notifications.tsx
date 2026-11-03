@@ -65,7 +65,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
         if (!granted) {
           play('warning');
           Alert.alert(tr("휴대폰 알림이 꺼져 있어요"), tr("기기 설정에서 글링 알림을 허용한 뒤 다시 켜주세요."), [
-            { text: tr("닫기"), style: 'cancel' }, { text: tr("기기 설정 열기"), onPress: () => void Linking.openSettings() },
+            { text: tr("닫기"), style: 'cancel', onPress: () => play('selection') }, { text: tr("기기 설정 열기"), onPress: () => { play('selection'); void Linking.openSettings(); } },
           ]);
           return;
         }

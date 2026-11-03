@@ -41,7 +41,7 @@ function screen({ meId = 'host', meetup = { id: 'p1', cityId: 'vancouver', title
       useLayoutEffect: callback => layouts.push(callback),
     },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': { View: 'View', TextInput: 'TextInput', KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'ios' }, StyleSheet: { create: x => x, hairlineWidth: 1 }, Alert: { alert: (...args) => alerts.push(args) }, DeviceEventEmitter: { emit: value => events.push(value) } },
+    'react-native': { View: 'View', TextInput: 'TextInput', KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'ios' }, StyleSheet: { create: x => x, hairlineWidth: 1 }, Alert: { alert: (...args) => alerts.push(args) }, DeviceEventEmitter: { emit: value => events.push(value) }, LayoutAnimation: { configureNext() {}, Types: {}, Properties: {} }, UIManager: {} },
     'expo-router': { useLocalSearchParams: () => ({ postId: 'p1' }), usePreventRemove: (enabled, callback) => { guard = { enabled, callback }; }, useRouter: () => ({ back: () => routes.push('back'), canGoBack: () => true, replace: path => routes.push(path) }) },
     '@/hooks/use-language': { useLanguage: () => ({ tr: (s, ...args) => translateUi('ko', s, ...args) }) },
     '@/hooks/use-theme': { useTheme: () => ({ text: '#000', background: '#fff', backgroundSelected: '#eee', card: '#fff', line: '#ddd', textSecondary: '#666', accent: '#70f' }) },

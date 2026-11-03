@@ -6,16 +6,17 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { Image } from 'expo-image';
 import { LayoutAnimation, Linking, Platform, StyleSheet, UIManager, View } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProfileAvatarButton } from '@/components/profile-avatar-button';
 import { GlassSurface } from '@/components/glass-surface';
+import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { LoginPanel } from '@/components/login-panel';
 import { TabContent } from '@/components/tab-content';
-import { ControlStyles, IconSize, controlPresentation } from '@/constants/design-system';
+import { ControlMotion, ControlStyles, IconSize, controlPresentation } from '@/constants/design-system';
 import { MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
@@ -302,14 +303,15 @@ export default function NotificationsScreen() {
         <View style={styles.tabs} accessibilityRole="tablist">
           {tabs.map(({ key, label, unread }) => {
             const selected = key === activeTab, look = controlPresentation(theme, { selected });
-            return <Pressable analyticsId="app_tabs_notifications.pressable.3" key={key} accessibilityRole="tab" accessibilityState={{ selected }}
+            // SelectionChip fades the accent fill in and out instead of hard-switching the selected tab.
+            return <SelectionChip analyticsId="app_tabs_notifications.pressable.3" key={key} selected={selected} accessibilityRole="tab" accessibilityState={{ selected }}
               accessibilityLabel={unread ? tr("{0}, 안 읽은 알림 {1}개", label, unread) : label} onPress={() => selectTab(key)}
-              style={({ pressed }) => [ControlStyles.pill, styles.tab, controlPresentation(theme, { selected, pressed }).container]}>
+              baseColor={theme.card} style={[ControlStyles.pill, styles.tab, { borderColor: selected ? theme.accent : theme.line }]}>
               <ThemedText type="smallBold" style={look.text} numberOfLines={1}>{label}</ThemedText>
               {unread > 0 && <View style={[styles.count, { backgroundColor: selected ? theme.accentInk : theme.accent }]}>
                 <ThemedText type="caption" style={{ color: selected ? theme.accent : theme.accentInk, fontWeight: '700' }}>{unread > 99 ? '99+' : unread}</ThemedText>
               </View>}
-            </Pressable>;
+            </SelectionChip>;
           })}
           {markable.length > 0 && <Pressable analyticsId="app_tabs_notifications.pressable.5" accessibilityRole="button" onPress={markAll}
             style={({ pressed }) => [ControlStyles.pill, styles.markAll, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
@@ -323,7 +325,8 @@ export default function NotificationsScreen() {
         {initialLoading ? (
           <GlingLoader color={theme.accent} style={styles.center} accessibilityLabel={t.notifications.loading} />
         ) : (
-          <FlatList analyticsId="app_tabs_notifications.flatlist.1"
+          // The first page fades up in place of the loader instead of popping in.
+          <Reanimated.View style={styles.flex} entering={reducedMotion ? FadeIn.duration(150) : FadeInDown.duration(250)}><FlatList analyticsId="app_tabs_notifications.flatlist.1"
             data={entries}
             keyExtractor={({ key }) => key}
             contentContainerStyle={styles.list}
@@ -341,7 +344,7 @@ export default function NotificationsScreen() {
             renderItem={({ item }) => item.type === 'header'
               ? <ThemedText accessibilityRole="header" type="smallBold" style={[styles.groupTitle, { color: theme.textSecondary }]}>{item.title}</ThemedText>
               : renderRow(item.item)}
-          />
+          /></Reanimated.View>
         )}
       </View></SafeAreaView>
     </TabContent>
@@ -352,7 +355,7 @@ function Avatar({ actor, fallback, symbol, small, style }: { actor?: Person; fal
   const theme = useTheme();
   return <View style={[small ? styles.avatarSmall : styles.avatar, { backgroundColor: theme.backgroundElement, borderColor: theme.background }, style]}>
     {actor?.avatarUrl
-      ? <Image source={{ uri: actor.avatarUrl }} style={styles.avatarImage} contentFit="cover" accessibilityIgnoresInvertColors />
+      ? <Image source={{ uri: actor.avatarUrl }} style={styles.avatarImage} contentFit="cover" transition={ControlMotion.settleMs} accessibilityIgnoresInvertColors />
       : fallback ? <ThemedText type="smallBold" themeColor="textSecondary">{fallback.trim().slice(0, 1)}</ThemedText>
       : <SymbolView name={symbol ?? KIND_SYMBOLS.system} size={IconSize.toolbar} tintColor={theme.accent} />}
   </View>;
@@ -394,4 +397,5 @@ const styles = StyleSheet.create({
   settings: { minWidth: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   settingsGlass: { borderRadius: 22 },
   center: { flex: 1, alignSelf: 'stretch' },
+  flex: { flex: 1 },
 });

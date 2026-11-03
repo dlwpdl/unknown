@@ -7,6 +7,7 @@ import { GlingRatingIcon, MerchantRatingBar } from '@/components/merchant-rating
 import { PostCard } from '@/components/post-card';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { StateCard } from '@/components/state-card';
+import { GlingLoader } from '@/components/gling-loader';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
@@ -163,7 +164,7 @@ function ScopedPlaceReviews({ cityId, placeId, userId, viewport }: Props & { use
         <ThemedText type="smallBold" themeColor="textSecondary">{tr('닫기')}</ThemedText>
       </Pressable>
     </View>}
-    {loading && <ThemedText type="small" accessibilityLiveRegion="polite" themeColor="textSecondary">{tr('후기 불러오는 중…')}</ThemedText>}
+    {loading && <GlingLoader color={theme.accent} accessibilityLabel={tr('후기 불러오는 중…')} />}
     {readError && <StateCard kind="error" title={tr('장소 후기를 불러오지 못했어요')}
       body={tr('이미 읽은 글과 작성 중인 내용은 남아 있어요. 연결을 확인한 뒤 다시 시도해 주세요.')}
       actionLabel={tr('다시 시도')} onAction={() => { void read(retryMore); }} />}

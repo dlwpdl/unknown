@@ -29,7 +29,7 @@ import { ThemedText } from '@/components/themed-text';
 import { chatListTime, chatMessageText, meetupChatIcon } from '@/lib/chat-details';
 import { TabContent } from '@/components/tab-content';
 import { TrustBadge } from '@/components/trust-badge';
-import { IconSize } from '@/constants/design-system';
+import { ControlMotion, IconSize } from '@/constants/design-system';
 import { MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
@@ -208,6 +208,8 @@ export default function ChatScreen() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'conversations' }, schedule)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, ({ new: message }) => {
         if (!active) return;
+        // A room re-sorting to the top glides there; skipped while a room is open so its own bubbles keep their animation.
+        if (!presentation.current) animateList();
         // The event already passed message RLS. Update visible previews without refetching history.
         setInbox((current) => {
           if (!current || current.userId !== scopeKey) return current;
@@ -226,7 +228,7 @@ export default function ChatScreen() {
     const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, schedule);
     const appState = AppState.addEventListener('change', (next) => { if (next === 'active') schedule(); });
     return () => { active = false; clearTimeout(timer); listener.remove(); appState.remove(); stopBusiness(); if (channel) void supabase.removeChannel(channel); };
-  }, [refresh, userId, channelId, asBusinessId, scopeKey, filter]);
+  }, [refresh, animateList, userId, channelId, asBusinessId, scopeKey, filter]);
 
   const loadMore = async () => {
     if (!userId || pageBusy.current || loading || !inbox?.cursor || inbox.userId !== scopeKey || inbox.filter !== filter) return;
@@ -289,7 +291,7 @@ export default function ChatScreen() {
   const confirmReject = (request: MeetupRequest) => {
     play('selection');
     if (Platform.OS === 'web') { if (globalThis.confirm(tr("이 참여 신청을 거절할까요?"))) void handleRequest(request, 'rejected'); }
-    else Alert.alert(tr("참여 신청 거절"), tr("이 참여 신청을 거절할까요?"), [{ text: tr("돌아가기"), style: 'cancel' }, { text: tr("거절하기"), style: 'destructive', onPress: () => void handleRequest(request, 'rejected') }]);
+    else Alert.alert(tr("참여 신청 거절"), tr("이 참여 신청을 거절할까요?"), [{ text: tr("돌아가기"), style: 'cancel', onPress: () => play('selection') }, { text: tr("거절하기"), style: 'destructive', onPress: () => void handleRequest(request, 'rejected') }]);
   };
 
   if (!auth.isAuthed) return <TabContent style={styles.fill}><LoginPanel reason={t.auth.reasonChat} onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} /></TabContent>;
@@ -348,13 +350,13 @@ export default function ChatScreen() {
         : loading ? undefined
         : filter === 'requests' ? (requests.length ? undefined : <StateCard title={tr("대기 중인 참여 신청이 없어요")} body={tr("모임에 신청이 들어오면 여기서 승인하거나 거절할 수 있어요.")} />)
           : <StateCard title={t.chat.emptyTitle} body={t.chat.emptyBody} />}
-      renderItem={({ item, index }) => <Pressable analyticsId="app_tabs_chat.pressable.7" onPress={() => { play('selection'); presentConversation(item); }} accessibilityRole="button" style={({ pressed }) => [styles.room, { borderBottomColor: theme.line, backgroundColor: pressed ? theme.backgroundElement : 'transparent', transform: [{ scale: pressed && !reducedMotion ? 0.985 : 1 }] }]}>
+      renderItem={({ item, index }) => <Pressable analyticsId="app_tabs_chat.pressable.7" onPress={() => { play('selection'); presentConversation(item); }} accessibilityRole="button" style={({ pressed }) => [styles.room, { borderBottomColor: theme.line, backgroundColor: pressed ? theme.backgroundElement : 'transparent' }]}>
         <ChatAvatar kind={item.kind} title={item.title} meetupCategory={item.meetupCategory} initial={item.kind !== 'group' ? item.otherUser.nickname[0] : ''} avatarUri={item.otherIdentity?.avatarUri} active={focused && !shownConversation && index < 8} delay={index * 260} />
         <View style={styles.roomBody}><View style={styles.nickRow}><ThemedText style={[styles.flex, styles.roomName]} numberOfLines={1}>{item.kind === 'group' ? item.title : item.otherUser.nickname}</ThemedText>{item.kind === 'business' && <ThemedText type="small" themeColor="accent">{tr('비즈니스')}</ThemedText>}{item.kind === 'direct' && <TrustBadge verified={item.otherUser.verificationLevel >= 2} trustLevel={item.otherUser.verificationLevel === 3 ? 3 : item.otherUser.verificationLevel === 2 ? 2 : undefined} />}</View>
           <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{item.status === 'pending' ? tr("대화 상태 확인 중") : item.status === 'ended' ? t.chat.ended : item.latestBody != null ? listPreview(item.latestBody, tr) : t.chat.newConversation}</ThemedText></View>
         <View style={styles.roomTime}><ThemedText type="small" themeColor="textSecondary">{chatListTime(item.latestAt, undefined, appLocale)}</ThemedText></View>
       </Pressable>} />
-  </View></SafeAreaView><Modal key={modalConversation?.key ?? 'closed'} visible={focused && !!modalConversation && !!openConversation && routeMatches} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" allowSwipeDismissal onRequestClose={closeConversation} onDismiss={() => {
+  </View></SafeAreaView><Modal key={modalConversation?.key ?? 'closed'} visible={focused && !!modalConversation && !!openConversation && routeMatches} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" allowSwipeDismissal onRequestClose={() => { play('selection'); closeConversation(); }} onDismiss={() => {
     if (presentation.current !== modalConversation) return;
     presentation.current = undefined;
     setModalConversation(undefined);
@@ -393,7 +395,7 @@ function ChatAvatar({ kind, title, meetupCategory, initial, avatarUri, active, d
       {icon === 'beer' && !reducedMotion && <Animated.View pointerEvents="none" style={[styles.iconOverlay, { opacity: pulse }]}><Image source={require('@/assets/brand/chat-3d/beer-full.png')} style={styles.partyIcon} contentFit="contain" accessible={false} /></Animated.View>}
       {icon === 'disco-ball' && !reducedMotion && <Animated.View pointerEvents="none" style={[styles.glint, { opacity: pulse.interpolate({ inputRange: [0, 0.3, 0.7, 1], outputRange: [0, 0, 1, 0] }), transform: [{ rotate: '45deg' }, { scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1.4] }) }] }]} />}
     </>
-      : avatarUri ? <Image source={{ uri: avatarUri }} style={[styles.partyIcon, { borderRadius: 26 }]} contentFit="cover" accessible={false} /> : <ThemedText type="subtitle" themeColor="accent">{initial}</ThemedText>}
+      : avatarUri ? <Image source={{ uri: avatarUri }} style={[styles.partyIcon, { borderRadius: 26 }]} contentFit="cover" transition={ControlMotion.settleMs} accessible={false} /> : <ThemedText type="subtitle" themeColor="accent">{initial}</ThemedText>}
   </Animated.View>;
 }
 

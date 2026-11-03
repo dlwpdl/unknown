@@ -1,4 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
+import { GlingLoader } from '@/components/gling-loader';
 import { useEffect, useRef, useState } from 'react';
 import { Linking, Platform, StyleSheet, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -8,6 +9,7 @@ import { Pressable } from '@/components/analytics-controls';
 import { MerchantProfileHeader } from '@/components/merchant-profile-header';
 import { MerchantHelp } from '@/components/merchant-ui';
 import { ThemedText } from '@/components/themed-text';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -164,7 +166,7 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
         else router.push({ pathname: '/company/[id]', params: { id: merchantId } });
       }} disabled={busy} />}
     </View>}
-    {loading ? <ThemedText type="small" accessibilityLiveRegion="polite">{tr("프로필을 불러오는 중…")}</ThemedText>
+    {loading ? <GlingLoader color={theme.accent} accessibilityLabel={tr("프로필을 불러오는 중")} style={{ alignSelf: 'center', marginVertical: Spacing.four }} />
       : profile && photos && <>
         {profile.can_edit && missing.length > 0 && <View style={card} accessibilityRole="summary">
           <ThemedText type="smallBold">{tr("배너·주소·영업시간을 채우면 더 잘 보여요")}</ThemedText>

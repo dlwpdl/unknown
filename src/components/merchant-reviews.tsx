@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { Pressable } from '@/components/analytics-controls';
 import { ReportSheet } from '@/components/report-sheet';
+import { GlingLoader } from '@/components/gling-loader';
 import { ThemedText } from '@/components/themed-text';
 import { MerchantRatingBar } from '@/components/merchant-rating-bar';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
@@ -150,7 +151,7 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
     }
   };
 
-  if (!page && !readError) return null;
+  if (!page && !readError) return <GlingLoader color={theme.accent} accessibilityLabel={tr("후기를 불러오는 중…")} />;
   const mine = isAuthed && page?.my_review?.author_id === me.id ? page.my_review : null;
   const publicRows = page?.reviews.filter((row) => row.receipt_status === 'verified' && (row.review_kind ?? 'usage') === reviewKind) ?? [];
   const rows = page ? (mine?.status === 'published' ? [mine, ...publicRows.filter(({ id }) => id !== mine.id)] : publicRows)
@@ -240,7 +241,7 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
       <Pressable analyticsId="merchant.review.retry" accessibilityRole="button" disabled={loading} accessibilityState={{ disabled: loading }}
         style={styles.textButton} onPress={() => { play('selection'); refresh(); }}><ThemedText type="smallBold" themeColor="accent">{tr("다시 불러오기")}</ThemedText></Pressable>
     </View>}
-    {loading && page && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr("후기를 불러오는 중…")}</ThemedText>}
+    {loading && page && <GlingLoader color={theme.accent} accessibilityLabel={tr("후기를 불러오는 중…")} />}
     {page?.has_more && !readError && <Pressable analyticsId="merchant.review.more" accessibilityRole="button" disabled={loading}
       accessibilityState={{ disabled: loading }} style={styles.textButton} onPress={() => {
         play('selection'); if (pendingRead.current) return; pendingRead.current = true; setLoading(true); setOffset((value) => value + 20);

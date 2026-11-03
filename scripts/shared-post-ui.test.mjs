@@ -21,6 +21,7 @@ import { translationSource } from './test-meetup-source-imports.mjs';
 import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 import * as postLinks from '../supabase/functions/_shared/post-links.ts';
 import * as postReactions from '../src/lib/post-reactions.ts';
+import * as postOpen from '../src/lib/post-open.ts';
 
 const id = '9f100000-0000-4000-8000-000000000001';
 const otherId = '9f100000-0000-4000-8000-000000000002';
@@ -83,7 +84,7 @@ function mount(file, name, data = {}, props = {}) {
     'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'SymbolView' }, 'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) },
     'expo-router': { useLocalSearchParams: () => data.params ?? {}, useIsFocused: () => data.focused !== false, useFocusEffect: fn => react.useEffect(() => data.focused === false ? undefined : fn(), [fn, data.focused]), useRouter: () => ({ canGoBack: () => false, back: () => calls.push(['back']), push: path => calls.push(['navigate', path]), replace: path => calls.push(['navigate', path]) }) },
     '@react-native-async-storage/async-storage': { __esModule: true, default: nativeStorage },
-    '@/lib/shared-post-return': sharedPostReturn,
+    '@/lib/shared-post-return': sharedPostReturn, '@/lib/post-open': postOpen,
     'expo-router/head': { default: 'Head' },
     '@/components/public-web/metadata': { generatePrivateMetadata: () => ({ robots: 'noindex, nofollow' }) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' }, '@/components/themed-text': { ThemedText: 'Text' },

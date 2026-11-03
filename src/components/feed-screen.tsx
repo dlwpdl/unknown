@@ -2,7 +2,7 @@ import { NewcomerProgressCard } from '@/components/newcomer';
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView, FlatList } from '@/components/analytics-controls';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import Reanimated, { FadeIn, FadeInDown, FadeOut, useReducedMotion } from 'react-native-reanimated';
@@ -54,7 +54,7 @@ import { StateCard } from '@/components/state-card';
 import { StartGuide } from '@/components/start-guide';
 import { WeeklyRanking } from '@/components/weekly-ranking';
 import { UserSheet, type SheetUser } from '@/components/user-sheet';
-import { PostDetail } from '@/components/post-detail';
+import { PostZoomLink } from '@/components/post-zoom-link';
 import { TabContent } from '@/components/tab-content';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -93,6 +93,7 @@ import {
 import { findNeighborhood, neighborhoodName } from '@/lib/neighborhoods';
 import { supabase } from '@/lib/supabase';
 import type { DailyQuota, Post, PostKind, Tag } from '@/lib/types';
+import { applyPostChange, handOffPost, POST_CHANGED_EVENT, type PostChange } from '@/lib/post-open';
 import { splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
 
 
@@ -168,8 +169,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [aiNote, setAiNote] = useState<{ tone: 'info' | 'warn'; text: string } | null>(null);
   const aiUndo = useRef<{ title: string; body: string; tag: Tag; hashtagInput: string; postKind: PostKind; priceInput: string } | null>(null);
   const writesNew = !hasDraftText || isShortNote(title, splitPostAttachments(body).body);
-  const [detailPost, setDetailPost] = useState<Post | null>(null);
-  const [detailVisible, setDetailVisible] = useState(false);
   const [sheetUser, setSheetUser] = useState<SheetUser | null>(null);
   // 카드의 작성자를 누르면 글을 열지 않고 바로 미니 프로필로 간다.
   const openAuthor = (post: Post) => {
@@ -260,6 +259,14 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, () => void refreshFeed().catch(() => {}));
     return () => listener.remove();
   }, [refreshFeed]);
+  // 글 화면(/post/[id])에서 고치거나 지운 글, 바뀐 댓글·조회 수를 돌아오기 전에 목록에 반영한다.
+  useEffect(() => {
+    const listener = DeviceEventEmitter.addListener(POST_CHANGED_EVENT, (change: PostChange) => {
+      setPosts(current => applyPostChange(current, change));
+      setSearchResults(current => applyPostChange(current, change));
+    });
+    return () => listener.remove();
+  }, []);
 
   useEffect(() => {
     if (!feedReady) return;
@@ -357,10 +364,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       setPendingPost(post); // 로그인 성공하면 이어서 열기
       return promptLogin(t.auth.reasonDetail);
     }
-    setDetailPost(post);
-    setDetailVisible(true);
+    handOffPost(me.id, post);
+    router.push({ pathname: '/post/[id]', params: { id: post.id } });
   };
-  const weeklyRanking = cityOpen && !meetupsOnly && tagFilter == null && <WeeklyRanking cityId={city.id} refreshKey={rankingRefresh} onOpen={async (postId) => {
+  // 로그인했으면 카드를 감싼 PostZoomLink가 누른 카드에서 글을 키워 연다(owner 2026-11-02). 게스트 카드는 그대로 로그인 창을 띄운다.
+  const zoomCard = (post: Post, card: ReactElement<{ onPress?: () => void }>) => isAuthed ? <PostZoomLink key={post.id} id={post.id} post={post}>{card}</PostZoomLink> : card;
+  const pressCard = (post: Post) => { if (!isAuthed) openDetail(post); };
+  const weeklyRanking = cityOpen && !meetupsOnly && tagFilter == null && <WeeklyRanking cityId={city.id} refreshKey={rankingRefresh} linked={isAuthed} onOpen={async (postId) => {
     try {
       const post = await loadPublicPost(supabase, postId);
       if (post) openDetail(post);
@@ -422,27 +432,22 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     return () => { active = false; };
   }, []);
 
-  const updateViewCount = useCallback((postId: string, count: number) => {
-    setPosts((current) => current.map((item) => item.id === postId ? { ...item, views: count } : item));
-    setSearchResults((current) => current.map((item) => item.id === postId ? { ...item, views: count } : item));
-  }, []);
-
   // 로그인 직후 보려던 글을 이어서 연다.
   useEffect(() => {
     if (isAuthed && pendingPost) {
       const timer = setTimeout(() => {
-        setDetailPost(pendingPost);
-        setDetailVisible(true);
+        handOffPost(me.id, pendingPost);
+        router.push({ pathname: '/post/[id]', params: { id: pendingPost.id } });
         setPendingPost(null);
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [isAuthed, pendingPost]);
+  }, [isAuthed, me.id, pendingPost, router]);
   const showActionError = useCallback((code: keyof typeof t.actionErrors) => {
     const message = t.actionErrors[code];
     Alert.alert(message.title, message.body, [
       { text: t.write.cancel, style: 'cancel' },
-      ...(message.membership ? [{ text: tr("멤버십 보기"), onPress: () => { setWriting(false); setJoinPost(null); setDetailVisible(false); setDetailPost(null); router.push('/profile/membership'); } }] : []),
+      ...(message.membership ? [{ text: tr("멤버십 보기"), onPress: () => { setWriting(false); setJoinPost(null); router.push('/profile/membership'); } }] : []),
     ]);
   }, [router, t, tr]);
 
@@ -452,8 +457,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     if (post.room?.closed) return showActionError('MEETUP_CLOSED');
     if (post.author.id === me.id) return Alert.alert(t.chat.ownMeetupTitle, t.chat.ownMeetupBody);
     if (post.room?.eventKind) {
-      setDetailVisible(false);
-      setDetailPost(null);
       router.push({ pathname: '/meetup-join', params: { postId: post.id } });
       return;
     }
@@ -896,24 +899,24 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             </View>
           ) : (
             Array.isArray(item) ? <Animated.View style={[styles.listingGrid, { opacity: feedOpacity }]}>
-              {item.map(post => businessGrid ? <BusinessNewsCard key={post.id} variant="tile" post={post} onPress={() => openDetail(post)} onAuthor={() => openAuthor(post)}
-                translationVisible={visibleFeedIds.has(post.id) && !searching && !detailVisible && !writing} />
-                : post.listingDetails ? <ListingCard key={post.id} variant="tile" post={post as DetailedPost} onPress={() => openDetail(post)} />
-                : <View key={post.id} style={styles.flexText}><PostCard flat post={post} onPress={() => openDetail(post)} onJoin={() => void onJoin(post)} onHashtag={openSearch} onAuthor={() => openAuthor(post)} /></View>)}
+              {item.map(post => businessGrid ? zoomCard(post, <BusinessNewsCard key={post.id} variant="tile" post={post} onPress={() => pressCard(post)} onAuthor={() => openAuthor(post)}
+                translationVisible={visibleFeedIds.has(post.id) && !searching && !writing} />)
+                : post.listingDetails ? zoomCard(post, <ListingCard key={post.id} variant="tile" post={post as DetailedPost} onPress={() => pressCard(post)} />)
+                : <View key={post.id} style={styles.flexText}>{zoomCard(post, <PostCard flat post={post} onPress={() => pressCard(post)} onJoin={() => void onJoin(post)} onHashtag={openSearch} onAuthor={() => openAuthor(post)} />)}</View>)}
               {item.length === 1 && <View style={styles.flexText} />}
             </Animated.View> :
-            <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: feedOpacity }}>{listingCategory && item.listingDetails ? <ListingCard
-              post={item as DetailedPost} onPress={() => openDetail(item)} /> : businessCategory ? <BusinessNewsCard
-              post={item} onPress={() => openDetail(item)} onAuthor={() => openAuthor(item)}
-              translationVisible={visibleFeedIds.has(item.id) && !searching && !detailVisible && !writing} /> : <PostCard
+            <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: feedOpacity }}>{zoomCard(item, listingCategory && item.listingDetails ? <ListingCard
+              post={item as DetailedPost} onPress={() => pressCard(item)} /> : businessCategory ? <BusinessNewsCard
+              post={item} onPress={() => pressCard(item)} onAuthor={() => openAuthor(item)}
+              translationVisible={visibleFeedIds.has(item.id) && !searching && !writing} /> : <PostCard
               flat
               post={item}
-              translationVisible={visibleFeedIds.has(item.id) && !searching && !detailVisible && !writing}
-              onPress={() => openDetail(item)}
+              translationVisible={visibleFeedIds.has(item.id) && !searching && !writing}
+              onPress={() => pressCard(item)}
               onJoin={() => void onJoin(item)}
               onHashtag={openSearch}
               onAuthor={() => openAuthor(item)}
-            />}{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !detailVisible && !writing && !searching)) && feedAdPosition(index - (showFeedSort ? 2 : 1), feedRows.length) && <FeedAd key={`ad-after-${item.id}`} />}</Animated.View></Reanimated.View>
+            />)}{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !writing && !searching)) && feedAdPosition(index - (showFeedSort ? 2 : 1), feedRows.length) && <FeedAd key={`ad-after-${item.id}`} />}</Animated.View></Reanimated.View>
           )}
         />
         {/* 덮개가 아래 회색 자리표시와 이전 글을 가리고, 다 불러오면 서서히 걷힌다. 첫 화면은 덮개째 바로 그린다. */}
@@ -929,7 +932,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         </Pressable>}
       </View></SafeAreaView>
 
-      <Modal visible={categorySheet} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" onRequestClose={() => { play('selection'); setCategorySheet(false); }}>
+      <Modal visible={categorySheet} animationType={reducedMotion ? 'fade' : 'slide'} presentationStyle="pageSheet" onRequestClose={() => { play('selection'); setCategorySheet(false); }}>
         <SafeAreaView style={[styles.categorySheet, { backgroundColor: theme.background }]}>
           <View style={styles.categorySheetHead}>
             <View style={{ flex: 1 }}>
@@ -960,7 +963,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         filters={listingFilters} onFilters={setListingFilters} onClose={() => setListingMap(false)}
         onOpenPost={post => { setListingMap(false); setTimeout(() => openDetail(post), Platform.OS === 'ios' ? 350 : 0); }} />}
       {/* 검색: 제목·내용·해시태그. 입력 전엔 인기 해시태그 칩 (당근 검색 패턴) */}
-      <Modal visible={searching} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => { play('selection'); setSearching(false); }}
+      <Modal visible={searching} animationType={reducedMotion ? 'fade' : 'slide'} onRequestClose={() => { play('selection'); setSearching(false); }}
         onDismiss={() => {
           const post = searchSelection.current;
           searchSelection.current = null;
@@ -1058,34 +1061,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         </SafeAreaProvider>
       </Modal>
 
-      {/* 글 상세 (로그인 게이트 통과 시) — pageSheet: 상단 여백·스와이프 닫기 네이티브 제공 */}
-      <Modal
-        visible={detailVisible && !!detailPost}
-        animationType={reducedMotion ? 'none' : 'slide'}
-        presentationStyle="pageSheet"
-        allowSwipeDismissal
-        onRequestClose={() => { play('selection'); setDetailVisible(false); }}
-        onDismiss={() => setDetailPost(null)}>
-        {detailPost && (
-          <PostDetail
-            post={detailPost}
-            onViewCountChange={updateViewCount}
-            onClose={() => setDetailVisible(false)}
-            onPostRemoved={(postId) => setPosts((current) => current.filter((post) => post.id !== postId))}
-            onPostChanged={(saved) => {
-              setPosts(current => current.map(post => post.id === saved.id ? saved : post));
-              setSearchResults(current => current.map(post => post.id === saved.id ? saved : post));
-              setDetailPost(saved);
-            }}
-            onJoin={() => onJoin(detailPost)}
-            onCommentCountChange={(count) => {
-              setPosts((current) => current.map((post) => post.id === detailPost.id ? { ...post, comments: count } : post));
-              setDetailPost((current) => current ? { ...current, comments: count } : current);
-            }}
-          />
-        )}
-      </Modal>
-
       <Modal visible={joinPost != null} transparent animationType="fade" onRequestClose={() => { play('selection'); setJoinPost(null); }}>
         <View style={styles.joinBackdrop}>
           <Pressable analyticsId="components_feed-screen.pressable.10" style={StyleSheet.absoluteFill} onPress={() => { play('selection'); setJoinPost(null); }} accessibilityRole="button" accessibilityLabel={tr("참여 신청 닫기")} />
@@ -1121,7 +1096,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       {/* 도시 선택은 안전 영역을 확보한 전체 화면(iOS) 또는 하단 모달(Android)로 연다. */}
       <Modal
         visible={cityPicker}
-        animationType={reducedMotion ? 'none' : 'slide'}
+        animationType={reducedMotion ? 'fade' : 'slide'}
         presentationStyle={Platform.OS === 'ios' ? 'fullScreen' : 'overFullScreen'}
         transparent={Platform.OS !== 'ios'}
         allowSwipeDismissal
@@ -1140,7 +1115,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
       {/* 글쓰기의 선택 항목은 접고, 제목과 본문을 먼저 보여준다. */}
       {business && <BusinessWriter business={business} visible={businessWriting} onClose={() => setBusinessWriting(false)} onPublished={() => { void refreshFeed().catch(() => {}); }} />}
-      <Modal visible={writing} animationType={reducedMotion ? 'none' : 'slide'}
+      <Modal visible={writing} animationType={reducedMotion ? 'fade' : 'slide'}
         presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} allowSwipeDismissal
         onDismiss={() => {
           if (!postSuccessPending.current) return;
@@ -1364,7 +1339,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 </View>
               </View>
               </View>} />
-              <Modal visible={writerPanel === 'more'} transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => { play('selection'); changeWriterPanel(null); }}>
+              <Modal visible={writerPanel === 'more'} transparent animationType="fade" onRequestClose={() => { play('selection'); changeWriterPanel(null); }}>
                 <SafeAreaProvider>
                   <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.writerMoreBackdrop}>
                     <SafeAreaView edges={['bottom']} accessibilityViewIsModal style={[styles.writerMoreSheet, { backgroundColor: theme.card }]}>

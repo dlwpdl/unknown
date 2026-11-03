@@ -24,6 +24,7 @@ test('store catalog failure preserves synchronized membership and clears stale p
     };
     if (name === 'react-native') return { Platform: { OS: 'ios' }, DeviceEventEmitter: { emit() {} } };
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true, me: { id: 'member' } }) };
+    if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
     if (name === '@/lib/membership') return { membershipOffer: item => ({ id: item.identifier }) };
     if (name === '@/lib/purchases') return { purchaseUnavailableReason: () => null, withPurchases: async (_, fn) => fn({
       getOfferings: async () => {
@@ -81,6 +82,7 @@ test('pending approval recovery requires confirmation, unchanged account and suc
       };
       if (name === 'react-native') return { Platform: { OS: platform } };
       if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true, me: { id: authId } }) };
+      if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
       if (name === '@/lib/membership') return { membershipOffer: () => offer };
       if (name === '@/lib/purchases') return { purchaseUnavailableReason: () => unavailable, withPurchases: async (id, fn) => {
         if (id !== sessionId) throw new Error('ACCOUNT_CHANGED');

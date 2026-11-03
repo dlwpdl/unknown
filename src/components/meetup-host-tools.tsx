@@ -5,6 +5,7 @@ import { Alert, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
 import { ChillingDateInput } from '@/components/chilling-date-input';
 import { DragSheet } from '@/components/drag-sheet';
+import { GlingLoader } from '@/components/gling-loader';
 import { ListCard, SectionLabel } from '@/components/list-card';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
@@ -166,7 +167,7 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
   </>;
   if (waitlistOnly) return <View style={[styles.panel, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <ThemedText type="subtitle" accessibilityRole="header">{say('모임 대기 신청', 'Meetup waitlist')}</ThemedText>
-    {loading && <ThemedText type="small" accessibilityLiveRegion="polite" style={styles.helper}>{say('운영 상태 불러오는 중…', 'Loading meetup status…')}</ThemedText>}
+    {loading && <GlingLoader color={theme.accent} accessibilityLabel={say('운영 상태 불러오는 중', 'Loading meetup status')} />}
     {state && <>
       <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{say('초대 알림을 받을 때까지 기다려요. 대기·초대는 참여 승인이나 자리 예약이 아니에요.', 'We’ll notify you if you’re invited. The waitlist and invitations don’t approve you or hold a spot.')}</ThemedText>
       {state.waitlist && <ThemedText type="small" style={styles.bodyText}>{state.waitlist.invitedAt ? say('참여 제안이 도착했어요. 모임에서 신청을 확인해주세요.', 'You’ve been invited. Check your request on this meetup.') : say(`현재 대기 순서 ${state.waitlist.position}번`, `Your waitlist position: ${state.waitlist.position}`)}</ThemedText>}
@@ -178,7 +179,7 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
     {status}
   </View>;
   return <View style={styles.sections}>
-    {loading && !state && <ThemedText type="small" accessibilityLiveRegion="polite" style={styles.helper}>{say('운영 상태 불러오는 중…', 'Loading meetup status…')}</ThemedText>}
+    {loading && !state && <GlingLoader color={theme.accent} accessibilityLabel={say('운영 상태 불러오는 중', 'Loading meetup status')} />}
     {state && <>
       {show('role') && ownInvitation && <View style={[styles.panel, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <ThemedText type="small" style={styles.bodyText}>{say('공동 호스트로 초대받았어요. 수락하면 회차, 참석 확인, 대기자 초대를 함께 해요. 비공개 신청 답변과 계정 권한은 공유되지 않아요.', 'You were invited to co-host. Accept to help with sessions, attendance and waitlist invitations. Private application answers and account access stay private.')}</ThemedText>

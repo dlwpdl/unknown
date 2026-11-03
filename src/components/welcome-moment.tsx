@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Animated, Easing, Image, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import Reanimated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
@@ -64,7 +65,7 @@ export function WelcomeMoment({ nickname, cityId, onContinue }: { nickname: stri
         <ThemedText accessibilityRole="header" style={styles.title}>{tr('{0}님, 반가워요!', nickname)}</ThemedText>
         <ThemedText style={styles.subtitle}>{tr("페스티벌도, 동네의 작은 한잔도. 마음 맞는 사람을 여기서 만나요.")}</ThemedText>
       </Animated.View>
-      {list && <View style={styles.meetups}>
+      {list && <Reanimated.View style={styles.meetups} entering={reducedMotion ? FadeIn.duration(150) : FadeInDown.duration(250)}>
         {list.mode === 'welcome' ? <View style={styles.sectionCopy}>
           <ThemedText accessibilityRole="header" style={styles.sectionTitle}>{tr('처음 가도 괜찮은 이번 주 {0} 모임', city)}</ThemedText>
           <ThemedText style={styles.sectionNote}>{tr('호스트가 처음 오는 분도 반긴다고 한 모임이에요.')}</ThemedText>
@@ -86,7 +87,7 @@ export function WelcomeMoment({ nickname, cityId, onContinue }: { nickname: stri
             <ThemedText style={styles.chevron}>›</ThemedText>
           </Pressable>;
         })}
-      </View>}
+      </Reanimated.View>}
     </ScrollView>
     <Pressable analyticsId="onboarding.welcome.start" accessibilityRole="button" onPress={() => { play('selection'); onContinue(); }} style={({ pressed }) => [styles.button, { opacity: pressed ? 0.72 : 1, transform: [{ scale: pressed && !reducedMotion ? 0.97 : 1 }] }]}>
       <ThemedText type="smallBold" style={styles.buttonText}>{tr("글링 시작하기")}</ThemedText>

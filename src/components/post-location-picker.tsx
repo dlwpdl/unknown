@@ -59,7 +59,7 @@ export function PostLocationPicker({ visible, initialPin, initialLabel = '', cit
         : '위치를 찾지 못했어요. 주소를 다시 확인하거나 지도에서 핀을 골라주세요.');
     } finally { if (timer) clearTimeout(timer); if (revision.current === operation) setBusy(false); }
   };
-  return <Modal visible={visible} animationType={reduced ? 'none' : 'slide'} onRequestClose={close}>
+  return <Modal visible={visible} animationType={reduced ? 'fade' : 'slide'} onRequestClose={close}>
     <SafeAreaProvider style={[styles.backdrop, { backgroundColor: theme.background }]}>
     <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: theme.background, paddingBottom: Math.max(insets.bottom, 12) }]}>
       <View style={styles.header}><Pressable analyticsId="post.location.cancel" accessibilityRole="button" accessibilityLabel={tr("위치 선택 취소")} onPress={close} style={styles.control}><ThemedText>‹</ThemedText></Pressable><ThemedText type="smallBold">{tr("위치 공유")}</ThemedText><View style={styles.control} /></View>

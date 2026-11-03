@@ -26,14 +26,16 @@ function screen({ business = null, webshop = null, loadReviews = async (_, __, _
   const imports = {
     '@/components/business-webshop': { usePublicWebshop: () => ({ shop: webshop, failed: false, retry() {} }), WebshopBanner: 'WebshopBanner', WebshopOrderButton: 'WebshopOrderButton', WebshopComparisonSheet: 'WebshopComparisonSheet' },
     react: {
-      useState(initial) { const slot = index++; if (!(slot in state)) state[slot] = initial; return [state[slot], value => { state[slot] = typeof value === 'function' ? value(state[slot]) : value; }]; },
+      useState(initial) { const slot = index++; if (!(slot in state)) state[slot] = typeof initial === 'function' ? initial() : initial; return [state[slot], value => { state[slot] = typeof value === 'function' ? value(state[slot]) : value; }]; },
       useRef(initial) { const slot = index++; return state[slot] ??= { current: initial }; },
       useEffect(fn, deps) { const slot = index++; if (!state[slot] || deps.some((value, i) => value !== state[slot][i])) { cleanup.get(slot)?.(); state[slot] = deps; const end = fn(); if (end) cleanup.set(slot, end); } },
+      useLayoutEffect(fn, deps) { return imports.react.useEffect(fn, deps); },
       useCallback(fn, deps) { const slot = index++; if (!state[slot] || deps.some((value, i) => value !== state[slot].deps[i])) state[slot] = { fn, deps }; return state[slot].fn; },
     },
     'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) },
-    'react-native': { View: 'View', StyleSheet: { create: value => value } },
+    'react-native': { View: 'View', StyleSheet: { create: value => value }, Animated: { View: 'AnimatedView', Value: class { setValue() {} }, timing: () => ({ start() {}, stop() {} }) } },
     'react-native-reanimated': { useReducedMotion: () => true },
+    '@/constants/design-system': { ControlMotion: { settleMs: 180 } },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     'expo-router': { useLocalSearchParams: () => ({ id: company }), useRouter: () => ({ push: value => routes.push(JSON.parse(JSON.stringify(value))) }), useFocusEffect: fn => imports.react.useEffect(() => focused ? fn() : undefined, [fn, focused]) },
     'expo-linking': { openURL: async url => { links.push(url); return openURL(url); } },

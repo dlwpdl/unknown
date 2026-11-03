@@ -2,10 +2,9 @@ import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
-import { Alert, DeviceEventEmitter, Modal, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useReducedMotion } from 'react-native-reanimated';
+import { Alert, DeviceEventEmitter, StyleSheet, View } from 'react-native';
 
+import { DragSheet } from '@/components/drag-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ControlMetrics, ControlMotion, ControlStyles } from '@/constants/design-system';
 import { Spacing } from '@/constants/theme';
@@ -33,11 +32,10 @@ export function PushInvite() {
   const { isAuthed, me } = useAuth();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
+  // reason stays set until the sheet has slid away so its words do not vanish mid-close.
   const [reason, setReason] = useState<PushPromptReason | null>(null);
+  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const insets = useSafeAreaInsets();
-  const reducedMotion = useReducedMotion();
-  const visible = reason !== null;
 
   useEffect(() => {
     let active = true, checking = false;
@@ -49,7 +47,7 @@ export function PushInvite() {
         try {
           const [snoozedAt, askedReasons, permissionGranted, canAsk] = await Promise.all([
             AsyncStorage.getItem(ASKED_KEY), readReasons(), pushPermissionGranted(), pushPermissionUndetermined()]);
-          if (active && pushPromptAllowed({ authed: isAuthed, configured: pushConfigured, snoozedAt, askedReasons, reason: next, permissionGranted, canAsk, now: Date.now() })) setReason(current => current ?? next);
+          if (active && pushPromptAllowed({ authed: isAuthed, configured: pushConfigured, snoozedAt, askedReasons, reason: next, permissionGranted, canAsk, now: Date.now() })) { setReason(current => current ?? next); setOpen(true); }
         } catch {
           // 확인에 실패하면 묻지 않는다. 잘못 띄워 한 번뿐인 기회를 쓰는 것보다 낫다.
         } finally { checking = false; }
@@ -60,7 +58,7 @@ export function PushInvite() {
 
   const remember = async (snooze: boolean) => {
     const asked = reason;
-    setReason(null);
+    setOpen(false);
     try {
       if (asked) await AsyncStorage.setItem(REASONS_KEY, JSON.stringify([...new Set([...await readReasons(), asked])]));
       if (snooze) await AsyncStorage.setItem(ASKED_KEY, new Date().toISOString());
@@ -89,14 +87,12 @@ export function PushInvite() {
     }
   };
 
-  if (!visible) return null;
+  if (!reason) return null;
   const copy = COPY[reason];
+  // DragSheet plays the close haptic for the handle, backdrop and back gesture itself.
   return (
-    <Modal visible transparent animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => { if (!busy) void close(); }}>
-      <View style={styles.backdrop}>
-        <Pressable analyticsId="components_push-invite.pressable.1" style={StyleSheet.absoluteFill} onPress={() => void close()} disabled={busy} accessibilityRole="button" accessibilityLabel={tr("닫기")} />
-        <View style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.three) + Spacing.two }]}>
-          <View style={[styles.grab, { backgroundColor: theme.backgroundSelected }]} />
+    <DragSheet visible={open} dismissible={!busy} onClose={() => void remember(true)} onDismissed={() => setReason(null)}>
+        <View style={styles.sheet}>
           <ThemedText accessibilityRole="header" type="sheetTitle">{tr(copy.title)}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{tr(copy.body)}</ThemedText>
           <View style={[styles.preview, { backgroundColor: theme.backgroundElement }]} accessibilityLabel={tr("알림 예시: {0}", tr(copy.preview))}>
@@ -116,15 +112,13 @@ export function PushInvite() {
             <ThemedText type="smallBold" themeColor="textSecondary">{tr("나중에")}</ThemedText>
           </Pressable>
         </View>
-      </View>
-    </Modal>
+    </DragSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.34)', justifyContent: 'flex-end' },
-  sheet: { borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: Spacing.four, paddingTop: Spacing.four, gap: Spacing.two },
-  grab: { width: 36, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: Spacing.two },
+  // DragSheet already pads its sides by Spacing.three; this keeps the earlier 24pt text inset.
+  sheet: { paddingHorizontal: Spacing.two, paddingBottom: Spacing.two, gap: Spacing.two },
   preview: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, borderRadius: 14, padding: Spacing.three, marginVertical: Spacing.two },
   previewIcon: { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   primary: { ...ControlStyles.action, minHeight: ControlMetrics.actionWide },

@@ -6,6 +6,7 @@ import { Animated, LayoutAnimation, Platform, StyleSheet, UIManager, View } from
 import { SymbolView } from 'expo-symbols';
 import Reanimated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 
+import { PostZoomLink } from '@/components/post-zoom-link';
 import { ThemedText } from '@/components/themed-text';
 import { GlingLoader } from '@/components/gling-loader';
 import { Spacing } from '@/constants/theme';
@@ -28,7 +29,8 @@ const FADE_MS = 180;
 // 서너 편 아래에서는 돌리지 않는다. 두 줄이 번갈아 바뀌는 건 정보가 아니라 소음이다.
 const ROTATE_MIN = 4;
 
-export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; refreshKey?: number; onOpen: (postId: string) => Promise<void> }) {
+// linked: signed in, so a row grows the post straight out of itself (owner 2026-11-02); guests keep onOpen and its login gate.
+export function WeeklyRanking({ cityId, refreshKey, linked = false, onOpen }: { cityId: string; refreshKey?: number; linked?: boolean; onOpen: (postId: string) => Promise<void> }) {
   const { tr } = useLanguage();
   const theme = useTheme();
   const hidden = useContentVisibility();
@@ -110,8 +112,8 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
             <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.heading}>{tr("이번 주 많이 읽은 글")}</ThemedText>
           </View>
           {ranking.entries.map((entry, index) => (
-            <Row key={entry.postId} entry={entry} last={index === total - 1}
-              onPress={async () => { play('selection'); await onOpen(entry.postId); }} />
+            <Row key={entry.postId} entry={entry} last={index === total - 1} linked={linked}
+              onPress={async () => { play('selection'); if (!linked) await onOpen(entry.postId); }} />
           ))}
         </View>
       </View>
@@ -142,8 +144,8 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
         {expanded ? (
           ranking.entries.map((entry, index) => (
             <Reanimated.View key={entry.postId} entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 9) * 20).duration(240)}>
-            <Row key={entry.postId} entry={entry} last={index === total - 1}
-              onPress={async () => { play('selection'); await onOpen(entry.postId); }} />
+            <Row key={entry.postId} entry={entry} last={index === total - 1} linked={linked}
+              onPress={async () => { play('selection'); if (!linked) await onOpen(entry.postId); }} />
             </Reanimated.View>
           ))
         ) : (
@@ -167,16 +169,16 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
   );
 }
 
-function Row({ entry, last, onPress }: { entry: WeeklyRankingEntry; last: boolean; onPress: () => Promise<void> }) {
+function Row({ entry, last, linked, onPress }: { entry: WeeklyRankingEntry; last: boolean; linked: boolean; onPress: () => Promise<void> }) {
   const { tr } = useLanguage();
   const theme = useTheme();
   const [busy, setBusy] = useState(false);
-  return (
-    <Pressable analyticsId="components_weekly-ranking.pressable.2" onPress={async () => { if (busy) return; setBusy(true); try { await onPress(); } finally { setBusy(false); } }} accessibilityRole="button"
+  const row = (
+    <Pressable analyticsId="components_weekly-ranking.pressable.2" onPress={linked ? () => void onPress() : async () => { if (busy) return; setBusy(true); try { await onPress(); } finally { setBusy(false); } }} accessibilityRole="button"
       accessibilityState={{ busy }}
       accessibilityLabel={tr("{0}위 {1}, {2}", (entry.rank), (entry.title), (entry.nickname))}
-      style={({ pressed }) => [styles.row, !last && { borderBottomWidth: 1, borderBottomColor: theme.line },
-        pressed && { backgroundColor: theme.backgroundSelected }]}>
+      // An object style: the zoom link's Slot drops function styles. FlatPressable gives the pressed fade and shrink.
+      style={StyleSheet.flatten([styles.row, !last && { borderBottomWidth: 1, borderBottomColor: theme.line }])}>
       <ThemedText type="smallBold" style={[styles.rank, { color: entry.rank <= 3 ? theme.accent : theme.textSecondary }]}>
         {entry.rank}
       </ThemedText>
@@ -184,6 +186,7 @@ function Row({ entry, last, onPress }: { entry: WeeklyRankingEntry; last: boolea
       {busy && <GlingLoader color={theme.accent} size={18} accessibilityLabel={tr("글 여는 중")} />}
     </Pressable>
   );
+  return linked ? <PostZoomLink id={entry.postId}>{row}</PostZoomLink> : row;
 }
 
 const styles = StyleSheet.create({

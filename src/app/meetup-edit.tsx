@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
-import { Alert, DeviceEventEmitter, KeyboardAvoidingView, Platform, StyleSheet, TextInput, View, type ScrollViewInstance, type TextInputInstance } from 'react-native';
+import { Alert, DeviceEventEmitter, KeyboardAvoidingView, LayoutAnimation, Platform, StyleSheet, TextInput, UIManager, View, type ScrollViewInstance, type TextInputInstance } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SymbolView } from 'expo-symbols';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -92,7 +92,15 @@ function MeetupEditForm({ postId }: { postId: string }) {
         setPhotos(paths.map((path, index) => ({ path, uri: uris[index] })));
       }).catch(() => { if (active) setPhotosFailed(true); });
     }).catch(cause => { if (active) setLoadError(getChillingError(cause)); })
-      .finally(() => { if (active) setLoading(false); });
+      .finally(() => {
+        if (!active) return;
+        // The form fades in where the loader was. Opacity only, so Reduce Motion keeps it too.
+        if (Platform.OS !== 'web') {
+          if (Platform.OS === 'android') UIManager.setLayoutAnimationEnabledExperimental?.(true);
+          LayoutAnimation.configureNext({ duration: 220, create: { type: LayoutAnimation.Types.easeOut, property: LayoutAnimation.Properties.opacity } });
+        }
+        setLoading(false);
+      });
     return () => { active = false; };
   }, [isAuthed, me.id, postId, retry]);
 
@@ -174,7 +182,7 @@ function MeetupEditForm({ postId }: { postId: string }) {
   </View>;
 
   const blocked = !isAuthed ? <StateCard kind="blocked" title={tr('로그인 후 모임을 수정할 수 있어요')} body={tr('모임을 연 호스트 계정으로 로그인해 주세요.')} actionLabel={tr('로그인')} onAction={() => promptLogin('모임을 수정하려면 로그인해 주세요.')} />
-    : loading ? <GlingLoader />
+    : loading ? <GlingLoader color={theme.accent} accessibilityLabel={tr('모임 불러오는 중')} />
     : loadError ? <StateCard kind="error" title={language === 'en' ? 'Couldn’t load this meetup' : '모임을 불러오지 못했어요'} body={tr(loadError)} actionLabel={tr('다시 시도')} onAction={() => { setLoadError(''); setLoading(true); setRetry(value => value + 1); }} />
     : !meetup || !room ? <StateCard kind="empty" title={tr('이 모임을 찾을 수 없어요.')} body={tr('삭제되었거나 볼 수 없는 모임이에요.')} />
     : meetup.authorId !== me.id ? <StateCard kind="blocked" title={tr('호스트만 수정할 수 있어요')} body={tr('모임을 연 호스트만 정보를 바꿀 수 있어요.')} />
@@ -183,7 +191,7 @@ function MeetupEditForm({ postId }: { postId: string }) {
 
   return <SafeAreaView style={[styles.root, { backgroundColor: theme.background }]}>
     <View style={[styles.head, { backgroundColor: theme.background }]}><Pressable analyticsId="app_meetup-create.pressable.1" accessibilityRole="button" accessibilityLabel={tr('뒤로가기')} disabled={saving} accessibilityState={{ disabled: saving }} onPress={() => { play('selection'); back(); }} style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable><ThemedText accessibilityRole="header" style={styles.headTitle}>{tr('모임 정보 수정')}</ThemedText></View>
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView ref={scroll} analyticsId="app_meetup-create.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView ref={scroll} analyticsId="app_meetup-create.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, loading && styles.loading]}>
       {blocked ?? <>
         <View onLayout={event => { cardY.current.basics = event.nativeEvent.layout.y; }} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
           <ThemedText accessibilityRole="header" style={styles.cardTitle}>{tr('기본 정보')}</ThemedText>
@@ -191,7 +199,7 @@ function MeetupEditForm({ postId }: { postId: string }) {
           <View style={styles.field}>
             <ThemedText type="smallBold" style={styles.label}>{tr('사진')}</ThemedText>
             {photosFailed ? <InfoNote tone="warn">{tr('사진을 모두 불러오지 못했어요. 이 화면을 다시 열어 주세요.')}</InfoNote>
-              : !photos ? <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('사진을 불러오고 있어요…')}</ThemedText>
+              : !photos ? <GlingLoader color={theme.accent} accessibilityLabel={tr('사진 불러오는 중')} />
               : photos.length ? <>
                 <PostPhotoEditor images={photos} disabled={saving || pickingPhoto} onChange={next => { setPhotos(next); setPhotosEdited(true); }} />
                 {photos.length > 1 && <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('첫 사진이 표지예요. 앞·뒤 버튼으로 순서를 바꿀 수 있어요.')}</ThemedText>}
@@ -242,7 +250,7 @@ function MeetupEditForm({ postId }: { postId: string }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 }, head: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.three }, back: { position: 'absolute', zIndex: 1, left: Spacing.three, width: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }, headTitle: { ...Typography.screenTitle, textAlign: 'center', flex: 1, paddingHorizontal: 44 + Spacing.two },
-  content: { padding: 22, paddingBottom: Spacing.five, width: '100%', maxWidth: 640, alignSelf: 'center', gap: Spacing.three },
+  content: { padding: 22, paddingBottom: Spacing.five, width: '100%', maxWidth: 640, alignSelf: 'center', gap: Spacing.three }, loading: { flexGrow: 1, justifyContent: 'center' },
   card: { borderWidth: 1, borderRadius: 16, padding: Spacing.three, gap: Spacing.three }, cardTitle: { ...Typography.section },
   label: { ...Typography.menu }, helper: { ...Typography.supporting }, bodyText: { ...Typography.body }, field: { gap: Spacing.two },
   kind: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },

@@ -243,7 +243,7 @@ function JoinForm({ postId }: { postId: string }) {
   const guestHead = () => {
     const host = post!.author.nickname;
     return <>
-      {!!post!.imageUris?.[0] && <Image source={{ uri: post!.imageUris[0] }} style={styles.photo} contentFit="cover" accessible accessibilityRole="image" accessibilityLabel={tr('{0} 사진', post!.title)} />}
+      {!!post!.imageUris?.[0] && <Image source={{ uri: post!.imageUris[0] }} style={styles.photo} contentFit="cover" transition={ControlMotion.settleMs} accessible accessibilityRole="image" accessibilityLabel={tr('{0} 사진', post!.title)} />}
       <MeetupChips post={post!} hideOpen />
       <ThemedText accessibilityRole="header" style={Typography.sheetTitle}>{post!.title}</ThemedText>
       <View style={styles.host}>
@@ -278,7 +278,7 @@ function JoinForm({ postId }: { postId: string }) {
       <ThemedText accessibilityRole="header" style={[Typography.menu, styles.headTitle]}>{tr("참여 신청")}</ThemedText><View style={styles.headSide} />
     </View>
     <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView analyticsId="app_meetup-join.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}
+      <ScrollView analyticsId="app_meetup-join.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, view === 'loading' && styles.loading]}
         refreshControl={pullable ? <RefreshControl refreshing={false} tintColor={theme.accent} onRefresh={() => { play('selection'); reload(); }} /> : undefined}>
         {view === 'loading' ? <GlingLoader color={theme.accent} accessibilityLabel={tr("신청 정보 불러오는 중")} />
             : view === 'failed' ? <StateCard kind="error" title={tr("신청 정보를 불러오지 못했어요")} body={tr(error)} actionLabel={tr("다시 불러오기")} onAction={reload} />
@@ -385,6 +385,8 @@ function JoinForm({ postId }: { postId: string }) {
 }
 const styles = StyleSheet.create({
   fill: { flex: 1 }, flex: { flex: 1, minWidth: 0 }, stack: { gap: Spacing.three },
+  // The first load sits in the middle of the screen, like the other loading screens.
+  loading: { flexGrow: 1, justifyContent: 'center' },
   content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', paddingHorizontal: Spacing.three, paddingTop: Spacing.one, paddingBottom: Spacing.four, gap: Spacing.three },
   head: { minHeight: 52, flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.two }, headSide: { width: 44 }, headTitle: { flex: 1, textAlign: 'center' },
   body: { fontSize: 16, lineHeight: 24 }, support: { fontSize: 14, lineHeight: 20 }, center: { textAlign: 'center' }, tabular: { fontVariant: ['tabular-nums'] },

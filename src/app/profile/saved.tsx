@@ -176,7 +176,7 @@ export default function SavedScreen() {
     if (item.target.kind === 'merchant') router.push({ pathname: '/company/[id]', params: { id } });
     else if (item.target.kind === 'place') router.push({ pathname: '/places/[id]', params: { id, cityId: item.target.cityId! } });
     else if (item.target.kind === 'user') router.push({ pathname: '/user/[id]', params: { id } });
-    else router.push({ pathname: '/post/[id]', params: { id } });
+    // Posts open through the PostZoomLink around the card's open row.
   }
   if (!auth.isAuthed) return <LoginPanel reason={ko ? '저장한 항목을 보려면 로그인해 주세요.' : 'Sign in to see your saved items.'} onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
   const selectedFolder = folders.find(folder => folder.id === folderId);
@@ -208,7 +208,7 @@ export default function SavedScreen() {
           body={current?.failed ? ko ? '연결을 확인하고 다시 시도해 주세요.' : 'Check your connection and try again.' : query || folderId || filter !== 'all' ? ko ? '검색어나 필터, 폴더를 바꿔 보세요.' : 'Try another search, filter or folder.' : ko ? '마음에 드는 장소, 글, 채용 정보나 사람을 저장해 보세요. 폴더 정리는 나중에 해도 돼요.' : 'Save places, posts, jobs or people. Organize them in folders whenever you like.'}
           actionLabel={current?.failed ? ko ? '다시 시도' : 'Try again' : undefined} onAction={current?.failed ? retry : undefined} /></View>}
       ListFooterComponent={<View style={styles.footer}>
-        {loading && !!rows.length && <ThemedText type="supporting" themeColor="textSecondary" accessibilityLiveRegion="polite">{ko ? '불러오는 중…' : 'Loading…'}</ThemedText>}
+        {loading && !!rows.length && <GlingLoader color={theme.accent} accessibilityLabel={ko ? '불러오는 중' : 'Loading'} />}
         {current?.failed && !!rows.length && <><ThemedText type="supporting" accessibilityRole="alert">{ko ? '목록을 불러오지 못했어요. 앞서 불러온 항목은 유지돼요.' : 'Couldn’t load the list. Items you already loaded are still here.'}</ThemedText><SavedLibraryButton analyticsId="saved.retry" label={ko ? '다시 시도' : 'Try again'} disabled={busy || loading} onPress={retry} /></>}
         {page?.hasMore && !current?.failed && <SavedLibraryButton analyticsId="saved.more" label={ko ? '더 보기' : 'Load more'} disabled={busy || loading} onPress={() => void more()} />}
       </View>}

@@ -162,7 +162,7 @@ export default function MembershipScreen() {
             {business && !business.canPurchase && <ThemedText type="small">{tr("확인된 비즈니스 소유자만 구독을 연결할 수 있어요.")}</ThemedText>}
             {otherBusiness && <ThemedText type="small">{tr("결제 연결은 다른 비즈니스에 묶여 있어요. 해당 비즈니스를 선택해 주세요.")}</ThemedText>}
             {business?.canPurchase && membership?.businessSubscription?.tier !== 'free' && membership?.businessSubscription && !membership.businessSubscription.merchantId && <Pressable analyticsId="membership.business.bind" accessibilityRole="button" disabled={busy || loading} style={styles.textButton}
-              onPress={() => { play('selection'); void supabase.rpc('bind_business_membership', { p_merchant_id: merchantId }).then(({ error }) => { if (error) setBusinessError('현재 계정의 비즈니스 소유 확인을 다시 확인해 주세요.'); else void refresh(); }); }}><ThemedText type="smallBold" themeColor="accent">{tr("기존 구독을 이 비즈니스에 연결")}</ThemedText></Pressable>}
+              onPress={() => { play('selection'); void supabase.rpc('bind_business_membership', { p_merchant_id: merchantId }).then(({ error }) => { if (error) { play('warning'); setBusinessError('현재 계정의 비즈니스 소유 확인을 다시 확인해 주세요.'); } else void refresh(); }); }}><ThemedText type="smallBold" themeColor="accent">{tr("기존 구독을 이 비즈니스에 연결")}</ThemedText></Pressable>}
           </View>}
 
           <View style={[styles.me, { backgroundColor: theme.card }]}>

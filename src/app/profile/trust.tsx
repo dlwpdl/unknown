@@ -1,10 +1,11 @@
 import { useLanguage } from '@/hooks/use-language';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
-import { LayoutAnimation, Platform, Pressable, ScrollView, StyleSheet, UIManager, View } from 'react-native';
+import { LayoutAnimation, Platform, ScrollView, StyleSheet, UIManager, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
 
+import { FlatPressable } from '@/components/flat-pressable';
 import { LoginPanel } from '@/components/login-panel';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -90,14 +91,14 @@ export default function TrustScreen() {
         {levels.map((item, index) => {
           const open = expanded === item.level;
           return <View key={item.level} style={[styles.level, index > 0 && { borderTopColor: theme.line, borderTopWidth: StyleSheet.hairlineWidth }]}>
-            <Pressable accessibilityRole="button" accessibilityLabel={tr("Lv{0} {1}, {2}", item.level, item.title, levelState(item.level))} accessibilityState={{ expanded: open }}
+            <FlatPressable accessibilityRole="button" accessibilityLabel={tr("Lv{0} {1}, {2}", item.level, item.title, levelState(item.level))} accessibilityState={{ expanded: open }}
               onPress={() => { play('selection'); if (!reducedMotion) { if (Platform.OS === 'android') UIManager.setLayoutAnimationEnabledExperimental?.(true); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); } setExpanded(open ? null : item.level); }}
               style={({ pressed }) => [styles.levelButton, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
               <View style={[styles.number, { backgroundColor: item.level === auth.trustLevel ? theme.backgroundElement : theme.background, }]}><ThemedText type="smallBold" style={{ color: item.level === auth.trustLevel ? theme.accent : theme.textSecondary }}>{String(item.level).padStart(2, '0')}</ThemedText></View>
               <View style={styles.flex}><ThemedText type="smallBold">{item.title}</ThemedText><ThemedText type="small" themeColor="textSecondary" style={styles.summary}>{item.summary}</ThemedText></View>
               <ThemedText type="smallBold" style={{ color: item.level === auth.trustLevel ? theme.accent : theme.textSecondary }}>{levelState(item.level)}</ThemedText>
               <SymbolView name={{ ios: open ? 'chevron.down' : 'chevron.right', android: open ? 'keyboard_arrow_down' : 'chevron_right', web: open ? 'keyboard_arrow_down' : 'chevron_right' }} size={15} tintColor={theme.textSecondary} />
-            </Pressable>
+            </FlatPressable>
             {open && <View style={styles.detail}>
               <ThemedText type="smallBold">{tr("확인하는 것")}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary" style={styles.detailText}>{item.checks}</ThemedText>

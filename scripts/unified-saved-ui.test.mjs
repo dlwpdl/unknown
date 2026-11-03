@@ -49,7 +49,10 @@ function screen(overrides = {}) {
 for (const [kind,route,target] of [['merchant','/company/[id]',{ kind:'merchant',id }],['post','/post/[id]',{ kind:'post',id }],['user','/user/[id]',{ kind:'user',id }],['place','/places/[id]',{ kind:'place',id:'osm:node:42',cityId:'vancouver' }]]) test(`saved ${kind} opens the exact public target`, async () => {
   const row={...item,target};const view=screen({loadSavedItems:async()=>page([row])});view.render();await settle();const root=view.render();
   assert.equal(view.calls[0].name,'loadSavedItems');assert.equal(view.calls[0].args[0].filter,'all');
-  list(root).props.renderItem({item:row}).props.onOpen();assert.equal(view.routes[0].pathname,route);assert.equal(view.routes[0].params.id,target.id);if(kind==='place')assert.equal(view.routes[0].params.cityId,'vancouver');view.unmount();
+  list(root).props.renderItem({item:row}).props.onOpen();
+  // A saved post opens through the PostZoomLink around the card's open row (checked below), so the screen pushes nothing.
+  if(kind==='post'){assert.equal(view.routes.length,0);view.unmount();return;}
+  assert.equal(view.routes[0].pathname,route);assert.equal(view.routes[0].params.id,target.id);if(kind==='place')assert.equal(view.routes[0].params.cityId,'vancouver');view.unmount();
 });
 
 test('filter, folder, account and lost-focus boundaries reject stale saved responses', async () => {
@@ -110,8 +113,8 @@ function library(component, initialProps) {
     'react/jsx-runtime':{jsx:(type,props,key)=>({type,props,key}),jsxs:(type,props,key)=>({type,props,key})},
     'react-native':{View:'View',TextInput:'TextInput',ScrollView:'ScrollView',Modal:'Modal',KeyboardAvoidingView:'KeyboardAvoidingView',Platform:{OS:'web'},StyleSheet:{create:value=>value}},
     'expo-image':{Image:'Image'},'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},
-    '@/components/analytics-controls':{Pressable:'Pressable'},'@/components/business-webshop':{UberOrderNotice:'UberOrderNotice'},'@/components/themed-text':{ThemedText:'Text'},
-    '@/constants/design-system':{ControlStyles:{pill:{},field:{}},controlPresentation:()=>({container:{},text:{}})},'@/constants/theme':{Spacing:{one:4,two:8,three:16}},
+    '@/components/analytics-controls':{Pressable:'Pressable'},'@/components/business-webshop':{UberOrderNotice:'UberOrderNotice'},'@/components/post-zoom-link':{PostZoomLink:'PostZoomLink'},'@/components/themed-text':{ThemedText:'Text'},
+    '@/constants/design-system':{ControlMotion:{settleMs:180},ControlStyles:{pill:{},field:{}},controlPresentation:()=>({container:{},text:{}})},'@/constants/theme':{Spacing:{one:4,two:8,three:16}},
     '@/hooks/use-language':{useLanguage:()=>({language:'ko'})},'@/hooks/use-theme':{useTheme:()=>({})},'@/lib/interaction-feedback':{useInteractionFeedback:()=>({play:value=>feedback.push(value)})}};
   const exported={},code=ts.transpileModule(readFileSync(new URL('../src/components/saved-library.tsx',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
   vm.runInNewContext(code,{exports:exported,require:name=>modules[name]??{}});
@@ -148,6 +151,13 @@ test('old folder editors do not reappear when switching away from and back to an
 
 test('a focused refresh that removes a target also removes its cached folder editor', async () => {
   let available=true;const view=screen({loadSavedItems:async()=>page(available?[item]:[])});view.render();await settle();list(view.render()).props.renderItem({item}).props.onOrganize();view.focus(false);view.render();available=false;view.focus(true);view.render();await settle();assert.equal(nodes(view.render()).some(x=>x.type==='SavedFolderSheet'),false);view.unmount();
+});
+
+test('a saved post grows out of its open row; other saved kinds keep their plain open row',()=>{
+  const postRoot=library('SavedItemCard',{item:post,folders:[],onOpen(){},onRemove(){},onOrganize(){}}).render();
+  const link=nodes(postRoot).find(x=>x.type==='PostZoomLink');assert.equal(link.props.id,post.target.id);assert.equal(link.props.children.props.analyticsId,'saved.open.post');
+  assert.equal(typeof link.props.children.props.style,'object','the link Slot drops function styles');
+  const placeRoot=library('SavedItemCard',{item,folders:[],onOpen(){},onRemove(){},onOrganize(){}}).render();assert.equal(nodes(placeRoot).some(x=>x.type==='PostZoomLink'),false);
 });
 
 test('saved telemetry carries fixed action identifiers without target or folder identities',()=>{

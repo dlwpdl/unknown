@@ -10,6 +10,8 @@ import { type LocationFix } from '@/lib/location';
 import { useCommunityLocation } from '@/lib/location-provider';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
+import { animateLayout } from '@/components/disclosure';
+import { useReducedMotion } from 'react-native-reanimated';
 
 export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false }: {
   onSelect?: (id: string) => void;
@@ -20,6 +22,7 @@ export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false
   const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
+  const reducedMotion = useReducedMotion();
   const location = useCommunityLocation();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const active = useRef(true);
@@ -34,7 +37,7 @@ export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false
         <ThemedText type="small" themeColor="textSecondary">{tr("GPS로 가까운 도시와 주변 동네를 찾아요.")}</ThemedText>
       </View>
       <Pressable analyticsId="components_nearby-city-card.pressable.1" accessibilityRole="button" accessibilityLabel={tr("위치 이용 안내")} accessibilityState={{ expanded: detailsOpen }} aria-expanded={detailsOpen}
-        onPress={() => { play('selection'); setDetailsOpen(value => !value); }} style={({ pressed }) => [styles.disclosure, pressed && styles.pressed]}>
+        onPress={() => { play('selection'); animateLayout(reducedMotion); setDetailsOpen(value => !value); }} style={({ pressed }) => [styles.disclosure, pressed && styles.pressed]}>
         <SymbolView name={{ ios: detailsOpen ? 'chevron.up' : 'info.circle', android: detailsOpen ? 'expand_less' : 'info', web: detailsOpen ? 'expand_less' : 'info' }} size={20} tintColor={theme.textSecondary} />
       </Pressable>
     </View>
@@ -51,7 +54,7 @@ export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false
       <Pressable analyticsId="components_nearby-city-card.pressable.3" accessibilityRole="button" disabled={disabled} accessibilityState={{ disabled, busy: location.busy }}
         onPress={() => {
           play('selection');
-          if (!location.enabled && !detailsOpen) { setDetailsOpen(true); return; }
+          if (!location.enabled && !detailsOpen) { animateLayout(reducedMotion); setDetailsOpen(true); return; }
           void location.capture(true).then((fix) => { if (active.current) onFix?.(fix); });
         }}
         style={({ pressed }) => [styles.primary, { backgroundColor: theme.backgroundElement, opacity: disabled ? 0.5 : 1 }, pressed && styles.pressed]}>

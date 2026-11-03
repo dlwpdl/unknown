@@ -180,7 +180,7 @@ export function BusinessDirectoryRow({ item, saving, onOpen, onSave }: { item: B
     <Pressable analyticsId="business.directory.profile" accessibilityRole="button" accessibilityLabel={tr('{0} 비즈니스 프로필 보기', item.name)}
       onPress={() => { play('selection'); onOpen(item); }} style={({ pressed }) => [styles.profile, { opacity: pressed ? ControlMotion.pressedOpacity : 1 }]}>
       <View style={[styles.photo, { backgroundColor: theme.backgroundElement }]} accessible={false}>
-        {photo && failed !== photo ? <Image source={{ uri: photo }} contentFit="cover" style={StyleSheet.absoluteFill} accessible={false} onError={() => setFailed(photo)} />
+        {photo && failed !== photo ? <Image source={{ uri: photo }} transition={ControlMotion.settleMs} contentFit="cover" style={StyleSheet.absoluteFill} accessible={false} onError={() => setFailed(photo)} />
           : <ThemedText type="section" themeColor="accent">{item.name.slice(0, 1)}</ThemedText>}
       </View>
       <View style={styles.businessCopy}>

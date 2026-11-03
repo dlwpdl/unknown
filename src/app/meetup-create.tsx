@@ -314,11 +314,11 @@ function MeetupCreateForm() {
   };
   const submit = async () => {
     if (busy.current || !focused.current || creatingDraft || pickingCover || !eventReady || !meetupCity || invalidDestination) return;
-    if (sourcePlace && (!resolveMeetupDestination(params as MeetupDestinationParams).destination || !splitPlaceMeetupBody(body.trim() + eventDetails, meetupCity.id))) { setError(aiCopy('장소 연결 정보를 다시 확인해 주세요. 작성한 내용은 그대로예요.', 'Check the linked place again. Your writing is unchanged.')); setErrorField(null); return; }
+    if (sourcePlace && (!resolveMeetupDestination(params as MeetupDestinationParams).destination || !splitPlaceMeetupBody(body.trim() + eventDetails, meetupCity.id))) { play('warning'); setError(aiCopy('장소 연결 정보를 다시 확인해 주세요. 작성한 내용은 그대로예요.', 'Check the linked place again. Your writing is unchanged.')); setErrorField(null); return; }
     if (!kindChosen) { showValidation(aiCopy('칠링 또는 정기모임을 선택해 주세요.', 'Choose a one-time or regular meetup.'), 'kind'); return; }
     if (!title.trim()) { showValidation(aiCopy('모임 제목을 적어주세요.', 'Enter a meetup title.'), tr('모임 제목')); return; }
     if (!ticketmasterEventId && title.trim().length > MEETUP_TITLE_MAX) { showValidation(aiCopy(`모임 제목은 ${MEETUP_TITLE_MAX}자까지 적어 주세요.`, `Keep the title to ${MEETUP_TITLE_MAX} characters.`), tr('모임 제목')); return; }
-    if (pickedPlace && !splitPlaceMeetupBody(body.trim() + eventDetails, meetupCity.id)) { setError(aiCopy('장소 연결 정보를 다시 확인해 주세요. 작성한 내용은 그대로예요.', 'Check the linked place again. Your writing is unchanged.')); setErrorField(null); return; }
+    if (pickedPlace && !splitPlaceMeetupBody(body.trim() + eventDetails, meetupCity.id)) { play('warning'); setError(aiCopy('장소 연결 정보를 다시 확인해 주세요. 작성한 내용은 그대로예요.', 'Check the linked place again. Your writing is unchanged.')); setErrorField(null); return; }
     if (!body.trim()) { showValidation(aiCopy('모임 소개를 적어주세요.', 'Add an introduction.'), tr('모임 소개')); return; }
     const deviceZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (event.kind === 'once' && event.timezone !== deviceZone) { setEvent(current => ({ ...current, timezone: deviceZone })); showValidation(tr("기기 시간대가 바뀌어 일정 시간대를 맞췄어요. 시작·종료 시각을 다시 확인해 주세요."), 'schedule'); return; }
@@ -340,9 +340,9 @@ function MeetupCreateForm() {
     const request = ++profileRead.current;
     try {
       if (ticketmasterEventId) {
-        const latest = await loadTicketmasterEvent(ticketmasterCityId ?? '', ticketmasterEventId).catch(cause => { if (mounted.current) setError(cause.message); return null; });
+        const latest = await loadTicketmasterEvent(ticketmasterCityId ?? '', ticketmasterEventId).catch(cause => { if (mounted.current) { play('warning'); setError(cause.message); } return null; });
         if (!latest || !mounted.current || !focused.current || request !== profileRead.current) return;
-        if (latest.event.id !== ticketmasterEventId || !meetupAllowed(latest.event)) { setError("행사 일정 또는 판매 상태가 바뀌었어요. 행사 상세를 다시 확인해 주세요."); return; }
+        if (latest.event.id !== ticketmasterEventId || !meetupAllowed(latest.event)) { play('warning'); setError("행사 일정 또는 판매 상태가 바뀌었어요. 행사 상세를 다시 확인해 주세요."); return; }
       }
       const profile = await loadChillingProfile(supabase, 'hosting');
       if (!mounted.current || !focused.current || request !== profileRead.current) return;

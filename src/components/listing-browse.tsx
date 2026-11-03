@@ -224,7 +224,7 @@ export function ListingMapScreen({ visible, category, city, posts, filters, onFi
   const focus = free || !busiest ? null : { latitude: busiest.latitude, longitude: busiest.longitude };
   const count = areas.reduce((sum, area) => sum + area.posts.length, 0);
   const close = () => { play('selection'); setFree(false); setMoved(null); setRegion(null); setSelectedId(null); onClose(); };
-  return <Modal visible={visible} animationType={reduced ? 'none' : 'slide'} onRequestClose={onClose}>
+  return <Modal visible={visible} animationType={reduced ? 'fade' : 'slide'} onRequestClose={onClose}>
     <SafeAreaProvider style={styles.flex}>
     <SafeAreaView edges={['top', 'bottom']} style={[styles.screen, { backgroundColor: theme.background }]}>
       <View style={styles.mapHeader}>

@@ -33,7 +33,7 @@ test('the actual inbox row shows event name and description, reads both and reta
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'expo-router': { useIsFocused: () => true, useRouter: () => ({ navigate: route => routes.push(route) }) },
     'react-native': new Proxy({ StyleSheet: { create: value => value }, Platform: { OS: 'ios' } }, { get: (value, key) => value[key] ?? key }),
-    'react-native-reanimated': { useReducedMotion: () => true },
+    'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, FadeIn: { duration: () => 'fade' }, FadeInDown: { duration: () => 'fade' }, useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, isAdmin: false, isAuthLoading: false, me: { id: 'member' } }) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: event => feedback.push(event) }) },

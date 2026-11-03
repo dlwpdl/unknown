@@ -11,6 +11,8 @@ import { PERSONAL_INFO_VERSION, validatePersonalInfo } from '@/lib/personal-info
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth';
 import { NicknameEditor } from '@/components/nickname-editor';
+import { animateLayout } from '@/components/disclosure';
+import { useReducedMotion } from 'react-native-reanimated';
 
 type PersonalInfo = { full_name: string | null; date_of_birth: string | null; gender: string | null; age: number | null; consented_at: string | null; updated_at: string | null };
 
@@ -25,6 +27,7 @@ function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nic
   const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
+  const reducedMotion = useReducedMotion();
   const active = useRef(true);
   const saving = useRef(false);
   const [data, setData] = useState<PersonalInfo | null>(null);
@@ -96,7 +99,7 @@ function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nic
       {notice && <ThemedText accessibilityLiveRegion="polite" type="small">{tr(notice)}</ThemedText>}
       <View style={[styles.divider, { backgroundColor: theme.line }]} />
       <Pressable analyticsId="components_personal-info-card.pressable.6" accessibilityRole="button" accessibilityState={{ expanded: editing, disabled: busy }} disabled={busy}
-        onPress={() => { play('selection'); setEditing(value => !value); }} style={styles.editRow}>
+        onPress={() => { play('selection'); animateLayout(reducedMotion); setEditing(value => !value); }} style={styles.editRow}>
         <ThemedText type="smallBold" style={{ color: theme.accent }}>{editing ? tr("계정 정보 닫기") : data.full_name ? tr("비공개 계정 정보 수정") : tr("비공개 계정 정보 입력")}</ThemedText>
         <ThemedText themeColor="textSecondary">{editing ? '⌃' : '›'}</ThemedText>
       </Pressable>
@@ -106,11 +109,11 @@ function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nic
         <Pressable analyticsId="components_personal-info-card.pressable.2" disabled={busy} onPress={() => void save()} accessibilityRole="button" accessibilityState={{ disabled: busy, busy }} style={({ pressed }) => [styles.button, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: busy ? 0.55 : 1, }]}>
           <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{busy ? tr("저장 중…") : tr("계정 정보 저장")}</ThemedText>
         </Pressable>
-        {data.full_name && !confirmDelete && <Pressable analyticsId="components_personal-info-card.pressable.3" disabled={busy} onPress={() => { play('selection'); setConfirmDelete(true); }} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold" style={{ color: theme.accent }}>{tr("저장된 이름·생년월일 삭제")}</ThemedText></Pressable>}
+        {data.full_name && !confirmDelete && <Pressable analyticsId="components_personal-info-card.pressable.3" disabled={busy} onPress={() => { play('selection'); animateLayout(reducedMotion); setConfirmDelete(true); }} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold" style={{ color: theme.accent }}>{tr("저장된 이름·생년월일 삭제")}</ThemedText></Pressable>}
         {confirmDelete && <View style={styles.confirm}>
           <ThemedText type="small">{tr("저장된 이름과 생년월일을 삭제할까요? 공개 프로필은 유지돼요.")}</ThemedText>
           <View style={styles.actions}>
-            <Pressable analyticsId="components_personal-info-card.pressable.4" disabled={busy} onPress={() => { play('selection'); setConfirmDelete(false); }} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold">{tr("취소")}</ThemedText></Pressable>
+            <Pressable analyticsId="components_personal-info-card.pressable.4" disabled={busy} onPress={() => { play('selection'); animateLayout(reducedMotion); setConfirmDelete(false); }} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold">{tr("취소")}</ThemedText></Pressable>
             <Pressable analyticsId="components_personal-info-card.pressable.5" disabled={busy} onPress={() => void save(true)} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold" style={{ color: theme.accent }}>{tr("삭제 확인")}</ThemedText></Pressable>
           </View>
         </View>}

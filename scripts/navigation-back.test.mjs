@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import * as postOpen from '../src/lib/post-open.ts';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 const text = tree => typeof tree === 'string' ? tree : tree && typeof tree === 'object' ? [tree.props?.children].flat(Infinity).map(text).join('') : '';
@@ -135,6 +136,7 @@ test('shared posts remain escapable during loading, failure and absence, and nev
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     '@react-native-async-storage/async-storage': { __esModule: true, default: {} },
     '@/lib/shared-post-return': { clearSharedPostReturn: async () => {}, rememberSharedPostReturn: async () => {} },
+    '@/lib/post-open': postOpen,
     'expo-symbols': { SymbolView: 'SymbolView' },
     '@/components/post-detail': { PostDetail: 'PostDetail' },
     '@/components/shared-link-card': { SharedPreviewContent: 'SharedPreviewContent' },

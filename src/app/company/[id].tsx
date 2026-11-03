@@ -1,15 +1,16 @@
-import { ControlStyles, IconSize, controlPresentation } from '@/constants/design-system';
+import { ControlMotion, ControlStyles, IconSize, controlPresentation } from '@/constants/design-system';
 import { useLanguage } from '@/hooks/use-language';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { SymbolView } from 'expo-symbols';
-import { StyleSheet, View, type ScrollViewInstance } from 'react-native';
+import { Animated, StyleSheet, View, type ScrollViewInstance } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { usePublicWebshop, WebshopBanner, WebshopComparisonSheet, WebshopOrderButton } from '@/components/business-webshop';
+import { GlingLoader } from '@/components/gling-loader';
 import { MerchantProfileHeader } from '@/components/merchant-profile-header';
 import { MerchantReviews } from '@/components/merchant-reviews';
 import { ThemedText } from '@/components/themed-text';
@@ -122,6 +123,14 @@ export default function CompanyProfileRoute() {
     }).finally(() => { if (operation.active) setPostBusy(false); });
     return () => { operation.active = false; };
   }, [profile?.id, isAuthLoading, isAuthed, me.id, merchantId, key, listKey, postKind, postRevision, hidden]);
+  // Every tab switch fades the shown panel in, including the kept-mounted reviews panel. Opacity only, so it also runs with reduced motion.
+  const [panelFade] = useState(() => new Animated.Value(1));
+  useLayoutEffect(() => {
+    panelFade.setValue(0);
+    const fade = Animated.timing(panelFade, { toValue: 1, duration: ControlMotion.settleMs, useNativeDriver: true });
+    fade.start();
+    return () => fade.stop();
+  }, [panelFade, tab]);
   const selectTab = (next: ProfileTab) => { play('selection'); if (next === 'reviews') setReviewVisited(key); setTabResult({ merchantId, tab: next }); };
   const openReviews = (kind: MerchantReviewKind) => {
     setReviewVisited(key);
@@ -256,10 +265,10 @@ export default function CompanyProfileRoute() {
             </Pressable>;
           })}
         </View>
-        {(tab === 'posts' || tab === 'jobs') && <View style={styles.panel}>
+        {(tab === 'posts' || tab === 'jobs') && <Animated.View style={[styles.panel, { opacity: panelFade }]}>
           <View style={styles.panelTitle}><ThemedText type="subtitle">{tab === 'posts' ? tr("최근 게시글") : tr("함께할 사람을 찾고 있어요")}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{tr("최신순")}</ThemedText></View>
-          {postsLoading && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tab === 'posts' ? tr("게시글") : tr("채용 공고")}{tr("을 불러오는 중…")}</ThemedText>}
+          {postsLoading && <GlingLoader color={theme.accent} accessibilityLabel={tr("글 불러오는 중")} />}
           {currentPosts?.failed && <View style={styles.statePhoto}><ThemedText type="small">{tr("글을 불러오지 못했어요.")}</ThemedText>
             <Pressable analyticsId="company.posts.retry" accessibilityRole="button" disabled={postsLoading} style={styles.button}
               onPress={() => { if (postPage?.has_more) void morePosts(); else { play('selection'); setPostRevision(value => value + 1); } }}><ThemedText themeColor="accent">{tr("다시 불러오기")}</ThemedText></Pressable></View>}
@@ -270,7 +279,7 @@ export default function CompanyProfileRoute() {
               <View style={styles.postText}><ThemedText type="small" themeColor="textSecondary">{tab === 'jobs' ? tr("모집 중") : tr(post.tag.label)} · {post.createdAtLabel}</ThemedText>
                 <ThemedText type="smallBold" numberOfLines={2}>{post.title}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{localizeBusinessDisclosure(post.body, tr)}</ThemedText></View>
-              {source ? <Image source={source} contentFit="cover" style={styles.postImage} accessibilityLabel={tr("{0} 사진", (post.title))} /> : <ThemedText themeColor="textSecondary" accessible={false}>›</ThemedText>}
+              {source ? <Image source={source} contentFit="cover" transition={ControlMotion.settleMs} style={styles.postImage} accessibilityLabel={tr("{0} 사진", (post.title))} /> : <ThemedText themeColor="textSecondary" accessible={false}>›</ThemedText>}
             </Pressable>;
           })}
           {!postsLoading && !currentPosts?.failed && (!postPage || !visiblePosts?.length) && <View style={styles.state}>
@@ -280,8 +289,8 @@ export default function CompanyProfileRoute() {
           </View>}
           {postPage?.has_more && <Pressable analyticsId="company.posts.more" accessibilityRole="button" disabled={postsLoading} style={styles.button}
             onPress={() => void morePosts()}><ThemedText themeColor="accent">{tab === 'posts' ? tr('게시글 더 보기') : tr('채용 공고 더 보기')}</ThemedText></Pressable>}
-        </View>}
-        {tab === 'about' && <View style={styles.panel}>
+        </Animated.View>}
+        {tab === 'about' && <Animated.View style={[styles.panel, { opacity: panelFade }]}>
           <ThemedText type="subtitle">{tr('{0} 소개', profile.name)}</ThemedText>
           <ThemedText>{profile.services || tr("등록된 소개가 없어요.")}</ThemedText>
           {[[tr("업종"), profile.industry], [tr("지역"), profile.city_name], [tr("주소"), profile.address], [tr("전화"), profile.public_phone], [tr("영업시간"), profile.business_hours]].filter(([, value]) => !!value).map(([label, value]) =>
@@ -291,13 +300,13 @@ export default function CompanyProfileRoute() {
             {!!mapsUrl && <Pressable analyticsId="company.about.maps" accessibilityRole="link" accessibilityLabel={tr("등록된 주소를 Google 지도에서 보기")} style={styles.button} onPress={() => void openContact(mapsUrl)}><ThemedText themeColor="accent">{tr("길찾기")}</ThemedText></Pressable>}
             {publicLinks.map((link, index) => <Pressable key={link.url} analyticsId={`company.about.source.${index}`} accessibilityRole="link" accessibilityLabel={tr("{0} 공개 링크 열기", (link.label))} style={styles.button} onPress={() => void openContact(link.url)}><ThemedText themeColor="accent">{link.label} ›</ThemedText></Pressable>)}
           </View>
-        </View>}
-        {tab === 'reviews' && !profile.review_post_id && <View style={styles.panel}>
+        </Animated.View>}
+        {tab === 'reviews' && !profile.review_post_id && <Animated.View style={[styles.panel, { opacity: panelFade }]}>
           <ThemedText type="smallBold">{tr("아직 표시할 후기가 없어요")}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{tr("공개된 후기는 이곳에서 확인할 수 있어요.")}</ThemedText>
-        </View>}
-        {(tab === 'reviews' || reviewVisited === key) && profile.review_post_id && <View
-          style={[styles.panel, tab !== 'reviews' && { display: 'none' }]} accessibilityElementsHidden={tab !== 'reviews'}
+        </Animated.View>}
+        {(tab === 'reviews' || reviewVisited === key) && profile.review_post_id && <Animated.View
+          style={[styles.panel, { opacity: panelFade }, tab !== 'reviews' && { display: 'none' }]} accessibilityElementsHidden={tab !== 'reviews'}
           importantForAccessibility={tab !== 'reviews' ? 'no-hide-descendants' : 'auto'}>
           <View style={styles.reviewTabs} accessibilityLabel={tr("리뷰 종류")}>
             {(['usage', 'employment'] as const).map(kind => <Pressable key={kind} analyticsId={`company.reviews.${kind}`} accessibilityRole="button"
@@ -307,9 +316,10 @@ export default function CompanyProfileRoute() {
             </Pressable>)}
           </View>
           <MerchantReviews postId={profile.review_post_id} reviewKind={reviewKind} onChanged={() => setReviewRevision(value => value + 1)} />
-        </View>}
+        </Animated.View>}
       </> : <View style={styles.state}>
-        <ThemedText type="subtitle">{isAuthLoading || merchantId && !current ? tr("프로필을 불러오는 중…") : current?.failed ? tr("프로필을 불러오지 못했어요") : tr("공개된 비즈니스 프로필이 없어요")}</ThemedText>
+        {isAuthLoading || merchantId && !current ? <GlingLoader color={theme.accent} accessibilityLabel={tr("프로필 불러오는 중")} />
+          : <ThemedText type="subtitle">{current?.failed ? tr("프로필을 불러오지 못했어요") : tr("공개된 비즈니스 프로필이 없어요")}</ThemedText>}
         {current?.failed && <Pressable analyticsId="company.retry" accessibilityRole="button" style={styles.button}
           onPress={() => { play('selection'); setRevision((value) => value + 1); }}><ThemedText themeColor="accent">{tr("다시 불러오기")}</ThemedText></Pressable>}
       </View>}

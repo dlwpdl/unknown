@@ -95,6 +95,8 @@ export function AuthProvider({ children, publicPage = false }: { children: React
   const [signingIn, setSigningIn] = useState(false);
   const signInInFlight = useRef(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  // A failed sign-in is felt as well as read on the login panel.
+  useEffect(() => { if (authError) play('warning'); }, [authError, play]);
   const [reason, setReason] = useState<string | undefined>();
   const [visible, setVisible] = useState(false);
   const [profilePhotoUri, setProfilePhotoUri] = useState<string | null>(null);
@@ -511,7 +513,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     <AuthContext.Provider value={value}>
       <CommunityLocationProvider userId={!publicPage && level === 1 ? session?.user.id ?? null : null} loginKey={loginKey}>
       {children}
-      <Modal visible={!publicPage && visible} animationType="slide" onRequestClose={() => setVisible(false)}>
+      <Modal visible={!publicPage && visible} animationType="slide" onRequestClose={() => { play('selection'); setVisible(false); }}>
         <SafeAreaProvider>
         {visible && <LoginPanel
           reason={reason}

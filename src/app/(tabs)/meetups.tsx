@@ -258,7 +258,7 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
         {/* 만들기는 화면당 하나뿐인 primary. 하단에 떠 있으면 카드를 가려서 헤더에 고정한다. */}
         <Pressable analyticsId="app_tabs_meetups.pressable.3" accessibilityRole="button" accessibilityLabel={destination ? copy('이곳에 갈 모임 만들기', 'Start a meetup here') : tr("모임 만들기")} accessibilityState={{ disabled: createDisabled }} disabled={createDisabled}
           onPress={() => { play('selection'); action('/meetup-create'); }}
-          style={({ pressed }) => [styles.circle, { backgroundColor: theme.accent, opacity: createDisabled ? 0.4 : pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] }]}>
+          style={({ pressed }) => [styles.circle, { backgroundColor: theme.accent, opacity: createDisabled ? 0.4 : pressed ? 0.85 : 1 }]}>
           <SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} size={20} tintColor={theme.accentInk} />
         </Pressable>
         <ProfileAvatarButton />
@@ -339,7 +339,7 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
       </ScrollView>
     </Animated.View>}
     </View>
-    <Modal visible={cityPicker} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setCityPicker(false)}><View style={[styles.root, { backgroundColor: theme.background, paddingTop: insets.top, paddingBottom: insets.bottom }]}><CityPicker onClose={() => setCityPicker(false)} /></View></Modal>
+    <Modal visible={cityPicker} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => { play('selection'); setCityPicker(false); }}><View style={[styles.root, { backgroundColor: theme.background, paddingTop: insets.top, paddingBottom: insets.bottom }]}><CityPicker onClose={() => setCityPicker(false)} /></View></Modal>
     {/* 카테고리·일정·자리 남음은 시트에서만 편다(목록이 먼저 보여야 한다). 값은 켜는 즉시 적용된다. */}
     <DragSheet visible={filtersOpen} onClose={() => setFiltersOpen(false)} title={tr("필터")}>
       <ScrollView analyticsId="app_tabs_meetups.scrollview.1">

@@ -25,11 +25,11 @@ function screen({load=async()=>page(),initialQuery='',initialKind='all'}={}) {
   };
   const modules={
     react:hooks,'react/jsx-runtime':{jsx:(type,props,key)=>({type,props,key}),jsxs:(type,props,key)=>({type,props,key})},
-    'react-native':{View:'View',TextInput:'TextInput',Keyboard:{dismiss(){}},Platform:{OS:'ios'},StyleSheet:{create:x=>x,hairlineWidth:1},useWindowDimensions:()=>({width:390,fontScale:1})},
+    'react-native':{View:'View',TextInput:'TextInput',Keyboard:{dismiss(){}},Platform:{OS:'ios'},StyleSheet:{create:x=>x,flatten:x=>Object.assign({},...[x].flat(Infinity).filter(Boolean)),hairlineWidth:1},useWindowDimensions:()=>({width:390,fontScale:1})},
     'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},'expo-image':{Image:'Image'},'expo-symbols':{SymbolView:'Symbol'},
     'expo-router':{useIsFocused:()=>focused,useRouter:()=>({push:route=>routes.push(route),canGoBack:()=>true,back:()=>routes.push('back'),replace:route=>routes.push(route)})},
-    '@/components/analytics-controls':{Pressable:'Pressable',FlatList:'FlatList'},'@/components/selection-chip':{SelectionChip:'Chip'},'@/components/state-card':{StateCard:'StateCard'},'@/components/themed-text':{ThemedText:'Text'},'@/components/gling-loader':{GlingLoader:'Loader'},
-    '@/constants/theme':{Spacing:{one:4,two:8,three:12,four:16,five:20,six:24},MaxContentWidth:800},'@/constants/design-system':{ControlStyles:{icon:{},pill:{},field:{},action:{}},ControlMetrics:{touch:44},IconSize:{toolbar:21},Typography:{body:{fontSize:16}}},
+    '@/components/analytics-controls':{Pressable:'Pressable',FlatList:'FlatList'},'@/components/selection-chip':{SelectionChip:'Chip'},'@/components/state-card':{StateCard:'StateCard'},'@/components/themed-text':{ThemedText:'Text'},'@/components/gling-loader':{GlingLoader:'Loader'},'@/components/post-zoom-link':{PostZoomLink:'PostZoomLink'},
+    '@/constants/theme':{Spacing:{one:4,two:8,three:12,four:16,five:20,six:24},MaxContentWidth:800},'@/constants/design-system':{ControlMotion:{settleMs:180},ControlStyles:{icon:{},pill:{},field:{},action:{}},ControlMetrics:{touch:44},IconSize:{toolbar:21},Typography:{body:{fontSize:16}}},
     '@/hooks/use-language':{useLanguage:()=>({language:'ko',tr:x=>x})},'@/hooks/use-theme':{useTheme:()=>({})},'@/hooks/use-content-visibility':{useContentVisibility:()=>hidden},
     '@/lib/auth':{useAuth:()=>({isAuthed:!!account,isAuthLoading:loading,me:{id:account??'guest'}})},'@/lib/mock':{CITIES:[city,{id:'toronto',name:'토론토',englishName:'Toronto'}]},
     '@/lib/supabase':{supabase:{}},'@/lib/interaction-feedback':{useInteractionFeedback:()=>({play:value=>feedback.push(value)})},
@@ -79,7 +79,17 @@ test('canonical results open existing company, user, post and map routes with ex
     [item('place','osm:123',{placeId:'osm:123'}),'/map',{cityId:city.id,placeId:'osm:123'}],
     [item('place','osm:124',{placeId:'osm:124',merchantId:ids[1]}),'/company/[id]',{id:ids[1]}],
   ];
-  for(const [value,pathname,params]of examples){const app=screen({initialQuery:'지모코',load:async()=>page([value])});app.render();await app.flush();rowControl(app.render()).props.onPress();assert.equal(app.routes[0].pathname,pathname);assert.deepEqual(JSON.parse(JSON.stringify(app.routes[0].params)),params);app.unmount();}
+  for(const [value,pathname,params]of examples){const app=screen({initialQuery:'지모코',load:async()=>page([value])});app.render();await app.flush();const view=app.render();rowControl(view).props.onPress();
+    // Posts and meetups navigate through the zoom link wrapping the row; the row itself pushes nothing.
+    if(pathname==='/post/[id]'){const link=view.rows.flatMap(nodes).find(node=>node.type==='PostZoomLink');assert.equal(link.props.id,params.id);assert.equal(app.routes.length,0);app.unmount();continue;}
+    assert.equal(view.rows.flatMap(nodes).some(node=>node.type==='PostZoomLink'),false);
+    assert.equal(app.routes[0].pathname,pathname);assert.deepEqual(JSON.parse(JSON.stringify(app.routes[0].params)),params);app.unmount();}
+});
+
+test('a stale post row cancels the zoom link navigation instead of opening an old result',async()=>{
+  const app=screen({initialQuery:'지모코',load:async()=>page([item('post')])});app.render();await app.flush();const view=app.render();
+  app.focus(false);app.render();let prevented=false;rowControl(view).props.onPress({preventDefault(){prevented=true;}});
+  assert.equal(prevented,true);assert.equal(app.routes.length,0);app.unmount();
 });
 
 test('bounded pagination is single-flight; a failed next page keeps results and the same retry offset',async()=>{
