@@ -31,7 +31,8 @@ MIGRATIONS = [ROOT / 'supabase/migrations/20261101230000_admin_event_board.sql',
               ROOT / 'supabase/migrations/20261103020000_campaign_live_dashboard.sql',
               ROOT / 'supabase/migrations/20261103030000_admin_event_board_check_reason.sql',
               ROOT / 'supabase/migrations/20261103040000_campaign_report.sql',
-              ROOT / 'supabase/migrations/20261103050000_campaign_metric_no_delete.sql']
+              ROOT / 'supabase/migrations/20261103050000_campaign_metric_no_delete.sql',
+              ROOT / 'supabase/migrations/20261103060000_campaign_report_business_fields.sql']
 # The report migration also replaces the link lookup, so the apply and store link tests run on top of it too.
 TESTS = ['admin_event_board.test.sql', 'admin_event_board_phase2.test.sql', 'campaign_live_dashboard.test.sql',
          'admin_event_board_check_reason.test.sql', 'campaign_report.test.sql', 'event_links.test.sql', 'event_board_phase2.test.sql']

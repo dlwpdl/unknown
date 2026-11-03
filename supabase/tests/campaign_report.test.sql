@@ -292,26 +292,26 @@ select is((select b->'money' from biz),'{"discount_total_cents":40000,"hosted_me
   'money has exactly these keys: guest sales are the corrected POS total and stay apart from what the store spent (corrected discount plus hosted meals, '
   'per guest), and an estimate makes the money unconfirmed');
 select is((select b->'contents' from biz),(select jsonb_build_array(
-  jsonb_build_object('label','A','kind','creator_content','url','https://www.instagram.com/reel/RptReelA1/','first_seen',s+3,'views',900,
+  jsonb_build_object('label','A','kind','creator_content','reel',true,'first_seen',s+3,'views',900,
     'views_at',((s+5)+time '12:00') at time zone 'America/Vancouver','likes',40,'comments',null,'shares',null,'saves',null,'confirmed',false),
-  jsonb_build_object('label','A','kind','creator_content','url','https://www.instagram.com/p/RptPostA2/','first_seen',s+6,'views',300,
+  jsonb_build_object('label','A','kind','creator_content','reel',false,'first_seen',s+6,'views',300,
     'views_at',((s+6)+time '12:00') at time zone 'America/Vancouver','likes',null,'comments',null,'shares',null,'saves',null,'confirmed',true),
-  jsonb_build_object('label','B','kind','creator_content','url','https://www.instagram.com/reel/RptReelB1/','first_seen',s+4,'views',500,
+  jsonb_build_object('label','B','kind','creator_content','reel',true,'first_seen',s+4,'views',500,
     'views_at',((s+4)+time '13:00') at time zone 'America/Vancouver','likes',null,'comments',null,'shares',null,'saves',null,'confirmed',true),
-  jsonb_build_object('label','우리 글 1','kind','our_post','url','https://www.instagram.com/p/RptOurs01/','first_seen',s+1,'views',700,
+  jsonb_build_object('label','우리 글 1','kind','our_post','reel',false,'first_seen',s+1,'views',700,
     'views_at',((s+1)+time '12:00') at time zone 'America/Vancouver','likes',null,'comments',null,'shares',null,'saves',null,'confirmed',true)) from d),
-  'each link shows its latest live numbers; creators are letters in the order they first appeared, our posts are numbered');
+  'each link shows its latest live numbers and whether it is a reel; creators are letters in the order they first appeared, our posts are numbered');
 select is((select b->'store' from biz),(select jsonb_build_array(
   jsonb_build_object('metric','ig_followers','value',1200,'period_start',s-31,'period_end',s-1,'source','owner','confirmed',true,'before_start',true),
   jsonb_build_object('metric','discount_total_cents','value',40000,'period_start',s,'period_end',s+27,'source','pos','confirmed',true,'before_start',false),
   jsonb_build_object('metric','guest_sales_cents','value',125000,'period_start',s,'period_end',s+27,'source','pos','confirmed',true,'before_start',false),
   jsonb_build_object('metric','hosted_meals_cents','value',30000,'period_start',s,'period_end',s+27,'source','store_report','confirmed',false,'before_start',false)) from d),
   'store numbers are the live ones, and a period ending before the start is a base value');
-select is((select b->'people' from biz),'{"applied":6,"confirmed":2,"visited":2,"posted":2}'::jsonb,
-  'people are head counts only: nobody left out counts as confirmed, and a posted link counts as posted');
+select is((select b->'people' from biz),'{"reviewed":6,"confirmed":2,"visited":2,"posted":2}'::jsonb,
+  'people are head counts only: every creator the board weighed, nobody left out counts as confirmed, and a posted link counts as posted');
 select is((select count(*)::int from biz,unnest(array['Alpha Secret','Bravo Secret','Charlie','report.alpha','report.bravo','secret-note','"note"','"handle"',
-    '"participation_id"','"minutes"','"alerts"','"id"','candidate','hold','e1950000-','e1980000-','e1990000-']) s where position(s in b::text)>0),0,
-  'no creator name or handle, note, row or entry id, minutes, alert or board stage reaches the business');
+    '"participation_id"','"minutes"','"alerts"','"id"','candidate','hold','e1950000-','e1980000-','e1990000-','instagram.com','"url"']) s where position(s in b::text)>0),0,
+  'no creator name, handle or link, note, row or entry id, minutes, alert or board stage reaches the business');
 
 -- What the admin sees on top: who each letter is, store notes and row ids, our minutes, the whole log and the link without its token.
 set local role authenticated;
@@ -324,6 +324,9 @@ select is((select jsonb_agg(jsonb_build_object('label',x->>'label','handle',x->>
   '[{"label":"A","handle":"report.alpha","entry":"e1950000-0000-0000-0000-000000000001"},{"label":"A","handle":"report.alpha","entry":"e1950000-0000-0000-0000-000000000001"},
     {"label":"B","handle":"report.bravo","entry":"e1950000-0000-0000-0000-000000000002"},{"label":"우리 글 1","handle":null,"entry":null}]'::jsonb,
   'the admin sees who each letter is');
+select is((select jsonb_agg(x->>'url' order by n) from adm,jsonb_array_elements(a->'report'->'contents') with ordinality c(x,n)),
+  '["https://www.instagram.com/reel/RptReelA1/","https://www.instagram.com/p/RptPostA2/","https://www.instagram.com/reel/RptReelB1/","https://www.instagram.com/p/RptOurs01/"]'::jsonb,
+  'and keeps each link');
 select is((select jsonb_agg(x->>'note' order by n) from adm,jsonb_array_elements(a->'report'->'store') with ordinality s(x,n)),
   '["secret-note-before","secret-note-pos","",""]'::jsonb,'the admin sees the live store notes');
 select is((select a->'report'->'minutes' from adm),'{"total":165,"by_step":{"minutes_setup":90,"minutes_outreach":45,"minutes_report":30}}'::jsonb,
@@ -394,13 +397,13 @@ select is(public.event_apply('report-open-apply','report.echo',(select jsonb_bui
 reset role;
 select is((select jsonb_object_agg(r.display_name,private.event_applicant(p)) from private.partnership_participations p
     join private.partnership_creators r on r.id=p.creator_id where p.campaign_id='e1930000-0000-0000-0000-000000000002'),
-  '{"Alpha Secret":true,"Bravo Secret":false,"Charlie Secret":false,"Delta Secret":false,"Echo Secret":true}'::jsonb,
-  'a row an admin entered and a board candidate who sent the form are applicants; untouched, messaged and confirmed board candidates are not');
-select is(private.campaign_report('e1930000-0000-0000-0000-000000000002',true)->'people','{"applied":2,"confirmed":1,"visited":0,"posted":0}'::jsonb,
-  'the report counts those two as applied, and the confirmed board candidate as confirmed');
+  '{"Alpha Secret":false,"Bravo Secret":false,"Charlie Secret":false,"Delta Secret":false,"Echo Secret":true}'::jsonb,
+  'only someone who sent the apply form is an applicant; rows an admin or the board added are not, whatever their stage');
+select is(private.campaign_report('e1930000-0000-0000-0000-000000000002',true)->'people','{"reviewed":5,"confirmed":1,"visited":0,"posted":0}'::jsonb,
+  'the report counts every creator the board weighed, and the confirmed board candidate as confirmed');
 set local role service_role;
-select is((public.event_store_view(repeat('b',64))->>'applicant_count')::int,2,'the store page counts the same two applicants');
-select is((public.event_store_view(repeat('a',64))->>'applicant_count')::int,6,'and the same six as the closed campaign''s report');
+select is((public.event_store_view(repeat('b',64))->>'applicant_count')::int,1,'the store page counts the one link applicant');
+select is((public.event_store_view(repeat('a',64))->>'applicant_count')::int,0,'and nobody on the closed campaign, where nobody used the link');
 reset role;
 
 -- Guest sales on the open campaign, whose other money number (hosted meals) is confirmed: an estimate makes the money unconfirmed
