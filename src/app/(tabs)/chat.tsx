@@ -292,7 +292,7 @@ export default function ChatScreen() {
     else Alert.alert(tr("참여 신청 거절"), tr("이 참여 신청을 거절할까요?"), [{ text: tr("돌아가기"), style: 'cancel' }, { text: tr("거절하기"), style: 'destructive', onPress: () => void handleRequest(request, 'rejected') }]);
   };
 
-  if (!auth.isAuthed) return <LoginPanel reason={t.auth.reasonChat} onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
+  if (!auth.isAuthed) return <TabContent style={styles.fill}><LoginPanel reason={t.auth.reasonChat} onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} /></TabContent>;
   return <TabContent style={styles.container}><SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}><View style={styles.safeArea}>
     {/* 홈·모임과 같게 제목 줄은 고정한다. 필터와 안내는 목록과 함께 스크롤된다. */}
     <View style={[styles.headRow, styles.headFixed, { backgroundColor: theme.background }]}>
@@ -398,6 +398,7 @@ function ChatAvatar({ kind, title, meetupCategory, initial, avatarUri, active, d
 }
 
 const styles = StyleSheet.create({
+  fill: { flex: 1 },
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, width: '100%', alignSelf: 'center', maxWidth: MaxContentWidth, paddingHorizontal: Spacing.three },
   list: { gap: Spacing.two, paddingBottom: TabBarHeight + Spacing.three },

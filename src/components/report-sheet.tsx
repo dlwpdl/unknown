@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
+import { ControlMotion } from '@/constants/design-system';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
@@ -73,7 +74,7 @@ export function ReportSheet({
       onClose();
     };
     if (reducedMotion) { finish(); return; }
-    Animated.timing(sheetOffset, { toValue: screenHeight, duration: 220, easing: Easing.in(Easing.quad), useNativeDriver: true })
+    Animated.timing(sheetOffset, { toValue: screenHeight, duration: ControlMotion.sheetCloseMs, easing: Easing.in(Easing.quad), useNativeDriver: true })
       .start(({ finished }) => { if (finished) finish(); });
   };
 
@@ -118,9 +119,10 @@ export function ReportSheet({
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={close}
-      onShow={() => { sheetOffset.setValue(screenHeight); if (reducedMotion) sheetOffset.setValue(0); else Animated.timing(sheetOffset, { toValue: 0, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }}>
+      onShow={() => { sheetOffset.setValue(screenHeight); if (reducedMotion) sheetOffset.setValue(0); else Animated.timing(sheetOffset, { toValue: 0, duration: ControlMotion.expandMs, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.backdrop, { paddingTop: insets.top }]}>
-        <View style={styles.scrim} />
+        {/* The dim follows the sheet: it darkens as the sheet rises and clears as it slides away. */}
+        <Animated.View pointerEvents="none" style={[styles.scrim, { opacity: sheetOffset.interpolate({ inputRange: [0, screenHeight], outputRange: [1, 0], extrapolate: 'clamp' }) }]} />
         <Pressable analyticsId="components_report-sheet.pressable.1"
           style={styles.backdropDismiss}
           onPress={() => { play('selection'); close(); }}

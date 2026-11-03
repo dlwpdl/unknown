@@ -38,7 +38,7 @@ function mount(file, name, data, props = {}, params = {}) {
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },
     '@/components/post-card': { PostCard: 'PostCard' }, '@/components/post-detail': { PostDetail: 'PostDetail' },
     '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: (target, visible) => { calls.push(['savedEntry', target, visible]); return { state: null, error: '', loading: false, busy: false, visible, onPress() {} }; } },
-    '@/components/manner-summary': { MannerSummary: 'MannerSummary' }, '@/components/report-sheet': { ReportSheet: 'ReportSheet' },
+    '@/components/manner-summary': { MannerSummary: 'MannerSummary' }, '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/drag-sheet': { DragSheet: 'DragSheet' },
     '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/constants/theme': { Spacing: {}, Depth: { control: {} } }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/hooks/use-chat-identity': { useChatIdentity: () => data.businessIdentity ?? null },
@@ -64,6 +64,13 @@ const post = (id, author = 'author') => ({ id, author: { id: author }, createdAt
 const list = harness => harness.nodes().find(node => node.type === 'FlatList');
 const detail = harness => harness.nodes().find(node => node.type === 'PostDetail');
 const control = (harness, id) => harness.nodes().find(node => node.props?.analyticsId === id);
+// The shared sheet slides away first; the parent hears onClose only once it is gone.
+const dismiss = harness => {
+  harness.render();
+  const sheet = harness.nodes().find(node => node.type === 'DragSheet');
+  assert.equal(sheet.props.visible, false, 'the sheet is leaving before the parent closes it');
+  sheet.props.onDismissed(); harness.render();
+};
 
 test('approved mini profile has an explicit close action with feedback', async context => {
   const closed = [], harness = mount('../src/components/user-sheet.tsx', 'UserSheet', {
@@ -71,9 +78,11 @@ test('approved mini profile has an explicit close action with feedback', async c
   }, { user: { id: 'neighbor', nickname: '이웃' }, onClose: () => closed.push(true) });
   context.after(() => harness.cleanup()); await harness.settle();
   const close = control(harness, 'user.profile.close'); assert.ok(close);
-  assert.equal(control(harness, 'components_user-sheet.pressable.1').props.children, undefined, 'dismiss backdrop must not contain other interactive controls');
+  assert.equal(harness.nodes().find(node => node.type === 'DragSheet').props.visible, true, 'the profile uses the shared bottom sheet');
   close.props.onPress();
-  assert.equal(closed.length, 1); assert.ok(harness.calls.some(call => call[0] === 'feedback' && call[1] === 'selection'));
+  assert.equal(closed.length, 0, 'content stays while the sheet slides down');
+  dismiss(harness);
+  assert.equal(closed.length, 1); assert.deepEqual(harness.calls.filter(call => call[0] === 'feedback'), [['feedback', 'selection']]);
 });
 
 test('approved mini profile expands trade detail on demand and keeps chat available', async context => {
@@ -207,7 +216,10 @@ test('web mini profiles retain inline reviews, direct chat and reporting without
   control(harness, 'components_user-sheet.pressable.4').props.onPress(); await harness.settle();
   const destination = harness.calls.find(call => call[0] === 'navigate')?.[1];
   assert.equal(destination?.pathname, '/chat'); assert.equal(destination?.params?.conversationId, 'web-direct-chat');
+  dismiss(harness);
   control(harness, 'components_user-sheet.pressable.5').props.onPress(); harness.render();
+  assert.ok(!harness.nodes().some(node => node.type === 'ReportSheet'), 'the report waits until the profile sheet is gone');
+  dismiss(harness);
   assert.ok(harness.nodes().some(node => node.type === 'ReportSheet' && node.props.targetType === 'user' && node.props.targetId === 'neighbor'));
   assert.equal(closed.length, 2, 'chat navigation and report action still dismiss their profile overlay');
 });

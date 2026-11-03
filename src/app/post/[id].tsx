@@ -47,7 +47,13 @@ export default function SharedPostRoute() {
   const current = result?.id === requestKey ? result : null;
   const returnPath = `/post?id=${postId}${invite === '1' || (preview?.key === requestKey && preview.value?.kind === 'meetup') || current?.post?.room ? '&invite=1' : ''}`;
   const loading = isAuthed && Boolean(postId) && !current;
-  const goBack = () => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/'); };
+  // 스와이프·안드로이드 뒤로가기로 닫혀도 X와 같은 진동을 한 번만 낸다. 버튼으로 닫을 때는 이미 울렸으니 건너뛴다 (owner 2026-11-02).
+  const closedInApp = useRef(false);
+  const leave = () => { closedInApp.current = true; if (router.canGoBack()) router.back(); else router.replace('/'); };
+  const goBack = () => { play('selection'); leave(); };
+  const playOnLeave = useRef(play);
+  useEffect(() => { playOnLeave.current = play; }, [play]);
+  useEffect(() => () => { if (!closedInApp.current) playOnLeave.current('selection'); }, []);
 
   useLayoutEffect(() => {
     const scope = { active: focused && !isAuthLoading, key: requestKey, path: returnPath, viewer };
@@ -109,7 +115,7 @@ export default function SharedPostRoute() {
       </Head>}
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         {isAuthed && current?.post ? (
-          <PostDetail post={current.post} commentId={targetCommentId} onClose={goBack} />
+          <PostDetail post={current.post} commentId={targetCommentId} onClose={leave} />
         ) : (
           <>
             <View style={styles.header}>

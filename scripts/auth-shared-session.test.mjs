@@ -50,6 +50,7 @@ function mount(initialSession = session('member')) {
     '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async key => storage.get(key) ?? null, setItem: async (key, value) => storage.set(key, value) } },
     '@react-native-google-signin/google-signin': {}, 'expo-apple-authentication': {}, 'expo-linking': {}, 'expo-web-browser': { maybeCompleteAuthSession() {} },
     '@/components/auth-panels': { LoginPanel: 'LoginPanel', ProfileOnboarding: 'ProfileOnboarding' },
+    '@/components/flat-pressable': { FlatPressable: 'Pressable' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },
     '@/constants/theme': { Spacing: {} }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/i18n/ko': { t: { auth: { loginError: '로그인 오류', sessionExpired: '세션 만료' } } }, '@/lib/admin': { isAdminRole: () => false },

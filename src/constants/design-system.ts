@@ -12,7 +12,7 @@ export const IconSize = { toolbar: 21, inline: 16, chevron: 14, avatar: 28 } as 
 // Small content card in a home row (가볼 곳·행사): one photo height and corner for both rows.
 export const MiniCard = { width: 148, photoHeight: 80, radius: 12 } as const;
 
-export const ControlMotion = { pressedOpacity: 0.82, disabledOpacity: 0.45, pressMs: 90, settleMs: 180, expandMs: 220, sheetCloseMs: 200 } as const;
+export const ControlMotion = { pressedOpacity: 0.82, disabledOpacity: 0.45, pressMs: 90, settleMs: 180, expandMs: 220, sheetCloseMs: 200, releaseSpring: { stiffness: 320, damping: 20, mass: 1 } } as const;
 
 export const ControlStyles = {
   icon: { width: ControlMetrics.touch, minHeight: ControlMetrics.touch, borderRadius: ControlMetrics.radius.icon, alignItems: 'center', justifyContent: 'center' },

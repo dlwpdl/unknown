@@ -5,7 +5,7 @@ import { Pressable, ScrollView, FlatList } from '@/components/analytics-controls
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import Reanimated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
+import Reanimated, { FadeIn, FadeInDown, FadeOut, useReducedMotion } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter, useScrollToTop } from 'expo-router';
 import {
@@ -49,6 +49,7 @@ import { ProfileAvatarButton } from '@/components/profile-avatar-button';
 import { BusinessWriter } from '@/components/business-writer';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { RaisedActionButton } from '@/components/raised-action-button';
+import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
 import { StartGuide } from '@/components/start-guide';
 import { WeeklyRanking } from '@/components/weekly-ranking';
@@ -58,7 +59,7 @@ import { TabContent } from '@/components/tab-content';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
-import { ControlMetrics, ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
+import { ControlMetrics, ControlMotion, ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useAuth } from '@/lib/auth';
@@ -741,7 +742,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     }
   };
 
-  const feedState = cityOpen && feedLoading ? <View style={styles.categoryLoading}>{cityLoading ? <View style={[styles.feedPlaceholder, { backgroundColor: theme.backgroundElement }]} accessible={false} /> : <GlingLoader color={theme.accent} accessibilityLabel={tr("글 불러오는 중")} />}</View> : (
+  // 첫 로딩·도시 변경은 목록 가운데, 카테고리·정렬 변경은 칩 바로 아래에 로고를 띄운다. 목록 맨 아래 로더는 화면 밖이라 안 보였다 (owner 2026-11-02).
+  const loadingCover = cityLoading ? 'page' : cityOpen && feedLoading && !meetupsOnly ? 'list' : null;
+  const feedState = cityOpen && feedLoading ? <View style={styles.categoryLoading}>{meetupsOnly && <GlingLoader color={theme.accent} accessibilityLabel={tr("글 불러오는 중")} />}</View> : (
     cityOpen ? (
       feedError && feedData.length === 0 ? (
         <StateCard kind="error" title={tr("글을 불러오지 못했어요")} body={tr("연결을 확인하고 다시 시도해 주세요.")} actionLabel={tr("다시 시도")} onAction={() => { play('selection'); void refreshFeed().catch(() => {}); }} />
@@ -812,16 +815,14 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 const label = id == null ? t.feed.filterAll : tr(TAGS.find((tg) => tg.id === id)!.label);
                 const active = tagFilter === id;
                 return (
-                  <Animated.View key={id ?? 'all'} style={active && { borderRadius: 999, transform: [{ scale: chipLift }] }}><Pressable analyticsId="components_feed-screen.pressable.3"
+                  <Animated.View key={id ?? 'all'} style={active && { borderRadius: 999, transform: [{ scale: chipLift }] }}><SelectionChip analyticsId="components_feed-screen.pressable.3"
+                    selected={active}
                     onPress={() => changeTagFilter(id)}
                     accessibilityRole="button"
                     accessibilityState={{ selected: active }}
-                    style={({ pressed }) => [
-                      styles.filterChip,
-                      { backgroundColor: active ? theme.accent : pressed ? 'rgba(255,255,255,0.12)' : 'transparent', borderBottomColor: 'transparent', },
-                    ]}>
+                    style={[styles.filterChip, { borderBottomColor: 'transparent' }]}>
                     <ThemedText type="smallBold" style={{ color: active ? theme.accentInk : theme.textSecondary }}>{label}</ThemedText>
-                  </Pressable></Animated.View>
+                  </SelectionChip></Animated.View>
                 );
               })}
               <Pressable analyticsId="feed.categories.more" accessibilityRole="button" accessibilityLabel={tr('카테고리 전체 보기')}
@@ -833,7 +834,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             </ScrollView></GlassSurface>
           </View>
         )}
-        <FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
+        <View style={styles.feedArea}><FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
+          accessibilityElementsHidden={loadingCover != null} importantForAccessibility={loadingCover ? 'no-hide-descendants' : 'auto'}
           onViewableItemsChanged={trackTranslationFeed}
           viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY}
           data={[null, ...(showFeedSort ? [null] : []), ...(feedLoading ? [] : feedRows)]}
@@ -874,7 +876,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               <View style={styles.journalIntro}>
                 <View style={styles.journalStatusRow}>
                   <ThemedText type="smallBold" themeColor="textSecondary" style={styles.journalDate}>{todayLabel(appLocale)}</ThemedText>
-                  {cityLoading && <View style={styles.cityLoadingStatus}><GlingLoader color={theme.accent} size={18} accessibilityLabel={tr("{0} 소식 불러오는 중", tr(city.name))} /><ThemedText type="small" themeColor="textSecondary">{tr("소식 불러오는 중")}</ThemedText></View>}
                 </View>
                 {meetupsOnly && <ThemedText accessibilityRole="header" style={styles.journalTitle}>{t.feed.meetupTitle}</ThemedText>}
               </View>
@@ -915,6 +916,12 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             />}{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !detailVisible && !writing && !searching)) && feedAdPosition(index - (showFeedSort ? 2 : 1), feedRows.length) && <FeedAd key={`ad-after-${item.id}`} />}</Animated.View></Reanimated.View>
           )}
         />
+        {/* 덮개가 아래 회색 자리표시와 이전 글을 가리고, 다 불러오면 서서히 걷힌다. 첫 화면은 덮개째 바로 그린다. */}
+        {loadingCover && <Reanimated.View entering={reducedMotion || loadingCover === 'page' ? undefined : FadeIn.duration(ControlMotion.pressMs)}
+          exiting={reducedMotion ? undefined : FadeOut.duration(ControlMotion.settleMs)}
+          style={[styles.loadingCover, loadingCover === 'page' && [styles.loadingCoverPage, { paddingBottom: bottomClear }], { backgroundColor: theme.background }]}>
+          <GlingLoader color={theme.accent} accessibilityLabel={loadingCover === 'page' ? tr("{0} 소식 불러오는 중", tr(city.name)) : tr("글 불러오는 중")} />
+        </Reanimated.View>}</View>
         {writeFab && <Pressable analyticsId="feed.write" accessibilityRole="button" accessibilityLabel={t.tabs.write} onPress={openWriter}
           style={({ pressed }) => [ControlStyles.pill, styles.writeFab, writeFabCompact && styles.writeFabCompact, { bottom: (Platform.OS === 'ios' ? insets.bottom : 0) + Spacing.three }, controlPresentation(theme, { tone: 'primary', pressed, reducedMotion }).container]}>
           <SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} size={IconSize.toolbar} tintColor={theme.accentInk} />
@@ -922,7 +929,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         </Pressable>}
       </View></SafeAreaView>
 
-      <Modal visible={categorySheet} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" onRequestClose={() => setCategorySheet(false)}>
+      <Modal visible={categorySheet} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" onRequestClose={() => { play('selection'); setCategorySheet(false); }}>
         <SafeAreaView style={[styles.categorySheet, { backgroundColor: theme.background }]}>
           <View style={styles.categorySheetHead}>
             <View style={{ flex: 1 }}>
@@ -953,7 +960,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         filters={listingFilters} onFilters={setListingFilters} onClose={() => setListingMap(false)}
         onOpenPost={post => { setListingMap(false); setTimeout(() => openDetail(post), Platform.OS === 'ios' ? 350 : 0); }} />}
       {/* 검색: 제목·내용·해시태그. 입력 전엔 인기 해시태그 칩 (당근 검색 패턴) */}
-      <Modal visible={searching} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setSearching(false)}
+      <Modal visible={searching} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => { play('selection'); setSearching(false); }}
         onDismiss={() => {
           const post = searchSelection.current;
           searchSelection.current = null;
@@ -1057,7 +1064,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         animationType={reducedMotion ? 'none' : 'slide'}
         presentationStyle="pageSheet"
         allowSwipeDismissal
-        onRequestClose={() => setDetailVisible(false)}
+        onRequestClose={() => { play('selection'); setDetailVisible(false); }}
         onDismiss={() => setDetailPost(null)}>
         {detailPost && (
           <PostDetail
@@ -1079,7 +1086,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         )}
       </Modal>
 
-      <Modal visible={joinPost != null} transparent animationType="fade" onRequestClose={() => setJoinPost(null)}>
+      <Modal visible={joinPost != null} transparent animationType="fade" onRequestClose={() => { play('selection'); setJoinPost(null); }}>
         <View style={styles.joinBackdrop}>
           <Pressable analyticsId="components_feed-screen.pressable.10" style={StyleSheet.absoluteFill} onPress={() => { play('selection'); setJoinPost(null); }} accessibilityRole="button" accessibilityLabel={tr("참여 신청 닫기")} />
           <ThemedView style={[styles.joinSheet, { backgroundColor: theme.card }]}>
@@ -1118,7 +1125,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         presentationStyle={Platform.OS === 'ios' ? 'fullScreen' : 'overFullScreen'}
         transparent={Platform.OS !== 'ios'}
         allowSwipeDismissal
-        onRequestClose={() => setCityPicker(false)}>
+        onRequestClose={() => { play('selection'); setCityPicker(false); }}>
         <SafeAreaProvider style={[styles.cityBackdrop, Platform.OS === 'ios' && { backgroundColor: theme.background }]}>
           {Platform.OS !== 'ios' && (
             <Pressable analyticsId="components_feed-screen.pressable.13" style={StyleSheet.absoluteFill} onPress={() => { play('selection'); setCityPicker(false); }} accessibilityRole="button" accessibilityLabel={t.write.cancel} />
@@ -1140,7 +1147,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           postSuccessPending.current = false;
           play('postPublished');
         }}
-        onRequestClose={() => setWriting(false)}>
+        onRequestClose={() => { play('reaction'); setWriting(false); }}>
         <SafeAreaProvider style={[styles.writer, { backgroundColor: theme.background }]}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.writer}>
           <SafeAreaView style={styles.writer}>
@@ -1357,7 +1364,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 </View>
               </View>
               </View>} />
-              <Modal visible={writerPanel === 'more'} transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => changeWriterPanel(null)}>
+              <Modal visible={writerPanel === 'more'} transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => { play('selection'); changeWriterPanel(null); }}>
                 <SafeAreaProvider>
                   <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.writerMoreBackdrop}>
                     <SafeAreaView edges={['bottom']} accessibilityViewIsModal style={[styles.writerMoreSheet, { backgroundColor: theme.card }]}>
@@ -1469,9 +1476,10 @@ const styles = StyleSheet.create({
   journalStatusRow: { minHeight: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
   writeFab: { position: 'absolute', right: Spacing.three, minHeight: ControlMetrics.action, flexDirection: 'row', gap: Spacing.one, borderWidth: 1 },
   writeFabCompact: { width: ControlMetrics.action, paddingHorizontal: 0 },
-  cityLoadingStatus: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   journalDate: { fontSize: 12, lineHeight: 18, letterSpacing: 0.8 },
-  feedPlaceholder: { width: '100%', height: 180, borderRadius: 16 },
+  feedArea: { flex: 1 },
+  loadingCover: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', paddingTop: Spacing.five },
+  loadingCoverPage: { justifyContent: 'center', paddingTop: 0 },
   journalTitle: { fontSize: 28, lineHeight: 36, fontWeight: 700, letterSpacing: -0.8 },
   chipGlass: { borderRadius: 28, marginTop: Spacing.two },
   chipBar: { flexDirection: 'row', gap: Spacing.one, padding: Spacing.one },

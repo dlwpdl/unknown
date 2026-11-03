@@ -7,9 +7,10 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AppState, DeviceEventEmitter, Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { AppState, DeviceEventEmitter, Modal, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { FlatPressable } from '@/components/flat-pressable';
 import { LoginPanel, ProfileOnboarding } from '@/components/auth-panels';
 import type { CompletedProfile } from '@/components/profile-onboarding';
 import { ThemedText } from '@/components/themed-text';
@@ -566,6 +567,7 @@ function AccountLockedPanel({
 }) {
   const { t } = useLanguage();
   const theme = useTheme();
+  const { play } = useInteractionFeedback();
   const supportEmail = process.env.EXPO_PUBLIC_SUPPORT_EMAIL ?? CONTACT_EMAIL;
   return (
     <ThemedView style={styles.lockedScreen}>
@@ -576,13 +578,13 @@ function AccountLockedPanel({
         </ThemedText>
         {!!note && <ThemedText type="small" themeColor="textSecondary">{note}</ThemedText>}
         {supportEmail && (
-          <Pressable onPress={() => void Linking.openURL(`mailto:${supportEmail}`)} accessibilityRole="link" style={[styles.lockedButton, { borderColor: theme.line }]}>
+          <FlatPressable onPress={() => { play('selection'); void Linking.openURL(`mailto:${supportEmail}`); }} accessibilityRole="link" style={[styles.lockedButton, { borderColor: theme.line }]}>
             <ThemedText type="smallBold">{t.profile.support}</ThemedText>
-          </Pressable>
+          </FlatPressable>
         )}
-        <Pressable onPress={() => void onSignOut()} accessibilityRole="button" style={[styles.lockedButton, { borderColor: theme.line }]}>
+        <FlatPressable onPress={() => { play('selection'); void onSignOut(); }} accessibilityRole="button" style={[styles.lockedButton, { borderColor: theme.line }]}>
           <ThemedText type="smallBold" style={{ color: theme.accent }}>{t.profile.signOut}</ThemedText>
-        </Pressable>
+        </FlatPressable>
       </View>
     </ThemedView>
   );

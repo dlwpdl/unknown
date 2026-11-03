@@ -87,7 +87,9 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
     const next = !open;
     if (!reducedMotion) {
       if (Platform.OS === 'android') UIManager.setLayoutAnimationEnabledExperimental?.(true);
-      LayoutAnimation.configureNext({ duration: next ? 340 : 260, update: { type: LayoutAnimation.Types.easeInEaseOut } });
+      // 펼칠 때는 스프링으로 쫙 열리고, 접을 때는 짧게 닫힌다. 줄 등장도 이 안에 끝나도록 맞췄다 (owner 2026-11-02).
+      LayoutAnimation.configureNext(next ? { duration: 380, update: { type: LayoutAnimation.Types.spring, springDamping: 0.82 } }
+        : { duration: 260, update: { type: LayoutAnimation.Types.easeInEaseOut } });
       Animated.spring(arrow, { toValue: next ? 1 : 0, tension: 70, friction: 10, useNativeDriver: true }).start();
     } else {
       arrow.setValue(next ? 1 : 0);
@@ -126,7 +128,7 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
           <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.duration(250)}>
           <Pressable analyticsId="components_weekly-ranking.pressable.1" onPress={toggle} accessibilityRole="button"
             accessibilityState={{ expanded }} accessibilityLabel={tr("주간 순위 접기")}
-            style={({ pressed }) => [styles.headRow, pressed && { backgroundColor: theme.backgroundElement, transform: [{ scale: 0.985 }] }]}>
+            style={({ pressed }) => [styles.headRow, pressed && { backgroundColor: theme.backgroundElement }]}>
             <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.heading}>{tr("이번 주 많이 읽은 글")}</ThemedText>
             <View style={styles.hintGroup}>
               <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>{tr("접기")}</ThemedText>
@@ -139,7 +141,7 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
         )}
         {expanded ? (
           ranking.entries.map((entry, index) => (
-            <Reanimated.View key={entry.postId} entering={reducedMotion ? undefined : FadeInDown.delay(index * 55).duration(280)}>
+            <Reanimated.View key={entry.postId} entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 9) * 20).duration(240)}>
             <Row key={entry.postId} entry={entry} last={index === total - 1}
               onPress={async () => { play('selection'); await onOpen(entry.postId); }} />
             </Reanimated.View>
@@ -148,7 +150,7 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
           <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.duration(220)}>
           <Pressable analyticsId="components_weekly-ranking.pressable.1" onPress={toggle} accessibilityRole="button"
             accessibilityState={{ expanded }} accessibilityLabel={tr("이번 주 많이 읽은 글 {0}편, 눌러서 전체 보기", (count(total)))}
-            style={({ pressed }) => [pressed && { backgroundColor: theme.backgroundElement, transform: [{ scale: reducedMotion ? 1 : 0.985 }] }]}>
+            style={({ pressed }) => [pressed && { backgroundColor: theme.backgroundElement }]}>
           <Animated.View style={[styles.collapsed, { opacity: fade }]}>
             <ThemedText type="smallBold" style={[styles.label, { color: theme.accent }]}>
               {tr('이번 주 {0}위', showing.rank)}</ThemedText>
@@ -168,14 +170,13 @@ export function WeeklyRanking({ cityId, refreshKey, onOpen }: { cityId: string; 
 function Row({ entry, last, onPress }: { entry: WeeklyRankingEntry; last: boolean; onPress: () => Promise<void> }) {
   const { tr } = useLanguage();
   const theme = useTheme();
-  const reducedMotion = useReducedMotion();
   const [busy, setBusy] = useState(false);
   return (
     <Pressable analyticsId="components_weekly-ranking.pressable.2" onPress={async () => { if (busy) return; setBusy(true); try { await onPress(); } finally { setBusy(false); } }} accessibilityRole="button"
       accessibilityState={{ busy }}
       accessibilityLabel={tr("{0}위 {1}, {2}", (entry.rank), (entry.title), (entry.nickname))}
       style={({ pressed }) => [styles.row, !last && { borderBottomWidth: 1, borderBottomColor: theme.line },
-        pressed && { backgroundColor: theme.backgroundSelected, transform: [{ scale: reducedMotion ? 1 : 0.985 }] }]}>
+        pressed && { backgroundColor: theme.backgroundSelected }]}>
       <ThemedText type="smallBold" style={[styles.rank, { color: entry.rank <= 3 ? theme.accent : theme.textSecondary }]}>
         {entry.rank}
       </ThemedText>

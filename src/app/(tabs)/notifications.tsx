@@ -242,7 +242,7 @@ export default function NotificationsScreen() {
   };
 
   if (isAuthLoading) return <TabContent style={styles.screen}><GlingLoader color={theme.accent} style={styles.center} /></TabContent>;
-  if (!isAuthed) return <LoginPanel reason={t.auth.reasonNotifications} onApple={signInApple} onKakao={signInKakao} onGoogle={signInGoogle} onDevLogin={signInDev} loading={isAuthLoading} error={authError} />;
+  if (!isAuthed) return <TabContent style={styles.fill}><LoginPanel reason={t.auth.reasonNotifications} onApple={signInApple} onKakao={signInKakao} onGoogle={signInGoogle} onDevLogin={signInDev} loading={isAuthLoading} error={authError} /></TabContent>;
 
   const person = (row: AppNotification) => row.actor_id && actorAllowed(row) && extras?.token === cache ? extras.people.get(row.actor_id) : undefined;
   const nameOf = (row: AppNotification) => person(row)?.nickname ?? /^(.+?)님이 /.exec(row.body)?.[1];
@@ -366,6 +366,7 @@ function KindBadge({ symbol }: { symbol: SymbolViewProps['name'] }) {
 }
 
 const styles = StyleSheet.create({
+  fill: { flex: 1 },
   screen: { flex: 1, alignItems: 'center' },
   safeArea: { flex: 1, width: '100%', alignSelf: 'center', maxWidth: MaxContentWidth },
   header: { minHeight: 56, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },

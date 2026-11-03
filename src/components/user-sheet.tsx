@@ -2,15 +2,16 @@ import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Alert, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Alert, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
+import { DragSheet } from '@/components/drag-sheet';
 import { ReportSheet } from '@/components/report-sheet';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
 import { TrustBadge } from '@/components/trust-badge';
 import { MannerSummary } from '@/components/manner-summary';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import { ControlStyles, IconSize, controlPresentation } from '@/constants/design-system';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
@@ -44,7 +45,6 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
 }) {
   const { tr, t } = useLanguage();
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { isAuthed, me, promptLogin } = useAuth();
   const business = useChatIdentity();
@@ -56,6 +56,12 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
   const [trade, setTrade] = useState<{ key: string; value: TradeProfile } | null>(null);
   const [manner, setManner] = useState<{ key: string; value: Summary } | null>(null);
   const busy = useRef(false);
+  // Like the meetup manage sheet: the sheet slides down first and the parent hears onClose once it is gone,
+  // so the content stays put while it leaves and a follow-up (report) never opens over a leaving modal on iOS.
+  const [open, setOpen] = useState(true), [shownUser, setShownUser] = useState(user);
+  if (user !== shownUser) { setShownUser(user); if (user) setOpen(true); }
+  const afterClose = useRef<(() => void) | null>(null);
+  const close = (then?: () => void) => { afterClose.current = then ?? null; setOpen(false); };
 
   // 대화 기반 거래 이력과 현장 참석 확인은 서로 다른 신호다.
   const userId = user?.id;
@@ -85,7 +91,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
 
   const navigate = (route: Parameters<typeof router.push>[0]) => {
     play('selection');
-    onClose();
+    close();
     onBeforeNavigate?.();
     router.push(route);
   };
@@ -122,52 +128,48 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
 
   return (
     <>
-      <Modal visible={!!user} transparent animationType="fade" onRequestClose={onClose}>
-        <View style={styles.backdrop}>
-          <Pressable analyticsId="components_user-sheet.pressable.1" style={StyleSheet.absoluteFill} onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" accessibilityLabel={tr('닫기')} />
-          <View accessibilityViewIsModal style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: user?.mine ? Math.max(insets.bottom, 12) : 0 }]}>
-            <View style={[styles.handle, { backgroundColor: theme.line }]} />
-            <View style={styles.sheetTools}>
-              <ThemedText type="small" themeColor="textSecondary">{tr('이웃 프로필')}</ThemedText>
-              <View style={styles.tools}>
-                {!!user && !user.mine && !!user.id && <Pressable analyticsId="components_user-sheet.pressable.5" onPress={() => { play('selection'); setReporting(user); onClose(); }} accessibilityRole="button" accessibilityLabel={t.report.userAction} style={styles.iconButton}>
-                  <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={21} tintColor={theme.textSecondary} />
-                </Pressable>}
-                <Pressable analyticsId="user.profile.close" onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" accessibilityLabel={tr('닫기')} style={styles.iconButton}>
-                  <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={19} tintColor={theme.textSecondary} />
-                </Pressable>
-              </View>
-            </View>
-            {user && <>
-              <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
-                <View style={styles.identity}>
-                  <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle" style={{ color: theme.accent }}>{user.nickname[0]}</ThemedText></View>
-                  <View style={styles.identityCopy}>
-                    <View style={styles.nickRow}><ThemedText type="subtitle" style={styles.nickname}>{user.nickname}</ThemedText><TrustBadge verified={user.verified} trustLevel={user.trustLevel} /></View>
-                    {user.neighborhood && <ThemedText type="small" themeColor="textSecondary">{user.neighborhood}</ThemedText>}
-                    {trade?.key === requestKey && trade.value.memberMonths >= 1 && !hidden('user', user.id ?? '') && <ThemedText type="small" themeColor="textSecondary">{tr('글링과 함께한 지 {0}개월', count(trade.value.memberMonths))}</ThemedText>}
-                  </View>
-                </View>
-                {manner?.key === requestKey && !hidden('user', user.id ?? '') && <MannerSummary summary={manner.value} />}
-                {trade?.key === requestKey && !user.mine && !hidden('user', user.id ?? '') && <>
-                  <Pressable analyticsId="user.profile.trade" accessibilityRole="button" accessibilityState={{ expanded: tradeOpen }} onPress={() => { play('selection'); setOpenTradeKey(value => value === requestKey ? null : requestKey); }} style={[styles.profileRow, { borderBottomColor: theme.line }]}>
-                    <View style={styles.identityCopy}><ThemedText type="smallBold">{tr('거래 기록')}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('이웃 {0}명과 거래 · 완료 {1}건', count(trade.value.dealPartners ?? 0), count(trade.value.closedListings ?? 0))}</ThemedText></View>
-                    <SymbolView name={{ ios: tradeOpen ? 'chevron.down' : 'chevron.right', android: tradeOpen ? 'expand_more' : 'chevron_right', web: tradeOpen ? 'expand_more' : 'chevron_right' }} size={17} tintColor={theme.textSecondary} />
-                  </Pressable>
-                  {tradeOpen && <TradeRecord trade={trade.value} onOpenPost={(postId) => navigate(`/post/${postId}`)} />}
-                </>}
-                <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>{user.mine ? t.profileSheet.self : user.trustLevel === 3 ? t.profileSheet.verifiedL3 : user.verified || user.trustLevel === 2 ? t.profileSheet.verifiedL2 : t.profileSheet.verifiedL1}</ThemedText>
-                {user.mine && Platform.OS !== 'web' && <Pressable analyticsId="components_user-sheet.pressable.3" onPress={() => navigate('/profile')} accessibilityRole="button" style={[styles.profileRow, { borderBottomColor: theme.line }]}><ThemedText type="smallBold">{t.tabs.profile}</ThemedText><ThemedText>›</ThemedText></Pressable>}
-                {!user.mine && user.id && Platform.OS !== 'web' && <Pressable analyticsId="components_user-sheet.pressable.7" onPress={() => navigate({ pathname: '/user/[id]', params: { id: user.id!, nickname: user.nickname } })} accessibilityRole="button" style={[styles.profileRow, { borderBottomColor: theme.line }]}>
-                  <View style={[styles.rowIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'doc.text', android: 'description', web: 'description' }} size={18} tintColor={theme.navy} /></View>
-                  <View style={styles.identityCopy}><ThemedText type="smallBold">{tr('공개한 글 보기')}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('오늘·구해요·팔아요')}</ThemedText></View><ThemedText themeColor="textSecondary">›</ThemedText>
-                </Pressable>}
-              </ScrollView>
-              {!user.mine && user.id && <View style={[styles.actionArea, { paddingBottom: Math.max(insets.bottom, Spacing.three) }]}><RaisedActionButton analyticsId="components_user-sheet.pressable.4" onPress={() => void requestChat(user)} disabled={requesting} busy={requesting} label={requesting ? t.chat.joinSending : t.profileSheet.chatRequest} /></View>}
-            </>}
+      <DragSheet visible={!!user && open} onClose={() => close()} onDismissed={() => { const then = afterClose.current; afterClose.current = null; onClose(); then?.(); }}>
+        <View style={styles.sheetTools}>
+          <ThemedText type="small" themeColor="textSecondary">{tr('이웃 프로필')}</ThemedText>
+          <View style={styles.tools}>
+            {!!user && !user.mine && !!user.id && <Pressable analyticsId="components_user-sheet.pressable.5" onPress={() => { play('selection'); close(() => setReporting(user)); }} accessibilityRole="button" accessibilityLabel={t.report.userAction}
+              style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
+              <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
+            </Pressable>}
+            <Pressable analyticsId="user.profile.close" onPress={() => { play('selection'); close(); }} accessibilityRole="button" accessibilityLabel={tr('닫기')}
+              style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
+              <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={19} tintColor={theme.textSecondary} />
+            </Pressable>
           </View>
         </View>
-      </Modal>
+        {user && <>
+          <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.identity}>
+              <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle" style={{ color: theme.accent }}>{user.nickname[0]}</ThemedText></View>
+              <View style={styles.identityCopy}>
+                <View style={styles.nickRow}><ThemedText type="subtitle" style={styles.nickname}>{user.nickname}</ThemedText><TrustBadge verified={user.verified} trustLevel={user.trustLevel} /></View>
+                {user.neighborhood && <ThemedText type="small" themeColor="textSecondary">{user.neighborhood}</ThemedText>}
+                {trade?.key === requestKey && trade.value.memberMonths >= 1 && !hidden('user', user.id ?? '') && <ThemedText type="small" themeColor="textSecondary">{tr('글링과 함께한 지 {0}개월', count(trade.value.memberMonths))}</ThemedText>}
+              </View>
+            </View>
+            {manner?.key === requestKey && !hidden('user', user.id ?? '') && <MannerSummary summary={manner.value} />}
+            {trade?.key === requestKey && !user.mine && !hidden('user', user.id ?? '') && <>
+              <Pressable analyticsId="user.profile.trade" accessibilityRole="button" accessibilityState={{ expanded: tradeOpen }} onPress={() => { play('selection'); setOpenTradeKey(value => value === requestKey ? null : requestKey); }} style={[styles.profileRow, { borderBottomColor: theme.line }]}>
+                <View style={styles.identityCopy}><ThemedText type="smallBold">{tr('거래 기록')}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('이웃 {0}명과 거래 · 완료 {1}건', count(trade.value.dealPartners ?? 0), count(trade.value.closedListings ?? 0))}</ThemedText></View>
+                <SymbolView name={{ ios: tradeOpen ? 'chevron.down' : 'chevron.right', android: tradeOpen ? 'expand_more' : 'chevron_right', web: tradeOpen ? 'expand_more' : 'chevron_right' }} size={17} tintColor={theme.textSecondary} />
+              </Pressable>
+              {tradeOpen && <TradeRecord trade={trade.value} onOpenPost={(postId) => navigate(`/post/${postId}`)} />}
+            </>}
+            <ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>{user.mine ? t.profileSheet.self : user.trustLevel === 3 ? t.profileSheet.verifiedL3 : user.verified || user.trustLevel === 2 ? t.profileSheet.verifiedL2 : t.profileSheet.verifiedL1}</ThemedText>
+            {user.mine && Platform.OS !== 'web' && <Pressable analyticsId="components_user-sheet.pressable.3" onPress={() => navigate('/profile')} accessibilityRole="button" style={[styles.profileRow, { borderBottomColor: theme.line }]}><ThemedText type="smallBold">{t.tabs.profile}</ThemedText><ThemedText>›</ThemedText></Pressable>}
+            {!user.mine && user.id && Platform.OS !== 'web' && <Pressable analyticsId="components_user-sheet.pressable.7" onPress={() => navigate({ pathname: '/user/[id]', params: { id: user.id!, nickname: user.nickname } })} accessibilityRole="button" style={[styles.profileRow, { borderBottomColor: theme.line }]}>
+              <View style={[styles.rowIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'doc.text', android: 'description', web: 'description' }} size={18} tintColor={theme.navy} /></View>
+              <View style={styles.identityCopy}><ThemedText type="smallBold">{tr('공개한 글 보기')}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('오늘·구해요·팔아요')}</ThemedText></View><ThemedText themeColor="textSecondary">›</ThemedText>
+            </Pressable>}
+          </ScrollView>
+          {!user.mine && user.id && <View style={styles.actionArea}><RaisedActionButton analyticsId="components_user-sheet.pressable.4" onPress={() => void requestChat(user)} disabled={requesting} busy={requesting} label={requesting ? t.chat.joinSending : t.profileSheet.chatRequest} /></View>}
+        </>}
+      </DragSheet>
       {reporting?.id && (
         <ReportSheet visible targetType="user" targetId={reporting.id} reportedUserId={reporting.id} reportedNickname={reporting.nickname} onClose={() => setReporting(null)} />
       )}
@@ -236,19 +238,17 @@ function TradeRecord({ trade, onOpenPost }: { trade: TradeProfile; onOpenPost: (
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheet: { maxHeight: '88%', borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 8, paddingBottom: 12 },
-  handle: { width: 32, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
-  sheetTools: { minHeight: 44, paddingLeft: 24, paddingRight: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  tools: { flexDirection: 'row' }, iconButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  sheetScroll: { flexShrink: 1 }, sheetContent: { paddingHorizontal: 24, paddingTop: 12, gap: 16 },
+  // DragSheet already pads its sides by Spacing.three; these add the rest so the text keeps its 24pt inset.
+  sheetTools: { minHeight: 44, paddingLeft: Spacing.two, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  tools: { flexDirection: 'row' },
+  sheetScroll: { flexShrink: 1 }, sheetContent: { paddingHorizontal: Spacing.two, paddingTop: 12, gap: 16 },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingBottom: 4 },
   avatar: { width: 64, height: 64, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   identityCopy: { flex: 1, minWidth: 0, gap: 4 }, nickname: { flexShrink: 1, fontSize: 20, lineHeight: 27 },
   nickRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   profileRow: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   rowIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  actionArea: { paddingHorizontal: 24, paddingTop: 16 },
+  actionArea: { paddingHorizontal: Spacing.two, paddingTop: 16 },
   record: { alignSelf: 'stretch', gap: Spacing.two, marginTop: Spacing.one },
   facts: { borderWidth: 1, borderRadius: 12, overflow: 'hidden' },
   fact: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: 9 },

@@ -9,9 +9,9 @@ export function flatControlStyle(style: ViewStyle = {}): ViewStyle {
   };
 }
 
-// About the same few points of shrink on any size, so a small pill and a full-width card both read as pressed.
+// About 12 points of shrink on any size so a small pill and a full-width card both visibly press in (owner 2026-11-02: effects are required).
 export function pressedScale(width: number) {
-  return Math.max(0.97, 1 - 6 / Math.max(width, 1));
+  return Math.max(0.94, 1 - 12 / Math.max(width, 1));
 }
 
 // A dismiss layer stretched over its parent must not shrink and reveal what is behind its edges.
