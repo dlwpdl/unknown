@@ -11,7 +11,8 @@ source = ''
 if 'managed:=auth.uid() is distinct from m.owner_id' not in sql('postgres', "select pg_get_functiondef('private.consume_business_usage(uuid,text,uuid,text)'::regprocedure);").stdout:
     for name in ['20261026065000_admin_unlimited_business_posts.sql', '20261026070100_admin_no_business_limits.sql']:
         source += (migrations / name).read_text() + '\n'
-source += (migrations / '20261030141000_admin_post_as_business.sql').read_text() + '\n'
+for name in ['20261030141000_admin_post_as_business.sql', '20261103100000_admin_posts_as_pending_business.sql']:
+    source += (migrations / name).read_text() + '\n'
 fixture = (root / 'supabase/tests/admin_post_as_business.test.sql').read_text()
 assert fixture.startswith('begin;') and fixture.rstrip().endswith('rollback;')
 before = sql('postgres', "select md5(pg_get_functiondef('public.link_admin_merchant_post(uuid,uuid,text)'::regprocedure));").stdout
