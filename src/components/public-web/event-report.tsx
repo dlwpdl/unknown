@@ -28,14 +28,16 @@ type Report = {
 const COPY = {
   page: '크리에이터 캠페인 결과',
   live: '실시간 동기화 · 마지막 ',
-  fixed: '30일 숫자 확정 · ',
-  fixOn: (day: string) => `30일째 확정 · ${day} 예정`,
+  // new (owner 2026-11-03 "마지막 릴스 뒤"): the report is fixed after the last visiting team's reel, not on day 30, and the fix
+  // keeps the numbers of the day it is pressed, so no wording here says "day 30".
+  fixed: '숫자 확정 · ',
+  fixOn: '방문 끝난 뒤 확정',
   since: (day: string) => `${day}부터`,
   // new: what a set of links is, as the Instagram app names them
   kind: (reels: number, all: number) => reels === all ? '릴스' : reels ? '릴스·게시물' : '게시물',
   // the panel's '영상' when every link is a reel; new: the kind otherwise (a photo or carousel post is not a video)
   summary: (guests: string, perGuest: string, posts: number, views: string, kind: string) =>
-    `온 손님 ${guests}명, 손님 1명당 ${perGuest} 들었어요. ${kind === '릴스' ? '영상' : kind} ${posts}개가 30일 동안 ${views}번 조회됐어요.`,
+    `온 손님 ${guests}명, 손님 1명당 ${perGuest} 들었어요. ${kind === '릴스' ? '영상' : kind} ${posts}개가 ${views}번 조회됐어요.`,
   ok: '확인값', settled: '확정', est: '추정',
   guestsQ: '몇 명 왔어요?', moneyQ: '얼마 벌었어요?', viewsQ: '몇 명이 봤어요?', whoQ: '누가 뭘 했어요?', leftQ: '뭐가 남았어요?',
   guests: '온 손님', people: (count: string) => `${count}명`, guestsHow: '가게 링크로 확인한 손님 수', guestsWait: '가게 링크가 켜지면 저절로 쌓여요',
@@ -44,7 +46,7 @@ const COPY = {
   spend: '가게가 쓴 돈', noRecord: '기록 없음', meals: '식사 지원', discount: '할인액', spendSource: '가게 보고 · 포스',
   perGuest: '손님 1명당 든 돈', notYet: '계산 전', perGuestHow: (spend: string, guests: string) => `${spend} ÷ ${guests}명`,
   perGuestWait: '가게가 쓴 돈 ÷ 온 손님. 두 칸이 차면 저절로 계산돼요', auto: '자동 계산',
-  views: '조회수 합계', viewsFixed: '30일째 값', // new: 조회수 합계 (a count of views, not of people)
+  views: '조회수 합계', viewsFixed: '확정한 날 값', // new: 조회수 합계 (a count of views, not of people)
   // new: '게시물' for a /p/ post as the Instagram app says (the panel only had a creator's reel), a number when one creator or we
   // posted more than once, and our own posts named '글링 게시물'/'글링 릴스' instead of the contract's '우리 글 1'
   creator: (letter: string, reel: boolean, number: number | null) => `크리에이터 ${letter} ${reel ? '릴스' : '게시물'}${number ? ` ${number}` : ''}`,
@@ -59,12 +61,12 @@ const COPY = {
   reviewed: (count: string) => `크리에이터 ${count}명 검토`, tracked: '크리에이터 게시 확인 · 조회 기록',
   ourPosts: (kind: string, count: number) => `글링 ${kind} ${count}개 올리기`, ourHandle: '@gling.app', // new: the panel's item was '당첨 발표 글 올리기'
   growth: '가게 팔로워·구글 리뷰', noBase: '비교 못 함', noBaseHow: '시작 전에 안 적어서 기준이 없어요.', check: '확인 전',
-  growthHow: '시작 전 값과 30일째 값의 차이', growthLive: '시작 전 값과 지금 값의 차이', // new: growthLive, before day 30
+  growthHow: '시작 전 값과 확정한 날 값의 차이', growthLive: '시작 전 값과 지금 값의 차이', // new: growthLive, before the fix
   before: (value: string) => `시작 전 값 ${value}`,
   // new: names of what a business reports (private.partnership_metrics store rows)
   store: { google_searches: '구글 검색', google_directions: '구글 길찾기', google_calls: '구글 전화', ig_profile_visits: '인스타 프로필 방문',
     ig_follows: '인스타 새 팔로우', customers: '전체 손님 수', sales_cents: '전체 매출' } as Record<string, string>,
-  legend: [['ok', '확인값', '실제로 센 숫자'], ['ok', '확정', '30일째 숫자, 더 바뀌지 않아요'], ['est', '추정', '다른 이유도 섞일 수 있는 숫자']] as const,
+  legend: [['ok', '확인값', '실제로 센 숫자'], ['ok', '확정', '확정한 날 숫자, 더 바뀌지 않아요'], ['est', '추정', '다른 이유도 섞일 수 있는 숫자']] as const,
 };
 
 const lightWordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark-light.png')).uri;
@@ -149,7 +151,7 @@ function Sheet({ report, fresh }: { report: Report; fresh: ReadonlySet<string> }
     return item.kind === 'creator_content' ? COPY.creator(item.label, item.reel, number) : COPY.ours(item.reel, number);
   };
   const waiting = !fixedAt && (!contents.length || people.confirmed > people.posted);
-  // The panel's day-30 summary; before day 30 its sentence was written for one campaign, so the numbers below speak for themselves.
+  // The panel's summary once fixed; before that its sentence was written for one campaign, so the numbers below speak for themselves.
   const summary = fixedAt && guests.total > 0 && money.per_guest_cents !== null && contents.length > 0
     ? COPY.summary(count(guests.total), pay(money.per_guest_cents), contents.length, count(report.views_total), kindOf(contents)) : null;
   const sales = money.guest_sales_cents ?? null; // a server without the column yet sends nothing
@@ -187,7 +189,7 @@ function Sheet({ report, fresh }: { report: Report; fresh: ReadonlySet<string> }
         <span className="rpt-kicker">{COPY.page}</span>
       </span>
       <span className="rpt-meta">
-        {!fixedAt && !!report.fix_on && <Chip tone="dash">{COPY.fixOn(md(report.fix_on))}</Chip>}
+        {!fixedAt && !!report.fix_on && <Chip tone="dash">{COPY.fixOn}</Chip>}
         <span className={fixedAt ? 'rpt-sync is-fixed' : 'rpt-sync'}><i aria-hidden="true" />
           {fixedAt ? <>{COPY.fixed}<b>{md(fixedAt)}</b></> : <>{COPY.live}<b>{hm(report.synced_at)}</b></>}</span>
       </span>
