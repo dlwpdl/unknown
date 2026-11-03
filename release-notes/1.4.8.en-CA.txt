@@ -1,0 +1,5 @@
+Posts on Home now open in a new screen. On iPhone, the card you tapped grows into the post, and it works the same way in search, profiles and saved posts.
+Buttons and cards dip when you press them, then spring back. You’ll also see more motion when you switch tabs or open and close pop-ups and menus.
+The profile that opens when you tap a name now slides up from the bottom, and so does the “Manage my post” menu. To close either one, drag its top edge down.
+When you change the category or sort, the Gling logo appears at the top of the Home list while posts load. It used to sit at the very end, where it was easy to miss.
+Tapping a post in “Most-read stories this week” before signing in no longer shows “Couldn’t load the post”. The sign-in screen now comes up right away. Once you sign in, the post you wanted opens.
