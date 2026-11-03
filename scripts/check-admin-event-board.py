@@ -19,7 +19,8 @@ CONTAINER = 'gling-admin-event-board-check-' + uuid.uuid4().hex[:12]
 IMAGE = 'public.ecr.aws/supabase/postgres:17.6.1.165'
 # Production order: board and its undo fix, then the event links and step 2 data, then the step 2 board functions,
 # then the store link use records and the board's use count, then the link's first-entry rule, the live campaign dashboard,
-# the board's check reasons, the campaign report and the removal of the number hard delete.
+# the board's check reasons, the campaign report, the removal of the number hard delete, the report's business fields
+# and the visit-date alert that skips people who have been.
 MIGRATIONS = [ROOT / 'supabase/migrations/20261101230000_admin_event_board.sql',
               ROOT / 'supabase/migrations/20261102010000_admin_event_board_restore.sql',
               MOBILE / '20261102120000_event_links.sql',
@@ -32,7 +33,8 @@ MIGRATIONS = [ROOT / 'supabase/migrations/20261101230000_admin_event_board.sql',
               ROOT / 'supabase/migrations/20261103030000_admin_event_board_check_reason.sql',
               ROOT / 'supabase/migrations/20261103040000_campaign_report.sql',
               ROOT / 'supabase/migrations/20261103050000_campaign_metric_no_delete.sql',
-              ROOT / 'supabase/migrations/20261103060000_campaign_report_business_fields.sql']
+              ROOT / 'supabase/migrations/20261103060000_campaign_report_business_fields.sql',
+              ROOT / 'supabase/migrations/20261103070000_campaign_alert_visited_has_date.sql']
 # The report migration also replaces the link lookup, so the apply and store link tests run on top of it too.
 TESTS = ['admin_event_board.test.sql', 'admin_event_board_phase2.test.sql', 'campaign_live_dashboard.test.sql',
          'admin_event_board_check_reason.test.sql', 'campaign_report.test.sql', 'event_links.test.sql', 'event_board_phase2.test.sql']
