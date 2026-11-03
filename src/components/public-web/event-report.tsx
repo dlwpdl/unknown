@@ -31,22 +31,24 @@ const COPY = {
   fixed: '30일 숫자 확정 · ',
   fixOn: (day: string) => `30일째 확정 · ${day} 예정`,
   since: (day: string) => `${day}부터`,
-  // new: '게시물' instead of the panel's '영상' when not every link is a reel (a photo or carousel post is not a video)
-  summary: (guests: string, perGuest: string, posts: number, views: string, reels: boolean) =>
-    `온 손님 ${guests}명, 손님 1명당 ${perGuest} 들었어요. ${reels ? '영상' : '게시물'} ${posts}개가 30일 동안 ${views}번 조회됐어요.`,
+  // new: what a set of links is, as the Instagram app names them
+  kind: (reels: number, all: number) => reels === all ? '릴스' : reels ? '릴스·게시물' : '게시물',
+  // the panel's '영상' when every link is a reel; new: the kind otherwise (a photo or carousel post is not a video)
+  summary: (guests: string, perGuest: string, posts: number, views: string, kind: string) =>
+    `온 손님 ${guests}명, 손님 1명당 ${perGuest} 들었어요. ${kind === '릴스' ? '영상' : kind} ${posts}개가 30일 동안 ${views}번 조회됐어요.`,
   ok: '확인값', settled: '확정', est: '추정',
   guestsQ: '몇 명 왔어요?', moneyQ: '얼마 벌었어요?', viewsQ: '몇 명이 봤어요?', whoQ: '누가 뭘 했어요?', leftQ: '뭐가 남았어요?',
   guests: '온 손님', people: (count: string) => `${count}명`, guestsHow: '가게 링크로 확인한 손님 수', guestsWait: '가게 링크가 켜지면 저절로 쌓여요',
   none: '아직 없음', storeLink: '가게 링크',
-  sales: '그 손님 매출', salesHow: '할인 쓴 손님들이 낸 금액', salesWait: '포스 숫자가 필요해요', pos: '포스',
+  sales: '그 손님 매출', salesHow: '할인 쓴 손님들이 낸 금액', pos: '포스',
   spend: '가게가 쓴 돈', noRecord: '기록 없음', meals: '식사 지원', discount: '할인액', spendSource: '가게 보고 · 포스',
   perGuest: '손님 1명당 든 돈', notYet: '계산 전', perGuestHow: (spend: string, guests: string) => `${spend} ÷ ${guests}명`,
   perGuestWait: '가게가 쓴 돈 ÷ 온 손님. 두 칸이 차면 저절로 계산돼요', auto: '자동 계산',
-  views: (reels: boolean) => reels ? '영상 조회' : '게시물 조회', viewsFixed: '30일째 값 합',
-  // new: '글' for a /p/ post (the panel only had a creator's reel), a number when one creator or we posted more than once,
-  // and our own posts named '글링 글'/'글링 릴스' instead of the contract's '우리 글 1'
-  creator: (letter: string, reel: boolean, number: number | null) => `크리에이터 ${letter} ${reel ? '릴스' : '글'}${number ? ` ${number}` : ''}`,
-  ours: (reel: boolean, number: number | null) => `글링 ${reel ? '릴스' : '글'}${number ? ` ${number}` : ''}`,
+  views: '조회수 합계', viewsFixed: '30일째 값', // new: 조회수 합계 (a count of views, not of people)
+  // new: '게시물' for a /p/ post as the Instagram app says (the panel only had a creator's reel), a number when one creator or we
+  // posted more than once, and our own posts named '글링 게시물'/'글링 릴스' instead of the contract's '우리 글 1'
+  creator: (letter: string, reel: boolean, number: number | null) => `크리에이터 ${letter} ${reel ? '릴스' : '게시물'}${number ? ` ${number}` : ''}`,
+  ours: (reel: boolean, number: number | null) => `글링 ${reel ? '릴스' : '게시물'}${number ? ` ${number}` : ''}`,
   creatorAccount: '크리에이터 계정', ourAccount: '글링 계정',
   until: (day: string, views: string) => `${day}까지 ${views}`, fresh: '방금 반영',
   reactions: [['saves', '저장'], ['shares', '공유'], ['comments', '댓글'], ['likes', '좋아요']] as const, // the panel's order; new: 좋아요
@@ -54,13 +56,13 @@ const COPY = {
   business: '비즈니스가 한 일', gling: '글링이 한 일', kinds: (count: number) => `${count}가지`,
   setDiscount: '할인 조건 정하기', checkGuests: '계산대에서 손님 확인', hostMeals: '당첨 팀 식사 대접',
   reviewed: (count: string) => `지원 ${count}명 검토`, tracked: '크리에이터 게시 확인 · 조회 기록',
-  ourPosts: (count: number) => `글링 글 ${count}개 올리기`, ourHandle: '@gling.app', // new: the panel's item was '당첨 발표 글 올리기'
+  ourPosts: (kind: string, count: number) => `글링 ${kind} ${count}개 올리기`, ourHandle: '@gling.app', // new: the panel's item was '당첨 발표 글 올리기'
   growth: '가게 팔로워·구글 리뷰', noBase: '비교 못 함', noBaseHow: '시작 전에 안 적어서 기준이 없어요.', check: '확인 전',
   growthHow: '시작 전 값과 30일째 값의 차이', growthLive: '시작 전 값과 지금 값의 차이', // new: growthLive, before day 30
   before: (value: string) => `시작 전 값 ${value}`,
   // new: names of what a business reports (private.partnership_metrics store rows)
   store: { google_searches: '구글 검색', google_directions: '구글 길찾기', google_calls: '구글 전화', ig_profile_visits: '인스타 프로필 방문',
-    ig_follows: '인스타 팔로우', customers: '손님 수', sales_cents: '매출' } as Record<string, string>,
+    ig_follows: '인스타 새 팔로우', customers: '전체 손님 수', sales_cents: '전체 매출' } as Record<string, string>,
   legend: [['ok', '확인값', '실제로 센 숫자'], ['ok', '확정', '30일째 숫자, 더 바뀌지 않아요'], ['est', '추정', '다른 이유도 섞일 수 있는 숫자']] as const,
 };
 
@@ -97,6 +99,7 @@ const hm = (value: string) => { const at = new Date(value); return `${String(at.
 const span = (row: StoreRow) => row.period_start === row.period_end ? md(row.period_start) : `${md(row.period_start)}–${md(row.period_end)}`;
 const later = (a: StoreRow, b: StoreRow) => a.period_end > b.period_end || (a.period_end === b.period_end && a.period_start >= b.period_start);
 const isReel = (item: Content) => /\/reels?\//.test(item.url);
+const kindOf = (items: Content[]) => COPY.kind(items.filter(isReel).length, items.length);
 const signed = (value: number | null) => value === null ? '—' : `${value < 0 ? '−' : '+'}${count(Math.abs(value))}`;
 
 function isReport(value: unknown): value is Report {
@@ -146,9 +149,8 @@ function Sheet({ report, fresh }: { report: Report; fresh: ReadonlySet<string> }
   };
   const waiting = !fixedAt && (!contents.length || people.confirmed > people.posted);
   // The panel's day-30 summary; before day 30 its sentence was written for one campaign, so the numbers below speak for themselves.
-  const reels = contents.every(isReel); // '영상' only when every link is a reel
   const summary = fixedAt && guests.total > 0 && money.per_guest_cents !== null && contents.length > 0
-    ? COPY.summary(count(guests.total), pay(money.per_guest_cents), contents.length, count(report.views_total), reels) : null;
+    ? COPY.summary(count(guests.total), pay(money.per_guest_cents), contents.length, count(report.views_total), kindOf(contents)) : null;
   const sales = money.guest_sales_cents ?? null; // a server without the column yet sends nothing
   // A no-break space keeps each amount with its name when the three money cards share a row.
   const spendHow = [money.hosted_meals_cents !== null && `${COPY.meals}\u00A0${pay(money.hosted_meals_cents)}`,
@@ -162,7 +164,7 @@ function Sheet({ report, fresh }: { report: Report; fresh: ReadonlySet<string> }
   ].filter((item): item is [string, string] => !!item);
   const gling = [
     people.applied > 0 && [COPY.reviewed(count(people.applied)), ''],
-    ours.length > 0 && [COPY.ourPosts(ours.length), COPY.ourHandle],
+    ours.length > 0 && [COPY.ourPosts(kindOf(ours), ours.length), COPY.ourHandle],
     (contents.length > 0 || people.confirmed > 0) && [COPY.tracked, people.confirmed > 0 ? COPY.posted(people.confirmed, people.posted) : ''],
   ].filter((item): item is [string, string] => !!item);
 
@@ -202,7 +204,7 @@ function Sheet({ report, fresh }: { report: Report; fresh: ReadonlySet<string> }
     {/* With no money rows the contract says confirmed: false; the panel kept 확인값 over its empty cards */}
     <Question title={COPY.moneyQ} sure={money.confirmed || (sales === null && money.store_spend_cents === null)}>
       <div className="rpt-kpis">
-        <Kpi title={COPY.sales} value={sales === null ? null : pay(sales)} blank={COPY.none} how={sales === null ? COPY.salesWait : COPY.salesHow} source={COPY.pos} />
+        <Kpi title={COPY.sales} value={sales === null ? null : pay(sales)} blank={COPY.none} how={COPY.salesHow} source={COPY.pos} />
         <Kpi title={COPY.spend} value={money.store_spend_cents === null ? null : pay(money.store_spend_cents)} blank={COPY.noRecord}
           how={spendHow || `${COPY.meals} + ${COPY.discount}`} source={COPY.spendSource} />
         <Kpi title={COPY.perGuest} value={money.per_guest_cents === null ? null : pay(money.per_guest_cents)} blank={COPY.notYet}
@@ -212,7 +214,7 @@ function Sheet({ report, fresh }: { report: Report; fresh: ReadonlySet<string> }
     </Question>
 
     <Question title={COPY.viewsQ} sure={!contents.length || contents.some(item => item.confirmed)}>
-      {contents.length > 0 && <div className="rpt-kpis"><Kpi title={COPY.views(reels)} value={count(report.views_total)} how={fixedAt ? COPY.viewsFixed : undefined} /></div>}
+      {contents.length > 0 && <div className="rpt-kpis"><Kpi title={COPY.views} value={count(report.views_total)} how={fixedAt ? COPY.viewsFixed : undefined} /></div>}
       <ul className="rpt-vlist">
         {contents.map(item => {
           const reactions = COPY.reactions.flatMap(([key, label]) => { const value = item[key]; return value === null ? [] : [`${label} ${count(value)}`]; }).join(' · ');
