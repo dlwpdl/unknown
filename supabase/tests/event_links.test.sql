@@ -209,9 +209,22 @@ select is((select jsonb_build_object('slots',preferred_slots,'party',party_size,
   'a repeat entry leaves what the person first sent');
 select is((select count(*) from private.partnership_events where action='participation_applied' and details->>'campaign_id'='e1530000-0000-0000-0000-000000000001'),1::bigint,
   'the first entry is in the audit trail; a repeat that changes nothing is not');
+-- It may be the person fixing an allergy, or someone else: the board checks by DM (security re-review 2026-11-03).
+select is((select needs_check from private.partnership_participations where campaign_id='e1530000-0000-0000-0000-000000000001'),true,
+  'a repeat with different answers puts the person on the board''s check-again list');
+select is((select details-array['kind','campaign_id','creator_id'] from private.partnership_events
+    where action='participation_apply_conflict' and details->>'campaign_id'='e1530000-0000-0000-0000-000000000001'),
+  jsonb_build_object('source','apply_link','language','en','slots',jsonb_build_array(pg_temp.pick(2,'18:00')),'party',1,'has_allergies',false,'allergies',null,'reel_days',3),
+  'the different answers are kept for the board, not applied');
+select is(public.event_apply('open-event','gling.tester',jsonb_build_array(pg_temp.pick(1,'19:00')),2,null,4,'en',pg_temp.ip(4)),'{"ok":true,"already":true}'::jsonb,
+  'a third answer gets the same reply');
+select is((select count(*) from private.partnership_events where action='participation_apply_conflict' and details->>'campaign_id'='e1530000-0000-0000-0000-000000000001'),1::bigint,
+  'until the board clears the flag, more answers add nothing');
 insert into private.partnership_creators(id,display_name,city_id,profile_url) values
  ('e1510000-0000-0000-0000-000000000001','Known Creator','event-link-test','https://instagram.com/Known_One');
 select is(pg_temp.apply('open-event','known_one',5)->>'ok','true','a creator already on file can apply');
+select is(pg_temp.apply('open-event','known_one',5)->>'ok','true','and sends the same answers again');
+select is((select needs_check from private.partnership_participations where creator_id='e1510000-0000-0000-0000-000000000001'),false,'the same answers again flag nothing');
 select is((select count(*) from private.partnership_creators where city_id='event-link-test'),2::bigint,'existing creator is reused by profile key, not duplicated');
 select is((select display_name from private.partnership_creators where id='e1510000-0000-0000-0000-000000000001'),'Known Creator','applying does not rename an existing creator');
 -- Someone added on the board before sending the form gets their answers filled in once; after that they stay.
@@ -223,10 +236,10 @@ select is(public.event_apply('open-event','board.added',jsonb_build_array(pg_tem
   'a board-added person sends the form');
 select is(public.event_apply('open-event','board.added',jsonb_build_array(pg_temp.pick(1,'18:00')),1,null,2,'en',pg_temp.ip(5)),'{"ok":true,"already":true}'::jsonb,
   'and sends it again');
-select is((select jsonb_build_object('via',applied_via,'applied',applied_at is not null,'slots',preferred_slots,'party',party_size,'allergies',allergies,'reel',reel_within_days,'language',language)
-  from private.partnership_participations where id='e1540000-0000-0000-0000-000000000002'),
-  jsonb_build_object('via','apply_link','applied',true,'slots',jsonb_build_array(pg_temp.pick(2,'19:00')),'party',4,'allergies','Shellfish','reel',6,'language','ko'),
-  'their first form fills the board row and the second changes nothing');
+select is((select jsonb_build_object('via',applied_via,'applied',applied_at is not null,'slots',preferred_slots,'party',party_size,'allergies',allergies,'reel',reel_within_days,
+    'language',language,'check',needs_check) from private.partnership_participations where id='e1540000-0000-0000-0000-000000000002'),
+  jsonb_build_object('via','apply_link','applied',true,'slots',jsonb_build_array(pg_temp.pick(2,'19:00')),'party',4,'allergies','Shellfish','reel',6,'language','ko','check',true),
+  'their first form fills the board row; a different second one changes nothing and asks the board to check');
 
 -- Ten tries an hour per IP, bad tries included.
 select is(pg_temp.apply('open-event','spam'||n,6)->>'ok','true','try '||n||' within the hourly cap') from generate_series(1,9) n;
@@ -287,6 +300,9 @@ select is((select party_size from private.partnership_participations where creat
   case when pg_temp.board() then null else 1 end,'a board-confirmed person stays as they are');
 select is((select count(*) from private.partnership_events where action='participation_applied'
   and details->>'creator_id' in ('e1510000-0000-0000-0000-000000000011','e1510000-0000-0000-0000-000000000015')),0::bigint,'locked re-entries leave no entry record');
+select is((select bool_and(needs_check) from private.partnership_participations
+  where creator_id in ('e1510000-0000-0000-0000-000000000011','e1510000-0000-0000-0000-000000000015')),true,
+  'a different answer for a picked person goes to the board to check, never onto the row');
 insert into private.partnership_benefits(id,merchant_id,campaign_id,title,audience,status,discount_percent,terms,terms_confirmed,expires_on)
 select v.id::uuid,'e1520000-0000-0000-0000-000000000001','e1530000-0000-0000-0000-000000000001',v.title,'creators',v.status,20,'Dine-in only',true,d+10 from today,(values
  ('e1550000-0000-0000-0000-000000000001','Event discount','active'),('e1550000-0000-0000-0000-000000000002','Draft perk','draft')) v(id,title,status);

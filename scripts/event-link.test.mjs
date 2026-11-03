@@ -75,6 +75,16 @@ test('the hourly IP cap keys on the address Cloudflare saw, never on a forwarded
   assert.equal(calls[2].args.p_ip_sha256, null, 'no Cloudflare address: the database applies only the per-event cap');
 });
 
+test('an IPv6 caller is counted by its /64, so changing the rest of the address does not reset the cap', async () => {
+  const { calls, send } = setup({ event_apply: { ok: true, already: false } });
+  for (const ip of ['2001:db8:1:2:3:4:5:6', '2001:DB8:1:2:ffff::1', '2001:0db8:0001:0002::', '2001:db8:1:3::1', '::ffff:203.0.113.9', '203.0.113.9']) {
+    await send(entry, { ip });
+  }
+  const network = hex('salt:2001:db8:1:2::/64');
+  assert.deepEqual(calls.map(call => call.args.p_ip_sha256),
+    [network, network, network, hex('salt:2001:db8:1:3::/64'), hex('salt:203.0.113.9'), hex('salt:203.0.113.9')]);
+});
+
 test('entry problems map to clear statuses and bad input never reaches the database', async () => {
   for (const [error, status] of [['not_found', 404], ['invalid', 400], ['rate_limited', 429], ['busy', 503], ['surprise', 503]]) {
     const { send } = setup({ event_apply: { ok: false, error } });

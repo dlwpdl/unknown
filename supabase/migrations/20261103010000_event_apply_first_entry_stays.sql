@@ -4,6 +4,9 @@
 -- - The first form for a handle is what the business sees. A later form for that handle changes nothing and gets the same
 --   answer, so the page never says whether someone applied; to change anything they DM us. Someone added on the event board
 --   who has not sent the form yet still has their answers filled in, once.
+-- - A later form with different answers (re-review 2026-11-03: it may be the person correcting an allergy, or someone else)
+--   puts the row in the board's "check again" (needs_check) and keeps the new answers in partnership_events as
+--   participation_apply_conflict, once until the board clears the flag. The board then confirms by DM.
 -- - p_ip_sha256 is null when no client IP reached the function; then only the per-event cap applies.
 -- - Each event takes at most 30 link entries an hour whatever the IPs, which bounds what a flood can write. Past that the answer
 --   is 'busy' (the page says it could not send).
@@ -11,7 +14,7 @@ create or replace function public.event_apply(p_slug text,p_handle text,p_slots 
   p_language text,p_ip_sha256 text) returns jsonb
 language plpgsql security definer set search_path='' as $$
 declare cid uuid; handle text; city text; today date; cfg private.partnership_apply_settings; allergy text:=btrim(p_allergies);
-  url text; crid uuid; pid uuid; again boolean:=false;
+  url text; crid uuid; pid uuid; flagged uuid; again boolean:=false;
 begin
   if p_ip_sha256 !~ '^[0-9a-f]{64}$' then raise exception 'INVALID_EVENT_LINK'; end if;
   if p_ip_sha256 is not null then
@@ -58,6 +61,18 @@ begin
       where p.campaign_id=cid and p.creator_id=crid and p.applied_at is null and p.stage='applied'
         and coalesce(to_jsonb(p)->>'outreach_stage','candidate') in ('candidate','proposed','replied') and not private.event_winner(p)
       returning p.id into pid;
+    if pid is null then
+      update private.partnership_participations p set needs_check=true,updated_at=greatest(clock_timestamp(),p.updated_at+interval '1 microsecond')
+        where p.campaign_id=cid and p.creator_id=crid and not p.needs_check
+          and (p.preferred_slots,p.party_size,p.has_allergies,p.allergies,p.reel_within_days)
+            is distinct from (p_slots,p_party,p_allergies is not null,allergy,p_reel_days)
+        returning p.id into flagged;
+      if flagged is not null then
+        insert into private.partnership_events(actor_id,resource_id,action,details) values(null,flagged,'participation_apply_conflict',
+          jsonb_build_object('kind','participation','campaign_id',cid,'creator_id',crid,'source','apply_link','language',p_language,
+            'slots',p_slots,'party',p_party,'has_allergies',p_allergies is not null,'allergies',allergy,'reel_days',p_reel_days));
+      end if;
+    end if;
   end if;
   if pid is not null then
     insert into private.partnership_events(actor_id,resource_id,action,details) values(null,pid,'participation_applied',

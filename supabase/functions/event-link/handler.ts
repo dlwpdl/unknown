@@ -16,6 +16,17 @@ const APPLY_KEYS = ['apply', 'handle', 'slots', 'party', 'allergies', 'reel_days
 type Rpc = (name: string, args: Record<string, unknown>) => Promise<unknown>;
 type Options = { rpc: Rpc; ipSalt: string; origins?: string[] };
 
+/** The hourly cap counts an IPv4 address, or an IPv6 address cut to its /64: one home or phone gets a whole /64 and can change
+ * the rest of the address at will (security re-review 2026-11-03). */
+function ipCapKey(ip: string) {
+  if (!ip.includes(':')) return ip;
+  if (ip.includes('.')) return ip.slice(ip.lastIndexOf(':') + 1); // ::ffff:203.0.113.9 is that IPv4 address
+  const [head, tail] = ip.split('::');
+  const left = head ? head.split(':') : [], right = tail ? tail.split(':') : [];
+  const groups = tail === undefined ? left : [...left, ...Array(Math.max(0, 8 - left.length - right.length)).fill('0'), ...right];
+  return `${groups.slice(0, 4).map(group => parseInt(group, 16).toString(16)).join(':')}::/64`;
+}
+
 export async function sha256(value: string) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
@@ -72,7 +83,7 @@ export async function handleEventLink(request: Request, { rpc, ipSalt, origins =
       if (!ip) console.warn('event-link: no CF-Connecting-IP, only the per-event hourly cap applies');
       const result = await rpc('event_apply', {
         p_slug: apply, p_handle: handle, p_slots: slots, p_party: party, p_allergies: allergies, p_reel_days: reel_days, p_language: language,
-        p_ip_sha256: ip ? await sha256(`${ipSalt}:${ip}`) : null,
+        p_ip_sha256: ip ? await sha256(`${ipSalt}:${ipCapKey(ip)}`) : null,
       }) as { ok?: boolean; error?: string } | null;
       if (result?.ok === true) return reply(200, { ok: true });
       const status = APPLY_STATUS[result?.error ?? ''];
