@@ -1,5 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { MerchantAccountEntry } from '@/components/merchant-account-connections';
+import { LinkedAccountEntry } from '@/components/linked-account-entry';
 import { ChatIdentitySwitcher } from '@/components/chat-identity-switcher';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
@@ -224,6 +225,7 @@ export default function ProfileScreen() {
             <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
           </Pressable>
           <MerchantAccountEntry />
+          <LinkedAccountEntry />
         </View>
         <View accessibilityRole="tablist" onLayout={event => setSegmentWidth(event.nativeEvent.layout.width)} style={[styles.segments, { borderBottomColor: theme.line }]}>
           {segmentWidth > 0 && <Animated.View pointerEvents="none" style={[styles.segmentIndicator, Depth.control, { width: segmentWidth / 3, backgroundColor: theme.backgroundElement, borderBottomColor: theme.accent, transform: [{ translateX: segmentPosition.interpolate({ inputRange: [0, 2], outputRange: [0, segmentWidth * 2 / 3] }) }] }]} />}

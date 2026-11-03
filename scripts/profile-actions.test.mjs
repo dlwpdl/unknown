@@ -20,6 +20,7 @@ function profile() {
     'react-native-reanimated': { __esModule: true, default: { View: 'View' }, useReducedMotion: () => true, FadeIn: { duration() {} }, FadeInDown: { duration() {} } },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/components/merchant-account-connections': { MerchantAccountEntry: 'MerchantAccountEntry' },
+    '@/components/linked-account-entry': { LinkedAccountEntry: 'LinkedAccountEntry' },
     '@/components/chat-identity-switcher': { ChatIdentitySwitcher: 'ChatIdentitySwitcher' },
     '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/login-panel': { LoginPanel: 'LoginPanel' }, '@/components/post-zoom-link': { PostZoomLink: 'PostZoomLink' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },

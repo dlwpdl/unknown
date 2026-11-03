@@ -20,6 +20,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { isAdminRole } from '@/lib/admin';
 import { registerSecurityDevice } from '@/lib/account-security-device';
 import { claimRememberedInvite } from '@/lib/invites';
+import { clearLinkedSessions } from '@/lib/linked-accounts';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { canUseDevPasswordLogin, getKakaoAuthSessionUrl, getOAuthCallbackPath, getOAuthCode } from '@/lib/kakao-auth';
 import { CONTACT_EMAIL } from '@/lib/contact';
@@ -169,7 +170,8 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       if (!active) return;
       const nextLogin = nextSession?.user.last_sign_in_at ?? null;
       if (event === 'SIGNED_IN' && nextLogin && nextLogin !== observedLogin.current) setLoginKey(nextLogin);
-      if (!nextSession) { setLoginKey(null); setProfileCheckedUserId(null); }
+      // Any sign-out (button, expiry, inactivity) drops kept linked-account logins so the next person cannot use them.
+      if (!nextSession) { setLoginKey(null); setProfileCheckedUserId(null); void clearLinkedSessions().catch(() => {}); }
       observedLogin.current = nextLogin;
       setBusinessImageSession(nextSession?.user.id ?? null, nextSession?.access_token ?? null);
       setSession(nextSession);

@@ -31,14 +31,17 @@ const authAwareFetch: typeof fetch = async (input, init) => {
   return response;
 };
 
+// Also keeps the linked-account sessions (src/lib/linked-accounts.ts) next to the app session.
+export const authStorage = Platform.OS === 'web' ? {
+  getItem: (key: string) => typeof window === 'undefined' ? null : window.localStorage.getItem(key),
+  setItem: (key: string, value: string) => { if (typeof window !== 'undefined') window.localStorage.setItem(key, value); },
+  removeItem: (key: string) => { if (typeof window !== 'undefined') window.localStorage.removeItem(key); },
+} : AsyncStorage;
+
 export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
   global: { fetch: authAwareFetch },
   auth: {
-    storage: Platform.OS === 'web' ? {
-      getItem: (key) => typeof window === 'undefined' ? null : window.localStorage.getItem(key),
-      setItem: (key, value) => { if (typeof window !== 'undefined') window.localStorage.setItem(key, value); },
-      removeItem: (key) => { if (typeof window !== 'undefined') window.localStorage.removeItem(key); },
-    } : AsyncStorage,
+    storage: authStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
