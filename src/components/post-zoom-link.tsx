@@ -24,6 +24,7 @@ const subscribeScreenReader = (listener: () => void) => { screenReaderListeners.
  * Opens /post/[id] from the pressed card: iOS 18+ grows the post out of the card, Android pushes normally (owner 2026-11-02).
  * The card's own onPress runs first and may call event.preventDefault() to stay. `post` lets the detail draw on its first frame.
  * The child must take an object style: the router's Slot drops function styles and rejects arrays.
+ * Its root must stay one native view (a Pressable, or a View with collapsable={false}): the zoom source mounts only its first native child.
  */
 export function PostZoomLink({ id, post, children }: { id: string; post?: Post; children: Pressing }) {
   const router = useRouter();

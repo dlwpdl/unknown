@@ -172,7 +172,10 @@ export function PostCard({
   };
 
   return (
+    // collapsable={false}: a flat card's root is layout-only, and Fabric would flatten it away inside PostZoomLink,
+    // whose zoom source keeps only its first native child (the author row) and drops the rest of the card.
     <View
+      collapsable={false}
       style={flat ? undefined : [
         styles.card,
         photo ? styles.photoCard : styles.textCard,
