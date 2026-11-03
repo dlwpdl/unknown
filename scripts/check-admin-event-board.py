@@ -18,15 +18,20 @@ SOURCE = 'supabase_db_gling'
 CONTAINER = 'gling-admin-event-board-check-' + uuid.uuid4().hex[:12]
 IMAGE = 'public.ecr.aws/supabase/postgres:17.6.1.165'
 # Production order: board and its undo fix, then the event links and step 2 data, then the step 2 board functions,
-# then the store link use records and the board's use count.
+# then the store link use records and the board's use count, then the link's first-entry rule, the live campaign dashboard
+# and the board's check reasons.
 MIGRATIONS = [ROOT / 'supabase/migrations/20261101230000_admin_event_board.sql',
               ROOT / 'supabase/migrations/20261102010000_admin_event_board_restore.sql',
               MOBILE / '20261102120000_event_links.sql',
               MOBILE / '20261102130000_event_board_phase2.sql',
               ROOT / 'supabase/migrations/20261102135000_admin_event_board_phase2.sql',
               MOBILE / '20261102150000_event_store_uses.sql',
-              ROOT / 'supabase/migrations/20261102151000_admin_event_board_store_uses.sql']
-TESTS = ['admin_event_board.test.sql', 'admin_event_board_phase2.test.sql']
+              ROOT / 'supabase/migrations/20261102151000_admin_event_board_store_uses.sql',
+              MOBILE / '20261103010000_event_apply_first_entry_stays.sql',
+              ROOT / 'supabase/migrations/20261103020000_campaign_live_dashboard.sql',
+              ROOT / 'supabase/migrations/20261103030000_admin_event_board_check_reason.sql']
+TESTS = ['admin_event_board.test.sql', 'admin_event_board_phase2.test.sql', 'campaign_live_dashboard.test.sql',
+         'admin_event_board_check_reason.test.sql']
 
 
 def command(args, source=None, check=True):
