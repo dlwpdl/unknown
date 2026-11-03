@@ -39,6 +39,7 @@ export function publicWebFetch(baseUrl: string, key: string, transport: typeof f
       || url.pathname === '/storage/v1/object/sign/post-images'
       || url.pathname === '/storage/v1/object/sign/merchant-profile-images'
       || url.pathname === '/functions/v1/ticketmaster-events'
+      || url.pathname === '/functions/v1/event-link'
     );
     if (!allowed) throw new Error('PUBLIC_WEB_READ_ONLY');
     const headers = new Headers(request.headers);

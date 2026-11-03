@@ -111,6 +111,19 @@ test('shared preview permits the exact anonymous getter while retaining the publ
   await assert.rejects(request('https://example.supabase.co/rest/v1/rpc/get_shared_link_preview',{method:'GET'}),/PUBLIC_WEB_READ_ONLY/);
 });
 
+test('event pages may POST only to the event-link function, with anonymous credentials', async () => {
+  const calls = [];
+  const request = publicWebFetch('https://example.supabase.co', 'public-key', async (url, init) => { calls.push({ url, init }); return new Response('{}'); });
+  await request('https://example.supabase.co/functions/v1/event-link', { method: 'POST', credentials: 'include', headers: { Authorization: 'Bearer private-user' }, body: '{}' });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].init.credentials, 'omit');
+  assert.equal(new Headers(calls[0].init.headers).get('Authorization'), 'Bearer public-key');
+  for (const path of ['/functions/v1/event-link/extra', '/functions/v1/event-links', '/rest/v1/rpc/event_apply', '/rest/v1/rpc/event_store_view']) {
+    await assert.rejects(request(`https://example.supabase.co${path}`, { method: 'POST', body: '{}' }), /PUBLIC_WEB_READ_ONLY/);
+  }
+  await assert.rejects(request('https://example.supabase.co/functions/v1/event-link', { method: 'GET' }), /PUBLIC_WEB_READ_ONLY/);
+  assert.equal(calls.length, 1);
+});
 
 // renderToStaticMarkup uses the same getServerSnapshot contract as initial hydration.
 // The mounted pass supplies browser snapshots; actual browser hydration is verified separately.
