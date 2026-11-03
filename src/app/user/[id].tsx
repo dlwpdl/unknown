@@ -4,13 +4,14 @@ import { Pressable } from '@/components/analytics-controls';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { DeviceEventEmitter, FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PostCard } from '@/components/post-card';
 import { MannerSummary } from '@/components/manner-summary';
 import { TrustBadge } from '@/components/trust-badge';
 import { PostDetail } from '@/components/post-detail';
+import { PostZoomLink } from '@/components/post-zoom-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SavedEntryButton, useSavedEntry } from '@/components/saved-entry';
@@ -22,6 +23,7 @@ import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
 import { useTranslationVisibleIds } from '@/hooks/use-content-translation';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { appendUniquePosts } from '@/lib/feed-data';
+import { applyPostChange, POST_CHANGED_EVENT, type PostChange } from '@/lib/post-open';
 import { loadPublicUserActivity, loadPublicUserProfile, type PublicUserProfile } from '@/lib/user-profile';
 import { supabase } from '@/lib/supabase';
 import { CITIES } from '@/lib/mock';
@@ -74,8 +76,11 @@ export default function AuthorPostsRoute() {
     finally { pending.current = false; setMore(false); }
   }
 
-  const updateViewCount = useCallback((postId: string, views: number) => {
-    setState((prev) => prev ? { ...prev, posts: prev.posts.map((post) => post.id === postId ? { ...post, views } : post) } : prev);
+  // 글 화면에서 고치거나 지운 글, 바뀐 댓글·조회 수를 이 사람의 글 목록에 바로 반영한다.
+  useEffect(() => {
+    const listener = DeviceEventEmitter.addListener(POST_CHANGED_EVENT, (change: PostChange) =>
+      setState(prev => prev ? { ...prev, posts: applyPostChange(prev.posts, change) } : prev));
+    return () => listener.remove();
   }, []);
 
   const posts = (current?.posts ?? []).filter(post => !hidden('post', post.id, post.author.id));
@@ -136,9 +141,9 @@ export default function AuthorPostsRoute() {
         </View>
             </View> : undefined}
 
-            renderItem={({ item }) => (
-              <PostCard post={item} translationVisible={visiblePostIds.has(item.id) && !detail} onPress={() => setDetail({ key: requestKey, post: item })} />
-            )}
+            // Signed in, the card grows the post out of itself (owner 2026-11-02); guests keep the in-place login gate.
+            renderItem={({ item }) => isAuthed ? <PostZoomLink id={item.id} post={item}><PostCard post={item} translationVisible={visiblePostIds.has(item.id)} /></PostZoomLink>
+              : <PostCard post={item} translationVisible={visiblePostIds.has(item.id) && !detail} onPress={() => setDetail({ key: requestKey, post: item })} />}
             ListEmptyComponent={(
               <View style={styles.message}>
                 <ThemedText type="subtitle">{failed === requestKey ? t.authorPosts.errorTitle : t.authorPosts.emptyTitle}</ThemedText>
@@ -155,22 +160,8 @@ export default function AuthorPostsRoute() {
         )}
       </SafeAreaView>
 
-      {shownDetail && (
-        <PostDetail
-          key={`${viewerScope}:${shownDetail.id}`}
-          post={shownDetail}
-          onViewCountChange={updateViewCount}
-          onClose={() => setDetail(null)}
-          onPostRemoved={(postId) => setState((prev) => prev ? { ...prev, posts: prev.posts.filter((post) => post.id !== postId) } : prev)}
-          onPostChanged={(saved) => {
-            setState(prev => prev ? { ...prev, posts: prev.posts.map(post => post.id === saved.id ? saved : post) } : prev);
-            setDetail({ key: requestKey, post: saved });
-          }}
-          onCommentCountChange={(comments) => setState((prev) => prev
-            ? { ...prev, posts: prev.posts.map((post) => post.id === shownDetail.id ? { ...post, comments } : post) }
-            : prev)}
-        />
-      )}
+      {/* Guests only: signing in changes the viewer scope and closes this gate. */}
+      {shownDetail && <PostDetail key={`${viewerScope}:${shownDetail.id}`} post={shownDetail} onClose={() => setDetail(null)} />}
     </ThemedView>
   );
 }

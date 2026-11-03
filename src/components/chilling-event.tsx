@@ -2,6 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import { memo, useState } from 'react';
 import { Image } from 'expo-image';
+import { ControlMotion } from '@/constants/design-system';
 import { StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ReportSheet } from '@/components/report-sheet';
@@ -80,7 +81,7 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
   const { labels, prefix } = useMeetupLabelPrefix(post);
   return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <Pressable analyticsId="components_chilling-event.pressable.2" onPress={() => { play('selection'); onOpen(); }} accessibilityRole="button" accessibilityLabel={`${prefix}${post.title}, ${exchange ? `${languagePairLabel(exchange)}, ` : ''}${schedule}${room?.fee ? `, ${tr('회비 {0}', meetupFeeAmount(room.fee.amount))}` : ''}${room?.recruitingClosed ? `, ${tr('모집 마감')}` : ''}`} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
-      {source && source.uri !== failed ? <Image source={source} style={styles.photo} contentFit="cover" recyclingKey={post.id} onError={() => setFailed(source.uri)} /> :
+      {source && source.uri !== failed ? <Image source={source} transition={ControlMotion.settleMs} style={styles.photo} contentFit="cover" recyclingKey={post.id} onError={() => setFailed(source.uri)} /> :
         // Decorative only: the title right below already names the meetup.
         <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.poster, { backgroundColor: theme.card }]}>
           <View style={[styles.sun, { backgroundColor: theme.accent }]} />

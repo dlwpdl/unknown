@@ -32,12 +32,13 @@ function mount({ light = false, reduced = false, places = [], business = {}, ori
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'SymbolView' }, 'expo-location': { Accuracy: { Balanced: 3 }, requestForegroundPermissionsAsync: async () => ({ granted: true }), getCurrentPositionAsync: async () => ({ coords: { ...origin, accuracy: 10 }, timestamp: Date.now(), mocked: false }) },
     'expo-web-browser': {}, '@/lib/merchant-source': {}, '@/lib/public-seo': {},
     '../../supabase/functions/_shared/ticketmaster': {},
-    'react-native-reanimated': { useReducedMotion: () => reduced },
+    'react-native-reanimated': { __esModule: true, default: { View: 'ReanimatedView' }, useReducedMotion: () => reduced, LayoutAnimationConfig: 'LayoutAnimationConfig',
+      FadeIn: { duration: ms => ({ fadeIn: ms }) }, SlideInDown: { duration: ms => ({ slideIn: ms }) }, SlideOutDown: { duration: ms => ({ slideOut: ms }) } },
     'expo-router': { useFocusEffect: fn => focusEffects.push(fn), useIsFocused: () => focused, useLocalSearchParams: () => ({}), useRouter: () => ({ push: route => routes.push(route) }) },
     '@/lib/mock': { CITIES: [] },
     '@/constants/theme': { Colors: { dark: { ...theme, card: '#171722' }, light: theme } }, '@/constants/design-system': designSystem, '@/hooks/use-language': { useLanguage: () => ({ tr }) },
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' },
-    '@/components/selection-chip': { SelectionChip: 'Pressable' },
+    '@/components/selection-chip': { SelectionChip: 'Pressable' }, '@/components/disclosure': { animateLayout() {} },
     '@/lib/delivery-partners': { DELIVERY_PARTNERS: [], deliveryPartnerPlace: () => undefined },
     '@/lib/webshops': { bindBusinessPlaces: (...args) => bindBusinessPlaces(...args).map(item => ({ ...item, ...business[item.sourceId] })), loadCityBusinessLinks: loadLinks, loadCityBusinessMapPhotos: loadPhotos, loadCityWebshops: loadWebshops },
     '@/components/discovery-map': { DiscoveryMap: 'DiscoveryMap' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
@@ -178,12 +179,12 @@ test('list and map navigation remain available after compacting the header', () 
   assert.ok(nodes(tree).some(node => node.type === 'DiscoveryMap'));
 });
 
-test('the map requests the shared capsule loader in both themes', () => {
+test('the map uses the same pulsing logo loader as the other tabs in both themes', () => {
   for (const light of [false, true]) {
     const tree = mount({ light }).render();
-    const capsule = nodes(tree).find(node => node.type === 'GlingLoader' && node.props?.accessibilityLabel === '지도 결과 불러오는 중');
-    assert.ok(capsule);
-    assert.equal(capsule.props.variant, 'capsule');
+    const loader = nodes(tree).find(node => node.type === 'GlingLoader' && node.props?.accessibilityLabel === '지도 결과 불러오는 중');
+    assert.ok(loader);
+    assert.equal(loader.props.variant, undefined);
   }
 });
 
@@ -204,6 +205,25 @@ test('collapsed place cards leave no panel or map inset and lower the list butto
   const list = nodes(tree).find(node => node.props?.accessibilityLabel === '리스트 보기' && Array.isArray(node.props.style));
   assert.equal(list.props.style.at(-1).bottom, 56);
   assert.ok(map.props.selectedId, 'collapsing keeps the chosen pin');
+});
+
+test('the place card rises and drops along the same edge, the view switch fades in, and Reduce Motion drops both', () => {
+  const place = { id: 'osm:node:100', cityId: 'vancouver', name: 'Fixture place', category: 'cafe', address: 'Fixture address', latitude: 49.29, longitude: -123.13, sourceUrl: 'https://www.openstreetmap.org/node/100' };
+  const { ControlMotion } = designSystem;
+  for (const reduced of [false, true]) {
+    const view = mount({ places: [place], reduced });
+    let tree = view.render();
+    const map = nodes(tree).find(node => node.type === 'DiscoveryMap');
+    map.props.onSelect(map.props.markers[0].id); tree = view.render();
+    const card = nodes(tree).find(node => typeof node.props?.onLayout === 'function' && Array.isArray(node.props.style));
+    assert.equal(card.type, 'ReanimatedView');
+    assert.deepEqual(card.props.entering, reduced ? undefined : { slideIn: ControlMotion.expandMs });
+    assert.deepEqual(card.props.exiting, reduced ? undefined : { slideOut: ControlMotion.sheetCloseMs });
+    control(tree, '리스트 보기').props.onPress(); tree = view.render();
+    const pane = nodes(tree).find(node => node.type === 'ReanimatedView' && node.key === 'list');
+    assert.ok(pane, 'the list replaces the map as a new pane');
+    assert.deepEqual(pane.props.entering, reduced ? undefined : { fadeIn: ControlMotion.settleMs });
+  }
 });
 
 test('one accessible arrow repeatedly toggles the same selected place with feedback', () => {

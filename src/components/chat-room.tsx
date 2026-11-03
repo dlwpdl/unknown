@@ -11,7 +11,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { SymbolView } from 'expo-symbols';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
-import { AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, ScrollView, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, useWindowDimensions, type ScrollViewInstance, type ViewInstance, type KeyDownEvent } from 'react-native';
+import { Animated, AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, ScrollView, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, useWindowDimensions, type ScrollViewInstance, type ViewInstance, type KeyDownEvent } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -20,6 +20,7 @@ import MapScreen from '@/app/map';
 import { SharedLinkCard } from '@/components/shared-link-card';
 import { sharedLinkInMessage } from '@/lib/sharing';
 import { ChatMembers } from '@/components/chat-members';
+import { animateLayout } from '@/components/disclosure';
 import { ChatMemberAvatar } from '@/components/chat-member-avatar';
 import { MeetupManageSheet } from '@/components/meetup-manage-sheet';
 import { MeetupRoomSummary } from '@/components/meetup-room-summary';
@@ -36,6 +37,7 @@ import { ThemedText } from '@/components/themed-text';
 import { MannerReviewButton } from '@/components/manner-review';
 import { ThemedView } from '@/components/themed-view';
 import { TrustBadge } from '@/components/trust-badge';
+import { ControlMotion } from '@/constants/design-system';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
@@ -210,6 +212,8 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const [menuFrame, setMenuFrame] = useState<{ anchor: ChatRect; bounds: ChatRect } | null>(null);
   const [menuSize, setMenuSize] = useState({ width: 0, height: 0 });
   const menuRequest = useRef(0), listRegion = useRef<ViewInstance>(null);
+  const [menuFade] = useState(() => new Animated.Value(0)), [menuLeaving, setMenuLeaving] = useState(false);
+  const menuShown = useRef(false), leavingMenu = useRef(false), afterMenu = useRef<(() => void) | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [editingMessage, setEditingMessage] = useState<ChatMessageRecord | null>(null);
   const [messageEditDraft, setMessageEditDraft] = useState('');
@@ -416,10 +420,24 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     lastTap.current = { id: messageId, at };
     if (previous && previous.id === messageId && at - previous.at < 320) { lastTap.current = null; void toggleHeart(messageId); }
   };
-  const closeMessageMenu = useCallback(() => { menuRequest.current += 1; setMessageMenu(null); setMenuFrame(null); }, []);
+  const clearMessageMenu = useCallback(() => {
+    menuRequest.current += 1; menuShown.current = false; leavingMenu.current = false; afterMenu.current = null;
+    setMenuLeaving(false); setMessageMenu(null); setMenuFrame(null);
+  }, []);
+  // The menu fades out before it unmounts. What it opens next (edit, report) waits until it is gone: iOS drops a modal presented over a leaving one.
+  const closeMessageMenu = useCallback((then?: () => void) => {
+    menuRequest.current += 1;
+    if (!menuShown.current || leavingMenu.current) return;
+    afterMenu.current = then ?? null; leavingMenu.current = true; setMenuLeaving(true);
+    Animated.timing(menuFade, { toValue: 0, duration: ControlMotion.sheetCloseMs, useNativeDriver: true }).start(() => {
+      const next = afterMenu.current;
+      clearMessageMenu();
+      if (valid()) next?.();
+    });
+  }, [clearMessageMenu, menuFade, valid]);
   const openMessageMenu = (message: ChatMessageRecord, bubble: ViewInstance) => {
     const mine = message.is_mine ?? message.sender_id === publicSelfId;
-    if (!access.read || (mine && !access.write) || sending || !valid() || message.deleted_at) return;
+    if (!access.read || (mine && !access.write) || sending || !valid() || message.deleted_at || leavingMenu.current) return;
     const request = ++menuRequest.current;
     lastTap.current = null; play('selection');
     bubble.measureInWindow((x, y, width, height) => {
@@ -428,7 +446,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       listRegion.current?.measureInWindow((x, y, width, height) => {
         if (!valid() || request !== menuRequest.current || hidden('message', message.id, message.sender_id) || width < 44 || height < 44) return;
         setMenuFrame({ anchor, bounds: { x, y, width, height } }); setMenuSize({ width: 0, height: 0 });
-        setDeleteConfirm(false); setMessageMenu(message);
+        setDeleteConfirm(false); menuShown.current = true; setMessageMenu(message);
       });
     });
   };
@@ -442,7 +460,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       if (!valid()) return;
       setMessages(previous => mergeChatMessages(previous, [{ ...message, ...saved }], blockedUsers.current));
       if (remove) setReplyTo(current => current?.id === message.id ? null : current);
-      setMessageMenu(null); setEditingMessage(null); play(remove ? 'warning' : 'success');
+      clearMessageMenu(); setEditingMessage(null); play(remove ? 'warning' : 'success');
     } catch {
       if (valid()) { play('warning'); setError("메시지를 변경하지 못했어요. 다른 기기에서 변경됐을 수 있으니 원문을 다시 확인해 주세요."); }
     } finally { processing.current = false; if (valid()) setSending(false); }
@@ -808,9 +826,9 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     }} onManage={conversation.isGroupHost && access.write ? actions => { if (valid()) { Keyboard.dismiss(); setHostActions(actions); setManageOpen(true); } } : undefined} />}
     {group && conversation.groupPostId && access.read && <MeetupRoomTop key={`notice:${currentUserId}:${conversation.groupPostId}`} postId={conversation.groupPostId} />}
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      {access.read ? loading && messages.length === 0 ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} /></View> : <View ref={listRegion} style={styles.messageList} onLayout={closeMessageMenu}><FlatList ref={messageList} analyticsId="components_chat-room.flatlist.1" data={searchMatches} keyExtractor={(message) => message.id} contentContainerStyle={styles.scroll}
+      {access.read ? loading && messages.length === 0 ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} /></View> : <View ref={listRegion} style={styles.messageList} onLayout={() => closeMessageMenu()}><FlatList ref={messageList} analyticsId="components_chat-room.flatlist.1" data={searchMatches} keyExtractor={(message) => message.id} contentContainerStyle={styles.scroll}
         onViewableItemsChanged={trackVisibleMessages} viewabilityConfig={viewability}
-        onScrollBeginDrag={closeMessageMenu} onScroll={onMessageScroll} scrollEventThrottle={32} maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+        onScrollBeginDrag={() => closeMessageMenu()} onScroll={onMessageScroll} scrollEventThrottle={32} maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
         onLayout={() => { if (!discoveryVisible.current && initialScroll.current && followingLatest.current) requestAnimationFrame(() => { if (!discoveryVisible.current) messageList.current?.scrollToEnd({ animated: false }); }); }}
         onContentSizeChange={() => { if (!discoveryVisible.current && initialScroll.current && followingLatest.current && !loadingOlder) requestAnimationFrame(() => { if (!discoveryVisible.current) messageList.current?.scrollToEnd({ animated: false }); }); }}
         onScrollToIndexFailed={({ index, averageItemLength }) => {
@@ -838,10 +856,10 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
               <View style={styles.photoGrid}>{photos.slice(0, 9).map((uri, position) => <BubblePressable key={position} analyticsId="chat.album.photo"
                 message={message} onMenu={openMessageMenu} accessibilityRole="button" accessibilityLabel={tr("묶음 사진 {0}/{1} 크게 보기", (position + 1), (photos.length))}
                 onPress={() => openPhotos(photos, position, message.id)} style={[styles.albumTile, { width: (gridWidth - (photos.length > 4 ? 4 : 2)) / (photos.length > 4 ? 3 : 2), backgroundColor: theme.backgroundElement }]}>
-                {uri ? <Image source={photoSource(uri)} cachePolicy={business ? 'none' : undefined} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} /> : <ThemedText type="small" themeColor="textSecondary">{tr("사진을 불러오지 못했어요")}</ThemedText>}
+                {uri ? <Image transition={ControlMotion.settleMs} source={photoSource(uri)} cachePolicy={business ? 'none' : undefined} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} /> : <ThemedText type="small" themeColor="textSecondary">{tr("사진을 불러오지 못했어요")}</ThemedText>}
                 {position === 8 && photos.length > 9 && <View pointerEvents="none" style={styles.morePhotos}><ThemedText type="subtitle" style={{ color: '#fff' }}>+{photos.length - 9}</ThemedText></View>}
               </BubblePressable>)}</View><ThemedText type="small" themeColor="textSecondary">{tr('사진 {0}장', photos.length)}</ThemedText>
-              </View> : photos[0] ? <Image source={photoSource(photos[0])} cachePolicy={business ? 'none' : undefined} style={styles.chatPhoto} contentFit="cover" accessibilityLabel={tr("대화에서 보낸 사진")} />
+              </View> : photos[0] ? <Image transition={ControlMotion.settleMs} source={photoSource(photos[0])} cachePolicy={business ? 'none' : undefined} style={styles.chatPhoto} contentFit="cover" accessibilityLabel={tr("대화에서 보낸 사진")} />
               : <ThemedText type="small" themeColor="textSecondary">{tr("사진을 불러오지 못했어요")}</ThemedText>
             : message.kind === 'location' && message.latitude != null && message.longitude != null
               ? <ChatLocationMessage latitude={message.latitude} longitude={message.longitude} label={message.location_label} />
@@ -889,7 +907,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       {access.write && replyTarget && <View style={[styles.photoPreview, { backgroundColor: theme.card, borderTopColor: theme.line }]}>
         <View style={styles.previewActions}><ThemedText type="smallBold">{tr("답장")}</ThemedText><ThemedText type="small" numberOfLines={2}>{messagePreview(replyTarget, tr)}</ThemedText></View>
         {replyLocked && <ThemedText type="small" themeColor="textSecondary">{tr("묶음 전송을 확인한 후 변경할 수 있어요.")}</ThemedText>}
-        <RoomAction label={tr("답장 취소")} onPress={() => { if (!photoSend.current?.submitted) setReplyTo(null); }} disabled={sending || pickingPhoto || replyLocked} />
+        <RoomAction label={tr("답장 취소")} onPress={() => { if (!photoSend.current?.submitted) { animateLayout(reducedMotion); setReplyTo(null); } }} disabled={sending || pickingPhoto || replyLocked} />
       </View>}
       {access.write && selectedPhotos.length > 0 && <ScrollView keyboardShouldPersistTaps="handled" style={{ flexGrow: 0, flexShrink: 1, backgroundColor: theme.card }} contentContainerStyle={[styles.photoPreview, { borderTopColor: theme.line }]}>
         <View style={styles.photoHeading}><View style={{ flex: 1 }}><ThemedText type="smallBold" style={{ fontSize: 16 }}>{tr('사진 {0}장', selectedPhotos.length)}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr(selectedPhotos.length > 1 ? tr("한 말풍선에 묶어 보내요") : tr("이 대화에만 공유"))}</ThemedText></View>
@@ -949,14 +967,14 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           <View style={styles.settingsHeading}><ThemedText type="section" accessibilityRole="header" style={{ flex: 1 }}>{settingsTitle}</ThemedText>
             <Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" accessibilityLabel={closeSettingsLabel} onPress={closeSettings} style={({ pressed }) => [styles.iconAction, { opacity: pressed ? 0.82 : 1 }]}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} /></Pressable>
           </View>
-          {access.write && <RoomAction label={group ? conversation.isGroupHost ? t.meetup.end : t.meetup.leave : t.chat.end} danger disabled={busy} onPress={() => { if (access.write) selectRoomSetting(() => setConfirmEnd(true)); }} />}
+          {access.write && <RoomAction label={group ? conversation.isGroupHost ? t.meetup.end : t.meetup.leave : t.chat.end} danger disabled={busy} onPress={() => { if (access.write) selectRoomSetting(() => { animateLayout(reducedMotion); setConfirmEnd(true); }); }} />}
           {!group && <>{!business && <RoomAction label={t.report.short} onPress={() => selectRoomSetting(() => { const target: ReportSelection = { targetType: 'user', targetId: conversation.otherUser.id, reportedUserId: conversation.otherUser.id, reportedNickname: conversation.otherUser.nickname }; if (Platform.OS === 'ios') reportAfterSettings.current = { session: settingsSession, target }; else setReport(target); })} />}
-            <RoomAction label={t.chat.block} disabled={busy} onPress={() => selectRoomSetting(() => setConfirmBlock({ id: conversation.otherUser.id, nickname: conversation.otherUser.nickname }))} /></>}
+            <RoomAction label={t.chat.block} disabled={busy} onPress={() => selectRoomSetting(() => { animateLayout(reducedMotion); setConfirmBlock({ id: conversation.otherUser.id, nickname: conversation.otherUser.nickname }); })} /></>}
         </SafeAreaView>
       </SafeAreaView></SafeAreaProvider>
     </Modal>
     {locationOpen && auth.isAuthed && auth.me.id === currentUserId && access.write && <ChatLocationPicker sending={sending} onSend={sendLocation} onClose={() => setLocationOpen(false)} />}
-    {discoveryOpen && auth.isAuthed && auth.me.id === currentUserId && scopeMatches && <Modal visible presentationStyle="fullScreen" animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={closeDiscovery}>
+    {discoveryOpen && auth.isAuthed && auth.me.id === currentUserId && scopeMatches && <Modal visible presentationStyle="fullScreen" animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => { play('selection'); closeDiscovery(); }}>
       <SafeAreaProvider style={{ flex: 1 }}><MapScreen onClose={closeDiscovery} /></SafeAreaProvider>
     </Modal>}
     {overviewOpen && group && conversation.groupPostId && access.read && auth.isAuthed && auth.me.id === currentUserId && scopeMatches && <MeetupChatOverview
@@ -969,25 +987,26 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       { key: 'share', label: tr('모임 공유하기'), icon: { ios: 'square.and.arrow.up', android: 'share', web: 'share' }, onPress: () => { void Promise.resolve().then(() => loadPublicPost(supabase, conversation.groupPostId!)).then(post => { if (post) setSharePost(post); }).catch(() => {}); } },
     ]} />}
     {sharePost && <PostShareSheet post={sharePost} visible onClose={() => setSharePost(null)} onShared={() => setSharePost(null)} />}
-    {messageMenu && menuFrame && !deleteConfirm && !hidden('message', messageMenu.id, messageMenu.sender_id) && auth.isAuthed && auth.me.id === currentUserId && access.read && <Modal visible transparent statusBarTranslucent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => { play('selection'); closeMessageMenu(); }}>
-      <View style={{ flex: 1 }} accessibilityViewIsModal>
+    {messageMenu && menuFrame && !deleteConfirm && !hidden('message', messageMenu.id, messageMenu.sender_id) && auth.isAuthed && auth.me.id === currentUserId && access.read && <Modal visible transparent statusBarTranslucent animationType="none" onRequestClose={() => { play('selection'); closeMessageMenu(); }}
+      onShow={() => { menuFade.setValue(0); Animated.timing(menuFade, { toValue: 1, duration: ControlMotion.settleMs, useNativeDriver: true }).start(); }}>
+      <Animated.View pointerEvents={menuLeaving ? 'none' : 'auto'} style={{ flex: 1, opacity: menuFade }} accessibilityViewIsModal>
         <Pressable analyticsId="chat.message.menu-dismiss" accessibilityRole="button" accessibilityLabel={tr("메시지 메뉴 닫기")} style={StyleSheet.absoluteFill}
           onPress={() => { play('selection'); closeMessageMenu(); }} />
         <View accessibilityLabel={tr("메시지 메뉴")} onLayout={({ nativeEvent: { layout } }) => setMenuSize(current => current.width === layout.width && current.height === layout.height ? current : { width: layout.width, height: layout.height })}
           style={[styles.bubbleMenu, { backgroundColor: theme.card, borderColor: theme.line, maxWidth: menuFrame.bounds.width - 16, opacity: menuSize.height ? 1 : 0 }, menuSize.width
             ? { width: menuSize.width, ...messageMenuPosition(menuFrame.anchor, menuSize, menuFrame.bounds, (messageMenu.is_mine ?? messageMenu.sender_id === publicSelfId)) }
             : { left: menuFrame.bounds.x + 8, top: menuFrame.bounds.y + 8 }]}>
-          {access.write && <Pressable analyticsId="chat.message.reply" accessibilityRole="button" accessibilityLabel={tr("답장")} disabled={sending || pickingPhoto || replyLocked} accessibilityState={{ disabled: sending || pickingPhoto || replyLocked }} onPress={() => { if (photoSend.current?.submitted) return; play('selection'); setReplyTo(messageMenu); closeMessageMenu(); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">{tr("답장")}</ThemedText></Pressable>}
-          {menuAuthor && <><Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" accessibilityLabel={t.report.short} onPress={() => { play('selection'); closeMessageMenu(); setReport({ targetType: 'message', targetId: messageMenu.id, ...(messageMenu.sender_kind === 'business' ? { reportedBusinessId: menuAuthor.id } : { reportedUserId: menuAuthor.id }), reportedNickname: menuAuthor.nickname }); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">{t.report.short}</ThemedText></Pressable>
+          {access.write && <Pressable analyticsId="chat.message.reply" accessibilityRole="button" accessibilityLabel={tr("답장")} disabled={sending || pickingPhoto || replyLocked} accessibilityState={{ disabled: sending || pickingPhoto || replyLocked }} onPress={() => { if (photoSend.current?.submitted) return; play('selection'); animateLayout(reducedMotion); setReplyTo(messageMenu); closeMessageMenu(); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">{tr("답장")}</ThemedText></Pressable>}
+          {menuAuthor && <><Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" accessibilityLabel={t.report.short} onPress={() => { play('selection'); closeMessageMenu(() => setReport({ targetType: 'message', targetId: messageMenu.id, ...(messageMenu.sender_kind === 'business' ? { reportedBusinessId: menuAuthor.id } : { reportedUserId: menuAuthor.id }), reportedNickname: menuAuthor.nickname })); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">{t.report.short}</ThemedText></Pressable>
               {group && <Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" accessibilityLabel={t.chat.block} onPress={() => { play('selection'); closeMessageMenu(); setConfirmBlock({ id: menuAuthor.id, nickname: menuAuthor.nickname }); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold" themeColor="danger">{t.chat.block}</ThemedText></Pressable>}</>}
           {access.write && (messageMenu.is_mine ?? messageMenu.sender_id === publicSelfId) && <>
-            {(!messageMenu.kind || messageMenu.kind === 'text') && <Pressable analyticsId="chat.message.edit" accessibilityRole="button" accessibilityLabel={tr("메시지 수정")} disabled={sending} onPress={() => { play('selection'); setEditingMessage(messageMenu); setMessageEditDraft(messageMenu.body); closeMessageMenu(); setError(null); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">{tr("수정")}</ThemedText></Pressable>}
-            <Pressable analyticsId="chat.message.delete" accessibilityRole="button" accessibilityLabel={tr("메시지 삭제")} disabled={sending} onPress={() => { play('selection'); setDeleteConfirm(true); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold" themeColor="danger">{tr("삭제")}</ThemedText></Pressable>
+            {(!messageMenu.kind || messageMenu.kind === 'text') && <Pressable analyticsId="chat.message.edit" accessibilityRole="button" accessibilityLabel={tr("메시지 수정")} disabled={sending} onPress={() => { play('selection'); closeMessageMenu(() => { setEditingMessage(messageMenu); setMessageEditDraft(messageMenu.body); setError(null); }); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold">{tr("수정")}</ThemedText></Pressable>}
+            <Pressable analyticsId="chat.message.delete" accessibilityRole="button" accessibilityLabel={tr("메시지 삭제")} disabled={sending} onPress={() => { play('selection'); menuFade.setValue(0); setDeleteConfirm(true); }} style={({ pressed }) => [styles.bubbleMenuAction, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><ThemedText type="smallBold" themeColor="danger">{tr("삭제")}</ThemedText></Pressable>
           </>}
         </View>
-      </View>
+      </Animated.View>
     </Modal>}
-    {messageMenu && deleteConfirm && !hidden('message', messageMenu.id, messageMenu.sender_id) && auth.isAuthed && auth.me.id === currentUserId && access.write && <Modal visible transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => { play('selection'); closeMessageMenu(); }}>
+    {messageMenu && deleteConfirm && !hidden('message', messageMenu.id, messageMenu.sender_id) && auth.isAuthed && auth.me.id === currentUserId && access.write && <Modal visible transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => { play('selection'); clearMessageMenu(); }}>
       <View style={styles.messageSheetBackdrop} accessibilityViewIsModal>
         <View style={[styles.messageSheet, { backgroundColor: theme.card }]}>
           <ThemedText type="small" numberOfLines={3}>{messagePreview(messageMenu, tr)}</ThemedText>
@@ -1014,7 +1033,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       setReport(null); void onChanged();
       void refreshMessages();
     }} />}
-    {photoOpen && <Modal visible transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => setPhotoOpen(null)}>
+    {photoOpen && <Modal visible transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => { play('selection'); setPhotoOpen(null); }}>
       <SafeAreaProvider accessibilityViewIsModal style={styles.photoBackdrop}>
         <SafeAreaView edges={['top', 'left', 'right']} style={styles.photoToolbar}><ThemedText type="smallBold" style={{ color: '#fff' }}>{`${photoOpen.index + 1}/${photoOpen.photos.length}`}</ThemedText>
           <Pressable analyticsId="components_chat-room.photo-close" accessibilityRole="button" accessibilityLabel={tr("사진 닫기")} onPress={() => { play('selection'); setPhotoOpen(null); }} style={styles.photoClose}><ThemedText style={{ color: '#fff' }}>{tr("닫기 ✕")}</ThemedText></Pressable>
@@ -1024,7 +1043,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           onLayout={() => photoPages.current?.scrollTo({ x: photoOpen.index * screen.width, animated: false })}
           onMomentumScrollEnd={event => { const index = Math.max(0, Math.min(photoOpen.photos.length - 1, Math.round(event.nativeEvent.contentOffset.x / screen.width))); if (index !== photoOpen.index) { play('selection'); setPhotoOpen({ ...photoOpen, index }); } }}>
           {photoOpen.photos.map((uri, index) => <View key={index} style={{ width: screen.width, height: '100%', justifyContent: 'center', alignItems: 'center' }}>
-            {uri ? <Image source={Math.abs(index - photoOpen.index) <= 1 ? photoSource(uri) : null} cachePolicy={business ? 'none' : undefined} style={styles.fullPhoto} contentFit="contain" accessibilityLabel={tr(index === photoOpen.index ? tr("대화 사진 크게 보기") : tr("묶음 사진 {0}", (index + 1)))} />
+            {uri ? <Image transition={ControlMotion.settleMs} source={Math.abs(index - photoOpen.index) <= 1 ? photoSource(uri) : null} cachePolicy={business ? 'none' : undefined} style={styles.fullPhoto} contentFit="contain" accessibilityLabel={tr(index === photoOpen.index ? tr("대화 사진 크게 보기") : tr("묶음 사진 {0}", (index + 1)))} />
               : <ThemedText style={{ color: '#fff' }}>{tr("사진을 불러오지 못했어요")}</ThemedText>}
           </View>)}
         </ScrollView>

@@ -7,12 +7,15 @@ import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { nicknameError, normalizeNickname } from '@/lib/nickname';
+import { animateLayout } from '@/components/disclosure';
+import { useReducedMotion } from 'react-native-reanimated';
 
 export function NicknameEditor({ nickname, onSave, admin = false }: {
   nickname: string; onSave: (value: string, expectedNickname: string) => Promise<void>; admin?: boolean;
 }) {
   const appTheme = useTheme(), theme = admin ? Colors.admin : appTheme;
   const { tr } = useLanguage(), { play } = useInteractionFeedback();
+  const reducedMotion = useReducedMotion();
   const [draft, setDraft] = useState<{ value: string; expected: string } | null>(null);
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState('');
   const active = useRef(true), pending = useRef(false);
@@ -30,7 +33,7 @@ export function NicknameEditor({ nickname, onSave, admin = false }: {
   }
   return <View style={styles.editor}>
     <View style={styles.row}><View style={styles.identity}><ThemedText type="small" style={{ color: theme.textSecondary }}>{tr('닉네임')}</ThemedText><ThemedText type="smallBold" style={{ color: theme.text }}>{nickname}</ThemedText></View>
-      {!draft && <Pressable analyticsId="profile.nickname.edit" accessibilityRole="button" accessibilityLabel={tr('닉네임 변경')} onPress={() => { play('selection'); setDraft({ value: nickname, expected: nickname }); setError(''); setNotice(''); }} style={[styles.button, { borderColor: theme.line }]}><ThemedText type="smallBold" style={{ color: theme.accent }}>{tr('변경')}</ThemedText></Pressable>}
+      {!draft && <Pressable analyticsId="profile.nickname.edit" accessibilityRole="button" accessibilityLabel={tr('닉네임 변경')} onPress={() => { play('selection'); animateLayout(reducedMotion); setDraft({ value: nickname, expected: nickname }); setError(''); setNotice(''); }} style={[styles.button, { borderColor: theme.line }]}><ThemedText type="smallBold" style={{ color: theme.accent }}>{tr('변경')}</ThemedText></Pressable>}
     </View>
     {draft && <>
       <TextInput accessibilityLabel={tr('새 닉네임')} value={draft.value} editable={!busy} maxLength={40} autoCapitalize="none" autoCorrect={false}
@@ -38,7 +41,7 @@ export function NicknameEditor({ nickname, onSave, admin = false }: {
         style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]} />
       <ThemedText type="small" style={{ color: theme.textSecondary }}>{tr('2~20자 · 다른 사람이 사용 중인 이름은 쓸 수 없어요.')}</ThemedText>
       <View style={styles.actions}>
-        <Pressable analyticsId="profile.nickname.cancel" accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => { play('selection'); setDraft(null); setError(''); }} style={[styles.button, { borderColor: theme.line }]}><ThemedText type="smallBold" style={{ color: theme.text }}>{tr('취소')}</ThemedText></Pressable>
+        <Pressable analyticsId="profile.nickname.cancel" accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => { play('selection'); animateLayout(reducedMotion); setDraft(null); setError(''); }} style={[styles.button, { borderColor: theme.line }]}><ThemedText type="smallBold" style={{ color: theme.text }}>{tr('취소')}</ThemedText></Pressable>
         <Pressable analyticsId="profile.nickname.save" accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy, busy }} onPress={() => { void save(); }} style={[styles.button, { backgroundColor: theme.accent, borderColor: theme.accent, opacity: busy ? 0.55 : 1 }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr(busy ? '저장 중…' : '닉네임 저장')}</ThemedText></Pressable>
       </View>
     </>}

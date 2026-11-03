@@ -7,9 +7,9 @@ import { fillsParent, flatControlStyle, pressedScale } from '../src/lib/flat-con
 import * as designSystem from '../src/constants/design-system.ts';
 
 test('press shrink is a few points on any size and never moves a stretched dismiss layer', () => {
-  assert.equal(pressedScale(44), 0.97);
-  assert.equal(pressedScale(0), 0.97);
-  assert.ok(Math.abs(pressedScale(390) - (1 - 6 / 390)) < 1e-9);
+  assert.equal(pressedScale(44), 0.94);
+  assert.equal(pressedScale(0), 0.94);
+  assert.ok(Math.abs(pressedScale(390) - (1 - 12 / 390)) < 1e-9);
   assert.ok(pressedScale(390) > pressedScale(120));
   assert.equal(fillsParent({ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }), true);
   assert.equal(fillsParent({ position: 'absolute', left: 16 }), false);

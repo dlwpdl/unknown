@@ -13,6 +13,7 @@ import { GlassSurface } from '@/components/glass-surface';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
 import { StateCard } from '@/components/state-card';
+import { ControlMotion } from '@/constants/design-system';
 import { Depth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -68,7 +69,7 @@ export default function EventDetailScreen() {
     play('selection'); setLinkError('');
     if (event?.ticketUrl) void Linking.openURL(event.ticketUrl).then(() => {
       if (userId && identity.current === userId) void recordProductEvent(supabase, { kind: 'event_website', targetId: event.id, cityId, platform: Platform.OS }).catch(() => {});
-    }, () => setLinkError('티켓 페이지를 열지 못했어요. 다시 시도해 주세요.'));
+    }, () => { play('warning'); setLinkError('티켓 페이지를 열지 못했어요. 다시 시도해 주세요.'); });
   };
   const create = () => {
     play('selection');
@@ -88,7 +89,7 @@ export default function EventDetailScreen() {
     <ScrollView analyticsId="ticketmaster.detail" style={styles.scroll} contentContainerStyle={[styles.content, loading && styles.loadingContent]}>
       {loading ? <GlingLoader color={theme.accent} accessibilityLabel={tr("행사 불러오는 중")} /> : error ? <StateCard kind="error" title={tr("행사를 확인하지 못했어요")} body={error} actionLabel={tr("다시 시도")} onAction={() => { play('selection'); setAttempt(n => n + 1); }} /> : event && <>
         {(event.image || promo) && <View style={[styles.hero, { backgroundColor: theme.card }]}>
-          {event.image && <Image source={{ uri: event.image }} style={styles.heroImage} contentFit="cover" accessibilityLabel={event.name} />}
+          {event.image && <Image source={{ uri: event.image }} style={styles.heroImage} contentFit="cover" transition={ControlMotion.settleMs} accessibilityLabel={event.name} />}
           {promo && videoOpen && isFocused && <FestivalVideo youtubeId={promo.youtubeId} muted onError={() => { setVideoOpen(false); setVideoError('영상을 재생하지 못했어요. 다시 시도해 주세요.'); }} />}
           {promo && !videoOpen && <GlassSurface colorScheme="dark" interactive style={styles.playVideo}><Pressable analyticsId="ticketmaster.detail.video.play" accessibilityRole="button" accessibilityLabel={tr("{0} 보기", (promo.label))} onPress={() => { play('selection'); setVideoError(''); setVideoOpen(true); }} style={({ pressed }) => [styles.videoTouch, { opacity: pressed ? 0.65 : 1 }]}><SymbolView name={{ ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' }} size={16} tintColor="#F6F3F0" /><ThemedText style={styles.playVideoText}>{tr("영상 보기")}</ThemedText></Pressable></GlassSurface>}
           {promo && videoOpen && <GlassSurface colorScheme="dark" interactive style={styles.closeVideo}><Pressable analyticsId="ticketmaster.detail.video.close" accessibilityRole="button" accessibilityLabel={tr("영상 닫기")} onPress={() => { play('selection'); setVideoOpen(false); }} style={({ pressed }) => [styles.closeTouch, { opacity: pressed ? 0.65 : 1 }]}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={20} tintColor="#F6F3F0" /></Pressable></GlassSurface>}

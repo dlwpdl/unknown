@@ -88,7 +88,7 @@ function EventRowCard({ event, cityId }: { event: TicketmasterEvent; cityId: str
   return <Link href={{ pathname: '/events/[id]', params: { id: event.id, cityId } }} asChild><Link.AppleZoom>
   <Pressable analyticsId="today.events.open" accessibilityRole="button" accessibilityLabel={[event.name, when, place, event.price && eventPriceLabel(event, locale)].filter(Boolean).join(', ')}
     onPress={() => play('selection')} style={({ pressed }) => [styles.card, { opacity: pressed ? ControlMotion.pressedOpacity : 1 }]}>
-    {event.image ? <Image source={{ uri: event.image }} style={styles.photo} contentFit="cover" accessible={false} />
+    {event.image ? <Image source={{ uri: event.image }} transition={ControlMotion.settleMs} style={styles.photo} contentFit="cover" accessible={false} />
       : <View style={[styles.photo, styles.fallback, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'calendar', android: 'event', web: 'event' }} size={22} tintColor={theme.textSecondary} /></View>}
     <ThemedText type="label" numberOfLines={2}>{event.name}</ThemedText>
     <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>{when}</ThemedText>

@@ -287,7 +287,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
                     return <MeetupProfilePhotoRow key={photo.path ?? photo.uri ?? index} index={index} count={photos.length} offset={drag ? dragOffset(index, drag.from, drag.to) : 0} active={!!drag} lifted={drag?.from === index} disabled={saving || photoSaving}
                       onLift={() => { play('selection'); setDrag({ from: index, to: index }); }} onOver={to => setDrag(current => current && current.to !== to ? { ...current, to } : current)}
                       onDrop={to => { setDrag(null); if (to !== index) { play('selection'); movePhotoTo(index, to); } }} onCancel={() => setDrag(null)}>
-                      {photo.uri ? <Image source={{ uri: photo.uri }} cachePolicy="none" style={styles.photo} contentFit="cover" accessibilityLabel={tr("모임 사진 {0}", index + 1)} /> : <View accessible accessibilityLabel={tr('미리보기 불가')} style={[styles.photo, styles.photoFallback, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'photo', android: 'image', web: 'image' }} size={IconSize.toolbar} tintColor={theme.textSecondary} /></View>}
+                      {photo.uri ? <Image source={{ uri: photo.uri }} transition={ControlMotion.settleMs} cachePolicy="none" style={styles.photo} contentFit="cover" accessibilityLabel={tr("모임 사진 {0}", index + 1)} /> : <View accessible accessibilityLabel={tr('미리보기 불가')} style={[styles.photo, styles.photoFallback, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'photo', android: 'image', web: 'image' }} size={IconSize.toolbar} tintColor={theme.textSecondary} /></View>}
                       <View style={styles.fill} />
                       {([[-1, tr("모임 사진 {0} 위로 옮기기", index + 1)], [1, tr("모임 사진 {0} 아래로 옮기기", index + 1)]] as const).map(([by, label]) => {
                         const blocked = locked || index + by < 0 || index + by >= photos.length;
@@ -396,7 +396,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
           : <RaisedActionButton analyticsId="app_meetup-profile.pressable.13" disabled={saving || photoSaving || !stepReady || !!drag} onPress={() => { play('selection'); if (step === 3) addTags(tagDraft); changeStep(step + 1); }} label={step === 3 ? tr("내 프로필 미리보기") : optionalEmpty ? tr("건너뛰기") : tr("다음")} />}
       </View>}
     </KeyboardAvoidingView>
-    <Modal visible={cityOpen} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setCityOpen(false)}>
+    <Modal visible={cityOpen} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => { play('selection'); setCityOpen(false); }}>
       <SafeAreaProvider style={[styles.fill, { backgroundColor: theme.background }]}>
         <View style={[styles.fill, { paddingTop: insets.top, paddingBottom: insets.bottom }]}><CityPicker title={tr("활동 지역")} onClose={() => setCityOpen(false)} draft={{ city: selectedCity, onSelect: city => { setProfile(current => ({ ...current, cityId: city.id })); setCityOpen(false); } }} /></View>
       </SafeAreaProvider>

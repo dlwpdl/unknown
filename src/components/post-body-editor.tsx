@@ -1,7 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { SymbolView } from 'expo-symbols';
-import { useReducedMotion } from 'react-native-reanimated';
 import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, TextInput, View, type TextInputProps, type TextInputInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
@@ -19,7 +18,6 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const insets = useSafeAreaInsets();
-  const reducedMotion = useReducedMotion();
   const [stage, setStage] = useState<'choices' | 'sns' | 'instagram' | 'url' | 'location' | null>(null);
   const [input, setInput] = useState('');
   const inputRef = useRef<TextInputInstance>(null);
@@ -92,7 +90,7 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
           play('success'); onChangeText?.(changed); setStage(null); setInput('');
         } catch { play('warning'); Alert.alert(t.write.validationTitle, t.write.bodyTooLong); }
       }} />}
-    <Modal visible={stage !== null && editable && stage !== 'location'} transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={close}>
+    <Modal visible={stage !== null && editable && stage !== 'location'} transparent animationType="fade" onRequestClose={close}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.overlay}>
         <Pressable analyticsId="post.attachment.backdrop" accessibilityRole="button" accessibilityLabel={tr("첨부 취소")} onPress={close} style={StyleSheet.absoluteFill} />
         <View accessibilityViewIsModal style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(16, insets.bottom) }]}>

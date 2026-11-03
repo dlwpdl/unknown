@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { appendUniquePosts } from '../src/lib/feed-data.ts';
 import { count, t } from '../src/i18n/ko.ts';
+import * as postOpen from '../src/lib/post-open.ts';
 
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
@@ -30,15 +31,15 @@ function mount(file, name, data, props = {}, params = {}) {
   const jsx = (type, props, key) => ({ type, props, key });
   const imports = {
     react, 'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': { FlatList: 'FlatList', View: 'View', Modal: 'Modal', Platform: { OS: data.os ?? 'ios' }, StyleSheet: { create: x => x }, Alert: { alert: (...args) => calls.push(['alert', ...args]) } },
+    'react-native': { FlatList: 'FlatList', View: 'View', Modal: 'Modal', DeviceEventEmitter: { addListener: (name, listener) => { calls.push(['listen', name, listener]); return { remove() {} }; } }, Platform: { OS: data.os ?? 'ios' }, StyleSheet: { create: x => x }, Alert: { alert: (...args) => calls.push(['alert', ...args]) } },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) },
     'expo-symbols': { SymbolView: 'SymbolView' },
     'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ canGoBack: () => true, back() {}, replace() {}, push: path => calls.push(['navigate', path]) }) },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/gling-loader': { GlingLoader: 'Loader' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },
-    '@/components/post-card': { PostCard: 'PostCard' }, '@/components/post-detail': { PostDetail: 'PostDetail' },
+    '@/components/post-card': { PostCard: 'PostCard' }, '@/components/post-detail': { PostDetail: 'PostDetail' }, '@/components/post-zoom-link': { PostZoomLink: 'PostZoomLink' }, '@/lib/post-open': postOpen,
     '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: (target, visible) => { calls.push(['savedEntry', target, visible]); return { state: null, error: '', loading: false, busy: false, visible, onPress() {} }; } },
-    '@/components/manner-summary': { MannerSummary: 'MannerSummary' }, '@/components/report-sheet': { ReportSheet: 'ReportSheet' },
+    '@/components/manner-summary': { MannerSummary: 'MannerSummary' }, '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/drag-sheet': { DragSheet: 'DragSheet' },
     '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/constants/theme': { Spacing: {}, Depth: { control: {} } }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/hooks/use-chat-identity': { useChatIdentity: () => data.businessIdentity ?? null },
@@ -64,6 +65,13 @@ const post = (id, author = 'author') => ({ id, author: { id: author }, createdAt
 const list = harness => harness.nodes().find(node => node.type === 'FlatList');
 const detail = harness => harness.nodes().find(node => node.type === 'PostDetail');
 const control = (harness, id) => harness.nodes().find(node => node.props?.analyticsId === id);
+// The shared sheet slides away first; the parent hears onClose only once it is gone.
+const dismiss = harness => {
+  harness.render();
+  const sheet = harness.nodes().find(node => node.type === 'DragSheet');
+  assert.equal(sheet.props.visible, false, 'the sheet is leaving before the parent closes it');
+  sheet.props.onDismissed(); harness.render();
+};
 
 test('approved mini profile has an explicit close action with feedback', async context => {
   const closed = [], harness = mount('../src/components/user-sheet.tsx', 'UserSheet', {
@@ -71,9 +79,11 @@ test('approved mini profile has an explicit close action with feedback', async c
   }, { user: { id: 'neighbor', nickname: '이웃' }, onClose: () => closed.push(true) });
   context.after(() => harness.cleanup()); await harness.settle();
   const close = control(harness, 'user.profile.close'); assert.ok(close);
-  assert.equal(control(harness, 'components_user-sheet.pressable.1').props.children, undefined, 'dismiss backdrop must not contain other interactive controls');
+  assert.equal(harness.nodes().find(node => node.type === 'DragSheet').props.visible, true, 'the profile uses the shared bottom sheet');
   close.props.onPress();
-  assert.equal(closed.length, 1); assert.ok(harness.calls.some(call => call[0] === 'feedback' && call[1] === 'selection'));
+  assert.equal(closed.length, 0, 'content stays while the sheet slides down');
+  dismiss(harness);
+  assert.equal(closed.length, 1); assert.deepEqual(harness.calls.filter(call => call[0] === 'feedback'), [['feedback', 'selection']]);
 });
 
 test('approved mini profile expands trade detail on demand and keeps chat available', async context => {
@@ -152,16 +162,34 @@ test('closing, signing out or returning to a profile cannot revive its old chat 
   }
 });
 
-test('profile detail closes immediately when the author or viewer changes', async context => {
+test('signed-in profile posts open the post screen from the card and pick up its edits', async context => {
+  const harness = mount('../src/app/user/[id].tsx', 'default', {
+    loadPublicUserActivity: async () => [post('a'), post('b')], loadPublicUserProfile: async (_client, id) => profile(id),
+  }, {}, { id: 'author' });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const row = list(harness).props.renderItem({ item: post('a') });
+  assert.equal(row.type, 'PostZoomLink'); assert.equal(row.props.id, 'a'); assert.equal(row.props.post.id, 'a', 'the card hands its post to the detail');
+  assert.equal(row.props.children.type, 'PostCard');
+  const [, name, changed] = harness.calls.findLast(call => call[0] === 'listen');
+  assert.equal(name, postOpen.POST_CHANGED_EVENT);
+  changed({ id: 'a', removed: true }); harness.render();
+  assert.deepEqual(list(harness).props.data.map(item => item.id), ['b'], 'a post deleted on its screen leaves the profile list');
+  assert.equal(detail(harness), undefined);
+});
+
+test('guest profile detail gate closes immediately when the author or viewer changes', async context => {
   const params = { id: 'author' }, response = deferred(); let delay = false;
   const harness = mount('../src/app/user/[id].tsx', 'default', {
     loadPublicUserActivity: async () => delay ? response.promise : [post('old-post')],
     loadPublicUserProfile: async (_client, id) => delay ? response.promise : profile(id),
   }, {}, params);
+  harness.auth.isAuthed = false;
   context.after(() => harness.cleanup()); await harness.settle();
   list(harness).props.renderItem({ item: post('old-post') }).props.onPress(); await harness.settle(); assert.ok(detail(harness));
-  delay = true; harness.auth.me.id = 'other-viewer'; harness.render();
-  assert.equal(detail(harness), undefined, 'previous viewer cannot keep an old open detail during reload');
+  delay = true; harness.auth.isAuthed = true; harness.render();
+  assert.equal(detail(harness), undefined, 'signing in cannot keep the old gate open during reload');
+  harness.auth.isAuthed = false; harness.render();
+  list(harness).props.renderItem({ item: post('old-post') }).props.onPress(); harness.render();
   params.id = 'different-author'; harness.render(); assert.equal(detail(harness), undefined);
 });
 
@@ -207,7 +235,10 @@ test('web mini profiles retain inline reviews, direct chat and reporting without
   control(harness, 'components_user-sheet.pressable.4').props.onPress(); await harness.settle();
   const destination = harness.calls.find(call => call[0] === 'navigate')?.[1];
   assert.equal(destination?.pathname, '/chat'); assert.equal(destination?.params?.conversationId, 'web-direct-chat');
+  dismiss(harness);
   control(harness, 'components_user-sheet.pressable.5').props.onPress(); harness.render();
+  assert.ok(!harness.nodes().some(node => node.type === 'ReportSheet'), 'the report waits until the profile sheet is gone');
+  dismiss(harness);
   assert.ok(harness.nodes().some(node => node.type === 'ReportSheet' && node.props.targetType === 'user' && node.props.targetId === 'neighbor'));
   assert.equal(closed.length, 2, 'chat navigation and report action still dismiss their profile overlay');
 });

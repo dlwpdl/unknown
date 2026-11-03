@@ -8,6 +8,8 @@ import * as preferences from '../src/lib/notification-preferences.ts';
 import * as product from '../src/lib/product-analytics.ts';
 
 const flush = () => new Promise(resolve => setImmediate(resolve));
+// Closing slides the sheet away first; the component unmounts once DragSheet reports it is gone.
+const closed = tree => tree === null || tree.props.visible === false;
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 
 function invite({ denied = false, failure = null } = {}) {
@@ -43,7 +45,7 @@ function invite({ denied = false, failure = null } = {}) {
       '@react-native-async-storage/async-storage': { default: { getItem: async () => null, setItem: async (...args) => writes.push(args) } },
       'react-native-safe-area-context': { useSafeAreaInsets: () => ({ bottom: 0 }) },
       'react-native-reanimated': { useReducedMotion: () => false }, 'expo-symbols': { SymbolView: 'SymbolView' },
-      '@/components/themed-text': { ThemedText: 'ThemedText' }, '@/constants/theme': { Spacing: {} },
+      '@/components/themed-text': { ThemedText: 'ThemedText' }, '@/components/drag-sheet': { DragSheet: 'DragSheet' }, '@/constants/theme': { Spacing: {} },
       '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
       '@/lib/auth': { useAuth: () => ({ isAuthed: true, isAdmin: false, me: { id: 'member' } }) },
       '@/lib/notification-preferences': preferences, '@/lib/push-notifications': push, '@/lib/supabase': { supabase },
@@ -73,31 +75,31 @@ function invite({ denied = false, failure = null } = {}) {
 
 test('allowing push updates foreground delivery without reopening the app', async t => {
   const ui = invite(); t.after(ui.cleanup); await flush();
-  assert.ok(ui.render(), 'a first comment opens the contextual sheet');
+  assert.ok(!closed(ui.render()), 'a first comment opens the contextual sheet');
   assert.equal((await ui.foreground()).shouldShowBanner, false);
   await ui.allow();
   assert.equal((await ui.foreground()).shouldShowBanner, true, 'the invite must update the running observer');
-  assert.equal(ui.render(), null);
+  assert.ok(closed(ui.render()));
 });
 
 test('connection failures keep the permission invite available for a successful retry', async t => {
   for (const failure of ['registration', 'save']) {
     const ui = invite({ failure }); await flush();
     await ui.allow();
-    assert.ok(ui.render(), 'a failed opt-in must retain the existing retry button');
+    assert.ok(!closed(ui.render()), 'a failed opt-in must retain the existing retry button');
     assert.equal(ui.alerts.length, 1, 'the user must know push was not enabled');
     assert.equal(ui.writes.length, 0, 'failed opt-in must not consume the reminder or the comment moment');
     assert.equal(ui.events.length, 0);
     ui.setFailure(null); await ui.allow();
     assert.equal((await ui.foreground()).shouldShowBanner, true);
-    assert.equal(ui.render(), null); ui.cleanup();
+    assert.ok(closed(ui.render())); ui.cleanup();
   }
 });
 
 test('declining the system permission keeps push off and closes the invite', async t => {
   const ui = invite({ denied: true }); t.after(ui.cleanup); await flush();
   await ui.allow();
-  assert.equal(ui.render(), null);
+  assert.ok(closed(ui.render()));
   assert.equal((await ui.foreground()).shouldShowBanner, false);
   assert.equal(ui.events.length, 0); assert.equal(ui.alerts.length, 0);
 });

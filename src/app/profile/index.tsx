@@ -8,11 +8,12 @@ import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Animated, Easing, LayoutAnimation, Platform, StyleSheet, UIManager, View } from 'react-native';
+import { Alert, Animated, Easing, LayoutAnimation, Platform, RefreshControl, StyleSheet, UIManager, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 
 import { LoginPanel } from '@/components/login-panel';
+import { PostZoomLink } from '@/components/post-zoom-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TrustBadge } from '@/components/trust-badge';
@@ -48,6 +49,7 @@ export default function ProfileScreen() {
   const [loadedSegment, setLoadedSegment] = useState<'story' | 'replies' | 'listing' | null>(null);
   const [segmentWidth, setSegmentWidth] = useState(0);
   const [segmentPosition] = useState(() => new Animated.Value(0));
+  const [reload, setReload] = useState(0), [pulling, setPulling] = useState(false);
   const activeSegmentIndex = segment === 'story' ? 0 : segment === 'replies' ? 1 : 2;
   const segmentLoading = loadedSegment !== segment;
 
@@ -65,7 +67,7 @@ export default function ProfileScreen() {
       .then((next) => active && setSummary(next))
       .catch(() => active && setSummary(null));
     return () => { active = false; };
-  }, [isAuthed, me.id, me.cityId]);
+  }, [isAuthed, me.id, me.cityId, reload]);
 
   useEffect(() => {
     if (!isAuthed) return;
@@ -79,10 +81,10 @@ export default function ProfileScreen() {
         if (Platform.OS === 'android') UIManager.setLayoutAnimationEnabledExperimental?.(true);
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       }
-      setLoadedSegment(segment);
+      setLoadedSegment(segment); setPulling(false);
     });
     return () => { active = false; };
-  }, [isAuthed, me.id, reducedMotion, segment]);
+  }, [isAuthed, me.id, reducedMotion, segment, reload]);
 
   // 내 프로필은 L0 로그인
   if (!isAuthed)
@@ -139,7 +141,8 @@ export default function ProfileScreen() {
         </View>
       ) }} />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <ScrollView analyticsId="app_profile_index.scroll" contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic">
+        <ScrollView analyticsId="app_profile_index.scroll" contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic"
+          refreshControl={<RefreshControl refreshing={pulling} tintColor={theme.accent} onRefresh={() => { play('selection'); setPulling(true); setReload(value => value + 1); }} />}>
         <View style={styles.hero}>
           <Pressable analyticsId="app_profile_index.pressable.1"
             onPress={() => { play('selection'); void pickProfilePhoto(); }}
@@ -183,7 +186,6 @@ export default function ProfileScreen() {
             <Pressable analyticsId="app_profile_index.pressable.2" key={label} onPress={() => { play('selection'); onPress(); }} accessibilityRole="button" accessibilityLabel={`${label}, ${sub ?? ''}`}
               style={({ pressed }) => [styles.manageCell, {
                 backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
-                transform: [{ scale: pressed && !reducedMotion ? 0.97 : 1 }], // 눌린 순간 바로 반응, 놓으면 실행
               }]}>
               <View style={styles.manageIcon}>
                 <SymbolView name={symbol} size={22} weight="medium" tintColor={attention ? theme.accent : theme.navy} />
@@ -235,20 +237,20 @@ export default function ProfileScreen() {
         {segmentLoading && <GlingLoader color={theme.accent} style={{ marginVertical: Spacing.three }} accessibilityLabel={tr("불러오는 중")} />}
         {!segmentLoading && <Reanimated.View key={segment} entering={reducedMotion ? FadeIn.duration(150) : FadeInDown.duration(250)}>
         {segment !== 'replies' && myPosts[segment].map((row) => (
-          <Pressable analyticsId="app_profile_index.pressable.4" key={row.id} onPress={() => { play('selection'); router.push(`/post/${row.id}`); }} accessibilityRole="button" style={[styles.myPost, { borderBottomColor: theme.line }]}>
+          <PostZoomLink key={row.id} id={row.id}><Pressable analyticsId="app_profile_index.pressable.4" onPress={() => play('selection')} accessibilityRole="button" style={StyleSheet.flatten([styles.myPost, { borderBottomColor: theme.line }])}>
             <ThemedText type="small" themeColor="textSecondary">{tr(TAGS.find(({ id }) => id === row.tag_id)?.label ?? '')}{row.kind === 'listing' ? ` · ${t.detail.listingBadge}` : ''}{row.kind === 'listing' && row.listing_status && row.listing_status !== 'open' ? ` · ${t.detail.listingStatus[row.listing_status]}` : ''}</ThemedText>
             <ThemedText type="smallBold" style={styles.myTitle}>{row.title}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{visibleMeetupBody(row.body)}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary" style={{ fontVariant: ['tabular-nums'] }}>{row.kind === 'listing' && row.price != null ? `${t.detail.price(Number(row.price))} · ` : ''}{tr('공감 {0} · 댓글 {1} · 저장 {2}', count(row.like_count), count(row.comment_count), count(row.save_count))} · {relativeTime(row.created_at, undefined, appLocale)}</ThemedText>
-          </Pressable>
+          </Pressable></PostZoomLink>
         ))}
         {segment !== 'replies' && myPosts[segment].length === 0 && <ThemedText type="small" themeColor="textSecondary" style={styles.emptyNote}>{segment === 'listing' ? tr("아직 올린 구해요·팔아요 글이 없어요.") : tr("아직 쓴 글이 없어요. 오늘의 한 편을 남겨보세요.")}</ThemedText>}
         {segment === 'replies' && replies.filter((reply) => !hidden('comment', reply.id, reply.author_id)).map((reply) => (
-          <Pressable analyticsId="app_profile_index.pressable.5" key={reply.id} onPress={() => { play('selection'); router.push(`/post/${reply.post_id}`); }} accessibilityRole="button" style={[styles.myPost, { borderBottomColor: theme.line }]}>
+          <PostZoomLink key={reply.id} id={reply.post_id}><Pressable analyticsId="app_profile_index.pressable.5" onPress={() => play('selection')} accessibilityRole="button" style={StyleSheet.flatten([styles.myPost, { borderBottomColor: theme.line }])}>
             <ThemedText type="small" themeColor="textSecondary"><ThemedText type="small" themeColor="navy">{reply.author?.nickname ?? tr("이웃")}</ThemedText>{tr("님이 「")}{reply.post?.title ?? tr("내 글")}{tr("」에 ·") + " "}{relativeTime(reply.created_at, undefined, appLocale)}</ThemedText>
             <ThemedText type="small">{reply.body}</ThemedText>
             <ThemedText type="smallBold" themeColor="accent">{tr("답글 달기")}</ThemedText>
-          </Pressable>
+          </Pressable></PostZoomLink>
         ))}
         {segment === 'replies' && replies.length === 0 && <ThemedText type="small" themeColor="textSecondary" style={styles.emptyNote}>{tr("아직 내 글에 달린 답글이 없어요.")}</ThemedText>}
         </Reanimated.View>}
@@ -269,7 +271,7 @@ export default function ProfileScreen() {
             style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: theme.backgroundSelected }]}
             accessibilityRole="button"
             onPress={() => { play('selection'); Alert.alert(t.profile.signOutTitle, t.profile.signOutBody, [
-              { text: t.profile.cancel, style: 'cancel' },
+              { text: t.profile.cancel, style: 'cancel', onPress: () => play('selection') },
               { text: t.profile.signOut, style: 'destructive', onPress: () => { play('warning'); void signOut(); } },
             ]); }}>
             <ThemedText type="small" themeColor="textSecondary">{t.profile.signOut}</ThemedText>

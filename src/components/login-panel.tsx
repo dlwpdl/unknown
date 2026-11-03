@@ -6,7 +6,6 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View, type TextInputInstance } from 'react-native';
-import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -45,7 +44,6 @@ export function LoginPanel({
   const theme = useTheme();
   const dark = theme === Colors.dark;
   const { play } = useInteractionFeedback();
-  const reducedMotion = useReducedMotion();
   const [googleFontLoaded] = useFonts({ GoogleSansMedium: require('@/assets/fonts/GoogleSans-Medium.ttf') });
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -133,7 +131,7 @@ export function LoginPanel({
           <View style={styles.actions}>
             {onKakao && <Pressable analyticsId="components_login-panel.pressable.1" accessibilityRole="button" accessibilityLabel={t.auth.kakao}
               onPress={() => { if (!disabled) { play('selection'); onKakao(); } }} disabled={disabled} accessibilityState={{ disabled, busy: loading }}
-              style={({ pressed }) => [styles.socialButton, styles.kakaoButton, { opacity: disabled ? 0.6 : pressed ? 0.8 : 1, transform: [{ scale: pressed && !reducedMotion ? 0.98 : 1 }] }]}>
+              style={({ pressed }) => [styles.socialButton, styles.kakaoButton, { opacity: disabled ? 0.6 : pressed ? 0.8 : 1 }]}>
               <Image source={require('@/assets/brand/kakao-login-symbol.svg')} style={styles.googleIcon} contentFit="contain" accessible={false} />
               <ThemedText type="smallBold" style={styles.kakaoText}>{t.auth.kakao}</ThemedText>
             </Pressable>}
@@ -143,7 +141,7 @@ export function LoginPanel({
               style={[styles.appleButton, { opacity: disabled ? 0.6 : 1 }]} />}
             {onGoogle && <Pressable analyticsId="components_login-panel.pressable.2" accessibilityRole="button" accessibilityLabel={t.auth.google}
               onPress={() => { if (!disabled) { play('selection'); onGoogle(); } }} disabled={disabled} accessibilityState={{ disabled, busy: loading }}
-              style={({ pressed }) => [styles.socialButton, { backgroundColor: dark ? '#131314' : '#FFFFFF', borderColor: dark ? '#8E918F' : '#747775', opacity: disabled ? 0.6 : pressed ? 0.8 : 1, transform: [{ scale: pressed && !reducedMotion ? 0.98 : 1 }] }]}>
+              style={({ pressed }) => [styles.socialButton, { backgroundColor: dark ? '#131314' : '#FFFFFF', borderColor: dark ? '#8E918F' : '#747775', opacity: disabled ? 0.6 : pressed ? 0.8 : 1 }]}>
               <Image source={require('@/assets/brand/google-g.png')} style={styles.googleIcon} contentFit="contain" accessible={false} />
               <ThemedText type="small" style={[styles.googleText, { color: dark ? '#E3E3E3' : '#1F1F1F' }, googleFontLoaded && { fontFamily: 'GoogleSansMedium' }]}>{t.auth.google}</ThemedText>
             </Pressable>}
@@ -184,7 +182,7 @@ export function LoginPanel({
                   disabled={disabled || !email.trim() || !password}
                   accessibilityRole="button"
                   accessibilityState={{ disabled: disabled || !email.trim() || !password, busy: loading }}
-                  style={({ pressed }) => [styles.devButton, { backgroundColor: theme.accent, opacity: disabled || !email.trim() || !password ? 0.5 : pressed ? 0.8 : 1, transform: [{ scale: pressed && !reducedMotion ? 0.97 : 1 }] }]}>
+                  style={({ pressed }) => [styles.devButton, { backgroundColor: theme.accent, opacity: disabled || !email.trim() || !password ? 0.5 : pressed ? 0.8 : 1 }]}>
                   <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{onAdminLogin ? tr("관리자 로그인") : onReviewLogin ? t.auth.reviewLoginCta : t.auth.devLoginCta}</ThemedText>
                 </Pressable>
               </View>

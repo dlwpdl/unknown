@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Keyboard, StyleSheet, TextInput, View } from 'react-native';
+import { Keyboard, StyleSheet, TextInput, View, type GestureResponderEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useIsFocused, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -9,8 +9,9 @@ import { FlatList, Pressable } from '@/components/analytics-controls';
 import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
 import { GlingLoader } from '@/components/gling-loader';
+import { PostZoomLink } from '@/components/post-zoom-link';
 import { ThemedText } from '@/components/themed-text';
-import { ControlStyles, IconSize, Typography } from '@/constants/design-system';
+import { ControlMotion, ControlStyles, IconSize, Typography } from '@/constants/design-system';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useLanguage } from '@/hooks/use-language';
@@ -60,16 +61,16 @@ export function UnifiedSearch({ initialCityId, initialQuery = '', initialKind = 
     }, 250);
     return () => clearTimeout(timer);
   }, [cityId, isAuthLoading, kind, needle, token]);
-  function open(item: UnifiedSearchItem) {
+  function open(item: UnifiedSearchItem, event?: GestureResponderEvent) {
     const scope = live.current;
-    if (!isCurrent() || isAuthLoading || !scope?.result || scope.result.token !== token) return;
+    // Post and meetup rows navigate through PostZoomLink right after this; a stale or hidden row cancels it.
+    if (!isCurrent() || isAuthLoading || !scope?.result || scope.result.token !== token) return event?.preventDefault();
     const target = scope.result.items.find(value => identity(value) === identity(item));
-    if (!target || !visible(target)) return;
+    if (!target || !visible(target)) return event?.preventDefault();
     play('selection'); Keyboard.dismiss();
     if (target.kind === 'business' || (target.kind === 'place' && target.merchantId)) router.push({ pathname: '/company/[id]', params: { id: target.merchantId ?? target.id } });
     else if (target.kind === 'person') router.push({ pathname: '/user/[id]', params: { id: target.id } });
     else if (target.kind === 'place') router.push({ pathname: '/map', params: { cityId: target.cityId, placeId: target.placeId ?? target.id } });
-    else router.push({ pathname: '/post/[id]', params: { id: target.id } });
   }
   function more() {
     const scope = live.current;
@@ -105,7 +106,7 @@ type ViewProps = {
   query: string; kind: UnifiedSearchKind; cityId: string | null; currentCityId: string; items: UnifiedSearchItem[];
   loading: boolean; failed: boolean; hasMore: boolean; moreLoading: boolean; moreFailed: boolean;
   onBack: () => void; onQuery: (query: string) => void; onClear: () => void; onKind: (kind: UnifiedSearchKind) => void;
-  onScope: (city: string | null) => void; onRetry: () => void; onMore: () => void; onOpen: (item: UnifiedSearchItem) => void;
+  onScope: (city: string | null) => void; onRetry: () => void; onMore: () => void; onOpen: (item: UnifiedSearchItem, event?: GestureResponderEvent) => void;
 };
 type Row = { type: 'heading'; kind: Kind } | { type: 'item'; item: UnifiedSearchItem };
 export function UnifiedSearchView(props: ViewProps) {
@@ -113,6 +114,8 @@ export function UnifiedSearchView(props: ViewProps) {
   const labels = ko ? { all: '전체', business: '비즈니스', place: '장소', person: '사람', post: '게시글', meetup: '모임' }
     : { all: 'All', business: 'Businesses', place: 'Places', person: 'People', post: 'Posts', meetup: 'Meetups' };
   const cityName = (id: string) => tr(CITIES.find(value => value.id === id)?.name ?? id);
+  // Posts and meetups grow out of the pressed row (owner 2026-11-02); the row's object style survives the link's Slot.
+  const zoom = (item: UnifiedSearchItem, row: React.ReactElement<{ onPress?: (event?: GestureResponderEvent) => void }>) => item.kind === 'post' || item.kind === 'meetup' ? <PostZoomLink id={item.id}>{row}</PostZoomLink> : row;
   const rows: Row[] = props.kind === 'all' ? (kinds.filter(value => value !== 'all') as Kind[]).flatMap(kind => {
     const values = props.items.filter(item => item.kind === kind).slice(0, 3);
     return values.length ? [{ type: 'heading' as const, kind }, ...values.map(item => ({ type: 'item' as const, item }))] : [];
@@ -137,10 +140,10 @@ export function UnifiedSearchView(props: ViewProps) {
       <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel={ko ? '검색 종류' : 'Result type'}>{kinds.map(kind => <SelectionChip key={kind} analyticsId={kindActions[kind]} selected={props.kind === kind} accessibilityRole="radio" accessibilityState={{ checked: props.kind === kind }} onPress={() => props.onKind(kind)} style={ControlStyles.pill} baseColor={theme.backgroundElement}><ThemedText type="label" style={{ color: props.kind === kind ? theme.accentInk : theme.text }}>{labels[kind]}</ThemedText></SelectionChip>)}</View>
       <FlatList analyticsId="search.results" data={rows} keyExtractor={row => row.type === 'heading' ? `heading:${row.kind}` : identity(row.item)} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.results}
         ListEmptyComponent={empty ?? undefined} renderItem={({ item: row }) => row.type === 'heading' ? <View style={styles.group}><ThemedText type="section" accessibilityRole="header" style={styles.groupTitle}>{labels[row.kind]}</ThemedText><Pressable analyticsId="search.group.more" accessibilityRole="button" accessibilityLabel={ko ? `${labels[row.kind]} 더 보기` : `More ${labels[row.kind].toLowerCase()}`} onPress={() => props.onKind(row.kind)} style={styles.groupMore}><ThemedText type="label" themeColor="accent">{ko ? '더 보기' : 'See more'}</ThemedText></Pressable></View>
-          : <Pressable analyticsId={resultActions[row.item.kind]} testID={`search.item.${identity(row.item)}`} accessibilityRole="button" accessibilityLabel={[labels[row.item.kind], row.item.title, row.item.subtitle, props.cityId === null ? cityName(row.item.cityId) : ''].filter(Boolean).join(', ')} onPress={() => props.onOpen(row.item)} style={({ pressed }) => [styles.result, { borderColor: theme.line, backgroundColor: theme.card, opacity: pressed ? 0.82 : 1 }]}>
-            {row.item.imageUri ? <Image source={{ uri: row.item.imageUri }} style={styles.image} contentFit="cover" accessible={false} /> : <View style={[styles.image, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: row.item.kind === 'person' ? 'person.crop.circle' : row.item.kind === 'business' ? 'storefront' : row.item.kind === 'place' ? 'mappin.and.ellipse' : 'text.bubble', android: row.item.kind === 'person' ? 'person' : 'search', web: 'search' }} size={22} tintColor={theme.textSecondary} /></View>}
+          : zoom(row.item, <Pressable analyticsId={resultActions[row.item.kind]} testID={`search.item.${identity(row.item)}`} accessibilityRole="button" accessibilityLabel={[labels[row.item.kind], row.item.title, row.item.subtitle, props.cityId === null ? cityName(row.item.cityId) : ''].filter(Boolean).join(', ')} onPress={event => props.onOpen(row.item, event)} style={StyleSheet.flatten([styles.result, { borderColor: theme.line, backgroundColor: theme.card }])}>
+            {row.item.imageUri ? <Image source={{ uri: row.item.imageUri }} style={styles.image} contentFit="cover" transition={ControlMotion.settleMs} accessible={false} /> : <View style={[styles.image, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: row.item.kind === 'person' ? 'person.crop.circle' : row.item.kind === 'business' ? 'storefront' : row.item.kind === 'place' ? 'mappin.and.ellipse' : 'text.bubble', android: row.item.kind === 'person' ? 'person' : 'search', web: 'search' }} size={22} tintColor={theme.textSecondary} /></View>}
             <View style={styles.resultText}><ThemedText type="menu" numberOfLines={2}>{row.item.title}</ThemedText>{!!row.item.subtitle && <ThemedText type="supporting" themeColor="textSecondary" numberOfLines={2}>{row.item.subtitle}</ThemedText>}{props.cityId === null && <ThemedText type="caption" themeColor="accent">{cityName(row.item.cityId)}</ThemedText>}</View><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={14} tintColor={theme.textSecondary} />
-          </Pressable>}
+          </Pressable>)}
         ListFooterComponent={props.hasMore ? <View style={styles.footer}>{props.moreFailed && <ThemedText accessibilityLiveRegion="polite" themeColor="textSecondary">{ko ? '다음 결과를 불러오지 못했어요. 다시 시도해 주세요.' : 'Couldn’t load more results. Try again.'}</ThemedText>}<Pressable analyticsId="search.more" accessibilityRole="button" disabled={props.moreLoading} onPress={props.onMore} style={[ControlStyles.action, { borderWidth: 1, borderColor: theme.line, opacity: props.moreLoading ? 0.6 : 1 }]}><ThemedText type="menu" themeColor="accent">{props.moreLoading ? ko ? '불러오는 중…' : 'Loading…' : props.moreFailed ? ko ? '다시 불러오기' : 'Try again' : ko ? '더 보기' : 'Load more'}</ThemedText></Pressable></View> : undefined} />
     </View>
   </SafeAreaView>;

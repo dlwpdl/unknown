@@ -3,9 +3,12 @@ import { useFocusEffect } from 'expo-router';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useCallback, useState } from 'react';
 import { Modal, Platform, StyleSheet, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { animateLayout } from '@/components/disclosure';
+import { PopIn } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
 import { Spacing } from '@/constants/theme';
@@ -42,6 +45,7 @@ export function StartGuide({ cityName, onPickCity, onOpenMeetups }: { cityName: 
   const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
+  const reducedMotion = useReducedMotion();
   const [state, setState] = useState<GuideState | null>(null);
   const [touring, setTouring] = useState(false);
 
@@ -51,6 +55,7 @@ export function StartGuide({ cityName, onPickCity, onOpenMeetups }: { cityName: 
   }, []));
 
   const save = (next: GuideState) => {
+    animateLayout(reducedMotion);
     setState(next);
     void AsyncStorage.setItem(START_GUIDE_KEY, JSON.stringify(next)).catch(() => {});
   };
@@ -86,7 +91,8 @@ export function StartGuide({ cityName, onPickCity, onOpenMeetups }: { cityName: 
             onPress={() => { play('selection'); step.run(); }}
             style={({ pressed }) => [styles.step, { borderColor: theme.line }, pressed && { backgroundColor: theme.backgroundSelected }]}>
             <View style={[styles.stepIcon, { backgroundColor: done ? theme.accent : theme.backgroundElement }]}>
-              <SymbolView name={done ? { ios: 'checkmark', android: 'check', web: 'check' } : step.icon} size={IconSize.inline} tintColor={done ? theme.accentInk : theme.accent} />
+              {done ? <PopIn><SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={IconSize.inline} tintColor={theme.accentInk} /></PopIn>
+                : <SymbolView name={step.icon} size={IconSize.inline} tintColor={theme.accent} />}
             </View>
             <View style={styles.flex}>
               <ThemedText type="smallBold" style={done && { color: theme.textSecondary }}>{step.title}</ThemedText>
@@ -102,7 +108,7 @@ export function StartGuide({ cityName, onPickCity, onOpenMeetups }: { cityName: 
         <ThemedText type="small" themeColor="textSecondary">{tr('더 이상 안 보기 · 설정에서 다시 볼 수 있어요')}</ThemedText>
       </Pressable>
 
-      <Modal visible={touring} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { setTouring(false); complete('tour'); }}>
+      <Modal visible={touring} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { play('selection'); setTouring(false); complete('tour'); }}>
         <SafeAreaView style={[styles.flex, { backgroundColor: theme.background }]}>
           <ScrollView analyticsId="start-guide.tour" contentContainerStyle={styles.tour}>
             <ThemedText accessibilityRole="header" style={Typography.sheetTitle}>{tr('글링은 이렇게 생겼어요')}</ThemedText>

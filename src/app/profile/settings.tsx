@@ -42,13 +42,13 @@ export default function SettingsScreen() {
 
   const removePhoto = () =>
     Alert.alert(t.profile.removePhotoTitle, t.profile.removePhotoBody, [
-      { text: t.profile.cancel, style: 'cancel' },
+      { text: t.profile.cancel, style: 'cancel', onPress: () => play('selection') },
       { text: t.profile.remove, style: 'destructive', onPress: () => { play('warning'); void setProfilePhoto(null); } },
     ]);
 
   const confirmSignOut = () =>
     Alert.alert(t.profile.signOutTitle, t.profile.signOutBody, [
-      { text: t.profile.cancel, style: 'cancel' },
+      { text: t.profile.cancel, style: 'cancel', onPress: () => play('selection') },
       {
         text: t.profile.signOut,
         style: 'destructive',
@@ -84,13 +84,13 @@ export default function SettingsScreen() {
 
   const confirmDelete = () =>
     Alert.alert(t.profile.deleteTitle, t.profile.deleteWarning, [
-      { text: t.profile.cancel, style: 'cancel' },
+      { text: t.profile.cancel, style: 'cancel', onPress: () => play('selection') },
       { text: tr("구독 관리"), onPress: () => void manage() },
       {
         text: t.profile.deleteContinue,
         style: 'destructive',
         onPress: () => Alert.alert(t.profile.deleteFinalTitle, t.profile.deleteFinalBody, [
-          { text: t.profile.cancel, style: 'cancel' },
+          { text: t.profile.cancel, style: 'cancel', onPress: () => play('selection') },
           { text: t.profile.deleteConfirm, style: 'destructive', onPress: () => void deleteAccount() },
         ]),
       },
@@ -137,7 +137,7 @@ export default function SettingsScreen() {
                 onValueChange={(enabled) => {
                   play('selection');
                   void setScheme(enabled ? 'dark' : 'light').then((saved) => {
-                    if (!saved) Alert.alert(t.profile.appearanceSaveErrorTitle, t.profile.appearanceSaveErrorBody);
+                    if (!saved) { play('warning'); Alert.alert(t.profile.appearanceSaveErrorTitle, t.profile.appearanceSaveErrorBody); }
                   });
                 }}
               />

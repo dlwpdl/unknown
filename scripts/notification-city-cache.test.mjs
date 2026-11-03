@@ -48,7 +48,7 @@ function cityCache(file, { holdList = false, holdActors = false } = {}) {
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'expo-router') return { useRouter: () => ({ push: value => routes.push(value), navigate: value => routes.push(value) }), usePathname: () => pathname, useIsFocused: () => focused, useFocusEffect: fn => { legacyFocus = fn; } };
     if (name === 'react-native') return native;
-    if (name === 'react-native-reanimated') return { useReducedMotion: () => true };
+    if (name === 'react-native-reanimated') return { __esModule: true, default: { View: 'AnimatedView' }, FadeIn: { duration: () => 'fade' }, FadeInDown: { duration: () => 'fade' }, useReducedMotion: () => true };
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed, isAuthLoading: authLoading, isAdmin, me }) };
     if (name === '@/lib/community-data') return data;
     if (name === '@/lib/supabase') return { supabase: client };

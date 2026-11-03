@@ -33,11 +33,12 @@ function NativeFlatPressable({ style, onPressIn, onPressOut, onLayout, ...props 
   const flat = StyleSheet.flatten(original) ?? undefined;
   const shrinks = !reduced && !blocked && !!(props.onPress || props.onLongPress) && !fillsParent(flat);
   const settle = (toValue: number, duration: number) => Animated.timing(scale, { toValue, duration, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  const release = () => Animated.spring(scale, { toValue: 1, ...ControlMotion.releaseSpring, useNativeDriver: true }).start();
   const Control = AnimatedPressable!;
   return <Control {...props}
     onLayout={event => { width.current = event.nativeEvent.layout.width; onLayout?.(event); }}
     onPressIn={event => { setPressed(true); if (shrinks) settle(pressedScale(width.current), ControlMotion.pressMs); onPressIn?.(event); }}
-    onPressOut={event => { setPressed(false); settle(1, ControlMotion.settleMs); onPressOut?.(event); }}
+    onPressOut={event => { setPressed(false); release(); onPressOut?.(event); }}
     style={[original, pressed && !blocked && (flat?.opacity == null || flat.opacity === 1) && { opacity: ControlMotion.pressedOpacity }, flatControlStyle(flat),
       shrinks && { transform: [...(Array.isArray(flat?.transform) ? flat.transform : []), { scale }] }]} />;
 }

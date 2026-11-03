@@ -4,15 +4,18 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { NearbyPlacesLocation } from '@/components/city-popular-places';
+import { SelectionChip } from '@/components/selection-chip';
 import { useCurrentLocation } from '@/hooks/use-current-location';
 import { formatNearbyDistance, rankPlacesByDistance } from '@/lib/discovery-sort';
 import { getPlaceReviewRating, PlaceReviewSummary } from '@/components/place-review-summary';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
+import { ControlMotion } from '@/constants/design-system';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useCommunityCity } from '@/lib/community-city';
@@ -39,7 +42,7 @@ function PlacesList({ city, nearby = false }: { city?: (typeof CITIES)[number]; 
   const categories: { id: PlaceCategory; label: string }[] = [
     { id: 'all', get label() { return nearby ? tr("전체") : tr("TOP 50"); } }, { id: 'food', get label() { return tr("레스토랑"); } }, { id: 'cafe', get label() { return tr("카페"); } }, { id: 'places', get label() { return tr("가볼 만한 곳"); } },
   ];
-  const theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
+  const theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback(), reduced = useReducedMotion();
   const location = useCurrentLocation(city?.id ?? '', nearby && !!city);
   const distances = new Map<string, number | null>();
   const [limit, setLimit] = useState(10), [category, setCategory] = useState<PlaceCategory>('all'), [query, setQuery] = useState('');
@@ -81,17 +84,18 @@ function PlacesList({ city, nearby = false }: { city?: (typeof CITIES)[number]; 
 
           </View>
           <View style={styles.categories}>
-            {categories.map(item => <Pressable key={item.id} analyticsId={`places.category.${item.id}`} accessibilityRole="button"
-              accessibilityLabel={tr("{0} 장소", (item.label))} accessibilityState={{ selected: category === item.id }}
+            {categories.map(item => <SelectionChip key={item.id} analyticsId={`places.category.${item.id}`} accessibilityRole="button"
+              accessibilityLabel={tr("{0} 장소", (item.label))} accessibilityState={{ selected: category === item.id }} selected={category === item.id}
               onPress={() => { play('selection'); setCategory(item.id); setLimit(item.id === 'all' ? 10 : 50); }}
-              style={[styles.category, { borderColor: category === item.id ? theme.accent : theme.line, backgroundColor: category === item.id ? theme.accent : 'transparent' }]}>
+              style={[styles.category, { borderColor: category === item.id ? theme.accent : theme.line }]}>
               <ThemedText type="smallBold" style={{ color: category === item.id ? theme.accentInk : theme.text }}>{item.label}</ThemedText>
-            </Pressable>)}
+            </SelectionChip>)}
           </View>
           <View>
-            {places.slice(0, limit).map(place => {
+            {places.slice(0, limit).map((place, index) => {
               const rating = getPlaceReviewRating(city.id, place.id, ratings[place.id]), distanceLabel = formatNearbyDistance(distances.get(place.id) ?? null, tr);
-              return <Pressable key={place.id} analyticsId="places.open" accessibilityRole="button" accessibilityLabel={[place.name, nearby ? distanceLabel : null, tr('지도 보기')].filter(Boolean).join(' · ')}
+              // The first 8 rows rise one after another; the rest (up to 50) fade in together so long lists stay smooth. Rows already shown stay put.
+              return <Reanimated.View key={place.id} entering={reduced ? undefined : index < 8 ? FadeInDown.delay(index * 50).duration(ControlMotion.expandMs) : FadeIn.duration(ControlMotion.settleMs)}><Pressable analyticsId="places.open" accessibilityRole="button" accessibilityLabel={[place.name, nearby ? distanceLabel : null, tr('지도 보기')].filter(Boolean).join(' · ')}
               accessibilityValue={rating.score == null ? undefined : { text: tr(rating.source === 'gling' ? '글링 평균 {0}점, 10점 만점' : '{0}점, 10점 만점', rating.score.toFixed(1)) }}
               onPress={() => { play('selection'); router.push(placeMapRoute(place)); }}
               style={({ pressed }) => [styles.place, { borderBottomColor: theme.line, opacity: pressed ? 0.65 : 1 }]}>
@@ -105,7 +109,7 @@ function PlacesList({ city, nearby = false }: { city?: (typeof CITIES)[number]; 
                 {!!place.address && <ThemedText style={styles.address} themeColor="textSecondary" numberOfLines={2}>{place.address}</ThemedText>}
               </View>
               <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={14} tintColor={theme.textSecondary} />
-            </Pressable>; })}
+            </Pressable></Reanimated.View>; })}
           </View>
           {!places.length && <StateCard kind="empty" title={tr("목록에서 찾지 못했어요")} body={tr("검색어를 바꾸거나 다른 분류를 골라보세요.")} />}
           <ThemedText type="small" themeColor="textSecondary">{tr("© OpenStreetMap contributors · {0} 확인 자료", (new Date(CITY_PLACES_COLLECTED_AT).toLocaleDateString(appLocale)))}</ThemedText>

@@ -9,7 +9,6 @@ import {
   DeviceEventEmitter,
   KeyboardAvoidingView,
   Platform,
-  Modal,
   StyleSheet,
   UIManager,
   TextInput,
@@ -29,6 +28,7 @@ import { MeetupFollowEncore } from '@/components/meetup-loyalty';
 import { PostPoll } from '@/components/post-poll';
 import { MeetupRsvp } from '@/components/meetup-rsvp';
 import { MeetupManageSheet } from '@/components/meetup-manage-sheet';
+import { DragSheet } from '@/components/drag-sheet';
 import { meetupHostActions } from '@/components/meetup-room-summary';
 import { MeetupWaitlist } from '@/components/meetup-host-tools';
 import { SeatBar } from '@/components/chilling-event';
@@ -729,12 +729,9 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
         { key: 'post-edit', analyticsId: 'components_post-detail.pressable.14', label: tr('소개·사진 수정'), icon: { ios: 'photo', android: 'image', web: 'image' }, onPress: () => startEditPost() },
         { key: 'post-delete', analyticsId: 'post.manage.delete', label: tr('글 삭제'), icon: { ios: 'trash', android: 'delete', web: 'delete' }, danger: true, onPress: () => setDeletePostOpen(true) },
       ]} />}
-      <Modal visible={postMenuOpen || deletePostOpen} transparent animationType="fade" onRequestClose={() => { if (!savingPost) { play('selection'); setPostMenuOpen(false); setDeletePostOpen(false); } }}>
-        <View style={styles.menuOverlay}>
-          <Pressable analyticsId="post.manage.dismiss" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}
-            onPress={() => { if (!savingPost) { play('selection'); setPostMenuOpen(false); setDeletePostOpen(false); } }} />
-          <View accessibilityViewIsModal style={[styles.menuSheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, 16) }]}>
-            <ThemedText type="smallBold" accessibilityRole="header" style={styles.menuTitle}>{tr(deletePostOpen ? tr("이 글을 삭제할까요?") : management ? tr("비즈니스 글 관리") : tr("내 글 관리"))}</ThemedText>
+      {/* 모임 관리와 같은 공용 시트: 올라오고 내려가며, 손잡이·제목을 끌어 내려 닫는다. 저장 중에는 닫히지 않는다 (owner 2026-11-02). */}
+      <DragSheet visible={postMenuOpen || deletePostOpen} dismissible={!savingPost} onClose={() => { setPostMenuOpen(false); setDeletePostOpen(false); }}
+        title={tr(deletePostOpen ? tr("이 글을 삭제할까요?") : management ? tr("비즈니스 글 관리") : tr("내 글 관리"))}>
             {deletePostOpen ? <>
               <ThemedText themeColor="textSecondary" style={styles.menuTitle}>{tr("삭제한 글은 되돌릴 수 없어요. 달린 댓글도 함께 보이지 않게 됩니다.")}</ThemedText>
               <Pressable analyticsId="components_post-detail.pressable.15" accessibilityRole="button" accessibilityLabel={tr(management ? tr("비즈니스 글 삭제 확인") : tr("내 글 삭제 확인"))} disabled={savingPost}
@@ -760,9 +757,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
             <Pressable analyticsId="post.manage.cancel" accessibilityRole="button" disabled={savingPost} onPress={() => { play('selection'); setPostMenuOpen(false); setDeletePostOpen(false); }} style={[styles.menuRow, { justifyContent: 'center', borderTopColor: theme.line, borderTopWidth: StyleSheet.hairlineWidth }]}>
               <ThemedText themeColor="textSecondary">{tr("취소")}</ThemedText>
             </Pressable>
-          </View>
-        </View>
-      </Modal>
+      </DragSheet>
       <View style={[styles.head, { backgroundColor: theme.background }]}>
         <Pressable analyticsId="components_post-detail.pressable.11" onPress={() => { play('selection'); onClose(); }} accessibilityRole="button" accessibilityLabel={t.detail.close} style={({ pressed }) => [styles.closeBtn, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
           <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={22} tintColor={theme.text} />
@@ -964,10 +959,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
 }
 
 const styles = StyleSheet.create({
-  menuOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#0009' },
-  menuSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12 },
-  menuTitle: { paddingHorizontal: 24, paddingVertical: 12 },
-  menuRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 24, paddingVertical: 12 },
+  menuTitle: { paddingHorizontal: Spacing.two, paddingBottom: Spacing.two },
+  menuRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: Spacing.two, paddingVertical: 12 },
   pressed: { opacity: 0.65 },
   head: {
     flexDirection: 'row',

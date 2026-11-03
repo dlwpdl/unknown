@@ -34,7 +34,7 @@ function mount(options = {}) {
     '@/lib/chilling-data': { getChillingError: e => e.message, getChillingErrorCode: e => e.message, loadChillingApplication: async () => application, loadMeetupRequestStatus: async () => null,
       respondMeetupRequestV2: async (_c, id, response) => { calls.push(['respond', id, response]); } },
     '@/lib/community-data': { MEETUPS_CHANGED_EVENT: 'changed', loadPendingMeetupRequests: async () => { if (options.pendingError) throw new Error('offline'); return options.pending ?? []; } },
-    '@/lib/user-profile': { loadMannerSummary: async () => null }, '@/lib/supabase': { supabase: {} }, '@/lib/mock': { CITIES: [] }, '@/constants/theme': { Spacing: {}, MaxContentWidth: 640 },
+    '@/lib/user-profile': { loadMannerSummary: async () => null }, '@/lib/supabase': { supabase: {} }, '@/lib/mock': { CITIES: [] }, '@/constants/theme': { Spacing: {}, MaxContentWidth: 640 }, '@/constants/design-system': { ControlMotion: { settleMs: 180 } },
   };
   const exports = {};
   const source = readFileSync(new URL('../src/app/meetup-application.tsx', import.meta.url), 'utf8') + '\nexport { Application };';

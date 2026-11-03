@@ -152,7 +152,7 @@ export function PostPhotoGallery({ post }: { post: Post }) {
           cachePolicy="memory-disk" recyclingKey={`${galleryKey}:thumb:${position}`} transition={0} />
       </Pressable>; })}
     </ScrollView>}
-    {fullIndex !== null && <Modal visible transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={close}>
+    {fullIndex !== null && <Modal visible transparent animationType="fade" onRequestClose={close}>
       <SafeAreaProvider accessibilityViewIsModal style={styles.viewer}>
         <SafeAreaView edges={['top', 'left', 'right']} style={styles.toolbar}>
           <ThemedText style={styles.viewerText}>{fullIndex + 1}/{photos.length}</ThemedText>

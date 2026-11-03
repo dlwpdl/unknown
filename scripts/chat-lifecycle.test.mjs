@@ -102,10 +102,13 @@ export function mount(file, exportName, data, props = {}, params = {}) {
         LayoutAnimation: { configureNext: config => animations.push(config), Presets: { easeInEaseOut: {} }, Types: { easeOut: 'easeOut' }, Properties: { opacity: 'opacity' } },
         AppState: { currentState: 'active', addEventListener(_name, callback) { appListeners.add(callback); return { remove: () => appListeners.delete(callback) }; } },
         DeviceEventEmitter: { addListener: () => ({ remove() {} }) },
+        // Fades finish at once so a closing menu or sheet is gone in the same settle.
+        Animated: { Value: class { setValue() {} interpolate() { return this; } }, View: 'AnimatedView', timing: () => ({ start: done => done?.({ finished: true }) }) },
         ...data.native,
       }, { get: (target, key) => target[key] ?? key });
       if (name === 'expo-router') return { useFocusEffect: fn => effect(() => data.focused === false ? undefined : fn(), [fn, data.focused]), useLocalSearchParams: () => params, useRouter: () => ({ setParams(value) { Object.assign(params, value); }, push(value) { data.routes?.push(value); } }) };
       if (name === '@/app/map') return { __esModule: true, default: 'MapScreen' };
+      if (name === '@/components/disclosure') return { animateLayout() {}, Disclosure: 'Disclosure' };
       if (name === 'react-native-reanimated') return { useReducedMotion: () => data.reducedMotion ?? false };
       if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) };
       if (name === '@/hooks/use-chat-identity') return { useChatIdentity: () => data.businessIdentity ?? null };
@@ -281,7 +284,7 @@ test('report then block stops when its sheet, account, profile or target changes
     const pending = new Promise((resolve, reject) => { finish = resolve; fail = reject; });
     const data = {
       businessIdentity: { id: 'business', name: '업체' }, reducedMotion: true,
-      native: { Animated: { Value: class {}, View: 'AnimatedView' }, Easing: {}, Alert: { alert: (...args) => alerts.push(args) } },
+      native: { Animated: { Value: class { interpolate() { return this; } }, View: 'AnimatedView' }, Easing: {}, Alert: { alert: (...args) => alerts.push(args) } },
       businessChat: {
         reportBusinessChatMessage: async () => { calls.push('report'); await pending; },
         blockBusinessConversation: async () => { calls.push('block'); },

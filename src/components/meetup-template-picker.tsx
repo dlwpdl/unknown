@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 import { applyMeetupTemplate, deleteMeetupTemplate, loadMeetupTemplates, saveMeetupTemplate, type MeetupTemplate, type MeetupTemplateDraft } from '@/lib/meetup-host-tools';
+import { GlingLoader } from '@/components/gling-loader';
 
 export type MeetupTemplatePickerProps = {
   draft: MeetupTemplateDraft;
@@ -78,7 +79,7 @@ function TemplatePicker({ draft, onApply, disabled = false }: MeetupTemplatePick
   return <View style={[styles.panel, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <ThemedText type="smallBold">{say('내 모임 템플릿 · Plus', 'My meetup templates · Plus')}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">{say('제목과 소개, 신청 질문을 저장해두고 다시 쓸 수 있어요. 날짜·장소·정원·결제 정보는 직접 확인해주세요.', 'Save a title, description and application question to reuse. Confirm dates, venue, capacity and payment separately.')}</ThemedText>
-    {loading && <ThemedText type="small" accessibilityLiveRegion="polite">{say('템플릿 불러오는 중…', 'Loading templates…')}</ThemedText>}
+    {loading && <GlingLoader color={theme.accent} accessibilityLabel={say('템플릿 불러오는 중', 'Loading templates')} />}
     {!loading && !canUse && <ThemedText type="small" themeColor="textSecondary">{say('새 템플릿 저장·적용은 Plus부터 이용해요. 기존에 저장한 내용은 계속 볼 수 있어요.', 'Saving and using templates needs Plus. You can still view the ones you saved.')}</ThemedText>}
     {!loading && templates.length === 0 && !error && <ThemedText type="small" themeColor="textSecondary">{say('아직 저장한 템플릿이 없어요.', 'No saved templates yet.')}</ThemedText>}
     {templates.map(template => <Pressable analyticsId="meetup_template_picker.control.1" key={template.id} accessibilityRole="button" accessibilityState={{ expanded: selected === template.id, disabled: locked }} disabled={locked}

@@ -71,7 +71,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
       clearLastNotificationResponseAsync: async () => {}, addNotificationResponseReceivedListener: listener => subscription('response', listener), addPushTokenListener: listener => subscription('token', listener) },
     'expo-linking': Linking, 'expo-application': { nativeApplicationVersion: '1.2.2', nativeBuildVersion: '64' },
     'expo-constants': { __esModule: true, default: { expoConfig: { version: '9.9.9', ios: { buildNumber: '999' } } } },
-    'react-native-reanimated': { useReducedMotion: () => true }, 'react-native-webview': { __esModule: true, default: 'WebView' },
+    'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, FadeIn: { duration: () => 'fade' }, FadeInDown: { duration: () => 'fade' }, useReducedMotion: () => true }, 'react-native-webview': { __esModule: true, default: 'WebView' },
     '@/lib/auth': { useAuth: () => ctx.auth }, '@/lib/product-analytics': product, '@/lib/notification-preferences': preferences,
     '@/lib/push-notifications': { pushSupported: true, pushConfigured: true, registerPushDevice: async () => {} },
     '@/lib/meetup-push-rsvp': { registerMeetupRsvpCategory: async () => {}, answerMeetupRsvpFromPush: () => false },

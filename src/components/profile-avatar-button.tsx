@@ -9,7 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { ControlStyles, IconSize, controlPresentation } from '@/constants/design-system';
+import { ControlMotion, ControlStyles, IconSize, controlPresentation } from '@/constants/design-system';
 import { ChatIdentitySwitcher } from '@/components/chat-identity-switcher';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
 
@@ -31,7 +31,7 @@ export function ProfileAvatarButton({ enableBusinessSwitch = true, onBusinessSwi
     <Pressable analyticsId="components_profile-avatar-button.pressable.1" onPress={() => { play('selection'); router.push('/profile'); }} accessibilityRole="button" accessibilityLabel={t.tabs.profile}
       style={({ pressed }) => [styles.button, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
       {isAuthed && me.photoUri
-        ? <Image source={{ uri: me.photoUri }} style={styles.avatar} contentFit="cover" accessible={false} />
+        ? <Image transition={ControlMotion.settleMs} source={{ uri: me.photoUri }} style={styles.avatar} contentFit="cover" accessible={false} />
         : isAuthed
           ? <View style={[styles.avatar, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{me.nickname[0]}</ThemedText></View>
           : <SymbolView name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} size={24} tintColor={theme.text} />}

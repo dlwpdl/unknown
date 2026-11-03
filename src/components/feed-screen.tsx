@@ -2,10 +2,10 @@ import { NewcomerProgressCard } from '@/components/newcomer';
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView, FlatList } from '@/components/analytics-controls';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import Reanimated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
+import Reanimated, { FadeIn, FadeInDown, FadeOut, useReducedMotion } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter, useScrollToTop } from 'expo-router';
 import {
@@ -49,16 +49,17 @@ import { ProfileAvatarButton } from '@/components/profile-avatar-button';
 import { BusinessWriter } from '@/components/business-writer';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { RaisedActionButton } from '@/components/raised-action-button';
+import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
 import { StartGuide } from '@/components/start-guide';
 import { WeeklyRanking } from '@/components/weekly-ranking';
 import { UserSheet, type SheetUser } from '@/components/user-sheet';
-import { PostDetail } from '@/components/post-detail';
+import { PostZoomLink } from '@/components/post-zoom-link';
 import { TabContent } from '@/components/tab-content';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
-import { ControlMetrics, ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
+import { ControlMetrics, ControlMotion, ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useAuth } from '@/lib/auth';
@@ -92,6 +93,7 @@ import {
 import { findNeighborhood, neighborhoodName } from '@/lib/neighborhoods';
 import { supabase } from '@/lib/supabase';
 import type { DailyQuota, Post, PostKind, Tag } from '@/lib/types';
+import { applyPostChange, handOffPost, POST_CHANGED_EVENT, type PostChange } from '@/lib/post-open';
 import { splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
 
 
@@ -167,8 +169,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [aiNote, setAiNote] = useState<{ tone: 'info' | 'warn'; text: string } | null>(null);
   const aiUndo = useRef<{ title: string; body: string; tag: Tag; hashtagInput: string; postKind: PostKind; priceInput: string } | null>(null);
   const writesNew = !hasDraftText || isShortNote(title, splitPostAttachments(body).body);
-  const [detailPost, setDetailPost] = useState<Post | null>(null);
-  const [detailVisible, setDetailVisible] = useState(false);
   const [sheetUser, setSheetUser] = useState<SheetUser | null>(null);
   // 카드의 작성자를 누르면 글을 열지 않고 바로 미니 프로필로 간다.
   const openAuthor = (post: Post) => {
@@ -176,7 +176,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     if (post.room) { router.push({ pathname: '/meetup-profile', params: { postId: post.id } }); return; }
     setSheetUser({ id: post.author.id, nickname: post.author.nickname, neighborhood: post.author.neighborhood, verified: post.author.verified, trustLevel: post.author.trustLevel, mine: post.author.id === me.id });
   };
-  const [pendingPost, setPendingPost] = useState<Post | null>(null); // 로그인 후 이어서 열 글
+  const [pendingPostId, setPendingPostId] = useState<string | null>(null); // 로그인 후 이어서 열 글
   const [tagFilter, setTagFilter] = useState<number | null>(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null); // 카테고리 칩
   const [feedSort, setFeedSort] = useState<FeedSort>('latest');
   const activeSort = meetupsOnly ? 'latest' : feedSort;
@@ -259,6 +259,14 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, () => void refreshFeed().catch(() => {}));
     return () => listener.remove();
   }, [refreshFeed]);
+  // 글 화면(/post/[id])에서 고치거나 지운 글, 바뀐 댓글·조회 수를 돌아오기 전에 목록에 반영한다.
+  useEffect(() => {
+    const listener = DeviceEventEmitter.addListener(POST_CHANGED_EVENT, (change: PostChange) => {
+      setPosts(current => applyPostChange(current, change));
+      setSearchResults(current => applyPostChange(current, change));
+    });
+    return () => listener.remove();
+  }, []);
 
   useEffect(() => {
     if (!feedReady) return;
@@ -353,20 +361,20 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   // 게스트는 피드만 훑고, 상세·글쓰기·참여는 로그인 후 사용한다.
   const openDetail = (post: Post) => {
     if (!isAuthed) {
-      setPendingPost(post); // 로그인 성공하면 이어서 열기
+      setPendingPostId(post.id); // 로그인 성공하면 이어서 열기
       return promptLogin(t.auth.reasonDetail);
     }
-    setDetailPost(post);
-    setDetailVisible(true);
+    handOffPost(me.id, post);
+    router.push({ pathname: '/post/[id]', params: { id: post.id } });
   };
-  const weeklyRanking = cityOpen && !meetupsOnly && tagFilter == null && <WeeklyRanking cityId={city.id} refreshKey={rankingRefresh} onOpen={async (postId) => {
-    try {
-      const post = await loadPublicPost(supabase, postId);
-      if (post) openDetail(post);
-      else Alert.alert(tr("글을 찾을 수 없어요"), tr("삭제되었거나 공개되지 않은 글이에요."));
-    } catch {
-      Alert.alert(tr("글을 불러오지 못했어요"), tr("잠시 후 다시 시도해 주세요."));
-    }
+  // 로그인했으면 카드를 감싼 PostZoomLink가 누른 카드에서 글을 키워 연다(owner 2026-11-02). 게스트 카드는 그대로 로그인 창을 띄운다.
+  const zoomCard = (post: Post, card: ReactElement<{ onPress?: () => void }>) => isAuthed ? <PostZoomLink key={post.id} id={post.id} post={post}>{card}</PostZoomLink> : card;
+  const pressCard = (post: Post) => { if (!isAuthed) openDetail(post); };
+  const weeklyRanking = cityOpen && !meetupsOnly && tagFilter == null && <WeeklyRanking cityId={city.id} refreshKey={rankingRefresh} linked={isAuthed} onOpen={async (postId) => {
+    // Only guests reach here (signed-in rows are links). Comments are members-only since 2026-10-26, so loading the
+    // post first failed with an alert; ask for login and let the detail load it, including the not-found state.
+    setPendingPostId(postId);
+    promptLogin(t.auth.reasonDetail);
   }} />;
   const animateLayout = () => {
     if (reducedMotion) return;
@@ -421,27 +429,22 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     return () => { active = false; };
   }, []);
 
-  const updateViewCount = useCallback((postId: string, count: number) => {
-    setPosts((current) => current.map((item) => item.id === postId ? { ...item, views: count } : item));
-    setSearchResults((current) => current.map((item) => item.id === postId ? { ...item, views: count } : item));
-  }, []);
-
   // 로그인 직후 보려던 글을 이어서 연다.
   useEffect(() => {
-    if (isAuthed && pendingPost) {
+    // No hand-off: the guest copy lacks the member view (likes, meetup details), so the detail loads it fresh.
+    if (isAuthed && pendingPostId) {
       const timer = setTimeout(() => {
-        setDetailPost(pendingPost);
-        setDetailVisible(true);
-        setPendingPost(null);
+        router.push({ pathname: '/post/[id]', params: { id: pendingPostId } });
+        setPendingPostId(null);
       }, 0);
       return () => clearTimeout(timer);
     }
-  }, [isAuthed, pendingPost]);
+  }, [isAuthed, pendingPostId, router]);
   const showActionError = useCallback((code: keyof typeof t.actionErrors) => {
     const message = t.actionErrors[code];
     Alert.alert(message.title, message.body, [
       { text: t.write.cancel, style: 'cancel' },
-      ...(message.membership ? [{ text: tr("멤버십 보기"), onPress: () => { setWriting(false); setJoinPost(null); setDetailVisible(false); setDetailPost(null); router.push('/profile/membership'); } }] : []),
+      ...(message.membership ? [{ text: tr("멤버십 보기"), onPress: () => { setWriting(false); setJoinPost(null); router.push('/profile/membership'); } }] : []),
     ]);
   }, [router, t, tr]);
 
@@ -451,8 +454,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     if (post.room?.closed) return showActionError('MEETUP_CLOSED');
     if (post.author.id === me.id) return Alert.alert(t.chat.ownMeetupTitle, t.chat.ownMeetupBody);
     if (post.room?.eventKind) {
-      setDetailVisible(false);
-      setDetailPost(null);
       router.push({ pathname: '/meetup-join', params: { postId: post.id } });
       return;
     }
@@ -741,7 +742,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     }
   };
 
-  const feedState = cityOpen && feedLoading ? <View style={styles.categoryLoading}>{cityLoading ? <View style={[styles.feedPlaceholder, { backgroundColor: theme.backgroundElement }]} accessible={false} /> : <GlingLoader color={theme.accent} accessibilityLabel={tr("글 불러오는 중")} />}</View> : (
+  // 첫 로딩·도시 변경은 목록 가운데, 카테고리·정렬 변경은 칩 바로 아래에 로고를 띄운다. 목록 맨 아래 로더는 화면 밖이라 안 보였다 (owner 2026-11-02).
+  const loadingCover = cityLoading ? 'page' : cityOpen && feedLoading && !meetupsOnly ? 'list' : null;
+  const feedState = cityOpen && feedLoading ? <View style={styles.categoryLoading}>{meetupsOnly && <GlingLoader color={theme.accent} accessibilityLabel={tr("글 불러오는 중")} />}</View> : (
     cityOpen ? (
       feedError && feedData.length === 0 ? (
         <StateCard kind="error" title={tr("글을 불러오지 못했어요")} body={tr("연결을 확인하고 다시 시도해 주세요.")} actionLabel={tr("다시 시도")} onAction={() => { play('selection'); void refreshFeed().catch(() => {}); }} />
@@ -812,16 +815,14 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 const label = id == null ? t.feed.filterAll : tr(TAGS.find((tg) => tg.id === id)!.label);
                 const active = tagFilter === id;
                 return (
-                  <Animated.View key={id ?? 'all'} style={active && { borderRadius: 999, transform: [{ scale: chipLift }] }}><Pressable analyticsId="components_feed-screen.pressable.3"
+                  <Animated.View key={id ?? 'all'} style={active && { borderRadius: 999, transform: [{ scale: chipLift }] }}><SelectionChip analyticsId="components_feed-screen.pressable.3"
+                    selected={active}
                     onPress={() => changeTagFilter(id)}
                     accessibilityRole="button"
                     accessibilityState={{ selected: active }}
-                    style={({ pressed }) => [
-                      styles.filterChip,
-                      { backgroundColor: active ? theme.accent : pressed ? 'rgba(255,255,255,0.12)' : 'transparent', borderBottomColor: 'transparent', },
-                    ]}>
+                    style={[styles.filterChip, { borderBottomColor: 'transparent' }]}>
                     <ThemedText type="smallBold" style={{ color: active ? theme.accentInk : theme.textSecondary }}>{label}</ThemedText>
-                  </Pressable></Animated.View>
+                  </SelectionChip></Animated.View>
                 );
               })}
               <Pressable analyticsId="feed.categories.more" accessibilityRole="button" accessibilityLabel={tr('카테고리 전체 보기')}
@@ -833,7 +834,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             </ScrollView></GlassSurface>
           </View>
         )}
-        <FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
+        <View style={styles.feedArea}><FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
+          accessibilityElementsHidden={loadingCover != null} importantForAccessibility={loadingCover ? 'no-hide-descendants' : 'auto'}
           onViewableItemsChanged={trackTranslationFeed}
           viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY}
           data={[null, ...(showFeedSort ? [null] : []), ...(feedLoading ? [] : feedRows)]}
@@ -874,7 +876,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               <View style={styles.journalIntro}>
                 <View style={styles.journalStatusRow}>
                   <ThemedText type="smallBold" themeColor="textSecondary" style={styles.journalDate}>{todayLabel(appLocale)}</ThemedText>
-                  {cityLoading && <View style={styles.cityLoadingStatus}><GlingLoader color={theme.accent} size={18} accessibilityLabel={tr("{0} 소식 불러오는 중", tr(city.name))} /><ThemedText type="small" themeColor="textSecondary">{tr("소식 불러오는 중")}</ThemedText></View>}
                 </View>
                 {meetupsOnly && <ThemedText accessibilityRole="header" style={styles.journalTitle}>{t.feed.meetupTitle}</ThemedText>}
               </View>
@@ -895,26 +896,32 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             </View>
           ) : (
             Array.isArray(item) ? <Animated.View style={[styles.listingGrid, { opacity: feedOpacity }]}>
-              {item.map(post => businessGrid ? <BusinessNewsCard key={post.id} variant="tile" post={post} onPress={() => openDetail(post)} onAuthor={() => openAuthor(post)}
-                translationVisible={visibleFeedIds.has(post.id) && !searching && !detailVisible && !writing} />
-                : post.listingDetails ? <ListingCard key={post.id} variant="tile" post={post as DetailedPost} onPress={() => openDetail(post)} />
-                : <View key={post.id} style={styles.flexText}><PostCard flat post={post} onPress={() => openDetail(post)} onJoin={() => void onJoin(post)} onHashtag={openSearch} onAuthor={() => openAuthor(post)} /></View>)}
+              {item.map(post => businessGrid ? zoomCard(post, <BusinessNewsCard key={post.id} variant="tile" post={post} onPress={() => pressCard(post)} onAuthor={() => openAuthor(post)}
+                translationVisible={visibleFeedIds.has(post.id) && !searching && !writing} />)
+                : post.listingDetails ? zoomCard(post, <ListingCard key={post.id} variant="tile" post={post as DetailedPost} onPress={() => pressCard(post)} />)
+                : <View key={post.id} style={styles.flexText}>{zoomCard(post, <PostCard flat post={post} onPress={() => pressCard(post)} onJoin={() => void onJoin(post)} onHashtag={openSearch} onAuthor={() => openAuthor(post)} />)}</View>)}
               {item.length === 1 && <View style={styles.flexText} />}
             </Animated.View> :
-            <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: feedOpacity }}>{listingCategory && item.listingDetails ? <ListingCard
-              post={item as DetailedPost} onPress={() => openDetail(item)} /> : businessCategory ? <BusinessNewsCard
-              post={item} onPress={() => openDetail(item)} onAuthor={() => openAuthor(item)}
-              translationVisible={visibleFeedIds.has(item.id) && !searching && !detailVisible && !writing} /> : <PostCard
+            <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: feedOpacity }}>{zoomCard(item, listingCategory && item.listingDetails ? <ListingCard
+              post={item as DetailedPost} onPress={() => pressCard(item)} /> : businessCategory ? <BusinessNewsCard
+              post={item} onPress={() => pressCard(item)} onAuthor={() => openAuthor(item)}
+              translationVisible={visibleFeedIds.has(item.id) && !searching && !writing} /> : <PostCard
               flat
               post={item}
-              translationVisible={visibleFeedIds.has(item.id) && !searching && !detailVisible && !writing}
-              onPress={() => openDetail(item)}
+              translationVisible={visibleFeedIds.has(item.id) && !searching && !writing}
+              onPress={() => pressCard(item)}
               onJoin={() => void onJoin(item)}
               onHashtag={openSearch}
               onAuthor={() => openAuthor(item)}
-            />}{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !detailVisible && !writing && !searching)) && feedAdPosition(index - (showFeedSort ? 2 : 1), feedRows.length) && <FeedAd key={`ad-after-${item.id}`} />}</Animated.View></Reanimated.View>
+            />)}{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !writing && !searching)) && feedAdPosition(index - (showFeedSort ? 2 : 1), feedRows.length) && <FeedAd key={`ad-after-${item.id}`} />}</Animated.View></Reanimated.View>
           )}
         />
+        {/* 덮개가 아래 회색 자리표시와 이전 글을 가리고, 다 불러오면 서서히 걷힌다. 첫 화면은 덮개째 바로 그린다. */}
+        {loadingCover && <Reanimated.View entering={reducedMotion || loadingCover === 'page' ? undefined : FadeIn.duration(ControlMotion.pressMs)}
+          exiting={reducedMotion ? undefined : FadeOut.duration(ControlMotion.settleMs)}
+          style={[styles.loadingCover, loadingCover === 'page' && [styles.loadingCoverPage, { paddingBottom: bottomClear }], { backgroundColor: theme.background }]}>
+          <GlingLoader color={theme.accent} accessibilityLabel={loadingCover === 'page' ? tr("{0} 소식 불러오는 중", tr(city.name)) : tr("글 불러오는 중")} />
+        </Reanimated.View>}</View>
         {writeFab && <Pressable analyticsId="feed.write" accessibilityRole="button" accessibilityLabel={t.tabs.write} onPress={openWriter}
           style={({ pressed }) => [ControlStyles.pill, styles.writeFab, writeFabCompact && styles.writeFabCompact, { bottom: (Platform.OS === 'ios' ? insets.bottom : 0) + Spacing.three }, controlPresentation(theme, { tone: 'primary', pressed, reducedMotion }).container]}>
           <SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} size={IconSize.toolbar} tintColor={theme.accentInk} />
@@ -922,7 +929,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         </Pressable>}
       </View></SafeAreaView>
 
-      <Modal visible={categorySheet} animationType={reducedMotion ? 'none' : 'slide'} presentationStyle="pageSheet" onRequestClose={() => setCategorySheet(false)}>
+      <Modal visible={categorySheet} animationType={reducedMotion ? 'fade' : 'slide'} presentationStyle="pageSheet" onRequestClose={() => { play('selection'); setCategorySheet(false); }}>
         <SafeAreaView style={[styles.categorySheet, { backgroundColor: theme.background }]}>
           <View style={styles.categorySheetHead}>
             <View style={{ flex: 1 }}>
@@ -953,7 +960,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         filters={listingFilters} onFilters={setListingFilters} onClose={() => setListingMap(false)}
         onOpenPost={post => { setListingMap(false); setTimeout(() => openDetail(post), Platform.OS === 'ios' ? 350 : 0); }} />}
       {/* 검색: 제목·내용·해시태그. 입력 전엔 인기 해시태그 칩 (당근 검색 패턴) */}
-      <Modal visible={searching} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => setSearching(false)}
+      <Modal visible={searching} animationType={reducedMotion ? 'fade' : 'slide'} onRequestClose={() => { play('selection'); setSearching(false); }}
         onDismiss={() => {
           const post = searchSelection.current;
           searchSelection.current = null;
@@ -1051,35 +1058,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         </SafeAreaProvider>
       </Modal>
 
-      {/* 글 상세 (로그인 게이트 통과 시) — pageSheet: 상단 여백·스와이프 닫기 네이티브 제공 */}
-      <Modal
-        visible={detailVisible && !!detailPost}
-        animationType={reducedMotion ? 'none' : 'slide'}
-        presentationStyle="pageSheet"
-        allowSwipeDismissal
-        onRequestClose={() => setDetailVisible(false)}
-        onDismiss={() => setDetailPost(null)}>
-        {detailPost && (
-          <PostDetail
-            post={detailPost}
-            onViewCountChange={updateViewCount}
-            onClose={() => setDetailVisible(false)}
-            onPostRemoved={(postId) => setPosts((current) => current.filter((post) => post.id !== postId))}
-            onPostChanged={(saved) => {
-              setPosts(current => current.map(post => post.id === saved.id ? saved : post));
-              setSearchResults(current => current.map(post => post.id === saved.id ? saved : post));
-              setDetailPost(saved);
-            }}
-            onJoin={() => onJoin(detailPost)}
-            onCommentCountChange={(count) => {
-              setPosts((current) => current.map((post) => post.id === detailPost.id ? { ...post, comments: count } : post));
-              setDetailPost((current) => current ? { ...current, comments: count } : current);
-            }}
-          />
-        )}
-      </Modal>
-
-      <Modal visible={joinPost != null} transparent animationType="fade" onRequestClose={() => setJoinPost(null)}>
+      <Modal visible={joinPost != null} transparent animationType="fade" onRequestClose={() => { play('selection'); setJoinPost(null); }}>
         <View style={styles.joinBackdrop}>
           <Pressable analyticsId="components_feed-screen.pressable.10" style={StyleSheet.absoluteFill} onPress={() => { play('selection'); setJoinPost(null); }} accessibilityRole="button" accessibilityLabel={tr("참여 신청 닫기")} />
           <ThemedView style={[styles.joinSheet, { backgroundColor: theme.card }]}>
@@ -1114,11 +1093,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       {/* 도시 선택은 안전 영역을 확보한 전체 화면(iOS) 또는 하단 모달(Android)로 연다. */}
       <Modal
         visible={cityPicker}
-        animationType={reducedMotion ? 'none' : 'slide'}
+        animationType={reducedMotion ? 'fade' : 'slide'}
         presentationStyle={Platform.OS === 'ios' ? 'fullScreen' : 'overFullScreen'}
         transparent={Platform.OS !== 'ios'}
         allowSwipeDismissal
-        onRequestClose={() => setCityPicker(false)}>
+        onRequestClose={() => { play('selection'); setCityPicker(false); }}>
         <SafeAreaProvider style={[styles.cityBackdrop, Platform.OS === 'ios' && { backgroundColor: theme.background }]}>
           {Platform.OS !== 'ios' && (
             <Pressable analyticsId="components_feed-screen.pressable.13" style={StyleSheet.absoluteFill} onPress={() => { play('selection'); setCityPicker(false); }} accessibilityRole="button" accessibilityLabel={t.write.cancel} />
@@ -1133,14 +1112,14 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
       {/* 글쓰기의 선택 항목은 접고, 제목과 본문을 먼저 보여준다. */}
       {business && <BusinessWriter business={business} visible={businessWriting} onClose={() => setBusinessWriting(false)} onPublished={() => { void refreshFeed().catch(() => {}); }} />}
-      <Modal visible={writing} animationType={reducedMotion ? 'none' : 'slide'}
+      <Modal visible={writing} animationType={reducedMotion ? 'fade' : 'slide'}
         presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} allowSwipeDismissal
         onDismiss={() => {
           if (!postSuccessPending.current) return;
           postSuccessPending.current = false;
           play('postPublished');
         }}
-        onRequestClose={() => setWriting(false)}>
+        onRequestClose={() => { play('reaction'); setWriting(false); }}>
         <SafeAreaProvider style={[styles.writer, { backgroundColor: theme.background }]}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.writer}>
           <SafeAreaView style={styles.writer}>
@@ -1357,7 +1336,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 </View>
               </View>
               </View>} />
-              <Modal visible={writerPanel === 'more'} transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => changeWriterPanel(null)}>
+              <Modal visible={writerPanel === 'more'} transparent animationType="fade" onRequestClose={() => { play('selection'); changeWriterPanel(null); }}>
                 <SafeAreaProvider>
                   <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.writerMoreBackdrop}>
                     <SafeAreaView edges={['bottom']} accessibilityViewIsModal style={[styles.writerMoreSheet, { backgroundColor: theme.card }]}>
@@ -1469,9 +1448,10 @@ const styles = StyleSheet.create({
   journalStatusRow: { minHeight: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
   writeFab: { position: 'absolute', right: Spacing.three, minHeight: ControlMetrics.action, flexDirection: 'row', gap: Spacing.one, borderWidth: 1 },
   writeFabCompact: { width: ControlMetrics.action, paddingHorizontal: 0 },
-  cityLoadingStatus: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   journalDate: { fontSize: 12, lineHeight: 18, letterSpacing: 0.8 },
-  feedPlaceholder: { width: '100%', height: 180, borderRadius: 16 },
+  feedArea: { flex: 1 },
+  loadingCover: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', paddingTop: Spacing.five },
+  loadingCoverPage: { justifyContent: 'center', paddingTop: 0 },
   journalTitle: { fontSize: 28, lineHeight: 36, fontWeight: 700, letterSpacing: -0.8 },
   chipGlass: { borderRadius: 28, marginTop: Spacing.two },
   chipBar: { flexDirection: 'row', gap: Spacing.one, padding: Spacing.one },

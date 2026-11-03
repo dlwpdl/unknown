@@ -317,7 +317,7 @@ test('the meetup card, schedule and fee line render the compact CAD fee in both 
   for (const [language, expected, status] of [['ko', /^회비 \$15\.50 · e-Transfer · 11월 1일까지$/, /^회비 \$20\.00 · 아직 안 냈어요$/], ['en', /\$15\.50 · e-Transfer · .*November 1/, /\$20\.00 · /]]) {
     const exports = {}, imports = {
       react: { memo: value => value, useState: value => [value, () => {}] }, 'react/jsx-runtime': { jsx: (type, props) => typeof type === 'function' ? type(props) : { type, props }, jsxs: (type, props) => typeof type === 'function' ? type(props) : { type, props }, Fragment: 'Fragment' },
-      'react-native': { StyleSheet: { create: value => value, hairlineWidth: 1 }, View: 'View' }, 'expo-image': { Image: 'Image' },
+      'react-native': { StyleSheet: { create: value => value, hairlineWidth: 1 }, View: 'View' }, 'expo-image': { Image: 'Image' }, '@/constants/design-system': { ControlMotion: { settleMs: 180 } },
       '@/hooks/use-language': { useLanguage: () => ({ language, locale: language === 'en' ? 'en-CA' : 'ko-KR', tr: (value, ...args) => translateUi(language, value, ...args) }) },
       '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/auth': { useAuth: () => ({ me: { id: 'viewer' }, isAuthed: true }) }, '@/lib/chilling': chilling, '@/lib/meetup-language': meetupLanguage, '@/lib/meetup-host-tools': hostTools,
       '@/lib/feed-data': { getPostImageSource: () => null }, '@/lib/community-data': {}, '@/lib/supabase': {}, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },

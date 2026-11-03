@@ -1,4 +1,5 @@
 import { Typography } from '@/constants/design-system';
+import { animateLayout } from '@/components/disclosure';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Keyboard, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -57,10 +58,12 @@ export function MeetupChatOverview({ postId, currentUserId, onClose }: { postId:
   }, [scope, postId, retry]);
   const changeView = (next: typeof view) => {
     if (!scope || liveScope.current !== scope || closing.current) return;
-    play('selection'); Keyboard.dismiss(); setView(next);
+    play('selection'); Keyboard.dismiss(); animateLayout(reducedMotion); setView(next);
   };
   const finish = () => {
     if (finished.current || !scope || liveScope.current !== scope) return;
+    // A swipe-down close never went through dismiss(), so it still owes the close tap.
+    if (!closing.current) play('selection');
     finished.current = true; onClose();
   };
   const dismiss = () => {

@@ -1,12 +1,13 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
 import { UberOrderNotice } from '@/components/business-webshop';
+import { DragSheet } from '@/components/drag-sheet';
+import { PostZoomLink } from '@/components/post-zoom-link';
 import { ThemedText } from '@/components/themed-text';
-import { ControlStyles, controlPresentation } from '@/constants/design-system';
+import { ControlMotion, ControlStyles, controlPresentation } from '@/constants/design-system';
 import { Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
@@ -34,10 +35,10 @@ export function SavedItemCard({ item, folders, disabled = false, compareBusy = f
     : item.target.kind === 'place' ? ko ? '장소' : 'Place' : item.target.kind === 'user' ? ko ? '사람' : 'Person'
       : item.postType === 'job' ? ko ? '채용' : 'Job' : item.postType === 'meetup' ? ko ? '모임' : 'Meetup' : ko ? '글' : 'Post';
   const names = folders.filter(folder => item.folderIds.includes(folder.id)).map(folder => folder.name);
-  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-    <Pressable analyticsId={{ merchant: 'saved.open.merchant', place: 'saved.open.place', post: 'saved.open.post', user: 'saved.open.user' }[item.target.kind]} testID={`saved.open.${item.key}`} accessibilityRole="button" accessibilityLabel={`${item.title} · ${ko ? '열기' : 'Open'}`}
-      onPress={() => { play('selection'); onOpen(); }} style={({ pressed }) => [styles.open, { opacity: pressed ? 0.82 : 1 }]}>
-      {!!item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.image} contentFit="cover" accessible={false} />}
+  // A saved post grows out of this row (owner 2026-11-02): PostZoomLink navigates after onOpen. Object style for the link's Slot.
+  const open = <Pressable analyticsId={{ merchant: 'saved.open.merchant', place: 'saved.open.place', post: 'saved.open.post', user: 'saved.open.user' }[item.target.kind]} testID={`saved.open.${item.key}`} accessibilityRole="button" accessibilityLabel={`${item.title} · ${ko ? '열기' : 'Open'}`}
+      onPress={() => { play('selection'); onOpen(); }} style={styles.open}>
+      {!!item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.image} contentFit="cover" transition={ControlMotion.settleMs} accessible={false} />}
       <View style={styles.grow}>
         <View style={styles.meta}><ThemedText type="label" themeColor="accent">{kind}</ThemedText>
           {item.closed && <ThemedText type="label" themeColor="textSecondary">{ko ? '마감' : 'Closed'}</ThemedText>}</View>
@@ -45,7 +46,9 @@ export function SavedItemCard({ item, folders, disabled = false, compareBusy = f
         {!!item.subtitle && <ThemedText type="supporting" themeColor="textSecondary" numberOfLines={2}>{item.subtitle}</ThemedText>}
         {!!item.address && item.address !== item.subtitle && <ThemedText type="supporting" themeColor="textSecondary" numberOfLines={2}>{item.address}</ThemedText>}
       </View>
-    </Pressable>
+    </Pressable>;
+  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+    {item.target.kind === 'post' ? <PostZoomLink id={item.target.id}>{open}</PostZoomLink> : open}
     {item.target.kind === 'user' && <ThemedText type="supporting" themeColor="textSecondary">{ko ? '저장해도 상대에게 알림이 가지 않아요.' : 'They won’t be notified when you save them.'}</ThemedText>}
     {!!names.length && <ThemedText type="supporting" themeColor="textSecondary">{names.join(' · ')}</ThemedText>}
     <View style={styles.actions}>
@@ -71,17 +74,16 @@ export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCrea
   const theme = useTheme(), { language } = useLanguage(), { play } = useInteractionFeedback(), ko = language === 'ko';
   const [name, setName] = useState(editor.kind === 'rename' ? editor.folder.name : '');
   const [ids, setIds] = useState(editor.kind === 'item' ? editor.item.folderIds : []);
+  // Closing slides the sheet down first; the parent unmounts it once DragSheet reports it is gone.
+  const [open, setOpen] = useState(true);
   const invalid = !name.trim() || name.trim().length > 80 || /[\u0000-\u001f\u007f]/.test(name);
   const title = editor.kind === 'item' ? ko ? '폴더에 정리' : 'Organize in folders'
     : editor.kind === 'create' ? ko ? '새 폴더' : 'New folder' : editor.kind === 'rename' ? ko ? '폴더 관리' : 'Manage folder' : ko ? '폴더를 삭제할까요?' : 'Delete this folder?';
-  const close = () => { if (!busy) { play('selection'); onClose(); } };
-  return <Modal transparent visible animationType="none" onRequestClose={close}>
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.backdrop}>
-      <Pressable analyticsId="saved.editor.backdrop" accessibilityRole="button" accessibilityLabel={ko ? '닫기' : 'Close'} onPress={close} disabled={busy} style={StyleSheet.absoluteFill} />
-      <SafeAreaView edges={['bottom']} accessibilityViewIsModal onAccessibilityEscape={close} style={[styles.sheet, { backgroundColor: theme.background }]}>
+  // The shared sheet slides up and closes by drag, backdrop or back (owner 2026-11-02: no popping in). It plays the close feedback itself.
+  return <DragSheet visible={open} onClose={() => setOpen(false)} onDismissed={onClose} dismissible={!busy}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.sheetContent}>
           <View style={styles.heading}><ThemedText type="sheetTitle" style={styles.grow}>{title}</ThemedText>
-            <SavedLibraryButton analyticsId="saved.editor.close" label={ko ? '닫기' : 'Close'} onPress={onClose} disabled={busy} /></View>
+            <SavedLibraryButton analyticsId="saved.editor.close" label={ko ? '닫기' : 'Close'} onPress={() => setOpen(false)} disabled={busy} /></View>
           <ThemedText type="supporting" themeColor="textSecondary">{ko ? '폴더는 나만 볼 수 있어요. 폴더를 삭제해도 저장한 항목은 남아요.' : 'Folders are private. Deleting a folder keeps your saved items.'}</ThemedText>
           {(editor.kind === 'create' || editor.kind === 'rename') && <TextInput value={name} onChangeText={setName} maxLength={80} editable={!busy} autoFocus
             accessibilityLabel={ko ? '폴더 이름' : 'Folder name'} placeholder={ko ? '폴더 이름' : 'Folder name'} placeholderTextColor={theme.textSecondary}
@@ -106,9 +108,7 @@ export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCrea
             onPress={() => { if (editor.kind === 'item') onAssign(ids); else if (editor.kind === 'create') onCreate(name.trim()); else if (editor.kind === 'rename') onRename(name.trim()); else onDelete(); }} />
           {editor.kind === 'rename' && <SavedLibraryButton analyticsId="saved.editor.delete" label={ko ? '폴더 삭제' : 'Delete folder'} disabled={busy} onPress={onRequestDelete} />}
         </ScrollView>
-      </SafeAreaView>
-    </KeyboardAvoidingView>
-  </Modal>;
+  </DragSheet>;
 }
 
 const styles = StyleSheet.create({
@@ -117,8 +117,6 @@ const styles = StyleSheet.create({
   meta: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginBottom: Spacing.one },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, action: { borderWidth: 1, maxWidth: '100%', paddingVertical: Spacing.two },
   offer: { borderTopWidth: 1, paddingTop: Spacing.two, gap: Spacing.two },
-  backdrop: { flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' },
-  sheet: { width: '100%', maxWidth: 600, alignSelf: 'center', maxHeight: '90%', borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' },
   sheetContent: { padding: Spacing.three, gap: Spacing.three }, heading: { flexDirection: 'row', alignItems: 'flex-start', flexWrap: 'wrap', gap: Spacing.two },
   check: { minHeight: 48, borderWidth: 1, borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
 });

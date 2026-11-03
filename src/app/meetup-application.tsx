@@ -7,6 +7,7 @@ import { Alert, DeviceEventEmitter, LayoutAnimation, Platform, StyleSheet, UIMan
 import { useReducedMotion } from 'react-native-reanimated';
 import { SymbolView } from 'expo-symbols';
 import { Image } from 'expo-image';
+import { ControlMotion } from '@/constants/design-system';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { InitialAvatar, ListCard, ListRow, SectionLabel, Tag } from '@/components/list-card';
@@ -57,6 +58,12 @@ function Application({ requestId }: { requestId: string }) {
   const [actionError, setActionError] = useState(''), [actionCode, setActionCode] = useState<string | null>(null);
   const revision = useRef(0);
   const busy = useRef(false);
+  // The next state (loaded application, approve/reject result) fades in instead of replacing the screen at once.
+  const fadeNext = () => {
+    if (reducedMotion || Platform.OS === 'web') return;
+    if (Platform.OS === 'android') UIManager.setLayoutAnimationEnabledExperimental?.(true);
+    LayoutAnimation.configureNext({ duration: 220, create: { type: LayoutAnimation.Types.easeOut, property: LayoutAnimation.Properties.opacity } });
+  };
   useFocusEffect(useCallback(() => {
     let active = true;
     revision.current += 1;
@@ -68,13 +75,7 @@ function Application({ requestId }: { requestId: string }) {
       // Hosts decide with the applicant's past meetup reviews; a failed load just hides the card.
       if (value && value.requesterId !== me.id) void loadMannerSummary(supabase, value.requesterId).then(summary => { if (active) setManner(summary); }).catch(() => undefined);
     })
-      .catch(e => { if (active) setError(getChillingError(e)); }).finally(() => { if (active) {
-        if (!reducedMotion && Platform.OS !== 'web') {
-          if (Platform.OS === 'android') UIManager.setLayoutAnimationEnabledExperimental?.(true);
-          LayoutAnimation.configureNext({ duration: 220, create: { type: LayoutAnimation.Types.easeOut, property: LayoutAnimation.Properties.opacity } });
-        }
-        setLoading(false);
-      } });
+      .catch(e => { if (active) setError(getChillingError(e)); }).finally(() => { if (active) { fadeNext(); setLoading(false); } });
     return () => { active = false; revision.current += 1; };
   // retry deliberately re-runs the focused screen's load after an explicit retry.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -90,7 +91,7 @@ function Application({ requestId }: { requestId: string }) {
     busy.current = true; setResponding(true); setError(''); setActionError(''); setActionCode(null);
     try {
       await respondMeetupRequestV2(supabase, requestId, response, shareHistory);
-      if (revision.current === current) { setApplication(null); setOutcome(response); }
+      if (revision.current === current) { fadeNext(); setApplication(null); setOutcome(response); }
       play(response === 'approved' ? 'meetup' : 'selection');
       DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       void refreshMembership();
@@ -133,7 +134,7 @@ function Application({ requestId }: { requestId: string }) {
       : visible ? <>
       {application.request?.post && <ThemedText type="small" themeColor="textSecondary">{application.request.post.title}{" " + tr("· 참여 신청")}</ThemedText>}
       <View style={styles.identity}>
-        {identity?.photoUri ? <Image source={{ uri: identity.photoUri }} cachePolicy="none" style={styles.avatar} contentFit="cover" accessibilityLabel={tr("{0} 모임 사진", identity.nickname)} />
+        {identity?.photoUri ? <Image source={{ uri: identity.photoUri }} transition={ControlMotion.settleMs} cachePolicy="none" style={styles.avatar} contentFit="cover" accessibilityLabel={tr("{0} 모임 사진", identity.nickname)} />
           : <View style={[styles.avatar, styles.initial, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle">{(identity?.nickname ?? tr("신청자")).slice(0, 1)}</ThemedText></View>}
         <View style={styles.identityBody}><ThemedText style={styles.name}>{identity?.nickname ?? tr("신청자")}</ThemedText>
           {!!identity?.city_id && <ThemedText type="small" themeColor="textSecondary">{tr(CITIES.find(city => city.id === identity.city_id)?.name ?? identity.city_id)}</ThemedText>}

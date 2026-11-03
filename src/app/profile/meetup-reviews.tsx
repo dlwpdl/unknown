@@ -5,7 +5,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { animateLayout } from '@/components/disclosure';
+import { GlingLoader } from '@/components/gling-loader';
 import { MannerSummary } from '@/components/manner-summary';
+import { useReducedMotion } from 'react-native-reanimated';
 import { MeetupReviews } from '@/components/meetup-reviews';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -23,6 +26,7 @@ export default function MeetupReviewInbox() {
 function Inbox() {
   const { tr } = useLanguage();
   const { isAuthed, me, promptLogin } = useAuth(), theme = useTheme(), { play } = useInteractionFeedback(), router = useRouter();
+  const reducedMotion = useReducedMotion();
   const [items, setItems] = useState<{ postId: string; title: string; kind: 'once' | 'group' }[] | null>(null);
   const [feedback, setFeedback] = useState<MyMannerFeedback[]>([]), [summary, setSummary] = useState<Summary | null>(null);
   const [selected, setSelected] = useState<string | null>(null), [error, setError] = useState(''), [retry, setRetry] = useState(0);
@@ -42,10 +46,10 @@ function Inbox() {
       {summary && <MannerSummary summary={summary} />}
       <ThemedText type="subtitle">{tr("참여한 회차")}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{tr("종료 후 7일 안에 참석 확인과 평가를 남길 수 있어요. 모임 퇴장·차단 이후에도 이미 참여한 회차의 권한은 유지돼요.")}</ThemedText>
-      {!items && !error && <ThemedText>{tr("불러오는 중…")}</ThemedText>}
+      {!items && !error && <GlingLoader accessibilityLabel={tr("불러오는 중…")} />}
       {items?.length === 0 && <ThemedText type="small">{tr("아직 등록된 참여 회차가 없어요. 모임 화면에서 회차를 열고 실제 현장에 체크인해주세요.")}</ThemedText>}
       {items?.map(item => <View key={item.postId} style={{ gap: 12 }}>
-        <Pressable accessibilityRole="button" accessibilityState={{ expanded: selected === item.postId }} onPress={() => { play('selection'); setSelected(old => old === item.postId ? null : item.postId); }} style={button}><ThemedText type="smallBold">{item.title} · {item.kind === 'once' ? tr("참석·개인 평가") : tr("후기·참석 확인")}</ThemedText></Pressable>
+        <Pressable accessibilityRole="button" accessibilityState={{ expanded: selected === item.postId }} onPress={() => { play('selection'); animateLayout(reducedMotion); setSelected(old => old === item.postId ? null : item.postId); }} style={button}><ThemedText type="smallBold">{item.title} · {item.kind === 'once' ? tr("참석·개인 평가") : tr("후기·참석 확인")}</ThemedText></Pressable>
         {selected === item.postId && <MeetupReviews postId={item.postId} kind={item.kind} attendanceOnly />}
       </View>)}
       <ThemedText type="subtitle">{tr("받은 글링 리뷰")}</ThemedText>

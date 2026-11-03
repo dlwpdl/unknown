@@ -73,7 +73,7 @@ export function AppUpdateGate({ children }: { children: ReactNode }) {
   return <>
     <View style={styles.app} importantForAccessibility={intro ? 'no-hide-descendants' : 'auto'} accessibilityElementsHidden={intro}>{children}</View>
     {intro && <LaunchMoment ready={status === 'allowed'} onComplete={() => setIntroDone(true)} />}
-    <Modal visible={status === 'blocked'} animationType="none" onRequestClose={() => {}}>
+    <Modal visible={status === 'blocked'} animationType="fade" onRequestClose={() => {}}>
       <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
         <View style={styles.content}>
           <StateCard kind="update" title={tr("새 버전으로 업데이트해 주세요")}

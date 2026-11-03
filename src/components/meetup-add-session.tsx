@@ -8,6 +8,7 @@ import { ChillingDateInput } from '@/components/chilling-date-input';
 import { DragSheet } from '@/components/drag-sheet';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { SelectionChip } from '@/components/selection-chip';
+import { GlingLoader } from '@/components/gling-loader';
 import { ThemedText } from '@/components/themed-text';
 import { IconSize, Typography } from '@/constants/design-system';
 import { Spacing } from '@/constants/theme';
@@ -98,7 +99,7 @@ export function MeetupAddSession({ postId, visible, canRepeat, canSingle = true,
       {!canRepeat && <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('매주, 격주로 한 번에 등록하는 건 프로 멤버십부터 쓸 수 있어요.')}</ThemedText>}
       {repeating && <>
         <ThemedText style={Typography.label}>{tr('등록할 날짜')}</ThemedText>
-        {loadingDates && <ThemedText themeColor="textSecondary" accessibilityLiveRegion="polite" style={Typography.supporting}>{tr('날짜를 맞춰 보는 중…')}</ThemedText>}
+        {loadingDates && <GlingLoader color={theme.accent} accessibilityLabel={tr('날짜를 맞춰 보는 중…')} />}
         {dates.map(date => {
           const checked = picked.includes(date.startsAt);
           return <Pressable key={date.startsAt} analyticsId="meetup.session.date" accessibilityRole="checkbox" accessibilityState={{ checked, disabled: busy }} disabled={busy} style={styles.check}

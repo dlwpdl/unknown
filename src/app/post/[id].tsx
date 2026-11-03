@@ -6,7 +6,7 @@ import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
-import { Platform, StyleSheet, View } from 'react-native';
+import { DeviceEventEmitter, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PostDetail } from '@/components/post-detail';
@@ -22,9 +22,15 @@ import { PUBLIC_SITE } from '@/lib/public-seo';
 import { loadSharedLinkPreview, type SharedLinkPreview } from '@/lib/shared-link-preview';
 import { SHARED_POST_RETURN_KEY, buildSharedPostUrl } from '@/lib/sharing';
 import { clearSharedPostReturn, rememberSharedPostReturn } from '@/lib/shared-post-return';
+import { forgetHandedOffPost, handedOffPost, POST_CHANGED_EVENT, type PostChange } from '@/lib/post-open';
 import type { Post } from '@/lib/types';
 
 const BRAND_CARD = `${PUBLIC_SITE}/share-covers/post.png`;
+// Module-level so PostDetail's view-count and meetup effects keep stable dependencies.
+const announce = (change: PostChange) => DeviceEventEmitter.emit(POST_CHANGED_EVENT, change);
+const announceViews = (id: string, views: number) => announce({ id, views });
+const announceRemoved = (id: string) => announce({ id, removed: true });
+const announceChanged = (post: Post) => announce({ id: post.id, post });
 export default function SharedPostRoute() {
   const { tr, language } = useLanguage();
   const { id, commentId, invite } = useLocalSearchParams<{ id: string; commentId?: string; invite?: string }>();
@@ -38,7 +44,13 @@ export default function SharedPostRoute() {
   const focused = useIsFocused();
   const { play } = useInteractionFeedback();
   const theme = useTheme();
-  const [result, setResult] = useState<{ id: string; post: Post | null; failed: boolean } | null>(null);
+  // A list card hands over the post it showed, so the zoom lands on the post instead of a loader (owner 2026-11-02).
+  const [result, setResult] = useState<{ id: string; post: Post | null; failed: boolean } | null>(() => {
+    const post = isAuthed ? handedOffPost(viewer, postId) : undefined;
+    return post ? { id: requestKey, post, failed: false } : null;
+  });
+  const handedKey = useRef(result?.id);
+  useEffect(() => { forgetHandedOffPost(postId); }, [postId]);
   const [preview, setPreview] = useState<{ key: string; value: SharedLinkPreview | null; failed: boolean } | null>(null);
   const [savingReturn, setSavingReturn] = useState(false);
   const [returnError, setReturnError] = useState<string | null>(null);
@@ -47,7 +59,13 @@ export default function SharedPostRoute() {
   const current = result?.id === requestKey ? result : null;
   const returnPath = `/post?id=${postId}${invite === '1' || (preview?.key === requestKey && preview.value?.kind === 'meetup') || current?.post?.room ? '&invite=1' : ''}`;
   const loading = isAuthed && Boolean(postId) && !current;
-  const goBack = () => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/'); };
+  // 스와이프·안드로이드 뒤로가기로 닫혀도 X와 같은 진동을 한 번만 낸다. 버튼으로 닫을 때는 이미 울렸으니 건너뛴다 (owner 2026-11-02).
+  const closedInApp = useRef(false);
+  const leave = () => { closedInApp.current = true; if (router.canGoBack()) router.back(); else router.replace('/'); };
+  const goBack = () => { play('selection'); leave(); };
+  const playOnLeave = useRef(play);
+  useEffect(() => { playOnLeave.current = play; }, [play]);
+  useEffect(() => () => { if (!closedInApp.current) playOnLeave.current('selection'); }, []);
 
   useLayoutEffect(() => {
     const scope = { active: focused && !isAuthLoading, key: requestKey, path: returnPath, viewer };
@@ -80,7 +98,8 @@ export default function SharedPostRoute() {
   }, [focused, isAuthed, isAuthLoading, current?.post, returnPath]);
 
   useEffect(() => {
-    if (!postId || !isAuthed) return;
+    // Like the old home sheet, a handed-over post is not reloaded; the detail loads its own comments and counts.
+    if (!postId || !isAuthed || handedKey.current === requestKey) return;
     let active = true;
     void loadPublicPost(supabase, postId)
       .then((post) => { if (active) setResult({ id: requestKey, post, failed: false }); })
@@ -109,7 +128,8 @@ export default function SharedPostRoute() {
       </Head>}
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         {isAuthed && current?.post ? (
-          <PostDetail post={current.post} commentId={targetCommentId} onClose={goBack} />
+          <PostDetail post={current.post} commentId={targetCommentId} onClose={leave} onViewCountChange={announceViews}
+            onPostRemoved={announceRemoved} onPostChanged={announceChanged} onCommentCountChange={comments => announce({ id: postId, comments })} />
         ) : (
           <>
             <View style={styles.header}>

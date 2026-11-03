@@ -1,5 +1,5 @@
 import { Colors } from '@/constants/theme';
-import { ControlStyles, IconSize, Typography } from '@/constants/design-system';
+import { ControlMotion, ControlStyles, IconSize, Typography } from '@/constants/design-system';
 import { useLanguage } from '@/hooks/use-language';
 import { PostAdLabel } from '@/components/post-ad-label';
 import { hasAdLabel } from '@/lib/hashtags';
@@ -12,8 +12,9 @@ import { SymbolView } from 'expo-symbols';
 import { openBrowserAsync } from 'expo-web-browser';
 import { safeTicketUrl } from '../../supabase/functions/_shared/ticketmaster';
 import * as Location from 'expo-location';
-import { useReducedMotion } from 'react-native-reanimated';
+import Reanimated, { FadeIn, LayoutAnimationConfig, SlideInDown, SlideOutDown, useReducedMotion } from 'react-native-reanimated';
 import { FlatList, Pressable, ScrollView } from '@/components/analytics-controls';
+import { animateLayout } from '@/components/disclosure';
 import { DiscoveryMap } from '@/components/discovery-map';
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { FeedAd } from '@/components/feed-ad';
@@ -268,7 +269,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     setDateFilter(null); setDate(''); setDateOpen(false); setDateError('');
   };
   const chooseDate = (value: DiscoveryDate) => {
-    play('selection');
+    play('selection'); animateLayout(reduced); // The date field below fades in or out instead of jumping.
     if (value === 'date') { setDateDraft(date || discoveryDays('today', city.id)[0]); setDateError(''); setDateOpen(true); }
     else { setDateFilter(value); setDateOpen(false); setDateError(''); }
   };
@@ -331,6 +332,8 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     {mode === 'list' && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite" style={styles.notice}>{tr('지도 {0}개 · 목록 {1}개', pins.length, items.length)}{limited ? tr(" · 500개까지 표시") : ''}</ThemedText>}
     {!!current?.errors.length && <View style={styles.notice}><ThemedText type="small" accessibilityRole="alert">{current.errors.map(error => tr(error)).join(' ')} {tr("새로고침으로 다시 시도할 수 있어요.")}</ThemedText></View>}
     <View style={styles.content}>
+      {/* The incoming view fades in. skipExiting: switching views or leaving drops the place card at once instead of keeping the old view alive for its slide. */}
+      <Reanimated.View key={mode} entering={reduced ? undefined : FadeIn.duration(ControlMotion.settleMs)} style={StyleSheet.absoluteFill}><LayoutAnimationConfig skipExiting>
       {mode === 'map' ? <>
         <DiscoveryMap markers={markers} cityName={city.englishName} selectedId={selected?.id} center={center} userLocation={userLocation} topInset={mapFiltersHeight} bottomInset={selected && located(selected) && cardOpen ? Math.min(cardHeight + 56, 1000) : 0} onSelect={selectPin} />
         <View testID="map-filter-overlay" pointerEvents="box-none" onLayout={event => setMapFiltersHeight(event.nativeEvent.layout.height)} style={styles.mapFilters}>{quickFilters}</View>
@@ -340,19 +343,21 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
           <Pressable analyticsId="discovery.refresh" accessibilityRole="button" accessibilityLabel={tr("지도 결과 새로고침")} onPress={() => { play('selection'); refresh(); }} style={[styles.mapControl, { backgroundColor: theme.card, borderColor: theme.line }]}><SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={21} tintColor={theme.text} /></Pressable>
         </View>
         <Pressable analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={tr("리스트 보기")} onPress={() => changeMode('list')} style={[styles.listLink, { backgroundColor: theme.card, borderColor: theme.line, bottom: selected && located(selected) && cardOpen ? Math.min(cardHeight + 64, 1000) : 56 }]}><SymbolView name={{ ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' }} size={18} tintColor={theme.text} /><View style={styles.listLinkText}><ThemedText type="smallBold" accessibilityLiveRegion="polite">{tr('목록 {0}개', items.length)}{limited ? '+' : ''}</ThemedText><ThemedText type="caption" themeColor="accent">{discountOrder ? tr('할인율 높은 순') : locating ? tr('위치 확인 중') : userLocation ? tr('가까운 순') : tr('위치 사용 필요')}</ThemedText></View></Pressable>
-        {selected && located(selected) && cardOpen ? <View onLayout={event => setCardHeight(event.nativeEvent.layout.height)} style={[styles.selected, { backgroundColor: theme.card, borderColor: theme.line }]}>
+        {selected && located(selected) && cardOpen ? <Reanimated.View entering={reduced ? undefined : SlideInDown.duration(ControlMotion.expandMs)} exiting={reduced ? undefined : SlideOutDown.duration(ControlMotion.sheetCloseMs)}
+          onLayout={event => setCardHeight(event.nativeEvent.layout.height)} style={[styles.selected, { backgroundColor: theme.card, borderColor: theme.line }]}>
             <ScrollView analyticsId="discovery.detail" accessibilityLabel={tr("선택한 장소 상세, 스크롤로 더 보기")} style={styles.selectedScroll} contentContainerStyle={styles.selectedContent}><DiscoveryCard item={selected} distance={discoveryDistanceKm(selected, userLocation)} externalInfo={!!onClose} viewerScope={viewerScope} onOpen={() => open(selected)} /><Top25Note item={selected} /><GlingVisitNote item={selected} /></ScrollView><Directions item={selected} />
-        </View>
+        </Reanimated.View>
 
           : !loading && !deliveryUnavailable && items.length === 0 && <View style={styles.mapEmpty}><StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : items.length ? tr("주소가 있는 항목은 목록에서 볼 수 있어요") : visitedOnly ? visitedReady ? tr("조건에 맞는 글링 방문 장소가 없어요") : tr("아직 글링이 방문한 장소가 없어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 50 장소가 없어요") : tr("이 도시의 TOP 50을 준비하고 있어요") : deliveryOnly ? tr("아직 배달 할인 가게가 없어요") : tr("아직 표시할 공개 위치가 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : visitedOnly ? visitedReady ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : tr("직접 다녀온 장소만 모아 보여드려요. 다른 분류에서 먼저 둘러보세요.") : top25Only ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : deliveryOnly ? tr("가게가 직접 받는 주문 페이지를 준비하고 있어요.") : tr("직접 첨부한 핀과 위치가 확인된 행사만 지도에 표시해요.")} actionLabel={current?.errors.length ? tr("다시 시도") : visitedOnly ? tr("전체 장소 보기") : tr("리스트 보기")} onAction={current?.errors.length ? refresh : visitedOnly ? () => { setSelectedFilters([]); setDateFilter(null); setDate(''); } : () => changeMode('list')} /></View>}
         {selected && located(selected) && <Pressable analyticsId="discovery.detail" accessibilityRole="button" accessibilityLabel={cardOpen ? tr('장소 카드 접기') : tr('장소 카드 펼치기')} accessibilityState={{ expanded: cardOpen }} onPress={() => { play('selection'); setClosedCardId(cardOpen ? selectedId : undefined); }} style={[styles.cardToggle, { backgroundColor: theme.card, borderColor: theme.line, bottom: cardOpen ? Math.min(cardHeight + 70, 1000) : 62 }]}>
           <SymbolView name={cardOpen ? { ios: 'chevron.down', android: 'expand_more', web: 'expand_more' } : { ios: 'chevron.up', android: 'expand_less', web: 'expand_less' }} size={IconSize.toolbar} tintColor={theme.text} />
         </Pressable>}
 
-      </> : <FlatList analyticsId="discovery.list" onViewableItemsChanged={trackTranslationResults} viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY} data={items} keyExtractor={item => item.id} contentContainerStyle={styles.list} renderItem={({ item, index }) => <><View style={[styles.listCard, { backgroundColor: theme.card, borderColor: theme.line }]}><DiscoveryCard item={item} distance={discoveryDistanceKm(item, userLocation)} externalInfo={!!onClose} translationVisible={visibleResultIds.has(item.id)} viewerScope={viewerScope} onOpen={() => open(item)} /><GlingVisitNote item={item} />{located(item) && <Directions item={item} />}</View>{adsSupported && !loading && !current?.errors.length && !selectedFilters.includes('top25') && index === 3 && contentAdPosition(index, items.length) && <FeedAd key={`ad-after-${item.id}`} surface="map" />}</>}
+      </> : <FlatList analyticsId="discovery.list" refreshing={false} onRefresh={() => { play('selection'); refresh(); }} onViewableItemsChanged={trackTranslationResults} viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY} data={items} keyExtractor={item => item.id} contentContainerStyle={styles.list} renderItem={({ item, index }) => <><View style={[styles.listCard, { backgroundColor: theme.card, borderColor: theme.line }]}><DiscoveryCard item={item} distance={discoveryDistanceKm(item, userLocation)} externalInfo={!!onClose} translationVisible={visibleResultIds.has(item.id)} viewerScope={viewerScope} onOpen={() => open(item)} /><GlingVisitNote item={item} />{located(item) && <Directions item={item} />}</View>{adsSupported && !loading && !current?.errors.length && !selectedFilters.includes('top25') && index === 3 && contentAdPosition(index, items.length) && <FeedAd key={`ad-after-${item.id}`} surface="map" />}</>}
         ListEmptyComponent={loading || deliveryUnavailable ? undefined : <StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : visitedOnly ? visitedReady ? tr("조건에 맞는 글링 방문 장소가 없어요") : tr("아직 글링이 방문한 장소가 없어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 50 장소가 없어요") : tr("이 도시의 TOP 50을 준비하고 있어요") : deliveryOnly ? tr("아직 배달 할인 가게가 없어요") : tr("조건에 맞는 항목이 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : visitedOnly ? visitedReady ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : tr("직접 다녀온 장소만 모아 보여드려요. 다른 분류에서 먼저 둘러보세요.") : deliveryOnly ? tr("가게가 직접 받는 주문 페이지를 준비하고 있어요.") : tr("다른 분류나 날짜를 선택해 보세요. 장소 위치는 글을 쓸 때 첨부할 수 있어요.")} actionLabel={current?.errors.length ? tr("다시 시도") : visitedOnly ? tr("전체 장소 보기") : undefined} onAction={current?.errors.length ? refresh : visitedOnly ? () => { setSelectedFilters([]); setDateFilter(null); setDate(''); } : undefined} />}
         ListFooterComponent={<>{more && <Pressable analyticsId="discovery.more" accessibilityRole="button" disabled={loading} onPress={() => { if (morePending.current || loading) return; morePending.current = true; play('selection'); loadPage(current); }} style={[styles.more, { borderColor: theme.line }]}><ThemedText themeColor="accent">{loading ? tr("불러오는 중…") : tr("더 보기")}</ThemedText></Pressable>}{limited && <ThemedText type="small" themeColor="textSecondary">{tr("500개까지 표시했어요. 검색어나 분류로 범위를 줄여 주세요.")}</ThemedText>}<ThemedText type="small" themeColor="textSecondary" style={styles.source}>{tr("글링 공개 위치 · 장소 자료: OpenStreetMap · 행사 정보: Ticketmaster")}{items.some(item => !located(item)) ? tr("\n위치 확인 전 항목은 지도 핀 없이 목록에 표시해요.") : ''}</ThemedText></>} />}
-      {loading && <View pointerEvents="none" style={[styles.loading, mode === 'map' && styles.mapLoading]}><GlingLoader variant="capsule" accessibilityLabel={tr("지도 결과 불러오는 중")} /></View>}
+      </LayoutAnimationConfig></Reanimated.View>
+      {loading && <View pointerEvents="none" style={[styles.loading, mode === 'map' && styles.mapLoading]}><GlingLoader color={theme.accent} accessibilityLabel={tr("지도 결과 불러오는 중")} /></View>}
     </View>
     {mode === 'map' && more && <Pressable analyticsId="discovery.more" accessibilityRole="button" disabled={loading} onPress={() => { if (morePending.current || loading) return; morePending.current = true; play('selection'); loadPage(current); }} style={[styles.moreMap, { borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">{loading ? tr("불러오는 중…") : tr("이 도시의 결과 더 보기")}</ThemedText></Pressable>}
     <Modal visible={filtersOpen} transparent animationType={reduced ? 'none' : 'fade'} onRequestClose={closeFilters}>

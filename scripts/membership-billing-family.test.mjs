@@ -21,6 +21,7 @@ function provider(platform, initial, { bindingFails=false, namedOffering=false, 
     };
     if(name==='react-native')return {Platform:{OS:platform},Linking:{openURL:async url=>notices.push(url)}};
     if(name==='@/lib/auth')return {useAuth:()=>({isAuthed:true,me:{id:user}})};
+    if(name==='@/lib/interaction-feedback')return {useInteractionFeedback:()=>({play(){}})};
     if(name==='@/lib/membership')return {membershipOffer};
     if(name==='@/lib/supabase')return {supabase:{
       auth:{getSession:async()=>({data:{session:{user:{id:user}}}})},

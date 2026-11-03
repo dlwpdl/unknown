@@ -13,6 +13,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { PersonalInfoFields, type PersonalInfoDraft } from '@/components/personal-info-fields';
 import { WelcomeMoment } from '@/components/welcome-moment';
+import { ControlMotion } from '@/constants/design-system';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -67,6 +68,8 @@ export function ProfileOnboarding({
   const [saving, setSaving] = useState(false);
   const [welcomeProfile, setWelcomeProfile] = useState<CompletedProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Every signup failure (photo, consent, nickname, save) is felt as well as read.
+  useEffect(() => { if (error) play('warning'); }, [error, play]);
   const [personalInfo, setPersonalInfo] = useState<PersonalInfoDraft>({ fullName: '', dateOfBirth: '', accepted: false, gender: '' });
   const active = useRef(true);
   const savingLock = useRef(false);
@@ -216,7 +219,7 @@ export function ProfileOnboarding({
             {!consentOnly && <View style={styles.photoSection}>
               <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}>
                 {photoUri ? (
-                  <Image source={{ uri: photoUri }} style={styles.avatarImage} contentFit="cover" />
+                  <Image source={{ uri: photoUri }} style={styles.avatarImage} contentFit="cover" transition={ControlMotion.settleMs} />
                 ) : (
                   <ThemedText type="subtitle" style={{ color: theme.navy }}>{nickname.trim()[0] ?? t.appName[0].toUpperCase()}</ThemedText>
                 )}
