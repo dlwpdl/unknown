@@ -1,9 +1,10 @@
 import { useLanguage } from '@/hooks/use-language';
 import { useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useCallback, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Modal, StyleSheet, View } from 'react-native';
 import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
+import { AdminMfaGate } from '@/components/admin/admin-mfa-gate';
 import { Pressable } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
 import { ThemedText } from '@/components/themed-text';
@@ -20,6 +21,7 @@ export function LinkedAccountEntry() {
   const { me } = useAuth(), theme = useTheme(), { play } = useInteractionFeedback(), reducedMotion = useReducedMotion();
   const [loaded, setLoaded] = useState<{ userId: string; accounts: LinkedAccount[] } | null>(null);
   const [busy, setBusy] = useState<string | null>(null), [failed, setFailed] = useState<string | null>(null);
+  const [mfaFor, setMfaFor] = useState<LinkedAccount | null>(null);
   const switching = useRef(false);
   useFocusEffect(useCallback(() => {
     let active = true;
@@ -28,14 +30,19 @@ export function LinkedAccountEntry() {
   }, [me.id]));
   const accounts = loaded?.userId === me.id ? loaded.accounts : [];
   if (!accounts.length) return null;
-  async function open(account: LinkedAccount) {
+  async function open(account: LinkedAccount, afterMfa = false) {
     if (switching.current) return;
     switching.current = true; setBusy(account.id); setFailed(null); play('selection');
     try { await switchToAccount(account.id, me.nickname); }
-    catch { setFailed(account.id); play('warning'); }
+    // One second-factor prompt per tap: a refusal right after passing it is shown as a failure, never a loop.
+    catch (error) { if (!afterMfa && error instanceof Error && error.message === 'MFA_REQUIRED') setMfaFor(account); else { setFailed(account.id); play('warning'); } }
     finally { switching.current = false; setBusy(null); }
   }
-  return <>{accounts.map(account => <Reanimated.View key={account.id} entering={reducedMotion ? FadeIn.duration(150) : FadeInDown.duration(250)}>
+  return <>
+    <Modal visible={!!mfaFor} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setMfaFor(null)}>
+      <AdminMfaGate><MfaPassed onPassed={() => { const account = mfaFor; setMfaFor(null); if (account) void open(account, true); }} /></AdminMfaGate>
+    </Modal>
+    {accounts.map(account => <Reanimated.View key={account.id} entering={reducedMotion ? FadeIn.duration(150) : FadeInDown.duration(250)}>
     <Pressable analyticsId="profile.linked-account" accessibilityRole="button" accessibilityLabel={tr('{0} 계정으로 전환', account.nickname)}
       disabled={busy !== null} accessibilityState={{ disabled: busy !== null, busy: busy === account.id }} onPress={() => { void open(account); }}
       style={({ pressed }) => [styles.row, { backgroundColor: pressed ? theme.backgroundSelected : theme.card }, busy !== null && { opacity: ControlMotion.disabledOpacity }]}>
@@ -45,6 +52,13 @@ export function LinkedAccountEntry() {
     </Pressable>
     {failed === account.id && <ThemedText type="small" themeColor="danger" accessibilityRole="alert" style={styles.error}>{tr('전환하지 못했어요. 잠시 뒤 다시 해 주세요.')}</ThemedText>}
   </Reanimated.View>)}</>;
+}
+
+/** Rendered by the gate once this session has passed the second factor; continues the tap that asked for it. */
+function MfaPassed({ onPassed }: { onPassed: () => void }) {
+  const done = useRef(false);
+  useEffect(() => { if (!done.current) { done.current = true; onPassed(); } }, [onPassed]);
+  return null;
 }
 
 // Same measures as the profile screen's accountRow / accountIcon / accountText.

@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { linkedAccountIds, switchDenial } from '../_shared/linked-account.ts';
+import { bearerAal, linkedAccountIds, mfaDenial, switchDenial } from '../_shared/linked-account.ts';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -46,7 +46,8 @@ Deno.serve(async (request) => {
     if (input.action === 'switch') {
       // Only ids the caller links to are looked up, so other ids reveal nothing.
       const target = linked.includes(input.target) ? await account(input.target) : { user: null, profile: null };
-      const denial = switchDenial(caller.user, callerStatus, target.user, target.profile?.account_status ?? null);
+      const denial = switchDenial(caller.user, callerStatus, target.user, target.profile?.account_status ?? null)
+        ?? mfaDenial(caller.user, bearerAal(authorization));
       if (denial) return json({ error: denial }, 403);
       const { data, error } = await admin.auth.admin.generateLink({ type: 'magiclink', email: target.user.email });
       const tokenHash = data?.properties?.hashed_token;

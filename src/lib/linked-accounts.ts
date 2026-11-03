@@ -74,7 +74,11 @@ export async function switchToAccount(targetId: string, nickname: string): Promi
     }
     if (!next && linkedIds(current.user).includes(targetId)) {
       const link = await supabase.functions.invoke('linked-account', { body: { action: 'switch', target: targetId } });
-      if (link.error || typeof link.data?.token_hash !== 'string') throw link.error ?? new Error('SWITCH_FAILED');
+      if (link.error || typeof link.data?.token_hash !== 'string') {
+        // The server names one refusal the app can resolve: an admin session that has not passed the second factor yet.
+        const code = await Promise.resolve(link.error?.context?.json?.()).then(body => body?.error, () => null);
+        throw new Error(code === 'MFA_REQUIRED' ? 'MFA_REQUIRED' : 'SWITCH_FAILED');
+      }
       next = (await staging.verifyOtp({ token_hash: link.data.token_hash, type: 'magiclink' })).data.session;
     }
     if (!next || next.user.id !== targetId) throw new Error('SWITCH_FAILED');

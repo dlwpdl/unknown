@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { Buffer } from 'node:buffer';
 import { registerHooks } from 'node:module';
 import test from 'node:test';
-import { linkedAccountIds, switchDenial } from '../supabase/functions/_shared/linked-account.ts';
+import { bearerAal, linkedAccountIds, mfaDenial, switchDenial } from '../supabase/functions/_shared/linked-account.ts';
 
 const OWNER = '11111111-1111-4111-8111-111111111111', ALT = '22222222-2222-4222-8222-222222222222';
 const owner = (app_metadata = { provider: 'kakao', role: 'admin', linked_accounts: [ALT] }) => ({ id: OWNER, app_metadata });
@@ -47,6 +47,19 @@ registerHooks({
 const vault = await import('../src/lib/linked-accounts.ts');
 const { supabase } = await import('../src/lib/supabase.ts');
 
+test('an admin or a member with a second factor mints a sign-in only from a session that passed it', () => {
+  const token = claims => `Bearer x.${Buffer.from(JSON.stringify(claims)).toString('base64url')}.sig`;
+  assert.equal(bearerAal(token({ aal: 'aal2', sub: OWNER })), 'aal2');
+  assert.equal(bearerAal(token({ sub: OWNER })), null);
+  for (const bad of ['', 'Bearer', 'Bearer a.%%%.c', 'Bearer a.bm90IGpzb24.c']) assert.equal(bearerAal(bad), null, bad);
+  assert.equal(mfaDenial(owner(), 'aal2'), null);
+  for (const aal of ['aal1', null, undefined, 'AAL2']) assert.equal(mfaDenial(owner(), aal), 'MFA_REQUIRED', String(aal));
+  const member = { id: OWNER, app_metadata: { provider: 'google', linked_accounts: [ALT] } };
+  assert.equal(mfaDenial(member, 'aal1'), null, 'no second factor to pass');
+  assert.equal(mfaDenial({ ...member, factors: [{ status: 'unverified' }] }, 'aal1'), null);
+  assert.equal(mfaDenial({ ...member, factors: [{ status: 'verified' }] }, 'aal1'), 'MFA_REQUIRED');
+});
+
 test('kept sessions are added, removed and merged into rows without the signed-in account', () => {
   const tokens = { access_token: 'a', refresh_token: 'r' };
   const sessions = vault.withSession(vault.withSession({}, OWNER, { nickname: '포근한수달', ...tokens }), ALT, { nickname: '예전 이름', ...tokens });
@@ -65,7 +78,7 @@ test('switching keeps a way back, and a failed switch leaves the current login a
   const jwt = sub => ['{"alg":"HS256"}', JSON.stringify({ sub, exp: Math.floor(Date.now() / 1000) + 3600 }), 'sig'].map(part => Buffer.from(part).toString('base64url')).join('.');
   const subject = request => JSON.parse(Buffer.from(request.headers.get('Authorization').split('.')[1], 'base64url')).sub;
   const live = new Map([['r-owner-0', OWNER]]); // refresh tokens the server still accepts
-  let issued = 0, userFails = false, linkFails = false;
+  let issued = 0, userFails = false, linkError = null;
   const calls = [];
   const sessionFor = id => { const refresh_token = `r-${id === OWNER ? 'owner' : 'alt'}-${++issued}`; live.set(refresh_token, id); return { access_token: jwt(id), token_type: 'bearer', expires_in: 3600, refresh_token, user: accounts[id] }; };
   t.mock.method(globalThis, 'fetch', async (input, init) => {
@@ -82,7 +95,7 @@ test('switching keeps a way back, and a failed switch leaves the current login a
       const body = await request.json();
       if (body.action === 'list') return Response.json({ accounts: [{ id: ALT, nickname: '토로노추웡' }] });
       assert.deepEqual(body, { action: 'switch', target: ALT });
-      return linkFails ? Response.json({ error: 'NOT_LINKED' }, { status: 403 }) : Response.json({ token_hash: 'hash-alt' });
+      return linkError ? Response.json({ error: linkError }, { status: 403 }) : Response.json({ token_hash: 'hash-alt' });
     }
     if (url.pathname === '/auth/v1/verify') {
       const body = await request.json();
@@ -118,10 +131,15 @@ test('switching keeps a way back, and a failed switch leaves the current login a
   assert.equal(live.get(kept()[ALT].refresh_token), ALT, 'the newly rotated alt token replaced the spent one');
 
   live.delete(kept()[ALT].refresh_token);
-  linkFails = true;
-  await assert.rejects(vault.switchToAccount(ALT, '포근한수달'));
+  linkError = 'NOT_LINKED';
+  await assert.rejects(vault.switchToAccount(ALT, '포근한수달'), /SWITCH_FAILED/);
   assert.equal((await current()).refresh_token, back.refresh_token, 'a refused switch keeps the current login');
   assert.deepEqual(kept(), {}, 'a rejected token is dropped and the current account is not left behind');
+
+  linkError = 'MFA_REQUIRED';
+  await assert.rejects(vault.switchToAccount(ALT, '포근한수달'), /MFA_REQUIRED/, 'the one refusal the app resolves keeps its name');
+  assert.equal((await current()).refresh_token, back.refresh_token);
+  assert.deepEqual(kept(), {});
 
   await vault.clearLinkedSessions();
   assert.equal(store.has('gling-linked-sessions'), false);
