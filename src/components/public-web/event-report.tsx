@@ -12,7 +12,7 @@ import { EVENT_COPY } from './event-copy';
 import { EventLoadState } from './event-parts';
 
 // The campaign_report JSON contract (output/reviews/creator-matching-bm-2026-11-02/build/PLAN.md), business version.
-type Content = { label: string; kind: 'creator_content' | 'our_post'; url: string; first_seen: string; views: number | null; views_at: string | null;
+type Content = { label: string; kind: 'creator_content' | 'our_post'; reel: boolean; first_seen: string; views: number | null; views_at: string | null;
   likes: number | null; comments: number | null; shares: number | null; saves: number | null; confirmed: boolean };
 type StoreRow = { metric: string; value: number; period_start: string; period_end: string; source: string; confirmed: boolean; before_start: boolean };
 type Report = {
@@ -20,7 +20,7 @@ type Report = {
   guests: { total: number; discount: number; winner: number; by_day: { day: string; n: number }[] };
   money: { guest_sales_cents?: number | null; discount_total_cents: number | null; hosted_meals_cents: number | null; store_spend_cents: number | null;
     per_guest_cents: number | null; confirmed: boolean };
-  contents: Content[]; views_total: number; store: StoreRow[]; people: { applied: number; confirmed: number; visited: number; posted: number };
+  contents: Content[]; views_total: number; store: StoreRow[]; people: { reviewed: number; confirmed: number; visited: number; posted: number };
 };
 
 // Every word on the page. The approved panel's wording ('결과 리포트', output/reviews/creator-matching-bm-2026-11-02/creator-admin/index.html,
@@ -55,7 +55,8 @@ const COPY = {
   videos: '크리에이터 영상', posted: (confirmed: number, posted: number) => `확정 ${confirmed}명 중 게시 ${posted}명`, waiting: '올라오면 재요', noVideo: '없음',
   business: '비즈니스가 한 일', gling: '글링이 한 일', kinds: (count: number) => `${count}가지`,
   setDiscount: '할인 조건 정하기', checkGuests: '계산대에서 손님 확인', hostMeals: '당첨 팀 식사 대접',
-  reviewed: (count: string) => `지원 ${count}명 검토`, tracked: '크리에이터 게시 확인 · 조회 기록',
+  // new: '크리에이터' for the panel's '지원'; the count is everyone the board weighed, not only people who applied
+  reviewed: (count: string) => `크리에이터 ${count}명 검토`, tracked: '크리에이터 게시 확인 · 조회 기록',
   ourPosts: (kind: string, count: number) => `글링 ${kind} ${count}개 올리기`, ourHandle: '@gling.app', // new: the panel's item was '당첨 발표 글 올리기'
   growth: '가게 팔로워·구글 리뷰', noBase: '비교 못 함', noBaseHow: '시작 전에 안 적어서 기준이 없어요.', check: '확인 전',
   growthHow: '시작 전 값과 30일째 값의 차이', growthLive: '시작 전 값과 지금 값의 차이', // new: growthLive, before day 30
@@ -98,8 +99,9 @@ const md = (value: string) => {
 const hm = (value: string) => { const at = new Date(value); return `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`; };
 const span = (row: StoreRow) => row.period_start === row.period_end ? md(row.period_start) : `${md(row.period_start)}–${md(row.period_end)}`;
 const later = (a: StoreRow, b: StoreRow) => a.period_end > b.period_end || (a.period_end === b.period_end && a.period_start >= b.period_start);
-const isReel = (item: Content) => /\/reels?\//.test(item.url);
-const kindOf = (items: Content[]) => COPY.kind(items.filter(isReel).length, items.length);
+const kindOf = (items: Content[]) => COPY.kind(items.filter(item => item.reel).length, items.length);
+// The business gets no links (a link names the creator), so an item is known by its label and its place among that label's items.
+const keys = (items: Content[]) => items.map((item, i) => `${item.label}·${items.slice(0, i).filter(other => other.label === item.label).length}`);
 const signed = (value: number | null) => value === null ? '—' : `${value < 0 ? '−' : '+'}${count(Math.abs(value))}`;
 
 function isReport(value: unknown): value is Report {
@@ -139,13 +141,12 @@ function Sheet({ report, fresh }: { report: Report; fresh: ReadonlySet<string> }
     .reduce<StoreRow | null>((pick, row) => !pick || later(row, pick) ? row : pick, null);
   const delta = (metric: string) => { const base = latest(metric, true), now = latest(metric, false); return base && now ? now.value - base.value : null; };
 
-  const ours = contents.filter(item => item.kind === 'our_post');
+  const ours = contents.filter(item => item.kind === 'our_post'), itemKeys = keys(contents);
   // The contract gives each creator one letter for all their links and lists them in posting order, so number repeats in that order.
   const name = (item: Content) => {
-    const reel = isReel(item);
     const same = item.kind === 'our_post' ? ours : contents.filter(other => other.kind === item.kind && other.label === item.label);
     const number = same.length > 1 ? same.indexOf(item) + 1 : null;
-    return item.kind === 'creator_content' ? COPY.creator(item.label, reel, number) : COPY.ours(reel, number);
+    return item.kind === 'creator_content' ? COPY.creator(item.label, item.reel, number) : COPY.ours(item.reel, number);
   };
   const waiting = !fixedAt && (!contents.length || people.confirmed > people.posted);
   // The panel's day-30 summary; before day 30 its sentence was written for one campaign, so the numbers below speak for themselves.
@@ -163,7 +164,7 @@ function Sheet({ report, fresh }: { report: Report; fresh: ReadonlySet<string> }
     (guests.winner > 0 || money.hosted_meals_cents !== null) && [COPY.hostMeals, money.hosted_meals_cents !== null ? pay(money.hosted_meals_cents) : ''],
   ].filter((item): item is [string, string] => !!item);
   const gling = [
-    people.applied > 0 && [COPY.reviewed(count(people.applied)), ''],
+    people.reviewed > 0 && [COPY.reviewed(count(people.reviewed)), ''],
     ours.length > 0 && [COPY.ourPosts(kindOf(ours), ours.length), COPY.ourHandle],
     (contents.length > 0 || people.confirmed > 0) && [COPY.tracked, people.confirmed > 0 ? COPY.posted(people.confirmed, people.posted) : ''],
   ].filter((item): item is [string, string] => !!item);
@@ -216,15 +217,15 @@ function Sheet({ report, fresh }: { report: Report; fresh: ReadonlySet<string> }
     <Question title={COPY.viewsQ} sure={!contents.length || contents.some(item => item.confirmed)}>
       {contents.length > 0 && <div className="rpt-kpis"><Kpi title={COPY.views} value={count(report.views_total)} how={fixedAt ? COPY.viewsFixed : undefined} /></div>}
       <ul className="rpt-vlist">
-        {contents.map(item => {
+        {contents.map((item, i) => {
           const reactions = COPY.reactions.flatMap(([key, label]) => { const value = item[key]; return value === null ? [] : [`${label} ${count(value)}`]; }).join(' · ');
-          return <li key={item.url}>
+          return <li key={itemKeys[i]}>
             <div><strong>{name(item)}</strong><small>{item.kind === 'creator_content' ? COPY.creatorAccount : COPY.ourAccount}</small></div>
             <div className="rpt-when">
               {item.views !== null && <Chip tone="strong">{item.views_at ? COPY.until(md(item.views_at), count(item.views)) : count(item.views)}</Chip>}
               {!!fixedAt && <Chip tone="ok">{COPY.settled}</Chip>}
               {!item.confirmed && <Chip tone="est">{COPY.est}</Chip>}
-              {fresh.has(item.url) && <Chip tone="accent">{COPY.fresh}</Chip>}
+              {fresh.has(itemKeys[i]) && <Chip tone="accent">{COPY.fresh}</Chip>}
             </div>
             {!!reactions && <p className="rpt-extra">{reactions}</p>}
           </li>;
@@ -267,7 +268,8 @@ function ReportPage() {
     const next = status === 200 ? data?.report : null;
     if (isReport(next)) {
       const before = last.current;
-      setFresh(new Set(before ? next.contents.filter(item => before.contents.find(old => old.url === item.url)?.views !== item.views).map(item => item.url) : []));
+      const seen = before ? new Map(keys(before.contents).map((key, i) => [key, before.contents[i].views])) : null;
+      setFresh(new Set(seen ? keys(next.contents).filter((key, i) => seen.get(key) !== next.contents[i].views) : []));
       last.current = next; setReport(next);
     } else if (status === 404 || status === 400) { last.current = null; setReport(null); setLoad('expired'); }
     else if (!last.current) setLoad('failed'); // a failed refresh keeps the last numbers, and the sync time says when they are from

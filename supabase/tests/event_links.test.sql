@@ -326,7 +326,12 @@ select is(public.event_store_view(pg_temp.sha('revoked-token')),null,'revoked st
 select is(public.event_store_view('good-token'),null,'the raw token is never accepted in place of its hash');
 select isnt(public.event_store_view(pg_temp.sha('closed-store')),null,'a store still sees its campaign after applications close');
 select is(public.event_store_view(pg_temp.sha('good-token'))->>'business','링크 검사 가게','store view names the business');
-select is((public.event_store_view(pg_temp.sha('good-token'))->>'applicant_count')::integer,(select count(*)::integer from private.partnership_participations where campaign_id='e1530000-0000-0000-0000-000000000001'),'applicant count matches the board');
+-- check-event-links.py runs this file without the report migrations, where every row counts; check-admin-event-board.py runs
+-- it on top of them, where only people who sent the apply form count (20261103060000).
+select is((public.event_store_view(pg_temp.sha('good-token'))->>'applicant_count')::integer,(select count(*)::integer from private.partnership_participations p
+  where p.campaign_id='e1530000-0000-0000-0000-000000000001'
+    and (to_regprocedure('private.event_applicant(private.partnership_participations)') is null or p.applied_via='apply_link')),
+  'applicant count: everyone before the report migrations, the people who sent the apply form after them');
 -- Without the board column nobody can be dropped, so the selected "Board Dropped" stays a winner there.
 select is((select jsonb_agg(coalesce(w.value->>'handle',w.value->>'name') order by w.n) from jsonb_array_elements(public.event_store_view(pg_temp.sha('good-token'))->'winners') with ordinality w(value,n)),
   case when pg_temp.board() then '["TikTok Winner","winner.one","board.ok"]' else '["TikTok Winner","winner.one","board.dropped"]' end::jsonb,
