@@ -4171,5 +4171,15 @@ export const uiEnglish: Record<string, string> = {
   "글 저장": "Save post",
   "저장 취소": "Remove from saved",
   "사진: {0}": "Photo: {0}",
-  "사진: {0} 외 {1}명": "Photos: {0} and {1} more"
+  "사진: {0} 외 {1}명": "Photos: {0} and {1} more",
+  "사진 {0}장 올리는 중": "Uploading photos ({0})",
+  "글 올리는 중": "Posting",
+  "사진을 올렸어요": "Your photos are up",
+  "사진을 올리지 못했어요": "Couldn’t post your photos",
+  "쓴 글과 사진은 그대로 있어요": "Your post and photos are still here",
+  "쓴 글은 그대로 있어요": "Your post is still here",
+  "다시 올리기": "Try again",
+  "수정하기": "Edit",
+  "아직 올리는 중이에요": "Still posting",
+  "위에 뜬 글이 다 올라가면 바로 쓸 수 있어요.": "You can write again once the post at the top is up."
 };

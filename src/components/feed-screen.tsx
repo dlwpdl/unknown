@@ -24,6 +24,7 @@ import {
   useWindowDimensions,
   View,
   type FlatList as NativeFlatList,
+  type ViewInstance,
 } from 'react-native';
 import { requestPushPrompt } from '@/lib/push-prompt';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -84,6 +85,7 @@ import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, hasAdLabel, MAX_
 import { canAddPostImage, MAX_POST_IMAGES } from '@/lib/image-upload';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { normalizePoll, type PollDraft } from '@/lib/post-polls';
+import { clearPostUpload, getPostUpload, savedByEarlierTry, startPostUpload, type UploadPhoto } from '@/lib/post-upload';
 import { TAGS } from '@/lib/mock';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { googlePinUrl, postMapBody, withPostMap } from '@/lib/post-maps';
@@ -144,7 +146,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [writerOptionsOpen, setWriterOptionsOpen] = useState(false);
   const [cityPicker, setCityPicker] = useState(false);
   const [writing, setWriting] = useState(false);
-  const postSuccessPending = useRef(false);
+  const photoTiles = useRef<(ViewInstance | null)[]>([]);
+  const [photosLaunched, setPhotosLaunched] = useState(false); // 위 카드로 날아간 사진은 닫히는 창에서 숨긴다
   const [tag, setTag] = useState<Tag>(TAGS[0]);
   const [postKind, setPostKind] = useState<PostKind>('story');
   const [priceInput, setPriceInput] = useState('');
@@ -493,12 +496,22 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     }
   };
 
+  const stillUploading = useCallback(() => {
+    play('warning');
+    Alert.alert(tr("아직 올리는 중이에요"), tr("위에 뜬 글이 다 올라가면 바로 쓸 수 있어요."));
+  }, [play, tr]);
+
   const openWriter = useCallback(() => {
     play('reaction');
     if (!isAuthed) return promptLogin(t.auth.reasonWrite);
     // Acting as a business, the writer offers only business post types (owner 2026-10-25, option A).
     if (business) { setBusinessWriting(true); return; }
     if (writing) return;
+    // 한 번에 하나만 올린다. 실패한 글은 초안 그대로 이 창에 있으니 카드만 치운다.
+    const upload = getPostUpload();
+    if (upload?.status === 'uploading') { stillUploading(); return; }
+    if (upload?.status === 'failed') clearPostUpload();
+    setPhotosLaunched(false);
     void loadListingQuota(supabase).then(setListingQuota).catch(() => {});
     const revision = ++writerRevision.current;
     draftLocation.current = null;
@@ -515,7 +528,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       if (revision !== writerRevision.current) return;
       draftLocation.current = fix;
     });
-  }, [isAuthed, promptLogin, business, writing, city, location, title, body, hashtagInput, draftImages, pollDraft, play, t.auth.reasonWrite, listingCategory]);
+  }, [isAuthed, promptLogin, business, writing, city, location, title, body, hashtagInput, draftImages, pollDraft, play, t.auth.reasonWrite, listingCategory, stillUploading]);
 
   useEffect(() => {
     if (!writing) { writerRevision.current++; draftLocation.current = null; }
@@ -666,26 +679,44 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       Alert.alert(t.write.validationTitle, error instanceof Error && error.message === 'INVALID_MAP_LINK' ? t.write.mapInvalid : t.write.bodyTooLong);
       return;
     }
+    if (getPostUpload()?.status === 'uploading') { stillUploading(); return; }
     setSubmitting(true);
     const revision = feedRevision.current;
     const hashtags = parseHashtags(hashtagInput);
-    try {
-      const created = await createCommunityPost(supabase, {
-        userId: me.id,
-        cityId: draftCity.id,
-        tag,
-        title: title.trim(),
-        body: postBody,
-        hashtags,
-        images: draftImages.map(({ base64, mimeType, thumbBase64, width, height }) => ({ base64, mimeType, thumbBase64, width, height })),
-        kind: postKind,
-        poll,
-        price: writerListingResult ? writerListingResult.price : postKind === 'listing' && priceInput.trim() ? Number(priceInput.replace(/[^0-9.]/g, '')) : null,
-        listingDetails: writerListingResult?.details,
-      });
+    const fix = draftLocation.current; // 창이 닫히면 비워지니 지금 잡아 둔다
+    const input = {
+      userId: me.id,
+      cityId: draftCity.id,
+      tag,
+      title: title.trim(),
+      body: postBody,
+      hashtags,
+      images: draftImages.map(({ base64, mimeType, thumbBase64, width, height }) => ({ base64, mimeType, thumbBase64, width, height })),
+      kind: postKind,
+      poll,
+      price: writerListingResult ? writerListingResult.price : postKind === 'listing' && priceInput.trim() ? Number(priceInput.replace(/[^0-9.]/g, '')) : null,
+      listingDetails: writerListingResult?.details,
+    };
+    // 글쓰기 창은 바로 닫히고 위 카드가 이 일을 끝까지 보여 준다. 초안은 다 올라간 뒤에만 비운다.
+    const send = async (retry: boolean) => {
+      let created: { id: string | null; post: Post | null } = { id: null, post: null };
+      try {
+        created = await createCommunityPost(supabase, input);
+      } catch (error) {
+        if (!savedByEarlierTry(error, retry)) {
+          setSubmitting(false);
+          play('warning');
+          const actionError = getCommunityActionError(error);
+          if (actionError) showActionError(actionError);
+          else if (isContentRejected(error)) Alert.alert(t.safety.contentBlockedTitle, t.safety.contentBlockedBody);
+          throw error;
+        }
+      }
+      setSubmitting(false);
       const post = created.post;
+      // 올리는 동안 목록을 새로 고쳐도 위치 기록은 글에 붙인다(계정이 바뀌면 record가 스스로 거른다).
+      if (created.id) void location.record(fix, created.id);
       if (revision === feedRevision.current) {
-        void location.record(draftLocation.current, created.id);
         setCity(draftCity);
         if (post && !meetupsOnly) setJustPosted({ post, at: Date.now(), viewer: viewerScope });
         if (post && activeSort === 'latest') setPosts((prev) => [post, ...prev.filter(({ id }) => id !== created.id)]);
@@ -707,21 +738,21 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       setPriceInput('');
       setListingDraft(null);
       setListingTried(false);
-      postSuccessPending.current = Platform.OS === 'ios';
-      setWriting(false);
-      if (Platform.OS !== 'ios') setTimeout(() => play('postPublished'), 350);
-    } catch (error) {
-      play('warning');
-      const contentRejected = isContentRejected(error);
-      const actionError = getCommunityActionError(error);
-      if (actionError) showActionError(actionError);
-      else Alert.alert(
-        contentRejected ? t.safety.contentBlockedTitle : t.write.submitErrorTitle,
-        contentRejected ? t.safety.contentBlockedBody : t.write.submitErrorBody,
-      );
-    } finally {
+    };
+    // 위 카드로 날아갈 앞의 세 장이 지금 화면 어디 있는지 잰다. 못 재면 날지 않고 카드에만 쌓인다.
+    const photos = await Promise.all(draftImages.slice(0, 3).map((image, index) => new Promise<UploadPhoto>((resolve) => {
+      const tile = photoTiles.current[index];
+      if (!tile || reducedMotion) return resolve({ uri: image.uri });
+      const timer = setTimeout(() => resolve({ uri: image.uri }), 120);
+      tile.measureInWindow((x, y, width, height) => { clearTimeout(timer); resolve({ uri: image.uri, from: width > 0 ? { x, y, width, height } : undefined }); });
+    })));
+    if (!startPostUpload({ owner: me.id, title: input.title, photoCount: draftImages.length, photos, send })) {
       setSubmitting(false);
+      stillUploading();
+      return;
     }
+    setPhotosLaunched(photos.some(({ from }) => from));
+    setWriting(false);
   };
 
   const loadMorePosts = async () => {
@@ -1146,11 +1177,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       {business && <BusinessWriter business={business} visible={businessWriting} onClose={() => setBusinessWriting(false)} onPublished={() => { void refreshFeed().catch(() => {}); }} />}
       <Modal visible={writing} animationType={reducedMotion ? 'fade' : 'slide'}
         presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} allowSwipeDismissal
-        onDismiss={() => {
-          if (!postSuccessPending.current) return;
-          postSuccessPending.current = false;
-          play('postPublished');
-        }}
         onRequestClose={() => { play('reaction'); setWriting(false); }}>
         <SafeAreaProvider style={[styles.writer, { backgroundColor: theme.background }]}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.writer}>
@@ -1299,7 +1325,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   {draftImages.length > 0 && (
                     <View style={styles.photoGrid}>
                       {draftImages.map((image, index) => (
-                        <View key={`${image.uri}-${index}`} style={styles.photoTile}>
+                        <View key={`${image.uri}-${index}`} ref={(node) => { photoTiles.current[index] = node; }} style={[styles.photoTile, photosLaunched && index < 3 && styles.photoLaunched]}>
                           <Image source={{ uri: image.uri }} style={styles.photoTileImage} contentFit="cover" />
                           {index < MAX_AI_IMAGES && <View style={[styles.photoAiBadge, { backgroundColor: theme.card }]} accessibilityLabel={tr("AI가 읽는 사진")}>
                             <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} size={10} tintColor={theme.accent} />
@@ -1619,6 +1645,7 @@ const styles = StyleSheet.create({
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   photoTile: { width: '31%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden' },
   photoTileImage: { width: '100%', height: '100%' },
+  photoLaunched: { opacity: 0 },
   photoAiBadge: { position: 'absolute', left: 6, bottom: 6, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   aiFields: { marginHorizontal: Spacing.four, marginBottom: Spacing.two, borderRadius: 14, overflow: 'hidden' },
   aiFieldRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, minHeight: 44 },
