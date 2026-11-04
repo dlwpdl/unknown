@@ -91,7 +91,7 @@ export function savedListPlaces(items: { target: { kind: string; id: string; cit
 /** What the image share needs from react-native-view-shot and expo-sharing; null when this build or platform does not have them. */
 export type ShareCardImageModules = {
   isAvailableAsync: () => Promise<boolean>;
-  captureRef: (view: never, options: { format: 'png'; result: 'tmpfile'; width: number; height: number }) => Promise<string>;
+  captureRef: (view: never, options: { format: 'png'; result: 'tmpfile'; fileName: string; width: number; height: number }) => Promise<string>;
   shareAsync: (url: string, options: { mimeType: string; UTI: string }) => Promise<void>;
 };
 
@@ -109,7 +109,8 @@ export async function shareCardImage(modules: ShareCardImageModules | null, view
   let uri: string | null = null;
   for (const view of views) {
     if (!view) continue;
-    try { uri = await modules.captureRef(view as never, { format: 'png', result: 'tmpfile', ...shareCardCaptureSize(os, scale) }); break; } catch { /* try the next view */ }
+    // shortcut: fileName only names the file on Android; iOS keeps a random tmp name, which shows in the share sheet header.
+    try { uri = await modules.captureRef(view as never, { format: 'png', result: 'tmpfile', fileName: 'gling-share-card', ...shareCardCaptureSize(os, scale) }); break; } catch { /* try the next view */ }
   }
   if (!uri) return false;
   await modules.shareAsync(uri.startsWith('file://') ? uri : `file://${uri}`, { mimeType: 'image/png', UTI: 'public.png' });

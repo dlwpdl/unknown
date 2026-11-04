@@ -119,7 +119,7 @@ test('the story-size card is shared first as a PNG file', async () => {
   const story = { id: 'story' }, preview = { id: 'preview' };
   const { modules, calls } = fakeModules({ captures: new Map([[story, '/tmp/ReactNative/story.png'], [preview, '/tmp/ReactNative/preview.png']]) });
   assert.equal(await shareCardImage(modules, [story, preview], 'ios', 3), true);
-  assert.deepEqual(calls.captured, [[story, { format: 'png', result: 'tmpfile', width: 360, height: 640 }]]);
+  assert.deepEqual(calls.captured, [[story, { format: 'png', result: 'tmpfile', fileName: 'gling-share-card', width: 360, height: 640 }]]);
   assert.deepEqual(calls.shared, [['file:///tmp/ReactNative/story.png', { mimeType: 'image/png', UTI: 'public.png' }]]);
 });
 
