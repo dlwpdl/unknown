@@ -6,10 +6,13 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { discoveryEventOnDays, discoveryMatches, mergeCityTop25 } from '../src/lib/discovery.ts';
+import { PLACE_SUBCATEGORIES, PRICE_FILTERS, discoveryEventOnDays, discoveryMatches, discoveryRefines, mergeCityTop25 } from '../src/lib/discovery.ts';
+import { cityClock, openState } from '../src/lib/opening-hours.ts';
 import { isFreshLocation } from '../src/lib/location.ts';
 
 const source = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
+// The price, sub-filter, area and open-now steps of the result pipeline, all switched off.
+const noRefine = { PRICE_FILTERS, PLACE_SUBCATEGORIES, discoveryRefines, cityClock, openState, priceLevels: [], subcategories: [], region: null, openNow: false, showUnknown: false };
 const compile = text => ts.transpileModule(text, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const previous = { key: 'viewer-and-city', page: 0, items: [{ id: 'post:old' }], cursor: { id: 'last-post', sortAt: '2026-10-14' }, postMore: true, eventMore: false };
@@ -29,7 +32,7 @@ test('a system permission dialog preserves GPS while an actual background transi
 });
 
 function gps({ granted = true, fix, defer = false } = {}) {
-  const start = source.indexOf('  const locate = async () => {'), end = source.indexOf('  const changeMode = ', start);
+  const start = source.indexOf('  const locate = async () => {'), end = source.indexOf('  const showList = ', start);
   const changes = { center: null, userLocation: null }, calls = [], locationRevision = { current: 0 }, AppState = { currentState: 'active' }, exports = {};
   let finish;
   const value = fix ?? { coords: { latitude: 49.28, longitude: -123.12, accuracy: 10 }, timestamp: Date.now() };
@@ -91,7 +94,7 @@ test('Top 25 merges only visible recommendations before filtering and keeps the 
   const exports = {};
   const item = { id: 'post:hidden-post', source: 'post', sourceId: 'hidden-post', cityId: 'vancouver', title: '비공개 제목', category: 'nature', label: '공개 위치', latitude: 49.28, longitude: -123.12, price: null, imageUri: 'private-image', post: { id: 'hidden-post', kind: 'story', author: { id: 'blocked-author' } } };
   const context = { exports, bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null, catalogItems: [], current: { items: [item], limited: false }, city: { id: 'vancouver' }, now: Date.now(), selectedFilters: ['top25'], query: '', days: [], hidden: () => true,
-    discoveryEventOnDays, discoveryMatches, mergeCityTop25: (items, city) => mergeCityTop25(items, city, [pick]), discoveryEvent: () => null };
+    discoveryEventOnDays, discoveryMatches, mergeCityTop25: (items, city) => mergeCityTop25(items, city, [pick]), discoveryEvent: () => null, ...noRefine };
   vm.runInNewContext(compile(`export function run() { ${source.slice(start, end)} return { items, limited }; }`), context);
   const result = exports.run();
   assert.equal(result.items.length, 1);
@@ -121,7 +124,7 @@ test('map pins, list and count exclude community stories but retain actual place
   vm.runInNewContext(compile(`exports.run = () => { ${source.slice(start, end)} return items; };`), {
     exports, bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null, current: { items: [story, { ...story, id: 'post:legacy', post: { ...story.post, kind: undefined } }, listing('used'), listing('housing'), listing('dining'), { ...story, id: 'post:missing', post: undefined }, event] },
     catalogItems: [place], city: { id: 'vancouver' }, now: Date.now(), selectedFilters: [], query: '', days: [], hidden: () => false,
-    discoveryEventOnDays, discoveryMatches, mergeCityTop25, discoveryEvent: () => null,
+    discoveryEventOnDays, discoveryMatches, mergeCityTop25, discoveryEvent: () => null, ...noRefine,
   });
   assert.deepEqual(Array.from(exports.run(), item => item.sourceId), ['cafe', 'used', 'housing', 'festival']);
 });
@@ -207,15 +210,15 @@ test('late pagination responses cannot restore stale pins after a refresh', asyn
 });
 test('selecting a pin cancels a pending GPS recenter request', () => {
   const marker = '  const selectPin = (id: string) => {';
-  const start = source.indexOf(marker), end = source.indexOf('  const locate = async () => {', start);
+  const start = source.indexOf(marker), end = source.indexOf('  const chooseCity = ', start);
   const exports = {}, changes = {}, locationRevision = { current: 1 };
   vm.runInNewContext(compile(`export function run(id: string) { ${source.slice(start + marker.length, end).replace(/};\s*$/, '')}\n}`), {
     exports, locationRevision, setLocating: value => { changes.locating = value; }, setLocationError: value => { changes.error = value; },
-    setSelectedId: value => { changes.id = value; }, setCenter: value => { changes.center = value; },
+    setSelectedId: value => { changes.id = value; }, setCenter: value => { changes.center = value; }, setSheet: value => { changes.sheet = value; },
   });
   exports.run('post:chosen');
   assert.equal(locationRevision.current, 2);
-  assert.deepEqual(changes, { locating: false, error: '', id: 'post:chosen', center: null });
+  assert.deepEqual(changes, { locating: false, error: '', id: 'post:chosen', center: null, sheet: 'closed' });
 });
 test('a failed festival supplement keeps available results and reports the partial failure', async () => {
   const ui = requests({ filter: 'all' }); ui.load(null); await tick();

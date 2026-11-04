@@ -6,7 +6,8 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { IconSize } from '../src/constants/design-system.ts';
-import { discoveryMatches, mergeCityTop25, discoveryEvent, discoveryEventOnDays } from '../src/lib/discovery.ts';
+import { PLACE_SUBCATEGORIES, PRICE_FILTERS, discoveryMatches, discoveryRefines, mergeCityTop25, discoveryEvent, discoveryEventOnDays } from '../src/lib/discovery.ts';
+import { cityClock, openState } from '../src/lib/opening-hours.ts';
 
 // Legacy programmatic union compatibility; the map UI now selects one category.
 const cityId = 'vancouver';
@@ -76,7 +77,8 @@ test('real map chips toggle a union and All clears category and date state', () 
   const context = {
     exports, TOP25_GOLD: '#F4CA78', top25Ink: '#68543A',
     styles: {}, theme: { accent: '#CBB9FF', line: '#ccc', backgroundSelected: '#ddd', backgroundElement: '#eee', text: '#222' },
-    ScrollView: 'scroll', Pressable: 'button', SelectionChip: 'button', chipBackground: '#eee', View: 'view', ThemedText: 'text', GlingVisitedBadge: 'visited-badge', SymbolView: 'symbol', IconSize, tr: value => value,
+    ScrollView: 'scroll', Pressable: 'button', SelectionChip: 'button', chipBackground: '#eee', View: 'view', ThemedText: 'text', GlingVisitedBadge: 'visited-badge', SymbolView: 'symbol', CategoryIcon: 'category-icon', IconSize, tr: value => value,
+    bump: { id: '', n: 0 }, setBump() {}, openNow: false, setOpenNow() {}, setShowUnknown() {}, setSubcategories() {}, filtersOpen: false, sheet: 'closed', setSheet() {}, setSelectedId() {},
     play: value => feedback.push(value), setSelectedFilters: update => { selected = Array.from(typeof update === 'function' ? update(selected) : update); },
     setDateFilter() {}, setDate() {}, setDateOpen() {}, setDateError() {}, setSortBy: value => { sort = value; },
     get selectedFilters() { return selected; },
@@ -85,7 +87,8 @@ test('real map chips toggle a union and All clears category and date state', () 
   const chipStart = source.indexOf('  const filterChip = '), chipEnd = source.indexOf('  const quickFilters', chipStart);
   const code = `${source.slice(filterStart, filterEnd)}\n${source.slice(start, end)}\n${source.slice(chipStart, chipEnd)}\nexports.render = () => (${source.slice(jsxStart, jsxEnd)});`;
   vm.runInNewContext(ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, context);
-  const buttons = () => [exports.render().props.children].flat(Infinity);
+  const buttons = () => [exports.render().props.children].flat(Infinity).filter(node => node.key);
+  assert.equal([exports.render().props.children].flat(Infinity)[1].props.analyticsId, 'discovery.open-now', '지금 영업 중 sits right after 전체');
   const button = id => buttons().find(node => node.key === id);
   assert.deepEqual(buttons().map(node => node.key), ['all', 'visited', 'top25', 'delivery', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used']);
   button('top25').props.onPress();
@@ -126,6 +129,7 @@ test('the real result pipeline applies city, hidden author, listing expiry and e
     city: { id: cityId }, now: Date.parse('2026-10-15T12:00:00Z'), selectedFilters: ['top25', 'cafe', 'used', 'festival'], query: '', days: ['2026-10-17'],
     hidden: (_type, _id, author) => author === 'blocked-author', discoveryEvent, discoveryEventOnDays, discoveryMatches,
     mergeCityTop25: (items, city) => mergeCityTop25(items, city, picks.slice(0, 1)),
+    PRICE_FILTERS, PLACE_SUBCATEGORIES, discoveryRefines, cityClock, openState, priceLevels: [], subcategories: [], region: null, openNow: false, showUnknown: false,
   };
   vm.runInNewContext(ts.transpileModule(`exports.run = () => { ${source.slice(start, end)} return items; };`, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, context);
   assert.deepEqual(Array.from(exports.run(), item => item.sourceId), ['fixture-pick-0', 'ordinary', '2026-10-17']);

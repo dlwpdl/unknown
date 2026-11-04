@@ -151,6 +151,21 @@ test('regional Openverse photos reuse the existing exact Flickr identity and lic
   }
 });
 
+test('optional price level and sub-filter values download with the catalog while malformed ones are rejected', () => {
+  const api = data();
+  const next = (patch, time) => { const value = catalog(); value.collectedAt = new Date(time).toISOString(); Object.assign(value.cities.vancouver.places[0], patch); return value; };
+  assert.equal(api.replaceCityPlacesCatalog(next({ priceLevel: 2, subcategories: ['lunch', 'a-later-value'] }, fixtureTime), fixtureNow), true);
+  const place = api.getCityPlaces('vancouver').find(row => row.id === catalog().cities.vancouver.places[0].id);
+  assert.equal(place.priceLevel, 2);
+  assert.deepEqual(Array.from(place.subcategories), ['lunch', 'a-later-value'], 'a later sub-filter name does not reject the catalog');
+  let time = fixtureTime;
+  for (const bad of [{ priceLevel: 0 }, { priceLevel: 5 }, { priceLevel: '2' }, { priceLevel: 1.5 }, { priceLevel: true }, { subcategories: 'lunch' }, { subcategories: [''] },
+    { subcategories: ['x'.repeat(41)] }, { subcategories: Array(13).fill('lunch') }, { subcategories: ['bad\u0000value'] }]) {
+    time += 1000;
+    assert.throws(() => api.replaceCityPlacesCatalog(next(bad, time), fixtureNow), /INVALID_PLACE_CATALOG/, JSON.stringify(bad));
+  }
+});
+
 test('reviewed Coquitlam-area records use the existing exact map and scoped search contracts', async () => {
   const seed = catalog(), api = data(), city = seed.cities.vancouver;
   assert.equal(Object.keys(seed.cities).length, 11);

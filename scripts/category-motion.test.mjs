@@ -1,0 +1,46 @@
+import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
+import test from 'node:test';
+import { ALIVE, ALIVE_MS, aliveMotion, aliveSteps } from '../src/lib/category-motion.ts';
+
+const MAP_ICONS = ['top25', 'delivery', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used', 'events'];
+
+test('every map icon has the mockup gesture and origin, and the artwork ships with the app', () => {
+  assert.deepEqual(Object.keys(ALIVE).sort(), [...MAP_ICONS].sort());
+  assert.deepEqual(ALIVE.cafe, ['hop', 0.5, 1], 'cafe hops from its base');
+  assert.deepEqual(ALIVE.delivery, ['scoot', 0.5, 0.8], 'delivery scoots forward');
+  assert.deepEqual(ALIVE.used, ['swing', 0.2, 0.2], 'the price tag dangles from its corner');
+  const icon = readFileSync(new URL('../src/components/category-icon.tsx', import.meta.url), 'utf8');
+  assert.deepEqual([...icon.matchAll(/(\w+): require\('@\/assets\/images\/map-categories\/(\w+)\.png'\)/g)].map(match => match[1] === match[2] && match[1]), MAP_ICONS, 'artwork only for these ten; 전체 and Visited draw none');
+  for (const id of MAP_ICONS) {
+    assert.ok(existsSync(new URL(`../assets/images/map-categories/${id}.png`, import.meta.url)), id);
+    assert.ok(icon.includes(`require('@/assets/images/map-categories/${id}.png')`), id);
+  }
+});
+
+test('each gesture runs once in 0.64s and ends where it started', () => {
+  for (const id of MAP_ICONS) {
+    const { tracks } = aliveMotion(id, 24, false);
+    assert.ok(Object.keys(tracks).length, id);
+    for (const [key, track] of Object.entries(tracks)) {
+      assert.equal(track[0][0], 0); assert.equal(track.at(-1)[0], 1);
+      const steps = aliveSteps(track);
+      assert.ok(Math.abs(steps.reduce((sum, [, ms]) => sum + ms, 0) - ALIVE_MS) < 1e-6, `${id} ${key}`);
+      assert.ok(steps.every(([, ms]) => ms > 0), `${id} ${key} keyframes move forward`);
+      const start = track[0][1], end = steps.at(-1)[0];
+      assert.equal(key === 'rotate' ? end % 360 : end, start, `${id} ${key} returns to rest`);
+    }
+  }
+  assert.deepEqual(aliveSteps(aliveMotion('nightlife', 24, false).tracks.rotate).map(([to, ms]) => [to, Math.round(ms * 10) / 10]), [[-22, 179.2], [12, 192], [-4, 166.4], [0, 102.4]]);
+});
+
+test('the origin becomes points from the center, and reduced motion or an unknown category plays nothing', () => {
+  const cafe = aliveMotion('cafe', 24, false);
+  assert.deepEqual([cafe.originX, cafe.originY], [0, 12]);
+  const festival = aliveMotion('festival', 24, false);
+  assert.ok(Math.abs(festival.originX + 4.8) < 1e-9 && Math.abs(festival.originY - 7.2) < 1e-9);
+  for (const id of MAP_ICONS) assert.equal(aliveMotion(id, 24, true), null, id);
+  assert.equal(aliveMotion('all', 24, false), null);
+  assert.equal(aliveMotion('visited', 24, false), null);
+  assert.equal(aliveMotion('toString', 24, false), null, 'object keys are not categories');
+});

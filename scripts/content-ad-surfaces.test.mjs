@@ -7,6 +7,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { bindBusinessPlaces } from '../src/lib/webshops.ts';
 import * as discovery from '../src/lib/discovery.ts';
+import * as openingHours from '../src/lib/opening-hours.ts';
 import { contentAdPosition } from '../src/lib/content-ad-placement.ts';
 import { appendUniquePosts } from '../src/lib/feed-data.ts';
 import { safeMerchantSourceUrl } from '../src/lib/merchant-source.ts';
@@ -57,7 +58,7 @@ function mount(file, component, imports, globals = {}, props = {}) {
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/constants/theme': { Colors: {}, WebNightColors: {} },
     '@/lib/community-city': { useCommunityCity: () => ({ city }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'guest' } }) }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
-    '@/lib/hashtags': { hasAdLabel: () => false },
+    '@/lib/hashtags': { hasAdLabel: () => false }, '@/lib/opening-hours': openingHours, '@/lib/mock': { CITIES: [city] },
     '@/lib/merchant-source': { safeMerchantSourceUrl }, '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.ej-entertainment.com' },
   };
   const exports = {};

@@ -15,6 +15,9 @@ export type CityPlace = {
   latitude: number; longitude: number; address: string; sourceUrl: string;
   website?: string | null; openingHours?: string | null;
   nightlife?: true;
+  // Filled by the place automation when a source backs it; absent means unknown, never a guess.
+  priceLevel?: 1 | 2 | 3 | 4;
+  subcategories?: string[];
   photo?: PlacePhoto | null;
   mapPhotoUri?: string;
   recommendation?: PlaceRecommendation;
@@ -109,7 +112,10 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
           || !Number.isFinite(p.longitude) || p.longitude < -142 || p.longitude > -52 || typeof p.address !== 'string' || p.address.length > 1000
           || p.sourceUrl !== `https://www.openstreetmap.org/${p.id.split(':').slice(1).join('/')}`
           || (p.website != null && !https(p.website)) || (p.openingHours != null && !text(p.openingHours, 1000))
-          || (p.nightlife !== undefined && p.nightlife !== true)) invalid();
+          || (p.nightlife !== undefined && p.nightlife !== true)
+          || (p.priceLevel !== undefined && ![1, 2, 3, 4].includes(p.priceLevel))
+          // Unknown subcategory names are ignored on read, so a later value does not reject the catalog.
+          || (p.subcategories !== undefined && (!Array.isArray(p.subcategories) || p.subcategories.length > 12 || p.subcategories.some(value => !text(value, 40))))) invalid();
         seen.add(p.id); ids.add(p.id);
       }
     }
