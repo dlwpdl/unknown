@@ -30,7 +30,8 @@
         "aps-environment": "production"
       },
       "infoPlist": {
-        "CFBundleName": "글링"
+        "CFBundleName": "글링",
+        "NSPhotoLibraryAddUsageDescription": "Gling adds an image to your photo library only when you save a share card."
       },
       "config": {
         "usesNonExemptEncryption": false
