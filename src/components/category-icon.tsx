@@ -14,8 +14,9 @@ const ART = {
   festival: require('@/assets/images/map-categories/festival.png'), nightlife: require('@/assets/images/map-categories/nightlife.png'),
   places: require('@/assets/images/map-categories/places.png'), housing: require('@/assets/images/map-categories/housing.png'),
   used: require('@/assets/images/map-categories/used.png'), events: require('@/assets/images/map-categories/events.png'),
-  // Map row settings (owner picks 2026-11-04): 보여 줄 곳, 전체, 지금 영업 중.
+  // Map row settings (owner picks 2026-11-04): 보여 줄 곳, 전체, 지금 영업 중, Visited (the gling logo tag).
   scope: require('@/assets/images/map-categories/scope.png'), all: require('@/assets/images/map-categories/all.png'), open: require('@/assets/images/map-categories/open.png'),
+  visited: require('@/assets/images/map-categories/visited.png'),
   // Sub-categories (subchip-icons-2026-11-04, owner: all 13 approved).
   lunch: require('@/assets/images/map-categories/lunch.png'), dinner: require('@/assets/images/map-categories/dinner.png'),
   late_night: require('@/assets/images/map-categories/late_night.png'), solo: require('@/assets/images/map-categories/solo.png'),
@@ -32,8 +33,6 @@ const easing = Easing.bezier(...ALIVE_BEZIER);
 const halo = (light: boolean) => Platform.OS === 'ios'
   ? { shadowColor: light ? '#FFFFFF' : '#0B0B12', shadowOpacity: light ? 0.95 : 0.9, shadowRadius: 1.2, shadowOffset: { width: 0, height: 0 } }
   : { filter: light ? 'drop-shadow(0 0 1.2px rgba(255,255,255,0.95)) drop-shadow(0 0 0.6px rgba(255,255,255,0.95))' : 'drop-shadow(0 0 1.2px rgba(11,11,18,0.9))' };
-
-export const hasCategoryArt = (id: string) => Object.hasOwn(ART, id);
 
 /** A map category's 3D icon, hidden from screen readers (the chip carries the name). Each new `play` value runs its gesture once. */
 export function CategoryIcon({ id, play, size = 24 }: { id: string; play: number; size?: number }) {
@@ -53,7 +52,7 @@ export function CategoryIcon({ id, play, size = 24 }: { id: string; play: number
   }, [play, id, size, reduced, x, y, rotate, scaleX, scaleY]);
   const moving = useAnimatedStyle(() => ({ transform: [{ translateX: originX + x.get() }, { translateY: originY + y.get() }, { rotate: `${rotate.get()}deg` },
     { scaleX: scaleX.get() }, { scaleY: scaleY.get() }, { translateX: -originX }, { translateY: -originY }] }));
-  if (!hasCategoryArt(id)) return null;
+  if (!Object.hasOwn(ART, id)) return null;
   const box = { width: size, height: size };
   return <Animated.View pointerEvents="none" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[box, halo(light), moving]}>
     <Image source={ART[id as keyof typeof ART]} contentFit="contain" style={box} accessible={false} />
