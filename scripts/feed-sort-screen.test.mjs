@@ -11,6 +11,7 @@ import { groupJournalPosts, appendUniquePosts, limitBusinessPosts } from '../src
 import { withPostMap, postMapBody, googlePinUrl } from '../src/lib/post-maps.ts';
 import * as listingDetails from '../src/lib/listing-details.ts';
 import * as neighborhoods from '../src/lib/neighborhoods.ts';
+import * as postUpload from '../src/lib/post-upload.ts';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = false, width = 390, fontScale = 1 } = {}) {
@@ -35,7 +36,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '@/i18n/ko': { t }, '@/lib/mock': { TAGS }, '@/lib/auth': { useAuth: () => ({ isAuthed: viewer !== null, isAuthLoading: authLoading, me: { id: viewer ?? 'guest' }, promptLogin() {} }) },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버', state: 'open' }, setCity() {} }) },
     '@/lib/location-provider': { useCommunityLocation: () => ({ record() {}, capture: async () => null }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
-    '@/lib/community-data': { loadListingQuota: async () => ({ used: 0, max: 3 }), createCommunityPost: () => deferPublish ? new Promise(resolve => writes.push({ resolve })) : Promise.resolve({ id: createdPost.id, post: createdPost }), getCommunityActionError: () => null, isContentRejected: () => false },
+    '@/lib/community-data': { loadListingQuota: async () => ({ used: 0, max: 3 }), createCommunityPost: (_client, input) => deferPublish ? new Promise((resolve, reject) => writes.push({ input, resolve, reject })) : Promise.resolve({ id: createdPost.id, post: createdPost }), getCommunityActionError: () => null, isContentRejected: () => false },
     '@/lib/post-maps': { withPostMap, postMapBody, googlePinUrl }, '@/lib/listing-details': listingDetails, '@/lib/neighborhoods': neighborhoods,
     '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async () => null, setItem: async () => {} } },
     '@/lib/hashtags': { getSuggestedHashtags: () => [], parseHashtags: () => [], canonicalizeHashtag: value => value },
@@ -43,7 +44,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '@/hooks/use-chat-identity': { useChatIdentity: () => null },
     '@/lib/feed-data': { groupJournalPosts, appendUniquePosts, limitBusinessPosts, loadPublicFeed: (...args) => new Promise((resolve, reject) => calls.push({ args, resolve, reject })) },
     '../../supabase/functions/_shared/post-links': { splitPostAttachments: body => ({ body }) },
-    '@/lib/ai-draft': aiDraft,
+    '@/lib/ai-draft': aiDraft, '@/lib/post-upload': postUpload, '@/lib/push-prompt': { requestPushPrompt() {} },
   };
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/feed-screen.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
@@ -223,6 +224,48 @@ test('an old publish completion cannot refresh or overwrite a feed after account
   app.writes[0].resolve({ id: 'old-member-publish', post: post('old-member-publish') }); await new Promise(setImmediate);
   assert.equal(app.calls.length, 3, 'previous account must not start a new feed request');
   assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => p.id), ['guest-post']);
+});
+
+test('posting closes the writer at once, blocks a second post, and a failed upload keeps the whole draft', async () => {
+  const app = screen({ deferPublish: true }); app.list(); app.refresh();
+  app.calls[0].resolve([post('previous')]); await new Promise(setImmediate);
+  const writerOpen = () => nodes(app.render()).some(n => n.type === 'Modal' && n.props.visible && nodes(n).some(c => c.props?.analyticsId === 'components_feed-screen.pressable.14'));
+  app.openWriter();
+  assert.equal(writerOpen(), true);
+  await app.publish();
+  assert.equal(writerOpen(), false, 'the writer closes before the server answers (owner 2026-11-04 ③)');
+  assert.equal(postUpload.getPostUpload().status, 'uploading');
+  assert.equal(postUpload.getPostUpload().title, '새 글');
+  assert.equal(app.writes[0].input.body, '새 본문', 'the same values go to the server as before');
+  app.openWriter();
+  assert.equal(writerOpen(), false, 'one post at a time: the writer stays shut while one uploads');
+  assert.equal(app.feedback.at(-1), 'warning');
+  app.writes[0].reject(new Error('Failed to fetch')); await new Promise(setImmediate);
+  assert.equal(postUpload.getPostUpload().status, 'failed');
+  assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => p.id), ['previous'], 'nothing is added for a failed post');
+  app.openWriter();
+  assert.equal(writerOpen(), true, 'editing reopens the writer');
+  const tree = nodes(app.render());
+  assert.equal(tree.find(n => n.props?.accessibilityLabel === t.write.titlePlaceholder).props.value, '새 글');
+  assert.equal(tree.find(n => n.props?.accessibilityLabel === t.write.bodyLabel).props.value, '새 본문');
+  assert.equal(postUpload.getPostUpload(), null, 'the writer takes over the failed card; its draft is right here');
+});
+
+test('a retry the server calls a duplicate counts as posted: no second post, no error, and the draft clears', async () => {
+  const app = screen({ deferPublish: true }); app.list(); app.refresh();
+  app.calls[0].resolve([post('previous')]); await new Promise(setImmediate);
+  await app.publish();
+  app.writes[0].reject(new Error('Failed to fetch')); await new Promise(setImmediate);
+  assert.equal(postUpload.retryPostUpload(), true);
+  assert.equal(postUpload.retryPostUpload(), false, 'a double tap sends once');
+  assert.equal(app.writes.length, 2);
+  assert.deepEqual(app.writes[1].input, app.writes[0].input, 'the retry sends exactly the kept draft');
+  app.writes[1].reject(new Error('DUPLICATE_POST')); await new Promise(setImmediate);
+  assert.equal(postUpload.getPostUpload().status, 'done');
+  assert.equal(app.feedback.filter(kind => kind === 'warning').length, 1, 'only the first, real failure warned');
+  assert.equal(app.calls.length, 2, 'the feed reloads to show the post the earlier try saved');
+  assert.equal(nodes(app.render()).find(n => n.props?.accessibilityLabel === t.write.titlePlaceholder).props.value, '');
+  postUpload.clearPostUpload();
 });
 
 test('error and empty states appear below the sorting control, where results normally appear', async () => {
