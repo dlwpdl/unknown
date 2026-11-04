@@ -28,7 +28,7 @@ import { ControlStyles, IconSize, Typography } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { count } from '@/i18n';
 import { useAuth } from '@/lib/auth';
-import { deletePost, recordPostShare, togglePostReaction } from '@/lib/community-data';
+import { deletePost, recordPostShare, setPostHidden, togglePostReaction } from '@/lib/community-data';
 import { getPostImageSource, relativeTime } from '@/lib/feed-data';
 import { visibleMeetupBody } from '@/lib/meetup-ai';
 import { splitPlaceMeetupBody } from '@/lib/meetup-destination';
@@ -76,7 +76,7 @@ export function PostCard({
   translationVisible?: boolean;
   meetupDetail?: { beforeTitle: ReactNode; afterTitle: ReactNode }; // 모임 상세: 작성자 줄·분류·반응 줄 대신 요약을 끼운다
   postDetail?: boolean; // 일반 글 상세: 장소·링크는 정보 카드, 본문은 문단, 출처는 접고, 반응은 하단 바로 옮긴다
-  feed?: boolean; // 오늘 탭 목록 (owner 2026-11-03): 프로필 줄 → 짧은 글 → 장소 카드 → 넘기는 사진 → 공감·댓글·공유·저장(오른쪽 끝). ··· 은 남의 글 신고, 내 글 고치기·삭제 (owner 2026-11-04)
+  feed?: boolean; // 오늘 탭 목록 (owner 2026-11-03): 프로필 줄 → 짧은 글 → 장소 카드 → 넘기는 사진 → 공감·댓글·공유·저장(오른쪽 끝). ··· 은 남의 글 숨기기·신고, 내 글 고치기·삭제 (owner 2026-11-04)
 }) {
   const { tr, t, locale: appLocale } = useLanguage();
   const theme = useTheme(), router = useRouter();
@@ -212,6 +212,18 @@ export function PostCard({
       play('warning');
       DeviceEventEmitter.emit(POST_CHANGED_EVENT, { id: post.id, removed: true } satisfies PostChange);
     } catch { play('warning'); Alert.alert(tr('글을 삭제하지 못했어요.'), t.detail.sendErrorBody); }
+  };
+  // 이 글 숨기기 (owner 2026-11-04): every list on screen drops it at once and no report is filed. The app has no undo toast,
+  // so the existing alert carries 되돌리기, shown once the server has saved it. A failed save or undo puts the list back.
+  const hidePost = async (hidden = true) => {
+    if (!isAuthed) return promptLogin(tr('글을 숨기려면 로그인이 필요해요'));
+    try {
+      await setPostHidden(supabase, me.id, post.id, hidden);
+      if (hidden) Alert.alert(tr('글을 숨겼어요'), undefined, [
+        { text: tr('되돌리기'), onPress: () => { play('selection'); void hidePost(false); } },
+        { text: tr('확인'), onPress: () => play('selection') },
+      ]);
+    } catch { play('warning'); Alert.alert(tr(hidden ? '글을 숨기지 못했어요.' : '되돌리지 못했어요.'), t.detail.sendErrorBody); }
   };
 
   const roomModule = post.room && !hideRoom && (
@@ -379,13 +391,15 @@ export function PostCard({
             <SymbolView name={{ ios: savedOn ? 'bookmark.fill' : 'bookmark', android: savedOn ? 'bookmark_added' : 'bookmark', web: savedOn ? 'bookmark_added' : 'bookmark' }} size={IconSize.toolbar} tintColor={savedOn ? theme.accent : theme.textSecondary} />
           </Pressable>
         </View>
-        {/* 이 글 숨기기는 아직 앱에 없어서(신고하면 숨겨짐) 남의 글은 신고만 둔다. 상세의 신고 버튼은 그대로다. */}
+        {/* 남의 글(운영 캐릭터·비즈니스 글 포함)은 이 글 숨기기 → 신고. 상세의 신고 버튼은 그대로다. */}
         {menuOpen && <MeetupManageSheet visible title={tr('글 메뉴')} onClose={() => setMenuOpen(false)} actions={mine ? [
           { key: 'edit', analyticsId: 'components_post-detail.pressable.14', label: tr(post.room ? '소개·사진 수정' : '글·사진 수정'), onPress: editPost,
             icon: { ios: 'pencil', android: 'edit', web: 'edit' } },
           { key: 'delete', analyticsId: 'post.manage.delete', label: tr('글 삭제'), danger: true, onPress: () => setDeleteOpen(true),
             icon: { ios: 'trash', android: 'delete', web: 'delete' } },
-        ] : [{ key: 'report', analyticsId: 'components_post-card.pressable.5', label: t.report.title(name), danger: true,
+        ] : [{ key: 'hide', analyticsId: 'post.manage.hide', label: tr('이 글 숨기기'), hint: tr('내 화면에서만 사라지고, 신고는 가지 않아요.'), onPress: () => void hidePost(),
+          icon: { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' } },
+        { key: 'report', analyticsId: 'components_post-card.pressable.5', label: t.report.title(name), danger: true,
           icon: { ios: 'flag', android: 'flag', web: 'flag' }, onPress: () => { if (isAuthed) setReportOpen(true); else promptLogin(t.auth.reasonReport); } }]} />}
         {deleteOpen && <MeetupManageSheet visible title={tr('이 글을 삭제할까요?')} onClose={() => setDeleteOpen(false)} actions={[
           { key: 'delete-confirm', analyticsId: 'components_post-detail.pressable.15', label: tr('글 삭제'), hint: tr('삭제한 글은 되돌릴 수 없어요. 달린 댓글도 함께 보이지 않게 됩니다.'), danger: true,

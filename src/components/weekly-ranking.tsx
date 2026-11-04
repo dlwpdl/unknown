@@ -37,7 +37,7 @@ export function WeeklyRanking({ cityId, refreshKey, linked = false, onOpen }: { 
   const reducedMotion = useReducedMotion();
   const { play } = useInteractionFeedback();
   const [loadedRanking, setRanking] = useState<Ranking>(null);
-  const ranking = loadedRanking && { ...loadedRanking, entries: loadedRanking.entries.filter((entry) => !hidden('post', entry.postId, entry.authorId)) };
+  const ranking = loadedRanking && { ...loadedRanking, entries: loadedRanking.entries.filter((entry) => !hidden('listed_post', entry.postId, entry.authorId)) };
   const [open, setOpen] = useState(false);
   const [at, setAt] = useState(0);
   const [fade] = useState(() => new Animated.Value(1));

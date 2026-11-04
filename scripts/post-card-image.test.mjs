@@ -34,8 +34,8 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
   let viewer = 'viewer-a';
   const feedback = [];
   const openedMaps = [];
-  const alerts = [], pushed = [], handed = [], emitted = [], deleted = [];
-  let mapFailure = false, translatedBody = null, deleteFailure = false;
+  const alerts = [], pushed = [], handed = [], emitted = [], deleted = [], hiddenCalls = [], logins = [];
+  let mapFailure = false, translatedBody = null, deleteFailure = false, hideFailure = false, authed = true;
   const react = {
     useCallback: (callback) => callback,
     useMemo: (callback) => callback(),
@@ -91,9 +91,10 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     '@/lib/place-reviews': { placeReviewPlace: () => feedPlace, placeReviewText: body => body },
     '@/hooks/use-theme': { useTheme: () => ({ backgroundElement: '#222231' }) },
     '@/i18n/ko': { count, t },
-    '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: viewer } }) },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: authed, me: { id: viewer }, promptLogin: reason => logins.push(reason) }) },
     '@/lib/community-data': { togglePostReaction: (_client, postId, viewerId, kind, isOn) => persistReaction({ postId, viewerId, kind, isOn }),
-      deletePost: async (_client, postId) => { if (deleteFailure) throw new Error('offline'); deleted.push(postId); } },
+      deletePost: async (_client, postId) => { if (deleteFailure) throw new Error('offline'); deleted.push(postId); },
+      setPostHidden: async (_client, viewerId, postId, isHidden) => { hiddenCalls.push([viewerId, postId, isHidden]); if (hideFailure) throw new Error('offline'); } },
     '@/lib/feed-data': { getPostImageSource },
     '@/lib/meetup-ai': {},
     '@/lib/hashtags': { uniqueHashtags },
@@ -116,6 +117,7 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     return modules[name];
   }) });
   return { render(props) { cursor = 0; return exports[component](props); }, feedback, openedMaps, alerts, pushed, handed, emitted, deleted, failDelete: () => { deleteFailure = true; },
+    hiddenCalls, logins, failHide: (value = true) => { hideFailure = value; }, setAuthed: (value) => { authed = value; },
     translate: body => { translatedBody = body; }, failMap: () => { mapFailure = true; }, setViewer: (id) => { viewer = id; } };
 }
 
@@ -200,7 +202,7 @@ test('피드 사진 전체를 원본 비율로 표시하고 글·사진·뷰어 
   assert.equal(image(card.render({ ...props, hidePhoto: true })), undefined);
 });
 
-test('Today card: author row, short text, place card, swipeable photos, then like/comment/share with save at the right end; ··· holds only report on others\' posts', async () => {
+test('Today card: author row, short text, place card, swipeable photos, then like/comment/share with save at the right end; ··· holds hide then report on others\' posts', async () => {
   const card = cardRenderer();
   let opened = 0;
   const credits = '\n\n사진 출처·이용 조건\n1. Kim Lee · CC BY 2.0 · https://commons.wikimedia.org/wiki/File:A.jpg\n2. Park · CC BY 2.0 · https://commons.wikimedia.org/wiki/File:B.jpg';
@@ -267,7 +269,7 @@ test('Today card: author row, short text, place card, swipeable photos, then lik
     const menu = nodes(card.render(props)).find(node => node.type === 'MeetupManageSheet');
     assert.equal(menu.props.title, '글 메뉴');
     assert.deepEqual(Array.from(menu.props.actions, action => `${action.analyticsId} ${action.label}`),
-      [`components_post-card.pressable.5 ${t.report.title('하늘')}`], 'no hide-this-post exists yet, so report only');
+      ['post.manage.hide 이 글 숨기기', `components_post-card.pressable.5 ${t.report.title('하늘')}`], 'hide sits above report on someone else\'s post');
     assert.ok(card.feedback.includes('selection'));
   } finally { feedPlace = null; }
 });
@@ -304,6 +306,51 @@ test('Today card ··· on my own post offers edit and delete only; edit opens t
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(card.emitted.length, 1, 'a failed delete keeps the post');
   assert.equal(card.alerts.at(-1)[0], '글을 삭제하지 못했어요.');
+});
+
+test('Today card ··· 이 글 숨기기 on someone else\'s post: saves the hide, then the alert offers 되돌리기; failures say so (owner 2026-11-04)', async () => {
+  const card = cardRenderer();
+  const props = { post: { id: 'theirs-1', cityId: 'vancouver', title: '남의 글', body: '오늘 날씨 좋네요.', author: { id: 'author-b', nickname: '하늘' }, tag: { kind: 'post', label: '일상' },
+    likes: 0, saves: 0, comments: 0, views: 0, createdAtLabel: '방금' }, feed: true, flat: true, onPress() {} };
+  const hide = () => {
+    nodes(card.render(props)).find(node => node.props?.analyticsId === 'post.manage.open').props.onPress();
+    return nodes(card.render(props)).find(node => node.type === 'MeetupManageSheet').props.actions.find(item => item.key === 'hide');
+  };
+  const settle = () => new Promise(resolve => setImmediate(resolve));
+  const action = hide();
+  assert.equal(action.label, '이 글 숨기기');
+  assert.equal(action.hint, '내 화면에서만 사라지고, 신고는 가지 않아요.');
+  assert.equal(action.danger, undefined, 'hiding is not a danger action; report stays the red one below');
+  assert.deepEqual({ ...action.icon }, { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' });
+
+  action.onPress(); await settle();
+  assert.deepEqual(card.hiddenCalls, [['viewer-a', 'theirs-1', true]]);
+  const [title, body, buttons] = card.alerts.at(-1);
+  assert.equal(title, '글을 숨겼어요');
+  assert.equal(body, undefined);
+  assert.deepEqual(Array.from(buttons, button => button.text), ['되돌리기', '확인']);
+  buttons[0].onPress(); await settle();
+  assert.deepEqual(card.hiddenCalls.at(-1), ['viewer-a', 'theirs-1', false], '되돌리기 un-hides the same post');
+  assert.equal(card.feedback.at(-1), 'selection');
+  assert.equal(card.alerts.length, 1, 'a successful undo needs no second alert');
+  buttons[1].onPress();
+  assert.equal(card.feedback.at(-1), 'selection');
+
+  card.failHide();
+  hide().onPress(); await settle();
+  assert.deepEqual(card.alerts.at(-1), ['글을 숨기지 못했어요.', t.detail.sendErrorBody]);
+  assert.equal(card.feedback.at(-1), 'warning');
+  card.failHide(false);
+  hide().onPress(); await settle();
+  card.failHide();
+  card.alerts.at(-1)[2][0].onPress(); await settle();
+  assert.deepEqual(card.alerts.at(-1), ['되돌리지 못했어요.', t.detail.sendErrorBody]);
+
+  card.setAuthed(false);
+  const calls = card.hiddenCalls.length;
+  hide().onPress(); await settle();
+  assert.deepEqual(card.logins, ['글을 숨기려면 로그인이 필요해요']);
+  assert.equal(card.hiddenCalls.length, calls, 'a guest is asked to sign in first');
 });
 
 test('Today card: a post without photos stays a small text card, and 더 보기 shows only when the text is cut', () => {
