@@ -140,10 +140,10 @@ export function useFriendShareNotice() {
     </Pressable>;
   const sheet = <DragSheet visible={!!pending} dismissible={!busy} onClose={() => setPending(null)} title={tr('저장한 곳은 친구에게 보여요')}>
     <View style={styles.notice}>
-      <ThemedText type="small" themeColor="textSecondary">{tr('친구를 맺으면 내가 저장한 장소와 비즈니스를 그 친구도 지도에서 볼 수 있어요. 구해요·팔아요 글이나 저장한 사람은 안 보이고, 설정에서 언제든 끌 수 있어요.')}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{tr('친구를 맺으면 내가 저장한 장소와 비즈니스를 그 친구가 지도에서 볼 수 있어요. 저장해 둔 구해요·팔아요 글과 프로필은 안 보이고, 설정에서 언제든 끌 수 있어요.')}</ThemedText>
       {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
-      {action('continue', tr('그대로 진행'), false)}
-      {action('hide', tr('저장한 곳은 숨기고 진행'), true)}
+      {action('continue', tr('그대로 계속'), false)}
+      {action('hide', tr('저장한 곳은 숨기고 계속'), true)}
     </View>
   </DragSheet>;
   return { confirm, sheet };
@@ -209,7 +209,7 @@ export function ProfileSharingCard() {
     <View style={styles.cardRow}>
       <View style={styles.grow}>
         <ThemedText type="small">{tr('친구에게 저장한 곳 보여 주기')}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">{tr('켜면 내가 저장한 장소와 비즈니스를 친구가 내 프로필 지도에서 볼 수 있어요. 구해요·팔아요 글과 저장한 사람은 안 보여요.')}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{tr('켜면 내가 저장한 장소와 비즈니스를 친구가 지도에서 볼 수 있어요. 저장해 둔 구해요·팔아요 글과 프로필은 안 보여요.')}</ThemedText>
       </View>
       <Switch analyticsId="profile.settings.share-saved-places" value={current?.on ?? true} disabled={!current || current.busy || current.on === null}
         onValueChange={on => void change(on)} accessibilityLabel={tr('친구에게 저장한 곳 보여 주기')}

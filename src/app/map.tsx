@@ -374,10 +374,10 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     : openNow ? { title: tr('지금 영업 중인 곳이 없어요'), action: tr('영업 중 필터 끄기'), clear: () => setOpenNow(false) } : null;
   // An empty saved scope says why first: signed out, no friends yet, or nothing saved in this city.
   const scopeCard = scope === 'all' || loading || scopedItems.length ? null
-    : !isAuthed ? <StateCard analyticsId="discovery.scope.empty" title={tr('로그인하면 저장한 곳이 지도에 떠요')} body={tr('내가 저장한 곳도, 친구가 저장한 곳도 로그인해야 보여요.')}
+    : !isAuthed ? <StateCard analyticsId="discovery.scope.empty" title={tr('로그인하면 저장한 곳이 지도에 떠요')} body={tr('내가 저장한 곳과 친구가 저장한 곳을 한 지도에서 같이 볼 수 있어요.')}
       actionLabel={tr('로그인')} onAction={() => promptLogin(tr('로그인하면 저장한 곳이 지도에 떠요'))} />
     : !scopeData?.value ? <StateCard kind="error" analyticsId="discovery.scope.empty" title={tr('저장한 곳을 불러오지 못했어요')} body={tr('연결을 확인하고 다시 시도해 주세요.')} actionLabel={tr('다시 시도')} onAction={refresh} />
-    : scope === 'friends' && scopeData.value.friendCount === 0 ? <StateCard analyticsId="discovery.scope.empty" title={tr('아직 친구가 없어요')} body={tr('친구가 되면 그 친구가 저장한 곳이 여기에 모여요.')}
+    : scope === 'friends' && scopeData.value.friendCount === 0 ? <StateCard analyticsId="discovery.scope.empty" title={tr('아직 친구가 없어요')} body={tr('이웃 프로필에서 친구를 맺으면 그 친구가 저장한 곳이 여기에 모여요.')}
       actionLabel={tr('친구 목록 보기')} onAction={() => router.push('/profile/friends')} />
     : <StateCard analyticsId="discovery.scope.empty" title={scope === 'friends' ? tr('친구가 저장한 곳이 아직 없어요') : tr('아직 저장한 곳이 없어요')}
       body={scope === 'friends' ? tr('친구가 이 도시에서 장소를 저장하면 여기에 떠요.') : tr('지도에서 마음에 드는 곳을 저장하면 여기에 모여요.')} actionLabel={tr('모두 보기')} onAction={() => setScope('all')} />;

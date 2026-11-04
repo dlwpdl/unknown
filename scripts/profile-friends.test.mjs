@@ -116,13 +116,13 @@ async function shareNotice({ shares = true, failHide = false } = {}) {
   return { render, press, storage, hidden, feedback, overviewReads, walk };
 }
 
-test('the friend sharing notice shows once while sharing is on, and 숨기고 진행 turns sharing off before going on', async () => {
+test('the friend sharing notice shows once while sharing is on, and 숨기고 계속 turns sharing off before going on', async () => {
   const notice = await shareNotice();
   let runs = 0;
   await notice.render().confirm(() => { runs++; });
   assert.equal(runs, 0, 'the request waits for an answer');
   assert.equal(notice.render().sheet.props.visible, true);
-  assert.match(notice.walk(notice.render().sheet).map(node => typeof node.props?.children === 'string' ? node.props.children : '').join(' '), /구해요·팔아요 글이나 저장한 사람은 안 보이고/);
+  assert.match(notice.walk(notice.render().sheet).map(node => typeof node.props?.children === 'string' ? node.props.children : '').join(' '), /저장해 둔 구해요·팔아요 글과 프로필은 안 보이고/);
   await notice.press('hide');
   assert.deepEqual(notice.hidden, [false]);
   assert.equal(runs, 1);
@@ -136,7 +136,7 @@ test('the friend sharing notice shows once while sharing is on, and 숨기고 �
   const kept = await shareNotice();
   await kept.render().confirm(() => { runs++; });
   await kept.press('continue');
-  assert.deepEqual(kept.hidden, [], '그대로 진행 leaves sharing on');
+  assert.deepEqual(kept.hidden, [], '그대로 계속 leaves sharing on');
   assert.equal(runs, 3);
 
   const off = await shareNotice({ shares: false });
