@@ -34,8 +34,8 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
   let viewer = 'viewer-a';
   const feedback = [];
   const openedMaps = [];
-  const alerts = [];
-  let mapFailure = false, translatedBody = null;
+  const alerts = [], pushed = [], handed = [], emitted = [], deleted = [];
+  let mapFailure = false, translatedBody = null, deleteFailure = false;
   const react = {
     useCallback: (callback) => callback,
     useMemo: (callback) => callback(),
@@ -56,7 +56,9 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     'expo-symbols': { SymbolView: 'SymbolView' },
     'react-native': { View: 'View', Modal: 'Modal', Platform: { OS: 'ios' }, useWindowDimensions: () => ({ width: 390, height: 844 }), StyleSheet: { create: (value) => value, hairlineWidth: 1 }, Animated: { Value: class {}, View: 'Animated.View' },
       Linking: { openURL: (url) => { openedMaps.push(url); return mapFailure ? Promise.reject(new Error('offline')) : Promise.resolve(); } },
-      Alert: { alert: (...args) => alerts.push(args) } },
+      Alert: { alert: (...args) => alerts.push(args) }, DeviceEventEmitter: { emit: (...args) => emitted.push(args) } },
+    'expo-router': { useRouter: () => ({ push: route => pushed.push(route) }) },
+    '@/lib/post-open': { handOffPost: (viewerId, post) => handed.push([viewerId, post.id]), POST_CHANGED_EVENT: 'postChanged' },
     'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, useReducedMotion: () => true,
       useSharedValue: (initial) => ({ value: initial, get() { return this.value; }, set(value) { this.value = value; } }), useAnimatedStyle: (fn) => fn(), runOnJS: (fn) => fn },
     'react-native-gesture-handler': { GestureHandlerRootView: 'GestureRoot', GestureDetector: 'GestureDetector', Gesture: {
@@ -90,7 +92,8 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     '@/hooks/use-theme': { useTheme: () => ({ backgroundElement: '#222231' }) },
     '@/i18n/ko': { count, t },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: viewer } }) },
-    '@/lib/community-data': { togglePostReaction: (_client, postId, viewerId, kind, isOn) => persistReaction({ postId, viewerId, kind, isOn }) },
+    '@/lib/community-data': { togglePostReaction: (_client, postId, viewerId, kind, isOn) => persistReaction({ postId, viewerId, kind, isOn }),
+      deletePost: async (_client, postId) => { if (deleteFailure) throw new Error('offline'); deleted.push(postId); } },
     '@/lib/feed-data': { getPostImageSource },
     '@/lib/meetup-ai': {},
     '@/lib/hashtags': { uniqueHashtags },
@@ -112,7 +115,7 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     assert.ok(name in modules, `Unexpected import: ${name}`);
     return modules[name];
   }) });
-  return { render(props) { cursor = 0; return exports[component](props); }, feedback, openedMaps, alerts,
+  return { render(props) { cursor = 0; return exports[component](props); }, feedback, openedMaps, alerts, pushed, handed, emitted, deleted, failDelete: () => { deleteFailure = true; },
     translate: body => { translatedBody = body; }, failMap: () => { mapFailure = true; }, setViewer: (id) => { viewer = id; } };
 }
 
@@ -197,7 +200,7 @@ test('피드 사진 전체를 원본 비율로 표시하고 글·사진·뷰어 
   assert.equal(image(card.render({ ...props, hidePhoto: true })), undefined);
 });
 
-test('Today card: author row, short text, place card, swipeable photos, then like/comment/share; save and report sit in the ··· menu', () => {
+test('Today card: author row, short text, place card, swipeable photos, then like/comment/share with save at the right end; ··· holds only report on others\' posts', async () => {
   const card = cardRenderer();
   let opened = 0;
   const credits = '\n\n사진 출처·이용 조건\n1. Kim Lee · CC BY 2.0 · https://commons.wikimedia.org/wiki/File:A.jpg\n2. Park · CC BY 2.0 · https://commons.wikimedia.org/wiki/File:B.jpg';
@@ -243,17 +246,64 @@ test('Today card: author row, short text, place card, swipeable photos, then lik
 
     tree = nodes(card.render(props));
     const ids = tree.map(node => node.props?.analyticsId).filter(Boolean);
-    for (const id of ['components_post-card.pressable.7', 'components_post-card.pressable.8', 'components_post-card.pressable.10']) assert.ok(ids.includes(id), id);
-    assert.ok(!ids.includes('components_post-card.pressable.9'), 'saving moved to the ··· menu');
+    const acts = ['components_post-card.pressable.7', 'components_post-card.pressable.8', 'components_post-card.pressable.10', 'components_post-card.pressable.9'].map(id => ids.indexOf(id));
+    assert.ok(acts.every((at, i) => at >= 0 && (i === 0 || at > acts[i - 1])), 'like → comment → share → save (owner 2026-11-04 저장은 카드에 바로)');
+    const save = () => nodes(card.render(props)).find(node => node.props?.analyticsId === 'components_post-card.pressable.9');
+    assert.equal(style(save()).marginLeft, 'auto', 'save sits at the right end of the row');
+    assert.ok(style(save()).minWidth >= 44 && style(save()).minHeight >= 44);
+    assert.equal(save().props.accessibilityLabel, '저장');
+    assert.equal(save().props.accessibilityState.selected, false);
+    assert.equal(nodes(save()).find(node => node.type === 'SymbolView').props.name.ios, 'bookmark');
+    save().props.onPress();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(card.feedback.at(-1), 'reaction');
+    assert.equal(save().props.accessibilityLabel, '저장 취소', 'the name follows the saved state');
+    assert.equal(save().props.accessibilityState.selected, true);
+    assert.equal(nodes(save()).find(node => node.type === 'SymbolView').props.name.ios, 'bookmark.fill');
+    tree = nodes(card.render(props));
     assert.ok(!tree.some(node => node.type === 'SymbolView' && node.props.name?.ios === 'eye'), 'no view count on Today');
     assert.ok(!tree.some(node => node.type === 'MeetupManageSheet'));
     tree.find(node => node.props?.analyticsId === 'post.manage.open').props.onPress();
     const menu = nodes(card.render(props)).find(node => node.type === 'MeetupManageSheet');
     assert.equal(menu.props.title, '글 메뉴');
     assert.deepEqual(Array.from(menu.props.actions, action => `${action.analyticsId} ${action.label}`),
-      ['components_post-card.pressable.9 글 저장', `components_post-card.pressable.5 ${t.report.title('하늘')}`]);
+      [`components_post-card.pressable.5 ${t.report.title('하늘')}`], 'no hide-this-post exists yet, so report only');
     assert.ok(card.feedback.includes('selection'));
   } finally { feedPlace = null; }
+});
+
+test('Today card ··· on my own post offers edit and delete only; edit opens the post in edit mode, delete asks first and removes it from lists', async () => {
+  const card = cardRenderer();
+  const props = { post: { id: 'mine-1', cityId: 'vancouver', title: '내 글', body: '오늘 날씨 좋네요.', author: { id: 'viewer-a', nickname: '나' }, tag: { kind: 'post', label: '일상' },
+    likes: 0, saves: 0, comments: 0, views: 0, createdAtLabel: '방금' }, feed: true, flat: true, onPress() {} };
+  const sheet = title => nodes(card.render(props)).find(node => node.type === 'MeetupManageSheet' && node.props.title === title);
+  const action = (title, key) => sheet(title).props.actions.find(item => item.key === key);
+  nodes(card.render(props)).find(node => node.props?.analyticsId === 'post.manage.open').props.onPress();
+  assert.deepEqual(Array.from(sheet('글 메뉴').props.actions, item => `${item.analyticsId} ${item.label}`),
+    ['components_post-detail.pressable.14 글·사진 수정', 'post.manage.delete 글 삭제'], 'no save, no report on my own post');
+
+  action('글 메뉴', 'edit').onPress();
+  assert.deepEqual(card.handed, [['viewer-a', 'mine-1']], 'the detail opens on the card it came from');
+  assert.deepEqual(JSON.parse(JSON.stringify(card.pushed)), [{ pathname: '/post/[id]', params: { id: 'mine-1', edit: '1' } }]);
+
+  assert.equal(sheet('이 글을 삭제할까요?'), undefined);
+  action('글 메뉴', 'delete').onPress();
+  const confirm = action('이 글을 삭제할까요?', 'delete-confirm');
+  assert.equal(confirm.label, '글 삭제');
+  assert.equal(confirm.hint, '삭제한 글은 되돌릴 수 없어요. 달린 댓글도 함께 보이지 않게 됩니다.');
+  assert.equal(confirm.danger, true);
+  assert.deepEqual(card.deleted, [], 'nothing is deleted before the confirm');
+  confirm.onPress();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(card.deleted, ['mine-1']);
+  assert.deepEqual(JSON.parse(JSON.stringify(card.emitted)), [['postChanged', { id: 'mine-1', removed: true }]], 'lists drop the post the way the detail delete does');
+  assert.equal(card.feedback.at(-1), 'warning');
+
+  card.failDelete();
+  confirm.onPress();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(card.emitted.length, 1, 'a failed delete keeps the post');
+  assert.equal(card.alerts.at(-1)[0], '글을 삭제하지 못했어요.');
 });
 
 test('Today card: a post without photos stays a small text card, and 더 보기 shows only when the text is cut', () => {

@@ -3,7 +3,8 @@ import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
-import { Alert, Animated, Easing, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Alert, Animated, DeviceEventEmitter, Easing, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
@@ -27,7 +28,7 @@ import { ControlStyles, IconSize, Typography } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { count } from '@/i18n';
 import { useAuth } from '@/lib/auth';
-import { recordPostShare, togglePostReaction } from '@/lib/community-data';
+import { deletePost, recordPostShare, togglePostReaction } from '@/lib/community-data';
 import { getPostImageSource, relativeTime } from '@/lib/feed-data';
 import { visibleMeetupBody } from '@/lib/meetup-ai';
 import { splitPlaceMeetupBody } from '@/lib/meetup-destination';
@@ -36,6 +37,7 @@ import { uniqueHashtags } from '@/lib/hashtags';
 import { postLocationUrl, postMapBody } from '@/lib/post-maps';
 import { changePostReaction, postReactionsSnapshot, subscribePostReactions, syncPostReactions } from '@/lib/post-reactions';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { handOffPost, POST_CHANGED_EVENT, type PostChange } from '@/lib/post-open';
 import { PostShareSheet } from '@/components/post-share-sheet';
 import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
@@ -74,10 +76,10 @@ export function PostCard({
   translationVisible?: boolean;
   meetupDetail?: { beforeTitle: ReactNode; afterTitle: ReactNode }; // 모임 상세: 작성자 줄·분류·반응 줄 대신 요약을 끼운다
   postDetail?: boolean; // 일반 글 상세: 장소·링크는 정보 카드, 본문은 문단, 출처는 접고, 반응은 하단 바로 옮긴다
-  feed?: boolean; // 오늘 탭 목록 (owner 2026-11-03): 프로필 줄 → 짧은 글 → 장소 카드 → 넘기는 사진 → 공감·댓글·공유. 저장·신고는 ··· 메뉴
+  feed?: boolean; // 오늘 탭 목록 (owner 2026-11-03): 프로필 줄 → 짧은 글 → 장소 카드 → 넘기는 사진 → 공감·댓글·공유·저장(오른쪽 끝). ··· 은 남의 글 신고, 내 글 고치기·삭제 (owner 2026-11-04)
 }) {
   const { tr, t, locale: appLocale } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), router = useRouter();
   const { isAuthed, me, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
@@ -104,7 +106,7 @@ export function PostCard({
   const [introLines, setIntroLines] = useState<{ body: string; lines: number } | null>(null), [introOpen, setIntroOpen] = useState(false);
   const [creditsOpen, setCreditsOpen] = useState(false);
   const { width: windowWidth } = useWindowDimensions();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false), [deleteOpen, setDeleteOpen] = useState(false);
   const [textLines, setTextLines] = useState<{ text: string; lines: number } | null>(null), [textOpen, setTextOpen] = useState(false);
   const [photoPage, setPhotoPage] = useState(0), [photoRowWidth, setPhotoRowWidth] = useState(0), [failedSlides, setFailedSlides] = useState<string[]>([]);
   const isMeetup = post.tag.kind === 'meetup';
@@ -201,6 +203,15 @@ export function PostCard({
     play('selection');
     if (!isAuthed) return promptLogin(t.auth.reasonShare);
     setShareOpen(true);
+  };
+  // 오늘 카드 ··· 의 내 글 고치기·삭제는 글 상세와 같은 수정 화면·삭제를 쓴다 (owner 2026-11-04).
+  const editPost = () => { handOffPost(me.id, post); router.push({ pathname: '/post/[id]', params: { id: post.id, edit: '1' } }); };
+  const removePost = async () => {
+    try {
+      await deletePost(supabase, post.id);
+      play('warning');
+      DeviceEventEmitter.emit(POST_CHANGED_EVENT, { id: post.id, removed: true } satisfies PostChange);
+    } catch { play('warning'); Alert.alert(tr('글을 삭제하지 못했어요.'), t.detail.sendErrorBody); }
   };
 
   const roomModule = post.room && !hideRoom && (
@@ -363,12 +374,22 @@ export function PostCard({
             accessibilityLabel={tr("{0} · {1}", (tr(post.room ? '모임 초대 링크 공유' : '게시물 링크 공유')), (t.feed.shares(shareCount)))} style={styles.feedAct}>
             <SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
           </Pressable>
+          <Pressable analyticsId="components_post-card.pressable.9" onPress={() => void toggleSave()} disabled={!!busyReaction} accessibilityRole="button" accessibilityLabel={savedOn ? tr('저장 취소') : tr('저장')}
+            accessibilityState={{ selected: savedOn, disabled: !!busyReaction, busy: busyReaction === 'save' }} style={[styles.feedAct, styles.feedSave]}>
+            <SymbolView name={{ ios: savedOn ? 'bookmark.fill' : 'bookmark', android: savedOn ? 'bookmark_added' : 'bookmark', web: savedOn ? 'bookmark_added' : 'bookmark' }} size={IconSize.toolbar} tintColor={savedOn ? theme.accent : theme.textSecondary} />
+          </Pressable>
         </View>
-        {menuOpen && <MeetupManageSheet visible title={tr('글 메뉴')} onClose={() => setMenuOpen(false)} actions={[
-          { key: 'save', analyticsId: 'components_post-card.pressable.9', label: savedOn ? tr('저장 취소') : tr('글 저장'), onPress: () => void toggleSave(),
-            icon: { ios: savedOn ? 'bookmark.slash' : 'bookmark', android: savedOn ? 'bookmark_remove' : 'bookmark', web: savedOn ? 'bookmark_remove' : 'bookmark' } },
-          ...(mine ? [] : [{ key: 'report', analyticsId: 'components_post-card.pressable.5', label: t.report.title(name), danger: true,
-            icon: { ios: 'flag', android: 'flag', web: 'flag' } as const, onPress: () => { if (isAuthed) setReportOpen(true); else promptLogin(t.auth.reasonReport); } }]),
+        {/* 이 글 숨기기는 아직 앱에 없어서(신고하면 숨겨짐) 남의 글은 신고만 둔다. 상세의 신고 버튼은 그대로다. */}
+        {menuOpen && <MeetupManageSheet visible title={tr('글 메뉴')} onClose={() => setMenuOpen(false)} actions={mine ? [
+          { key: 'edit', analyticsId: 'components_post-detail.pressable.14', label: tr(post.room ? '소개·사진 수정' : '글·사진 수정'), onPress: editPost,
+            icon: { ios: 'pencil', android: 'edit', web: 'edit' } },
+          { key: 'delete', analyticsId: 'post.manage.delete', label: tr('글 삭제'), danger: true, onPress: () => setDeleteOpen(true),
+            icon: { ios: 'trash', android: 'delete', web: 'delete' } },
+        ] : [{ key: 'report', analyticsId: 'components_post-card.pressable.5', label: t.report.title(name), danger: true,
+          icon: { ios: 'flag', android: 'flag', web: 'flag' }, onPress: () => { if (isAuthed) setReportOpen(true); else promptLogin(t.auth.reasonReport); } }]} />}
+        {deleteOpen && <MeetupManageSheet visible title={tr('이 글을 삭제할까요?')} onClose={() => setDeleteOpen(false)} actions={[
+          { key: 'delete-confirm', analyticsId: 'components_post-detail.pressable.15', label: tr('글 삭제'), hint: tr('삭제한 글은 되돌릴 수 없어요. 달린 댓글도 함께 보이지 않게 됩니다.'), danger: true,
+            icon: { ios: 'trash', android: 'delete', web: 'delete' }, onPress: () => void removePost() },
         ]} />}
         {sheets}
       </View>
@@ -750,4 +771,5 @@ const styles = StyleSheet.create({
   photoBadgeText: { color: '#FFFFFF', fontVariant: ['tabular-nums'] },
   feedActs: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: FEED_TEXT_INSET - 8, paddingTop: 6 },
   feedAct: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, minWidth: 44, minHeight: 44, paddingHorizontal: 8, borderRadius: 999 },
+  feedSave: { marginLeft: 'auto' },
 });

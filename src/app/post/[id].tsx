@@ -33,7 +33,7 @@ const announceRemoved = (id: string) => announce({ id, removed: true });
 const announceChanged = (post: Post) => announce({ id: post.id, post });
 export default function SharedPostRoute() {
   const { tr, language } = useLanguage();
-  const { id, commentId, invite } = useLocalSearchParams<{ id: string; commentId?: string; invite?: string }>();
+  const { id, commentId, invite, edit } = useLocalSearchParams<{ id: string; commentId?: string; invite?: string; edit?: string }>();
   const postId = typeof id === 'string' ? id : Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.pathname.match(/^\/(?:post|share)\/([0-9a-f-]+)\/?$/i)?.[1] ?? '' : '';
   const targetCommentId = typeof commentId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(commentId) ? commentId.toLowerCase() : undefined;
   const { isAuthed, me, isAuthLoading, promptLogin } = useAuth();
@@ -128,7 +128,7 @@ export default function SharedPostRoute() {
       </Head>}
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         {isAuthed && current?.post ? (
-          <PostDetail post={current.post} commentId={targetCommentId} onClose={leave} onViewCountChange={announceViews}
+          <PostDetail post={current.post} commentId={targetCommentId} editOnOpen={edit === '1'} onClose={leave} onViewCountChange={announceViews}
             onPostRemoved={announceRemoved} onPostChanged={announceChanged} onCommentCountChange={comments => announce({ id: postId, comments })} />
         ) : (
           <>

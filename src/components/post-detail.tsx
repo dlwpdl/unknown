@@ -99,6 +99,7 @@ type PostDetailProps = {
   onViewCountChange?: (postId: string, count: number) => void;
   onPostRemoved?: (postId: string) => void;
   onPostChanged?: (post: Post) => void;
+  editOnOpen?: boolean; // 오늘 카드 ··· 의 고치기: 열자마자 수정 화면 (owner 2026-11-04)
   management?: { edit: (postId: string, patch: { title: string; body: string }, replacement?: Parameters<typeof editPost>[3]) => Promise<void>; remove: (postId: string) => Promise<void> };
 };
 
@@ -116,7 +117,7 @@ export function PostDetail(props: PostDetailProps) {
   return <PostDetailContent key={`${props.post.id}:${isAuthed ? me.id : 'guest'}`} {...props} />;
 }
 
-function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCommentCountChange, onViewCountChange, onPostRemoved, onPostChanged, management }: PostDetailProps) {
+function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCommentCountChange, onViewCountChange, onPostRemoved, onPostChanged, editOnOpen, management }: PostDetailProps) {
   const { tr, t, language } = useLanguage();
   const business = useChatIdentity();
   const theme = useTheme();
@@ -151,8 +152,13 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const [reportSelection, setReportSelection] = useState<ReportSelection | null>(null);
   const [commentTotal, setCommentTotal] = useState(post.comments);
   const [viewCount, setViewCount] = useState(post.views);
-  const [postDraft, setPostDraft] = useState<{ title: string; body: string } | null>(null);
-  const [postImages, setPostImages] = useState<EditablePostImage[] | null>(null);
+  const photosLoaded = () => (post.imagePaths?.length ?? 0) === (post.imageUris?.filter(Boolean).length ?? 0);
+  const draftOf = () => ({ title: post.title, body: post.room ? visibleMeetupBody(post.body) : post.body });
+  const imagesOf = () => (post.imagePaths ?? []).map((path, index) => ({ path, uri: post.imageUris![index] }));
+  // 오늘 카드 ··· 의 고치기는 수정 화면으로 바로 연다 (owner 2026-11-04). 사진을 다 못 받았으면 보통 화면으로 열린다.
+  const editFirst = () => !!editOnOpen && canManagePost && photosLoaded();
+  const [postDraft, setPostDraft] = useState<{ title: string; body: string } | null>(() => editFirst() ? draftOf() : null);
+  const [postImages, setPostImages] = useState<EditablePostImage[] | null>(() => editFirst() ? imagesOf() : null);
   const [postMenuOpen, setPostMenuOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [deletePostOpen, setDeletePostOpen] = useState(false);
@@ -318,12 +324,12 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   ]);
 
   const startEditPost = () => {
-    if ((post.imagePaths?.length ?? 0) !== (post.imageUris?.filter(Boolean).length ?? 0)) {
+    if (!photosLoaded()) {
       play('warning'); Alert.alert(tr("사진을 다시 불러와 주세요."), tr("사진을 모두 불러오지 못했어요. 글을 다시 연 뒤 수정해 주세요.")); return;
     }
     setPostMenuOpen(false);
-    setPostImages((post.imagePaths ?? []).map((path, index) => ({ path, uri: post.imageUris![index] })));
-    setPostDraft({ title: post.title, body: post.room ? visibleMeetupBody(post.body) : post.body });
+    setPostImages(imagesOf());
+    setPostDraft(draftOf());
     scrollRef.current?.scrollToOffset({ offset: 0, animated: false });
   };
   const pickPostImages = async (replace = false) => {

@@ -259,6 +259,13 @@ test('authenticated routes reveal the body and immediately remove the cached bod
   assert.equal(harness.calls.filter(call => call[0] === 'full-post').length, 1); assert.equal(harness.calls.filter(call => call[0] === 'preview').length, 1);
 });
 
+test('the Today card edit link opens the detail straight into editing; a plain link does not (owner 2026-11-04)', async context => {
+  for (const [params, editOnOpen] of [[{ id, edit: '1' }, true], [{ id }, false], [{ id, edit: 'yes' }, false]]) {
+    const harness = mount('../src/app/post/[id].tsx', 'default', { params }); context.after(() => harness.unmount()); await harness.settle();
+    assert.equal(harness.nodes().find(node => node.type === 'PostDetail')?.props.editOnOpen, editOnOpen, JSON.stringify(params));
+  }
+});
+
 test('signout discards a late full-post response without exposing its body', async context => {
   const response = deferred(), harness = mount('../src/app/post/[id].tsx', 'default', { params: { id }, fullPost: () => response.promise }); context.after(() => harness.unmount());
   harness.auth.isAuthed = false; harness.auth.me = { id: 'guest' }; harness.render(); response.resolve(post()); await harness.settle();
