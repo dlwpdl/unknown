@@ -31,8 +31,8 @@ const contrast = (a, b) => { const [hi, lo] = [luminance(a), luminance(b)].sort(
 test('the top light keeps the mockup geometry and a view offset by (x, y) gets the same light at its spot', () => {
   const { screenGlowImage } = load(Colors.light);
   const image = screenGlowImage(Colors.light, 400, 800);
-  assert.match(image, /^radial-gradient\(520px 440px at 0px 0px, rgba\(110,74,162,0\.119\), transparent 62%\), radial-gradient\(400px 336px at 400px 40px, rgba\(52,80,107,0\.084\), transparent 60%\), /);
-  assert.match(image, /radial-gradient\(480px 880px at 200px 0px, #F8F2FE, transparent\), radial-gradient\(480px 880px at 200px 800px, #F0F4FE, transparent\)$/);
+  assert.match(image, /^radial-gradient\(520px 440px at 0px 0px, rgba\(110,74,162,0\.085\), transparent 62%\), radial-gradient\(400px 336px at 400px 40px, rgba\(52,80,107,0\.06\), transparent 60%\), /);
+  assert.match(image, /radial-gradient\(480px 880px at 200px 0px, #F8F4FD, transparent\), radial-gradient\(480px 880px at 200px 800px, #F2F5FD, transparent\)$/);
   const shifted = screenGlowImage(Colors.light, 400, 800, 16, 177.24);
   assert.match(shifted, /at -16px -177\.2px,.* at 384px -137\.2px,.* at 184px -177\.2px,.* at 184px 622\.8px,/, 'same sizes, centres moved by the offset');
   const sizes = value => value.match(/radial-gradient\([\d.]+px [\d.]+px/g);
@@ -45,13 +45,14 @@ test('both themes carry the light as tokens, and the body tint is a faint purple
     for (const key of ['glowA', 'glowB']) assert.match(palette[key], /^rgba\(\d+,\d+,\d+,0?\.\d+\)$/, `${scheme}.${key}`);
     for (const key of ['bodyGlowA', 'bodyGlowB']) {
       assert.match(palette[key], /^#[0-9A-F]{6}$/, `${scheme}.${key}`);
-      // Light was raised so the tint shows (owner 2026-11-04 "조금 더 진하게"), then eased 30% ("30%정도 연하게"); dark and admin keep the faint shift.
-      const moved = farthest(rgb(palette[key]), base), [low, high] = scheme === 'light' ? [4, 9] : [1, 5];
+      // Light was raised so the tint shows (owner 2026-11-04 "조금 더 진하게"), then eased 50% ("30%정도 연하게", picked 50% after a 30/50/70 comparison); dark and admin keep the faint shift.
+      const moved = farthest(rgb(palette[key]), base), [low, high] = scheme === 'light' ? [3, 6] : [1, 5];
       assert.ok(moved >= low && moved <= high, `${scheme}.${key} moves the background by ${low}-${high} steps (${moved})`);
       assert.ok(rgb(palette[key])[2] > base[2], `${scheme}.${key} leans blue`);
     }
     assert.ok(rgb(palette.bodyGlowA)[0] > rgb(palette.bodyGlowB)[0], `${scheme} body tint runs purple (top) to blue-grey (bottom)`);
-    assert.ok(farthest(over(base, palette.glowA), base) >= 15, `${scheme} top light is several times stronger`);
+    // 12 = twice the light body tint's ceiling (6); light top eased to 0.085 lands near 14.7.
+    assert.ok(farthest(over(base, palette.glowA), base) >= 12, `${scheme} top light is several times stronger`);
   }
 });
 
