@@ -13,6 +13,7 @@ import {
   pinJustPosted,
   todayRowsAfter,
 } from '../src/lib/feed-data.ts';
+import { contentAdPosition } from '../src/lib/content-ad-placement.ts';
 
 test('프로필 화면은 작성자 글 RPC에 작성자와 커서를 넘기고 카드로 바꾼다', async () => {
   const calls = [];
@@ -241,6 +242,14 @@ test('오늘 전체 글 사이 줄은 두 번째 글 뒤 가볼 만한 곳부터
   const shifted = rowsIn(30, everyThird);
   assert.deepEqual(shifted.slice(0, 3), ['1:places0', '6:festivals0', '9:places1'], 'a changed ad cadence pushes the row past the ad');
   for (const row of shifted) assert.equal(everyThird(Number(row.split(':')[0])), false, row);
+});
+
+test('웹 광고 자리(contentAdPosition, 글 수까지 보는 방식)와도 글 사이 줄이 겹치지 않는다', () => {
+  for (let total = 0; total <= 120; total++) {
+    const web = at => contentAdPosition(at, total);
+    for (let index = -1; index < total; index++) if (web(index)) assert.deepEqual(todayRowsAfter(index, total, web), [], `total ${total}, ad after ${index}`);
+  }
+  assert.deepEqual(rowsIn(30, at => contentAdPosition(at, 30)), rowsIn(30), 'the web cadence lands the rows where the app does');
 });
 
 test('글이 짧으면 아직 차례가 안 온 줄은 마지막 글 아래에, 글이 없으면 빈 화면 아래에 나온다', () => {

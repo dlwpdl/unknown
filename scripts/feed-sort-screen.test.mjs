@@ -21,7 +21,7 @@ const glowModule = imports => {
   vm.runInNewContext(source, { exports, require: name => imports[name] });
   return exports;
 };
-function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = false, width = 390, fontScale = 1 } = {}) {
+function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = false, width = 390, fontScale = 1, adPosition = index => index >= 3 && (index - 3) % 4 === 0 } = {}) {
   const slots = [], effects = [], calls = [], writes = [], drafts = [], routes = [], feedback = [], params = {};
   let viewer = 'viewer', authLoading = false;
   let at = 0;
@@ -46,7 +46,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '@/lib/post-maps': { withPostMap, postMapBody, googlePinUrl }, '@/lib/listing-details': listingDetails, '@/lib/neighborhoods': neighborhoods,
     '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async () => null, setItem: async () => {} } },
     '@/lib/hashtags': { getSuggestedHashtags: () => [], parseHashtags: () => [], canonicalizeHashtag: value => value },
-    '@/lib/ads': { adsSupported: false, feedAdPosition: index => index >= 3 && (index - 3) % 4 === 0 }, '@/lib/supabase': { supabase: { functions: { invoke: (...args) => new Promise((resolve, reject) => drafts.push({ args, resolve, reject })) } } },
+    '@/lib/ads': { adsSupported: false, feedAdPosition: adPosition }, '@/lib/supabase': { supabase: { functions: { invoke: (...args) => new Promise((resolve, reject) => drafts.push({ args, resolve, reject })) } } },
     '@/hooks/use-chat-identity': { useChatIdentity: () => null },
     '@/lib/feed-data': { groupJournalPosts, appendUniquePosts, limitBusinessPosts, pinJustPosted, todayRowsAfter, loadPublicFeed: (...args) => new Promise((resolve, reject) => calls.push({ args, resolve, reject })) },
     '../../supabase/functions/_shared/post-links': { splitPostAttachments: body => ({ body }) },
@@ -303,6 +303,13 @@ test('today 전체 puts festivals and places after the second post, drops the da
     .filter(n => n.type === 'LocalEventsCarousel' || n.type === 'CityPopularPlaces').map(n => `${index}:${n.type === 'CityPopularPlaces' ? 'places' : 'festivals'}${n.props.page}`));
   assert.deepEqual(rows, ['1:places0', '5:festivals0', '9:places1', '13:festivals1', '17:places2', '21:festivals2', '25:places3', '29:festivals3'],
     'they take turns every four posts, two posts away from the ads after posts 4, 8, 12…');
+
+  // The web ad rule needs the list length (contentAdPosition(index, total)); without it every slot would look ad-free.
+  const web = screen({ os: 'ios', adPosition: (index, total) => Number.isSafeInteger(total) && index === 1 });
+  web.list(); web.refresh();
+  web.calls[0].resolve(thirty); await new Promise(setImmediate);
+  assert.equal(nodes(web.list().renderItem({ item: thirty[1], index: 3 })).some(n => n.type === 'CityPopularPlaces'), false, 'no row in the ad slot');
+  assert.equal(nodes(web.list().renderItem({ item: thirty[2], index: 4 })).find(n => n.type === 'CityPopularPlaces')?.props.page, 0, 'the row moves past it');
 
   const food = nodes(app.render()).find(node => node.props?.analyticsId === 'components_feed-screen.pressable.3' && nodes(node).some(child => child.props?.children === '맛집'));
   food.props.onPress(); app.list(); app.refresh();

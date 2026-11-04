@@ -312,7 +312,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const cityLoading = cityOpen && !meetupsOnly && loadedFeedCityId !== city.id;
   // Places and festivals take turns between posts in '전체' (owner 2026-11-03, 11-04), so the city cover no longer waits for them.
   const showTodaySections = cityOpen && !meetupsOnly && tagFilter == null;
-  const todayRows = (index: number) => showTodaySections && todayRowsAfter(index, feedRows.length, feedAdPosition).map(({ kind, page }) => kind === 'places'
+  const todayRows = (index: number) => showTodaySections && todayRowsAfter(index, feedRows.length, at => feedAdPosition(at, feedRows.length)).map(({ kind, page }) => kind === 'places'
     ? <CityPopularPlaces key={`places-${page}`} cityId={city.id} page={page} />
     : <LocalEventsCarousel key={`festivals-${page}`} cityId={city.id} page={page} refreshKey={rankingRefresh} cityLoading={cityLoading} />);
 
