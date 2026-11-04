@@ -127,7 +127,10 @@ begin
     'friendCount',private.friend_count(p_user_id),'friendship',state,
     'canRequestFriend',coalesce(state='none' and private.friend_pair_ok(uid,p_user_id),false),
     'savedPlaces',places,'mapHiddenReason',case when shows then null when state='friends' then 'not_shared' else 'not_friends' end,
-    'sharesSavedPlaces',case when own then coalesce((select s.saved_places_to_friends from private.profile_sharing s where s.user_id=uid),false) end);
+    'sharesSavedPlaces',case when own then coalesce((select s.saved_places_to_friends from private.profile_sharing s where s.user_id=uid),false) end,
+    'friendRequestCount',case when own then (select count(*)::integer from private.friendships f
+      where f.accepted_at is null and f.requester_id<>uid and (f.user_low_id=uid or f.user_high_id=uid)
+        and private.is_active_account(f.requester_id) and not private.is_blocked_between(uid,f.requester_id)) end);
 end $$;
 
 -- request · accept · decline · cancel · remove, always between the signed-in member and p_user_id.

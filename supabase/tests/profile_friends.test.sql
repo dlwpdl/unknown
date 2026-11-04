@@ -113,6 +113,8 @@ select throws_ok($$select public.set_friendship('e5100000-0000-4000-8000-0000000
 
 select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000002","role":"authenticated"}',true);
 select is(public.get_my_friends()->'incoming'->0->>'nickname','FriendA','B sees the incoming request');
+select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>'friendRequestCount','1','B''s own profile counts the waiting request');
+select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000001')->'friendRequestCount','null'::jsonb,'nobody sees another member''s request count');
 select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000001')->>'friendship','incoming','A''s profile shows the request to B');
 select is(public.set_friendship('e5100000-0000-4000-8000-000000000001','decline')->>'friendship','none','B declines');
 select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000001","role":"authenticated"}',true);
