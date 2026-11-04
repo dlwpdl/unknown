@@ -69,7 +69,7 @@ set local role anon;
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>'savedCount','2','anonymous visitors see the count of places and businesses only');
 select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedPlaces','null'::jsonb,'anonymous visitors never see saved places');
-select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>'canRequestFriend','false','anonymous visitors cannot ask');
+select ok(not public.get_profile_overview('e5100000-0000-4000-8000-000000000002') ? 'canRequestFriend','no field says whom a request would reach');
 select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>'meetupCount','1','meetup posts are counted');
 select is(public.get_merchant_saves('e5110000-0000-4000-8000-000000000001')->>'saverCount','1','a persona save does not count as a member');
 select is(public.get_merchant_saves('e5110000-0000-4000-8000-000000000001')->'friends','[]'::jsonb,'anonymous visitors see no friends');
@@ -80,21 +80,23 @@ select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-00000000
 select is(jsonb_array_length(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedPlaces'),2,'the owner sees their own map');
 select is((select string_agg(x->>'placeKey',',' order by x->>'placeKey') from jsonb_array_elements(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedPlaces') x),
   'osm:node:810001,osm:node:810002','the map holds the park and the business place only; rent listing and source record stay off');
-select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>'sharesSavedPlaces','false','sharing starts off');
+select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>'sharesSavedPlaces','true','sharing starts on (owner 2026-11-04)');
 select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>'own','true','own profile');
 select throws_ok($$select * from private.friendships$$,'42501',null,'members cannot select friendships directly');
 
 select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedPlaces','null'::jsonb,'a stranger sees no saved places');
 select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>'mapHiddenReason','not_friends','a stranger is told to be friends first');
-select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>'canRequestFriend','true','a real member can ask');
+select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>'friendship','none','a real member sees 친구 추가');
 select is(public.set_friendship('e5100000-0000-4000-8000-000000000002','request')->>'friendship','outgoing','A asks B');
 select is(public.set_friendship('e5100000-0000-4000-8000-000000000002','request')->>'friendship','outgoing','asking twice is harmless');
 select throws_ok($$select public.set_friendship('e5100000-0000-4000-8000-000000000002','accept')$$,'P0001','FRIEND_REQUEST_NOT_FOUND','A cannot accept their own request');
 select throws_ok($$select public.set_friendship('e5100000-0000-4000-8000-000000000001','request')$$,'P0001','FRIEND_UNAVAILABLE','nobody befriends themselves');
 select throws_ok($$select public.set_friendship('e5100000-0000-4000-8000-000000000002','poke')$$,'P0001','INVALID_FRIEND_ACTION','unknown actions are refused');
 select throws_ok($$select public.set_friendship('e5100000-0000-4000-8000-000000000004','request')$$,'P0001','FRIEND_UNAVAILABLE','a persona cannot be asked');
-select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000004')->>'canRequestFriend','false','a persona offers no friend button');
+select is((select array_agg(k order by k) from jsonb_object_keys(public.get_profile_overview('e5100000-0000-4000-8000-000000000004')) k),
+  (select array_agg(k order by k) from jsonb_object_keys(public.get_profile_overview('e5100000-0000-4000-8000-000000000003')) k),'a persona profile answers with the same fields as a member');
+select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000004')->>'friendship','none','the persona profile shows 친구 추가 too, so nothing gives it away');
 select is(jsonb_array_length(public.get_my_friends()->'outgoing'),1,'A sees the sent request');
 reset role;
 select is((select count(*)::integer from public.notifications where user_id='e5100000-0000-4000-8000-000000000002' and kind='friend_request' and category='direct_requests'
@@ -132,17 +134,22 @@ select is((select count(*)::integer from public.notifications where user_id='e51
 set local role authenticated;
 
 select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000001","role":"authenticated"}',true);
-select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedPlaces','null'::jsonb,'a friend sees nothing until B shares');
-select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>'mapHiddenReason','not_shared','a friend is told B has not shared');
-select is(public.get_merchant_saves('e5110000-0000-4000-8000-000000000001')->'friends','[]'::jsonb,'an unshared friend is not named on the business');
-select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000002","role":"authenticated"}',true);
-select is(public.set_profile_sharing(true)->>'savedPlacesToFriends','true','B turns sharing on');
-select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select is((select string_agg(x->>'placeKey',',' order by x->>'placeKey') from jsonb_array_elements(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedPlaces') x),
-  'osm:node:810001,osm:node:810002','a friend sees the shared places and still no listing or source record');
+  'osm:node:810001,osm:node:810002','a friend sees the places by default and still no listing or source record');
 select is((select x->>'merchantId' from jsonb_array_elements(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedPlaces') x where x->>'placeKey'='osm:node:810001'),
   'e5110000-0000-4000-8000-000000000001','the business pin carries its business');
-select is(public.get_merchant_saves('e5110000-0000-4000-8000-000000000001')->'friends'->0->>'nickname','FriendB','the business shows the sharing friend');
+select is(public.get_merchant_saves('e5110000-0000-4000-8000-000000000001')->'friends'->0->>'nickname','FriendB','the business names the friend by default');
+select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select is(public.set_profile_sharing(false)->>'savedPlacesToFriends','false','B turns sharing off');
+select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>'sharesSavedPlaces','false','B''s own profile shows it off');
+select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedPlaces','null'::jsonb,'a friend sees nothing once B turns it off');
+select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>'mapHiddenReason','not_shared','a friend is told B does not share');
+select is(public.get_merchant_saves('e5110000-0000-4000-8000-000000000001')->'friends','[]'::jsonb,'a friend who turned it off is not named on the business');
+select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select is(public.set_profile_sharing(true)->>'savedPlacesToFriends','true','B turns sharing back on');
+select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select is(jsonb_array_length(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedPlaces'),2,'the map comes back');
 select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000003","role":"authenticated"}',true);
 select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedPlaces','null'::jsonb,'sharing reaches friends only');
 select is(public.get_merchant_saves('e5110000-0000-4000-8000-000000000001')->'friends','[]'::jsonb,'a non-friend sees no names');
@@ -167,5 +174,13 @@ insert into public.reports(reporter_id,reported_user_id,target_type,target_id,re
 select is((select count(*)::integer from private.friendships where user_low_id='e5100000-0000-4000-8000-000000000001' and user_high_id='e5100000-0000-4000-8000-000000000003'),0,'a report ends the pending request');
 set local role authenticated;
 select throws_ok($$select public.set_friendship('e5100000-0000-4000-8000-000000000003','request')$$,'P0001','FRIEND_UNAVAILABLE','a reported pair cannot ask');
+
+-- Even if a row with an operated character reached the table some other way, it never shows or counts.
+reset role;
+insert into private.friendships(user_low_id,user_high_id,requester_id,created_at,accepted_at) values('e5100000-0000-4000-8000-000000000001','e5100000-0000-4000-8000-000000000004','e5100000-0000-4000-8000-000000000001',now()-interval '1 minute',now());
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select is(jsonb_array_length(public.get_my_friends()->'friends'),0,'an operated character never shows in the friend list');
+select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000001')->>'friendCount','0','an operated character is not counted as a friend');
 select * from finish();
 rollback;
