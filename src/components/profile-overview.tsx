@@ -45,8 +45,8 @@ export function ProfileSavedMap({ overview, homeCityId }: { overview: ProfileOve
   if (!pins || !markers.length || !city) {
     const own = overview.own, locked = overview.mapHiddenReason === 'not_friends';
     const title = own ? tr('첫 장소 저장하기') : locked ? tr('친구가 되면 저장한 곳이 보여요')
-      : overview.mapHiddenReason === 'not_shared' ? tr('저장한 곳을 아직 친구에게 보여 주지 않았어요') : tr('지도에 올릴 저장한 곳이 아직 없어요');
-    const body = own ? tr('지도에서 마음에 드는 곳을 저장하면 여기에 모여요.') : locked && cityOf(homeCityId) ? tr('지금은 사는 도시만 보여요 · {0}', tr(cityOf(homeCityId)!.name)) : null;
+      : overview.mapHiddenReason === 'not_shared' ? tr('저장한 곳을 아직 친구에게 보여 주지 않았어요') : tr('아직 지도에 보여 줄 장소가 없어요');
+    const body = own ? tr('지도에서 마음에 드는 곳을 저장하면 여기에 모여요.') : locked && cityOf(homeCityId) ? tr('지금은 활동 지역만 보여요 · {0}', tr(cityOf(homeCityId)!.name)) : null;
     return <Reanimated.View entering={FadeIn.duration(200)} style={[styles.mapEmpty, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}>
       <SymbolView name={{ ios: own ? 'mappin.and.ellipse' : 'lock', android: own ? 'add_location' : 'lock', web: own ? 'add_location' : 'lock' }} size={24} tintColor={theme.navy} />
       <ThemedText type="smallBold" style={styles.center}>{title}</ThemedText>
@@ -118,7 +118,7 @@ export function FriendButton({ overview, nickname, onChanged }: { overview: Prof
       style={({ pressed }) => [ControlStyles.action, styles.border, styles.grow, controlPresentation(theme, { tone: primary ? 'primary' : 'secondary', pressed, busy }).container]}>
       <ThemedText type="smallBold" style={controlPresentation(theme, { tone: primary ? 'primary' : 'secondary' }).text}>{label}</ThemedText>
     </Pressable>;
-  if (!isAuthed) return <View style={styles.row}>{button('request', tr('친구 추가'), () => promptLogin(tr('친구를 맺으려면 로그인해 주세요.')), true)}</View>;
+  if (!isAuthed) return <View style={styles.row}>{button('request', tr('친구 추가'), () => promptLogin(tr('친구를 추가하려면 로그인해 주세요.')), true)}</View>;
   if (overview.own || state === null || (state === 'none' && !overview.canRequestFriend)) return null;
   return <View style={styles.friend}>
     <View style={styles.row}>
@@ -157,7 +157,7 @@ export function ProfileSharingCard() {
     <View style={styles.cardRow}>
       <View style={styles.grow}>
         <ThemedText type="small">{tr('친구에게 저장한 곳 보여 주기')}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">{tr('켜면 친구가 내 프로필 지도에서 저장한 장소와 비즈니스를 봐요. 구해요·팔아요 글과 저장한 사람은 안 보여요.')}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{tr('켜면 내가 저장한 장소와 비즈니스를 친구가 내 프로필 지도에서 볼 수 있어요. 구해요·팔아요 글과 저장한 사람은 안 보여요.')}</ThemedText>
       </View>
       <Switch analyticsId="profile.settings.share-saved-places" value={current?.on ?? false} disabled={!current || current.busy || current.on === null}
         onValueChange={on => void change(on)} accessibilityLabel={tr('친구에게 저장한 곳 보여 주기')}

@@ -51,7 +51,7 @@ export function placeShareCard(place: CityPlace, city: ShareCardCity, language: 
   const maps = merchantMapsUrl([place.name, place.address, city.englishName, city.province, 'Canada'].filter(Boolean).join(', '));
   return {
     kind: 'place', eyebrow, title, badge: cityName, photo, items: [], more: null, empty: null,
-    credit: credit([photo], t), sender: signed, footer: t('글링 앱 지도에서 볼 수 있어요'),
+    credit: credit([photo], t), sender: signed, footer: t('글링 지도에서 볼 수 있어요'),
     label: [t('공유 카드'), title, eyebrow, cityName, signed].filter(Boolean).join(', '),
     message: [place.name.trim(), `${eyebrow} · ${cityName}`, maps].filter(Boolean).join('\n'),
   };
@@ -63,11 +63,11 @@ export function listShareCard(name: string, places: CityPlace[], count: number |
   const title = clampShareText(name, 40), total = count === null ? null : Math.max(count, places.length);
   const items = places.slice(0, LIST_ROWS).map(place => ({ name: clampShareText(place.name, 40), photo: licensedPhoto(place) }));
   const rest = total === null ? 0 : total - items.length, restAll = total === null ? 0 : total - places.length;
-  const badge = total === null ? null : t('장소 {0}곳', total), signed = sender ? t('{0}님이 공유했어요', sender) : null;
+  const badge = total === null ? null : t(total === 1 ? '장소 1곳' : '장소 {0}곳', total), signed = sender ? t('{0}님이 공유했어요', sender) : null;
   return {
     kind: 'list', eyebrow: t('장소 목록'), title, badge, photo: null, items,
     more: rest > 0 ? t('외 {0}곳', rest) : null, empty: places.length ? null : t('아직 담긴 장소가 없어요'),
-    credit: credit(items.map(item => item.photo), t), sender: signed, footer: t('장소는 모두 글링 앱 지도에서 볼 수 있어요'),
+    credit: credit(items.map(item => item.photo), t), sender: signed, footer: t('장소는 모두 글링 지도에서 볼 수 있어요'),
     label: [t('공유 카드'), title, badge, ...items.map(item => item.name), signed].filter(Boolean).join(', '),
     message: [name.trim(), ...places.map(place => `· ${place.name.trim()}`), restAll > 0 ? t('외 {0}곳', restAll) : null].filter(Boolean).join('\n'),
   };

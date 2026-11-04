@@ -498,7 +498,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
   const stillUploading = useCallback(() => {
     play('warning');
-    Alert.alert(tr("아직 올리는 중이에요"), tr("위에 뜬 글이 다 올라가면 바로 쓸 수 있어요."));
+    Alert.alert(tr("아직 올리는 중이에요"), tr("지금 올리는 글이 다 올라가면 바로 쓸 수 있어요."));
   }, [play, tr]);
 
   const openWriter = useCallback(() => {

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { tr } from '../i18n/index.ts';
 
-// Friends need the other person's acceptance. '사용자 저장' (saved people) stays a separate private bookmark.
+// Friends need the other person's acceptance. '프로필 저장' (saved people) stays a separate private bookmark.
 export type FriendshipState = 'none' | 'outgoing' | 'incoming' | 'friends';
 export type FriendAction = 'request' | 'accept' | 'decline' | 'cancel' | 'remove';
 export type SavedPlacePin = { cityId: string; placeKey: string; merchantId: string | null };
@@ -115,6 +115,6 @@ export function friendErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : '';
   if (message.includes('FRIEND_REQUEST_LIMIT')) return tr('답을 기다리는 요청이 100개예요. 몇 개를 취소한 뒤 다시 보내 주세요.');
   if (message.includes('FRIEND_REQUEST_NOT_FOUND')) return tr('요청이 이미 취소됐거나 처리됐어요.');
-  if (message.includes('FRIEND_UNAVAILABLE')) return tr('지금은 이 사람과 친구를 맺을 수 없어요.');
+  if (message.includes('FRIEND_UNAVAILABLE')) return tr('지금은 이 사람을 친구로 추가할 수 없어요.');
   return tr('친구 요청을 처리하지 못했어요. 잠시 후 다시 해 주세요.');
 }

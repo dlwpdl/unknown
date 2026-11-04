@@ -19,7 +19,7 @@ test('a place card carries the licensed photo with its credit and nothing the ap
   assert.equal(card.photo.photo.imageSha256, 'sha-1');
   assert.equal(card.photo.mapPhotoUri, undefined, 'a business map photo never replaces the licensed one on a shared image');
   assert.equal(card.credit, '사진: Artist 1 · CC BY-SA 4.0');
-  assert.deepEqual([card.eyebrow, card.badge, card.footer, card.sender], ['카페', '밴쿠버', '글링 앱 지도에서 볼 수 있어요', null]);
+  assert.deepEqual([card.eyebrow, card.badge, card.footer, card.sender], ['카페', '밴쿠버', '글링 지도에서 볼 수 있어요', null]);
   const shown = [card.eyebrow, card.title, card.badge, card.more, card.empty, card.credit, card.sender, card.footer, card.label, card.message].join('\n');
   assert.equal(shown.includes('08:00'), false, 'opening hours are not shown as an open state');
   assert.deepEqual(Object.keys(card).sort(), ['badge', 'credit', 'empty', 'eyebrow', 'footer', 'items', 'kind', 'label', 'message', 'more', 'photo', 'sender', 'title']);
@@ -72,8 +72,9 @@ test('an empty list, an unknown total and a repeated photo stay honest', () => {
   const same = photo(9);
   assert.equal(listShareCard('같은 사진', [place(1, { photo: same }), place(2, { photo: same })], 2, 'ko').credit, '사진: Artist 9 · CC BY-SA 4.0');
   const longer = listShareCard('일부만 가진 목록', [place(1), place(2)], 7, 'en');
-  assert.deepEqual([longer.badge, longer.more], ['Places: 7', '+5 more']);
+  assert.deepEqual([longer.badge, longer.more], ['7 places', '+5 more']);
   assert.ok(longer.message.endsWith('\n+5 more'));
+  assert.deepEqual([listShareCard('하나', [place(1)], 1, 'en').badge, listShareCard('하나', [place(1)], 1, 'ko').badge], ['1 place', '장소 1곳'], 'one place reads as one, not "1 places"');
 });
 
 test('a saved list keeps its catalog places in order and skips businesses, posts and unknown cities', () => {

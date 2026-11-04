@@ -75,7 +75,7 @@ export function SavedEntryButton({ entry, kind, analyticsId }: { entry: ReturnTy
   const saved = entry.state?.saved ?? false, retry = !entry.state && !!entry.error, busy = entry.loading || entry.busy;
   const label = busy ? ko ? '저장 상태 확인 중' : 'Checking saved status' : retry ? ko ? '저장 상태 다시 확인' : 'Check saved status again'
     : kind === 'place' ? saved ? ko ? '장소 저장 취소' : 'Unsave place' : ko ? '장소 저장' : 'Save place'
-      : saved ? ko ? '사용자 저장 취소' : 'Unsave person' : ko ? '사용자 저장' : 'Save person';
+      : saved ? ko ? '프로필 저장 취소' : 'Unsave profile' : ko ? '프로필 저장' : 'Save profile';
   return <Pressable analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={label}
     accessibilityState={{ selected: saved, busy, disabled: busy }} disabled={busy} onPress={entry.onPress}
     style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', selected: saved, pressed, busy }).container]}>

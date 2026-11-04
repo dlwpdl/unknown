@@ -1008,7 +1008,7 @@ test('direct Flickr photos keep their provenance and preserve both legacy photo 
   assert.equal(places.find(place => place.id === original.placeId).photo?.uri, original.uri);
   const detail = nodes(screen('src/app/places/[id].tsx', { cityId: 'toronto', id: direct.placeId }, false, api).render());
   const credits = detail.find(node => node.type === 'PostPhotoCredits').props.credits;
-  for (const value of [direct.title, direct.artist, direct.sourceUrl, direct.licenseUrl, '사진은 촬영 시점의 모습']) assert.ok(credits.includes(value));
+  for (const value of [direct.title, direct.artist, direct.sourceUrl, direct.licenseUrl, '사진은 찍은 때의 모습']) assert.ok(credits.includes(value));
   assert.equal(detail.some(node => node.type === 'ThemedText' && typeof node.props.children === 'string'
     && node.props.children.includes('Openverse로 찾은 사진')), false);
 });

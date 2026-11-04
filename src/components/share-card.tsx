@@ -84,7 +84,7 @@ function photoCredits(card: ShareCard, tr: (text: string, ...values: unknown[]) 
   const photos = [...new Map([card.photo, ...card.items.map(item => item.photo)].flatMap(place => place?.photo ? [[place.photo.imageSha256, place.photo]] : [])).values()];
   if (!photos.length) return '';
   return [...photos.map(photo => [photo.title && tr(photo.title), tr('사진: {0}', tr(photo.artist)), photo.sourceUrl, photo.license, photo.licenseUrl].filter(Boolean).join('\n')),
-    tr('사진은 촬영 시점의 모습이며 현재와 다를 수 있어요.')].join('\n');
+    tr('사진은 찍은 때의 모습이라 지금과 다를 수 있어요.')].join('\n');
 }
 
 /** Bottom sheet that previews the place or list card and shares it. The card colour is its own choice, apart from the app theme. */

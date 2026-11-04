@@ -618,5 +618,5 @@ test('city taps, zoom and new marker fields are validated at the bridge', () => 
     assert.throws(() => discoveryMapHtml({ ...options, cities }), /INVALID_DISCOVERY_CIT/);
   const html = discoveryMapHtml({ ...options, language: 'en', cities: [{ id: 'calgary', name: 'Calgary', englishName: 'Calgary', open: false }, { id: 'x', name: '</script><b>', englishName: 'Halifax', open: true }] });
   assert.ok(!html.includes('</script><b>'));
-  assert.ok(html.includes("'Go to '+c.name") && html.includes('Coming soon'));
+  assert.ok(html.includes("'Open the '+c.name+' map'") && html.includes('Coming soon'));
 });

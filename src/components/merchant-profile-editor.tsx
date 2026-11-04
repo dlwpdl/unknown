@@ -165,7 +165,7 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
     } catch (failure) {
       if (mounted.current) {
         const message = failure instanceof Error ? failure.message : '';
-        setError(message.includes('MERCHANT_PROFILE_CHANGED') ? "다른 곳에서 프로필이 바뀌었어요. 입력한 소개는 남아 있어요. 수정 취소 후 최근 저장본을 다시 확인해 주세요."
+        setError(message.includes('MERCHANT_PROFILE_CHANGED') ? "다른 곳에서 프로필이 바뀌었어요. 쓴 소개는 그대로 있으니, 수정을 취소하고 바뀐 내용을 먼저 확인해 주세요."
           : message.includes('ACCOUNT_CHANGED') ? "계정이 바뀌었어요. 현재 계정으로 다시 열어주세요."
           : message.includes('INVALID') ? "한 칸에 160자까지 쓸 수 있어요. 줄바꿈과 링크는 빼고 적어 주세요."
           : "소개 저장을 확인하지 못했어요. 입력한 내용은 남아 있으니 다시 시도해 주세요.");
@@ -262,7 +262,7 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
             <ThemedText type="small" themeColor="textSecondary">{tr("직접 쓴 그대로 프로필에 나와요. 비워 둔 칸은 안 보여요.")}</ThemedText>
           </View>
           {([['vibe', tr("분위기"), tr("어떤 곳인지 한 줄로")], ['order', tr("뭘 시킬까"), tr("처음 온 손님에게 권하는 메뉴")],
-            ['tip', tr("요령"), tr("알아 두면 좋은 것 (주차, 붐비는 시간 등)")]] as const).map(([key, label, hint]) => <View key={key} style={styles.field}>
+            ['tip', tr("팁"), tr("알아 두면 좋은 것 (주차, 붐비는 시간 등)")]] as const).map(([key, label, hint]) => <View key={key} style={styles.field}>
             <View style={styles.title}>
               <ThemedText type="smallBold">{label}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">{tr("{0}/{1}자", [...intro[key]].length, MERCHANT_INTRO_MAX)}</ThemedText>
@@ -273,7 +273,7 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
               style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
           </View>)}
           <View style={[styles.actions, styles.end]}>
-            <ProfileAction label={busy ? tr("소개 처리 중…") : tr("소개 저장")} onPress={() => { void saveIntro(); }} disabled={busy || !introDirty} primary={!photoDirty && !contactDirty && introDirty} />
+            <ProfileAction label={busy ? tr("소개 저장 중…") : tr("소개 저장")} onPress={() => { void saveIntro(); }} disabled={busy || !introDirty} primary={!photoDirty && !contactDirty && introDirty} />
           </View>
         </View>}
       </>}

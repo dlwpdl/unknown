@@ -105,7 +105,7 @@ export default function PlaceDetailScreen() {
         {!!place.photo && <PostPhotoCredits credits={[
           place.photo.title && tr(place.photo.title), `${language === 'en' ? 'Photo' : '사진'}: ${place.photo.artist && tr(place.photo.artist)}`, place.photo.sourceUrl,
           place.photo.license, place.photo.licenseUrl,
-          language === 'en' ? 'Photos show the place when they were taken. It may look different now.' : '사진은 촬영 시점의 모습이며 현재와 다를 수 있어요.',
+          language === 'en' ? 'Photos show the place when they were taken. It may look different now.' : '사진은 찍은 때의 모습이라 지금과 다를 수 있어요.',
         ].filter(Boolean).join('\n')} />}
         {place.photo?.discoveredVia === 'Openverse' && <ThemedText type="small" themeColor="textSecondary">{language === 'en'
           ? 'Photos found with Openverse. This service isn’t endorsed or certified by Openverse.'

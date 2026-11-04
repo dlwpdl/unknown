@@ -450,17 +450,18 @@ test('지금 영업 중 removes closed and unknown places from the map and keeps
   assert.deepEqual(view.feedback, ['selection', 'selection', 'selection']);
 });
 
-test('price chips select several levels, hide without price data, and an empty result offers 가격 거르기 풀기', async () => {
+test('price chips select several levels, hide without price data, and an empty result offers 가격 필터 풀기', async () => {
   const places = [fixturePlace(1, { name: 'Cheap lunch', priceLevel: 1, subcategories: ['lunch'] }), fixturePlace(2, { name: 'Date night', priceLevel: 3, subcategories: ['date', 'dinner'] }), fixturePlace(3, { name: 'No price' }),
     fixturePlace(4, { name: 'Cafe', category: 'cafe' })];
   const view = mount({ places }); let tree = view.render();
-  const priceChip = tree => nodes(tree).some(node => /^가격(으로 거르기| .+, 바꾸기)$/.test(node.props?.accessibilityLabel ?? ''));
+  const priceChip = tree => nodes(tree).some(node => /^가격( 필터| .+, 바꾸기)$/.test(node.props?.accessibilityLabel ?? ''));
   assert.ok(!priceChip(tree), 'no price chip before a priced category is chosen');
   control(tree, '레스토랑').props.onPress(); tree = view.render();
   view.readResults(); await new Promise(setImmediate); tree = view.render();
   assert.equal(nodes(tree).find(node => node.type === 'MapListSheet').props.snap, 'half');
   assert.deepEqual(nodes(tree).filter(node => node.props?.analyticsId === 'discovery.subcategory' && node.props.accessibilityLabel).map(node => node.props.accessibilityLabel), ['점심', '저녁', '데이트'], 'only sub-filters some place has');
-  control(tree, '가격으로 거르기').props.onPress(); tree = view.render();
+  assert.ok(priceChip(tree), 'the price chip shows once a priced category is chosen');
+  control(tree, '가격 필터').props.onPress(); tree = view.render();
   assert.equal(nodes(tree).find(node => node.type === 'DragSheet').props.visible, true);
   control(tree, '가격대 1단계').props.onPress(); tree = view.render();
   control(tree, '가격대 2단계').props.onPress(); tree = view.render();
@@ -474,7 +475,7 @@ test('price chips select several levels, hide without price data, and an empty r
   control(tree, '가격대 4단계').props.onPress(); tree = view.render();
   control(tree, '가격 적용').props.onPress(); tree = view.render();
   assert.deepEqual(listOf(tree), []);
-  const empty = emptyCards(tree).find(node => node.props.actionLabel === '가격 거르기 풀기');
+  const empty = emptyCards(tree).find(node => node.props.actionLabel === '가격 필터 풀기');
   assert.ok(empty, 'an empty price result can be cleared in one tap');
   empty.props.onAction(); tree = view.render();
   assert.deepEqual(listOf(tree), ['Cheap lunch', 'Date night', 'No price']);

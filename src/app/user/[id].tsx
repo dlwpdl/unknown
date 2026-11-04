@@ -137,7 +137,7 @@ export default function AuthorPostsRoute() {
               </ThemedText>
             )}
           </View>
-          {publicProfile && <Pressable analyticsId="user.more" accessibilityRole="button" accessibilityLabel={tr('더보기')} accessibilityHint={tr('사용자 저장, 신고, 차단')}
+          {publicProfile && <Pressable analyticsId="user.more" accessibilityRole="button" accessibilityLabel={tr('더보기')} accessibilityHint={tr('프로필 저장, 신고, 차단')}
             onPress={() => { play('selection'); setMenu('open'); }}
             style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
             <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={IconSize.toolbar} tintColor={theme.text} />
@@ -202,7 +202,7 @@ export default function AuthorPostsRoute() {
       <DragSheet visible={!!publicProfile && menu === 'open'} onClose={() => closeMenu()} onDismissed={() => { const then = afterMenu.current; afterMenu.current = null; then?.(); }}>
         {publicProfile && <View style={styles.menu}>
           <View style={[styles.menuRow, { borderBottomColor: theme.line }]}>
-            <View style={styles.menuText}><ThemedText type="smallBold">{tr('사용자 저장')}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('나만 보는 북마크예요')}</ThemedText></View>
+            <View style={styles.menuText}><ThemedText type="smallBold">{tr('프로필 저장')}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('나만 보는 저장 목록에 넣어요')}</ThemedText></View>
             <SavedEntryButton entry={saved} kind="user" analyticsId="save.user" />
           </View>
           {isAuthed && me.id !== authorId && <>

@@ -220,7 +220,7 @@ export default function CompanyProfileRoute() {
   }
   const glingPlace = mapPlace?.key === key ? mapPlace.placeKey : null;
   const shownSaves = saves?.key === key ? saves.value : null;
-  const intro = profile ? ([[tr('분위기'), profile.intro_vibe], [tr('뭘 시킬까'), profile.intro_order], [tr('요령'), profile.intro_tip]] as const).filter(([, value]) => !!value) : [];
+  const intro = profile ? ([[tr('분위기'), profile.intro_vibe], [tr('뭘 시킬까'), profile.intro_order], [tr('팁'), profile.intro_tip]] as const).filter(([, value]) => !!value) : [];
   function openLocation() {
     if (profile && glingPlace) { play('selection'); router.push(placeMapRoute({ id: glingPlace, cityId: profile.city_id })); }
     else void openContact(mapsUrl);
@@ -236,7 +236,7 @@ export default function CompanyProfileRoute() {
       play('success');
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
-      setActionError({ key, message: '공유하지 못했어요. 잠시 후 다시 시도해 주세요.' }); play('warning');
+      setActionError({ key, message: '공유하지 못했어요. 다시 눌러주세요.' }); play('warning');
     }
   }
   async function morePosts() {

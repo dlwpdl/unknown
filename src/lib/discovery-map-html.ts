@@ -163,7 +163,7 @@ try{
   }
   for(const c of config.cities){
    const el=document.createElement('button');el.className='city-pill';el.type='button';el.disabled=!c.open;el.textContent=c.open?c.name:c.name+' · ${language === 'en' ? 'Coming soon' : '준비 중'}';
-   el.setAttribute('data-city',c.id);el.setAttribute('aria-label',c.open?${language === 'en' ? "'Go to '+c.name" : "c.name+' 지도로 가기'"}:c.name+', ${language === 'en' ? 'coming soon' : '준비 중'}');
+   el.setAttribute('data-city',c.id);el.setAttribute('aria-label',c.open?${language === 'en' ? "'Open the '+c.name+' map'" : "c.name+' 지도로 가기'"}:c.name+', ${language === 'en' ? 'coming soon' : '준비 중'}');
    pills.push(el);new maplibregl.Marker({element:el}).setLngLat(c.center).addTo(map);
   }
   stage();map.on('zoom',stage);

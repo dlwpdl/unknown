@@ -347,13 +347,13 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const sheetCover = sheet === 'closed' ? 0 : Math.min(Math.max(contentHeight - sheetStops[sheet], 0), 1000);
   const sortLabel = discountOrder ? tr('할인율 높은 순') : locating ? tr('위치 확인 중') : userLocation ? tr('가까운 순') : tr('위치 사용 필요');
   const refine = items.length || loading || deliveryUnavailable || current?.errors.length ? null
-    : activePrices.length ? { title: tr('이 가격대에 맞는 곳이 없어요'), action: tr('가격 거르기 풀기'), clear: () => setPriceLevels([]) }
-    : activeSubcategories.length ? { title: tr('고른 분류에 맞는 곳이 없어요'), action: tr('작은 분류 풀기'), clear: () => setSubcategories([]) }
+    : activePrices.length ? { title: tr('이 가격대에 맞는 곳이 없어요'), action: tr('가격 필터 풀기'), clear: () => setPriceLevels([]) }
+    : activeSubcategories.length ? { title: tr('고른 분류에 맞는 곳이 없어요'), action: tr('세부 분류 풀기'), clear: () => setSubcategories([]) }
     : region ? { title: tr('이 지역에는 조건에 맞는 곳이 없어요'), action: tr('도시 전체 보기'), clear: () => setRegion(null) }
-    : openNow ? { title: tr('지금 영업 중인 곳이 없어요'), action: tr('영업 중만 보기 끄기'), clear: () => setOpenNow(false) } : null;
-  const refineCard = refine && <StateCard kind="empty" title={refine.title} body={unknownItems.length ? tr('영업시간을 모르는 곳은 목록 맨 아래에 모아 뒀어요.') : tr('거르기를 풀면 다른 곳도 볼 수 있어요.')} actionLabel={refine.action} onAction={refine.clear} />;
+    : openNow ? { title: tr('지금 영업 중인 곳이 없어요'), action: tr('영업 중 필터 끄기'), clear: () => setOpenNow(false) } : null;
+  const refineCard = refine && <StateCard kind="empty" title={refine.title} body={unknownItems.length ? tr('영업시간을 모르는 곳은 목록 맨 아래에 모아 뒀어요.') : tr('필터를 풀면 다른 곳도 보여요.')} actionLabel={refine.action} onAction={refine.clear} />;
   const priceChip = priceReady && <SelectionChip key="price" selected={activePrices.length > 0} baseColor={theme.backgroundElement} analyticsId="discovery.price" accessibilityRole="button"
-    accessibilityLabel={activePrices.length ? tr('가격 {0}, 바꾸기', priceLabel(activePrices)) : tr('가격으로 거르기')} accessibilityState={{ selected: activePrices.length > 0, expanded: priceDraft !== null }}
+    accessibilityLabel={activePrices.length ? tr('가격 {0}, 바꾸기', priceLabel(activePrices)) : tr('가격 필터')} accessibilityState={{ selected: activePrices.length > 0, expanded: priceDraft !== null }}
     onPress={() => { play('selection'); setPriceDraft(activePrices); }} style={[styles.chip, { borderColor: activePrices.length ? theme.accent : theme.line }]}>
     <ThemedText type="smallBold" style={{ color: activePrices.length ? theme.accentInk : theme.text }}>{activePrices.length ? priceLabel(activePrices) : tr('가격')} ⌄</ThemedText>
   </SelectionChip>;
@@ -475,7 +475,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
           <ThemedText type="smallBold" style={{ color: on ? theme.accentInk : theme.text }}>{priceSymbol(level)}</ThemedText>
         </SelectionChip>;
       })}</View>
-      <ThemedText type="caption" themeColor="textSecondary">{tr('여러 칸을 같이 고를 수 있어요. 가격 정보가 있는 곳만 남아요.')}</ThemedText>
+      <ThemedText type="caption" themeColor="textSecondary">{tr('여러 개 같이 고를 수 있어요. 가격 정보가 있는 곳만 남아요.')}</ThemedText>
       <View style={[styles.sheetActions, { borderColor: theme.line }]}>
         <Pressable analyticsId="discovery.price" accessibilityRole="button" onPress={() => { play('selection'); setPriceDraft([]); }} style={styles.date}><ThemedText>{tr("초기화")}</ThemedText></Pressable>
         <Pressable analyticsId="discovery.price" accessibilityRole="button" accessibilityLabel={tr('가격 적용')} onPress={() => { play('selection'); setPriceLevels(priceDraft ?? []); setPriceDraft(null); }} style={[styles.apply, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr("적용")}</ThemedText></Pressable>
