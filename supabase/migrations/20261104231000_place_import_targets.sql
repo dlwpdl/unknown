@@ -6,12 +6,7 @@ insert into private.behavior_targets(id) values
   ('import.file'),
   ('import.pick'),
   ('import.pick.back'),
-  ('import.branch'),
-  ('import.missing.search'),
-  ('import.toggle'),
-  ('import.add'),
   ('import.ask'),
-  ('import.save'),
   ('import.restart'),
   ('import.done')
 on conflict (id) do nothing;
