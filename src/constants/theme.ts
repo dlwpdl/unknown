@@ -20,10 +20,11 @@ export const Colors = {
     danger: '#B33246',
     // 배경 빛(components/screen-glow, 오늘·모임·채팅·알림): 위쪽 빛은 시안 corner-style-today-feed의 --glow-a·--glow-b.
     // 본문 빛(body*)은 눈에 보이는 보라·푸른 회색이다(사장님 2026-11-04 "조금 더 진하게"). 글자 대비는 가장 진한 곳에서 4% 안으로만 내려간다.
-    glowA: 'rgba(110,74,162,0.17)',
-    glowB: 'rgba(52,80,107,0.12)',
-    bodyGlowA: '#F8F0FF',
-    bodyGlowB: '#EDF3FF',
+    // 라이트는 위쪽 빛 투명도 0.7배, 본문 빛은 바탕 쪽으로 30% 되돌림(사장님 2026-11-04 "라이트테마 그라데이션 조금 연하게해줘 30%정도").
+    glowA: 'rgba(110,74,162,0.119)',
+    glowB: 'rgba(52,80,107,0.084)',
+    bodyGlowA: '#F8F2FE',
+    bodyGlowB: '#F0F4FE',
   },
   dark: {
     text: '#F6F3F0',
