@@ -27,6 +27,7 @@ import { relationshipSlotData } from '@/components/relationship-slot-card';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { chatListTime, chatMessageText, meetupChatIcon } from '@/lib/chat-details';
+import { useScreenGlow } from '@/components/screen-glow';
 import { TabContent } from '@/components/tab-content';
 import { TrustBadge } from '@/components/trust-badge';
 import { ControlMotion, IconSize } from '@/constants/design-system';
@@ -60,6 +61,8 @@ function listPreview(body: string, translate: (text: string, ...values: unknown[
 }
 
 export default function ChatScreen() {
+  // 오늘 탭과 같은 배경 빛(사장님 2026-11-04 '빛 넣을 탭: 지도 빼고 다'). 제목 줄은 투명이라 빛이 비친다.
+  const glow = useScreenGlow(), screenGlow = glow.image();
   const { tr, t, locale: appLocale } = useLanguage();
   // Pushing a tab route from a stack screen can mount the tabs twice; keep channel names unique per mount.
   const channelId = useId();
@@ -295,9 +298,9 @@ export default function ChatScreen() {
   };
 
   if (!auth.isAuthed) return <TabContent style={styles.fill}><LoginPanel reason={t.auth.reasonChat} onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} /></TabContent>;
-  return <TabContent style={styles.container}><SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}><View style={styles.safeArea}>
+  return <TabContent style={[styles.container, screenGlow != null && { backgroundImage: screenGlow }]} onLayout={glow.onLayout}><SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}><View style={styles.safeArea}>
     {/* 홈·모임과 같게 제목 줄은 고정한다. 필터와 안내는 목록과 함께 스크롤된다. */}
-    <View style={[styles.headRow, styles.headFixed, { backgroundColor: theme.background }]}>
+    <View style={[styles.headRow, styles.headFixed]}>
       <ThemedText accessibilityRole="header" style={styles.heading}>{t.tabs.chat}</ThemedText>
       <GlassSurface tone="control" interactive style={styles.refreshGlass}><Pressable analyticsId="chat.discovery.open" accessibilityRole="button" accessibilityLabel={tr('부동산·중고거래·장소·행사 통합 지도')}
         onPress={() => { play('reaction'); router.push('/map'); }} style={({ pressed }) => [styles.refreshAction, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>

@@ -20,6 +20,7 @@ import { RaisedActionButton } from '@/components/raised-action-button';
 import { relationshipSlotData } from '@/components/relationship-slot-card';
 import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
+import { useScreenGlow } from '@/components/screen-glow';
 import { TabContent } from '@/components/tab-content';
 import { ThemedText } from '@/components/themed-text';
 import { UserSheet, type SheetUser } from '@/components/user-sheet';
@@ -60,9 +61,9 @@ export default function MeetupsScreen() {
 
 // Acting as a business this tab is "내 가게": the same workspace as the profile entry, under the tab header.
 function BusinessHome() {
-  const { tr } = useLanguage(), theme = useTheme();
-  return <TabContent style={styles.root}><SafeAreaView edges={['top', 'left', 'right']} style={[styles.root, { backgroundColor: theme.background }]}>
-    <View style={[styles.head, styles.headFixed, { backgroundColor: theme.background }]}>
+  const { tr } = useLanguage(), glow = useScreenGlow(), screenGlow = glow.image();
+  return <TabContent style={[styles.root, screenGlow != null && { backgroundImage: screenGlow }]} onLayout={glow.onLayout}><SafeAreaView edges={['top', 'left', 'right']} style={styles.root}>
+    <View style={[styles.head, styles.headFixed]}>
       <ThemedText accessibilityRole="header" style={[styles.title, { flex: 1 }]}>{tr('내 가게')}</ThemedText>
       <ProfileAvatarButton />
     </View>
@@ -74,6 +75,8 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
   const { tr, t, language } = useLanguage();
   const copy = (ko: string, en: string) => language === 'en' ? en : ko;
   const theme = useTheme(), router = useRouter(), insets = useSafeAreaInsets();
+  // 오늘 탭과 같은 배경 빛(사장님 2026-11-04 '빛 넣을 탭: 지도 빼고 다'). 제목 줄은 투명이라 빛이 비친다.
+  const glow = useScreenGlow(), screenGlow = glow.image();
   const reducedMotion = useReducedMotion();
   const { width: screenWidth, fontScale } = useWindowDimensions();
   // Large text stacks the header on purpose; at other sizes the controls stay beside the title and wrap only when they don't fit.
@@ -249,9 +252,9 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
   };
   const clearDestination = () => { if (!remember(kind, 'browse')) return; setView('browse'); play('selection'); router.setParams({ placeId: '', placeCityId: '', ticketmasterEventId: '', ticketmasterCityId: '' }); };
   const createDisabled = sourceInvalid || (destination?.kind === 'event' && !sourceLabel);
-  return <TabContent style={styles.root}><SafeAreaView edges={['top', 'left', 'right']} style={[styles.root, { backgroundColor: theme.background }]}>
+  return <TabContent style={[styles.root, screenGlow != null && { backgroundImage: screenGlow }]} onLayout={glow.onLayout}><SafeAreaView edges={['top', 'left', 'right']} style={styles.root}>
     {/* 헤더는 스크롤과 함께 사라지면 안 된다(홈과 동일). 목록 밖에 두고 고정한다. */}
-    <View style={[styles.head, styles.headFixed, { backgroundColor: theme.background }]}>
+    <View style={[styles.head, styles.headFixed]}>
       <ThemedText accessibilityRole="header" style={[styles.title, compactHeader && styles.titleLarge]}>{t.tabs.meetups}</ThemedText>
       <View style={[styles.headActions, compactHeader && styles.headActionsLarge]}>
         <GlassSurface tone="control" interactive={!destination} style={[styles.cityGlass, compactHeader && styles.cityGlassLarge]}>{destination ? <View style={styles.city}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.cityText}>{tr("{0}에서", tr(city.name))}</ThemedText></View> : <Pressable analyticsId="app_tabs_meetups.pressable.1" onPress={() => { play('selection'); setCityPicker(true); }} accessibilityRole="button" accessibilityLabel={tr("{0} 활동 지역 선택", tr(city.name))} style={({ pressed }) => [styles.city, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.cityText}>{tr("{0}에서", tr(city.name))}</ThemedText><SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={IconSize.chevron} tintColor={theme.textSecondary} /></Pressable>}</GlassSurface>

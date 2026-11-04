@@ -94,6 +94,7 @@ export function mount(file, exportName, data, props = {}, params = {}) {
     clearTimeout(id) { timers.delete(id); },
     setInterval() { return 0; }, clearInterval() {},
     require: languageImports((name) => {
+      if (name === '@/components/screen-glow') return { useScreenGlow: () => ({ onLayout() {}, image: () => undefined }) };
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === 'react') return react;
       if (name === 'react-native') return new Proxy({

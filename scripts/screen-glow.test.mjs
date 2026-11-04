@@ -75,3 +75,16 @@ test('the body tint keeps the background brightness, so text, card and line cont
     }
   }
 });
+
+test('meetups, chat and notifications carry the same light, the map and the shared tab base stay plain (owner 2026-11-04)', () => {
+  const source = file => fs.readFileSync(new URL(`../src/${file}`, import.meta.url), 'utf8');
+  for (const [file, screens] of [['app/(tabs)/meetups.tsx', 2], ['app/(tabs)/chat.tsx', 1], ['app/(tabs)/notifications.tsx', 1]]) {
+    const code = source(file);
+    assert.equal(code.match(/glow = useScreenGlow\(\), screenGlow = glow\.image\(\);/g)?.length, screens, `${file}: one light per screen`);
+    assert.equal(code.match(/<TabContent style=\{\[styles\.\w+, screenGlow != null && \{ backgroundImage: screenGlow \}\]\} onLayout=\{glow\.onLayout\}>/g)?.length, screens, `${file}: the light sits on the screen's own TabContent`);
+    assert.doesNotMatch(code, /styles\.(head|headRow|header)\b[^\n]*backgroundColor: theme\.background/, `${file}: the title row lets the light through`);
+    assert.doesNotMatch(code, /<SafeAreaView[^>]*backgroundColor: theme\.background/, `${file}: nothing opaque over the light`);
+  }
+  assert.doesNotMatch(source('components/tab-content.tsx'), /glow|backgroundImage/i, 'the base every tab shares is untouched');
+  assert.doesNotMatch(source('app/map.tsx'), /useScreenGlow/, 'the map covers the screen, so it stays without the light');
+});

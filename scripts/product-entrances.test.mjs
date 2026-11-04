@@ -64,6 +64,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     DeviceEventEmitter: { addListener: (name, listener) => subscription(name, listener) },
   }, { get: (target, key) => target[key] ?? key });
   const imports = {
+    '@/components/screen-glow': { useScreenGlow: () => ({ onLayout() {}, image: () => undefined }) },
     react, 'react-native': native, 'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'expo-router': { useRootNavigationState: () => ({ key: 'root' }), useRouter: () => router, useLocalSearchParams: () => ctx.params,
       useIsFocused: () => ctx.focused, useFocusEffect: fn => effect(() => ctx.focused ? fn() : undefined, [fn, ctx.focused]), usePathname: () => ctx.pathname, Link: { AppleZoomTarget: 'ZoomTarget' } },

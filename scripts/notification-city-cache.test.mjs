@@ -44,6 +44,7 @@ function cityCache(file, { holdList = false, holdActors = false } = {}) {
   };
   const cache = new Map();
   const resolve = withLanguageImports(name => {
+    if (name === '@/components/screen-glow') return { useScreenGlow: () => ({ onLayout() {}, image: () => undefined }) };
     if (name === 'react') return hooks;
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'expo-router') return { useRouter: () => ({ push: value => routes.push(value), navigate: value => routes.push(value) }), usePathname: () => pathname, useIsFocused: () => focused, useFocusEffect: fn => { legacyFocus = fn; } };

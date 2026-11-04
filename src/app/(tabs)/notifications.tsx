@@ -15,6 +15,7 @@ import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { LoginPanel } from '@/components/login-panel';
+import { useScreenGlow } from '@/components/screen-glow';
 import { TabContent } from '@/components/tab-content';
 import { ControlMotion, ControlStyles, IconSize, controlPresentation } from '@/constants/design-system';
 import { MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
@@ -62,6 +63,8 @@ function symbolFor(item: InboxItem<AppNotification>, admin: boolean) {
 }
 
 export default function NotificationsScreen() {
+  // 오늘 탭과 같은 배경 빛(사장님 2026-11-04 '빛 넣을 탭: 지도 빼고 다'). 제목 줄은 투명이라 빛이 비친다.
+  const glow = useScreenGlow(), screenGlow = glow.image();
   const { tr, t, locale: appLocale, language } = useLanguage();
   const theme = useTheme();
   const router = useRouter();
@@ -291,9 +294,9 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <TabContent style={styles.screen}>
+    <TabContent style={[styles.screen, screenGlow != null && { backgroundImage: screenGlow }]} onLayout={glow.onLayout}>
       <SafeAreaView style={{ flex: 1, width: '100%' }}><View style={styles.safeArea}>
-        <View style={[styles.header, { backgroundColor: theme.background }]}>
+        <View style={styles.header}>
           <ThemedText accessibilityRole="header" style={styles.headerTitle}>{t.notifications.title}</ThemedText>
           <ProfileAvatarButton />
           <GlassSurface tone="control" interactive style={styles.settingsGlass}><Pressable analyticsId="app_tabs_notifications.pressable.1" accessibilityRole="button" accessibilityLabel={tr("알림 설정")} onPress={() => { play('selection'); router.push('/profile/notifications'); }} style={({ pressed }) => [styles.settings, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>

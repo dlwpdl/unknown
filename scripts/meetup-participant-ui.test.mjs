@@ -65,6 +65,7 @@ export function mountParticipant(screen, options = {}) {
   const exports = {};
   vm.runInNewContext(ts.transpileModule(source + `\nexport { ${exportName} };`, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText, { exports, require: name => {
     if (name in imports) return imports[name];
+    if (name === '@/components/screen-glow') return { useScreenGlow: () => ({ onLayout() {}, image: () => undefined }) };
     if (name.startsWith('@/components/')) return new Proxy({}, { get: (_, key) => key });
     throw new Error(`Unexpected import ${name}`);
   }, Date, Intl, JSON, setTimeout: () => 0, clearTimeout() {}, requestAnimationFrame: fn => fn() });
@@ -325,6 +326,7 @@ test('the meetup card, schedule and fee line render the compact CAD fee in both 
     };
     vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, { exports, require: name => {
       if (name in imports) return imports[name];
+      if (name === '@/components/screen-glow') return { useScreenGlow: () => ({ onLayout() {}, image: () => undefined }) };
       if (name.startsWith('@/components/')) return new Proxy({}, { get: (_, key) => key });
       throw new Error(`Unexpected import ${name}`);
     }, Date, Intl });

@@ -28,6 +28,7 @@ test('the actual inbox row shows event name and description, reads both and reta
   let state = 0, memo = 0, cache, tab = 'city'; const routes = [], feedback = [], exports = {};
   const jsx = (type, props) => ({ type, props });
   const imports = {
+    '@/components/screen-glow': { useScreenGlow: () => ({ onLayout() {}, image: () => undefined }) },
     react: { useLayoutEffect: fn => fn(), useEffect() {}, useMemo: fn => { const value = fn(); if (memo++ === 0) cache = value; return value; },
       useState: value => [state++ === 0 ? { token: cache, rows: items, hasMore: false } : value === 'mine' ? tab : typeof value === 'boolean' ? false : value, () => {}], useRef: current => ({ current }), useCallback: fn => fn },
     'react/jsx-runtime': { jsx, jsxs: jsx },
