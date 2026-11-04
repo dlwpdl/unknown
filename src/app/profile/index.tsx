@@ -262,8 +262,9 @@ const styles = StyleSheet.create({
   requests: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 52, borderRadius: 14, paddingHorizontal: Spacing.three, marginTop: Spacing.three },
   requestDot: { width: 8, height: 8, borderRadius: 4 },
   grow: { flex: 1 },
-  records: { marginTop: Spacing.three, marginBottom: Spacing.four },
-  segments: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
+  records: { marginTop: Spacing.three },
+  // The gap lives here so the tabs clear the buttons even when the record tiles are not shown.
+  segments: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth, marginTop: Spacing.four },
   segmentIndicator: { position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: 10, borderBottomWidth: 2 },
   segment: { flex: 1, minHeight: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   myPost: { paddingVertical: Spacing.three, gap: Spacing.one, borderBottomWidth: StyleSheet.hairlineWidth },
