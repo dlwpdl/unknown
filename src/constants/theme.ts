@@ -18,6 +18,12 @@ export const Colors = {
     accentInk: '#FFFFFF',
     navy: '#34506B',
     danger: '#B33246',
+    // 오늘 탭 배경 빛(components/screen-glow): 위쪽 빛은 시안 corner-style-today-feed의 --glow-a·--glow-b.
+    // 본문 빛(body*)은 바탕과 밝기가 같은 보라·푸른 회색이라 색만 살짝 돌고 글자·카드 대비는 그대로다(사장님 2026-11-03 "전체 본문에도 살짝").
+    glowA: 'rgba(110,74,162,0.17)',
+    glowB: 'rgba(52,80,107,0.12)',
+    bodyGlowA: '#F9F6FF',
+    bodyGlowB: '#F4F7FF',
   },
   dark: {
     text: '#F6F3F0',
@@ -32,6 +38,10 @@ export const Colors = {
     accentInk: '#171123',
     navy: '#B9C8FF',
     danger: '#FF8585',
+    glowA: 'rgba(203,185,255,0.15)',
+    glowB: 'rgba(185,200,255,0.07)',
+    bodyGlowA: '#0D0A17',
+    bodyGlowB: '#090B17',
     // Measured / estimated marks on the dark campaign report (/report); its light screen uses Colors.admin's. 7:1+ on their backgrounds.
     success: '#7FD4A6',
     successBackground: '#173B2B',
@@ -51,6 +61,11 @@ export const Colors = {
     accentInk: '#FFFFFF',
     navy: '#3C5D8E',
     danger: '#B33246',
+    // Admin never shows the Today tab; same recipe on its own accent/navy keeps useTheme() typed.
+    glowA: 'rgba(101,80,166,0.17)',
+    glowB: 'rgba(60,93,142,0.12)',
+    bodyGlowA: '#F7F6FF',
+    bodyGlowB: '#F4F7FF',
     dangerBackground: '#FBEFF1',
     success: '#257454',
     successBackground: '#EBF5EF',

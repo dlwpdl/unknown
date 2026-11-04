@@ -55,6 +55,7 @@ import { StartGuide } from '@/components/start-guide';
 import { WeeklyRanking } from '@/components/weekly-ranking';
 import { UserSheet, type SheetUser } from '@/components/user-sheet';
 import { PostZoomLink } from '@/components/post-zoom-link';
+import { useScreenGlow } from '@/components/screen-glow';
 import { TabContent } from '@/components/tab-content';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -186,6 +187,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [categorySheet, setCategorySheet] = useState(false);
   const feedListRef = useRef<NativeFlatList<Post | Post[] | null>>(null);
   const feedIntroHeight = useRef(0);
+  const feedOffset = useRef(0);
+  const [sortStuck, setSortStuck] = useState(false);
+  const glow = useScreenGlow(!meetupsOnly);
+  const [listAt, setListAt] = useState({ x: 0, y: 0, top: 0 }); // 글 목록이 화면 왼쪽 위에서 떨어진 자리(안쪽 x·y + 목록 top)
   const scrollToResults = useRef(false);
   useScrollToTop(feedListRef);
   const filterTransition = useRef<number | null | undefined>(undefined);
@@ -749,6 +754,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
   // 첫 로딩·도시 변경은 목록 가운데, 카테고리·정렬 변경은 칩 바로 아래에 로고를 띄운다. 목록 맨 아래 로더는 화면 밖이라 안 보였다 (owner 2026-11-02).
   const loadingCover = cityLoading ? 'page' : cityOpen && feedLoading && !meetupsOnly ? 'list' : null;
+  // 오늘 탭 배경 빛 (owner 2026-11-03 "시안헤더에 그라데이션으로 컬러 들어간거 우리 헤더에도" + "전체 본문에도 살짝", 두 테마).
+  // 화면에 고정되고 글은 그 위로 지나간다. 글을 가려야 하는 곳(위에 붙은 정렬 줄, 불러오기 덮개)은 불투명이라
+  // 목록 자리에서 본 같은 빛을 다시 그려 헤더·본문과 끊김 없이 잇는다.
+  const measureList = (next: Partial<typeof listAt>) => setListAt(current => ({ ...current, ...next }));
+  const screenGlow = glow.image();
+  const listGlow = glow.image(listAt.x, listAt.y + listAt.top);
+  const glowOn = screenGlow != null;
   const feedState = cityOpen && feedLoading ? <View style={styles.categoryLoading}>{meetupsOnly && <GlingLoader color={theme.accent} accessibilityLabel={tr("글 불러오는 중")} />}</View> : (
     cityOpen ? (
       feedError && feedData.length === 0 ? (
@@ -790,9 +802,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   );
 
   return (
-    <TabContent style={styles.container}>
-      <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}><View style={styles.safeArea}>
-        <View style={[styles.headRow, expandedHeader && styles.headRowLarge, { backgroundColor: theme.background }]}>
+    <TabContent style={[styles.container, screenGlow != null && { backgroundImage: screenGlow }]}
+      onLayout={glow.onLayout}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}><View style={styles.safeArea} onLayout={({ nativeEvent: { layout } }) => measureList({ x: layout.x, y: layout.y })}>
+        <View style={[styles.headRow, expandedHeader && styles.headRowLarge]}>
           <Pressable analyticsId="feed.home" accessibilityRole="button" accessibilityLabel={`${t.appName}, ${t.tabs.today}`}
             onPress={() => { play('selection'); router.navigate('/'); }} style={[styles.homeButton, expandedHeader && styles.homeButtonLarge]}>
             <Image source={theme === Colors.light ? require('@/assets/brand/gling-night-wordmark-light.png') : require('@/assets/brand/gling-night-wordmark.png')} style={[styles.wordmark, (viewportWidth < 380 || fontScale > 1.2) && styles.wordmarkCompact]} contentFit="contain" accessible={false} />
@@ -839,7 +852,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             </ScrollView></GlassSurface>
           </View>
         )}
-        <View style={styles.feedArea}><FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
+        <View style={styles.feedArea} onLayout={({ nativeEvent: { layout } }) => measureList({ top: layout.y })}><FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
+          onScroll={glowOn ? ({ nativeEvent }) => {
+            feedOffset.current = nativeEvent.contentOffset.y;
+            const stuck = feedOffset.current >= feedIntroHeight.current - 0.5;
+            if (stuck !== sortStuck) setSortStuck(stuck);
+          } : undefined}
+          scrollEventThrottle={16}
           accessibilityElementsHidden={loadingCover != null} importantForAccessibility={loadingCover ? 'no-hide-descendants' : 'auto'}
           onViewableItemsChanged={trackTranslationFeed}
           viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY}
@@ -866,6 +885,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             : !feedLoading && todaySections && todaySectionsAfter(feedRows.length) < 0 ? <>{feedState}{todaySections}</> : feedState ?? undefined}
           renderItem={({ item, index }) => item == null && index === 1 && showFeedSort ? (
             <FeedSortControl sort={activeSort} title={businessCategory ? tr('새 소식') : selectedFilterTag ? tr("{0} 글", (selectedFilterTag.label)) : tr("오늘 글")} onChange={changeFeedSort}
+              style={[styles.sortBar, glowOn && (sortStuck ? { backgroundImage: listGlow } : { backgroundColor: 'transparent' })]}
               action={businessCategory ? <Pressable analyticsId="business.directory.open" accessibilityRole="button" accessibilityLabel={tr('비즈니스 찾기')}
                 onPress={() => { play('selection'); router.push('/businesses'); }}
                 style={({ pressed }) => [ControlStyles.pill, { flexDirection: 'row', gap: Spacing.two }, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
@@ -878,7 +898,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               {businessCategory && <ListingViewSwitch view={businessView} onView={changeBusinessView} />}
             </FeedSortControl>
           ) : item == null ? (
-            <View style={[styles.header, !meetupsOnly && styles.todayHeader]} onLayout={event => { feedIntroHeight.current = event.nativeEvent.layout.height; }}>
+            <View style={[styles.header, !meetupsOnly && styles.todayHeader]} onLayout={event => {
+              feedIntroHeight.current = event.nativeEvent.layout.height;
+              setSortStuck(feedOffset.current >= feedIntroHeight.current - 0.5);
+            }}>
               {/* 오늘 탭은 날짜 줄 없이 바로 많이 읽은 글 (owner 2026-11-03 "공간낭비"). 모임 탭 제목 줄은 그대로. */}
               {meetupsOnly && <View style={styles.journalIntro}>
                 <View style={styles.journalStatusRow}>
@@ -926,7 +949,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         {/* 덮개가 아래 회색 자리표시와 이전 글을 가리고, 다 불러오면 서서히 걷힌다. 첫 화면은 덮개째 바로 그린다. */}
         {loadingCover && <Reanimated.View entering={reducedMotion || loadingCover === 'page' ? undefined : FadeIn.duration(ControlMotion.pressMs)}
           exiting={reducedMotion ? undefined : FadeOut.duration(ControlMotion.settleMs)}
-          style={[styles.loadingCover, loadingCover === 'page' && [styles.loadingCoverPage, { paddingBottom: bottomClear }], { backgroundColor: theme.background }]}>
+          style={[styles.loadingCover, loadingCover === 'page' && [styles.loadingCoverPage, { paddingBottom: bottomClear }], { backgroundColor: theme.background, backgroundImage: listGlow }]}>
           <GlingLoader color={theme.accent} accessibilityLabel={loadingCover === 'page' ? tr("{0} 소식 불러오는 중", tr(city.name)) : tr("글 불러오는 중")} />
         </Reanimated.View>}</View>
         {writeFab && <Pressable analyticsId="feed.write" accessibilityRole="button" accessibilityLabel={t.tabs.write} onPress={openWriter}
@@ -1458,6 +1481,8 @@ const styles = StyleSheet.create({
   writeFabCompact: { width: ControlMetrics.action, paddingHorizontal: 0 },
   journalDate: { fontSize: 12, lineHeight: 18, letterSpacing: 0.8 },
   feedArea: { flex: 1 },
+  // 목록 좌우 여백까지 덮어, 위에 붙었을 때 꽉 찬 사진이 정렬 줄 옆으로 비치지 않게.
+  sortBar: { marginHorizontal: -Spacing.three, paddingHorizontal: Spacing.three },
   loadingCover: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', paddingTop: Spacing.five },
   loadingCoverPage: { justifyContent: 'center', paddingTop: 0 },
   journalTitle: { fontSize: 28, lineHeight: 36, fontWeight: 700, letterSpacing: -0.8 },

@@ -13,6 +13,14 @@ import * as listingDetails from '../src/lib/listing-details.ts';
 import * as neighborhoods from '../src/lib/neighborhoods.ts';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
+const theme = { background: '#0B0B12', accent: '#CBB9FF', glowA: 'rgba(203,185,255,0.15)', glowB: 'rgba(185,200,255,0.07)', bodyGlowA: '#0D0A17', bodyGlowB: '#090B17' };
+// The shared background part runs for real inside the screen's mocked hooks.
+const glowModule = imports => {
+  const exports = {};
+  const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/screen-glow.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
+  vm.runInNewContext(source, { exports, require: name => imports[name] });
+  return exports;
+};
 function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = false, width = 390, fontScale = 1 } = {}) {
   const slots = [], effects = [], calls = [], writes = [], drafts = [], routes = [], feedback = [], params = {};
   let viewer = 'viewer', authLoading = false;
@@ -20,7 +28,6 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
   const slot = initial => { const index = at++; if (!(index in slots)) slots[index] = typeof initial === 'function' ? initial() : initial; return index; };
   class Value { constructor(value) { this.value = value; } setValue(value) { this.value = value; } stopAnimation() {} interpolate() { return 0; } }
   const jsx = (type, props) => type === 'PostBodyEditor' && props.renderLayout ? props.renderLayout({ input: { type, props }, attachments: null, actions: { type: 'EditorActions', props: {} } }) : ({ type, props });
-  const theme = { background: '#0B0B12', accent: '#CBB9FF' };
   const imports = {
     react: { useState: initial => { const i = slot(initial); return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; }, useRef: initial => slots[slot(() => ({ current: initial }))], useMemo: fn => fn(), useCallback: fn => fn, useEffect: fn => effects.push(fn) },
     'react/jsx-runtime': { jsx, jsxs: jsx },
@@ -45,6 +52,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '../../supabase/functions/_shared/post-links': { splitPostAttachments: body => ({ body }) },
     '@/lib/ai-draft': aiDraft,
   };
+  imports['@/components/screen-glow'] = glowModule(imports);
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/feed-screen.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
   vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
@@ -116,6 +124,32 @@ test('today has a pinned sort row and preserves server order, including meetup p
   assert.deepEqual(Array.from(props.stickyHeaderIndices), [1]);
   assert.deepEqual(Array.from(props.data.filter(Boolean), p => p.id), ['new', 'older-meetup']);
   assert.equal(app.sort().sort, 'latest');
+});
+
+test('today background light is fixed to the screen; the sort row is clear until pinned, then repaints the same light at its spot', () => {
+  const layout = (node, box) => node.props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 0, height: 0, ...box } } });
+  const app = screen({ os: 'ios' });
+  let tree = nodes(app.render());
+  layout(tree.find(n => n.type === 'TabContent'), { width: 400, height: 800 });
+  layout(tree.find(n => n.type === 'SafeAreaView' && n.props.edges).props.children, { y: 47 });
+  layout(tree.find(n => [n.props?.children].flat().some(child => child?.props?.analyticsId === 'components_feed-screen.flatlist.1')), { y: 130 });
+  tree = nodes(app.render());
+  const { screenGlowImage } = glowModule({});
+  const glow = y => screenGlowImage(theme, 400, 800, 0, y);
+  assert.equal([tree.find(n => n.type === 'TabContent').props.style].flat().find(style => style?.backgroundImage)?.backgroundImage, glow(0), 'screen-sized header light and body tint');
+  const head = tree.find(n => [n.props?.children].flat(Infinity).some(child => child?.props?.analyticsId === 'feed.home'));
+  assert.equal([head.props.style].flat().some(style => style?.backgroundColor), false, 'header row lets the light through');
+  layout(app.list().renderItem({ item: null, index: 0 }), { height: 300 });
+  const bar = () => Object.assign({}, ...[app.sort().style].flat(Infinity).filter(Boolean));
+  app.list().onScroll({ nativeEvent: { contentOffset: { y: 120 } } });
+  assert.equal(bar().backgroundColor, 'transparent', 'at rest the row shows the screen light behind it');
+  app.list().onScroll({ nativeEvent: { contentOffset: { y: 300 } } });
+  assert.equal(bar().backgroundColor, undefined, 'pinned: the row keeps its opaque background so posts stay hidden underneath');
+  assert.equal(bar().backgroundImage, glow(177), 'pinned at the list top (47 + 130), so the light lines up with the header');
+  assert.equal(bar().marginHorizontal, -16, 'and covers the list gutters edge to edge');
+  const meetups = screen({ meetupsOnly: true });
+  layout(nodes(meetups.render()).find(n => n.type === 'TabContent'), { width: 400, height: 800 });
+  assert.equal([nodes(meetups.render()).find(n => n.type === 'TabContent').props.style].flat().some(style => style?.backgroundImage), false, 'other screens stay plain');
 });
 
 test('switching order invalidates an older request and the next request keeps popular mode', async () => {
