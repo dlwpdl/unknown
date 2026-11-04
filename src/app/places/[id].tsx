@@ -8,8 +8,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { RaisedActionButton } from '@/components/raised-action-button';
+import { ReservationButton } from '@/components/reservation-button';
 import { PlaceReviews } from '@/components/place-reviews';
 import { PlaceExternalRatings } from '@/components/place-external-ratings';
+import { PlaceHours } from '@/components/place-hours';
 import { PostMapLink } from '@/components/post-map-link';
 import { PostPhotoCredits } from '@/components/post-photo-credits';
 import { StateCard } from '@/components/state-card';
@@ -108,7 +110,8 @@ export default function PlaceDetailScreen() {
         <View style={[styles.facts, { backgroundColor: theme.card }]}>
           <ThemedText type="smallBold" themeColor="accent">{place.category === 'food' ? tr("맛집") : place.category === 'cafe' ? tr("카페") : tr("가볼 만한 곳")}</ThemedText>
           <ThemedText>{place.address || tr("등록된 주소 정보가 없어요. 지도에서 위치를 확인해 주세요.")}</ThemedText>
-          {!!place.openingHours && <ThemedText type="small" themeColor="textSecondary">{tr("등록된 운영 시간: {0}", (place.openingHours))}</ThemedText>}
+          {!!place.openingHours && <PlaceHours openingHours={place.openingHours} cityId={city.id}
+            fallback={<ThemedText type="small" themeColor="textSecondary">{tr("등록된 운영 시간: {0}", (place.openingHours))}</ThemedText>} />}
         </View>
         {/* The legacy analytics target distinguishes this shared action by its screen. */}
         {place.id.startsWith('osm:') && <RaisedActionButton analyticsId="ticketmaster.meetup.find" label={language === 'en' ? 'Find a meetup here' : '이곳에 갈 모임 보기'} disabled={city.state !== 'open'} onPress={() => { play('selection'); router.push({ pathname: '/(tabs)/meetups', params: { placeId: place.id, placeCityId: city.id } }); }} />}
@@ -119,6 +122,8 @@ export default function PlaceDetailScreen() {
         </Pressable>
         {place.id.startsWith('osm:') && <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} />}
         {place.id.startsWith('osm:') && <PlaceExternalRatings key={`${city.id}:${place.id}`} cityId={city.id} placeId={place.id} />}
+        {/* Business-linked places redirect to the company page, so only a booking-site website can show here. */}
+        <ReservationButton website={place.website} />
         {mapsUrl && <PostMapLink url={mapsUrl} label={place.name} onOpened={() => record('place_directions')} />}
         {!!place.recommendation && <Pressable analyticsId="places.detail.source" accessibilityRole="link" accessibilityLabel={tr("사진 명소 선정 출처 보기")} onPress={() => openSource(place.recommendation!.sourceUrl)} style={styles.link}>
           <ThemedText type="smallBold" themeColor="accent">{tr("사진 명소 선정 출처 보기")}</ThemedText>

@@ -4167,5 +4167,16 @@ export const uiEnglish: Record<string, string> = {
   "다음 신청": "Next request",
   "다음 신청 보기": "View next request",
   "다음 신청을 찾는 중…": "Looking for the next request…",
-  "참여 신청 목록으로": "Back to join requests"
+  "참여 신청 목록으로": "Back to join requests",
+  "예약하기": "Book",
+  "예약하기, 예약 사이트 열기": "Book, opens the booking site",
+  "예약하기, 전화 걸기": "Book, calls the place",
+  "예약하기, 글링 메시지로 문의": "Book, asks in a Gling message",
+  "예약 페이지를 열지 못했어요": "Couldn’t open the booking page",
+  "전화를 걸지 못했어요": "Couldn’t start the call",
+  "문의를 시작하지 못했어요": "Couldn’t start a chat",
+  "영업 중": "Open now",
+  "영업 종료": "Closed now",
+  "휴무": "Closed",
+  "요일별 영업시간 보기": "Shows the hours for each day"
 };
