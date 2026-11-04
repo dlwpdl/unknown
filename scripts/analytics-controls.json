@@ -289,5 +289,7 @@
   "meetup-profile.move-photo": "src/app/meetup-profile.tsx",
   "meetup.application.decide": "src/app/meetup-application.tsx",
   "meetup.application.next": "src/app/meetup-application.tsx",
-  "meetup.application.inbox": "src/app/meetup-application.tsx"
+  "meetup.application.inbox": "src/app/meetup-application.tsx",
+  "discovery.scope": "src/app/map.tsx",
+  "discovery.scope.empty": "src/app/map.tsx"
 }

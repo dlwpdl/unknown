@@ -1,8 +1,8 @@
 -- Profile redesign (owner 2026-11-04, P1·P2·P3·P5): friends need the other person's acceptance, the profile shows a map
 -- of saved places and record counts, and a business shows who saved it.
 -- '사용자 저장' (private.saved_users) stays a private bookmark and never becomes a friendship.
--- Saved places stay owner-only until the owner turns on sharing with friends. The default is off and nothing saved
--- before is shared retroactively; changing that default is the owner's decision.
+-- Saved places are shown to mutually accepted friends by default (owner 2026-11-04 '친구 공개 처음 값: 켜 두기'). The app
+-- says so once before a member's first friend request or accept, and a member who turns it off (a false row) stays hidden.
 -- Maps only ever show catalog places and consented businesses linked to one: saved posts (rent, used goods, meetups),
 -- saved people and real-estate or source records never reach a map, so no saved home address can be pinned.
 
@@ -22,7 +22,7 @@ create index friendships_pending_requester on private.friendships(requester_id) 
 
 create table private.profile_sharing (
   user_id uuid primary key references public.profiles(id) on delete cascade,
-  saved_places_to_friends boolean not null default false,
+  saved_places_to_friends boolean not null default true,
   updated_at timestamptz not null default clock_timestamp()
 );
 -- Business pages count savers by place too.
@@ -62,6 +62,7 @@ language sql stable security definer set search_path='' as $$
   select count(*)::integer from private.friendships f
   where f.accepted_at is not null and (f.user_low_id=p_user or f.user_high_id=p_user)
     and private.is_active_account(case when f.user_low_id=p_user then f.user_high_id else f.user_low_id end)
+    and not private.is_operated_character(case when f.user_low_id=p_user then f.user_high_id else f.user_low_id end)
 $$;
 
 -- One row per saved place or business; place_key is null for a business without a map place.
@@ -100,7 +101,8 @@ language sql stable set search_path='' as $$
 $$;
 
 -- Counts are public like the 시안: saved count, streak, meetups, friends. The saved places themselves are returned only
--- to the owner, or to a friend when the owner shares them.
+-- to the owner, or to a friend unless the owner turned sharing off. No field says whether a request would be refused
+-- (operated character, block, report): the button always shows and set_friendship answers FRIEND_UNAVAILABLE.
 create function public.get_profile_overview(p_user_id uuid) returns jsonb
 language plpgsql stable security definer set search_path='' as $$
 declare uid uuid:=auth.uid(); own boolean; state text; shows boolean; places jsonb; total integer; streak integer;
@@ -113,7 +115,7 @@ begin
   end if;
   state:=case when own or uid is null then null else private.friendship_state(uid,p_user_id) end;
   shows:=own or (state='friends' and not private.is_operated_character(p_user_id)
-    and coalesce((select s.saved_places_to_friends from private.profile_sharing s where s.user_id=p_user_id),false));
+    and coalesce((select s.saved_places_to_friends from private.profile_sharing s where s.user_id=p_user_id),true));
   select count(*)::integer,private.saved_week_streak(coalesce(array_agg(p.saved_at),'{}'::timestamptz[]),now())
     into total,streak from private.profile_saved_places(p_user_id) p;
   if shows then
@@ -125,9 +127,8 @@ begin
       and x.business_author_id is null and x.tag_id=(select t.id from public.tags t where t.slug='meetup')
       and (own or not private.has_reported(uid,'post',x.id))),
     'friendCount',private.friend_count(p_user_id),'friendship',state,
-    'canRequestFriend',coalesce(state='none' and private.friend_pair_ok(uid,p_user_id),false),
     'savedPlaces',places,'mapHiddenReason',case when shows then null when state='friends' then 'not_shared' else 'not_friends' end,
-    'sharesSavedPlaces',case when own then coalesce((select s.saved_places_to_friends from private.profile_sharing s where s.user_id=uid),false) end,
+    'sharesSavedPlaces',case when own then coalesce((select s.saved_places_to_friends from private.profile_sharing s where s.user_id=uid),true) end,
     'friendRequestCount',case when own then (select count(*)::integer from private.friendships f
       where f.accepted_at is null and f.requester_id<>uid and (f.user_low_id=uid or f.user_high_id=uid)
         and private.is_active_account(f.requester_id) and not private.is_blocked_between(uid,f.requester_id)) end);
@@ -175,7 +176,6 @@ begin
     delete from private.friendships where user_low_id=lo and user_high_id=hi and accepted_at is not null;
   end if;
   return jsonb_build_object('userId',p_user_id,'friendship',private.friendship_state(uid,p_user_id),
-    'canRequestFriend',private.friendship_state(uid,p_user_id)='none' and private.friend_pair_ok(uid,p_user_id),
     'friendCount',private.friend_count(p_user_id));
 end $$;
 
@@ -193,7 +193,7 @@ begin
       jsonb_build_object('id',p.id,'nickname',p.nickname,'cityId',p.city_id,'neighborhood',p.neighborhood,'since',coalesce(f.accepted_at,f.created_at)) item
     from private.friendships f
     join public.profiles p on p.id=case when f.user_low_id=uid then f.user_high_id else f.user_low_id end
-    where (f.user_low_id=uid or f.user_high_id=uid) and p.account_status='active'
+    where (f.user_low_id=uid or f.user_high_id=uid) and p.account_status='active' and not private.is_operated_character(p.id)
       and not private.is_blocked_between(uid,p.id) and not private.has_reported(uid,'user',p.id)
     order by coalesce(f.accepted_at,f.created_at) desc limit 600) x);
 end $$;
@@ -238,8 +238,8 @@ begin
     'friends',(select coalesce(jsonb_agg(jsonb_build_object('id',f.id,'nickname',f.nickname,'savedAt',f.saved_at) order by f.saved_at desc),'[]'::jsonb)
       from (select p.id,p.nickname,s.saved_at from private.merchant_savers(p_merchant_id) s
         join public.profiles p on p.id=s.user_id
-        join private.profile_sharing ps on ps.user_id=s.user_id and ps.saved_places_to_friends
-        where uid is not null and s.user_id<>uid and private.are_friends(uid,s.user_id) and private.friend_pair_ok(uid,s.user_id)
+        left join private.profile_sharing ps on ps.user_id=s.user_id
+        where coalesce(ps.saved_places_to_friends,true) and uid is not null and s.user_id<>uid and private.are_friends(uid,s.user_id) and private.friend_pair_ok(uid,s.user_id)
         order by s.saved_at desc limit 20) f),
     'similar',(select coalesce(jsonb_agg(jsonb_build_object('merchantId',o.merchant_id,'name',o.name,'saverCount',o.savers,'weekCount',o.week_count)
         order by o.together desc,o.savers desc,o.merchant_id),'[]'::jsonb)
