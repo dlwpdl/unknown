@@ -93,6 +93,8 @@ export type ShareCardImageModules = {
   isAvailableAsync: () => Promise<boolean>;
   captureRef: (view: never, options: { format: 'png'; result: 'tmpfile'; fileName: string; width: number; height: number }) => Promise<string>;
   shareAsync: (url: string, options: { mimeType: string; UTI: string }) => Promise<void>;
+  /** Moves the capture to gling-share-card.png and returns its uri; the share sheet header shows this name (owner 2026-11-04). */
+  rename: (uri: string) => Promise<string>;
 };
 
 /** Capture size that comes out as 1080×1920 pixels: iOS reads it in points and draws at the screen scale, Android reads pixels. */
@@ -109,10 +111,11 @@ export async function shareCardImage(modules: ShareCardImageModules | null, view
   let uri: string | null = null;
   for (const view of views) {
     if (!view) continue;
-    // shortcut: fileName only names the file on Android; iOS keeps a random tmp name, which shows in the share sheet header.
     try { uri = await modules.captureRef(view as never, { format: 'png', result: 'tmpfile', fileName: 'gling-share-card', ...shareCardCaptureSize(os, scale) }); break; } catch { /* try the next view */ }
   }
   if (!uri) return false;
-  await modules.shareAsync(uri.startsWith('file://') ? uri : `file://${uri}`, { mimeType: 'image/png', UTI: 'public.png' });
+  const fileUri = uri.startsWith('file://') ? uri : `file://${uri}`;
+  // A failed rename only costs the tidy name, never the share.
+  await modules.shareAsync(await modules.rename(fileUri).catch(() => fileUri), { mimeType: 'image/png', UTI: 'public.png' });
   return true;
 }

@@ -1,8 +1,9 @@
 import assets from '../../assets/maps/maplibre.bundle.js';
 import { mapCityCenter } from './post-map-html.ts';
 import { TOP25_GOLD } from './discovery.ts';
+import { MAP_PIN_ART } from './map-pin-art.ts';
 
-// `icon` is the category id: the swap point for drawn pin art (`map.addImage('icon-' + id)`); today every pin is the category-coloured circle.
+// `icon` names the category's 3D art (MAP_PIN_ART): up close the pin is that picture in a white circle, further out a category-coloured dot.
 export type DiscoveryMarker = { id: string; latitude: number; longitude: number; color: string; label: string; sublabel?: string; featured?: boolean; icon?: string; top25?: boolean; discount?: number };
 /** A city pill for the far zoom stage. Only open cities can be tapped. */
 export type DiscoveryCity = { id: string; name: string; englishName: string; open: boolean };
@@ -80,7 +81,7 @@ export function discoveryMapHtml({ markers, cities = [], cityName, sessionId, se
   if (!text(sessionId, 180) || !['ko', 'en'].includes(language) || !/^#[a-f\d]{6}$/i.test(accent)) throw new Error('INVALID_DISCOVERY_CONFIG');
   if (markers === undefined) throw new Error('INVALID_DISCOVERY_MARKERS');
   if (parentOrigin !== 'null' && (!/^https?:\/\//.test(parentOrigin) || new URL(parentOrigin).origin !== parentOrigin)) throw new Error('INVALID_DISCOVERY_ORIGIN');
-  const config = json({ ...state({ markers, selectedId, center, userLocation, bottomInset, topInset }), cities: cityPills(cities, cityName), cityCenter: mapCityCenter(cityName), sessionId, parentOrigin, credits });
+  const config = json({ ...state({ markers, selectedId, center, userLocation, bottomInset, topInset }), cities: cityPills(cities, cityName), cityCenter: mapCityCenter(cityName), sessionId, parentOrigin, credits, art: MAP_PIN_ART });
   return `<!doctype html><html lang="${language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-gling-map' blob:; style-src 'unsafe-inline'; worker-src blob:; connect-src https://tiles.openfreemap.org; img-src data: blob: https://tiles.openfreemap.org; base-uri 'none'; form-action 'none'; object-src 'none'"><style>${assets.css}
 html,body,#map{margin:0;width:100%;height:100%;overflow:hidden;background:#efeee9}.maplibregl-ctrl-top-left{top:calc(var(--map-top-inset,0px) + 12px);left:12px}.maplibregl-ctrl-group{border-radius:14px;overflow:hidden;box-shadow:0 2px 12px #3020471a}.maplibregl-ctrl-group button{width:44px;height:44px}.maplibregl-ctrl-group button:active{background:#ebe5f6}.maplibregl-ctrl-group button:focus-visible,#credits a:focus-visible{outline:3px solid ${accent};outline-offset:-3px}#credits{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:flex-end;flex-wrap:wrap;font:10px/1.3 system-ui;background:#fffffff0;color:#333;z-index:4}#credits a{color:#333;min-height:44px;display:inline-flex;align-items:center;padding:0 6px;box-sizing:border-box}#credits a:active{background:#ebe5f6}
 .city-pill{min-height:44px;padding:0 16px;border-radius:22px;border:1px solid #d9d3e6;background:#fff;color:#302047;font:700 14px/1.2 system-ui;box-shadow:0 2px 10px #30204726;cursor:pointer}.city-pill:active{background:#ebe5f6}.city-pill:disabled{color:#7a7287;background:#f6f4f9;box-shadow:none;cursor:default}.city-pill:focus-visible{outline:3px solid ${accent};outline-offset:2px}.city-pill[hidden]{display:none}
@@ -93,7 +94,10 @@ const validPoint=p=>p&&Number.isFinite(p.latitude)&&Math.abs(p.latitude)<=90&&Nu
 const validText=(s,max)=>typeof s==='string'&&s.length>0&&s.length<=max&&!/[\\u0000-\\u001f\\u007f]/.test(s);
 const validState=s=>{if(!s||typeof s!=='object'||Array.isArray(s)||(s.markers!==undefined&&(!Array.isArray(s.markers)||s.markers.length>500))||(s.center!=null&&!validPoint(s.center))||(s.userLocation!=null&&!validPoint(s.userLocation))||(s.selectedId!=null&&!validText(s.selectedId,180))||(s.topInset!=null&&(!Number.isFinite(s.topInset)||s.topInset<0||s.topInset>1000))||(s.bottomInset!=null&&(!Number.isFinite(s.bottomInset)||s.bottomInset<0||s.bottomInset>1000)))return false;const ids=new Set();return s.markers===undefined||s.markers.every(m=>{if(!m||!validText(m.id,180)||ids.has(m.id)||typeof m.label!=='string'||m.label.length>80||!validPoint(m)||typeof m.color!=='string'||!/^#[a-f\\d]{6}$/i.test(m.color)||(m.sublabel!==undefined&&(typeof m.sublabel!=='string'||m.sublabel.length>40))||(m.featured!==undefined&&typeof m.featured!=='boolean')||(m.icon!==undefined&&(typeof m.icon!=='string'||!/^[a-z][a-z0-9_-]{0,23}$/.test(m.icon)))||(m.top25!==undefined&&typeof m.top25!=='boolean')||(m.discount!==undefined&&(!Number.isFinite(m.discount)||m.discount<=0||m.discount>100)))return false;ids.add(m.id);return true})};
 const sameMarkers=(a,b)=>a.length===b.length&&a.every((m,i)=>{const p=b[i];return m.id===p.id&&m.latitude===p.latitude&&m.longitude===p.longitude&&m.color===p.color&&m.label===p.label&&(m.sublabel||'')===(p.sublabel||'')&&(m.featured===true)===(p.featured===true)&&(m.icon||'')===(p.icon||'')&&(m.top25===true)===(p.top25===true)&&(m.discount||0)===(p.discount||0)});
-const geojson=(selection=false)=>({type:'FeatureCollection',features:current.markers.filter(m=>!selection||m.id===current.selectedId).map(m=>({type:'Feature',geometry:{type:'Point',coordinates:[m.longitude,m.latitude]},properties:{id:m.id,label:m.label,sublabel:m.sublabel||'',featured:m.featured===true,icon:m.icon||'',color:m.color,top25:m.top25===true,discount:m.discount||0}}))});
+const geojson=(selection=false)=>({type:'FeatureCollection',features:current.markers.filter(m=>!selection||m.id===current.selectedId).map(m=>({type:'Feature',geometry:{type:'Point',coordinates:[m.longitude,m.latitude]},properties:{id:m.id,label:m.label,sublabel:m.sublabel||'',featured:m.featured===true,icon:m.icon||'',art:pinArt[m.icon]===true,color:m.color,top25:m.top25===true,discount:m.discount||0}}))});
+const pinArt={};
+// Each 3D picture becomes a white round pin image; until it loads, or if it cannot, the place keeps its coloured dot.
+const loadPins=()=>{if(typeof Image==='undefined')return;Promise.all(Object.entries(config.art||{}).map(([id,src])=>new Promise(done=>{const img=new Image();img.onload=()=>{try{const s=3,d=36,c=document.createElement('canvas');c.width=c.height=d*s;const ctx=c.getContext('2d');ctx.scale(s,s);ctx.shadowColor='rgba(23,17,35,.22)';ctx.shadowBlur=4;ctx.shadowOffsetY=1;ctx.beginPath();ctx.arc(d/2,d/2,16,0,Math.PI*2);ctx.fillStyle='#ffffff';ctx.fill();ctx.shadowColor='transparent';ctx.drawImage(img,d/2-12,d/2-12,24,24);map.addImage('pin-'+id,ctx.getImageData(0,0,c.width,c.height),{pixelRatio:s});pinArt[id]=true}catch{}done()};img.onerror=()=>done();img.src=src}))).then(()=>{if(loaded&&Object.keys(pinArt).length)apply(true,true)})};
 const move=camera=>map.easeTo({...camera,duration:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?0:300});
 const hitLayers=['discovery-selected-discount','discovery-selected-discount-dot','discovery-discount','discovery-discount-dot','discovery-selected-top25','discovery-selected-hit','discovery-selected-label','discovery-top25','discovery-hit','discovery-labels','discovery-featured-labels'];
 const notSelected=()=>['!=',['get','id'],current.selectedId??''];
@@ -125,7 +129,7 @@ const apply=(markersChanged=false,selectionChanged=false)=>{if(!loaded)return;if
  const height=map.getContainer().clientHeight,top=Math.min(current.topInset||0,Math.max(0,height-44)),bottom=Math.min(current.bottomInset||0,Math.max(0,height-top-44)),padding=top+':'+bottom,paddingChanged=padding!==previousPadding;
  map.getContainer().style.setProperty('--map-top-inset',top+'px');
  if(paddingChanged){map.setPadding({top,right:0,left:0,bottom});previousPadding=padding}
- map.setFilter('discovery-labels',notSelected());map.setFilter('discovery-featured-labels',['all',['==',['get','featured'],true],notSelected()]);
+ map.setFilter('discovery-labels',notSelected());map.setFilter('discovery-featured-labels',['all',['==',['get','featured'],true],['!=',['get','art'],true],notSelected()]);map.setFilter('discovery-art-featured',['all',['==',['get','art'],true],['==',['get','featured'],true],notSelected()]);
  const selected=current.markers.find(m=>m.id===current.selectedId),c=current.center;
  const changedCenter=c&&(!previousCenter||c.latitude!==previousCenter.latitude||c.longitude!==previousCenter.longitude||c.requestId!==previousCenter.requestId);
  if(c&&(changedCenter||paddingChanged))move({center:[c.longitude,c.latitude]});else if(selected&&(current.selectedId!==previousSelection||paddingChanged))move({center:[selected.longitude,selected.latitude]});
@@ -146,14 +150,21 @@ try{
   // Every place layer starts at the mid stage; below it only the city pills show.
   const add=layer=>map.addLayer({minzoom:FAR,...layer}),step=(mid,near)=>['step',['zoom'],mid,NEAR,near];
   const nameFont={'text-font':['Noto Sans Regular'],'text-anchor':'left','text-max-width':14};
-  add({id:'discovery-pins',type:'circle',source:'discovery',paint:{'circle-radius':step(4,11),'circle-color':['get','color'],'circle-stroke-color':'#ffffff','circle-stroke-width':step(1.5,2)}});
-  add({id:'discovery-labels',type:'symbol',source:'discovery',minzoom:NEAR,layout:{...nameFont,'text-field':['case',['!=',['get','sublabel'],''],['format',['get','label'],{},'\\n',{},['get','sublabel'],{'font-scale':0.85,'text-color':'#6b6280'}],['get','label']],'text-size':12,'text-offset':[2,0],'text-padding':4},paint:{'text-color':'#302047','text-halo-color':'#ffffff','text-halo-width':2}});
-  add({id:'discovery-featured-labels',type:'symbol',source:'discovery',maxzoom:NEAR,filter:['==',['get','featured'],true],layout:{...nameFont,'text-field':['get','label'],'text-size':11,'text-offset':[1,0],'text-padding':6},paint:{'text-color':'#302047','text-halo-color':'#ffffff','text-halo-width':2}});
+  // Places whose picture is loaded swap the near dot for the picture pin; names sit a little further out from the bigger pin.
+  // Further out every place is a dot and a named (featured) place gets a smaller picture pin on top where it does not collide (corner-map-today 2026-11-04 zoom stages).
+  const art=['==',['get','art'],true],midArt=['all',art,['==',['get','featured'],true]],dot=['case',art,0,1],nameOffset=['case',art,['literal',[2.4,0]],['literal',[2,0]]],artPin={'icon-image':['concat','pin-',['get','icon']],'icon-allow-overlap':true,'icon-ignore-placement':true};
+  add({id:'discovery-pins',type:'circle',source:'discovery',paint:{'circle-radius':step(4,11),'circle-color':['get','color'],'circle-stroke-color':'#ffffff','circle-stroke-width':step(1.5,2),'circle-opacity':step(1,dot),'circle-stroke-opacity':step(1,dot)}});
+  add({id:'discovery-art',type:'symbol',source:'discovery',minzoom:NEAR,filter:art,layout:artPin});
+  add({id:'discovery-labels',type:'symbol',source:'discovery',minzoom:NEAR,layout:{...nameFont,'text-field':['case',['!=',['get','sublabel'],''],['format',['get','label'],{},'\\n',{},['get','sublabel'],{'font-scale':0.85,'text-color':'#6b6280'}],['get','label']],'text-size':12,'text-offset':nameOffset,'text-padding':4},paint:{'text-color':'#302047','text-halo-color':'#ffffff','text-halo-width':2}});
+  add({id:'discovery-featured-labels',type:'symbol',source:'discovery',maxzoom:NEAR,filter:['all',['==',['get','featured'],true],['!',art]],layout:{...nameFont,'text-field':['get','label'],'text-size':11,'text-offset':[1,0],'text-padding':6},paint:{'text-color':'#302047','text-halo-color':'#ffffff','text-halo-width':2}});
   add({id:'discovery-hit',type:'circle',source:'discovery',paint:{'circle-radius':22,'circle-opacity':0}});
-  add({id:'discovery-top25',type:'circle',source:'discovery',filter:top25Filter(),paint:{'circle-radius':step(7,15),'circle-opacity':0,'circle-stroke-color':'#9C7637','circle-stroke-width':step(1.5,2)}});
-  add({id:'discovery-selected',type:'circle',source:'discovery-selection',paint:{'circle-radius':17,'circle-color':'#ffffff','circle-stroke-color':'${accent}','circle-stroke-width':4}});
-  add({id:'discovery-selected-pin',type:'circle',source:'discovery-selection',paint:{'circle-radius':11,'circle-color':['get','color'],'circle-stroke-color':'#ffffff','circle-stroke-width':2}});
-  add({id:'discovery-selected-label',type:'symbol',source:'discovery-selection',layout:{...nameFont,'text-field':['get','label'],'text-size':12,'text-offset':[2,0],'text-allow-overlap':true},paint:{'text-color':'#302047','text-halo-color':'#ffffff','text-halo-width':2}});
+  add({id:'discovery-top25',type:'circle',source:'discovery',filter:top25Filter(),paint:{'circle-radius':step(7,['case',art,20,15]),'circle-opacity':0,'circle-stroke-color':'#9C7637','circle-stroke-width':step(1.5,2)}});
+  // Pin and name are one symbol above the other names, so pins are placed first: a pin that collides drops back to its dot, a name that collides leaves the pin bare. It also covers the small TOP 50 ring under it.
+  add({id:'discovery-art-featured',type:'symbol',source:'discovery',maxzoom:NEAR,filter:midArt,layout:{...artPin,...nameFont,'icon-size':0.75,'icon-allow-overlap':false,'icon-ignore-placement':false,'text-field':['get','label'],'text-size':11,'text-offset':[1.8,0],'text-padding':6,'text-optional':true},paint:{'text-color':'#302047','text-halo-color':'#ffffff','text-halo-width':2}});
+  add({id:'discovery-selected',type:'circle',source:'discovery-selection',paint:{'circle-radius':['case',art,21,17],'circle-color':'#ffffff','circle-stroke-color':'${accent}','circle-stroke-width':4}});
+  add({id:'discovery-selected-pin',type:'circle',source:'discovery-selection',paint:{'circle-radius':11,'circle-color':['get','color'],'circle-stroke-color':'#ffffff','circle-stroke-width':2,'circle-opacity':dot,'circle-stroke-opacity':dot}});
+  add({id:'discovery-selected-art',type:'symbol',source:'discovery-selection',filter:art,layout:artPin});
+  add({id:'discovery-selected-label',type:'symbol',source:'discovery-selection',layout:{...nameFont,'text-field':['get','label'],'text-size':12,'text-offset':nameOffset,'text-allow-overlap':true},paint:{'text-color':'#302047','text-halo-color':'#ffffff','text-halo-width':2}});
   add({id:'discovery-selected-hit',type:'circle',source:'discovery-selection',paint:{'circle-radius':22,'circle-opacity':0}});
   add({id:'discovery-selected-top25',type:'symbol',source:'discovery-selection',filter:['==',['get','top25'],true],layout:{'icon-image':'top25-full','icon-anchor':'left','icon-offset':[21,-24],'icon-allow-overlap':true,'icon-ignore-placement':true}});
   for(const [id,source] of [['discovery-discount','discovery'],['discovery-selected-discount','discovery-selection']]){
@@ -168,7 +179,7 @@ try{
   }
   stage();map.on('zoom',stage);
   clearTimeout(timer);loaded=true;failed=false;
-  apply();send({type:'ready'});
+  apply();loadPins();send({type:'ready'});
  }catch{fail()}});
  map.on('error',()=>{if(!loaded)fail()});
  map.on('click',e=>{if(!loaded)return;const hit=map.queryRenderedFeatures(e.point,{layers:hitLayers})[0];if(!hit)return;

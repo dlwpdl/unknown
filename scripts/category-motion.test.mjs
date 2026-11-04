@@ -2,8 +2,11 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 import { ALIVE, ALIVE_MS, aliveMotion, aliveSteps } from '../src/lib/category-motion.ts';
+import { PLACE_SUBCATEGORIES } from '../src/lib/discovery.ts';
 
 const MAP_ICONS = ['top25', 'delivery', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used', 'events'];
+// Still pictures without a gesture: the row settings the owner picked and every sub-category (2026-11-04).
+const STILL_ICONS = ['scope', 'all', 'open', ...PLACE_SUBCATEGORIES.map(option => option.id)];
 
 test('every map icon has the mockup gesture and origin, and the artwork ships with the app', () => {
   assert.deepEqual(Object.keys(ALIVE).sort(), [...MAP_ICONS].sort());
@@ -11,8 +14,8 @@ test('every map icon has the mockup gesture and origin, and the artwork ships wi
   assert.deepEqual(ALIVE.delivery, ['scoot', 0.5, 0.8], 'delivery scoots forward');
   assert.deepEqual(ALIVE.used, ['swing', 0.2, 0.2], 'the price tag dangles from its corner');
   const icon = readFileSync(new URL('../src/components/category-icon.tsx', import.meta.url), 'utf8');
-  assert.deepEqual([...icon.matchAll(/(\w+): require\('@\/assets\/images\/map-categories\/(\w+)\.png'\)/g)].map(match => match[1] === match[2] && match[1]), MAP_ICONS, 'artwork only for these ten; 전체 and Visited draw none');
-  for (const id of MAP_ICONS) {
+  assert.deepEqual([...icon.matchAll(/(\w+): require\('@\/assets\/images\/map-categories\/(\w+)\.png'\)/g)].map(match => match[1] === match[2] && match[1]), [...MAP_ICONS, ...STILL_ICONS], 'the ten moving icons, then the still ones; Visited draws none');
+  for (const id of [...MAP_ICONS, ...STILL_ICONS]) {
     assert.ok(existsSync(new URL(`../assets/images/map-categories/${id}.png`, import.meta.url)), id);
     assert.ok(icon.includes(`require('@/assets/images/map-categories/${id}.png')`), id);
   }

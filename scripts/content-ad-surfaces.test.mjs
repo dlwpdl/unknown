@@ -12,6 +12,9 @@ import { contentAdPosition } from '../src/lib/content-ad-placement.ts';
 import { appendUniquePosts } from '../src/lib/feed-data.ts';
 import { safeMerchantSourceUrl } from '../src/lib/merchant-source.ts';
 import * as publicSeo from '../src/lib/public-seo.ts';
+// The real art list, so the map screen renders the same picture chips as the app.
+const artIds = new Set([...readFileSync(new URL('../src/components/category-icon.tsx', import.meta.url), 'utf8').matchAll(/(\w+): require\('@\/assets\/images\/map-categories\//g)].map(match => match[1]));
+const hasCategoryArt = id => artIds.has(id);
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 const city = { id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver', state: 'open' };
@@ -50,7 +53,7 @@ function mount(file, component, imports, globals = {}, props = {}) {
     '@/lib/discovery-sort': discoverySort, '@/hooks/use-content-translation': translationHookDefaults,
     '@/lib/delivery-partners': { DELIVERY_PARTNERS: [], deliveryPartnerPlace: () => undefined },
     '@/lib/webshops': { bindBusinessPlaces, loadCityBusinessLinks: async () => ({}), loadCityBusinessMapPhotos: async () => ({}), loadCityWebshops: async () => [] },
-    '@/components/selection-chip': { SelectionChip: 'Pressable' },
+    '@/components/selection-chip': { SelectionChip: 'Pressable' }, '@/components/category-icon': { CategoryIcon: 'CategoryIcon', hasCategoryArt },
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' },
     '@/components/feed-ad': { FeedAd: 'FeedAd' }, '@/lib/content-ad-placement': { contentAdPosition },
     '@/lib/ads': { adsSupported: true }, './lazy-sections': { FeedAd: 'FeedAd' },

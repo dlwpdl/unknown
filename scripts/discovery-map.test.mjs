@@ -4,6 +4,8 @@ import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers } from '../src/lib/discovery-map-html.ts';
+import { MAP_PIN_ART } from '../src/lib/map-pin-art.ts';
+
 
 const marker = { id: 'place:1', latitude: 49.28, longitude: -123.12, color: '#d86632', label: '카페' };
 const sessionId = 'canvas-1';
@@ -108,7 +110,7 @@ test('only accepts current session messages, known selection IDs and exact credi
   for (const raw of ['oops', 'null', '[]', '{}', 'x'.repeat(2049)]) assert.equal(discoveryMapMessage(raw, sessionId, [marker]), null);
 });
 
-function canvas(markers = [marker], providedHtml, extra = {}) {
+function canvas(markers = [marker], providedHtml, extra = {}, globals = {}) {
   const messages = [], listeners = {}, cameras = [], sources = {}, layers = [], images = {}, paddingCalls = [], userMarkers = [], cityMarkers = [], labels = [];
   const container = { clientHeight: 400, style: { setProperty(name, value) { this[name] = value; }, getPropertyValue(name) { return this[name] ?? ''; } } };
   let map;
@@ -131,14 +133,14 @@ function canvas(markers = [marker], providedHtml, extra = {}) {
     setPadding(padding) { this.padding = padding; paddingCalls.push(padding); }
   }
   const window = { parent: { postMessage: message => messages.push(JSON.parse(message)) }, addEventListener: (type, callback) => { listeners['window:' + type] = callback; }, matchMedia: () => ({ matches: true }) };
-  const drawing = { scale() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, arcTo() {}, closePath() {}, fill() {}, stroke() {}, measureText: text => ({ width: text.length * 6 }), fillText(text) { labels.push(text); }, getImageData: (_x, _y, width, height) => ({ width, height, data: new Uint8Array(width * height * 4) }) };
+  const drawing = { scale() {}, arc() {}, drawImage() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, arcTo() {}, closePath() {}, fill() {}, stroke() {}, measureText: text => ({ width: text.length * 6 }), fillText(text) { labels.push(text); }, getImageData: (_x, _y, width, height) => ({ width, height, data: new Uint8Array(width * height * 4) }) };
   class Marker {
     constructor({ element }) { this.element = element; (element.className === 'city-pill' ? cityMarkers : userMarkers).push(this); }
     setLngLat(point) { this.point = Array.from(point); return this; }
     addTo() { return this; }
     remove() { this.removed = true; }
   }
-  const context = { window, document: { createElement: () => ({ getContext: () => drawing, setAttribute(name, value) { this[name] = value; } }), addEventListener: (type, callback) => { listeners['document:' + type] = callback; } }, maplibregl: { Map, Marker, NavigationControl: class {} }, setTimeout: () => 1, clearTimeout() {}, console };
+  const context = { window, document: { createElement: () => ({ getContext: () => drawing, setAttribute(name, value) { this[name] = value; } }), addEventListener: (type, callback) => { listeners['document:' + type] = callback; } }, maplibregl: { Map, Marker, NavigationControl: class {} }, setTimeout: () => 1, clearTimeout() {}, console, ...globals };
   const html = providedHtml ?? discoveryMapHtml({ ...options, markers, ...extra });
   const script = [...html.matchAll(/<script nonce="gling-map">([\s\S]*?)<\/script>/g)].at(-1)[1];
   vm.runInNewContext(script, context);
@@ -619,4 +621,20 @@ test('city taps, zoom and new marker fields are validated at the bridge', () => 
   const html = discoveryMapHtml({ ...options, language: 'en', cities: [{ id: 'calgary', name: 'Calgary', englishName: 'Calgary', open: false }, { id: 'x', name: '</script><b>', englishName: 'Halifax', open: true }] });
   assert.ok(!html.includes('</script><b>'));
   assert.ok(html.includes("'Open the '+c.name+' map'") && html.includes('Coming soon'));
+});
+
+test('up close a place with 3D art is drawn as a white picture pin once the art loads, otherwise it keeps its dot', async () => {
+  const sources = [];
+  class Image { set src(value) { sources.push(value); if (value === MAP_PIN_ART.dining) this.onerror(); else this.onload(); } }
+  const art = { ...marker, id: 'art', icon: 'cafe' }, broken = { ...marker, id: 'broken', icon: 'dining', latitude: marker.latitude + 0.01 };
+  const c = canvas([art, broken], undefined, {}, { Image });
+  const features = () => Object.fromEntries(c.sources.discovery.data.features.map(f => [f.properties.id, f.properties.art]));
+  assert.equal(JSON.stringify(features()), JSON.stringify({ art: false, broken: false }), 'dots until the pictures load');
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.ok(sources.every(src => src.startsWith('data:image/png;base64,')) && sources.length >= 10);
+  assert.ok(c.images['pin-cafe'] && !c.images['pin-dining'], 'a picture that fails to load adds no pin image');
+  assert.equal(c.images['pin-cafe'].options.pixelRatio, 3);
+  assert.equal(JSON.stringify(features()), JSON.stringify({ art: true, broken: false }), 'the failed picture keeps its coloured dot');
+  for (const id of ['discovery-art', 'discovery-selected-art']) assert.equal(JSON.stringify(c.layers.find(layer => layer.id === id).layout['icon-image']), JSON.stringify(['concat', 'pin-', ['get', 'icon']]));
+  assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-pins').paint['circle-opacity'].at(-1)), JSON.stringify(['case', ['==', ['get', 'art'], true], 0, 1]));
 });

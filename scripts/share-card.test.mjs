@@ -98,13 +98,14 @@ test('a one-place list shows that place, says one place and adds no "more" line'
   assert.equal(card.message, '하나만\n· Place 1');
 });
 
-// Fake image modules: `captures` maps a view to its file path, or to an Error that capture throws.
-function fakeModules({ available = true, captures = new Map(), shareError = null } = {}) {
-  const calls = { captured: [], shared: [] };
+// Fake image modules: `captures` maps a view to its file path, or to an Error that capture throws. `renamed` replaces the uri, or throws when an Error.
+function fakeModules({ available = true, captures = new Map(), shareError = null, renamed = null } = {}) {
+  const calls = { captured: [], shared: [], renamed: [] };
   return { calls, modules: {
     isAvailableAsync: async () => { if (available instanceof Error) throw available; return available; },
     captureRef: async (view, options) => { calls.captured.push([view, options]); const out = captures.get(view); if (!out || out instanceof Error) throw out ?? new Error('no view'); return out; },
     shareAsync: async (url, options) => { calls.shared.push([url, options]); if (shareError) throw shareError; },
+    rename: async (uri) => { calls.renamed.push(uri); if (renamed instanceof Error) throw renamed; return renamed ?? uri; },
   } };
 }
 
@@ -121,6 +122,17 @@ test('the story-size card is shared first as a PNG file', async () => {
   assert.equal(await shareCardImage(modules, [story, preview], 'ios', 3), true);
   assert.deepEqual(calls.captured, [[story, { format: 'png', result: 'tmpfile', fileName: 'gling-share-card', width: 360, height: 640 }]]);
   assert.deepEqual(calls.shared, [['file:///tmp/ReactNative/story.png', { mimeType: 'image/png', UTI: 'public.png' }]]);
+});
+
+test('the card is shared under the gling-share-card name, or under the capture name when renaming fails', async () => {
+  const story = { id: 'story' };
+  const named = fakeModules({ captures: new Map([[story, '/tmp/ReactNative/8D49.png']]), renamed: 'file:///cache/gling-share-card.png' });
+  assert.equal(await shareCardImage(named.modules, [story], 'ios', 3), true);
+  assert.deepEqual(named.calls.renamed, ['file:///tmp/ReactNative/8D49.png']);
+  assert.deepEqual(named.calls.shared.map(([url]) => url), ['file:///cache/gling-share-card.png']);
+  const failed = fakeModules({ captures: new Map([[story, '/tmp/ReactNative/8D49.png']]), renamed: new Error('move failed') });
+  assert.equal(await shareCardImage(failed.modules, [story], 'ios', 3), true);
+  assert.deepEqual(failed.calls.shared.map(([url]) => url), ['file:///tmp/ReactNative/8D49.png']);
 });
 
 test('when the off-screen capture fails or is not mounted, the preview card is captured instead', async () => {

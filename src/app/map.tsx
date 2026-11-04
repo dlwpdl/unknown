@@ -21,7 +21,7 @@ import { MapListSheet, type SheetSnap } from '@/components/map-list-sheet';
 import { FriendSavedLine, MapScopeSheet } from '@/components/map-scope';
 import { PlaceHours } from '@/components/place-hours';
 import { ReservationButton } from '@/components/reservation-button';
-import { CategoryIcon } from '@/components/category-icon';
+import { CategoryIcon, hasCategoryArt } from '@/components/category-icon';
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { FeedAd } from '@/components/feed-ad';
 import { SelectionChip } from '@/components/selection-chip';
@@ -263,7 +263,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     // No status values yet (stage 4), so the second line is the first known sub-filter or the category.
     const subcategory = PLACE_SUBCATEGORIES.find(option => item.place?.subcategories?.includes(option.id));
     return { id: item.id, latitude: item.latitude, longitude: item.longitude, color: category.color,
-      label: `${hasAdLabel(item.post?.hashtags) ? 'AD · ' : ''}${item.title}`.slice(0,80), sublabel: tr(subcategory?.label ?? category.label).slice(0, 40), icon: item.category,
+      label: `${hasAdLabel(item.post?.hashtags) ? 'AD · ' : ''}${item.title}`.slice(0,80), sublabel: tr(subcategory?.label ?? category.label).slice(0, 40), icon: category.art,
       ...(item.top25 || item.glingVisited ? { featured: true } : {}), ...(item.top25 ? { top25: true } : {}), ...(item.webshopDiscount ? { discount: item.webshopDiscount } : {}) };
   });
   const more = scope === 'all' && current && !limited && (!top25Only || top25Ready) && (current.postMore || current.eventMore);
@@ -333,6 +333,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const chipBackground = sheet !== 'full' && !filtersOpen ? `${theme.backgroundElement}C7` : theme.backgroundElement;
   const filterChip = (value: typeof filters[number]) => {
     const selected = value.id === 'all' ? !selectedFilters.length : selectedFilters.includes(value.id);
+    if (hasCategoryArt(value.id)) return artChip({ id: value.id, label: tr(value.label), selected, analyticsId: 'discovery.filter', onPress: () => toggleFilter(value.id), ink: value.id === 'top25' ? top25Ink : undefined });
     return <SelectionChip key={value.id} selected={selected} baseColor={chipBackground} analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr(value.label)} accessibilityState={{ selected }} onPress={() => toggleFilter(value.id)} style={[styles.chip, value.id === 'visited' && styles.visitedChip, { borderColor: selected ? theme.accent : theme.line }]}>
       {value.id === 'visited' ? <><GlingVisitedBadge selected={selected} /><View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.visitedSelection, { opacity: selected ? 1 : 0 }]}><SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={IconSize.inline} tintColor={theme.accentInk} /></View></> : <>
       <CategoryIcon id={value.id} play={bump.id === value.id ? bump.n : 0} />
@@ -340,17 +341,21 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       </>}
     </SelectionChip>;
   };
+  // A chip with a 3D picture is just the picture and its name, no chip behind (owner 2026-11-04, mockup ⑪): the chosen one lifts and its name fills.
+  // A setting (보여 줄 곳) only gets a purple outline on the card color, so it never reads as a chosen category.
+  const artChip = ({ id, label, selected, analyticsId, onPress, accessibilityLabel = label, expanded, outline, size = 40, ink = theme.text }: { id: string; label: string; selected: boolean; analyticsId: string; onPress: () => void; accessibilityLabel?: string; expanded?: boolean; outline?: boolean; size?: number; ink?: string }) =>
+    <Pressable key={id} analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityState={expanded === undefined ? { selected } : { selected, expanded }}
+      onPress={onPress} style={({ pressed }) => [styles.artChip, { opacity: pressed ? 0.82 : 1 }]}>
+      <View style={selected ? styles.artLift : null}><CategoryIcon id={id} size={size} play={bump.id === id ? bump.n : 0} /></View>
+      <ThemedText numberOfLines={1} style={[styles.artLabel, !selected ? { color: ink, textShadowColor: theme.background, textShadowRadius: 3 }
+        : outline ? { backgroundColor: theme.card, borderWidth: 1.5, borderColor: theme.accent, color: theme.accent } : { backgroundColor: theme.accent, color: theme.accentInk }]}>{label}</ThemedText>
+    </Pressable>;
   const quickFilters = <>
-    <ScrollView horizontal analyticsId="discovery.filter" showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filters}>
-      <SelectionChip selected={scope !== 'all'} baseColor={chipBackground} analyticsId="discovery.scope" accessibilityRole="button" accessibilityLabel={tr('보여 줄 곳, {0}', tr(scopeName))}
-        accessibilityState={{ selected: scope !== 'all', expanded: scopeOpen }} onPress={() => { play('selection'); setScopeOpen(true); }} style={[styles.chip, { borderColor: scope !== 'all' ? theme.accent : theme.line }]}>
-        <ThemedText type="smallBold" style={{ color: scope !== 'all' ? theme.accentInk : theme.text }}>{tr(scope === 'all' ? '보여 줄 곳' : scopeName)} ⌄</ThemedText>
-      </SelectionChip>
+    <ScrollView horizontal analyticsId="discovery.filter" showsHorizontalScrollIndicator={false} style={[styles.filterRow, styles.artRow]} contentContainerStyle={[styles.filters, styles.artRowItems]}>
+      {artChip({ id: 'scope', label: `${tr(scope === 'all' ? '보여 줄 곳' : scopeName)} ⌄`, selected: scope !== 'all', outline: true, expanded: scopeOpen, analyticsId: 'discovery.scope',
+        accessibilityLabel: tr('보여 줄 곳, {0}', tr(scopeName)), onPress: () => { play('selection'); setScopeOpen(true); } })}
       {filterChip(filters[0])}
-      <SelectionChip selected={openNow} baseColor={chipBackground} analyticsId="discovery.open-now" accessibilityRole="button" accessibilityLabel={tr('지금 영업 중')} accessibilityState={{ selected: openNow }}
-        onPress={() => { play('selection'); setOpenNow(value => !value); setShowUnknown(false); }} style={[styles.chip, { borderColor: openNow ? theme.accent : theme.line }]}>
-        <ThemedText type="smallBold" style={{ color: openNow ? theme.accentInk : theme.text }}>{openNow ? '✓' : '🕒'} {tr('지금 영업 중')}</ThemedText>
-      </SelectionChip>
+      {artChip({ id: 'open', label: tr('지금 영업 중'), selected: openNow, analyticsId: 'discovery.open-now', onPress: () => { play('selection'); setOpenNow(value => !value); setShowUnknown(false); } })}
       {(['visited', 'top25', 'delivery', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used'] as const).map(id => filterChip(filters.find(value => value.id === id)!))}
     </ScrollView>
     {Object.hasOwn(EVENT_CITIES, city.id) && eventCategory && <ScrollView horizontal analyticsId="discovery.date" showsHorizontalScrollIndicator={false} style={styles.eventDateRow} contentContainerStyle={styles.eventDates}>
@@ -389,10 +394,8 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   </SelectionChip>;
   const subcategoryChip = (option: typeof PLACE_SUBCATEGORIES[number]) => {
     const on = activeSubcategories.includes(option.id);
-    return <SelectionChip key={option.id} selected={on} baseColor={theme.backgroundElement} analyticsId="discovery.subcategory" accessibilityRole="button" accessibilityLabel={tr(option.label)} accessibilityState={{ selected: on }}
-      onPress={() => { play('selection'); setSubcategories(value => value.includes(option.id) ? value.filter(id => id !== option.id) : [...value, option.id]); }} style={[styles.chip, { borderColor: on ? theme.accent : theme.line }]}>
-      <ThemedText type="smallBold" style={{ color: on ? theme.accentInk : theme.text }}>{on ? '✓ ' : ''}{tr(option.label)}</ThemedText>
-    </SelectionChip>;
+    return artChip({ id: option.id, label: tr(option.label), selected: on, size: 32, analyticsId: 'discovery.subcategory',
+      onPress: () => { play('selection'); setSubcategories(value => value.includes(option.id) ? value.filter(id => id !== option.id) : [...value, option.id]); } });
   };
   const sortRow = <View style={styles.sortRow}>
     {deliveryOnly ? ([['near', tr('가까운 순')], ['discount', tr('할인율 높은 순')]] as const).map(([key, label]) => <SelectionChip key={key} analyticsId="discovery.current" selected={sortBy === key} baseColor={theme.backgroundElement} disabled={key === 'discount' && !hasVerifiedDiscount}
@@ -411,7 +414,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       </View>
       <Pressable analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={tr('목록 닫기')} onPress={showMap} style={styles.icon}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={IconSize.inline} tintColor={theme.textSecondary} /></Pressable>
     </View>
-    {(!!priceChip || subcategoryOptions.length > 0) && <ScrollView horizontal analyticsId="discovery.subcategory" showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filters}>{priceChip}{subcategoryOptions.map(subcategoryChip)}</ScrollView>}
+    {(!!priceChip || subcategoryOptions.length > 0) && <ScrollView horizontal analyticsId="discovery.subcategory" showsHorizontalScrollIndicator={false} style={[styles.filterRow, styles.artRow]} contentContainerStyle={[styles.filters, styles.artRowItems]}>{priceChip}{subcategoryOptions.map(subcategoryChip)}</ScrollView>}
     {sortRow}
   </>;
   const unknownRow = openNow && unknownItems.length > 0 && <Pressable analyticsId="discovery.unknown-hours" accessibilityRole="button" accessibilityState={{ expanded: showUnknown }}
@@ -590,7 +593,9 @@ const styles = StyleSheet.create({
   search: { marginHorizontal: 16, marginBottom: 10, borderWidth: StyleSheet.hairlineWidth, borderRadius: 14, flexDirection: 'row', alignItems: 'center', paddingLeft: 14, paddingRight: 4 }, input: { minHeight: 46, flex: 1, minWidth: 0, paddingHorizontal: 10, fontSize: 14 },
   mapFilters: { position: 'absolute', top: 0, left: 0, right: 0, paddingTop: 12, zIndex: 1 },
   mapDateLabel: { borderRadius: 12, paddingHorizontal: 8, paddingVertical: 6, overflow: 'hidden' },
-  filterRow: { flexGrow: 0, flexShrink: 0, maxHeight: 58 }, filters: { paddingHorizontal: 16, gap: 8, paddingBottom: 8 }, chip: { minHeight: 44, paddingHorizontal: 13, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 7 }, dot: { width: 8, height: 8, borderRadius: 4 },
+  filterRow: { flexGrow: 0, flexShrink: 0, maxHeight: 58 }, artRow: { maxHeight: 74 }, artRowItems: { alignItems: 'center' },
+  artChip: { minWidth: 52, minHeight: 44, alignItems: 'center', gap: 1, paddingHorizontal: 2 }, artLift: { transform: [{ translateY: -2 }, { scale: 1.06 }] },
+  artLabel: { fontSize: 12, lineHeight: 16, fontWeight: '700', paddingHorizontal: 6, borderRadius: 8, overflow: 'hidden' }, filters: { paddingHorizontal: 16, gap: 8, paddingBottom: 8 }, chip: { minHeight: 44, paddingHorizontal: 13, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 7 }, dot: { width: 8, height: 8, borderRadius: 4 },
   filterDot: { width: 6, height: 6, borderRadius: 3, position: 'absolute', right: 6, top: 6 },
   visitedBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#CBB9FF', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 3 }, visitedLogo: { width: 35, height: 16 }, visitedText: { color: '#171123', fontSize: 9, lineHeight: 14, fontWeight: '800', letterSpacing: 0.8 },
   visitedChip: { ...ControlStyles.pill, paddingHorizontal: 10, gap: 8 }, visitedInline: { backgroundColor: 'transparent', paddingHorizontal: 0, paddingVertical: 0, gap: 8 }, visitedFilterText: { ...Typography.label }, visitedSelection: { width: IconSize.inline, height: IconSize.inline, alignItems: 'center', justifyContent: 'center' },

@@ -8,21 +8,22 @@ import type { CityPlace } from './city-places.ts';
 
 export const TOP25_GOLD = '#F4CA78';
 
+// `art` is the 3D picture drawn in the category's map pin (src/lib/map-pin-art.ts); categories without their own share the nearest one.
 export const DISCOVERY_CATEGORIES = [
-  { id: 'housing', label: '부동산', short: '집', color: '#70BFAF' },
-  { id: 'used', label: '중고거래', short: '중고', color: '#E9B86C' },
-  { id: 'festival', label: '페스티벌', short: '축제', color: '#CBB9FF' },
-  { id: 'exhibition', label: '전시', short: '전시', color: '#E7A5C0' },
-  { id: 'event', label: '이벤트', short: '행사', color: '#5F7CF3' },
-  { id: 'nature', label: '자연', short: '자연', color: '#A8C39B' },
-  { id: 'cafe', label: '카페', short: '카페', color: '#D7BD92' },
-  { id: 'dining', label: '다이닝', short: '맛집', color: '#D79681' },
-  { id: 'shopping', label: '쇼핑', short: '쇼핑', color: '#92C4C7' },
-  { id: 'trip', label: '근교 여행', short: '여행', color: '#9BAED1' },
-  { id: 'activity', label: '액티비티', short: '활동', color: '#82ADF0' },
-  { id: 'nightlife', label: '나이트라이프', short: '밤', color: '#DD737F' },
-  { id: 'library', label: '도서관', short: '책', color: '#B8A270' },
-  { id: 'place', label: '장소', short: '장소', color: '#B6B9CC' },
+  { id: 'housing', label: '부동산', short: '집', color: '#70BFAF', art: 'housing' },
+  { id: 'used', label: '중고거래', short: '중고', color: '#E9B86C', art: 'used' },
+  { id: 'festival', label: '페스티벌', short: '축제', color: '#CBB9FF', art: 'festival' },
+  { id: 'exhibition', label: '전시', short: '전시', color: '#E7A5C0', art: 'events' },
+  { id: 'event', label: '이벤트', short: '행사', color: '#5F7CF3', art: 'events' },
+  { id: 'nature', label: '자연', short: '자연', color: '#A8C39B', art: 'places' },
+  { id: 'cafe', label: '카페', short: '카페', color: '#D7BD92', art: 'cafe' },
+  { id: 'dining', label: '다이닝', short: '맛집', color: '#D79681', art: 'dining' },
+  { id: 'shopping', label: '쇼핑', short: '쇼핑', color: '#92C4C7', art: 'shopping' },
+  { id: 'trip', label: '근교 여행', short: '여행', color: '#9BAED1', art: 'travel' },
+  { id: 'activity', label: '액티비티', short: '활동', color: '#82ADF0', art: 'events' },
+  { id: 'nightlife', label: '나이트라이프', short: '밤', color: '#DD737F', art: 'nightlife' },
+  { id: 'library', label: '도서관', short: '책', color: '#B8A270', art: 'places' },
+  { id: 'place', label: '장소', short: '장소', color: '#B6B9CC', art: 'places' },
 ] as const;
 export type DiscoveryCategory = typeof DISCOVERY_CATEGORIES[number]['id'];
 export type DiscoveryFilter = 'all' | 'top25' | 'visited' | 'delivery' | 'nightlife' | 'festival' | 'cafe' | 'dining' | 'places' | 'events' | 'housing' | 'used';

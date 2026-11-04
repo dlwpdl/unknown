@@ -13,6 +13,9 @@ import * as location from '../src/lib/location.ts';
 import { tr } from '../src/i18n/index.ts';
 import { contentAdPosition } from '../src/lib/content-ad-placement.ts';
 import * as openingHours from '../src/lib/opening-hours.ts';
+// The real art list, so the map screen renders the same picture chips as the app.
+const artIds = new Set([...readFileSync(new URL('../src/components/category-icon.tsx', import.meta.url), 'utf8').matchAll(/(\w+): require\('@\/assets\/images\/map-categories\//g)].map(match => match[1]));
+const hasCategoryArt = id => artIds.has(id);
 
 const source = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
 // The list sheet's header (summary, sub-filters, sort) is a prop, so it is walked like children.
@@ -47,7 +50,7 @@ function mount({ cities = [], routeParams = {}, light = false, reduced = false, 
     '@/lib/delivery-partners': { DELIVERY_PARTNERS: [], deliveryPartnerPlace: () => undefined },
     '@/lib/webshops': { bindBusinessPlaces: (...args) => bindBusinessPlaces(...args).map(item => ({ ...item, ...business[item.sourceId] })), loadCityBusinessLinks: loadLinks, loadCityBusinessMapPhotos: loadPhotos, loadCityWebshops: loadWebshops },
     '@/components/discovery-map': { DiscoveryMap: 'DiscoveryMap' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
-    '@/components/city-place-photo': { CityPlacePhoto: 'CityPlacePhoto' }, '@/components/category-icon': { CategoryIcon: 'CategoryIcon' },
+    '@/components/city-place-photo': { CityPlacePhoto: 'CityPlacePhoto' }, '@/components/category-icon': { CategoryIcon: 'CategoryIcon', hasCategoryArt },
     '@/components/feed-ad': { FeedAd: 'FeedAd' }, '@/lib/ads': { adsSupported: false }, '@/lib/content-ad-placement': { contentAdPosition },
     '@/components/state-card': { StateCard: 'StateCard' }, '@/components/content-translation': {}, '@/hooks/use-content-translation': { ...translationHookDefaults, useContentTranslation: (_kind, _id, source) => ({ display: source }) },
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: {} }, '@/lib/translation-source': {},
@@ -272,7 +275,8 @@ test('map categories float over the map and list categories keep normal flow', (
     assert.equal(overlay.props.style.position, 'absolute');
     assert.equal(overlay.props.style.backgroundColor, undefined);
     assert.ok(nodes(tree).some(node => children(node).includes(map) && children(node).includes(overlay)));
-    assert.match(control(overlay, '전체').props.baseColor, /#[0-9A-Fa-f]{6}C7$/);
+    assert.equal(control(overlay, '전체').props.baseColor, undefined, '전체 is a picture with its name, nothing behind it');
+    assert.match(control(overlay, 'gling Visited').props.baseColor, /#[0-9A-Fa-f]{6}C7$/, 'the one remaining pill stays see-through over the map');
     overlay.props.onLayout({ nativeEvent: { layout: { height: 68 } } }); tree = view.render();
     assert.equal(nodes(tree).find(node => node.type === 'DiscoveryMap').props.topInset, 68);
     const location = control(tree, '내 위치로 지도 이동');
@@ -282,7 +286,7 @@ test('map categories float over the map and list categories keep normal flow', (
     const above = nodes(tree).find(node => node.props?.testID === 'map-filter-overlay');
     assert.ok(above, 'categories stay above the full list so they can still be switched');
     assert.equal(Object.assign({}, ...above.props.style).backgroundColor, light ? '#fff' : '#0B0B12');
-    assert.equal(control(tree, '전체').props.baseColor, '#222231');
+    assert.equal(control(tree, 'gling Visited').props.baseColor, '#222231', 'over the full list the remaining pill turns solid');
     assert.equal(nodes(tree).find(node => node.type === 'MapListSheet').props.positions.full, 68, 'the full list stops under the chips');
   }
 });
@@ -519,9 +523,9 @@ test('map pins carry a second line, featured names and the category id for the d
 test('category chips show the 3D icon in the icon spot and each press replays only the pressed icon', () => {
   const view = mount(); let tree = view.render();
   const icon = (tree, label) => nodes(control(tree, label)).find(node => node.type === 'CategoryIcon');
-  assert.equal(icon(tree, '전체').props.id, 'all', '전체 asks for an id with no artwork, so it draws nothing');
+  assert.equal(icon(tree, '전체').props.id, 'all', '전체 draws the four-tile picture the owner picked');
   assert.ok(!nodes(control(tree, 'gling Visited')).some(node => node.type === 'CategoryIcon'), 'Visited keeps its wordmark');
-  assert.ok(!icon(tree, '지금 영업 중'));
+  assert.equal(icon(tree, '지금 영업 중').props.id, 'open', '지금 영업 중 draws the desk clock');
   for (const label of ['TOP 50', '배달 할인', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳', '부동산', '중고거래']) assert.equal(icon(tree, label).props.play, 0, label);
   control(tree, '카페').props.onPress(); tree = view.render();
   const first = icon(tree, '카페').props.play;
