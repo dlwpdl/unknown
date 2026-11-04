@@ -11,7 +11,11 @@ export type MerchantProfile = {
   avatarUri: string | null; bannerUri: string | null; imageLoadFailed: boolean;
   public_phone: string; business_hours: string; can_message: boolean; saved: boolean; notifications_enabled: boolean;
   links?: { url: string; label: string }[];
+  // Written by the business itself (P6); '' when empty or not shown for this business.
+  intro_vibe: string; intro_order: string; intro_tip: string;
 };
+
+const introLine = (value: unknown) => typeof value === 'string' && value.length <= 160 && !/[\x00-\x1f\x7f]/.test(value) ? value.trim() : '';
 
 export function mapMerchantProfile(value: unknown): Omit<MerchantProfile, 'avatarUri' | 'bannerUri' | 'imageLoadFailed'> {
   if (!value || typeof value !== 'object') throw new Error('MERCHANT_PROFILE_READ_FAILED');
@@ -31,7 +35,8 @@ export function mapMerchantProfile(value: unknown): Omit<MerchantProfile, 'avata
     industry: row.industry as string, services: row.services as string, address: row.address as string,
     avatar_path: row.avatar_path as string | null, banner_path: row.banner_path as string | null, review_post_id: row.review_post_id as string | null,
     public_phone: typeof row.public_phone === 'string' ? row.public_phone : '', business_hours: typeof row.business_hours === 'string' ? row.business_hours : '',
-    can_message: row.can_business_message === true || row.can_message === true, saved: row.saved === true, notifications_enabled: row.saved === true && row.notifications_enabled === true, links };
+    can_message: row.can_business_message === true || row.can_message === true, saved: row.saved === true, notifications_enabled: row.saved === true && row.notifications_enabled === true, links,
+    intro_vibe: introLine(row.intro_vibe), intro_order: introLine(row.intro_order), intro_tip: introLine(row.intro_tip) };
 }
 
 export async function attachMerchantProfileImages<T extends Pick<MerchantProfile, 'avatar_path' | 'banner_path'> & { map_photo_path?: string | null }>(client: SupabaseClient, profile: T) {
