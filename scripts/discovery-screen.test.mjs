@@ -93,7 +93,7 @@ test('Top 25 merges only visible recommendations before filtering and keeps the 
   const pick = { id: 'park', cityId: 'vancouver', title: '공원', label: '공개 장소', category: 'nature', latitude: 49.28, longitude: -123.12, reason: '선정 이유', sourceUrl: 'https://example.org/park', postIds: ['hidden-post'] };
   const exports = {};
   const item = { id: 'post:hidden-post', source: 'post', sourceId: 'hidden-post', cityId: 'vancouver', title: '비공개 제목', category: 'nature', label: '공개 위치', latitude: 49.28, longitude: -123.12, price: null, imageUri: 'private-image', post: { id: 'hidden-post', kind: 'story', author: { id: 'blocked-author' } } };
-  const context = { exports, bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null, catalogItems: [], current: { items: [item], limited: false }, city: { id: 'vancouver' }, now: Date.now(), selectedFilters: ['top25'], query: '', days: [], hidden: () => true,
+  const context = { exports, bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, scope: 'all', registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null, catalogItems: [], current: { items: [item], limited: false }, city: { id: 'vancouver' }, now: Date.now(), selectedFilters: ['top25'], query: '', days: [], hidden: () => true,
     discoveryEventOnDays, discoveryMatches, mergeCityTop25: (items, city) => mergeCityTop25(items, city, [pick]), discoveryEvent: () => null, ...noRefine };
   vm.runInNewContext(compile(`export function run() { ${source.slice(start, end)} return { items, limited }; }`), context);
   const result = exports.run();
@@ -122,7 +122,7 @@ test('map pins, list and count exclude community stories but retain actual place
   const event = { ...story, id: 'event:festival', sourceId: 'festival', source: 'event', title: '실제 행사', category: 'festival', post: undefined };
   const exports = {};
   vm.runInNewContext(compile(`exports.run = () => { ${source.slice(start, end)} return items; };`), {
-    exports, bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null, current: { items: [story, { ...story, id: 'post:legacy', post: { ...story.post, kind: undefined } }, listing('used'), listing('housing'), listing('dining'), { ...story, id: 'post:missing', post: undefined }, event] },
+    exports, bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, scope: 'all', registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null, current: { items: [story, { ...story, id: 'post:legacy', post: { ...story.post, kind: undefined } }, listing('used'), listing('housing'), listing('dining'), { ...story, id: 'post:missing', post: undefined }, event] },
     catalogItems: [place], city: { id: 'vancouver' }, now: Date.now(), selectedFilters: [], query: '', days: [], hidden: () => false,
     discoveryEventOnDays, discoveryMatches, mergeCityTop25, discoveryEvent: () => null, ...noRefine,
   });

@@ -7,6 +7,7 @@ import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-r
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
+import { useFriendShareNotice } from '@/components/profile-overview';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ControlStyles, controlPresentation } from '@/constants/design-system';
@@ -26,6 +27,7 @@ export default function FriendsScreen() {
   const [result, setResult] = useState<{ user: string; friends: MyFriends | null; failed: boolean } | null>(null);
   const [busy, setBusy] = useState<string | null>(null), [error, setError] = useState(''), [revision, setRevision] = useState(0);
   const current = result?.user === me.id ? result : null;
+  const notice = useFriendShareNotice();
   useFocusEffect(useCallback(() => {
     if (!isAuthed) return;
     let active = true;
@@ -38,14 +40,15 @@ export default function FriendsScreen() {
 
   const act = async (person: FriendPerson, action: FriendAction) => {
     if (busy) return;
-    play('selection'); setBusy(person.id); setError('');
+    setBusy(person.id); setError('');
     try { await setFriendship(supabase, person.id, action); play(action === 'accept' ? 'success' : 'selection'); setRevision(value => value + 1); }
     catch (failure) { setError(friendErrorMessage(failure)); play('warning'); }
     finally { setBusy(null); }
   };
   const small = (person: FriendPerson, action: FriendAction, label: string, primary = false) =>
     <Pressable analyticsId={`profile.friends.${action}`} accessibilityRole="button" accessibilityLabel={`${person.nickname}, ${label}`}
-      accessibilityState={{ disabled: !!busy, busy: busy === person.id }} disabled={!!busy} onPress={() => void act(person, action)}
+      accessibilityState={{ disabled: !!busy, busy: busy === person.id }} disabled={!!busy}
+      onPress={() => { play('selection'); if (action === 'accept') void notice.confirm(() => void act(person, action)); else void act(person, action); }}
       style={({ pressed }) => [ControlStyles.pill, styles.border, controlPresentation(theme, { tone: primary ? 'primary' : 'secondary', pressed, busy: busy === person.id }).container]}>
       <ThemedText type="smallBold" style={controlPresentation(theme, { tone: primary ? 'primary' : 'secondary' }).text}>{label}</ThemedText>
     </Pressable>;
@@ -85,6 +88,7 @@ export default function FriendsScreen() {
         </View>}
       </>}
     </ScrollView>
+    {notice.sheet}
   </SafeAreaView></ThemedView>;
 }
 

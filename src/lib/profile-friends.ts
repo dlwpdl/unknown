@@ -7,7 +7,8 @@ export type FriendAction = 'request' | 'accept' | 'decline' | 'cancel' | 'remove
 export type SavedPlacePin = { cityId: string; placeKey: string; merchantId: string | null };
 export type ProfileOverview = {
   userId: string; own: boolean; savedCount: number; savedWeekStreak: number; meetupCount: number; friendCount: number;
-  friendship: FriendshipState | null; canRequestFriend: boolean;
+  // No field says whether a request would be refused: the button always shows and the server answers FRIEND_UNAVAILABLE.
+  friendship: FriendshipState | null;
   // null: not visible to this viewer (mapHiddenReason says why). The owner and sharing friends get an array.
   savedPlaces: SavedPlacePin[] | null; mapHiddenReason: 'not_friends' | 'not_shared' | null; sharesSavedPlaces: boolean | null;
   // Own profile only: requests waiting for this member's answer.
@@ -15,7 +16,7 @@ export type ProfileOverview = {
 };
 export type FriendPerson = { id: string; nickname: string; cityId: string | null; neighborhood: string | null; since: string };
 export type MyFriends = { incoming: FriendPerson[]; outgoing: FriendPerson[]; friends: FriendPerson[] };
-export type FriendshipResult = { friendship: FriendshipState; canRequestFriend: boolean; friendCount: number };
+export type FriendshipResult = { friendship: FriendshipState; friendCount: number };
 export type MerchantSaves = {
   saverCount: number;
   friends: { id: string; nickname: string; savedAt: string }[];
@@ -36,7 +37,7 @@ function invalid(): never { throw new Error('INVALID_PROFILE_RESPONSE'); }
 
 export function parseProfileOverview(value: unknown): ProfileOverview | null {
   if (value === null) return null;
-  if (!object(value) || typeof value.own !== 'boolean' || typeof value.canRequestFriend !== 'boolean') invalid();
+  if (!object(value) || typeof value.own !== 'boolean') invalid();
   const friendship = value.friendship === null ? null : STATES.includes(value.friendship as FriendshipState) ? value.friendship as FriendshipState : invalid();
   const savedPlaces = value.savedPlaces === null ? null : list(value.savedPlaces, 300).map(pin => {
     if (!object(pin) || typeof pin.cityId !== 'string' || !CITY.test(pin.cityId) || typeof pin.placeKey !== 'string' || !PLACE.test(pin.placeKey)) invalid();
@@ -47,7 +48,7 @@ export function parseProfileOverview(value: unknown): ProfileOverview | null {
   if (value.sharesSavedPlaces !== null && typeof value.sharesSavedPlaces !== 'boolean') invalid();
   const requests = value.friendRequestCount === null || value.friendRequestCount === undefined ? null : count(value.friendRequestCount);
   return { userId: uuid(value.userId), own: value.own, savedCount: count(value.savedCount), savedWeekStreak: count(value.savedWeekStreak),
-    meetupCount: count(value.meetupCount), friendCount: count(value.friendCount), friendship, canRequestFriend: value.canRequestFriend,
+    meetupCount: count(value.meetupCount), friendCount: count(value.friendCount), friendship,
     savedPlaces, mapHiddenReason: reason, sharesSavedPlaces: value.sharesSavedPlaces, friendRequestCount: requests };
 }
 
@@ -67,8 +68,8 @@ export async function loadProfileOverview(client: SupabaseClient, userId: string
 export async function setFriendship(client: SupabaseClient, userId: string, action: FriendAction): Promise<FriendshipResult> {
   const { data, error } = await client.rpc('set_friendship', { p_user_id: userId, p_action: action });
   if (error) throw new Error(error.message);
-  if (!object(data) || !STATES.includes(data.friendship as FriendshipState) || typeof data.canRequestFriend !== 'boolean') invalid();
-  return { friendship: data.friendship as FriendshipState, canRequestFriend: data.canRequestFriend, friendCount: count(data.friendCount) };
+  if (!object(data) || !STATES.includes(data.friendship as FriendshipState)) invalid();
+  return { friendship: data.friendship as FriendshipState, friendCount: count(data.friendCount) };
 }
 
 function people(value: unknown): FriendPerson[] {
@@ -111,10 +112,65 @@ export async function loadMerchantSaves(client: SupabaseClient, merchantId: stri
   return parseMerchantSaves(data);
 }
 
+// 지도 '보여 줄 곳': places in one city saved by friends who share them (get_friend_saved_places). friendCount is every
+// friend, so the map can tell '친구 0명' from '보여 준 친구 0명'.
+export type FriendSaver = { id: string; nickname: string; avatarPath: string | null; avatarUrl?: string };
+export type FriendSavedPlace = { placeKey: string; friendCount: number; friends: FriendSaver[] };
+export type FriendSavedPlaces = { friendCount: number; places: FriendSavedPlace[] };
+export function parseFriendSavedPlaces(value: unknown): FriendSavedPlaces {
+  if (!object(value)) invalid();
+  const places = list(value.places, 300).map(place => {
+    if (!object(place) || typeof place.placeKey !== 'string' || !PLACE.test(place.placeKey)) invalid();
+    const friends = list(place.friends, 3).map(friend => {
+      if (!object(friend)) invalid();
+      const id = uuid(friend.id);
+      // Avatars live under '<user id>/'; anything else is not that person's photo.
+      if (friend.avatarPath !== null && (typeof friend.avatarPath !== 'string' || !friend.avatarPath.startsWith(`${id}/`) || friend.avatarPath.length > 300)) invalid();
+      return { id, nickname: name(friend.nickname), avatarPath: friend.avatarPath };
+    });
+    const total = count(place.friendCount);
+    if (!friends.length || total < friends.length) invalid();
+    return { placeKey: place.placeKey, friendCount: total, friends };
+  });
+  return { friendCount: count(value.friendCount), places };
+}
+export async function loadFriendSavedPlaces(client: SupabaseClient, cityId: string): Promise<FriendSavedPlaces> {
+  if (!CITY.test(cityId)) invalid();
+  const { data, error } = await client.rpc('get_friend_saved_places', { p_city_id: cityId });
+  if (error) throw error;
+  const result = parseFriendSavedPlaces(data);
+  const paths = [...new Set(result.places.flatMap(place => place.friends.flatMap(friend => friend.avatarPath ? [friend.avatarPath] : [])))].slice(0, 100);
+  if (!paths.length) return result;
+  // A photo that fails to sign falls back to the initial; the places still show.
+  const urls = new Map<string, string>();
+  try {
+    const signed = await client.storage.from('avatars').createSignedUrls(paths, 3600);
+    for (const item of signed.data ?? []) if (item.path && item.signedUrl) urls.set(item.path, item.signedUrl);
+  } catch { /* initials only */ }
+  return { ...result, places: result.places.map(place => ({ ...place, friends: place.friends.map(friend => {
+    const avatarUrl = friend.avatarPath ? urls.get(friend.avatarPath) : undefined;
+    return avatarUrl ? { ...friend, avatarUrl } : friend;
+  }) })) };
+}
+
+// The map's place keys for one scope. 내가 저장한 곳 reuses the owner's own profile pins (catalog places and consented
+// businesses only), so it never needs a new server read.
+export type MapScope = 'all' | 'mine' | 'friends';
+export type MapScopePlaces = { places: Map<string, FriendSavedPlace | null>; friendCount: number | null };
+export async function loadMapScope(client: SupabaseClient, scope: Exclude<MapScope, 'all'>, cityId: string, userId: string): Promise<MapScopePlaces> {
+  if (scope === 'friends') {
+    const result = await loadFriendSavedPlaces(client, cityId);
+    return { places: new Map(result.places.map(place => [place.placeKey, place])), friendCount: result.friendCount };
+  }
+  const overview = await loadProfileOverview(client, userId);
+  return { places: new Map((overview?.savedPlaces ?? []).filter(pin => pin.cityId === cityId).map(pin => [pin.placeKey, null])), friendCount: null };
+}
+
 export function friendErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : '';
   if (message.includes('FRIEND_REQUEST_LIMIT')) return tr('답을 기다리는 요청이 100개예요. 몇 개를 취소한 뒤 다시 보내 주세요.');
   if (message.includes('FRIEND_REQUEST_NOT_FOUND')) return tr('요청이 이미 취소됐거나 처리됐어요.');
-  if (message.includes('FRIEND_UNAVAILABLE')) return tr('지금은 이 사람을 친구로 추가할 수 없어요.');
+  // Operated characters, blocked and reported pairs all get the same sentence (owner 2026-11-04).
+  if (message.includes('FRIEND_UNAVAILABLE')) return tr('지금은 친구를 맺을 수 없어요.');
   return tr('친구 요청을 처리하지 못했어요. 잠시 후 다시 해 주세요.');
 }

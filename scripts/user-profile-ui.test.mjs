@@ -268,7 +268,7 @@ test('iOS mini profiles preserve both existing full-profile destinations', async
 });
 
 test('someone else\'s profile shows the friend button and keeps save, report and block behind ···', async context => {
-  const overview = { userId: 'author', own: false, savedCount: 4, savedWeekStreak: 1, meetupCount: 0, friendCount: 2, friendship: 'none', canRequestFriend: true,
+  const overview = { userId: 'author', own: false, savedCount: 4, savedWeekStreak: 1, meetupCount: 0, friendCount: 2, friendship: 'none',
     savedPlaces: null, mapHiddenReason: 'not_friends', sharesSavedPlaces: null, friendRequestCount: null };
   const harness = mount('../src/app/user/[id].tsx', 'default', {
     loadPublicUserActivity: async () => [], loadPublicUserProfile: async () => profile('author'), loadProfileOverview: async () => overview,

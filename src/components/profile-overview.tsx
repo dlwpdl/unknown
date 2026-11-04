@@ -1,11 +1,13 @@
 import { useLanguage } from '@/hooks/use-language';
-import { useEffect, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { Pressable, ScrollView, Switch } from '@/components/analytics-controls';
 import { DiscoveryMap, type DiscoveryMarker } from '@/components/discovery-map';
+import { DragSheet } from '@/components/drag-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles, controlPresentation } from '@/constants/design-system';
 import { Spacing } from '@/constants/theme';
@@ -100,10 +102,59 @@ export function ProfileRecordTiles({ overview }: { overview: ProfileOverview }) 
   </ScrollView>;
 }
 
-// P3: friend request button on someone else's profile. Personas and blocked pairs get canRequestFriend=false from the server.
+const NOTICE_KEY = 'gling.friend-share-notice.v1:';
+// Saved places reach friends by default (owner 2026-11-04 '켜 두기'), so a member's first request or accept says so once.
+// Seen is kept on this device per member; a member who already turned sharing off gets no notice.
+export function useFriendShareNotice() {
+  const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), { me } = useAuth();
+  const [pending, setPending] = useState<(() => void) | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const checking = useRef(false);
+  const confirm = async (run: () => void) => {
+    if (checking.current) return;
+    checking.current = true;
+    try {
+      if (await AsyncStorage.getItem(NOTICE_KEY + me.id).catch(() => null)) return run();
+      // A setting that cannot be read counts as on: telling once too often is the safe side.
+      if (!await loadProfileOverview(supabase, me.id).then(overview => overview?.sharesSavedPlaces ?? true, () => true)) return run();
+      setError(''); setPending(() => run);
+    } finally { checking.current = false; }
+  };
+  const finish = async (hide: boolean) => {
+    const run = pending;
+    if (!run || busy) return;
+    play('selection');
+    if (hide) {
+      setBusy(true); setError('');
+      try { await setProfileSharing(supabase, false); }
+      catch { setBusy(false); setError(tr('바꾸지 못했어요. 다시 시도해 주세요.')); play('warning'); return; }
+      setBusy(false);
+    }
+    void AsyncStorage.setItem(NOTICE_KEY + me.id, '1').catch(() => {});
+    setPending(null); run();
+  };
+  const action = (id: string, label: string, hide: boolean) =>
+    <Pressable analyticsId={`friend.notice.${id}`} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: busy, busy: busy && hide }}
+      disabled={busy} onPress={() => void finish(hide)}
+      style={({ pressed }) => [ControlStyles.action, styles.border, controlPresentation(theme, { tone: hide ? 'secondary' : 'primary', pressed, busy: busy && hide }).container]}>
+      <ThemedText type="smallBold" style={controlPresentation(theme, { tone: hide ? 'secondary' : 'primary' }).text}>{label}</ThemedText>
+    </Pressable>;
+  const sheet = <DragSheet visible={!!pending} dismissible={!busy} onClose={() => setPending(null)} title={tr('저장한 곳은 친구에게 보여요')}>
+    <View style={styles.notice}>
+      <ThemedText type="small" themeColor="textSecondary">{tr('친구를 맺으면 내가 저장한 장소와 비즈니스를 그 친구도 지도에서 볼 수 있어요. 구해요·팔아요 글이나 저장한 사람은 안 보이고, 설정에서 언제든 끌 수 있어요.')}</ThemedText>
+      {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
+      {action('continue', tr('그대로 진행'), false)}
+      {action('hide', tr('저장한 곳은 숨기고 진행'), true)}
+    </View>
+  </DragSheet>;
+  return { confirm, sheet };
+}
+
+// P3: friend request button on someone else's profile. It shows for every 'none' state, operated characters included:
+// the server refuses those with FRIEND_UNAVAILABLE, so the screen never gives an operated account away.
 export function FriendButton({ overview, nickname, onChanged }: { overview: ProfileOverview; nickname: string; onChanged: (next: FriendshipResult) => void }) {
   const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), { isAuthed, promptLogin } = useAuth();
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const notice = useFriendShareNotice();
   const state = overview.friendship;
   const run = async (action: FriendAction) => {
     if (busy) return;
@@ -119,12 +170,12 @@ export function FriendButton({ overview, nickname, onChanged }: { overview: Prof
       <ThemedText type="smallBold" style={controlPresentation(theme, { tone: primary ? 'primary' : 'secondary' }).text}>{label}</ThemedText>
     </Pressable>;
   if (!isAuthed) return <View style={styles.row}>{button('request', tr('친구 추가'), () => promptLogin(tr('친구를 추가하려면 로그인해 주세요.')), true)}</View>;
-  if (overview.own || state === null || (state === 'none' && !overview.canRequestFriend)) return null;
+  if (overview.own || state === null) return null;
   return <View style={styles.friend}>
     <View style={styles.row}>
-      {state === 'none' && button('request', tr('친구 추가'), () => void run('request'), true, tr('상대가 받으면 친구가 돼요'))}
+      {state === 'none' && button('request', tr('친구 추가'), () => void notice.confirm(() => void run('request')), true, tr('상대가 받으면 친구가 돼요'))}
       {state === 'outgoing' && button('cancel', tr('요청 보냄'), () => void run('cancel'), false, tr('다시 누르면 요청을 취소해요'))}
-      {state === 'incoming' && <>{button('accept', tr('수락'), () => void run('accept'), true)}{button('decline', tr('거절'), () => void run('decline'), false)}</>}
+      {state === 'incoming' && <>{button('accept', tr('수락'), () => void notice.confirm(() => void run('accept')), true)}{button('decline', tr('거절'), () => void run('decline'), false)}</>}
       {state === 'friends' && button('remove', tr('친구'), () => Alert.alert(tr('{0}님과 친구를 끊을까요?', nickname), tr('상대에게 따로 알리지 않아요.'), [
         { text: tr('취소'), style: 'cancel', onPress: () => play('selection') },
         { text: tr('친구 끊기'), style: 'destructive', onPress: () => void run('remove') },
@@ -132,10 +183,11 @@ export function FriendButton({ overview, nickname, onChanged }: { overview: Prof
     </View>
     {state === 'incoming' && <ThemedText type="small" themeColor="textSecondary">{tr('{0}님이 친구 요청을 보냈어요.', nickname)}</ThemedText>}
     {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
+    {notice.sheet}
   </View>;
 }
 
-// Saved places stay owner-only until this is turned on; the default is off and nothing saved earlier is shared on its own.
+// On by default (owner 2026-11-04): with no saved choice the server shares with friends, so the switch starts on too.
 export function ProfileSharingCard() {
   const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), { me, isAuthed } = useAuth();
   const [state, setState] = useState<{ user: string; on: boolean | null; busy: boolean; error: string } | null>(null);
@@ -143,7 +195,7 @@ export function ProfileSharingCard() {
   useEffect(() => {
     if (!isAuthed) return;
     let active = true;
-    void loadProfileOverview(supabase, me.id).then(overview => { if (active) setState({ user: me.id, on: overview?.sharesSavedPlaces ?? false, busy: false, error: '' }); })
+    void loadProfileOverview(supabase, me.id).then(overview => { if (active) setState({ user: me.id, on: overview?.sharesSavedPlaces ?? true, busy: false, error: '' }); })
       .catch(() => { if (active) setState({ user: me.id, on: null, busy: false, error: tr('설정을 불러오지 못했어요. 잠시 후 다시 열어 주세요.') }); });
     return () => { active = false; };
   }, [isAuthed, me.id, tr]);
@@ -159,7 +211,7 @@ export function ProfileSharingCard() {
         <ThemedText type="small">{tr('친구에게 저장한 곳 보여 주기')}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">{tr('켜면 내가 저장한 장소와 비즈니스를 친구가 내 프로필 지도에서 볼 수 있어요. 구해요·팔아요 글과 저장한 사람은 안 보여요.')}</ThemedText>
       </View>
-      <Switch analyticsId="profile.settings.share-saved-places" value={current?.on ?? false} disabled={!current || current.busy || current.on === null}
+      <Switch analyticsId="profile.settings.share-saved-places" value={current?.on ?? true} disabled={!current || current.busy || current.on === null}
         onValueChange={on => void change(on)} accessibilityLabel={tr('친구에게 저장한 곳 보여 주기')}
         trackColor={{ false: theme.line, true: theme.accent }} ios_backgroundColor={theme.line} />
     </View>
@@ -180,6 +232,7 @@ const styles = StyleSheet.create({
   tile: { minWidth: 104, minHeight: 76, borderRadius: 14, paddingHorizontal: Spacing.three, paddingVertical: 12, gap: 2, justifyContent: 'center' },
   tileValue: { fontVariant: ['tabular-nums'] },
   friend: { gap: Spacing.two },
+  notice: { gap: Spacing.three, paddingBottom: Spacing.two },
   row: { flexDirection: 'row', gap: Spacing.two },
   grow: { flex: 1 },
 });

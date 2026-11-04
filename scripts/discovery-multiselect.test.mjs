@@ -78,7 +78,7 @@ test('real map chips toggle a union and All clears category and date state', () 
     exports, TOP25_GOLD: '#F4CA78', top25Ink: '#68543A',
     styles: {}, theme: { accent: '#CBB9FF', line: '#ccc', backgroundSelected: '#ddd', backgroundElement: '#eee', text: '#222' },
     ScrollView: 'scroll', Pressable: 'button', SelectionChip: 'button', chipBackground: '#eee', View: 'view', ThemedText: 'text', GlingVisitedBadge: 'visited-badge', SymbolView: 'symbol', CategoryIcon: 'category-icon', IconSize, tr: value => value,
-    bump: { id: '', n: 0 }, setBump() {}, openNow: false, setOpenNow() {}, setShowUnknown() {}, setSubcategories() {}, filtersOpen: false, sheet: 'closed', setSheet() {}, setSelectedId() {},
+    bump: { id: '', n: 0 }, setBump() {}, scope: 'all', scopeOpen: false, setScopeOpen() {}, scopeName: '모두', openNow: false, setOpenNow() {}, setShowUnknown() {}, setSubcategories() {}, filtersOpen: false, sheet: 'closed', setSheet() {}, setSelectedId() {},
     play: value => feedback.push(value), setSelectedFilters: update => { selected = Array.from(typeof update === 'function' ? update(selected) : update); },
     setDateFilter() {}, setDate() {}, setDateOpen() {}, setDateError() {}, setSortBy: value => { sort = value; },
     get selectedFilters() { return selected; },
@@ -88,7 +88,9 @@ test('real map chips toggle a union and All clears category and date state', () 
   const code = `${source.slice(filterStart, filterEnd)}\n${source.slice(start, end)}\n${source.slice(chipStart, chipEnd)}\nexports.render = () => (${source.slice(jsxStart, jsxEnd)});`;
   vm.runInNewContext(ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, context);
   const buttons = () => [exports.render().props.children].flat(Infinity).filter(node => node.key);
-  assert.equal([exports.render().props.children].flat(Infinity)[1].props.analyticsId, 'discovery.open-now', '지금 영업 중 sits right after 전체');
+  const row = [exports.render().props.children].flat(Infinity);
+  assert.equal(row[0].props.analyticsId, 'discovery.scope', '보여 줄 곳 leads the row');
+  assert.equal(row[row.findIndex(node => node.key === 'all') + 1].props.analyticsId, 'discovery.open-now', '지금 영업 중 sits right after 전체');
   const button = id => buttons().find(node => node.key === id);
   assert.deepEqual(buttons().map(node => node.key), ['all', 'visited', 'top25', 'delivery', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used']);
   button('top25').props.onPress();
@@ -124,7 +126,7 @@ test('the real result pipeline applies city, hidden author, listing expiry and e
   const blocked = { ...cafe('blocked'), source: 'post', post: { id: 'blocked', kind: 'story', author: { id: 'blocked-author' } } };
   const expired = { ...cafe('expired'), source: 'post', category: 'used', post: { id: 'expired', kind: 'listing', listingStatus: 'closed', expiresAt: '2027-01-01', author: { id: 'visible' } } };
   const exports = {}, context = {
-    bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null,
+    bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, scope: 'all', registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null,
     exports, catalogItems: [], current: { items: [cafe('ordinary'), blocked, expired, { ...cafe('foreign'), cityId: 'toronto' }, event('2026-10-17'), event('2026-10-18')] },
     city: { id: cityId }, now: Date.parse('2026-10-15T12:00:00Z'), selectedFilters: ['top25', 'cafe', 'used', 'festival'], query: '', days: ['2026-10-17'],
     hidden: (_type, _id, author) => author === 'blocked-author', discoveryEvent, discoveryEventOnDays, discoveryMatches,

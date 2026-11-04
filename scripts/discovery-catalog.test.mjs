@@ -74,7 +74,7 @@ test('the combined screen includes its current-city catalog while backend rows a
   const start = mapSource.indexOf('  const publicItems = '), end = mapSource.indexOf('  const pins = ', start);
   const exports = {};
   vm.runInNewContext(compile(`exports.run = () => { ${mapSource.slice(start, end)} return items; };`), {
-    exports, bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null, current: null, catalogItems: [discovery.discoveryPlace(place)], city: { id: place.cityId }, now: Date.now(), selectedFilters: [], query: '', days: [],
+    exports, bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, scope: 'all', registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null, current: null, catalogItems: [discovery.discoveryPlace(place)], city: { id: place.cityId }, now: Date.now(), selectedFilters: [], query: '', days: [],
     hidden: () => false, discoveryEvent: () => null, discoveryEventOnDays: discovery.discoveryEventOnDays, mergeCityTop25: discovery.mergeCityTop25, discoveryMatches: discovery.discoveryMatches,
     PRICE_FILTERS: discovery.PRICE_FILTERS, PLACE_SUBCATEGORIES: discovery.PLACE_SUBCATEGORIES, discoveryRefines: discovery.discoveryRefines, cityClock, openState, priceLevels: [], subcategories: [], region: null, openNow: false, showUnknown: false,
   });
