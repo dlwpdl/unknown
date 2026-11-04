@@ -47,7 +47,7 @@ function mount({ cities = [], routeParams = {}, light = false, reduced = false, 
     '@/lib/delivery-partners': { DELIVERY_PARTNERS: [], deliveryPartnerPlace: () => undefined },
     '@/lib/webshops': { bindBusinessPlaces: (...args) => bindBusinessPlaces(...args).map(item => ({ ...item, ...business[item.sourceId] })), loadCityBusinessLinks: loadLinks, loadCityBusinessMapPhotos: loadPhotos, loadCityWebshops: loadWebshops },
     '@/components/discovery-map': { DiscoveryMap: 'DiscoveryMap' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
-    '@/components/city-place-photo': { CityPlacePhoto: 'CityPlacePhoto' },
+    '@/components/city-place-photo': { CityPlacePhoto: 'CityPlacePhoto' }, '@/components/category-icon': { CategoryIcon: 'CategoryIcon' },
     '@/components/feed-ad': { FeedAd: 'FeedAd' }, '@/lib/ads': { adsSupported: false }, '@/lib/content-ad-placement': { contentAdPosition },
     '@/components/state-card': { StateCard: 'StateCard' }, '@/components/content-translation': {}, '@/hooks/use-content-translation': { ...translationHookDefaults, useContentTranslation: (_kind, _id, source) => ({ display: source }) },
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: {} }, '@/lib/translation-source': {},
@@ -513,4 +513,23 @@ test('map pins carry a second line, featured names and the category id for the d
   const places = [fixturePlace(1, { name: 'Brunch spot', category: 'cafe', subcategories: ['brunch'] }), fixturePlace(2, { name: 'Visited', glingVisited: { sourceUrl: 'https://www.instagram.com/reel/fixture/' } })];
   const markers = nodes(mount({ places }).render()).find(node => node.type === 'DiscoveryMap').props.markers;
   assert.deepEqual(Array.from(markers.map(marker => [marker.label, marker.sublabel, marker.featured ?? false, marker.icon])), [['Brunch spot', '브런치', false, 'cafe'], ['Visited', '다이닝', true, 'dining']]);
+});
+
+test('category chips show the 3D icon in the icon spot and each press replays only the pressed icon', () => {
+  const view = mount(); let tree = view.render();
+  const icon = (tree, label) => nodes(control(tree, label)).find(node => node.type === 'CategoryIcon');
+  assert.equal(icon(tree, '전체').props.id, 'all', '전체 asks for an id with no artwork, so it draws nothing');
+  assert.ok(!nodes(control(tree, 'gling Visited')).some(node => node.type === 'CategoryIcon'), 'Visited keeps its wordmark');
+  assert.ok(!icon(tree, '지금 영업 중'));
+  for (const label of ['TOP 50', '배달 할인', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳', '부동산', '중고거래']) assert.equal(icon(tree, label).props.play, 0, label);
+  control(tree, '카페').props.onPress(); tree = view.render();
+  const first = icon(tree, '카페').props.play;
+  assert.ok(first > 0);
+  assert.equal(icon(tree, '레스토랑').props.play, 0);
+  assert.equal(icon(tree, '카페').props.id, 'cafe');
+  control(tree, '카페').props.onPress(); tree = view.render();
+  assert.ok(icon(tree, '카페').props.play > first, 'pressing again (deselecting too) plays again');
+  control(tree, '배달 할인').props.onPress(); tree = view.render();
+  assert.equal(icon(tree, '카페').props.play, 0);
+  assert.ok(icon(tree, '배달 할인').props.play > 0);
 });

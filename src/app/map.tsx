@@ -20,6 +20,7 @@ import { DragSheet } from '@/components/drag-sheet';
 import { MapListSheet, type SheetSnap } from '@/components/map-list-sheet';
 import { PlaceHours } from '@/components/place-hours';
 import { ReservationButton } from '@/components/reservation-button';
+import { CategoryIcon } from '@/components/category-icon';
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { FeedAd } from '@/components/feed-ad';
 import { SelectionChip } from '@/components/selection-chip';
@@ -56,14 +57,14 @@ import { safeMerchantSourceUrl } from '@/lib/merchant-source';
 import { PUBLIC_SITE, publicCompanyUrl } from '@/lib/public-seo';
 import { EVENT_CITIES, eventPriceLabel, eventTime, loadTicketmasterEvents, type EventCity } from '@/lib/ticketmaster';
 
-const filters: { id: DiscoveryFilter; label: string; color?: string }[] = [
-  { id: 'all', label: '전체' }, { id: 'visited', label: 'gling Visited', color: '#CBB9FF' },
-  { id: 'top25', label: 'TOP 50', color: TOP25_GOLD }, { id: 'delivery', label: '배달 할인', color: '#8FD9C4' },
-  { id: 'dining', label: '레스토랑', color: '#D79681' }, { id: 'cafe', label: '카페', color: '#D7BD92' },
-  { id: 'festival', label: '페스티벌', color: '#CBB9FF' }, { id: 'nightlife', label: '나이트라이프', color: '#DD737F' },
-  { id: 'places', label: '가볼 만한 곳', color: '#A8C39B' },
-  { id: 'housing', label: '부동산', color: '#70BFAF' }, { id: 'used', label: '중고거래', color: '#E9B86C' },
-  { id: 'events', label: '행사 전체', color: '#5F7CF3' },
+const filters: { id: DiscoveryFilter; label: string }[] = [
+  { id: 'all', label: '전체' }, { id: 'visited', label: 'gling Visited' },
+  { id: 'top25', label: 'TOP 50' }, { id: 'delivery', label: '배달 할인' },
+  { id: 'dining', label: '레스토랑' }, { id: 'cafe', label: '카페' },
+  { id: 'festival', label: '페스티벌' }, { id: 'nightlife', label: '나이트라이프' },
+  { id: 'places', label: '가볼 만한 곳' },
+  { id: 'housing', label: '부동산' }, { id: 'used', label: '중고거래' },
+  { id: 'events', label: '행사 전체' },
 ];
 type Result = { key: string; page: number; items: DiscoveryItem[]; cursor: FeedCursor | null; postMore: boolean; eventMore: boolean; errors: string[]; limited: boolean };
 const freshMapFix = (fix: LocationFix) => isFreshLocation(fix) && fix.accuracy! <= 250 && Date.now() - fix.measuredAt <= 120000;
@@ -107,6 +108,8 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const [sortBy, setSortBy] = useState<'near' | 'discount'>('near');
   const [openNow, setOpenNow] = useState(false), [showUnknown, setShowUnknown] = useState(false);
   const [priceLevels, setPriceLevels] = useState<number[]>([]), [priceDraft, setPriceDraft] = useState<number[] | null>(null), [subcategories, setSubcategories] = useState<string[]>([]);
+  // The last pressed category chip and a press count, so its icon plays its gesture once per press.
+  const [bump, setBump] = useState({ id: '', n: 0 });
   const [moved, setMoved] = useState<{ bounds: DiscoveryBounds; zoom?: number } | null>(null), [region, setRegion] = useState<DiscoveryBounds | null>(null);
   const [contentHeight, setContentHeight] = useState(0);
   const viewerScope = isAuthed ? me.id : 'guest', registryKey = `${city.id}:${viewerScope}`;
@@ -298,7 +301,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const showList = (snap: SheetSnap) => { play('selection'); setSelectedId(null); setSheet(snap); if (!userLocation) void locate(); };
   const showMap = () => { play('selection'); setSheet('closed'); };
   const toggleFilter = (value: DiscoveryFilter) => {
-    play('selection');
+    play('selection'); setBump(current => ({ id: value, n: current.n + 1 }));
     if (value !== 'all' && !selectedFilters.includes(value) && !filtersOpen && (sheet === 'closed' || sheet === 'peek')) { setSelectedId(null); setSheet('half'); }
     setSubcategories([]);
     setSelectedFilters(current => value === 'all' ? [] : current.includes(value) ? current.filter(id => id !== value) : [...current, value]); setSortBy('near');
@@ -315,7 +318,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     const selected = value.id === 'all' ? !selectedFilters.length : selectedFilters.includes(value.id);
     return <SelectionChip key={value.id} selected={selected} baseColor={chipBackground} analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr(value.label)} accessibilityState={{ selected }} onPress={() => toggleFilter(value.id)} style={[styles.chip, value.id === 'visited' && styles.visitedChip, { borderColor: selected ? theme.accent : theme.line }]}>
       {value.id === 'visited' ? <><GlingVisitedBadge selected={selected} /><View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.visitedSelection, { opacity: selected ? 1 : 0 }]}><SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={IconSize.inline} tintColor={theme.accentInk} /></View></> : <>
-      {selected && value.id !== 'all' ? <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText> : (value.id === 'top25' || value.id === 'delivery') && <View style={[styles.dot, { backgroundColor: value.color }]} />}
+      <CategoryIcon id={value.id} play={bump.id === value.id ? bump.n : 0} />
       <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : value.id === 'top25' ? top25Ink : theme.text }}>{tr(value.label)}</ThemedText>
       </>}
     </SelectionChip>;
