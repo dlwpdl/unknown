@@ -27,6 +27,29 @@ export const DISCOVERY_CATEGORIES = [
 export type DiscoveryCategory = typeof DISCOVERY_CATEGORIES[number]['id'];
 export type DiscoveryFilter = 'all' | 'top25' | 'visited' | 'delivery' | 'nightlife' | 'festival' | 'cafe' | 'dining' | 'places' | 'events' | 'housing' | 'used';
 export type DiscoveryDate = 'all' | 'today' | 'week' | 'weekend' | 'date';
+// Owner 2026-11-04: sub-filters differ per map category. These ids are the catalog values in CityPlace.subcategories.
+export const PLACE_SUBCATEGORIES = [
+  { id: 'lunch', filter: 'dining', label: '점심' }, { id: 'dinner', filter: 'dining', label: '저녁' }, { id: 'late_night', filter: 'dining', label: '늦은 밤' },
+  { id: 'solo', filter: 'dining', label: '혼밥' }, { id: 'date', filter: 'dining', label: '데이트' },
+  { id: 'izakaya', filter: 'nightlife', label: '이자카야' }, { id: 'pocha', filter: 'nightlife', label: '포차' }, { id: 'cocktail_bar', filter: 'nightlife', label: '칵테일 바' },
+  { id: 'wine_bar', filter: 'nightlife', label: '와인 바' }, { id: 'pub', filter: 'nightlife', label: '펍' },
+  { id: 'dessert', filter: 'cafe', label: '디저트' }, { id: 'brunch', filter: 'cafe', label: '브런치' }, { id: 'work_friendly', filter: 'cafe', label: '작업하기 좋은 곳' },
+] as const;
+export type PlaceSubcategory = typeof PLACE_SUBCATEGORIES[number]['id'];
+export const PRICE_FILTERS: readonly DiscoveryFilter[] = ['dining', 'cafe', 'nightlife'];
+export const PRICE_LEVELS = [1, 2, 3, 4] as const;
+export const priceSymbol = (level: number) => '$'.repeat(level);
+/** '$–$$' for a run, '$ · $$$' for a gap, '' for none. */
+export function priceLabel(levels: readonly number[]) {
+  const sorted = [...new Set(levels)].filter(level => (PRICE_LEVELS as readonly number[]).includes(level)).sort((a, b) => a - b);
+  if (sorted.length > 1 && sorted.at(-1)! - sorted[0] === sorted.length - 1) return `${priceSymbol(sorted[0])}–${priceSymbol(sorted.at(-1)!)}`;
+  return sorted.map(priceSymbol).join(' · ');
+}
+/** Price and sub-filter choices: an item without the value is left out, never assumed to match. */
+export function discoveryRefines(item: Pick<DiscoveryItem, 'place'>, priceLevels: readonly number[], subcategories: readonly string[]) {
+  return (!priceLevels.length || priceLevels.includes(item.place?.priceLevel ?? 0))
+    && (!subcategories.length || subcategories.some(id => item.place?.subcategories?.includes(id)));
+}
 export type DiscoveryItem = {
   id: string; source: 'post' | 'event' | 'place'; sourceId: string; cityId: string; title: string;
   category: DiscoveryCategory; label: string; latitude: number | null; longitude: number | null;
