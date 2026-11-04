@@ -18,7 +18,7 @@ const profile = { id: company, name: '회사', services: '등록된 소개', add
 const settle = () => new Promise(setImmediate);
 const nodes = root => !root || typeof root !== 'object' ? [] : [root, ...Object.values(root).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 
-function screen({ business = null, webshop = null, loadReviews = async (_, __, ___, kind) => ({ review_kind: kind, rating_average: kind === 'usage' ? 8.833333333 : 7, review_count: 3 }), loadPosts = async (_, __, kind) => ({ ...content, kind }), loadProfile = async () => profile, loadSavedState, rpc = async () => ({ data: true }), openURL = async () => {} } = {}) {
+function screen({ business = null, webshop = null, merchantSaves = async () => null, businessLinks = {}, loadReviews = async (_, __, ___, kind) => ({ review_kind: kind, rating_average: kind === 'usage' ? 8.833333333 : 7, review_count: 3 }), loadPosts = async (_, __, kind) => ({ ...content, kind }), loadProfile = async () => profile, loadSavedState, rpc = async () => ({ data: true }), openURL = async () => {} } = {}) {
   const state = [], cleanup = new Map(), calls = [], postCalls = [], routes = [], feedback = [], rpcCalls = [], login = [], links = [];
   let index = 0, account = 'author', hidden = () => false, focused = true, lastProfile = profile;
   const savedReads = [];
@@ -55,6 +55,10 @@ function screen({ business = null, webshop = null, loadReviews = async (_, __, _
     '@/lib/merchant-profile': { loadMerchantProfile: async (...args) => { lastProfile = await loadProfile(...args); return lastProfile; },
       loadMerchantProfilePosts: async (...args) => { postCalls.push(args); return loadPosts(...args); } },
     '@/lib/feed-data': { getPostImageSource, appendUniquePosts },
+    '@/lib/profile-friends': { loadMerchantSaves: async (...args) => merchantSaves(...args) },
+    '@/lib/webshops': { loadCityBusinessLinks: async () => businessLinks },
+    '@/lib/discovery': { placeMapRoute: place => ({ pathname: '/map', params: { cityId: place.cityId, placeId: place.id } }) },
+    '@/lib/public-seo': { publicCompanyUrl: id => `https://gling.example/company/${id}` },
     '@/lib/merchant-reviews': { loadMerchantReviews: async (...args) => { calls.push(args); return loadReviews(...args); } },
     '@/lib/supabase': { supabase: { rpc: async (name, args) => {
       if (name === 'get_saved_item_state') { savedReads.push(args); return { data: loadSavedState ? await loadSavedState(args) : savedState(lastProfile?.saved === true) }; }
@@ -73,7 +77,7 @@ const text = root => nodes(root).flatMap(node => [node.props?.children].flat().f
 
 test('company tabs show real counts, select hiring and open a real post detail', async () => {
   const view = screen(); view.render(); await settle(); view.render(); await settle();
-  assert.equal(control(view.render(), 'company.tab.about').props.accessibilityState.selected, true);
+  assert.equal(control(view.render(), 'company.tab.posts').props.accessibilityState.selected, true, 'a business opens on its news');
   control(view.render(), 'company.tab.posts').props.onPress(); view.render(); await settle(); view.render(); await settle();
   let root = view.render();
   assert.equal(control(root, 'company.tab.posts')?.props.accessibilityState.selected, true);
@@ -95,7 +99,7 @@ test('company tabs show real counts, select hiring and open a real post detail',
 test('real zero counts keep all tabs and the no-jobs state removes the hiring badge', async () => {
   const view = screen({ loadPosts: async (_, __, kind) => ({ ...content, kind, post_count: 0, job_count: 0, posts: [], nextOffset: 0 }) });
   view.render(); await settle(); view.render(); await settle();
-  assert.equal(control(view.render(), 'company.tab.about').props.accessibilityState.selected, true);
+  assert.equal(control(view.render(), 'company.tab.posts').props.accessibilityState.selected, true, 'a business opens on its news');
   control(view.render(), 'company.tab.posts').props.onPress(); view.render(); await settle(); view.render(); await settle();
   let root = view.render();
   assert.equal(control(root, 'company.hiring'), undefined);
@@ -122,7 +126,7 @@ test('late company list responses from the previous account cannot restore its p
   const pending = [];
   const view = screen({ loadPosts: () => new Promise(resolve => pending.push(resolve)) });
   view.render(); await settle(); view.render(); await settle();
-  assert.equal(control(view.render(), 'company.tab.about').props.accessibilityState.selected, true);
+  assert.equal(control(view.render(), 'company.tab.posts').props.accessibilityState.selected, true, 'a business opens on its news');
   control(view.render(), 'company.tab.posts').props.onPress(); view.render(); await settle(); view.render(); await settle();
   view.setAccount('another'); view.render(); await settle(); view.render(); await settle();
   pending[0](content); await settle();
@@ -139,7 +143,7 @@ test('visible retry resumes the failed page and preserves earlier pages without 
     count++; return new Promise((done, fail) => { resolve = done; reject = fail; });
   } });
   view.render(); await settle(); view.render(); await settle();
-  assert.equal(control(view.render(), 'company.tab.about').props.accessibilityState.selected, true);
+  assert.equal(control(view.render(), 'company.tab.posts').props.accessibilityState.selected, true, 'a business opens on its news');
   control(view.render(), 'company.tab.posts').props.onPress(); view.render(); await settle(); view.render(); await settle();
   let root = view.render(), more = control(root, 'company.posts.more');
   assert.ok(more);
@@ -412,4 +416,29 @@ test('comparison labels menu observations and checkout quotes with their own dat
     context.shop = { verifiedAt: null };
     assert.equal(evaluate(menu), '');
   }
+});
+
+test('the business profile shows real saves, its own intro lines and opens its Gling map pin', async () => {
+  const friend = '33333333-3333-4333-8333-333333333333', other = '44444444-4444-4444-8444-444444444444';
+  const view = screen({
+    loadProfile: async () => ({ ...profile, city_id: 'vancouver', intro_vibe: '조용해요', intro_order: '', intro_tip: '창가 자리가 먼저 차요' }),
+    merchantSaves: async () => ({ saverCount: 7, friends: [{ id: friend, nickname: '하늘', savedAt: '2026-11-01T00:00:00Z' }], similar: [{ merchantId: other, name: '옆집', saverCount: 5, weekCount: 2 }] }),
+    businessLinks: { 'osm:node:42': company },
+  });
+  view.render(); await settle(); view.render(); await settle(); let root = view.render();
+  assert.match(text(root), /저장한 사람 7명/);
+  assert.match(text(root), /조용해요/); assert.match(text(root), /창가 자리가 먼저 차요/);
+  assert.doesNotMatch(text(root), /뭘 시킬까/, 'an empty intro line is hidden');
+  control(root, 'company.saves.friend').props.onPress();
+  assert.deepEqual(view.routes.at(-1), { pathname: '/user/[id]', params: { id: friend, nickname: '하늘' } });
+  control(root, 'company.similar').props.onPress();
+  assert.deepEqual(view.routes.at(-1), { pathname: '/company/[id]', params: { id: other } });
+  control(root, 'company.location').props.onPress();
+  assert.deepEqual(view.routes.at(-1), { pathname: '/map', params: { cityId: 'vancouver', placeId: 'osm:node:42' } });
+  assert.deepEqual(view.links, [], 'a linked business stays inside Gling');
+  const empty = screen({ merchantSaves: async () => ({ saverCount: 0, friends: [], similar: [] }) });
+  empty.render(); await settle(); root = empty.render();
+  assert.doesNotMatch(text(root), /저장한 사람|같이 저장된 곳|분위기/, 'sections without data stay hidden');
+  control(root, 'company.location').props.onPress(); await settle();
+  assert.equal(empty.links.length, 1, 'an unlinked business still opens its registered address');
 });

@@ -5,14 +5,16 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { SymbolView } from 'expo-symbols';
-import { Animated, StyleSheet, View, type ScrollViewInstance } from 'react-native';
+import { Animated, Platform, Share, StyleSheet, View, type ScrollViewInstance } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { usePublicWebshop, WebshopBanner, WebshopComparisonSheet, WebshopOrderButton } from '@/components/business-webshop';
+import { DragSheet } from '@/components/drag-sheet';
 import { GlingLoader } from '@/components/gling-loader';
 import { MerchantProfileHeader } from '@/components/merchant-profile-header';
 import { MerchantReviews } from '@/components/merchant-reviews';
+import { ReportSheet } from '@/components/report-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
@@ -27,6 +29,10 @@ import { loadMerchantReviews, type MerchantReviewKind, type MerchantReviewPage }
 import { merchantMapsUrl, merchantPhoneUrl, setSavedMerchantNotifications, startMerchantConversation } from '@/lib/merchant-conveniences';
 import { loadSavedItemState, setSavedItem } from '@/lib/saved-items';
 import { safeMerchantSourceUrl } from '@/lib/merchant-source';
+import { placeMapRoute } from '@/lib/discovery';
+import { loadMerchantSaves, type MerchantSaves } from '@/lib/profile-friends';
+import { publicCompanyUrl } from '@/lib/public-seo';
+import { loadCityBusinessLinks } from '@/lib/webshops';
 import { supabase } from '@/lib/supabase';
 import { localizeBusinessDisclosure } from '@/lib/translation-source';
 
@@ -48,7 +54,8 @@ export default function CompanyProfileRoute() {
   const [selected, setSelected] = useState<{ merchantId: string; kind: MerchantReviewKind } | null>(null), [reviewRevision, setReviewRevision] = useState(0);
   const [ratingResult, setRatingResult] = useState<{ key: string; ratings: Record<MerchantReviewKind, Pick<MerchantReviewPage, 'rating_average' | 'review_count'> | null> } | null>(null);
   const [tabResult, setTabResult] = useState<{ merchantId: string; tab: ProfileTab } | null>(null);
-  const tab = tabResult?.merchantId === merchantId ? tabResult.tab : review ? 'reviews' : 'about';
+  // R2-11: a business profile opens on its news; review links still open reviews.
+  const tab = tabResult?.merchantId === merchantId ? tabResult.tab : review ? 'reviews' : 'posts';
   const postKind = tab === 'jobs' ? 'jobs' : 'posts', listKey = `${key}:${postKind}`;
   const [postResult, setPostResult] = useState<{ key: string; page: MerchantProfilePostPage | null; failed: boolean; attempt: number } | null>(null);
   const [countsResult, setCountsResult] = useState<{ key: string; value: Pick<MerchantProfilePostPage, 'post_count' | 'job_count'> | null } | null>(null);
@@ -58,6 +65,9 @@ export default function CompanyProfileRoute() {
   const [actionBusy, setActionBusy] = useState<{ operation: typeof actionRequest.current; kind: 'save' | 'message' | 'notifications' } | null>(null);
   const [actionError, setActionError] = useState<{ key: string; message: string; savedRead?: boolean } | null>(null);
   const [unavailableRecipient, setUnavailableRecipient] = useState<string | null>(null);
+  const [saves, setSaves] = useState<{ key: string; value: MerchantSaves | null } | null>(null);
+  const [mapPlace, setMapPlace] = useState<{ key: string; placeKey: string | null } | null>(null);
+  const [menu, setMenu] = useState<{ key: string; view: 'open' | 'report' } | null>(null), afterMenu = useRef<(() => void) | null>(null);
   const reviewKind = selected?.merchantId === merchantId ? selected.kind : review === 'employment' ? 'employment' : 'usage';
   const current = result?.key === key ? result : null;
   const profile = current?.profile;
@@ -123,6 +133,22 @@ export default function CompanyProfileRoute() {
     }).finally(() => { if (operation.active) setPostBusy(false); });
     return () => { operation.active = false; };
   }, [profile?.id, isAuthLoading, isAuthed, me.id, merchantId, key, listKey, postKind, postRevision, hidden]);
+  // Who saved it and similar places; nothing shows when the server has no real saves.
+  useEffect(() => {
+    if (!profile?.id || isAuthLoading) return;
+    let active = true;
+    void loadMerchantSaves(supabase, merchantId).then(value => { if (active) setSaves({ key, value }); }).catch(() => { if (active) setSaves({ key, value: null }); });
+    return () => { active = false; };
+  }, [profile?.id, isAuthLoading, merchantId, key, revision, hidden]);
+  // R2-14: 위치 보기 opens the business's own pin on the Gling map when it is linked to one.
+  useEffect(() => {
+    if (!profile?.city_id || isAuthLoading) return;
+    let active = true;
+    void loadCityBusinessLinks(supabase, profile.city_id).then(links => {
+      if (active) setMapPlace({ key, placeKey: Object.entries(links).find(([, id]) => id === merchantId)?.[0] ?? null });
+    }).catch(() => { if (active) setMapPlace({ key, placeKey: null }); });
+    return () => { active = false; };
+  }, [profile?.city_id, isAuthLoading, merchantId, key]);
   // Every tab switch fades the shown panel in, including the kept-mounted reviews panel. Opacity only, so it also runs with reduced motion.
   const [panelFade] = useState(() => new Animated.Value(1));
   useLayoutEffect(() => {
@@ -192,6 +218,27 @@ export default function CompanyProfileRoute() {
     try { await Linking.openURL(url); }
     catch { if (operation.active) { setActionError({ key, message: '연결을 열지 못했어요. 이 기기의 전화 앱이나 브라우저를 확인해 주세요.' }); play('warning'); } }
   }
+  const glingPlace = mapPlace?.key === key ? mapPlace.placeKey : null;
+  const shownSaves = saves?.key === key ? saves.value : null;
+  const intro = profile ? ([[tr('분위기'), profile.intro_vibe], [tr('뭘 시킬까'), profile.intro_order], [tr('요령'), profile.intro_tip]] as const).filter(([, value]) => !!value) : [];
+  function openLocation() {
+    if (profile && glingPlace) { play('selection'); router.push(placeMapRoute({ id: glingPlace, cityId: profile.city_id })); }
+    else void openContact(mapsUrl);
+  }
+  const closeMenu = (then?: () => void) => { afterMenu.current = then ?? null; setMenu(null); };
+  async function shareProfile() {
+    const url = publicCompanyUrl(merchantId);
+    try {
+      if (Platform.OS === 'web') {
+        if (navigator.share) await navigator.share({ url });
+        else { await navigator.clipboard.writeText(url); setActionError({ key, message: '프로필 링크를 복사했어요.' }); }
+      } else await Share.share({ message: url });
+      play('success');
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
+      setActionError({ key, message: '공유하지 못했어요. 잠시 후 다시 시도해 주세요.' }); play('warning');
+    }
+  }
   async function morePosts() {
     const operation = postRequest.current;
     if (!postPage?.has_more || postsLoading || operation.reading) return;
@@ -218,12 +265,22 @@ export default function CompanyProfileRoute() {
             style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', selected: profile.saved, pressed, busy }).container]}
             onPress={() => void toggleSaved()}><SymbolView name={{ ios: profile.saved ? 'bookmark.fill' : 'bookmark', android: profile.saved ? 'bookmark' : 'bookmark_border', web: profile.saved ? 'bookmark' : 'bookmark_border' }} size={IconSize.toolbar} tintColor={theme.accent} />
             </Pressable>
+          <Pressable analyticsId="company.more" accessibilityRole="button" accessibilityLabel={tr('더보기')} accessibilityHint={tr('공유, 신고')}
+            style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}
+            onPress={() => { play('selection'); setMenu({ key, view: 'open' }); }}>
+            <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={IconSize.toolbar} tintColor={theme.text} />
+          </Pressable>
       </>}
     </View>
     <ScrollView ref={scroll} analyticsId="company.profile" contentContainerStyle={styles.content}>
       {profile ? <>
         <MerchantProfileHeader profile={{ ...profile, services: '', address: '' }} ratings={profile.review_post_id ? ratings : NO_REVIEWS}
           onReviewPress={openReviews} />
+        {!!counts?.job_count && <Pressable analyticsId="company.hiring" accessibilityRole="button" style={styles.hiring}
+          onPress={() => { selectTab('jobs'); scroll.current?.scrollTo({ y: tabsTop.current, animated: !reducedMotion }); }}>
+          <ThemedText type="small" themeColor="accent">{tr('• 채용 중 · {0}건 ›', counts.job_count.toLocaleString(appLocale))}</ThemedText>
+        </Pressable>}
+        {!!profile.services && <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{profile.services.split(/\r?\n/, 1)[0]}</ThemedText>}
         {webshop.shop && <WebshopBanner shop={webshop.shop} onPress={() => setOrderMerchant(merchantId)} />}
         {webshop.failed && <Pressable analyticsId="webshop.retry" accessibilityRole="button" style={styles.button} onPress={() => { play('selection'); webshop.retry(); }}><ThemedText type="small" themeColor="accent">{tr("웹샵 정보를 다시 확인해주세요")}</ThemedText></Pressable>}
         <View style={styles.actions}>
@@ -247,11 +304,22 @@ export default function CompanyProfileRoute() {
           <Pressable analyticsId="company.photo.retry" accessibilityRole="button" style={styles.button}
             onPress={() => { play('selection'); setRevision((value) => value + 1); }}><ThemedText themeColor="accent">{tr("사진 다시 확인")}</ThemedText></Pressable>
         </View>}
-        {!!profile.services && <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{profile.services.split(/\r?\n/, 1)[0]}</ThemedText>}
-        {!!counts?.job_count && <Pressable analyticsId="company.hiring" accessibilityRole="button" style={styles.hiring}
-          onPress={() => { selectTab('jobs'); scroll.current?.scrollTo({ y: tabsTop.current, animated: !reducedMotion }); }}>
-          <ThemedText type="small" themeColor="accent">{tr('• 채용 중 · {0}건 ›', counts.job_count.toLocaleString(appLocale))}</ThemedText>
-        </Pressable>}
+        {!!shownSaves && (shownSaves.saverCount > 0 || shownSaves.friends.length > 0) && <View style={[styles.box, { backgroundColor: theme.backgroundElement }]}>
+          <ThemedText type="smallBold">{tr('저장한 사람 {0}명', shownSaves.saverCount.toLocaleString(appLocale))}</ThemedText>
+          {shownSaves.friends.length > 0 ? <View style={styles.actions}>
+            {shownSaves.friends.map(friend => <Pressable key={friend.id} analyticsId="company.saves.friend" accessibilityRole="link" accessibilityLabel={tr('{0} 프로필 보기', friend.nickname)}
+              onPress={() => { play('selection'); router.push({ pathname: '/user/[id]', params: { id: friend.id, nickname: friend.nickname } }); }}
+              style={({ pressed }) => [ControlStyles.pill, styles.chip, controlPresentation(theme, { pressed }).container]}>
+              <ThemedText type="small">{tr('{0}님이 저장', friend.nickname)}</ThemedText>
+            </Pressable>)}
+          </View> : <ThemedText type="small" themeColor="textSecondary">{tr('친구가 저장하면 여기에 이름이 보여요. 다른 사람은 숫자로만 보여요.')}</ThemedText>}
+        </View>}
+        {intro.length > 0 && <View style={styles.introBlock}>
+          {intro.map(([label, value]) => <View key={label} style={styles.aboutRow}>
+            <ThemedText type="smallBold" themeColor="textSecondary" style={styles.aboutLabel}>{label}</ThemedText>
+            <ThemedText type="small" style={styles.aboutValue}>{value}</ThemedText>
+          </View>)}
+        </View>}
         <View onLayout={event => { tabsTop.current = event.nativeEvent.layout.y; }} style={[styles.tabs, { borderBottomColor: theme.line }]} accessibilityRole="tablist">
           {tabs.map(item => {
             const count = item.id === 'posts' ? displayCount(counts?.post_count, !!currentPosts?.failed || countsResult?.key === key)
@@ -297,7 +365,7 @@ export default function CompanyProfileRoute() {
             <View key={label} style={styles.aboutRow}><ThemedText type="small" themeColor="textSecondary" style={styles.aboutLabel}>{label}</ThemedText><ThemedText type="small" style={styles.aboutValue}>{value}</ThemedText></View>)}
           <View style={styles.actions}>
             {!!phoneUrl && <Pressable analyticsId="company.about.phone" accessibilityRole="link" accessibilityLabel={tr("공개 전화 {0}", (profile.public_phone))} style={styles.button} onPress={() => void openContact(phoneUrl)}><ThemedText themeColor="accent">{tr("전화하기")}</ThemedText></Pressable>}
-            {!!mapsUrl && <Pressable analyticsId="company.about.maps" accessibilityRole="link" accessibilityLabel={tr("등록된 주소를 Google 지도에서 보기")} style={styles.button} onPress={() => void openContact(mapsUrl)}><ThemedText themeColor="accent">{tr("길찾기")}</ThemedText></Pressable>}
+            {(!!glingPlace || !!mapsUrl) && <Pressable analyticsId="company.about.maps" accessibilityRole="link" accessibilityLabel={glingPlace ? tr("글링 지도에서 위치 보기") : tr("등록된 주소를 Google 지도에서 보기")} style={styles.button} onPress={openLocation}><ThemedText themeColor="accent">{tr("길찾기")}</ThemedText></Pressable>}
             {publicLinks.map((link, index) => <Pressable key={link.url} analyticsId={`company.about.source.${index}`} accessibilityRole="link" accessibilityLabel={tr("{0} 공개 링크 열기", (link.label))} style={styles.button} onPress={() => void openContact(link.url)}><ThemedText themeColor="accent">{link.label} ›</ThemedText></Pressable>)}
           </View>
         </Animated.View>}
@@ -317,6 +385,19 @@ export default function CompanyProfileRoute() {
           </View>
           <MerchantReviews postId={profile.review_post_id} reviewKind={reviewKind} onChanged={() => setReviewRevision(value => value + 1)} />
         </Animated.View>}
+        {!!shownSaves?.similar.length && <View style={styles.panel}>
+          <ThemedText type="subtitle">{tr('같이 저장된 곳')}</ThemedText>
+          {shownSaves.similar.map((place, index) => <Pressable key={place.merchantId} analyticsId="company.similar" accessibilityRole="link" accessibilityLabel={tr('{0} 비즈니스 프로필 보기', place.name)}
+            onPress={() => { play('selection'); router.push({ pathname: '/company/[id]', params: { id: place.merchantId } }); }}
+            style={({ pressed }) => [styles.similar, { borderBottomColor: theme.line, opacity: pressed ? 0.7 : 1 }]}>
+            <ThemedText type="smallBold" themeColor="accent" style={styles.rank}>{index + 1}</ThemedText>
+            <View style={styles.postText}>
+              <ThemedText type="smallBold" numberOfLines={1}>{place.name}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{place.weekCount > 0 ? tr('저장 {0} · 이번 주 +{1}', place.saverCount.toLocaleString(appLocale), place.weekCount.toLocaleString(appLocale)) : tr('저장 {0}', place.saverCount.toLocaleString(appLocale))}</ThemedText>
+            </View>
+            <ThemedText themeColor="textSecondary" accessible={false}>›</ThemedText>
+          </Pressable>)}
+        </View>}
       </> : <View style={styles.state}>
         {isAuthLoading || merchantId && !current ? <GlingLoader color={theme.accent} accessibilityLabel={tr("프로필 불러오는 중")} />
           : <ThemedText type="subtitle">{current?.failed ? tr("프로필을 불러오지 못했어요") : tr("공개된 비즈니스 프로필이 없어요")}</ThemedText>}
@@ -324,16 +405,32 @@ export default function CompanyProfileRoute() {
           onPress={() => { play('selection'); setRevision((value) => value + 1); }}><ThemedText themeColor="accent">{tr("다시 불러오기")}</ThemedText></Pressable>}
       </View>}
     </ScrollView>
-    {profile && (webshop.shop || canMessage && business?.id !== merchantId || mapsUrl) && <SafeAreaView edges={['bottom']} style={[styles.inquiryBar, { borderTopColor: theme.line, backgroundColor: theme.background }]}>
+    {profile && (webshop.shop || canMessage && business?.id !== merchantId || mapsUrl || glingPlace) && <SafeAreaView edges={['bottom']} style={[styles.inquiryBar, { borderTopColor: theme.line, backgroundColor: theme.background }]}>
       {webshop.shop && <WebshopOrderButton onPress={() => setOrderMerchant(merchantId)} />}
       <View style={styles.footerActions}>
         {!!canMessage && business?.id !== merchantId && <Pressable analyticsId="company.inquiry" accessibilityRole="button" accessibilityLabel={tr("비즈니스 담당자에게 문의")}
           accessibilityState={{ disabled: busy, busy: busy && actionBusy?.kind === 'message' }} disabled={busy}
           style={({ pressed }) => [styles.inquiry, { flex: 1, borderColor: theme.line, backgroundColor: webshop.shop ? theme.card : theme.accent, opacity: busy ? 0.45 : pressed ? 0.82 : 1 }]}
           onPress={() => void requestInquiry()}><ThemedText type="smallBold" style={{ color: webshop.shop ? theme.text : theme.accentInk }}>{busy && actionBusy?.kind === 'message' ? tr("연결 중…") : tr("문의하기")}</ThemedText></Pressable>}
-        {!!mapsUrl && <Pressable analyticsId="company.location" accessibilityRole="link" style={({ pressed }) => [styles.inquiry, { flex: 1, backgroundColor: theme.card, borderColor: theme.line, opacity: pressed ? 0.82 : 1 }]} onPress={() => void openContact(mapsUrl)}><ThemedText type="smallBold">{tr("위치 보기")}</ThemedText></Pressable>}
+        {(!!mapsUrl || !!glingPlace) && <Pressable analyticsId="company.location" accessibilityRole="link" accessibilityLabel={glingPlace ? tr("글링 지도에서 위치 보기") : tr("위치 보기")} style={({ pressed }) => [styles.inquiry, { flex: 1, backgroundColor: theme.card, borderColor: theme.line, opacity: pressed ? 0.82 : 1 }]} onPress={openLocation}><ThemedText type="smallBold">{tr("위치 보기")}</ThemedText></Pressable>}
       </View>
     </SafeAreaView>}
+    <DragSheet visible={!!profile && menu?.key === key && menu.view === 'open'} onClose={() => closeMenu()} onDismissed={() => { const then = afterMenu.current; afterMenu.current = null; then?.(); }}>
+      {profile && <View style={styles.menu}>
+        <Pressable analyticsId="company.menu.share" accessibilityRole="button" onPress={() => { play('selection'); closeMenu(() => void shareProfile()); }}
+          style={({ pressed }) => [styles.menuRow, { borderBottomColor: theme.line }, pressed && { backgroundColor: theme.backgroundSelected }]}>
+          <SymbolView name={{ ios: 'square.and.arrow.up', android: 'share', web: 'share' }} size={20} tintColor={theme.text} />
+          <ThemedText type="smallBold">{tr('프로필 공유')}</ThemedText>
+        </Pressable>
+        {isAuthed && !!profile.review_post_id && business?.id !== merchantId && <Pressable analyticsId="company.menu.report" accessibilityRole="button" onPress={() => { play('selection'); closeMenu(() => setMenu({ key, view: 'report' })); }}
+          style={({ pressed }) => [styles.menuRow, { borderBottomColor: theme.line }, pressed && { backgroundColor: theme.backgroundSelected }]}>
+          <SymbolView name={{ ios: 'flag', android: 'flag', web: 'flag' }} size={20} tintColor={theme.danger} />
+          <ThemedText type="smallBold" style={{ color: theme.danger }}>{tr('{0} 신고하기', profile.name)}</ThemedText>
+        </Pressable>}
+      </View>}
+    </DragSheet>
+    {profile?.review_post_id && menu?.key === key && menu.view === 'report' && <ReportSheet visible targetType="post" targetId={profile.review_post_id} reportedBusinessId={merchantId}
+      reportedNickname={profile.name} onClose={() => { setMenu(null); setRevision(value => value + 1); }} />}
     {profile && webshop.shop && <WebshopComparisonSheet key={merchantId} client={supabase} shop={webshop.shop} name={profile.name} visible={orderOpen} onClose={() => setOrderMerchant(null)} />}
   </SafeAreaView></ThemedView>;
 }
@@ -363,5 +460,12 @@ const styles = StyleSheet.create({
   aboutLabel: { width: 60 },
   aboutValue: { flex: 1 },
   reviewTabs: { flexDirection: 'row', gap: 8 },
+  box: { borderRadius: 14, padding: 16, gap: 10 },
+  chip: { borderWidth: 1 },
+  introBlock: { gap: 10 },
+  similar: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingVertical: 12, borderBottomWidth: 1 },
+  rank: { width: 20, textAlign: 'center', fontVariant: ['tabular-nums'] },
+  menu: { paddingBottom: 8 },
+  menuRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 8, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   reviewTab: { minWidth: 72, minHeight: 44, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center' },
 });
