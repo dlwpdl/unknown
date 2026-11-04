@@ -12,6 +12,7 @@ import { AppBadgeSync } from '@/components/app-badge-sync';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { NotificationObserver } from '@/components/notification-observer';
 import { PushInvite } from '@/components/push-invite';
+import { PostUploadCard } from '@/components/post-upload-card';
 import { AuthProvider } from '@/lib/auth';
 import { CommunityCityProvider } from '@/lib/community-city';
 import { installErrorReporting } from '@/lib/error-reporting';
@@ -58,6 +59,8 @@ function AppLayout() {
           </Stack>
           {/* Opens only right after a first comment, post, meetup request or meetup creation. */}
           <PushInvite />
+          {/* 글쓰기 창을 닫은 뒤에도 올리기를 앱 맨 위에서 보여 준다 (owner 2026-11-04 ③). */}
+          <PostUploadCard />
         </MembershipProvider>
         </CommunityCityProvider>
         </ContentTranslationProvider>

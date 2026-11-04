@@ -4167,5 +4167,15 @@ export const uiEnglish: Record<string, string> = {
   "다음 신청": "Next request",
   "다음 신청 보기": "View next request",
   "다음 신청을 찾는 중…": "Looking for the next request…",
-  "참여 신청 목록으로": "Back to join requests"
+  "참여 신청 목록으로": "Back to join requests",
+  "사진 {0}장 올리는 중": "Uploading photos ({0})",
+  "글 올리는 중": "Posting",
+  "사진을 올렸어요": "Your photos are up",
+  "사진을 올리지 못했어요": "Couldn’t post your photos",
+  "쓴 글과 사진은 그대로 있어요": "Your post and photos are still here",
+  "쓴 글은 그대로 있어요": "Your post is still here",
+  "다시 올리기": "Try again",
+  "수정하기": "Edit",
+  "아직 올리는 중이에요": "Still posting",
+  "위에 뜬 글이 다 올라가면 바로 쓸 수 있어요.": "You can write again once the post at the top is up."
 };
