@@ -8,6 +8,7 @@ import { WebshopComparisonSheet } from '@/components/business-webshop';
 import { GlingLoader } from '@/components/gling-loader';
 import { LoginPanel } from '@/components/login-panel';
 import { SavedFolderSheet, SavedItemCard, SavedLibraryButton, type SavedFolderEditor } from '@/components/saved-library';
+import { ShareCardSheet } from '@/components/share-card';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -17,11 +18,13 @@ import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
+import { getCityPlaces } from '@/lib/city-places';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import {
   createSavedFolder, deleteSavedFolder, loadSavedFolders, loadSavedItems, renameSavedFolder,
   setSavedItem, setSavedItemFolders, type SavedFilter, type SavedFolder, type SavedItem, type SavedPage,
 } from '@/lib/saved-items';
+import { savedListPlaces } from '@/lib/share-card';
 import { supabase } from '@/lib/supabase';
 import { loadPublicWebshop } from '@/lib/webshops';
 
@@ -34,6 +37,7 @@ export default function SavedScreen() {
   const { filter: initialFilter } = useLocalSearchParams<{ filter?: string }>();
   const [filter, setFilter] = useState<SavedFilter>(initialFilter === 'places' ? 'places' : 'all'), [folderId, setFolderId] = useState<string | null>(null);
   const [search, setSearch] = useState(''), [query, setQuery] = useState(''), [revision, setRevision] = useState(0);
+  const [sharingList, setSharingList] = useState(false);
   const pendingSearch = search.trim() !== query;
   const key = JSON.stringify([auth.isAuthLoading ? 'loading' : auth.isAuthed ? auth.me.id : 'guest', filter, folderId, query]);
   const [result, setResult] = useState<{ key: string; visibility: typeof hidden; operation: SavedReadOperation; page: SavedPage | null; folders: SavedFolder[]; failed: boolean; appendFailed: boolean } | null>(null);
@@ -199,7 +203,9 @@ export default function SavedScreen() {
           <View style={styles.wrap}><SavedLibraryButton analyticsId="saved.folder.all" label={ko ? '전체 저장' : 'All saved'} selected={!folderId} disabled={busy} onPress={() => { closeTransient(); setFolderId(null); }} />
             {folders.map(folder => <SavedLibraryButton key={folder.id} analyticsId="saved.folder.select" testID={`saved.folder.${folder.id}`} label={folder.name} selected={folderId === folder.id} disabled={busy} onPress={() => { closeTransient(); setFolderId(folder.id); }} />)}
             <SavedLibraryButton analyticsId="saved.folder.new" label={ko ? '+ 새 폴더' : '+ New folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'create' } }); }} />
-            {!!selectedFolder && <SavedLibraryButton analyticsId="saved.folder.manage" label={ko ? '폴더 관리' : 'Manage folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'rename', folder: selectedFolder } }); }} />}</View>
+            {!!selectedFolder && <SavedLibraryButton analyticsId="saved.folder.manage" label={ko ? '폴더 관리' : 'Manage folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'rename', folder: selectedFolder } }); }} />}
+            {/* Filters and search drop places from the list, so sharing waits until the whole folder shows. */}
+            {!!selectedFolder && !query && (filter === 'all' || filter === 'places') && <SavedLibraryButton analyticsId="saved.folder.share" label={ko ? '목록 공유' : 'Share list'} disabled={busy || loading} onPress={() => { closeTransient(); setSharingList(true); }} />}</View>
         </View>
         <View style={styles.summary}><ThemedText type="supporting" themeColor="textSecondary">{selectedFolder?.name ?? (ko ? '전체 저장' : 'All saved')}{current && !current.failed ? ko ? ` · ${rows.length}개 표시 중` : ` · ${rows.length} shown` : ''}</ThemedText>
           <ThemedText type="supporting" themeColor="textSecondary">{ko ? '최근 저장순' : 'Recently saved'}</ThemedText></View>
@@ -222,6 +228,7 @@ export default function SavedScreen() {
       editor={activeEditor} folders={folders} busy={busy} error={error} onClose={() => { if (!busy) { setEditor(null); setMessage(null); } }} onCreate={saveFolder} onRename={saveFolder} onDelete={() => void deleteFolder()} onAssign={assign}
       onCreateForItem={ids => { if (activeEditor.kind === 'item') { setMessage(null); setEditor({ key, visibility: hidden, value: { kind: 'create', returnItem: { ...activeEditor.item, folderIds: ids } } }); } }}
       onRequestDelete={() => { if (activeEditor.kind === 'rename') { setMessage(null); setEditor({ key, visibility: hidden, value: { kind: 'delete', folder: activeEditor.folder } }); } }} />}
+    {selectedFolder && sharingList && (() => { const places = savedListPlaces(rows, getCityPlaces); return <ShareCardSheet visible onClose={() => setSharingList(false)} target={{ kind: 'list', name: selectedFolder.name, places, count: page?.hasMore ? null : places.length }} />; })()}
     {!pendingSearch && offer?.key === key && offer.visibility === hidden && <WebshopComparisonSheet client={supabase} shop={offer.shop} name={offer.name} visible onClose={() => setOffer(null)} />}
   </SafeAreaView></ThemedView>;
 }

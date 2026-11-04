@@ -35,6 +35,8 @@ function screen(overrides = {}) {
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/login-panel': { LoginPanel: 'Login' }, '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/state-card': { StateCard: 'StateCard' }, '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },
     '@/components/saved-library': { SavedItemCard: 'SavedItemCard', SavedFolderSheet: 'SavedFolderSheet', SavedLibraryButton: 'SavedLibraryButton' },
     '@/components/business-webshop': { WebshopComparisonSheet: 'WebshopComparisonSheet' },
+    '@/components/share-card': { ShareCardSheet: 'ShareCardSheet' }, '@/lib/city-places': { getCityPlaces: () => [] },
+    '@/lib/share-card': { savedListPlaces: rows => rows.filter(row => row.target.kind === 'place') },
     '@/constants/theme': { Depth: {}, Spacing: { one: 4, two: 8, three: 16, four: 24, five: 32 }, MaxContentWidth: 800 }, '@/constants/design-system': { ControlStyles: { icon: {}, pill: {}, field: {} }, controlPresentation: () => ({ container: {}, text: {} }) },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', locale: 'ko-KR', tr: x => x, t: { profile: { savedLoading: '불러오는 중' } } }) }, '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
     '@/lib/auth': { useAuth: () => ({ isAuthed: !!account, isAuthLoading: false, me: { id: account ?? 'guest' } }) }, '@/lib/saved-items': api,
@@ -61,6 +63,19 @@ test('filter, folder, account and lost-focus boundaries reject stale saved respo
   pending[1].resolve(page([post]));await settle();assert.equal(list(view.render()).props.data[0].key,post.key);
   view.account('other');view.render();assert.equal(list(view.render()).props.data.length,0);pending[2].resolve(page([]));await settle();view.render();
   control(view.render(),`saved.folder.${folder.id}`).props.onPress();view.render();view.focus(false);view.render();pending[3].resolve(page([item]));await settle();assert.equal(list(view.render()).props.data.length,0);view.unmount();
+});
+
+test('a chosen folder offers a list share card only while the whole folder shows', async () => {
+  const view=screen();view.render();await settle();
+  assert.equal(control(view.render(),'saved.folder.share'),undefined,'no list to share without a folder');
+  control(view.render(),`saved.folder.${folder.id}`).props.onPress();view.render();await settle();
+  control(view.render(),'saved.folder.share').props.onPress();
+  const sheet=nodes(view.render()).find(node=>node.type==='ShareCardSheet');
+  assert.deepEqual({kind:sheet.props.target.kind,name:sheet.props.target.name,count:sheet.props.target.count},{kind:'list',name:folder.name,count:0});
+  sheet.props.onClose();assert.equal(nodes(view.render()).some(node=>node.type==='ShareCardSheet'),false);
+  control(view.render(),'saved.filter.jobs').props.onPress();view.render();await settle();
+  assert.equal(control(view.render(),'saved.folder.share'),undefined,'a filter that drops places hides it');
+  view.unmount();
 });
 
 test('query submit uses the current search and late old-query data remains hidden', async () => {

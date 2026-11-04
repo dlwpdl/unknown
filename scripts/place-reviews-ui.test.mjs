@@ -271,6 +271,8 @@ function detailViewport(mode = 'auto') {
     '@/lib/merchant-source': { safeMerchantSourceUrl: () => null, merchantMapsUrl: () => null },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16 }, MaxContentWidth: 920 },
+    '@/constants/design-system': { ControlStyles: { icon: {} }, IconSize: { toolbar: 21 } },
+    '@/components/share-card': { ShareCardSheet: 'ShareCardSheet' },
   };
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/app/places/[id].tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText,
     { exports, require: name => imports[name] ?? {} });
@@ -316,4 +318,15 @@ test('F1: a tall review is eligible at half of the smaller row/viewport height',
   ui.viewport({ y: 700, height: 600 }); assert.equal(translates(ui.render(), 'tall'), true);
   ui.viewport({ y: 2500, height: 600 }); assert.equal(translates(ui.render(), 'tall'), true);
   ui.viewport({ y: 2501, height: 600 }); assert.equal(translates(ui.render(), 'tall'), false);
+});
+
+test('place detail header shares the place as a card next to save', () => {
+  const detail = detailViewport();
+  const share = nodes(detail.render()).find(n => n.props?.analyticsId === 'places.detail.share');
+  assert.equal(share.props.accessibilityRole, 'button');
+  assert.equal(nodes(detail.render()).find(n => n.type === 'ShareCardSheet').props.visible, false);
+  share.props.onPress();
+  const sheet = nodes(detail.render()).find(n => n.type === 'ShareCardSheet');
+  assert.equal(sheet.props.visible, true); assert.equal(sheet.props.target.kind, 'place'); assert.equal(sheet.props.target.place.id, 'osm:node:1');
+  sheet.props.onClose(); assert.equal(nodes(detail.render()).find(n => n.type === 'ShareCardSheet').props.visible, false);
 });

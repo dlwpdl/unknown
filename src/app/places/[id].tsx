@@ -17,6 +17,8 @@ import { PostPhotoCredits } from '@/components/post-photo-credits';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { SavedEntryButton, useSavedEntry } from '@/components/saved-entry';
+import { ShareCardSheet } from '@/components/share-card';
+import { ControlStyles, IconSize } from '@/constants/design-system';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
@@ -38,6 +40,7 @@ export default function PlaceDetailScreen() {
   useCityPlacesRevision();
   const { tr, language, locale: appLocale } = useLanguage();
   const [viewport, setViewport] = useState({ y: 0, height: 0 });
+  const [sharing, setSharing] = useState(false);
   // The scroll position only decides which reviews auto-translate; other modes skip a re-render per scroll event.
   const trackViewport = useTranslationPreference().mode === 'auto';
   const { cityId, id } = useLocalSearchParams<{ cityId?: string; id?: string }>();
@@ -86,7 +89,12 @@ export default function PlaceDetailScreen() {
         <SymbolView name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }} size={19} tintColor={theme.text} />
         <ThemedText type="smallBold">{tr("돌아가기")}</ThemedText>
       </Pressable>
-      {place && <SavedEntryButton entry={saved} kind="place" analyticsId="save.place" />}
+      {place && <View style={styles.headerActions}>
+        {city && <Pressable analyticsId="places.detail.share" accessibilityRole="button" accessibilityLabel={tr('장소 공유')} onPress={() => { play('selection'); setSharing(true); }} style={ControlStyles.icon}>
+          <SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={IconSize.toolbar} tintColor={theme.text} accessible={false} />
+        </Pressable>}
+        <SavedEntryButton entry={saved} kind="place" analyticsId="save.place" />
+      </View>}
     </View>
     {!!saved.error && <ThemedText type="small" accessibilityRole="alert" style={styles.saveError}>{saved.error}</ThemedText>}
     <ScrollView analyticsId="places.detail.scroll" contentContainerStyle={styles.content} scrollEventThrottle={100}
@@ -140,6 +148,7 @@ export default function PlaceDetailScreen() {
         </Pressable>
       </>}
     </ScrollView>
+    {place && city && <ShareCardSheet target={{ kind: 'place', place, city }} visible={sharing} onClose={() => setSharing(false)} />}
   </SafeAreaView>;
 }
 
@@ -148,6 +157,7 @@ const styles = StyleSheet.create({
   header: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.one, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   saveError: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', paddingHorizontal: Spacing.three },
   content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', padding: Spacing.three, gap: Spacing.three },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   back: { minHeight: 44, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   photo: { width: '100%', aspectRatio: 4 / 3, borderRadius: 16 },
   title: { fontSize: 26, lineHeight: 36, fontWeight: '700' },
