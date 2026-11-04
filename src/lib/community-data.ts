@@ -2,7 +2,7 @@ import { behavior } from './behavior-analytics.ts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { chillingAvailability } from './chilling.ts';
-import { hideContent } from './content-visibility.ts';
+import { hideContent, showContent } from './content-visibility.ts';
 import { isThumbPath, MAX_IMAGE_BYTES, MAX_POST_IMAGES, thumbPathFor } from './image-upload.ts';
 import { normalizePoll, type PollDraft } from './post-polls.ts';
 import { chatImagePaths } from './chat-details.ts';
@@ -362,6 +362,17 @@ export async function reportContent(
   if (result.error) throw result.error;
   if (targetType !== 'user') hideContent(viewerId, targetType, targetId);
   return result.data as string;
+}
+
+// 이 글 숨기기 (owner 2026-11-04): the post leaves my lists at once, the server remembers it, and a failed save puts it back.
+// No report is filed. Undo is the same call with hidden=false.
+export async function setPostHidden(client: SupabaseClient, viewerId: string, postId: string, hidden: boolean) {
+  (hidden ? hideContent : showContent)(viewerId, 'listed_post', postId);
+  const result = await client.rpc('set_post_hidden', { p_post_id: postId, p_hidden: hidden });
+  if (result.error) {
+    (hidden ? showContent : hideContent)(viewerId, 'listed_post', postId);
+    throw result.error;
+  }
 }
 
 export async function blockUser(client: SupabaseClient, userId: string, blockedUserId: string) {

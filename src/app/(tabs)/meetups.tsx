@@ -186,7 +186,7 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
   }, [isAuthed, me.id]));
   const open = useCallback(async (id: string) => { router.push({ pathname: '/post/[id]', params: { id } }); }, [router]);
   const filtered = posts.filter(p => p.cityId === city.id && matchesChilling(p, kind, category) && matchesChillingWindow(p, dateWindow)
-    && (!seatsOnly || hasOpenSeat(p.room)) && !hidden('post', p.id, p.author.id)
+    && (!seatsOnly || hasOpenSeat(p.room)) && !hidden('listed_post', p.id, p.author.id)
     && (!destination || matchesMeetupDestination(p, destination))
     && (!destination || !query || `${p.title}\n${p.body}`.toLocaleLowerCase().includes(query.toLocaleLowerCase())));
   const visible = sortChillings(filtered, kind);

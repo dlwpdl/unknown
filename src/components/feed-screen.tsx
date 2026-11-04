@@ -287,7 +287,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   }, [cancelFeedRequests, feedReady, refreshFeed]);
 
   const cityOpen = city.state === 'open';
-  const cityPosts = (meetupsOnly ? posts : pinJustPosted(posts, justPosted, viewerScope)).filter((p) => p.cityId === city.id && !hidden('post', p.id, p.author.id));
+  const cityPosts = (meetupsOnly ? posts : pinJustPosted(posts, justPosted, viewerScope)).filter((p) => p.cityId === city.id && !hidden('listed_post', p.id, p.author.id));
   const feedData = useMemo(
     () =>
       cityOpen
@@ -1091,7 +1091,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               <FlatList analyticsId="components_feed-screen.flatlist.2"
                 onViewableItemsChanged={trackTranslationSearch}
                 viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY}
-                data={searchResults.filter((post) => !hidden('post', post.id, post.author.id) && (!meetupsOnly || !post.room?.closed))}
+                data={searchResults.filter((post) => !hidden('listed_post', post.id, post.author.id) && (!meetupsOnly || !post.room?.closed))}
                 keyExtractor={(p) => p.id}
                 contentContainerStyle={styles.listContent}
                 ItemSeparatorComponent={() => <View style={{ height: Spacing.two + 2 }} />}
