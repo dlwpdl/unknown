@@ -14,7 +14,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadMyMerchantProfile, saveMyMerchantProfile, saveMyMerchantProfilePhotos, uploadMerchantProfileImage, type MyMerchantProfile } from '@/lib/merchant-profile-editor';
-import { saveMerchantContact } from '@/lib/merchant-conveniences';
+import { MERCHANT_INTRO_MAX, saveMerchantContact, saveMerchantIntro } from '@/lib/merchant-conveniences';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { supabase } from '@/lib/supabase';
 import { publicCompanyUrl } from '@/lib/public-seo';
@@ -22,6 +22,8 @@ import { CONTACT_EMAIL } from '@/lib/legal-documents';
 
 type Photo = { path: string | null; uri: string | null; image?: PreparedImage };
 type Photos = { avatar: Photo; banner: Photo; map: Photo };
+type Intro = { vibe: string; order: string; tip: string };
+const savedIntro = (profile: MyMerchantProfile): Intro => ({ vibe: profile.intro_vibe ?? '', order: profile.intro_order ?? '', tip: profile.intro_tip ?? '' });
 const savedPhotos = (profile: MyMerchantProfile): Photos => ({ avatar: { path: profile.avatar_path, uri: profile.avatarUri }, banner: { path: profile.banner_path, uri: profile.bannerUri }, map: { path: profile.map_photo_path ?? null, uri: profile.mapPhotoUri ?? null } });
 
 function ProfileAction({ label, onPress, disabled = false, primary = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
@@ -47,14 +49,17 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
   const [profile, setProfile] = useState<MyMerchantProfile | null>(null), [photos, setPhotos] = useState<Photos | null>(null);
   const [contact, setContact] = useState<{ phone: string; hours: string } | null>(null);
   const contactDraft = useRef<{ phone: string; hours: string } | null>(null);
+  const [intro, setIntro] = useState<Intro | null>(null), introDraft = useRef<Intro | null>(null);
   const [loading, setLoading] = useState(true), [revision, setRevision] = useState(0);
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState('');
   const mounted = useRef(true), working = useRef(false), draft = useRef<Photos | null>(null), uploads = useRef(new Set<string>());
   const change = (next: Photos | null) => { draft.current = next; setPhotos(next); setNotice(''); };
   const photoDirty = !!profile && !!photos && (!!photos.avatar.image || !!photos.banner.image || !!photos.map.image || photos.avatar.path !== profile.avatar_path || photos.banner.path !== profile.banner_path || photos.map.path !== (profile.map_photo_path ?? null));
   const contactDirty = !!profile && !!contact && (contact.phone !== (profile.public_phone ?? '') || contact.hours !== (profile.business_hours ?? ''));
-  const dirty = photoDirty || contactDirty;
+  const introDirty = !!profile && !!intro && (['vibe', 'order', 'tip'] as const).some(key => intro[key].trim() !== savedIntro(profile)[key]);
+  const dirty = photoDirty || contactDirty || introDirty;
   const changeContact = (next: { phone: string; hours: string }) => { contactDraft.current = next; setContact(next); setNotice(''); };
+  const changeIntro = (next: Intro) => { introDraft.current = next; setIntro(next); setNotice(''); };
 
   useEffect(() => {
     mounted.current = true;
@@ -73,6 +78,7 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
       setProfile(next);
       if (!draft.current) { draft.current = savedPhotos(next); setPhotos(draft.current); }
       if (!contactDraft.current) { contactDraft.current = { phone: next.public_phone ?? '', hours: next.business_hours ?? '' }; setContact(contactDraft.current); }
+      if (!introDraft.current) { introDraft.current = savedIntro(next); setIntro(introDraft.current); }
       setError('');
     }).catch(() => { if (active) setError("프로필을 불러오지 못했어요. 비즈니스 권한과 연결 상태를 확인해 주세요."); })
       .finally(() => { if (active) setLoading(false); });
@@ -146,10 +152,31 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
       }
     } finally { working.current = false; if (mounted.current) setBusy(false); }
   };
+  const saveIntro = async () => {
+    if (working.current || !profile?.can_edit || !introDraft.current || !introDirty) return;
+    working.current = true; setBusy(true); setError(''); setNotice('');
+    try {
+      const session = await supabase.auth.getSession();
+      if (!mounted.current || session.data.session?.user.id !== me.id) throw new Error('ACCOUNT_CHANGED');
+      const saved = await saveMerchantIntro(supabase, merchantId, introDraft.current, profile.updated_at);
+      if (!mounted.current) return;
+      setProfile(saved); changeIntro(savedIntro(saved));
+      setNotice("가게 소개를 저장했어요. 비워 둔 칸은 프로필에 안 보여요."); play('success');
+    } catch (failure) {
+      if (mounted.current) {
+        const message = failure instanceof Error ? failure.message : '';
+        setError(message.includes('MERCHANT_PROFILE_CHANGED') ? "다른 곳에서 프로필이 바뀌었어요. 입력한 소개는 남아 있어요. 수정 취소 후 최근 저장본을 다시 확인해 주세요."
+          : message.includes('ACCOUNT_CHANGED') ? "계정이 바뀌었어요. 현재 계정으로 다시 열어주세요."
+          : message.includes('INVALID') ? "한 칸에 160자까지 쓸 수 있어요. 줄바꿈과 링크는 빼고 적어 주세요."
+          : "소개 저장을 확인하지 못했어요. 입력한 내용은 남아 있으니 다시 시도해 주세요.");
+        play('warning');
+      }
+    } finally { working.current = false; if (mounted.current) setBusy(false); }
+  };
   const reload = () => { setLoading(true); setError(''); setRevision((value) => value + 1); };
   const cancel = () => {
     if (uploads.current.size) void supabase.storage.from('merchant-profile-images').remove([...uploads.current]).catch(() => {});
-    contactDraft.current = null; setContact(null); change(null); reload();
+    contactDraft.current = null; setContact(null); introDraft.current = null; setIntro(null); change(null); reload();
   };
   const name = (kind: keyof Photos) => kind === 'banner' ? tr("채널 배너") : kind === 'avatar' ? tr("가게 로고") : tr("지도 대표 사진");
   const short = (kind: keyof Photos) => kind === 'banner' ? tr('배너') : kind === 'avatar' ? tr('로고') : tr('지도 사진');
@@ -227,6 +254,26 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
           <ThemedText type="small" themeColor="textSecondary">{tr("손님에게 공개돼요. 내부 담당자 연락처와는 따로예요.")}</ThemedText>
           <View style={[styles.actions, styles.end]}>
             <ProfileAction label={busy ? tr("연락 정보 처리 중…") : tr("연락 정보 저장")} onPress={() => { void saveContact(); }} disabled={busy || !contactDirty} primary={!photoDirty && contactDirty} />
+          </View>
+        </View>}
+        {profile.can_edit && intro && <View style={card}>
+          <View style={styles.title}>
+            <ThemedText type="smallBold">{tr("가게 소개 세 줄")}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{tr("직접 쓴 그대로 프로필에 나와요. 비워 둔 칸은 안 보여요.")}</ThemedText>
+          </View>
+          {([['vibe', tr("분위기"), tr("어떤 곳인지 한 줄로")], ['order', tr("뭘 시킬까"), tr("처음 온 손님에게 권하는 메뉴")],
+            ['tip', tr("요령"), tr("알아 두면 좋은 것 (주차, 붐비는 시간 등)")]] as const).map(([key, label, hint]) => <View key={key} style={styles.field}>
+            <View style={styles.title}>
+              <ThemedText type="smallBold">{label}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{tr("{0}/{1}자", [...intro[key]].length, MERCHANT_INTRO_MAX)}</ThemedText>
+            </View>
+            <TextInput accessibilityLabel={tr("가게 소개: {0}", label)} value={intro[key]} editable={!busy} maxLength={MERCHANT_INTRO_MAX}
+              placeholder={hint} placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')}
+              onChangeText={value => changeIntro({ ...intro, [key]: value.replace(/[\r\n]+/g, ' ') })}
+              style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
+          </View>)}
+          <View style={[styles.actions, styles.end]}>
+            <ProfileAction label={busy ? tr("소개 처리 중…") : tr("소개 저장")} onPress={() => { void saveIntro(); }} disabled={busy || !introDirty} primary={!photoDirty && !contactDirty && introDirty} />
           </View>
         </View>}
       </>}
