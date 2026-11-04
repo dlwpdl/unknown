@@ -18,12 +18,12 @@ export const Colors = {
     accentInk: '#FFFFFF',
     navy: '#34506B',
     danger: '#B33246',
-    // 오늘 탭 배경 빛(components/screen-glow): 위쪽 빛은 시안 corner-style-today-feed의 --glow-a·--glow-b.
-    // 본문 빛(body*)은 바탕과 밝기가 같은 보라·푸른 회색이라 색만 살짝 돌고 글자·카드 대비는 그대로다(사장님 2026-11-03 "전체 본문에도 살짝").
+    // 배경 빛(components/screen-glow, 오늘·모임·채팅·알림): 위쪽 빛은 시안 corner-style-today-feed의 --glow-a·--glow-b.
+    // 본문 빛(body*)은 눈에 보이는 보라·푸른 회색이다(사장님 2026-11-04 "조금 더 진하게"). 글자 대비는 가장 진한 곳에서 4% 안으로만 내려간다.
     glowA: 'rgba(110,74,162,0.17)',
     glowB: 'rgba(52,80,107,0.12)',
-    bodyGlowA: '#F9F6FF',
-    bodyGlowB: '#F4F7FF',
+    bodyGlowA: '#F8F0FF',
+    bodyGlowB: '#EDF3FF',
   },
   dark: {
     text: '#F6F3F0',

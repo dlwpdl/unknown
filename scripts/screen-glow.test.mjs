@@ -32,7 +32,7 @@ test('the top light keeps the mockup geometry and a view offset by (x, y) gets t
   const { screenGlowImage } = load(Colors.light);
   const image = screenGlowImage(Colors.light, 400, 800);
   assert.match(image, /^radial-gradient\(520px 440px at 0px 0px, rgba\(110,74,162,0\.17\), transparent 62%\), radial-gradient\(400px 336px at 400px 40px, rgba\(52,80,107,0\.12\), transparent 60%\), /);
-  assert.match(image, /radial-gradient\(480px 880px at 200px 0px, #F9F6FF, transparent\), radial-gradient\(480px 880px at 200px 800px, #F4F7FF, transparent\)$/);
+  assert.match(image, /radial-gradient\(480px 880px at 200px 0px, #F8F0FF, transparent\), radial-gradient\(480px 880px at 200px 800px, #EDF3FF, transparent\)$/);
   const shifted = screenGlowImage(Colors.light, 400, 800, 16, 177.24);
   assert.match(shifted, /at -16px -177\.2px,.* at 384px -137\.2px,.* at 184px -177\.2px,.* at 184px 622\.8px,/, 'same sizes, centres moved by the offset');
   const sizes = value => value.match(/radial-gradient\([\d.]+px [\d.]+px/g);
@@ -45,8 +45,9 @@ test('both themes carry the light as tokens, and the body tint is a faint purple
     for (const key of ['glowA', 'glowB']) assert.match(palette[key], /^rgba\(\d+,\d+,\d+,0?\.\d+\)$/, `${scheme}.${key}`);
     for (const key of ['bodyGlowA', 'bodyGlowB']) {
       assert.match(palette[key], /^#[0-9A-F]{6}$/, `${scheme}.${key}`);
-      const moved = farthest(rgb(palette[key]), base);
-      assert.ok(moved > 0 && moved <= 5, `${scheme}.${key} moves the background by a few steps (${moved})`);
+      // Light was raised so the tint shows (owner 2026-11-04 "조금 더 진하게"); dark and admin keep the faint shift.
+      const moved = farthest(rgb(palette[key]), base), [low, high] = scheme === 'light' ? [6, 12] : [1, 5];
+      assert.ok(moved >= low && moved <= high, `${scheme}.${key} moves the background by ${low}-${high} steps (${moved})`);
       assert.ok(rgb(palette[key])[2] > base[2], `${scheme}.${key} leans blue`);
     }
     assert.ok(rgb(palette.bodyGlowA)[0] > rgb(palette.bodyGlowB)[0], `${scheme} body tint runs purple (top) to blue-grey (bottom)`);
@@ -62,15 +63,22 @@ test('nothing is drawn before the screen is measured or on screens that keep it 
   assert.equal(glow.render(false).image(), undefined);
 });
 
-test('the body tint keeps the background brightness, so text, card and line contrast stay as they were', () => {
+test('the body tint keeps dark contrast as it was and lowers light contrast by under 5%, text staying above 7:1', () => {
   for (const scheme of ['light', 'dark']) {
     const palette = Colors[scheme], base = rgb(palette.background);
     const [a, b] = [rgb(palette.bodyGlowA), rgb(palette.bodyGlowB)];
     // Every spot of the body is a blend of the background and the two tints; their ends and midpoints are the extremes.
     for (const spot of [a, b, mix(a, b, 0.5), mix(base, a, 0.5), mix(base, b, 0.5)]) {
       for (const role of ['text', 'textSecondary', 'accent', 'card', 'backgroundElement', 'line']) {
-        const before = contrast(rgb(palette[role]), base), after = contrast(rgb(palette[role]), spot);
-        assert.ok(Math.abs(after / before - 1) < 0.005, `${scheme} ${role}: ${before.toFixed(2)} -> ${after.toFixed(2)} at ${spot.map(Math.round)}`);
+        const before = contrast(rgb(palette[role]), base), after = contrast(rgb(palette[role]), spot), change = after / before - 1;
+        const label = `${scheme} ${role}: ${before.toFixed(2)} -> ${after.toFixed(2)} at ${spot.map(Math.round)}`;
+        if (scheme === 'dark') assert.ok(Math.abs(change) < 0.005, label);
+        // A card is lighter than the tint, so its edge gets clearer; everything darker loses at most 5%.
+        else assert.ok(role === 'card' ? change >= 0 : change <= 0 && change > -0.05, label);
+      }
+      if (scheme === 'light') {
+        assert.ok(contrast(rgb(palette.text), spot) > 7, `light text stays above 7:1 at ${spot.map(Math.round)}`);
+        assert.ok(contrast(rgb(palette.textSecondary), spot) > 4.5, `light secondary text stays above 4.5:1 at ${spot.map(Math.round)}`);
       }
     }
   }
