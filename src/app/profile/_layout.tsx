@@ -44,6 +44,8 @@ export default function ProfileLayout() {
       <Stack.Screen name="saved" options={{ title: t.profile.saved }} />
       <Stack.Screen name="promotions" options={{ title: tr(PROMOTIONS_PREVIEW_ENABLED ? '홍보 크레딧' : ''), headerShown: PROMOTIONS_PREVIEW_ENABLED }} />
       <Stack.Screen name="settings" options={{ title: t.profile.settings }} />
+      <Stack.Screen name="menu" options={{ title: tr('더보기') }} />
+      <Stack.Screen name="friends" options={{ title: tr('친구') }} />
       <Stack.Screen name="notifications" options={{ title: tr('알림 설정') }} />
       <Stack.Screen name="inbox" options={{ title: t.notifications.title }} />
     </Stack>

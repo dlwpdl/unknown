@@ -1,4 +1,4 @@
-import { useFocusEffect, useIsFocused, useRouter } from 'expo-router';
+import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FlatList, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -30,7 +30,9 @@ type SavedReadOperation = { active: boolean; reading: boolean; accountId: string
 export default function SavedScreen() {
   const auth = useAuth(), theme = useTheme(), router = useRouter(), hidden = useContentVisibility(), focused = useIsFocused();
   const { language } = useLanguage(), { play } = useInteractionFeedback(), ko = language === 'ko';
-  const [filter, setFilter] = useState<SavedFilter>('all'), [folderId, setFolderId] = useState<string | null>(null);
+  // The profile's '저장한 곳' count and tile open this list already narrowed to places.
+  const { filter: initialFilter } = useLocalSearchParams<{ filter?: string }>();
+  const [filter, setFilter] = useState<SavedFilter>(initialFilter === 'places' ? 'places' : 'all'), [folderId, setFolderId] = useState<string | null>(null);
   const [search, setSearch] = useState(''), [query, setQuery] = useState(''), [revision, setRevision] = useState(0);
   const pendingSearch = search.trim() !== query;
   const key = JSON.stringify([auth.isAuthLoading ? 'loading' : auth.isAuthed ? auth.me.id : 'guest', filter, folderId, query]);

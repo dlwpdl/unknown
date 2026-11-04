@@ -42,6 +42,9 @@ function mount(file, name, data, props = {}, params = {}) {
     '@/components/manner-summary': { MannerSummary: 'MannerSummary' }, '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/drag-sheet': { DragSheet: 'DragSheet' },
     '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/constants/theme': { Spacing: {}, Depth: { control: {} } }, '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/constants/design-system': { ControlStyles: {}, IconSize: {}, controlPresentation: () => ({ container: {} }) },
+    '@/components/profile-overview': { FriendButton: 'FriendButton', ProfileRecordTiles: 'ProfileRecordTiles', ProfileSavedMap: 'ProfileSavedMap' },
+    '@/lib/profile-friends': { loadProfileOverview: data.loadProfileOverview ?? (async () => null) },
     '@/hooks/use-chat-identity': { useChatIdentity: () => data.businessIdentity ?? null },
     '@/lib/business-chat': { startBusinessConversation: data.startBusinessConversation },
     '@/lib/chat-identity': { chatBusinessIdentity: () => data.businessIdentity ?? null },
@@ -262,4 +265,26 @@ test('iOS mini profiles preserve both existing full-profile destinations', async
     const destination = harness.calls.find(call => call[0] === 'navigate')?.[1];
     if (own) assert.equal(destination, '/profile'); else { assert.equal(destination?.pathname, '/user/[id]'); assert.equal(destination?.params?.id, 'neighbor'); }
   }
+});
+
+test('someone else\'s profile shows the friend button and keeps save, report and block behind ···', async context => {
+  const overview = { userId: 'author', own: false, savedCount: 4, savedWeekStreak: 1, meetupCount: 0, friendCount: 2, friendship: 'none', canRequestFriend: true,
+    savedPlaces: null, mapHiddenReason: 'not_friends', sharesSavedPlaces: null, friendRequestCount: null };
+  const harness = mount('../src/app/user/[id].tsx', 'default', {
+    loadPublicUserActivity: async () => [], loadPublicUserProfile: async () => profile('author'), loadProfileOverview: async () => overview,
+  }, {}, { id: 'author' });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const header = nodes(list(harness).props.ListHeaderComponent);
+  assert.equal(header.find(node => node.type === 'FriendButton')?.props.overview, overview);
+  assert.equal(header.find(node => node.type === 'ProfileSavedMap')?.props.overview, overview, 'the locked map explains friends see saved places');
+  const sheet = () => harness.nodes().find(node => node.type === 'DragSheet');
+  assert.equal(sheet().props.visible, false);
+  control(harness, 'user.more').props.onPress(); harness.render();
+  assert.equal(sheet().props.visible, true);
+  assert.ok(nodes(sheet()).some(node => node.type === 'SavedEntryButton'), 'the private person save lives in the ··· sheet');
+  control(harness, 'user.menu.report').props.onPress(); harness.render();
+  assert.ok(!harness.nodes().some(node => node.type === 'ReportSheet'), 'the report waits for the menu to close');
+  sheet().props.onDismissed(); harness.render();
+  const report = harness.nodes().find(node => node.type === 'ReportSheet');
+  assert.equal(report.props.targetType, 'user'); assert.equal(report.props.reportedUserId, 'author');
 });

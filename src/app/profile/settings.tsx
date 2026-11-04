@@ -13,6 +13,7 @@ import { ThemedText } from '@/components/themed-text';
 import { NearbyCityCard } from '@/components/nearby-city-card';
 import { ContentTranslationSettings } from '@/components/content-translation';
 import { PersonalInfoCard } from '@/components/personal-info-card';
+import { ProfileSharingCard } from '@/components/profile-overview';
 import { resetStartGuide } from '@/components/start-guide';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
@@ -151,6 +152,9 @@ export default function SettingsScreen() {
               <ThemedText themeColor="textSecondary">›</ThemedText>
             </Pressable>
           </View>
+
+          <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{tr("친구 공개")}</ThemedText>
+          <ProfileSharingCard />
 
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{tr("위치 및 지역")}</ThemedText>
           <NearbyCityCard settings />

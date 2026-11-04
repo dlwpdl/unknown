@@ -29,6 +29,8 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
   reply: [[/^(.+)님이 내 댓글에 답글을 남겼어요\.$/, m => `${m[1]} replied to your comment.`]],
   comment_like: [[/^(.+)님이 내 댓글에 공감했어요\.$/, m => `${m[1]} liked your comment.`]],
   post_like: [[/^(.+)님이 내 글에 공감했어요\.$/, m => `${m[1]} liked your post.`]],
+  friend_request: [[/^(.+)님이 친구 요청을 보냈어요\.$/, m => `${m[1]} sent you a friend request.`]],
+  friend_accepted: [[/^(.+)님과 친구가 됐어요\.$/, m => `You and ${m[1]} are now friends.`]],
   meetup_reminder: [
     [/^(.+) 모임이 24시간 뒤에 시작해요\. \((\d{2})\/(\d{2}) (\d{2}):(\d{2}) · 모임 장소 기준\)$/, m => `“${m[1]}” starts in 24 hours (${monthDay(m[2], m[3], [m[4], m[5]])}, local time).`],
     [/^(.+) 모임이 1시간 뒤에 시작해요\.$/, m => `“${m[1]}” starts in an hour.`],
