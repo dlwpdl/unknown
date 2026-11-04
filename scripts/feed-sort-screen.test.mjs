@@ -7,7 +7,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { t } from '../src/i18n/ko.ts';
 import { TAGS } from '../src/lib/mock.ts';
-import { groupJournalPosts, appendUniquePosts, limitBusinessPosts, todayRowsAfter } from '../src/lib/feed-data.ts';
+import { groupJournalPosts, appendUniquePosts, limitBusinessPosts, pinJustPosted, todayRowsAfter } from '../src/lib/feed-data.ts';
 import { withPostMap, postMapBody, googlePinUrl } from '../src/lib/post-maps.ts';
 import * as listingDetails from '../src/lib/listing-details.ts';
 import * as neighborhoods from '../src/lib/neighborhoods.ts';
@@ -48,7 +48,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '@/lib/hashtags': { getSuggestedHashtags: () => [], parseHashtags: () => [], canonicalizeHashtag: value => value },
     '@/lib/ads': { adsSupported: false, feedAdPosition: index => index >= 3 && (index - 3) % 4 === 0 }, '@/lib/supabase': { supabase: { functions: { invoke: (...args) => new Promise((resolve, reject) => drafts.push({ args, resolve, reject })) } } },
     '@/hooks/use-chat-identity': { useChatIdentity: () => null },
-    '@/lib/feed-data': { groupJournalPosts, appendUniquePosts, limitBusinessPosts, todayRowsAfter, loadPublicFeed: (...args) => new Promise((resolve, reject) => calls.push({ args, resolve, reject })) },
+    '@/lib/feed-data': { groupJournalPosts, appendUniquePosts, limitBusinessPosts, pinJustPosted, todayRowsAfter, loadPublicFeed: (...args) => new Promise((resolve, reject) => calls.push({ args, resolve, reject })) },
     '../../supabase/functions/_shared/post-links': { splitPostAttachments: body => ({ body }) },
     '@/lib/ai-draft': aiDraft,
   };
@@ -213,16 +213,29 @@ test('a top-page refresh does not simultaneously request a page from the previou
   assert.equal(app.calls.length, 2, 'paging waits for the refreshed first page');
 });
 
-test('publishing in popular mode refreshes the server ranking instead of prepending an unranked post', async () => {
+test('publishing in popular mode refreshes the server ranking and keeps my new post on top (owner 2026-11-04)', async () => {
   const app = screen({ createdPost: post('just-published') }); app.list(); app.refresh();
   app.sort().onChange('popular'); app.list(); app.refresh();
   app.calls[1].resolve([post('top-ranked', { popularityScore: 99 })]); await new Promise(setImmediate);
   await app.publish();
-  assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => p.id), ['top-ranked']);
+  assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => p.id), ['just-published', 'top-ranked']);
   assert.equal(app.calls.length, 3, 'publication must refresh the ranking');
   assert.equal(app.calls[2].args[5].sort, 'popular');
-  app.calls[2].resolve([post('top-ranked'), post('just-published')]); await new Promise(setImmediate);
-  assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => p.id), ['top-ranked', 'just-published']);
+  app.calls[2].resolve([post('top-ranked'), post('just-published', { likes: 2 })]); await new Promise(setImmediate);
+  assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => [p.id, p.likes]), [['just-published', 2], ['top-ranked', undefined]], 'the ranked copy replaces the local one, still on top');
+  assert.equal(app.calls[2].args[4], null, 'the ranking cursor still comes from the server page');
+});
+
+test('my new post stays on top through a pull-to-refresh that brings back newer posts or leaves it out', async () => {
+  const app = screen({ createdPost: post('just-published') }); app.list(); app.refresh();
+  app.calls[0].resolve([post('previous')]); await new Promise(setImmediate);
+  await app.publish();
+  app.list().onRefresh();
+  app.calls[1].resolve([post('someone-newer'), post('previous')]); await new Promise(setImmediate);
+  assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => p.id), ['just-published', 'someone-newer', 'previous']);
+  app.setViewer(null); app.list(); app.refresh();
+  app.calls[2].resolve([post('guest-view')]); await new Promise(setImmediate);
+  assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => p.id), ['guest-view'], 'another account never sees the pin');
 });
 
 test('publishing in latest mode retains the immediate new-post preview', async () => {

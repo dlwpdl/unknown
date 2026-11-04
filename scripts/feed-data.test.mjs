@@ -9,6 +9,8 @@ import {
   limitBusinessPosts,
   loadAuthorPosts,
   mapPublicFeed,
+  JUST_POSTED_MS,
+  pinJustPosted,
   todayRowsAfter,
 } from '../src/lib/feed-data.ts';
 
@@ -247,4 +249,14 @@ test('글이 짧으면 아직 차례가 안 온 줄은 마지막 글 아래에, 
   assert.deepEqual(rowsIn(2), ['1:places0', '1:festivals0']);
   assert.deepEqual(rowsIn(4), ['1:places0', '3:festivals0']);
   assert.deepEqual(rowsIn(6), ['1:places0', '5:festivals0']);
+});
+
+test('방금 쓴 내 글은 정렬·새로고침과 상관없이 10분 동안 맨 위에 있고, 서버에서 온 최신 내용으로 보인다', () => {
+  const mine = { id: 'mine', likes: 0 }, pin = { post: mine, at: 1_000_000, viewer: 'me' };
+  const server = [{ id: 'top' }, { id: 'mine', likes: 3 }, { id: 'other' }];
+  assert.deepEqual(pinJustPosted(server, pin, 'me', 1_000_000 + 60_000), [{ id: 'mine', likes: 3 }, { id: 'top' }, { id: 'other' }]);
+  assert.deepEqual(pinJustPosted([{ id: 'top' }], pin, 'me', 1_000_000), [mine, { id: 'top' }], 'kept on top even when a refresh or 인기순 page leaves it out');
+  assert.deepEqual(pinJustPosted(server, pin, 'me', 1_000_000 + JUST_POSTED_MS + 1), server, 'after ten minutes the server order returns');
+  assert.deepEqual(pinJustPosted(server, pin, 'someone-else', 1_000_000), server, 'another account never sees the pin');
+  assert.deepEqual(pinJustPosted(server, null, 'me'), server);
 });

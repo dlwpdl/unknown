@@ -86,6 +86,13 @@ export function todayRowsAfter(index: number, postCount: number, isAdSlot: (inde
   return rows;
 }
 
+// Owner 2026-11-04 ('오늘 글 순서'): the post I just wrote stays first in 오늘 for ten minutes, whatever the sort or a refresh brings back.
+export const JUST_POSTED_MS = 10 * 60_000;
+export type JustPosted<T> = { post: T; at: number; viewer: string };
+export function pinJustPosted<T extends { id: string }>(posts: readonly T[], pin: JustPosted<T> | null, viewer: string, now = Date.now()): readonly T[] {
+  if (!pin || pin.viewer !== viewer || now - pin.at > JUST_POSTED_MS) return posts;
+  return [posts.find(({ id }) => id === pin.post.id) ?? pin.post, ...posts.filter(({ id }) => id !== pin.post.id)];
+}
 
 // Owner 2026-10-25: 오늘 '전체' carries at most one business post per five; business hiring stays in 구인구직.
 export function limitBusinessPosts<T extends { business?: unknown; tag: { slug: string } }>(posts: readonly T[]) {

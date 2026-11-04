@@ -79,7 +79,7 @@ import {
   MEETUPS_CHANGED_EVENT,
   requestMeetupJoin,
 } from '@/lib/community-data';
-import { appendUniquePosts, limitBusinessPosts, loadPublicFeed, loadPublicPost, todayRowsAfter, type FeedSort } from '@/lib/feed-data';
+import { appendUniquePosts, limitBusinessPosts, loadPublicFeed, loadPublicPost, pinJustPosted, todayRowsAfter, type FeedSort, type JustPosted } from '@/lib/feed-data';
 import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, hasAdLabel, MAX_HASHTAGS, parseHashtags, toggleAdLabel } from '@/lib/hashtags';
 import { canAddPostImage, MAX_POST_IMAGES } from '@/lib/image-upload';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -128,6 +128,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const writeFabCompact = viewportWidth < 380; // 폴드 바깥 화면 같은 좁은 폭에서는 + 하나만
   // 실측: iOS 탭 화면의 insets.bottom은 이미 탭바까지 포함(탭마다 SafeAreaProvider), 안드로이드 탭 내용은 탭바 위에서 끝난다.
   const [posts, setPosts] = useState<Post[]>([]);
+  const [justPosted, setJustPosted] = useState<JustPosted<Post> | null>(null);
   const [visibleFeedIds, setVisibleFeedIds] = useTranslationVisibleIds();
   const [visibleSearchIds, setVisibleSearchIds] = useTranslationVisibleIds();
   const trackTranslationFeed = useCallback(({ viewableItems }: { viewableItems: { item: Post | Post[] | null }[] }) =>
@@ -267,6 +268,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   useEffect(() => {
     const listener = DeviceEventEmitter.addListener(POST_CHANGED_EVENT, (change: PostChange) => {
       setPosts(current => applyPostChange(current, change));
+      setJustPosted(current => { const [post] = current ? applyPostChange([current.post], change) : []; return current && post ? { ...current, post } : null; });
       setSearchResults(current => applyPostChange(current, change));
     });
     return () => listener.remove();
@@ -282,7 +284,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   }, [cancelFeedRequests, feedReady, refreshFeed]);
 
   const cityOpen = city.state === 'open';
-  const cityPosts = posts.filter((p) => p.cityId === city.id && !hidden('post', p.id, p.author.id));
+  const cityPosts = (meetupsOnly ? posts : pinJustPosted(posts, justPosted, viewerScope)).filter((p) => p.cityId === city.id && !hidden('post', p.id, p.author.id));
   const feedData = useMemo(
     () =>
       cityOpen
@@ -685,6 +687,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       if (revision === feedRevision.current) {
         void location.record(draftLocation.current, created.id);
         setCity(draftCity);
+        if (post && !meetupsOnly) setJustPosted({ post, at: Date.now(), viewer: viewerScope });
         if (post && activeSort === 'latest') setPosts((prev) => [post, ...prev.filter(({ id }) => id !== created.id)]);
         else if (draftCity.id === city.id && (meetupsOnly || tagFilter == null)) void refreshFeed().catch(() => {});
         setTagFilter(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null);
