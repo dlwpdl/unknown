@@ -79,7 +79,7 @@ import {
   MEETUPS_CHANGED_EVENT,
   requestMeetupJoin,
 } from '@/lib/community-data';
-import { appendUniquePosts, limitBusinessPosts, loadPublicFeed, loadPublicPost, todaySectionsAfter, type FeedSort } from '@/lib/feed-data';
+import { appendUniquePosts, limitBusinessPosts, loadPublicFeed, loadPublicPost, todayRowsAfter, type FeedSort } from '@/lib/feed-data';
 import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, hasAdLabel, MAX_HASHTAGS, parseHashtags, toggleAdLabel } from '@/lib/hashtags';
 import { canAddPostImage, MAX_POST_IMAGES } from '@/lib/image-upload';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -308,12 +308,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     : listingPosts;
   const feedLoading = categoryLoading || loadedFeedKey !== feedKey;
   const cityLoading = cityOpen && !meetupsOnly && loadedFeedCityId !== city.id;
-  // Festivals and popular places sit after the second post in '전체' (owner 2026-11-03), so the city cover no longer waits for them.
+  // Places and festivals take turns between posts in '전체' (owner 2026-11-03, 11-04), so the city cover no longer waits for them.
   const showTodaySections = cityOpen && !meetupsOnly && tagFilter == null;
-  const todaySections = showTodaySections && <>
-    <LocalEventsCarousel cityId={city.id} refreshKey={rankingRefresh} cityLoading={cityLoading} />
-    <CityPopularPlaces cityId={city.id} />
-  </>;
+  const todayRows = (index: number) => showTodaySections && todayRowsAfter(index, feedRows.length, feedAdPosition).map(({ kind, page }) => kind === 'places'
+    ? <CityPopularPlaces key={`places-${page}`} cityId={city.id} page={page} />
+    : <LocalEventsCarousel key={`festivals-${page}`} cityId={city.id} page={page} refreshKey={rankingRefresh} cityLoading={cityLoading} />);
 
   // 검색: 제목·내용·닉네임·동네·해시태그 부분일치 ('#' 입력은 무시)
   // 영문 동네명도 매칭 (Coquitlam → 코퀴틀람) — 표기 파편화 방지
@@ -882,7 +881,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           contentContainerStyle={[styles.listContent, { paddingBottom: bottomClear + Spacing.three + (writeFab ? ControlMetrics.action + Spacing.three : 0) }]}
           ItemSeparatorComponent={({ leadingItem }) => leadingItem == null ? null : <View style={{ height: (businessCategory && !businessGrid) || (listingCategory && !usedGrid) ? 0 : Spacing.four }} />}
           ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText>
-            : !feedLoading && todaySections && todaySectionsAfter(feedRows.length) < 0 ? <>{feedState}{todaySections}</> : feedState ?? undefined}
+            : !feedLoading && showTodaySections && !feedRows.length ? <>{feedState}{todayRows(-1)}</> : feedState ?? undefined}
           renderItem={({ item, index }) => item == null && index === 1 && showFeedSort ? (
             <FeedSortControl sort={activeSort} title={businessCategory ? tr('새 소식') : selectedFilterTag ? tr("{0} 글", (selectedFilterTag.label)) : tr("오늘 글")} onChange={changeFeedSort}
               style={[styles.sortBar, glowOn && (sortStuck ? { backgroundImage: listGlow } : { backgroundColor: 'transparent' })]}
@@ -943,7 +942,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               onHashtag={openSearch}
               onAuthor={() => openAuthor(item)}
             />)}{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !writing && !searching)) && feedAdPosition(index - (showFeedSort ? 2 : 1), feedRows.length) && <FeedAd key={`ad-after-${item.id}`} />}
-              {todaySections && index - (showFeedSort ? 2 : 1) === todaySectionsAfter(feedRows.length) && todaySections}</Animated.View></Reanimated.View>
+              {todayRows(index - (showFeedSort ? 2 : 1))}</Animated.View></Reanimated.View>
           )}
         />
         {/* 덮개가 아래 회색 자리표시와 이전 글을 가리고, 다 불러오면 서서히 걷힌다. 첫 화면은 덮개째 바로 그린다. */}

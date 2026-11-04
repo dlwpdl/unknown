@@ -7,7 +7,7 @@ import ts from 'typescript';
 import { translateUi, translationsFor } from '../src/i18n/index.ts';
 import * as ticketmaster from '../supabase/functions/_shared/ticketmaster.ts';
 
-function carousel({ web = false, focused = true, activeCard = true, reducedMotion = false, screenReader = false, eventCount = 8, now = '2026-10-12T06:59:00Z', nextRefreshAt, failRequest } = {}) {
+function carousel({ web = false, focused = true, activeCard = true, reducedMotion = false, screenReader = false, eventCount = 8, now = '2026-10-12T06:59:00Z', nextRefreshAt, failRequest, page = 0 } = {}) {
   let hook = 0, dirty = false, time = Date.parse(now), focus = focused, cityId = 'vancouver', tree, language = 'ko';
   let windowDimensions = { width: 390, height: 844 };
   const formats = [];
@@ -59,7 +59,7 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
     do {
       hook = 0; dirty = false;
       tree = card ? exports.card({ event: events[0], cityId: 'vancouver', index: 0, active: activeCard, reducedMotion, onOpen() {} })
-        : web ? exports.PublicFestivals({ cityId, cityName: ticketmaster.EVENT_CITIES[cityId] }) : exports.LocalEventsCarousel({ cityId, refreshKey: 0, cityLoading: false });
+        : web ? exports.PublicFestivals({ cityId, cityName: ticketmaster.EVENT_CITIES[cityId] }) : exports.LocalEventsCarousel({ cityId, refreshKey: 0, cityLoading: false, page });
       const scroll = elements(tree).find(node => node.props?.analyticsId === 'today.events.carousel');
       if (scroll?.props.ref) scroll.props.ref.current = { scrollTo: position => scrolls.push(position) };
       for (const callback of pending.splice(0)) callback();
@@ -197,4 +197,20 @@ test('a loaded carousel rereads when a manual exposure ends before its festival 
     await ui.render(); assert.equal(ui.requests.length, 1);
     await ui.tick(60000, 360000); assert.equal(ui.requests.length, 2);
   }
+});
+
+test('a later festival turn between Today posts repeats the whole row, and any turn with no events is skipped (owner 2026-11-04)', async () => {
+  const later = carousel({ page: 1, failRequest: 1 }); await later.render();
+  assert.equal(later.tree(), null, 'a later turn shows no error box');
+  const loading = carousel({ page: 1, focused: false }); await loading.render();
+  assert.equal(loading.tree(), null, 'nor a second loader');
+  const repeat = carousel({ page: 1 }); await repeat.render();
+  assert.deepEqual(cards(repeat.tree()), ['f0', 'f7', 'f1', 'f2', 'f3', 'f4', 'f5']);
+  for (const page of [0, 1]) {
+    const none = carousel({ page, eventCount: 0 }); await none.render();
+    assert.equal(none.requests.length, 1);
+    assert.equal(none.tree(), null, `turn ${page} with no festivals is skipped`);
+  }
+  const first = carousel({ focused: false }); await first.render();
+  assert.ok(elements(first.tree()).some(node => node.props?.accessibilityLabel === '행사 불러오는 중'), 'the first turn keeps its loader');
 });

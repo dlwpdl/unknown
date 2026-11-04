@@ -72,8 +72,20 @@ export function setBusinessImageSession(viewer: string | null, token: string | n
   businessImageSessionRevision++;
 }
 
-// Owner 2026-11-03: 오늘 '전체' shows the festival and place rows after the second post, after the only one, and at -1 (under the empty state) with none.
-export const todaySectionsAfter = (postCount: number) => Math.min(postCount, 2) - 1;
+// Owner 2026-11-04 ('글 사이 줄'): in 오늘 '전체' the place row follows the second post, then festivals and places take turns
+// every TODAY_ROW_EVERY posts. 4 is the ad cadence offset by two posts, so a turn never takes an ad's slot (and shifts if that cadence changes).
+// A list too short for a row's first turn shows it under the last post, or under the empty state at index -1.
+export const TODAY_ROW_EVERY = 4;
+export type TodayRow = { kind: 'places' | 'festivals'; page: number };
+export function todayRowsAfter(index: number, postCount: number, isAdSlot: (index: number) => boolean): TodayRow[] {
+  const slot = (turn: number) => { let at = 1 + turn * TODAY_ROW_EVERY; while (isAdSlot(at)) at++; return at; };
+  const row = (turn: number): TodayRow => ({ kind: turn % 2 ? 'festivals' : 'places', page: turn >> 1 });
+  const rows: TodayRow[] = [];
+  for (let turn = 0; slot(turn) <= index; turn++) if (slot(turn) === index) rows.push(row(turn));
+  if (index === postCount - 1) for (const turn of [0, 1]) if (slot(turn) > index) rows.push(row(turn));
+  return rows;
+}
+
 
 // Owner 2026-10-25: 오늘 '전체' carries at most one business post per five; business hiring stays in 구인구직.
 export function limitBusinessPosts<T extends { business?: unknown; tag: { slug: string } }>(posts: readonly T[]) {

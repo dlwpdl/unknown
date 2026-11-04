@@ -9,6 +9,7 @@ import {
   limitBusinessPosts,
   loadAuthorPosts,
   mapPublicFeed,
+  todayRowsAfter,
 } from '../src/lib/feed-data.ts';
 
 test('프로필 화면은 작성자 글 RPC에 작성자와 커서를 넘기고 카드로 바꾼다', async () => {
@@ -224,4 +225,26 @@ test('오늘 전체는 비즈니스 글을 5개 중 최대 1개만 섞고 비즈
   const p = (id, business = false, slug = 'life') => ({ id, business: business ? { id: 'm' } : undefined, tag: { slug } });
   const posts = [p('b1', true), p('b2', true), p('a'), p('b3', true, 'jobs'), p('c'), p('d'), p('e'), p('b4', true), p('f')];
   assert.deepEqual(limitBusinessPosts(posts).map(({ id }) => id), ['b1', 'a', 'c', 'd', 'e', 'b4', 'f']);
+});
+
+// Same cadence as src/lib/ads.ts feedAdPosition (that module needs the native SDK, so the rule is restated here).
+const adSlot = index => index >= 3 && (index - 3) % 4 === 0;
+const rowsIn = (count, isAdSlot = adSlot) => Array.from({ length: count }, (_, index) => todayRowsAfter(index, count, isAdSlot)
+  .map(({ kind, page }) => `${index}:${kind}${page}`)).flat();
+
+test('오늘 전체 글 사이 줄은 두 번째 글 뒤 가볼 만한 곳부터 4글마다 페스티벌과 번갈아 나오고 광고 자리는 피한다', () => {
+  assert.deepEqual(rowsIn(30), ['1:places0', '5:festivals0', '9:places1', '13:festivals1', '17:places2', '21:festivals2', '25:places3', '29:festivals3']);
+  for (let index = 0; index < 200; index++) if (adSlot(index)) assert.deepEqual(todayRowsAfter(index, 200, adSlot), [], `ad slot ${index}`);
+  const everyThird = index => index >= 2 && (index - 2) % 3 === 0;
+  const shifted = rowsIn(30, everyThird);
+  assert.deepEqual(shifted.slice(0, 3), ['1:places0', '6:festivals0', '9:places1'], 'a changed ad cadence pushes the row past the ad');
+  for (const row of shifted) assert.equal(everyThird(Number(row.split(':')[0])), false, row);
+});
+
+test('글이 짧으면 아직 차례가 안 온 줄은 마지막 글 아래에, 글이 없으면 빈 화면 아래에 나온다', () => {
+  assert.deepEqual(todayRowsAfter(-1, 0, adSlot), [{ kind: 'places', page: 0 }, { kind: 'festivals', page: 0 }]);
+  assert.deepEqual(rowsIn(1), ['0:places0', '0:festivals0']);
+  assert.deepEqual(rowsIn(2), ['1:places0', '1:festivals0']);
+  assert.deepEqual(rowsIn(4), ['1:places0', '3:festivals0']);
+  assert.deepEqual(rowsIn(6), ['1:places0', '5:festivals0']);
 });

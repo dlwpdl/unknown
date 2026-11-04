@@ -449,6 +449,16 @@ test('the city places entry gives each preview card its own compact rating scope
   assert.equal(ui.routes.at(-1).pathname, '/map');
   assert.equal(ui.opened.length, 0, 'review entry stays inside Gling');
 });
+test('a later place row between Today posts shows the next three places without the location prompt, and none past the list (owner 2026-11-04)', () => {
+  const ui = screen('src/components/city-popular-places.tsx'), all = data().getCityDiscoveryPlaces('vancouver');
+  const ids = tree => nodes(tree).filter(node => node.props?.analyticsId === 'today.places.place-open').map(card => nodes(card).find(node => node.type === 'PlaceReviewSummary').props.rating.placeId);
+  const first = ui.render({ cityId: 'vancouver' }), second = ui.render({ cityId: 'vancouver', page: 1 });
+  assert.deepEqual(Array.from(ids(second)), Array.from(all.slice(3, 6), place => place.id));
+  assert.equal(ids(first).some(id => ids(second).includes(id)), false, 'no place repeats between rows');
+  assert.ok(nodes(first).some(node => node.props?.analyticsId === 'today.places.locate'));
+  assert.equal(nodes(second).some(node => node.props?.analyticsId === 'today.places.locate'), false, 'the location prompt stays on the first row');
+  assert.equal(ui.render({ cityId: 'vancouver', page: Math.ceil(all.length / 3) }), null, 'a turn past the list is skipped');
+});
 test('real OSM data covers every city with canonical IDs, coordinates and extraction provenance', () => {
   assert.equal(typeof data().getCityPlaces, 'function', 'actual data loader is missing');
   const source = catalog();

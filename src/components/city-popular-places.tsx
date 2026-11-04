@@ -37,7 +37,8 @@ export function NearbyPlacesLocation({ location, analyticsId }: { location: Curr
   </View>;
 }
 
-export function CityPopularPlaces({ cityId }: { cityId: string }) {
+// page: the Nth place row in 오늘 shows the next three places; a page past the list draws nothing (owner 2026-11-04).
+export function CityPopularPlaces({ cityId, page = 0 }: { cityId: string; page?: number }) {
   const { tr } = useLanguage(), { fontScale } = useWindowDimensions(), large = fontScale > 1.2;
   const router = useRouter(), { play } = useInteractionFeedback();
   useCityPlacesRevision();
@@ -53,9 +54,9 @@ export function CityPopularPlaces({ cityId }: { cityId: string }) {
   const places = city ? getCityDiscoveryPlaces(cityId).filter(place => place.cityId === cityId) : [];
   const ranked = rankPlacesByDistance(places, location.fix);
   // "내 위치로 보기" asked for nearest first; otherwise places members actually go to lead.
-  const preview = (ranked.some(row => row.distance !== null) ? ranked : preferVisitedPlaces(ranked, signals.cityId === cityId ? signals.ids : [])).slice(0, 3);
+  const preview = (ranked.some(row => row.distance !== null) ? ranked : preferVisitedPlaces(ranked, signals.cityId === cityId ? signals.ids : [])).slice(page * 3, page * 3 + 3);
   const ratings = usePlaceReviewSummaries(cityId, preview.map(row => row.place.id));
-  if (!city || !places.length) return null;
+  if (!city || !preview.length) return null;
   return <View style={styles.section}>
     <View style={styles.heading}>
       <ThemedText accessibilityRole="header" type="section" style={styles.title}>{tr('이 도시에서 가볼 만한 곳')}</ThemedText>
@@ -64,7 +65,7 @@ export function CityPopularPlaces({ cityId }: { cityId: string }) {
         <ThemedText type="smallBold" themeColor="accent">{tr('전체 보기 ›')}</ThemedText>
       </Pressable>
     </View>
-    <NearbyPlacesLocation location={location} analyticsId="today.places.locate" />
+    {page === 0 && <NearbyPlacesLocation location={location} analyticsId="today.places.locate" />}
     <View style={[styles.cards, large && styles.cardsLarge]}>
       {preview.map(({ place, distance }) => {
         const rating = getPlaceReviewRating(cityId, place.id, ratings[place.id]), distanceLabel = formatNearbyDistance(distance, tr);

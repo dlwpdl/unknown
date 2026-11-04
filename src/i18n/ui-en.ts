@@ -1317,7 +1317,6 @@ export const uiEnglish: Record<string, string> = {
   "전체 보기 ›": "View all ›",
   "행사 불러오는 중": "Loading events",
   "눌러서 다시 시도해 주세요.": "Tap to try again.",
-  "예정된 페스티벌이 아직 없어요. 나중에 다시 확인해 주세요.": "No upcoming festivals yet. Check back later.",
   "이전 페스티벌": "Previous festival",
   "다음 페스티벌": "Next festival",
   "행사 정보: Ticketmaster · 일정과 판매 상태는 변경될 수 있어요": "Event info from Ticketmaster · Dates and ticket availability may change",
