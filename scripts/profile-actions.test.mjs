@@ -22,6 +22,8 @@ function profile() {
     '@/components/merchant-account-connections': { MerchantAccountEntry: 'MerchantAccountEntry' },
     '@/components/linked-account-entry': { LinkedAccountEntry: 'LinkedAccountEntry' },
     '@/components/chat-identity-switcher': { ChatIdentitySwitcher: 'ChatIdentitySwitcher' },
+    '@/components/profile-overview': { ProfileRecordTiles: 'ProfileRecordTiles', ProfileSavedMap: 'ProfileSavedMap' },
+    '@/lib/profile-friends': {}, '@/constants/design-system': { ControlStyles: {}, controlPresentation: () => ({ container: {} }) },
     '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/login-panel': { LoginPanel: 'LoginPanel' }, '@/components/post-zoom-link': { PostZoomLink: 'PostZoomLink' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/constants/theme': { Depth: {}, Spacing: {}, TabBarHeight: 49, MaxContentWidth: 800 },
@@ -40,19 +42,22 @@ function profile() {
   return { render: exports.default, routes, feedback, shares, signOut() { authenticated = false; }, signIn() { authenticated = true; }, setCanGoBack(value) { canGoBack = value; } };
 }
 
-test('profile header offers the shared switcher before invite and settings, then clears actions on sign-out', async () => {
+test('own profile keeps one ··· for settings, puts the switcher by the name and the invite as the filled button', async () => {
   const app = profile(), tree = app.render(), header = nodes(tree).find(n => n.type === 'Screen').props.options.headerRight();
-  const switcher = nodes(header).find(n => n.type === 'ChatIdentitySwitcher');
-  assert.equal(switcher?.props.target, 'business');
-  assert.equal(header.props.children[0], switcher);
+  assert.equal(nodes(header).some(n => n.type === 'ChatIdentitySwitcher'), false, 'account switching left the header');
+  const more = nodes(header).find(n => n.props?.analyticsId === 'profile.more');
+  more.props.onPress();
+  assert.equal(app.routes.at(-1), '/profile/menu', 'settings, the manage cells and account menu open from ···');
+  assert.equal(app.feedback.at(-1), 'selection');
+  const nick = nodes(tree).find(n => n.type === 'View' && [n.props?.children].flat().some(child => child?.type === 'TrustBadge'));
+  assert.equal(nodes(nick).find(n => n.type === 'ChatIdentitySwitcher').props.target, 'business', 'the ⌄ sits next to the name');
   const photo = nodes(tree).find(n => n.props?.analyticsId === 'app_profile_index.pressable.1');
   assert.equal(photo.props.accessibilityLabel, '사진 변경', 'The own-photo control remains an editor, separate from profile switching.');
-  assert.equal(typeof photo.props.onPress, 'function');
-  nodes(header).find(n => n.props.analyticsId === 'app_profile_index.pressable.8').props.onPress();
-  assert.equal(app.routes.at(-1), '/profile/settings');
-  assert.equal(app.feedback.at(-1), 'selection');
-  nodes(header).find(n => n.props.analyticsId === 'app_profile_index.invite').props.onPress();
+  nodes(tree).find(n => n.props?.analyticsId === 'app_profile_index.invite').props.onPress();
   assert.equal(app.routes.at(-1), '/profile/invite', 'The invite button opens the invite page with the personal link and passes.');
+  nodes(tree).find(n => n.props?.analyticsId === 'profile.edit').props.onPress();
+  assert.equal(app.routes.at(-1), '/profile/settings');
+  for (const moved of ['MerchantAccountEntry', 'LinkedAccountEntry']) assert.equal(nodes(tree).some(n => n.type === moved), false, `${moved} moved to the ··· screen`);
   assert.equal(nodes(tree).filter(n => n.type === 'ScrollView').length, 1);
   app.signOut();
   const guest = app.render();

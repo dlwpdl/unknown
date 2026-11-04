@@ -31,7 +31,7 @@ function screen(overrides = {}) {
     react: hooks, 'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) },
     'react-native': { FlatList: 'FlatList', View: 'View', TextInput: 'TextInput', ScrollView: 'ScrollView', Pressable: 'Pressable', Platform: { OS: 'web' }, StyleSheet: { create: value => value } },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' }, 'expo-symbols': { SymbolView: 'Symbol' },
-    'expo-router': { useRouter: () => ({ push: route => routes.push(JSON.parse(JSON.stringify(route))) }), useIsFocused: () => focused, useFocusEffect: fn => hooks.useEffect(() => focused ? fn() : undefined, [fn, focused]) },
+    'expo-router': { useRouter: () => ({ push: route => routes.push(JSON.parse(JSON.stringify(route))) }), useLocalSearchParams: () => ({}), useIsFocused: () => focused, useFocusEffect: fn => hooks.useEffect(() => focused ? fn() : undefined, [fn, focused]) },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/login-panel': { LoginPanel: 'Login' }, '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/state-card': { StateCard: 'StateCard' }, '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },
     '@/components/saved-library': { SavedItemCard: 'SavedItemCard', SavedFolderSheet: 'SavedFolderSheet', SavedLibraryButton: 'SavedLibraryButton' },
     '@/components/business-webshop': { WebshopComparisonSheet: 'WebshopComparisonSheet' },

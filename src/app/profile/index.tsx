@@ -1,6 +1,4 @@
 import { useLanguage } from '@/hooks/use-language';
-import { MerchantAccountEntry } from '@/components/merchant-account-connections';
-import { LinkedAccountEntry } from '@/components/linked-account-entry';
 import { ChatIdentitySwitcher } from '@/components/chat-identity-switcher';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
@@ -14,23 +12,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 
 import { LoginPanel } from '@/components/login-panel';
+import { ProfileRecordTiles, ProfileSavedMap } from '@/components/profile-overview';
 import { PostZoomLink } from '@/components/post-zoom-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TrustBadge } from '@/components/trust-badge';
+import { ControlStyles, controlPresentation } from '@/constants/design-system';
 import { Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { count } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { CITIES, TAGS } from '@/lib/mock';
-import { useMembership } from '@/lib/membership-provider';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { useUnreadCount } from '@/hooks/use-unread-count';
 import { loadMyPosts, loadProfileSummary, loadRepliesToMe, type MyPostRow, type ProfileSummary, type ReplyToMe } from '@/lib/community-data';
 import { relativeTime } from '@/lib/feed-data';
 import { visibleMeetupBody } from '@/lib/meetup-ai';
-import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
+import { loadProfileOverview, type ProfileOverview } from '@/lib/profile-friends';
 import { supabase } from '@/lib/supabase';
 
 export default function ProfileScreen() {
@@ -39,11 +37,10 @@ export default function ProfileScreen() {
   const hidden = useContentVisibility();
   const router = useRouter();
   const reducedMotion = useReducedMotion();
-  const { isAuthed, signInApple, signInKakao, signInGoogle, signInDev, isAuthLoading, authError, trustLevel, me, setProfilePhoto, signOut } = useAuth();
-  const { membership } = useMembership();
-  const unread = useUnreadCount('other');
+  const { isAuthed, signInApple, signInKakao, signInGoogle, signInDev, isAuthLoading, authError, trustLevel, me, setProfilePhoto } = useAuth();
   const { play } = useInteractionFeedback();
   const [summary, setSummary] = useState<ProfileSummary | null>(null);
+  const [overview, setOverview] = useState<{ user: string; value: ProfileOverview | null } | null>(null);
   const [segment, setSegment] = useState<'story' | 'replies' | 'listing'>('story');
   const [myPosts, setMyPosts] = useState<Record<'story' | 'listing', MyPostRow[]>>({ story: [], listing: [] });
   const [replies, setReplies] = useState<ReplyToMe[]>([]);
@@ -67,6 +64,10 @@ export default function ProfileScreen() {
     void loadProfileSummary(supabase, me.id)
       .then((next) => active && setSummary(next))
       .catch(() => active && setSummary(null));
+    // A failed read just leaves the map, tiles and counts out; the rest of the profile stays usable.
+    void loadProfileOverview(supabase, me.id)
+      .then((value) => { if (active) setOverview({ user: me.id, value }); })
+      .catch(() => { if (active) setOverview({ user: me.id, value: null }); });
     return () => { active = false; };
   }, [isAuthed, me.id, me.cityId, reload]);
 
@@ -105,8 +106,12 @@ export default function ProfileScreen() {
     );
 
   const cityName = CITIES.find(({ id }) => id === summary?.cityId)?.name ?? summary?.cityId ?? '';
-  const membershipLabel = membership ? tr(({ free: '베이직', plus: '플러스', pro: '프로', premium: '프리미엄', admin: '관리자' } as const)[membership.tier]) : null;
-  const unreadLabel = unread > 0 ? tr('새 소식 {0}', unread) : tr('새 소식 없음');
+  const own = overview?.user === me.id ? overview.value : null;
+  const stats = [
+    ['saved', own ? count(own.savedCount) : '–', tr('저장한 곳'), () => router.push({ pathname: '/profile/saved', params: { filter: 'places' } })],
+    ['friends', own ? count(own.friendCount) : '–', tr('친구'), () => router.push('/profile/friends')],
+    ['posts', count(summary?.posts ?? 0), tr('쓴 글'), null],
+  ] as const;
 
   const pickProfilePhoto = async () => {
     try {
@@ -130,20 +135,16 @@ export default function ProfileScreen() {
     <ThemedView style={styles.container}>
       <Stack.Screen options={{ headerShown: true, title: tr('내 프로필'), headerRight: () => (
         <View style={styles.headerActions}>
-          <ChatIdentitySwitcher target="business" />
-          <Pressable analyticsId="app_profile_index.invite" accessibilityRole="button" accessibilityLabel={tr('친구 초대하기')} accessibilityHint={tr('초대 링크와 받은 이용권을 봐요')}
-            onPress={() => { play('selection'); router.push('/profile/invite'); }} style={styles.headerButton}>
-            <SymbolView name={{ ios: 'square.and.arrow.up', android: 'share', web: 'share' }} size={22} tintColor={theme.text} />
-          </Pressable>
-          <Pressable analyticsId="app_profile_index.pressable.8" accessibilityRole="button" accessibilityLabel={t.profile.settings}
-            onPress={() => { play('selection'); router.push('/profile/settings'); }} style={styles.headerButton}>
-            <SymbolView name={{ ios: 'gearshape', android: 'settings', web: 'settings' }} size={22} tintColor={theme.text} />
+          <Pressable analyticsId="profile.more" accessibilityRole="button" accessibilityLabel={tr('더보기')} accessibilityHint={tr('설정, 멤버십, 알림, 계정 메뉴를 열어요')}
+            onPress={() => { play('selection'); router.push('/profile/menu'); }} style={styles.headerButton}>
+            <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={22} tintColor={theme.text} />
           </Pressable>
         </View>
       ) }} />
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView analyticsId="app_profile_index.scroll" contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic"
           refreshControl={<RefreshControl refreshing={pulling} tintColor={theme.accent} onRefresh={() => { play('selection'); setPulling(true); setReload(value => value + 1); }} />}>
+        {own && <View style={styles.top}><ProfileSavedMap overview={own} homeCityId={summary?.cityId ?? me.cityId ?? null} /></View>}
         <View style={styles.hero}>
           <Pressable analyticsId="app_profile_index.pressable.1"
             onPress={() => { play('selection'); void pickProfilePhoto(); }}
@@ -168,65 +169,40 @@ export default function ProfileScreen() {
               {me.nickname}
             </ThemedText>
             <TrustBadge trustLevel={trustLevel === 1 ? undefined : trustLevel} />
+            <ChatIdentitySwitcher target="business" />
           </View>
           <ThemedText type="small" themeColor="textSecondary">
             {t.profile.location(tr(cityName), summary?.neighborhood)}
           </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" style={{ fontVariant: ['tabular-nums'] }}>
-            {t.profile.stats(summary?.posts ?? 0, summary?.likes ?? 0, summary?.meetups ?? 0)}
-          </ThemedText>
         </View>
-
-        <View style={[styles.manage, { backgroundColor: theme.backgroundElement }]}>
-          {([
-            [tr("멤버십"), membershipLabel, { ios: 'star.circle', android: 'stars', web: 'stars' }, false, () => router.push('/profile/membership')],
-            [tr("인증 Lv{0}", (trustLevel)), trustLevel === 1 ? t.trust.short(trustLevel) : tr("등록된 단계"), { ios: 'checkmark.seal', android: 'verified', web: 'verified' }, false, () => router.push('/profile/trust')],
-            [t.notifications.title, unreadLabel, { ios: 'bell', android: 'notifications', web: 'notifications' }, unread > 0, () => router.navigate('/notifications')],
-            [t.profile.saved, tr("모아보기"), { ios: 'bookmark', android: 'bookmark', web: 'bookmark' }, false, () => router.push('/profile/saved')],
-          ] as const).map(([label, sub, symbol, attention, onPress]) => (
-            <Pressable analyticsId="app_profile_index.pressable.2" key={label} onPress={() => { play('selection'); onPress(); }} accessibilityRole="button" accessibilityLabel={`${label}, ${sub ?? ''}`}
-              style={({ pressed }) => [styles.manageCell, {
-                backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
-              }]}>
-              <View style={styles.manageIcon}>
-                <SymbolView name={symbol} size={22} weight="medium" tintColor={attention ? theme.accent : theme.navy} />
-                {attention && <View style={[styles.manageDot, { backgroundColor: theme.accent, borderColor: theme.backgroundElement }]} />}
-              </View>
-              <ThemedText type="smallBold" style={styles.manageLabel}>{label}</ThemedText>
-              <ThemedText type="small" themeColor={attention ? undefined : 'textSecondary'} style={[styles.manageSub, attention && { color: theme.accent }]}>{sub}</ThemedText>
-            </Pressable>
-          ))}
+        <View style={[styles.stats, { borderColor: theme.line }]}>
+          {stats.map(([id, value, label, open]) => <Pressable key={id} analyticsId={`profile.stat.${id}`} accessibilityRole={open ? 'button' : 'text'} disabled={!open}
+            accessibilityLabel={`${label} ${value}`} onPress={() => { if (!open) return; play('selection'); open(); }}
+            style={({ pressed }) => [styles.stat, pressed && !!open && { backgroundColor: theme.backgroundSelected }]}>
+            <ThemedText type="subtitle" style={styles.statValue}>{value}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{label}</ThemedText>
+          </Pressable>)}
         </View>
-        <View style={[styles.accountMenu, { backgroundColor: theme.card, borderColor: theme.line }]}>
-          <Pressable analyticsId="profile.meetup-profile" accessibilityRole="button" accessibilityLabel={tr('모임 프로필 관리')}
-            onPress={() => { play('selection'); router.push('/meetup-profile'); }}
-            style={({ pressed }) => [styles.accountRow, { backgroundColor: pressed ? theme.backgroundSelected : theme.card }]}>
-            <View style={[styles.accountIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'person.crop.rectangle', android: 'badge', web: 'badge' }} size={22} tintColor={theme.navy} /></View>
-            <View style={styles.accountText}><ThemedText type="smallBold">{tr('모임 프로필 관리')}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('모임 사진·소개·공개 범위를 따로 설정해요')}</ThemedText></View>
-            <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
-          </Pressable>
-          <Pressable analyticsId="profile.meetup-reviews" accessibilityRole="button" accessibilityLabel={tr('모임 후기와 내 매너 평가 관리')}
-            onPress={() => { play('selection'); router.push('/profile/meetup-reviews'); }}
-            style={({ pressed }) => [styles.accountRow, { backgroundColor: pressed ? theme.backgroundSelected : theme.card }]}>
-            <View style={[styles.accountIcon, { backgroundColor: theme.backgroundElement }]}>
-              <SymbolView name={{ ios: 'person.2', android: 'group', web: 'group' }} size={22} tintColor={theme.navy} />
-            </View>
-            <View style={styles.accountText}>
-              <ThemedText type="smallBold">{tr('모임 후기 · 매너 평가')}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">{tr('내 후기와 매너 평가 관리')}</ThemedText>
-            </View>
-            <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
-          </Pressable>
-          <Pressable analyticsId="profile.invite" accessibilityRole="button" accessibilityLabel={tr('친구 초대')}
+        <View style={styles.heroActions}>
+          <Pressable analyticsId="app_profile_index.invite" accessibilityRole="button" accessibilityLabel={tr('친구 초대')} accessibilityHint={tr('초대 링크와 받은 이용권을 봐요')}
             onPress={() => { play('selection'); router.push('/profile/invite'); }}
-            style={({ pressed }) => [styles.accountRow, { backgroundColor: pressed ? theme.backgroundSelected : theme.card }]}>
-            <View style={[styles.accountIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'gift', android: 'redeem', web: 'redeem' }} size={22} tintColor={theme.navy} /></View>
-            <View style={styles.accountText}><ThemedText type="smallBold">{tr('친구 초대')}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('친구가 첫 모임에 오면 플러스 2주 이용권')}</ThemedText></View>
-            <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
+            style={({ pressed }) => [ControlStyles.action, styles.heroAction, controlPresentation(theme, { tone: 'primary', pressed }).container]}>
+            <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr('친구 초대')}</ThemedText>
           </Pressable>
-          <MerchantAccountEntry />
-          <LinkedAccountEntry />
+          <Pressable analyticsId="profile.edit" accessibilityRole="button" accessibilityLabel={tr('프로필 수정')} accessibilityHint={tr('닉네임, 활동 지역, 화면 모드를 바꿔요')}
+            onPress={() => { play('selection'); router.push('/profile/settings'); }}
+            style={({ pressed }) => [ControlStyles.action, styles.heroAction, controlPresentation(theme, { pressed }).container]}>
+            <ThemedText type="smallBold">{tr('프로필 수정')}</ThemedText>
+          </Pressable>
         </View>
+        {!!own?.friendRequestCount && <Pressable analyticsId="profile.friend-requests" accessibilityRole="button" accessibilityLabel={tr('받은 친구 요청 {0}개', count(own.friendRequestCount))}
+          onPress={() => { play('selection'); router.push('/profile/friends'); }}
+          style={({ pressed }) => [styles.requests, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
+          <View style={[styles.requestDot, { backgroundColor: theme.accent }]} />
+          <ThemedText type="smallBold" style={styles.grow}>{tr('받은 친구 요청 {0}개', count(own.friendRequestCount))}</ThemedText>
+          <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
+        </Pressable>}
+        {own && <View style={styles.records}><ProfileRecordTiles overview={own} /></View>}
         <View accessibilityRole="tablist" onLayout={event => setSegmentWidth(event.nativeEvent.layout.width)} style={[styles.segments, { borderBottomColor: theme.line }]}>
           {segmentWidth > 0 && <Animated.View pointerEvents="none" style={[styles.segmentIndicator, Depth.control, { width: segmentWidth / 3, backgroundColor: theme.backgroundElement, borderBottomColor: theme.accent, transform: [{ translateX: segmentPosition.interpolate({ inputRange: [0, 2], outputRange: [0, segmentWidth * 2 / 3] }) }] }]} />}
           {([['story', tr("내 글")], ['replies', tr("답글")], ['listing', tr("구해요·팔아요")]] as const).map(([key, label]) => (
@@ -257,28 +233,6 @@ export default function ProfileScreen() {
         {segment === 'replies' && replies.length === 0 && <ThemedText type="small" themeColor="textSecondary" style={styles.emptyNote}>{tr("아직 내 글에 달린 답글이 없어요.")}</ThemedText>}
         </Reanimated.View>}
 
-        <View style={[styles.menu, Depth.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-          {PROMOTIONS_PREVIEW_ENABLED && <><Pressable analyticsId="app_profile_index.pressable.6" style={styles.menuRow} accessibilityRole="button" onPress={() => { play('selection'); router.push('/profile/promotions'); }}>
-            <ThemedText type="small">{tr("홍보 크레딧")}</ThemedText>
-          </Pressable>
-          <View style={[styles.divider, { backgroundColor: theme.line }]} /></>}
-          <Pressable analyticsId="app_profile_index.pressable.7"
-            style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: theme.backgroundSelected }]}
-            accessibilityRole="button"
-            onPress={() => { play('selection'); router.push('/profile/guidelines'); }}>
-            <ThemedText type="small">{t.profile.guidelines}</ThemedText>
-          </Pressable>
-          <View style={[styles.divider, { backgroundColor: theme.line }]} />
-          <Pressable analyticsId="app_profile_index.pressable.9"
-            style={({ pressed }) => [styles.menuRow, pressed && { backgroundColor: theme.backgroundSelected }]}
-            accessibilityRole="button"
-            onPress={() => { play('selection'); Alert.alert(t.profile.signOutTitle, t.profile.signOutBody, [
-              { text: t.profile.cancel, style: 'cancel', onPress: () => play('selection') },
-              { text: t.profile.signOut, style: 'destructive', onPress: () => { play('warning'); void signOut(); } },
-            ]); }}>
-            <ThemedText type="small" themeColor="textSecondary">{t.profile.signOut}</ThemedText>
-          </Pressable>
-        </View>
         </ScrollView>
       </SafeAreaView>
 
@@ -292,30 +246,27 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: Spacing.three, paddingBottom: TabBarHeight + Spacing.four },
   headerActions: { flexDirection: 'row' },
   headerButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  hero: { alignItems: 'center', gap: Spacing.one, paddingVertical: Spacing.five },
+  hero: { alignItems: 'center', gap: Spacing.one, paddingTop: Spacing.four, paddingBottom: Spacing.three },
   photoButton: { width: 72, height: 72, marginBottom: Spacing.two },
   photoBadge: { position: 'absolute', bottom: -2, right: -2, width: 28, height: 28, borderRadius: 14, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
   avatar: { width: 72, height: 72, borderRadius: 36, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   avatarImage: { width: '100%', height: '100%' },
   nickRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.two },
   nick: { flexShrink: 1, textAlign: 'center', fontSize: 24, lineHeight: 32, fontWeight: 700 },
-  menu: { borderWidth: 1, borderRadius: 12, overflow: 'hidden', marginTop: Spacing.four },
-  manage: { flexDirection: 'row', borderRadius: 16, padding: Spacing.one, marginBottom: Spacing.three },
-  manageCell: { flex: 1, minWidth: 0, minHeight: 88, borderRadius: 12, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', gap: 2, paddingVertical: 12, paddingHorizontal: Spacing.one },
-  manageIcon: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  manageDot: { position: 'absolute', top: 1, right: 1, width: 9, height: 9, borderRadius: 5, borderWidth: 2 },
-  manageLabel: { textAlign: 'center' },
-  manageSub: { textAlign: 'center', fontSize: 12, lineHeight: 16, fontVariant: ['tabular-nums'] },
-  accountMenu: { borderWidth: 1, borderRadius: 16, overflow: 'hidden', marginBottom: Spacing.four },
-  accountRow: { minHeight: 72, paddingHorizontal: Spacing.three, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  accountIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  accountText: { flex: 1, gap: Spacing.one },
+  top: { paddingTop: Spacing.three },
+  stats: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: Spacing.one },
+  stat: { flex: 1, minWidth: 0, minHeight: 64, alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 12 },
+  statValue: { fontVariant: ['tabular-nums'] },
+  heroActions: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.three },
+  heroAction: { flex: 1, borderWidth: 1 },
+  requests: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 52, borderRadius: 14, paddingHorizontal: Spacing.three, marginTop: Spacing.three },
+  requestDot: { width: 8, height: 8, borderRadius: 4 },
+  grow: { flex: 1 },
+  records: { marginTop: Spacing.three, marginBottom: Spacing.four },
   segments: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
   segmentIndicator: { position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: 10, borderBottomWidth: 2 },
   segment: { flex: 1, minHeight: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   myPost: { paddingVertical: Spacing.three, gap: Spacing.one, borderBottomWidth: StyleSheet.hairlineWidth },
   myTitle: { fontSize: 16, lineHeight: 22 },
   emptyNote: { paddingVertical: Spacing.four, textAlign: 'center' },
-  menuRow: { paddingHorizontal: Spacing.three, paddingVertical: 14 },
-  divider: { height: 1, marginHorizontal: Spacing.three },
 });
