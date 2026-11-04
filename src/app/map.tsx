@@ -338,11 +338,12 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   };
   // A chip with a 3D picture is just the picture and its name, no chip behind (owner 2026-11-04, mockup ⑪): the chosen one lifts and its name fills.
   // A setting (보여 줄 곳) only gets a purple outline on the card color, so it never reads as a chosen category.
+  // Every name sits on the card color so map labels never run into it (owner 2026-11-04 "글이 백그라운드가없으니 지도에 뜨는 글과 겹쳐서").
   const artChip = ({ id, label, selected, analyticsId, onPress, accessibilityLabel = label, expanded, outline, size = 40, ink = theme.text }: { id: string; label: string; selected: boolean; analyticsId: string; onPress: () => void; accessibilityLabel?: string; expanded?: boolean; outline?: boolean; size?: number; ink?: string }) =>
     <Pressable key={id} analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityState={expanded === undefined ? { selected } : { selected, expanded }}
       onPress={onPress} style={({ pressed }) => [styles.artChip, { opacity: pressed ? 0.82 : 1 }]}>
       <View style={selected ? styles.artLift : null}><CategoryIcon id={id} size={size} play={bump.id === id ? bump.n : 0} /></View>
-      <ThemedText numberOfLines={1} style={[styles.artLabel, !selected ? { color: ink, textShadowColor: theme.background, textShadowRadius: 3 }
+      <ThemedText numberOfLines={1} style={[styles.artLabel, !selected ? { color: ink, backgroundColor: `${theme.card}F0` }
         : outline ? { backgroundColor: theme.card, borderWidth: 1.5, borderColor: theme.accent, color: theme.accent } : { backgroundColor: theme.accent, color: theme.accentInk }]}>{label}</ThemedText>
     </Pressable>;
   const quickFilters = <>
@@ -588,7 +589,7 @@ const styles = StyleSheet.create({
   mapDateLabel: { borderRadius: 12, paddingHorizontal: 8, paddingVertical: 6, overflow: 'hidden' },
   filterRow: { flexGrow: 0, flexShrink: 0, maxHeight: 58 }, artRow: { maxHeight: 74 }, artRowItems: { alignItems: 'center' },
   artChip: { minWidth: 52, minHeight: 44, alignItems: 'center', gap: 1, paddingHorizontal: 2 }, artLift: { transform: [{ translateY: -2 }, { scale: 1.06 }] },
-  artLabel: { fontSize: 12, lineHeight: 16, fontWeight: '700', paddingHorizontal: 6, borderRadius: 8, overflow: 'hidden' }, filters: { paddingHorizontal: 16, gap: 8, paddingBottom: 8 }, chip: { minHeight: 44, paddingHorizontal: 13, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 7 }, dot: { width: 8, height: 8, borderRadius: 4 },
+  artLabel: { fontSize: 12, lineHeight: 16, fontWeight: '700', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 8, overflow: 'hidden' }, filters: { paddingHorizontal: 16, gap: 8, paddingBottom: 8 }, chip: { minHeight: 44, paddingHorizontal: 13, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 7 }, dot: { width: 8, height: 8, borderRadius: 4 },
   filterDot: { width: 6, height: 6, borderRadius: 3, position: 'absolute', right: 6, top: 6 },
   visitedBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#CBB9FF', borderRadius: 5, paddingHorizontal: 6, paddingVertical: 3 }, visitedLogo: { width: 35, height: 16 }, visitedText: { color: '#171123', fontSize: 9, lineHeight: 14, fontWeight: '800', letterSpacing: 0.8 },
   top25Badge: { borderRadius: 5, borderWidth: 1, borderColor: '#68543A', backgroundColor: '#2A2319', paddingHorizontal: 5, paddingVertical: 2 }, top25BadgeText: { color: TOP25_GOLD, fontSize: 10, lineHeight: 14, fontWeight: '800' }, top25Note: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 4, gap: 5 }, top25Source: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
