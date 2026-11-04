@@ -12,16 +12,21 @@ import * as discoverySort from '../src/lib/discovery-sort.ts';
 import * as location from '../src/lib/location.ts';
 import { tr } from '../src/i18n/index.ts';
 import { contentAdPosition } from '../src/lib/content-ad-placement.ts';
+import * as openingHours from '../src/lib/opening-hours.ts';
 
 const source = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
-const children = node => [node?.props?.children].flat(Infinity);
+// The list sheet's header (summary, sub-filters, sort) is a prop, so it is walked like children.
+const children = node => [node?.props?.children, ...(node?.props?.header ? [node.props.header] : [])].flat(Infinity);
 const nodes = node => !node || typeof node !== 'object' || node.type === 'Modal' && !node.props.visible ? [] : [node, ...children(node).flatMap(nodes)];
 const text = node => node == null || typeof node === 'boolean' ? '' : typeof node === 'object' ? children(node).map(text).join(' ') : String(node);
+// The filter sheet's own 지도 보기, not the header's list/map switch with the same name.
+const modalControl = (tree, label) => control(nodes(tree).find(node => node.type === 'Modal' && node.props.visible), label);
+const emptyCards = tree => [...nodes(tree), ...nodes(nodes(tree).find(node => node.type === 'FlatList')?.props.ListEmptyComponent)].filter(node => node.type === 'StateCard');
 const control = (tree, label) => { const result = nodes(tree).find(node => node.props?.accessibilityLabel === label || node.type === 'Pressable' && text(node).trim() === label); assert.ok(result, `Missing control: ${label}`); return result; };
 
 // Render the actual route and run its handlers; only native/external services are replaced.
-function mount({ light = false, reduced = false, places = [], business = {}, origin = { latitude: 49.25, longitude: -122.86 }, registryReady = true, onClose, loadWebshops = async () => [], loadLinks = async () => ({}), loadPhotos = async () => ({}) } = {}) {
-  const routes = [], state = [], feedback = [], alerts = [], memoValues = [], effects = [], focusEffects = [];
+function mount({ cities = [], routeParams = {}, light = false, reduced = false, places = [], business = {}, origin = { latitude: 49.25, longitude: -122.86 }, registryReady = true, onClose, loadWebshops = async () => [], loadLinks = async () => ({}), loadPhotos = async () => ({}) } = {}) {
+  const routes = [], state = [], feedback = [], alerts = [], memoValues = [], effects = [], focusEffects = [], chosenCities = [];
   let index = 0, focused = true, viewer = 'guest', city = { id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver' };
   const theme = { background: light ? '#fff' : '#0B0B12', card: light ? '#fff' : '#171722', backgroundElement: '#222231', backgroundSelected: '#343443', text: '#F6F3F0', textSecondary: '#B7B4C3', accent: '#CBB9FF', accentInk: '#171123', line: '#343443' };
   const hooks = { useState(initial) { const slot = index++; if (!(slot in state)) { const value = typeof initial === 'function' ? initial() : initial; state[slot] = value && typeof value === 'object' && 'ready' in value && 'shops' in value ? { ...value, key: 'vancouver:guest', ready: registryReady } : value; } return [state[slot], next => { state[slot] = typeof next === 'function' ? next(state[slot]) : next; }]; }, useRef: current => ({ current }), useMemo: fn => { const value = fn(); memoValues.push(value); return value; }, useCallback: fn => fn, useEffect: (fn, deps) => effects.push({ fn, deps }) };
@@ -34,8 +39,8 @@ function mount({ light = false, reduced = false, places = [], business = {}, ori
     '../../supabase/functions/_shared/ticketmaster': {},
     'react-native-reanimated': { __esModule: true, default: { View: 'ReanimatedView' }, useReducedMotion: () => reduced, LayoutAnimationConfig: 'LayoutAnimationConfig',
       FadeIn: { duration: ms => ({ fadeIn: ms }) }, SlideInDown: { duration: ms => ({ slideIn: ms }) }, SlideOutDown: { duration: ms => ({ slideOut: ms }) } },
-    'expo-router': { useFocusEffect: fn => focusEffects.push(fn), useIsFocused: () => focused, useLocalSearchParams: () => ({}), useRouter: () => ({ push: route => routes.push(route) }) },
-    '@/lib/mock': { CITIES: [] },
+    'expo-router': { useFocusEffect: fn => focusEffects.push(fn), useIsFocused: () => focused, useLocalSearchParams: () => routeParams, useRouter: () => ({ push: route => routes.push(route), setParams: params => routes.push({ setParams: params }) }) },
+    '@/lib/mock': { CITIES: cities },
     '@/constants/theme': { Colors: { dark: { ...theme, card: '#171722' }, light: theme } }, '@/constants/design-system': designSystem, '@/hooks/use-language': { useLanguage: () => ({ tr }) },
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' },
     '@/components/selection-chip': { SelectionChip: 'Pressable' }, '@/components/disclosure': { animateLayout() {} },
@@ -49,15 +54,18 @@ function mount({ light = false, reduced = false, places = [], business = {}, ori
     '@/components/themed-text': { ThemedText: 'Text' }, '@/hooks/use-theme': { useTheme: () => theme },
     '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
     '@/lib/auth': { useAuth: () => ({ isAuthed: viewer !== 'guest', me: { id: viewer }, promptLogin() {} }) },
-    '@/lib/community-city': { useCommunityCity: () => ({ city }) },
+    '@/lib/community-city': { useCommunityCity: () => ({ city, selectCity: async next => { chosenCities.push(next.id); return true; } }) },
     '@/lib/discovery': discovery, '@/lib/discovery-sort': discoverySort, '@/lib/post-maps': postMaps, '@/lib/city-places': { getCityDiscoveryPlaces: () => places }, '@/lib/city-top25': { cityTop25Recommendations: () => [] }, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 }, '@/lib/discovery-data': {}, '@/lib/feed-data': {},
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) }, '@/lib/location': location, '@/lib/supabase': { supabase: {} },
     '@/lib/ticketmaster': { EVENT_CITIES: { vancouver: {} } }, '@/components/post-ad-label': {}, '@/lib/hashtags': { hasAdLabel: () => false },
+    '@/components/drag-sheet': { DragSheet: 'DragSheet' }, '@/components/map-list-sheet': { MapListSheet: 'MapListSheet' }, '@/components/place-hours': { PlaceHours: 'PlaceHours' },
+    '@/components/reservation-button': { ReservationButton: 'ReservationButton' }, '@/lib/opening-hours': openingHours,
+    '@/lib/listing-details': { inBounds: (b, p) => p.latitude >= b.south && p.latitude <= b.north && p.longitude >= b.west && p.longitude <= b.east },
   };
   const exports = {};
   const code = ts.transpileModule(source + '\nexports.CityMap = CityMap; exports.DiscoveryCard = DiscoveryCard; exports.GlingVisitedBadge = GlingVisitedBadge;', { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(code, { exports, Date, AbortController, setTimeout, clearTimeout, require: name => { if (name.startsWith('@/assets/')) return name; assert.ok(Object.hasOwn(imports, name), name); return imports[name]; } });
-  return { render() { index = 0; memoValues.length = 0; effects.length = 0; focusEffects.length = 0; return exports.CityMap({ city: imports['@/lib/community-city'].useCommunityCity().city, onClose }); }, renderCard(item, distance) { index = 0; return exports.DiscoveryCard({ item, distance, viewerScope: 'guest', onOpen() {} }); }, renderBadge(selected) { index = 0; return exports.GlingVisitedBadge({ selected }); }, get days() { return memoValues[0]; }, get registryDependencies() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).deps; }, readRegistry() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).fn(); }, readResults() { return focusEffects.find(fn => String(fn).includes('loadPage(null)'))(); }, setCity: id => { city = { ...city, id }; }, setViewer: id => { viewer = id; }, setFocused: value => { focused = value; }, feedback, alerts, routes };
+  return { render() { index = 0; memoValues.length = 0; effects.length = 0; focusEffects.length = 0; return exports.CityMap({ city: imports['@/lib/community-city'].useCommunityCity().city, onClose }); }, renderCard(item, distance) { index = 0; return exports.DiscoveryCard({ item, distance, viewerScope: 'guest', onOpen() {} }); }, renderBadge(selected) { index = 0; return exports.GlingVisitedBadge({ selected }); }, get days() { return memoValues[0]; }, get registryDependencies() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).deps; }, readRegistry() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).fn(); }, readResults() { return focusEffects.find(fn => String(fn).includes('loadPage(null)'))(); }, setCity: id => { city = { ...city, id }; }, setViewer: id => { viewer = id; }, setFocused: value => { focused = value; }, feedback, alerts, routes, chosenCities };
 }
 
 test('main categories toggle independently and event dates belong to the festival category', () => {
@@ -83,7 +91,7 @@ test('main categories toggle independently and event dates belong to the festiva
 test('the quick category row preserves the owner-selected restaurant, cafe, festival and nightlife order', () => {
   const tree = mount().render();
   const row = nodes(tree).find(node => node.type === 'ScrollView' && node.props.horizontal);
-  assert.deepEqual(children(row).map(node => node.props.accessibilityLabel), ['전체', 'gling Visited', 'TOP 50', '배달 할인', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳', '부동산', '중고거래']);
+  assert.deepEqual(children(row).map(node => node.props.accessibilityLabel), ['전체', '지금 영업 중', 'gling Visited', 'TOP 50', '배달 할인', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳', '부동산', '중고거래']);
 });
 
 test('gling Visited selects only attested map pins while dining, cafe and All remain independent', () => {
@@ -155,12 +163,12 @@ test('custom dates validate before closing and reset clears both category and da
   control(tree, '분류와 날짜 필터 열기').props.onPress(); tree = view.render();
   control(tree, '날짜 지정').props.onPress(); tree = view.render();
   control(tree, '행사 날짜 연도-월-일').props.onChangeText('2026-02-30'); tree = view.render();
-  control(tree, '지도 보기').props.onPress(); tree = view.render();
+  modalControl(tree, '지도 보기').props.onPress(); tree = view.render();
   assert.ok(nodes(tree).some(node => node.props?.accessibilityRole === 'alert'));
   assert.ok(nodes(tree).some(node => node.type === 'Modal'));
   const tomorrow = discovery.discoveryDays('today', 'vancouver')[0];
   control(tree, '행사 날짜 연도-월-일').props.onChangeText(tomorrow); tree = view.render();
-  control(tree, '지도 보기').props.onPress(); tree = view.render();
+  modalControl(tree, '지도 보기').props.onPress(); tree = view.render();
   assert.ok(!nodes(tree).some(node => node.type === 'Modal'));
   control(tree, '분류와 날짜 필터 열기').props.onPress(); tree = view.render();
   control(tree, '초기화').props.onPress(); tree = view.render();
@@ -207,7 +215,7 @@ test('collapsed place cards leave no panel or map inset and lower the list butto
   assert.ok(map.props.selectedId, 'collapsing keeps the chosen pin');
 });
 
-test('the place card rises and drops along the same edge, the view switch fades in, and Reduce Motion drops both', () => {
+test('the place card rises and drops along the same edge, Reduce Motion drops it, and the list sheet replaces the card', () => {
   const place = { id: 'osm:node:100', cityId: 'vancouver', name: 'Fixture place', category: 'cafe', address: 'Fixture address', latitude: 49.29, longitude: -123.13, sourceUrl: 'https://www.openstreetmap.org/node/100' };
   const { ControlMotion } = designSystem;
   for (const reduced of [false, true]) {
@@ -220,9 +228,9 @@ test('the place card rises and drops along the same edge, the view switch fades 
     assert.deepEqual(card.props.entering, reduced ? undefined : { slideIn: ControlMotion.expandMs });
     assert.deepEqual(card.props.exiting, reduced ? undefined : { slideOut: ControlMotion.sheetCloseMs });
     control(tree, '리스트 보기').props.onPress(); tree = view.render();
-    const pane = nodes(tree).find(node => node.type === 'ReanimatedView' && node.key === 'list');
-    assert.ok(pane, 'the list replaces the map as a new pane');
-    assert.deepEqual(pane.props.entering, reduced ? undefined : { fadeIn: ControlMotion.settleMs });
+    assert.equal(nodes(tree).find(node => node.type === 'MapListSheet').props.snap, 'full', 'the list rises over the map instead of replacing it');
+    assert.ok(nodes(tree).some(node => node.type === 'DiscoveryMap'), 'the map stays mounted under the sheet');
+    assert.ok(!nodes(tree).some(node => node.type === 'ReanimatedView'), 'the place card leaves when the list opens');
   }
 });
 
@@ -271,8 +279,11 @@ test('map categories float over the map and list categories keep normal flow', (
     const controls = nodes(tree).find(node => children(node).includes(location));
     assert.equal(controls.props.style.at(-1).top, 80);
     control(tree, '리스트 보기').props.onPress(); tree = view.render();
-    assert.ok(!nodes(tree).some(node => node.props?.testID === 'map-filter-overlay'));
+    const above = nodes(tree).find(node => node.props?.testID === 'map-filter-overlay');
+    assert.ok(above, 'categories stay above the full list so they can still be switched');
+    assert.equal(Object.assign({}, ...above.props.style).backgroundColor, light ? '#fff' : '#0B0B12');
     assert.equal(control(tree, '전체').props.baseColor, '#222231');
+    assert.equal(nodes(tree).find(node => node.type === 'MapListSheet').props.positions.full, 68, 'the full list stops under the chips');
   }
 });
 
@@ -322,7 +333,8 @@ test('delivery-only discount sorting preserves the default nearest order and res
   let tree = view.render();
   assert.ok(!nodes(tree).some(node => node.props?.accessibilityLabel === '할인율 높은 순'));
   control(tree, '배달 할인').props.onPress(); tree = view.render();
-  control(tree, '리스트 보기').props.onPress();
+  assert.equal(nodes(tree).find(node => node.type === 'MapListSheet').props.snap, 'half', 'a category tap raises the list half way');
+  control(tree, '내 위치 사용').props.onPress();
   await new Promise(setImmediate); tree = view.render();
   const data = () => nodes(tree).find(node => node.type === 'FlatList').props.data.map(item => item.title);
   assert.deepEqual(Array.from(data()), ['Near shop', 'Larger saving']);
@@ -343,12 +355,12 @@ test('delivery registry pending, failure and retry are distinct from a successfu
   control(tree, '배달 할인').props.onPress(); tree = view.render();
   const finishResults = view.readResults(); await new Promise(setImmediate); tree = view.render();
   assert.ok(nodes(tree).some(node => node.type === 'GlingLoader'), 'unread registry remains loading after other results have settled');
-  assert.ok(!nodes(tree).some(node => node.type === 'StateCard' && node.props.title === '아직 배달 할인 가게가 없어요'));
+  assert.ok(!emptyCards(tree).some(node => node.props.title === '아직 배달 할인 가게가 없어요'));
   const stopRead = view.readRegistry(); await new Promise(setImmediate); tree = view.render();
   const error = nodes(tree).find(node => node.type === 'StateCard' && node.props.kind === 'error');
   assert.equal(error.props.title, '웹샵 할인 정보를 불러오지 못했어요');
   assert.equal(error.props.actionLabel, '다시 시도');
-  assert.ok(!nodes(tree).some(node => node.type === 'StateCard' && node.props.title === '아직 배달 할인 가게가 없어요'));
+  assert.ok(!emptyCards(tree).some(node => node.props.title === '아직 배달 할인 가게가 없어요'));
   const attempt = view.registryDependencies[1], feedback = view.feedback.length;
   error.props.onAction(); tree = view.render();
   assert.equal(view.registryDependencies[1], attempt + 1, 'retry changes the actual registry read dependency');
@@ -358,7 +370,7 @@ test('delivery registry pending, failure and retry are distinct from a successfu
   await new Promise(setImmediate); tree = view.render();
   assert.equal(reads, 2);
   assert.ok(!nodes(tree).some(node => node.type === 'StateCard' && node.props.kind === 'error'));
-  assert.ok(nodes(tree).some(node => node.type === 'StateCard' && node.props.title === '아직 배달 할인 가게가 없어요'), 'only a successful zero-row read shows an empty list');
+  assert.ok(emptyCards(tree).some(node => node.props.title === '아직 배달 할인 가게가 없어요'), 'only a successful zero-row read shows an empty list');
   stopRead(); stopRetry(); finishResults(); finishRetryResults();
 });
 
@@ -409,4 +421,96 @@ test('main Map opens common search while embedded Map retains its local input an
   assert.equal(nodes(tree).some(node=>node.props?.analyticsId==='search.entry.map'),false);
   const input=nodes(tree).find(node=>node.type==='TextInput'&&typeof node.props.onChangeText==='function');assert.ok(input);input.props.onChangeText('지모코');tree=embedded.render();
   assert.equal(nodes(tree).find(node=>node.type==='TextInput').props.value,'지모코');assert.equal(embedded.routes.length,0);assert.equal(closed,0);
+});
+
+const fixturePlace = (id, patch = {}) => ({ id: `osm:node:${id}`, cityId: 'vancouver', name: `Place ${id}`, category: 'food', address: 'A', latitude: 49.25 + id / 1000, longitude: -122.86, sourceUrl: `https://www.openstreetmap.org/node/${id}`, ...patch });
+const pinsOf = tree => nodes(tree).find(node => node.type === 'DiscoveryMap').props.markers.map(marker => marker.label);
+const listOf = tree => Array.from(nodes(tree).find(node => node.type === 'FlatList').props.data.map(item => item.title));
+const footerOf = tree => nodes(nodes(tree).find(node => node.type === 'FlatList').props.ListFooterComponent);
+
+test('지금 영업 중 removes closed and unknown places from the map and keeps unknown ones behind the last list row', () => {
+  const view = mount({ places: [fixturePlace(1, { name: 'Always open', openingHours: '24/7' }), fixturePlace(2, { name: 'Closed all week', openingHours: 'Mo-Su off' }), fixturePlace(3, { name: 'No hours' }), fixturePlace(4, { name: 'Unreadable', openingHours: 'sunrise-sunset' })] });
+  let tree = view.render();
+  assert.equal(pinsOf(tree).length, 4);
+  const chip = control(tree, '지금 영업 중');
+  assert.equal(chip.props.accessibilityState.selected, false);
+  chip.props.onPress(); tree = view.render();
+  assert.equal(control(tree, '지금 영업 중').props.accessibilityState.selected, true);
+  assert.deepEqual(pinsOf(tree), ['Always open']);
+  assert.deepEqual(listOf(tree), ['Always open']);
+  const row = footerOf(tree).find(node => node.props?.analyticsId === 'discovery.unknown-hours');
+  assert.match(text(row), /영업시간을 모르는 곳 2곳/);
+  assert.equal(row.props.accessibilityState.expanded, false);
+  row.props.onPress(); tree = view.render();
+  assert.deepEqual(listOf(tree), ['Always open', 'No hours', 'Unreadable'], 'unknown hours open below the known ones');
+  assert.deepEqual(pinsOf(tree), ['Always open'], 'they still stay off the map');
+  assert.ok(!footerOf(tree).some(node => node.props?.analyticsId === 'discovery.unknown-hours'), 'the row moves above the places it opened');
+  control(tree, '지금 영업 중').props.onPress(); tree = view.render();
+  assert.equal(pinsOf(tree).length, 4);
+  assert.deepEqual(view.feedback, ['selection', 'selection', 'selection']);
+});
+
+test('price chips select several levels, hide without price data, and an empty result offers 가격 거르기 풀기', async () => {
+  const places = [fixturePlace(1, { name: 'Cheap lunch', priceLevel: 1, subcategories: ['lunch'] }), fixturePlace(2, { name: 'Date night', priceLevel: 3, subcategories: ['date', 'dinner'] }), fixturePlace(3, { name: 'No price' }),
+    fixturePlace(4, { name: 'Cafe', category: 'cafe' })];
+  const view = mount({ places }); let tree = view.render();
+  const priceChip = tree => nodes(tree).some(node => /^가격(으로 거르기| .+, 바꾸기)$/.test(node.props?.accessibilityLabel ?? ''));
+  assert.ok(!priceChip(tree), 'no price chip before a priced category is chosen');
+  control(tree, '레스토랑').props.onPress(); tree = view.render();
+  view.readResults(); await new Promise(setImmediate); tree = view.render();
+  assert.equal(nodes(tree).find(node => node.type === 'MapListSheet').props.snap, 'half');
+  assert.deepEqual(nodes(tree).filter(node => node.props?.analyticsId === 'discovery.subcategory' && node.props.accessibilityLabel).map(node => node.props.accessibilityLabel), ['점심', '저녁', '데이트'], 'only sub-filters some place has');
+  control(tree, '가격으로 거르기').props.onPress(); tree = view.render();
+  assert.equal(nodes(tree).find(node => node.type === 'DragSheet').props.visible, true);
+  control(tree, '가격대 1단계').props.onPress(); tree = view.render();
+  control(tree, '가격대 2단계').props.onPress(); tree = view.render();
+  control(tree, '가격 적용').props.onPress(); tree = view.render();
+  assert.equal(nodes(tree).find(node => node.type === 'DragSheet').props.visible, false);
+  assert.ok(nodes(tree).some(node => node.props?.accessibilityLabel === '가격 $–$$, 바꾸기'));
+  assert.deepEqual(listOf(tree), ['Cheap lunch'], 'places without a price leave while a price is chosen');
+  assert.deepEqual(pinsOf(tree), ['Cheap lunch']);
+  control(tree, '가격 $–$$, 바꾸기').props.onPress(); tree = view.render();
+  control(tree, '가격대 1단계').props.onPress(); tree = view.render();
+  control(tree, '가격대 4단계').props.onPress(); tree = view.render();
+  control(tree, '가격 적용').props.onPress(); tree = view.render();
+  assert.deepEqual(listOf(tree), []);
+  const empty = emptyCards(tree).find(node => node.props.actionLabel === '가격 거르기 풀기');
+  assert.ok(empty, 'an empty price result can be cleared in one tap');
+  empty.props.onAction(); tree = view.render();
+  assert.deepEqual(listOf(tree), ['Cheap lunch', 'Date night', 'No price']);
+  control(tree, '데이트').props.onPress(); tree = view.render();
+  assert.deepEqual(listOf(tree), ['Date night']);
+  control(tree, '점심').props.onPress(); tree = view.render();
+  assert.deepEqual(listOf(tree), ['Cheap lunch', 'Date night'], 'sub-filters add up');
+  control(tree, '레스토랑').props.onPress(); control(tree, '카페').props.onPress(); tree = view.render();
+  assert.ok(!priceChip(tree) && !nodes(tree).some(node => node.props?.analyticsId === 'discovery.subcategory'), 'a category with no values shows neither row');
+  assert.deepEqual(listOf(tree), ['Cafe'], 'leftover sub-filters never hide another category');
+});
+
+test('search this area narrows to the moved map, hides when zoomed out to cities, and city pills switch the city', () => {
+  const cities = [{ id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver', state: 'open' }, { id: 'toronto', name: '토론토', englishName: 'Toronto', state: 'open' }, { id: 'calgary', name: '캘거리', englishName: 'Calgary', state: 'soon' }];
+  const view = mount({ cities, places: [fixturePlace(1, { name: 'Inside' }), fixturePlace(2, { name: 'Outside', latitude: 49.4 })] });
+  let tree = view.render(); let map = nodes(tree).find(node => node.type === 'DiscoveryMap');
+  assert.deepEqual(Array.from(map.props.cities.map(city => [city.id, city.open])), [['vancouver', true], ['toronto', true], ['calgary', false]]);
+  map.props.onMoved({ west: -123, south: 49.2, east: -122.8, north: 49.3 }, 5); tree = view.render();
+  assert.ok(!nodes(tree).some(node => node.props?.analyticsId === 'discovery.search-here'), 'the far city stage has no area to search');
+  nodes(tree).find(node => node.type === 'DiscoveryMap').props.onMoved({ west: -123, south: 49.2, east: -122.8, north: 49.3 }, 12); tree = view.render();
+  const pill = nodes(tree).find(node => node.props?.analyticsId === 'discovery.search-here');
+  assert.match(text(pill), /이 지역에서 다시 찾기/);
+  pill.props.onPress(); tree = view.render();
+  assert.deepEqual(pinsOf(tree), ['Inside']);
+  assert.ok(!nodes(tree).some(node => node.props?.analyticsId === 'discovery.search-here'));
+  map = nodes(tree).find(node => node.type === 'DiscoveryMap');
+  map.props.onCity('calgary'); map.props.onCity('toronto');
+  assert.deepEqual(view.chosenCities, ['toronto'], 'only open cities can be chosen, through the shared city choice');
+  const routed = mount({ cities, routeParams: { cityId: 'vancouver' } });
+  nodes(routed.render()).find(node => node.type === 'DiscoveryMap').props.onCity('toronto');
+  assert.deepEqual(JSON.parse(JSON.stringify(routed.routes.at(-1))), { setParams: { cityId: 'toronto' } }, 'a map opened for a city link changes its own link');
+  assert.deepEqual(routed.chosenCities, []);
+});
+
+test('map pins carry a second line, featured names and the category id for the drawn icon', () => {
+  const places = [fixturePlace(1, { name: 'Brunch spot', category: 'cafe', subcategories: ['brunch'] }), fixturePlace(2, { name: 'Visited', glingVisited: { sourceUrl: 'https://www.instagram.com/reel/fixture/' } })];
+  const markers = nodes(mount({ places }).render()).find(node => node.type === 'DiscoveryMap').props.markers;
+  assert.deepEqual(Array.from(markers.map(marker => [marker.label, marker.sublabel, marker.featured ?? false, marker.icon])), [['Brunch spot', '브런치', false, 'cafe'], ['Visited', '다이닝', true, 'dining']]);
 });
