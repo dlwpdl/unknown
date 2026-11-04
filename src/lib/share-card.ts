@@ -5,6 +5,8 @@ import { merchantMapsUrl } from './merchant-source.ts';
 
 /** 9:16 card in points. Drawn at this width it captures as the 1080×1920 Instagram story image at 3x. */
 export const SHARE_CARD_SIZE = { width: 360, height: 640 } as const;
+/** The shared image file: an Instagram story frame in pixels. */
+export const SHARE_CARD_PIXELS = { width: 1080, height: 1920 } as const;
 export type ShareCardTone = 'dark' | 'light';
 export type ShareCardCity = { name: string; englishName: string; province: string };
 export type ShareCardItem = { name: string; photo: CityPlace | null };
@@ -84,4 +86,32 @@ export function savedListPlaces(items: { target: { kind: string; id: string; cit
     const place = cities.get(target.cityId)!.get(target.id);
     return place ? [place] : [];
   });
+}
+
+/** What the image share needs from react-native-view-shot and expo-sharing; null when this build or platform does not have them. */
+export type ShareCardImageModules = {
+  isAvailableAsync: () => Promise<boolean>;
+  captureRef: (view: never, options: { format: 'png'; result: 'tmpfile'; width: number; height: number }) => Promise<string>;
+  shareAsync: (url: string, options: { mimeType: string; UTI: string }) => Promise<void>;
+};
+
+/** Capture size that comes out as 1080×1920 pixels: iOS reads it in points and draws at the screen scale, Android reads pixels. */
+export function shareCardCaptureSize(os: string, scale: number) {
+  return os === 'ios' ? { width: SHARE_CARD_PIXELS.width / scale, height: SHARE_CARD_PIXELS.height / scale } : { ...SHARE_CARD_PIXELS };
+}
+
+/**
+ * Shares the first view that captures (story-size copy, then the preview) as a PNG through the system share sheet.
+ * False when there is nothing to share as an image, so the caller shares the text instead; a failing share sheet still throws.
+ */
+export async function shareCardImage(modules: ShareCardImageModules | null, views: unknown[], os: string, scale: number) {
+  if (!modules || !(await modules.isAvailableAsync().catch(() => false))) return false;
+  let uri: string | null = null;
+  for (const view of views) {
+    if (!view) continue;
+    try { uri = await modules.captureRef(view as never, { format: 'png', result: 'tmpfile', ...shareCardCaptureSize(os, scale) }); break; } catch { /* try the next view */ }
+  }
+  if (!uri) return false;
+  await modules.shareAsync(uri.startsWith('file://') ? uri : `file://${uri}`, { mimeType: 'image/png', UTI: 'public.png' });
+  return true;
 }

@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState, type Ref, type RefObject } from 'react';
-import { Share, StyleSheet, useWindowDimensions, View, type StyleProp, type ViewInstance, type ViewStyle } from 'react-native';
+import { PixelRatio, Platform, Share, StyleSheet, useWindowDimensions, View, type StyleProp, type ViewInstance, type ViewStyle } from 'react-native';
 import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 
 import { ScrollView, Switch } from '@/components/analytics-controls';
@@ -17,15 +17,20 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import type { CityPlace } from '@/lib/city-places';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { listShareCard, placeShareCard, SHARE_CARD_SIZE, shareCardSenderName, type ShareCard, type ShareCardCity, type ShareCardTone } from '@/lib/share-card';
+import { listShareCard, placeShareCard, SHARE_CARD_PIXELS, SHARE_CARD_SIZE, shareCardImage, shareCardSenderName, type ShareCard, type ShareCardCity, type ShareCardTone } from '@/lib/share-card';
+import { shareCardImageModules } from '@/lib/share-card-image';
 import { supabase } from '@/lib/supabase';
 
 export type ShareCardTarget = { kind: 'place'; place: CityPlace; city: ShareCardCity } | { kind: 'list'; name: string; places: CityPlace[]; count: number | null };
 
 export const SHARE_CARD_ACTION = '다른 앱으로 공유';
-// shortcut: 그림 파일 공유는 react-native-view-shot·expo-sharing 승인 뒤, 승인되면 이 함수만 바꾼다
-/** Sends the card out of the app; true when the person finished sharing. Until the image modules land it shares the card's text and map link. */
-export async function exportShareCard(card: ShareCard, _view: RefObject<ViewInstance | null>): Promise<boolean> {
+/**
+ * Sends the card out of the app as a 1080×1920 PNG, trying `views` in order; true when the person finished sharing.
+ * The image share sheet does not say whether it was sent or cancelled, so it reports false.
+ * The web, a build without the image modules, a device that cannot share files and a failed capture share the text and map link instead.
+ */
+export async function exportShareCard(card: ShareCard, views: RefObject<ViewInstance | null>[]): Promise<boolean> {
+  if (await shareCardImage(shareCardImageModules(), views.map(view => view.current), Platform.OS, PixelRatio.get())) return false;
   const result = await Share.share({ message: card.message });
   return result.action === Share.sharedAction;
 }
@@ -94,7 +99,7 @@ export function ShareCardSheet({ target, visible, onClose }: { target: ShareCard
   const [tone, setTone] = useState<ShareCardTone>('dark'), [signed, setSigned] = useState(false);
   const [busy, setBusy] = useState(false), [notice, setNotice] = useState('');
   const [account, setAccount] = useState<{ id: string; metadata: Record<string, unknown> } | null>(null);
-  const view = useRef<ViewInstance>(null);
+  const view = useRef<ViewInstance>(null), story = useRef<ViewInstance>(null);
   useEffect(() => {
     if (!visible || !isAuthed) return;
     let live = true;
@@ -110,7 +115,7 @@ export function ShareCardSheet({ target, visible, onClose }: { target: ShareCard
   async function share() {
     if (busy) return;
     setBusy(true); setNotice(''); play('selection');
-    try { if (await exportShareCard(card, view)) play('message'); }
+    try { if (await exportShareCard(card, [story, view])) play('message'); }
     catch { setNotice(tr('공유하지 못했어요. 다시 눌러주세요.')); play('warning'); }
     finally { setBusy(false); }
   }
@@ -137,6 +142,10 @@ export function ShareCardSheet({ target, visible, onClose }: { target: ShareCard
       <RaisedActionButton analyticsId="share.card.export" label={tr(SHARE_CARD_ACTION)} busy={busy} onPress={() => void share()} />
       {!!notice && <ThemedText type="supporting" themeColor="textSecondary" accessibilityLiveRegion="polite">{notice}</ThemedText>}
     </ScrollView>
+    {/* The image file: the same card drawn 1080 pixels wide at this screen's scale, off screen and hidden from screen readers. */}
+    <View pointerEvents="none" aria-hidden accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.story}>
+      <ShareCardView ref={story} card={card} tone={tone} width={SHARE_CARD_PIXELS.width / PixelRatio.get()} />
+    </View>
   </DragSheet>;
 }
 
@@ -155,4 +164,5 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.two },
   option: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   optionText: { flex: 1, gap: Spacing.half },
+  story: { position: 'absolute', top: 0, left: -10000 },
 });

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { clampShareText, listShareCard, placeShareCard, savedListPlaces, SHARE_CARD_SIZE, shareCardSenderName } from '../src/lib/share-card.ts';
+import { clampShareText, listShareCard, placeShareCard, savedListPlaces, SHARE_CARD_PIXELS, SHARE_CARD_SIZE, shareCardCaptureSize, shareCardImage, shareCardSenderName } from '../src/lib/share-card.ts';
 
 const city = { name: '밴쿠버', englishName: 'Vancouver', province: 'BC' };
 const photo = (id, extra = {}) => ({ placeId: id, cityId: 'vancouver', uri: `https://upload.wikimedia.org/${id}.jpg`, sourceUrl: `https://commons.wikimedia.org/${id}`,
@@ -91,8 +91,90 @@ test('a saved list keeps its catalog places in order and skips businesses, posts
   assert.equal(reads, 3, 'each city catalog is read once');
 });
 
-test('image export lives in one marked function', () => {
-  const source = readFileSync(new URL('../src/components/share-card.tsx', import.meta.url), 'utf8');
-  assert.equal(source.match(/export async function exportShareCard\(/g)?.length, 1);
-  assert.match(source, /shortcut: 그림 파일 공유는 react-native-view-shot·expo-sharing 승인 뒤, 승인되면 이 함수만 바꾼다/);
+test('a one-place list shows that place, says one place and adds no "more" line', () => {
+  const card = listShareCard('하나만', [place(1, { photo: photo(1) })], 1, 'ko');
+  assert.deepEqual([card.items.length, card.items[0].name, card.badge, card.more, card.empty], [1, 'Place 1', '장소 1곳', null, null]);
+  assert.equal(card.credit, '사진: Artist 1 · CC BY-SA 4.0');
+  assert.equal(card.message, '하나만\n· Place 1');
+});
+
+// Fake image modules: `captures` maps a view to its file path, or to an Error that capture throws.
+function fakeModules({ available = true, captures = new Map(), shareError = null } = {}) {
+  const calls = { captured: [], shared: [] };
+  return { calls, modules: {
+    isAvailableAsync: async () => { if (available instanceof Error) throw available; return available; },
+    captureRef: async (view, options) => { calls.captured.push([view, options]); const out = captures.get(view); if (!out || out instanceof Error) throw out ?? new Error('no view'); return out; },
+    shareAsync: async (url, options) => { calls.shared.push([url, options]); if (shareError) throw shareError; },
+  } };
+}
+
+test('the image comes out as the 1080×1920 story frame on both platforms', () => {
+  assert.equal(SHARE_CARD_PIXELS.width * 16, SHARE_CARD_PIXELS.height * 9);
+  assert.deepEqual(shareCardCaptureSize('ios', 3), { width: 360, height: 640 }, 'iOS sizes are points drawn at the screen scale');
+  assert.deepEqual(shareCardCaptureSize('ios', 2), { width: 540, height: 960 });
+  assert.deepEqual(shareCardCaptureSize('android', 2.625), { width: 1080, height: 1920 }, 'Android sizes are whole pixels');
+});
+
+test('the story-size card is shared first as a PNG file', async () => {
+  const story = { id: 'story' }, preview = { id: 'preview' };
+  const { modules, calls } = fakeModules({ captures: new Map([[story, '/tmp/ReactNative/story.png'], [preview, '/tmp/ReactNative/preview.png']]) });
+  assert.equal(await shareCardImage(modules, [story, preview], 'ios', 3), true);
+  assert.deepEqual(calls.captured, [[story, { format: 'png', result: 'tmpfile', width: 360, height: 640 }]]);
+  assert.deepEqual(calls.shared, [['file:///tmp/ReactNative/story.png', { mimeType: 'image/png', UTI: 'public.png' }]]);
+});
+
+test('when the off-screen capture fails or is not mounted, the preview card is captured instead', async () => {
+  const story = { id: 'story' }, preview = { id: 'preview' };
+  const failed = fakeModules({ captures: new Map([[story, new Error('drawViewHierarchyInRect was not successful')], [preview, 'file:///data/cache/preview.png']]) });
+  assert.equal(await shareCardImage(failed.modules, [story, preview], 'android', 2.625), true);
+  assert.deepEqual(failed.calls.captured.map(([view]) => view), [story, preview]);
+  assert.deepEqual(failed.calls.shared.map(([url]) => url), ['file:///data/cache/preview.png'], 'an Android file URI is not prefixed twice');
+  const unmounted = fakeModules({ captures: new Map([[preview, '/tmp/preview.png']]) });
+  assert.equal(await shareCardImage(unmounted.modules, [null, preview], 'ios', 2), true);
+  assert.deepEqual(unmounted.calls.captured.map(([view]) => view), [preview]);
+});
+
+test('no image modules, no file sharing or no capture falls back to the text share', async () => {
+  const story = { id: 'story' }, preview = { id: 'preview' };
+  assert.equal(await shareCardImage(null, [story, preview], 'ios', 3), false, 'web, or an older binary without the native modules');
+  for (const available of [false, new Error('isAvailableAsync failed')]) {
+    const { modules, calls } = fakeModules({ available, captures: new Map([[story, '/tmp/story.png']]) });
+    assert.equal(await shareCardImage(modules, [story, preview], 'ios', 3), false);
+    assert.deepEqual([calls.captured, calls.shared], [[], []], 'nothing is captured when the device cannot share files');
+  }
+  const broken = fakeModules({ captures: new Map([[story, new Error('RNViewShot is undefined')], [preview, new Error('RNViewShot is undefined')]]) });
+  assert.equal(await shareCardImage(broken.modules, [story, preview], 'android', 3), false);
+  assert.deepEqual(broken.calls.shared, []);
+  assert.equal(await shareCardImage(fakeModules().modules, [null, null], 'ios', 3), false);
+});
+
+test('a share sheet that fails after a good capture is reported, not retried as text', async () => {
+  const story = { id: 'story' };
+  const { modules } = fakeModules({ captures: new Map([[story, '/tmp/story.png']]), shareError: new Error('MissingCurrentViewControllerException') });
+  await assert.rejects(shareCardImage(modules, [story], 'ios', 3), /MissingCurrentViewController/);
+});
+
+test('the image modules load only where they exist, so an older binary or the web never crashes on import', () => {
+  const read = path => readFileSync(new URL(`../src/${path}`, import.meta.url), 'utf8');
+  const native = read('lib/share-card-image.ts'), web = read('lib/share-card-image.web.ts'), sheet = read('components/share-card.tsx');
+  assert.match(native, /if \(!requireOptionalNativeModule\('ExpoSharing'\)\) return null;/);
+  assert.ok(native.indexOf("requireOptionalNativeModule('ExpoSharing')") < native.indexOf("require('expo-sharing')"), 'checked before expo-sharing looks up its native module');
+  assert.doesNotMatch(native, /^import .*(expo-sharing|react-native-view-shot)/m);
+  assert.doesNotMatch(web, /expo-sharing'|react-native-view-shot'|require\(/);
+  assert.match(web, /return null;/);
+  assert.doesNotMatch(sheet, /from 'expo-sharing'|from 'react-native-view-shot'/);
+  assert.equal(sheet.match(/export async function exportShareCard\(/g)?.length, 1);
+  assert.match(sheet, /exportShareCard\(card, \[story, view\]\)/, 'story-size card first, then the preview');
+  assert.match(sheet, /return result\.action === Share\.sharedAction;/, 'the text share stays as the last fallback');
+});
+
+test('iOS can save the card to Photos: the add-only photo permission is in the build config and both languages', () => {
+  const json = path => JSON.parse(readFileSync(new URL(`../${path}`, import.meta.url), 'utf8'));
+  const english = json('app.json').expo.ios.infoPlist.NSPhotoLibraryAddUsageDescription;
+  assert.ok(english);
+  assert.equal(json('locales/en.json').ios.NSPhotoLibraryAddUsageDescription, english);
+  assert.ok(json('locales/ko.json').ios.NSPhotoLibraryAddUsageDescription);
+  assert.equal(json('package.json').dependencies['expo-sharing'], '~58.0.20');
+  assert.equal(json('package.json').dependencies['react-native-view-shot'], '6.1.1');
+  assert.equal(json('app.json').expo.plugins.includes('expo-sharing'), false, 'the receive-share plugin is not needed to send');
 });
