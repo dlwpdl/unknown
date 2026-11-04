@@ -82,6 +82,8 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
     [/^(.+): 사진을 보냈어요\.$/, m => `${m[1]}: Sent a photo.`],
     [/^(.+): 위치를 보냈어요\.$/, m => `${m[1]}: Shared a location.`],
   ],
+  // Reply to a member's import request: 20261104232000_place_suggestions.sql.
+  place_suggestion_added: [[/^요청하신 ‘(.+)’, 글링 지도에 올리고 저장해 뒀어요\.$/, m => `“${m[1]}”, the place you asked for, is on the gling map now. We saved it for you.`]],
   admin_digest: [
     [/^새로 가입한 사람 (\d+)명, 운영 모임 참여 신청 (\d+)건이 있어요\.$/, m => `${m[1]} new ${m[1] === '1' ? 'member' : 'members'} and ${m[2]} ${m[2] === '1' ? 'request' : 'requests'} to join Gling-run meetups.`],
     [/^새로 가입한 사람이 (\d+)명 있어요\.$/, m => `${m[1]} new ${m[1] === '1' ? 'member' : 'members'} joined.`],

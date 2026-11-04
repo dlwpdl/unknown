@@ -2,6 +2,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
+import { ShareIntentProvider } from 'expo-share-intent';
 import { useEffect } from 'react';
 import { Appearance } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -13,6 +14,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { NotificationObserver } from '@/components/notification-observer';
 import { PushInvite } from '@/components/push-invite';
 import { PostUploadCard } from '@/components/post-upload-card';
+import { SharedImport } from '@/components/shared-import';
 import { AuthProvider } from '@/lib/auth';
 import { CommunityCityProvider } from '@/lib/community-city';
 import { installErrorReporting } from '@/lib/error-reporting';
@@ -28,7 +30,8 @@ SplashScreen.setOptions({ fade: false });
 installErrorReporting();
 
 export default function TabLayout() {
-  return <LanguagePreferenceProvider><ThemePreferenceProvider><AppLayout /></ThemePreferenceProvider></LanguagePreferenceProvider>;
+  // The share-intent provider sits outside the others, as the package asks; the web layout has no share sheet.
+  return <ShareIntentProvider><LanguagePreferenceProvider><ThemePreferenceProvider><AppLayout /></ThemePreferenceProvider></LanguagePreferenceProvider></ShareIntentProvider>;
 }
 
 function AppLayout() {
@@ -53,6 +56,7 @@ function AppLayout() {
         <AppActivity />
         <NotificationObserver />
         <AppBadgeSync />
+        <SharedImport />
         <MembershipProvider>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="meetup-create" options={{ animation: reducedMotion ? 'none' : 'slide_from_bottom' }} />

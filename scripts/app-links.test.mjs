@@ -37,10 +37,12 @@ test('scheme links, other hosts and in-app paths pass through unchanged', () => 
 test('old compose-tab links open the writer on home now that the tab is the map', () => {
   const exports = {};
   const source = ts.transpileModule(readFileSync(new URL('../src/app/+native-intent.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
-  vm.runInNewContext(source, { exports, require: () => ({ appPathForLink }) });
+  vm.runInNewContext(source, { exports, require: name => name === 'expo-share-intent' ? { getShareExtensionKey: () => 'glingShareKey' } : { appPathForLink } });
   const open = path => exports.redirectSystemPath({ path, initial: true });
   for (const link of ['gling://compose', '/compose', '/compose?x=1']) assert.equal(open(link), '/?compose=1', link);
   for (const link of ['gling://composer', '/compose-draft', `${site}/compose`, '/notifications']) assert.notEqual(open(link), '/?compose=1', link);
+  // The iOS share extension's hand-off opens the import screen (owner 2026-11-04 G3).
+  assert.equal(open('gling://dataUrl=glingShareKey#text'), '/profile/import');
 });
 
 test('association files claim only paths the app maps, for the release identities', () => {

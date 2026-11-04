@@ -202,6 +202,7 @@ export default function SavedScreen() {
         <View style={styles.folders}><ThemedText type="label" themeColor="textSecondary">{ko ? '내 폴더' : 'My folders'}</ThemedText>
           <View style={styles.wrap}><SavedLibraryButton analyticsId="saved.folder.all" label={ko ? '전체 저장' : 'All saved'} selected={!folderId} disabled={busy} onPress={() => { closeTransient(); setFolderId(null); }} />
             {folders.map(folder => <SavedLibraryButton key={folder.id} analyticsId="saved.folder.select" testID={`saved.folder.${folder.id}`} label={folder.name} selected={folderId === folder.id} disabled={busy} onPress={() => { closeTransient(); setFolderId(folder.id); }} />)}
+            <SavedLibraryButton analyticsId="saved.import" label={ko ? '가져오기' : 'Import'} disabled={busy} onPress={() => { closeTransient(); router.push('/profile/import'); }} />
             <SavedLibraryButton analyticsId="saved.folder.new" label={ko ? '+ 새 폴더' : '+ New folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'create' } }); }} />
             {!!selectedFolder && <SavedLibraryButton analyticsId="saved.folder.manage" label={ko ? '폴더 관리' : 'Manage folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'rename', folder: selectedFolder } }); }} />}
             {/* Filters and search drop places from the list, so sharing waits until the whole folder shows. */}

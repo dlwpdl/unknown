@@ -713,6 +713,7 @@ export const uiEnglish: Record<string, string> = {
   "돌아가기": "Back",
   "거절하기": "Decline",
   "뒤로가기": "Back",
+  "가져오기": "Import",
   "내 참여 신청": "My join request",
   "참여 신청 검토": "Review join request",
   "신청 정보 불러오는 중": "Loading request",
