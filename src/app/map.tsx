@@ -7,7 +7,7 @@ import { hasAdLabel } from '@/lib/hashtags';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, AppState, KeyboardAvoidingView, Linking, Modal, Platform, StyleSheet, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { openBrowserAsync } from 'expo-web-browser';
@@ -541,7 +541,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       </KeyboardAvoidingView>
     </Modal>
     <Modal visible={cityOpen} animationType={reduced ? 'none' : 'slide'} onRequestClose={() => { play('selection'); setCityOpen(false); }}>
-      <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}><CityPicker onClose={() => setCityOpen(false)} /></SafeAreaView>
+      {/* A Modal is a new native root on iOS, so it needs its own provider for the top inset (same as feed-screen). */}<SafeAreaProvider><SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}><CityPicker onClose={() => setCityOpen(false)} /></SafeAreaView></SafeAreaProvider>
     </Modal>
     <MapScopeSheet visible={scopeOpen} scope={scope} onClose={() => setScopeOpen(false)} onPick={value => { setScopeOpen(false); setSelectedId(null); setScope(value); }} />
     <DragSheet visible={priceDraft !== null} onClose={() => setPriceDraft(null)} title={tr('가격')}>
