@@ -14,6 +14,8 @@ export type CityPlace = {
   id: string; cityId: string; name: string; category: Exclude<PlaceCategory, 'all'>;
   latitude: number; longitude: number; address: string; sourceUrl: string;
   website?: string | null; openingHours?: string | null;
+  // P3 전화·인스타 buttons: no bundled place has these yet (0/1250 on 2026-11-05); the screen checks them before showing a button.
+  phone?: string | null; instagram?: string | null;
   nightlife?: true;
   // Filled by the place automation when a source backs it; absent means unknown, never a guess.
   priceLevel?: 1 | 2 | 3 | 4;

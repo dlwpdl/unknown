@@ -87,7 +87,7 @@ export function useSavedEntry(target: SavedTarget | null, visible: boolean) {
     busy: current?.saving ?? false, visible: enabled, onPress, choose };
 }
 
-export function SavedEntryButton({ entry, kind, analyticsId, onBeen }: { entry: ReturnType<typeof useSavedEntry>; kind: 'place' | 'user'; analyticsId: 'save.place' | 'save.user'; onBeen?: () => void }) {
+export function SavedEntryButton({ entry, kind, analyticsId, onBeen }: { entry: ReturnType<typeof useSavedEntry>; kind: 'place' | 'user'; analyticsId: 'save.place' | 'save.user' | 'company.save'; onBeen?: () => void }) {
   const theme = useTheme(), { language } = useLanguage(), ko = language === 'ko', { play } = useInteractionFeedback();
   const [menu, setMenu] = useState(false);
   if (!entry.visible || entry.state && !entry.state.available && !entry.state.saved) return null;

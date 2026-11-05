@@ -6,7 +6,7 @@ import { animateLayout } from '@/components/disclosure';
 import { ThemedText } from '@/components/themed-text';
 import { useLanguage } from '@/hooks/use-language';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { cityClock, formatRanges, isOpenAt, parseOpeningHours } from '@/lib/opening-hours';
+import { cityClock, formatRanges, formatTime, isOpenAt, minutesUntilClose, parseOpeningHours } from '@/lib/opening-hours';
 
 // 2026-11-02 is a Monday, so index 0 lines up with WeekHours.
 const weekday = (locale: string, day: number) => new Intl.DateTimeFormat(locale, { weekday: 'short', timeZone: 'UTC' }).format(Date.UTC(2026, 10, 2 + day));
@@ -17,13 +17,16 @@ export function PlaceHours({ openingHours, cityId, now, fallback = null }: { ope
   const [expanded, setExpanded] = useState(false), [openedAt] = useState(() => Date.now());
   const hours = parseOpeningHours(openingHours), clock = cityClock(cityId, now ?? openedAt);
   if (!hours || !clock) return fallback;
-  const open = isOpenAt(hours, clock), state = open ? tr('영업 중') : tr('영업 종료');
+  // 곧 닫음 (P6): within the hour it shows orange with the closing time instead of today's hours.
+  const open = isOpenAt(hours, clock), left = minutesUntilClose(hours, clock);
+  const closes = left !== null && left <= 60 ? formatTime(clock.minutes + left) : null;
+  const state = closes ? tr('곧 닫음') : open ? tr('영업 중') : tr('영업 종료');
   const day = (index: number) => hours[index].length ? formatRanges(hours[index]) : tr('휴무');
-  const today = tr('오늘 {0}', day(clock.day));
+  const today = closes ? tr('{0}에 닫아요', closes) : tr('오늘 {0}', day(clock.day));
   return <View>
     <Pressable analyticsId="discovery.hours" accessibilityRole="button" accessibilityLabel={`${state}, ${today}`} accessibilityHint={tr('요일별 영업시간 보기')} accessibilityState={{ expanded }}
       onPress={() => { play('selection'); animateLayout(reduced); setExpanded(value => !value); }} style={styles.row}>
-      <ThemedText type="smallBold" themeColor={open ? 'accent' : 'textSecondary'}>{state}</ThemedText>
+      <ThemedText type="smallBold" themeColor={closes ? 'orange' : open ? 'accent' : 'textSecondary'}>{state}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary" style={styles.today}>· {today} {expanded ? '⌃' : '⌄'}</ThemedText>
     </Pressable>
     {expanded && <View style={styles.week}>{hours.map((_, index) => <View key={index} style={styles.day}>

@@ -16,6 +16,7 @@ import { GlingLoader } from '@/components/gling-loader';
 import { MerchantProfileHeader } from '@/components/merchant-profile-header';
 import { MerchantReviews } from '@/components/merchant-reviews';
 import { ReportSheet } from '@/components/report-sheet';
+import { SavedEntryButton, useSavedEntry } from '@/components/saved-entry';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
@@ -28,7 +29,6 @@ import { appendUniquePosts, getPostImageSource } from '@/lib/feed-data';
 import { loadMerchantProfile, loadMerchantProfilePosts, type MerchantProfile, type MerchantProfilePostPage } from '@/lib/merchant-profile';
 import { loadMerchantReviews, type MerchantReviewKind, type MerchantReviewPage } from '@/lib/merchant-reviews';
 import { merchantMapsUrl, merchantPhoneUrl, setSavedMerchantNotifications, startMerchantConversation } from '@/lib/merchant-conveniences';
-import { loadSavedItemState, setSavedItem } from '@/lib/saved-items';
 import { safeMerchantSourceUrl } from '@/lib/merchant-source';
 import { placeMapRoute } from '@/lib/discovery';
 import { loadMerchantSaves, type MerchantSaves } from '@/lib/profile-friends';
@@ -63,8 +63,8 @@ export default function CompanyProfileRoute() {
   const [postRevision, setPostRevision] = useState(0), [postBusy, setPostBusy] = useState(false);
   const postRequest = useRef({ active: false, reading: false });
   const profileRead = useRef(0), actionRequest = useRef({ key, visibility: hidden, active: false, busy: false });
-  const [actionBusy, setActionBusy] = useState<{ operation: typeof actionRequest.current; kind: 'save' | 'message' | 'notifications' } | null>(null);
-  const [actionError, setActionError] = useState<{ key: string; message: string; savedRead?: boolean } | null>(null);
+  const [actionBusy, setActionBusy] = useState<{ operation: typeof actionRequest.current; kind: 'message' | 'notifications' } | null>(null);
+  const [actionError, setActionError] = useState<{ key: string; message: string } | null>(null);
   const [unavailableRecipient, setUnavailableRecipient] = useState<string | null>(null);
   const [saves, setSaves] = useState<{ key: string; value: MerchantSaves | null } | null>(null);
   const [mapPlace, setMapPlace] = useState<{ key: string; placeKey: string | null } | null>(null);
@@ -72,6 +72,10 @@ export default function CompanyProfileRoute() {
   const reviewKind = selected?.merchantId === merchantId ? selected.kind : review === 'employment' ? 'employment' : 'usage';
   const current = result?.key === key ? result : null;
   const profile = current?.profile;
+  // B1: the same 가 보고 싶어요·가 봤어요 sheet as a place; its state is the canonical saved item for this business.
+  const saved = useSavedEntry(merchantId ? { kind: 'merchant', id: merchantId } : null, !!profile), isSaved = !!saved.state?.saved;
+  // An unsave drops the 새 소식 받기 choice with it, as the server does (adjusted while rendering, so no extra pass).
+  if (saved.state?.saved === false && profile?.notifications_enabled) setResult(previous => previous?.profile ? { ...previous, profile: { ...previous.profile, notifications_enabled: false } } : previous);
   const webshop = usePublicWebshop(supabase, profile?.id, `${key}:${revision}`);
   const [orderMerchant, setOrderMerchant] = useState<string | null>(null);
   const orderOpen = orderMerchant === merchantId;
@@ -97,13 +101,6 @@ export default function CompanyProfileRoute() {
       if (!active || request !== profileRead.current) return;
       setResult({ key, profile: next, failed: false });
       if (next?.can_message) setUnavailableRecipient(null);
-      if (next && isAuthed) void loadSavedItemState(supabase, { kind: 'merchant', id: merchantId }).then(saved => {
-        if (!active || request !== profileRead.current) return;
-        setResult(previous => previous?.key === key && previous.profile ? { ...previous, profile: { ...previous.profile,
-          saved: saved.saved, notifications_enabled: saved.saved && previous.profile.notifications_enabled } } : previous);
-      }).catch(() => {
-        if (active && request === profileRead.current) setActionError({ key, message: '저장 상태를 확인하지 못했어요. 다시 시도해주세요.', savedRead: true });
-      });
     })
       .catch(() => { if (active && request === profileRead.current) setResult((previous) => ({ key, profile: previous?.key === key ? previous.profile : null, failed: true })); });
     return () => { active = false; };
@@ -181,26 +178,10 @@ export default function CompanyProfileRoute() {
       setActionError({ key, message: '문의를 시작하지 못했어요. 담당자 연결 상태와 네트워크를 확인해 주세요.' }); play('warning');
     } finally { operation.busy = false; if (operation.active) setActionBusy(null); }
   }
-  async function toggleSaved() {
-    play('selection');
-    if (!isAuthed) return promptLogin('비즈니스를 저장하려면 로그인해 주세요.');
-    const operation = actionRequest.current;
-    if (!profile || operation.key !== key || operation.visibility !== hidden || operation.busy || !operation.active) return;
-    operation.busy = true; setActionBusy({ operation, kind: 'save' }); setActionError(null);
-    try {
-      const { saved } = await setSavedItem(supabase, { kind: 'merchant', id: merchantId }, !profile.saved);
-      if (!operation.active || operation.key !== key || operation.visibility !== hidden) return;
-      profileRead.current++;
-      setResult(previous => previous?.key === key && previous.profile ? { ...previous, profile: { ...previous.profile, saved, notifications_enabled: saved && previous.profile.notifications_enabled } } : previous);
-      setRevision(value => value + 1); play('success');
-    } catch {
-      if (operation.active) { setActionError({ key, message: '저장 상태를 바꾸지 못했어요. 다시 시도해 주세요.' }); play('warning'); }
-    } finally { operation.busy = false; if (operation.active) setActionBusy(null); }
-  }
   async function toggleNotifications() {
     play('selection');
     const operation = actionRequest.current;
-    if (!isAuthed || !profile?.saved || operation.key !== key || operation.visibility !== hidden || operation.busy || !operation.active) return;
+    if (!isAuthed || !profile || !isSaved || operation.key !== key || operation.visibility !== hidden || operation.busy || !operation.active) return;
     operation.busy = true; setActionBusy({ operation, kind: 'notifications' }); setActionError(null);
     try {
       const notifications_enabled = await setSavedMerchantNotifications(supabase, merchantId, !profile.notifications_enabled);
@@ -257,11 +238,7 @@ export default function CompanyProfileRoute() {
   }
   return <ThemedView style={styles.page}><SafeAreaView style={styles.page} edges={['left', 'right']}>
     <PageHeader title={tr("비즈니스 프로필")} analyticsId="company.back" right={profile ? <View style={styles.headerActions}>
-          <Pressable analyticsId="company.save" accessibilityRole="button" accessibilityLabel={profile.saved ? tr("비즈니스 저장 취소") : tr("비즈니스 저장")}
-            accessibilityState={{ selected: profile.saved, disabled: busy, busy: busy && actionBusy?.kind === 'save' }} disabled={busy}
-            style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', selected: profile.saved, pressed, busy }).container]}
-            onPress={() => void toggleSaved()}><SymbolView name={{ ios: profile.saved ? 'bookmark.fill' : 'bookmark', android: profile.saved ? 'bookmark' : 'bookmark_border', web: profile.saved ? 'bookmark' : 'bookmark_border' }} size={IconSize.toolbar} tintColor={theme.accent} />
-            </Pressable>
+          <SavedEntryButton entry={saved} kind="place" analyticsId="company.save" onBeen={() => openReviews('usage')} />
           <Pressable analyticsId="company.more" accessibilityRole="button" accessibilityLabel={tr('더보기')} accessibilityHint={tr('공유, 신고')}
             style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}
             onPress={() => { play('selection'); setMenu({ key, view: 'open' }); }}>
@@ -281,7 +258,7 @@ export default function CompanyProfileRoute() {
         {webshop.failed && <Pressable analyticsId="webshop.retry" accessibilityRole="button" style={styles.button} onPress={() => { play('selection'); webshop.retry(); }}><ThemedText type="small" themeColor="accent">{tr("웹샵 정보를 다시 확인해주세요")}</ThemedText></Pressable>}
         <View style={styles.actions}>
 
-          {isAuthed && profile.saved && <Pressable analyticsId="company.notifications" accessibilityRole="button" accessibilityLabel={tr("새 소식 받기")}
+          {isAuthed && isSaved && <Pressable analyticsId="company.notifications" accessibilityRole="button" accessibilityLabel={tr("새 소식 받기")}
             accessibilityState={{ selected: profile.notifications_enabled, disabled: busy, busy: busy && actionBusy?.kind === 'notifications' }} disabled={busy}
             style={({ pressed }) => [styles.secondaryAction, { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.card, opacity: busy ? 0.65 : 1 }]}
             onPress={() => void toggleNotifications()}><SymbolView name={{ ios: profile.notifications_enabled ? 'bell.fill' : 'bell', android: profile.notifications_enabled ? 'notifications' : 'notifications_none', web: profile.notifications_enabled ? 'notifications' : 'notifications_none' }} size={17} tintColor={theme.accent} />
@@ -295,6 +272,7 @@ export default function CompanyProfileRoute() {
           </View>
         </View>}
         {actionError?.key === key && <ThemedText type="small" accessibilityRole="alert" accessibilityLiveRegion="polite">{tr(actionError.message)}</ThemedText>}
+        {!!saved.error && <ThemedText type="small" accessibilityRole="alert" accessibilityLiveRegion="polite">{saved.error}</ThemedText>}
         {(profile.imageLoadFailed || current?.failed) && <View style={styles.statePhoto}>
           <ThemedText type="small" themeColor="textSecondary">{tr("사진을 다시 불러오지 못했어요. 비즈니스 정보와 저장된 사진은 유지돼요.")}</ThemedText>
           <Pressable analyticsId="company.photo.retry" accessibilityRole="button" style={styles.button}

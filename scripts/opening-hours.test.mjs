@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { cityClock, formatRanges, isOpenAt, localClock, openState, parseOpeningHours } from '../src/lib/opening-hours.ts';
+import { cityClock, formatRanges, formatTime, isOpenAt, localClock, minutesUntilClose, openState, parseOpeningHours } from '../src/lib/opening-hours.ts';
 
 const at = (day, time) => ({ day, minutes: Number(time.slice(0, 2)) * 60 + Number(time.slice(3)) });
 const MO = 0, TU = 1, WE = 2, TH = 3, FR = 4, SA = 5, SU = 6;
@@ -85,4 +85,25 @@ test('the local clock follows the city time zone, including the daylight saving 
   assert.equal(openState('Mo-Su 11:00-23:00', cityClock('vancouver', now)), 'open');
   assert.equal(openState('Tu 18:00-02:00', cityClock('toronto', now)), 'open', 'Tuesday spills into Wednesday morning');
   assert.equal(openState('Mo-We 11:30-24:00', cityClock('toronto', now)), 'closed', 'a 24:00 close does not spill');
+});
+
+test('P6 곧 닫음: minutes until close follow overnight hours, and 24-hour places never close', () => {
+  const left = (value, day, time) => minutesUntilClose(parseOpeningHours(value), at(day, time));
+  assert.equal(left('Mo-Fr 07:00-17:00', MO, '16:00'), 60, 'exactly one hour counts as soon');
+  assert.equal(left('Mo-Fr 07:00-17:00', MO, '15:59'), 61);
+  assert.equal(left('Mo-Fr 07:00-17:00', MO, '16:59'), 1);
+  assert.equal(left('Mo-Fr 07:00-17:00', MO, '17:00'), null, 'closed now');
+  assert.equal(left('Mo-Fr 07:00-17:00', SA, '12:00'), null);
+  assert.equal(left('Mo-Fr 11:30-14:30,16:30-22:30', TU, '14:00'), 30, 'the lunch range closes first');
+  assert.equal(left('Mo off; Tu-Su 17:00-02:00', TU, '23:30'), 150, 'closing after midnight');
+  assert.equal(left('Mo off; Tu-Su 17:00-02:00', WE, '01:30'), 30, 'yesterday’s hours run into this morning');
+  assert.equal(left('Mo off; Tu-Su 17:00-02:00', TU, '01:30'), null, 'Monday is off, so nothing spills into Tuesday');
+  assert.equal(left('Su 11:30-01:00', MO, '00:15'), 45, 'Sunday into Monday wraps the week');
+  assert.equal(left('Mo-Su 07:00-24:00', MO, '23:30'), 30, 'a 24:00 close with a later opening the next day');
+  assert.equal(left('Mo 18:00-24:00; Tu 00:00-00:30', MO, '23:50'), 40, 'a range that reopens at midnight carries on');
+  assert.equal(left('24/7', SU, '23:59'), null, 'open around the clock');
+  assert.equal(left('Mo-Su 00:00-24:00', WE, '23:30'), null);
+  assert.equal(left('Mo-Sa 00:00-24:00; Su 00:00-22:00', SU, '21:30'), 30, 'a 24-hour week that does end');
+  assert.equal(left('Mo-Sa 00:00-24:00; Su 00:00-22:00', SA, '23:30'), 1350, 'Saturday night runs on to Sunday 22:00');
+  assert.deepEqual(['23:30', '23:59', '01:30'].map(time => formatTime(at(MO, time).minutes + 30)), ['24:00', '00:29', '02:00']);
 });
