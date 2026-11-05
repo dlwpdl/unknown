@@ -9,9 +9,9 @@ test('tab transitions finish on interruption and respect system reduced motion a
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   for (const [os, reducedMotion, shouldAnimate] of [['ios', false, true], ['android', false, true], ['ios', true, false], ['web', false, false]]) {
-    const exports = {}, values = [], calls = [];
+    const exports = {}, values = [], calls = [], timers = [];
     let focus;
-    vm.runInNewContext(source, { exports, require(name) {
+    vm.runInNewContext(source, { exports, setTimeout: fn => timers.push(fn), clearTimeout: id => { timers[id - 1] = null; }, require(name) {
       if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) };
       if (name === 'react') return { useCallback: fn => fn, useState: initial => [initial()] };
       if (name === 'expo-router') return { useFocusEffect: fn => { focus = fn; } };
@@ -40,10 +40,15 @@ test('tab transitions finish on interruption and respect system reduced motion a
       assert.equal(values.at(-1), 1, 'a fast switch must not leave the screen dimmed or shifted');
       focus()();
       assert.equal(values.at(-1), 1);
+      const unfocus = focus();
+      timers.at(-1)();
+      assert.equal(values.at(-1), 1, 'a dropped native fade still lands at full opacity (owner 5182a202 white veil)');
+      unfocus();
     } else {
       assert.equal(blur, undefined);
       assert.deepEqual(calls, []);
       assert.deepEqual(values, []);
+      assert.deepEqual(timers, []);
     }
   }
 });
