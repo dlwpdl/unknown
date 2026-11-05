@@ -23,6 +23,8 @@ import { FriendSavedLine, MapScopeSheet } from '@/components/map-scope';
 import { PlaceHours } from '@/components/place-hours';
 import { ReservationButton } from '@/components/reservation-button';
 import { CategoryIcon } from '@/components/category-icon';
+import { CityPicker } from '@/components/city-picker';
+import { SavedEntryButton, useSavedEntry } from '@/components/saved-entry';
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { FeedAd } from '@/components/feed-ad';
 import { SelectionChip } from '@/components/selection-chip';
@@ -52,7 +54,7 @@ import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { loadDiscoveryPosts } from '@/lib/discovery-data';
 import { getPostImageSource, type FeedCursor } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { isFreshLocation, type LocationFix } from '@/lib/location';
+import { facingDegrees, isFreshLocation, type LocationFix } from '@/lib/location';
 import { postPublicAddress, type PostPin } from '@/lib/post-maps';
 import { loadMapScope, type FriendSavedPlace, type MapScope, type MapScopePlaces } from '@/lib/profile-friends';
 import { supabase } from '@/lib/supabase';
@@ -106,7 +108,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const [chosenDateFilter, setDateFilter] = useState<DiscoveryDate | null>(null), [date, setDate] = useState('');
   const dateFilter: DiscoveryDate = eventCategory ? chosenDateFilter ?? (selectedFilters.includes('festival') ? 'week' : 'today') : 'all';
   const [dateOpen, setDateOpen] = useState(false), [dateDraft, setDateDraft] = useState(''), [dateError, setDateError] = useState('');
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false), [cityOpen, setCityOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null), [center, setCenter] = useState<(PostPin & { requestId: number }) | null>(null);
   const [sortBy, setSortBy] = useState<'near' | 'discount'>('near');
   const [openNow, setOpenNow] = useState(false), [showUnknown, setShowUnknown] = useState(false);
@@ -154,6 +156,24 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     void loadMapScope(supabase, scope, city.id, me.id).then(value => { if (active) setScopeResult({ key: scopeKey, value }); }, () => { if (active) setScopeResult({ key: scopeKey, value: null }); });
     return () => { active = false; };
   }, [scope, isAuthed, isFocused, scopeKey, city.id, me.id]);
+  // M5 (owner 2026-11-05): my own saves get a small mark on their pins in every scope; 내가 저장한 곳 already holds that list, and a failed read just leaves pins plain.
+  const [mineResult, setMineResult] = useState<{ key: string; places: MapScopePlaces['places'] } | null>(null);
+  const [savedNow, setSavedNow] = useState<Record<string, boolean>>({});
+  const mineKey = `${city.id}:${viewerScope}:${attempt}`, mineScope = scope === 'mine';
+  useEffect(() => {
+    if (mineScope || !isAuthed || !isFocused) return;
+    let active = true;
+    void loadMapScope(supabase, 'mine', city.id, me.id).then(value => { if (active) setMineResult({ key: mineKey, places: value.places }); }, () => {});
+    return () => { active = false; };
+  }, [mineScope, isAuthed, isFocused, mineKey, city.id, me.id]);
+  // M7 (owner 2026-11-05): the compass runs only while this map is on screen after a location fix (that fix already asked for permission).
+  const [heading, setHeading] = useState<number | null>(null), hasLocation = !!userLocation;
+  useEffect(() => {
+    if (!isFocused || !hasLocation) return;
+    let active = true, watch: Location.LocationSubscription | null = null;
+    void Location.watchHeadingAsync(reading => { if (active) setHeading(facingDegrees(reading)); }).then(subscription => { if (active) watch = subscription; else subscription.remove(); }, () => {});
+    return () => { active = false; watch?.remove(); setHeading(null); };
+  }, [isFocused, hasLocation]);
   const loading = !current || pendingKey === key || selectedFilters.includes('delivery') && !registry.ready || scope !== 'all' && isAuthed && !scopeData;
   const refresh = () => { morePending.current = false; setAttempt(value => value + 1); setNow(Date.now()); setRegion(null); setMoved(null); };
 
@@ -259,13 +279,15 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const pins = items.filter(located);
   // Only show the detail card for a pin the user actually picked; the map stays clear otherwise.
   const selected = items.find(item => item.id === selectedId) ?? null;
+  const mySaved = mineScope ? scopePlaces : mineResult?.key === mineKey ? mineResult.places : null;
   const markers = pins.map(item => {
     const category = DISCOVERY_CATEGORIES.find(value => value.id === item.category)!;
     // No status values yet (stage 4), so the second line is the first known sub-filter or the category.
     const subcategory = PLACE_SUBCATEGORIES.find(option => item.place?.subcategories?.includes(option.id));
     return { id: item.id, latitude: item.latitude, longitude: item.longitude, color: category.color,
       label: `${hasAdLabel(item.post?.hashtags) ? 'AD · ' : ''}${item.title}`.slice(0,80), sublabel: tr(subcategory?.label ?? category.label).slice(0, 40), icon: category.art,
-      ...(item.top25 || item.glingVisited ? { featured: true } : {}), ...(item.top25 ? { top25: true } : {}), ...(item.webshopDiscount ? { discount: item.webshopDiscount } : {}) };
+      ...(item.top25 || item.glingVisited ? { featured: true } : {}), ...(item.top25 ? { top25: true } : {}), ...(item.webshopDiscount ? { discount: item.webshopDiscount } : {}),
+      ...(item.source === 'place' && (savedNow[`${viewerScope}:${placeKey(item)}`] ?? !!mySaved?.has(placeKey(item))) ? { saved: true } : {}) };
   });
   const more = scope === 'all' && current && !limited && (!top25Only || top25Ready) && (current.postMore || current.eventMore);
   const open = (item: DiscoveryItem) => {
@@ -364,6 +386,15 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const chooseNearest = () => { play('selection'); setSortBy('near'); if (!userLocation) void locate(); };
   const chooseDiscount = () => { play('selection'); setSortBy('discount'); };
   const cardShown = !!selected && located(selected) && cardOpen;
+  // M2 (owner 2026-11-05): the open card saves with the place screen's own 가 보고 싶어요/가 봤어요 sheet, read only while the card shows.
+  // 가 봤어요 then opens the place for its review, except in the chat sheet where that page would open behind it. A confirmed state also moves the pin mark (M5).
+  const cardPlace = cardShown ? selected.place : undefined;
+  const savedEntry = useSavedEntry(cardPlace ? { kind: 'place', id: cardPlace.id, cityId: cardPlace.cityId } : null, !!cardPlace);
+  // What the card just confirmed wins over the read made when the map opened; marks are kept per account so a sign-in switch never shows the last person's saves.
+  const cardMark = `${viewerScope}:${cardPlace?.id}`, cardSaved = savedEntry.state?.saved;
+  if (cardPlace && cardSaved !== undefined && savedNow[cardMark] !== cardSaved) setSavedNow(current => ({ ...current, [cardMark]: cardSaved }));
+  const saveButton = cardPlace && <SavedEntryButton entry={savedEntry} kind="place" analyticsId="save.place"
+    onBeen={onClose ? undefined : () => router.push({ pathname: '/places/[id]', params: { id: cardPlace.id, cityId: cardPlace.cityId } })} />;
   const listShown = sheet === 'half' || sheet === 'full';
   // Sheet stops are its top edge inside the map area: under the floating chips when full, half way, or only its summary.
   const sheetStops = { full: mapFiltersHeight, half: Math.max(mapFiltersHeight, Math.round(contentHeight * 0.5)), peek: Math.max(mapFiltersHeight, contentHeight - 96), closed: contentHeight };
@@ -429,7 +460,13 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     {routeHeader ? <PageHeader title={tr('{0} 지도', tr(city.name))} analyticsId="discovery.back" right={<View style={styles.headerActions}>{headerActions}</View>} />
     : <View style={[styles.header, tab && styles.tabHeader]}>
       {!tab && <Pressable analyticsId="discovery.back" accessibilityRole="button" accessibilityLabel={tr("지도를 닫고 이전 화면으로")} onPress={() => { play('selection'); if (onClose) onClose(); else if (router.canGoBack()) router.back(); else router.replace('/'); }} style={styles.icon}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={21} tintColor={theme.text} /></Pressable>}
-      <View style={styles.heading}><ThemedText accessibilityRole="header" style={styles.title}>{tr('{0} 지도', tr(city.name))}</ThemedText></View>
+      {/* M6 (owner 2026-11-05): the title opens the same city picker as the home screen; the small arrow says it can be pressed.
+        shortcut: reuses the registered 'discovery.open' target (the home map button removed 2026-11-01) since new targets need a migration; register 'discovery.city' when one ships. */}
+      <View style={styles.heading}><Pressable analyticsId="discovery.open" accessibilityRole="button" accessibilityLabel={tr('{0} 지도, 도시 바꾸기', tr(city.name))} accessibilityState={{ expanded: cityOpen }}
+        onPress={() => { play('selection'); setCityOpen(true); }} style={styles.titleButton}>
+        <ThemedText style={[styles.title, styles.titleText]}>{tr('{0} 지도', tr(city.name))}</ThemedText>
+        <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={IconSize.chevron} tintColor={theme.textSecondary} />
+      </Pressable></View>
       {headerActions}
     </View>}
     <View style={[styles.search, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}>
@@ -449,7 +486,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     {!!locationError && <ThemedText accessibilityRole="alert" type="small" style={styles.notice}>{tr(locationError)}</ThemedText>}
     {!!current?.errors.length && <View style={styles.notice}><ThemedText type="small" accessibilityRole="alert">{current.errors.map(error => tr(error)).join(' ')} {tr("새로고침으로 다시 시도할 수 있어요.")}</ThemedText></View>}
     <View style={styles.content} onLayout={event => setContentHeight(event.nativeEvent.layout.height)}>
-      <DiscoveryMap markers={markers} cityName={city.englishName} cities={CITIES.map(value => ({ id: value.id, name: tr(value.name), englishName: value.englishName, open: value.state === 'open' }))} selectedId={selected?.id} center={center} userLocation={userLocation} topInset={mapFiltersHeight}
+      <DiscoveryMap markers={markers} cityName={city.englishName} cities={CITIES.map(value => ({ id: value.id, name: tr(value.name), englishName: value.englishName, open: value.state === 'open' }))} selectedId={selected?.id} center={center} userLocation={userLocation} heading={heading} topInset={mapFiltersHeight}
         bottomInset={cardShown ? Math.min(cardHeight + 56, 1000) : sheetCover} onSelect={selectPin} onMoved={(bounds, zoom) => setMoved({ bounds, zoom })} onCity={chooseCity} />
       <View testID="map-filter-overlay" pointerEvents="box-none" onLayout={event => setMapFiltersHeight(event.nativeEvent.layout.height)} style={sheet === 'full' ? [styles.mapFilters, { backgroundColor: theme.background }] : styles.mapFilters}>{quickFilters}</View>
       <View style={[styles.mapControls, { top: mapFiltersHeight + 12 }]}>
@@ -464,7 +501,9 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       {sheet === 'closed' && <Pressable analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={tr("리스트 보기")} onPress={() => showList('half')} style={[styles.listLink, { backgroundColor: theme.card, borderColor: theme.line, bottom: cardShown ? Math.min(cardHeight + 64, 1000) : 56 }]}><SymbolView name={{ ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' }} size={18} tintColor={theme.text} /><View style={styles.listLinkText}><ThemedText type="smallBold" accessibilityLiveRegion="polite">{tr('목록 {0}개', items.length)}{limited ? '+' : ''}</ThemedText><ThemedText type="caption" themeColor="accent">{sortLabel}</ThemedText></View></Pressable>}
       {cardShown ? <Reanimated.View entering={reduced ? undefined : SlideInDown.duration(ControlMotion.expandMs)} exiting={reduced ? undefined : SlideOutDown.duration(ControlMotion.sheetCloseMs)}
         onLayout={event => setCardHeight(event.nativeEvent.layout.height)} style={[styles.selected, { backgroundColor: theme.card, borderColor: theme.line }]}>
-          <ScrollView analyticsId="discovery.detail" accessibilityLabel={tr("선택한 장소 상세, 스크롤로 더 보기")} style={styles.selectedScroll} contentContainerStyle={styles.selectedContent}><DiscoveryCard item={selected} now={now} distance={discoveryDistanceKm(selected, userLocation)} externalInfo={!!onClose} viewerScope={viewerScope} savedBy={scopePlaces?.get(placeKey(selected))} onOpen={() => open(selected)} /><Top25Note item={selected} /><GlingVisitNote item={selected} /></ScrollView><Directions item={selected} reserveFromBusiness />
+          <ScrollView analyticsId="discovery.detail" accessibilityLabel={tr("선택한 장소 상세, 스크롤로 더 보기")} style={styles.selectedScroll} contentContainerStyle={styles.selectedContent}>
+            <View style={styles.cardRow}><View style={styles.flex}><DiscoveryCard item={selected} now={now} distance={discoveryDistanceKm(selected, userLocation)} externalInfo={!!onClose} viewerScope={viewerScope} savedBy={scopePlaces?.get(placeKey(selected))} onOpen={() => open(selected)} /></View>{saveButton}</View>
+            {!!savedEntry.error && <ThemedText type="small" accessibilityRole="alert">{savedEntry.error}</ThemedText>}<Top25Note item={selected} /><GlingVisitNote item={selected} /></ScrollView><Directions item={selected} reserveFromBusiness />
       </Reanimated.View>
         : sheet === 'closed' && !loading && !deliveryUnavailable && items.length === 0 && <View style={styles.mapEmpty}>{refineCard || <StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : visitedOnly ? visitedReady ? tr("조건에 맞는 글링 방문 장소가 없어요") : tr("아직 글링이 방문한 장소가 없어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 50 장소가 없어요") : tr("이 도시의 TOP 50을 준비하고 있어요") : deliveryOnly ? tr("아직 배달 할인 가게가 없어요") : tr("아직 표시할 공개 위치가 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : visitedOnly ? visitedReady ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : tr("직접 다녀온 장소만 모아 보여드려요. 다른 분류에서 먼저 둘러보세요.") : top25Only ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : deliveryOnly ? tr("가게가 직접 받는 주문 페이지를 준비하고 있어요.") : tr("직접 첨부한 핀과 위치가 확인된 행사만 지도에 표시해요.")} actionLabel={current?.errors.length ? tr("다시 시도") : visitedOnly ? tr("전체 장소 보기") : tr("리스트 보기")} onAction={current?.errors.length ? refresh : visitedOnly ? () => { setSelectedFilters([]); setDateFilter(null); setDate(''); } : () => showList('half')} />}</View>}
       {selected && located(selected) && <Pressable analyticsId="discovery.detail" accessibilityRole="button" accessibilityLabel={cardOpen ? tr('장소 카드 접기') : tr('장소 카드 펼치기')} accessibilityState={{ expanded: cardOpen }} onPress={() => { play('selection'); setClosedCardId(cardOpen ? selectedId : undefined); }} style={[styles.cardToggle, { backgroundColor: theme.card, borderColor: theme.line, bottom: cardOpen ? Math.min(cardHeight + 70, 1000) : 62 }]}>
@@ -500,6 +539,9 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
           <View style={[styles.sheetActions, { borderColor: theme.line }]}><Pressable analyticsId="discovery.filter" accessibilityRole="button" onPress={() => { play('selection'); setSelectedFilters([]); setDateFilter(null); setDate(''); setDateOpen(false); setDateError(''); }} style={styles.date}><ThemedText>{tr("초기화")}</ThemedText></Pressable><Pressable analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr("지도 보기")} onPress={() => { if (dateOpen) { try { const selected = discoveryDays('date', city.id, dateDraft)[0]; const today = discoveryDays('today', city.id)[0]; if (selected < today || Date.parse(`${selected}T00:00:00Z`) > Date.parse(`${today}T00:00:00Z`) + 365 * 86400000) throw new Error(); setDate(selected); setDateFilter('date'); } catch { play('warning'); setDateError("오늘부터 1년 안의 날짜를 YYYY-MM-DD로 입력해 주세요."); return; } } play('selection'); setSheet('closed'); setFiltersOpen(false); setDateOpen(false); setDateError(''); }} style={[styles.apply, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr("지도 보기")}</ThemedText></Pressable></View>
         </SafeAreaView>
       </KeyboardAvoidingView>
+    </Modal>
+    <Modal visible={cityOpen} animationType={reduced ? 'none' : 'slide'} onRequestClose={() => { play('selection'); setCityOpen(false); }}>
+      <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}><CityPicker onClose={() => setCityOpen(false)} /></SafeAreaView>
     </Modal>
     <MapScopeSheet visible={scopeOpen} scope={scope} onClose={() => setScopeOpen(false)} onPick={value => { setScopeOpen(false); setSelectedId(null); setScope(value); }} />
     <DragSheet visible={priceDraft !== null} onClose={() => setPriceDraft(null)} title={tr('가격')}>
@@ -587,7 +629,8 @@ const styles = StyleSheet.create({
   searchHere: { position: 'absolute', alignSelf: 'center', minHeight: 44, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
   priceOptions: { flexDirection: 'row', gap: 8, paddingVertical: 8 }, priceOption: { flex: 1, minHeight: 48, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   screen: { flex: 1 }, header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 8 }, tabHeader: { paddingLeft: 16 }, headerActions: { flexDirection: 'row', alignItems: 'center' },
-  icon: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }, heading: { flex: 1, gap: 2 }, title: { fontSize: 20, lineHeight: 28, fontWeight: '800', letterSpacing: -0.5 },
+  icon: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }, heading: { flex: 1, gap: 2 },
+  titleButton: { alignSelf: 'flex-start', maxWidth: '100%', minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 4 }, titleText: { flexShrink: 1 }, title: { fontSize: 20, lineHeight: 28, fontWeight: '800', letterSpacing: -0.5 },
   unifiedSearch: { flex: 1, minWidth: 0, minHeight: 46, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }, unifiedSearchText: { flex: 1, minWidth: 0 },
   search: { marginHorizontal: 16, marginBottom: 10, borderWidth: StyleSheet.hairlineWidth, borderRadius: 14, flexDirection: 'row', alignItems: 'center', paddingLeft: 14, paddingRight: 4 }, input: { minHeight: 46, flex: 1, minWidth: 0, paddingHorizontal: 10, fontSize: 14 },
   mapFilters: { position: 'absolute', top: 0, left: 0, right: 0, paddingTop: 12, zIndex: 1 },
@@ -612,7 +655,7 @@ const styles = StyleSheet.create({
   content: { flex: 1, minHeight: 180 }, mapControls: { position: 'absolute', right: 22, top: 22, gap: 8 }, mapControl: { minWidth: 44, minHeight: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   listLinkText: { flexShrink: 1, alignItems: 'center' },
   listLink: { position: 'absolute', alignSelf: 'center', minHeight: 56, maxWidth: '55%', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  selected: { position: 'absolute', bottom: 56, left: 16, right: 16, maxWidth: 560, maxHeight: '45%', borderRadius: 18, borderWidth: 1, padding: 12, gap: 12, shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 }, selectedScroll: { flexShrink: 1, minHeight: 0 }, selectedContent: { gap: 12 },
+  selected: { position: 'absolute', bottom: 56, left: 16, right: 16, maxWidth: 560, maxHeight: '45%', borderRadius: 18, borderWidth: 1, padding: 12, gap: 12, shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 }, selectedScroll: { flexShrink: 1, minHeight: 0 }, selectedContent: { gap: 12 }, cardRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4 },
   cardBody: { minHeight: 84, flexDirection: 'row', alignItems: 'center', gap: 12 }, thumbnail: { width: 72, height: 84, borderRadius: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, cardText: { flex: 1, minWidth: 0, gap: 3 }, badge: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
   housingPrice: { fontSize: 18, lineHeight: 25, fontWeight: '700' },
   directions: { flexDirection: 'row', gap: 8 }, reserve: { flex: 1, borderRadius: 10 }, direction: { flex: 1, minHeight: 37, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
