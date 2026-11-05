@@ -3636,6 +3636,7 @@ export const uiEnglish: Record<string, string> = {
   "댓글·답글": "Comments and replies",
   "내 글과 내 댓글에 달린 것": "On your posts and comments",
   "좋아요": "Likes",
+  "좋아요·손 흔들기": "Likes and waves",
   "한 글에 몇 명이 눌러도 한 번에 묶어서": "Grouped into one alert per post",
   "메시지": "Messages",
   "단톡방은 1분 안에 온 건 하나로": "Group chat messages within a minute come as one",
