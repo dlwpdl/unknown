@@ -47,6 +47,16 @@ export function approximatePoint(point: Point): Point {
   return { latitude: round(point.latitude), longitude: round(point.longitude) };
 }
 /**
+ * Where a member's bubble will really show, so the preview never promises another spot: the grid point, or my last bubble's point
+ * when the new one is in its cell or the next. Same rule and numbers as post_live_bubble (review F2), so a home near a grid line never
+ * shows two points by turns.
+ */
+export function shownPoint(point: Point, last: Point | null): Point {
+  const grid = approximatePoint(point);
+  return last && Math.abs(last.latitude - grid.latitude) <= 0.0011 && Math.abs(last.longitude - grid.longitude) <= 0.0011
+    ? { latitude: last.latitude, longitude: last.longitude } : grid;
+}
+/**
  * Where I am, for posting: an honest, fresh fix within 250 m, or MOCKED / INACCURATE / UNAVAILABLE.
  * Only the development example (live state `demo`: a dev build whose server lacks the functions, never a release build)
  * takes the simulator's made-up fix, or the city centre when there is none, so the whole flow can be tried there.
@@ -125,7 +135,17 @@ let context: { client: SupabaseClient; userId: string; cityId: string; center: P
 const listeners = new Set<() => void>();
 export const subscribeLive = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; };
 export const getLive = () => state;
-const set = (next: Partial<LiveState>) => { state = { ...state, ...next }; for (const listener of listeners) listener(); };
+// My latest bubble's point, kept after it goes down because the server keeps reusing it (shownPoint).
+// shortcut: remembered for this app session only; a server field with the last point would cover restarts and other devices.
+let lastMine: (Point & { userId: string }) | null = null;
+const set = (next: Partial<LiveState>) => {
+  state = { ...state, ...next };
+  const mine = state.map?.mine;
+  if (mine && context) lastMine = { userId: context.userId, latitude: mine.latitude, longitude: mine.longitude };
+  for (const listener of listeners) listener();
+};
+/** My latest bubble's point, up or already down, for this signed-in person. */
+export const lastMyPoint = (): Point | null => lastMine && lastMine.userId === context?.userId ? { latitude: lastMine.latitude, longitude: lastMine.longitude } : null;
 /** A short confirmation shown over any screen; with a request id, tapping it opens that request. */
 export const liveNotice = (value: string, requestId?: string) => set({ notice: { id: Date.now(), text: value, ...(requestId ? { requestId } : {}) } });
 export type LiveNoticeItem = NonNullable<LiveState['notice']>;
@@ -162,7 +182,7 @@ export function refreshLive() {
   return loadLiveMap(client, userId, cityId, center);
 }
 /** Signing out or switching accounts: nothing from the last person stays on screen. */
-export function resetLive() { context = null; set({ key: '', status: 'idle', demo: false, map: null, notice: null }); }
+export function resetLive() { context = null; lastMine = null; set({ key: '', status: 'idle', demo: false, map: null, notice: null }); }
 
 async function act<T>(server: (client: SupabaseClient) => PromiseLike<{ data: unknown; error: unknown }>, local: (key: string) => T) {
   if (!context) throw new Error('LIVE_NOT_READY');

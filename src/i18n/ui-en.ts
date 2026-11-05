@@ -4494,6 +4494,7 @@ export const uiEnglish: Record<string, string> = {
   "그대로 둘게요. 위쪽 막대에서 언제든 내릴 수 있어요": "Leaving it up. You can take it down from the bar at the top anytime",
   "그대로 둘게요. 아래 막대에서 언제든 내릴 수 있어요": "Leaving it up. You can take it down from the bar at the bottom anytime",
   "곧 내려가요 · {0}": "Coming down soon · {0}",
+  "전에 띄운 자리와 가까워서 같은 자리에 보여요": "It's close to where your last bubble was, so it shows in the same spot",
   "그대로 둘게요": "Leave it up",
   "{0}분": "{0} min",
   "{0}시간 {1}분": "{0} hr {1} min",

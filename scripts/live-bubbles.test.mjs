@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-import { LIVE, approximatePoint, clampWithin, demoAllowed, distanceMeters, durationLabel, minutesLeft, noticeBottom, noticeMs, parseLiveMap, postingPlace, visibleNotice } from '../src/lib/live-bubbles.ts';
+import { LIVE, approximatePoint, clampWithin, shownPoint, demoAllowed, distanceMeters, durationLabel, minutesLeft, noticeBottom, noticeMs, parseLiveMap, postingPlace, visibleNotice } from '../src/lib/live-bubbles.ts';
 import * as demo from '../src/lib/live-bubbles-demo.ts';
 
 const vancouver = { latitude: 49.2627, longitude: -123.1007 };
@@ -35,6 +35,21 @@ test('pins dragged to the edge of the 100 m circle go out on the ~100 m grid, so
   const shown = edge.map(approximatePoint);
   for (const point of shown) assert.deepEqual(point, { latitude: Math.round(point.latitude * 1000) / 1000, longitude: Math.round(point.longitude * 1000) / 1000 }, 'on the grid');
   assert.ok(offCentre(shown) > 20, 'the grid points do not');
+});
+
+test('the preview shows the point the server will keep: the grid point, or my last one from its cell or the next', () => {
+  // The same cases pgTAP runs through post_live_bubble (review F2), with the same rule and numbers in the migration.
+  const last = { latitude: 49.264, longitude: -123.101 };
+  assert.deepEqual(shownPoint({ latitude: 49.26345, longitude: -123.1007 }, last), last, 'the next cell south keeps the last point');
+  assert.deepEqual(shownPoint({ latitude: 49.2667, longitude: -123.1007 }, last), { latitude: 49.267, longitude: -123.101 }, 'three cells away moves');
+  assert.deepEqual(shownPoint({ latitude: 49.2652, longitude: -123.1002 }, last), last, 'a diagonal neighbour keeps it too');
+  assert.deepEqual(shownPoint({ latitude: 49.2640, longitude: -123.0990 }, last), { latitude: 49.264, longitude: -123.099 }, 'two cells east moves');
+  assert.deepEqual(shownPoint({ latitude: 49.26345, longitude: -123.1007 }, null), { latitude: 49.263, longitude: -123.101 }, 'with no last bubble, the grid point');
+  const migration = readFileSync(new URL('../supabase/migrations/20261105030000_live_bubbles.sql', import.meta.url), 'utf8');
+  assert.match(migration, /lat:=round\(p_latitude::numeric,3\)::double precision; lon:=round\(p_longitude::numeric,3\)::double precision/);
+  assert.match(migration, /if abs\(last\.latitude-lat\)<=0\.0011 and abs\(last\.longitude-lon\)<=0\.0011 then lat:=last\.latitude; lon:=last\.longitude; end if;/);
+  const pgtap = readFileSync(new URL('../supabase/tests/live_bubbles.test.sql', import.meta.url), 'utf8');
+  assert.match(pgtap, /'다시 왔어요','city',30,49\.26345,-123\.1007[\s\S]*'\[49\.264,-123\.101\]'[\s\S]*'이사 왔어요','city',30,49\.2667,-123\.1007[\s\S]*'\[49\.267,-123\.101\]'/, 'and pgTAP expects the same points');
 });
 
 test('time left rounds to whole minutes and reads naturally', () => {
