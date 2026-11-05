@@ -138,3 +138,15 @@ test('before posting, the development example still shows the receiving side', c
   context.mock.timers.tick(10000);
   assert.equal(demo.load('me:early', 'me', vancouver, now, changed).waves.length, 1, 'no second automatic round from the sample bubble');
 });
+
+test('the safety monitor reads a bubble line through its service-only function (ADR-0001)', async () => {
+  const [{ default: ts }, vm] = await Promise.all([import('typescript'), import('node:vm')]);
+  const exports = {};
+  vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../supabase/functions/safety-monitor/index.ts', import.meta.url), 'utf8') + '\nexports.loadContent = loadContent;', {
+    compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, { exports, Deno: { serve() {} }, require: () => ({}) });
+  const calls = [];
+  const content = await exports.loadContent({ rpc: async (name, args) => { calls.push([name, { ...args }]); return { data: { authorId: 'a', text: '동네 말풍선 · 보는 사람: 도시 전체\n커피' }, error: null }; } }, 'live_bubble', 'b1');
+  assert.deepEqual(calls, [['get_live_bubble_safety_content', { p_target_id: 'b1' }]]);
+  assert.equal(content.authorId, 'a');
+  await assert.rejects(exports.loadContent({ rpc: async () => ({ error: new Error('SERVICE_ROLE_REQUIRED') }) }, 'live_bubble', 'b1'), /SERVICE_ROLE_REQUIRED/);
+});
