@@ -18,7 +18,9 @@ export function TabContent({ style, ...props }: ViewProps) {
       toValue: 1, duration: 240, easing: Easing.out(Easing.cubic), useNativeDriver: true,
     });
     animation.start();
-    return () => { animation.stop(); progress.setValue(1); };
+    // iOS can drop a native-driver animation when a sheet or the live-bubble bar changes the screen mid-fade, leaving the tab stuck at 35% (a white veil, owner 2026-11-05). Land on 1 regardless.
+    const settle = setTimeout(() => progress.setValue(1), 300);
+    return () => { clearTimeout(settle); animation.stop(); progress.setValue(1); };
   }, [progress, reducedMotion]));
 
   return <Animated.View {...props} style={[
