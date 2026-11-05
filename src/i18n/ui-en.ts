@@ -4411,6 +4411,7 @@ export const uiEnglish: Record<string, string> = {
   "고치기": "Edit",
   "남기기": "Post",
   "개발용 예시: 손 흔들기·대화 신청 받아 보기": "Dev example: receive a wave and a chat request",
+  "개발용 예시: 시뮬레이터 위치를, 없으면 도시 가운데를 지금 있는 곳으로 써요.": "Dev example: the simulator location, or the city centre without one, stands in for where you are.",
   "개발용 예시": "Dev example",
   "{0}님에게 대화 신청을 보냈어요": "Chat request sent to {0}",
   "개발용 예시라 실제 채팅은 열리지 않아요": "This is a dev example, so no real chat opens",

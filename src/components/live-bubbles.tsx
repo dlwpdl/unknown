@@ -27,10 +27,10 @@ import { DISCOVERY_CATEGORIES } from '@/lib/discovery';
 import { loadPublicFeed, relativeTime } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import {
-  GREETINGS, LIVE, QUICK_PHRASES, approximatePoint, cancelLiveRequest, clampWithin, demoReceive, distanceMeters, durationLabel, endLiveBubble, getLive, liveErrorCode, liveNotice,
+  GREETINGS, LIVE, QUICK_PHRASES, approximatePoint, postingPlace, cancelLiveRequest, clampWithin, demoReceive, distanceMeters, durationLabel, endLiveBubble, getLive, liveErrorCode, liveNotice,
   minutesLeft, postLiveBubble, refreshLive, replyToWave, respondLiveRequest, sendLiveRequest, subscribeLive, waveLiveBubble, type LiveAudience, type LiveBubble, type LiveKind, type LiveMap, type LivePerson, type LiveRequest, type LiveWave, type Point,
 } from '@/lib/live-bubbles';
-import { isFreshLocation } from '@/lib/location';
+import type { LocationFix } from '@/lib/location';
 import { splitPlaceMeetupBody } from '@/lib/meetup-destination';
 import { googleMapsPin, postMapBody } from '@/lib/post-maps';
 import { supabase } from '@/lib/supabase';
@@ -108,7 +108,8 @@ export function LiveDock({ map, demo, now, onCompose, onReceived }: { map: LiveM
       </View>
       <View style={[styles.dockPill, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{action}</ThemedText></View>
     </Pressable>
-    {demo && mine && !pending && <Pressable analyticsId="livemap.dev" accessibilityRole="button" onPress={() => { play('selection'); demoReceive(); }} style={styles.link}>
+    {/* Before posting too: the example then puts up a sample bubble of mine to receive on. */}
+    {demo && !pending && <Pressable analyticsId="livemap.dev" accessibilityRole="button" accessibilityLabel={tr('개발용 예시: 손 흔들기·대화 신청 받아 보기')} onPress={() => { play('selection'); demoReceive(); }} style={styles.link}>
       <ThemedText type="caption" themeColor="accent">{tr('개발용 예시: 손 흔들기·대화 신청 받아 보기')}</ThemedText>
     </Pressable>}
   </View>;
@@ -193,18 +194,14 @@ function WaveList({ waves, now, onClose }: { waves: LiveWave[]; now: number; onC
   </View>;
 }
 
-/** A fresh, honest fix of where I am now; throws PERMISSION, TIMEOUT, MOCKED or INACCURATE. */
-async function currentFix() {
+/** The phone's current fix as reported (checked afterwards by postingPlace); throws PERMISSION or TIMEOUT. */
+async function readFix(): Promise<LocationFix> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const permission = await Location.requestForegroundPermissionsAsync();
     if (!permission.granted) throw new Error('PERMISSION');
     const value = await Promise.race([Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }), new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('TIMEOUT')), 15000); })]);
-    const fix = { latitude: value.coords.latitude, longitude: value.coords.longitude, accuracy: value.coords.accuracy, measuredAt: value.timestamp, mocked: value.mocked ?? false };
-    // A location-faking app reports itself through `mocked`; the server also refuses impossible jumps.
-    if (fix.mocked) throw new Error('MOCKED');
-    if (!isFreshLocation(fix) || fix.accuracy! > 250) throw new Error('INACCURATE');
-    return fix;
+    return { latitude: value.coords.latitude, longitude: value.coords.longitude, accuracy: value.coords.accuracy, measuredAt: value.timestamp, mocked: value.mocked ?? false };
   } finally { if (timer) clearTimeout(timer); }
 }
 
@@ -221,10 +218,12 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
   const [origin, setOrigin] = useState<Point | null>(null), [point, setPoint] = useState<Point | null>(() => isAdmin ? mine ?? mapCenter : null);
   const [locating, setLocating] = useState(!isAdmin), [problem, setProblem] = useState(''), [busy, setBusy] = useState(false), [atEdge, setAtEdge] = useState(false);
   const alive = useRef(true);
+  // Fixed for this opening (the sheet mounts with a new key each time), so a moving map centre never re-runs the location check.
+  const [start] = useState(() => ({ demo: live.demo, center: mapCenter }));
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
-  const locate = useCallback(() => currentFix().then(fix => {
-    if (alive.current) { setOrigin({ latitude: fix.latitude, longitude: fix.longitude }); setPoint(approximatePoint(fix)); }
-  }, error => { if (alive.current) setProblem(locationProblem(error instanceof Error ? error.message : '')); }).finally(() => { if (alive.current) setLocating(false); }), []);
+  const locate = useCallback(() => readFix().catch(error => { if (start.demo) return null; throw error; }).then(fix => postingPlace(fix, start.demo, start.center)).then(place => {
+    if (alive.current) { setOrigin(place); setPoint(approximatePoint(place)); }
+  }, error => { if (alive.current) setProblem(locationProblem(error instanceof Error ? error.message : '')); }).finally(() => { if (alive.current) setLocating(false); }), [start]);
   useEffect(() => { if (!isAdmin) void locate(); }, [isAdmin, locate]);
   const ready = !!body.trim() && !!point && !busy && (isAdmin || !!origin);
   const submit = async () => {
@@ -274,6 +273,7 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
           <View style={styles.flex}>
             <ThemedText type="smallBold" accessibilityLiveRegion="polite">{locating ? tr('지금 있는 곳을 확인하고 있어요') : tr('{0} · 지금 있는 곳 근처', tr(city.name))}</ThemedText>
             <ThemedText type="caption" themeColor="textSecondary">{tr('지금 있는 곳에서 100m 안으로 옮길 수 있어요. 다음 화면에서 남들에게 보이는 자리를 먼저 확인해요.')}</ThemedText>
+            {start.demo && <ThemedText type="caption" themeColor="accent">{tr('개발용 예시: 시뮬레이터 위치를, 없으면 도시 가운데를 지금 있는 곳으로 써요.')}</ThemedText>}
           </View>
         </View>}
         {problemLine}

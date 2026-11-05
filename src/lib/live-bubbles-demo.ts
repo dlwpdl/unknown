@@ -3,7 +3,7 @@ import { LIVE, type LiveBubble, type LiveMap, type LivePost, type LiveRequest, t
 // Development builds only, and only while the server has no live-map functions (live-bubbles.ts demoAllowed): made-up neighbours
 // so the whole flow, including the receiving side, can be tried on a simulator. Everything stays in memory; nothing is sent anywhere.
 // Every name below is invented, and screens label these bubbles '개발용 예시'.
-type World = { userId: string; bubbles: LiveBubble[]; mine: LiveBubble | null; received: LiveRequest[]; waves: LiveWave[]; day: string; used: number; waved: number; sent: number; changed: () => void };
+type World = { userId: string; center: Point; bubbles: LiveBubble[]; mine: LiveBubble | null; received: LiveRequest[]; waves: LiveWave[]; day: string; used: number; waved: number; sent: number; changed: () => void };
 const worlds = new Map<string, World>();
 const PEOPLE = [
   { id: 'demo-person-1', nickname: '하늘콩', trustLevel: 3, body: '커피 한잔 할 사람', east: 260, north: -180, age: 12, left: 48 },
@@ -23,12 +23,12 @@ const later = (key: string, ms: number, run: (value: World) => void) => setTimeo
 export function load(key: string, userId: string, center: Point, now: number, changed: () => void): LiveMap {
   let value = worlds.get(key);
   if (!value) {
-    value = { userId, mine: null, received: [], waves: [], day: day(now), used: 0, waved: 0, sent: 0, changed, bubbles: PEOPLE.map(person => ({
+    value = { userId, center, mine: null, received: [], waves: [], day: day(now), used: 0, waved: 0, sent: 0, changed, bubbles: PEOPLE.map(person => ({
       id: `demo-bubble-${person.id}`, author: { id: person.id, nickname: person.nickname, trustLevel: person.trustLevel }, body: person.body, ...shift(center, person.east, person.north),
       audience: 'city', kind: 'member', createdAt: iso(now - person.age * 60000), expiresAt: iso(now + person.left * 60000), sent: null, waved: false, demo: true })) };
     worlds.set(key, value);
   }
-  value.changed = changed;
+  value.changed = changed; value.center = center;
   if (value.day !== day(now)) { value.day = day(now); value.used = 0; value.waved = 0; }
   if (value.mine && Date.parse(value.mine.expiresAt) <= now) clearMine(value);
   // Like the server: a request about a bubble that went down goes with it.
@@ -37,13 +37,13 @@ export function load(key: string, userId: string, center: Point, now: number, ch
     requestsLeft: LIVE.dailyRequests - value.used, requestLimit: LIVE.dailyRequests, wavesLeft: LIVE.dailyWaves - value.waved };
 }
 
-export function post(key: string, input: LivePost, now: number) {
+export function post(key: string, input: LivePost, now: number, sample = true) {
   const value = world(key), replacing = !!value.mine;
   value.mine = { id: nextId('mine'), author: { id: value.userId, nickname: '나', trustLevel: 1 }, body: input.body.trim(), latitude: input.point.latitude, longitude: input.point.longitude,
     audience: input.audience, kind: input.kind, createdAt: iso(now), expiresAt: iso(now + input.minutes * 60000), sent: null, waved: false, demo: true };
   // A replaced bubble takes its requests and waves with it, as on the server.
   value.received = value.received.filter(request => request.waveReply); value.waves = [];
-  if (!replacing) later(key, 6000, current => { if (current.mine && !current.waves.length) receive(key, Date.now()); });
+  if (!replacing && sample) later(key, 6000, current => { if (current.mine && !current.waves.length) receive(key, Date.now()); });
 }
 const clearMine = (value: World) => { value.mine = null; value.waves = []; value.received = value.received.filter(request => request.waveReply); };
 export function end(key: string) { clearMine(world(key)); }
@@ -96,10 +96,13 @@ export function replyToWave(key: string, waveId: string) {
   value.waves = value.waves.map(item => item.id === waveId ? { ...item, reply: { id, status: 'pending', greeting: 0, conversationId: null } } : item);
   later(key, 3500, current => { current.waves = current.waves.map(item => item.reply?.id === id ? { ...item, reply: { ...item.reply, status: 'accepted' } } : item); });
 }
-/** A made-up neighbour waves at my bubble now and another sends it a chat request a few seconds later (each person once while it waits). */
+/**
+ * A made-up neighbour waves at my bubble now and another sends it a chat request a few seconds later (each person once while it waits).
+ * With no bubble of mine up yet, a sample one goes up first so the receiving side can be seen before posting.
+ */
 export function receive(key: string, now: number) {
   const value = world(key);
-  if (!value.mine) return;
+  if (!value.mine) post(key, { cityId: '', body: '커피 한잔 할 사람', audience: 'city', minutes: 60, point: value.center, origin: value.center, kind: 'member' }, now, false);
   const waved = new Set(value.waves.map(item => item.sender.id));
   const waver = [PEOPLE[1], PEOPLE[3], PEOPLE[0], PEOPLE[2]].find(person => !waved.has(person.id));
   if (waver) value.waves = [{ id: nextId('wave'), sender: { id: waver.id, nickname: waver.nickname, trustLevel: waver.trustLevel }, createdAt: iso(now), reply: null, demo: true }, ...value.waves];

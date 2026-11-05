@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { tr } from '../i18n/index.ts';
 import * as demo from './live-bubbles-demo.ts';
+import { isFreshLocation, type LocationFix } from './location.ts';
 
 // 동네 말풍선 지도 (owner 2026-11-05, docs/ideas/live-map-2026-11-05.md): one short line left where I am, for a while; tapping someone's opens a chat request
 // or a lighter 👋 wave (owner 9cb7200d), which only the bubble's owner sees and can answer with a chat request.
@@ -41,6 +42,20 @@ export function clampWithin(origin: Point, point: Point, meters: number = LIVE.m
 export function approximatePoint(fix: Point): Point {
   const round = (value: number) => Math.round(value * 1000) / 1000;
   return clampWithin(fix, { latitude: round(fix.latitude), longitude: round(fix.longitude) });
+}
+/**
+ * Where I am, for posting: an honest, fresh fix within 250 m, or MOCKED / INACCURATE / UNAVAILABLE.
+ * Only the development example (live state `demo`: a dev build whose server lacks the functions, never a release build)
+ * takes the simulator's made-up fix, or the city centre when there is none, so the whole flow can be tried there.
+ */
+export function postingPlace(fix: LocationFix | null, demoMode: boolean, fallback: Point, now = Date.now()): Point {
+  const usable = !!fix && Number.isFinite(fix.latitude) && Math.abs(fix.latitude) <= 90 && Number.isFinite(fix.longitude) && Math.abs(fix.longitude) <= 180;
+  if (demoMode) return usable ? { latitude: fix.latitude, longitude: fix.longitude } : fallback;
+  if (!fix || !usable) throw new Error('UNAVAILABLE');
+  // A location-faking app reports itself through `mocked`; the server also refuses impossible jumps.
+  if (fix.mocked) throw new Error('MOCKED');
+  if (!isFreshLocation(fix, now) || fix.accuracy! > 250) throw new Error('INACCURATE');
+  return { latitude: fix.latitude, longitude: fix.longitude };
 }
 export function minutesLeft(expiresAt: string, now: number) {
   const end = Date.parse(expiresAt);
