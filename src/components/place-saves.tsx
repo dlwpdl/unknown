@@ -37,11 +37,12 @@ export function PlaceSavedBy({ place, saves }: { place: CityPlace; saves: PlaceS
   return <>
     {!!saves && (saves.saverCount > 0 || saves.friends.length > 0) && <View style={[styles.box, { backgroundColor: theme.backgroundElement }]}>
       <ThemedText type="smallBold">{tr('저장한 사람 {0}명', saves.saverCount.toLocaleString(locale))}{saves.weekCount > 0 ? ` · ${tr('이번 주 +{0}', saves.weekCount.toLocaleString(locale))}` : ''}</ThemedText>
+      {saves.firstIsMe && <ThemedText type="smallBold" themeColor="accent">{tr('내가 처음 저장했어요')}</ThemedText>}
       {saves.friends.length > 0 ? <View style={styles.chips}>
         {saves.friends.map(friend => <Pressable key={friend.id} analyticsId="places.saves.friend" accessibilityRole="link" accessibilityLabel={tr('{0} 프로필 보기', friend.nickname)}
           onPress={() => { play('selection'); router.push({ pathname: '/user/[id]', params: { id: friend.id, nickname: friend.nickname } }); }}
           style={({ pressed }) => [ControlStyles.pill, styles.chip, controlPresentation(theme, { pressed }).container]}>
-          <ThemedText type="small">{tr('{0}님이 저장', friend.nickname)}</ThemedText>
+          <ThemedText type="small">{friend.first ? tr('{0}님이 처음 저장', friend.nickname) : tr('{0}님이 저장', friend.nickname)}</ThemedText>
         </Pressable>)}
       </View> : <ThemedText type="small" themeColor="textSecondary">{tr('친구가 저장하면 여기에 이름이 보여요. 다른 사람은 숫자로만 보여요.')}</ThemedText>}
     </View>}

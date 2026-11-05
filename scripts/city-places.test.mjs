@@ -1188,11 +1188,12 @@ test('G2 place saves: friends by name, similar places named from the catalog, li
   const text = tree => nodes(tree).filter(n => n.type === 'ThemedText').map(n => [n.props.children].flat().join('')).join(' | ');
   const place = { id: 'osm:node:1', cityId: 'vancouver', name: 'First', category: 'food', recommendation: { placeId: 'osm:node:1' }, glingVisited: { sourceUrl: 'https://gling.ca' },
     intro: { vibe: '조용해요', when: '평일 저녁', sourceUrl: 'https://example.ca/menu' } };
-  const saves = { saverCount: 12, weekCount: 2, friends: [{ id: 'u1', nickname: '민지', savedAt: '2026-11-04T00:00:00Z' }],
+  const saves = { saverCount: 12, weekCount: 2, firstIsMe: true, friends: [{ id: 'u1', nickname: '민지', savedAt: '2026-11-04T00:00:00Z', first: true }],
     similar: [{ placeKey: 'osm:node:9', saverCount: 9, weekCount: 0 }, { placeKey: 'osm:node:2', saverCount: 5, weekCount: 1 }, { placeKey: 'osm:node:3', saverCount: 3, weekCount: 0 }] };
   const top = ui.PlaceSavedBy({ place, saves }), top_text = text(top);
   assert.match(top_text, /저장한 사람 12명 · 이번 주 \+2/);
-  assert.match(top_text, /민지님이 저장/);
+  assert.match(top_text, /민지님이 처음 저장/, 'G5: a sharing friend who saved it first is marked');
+  assert.match(top_text, /내가 처음 저장했어요/);
   assert.match(top_text, /분위기 \| 조용해요 \| 언제 갈까 \| 평일 저녁/, 'a missing line is left out, never guessed');
   assert.ok(!top_text.includes('뭘 시킬까'));
   nodes(top).find(n => n.props?.analyticsId === 'places.saves.friend').props.onPress();

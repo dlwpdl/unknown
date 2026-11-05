@@ -40,15 +40,15 @@ test('friend actions call the server once and surface its refusal', async () => 
 
 test('place saves: keys only for similar places, friends checked like a business', async () => {
   const calls = [];
-  const data = { placeKey: 'osm:node:1', saverCount: 7, weekCount: 2, friends: [{ id: user.toUpperCase(), nickname: '민지', savedAt: '2026-11-04T03:00:00Z' }],
+  const data = { placeKey: 'osm:node:1', saverCount: 7, weekCount: 2, firstIsMe: false, friends: [{ id: user.toUpperCase(), nickname: '민지', savedAt: '2026-11-04T03:00:00Z', first: true }],
     similar: [{ placeKey: 'osm:way:9', saverCount: 5, weekCount: 1 }] };
   const client = value => ({ rpc: async (name, args) => { calls.push([name, args]); return { data: value, error: null }; } });
   const saves = await loadPlaceSaves(client(data), 'vancouver', 'osm:node:1');
   assert.deepEqual(calls, [['get_place_saves', { p_city_id: 'vancouver', p_place_key: 'osm:node:1' }]]);
-  assert.deepEqual(JSON.parse(JSON.stringify(saves)), { saverCount: 7, weekCount: 2, friends: [{ id: user, nickname: '민지', savedAt: '2026-11-04T03:00:00Z' }], similar: [{ placeKey: 'osm:way:9', saverCount: 5, weekCount: 1 }] });
+  assert.deepEqual(JSON.parse(JSON.stringify(saves)), { saverCount: 7, weekCount: 2, firstIsMe: false, friends: [{ id: user, nickname: '민지', savedAt: '2026-11-04T03:00:00Z', first: true }], similar: [{ placeKey: 'osm:way:9', saverCount: 5, weekCount: 1 }] });
   assert.equal(await loadPlaceSaves(client(null), 'vancouver', 'osm:node:1'), null);
   assert.equal(await loadPlaceSaves({ rpc: async () => ({ data: null, error: { code: 'PGRST202' } }) }, 'vancouver', 'osm:node:1'), null, 'an older server shows nothing');
-  for (const bad of [{ ...data, weekCount: -1 }, { ...data, similar: [{ placeKey: 'javascript:1', saverCount: 1, weekCount: 0 }] }, { ...data, similar: Array(6).fill(data.similar[0]) }, { ...data, friends: [{ id: 'x', nickname: 'a', savedAt: 'now' }] }])
+  for (const bad of [{ ...data, weekCount: -1 }, { ...data, similar: [{ placeKey: 'javascript:1', saverCount: 1, weekCount: 0 }] }, { ...data, similar: Array(6).fill(data.similar[0]) }, { ...data, friends: [{ id: 'x', nickname: 'a', savedAt: 'now' }] }, { ...data, firstIsMe: null }, { ...data, friends: [{ ...data.friends[0], first: 'yes' }] }])
     await assert.rejects(loadPlaceSaves(client(bad), 'vancouver', 'osm:node:1'), /INVALID_PROFILE_RESPONSE/);
 });
 

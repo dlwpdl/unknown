@@ -1,4 +1,6 @@
 export const uiEnglish: Record<string, string> = {
+  "내가 처음 저장했어요": "You saved it first",
+  "{0}님이 처음 저장": "{0} saved it first",
   "이번 주 +{0}": "+{0} this week",
   "뭘 할까": "What to do",
   "언제 갈까": "When to go",

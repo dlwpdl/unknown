@@ -226,16 +226,24 @@ $$;
 -- at least 3 members who saved both, so one person's saves never show through.
 create function public.get_merchant_saves(p_merchant_id uuid) returns jsonb
 language plpgsql stable security definer set search_path='' as $$
-declare uid uuid:=auth.uid(); v_city text; week_start timestamptz;
+declare uid uuid:=auth.uid(); v_city text; week_start timestamptz; first_id uuid;
 begin
   if p_merchant_id is null or public.get_merchant_profile(p_merchant_id) is null then return null; end if;
   -- A business that has not agreed to its Gling profile yet shows no saves.
   select m.city_id into v_city from private.merchants m where m.id=p_merchant_id and m.consent='granted';
   if v_city is null then return null; end if;
   week_start:=date_trunc('week',now() at time zone 'America/Vancouver') at time zone 'America/Vancouver';
+  -- G5 '처음 저장': only the viewer learns it was them, and friends who share saves show it on their name.
+  select x.user_id into first_id from (
+    select sm.user_id,sm.created_at from private.saved_merchants sm where sm.merchant_id=p_merchant_id
+    union all
+    select s.user_id,s.created_at from private.webshop_place_links l join private.saved_places s on s.place_key=l.place_key and s.city_id=l.city_id where l.merchant_id=p_merchant_id
+  ) x where private.is_active_account(x.user_id) and not private.is_operated_character(x.user_id) order by x.created_at,x.user_id limit 1;
   return jsonb_build_object('merchantId',p_merchant_id,
     'saverCount',(select count(*)::integer from private.merchant_savers(p_merchant_id)),
-    'friends',(select coalesce(jsonb_agg(jsonb_build_object('id',f.id,'nickname',f.nickname,'savedAt',f.saved_at) order by f.saved_at desc),'[]'::jsonb)
+    'weekCount',(select count(*)::integer from private.merchant_savers(p_merchant_id) w where w.saved_at>=week_start),
+    'firstIsMe',uid is not null and first_id is not distinct from uid,
+    'friends',(select coalesce(jsonb_agg(jsonb_build_object('id',f.id,'nickname',f.nickname,'savedAt',f.saved_at,'first',coalesce(f.id=first_id,false)) order by f.saved_at desc),'[]'::jsonb)
       from (select p.id,p.nickname,s.saved_at from private.merchant_savers(p_merchant_id) s
         join public.profiles p on p.id=s.user_id
         left join private.profile_sharing ps on ps.user_id=s.user_id

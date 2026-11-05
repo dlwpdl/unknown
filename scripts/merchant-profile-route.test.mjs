@@ -422,11 +422,12 @@ test('the business profile shows real saves, its own intro lines and opens its G
   const friend = '33333333-3333-4333-8333-333333333333', other = '44444444-4444-4444-8444-444444444444';
   const view = screen({
     loadProfile: async () => ({ ...profile, city_id: 'vancouver', intro_vibe: '조용해요', intro_order: '', intro_tip: '창가 자리가 먼저 차요' }),
-    merchantSaves: async () => ({ saverCount: 7, friends: [{ id: friend, nickname: '하늘', savedAt: '2026-11-01T00:00:00Z' }], similar: [{ merchantId: other, name: '옆집', saverCount: 5, weekCount: 2 }] }),
+    merchantSaves: async () => ({ saverCount: 7, weekCount: 3, firstIsMe: true, friends: [{ id: friend, nickname: '하늘', savedAt: '2026-11-01T00:00:00Z', first: false }], similar: [{ merchantId: other, name: '옆집', saverCount: 5, weekCount: 2 }] }),
     businessLinks: { 'osm:node:42': company },
   });
   view.render(); await settle(); view.render(); await settle(); let root = view.render();
-  assert.match(text(root), /저장한 사람 7명/);
+  assert.match(text(root), /저장한 사람 7명\s+· 이번 주 \+3/);
+  assert.match(text(root), /내가 처음 저장했어요/, 'G5: the viewer sees that they were first');
   assert.match(text(root), /조용해요/); assert.match(text(root), /창가 자리가 먼저 차요/);
   assert.doesNotMatch(text(root), /뭘 시킬까/, 'an empty intro line is hidden');
   control(root, 'company.saves.friend').props.onPress();
@@ -436,7 +437,7 @@ test('the business profile shows real saves, its own intro lines and opens its G
   control(root, 'company.location').props.onPress();
   assert.deepEqual(view.routes.at(-1), { pathname: '/map', params: { cityId: 'vancouver', placeId: 'osm:node:42' } });
   assert.deepEqual(view.links, [], 'a linked business stays inside Gling');
-  const empty = screen({ merchantSaves: async () => ({ saverCount: 0, friends: [], similar: [] }) });
+  const empty = screen({ merchantSaves: async () => ({ saverCount: 0, weekCount: 0, firstIsMe: false, friends: [], similar: [] }) });
   empty.render(); await settle(); root = empty.render();
   assert.doesNotMatch(text(root), /저장한 사람|같이 저장된 곳|분위기/, 'sections without data stay hidden');
   control(root, 'company.location').props.onPress(); await settle();

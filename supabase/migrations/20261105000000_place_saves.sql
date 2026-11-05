@@ -16,15 +16,22 @@ $$;
 -- leave the database; the app names them from its own catalog and drops keys it does not know, so up to 5 come back.
 create function public.get_place_saves(p_city_id text,p_place_key text) returns jsonb
 language plpgsql stable security definer set search_path='' as $$
-declare uid uuid:=auth.uid(); week_start timestamptz;
+declare uid uuid:=auth.uid(); week_start timestamptz; first_id uuid;
 begin
   if p_city_id is null or p_place_key is null or not exists(select 1 from public.cities c where c.id=p_city_id)
     or not (p_place_key ~ '^osm:(node|way|relation):[1-9][0-9]{0,19}$' or p_place_key ~ '^partner:[a-z0-9]+(-[a-z0-9]+)*$') then return null; end if;
   week_start:=date_trunc('week',now() at time zone 'America/Vancouver') at time zone 'America/Vancouver';
+  -- G5 '처음 저장': only the viewer learns it was them, and friends who share saves show it on their name.
+  select x.user_id into first_id from (
+    select s.user_id,s.created_at from private.saved_places s where s.city_id=p_city_id and s.place_key=p_place_key
+    union all
+    select sm.user_id,sm.created_at from private.webshop_place_links l join private.saved_merchants sm on sm.merchant_id=l.merchant_id where l.city_id=p_city_id and l.place_key=p_place_key
+  ) x where private.is_active_account(x.user_id) and not private.is_operated_character(x.user_id) order by x.created_at,x.user_id limit 1;
   return jsonb_build_object('placeKey',p_place_key,
     'saverCount',(select count(*)::integer from private.place_savers(p_city_id,p_place_key)),
     'weekCount',(select count(*)::integer from private.place_savers(p_city_id,p_place_key) w where w.saved_at>=week_start),
-    'friends',(select coalesce(jsonb_agg(jsonb_build_object('id',f.id,'nickname',f.nickname,'savedAt',f.saved_at) order by f.saved_at desc),'[]'::jsonb)
+    'firstIsMe',uid is not null and first_id is not distinct from uid,
+    'friends',(select coalesce(jsonb_agg(jsonb_build_object('id',f.id,'nickname',f.nickname,'savedAt',f.saved_at,'first',coalesce(f.id=first_id,false)) order by f.saved_at desc),'[]'::jsonb)
       from (select p.id,p.nickname,s.saved_at from private.place_savers(p_city_id,p_place_key) s
         join public.profiles p on p.id=s.user_id
         left join private.profile_sharing ps on ps.user_id=s.user_id

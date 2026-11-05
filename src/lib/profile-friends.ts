@@ -18,13 +18,15 @@ export type FriendPerson = { id: string; nickname: string; cityId: string | null
 export type MyFriends = { incoming: FriendPerson[]; outgoing: FriendPerson[]; friends: FriendPerson[] };
 export type FriendshipResult = { friendship: FriendshipState; friendCount: number };
 export type MerchantSaves = {
-  saverCount: number;
-  friends: { id: string; nickname: string; savedAt: string }[];
+  saverCount: number; weekCount: number;
+  // G5 '처음 저장': the viewer is told only about themselves and friends who share their saves.
+  firstIsMe: boolean;
+  friends: { id: string; nickname: string; savedAt: string; first: boolean }[];
   similar: { merchantId: string; name: string; saverCount: number; weekCount: number }[];
 };
 // A map place: the app names similar places from its own catalog, so only keys come back.
 export type PlaceSaves = {
-  saverCount: number; weekCount: number;
+  saverCount: number; weekCount: number; firstIsMe: boolean;
   friends: MerchantSaves['friends'];
   similar: { placeKey: string; saverCount: number; weekCount: number }[];
 };
@@ -38,6 +40,7 @@ const count = (value: unknown) => typeof value === 'number' && Number.isInteger(
 const uuid = (value: unknown) => typeof value === 'string' && UUID.test(value) ? value.toLowerCase() : invalid();
 const name = (value: unknown) => typeof value === 'string' && value.length <= 200 ? value : invalid();
 const time = (value: unknown) => typeof value === 'string' && Number.isFinite(Date.parse(value)) ? value : invalid();
+const flag = (value: unknown) => typeof value === 'boolean' ? value : invalid();
 const list = (value: unknown, max: number) => Array.isArray(value) && value.length <= max ? value : invalid();
 function invalid(): never { throw new Error('INVALID_PROFILE_RESPONSE'); }
 
@@ -104,8 +107,8 @@ export function parseMerchantSaves(value: unknown): MerchantSaves | null {
   if (value === null) return null;
   if (!object(value)) invalid();
   return {
-    saverCount: count(value.saverCount),
-    friends: list(value.friends, 20).map(friend => object(friend) ? { id: uuid(friend.id), nickname: name(friend.nickname), savedAt: time(friend.savedAt) } : invalid()),
+    saverCount: count(value.saverCount), weekCount: count(value.weekCount), firstIsMe: flag(value.firstIsMe),
+    friends: list(value.friends, 20).map(friend => object(friend) ? { id: uuid(friend.id), nickname: name(friend.nickname), savedAt: time(friend.savedAt), first: flag(friend.first) } : invalid()),
     similar: list(value.similar, 3).map(place => object(place)
       ? { merchantId: uuid(place.merchantId), name: name(place.name), saverCount: count(place.saverCount), weekCount: count(place.weekCount) } : invalid()),
   };
@@ -123,7 +126,7 @@ export function parsePlaceSaves(value: unknown): PlaceSaves | null {
   if (!object(value)) invalid();
   const merchant = parseMerchantSaves({ ...value, similar: [] })!;
   return {
-    saverCount: merchant.saverCount, weekCount: count(value.weekCount), friends: merchant.friends,
+    saverCount: merchant.saverCount, weekCount: merchant.weekCount, firstIsMe: merchant.firstIsMe, friends: merchant.friends,
     similar: list(value.similar, 5).map(place => object(place) && typeof place.placeKey === 'string' && PLACE.test(place.placeKey)
       ? { placeKey: place.placeKey, saverCount: count(place.saverCount), weekCount: count(place.weekCount) } : invalid()),
   };
