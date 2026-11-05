@@ -193,7 +193,7 @@ export default function SavedScreen() {
       refreshing={loading && !busy} onRefresh={reload}
       ListHeaderComponent={<View style={styles.header}>
         <View style={styles.intro}><ThemedText type="section">{ko ? '다시 보고 싶은 것들' : 'Worth coming back to'}</ThemedText>
-          <ThemedText type="supporting" themeColor="textSecondary">{ko ? '저장한 항목과 폴더는 나만 볼 수 있어요.' : 'Your saved items and folders are private.'}</ThemedText></View>
+          <ThemedText type="supporting" themeColor="textSecondary">{ko ? '저장한 장소는 친구에게도 보여요. 설정에서 끌 수 있고, 나머지는 나만 볼 수 있어요.' : 'Friends can see your saved places unless you turn it off in Settings. Everything else stays private.'}</ThemedText></View>
         {/* Owner 2026-11-04 "가져오기: 검색창 위 한 줄로": its own row, so it never reads as a folder. */}
         <Pressable analyticsId="saved.import" accessibilityRole="button" accessibilityLabel={ko ? '다른 앱에서 가져오기' : 'Import from other apps'} disabled={busy}
           onPress={() => { play('selection'); closeTransient(); router.push('/profile/import'); }}
