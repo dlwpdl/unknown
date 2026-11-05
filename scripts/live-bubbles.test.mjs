@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import { LIVE, approximatePoint, clampWithin, demoAllowed, distanceMeters, durationLabel, minutesLeft, parseLiveMap } from '../src/lib/live-bubbles.ts';
@@ -101,4 +102,12 @@ test('notifications may open a live-map request, and nothing else under /discove
   assert.equal(notificationRoute(`/discover?bubbleRequest=${id}`), `/discover?bubbleRequest=${id}`);
   assert.equal(notificationRoute('/discover'), '/discover');
   assert.notEqual(notificationRoute('/discover?bubbleRequest=../../admin'), '/discover?bubbleRequest=../../admin');
+});
+
+test('the sibling sheets never share a React key, even before anything was opened', () => {
+  const source = readFileSync(new URL('../src/components/live-bubbles.tsx', import.meta.url), 'utf8');
+  const sheets = source.slice(source.indexOf('export function LiveSheets'), source.indexOf('const styles = StyleSheet.create'));
+  const keys = [...sheets.matchAll(/key=\{`([a-z]+):\$\{/g)].map(match => match[1]);
+  assert.deepEqual(keys, ['compose', 'request', 'received'], 'every keyed sheet uses a template key with its own prefix');
+  assert.equal([...sheets.matchAll(/ key=\{/g)].length, keys.length, 'no keyed sheet without a prefix');
 });

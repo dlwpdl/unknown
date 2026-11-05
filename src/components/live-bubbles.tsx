@@ -486,12 +486,13 @@ export function LiveSheets({ open, onChange, city, mapCenter, now }: { open: Liv
       } catch { play('warning'); Alert.alert(tr('차단하지 못했어요'), tr('연결을 확인하고 다시 해 주세요.')); }
     })() },
   ]);
+  // Sibling sheets: each key carries its own prefix so two empty ids never collide (React duplicate-key error).
   return <>
-    {composeSession > 0 && <LiveComposeSheet key={composeSession} visible={open?.kind === 'compose'} onClose={() => onChange(null)} city={city} mapCenter={mapCenter} />}
+    {composeSession > 0 && <LiveComposeSheet key={`compose:${composeSession}`} visible={open?.kind === 'compose'} onClose={() => onChange(null)} city={city} mapCenter={mapCenter} />}
     {/* The report sheet opens only once the bubble sheet is gone; iOS drops a modal presented over one still leaving. */}
-    <LiveRequestSheet key={lastBubble ?? ''} visible={open?.kind === 'request' && !!bubble} bubble={bubble} map={map} now={now} onClose={() => onChange(null)} onReport={report} onBlock={block}
+    <LiveRequestSheet key={`request:${lastBubble ?? ''}`} visible={open?.kind === 'request' && !!bubble} bubble={bubble} map={map} now={now} onClose={() => onChange(null)} onReport={report} onBlock={block}
       onDismissed={() => { const then = afterClose.current; afterClose.current = null; then?.(); }} />
-    <LiveReceivedSheet key={lastRequest ?? ''} visible={open?.kind === 'received' && !!request} request={request} onClose={() => onChange(null)} />
+    <LiveReceivedSheet key={`received:${lastRequest ?? ''}`} visible={open?.kind === 'received' && !!request} request={request} onClose={() => onChange(null)} />
     {reporting && <ReportSheet visible targetType="live_bubble" targetId={reporting.id} reportedUserId={reporting.author.id} reportedNickname={reporting.author.nickname} onClose={() => { setReporting(null); void refreshLive(); }} />}
   </>;
 }
