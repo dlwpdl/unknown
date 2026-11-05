@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-import { LIVE, approximatePoint, clampWithin, demoAllowed, distanceMeters, durationLabel, minutesLeft, parseLiveMap } from '../src/lib/live-bubbles.ts';
+import { LIVE, approximatePoint, clampWithin, demoAllowed, distanceMeters, durationLabel, minutesLeft, parseLiveMap, postingPlace } from '../src/lib/live-bubbles.ts';
 import * as demo from '../src/lib/live-bubbles-demo.ts';
 
 const vancouver = { latitude: 49.2627, longitude: -123.1007 };
@@ -110,4 +110,31 @@ test('the sibling sheets never share a React key, even before anything was opene
   const keys = [...sheets.matchAll(/key=\{`([a-z]+):\$\{/g)].map(match => match[1]);
   assert.deepEqual(keys, ['compose', 'request', 'received'], 'every keyed sheet uses a template key with its own prefix');
   assert.equal([...sheets.matchAll(/ key=\{/g)].length, keys.length, 'no keyed sheet without a prefix');
+});
+
+test('posting needs an honest fresh fix; only the development example takes the simulator place or the city centre', () => {
+  const now = Date.parse('2026-11-05T18:00:00Z'), centre = { latitude: 49.28, longitude: -123.12 };
+  const real = { ...vancouver, accuracy: 20, measuredAt: now - 5000, mocked: false };
+  const simulator = { ...vancouver, accuracy: 5, measuredAt: now - 5000, mocked: true };
+  assert.deepEqual(postingPlace(real, false, centre, now), vancouver);
+  assert.throws(() => postingPlace(simulator, false, centre, now), /MOCKED/, 'a faked place is refused in a release build and against the server');
+  assert.throws(() => postingPlace({ ...real, measuredAt: now - 600000 }, false, centre, now), /INACCURATE/);
+  assert.throws(() => postingPlace({ ...real, accuracy: 900 }, false, centre, now), /INACCURATE/);
+  assert.throws(() => postingPlace(null, false, centre, now), /UNAVAILABLE/);
+  assert.deepEqual(postingPlace(simulator, true, centre, now), vancouver, 'the example uses the simulator place');
+  assert.deepEqual(postingPlace(null, true, centre, now), centre, 'or the city centre when there is none');
+});
+
+test('before posting, the development example still shows the receiving side', context => {
+  context.mock.timers.enable({ apis: ['setTimeout'] });
+  const now = Date.parse('2026-11-05T18:00:00Z'), changed = () => {};
+  assert.equal(demo.load('me:early', 'me', vancouver, now, changed).mine, null);
+  demo.receive('me:early', now);
+  context.mock.timers.tick(3000);
+  const map = demo.load('me:early', 'me', vancouver, now, changed);
+  assert.ok(map.mine?.demo && distanceMeters(map.mine, vancouver) < 1, 'a sample bubble of mine goes up where the example map is');
+  assert.equal(map.waves.length, 1);
+  assert.equal(map.received.length, 1);
+  context.mock.timers.tick(10000);
+  assert.equal(demo.load('me:early', 'me', vancouver, now, changed).waves.length, 1, 'no second automatic round from the sample bubble');
 });
