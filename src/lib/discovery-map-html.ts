@@ -205,7 +205,8 @@ try{
   clearTimeout(timer);loaded=true;failed=false;
   apply();loadPins();send({type:'ready'});
  }catch{fail()}});
- map.on('error',()=>{if(!loaded)fail()});
+ // A tile or glyph error while the map is still loading often passes; show the failure only if it still has not loaded 5s after the first one (owner b09e6df1).
+ let grace=0;map.on('error',()=>{if(!loaded&&!grace)grace=setTimeout(()=>{if(!loaded)fail()},5000)});
  map.on('click',e=>{if(!loaded)return;const hit=map.queryRenderedFeatures(e.point,{layers:hitLayers})[0];if(!hit)return;
   if(current.markers.some(m=>m.id===hit.properties?.id)){send({type:'feedback'});send({type:'select',id:hit.properties.id})}
  });

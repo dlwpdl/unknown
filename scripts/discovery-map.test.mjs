@@ -146,9 +146,22 @@ function canvas(markers = [marker], providedHtml, extra = {}, globals = {}) {
   const html = providedHtml ?? discoveryMapHtml({ ...options, markers, ...extra });
   const script = [...html.matchAll(/<script nonce="gling-map">([\s\S]*?)<\/script>/g)].at(-1)[1];
   vm.runInNewContext(script, context);
-  listeners.load();
+  if (!globals.deferLoad) listeners.load();
   return { window, listeners, cameras, sources, layers, images, paddingCalls, messages, map, html, userMarkers, cityMarkers, labels };
 }
+
+test('a passing map error while loading never shows the failure; one that outlasts 5s does (owner b09e6df1)', () => {
+  const run = () => { const timers = []; const c = canvas([marker], undefined, {}, { deferLoad: true, setTimeout: (fn, ms) => timers.push({ fn, ms }) }); return { c, timers, errors: () => c.messages.filter(m => m.type === 'error').length, grace: () => timers.filter(t => t.ms === 5000) }; };
+  const passing = run();
+  passing.c.listeners.error({}); passing.c.listeners.error({});
+  assert.equal(passing.errors(), 0, 'no failure card while still loading');
+  assert.equal(passing.grace().length, 1, 'one grace timer for many errors');
+  passing.c.listeners.load(); passing.grace()[0].fn();
+  assert.equal(passing.errors(), 0); assert.ok(passing.c.messages.some(m => m.type === 'ready'));
+  const stuck = run();
+  stuck.c.listeners.error({}); stuck.grace()[0].fn();
+  assert.equal(stuck.errors(), 1, 'still not loaded after the grace: show the failure');
+});
 
 test('own GPS marker stays separate from camera and place selection, updates and clears explicitly', () => {
   const c = canvas();
