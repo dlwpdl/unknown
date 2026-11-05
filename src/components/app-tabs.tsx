@@ -1,6 +1,9 @@
 import { useLanguage } from '@/hooks/use-language';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { useState } from 'react';
 import { Platform } from 'react-native';
+import { LIVE_ACCESSORY, LiveBubbleAccessory } from '@/components/live-bubble-bar';
+import { useMineUp } from '@/components/live-bubbles';
 import { Colors } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useUnreadCount } from '@/hooks/use-unread-count';
@@ -15,10 +18,11 @@ export default function AppTabs() {
   const unreadCount = useUnreadCount('other');
   const chatCount = useUnreadCount('chat');
   const colors = useTheme();
+  const mineUp = useMineUp(), [onMap, setOnMap] = useState(false);
 
   return (
     <NativeTabs
-      screenListeners={({ route }) => ({ tabPress: () => play('selection') })}
+      screenListeners={({ route }) => ({ tabPress: () => play('selection'), focus: () => setOnMap(route.name === 'discover') })}
       disableTransparentOnScrollEdge
       backgroundColor={Platform.OS === 'ios' ? undefined : colors.background}
       blurEffect={Platform.OS === 'ios' ? colors === Colors.dark ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight' : undefined}
@@ -70,6 +74,9 @@ export default function AppTabs() {
 
       {/* 옛 /compose 링크는 +native-intent가 오늘 화면 글쓰기로 바꾼다. */}
       <NativeTabs.Trigger name="compose" hidden />
+
+      {/* 내 말풍선은 탭 바 바로 위에 (iOS 26+, owner 9148628c). 지도 탭에선 아래 카드가 같은 걸 보여 줘서 뺀다. */}
+      {LIVE_ACCESSORY && mineUp && !onMap && <NativeTabs.BottomAccessory><LiveBubbleAccessory /></NativeTabs.BottomAccessory>}
     </NativeTabs>
   );
 }

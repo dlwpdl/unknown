@@ -4522,6 +4522,8 @@ export const uiEnglish: Record<string, string> = {
   "말풍선은 남긴 곳 근처에 떠 있는데, 지금은 꽤 멀리 와 있어요.": "Your bubble is still up where you left it, but you're quite far from there now.",
   "떠 있는 동안엔 아직 그 동네에 있는 것처럼 보일 수 있어요.": "While it's up, it may look like you're still in that area.",
   "그대로 둘게요. 위쪽 막대에서 언제든 내릴 수 있어요": "Leaving it up. You can take it down from the bar at the top anytime",
+  "그대로 둘게요. 아래 막대에서 언제든 내릴 수 있어요": "Leaving it up. You can take it down from the bar at the bottom anytime",
+  "곧 내려가요 · {0}": "Coming down soon · {0}",
   "그대로 둘게요": "Leave it up",
   "{0}분": "{0} min",
   "{0}시간 {1}분": "{0} hr {1} min",
