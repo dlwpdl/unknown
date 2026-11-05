@@ -174,6 +174,19 @@ insert into public.reports(reporter_id,reported_user_id,target_type,target_id,re
 select is((select count(*)::integer from private.friendships where user_low_id='e5100000-0000-4000-8000-000000000001' and user_high_id='e5100000-0000-4000-8000-000000000003'),0,'a report ends the pending request');
 set local role authenticated;
 select throws_ok($$select public.set_friendship('e5100000-0000-4000-8000-000000000003','request')$$,'P0001','FRIEND_UNAVAILABLE','a reported pair cannot ask');
+reset role;
+select ok(exists(select 1 from private.action_rate_events where user_id='e5100000-0000-4000-8000-000000000001' and action='friend_request'),'friend requests count toward a daily cap');
+set local role authenticated;
+-- Reporting a friend's message ends it too, so they lose your map.
+select is(public.set_friendship('e5100000-0000-4000-8000-000000000002','request')->>'friendship','outgoing','A asks B again');
+select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select is(public.set_friendship('e5100000-0000-4000-8000-000000000001','accept')->>'friendship','friends','B accepts again');
+reset role;
+insert into public.reports(reporter_id,reported_user_id,target_type,target_id,reason_code) values('e5100000-0000-4000-8000-000000000002','e5100000-0000-4000-8000-000000000001','message',gen_random_uuid(),'harassment');
+select is((select count(*)::integer from private.friendships where user_low_id='e5100000-0000-4000-8000-000000000001' and user_high_id='e5100000-0000-4000-8000-000000000002'),0,'reporting a message ends the friendship');
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select throws_ok($$select public.set_friendship('e5100000-0000-4000-8000-000000000002','request')$$,'P0001','FRIEND_UNAVAILABLE','a message report blocks asking again');
 
 -- Even if a row with an operated character reached the table some other way, it never shows or counts.
 reset role;

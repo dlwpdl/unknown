@@ -44,7 +44,9 @@ begin
           (select count(*)::integer from private.place_savers(p_city_id,co.place_key) w where w.saved_at>=week_start) week_count
         from (select sp.place_key,count(distinct sp.user_id) together
             from private.place_savers(p_city_id,p_place_key) s join private.saved_places sp on sp.user_id=s.user_id and sp.city_id=p_city_id
-            where sp.place_key<>p_place_key
+            left join private.profile_sharing ps on ps.user_id=s.user_id
+            -- The viewer and anyone who hid their saves do not count, so a few sock accounts cannot reveal one person's list.
+            where sp.place_key<>p_place_key and s.user_id is distinct from uid and coalesce(ps.saved_places_to_friends,true)
             group by sp.place_key having count(distinct sp.user_id)>=3) co
         order by co.together desc,savers desc,co.place_key limit 5) o));
 end $$;

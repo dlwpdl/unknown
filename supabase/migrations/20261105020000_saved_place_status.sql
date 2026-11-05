@@ -7,7 +7,8 @@ create table private.saved_place_been (
  been_at timestamptz not null default clock_timestamp(), primary key(user_id,saved_key)
 );
 alter table private.saved_place_been enable row level security;
-revoke all on private.saved_place_been from public,anon,authenticated;
+alter table private.saved_place_been owner to postgres;
+revoke all on private.saved_place_been from public,anon,authenticated,service_role;
 
 create function private.saved_place_state(p_uid uuid,p_kind text,p_id text,p_city text) returns jsonb
 language sql stable security definer set search_path='' as $$

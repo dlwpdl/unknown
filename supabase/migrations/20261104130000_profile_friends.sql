@@ -53,7 +53,8 @@ language sql stable security definer set search_path='' as $$
   select p_viewer is not null and p_user is not null and p_viewer<>p_user
     and private.is_active_account(p_viewer) and private.is_active_account(p_user)
     and not private.is_blocked_between(p_viewer,p_user)
-    and not private.has_reported(p_viewer,'user',p_user) and not private.has_reported(p_user,'user',p_viewer)
+    -- Any report between them counts, not only a profile report: reporting a friend's message or post must hide your map from them.
+    and not exists(select 1 from public.reports r where (r.reporter_id=p_viewer and r.reported_user_id=p_user) or (r.reporter_id=p_user and r.reported_user_id=p_viewer))
     and not private.is_operated_character(p_viewer) and not private.is_operated_character(p_user)
 $$;
 
@@ -152,6 +153,8 @@ begin
     if f.user_low_id is null then
       if not private.friend_pair_ok(uid,p_user_id) then raise exception 'FRIEND_UNAVAILABLE'; end if;
       if (select count(*) from private.friendships where requester_id=uid and accepted_at is null)>=100 then raise exception 'FRIEND_REQUEST_LIMIT'; end if;
+      -- Each request can push an alert with the sender's own nickname, so new requests are capped per day.
+      perform private.enforce_rate_limit('friend_request',30,interval '1 day');
       insert into private.friendships(user_low_id,user_high_id,requester_id) values(lo,hi,uid);
       -- One alert per pair per week, so cancelling and asking again cannot repeat it.
       if not exists(select 1 from public.notifications n where n.user_id=p_user_id and n.actor_id=uid and n.kind='friend_request'
@@ -259,20 +262,20 @@ begin
             union all
             select s.user_id,l.merchant_id from private.merchant_savers(p_merchant_id) s join private.saved_places sp on sp.user_id=s.user_id
               join private.webshop_place_links l on l.place_key=sp.place_key and l.city_id=sp.city_id
-          ) x where x.merchant_id<>p_merchant_id group by x.merchant_id having count(distinct x.user_id)>=3) co
+          ) x left join private.profile_sharing ps on ps.user_id=x.user_id
+          where x.merchant_id<>p_merchant_id and x.user_id is distinct from uid and coalesce(ps.saved_places_to_friends,true) group by x.merchant_id having count(distinct x.user_id)>=3) co
         join private.merchants m on m.id=co.merchant_id and m.city_id=v_city and m.consent='granted'
         where public.get_merchant_profile(co.merchant_id) is not null
         order by co.together desc,savers desc,co.merchant_id limit 3) o));
 end $$;
 
--- Blocking or reporting someone ends the friendship or the pending request.
+-- Blocking someone, or reporting them or anything they wrote, ends the friendship or the pending request.
 create function private.end_friendship() returns trigger
 language plpgsql security definer set search_path='' as $$
 declare actor uuid; other uuid;
 begin
   if tg_table_name='blocks' then actor:=new.blocker_id; other:=new.blocked_id;
-  elsif new.target_type='user' then actor:=new.reporter_id; other:=new.target_id;
-  else return null; end if;
+  else actor:=new.reporter_id; other:=new.reported_user_id; end if;
   delete from private.friendships where user_low_id=least(actor,other) and user_high_id=greatest(actor,other);
   return null;
 end $$;

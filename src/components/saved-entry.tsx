@@ -109,9 +109,9 @@ export function SavedEntryButton({ entry, kind, analyticsId, onBeen }: { entry: 
         : { ios: saved ? 'bookmark.fill' : 'bookmark', android: saved ? 'bookmark' : 'bookmark_border', web: saved ? 'bookmark' : 'bookmark_border' }} size={IconSize.toolbar} tintColor={theme.accent} />}
     </Pressable>
     {menu && <MeetupManageSheet visible title={ko ? '이 장소 저장' : 'Save this place'} onClose={() => setMenu(false)} actions={[
-      { key: 'want', analyticsId: 'save.place.want', label: ko ? '가 보고 싶어요' : 'Want to go', hint: status === 'want' ? ko ? '지금 이렇게 저장돼 있어요' : 'Saved like this now' : ko ? '나중에 가 볼 곳에 넣어 둬요' : 'Keep it for later',
+      { key: 'want', analyticsId: 'save.place.want', label: ko ? '가 보고 싶어요' : 'Want to go', hint: status === 'want' ? ko ? '지금 이걸로 저장돼 있어요' : 'Saved this way now' : ko ? '나중에 가 볼 곳에 넣어 둬요' : 'Keep it for later',
         icon: { ios: 'bookmark', android: 'bookmark_border', web: 'bookmark_border' }, onPress: () => { void entry.choose('want'); } },
-      { key: 'been', analyticsId: 'save.place.been', label: ko ? '가 봤어요' : 'Been here', hint: been ? ko ? '지금 이렇게 저장돼 있어요' : 'Saved like this now' : ko ? '저장하고 바로 후기를 남겨요' : 'Save it and leave a review',
+      { key: 'been', analyticsId: 'save.place.been', label: ko ? '가 봤어요' : 'Been here', hint: been ? ko ? '지금 이걸로 저장돼 있어요' : 'Saved this way now' : ko ? '저장하고 바로 후기를 남겨요' : 'Save it and leave a review',
         icon: { ios: 'checkmark.circle', android: 'check_circle', web: 'check_circle' }, onPress: () => { void entry.choose('been').then(done => { if (done) onBeen?.(); }); } },
       ...(saved ? [{ key: 'remove', analyticsId: 'save.place.remove', label: ko ? '저장 해제' : 'Unsave', danger: true,
         icon: { ios: 'bookmark.slash', android: 'bookmark_remove', web: 'bookmark_remove' } as const, onPress: () => { void entry.choose(null); } }] : []),
