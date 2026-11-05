@@ -5,8 +5,9 @@ import { ALIVE, ALIVE_MS, aliveMotion, aliveSteps } from '../src/lib/category-mo
 import { PLACE_SUBCATEGORIES } from '../src/lib/discovery.ts';
 
 const MAP_ICONS = ['top25', 'delivery', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used', 'events'];
-// Still pictures without a gesture: the row settings the owner picked and every sub-category (2026-11-04).
-const STILL_ICONS = ['scope', 'all', 'open', 'visited', ...PLACE_SUBCATEGORIES.map(option => option.id)];
+// Still pictures without a gesture: the row settings the owner picked and the sub-categories drawn so far (2026-11-04).
+const OWN_SUBCATEGORY_ICONS = ['lunch', 'dinner', 'late_night', 'solo', 'date', 'izakaya', 'pocha', 'cocktail_bar', 'wine_bar', 'pub', 'dessert', 'brunch', 'work_friendly'];
+const STILL_ICONS = ['scope', 'all', 'open', 'visited', ...OWN_SUBCATEGORY_ICONS];
 
 test('every map icon has the mockup gesture and origin, and the artwork ships with the app', () => {
   assert.deepEqual(Object.keys(ALIVE).sort(), [...MAP_ICONS].sort());
@@ -18,6 +19,16 @@ test('every map icon has the mockup gesture and origin, and the artwork ships wi
   for (const id of [...MAP_ICONS, ...STILL_ICONS]) {
     assert.ok(existsSync(new URL(`../assets/images/map-categories/${id}.png`, import.meta.url)), id);
     assert.ok(icon.includes(`require('@/assets/images/map-categories/${id}.png')`), id);
+  }
+});
+
+test('a sub-category without its own picture yet shows its map category picture', () => {
+  const icon = readFileSync(new URL('../src/components/category-icon.tsx', import.meta.url), 'utf8');
+  const drawn = new Set([...icon.matchAll(/(\w+): require\(/g)].map(match => match[1]));
+  for (const option of PLACE_SUBCATEGORIES) {
+    const own = OWN_SUBCATEGORY_ICONS.includes(option.id);
+    assert.equal(drawn.has(option.id), own, option.id);
+    if (!own) assert.ok(MAP_ICONS.includes(option.filter) && drawn.has(option.filter), option.id);
   }
 });
 

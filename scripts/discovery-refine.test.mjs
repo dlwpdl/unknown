@@ -21,10 +21,12 @@ test('price and sub-filters leave out places without the value instead of assumi
   assert.deepEqual(keep([4], ['solo']), []);
 });
 
-test('sub-filter ids are unique and belong to the three owner-chosen categories', () => {
+test('sub-filter ids are unique and belong to the owner-chosen categories', () => {
   assert.equal(new Set(PLACE_SUBCATEGORIES.map(value => value.id)).size, PLACE_SUBCATEGORIES.length);
-  assert.deepEqual([...new Set(PLACE_SUBCATEGORIES.map(value => value.filter))], ['dining', 'nightlife', 'cafe']);
-  assert.deepEqual(PLACE_SUBCATEGORIES.filter(value => value.filter === 'dining').map(value => value.label), ['점심', '저녁', '늦은 밤', '혼밥', '데이트']);
-  assert.deepEqual(PLACE_SUBCATEGORIES.filter(value => value.filter === 'nightlife').map(value => value.label), ['이자카야', '포차', '칵테일 바', '와인 바', '펍']);
-  assert.deepEqual(PLACE_SUBCATEGORIES.filter(value => value.filter === 'cafe').map(value => value.label), ['디저트', '브런치', '작업하기 좋은 곳']);
+  assert.deepEqual([...new Set(PLACE_SUBCATEGORIES.map(value => value.filter))], ['dining', 'nightlife', 'cafe', 'places']);
+  assert.deepEqual(PLACE_SUBCATEGORIES.filter(value => value.filter === 'dining').map(value => value.label), ['점심', '저녁', '늦은 밤', '혼밥', '데이트',
+    '한식', '일식', '중식', '베트남', '태국', '인도 음식', '이탈리안', '멕시칸', '버거', '피자', '해산물', '비건']);
+  assert.deepEqual(PLACE_SUBCATEGORIES.filter(value => value.filter === 'nightlife').map(value => value.label), ['이자카야', '포차', '칵테일 바', '와인 바', '펍·술집', '클럽', '바', '브루어리', '라이브 음악']);
+  assert.deepEqual(PLACE_SUBCATEGORIES.filter(value => value.filter === 'cafe').map(value => value.label), ['디저트', '브런치', '작업하기 좋은 곳', '베이커리', '버블티', '로스터리']);
+  assert.deepEqual(PLACE_SUBCATEGORIES.filter(value => value.filter === 'places').map(value => value.label), ['공원', '해변', '정원', '전망대', '산책·하이킹', '박물관', '미술관·갤러리', '도서관', '동물원·아쿠아리움', '역사 명소', '시장', '공연장']);
 });

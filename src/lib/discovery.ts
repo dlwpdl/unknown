@@ -29,12 +29,24 @@ export type DiscoveryCategory = typeof DISCOVERY_CATEGORIES[number]['id'];
 export type DiscoveryFilter = 'all' | 'top25' | 'visited' | 'delivery' | 'nightlife' | 'festival' | 'cafe' | 'dining' | 'places' | 'events' | 'housing' | 'used';
 export type DiscoveryDate = 'all' | 'today' | 'week' | 'weekend' | 'date';
 // Owner 2026-11-04: sub-filters differ per map category. These ids are the catalog values in CityPlace.subcategories.
+// Owner 2026-11-05 added the rest; scripts/map-subcategories.py fills them from each place's OSM tags. A place's pin names
+// its first sub-filter in this order, so the specific ones come before the general ones (칵테일 바 before 바).
 export const PLACE_SUBCATEGORIES = [
   { id: 'lunch', filter: 'dining', label: '점심' }, { id: 'dinner', filter: 'dining', label: '저녁' }, { id: 'late_night', filter: 'dining', label: '늦은 밤' },
   { id: 'solo', filter: 'dining', label: '혼밥' }, { id: 'date', filter: 'dining', label: '데이트' },
+  { id: 'korean', filter: 'dining', label: '한식' }, { id: 'japanese', filter: 'dining', label: '일식' }, { id: 'chinese', filter: 'dining', label: '중식' },
+  { id: 'vietnamese', filter: 'dining', label: '베트남' }, { id: 'thai', filter: 'dining', label: '태국' }, { id: 'indian', filter: 'dining', label: '인도 음식' },
+  { id: 'italian', filter: 'dining', label: '이탈리안' }, { id: 'mexican', filter: 'dining', label: '멕시칸' }, { id: 'burger', filter: 'dining', label: '버거' },
+  { id: 'pizza', filter: 'dining', label: '피자' }, { id: 'seafood', filter: 'dining', label: '해산물' }, { id: 'vegan', filter: 'dining', label: '비건' },
   { id: 'izakaya', filter: 'nightlife', label: '이자카야' }, { id: 'pocha', filter: 'nightlife', label: '포차' }, { id: 'cocktail_bar', filter: 'nightlife', label: '칵테일 바' },
-  { id: 'wine_bar', filter: 'nightlife', label: '와인 바' }, { id: 'pub', filter: 'nightlife', label: '펍' },
+  { id: 'wine_bar', filter: 'nightlife', label: '와인 바' }, { id: 'pub', filter: 'nightlife', label: '펍·술집' }, { id: 'club', filter: 'nightlife', label: '클럽' },
+  { id: 'bar', filter: 'nightlife', label: '바' }, { id: 'brewery', filter: 'nightlife', label: '브루어리' }, { id: 'live_music', filter: 'nightlife', label: '라이브 음악' },
   { id: 'dessert', filter: 'cafe', label: '디저트' }, { id: 'brunch', filter: 'cafe', label: '브런치' }, { id: 'work_friendly', filter: 'cafe', label: '작업하기 좋은 곳' },
+  { id: 'bakery', filter: 'cafe', label: '베이커리' }, { id: 'bubble_tea', filter: 'cafe', label: '버블티' }, { id: 'roastery', filter: 'cafe', label: '로스터리' },
+  { id: 'park', filter: 'places', label: '공원' }, { id: 'beach', filter: 'places', label: '해변' }, { id: 'garden', filter: 'places', label: '정원' },
+  { id: 'viewpoint', filter: 'places', label: '전망대' }, { id: 'trail', filter: 'places', label: '산책·하이킹' }, { id: 'museum', filter: 'places', label: '박물관' },
+  { id: 'gallery', filter: 'places', label: '미술관·갤러리' }, { id: 'library', filter: 'places', label: '도서관' }, { id: 'zoo_aquarium', filter: 'places', label: '동물원·아쿠아리움' },
+  { id: 'historic', filter: 'places', label: '역사 명소' }, { id: 'market', filter: 'places', label: '시장' }, { id: 'theatre', filter: 'places', label: '공연장' },
 ] as const;
 export type PlaceSubcategory = typeof PLACE_SUBCATEGORIES[number]['id'];
 export const PRICE_FILTERS: readonly DiscoveryFilter[] = ['dining', 'cafe', 'nightlife'];
