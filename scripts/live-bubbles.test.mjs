@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-import { LIVE, approximatePoint, clampWithin, demoAllowed, distanceMeters, durationLabel, minutesLeft, parseLiveMap, postingPlace } from '../src/lib/live-bubbles.ts';
+import { LIVE, approximatePoint, clampWithin, demoAllowed, distanceMeters, durationLabel, minutesLeft, noticeBottom, noticeMs, parseLiveMap, postingPlace, visibleNotice } from '../src/lib/live-bubbles.ts';
 import * as demo from '../src/lib/live-bubbles-demo.ts';
 
 const vancouver = { latitude: 49.2627, longitude: -123.1007 };
@@ -21,11 +21,17 @@ test('a bubble never moves more than 100 m from where I am', () => {
   }
 });
 
-test('time left counts whole minutes up and reads naturally', () => {
-  const now = Date.parse('2026-11-05T10:00:00Z');
-  assert.equal(minutesLeft('2026-11-05T10:30:00Z', now), 30);
-  assert.equal(minutesLeft('2026-11-05T10:00:01Z', now), 1);
-  assert.equal(minutesLeft('2026-11-05T09:00:00Z', now), 0);
+test('time left rounds to whole minutes and reads naturally', () => {
+  const now = Date.parse('2026-11-05T10:00:00Z'), at = seconds => new Date(now + seconds * 1000).toISOString();
+  assert.equal(minutesLeft(at(3600), now), 60);
+  assert.equal(durationLabel(minutesLeft(at(3600 + 29), now)), '1시간', 'a bubble just put up for an hour, read on a clock up to 30 s old, says 1시간 (not 1시간 1분)');
+  assert.equal(durationLabel(minutesLeft(at(3600 - 1), now)), '1시간', 'and still 1시간 a second later');
+  assert.equal(minutesLeft(at(3600 + 31), now), 61);
+  assert.equal(minutesLeft(at(30 * 60 - 29), now), 30);
+  assert.equal(minutesLeft(at(30), now), 1, 'the last half minute still reads 1분 while it is up');
+  assert.equal(minutesLeft(at(1), now), 1);
+  assert.equal(minutesLeft(at(0), now), 0, 'over at the exact end');
+  assert.equal(minutesLeft(at(-60), now), 0);
   assert.equal(minutesLeft('nonsense', now), 0);
   assert.equal(durationLabel(30), '30분');
   assert.equal(durationLabel(60), '1시간');
@@ -170,4 +176,19 @@ test('every server call the app makes matches a function and its parameter names
     assert.deepEqual([...declared[1].matchAll(/(p_[a-z_]+) /g)].map(match => match[1]).sort(), args, `${name} takes exactly what the app sends`);
     assert.match(migration, new RegExp(`grant execute on function[^;]*public\\.${name}\\(`), `${name} is granted to members`);
   }
+});
+
+test('a notice goes after its few seconds, never comes back, and sits above the buttons and card it would cover', () => {
+  const sent = { id: 1, text: '동네고양이님에게 대화 신청을 보냈어요' }, request = { id: 2, text: '대화 신청이 왔어요', requestId: 'r' };
+  assert.equal(visibleNotice(sent, null), sent);
+  assert.equal(visibleNotice(sent, 1), null, 'once hidden by its timer it stays hidden (it used to come straight back)');
+  assert.equal(visibleNotice(request, 1), request, 'the next notice shows');
+  assert.equal(noticeMs(sent), 3000);
+  assert.equal(noticeMs(request), 6000, 'a little longer when tapping it opens the request');
+  const usual = 34 + 96, screen = 932;
+  assert.equal(noticeBottom(usual, screen, []), usual, 'nothing to avoid: the usual place');
+  assert.equal(noticeBottom(usual, screen, [792]), 148, 'an open sheet: just above its button row');
+  assert.equal(noticeBottom(usual, screen, [792, 727]), 213, 'above the map card too when both are on screen');
+  assert.equal(noticeBottom(usual, screen, [900]), usual, 'never lower than usual');
+  assert.equal(noticeBottom(usual, screen, [0, 1200]), usual, 'views off screen or not laid out are ignored');
 });
