@@ -21,6 +21,22 @@ test('a bubble never moves more than 100 m from where I am', () => {
   }
 });
 
+test('pins dragged to the edge of the 100 m circle go out on the ~100 m grid, so three of them no longer lead back home', () => {
+  // Security review 2026-11-05 F1: exact edge points sit on one circle around home, and its centre is home.
+  const lat = 111195, lng = lat * Math.cos(vancouver.latitude * Math.PI / 180);
+  const offCentre = points => {
+    const [[ax, ay], [bx, by], [cx, cy]] = points.map(p => [(p.longitude - vancouver.longitude) * lng, (p.latitude - vancouver.latitude) * lat]);
+    const d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by)), a = ax * ax + ay * ay, b = bx * bx + by * by, c = cx * cx + cy * cy;
+    return Math.hypot((a * (by - cy) + b * (cy - ay) + c * (ay - by)) / d, (a * (cx - bx) + b * (ax - cx) + c * (bx - ax)) / d);
+  };
+  const edge = [0, 120, 240].map(degrees => clampWithin(vancouver, {
+    latitude: vancouver.latitude + 900 * Math.cos(degrees * Math.PI / 180) / lat, longitude: vancouver.longitude + 900 * Math.sin(degrees * Math.PI / 180) / lng }));
+  assert.ok(offCentre(edge) < 1, 'the exact edge points would give home away');
+  const shown = edge.map(approximatePoint);
+  for (const point of shown) assert.deepEqual(point, { latitude: Math.round(point.latitude * 1000) / 1000, longitude: Math.round(point.longitude * 1000) / 1000 }, 'on the grid');
+  assert.ok(offCentre(shown) > 20, 'the grid points do not');
+});
+
 test('time left rounds to whole minutes and reads naturally', () => {
   const now = Date.parse('2026-11-05T10:00:00Z'), at = seconds => new Date(now + seconds * 1000).toISOString();
   assert.equal(minutesLeft(at(3600), now), 60);
@@ -71,7 +87,7 @@ test('the development example counts five requests a day and never refunds one',
   assert.equal(demo.load('me:test', 'me', vancouver, now, changed).requestsLeft, 0);
   assert.throws(() => demo.send('me:test', target, 0, now), /REQUEST_LIMIT/);
   assert.equal(demo.load('me:test', 'me', vancouver, now + 86400000, changed).requestsLeft, 5, 'a new day starts again');
-  demo.post('me:test', { cityId: 'vancouver', body: ' 커피 ', audience: 'city', minutes: 30, point: vancouver, origin: vancouver, kind: 'member' }, now);
+  demo.post('me:test', { cityId: 'vancouver', body: ' 커피 ', audience: 'city', minutes: 30, point: vancouver, kind: 'member' }, now);
   demo.receive('me:test', now);
   context.mock.timers.tick(3000);
   const mine = demo.load('me:test', 'me', vancouver, now, changed);
@@ -91,7 +107,7 @@ test('waves: once per bubble, twenty a day, apart from chat requests; the owner 
   const after = demo.load('me:wave', 'me', vancouver, now, changed);
   assert.equal(after.bubbles[0].waved, true);
   assert.equal(after.requestsLeft, LIVE.dailyRequests, 'a wave is not a chat request');
-  demo.post('me:wave', { cityId: 'vancouver', body: '산책', audience: 'city', minutes: 60, point: vancouver, origin: vancouver, kind: 'member' }, now);
+  demo.post('me:wave', { cityId: 'vancouver', body: '산책', audience: 'city', minutes: 60, point: vancouver, kind: 'member' }, now);
   demo.receive('me:wave', now);
   const [wave] = demo.load('me:wave', 'me', vancouver, now, changed).waves;
   demo.replyToWave('me:wave', wave.id);

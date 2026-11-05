@@ -2,7 +2,8 @@ begin;
 set local search_path=public,extensions;
 select no_plan();
 
--- 동네 말풍선 지도: A owner, B A's friend, C a stranger, P an operated character, D blocked by A, E–I neighbours with bubbles, J a traveller.
+-- 동네 말풍선 지도: A owner, B A's friend, C a stranger, P an operated character, D blocked by A, E–I neighbours with bubbles, J a traveller,
+-- K1–K3 accounts made today, M an admin, N someone who used to be one. Everyone but K1–K3 signed up a month ago.
 insert into public.cities values('live-test','Live test','BC','America/Vancouver',true);
 insert into auth.users(id,email) values
  ('e5200000-0000-4000-8000-000000000001','live-a@example.test'),('e5200000-0000-4000-8000-000000000002','live-b@example.test'),
@@ -10,15 +11,24 @@ insert into auth.users(id,email) values
  ('e5200000-0000-4000-8000-000000000005','live-d@example.test'),('e5200000-0000-4000-8000-000000000006','live-e@example.test'),
  ('e5200000-0000-4000-8000-000000000007','live-f@example.test'),('e5200000-0000-4000-8000-000000000008','live-g@example.test'),
  ('e5200000-0000-4000-8000-000000000009','live-h@example.test'),('e5200000-0000-4000-8000-000000000010','live-i@example.test'),
- ('e5200000-0000-4000-8000-000000000011','live-j@example.test');
+ ('e5200000-0000-4000-8000-000000000011','live-j@example.test'),('e5200000-0000-4000-8000-000000000012','live-k1@example.test'),
+ ('e5200000-0000-4000-8000-000000000013','live-k2@example.test'),('e5200000-0000-4000-8000-000000000014','live-k3@example.test'),
+ ('e5200000-0000-4000-8000-000000000015','live-m@example.test'),('e5200000-0000-4000-8000-000000000016','live-n@example.test');
+update auth.users set created_at=case when id between 'e5200000-0000-4000-8000-000000000012' and 'e5200000-0000-4000-8000-000000000014' then now() else now()-interval '30 days' end
+  where id between 'e5200000-0000-4000-8000-000000000001' and 'e5200000-0000-4000-8000-000000000016';
 update auth.users set raw_app_meta_data='{"gling_persona":true}' where id='e5200000-0000-4000-8000-000000000004';
+update auth.users set raw_app_meta_data='{"role":"admin"}' where id='e5200000-0000-4000-8000-000000000015';
 insert into public.profiles(id,nickname,city_id) values
  ('e5200000-0000-4000-8000-000000000001','LiveA','live-test'),('e5200000-0000-4000-8000-000000000002','LiveB','live-test'),
  ('e5200000-0000-4000-8000-000000000003','LiveC','live-test'),('e5200000-0000-4000-8000-000000000004','LivePersona','live-test'),
  ('e5200000-0000-4000-8000-000000000005','LiveD','live-test'),('e5200000-0000-4000-8000-000000000006','LiveE','live-test'),
  ('e5200000-0000-4000-8000-000000000007','LiveF','live-test'),('e5200000-0000-4000-8000-000000000008','LiveG','live-test'),
  ('e5200000-0000-4000-8000-000000000009','LiveH','live-test'),('e5200000-0000-4000-8000-000000000010','LiveI','live-test'),
- ('e5200000-0000-4000-8000-000000000011','LiveJ','live-test');
+ ('e5200000-0000-4000-8000-000000000011','LiveJ','live-test'),('e5200000-0000-4000-8000-000000000012','LiveK1','live-test'),
+ ('e5200000-0000-4000-8000-000000000013','LiveK2','live-test'),('e5200000-0000-4000-8000-000000000014','LiveK3','live-test'),
+ ('e5200000-0000-4000-8000-000000000015','LiveM','live-test'),('e5200000-0000-4000-8000-000000000016','LiveN','live-test');
+insert into private.admin_ids(user_id) values('e5200000-0000-4000-8000-000000000016') on conflict do nothing;
+insert into auth.sessions(id,user_id,aal) values('e5260000-0000-4000-8000-000000000015','e5200000-0000-4000-8000-000000000015','aal2');
 insert into private.friendships(user_low_id,user_high_id,requester_id,created_at,accepted_at)
  values('e5200000-0000-4000-8000-000000000001','e5200000-0000-4000-8000-000000000002','e5200000-0000-4000-8000-000000000001',now(),now());
 insert into public.blocks(blocker_id,blocked_id) values('e5200000-0000-4000-8000-000000000001','e5200000-0000-4000-8000-000000000005');
@@ -43,30 +53,74 @@ select ok(not has_function_privilege('anon','public.get_live_map(text)','execute
 select ok(not has_function_privilege('authenticated','public.get_live_bubble_safety_content(uuid)','execute'),'members cannot read the safety copy');
 select is((select count(*)::int from information_schema.columns where table_schema='private' and table_name like 'live_bubble%' and column_name ~ 'origin|accuracy'),0,
   'only the shown point is stored, never the place the phone reported');
+select is((select string_agg(pg_get_function_identity_arguments(p.oid),';') from pg_proc p where p.oid='public.post_live_bubble'::regproc),
+  'p_city_id text, p_body text, p_audience text, p_minutes integer, p_latitude double precision, p_longitude double precision, p_kind text',
+  'and the phone''s place is never even sent: the app checks the 100 m itself');
+-- Metres between a home point and the centre of the circle through three points around it (flat at this scale).
+create function pg_temp.off_centre(h_lat float8,h_lon float8,pts float8[]) returns float8 language sql immutable as $$
+  with p as (select (pts[2*i]-h_lon)*111194.93*cos(radians(h_lat)) x,(pts[2*i-1]-h_lat)*111194.93 y,i from generate_series(1,3) i),
+  a as (select x ax,y ay from p where i=1),b as (select x bx,y by_ from p where i=2),c as (select x cx,y cy from p where i=3)
+  select sqrt(power(((ax*ax+ay*ay)*(by_-cy)+(bx*bx+by_*by_)*(cy-ay)+(cx*cx+cy*cy)*(ay-by_))/den,2)+power(((ax*ax+ay*ay)*(cx-bx)+(bx*bx+by_*by_)*(ax-cx)+(cx*cx+cy*cy)*(bx-ax))/den,2))
+  from a,b,c,lateral (select 2*(ax*(by_-cy)+bx*(cy-ay)+cx*(ay-by_)) den) q
+$$;
 
 set local role authenticated;
--- A leaves a city-wide bubble 50 m from where the phone is; B a friends-only one.
+-- A leaves a city-wide bubble; B a friends-only one.
 select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000001","role":"authenticated"}',true);
-select set_config('live.a',public.post_live_bubble('live-test','커피 한잔 할 사람','city',60,49.2627,-123.1007,49.26315,-123.1007,'member')::text,true);
-select throws_ok($$select public.post_live_bubble('live-test','멀리','city',60,49.2627,-123.1007,49.2641,-123.1007,'member')$$,'P0001','LOCATION_UNAVAILABLE','a bubble more than 100 m from the phone is refused');
-select throws_ok($$select public.post_live_bubble('live-test','어디','city',60,49.2627,-123.1007,null,null,'member')$$,'P0001','LOCATION_UNAVAILABLE','a member must send where the phone is');
-select throws_ok($$select public.post_live_bubble('live-test','핀','city',60,49.2627,-123.1007,49.2627,-123.1007,'pin')$$,'P0001','ADMIN_REQUIRED','only admins place a 관리자 핀');
-select throws_ok($$select public.post_live_bubble('live-test',repeat('가',41),'city',60,49.2627,-123.1007,49.2627,-123.1007,'member')$$,'P0001','INVALID_BODY','41 characters is too long');
-select throws_ok($$select public.post_live_bubble('live-test','좋아','city',45,49.2627,-123.1007,49.2627,-123.1007,'member')$$,'P0001','INVALID_BUBBLE','only 30 minutes, 1 hour or 3 hours');
+select set_config('live.a',public.post_live_bubble('live-test','커피 한잔 할 사람','city',60,49.2627,-123.1007,'member')::text,true);
+select throws_ok($$select public.post_live_bubble('live-test','핀','city',60,49.2627,-123.1007,'pin')$$,'P0001','ADMIN_REQUIRED','only admins place a 관리자 핀');
+select throws_ok($$select public.post_live_bubble('live-test',repeat('가',41),'city',60,49.2627,-123.1007,'member')$$,'P0001','INVALID_BODY','41 characters is too long');
+select throws_ok($$select public.post_live_bubble('live-test','좋아','city',45,49.2627,-123.1007,'member')$$,'P0001','INVALID_BUBBLE','only 30 minutes, 1 hour or 3 hours');
 select is(public.get_live_map('live-test')->'mine'->>'id',current_setting('live.a'),'A sees the bubble as her own');
 select ok((public.get_live_map('live-test')->'mine'->>'expiresAt')::timestamptz between now()+interval '59 minutes' and now()+interval '61 minutes','it stays up for the chosen hour');
 select is(public.extend_live_bubble(),now()+interval '2 hours','1시간 더 띄우기 adds an hour');
 select is(public.extend_live_bubble(),now()+interval '3 hours','and never past 3 hours from now');
 select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000002","role":"authenticated"}',true);
-select set_config('live.b',public.post_live_bubble('live-test','친구만 봐요','friends',30,49.2629,-123.1009,49.2629,-123.1009,'member')::text,true);
+select set_config('live.b',public.post_live_bubble('live-test','친구만 봐요','friends',30,49.2629,-123.1009,'member')::text,true);
+
+-- The review's attack (F1): three bubbles dragged to the very edge of the 100 m circle around one home, 120° apart. The exact points
+-- would give that home back to a few centimetres; saved on the ~100 m grid, the centre lands tens of metres off.
+select ok(pg_temp.off_centre(49.2627,-123.1007,array[49.26359,-123.1007, 49.262255,-123.099518, 49.262255,-123.101882])<1,'the exact edge points would give the home away');
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000012","role":"authenticated"}',true);
+select set_config('live.k1',public.post_live_bubble('live-test','북쪽 끝','city',30,49.26359,-123.1007,'member')::text,true);
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000013","role":"authenticated"}',true);
+select set_config('live.k2',public.post_live_bubble('live-test','남동쪽 끝','city',30,49.262255,-123.099518,'member')::text,true);
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000014","role":"authenticated"}',true);
+select set_config('live.k3',public.post_live_bubble('live-test','남서쪽 끝','city',30,49.262255,-123.101882,'member')::text,true);
+reset role;
+select is((select count(*)::int from private.live_bubbles where id in (current_setting('live.k1')::uuid,current_setting('live.k2')::uuid,current_setting('live.k3')::uuid)
+  and latitude::numeric=round(latitude::numeric,3) and longitude::numeric=round(longitude::numeric,3)),3,'each is saved on the ~100 m grid');
+select ok(pg_temp.off_centre(49.2627,-123.1007,(select array_agg(v order by b.created_at,o) from private.live_bubbles b,
+  lateral (values(1,b.latitude),(2,b.longitude)) x(o,v) where b.id in (current_setting('live.k1')::uuid,current_setting('live.k2')::uuid,current_setting('live.k3')::uuid)))>20,
+  'so the three saved points no longer give the home away');
+-- Back near the last point (its cell or one next to it, F2): the same point again, so a home near a grid line never shows two by turns.
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000012","role":"authenticated"}',true);
+select lives_ok($$select public.post_live_bubble('live-test','다시 왔어요','city',30,49.26345,-123.1007,'member')$$,'K1 posts again from the next cell south');
+select is((select jsonb_build_array(m->'latitude',m->'longitude') from (select public.get_live_map('live-test')->'mine' m) x),'[49.264,-123.101]'::jsonb,'and her bubble keeps its last point');
+select lives_ok($$select public.post_live_bubble('live-test','이사 왔어요','city',30,49.2667,-123.1007,'member')$$,'from three cells away');
+select is((select jsonb_build_array(m->'latitude',m->'longitude') from (select public.get_live_map('live-test')->'mine' m) x),'[49.267,-123.101]'::jsonb,'it moves to the new cell');
+
+-- 글링 pins (F5): only someone who is an admin right now with the second sign-in step, at the exact spot, and naming no admin account.
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000016","role":"authenticated"}',true);
+select throws_ok($$select public.post_live_bubble('live-test','공식 안내: 여기로 오세요','city',60,43.6532,-79.3832,'pin')$$,'P0001','ADMIN_REQUIRED','someone who used to be an admin cannot place a 글링 pin');
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000015","role":"authenticated","app_metadata":{"role":"admin"}}',true);
+select throws_ok($$select public.post_live_bubble('live-test','공식 안내','city',60,49.26543,-123.10021,'pin')$$,'P0001','ADMIN_REQUIRED','nor an admin signed in without the second step');
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000015","role":"authenticated","aal":"aal2","session_id":"e5260000-0000-4000-8000-000000000015","app_metadata":{"role":"admin"}}',true);
+select set_config('live.pin',public.post_live_bubble('live-test','글링 모임 여기예요','city',60,49.26543,-123.10021,'pin')::text,true);
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select is((select b->'author' from jsonb_array_elements(public.get_live_map('live-test')->'bubbles') b where b->>'id'=current_setting('live.pin')),
+  '{"id":"gling","nickname":"글링","trustLevel":3}'::jsonb,'a pin shows 글링, never the admin account behind it');
+select is((select jsonb_build_array(b->'latitude',b->'longitude') from jsonb_array_elements(public.get_live_map('live-test')->'bubbles') b where b->>'id'=current_setting('live.pin')),
+  '[49.26543,-123.10021]'::jsonb,'at the exact spot the admin chose');
 
 -- Impossible speed: C was here 10 minutes ago, so a bubble from 50 km away now is refused; J's 50 km over 3 hours is fine.
 select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000003","role":"authenticated"}',true);
-select throws_ok($$select public.post_live_bubble('live-test','순간이동','city',30,49.7120,-123.1007,49.7120,-123.1007,'member')$$,'P0001','LOCATION_UNAVAILABLE','50 km in 10 minutes is refused');
+select throws_ok($$select public.post_live_bubble('live-test','순간이동','city',30,49.7120,-123.1007,'member')$$,'P0001','LOCATION_UNAVAILABLE','50 km in 10 minutes is refused');
 select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000011","role":"authenticated"}',true);
-select ok(public.post_live_bubble('live-test','돌아왔어요','city',30,49.2627,-123.1007,49.2627,-123.1007,'member') is not null,'50 km over three hours is allowed');
+select ok(public.post_live_bubble('live-test','돌아왔어요','city',30,49.2627,-123.1007,'member') is not null,'50 km over three hours is allowed');
 select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000004","role":"authenticated"}',true);
-select throws_ok($$select public.post_live_bubble('live-test','안녕','city',30,49.2627,-123.1007,49.2627,-123.1007,'member')$$,'P0001','PERSONA_NOT_ALLOWED','an operated character cannot post');
+select throws_ok($$select public.post_live_bubble('live-test','안녕','city',30,49.2627,-123.1007,'member')$$,'P0001','PERSONA_NOT_ALLOWED','an operated character cannot post');
 select throws_ok($$select public.send_live_bubble_request(current_setting('live.a')::uuid,0)$$,'P0001','PERSONA_NOT_ALLOWED','nor ask anyone');
 
 -- Who sees what.
@@ -97,7 +151,7 @@ select ok((select b->>'waved' from jsonb_array_elements(public.get_live_map('liv
 select is((public.get_live_map('live-test')->>'requestsLeft')::int,5,'a wave is not a chat request');
 select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000002","role":"authenticated"}',true);
 select is((select b - 'sent' - 'createdAt' - 'expiresAt' - 'author' from jsonb_array_elements(public.get_live_map('live-test')->'bubbles') b where b->>'id'=current_setting('live.a')),
-  jsonb_build_object('id',current_setting('live.a'),'body','커피 한잔 할 사람','latitude',49.2627,'longitude',-123.1007,'audience','city','kind','member','waved',false),
+  jsonb_build_object('id',current_setting('live.a'),'body','커피 한잔 할 사람','latitude',49.263,'longitude',-123.101,'audience','city','kind','member','waved',false),
   'someone else sees no waver and no count on A''s bubble');
 select is(public.get_live_map('live-test')->'waves','[]'::jsonb,'and no waves of their own bubble yet');
 select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000001","role":"authenticated"}',true);
@@ -172,6 +226,19 @@ select throws_ok($$select public.send_live_bubble_request('e5210000-0000-4000-80
 select throws_ok($$select public.wave_live_bubble('e5210000-0000-4000-8000-000000000010')$$,'P0001','BUBBLE_GONE','or waves');
 select ok(not public.get_live_map('live-test')->'bubbles' @> '[{"id":"e5210000-0000-4000-8000-000000000010"}]','and is off the map');
 
+-- Reports from accounts made today don't take a bubble down (F4); they wait for an admin in the report queue.
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000012","role":"authenticated"}',true);
+select lives_ok($$select public.create_report('live_bubble','e5210000-0000-4000-8000-000000000008','spam',null)$$,'a new account reports G');
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000013","role":"authenticated"}',true);
+select lives_ok($$select public.create_report('live_bubble','e5210000-0000-4000-8000-000000000008','spam',null)$$,'a second one');
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000014","role":"authenticated"}',true);
+select lives_ok($$select public.create_report('live_bubble','e5210000-0000-4000-8000-000000000008','spam',null)$$,'a third one');
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000011","role":"authenticated"}',true);
+select ok(public.get_live_map('live-test')->'bubbles' @> '[{"id":"e5210000-0000-4000-8000-000000000008"}]','three accounts made today cannot take it down');
+reset role;
+select is((select count(*)::int from public.reports where target_type='live_bubble' and target_id='e5210000-0000-4000-8000-000000000008' and status='open'),3,'their reports wait in the queue');
+set local role authenticated;
+
 -- Three different people reporting a bubble take it down at once.
 select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000003","role":"authenticated"}',true);
 select lives_ok($$select public.create_report('live_bubble','e5210000-0000-4000-8000-000000000009','spam',null)$$,'first report');
@@ -186,7 +253,8 @@ select ok(not public.get_live_map('live-test')->'bubbles' @> '[{"id":"e5210000-0
 reset role;
 select ok((select hidden_at is not null and ended_at is not null from private.live_bubbles where id='e5210000-0000-4000-8000-000000000009'),'it is marked hidden for the report queue');
 select is((select count(*)::int from private.live_bubble_requests where bubble_id='e5210000-0000-4000-8000-000000000009' and status='pending'),0,'its unanswered request went with it');
-select is((select evidence->>'body' from public.reports where target_type='live_bubble' limit 1),'맛집 추천','the report keeps a copy of the line');
+select is((select evidence->>'body' from public.reports where target_type='live_bubble' and target_id='e5210000-0000-4000-8000-000000000009' limit 1),'맛집 추천','the report keeps a copy of the line');
+select ok(not exists(select 1 from public.reports where target_type='live_bubble' and (evidence ? 'latitude' or evidence ? 'longitude')),'but never where it sat (F3)');
 select ok(exists(select 1 from public.safety_review_queue where target_type='live_bubble' and target_id=current_setting('live.a')::uuid),'every bubble line enters the safety review queue');
 
 -- 내리기: waves and unanswered requests go with the bubble.

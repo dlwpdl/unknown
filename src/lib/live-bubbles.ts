@@ -31,17 +31,20 @@ export function distanceMeters(a: Point, b: Point) {
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.latitude * RAD) * Math.cos(b.latitude * RAD) * Math.sin(dLng / 2) ** 2;
   return 2 * 6371008.8 * Math.asin(Math.min(1, Math.sqrt(h)));
 }
-/** The point, pulled back toward origin until it is inside the circle (1% margin so the server's own check never disagrees). */
+/** The point, pulled back toward origin until it is inside the 100 m circle (1% margin). Only the app checks this: the phone's place never leaves it. */
 export function clampWithin(origin: Point, point: Point, meters: number = LIVE.moveMeters): Point {
   const distance = distanceMeters(origin, point);
   if (distance <= meters * 0.99) return point;
   const ratio = meters * 0.99 / distance;
   return { latitude: origin.latitude + (point.latitude - origin.latitude) * ratio, longitude: origin.longitude + (point.longitude - origin.longitude) * ratio };
 }
-/** Where a new bubble first sits: the ~100 m grid cell around me, never my exact spot, and always inside the 100 m circle. */
-export function approximatePoint(fix: Point): Point {
+/**
+ * The ~100 m grid point (3 decimals) a member's bubble shows: where it first sits, and where a dragged pin lands, so even three bubbles
+ * dragged to the edge of the 100 m circle can't be drawn back to one home (security review 2026-11-05 F1). The server rounds again.
+ */
+export function approximatePoint(point: Point): Point {
   const round = (value: number) => Math.round(value * 1000) / 1000;
-  return clampWithin(fix, { latitude: round(fix.latitude), longitude: round(fix.longitude) });
+  return { latitude: round(point.latitude), longitude: round(point.longitude) };
 }
 /**
  * Where I am, for posting: an honest, fresh fix within 250 m, or MOCKED / INACCURATE / UNAVAILABLE.
@@ -169,11 +172,14 @@ async function act<T>(server: (client: SupabaseClient) => PromiseLike<{ data: un
   await refreshLive();
   return result.data as T;
 }
-export type LivePost = { cityId: string; body: string; audience: LiveAudience; minutes: number; point: Point; origin: Point | null; kind: LiveKind };
-export const postLiveBubble = (input: LivePost) => act(client => client.rpc('post_live_bubble', {
-  p_city_id: input.cityId, p_body: input.body.trim(), p_audience: input.audience, p_minutes: input.minutes, p_latitude: input.point.latitude, p_longitude: input.point.longitude,
-  p_origin_latitude: input.origin?.latitude ?? null, p_origin_longitude: input.origin?.longitude ?? null, p_kind: input.kind,
-}), key => demo.post(key, input, Date.now()));
+export type LivePost = { cityId: string; body: string; audience: LiveAudience; minutes: number; point: Point; kind: LiveKind };
+/** Only the shown point goes out, on the grid for a member's bubble; a 글링 pin keeps the admin's exact spot. */
+export function postLiveBubble(input: LivePost) {
+  const sent = input.kind === 'member' ? { ...input, point: approximatePoint(input.point) } : input;
+  return act(client => client.rpc('post_live_bubble', {
+    p_city_id: sent.cityId, p_body: sent.body.trim(), p_audience: sent.audience, p_minutes: sent.minutes, p_latitude: sent.point.latitude, p_longitude: sent.point.longitude, p_kind: sent.kind,
+  }), key => demo.post(key, sent, Date.now()));
+}
 export const endLiveBubble = () => act(client => client.rpc('end_live_bubble'), key => demo.end(key));
 export const extendLiveBubble = () => act(client => client.rpc('extend_live_bubble'), key => demo.extend(key, Date.now()));
 export const sendLiveRequest = (bubbleId: string, greeting: number) => act(client => client.rpc('send_live_bubble_request', { p_bubble_id: bubbleId, p_greeting: greeting }), key => demo.send(key, bubbleId, greeting, Date.now()));

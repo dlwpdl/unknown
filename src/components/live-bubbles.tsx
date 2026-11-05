@@ -178,16 +178,17 @@ function Secondary({ label, onPress, analyticsId, disabled }: { label: string; o
     <ThemedText type="smallBold">{label}</ThemedText>
   </Pressable>;
 }
-function Person({ person, demo, onProfile }: { person: LivePerson; demo?: boolean; onProfile: () => void }) {
+// No onProfile for a 글링 pin: it names no account.
+function Person({ person, demo, onProfile }: { person: LivePerson; demo?: boolean; onProfile?: () => void }) {
   const { tr } = useLanguage(), { play } = useInteractionFeedback();
   return <View style={styles.person}>
     <InitialAvatar name={person.nickname} />
     <View style={styles.flex}>
       <View style={styles.nameRow}><ThemedText type="smallBold" numberOfLines={1} style={styles.shrink}>{person.nickname}</ThemedText>
         <TrustBadge trustLevel={person.trustLevel === 1 ? undefined : person.trustLevel} />{demo && <Tag label={tr('개발용 예시')} tone="quiet" />}</View>
-      <Pressable analyticsId="livemap.profile" accessibilityRole="button" accessibilityLabel={tr('{0} 프로필 보기', person.nickname)} onPress={() => { play('selection'); onProfile(); }} style={styles.inlineLink}>
+      {onProfile && <Pressable analyticsId="livemap.profile" accessibilityRole="button" accessibilityLabel={tr('{0} 프로필 보기', person.nickname)} onPress={() => { play('selection'); onProfile(); }} style={styles.inlineLink}>
         <ThemedText type="small" themeColor="accent">{tr('프로필 보기')}</ThemedText>
-      </Pressable>
+      </Pressable>}
     </View>
   </View>;
 }
@@ -278,7 +279,7 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
     if (!ready || !point) return;
     play('selection'); setBusy(true); setProblem('');
     try {
-      await postLiveBubble({ cityId: city.id, body, audience, minutes, point, origin: isAdmin ? null : origin, kind: isAdmin ? kind : 'member' });
+      await postLiveBubble({ cityId: city.id, body, audience, minutes, point, kind: isAdmin ? kind : 'member' });
       play('success');
       liveNotice(mine ? tr('말풍선을 바꿨어요. {0} 뒤에 사라져요', durationLabel(minutes)) : tr('말풍선을 띄웠어요. {0} 뒤에 사라져요', durationLabel(minutes)));
       onClose();
@@ -294,9 +295,10 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
   };
   const move = (pin: Point) => {
     if (!origin) return;
+    // The 100 m is measured before the pin settles on the ~100 m grid, the point others will see.
     const next = clampWithin(origin, pin), edge = distanceMeters(pin, next) > 1;
     if (edge) play('warning');
-    setAtEdge(edge); setPoint(next);
+    setAtEdge(edge); setPoint(approximatePoint(next));
   };
   const title = step === 'preview' ? tr('남들에게 이렇게 보여요') : step === 'adjust' ? tr('위치 바꾸기') : mine ? tr('내 말풍선') : tr('말풍선 남기기');
   const preview: DiscoveryMarker[] = point ? [{ id: 'preview', ...point, color: BUBBLE_COLOR, label: body.trim().slice(0, 80) || tr('한마디'), sublabel: tr('나 · {0} 남음', durationLabel(minutes)), icon: kind === 'pin' && isAdmin ? 'visited' : 'bubble' }] : [];
@@ -415,7 +417,7 @@ export function LiveRequestSheet({ visible, bubble, map, now, onClose, onDismiss
   const profile = () => { if (bubble.demo) liveNotice(tr('개발용 예시라 프로필이 없어요')); else { onClose(); router.push({ pathname: '/user/[id]', params: { id: bubble.author.id, nickname: name } }); } };
   return <DragSheet visible={visible} onClose={onClose} onDismissed={onDismissed} dismissible={!busy}>
     <ScrollView analyticsId="livemap.request" style={styles.scroll} contentContainerStyle={styles.body}>
-      <Person person={bubble.author} demo={bubble.demo} onProfile={profile} />
+      <Person person={bubble.author} demo={bubble.demo} onProfile={bubble.kind === 'pin' ? undefined : profile} />
       <View style={[styles.quote, { backgroundColor: theme.backgroundElement }]}>
         <ThemedText type="section">{bubble.body}</ThemedText>
         <View style={styles.metaRow}>
@@ -454,8 +456,8 @@ export function LiveRequestSheet({ visible, bubble, map, now, onClose, onDismiss
         <ThemedText type="caption" themeColor="textSecondary">{tr('{0}님이 받으면 채팅이 열려요.', name)}</ThemedText>
       </>}
       {sent?.status === 'pending' && !!problem && <ThemedText type="small" accessibilityRole="alert">{tr(problem)}</ThemedText>}
-      <Pressable analyticsId="livemap.request" accessibilityRole="button" accessibilityLabel={tr('{0}님 차단하기', name)} onPress={() => { play('selection'); onBlock(bubble); }} style={styles.link}>
-        <ThemedText type="small" themeColor="textSecondary">{tr('차단하기')}</ThemedText></Pressable>
+      {bubble.kind !== 'pin' && <Pressable analyticsId="livemap.request" accessibilityRole="button" accessibilityLabel={tr('{0}님 차단하기', name)} onPress={() => { play('selection'); onBlock(bubble); }} style={styles.link}>
+        <ThemedText type="small" themeColor="textSecondary">{tr('차단하기')}</ThemedText></Pressable>}
       </View>
     </ScrollView>
   </DragSheet>;
@@ -548,7 +550,7 @@ export function LiveSheets({ open, onChange, city, mapCenter, now }: { open: Liv
     <LiveRequestSheet key={`request:${lastBubble ?? ''}`} visible={open?.kind === 'request' && !!bubble} bubble={bubble} map={map} now={now} onClose={() => onChange(null)} onReport={report} onBlock={block}
       onDismissed={() => { const then = afterClose.current; afterClose.current = null; then?.(); }} />
     <LiveReceivedSheet key={`received:${lastRequest ?? ''}`} visible={open?.kind === 'received' && !!request} request={request} onClose={() => onChange(null)} />
-    {reporting && <ReportSheet visible targetType="live_bubble" targetId={reporting.id} reportedUserId={reporting.author.id} reportedNickname={reporting.author.nickname} onClose={() => { setReporting(null); void refreshLive(); }} />}
+    {reporting && <ReportSheet visible targetType="live_bubble" targetId={reporting.id} reportedUserId={reporting.kind === 'pin' ? undefined : reporting.author.id} reportedNickname={reporting.author.nickname} onClose={() => { setReporting(null); void refreshLive(); }} />}
   </>;
 }
 const styles = StyleSheet.create({

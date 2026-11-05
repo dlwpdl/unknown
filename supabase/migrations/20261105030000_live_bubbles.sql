@@ -8,9 +8,12 @@ insert into private.behavior_targets(id) values
 ('livemap.received'),('livemap.received.accept'),('livemap.received.decline')
 on conflict do nothing;
 
--- Privacy: a bubble row holds only the point other members see (the member's own place moved at most 100 m, or a ~100 m grid
--- point). The exact place the phone reported is sent once for the 100 m and speed checks and is never written anywhere.
--- The speed check compares it with the member's last bubble point and time. Bubbles are deleted 7 days after they go down.
+-- Privacy: the phone's place never reaches the server. The app keeps a member's bubble within 100 m of it and sends a point on the
+-- ~100 m grid (3 decimals), which the server rounds again before saving, so even a pin dragged to the edge of the circle says nothing
+-- finer about home (security review 2026-11-05 F1, F7). The speed check compares shown points. Bubbles are deleted 7 days after they go down.
+-- Known and left for now (same review): the daily counts follow the bubble's city day (R1); any member can open any city's map (R2);
+-- visibility reads ended_at, which every hiding path also sets (R4); 1시간 더 can be pressed again and again (R5); accepting two
+-- requests within 30 seconds hits start_conversation's wait (R6); the phone reports its own place, so faking it can't be stopped here (R7).
 create table private.live_bubbles (
   id uuid primary key default gen_random_uuid(),
   author_id uuid not null references public.profiles(id) on delete cascade,
@@ -114,7 +117,8 @@ $$;
 create function private.live_bubble_json(b private.live_bubbles,p_viewer uuid) returns jsonb
 language sql stable security definer set search_path='' as $$
   select jsonb_build_object('id',b.id,
-    'author',case when b.kind='pin' then jsonb_build_object('id',b.author_id,'nickname','글링','trustLevel',3) else private.live_person(b.author_id) end,
+    -- A pin speaks for Gling, so it never names the admin account behind it.
+    'author',case when b.kind='pin' then jsonb_build_object('id','gling','nickname','글링','trustLevel',3) else private.live_person(b.author_id) end,
     'body',b.body,'latitude',b.latitude,'longitude',b.longitude,'audience',b.audience,'kind',b.kind,'createdAt',b.created_at,'expiresAt',b.expires_at,
     'sent',(select jsonb_build_object('id',r.id,'status',r.status,'greeting',r.greeting,'conversationId',r.conversation_id)
       from private.live_bubble_requests r where r.bubble_id=b.id and r.sender_id=p_viewer and not r.wave_reply),
@@ -155,25 +159,28 @@ begin
 end $$;
 
 create function public.post_live_bubble(p_city_id text,p_body text,p_audience text,p_minutes integer,p_latitude double precision,p_longitude double precision,
-  p_origin_latitude double precision default null,p_origin_longitude double precision default null,p_kind text default 'member')
+  p_kind text default 'member')
 returns uuid language plpgsql security definer set search_path='' as $$
-declare uid uuid:=auth.uid(); admin boolean; body text:=btrim(coalesce(p_body,'')); last private.live_bubbles; meters double precision; hours double precision; new_id uuid;
+declare uid uuid:=auth.uid(); admin boolean; body text:=btrim(coalesce(p_body,'')); last private.live_bubbles; lat double precision:=p_latitude; lon double precision:=p_longitude;
+  meters double precision; hours double precision; new_id uuid;
 begin
   perform private.assert_live_member(uid);
-  admin:=private.is_admin_id(uid);
+  -- An admin right now, signed in with the second step; once having been one is not enough to place 글링 pins anywhere.
+  admin:=private.is_admin();
   if char_length(body) not between 1 and 40 then raise exception 'INVALID_BODY'; end if;
   perform private.assert_content_allowed(body);
   if p_audience not in ('city','friends') or p_minutes not in (30,60,180) or p_kind not in ('member','pin') then raise exception 'INVALID_BUBBLE'; end if;
   if p_kind='pin' and not admin then raise exception 'ADMIN_REQUIRED'; end if;
   if not exists(select 1 from public.cities where id=p_city_id) then raise exception 'INVALID_CITY'; end if;
   if p_latitude is null or p_longitude is null or p_latitude not between -90 and 90 or p_longitude not between -180 and 180 then raise exception 'INVALID_BUBBLE'; end if;
-  -- Members: the shown point stays within 100 m of where the phone is, and nobody moves faster than people can.
+  -- A member's bubble sits on the ~100 m grid whatever the app sent; a 글링 pin keeps the exact spot the admin chose.
+  if p_kind='member' then lat:=round(p_latitude::numeric,3)::double precision; lon:=round(p_longitude::numeric,3)::double precision; end if;
   if not admin then
-    if p_origin_latitude is null or p_origin_longitude is null or p_origin_latitude not between -90 and 90 or p_origin_longitude not between -180 and 180
-      or private.live_distance_m(p_origin_latitude,p_origin_longitude,p_latitude,p_longitude)>100.5 then raise exception 'LOCATION_UNAVAILABLE'; end if;
     select * into last from private.live_bubbles b where b.author_id=uid order by b.created_at desc limit 1;
     if last.id is not null then
-      meters:=private.live_distance_m(last.latitude,last.longitude,p_origin_latitude,p_origin_longitude);
+      -- Back in the last point's cell or one next to it: keep that point, so someone living near a grid line never shows two points by turns.
+      if abs(last.latitude-lat)<=0.0011 and abs(last.longitude-lon)<=0.0011 then lat:=last.latitude; lon:=last.longitude; end if;
+      meters:=private.live_distance_m(last.latitude,last.longitude,lat,lon);
       hours:=greatest(extract(epoch from now()-last.created_at)/3600,1/3600.0);
       -- Small hops are GPS noise; within an hour nobody covers ground faster than 200 km/h, and nobody ever faster than a plane.
       if meters>2000 and meters/1000/hours>(case when hours<1 then 200 else 1000 end) then raise exception 'LOCATION_UNAVAILABLE'; end if;
@@ -182,7 +189,7 @@ begin
   perform private.enforce_rate_limit('live_bubble_post',30,interval '1 day');
   update private.live_bubbles set ended_at=now() where author_id=uid and ended_at is null;
   insert into private.live_bubbles(author_id,city_id,body,latitude,longitude,audience,kind,expires_at)
-    values(uid,p_city_id,body,p_latitude,p_longitude,p_audience,p_kind,now()+make_interval(mins=>p_minutes)) returning id into new_id;
+    values(uid,p_city_id,body,lat,lon,p_audience,p_kind,now()+make_interval(mins=>p_minutes)) returning id into new_id;
   return new_id;
 end $$;
 
@@ -315,11 +322,13 @@ end $$;
 create trigger live_bubbles_down after update of ended_at on private.live_bubbles
   for each row when (old.ended_at is null and new.ended_at is not null) execute function private.live_bubble_went_down();
 
--- Reports from three different people take a bubble down at once; an admin still reviews them in the report queue.
+-- Reports from three different people take a bubble down at once. Only accounts signed up 7 or more days ago count, so a few fresh
+-- sign-ups can't keep taking someone's bubble down; every report, newer accounts' too, still waits for an admin in the report queue.
 create function private.hide_reported_live_bubble() returns trigger
 language plpgsql security definer set search_path='' as $$
 begin
-  if (select count(distinct r.reporter_id) from public.reports r where r.target_type='live_bubble' and r.target_id=new.target_id)>=3 then
+  if (select count(distinct r.reporter_id) from public.reports r join auth.users u on u.id=r.reporter_id
+      where r.target_type='live_bubble' and r.target_id=new.target_id and u.created_at<=now()-interval '7 days')>=3 then
     update private.live_bubbles set hidden_at=coalesce(hidden_at,now()),ended_at=coalesce(ended_at,now()) where id=new.target_id;
   end if;
   return new;
@@ -379,7 +388,7 @@ begin
   definition:=pg_get_functiondef('private.capture_report_evidence()'::regprocedure); anchor:='case new.target_type';
   if strpos(definition,anchor)=0 then raise exception 'LIVE_REPORT_EVIDENCE_CHANGED'; end if;
   execute replace(definition,anchor,anchor||$branch$
-    when 'live_bubble' then select to_jsonb(b) into new.evidence from private.live_bubbles b where b.id=new.target_id;
+    when 'live_bubble' then select to_jsonb(b)-'latitude'-'longitude' into new.evidence from private.live_bubbles b where b.id=new.target_id;
   $branch$);
   definition:=pg_get_functiondef('public.moderate_report(uuid,text,text)'::regprocedure); anchor:='case report.target_type';
   if strpos(definition,anchor)=0 then raise exception 'LIVE_REPORT_MODERATION_CHANGED'; end if;
@@ -419,7 +428,7 @@ do $$ declare signature text; begin
   'private.live_person(uuid)','private.live_bubble_visible(uuid,uuid)','private.live_pair_ok(uuid,uuid)','private.live_bubble_json(private.live_bubbles,uuid)',
   'private.assert_live_member(uuid)','private.use_live_quota(uuid,text,text)','private.live_bubble_went_down()','private.hide_reported_live_bubble()',
   'private.tidy_live_bubbles()','private.live_bubble_safety_content(uuid)','public.get_live_bubble_safety_content(uuid)','public.get_admin_live_bubble_content(uuid)',
-  'public.get_live_map(text)','public.post_live_bubble(text,text,text,integer,double precision,double precision,double precision,double precision,text)',
+  'public.get_live_map(text)','public.post_live_bubble(text,text,text,integer,double precision,double precision,text)',
   'public.end_live_bubble()','public.extend_live_bubble()','public.send_live_bubble_request(uuid,integer)','public.cancel_live_bubble_request(uuid)',
   'public.respond_live_bubble_request(uuid,text)','public.wave_live_bubble(uuid)','public.reply_live_bubble_wave(uuid)'] loop
   execute 'alter function '||signature||' owner to postgres';
@@ -427,7 +436,7 @@ do $$ declare signature text; begin
  end loop;
 end $$;
 grant execute on function public.get_live_map(text),
-  public.post_live_bubble(text,text,text,integer,double precision,double precision,double precision,double precision,text),
+  public.post_live_bubble(text,text,text,integer,double precision,double precision,text),
   public.end_live_bubble(),public.extend_live_bubble(),public.send_live_bubble_request(uuid,integer),public.cancel_live_bubble_request(uuid),
   public.respond_live_bubble_request(uuid,text),public.wave_live_bubble(uuid),public.reply_live_bubble_wave(uuid),public.get_admin_live_bubble_content(uuid) to authenticated;
 grant execute on function public.get_live_bubble_safety_content(uuid) to service_role;
