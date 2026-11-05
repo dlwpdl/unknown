@@ -900,7 +900,7 @@ export async function deleteMyAccount(client: SupabaseClient, appleAuthorization
 export async function loadProfileSummary(client: SupabaseClient, userId: string): Promise<ProfileSummary> {
   const [profile, posts] = await Promise.all([
     client.from('profiles').select('city_id,neighborhood').eq('id', userId).single(),
-    client.from('posts').select('like_count,tag_id').eq('author_id', userId),
+    client.from('posts').select('like_count,tag_id,status,room_preview').eq('author_id', userId),
   ]);
   if (profile.error) throw profile.error;
   if (posts.error) throw posts.error;
@@ -908,7 +908,8 @@ export async function loadProfileSummary(client: SupabaseClient, userId: string)
   return {
     cityId: profile.data.city_id,
     neighborhood: profile.data.neighborhood,
-    posts: rows.length,
+    // Same rows as the 내 글/구해요·팔아요 tabs (loadMyPosts), so the number never says 2 over empty lists.
+    posts: rows.filter(({ status, room_preview }) => status === 'published' && room_preview == null).length,
     likes: rows.reduce((sum, post) => sum + post.like_count, 0),
     meetups: rows.filter(({ tag_id }) => tag_id === 5).length,
   };
