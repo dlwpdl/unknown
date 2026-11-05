@@ -23,7 +23,11 @@ export type CityPlace = {
   recommendation?: PlaceRecommendation;
   diningRecommendation?: PlaceRecommendation;
   glingVisited?: { sourceUrl: string };
+  // 소개 3칸 (G2), written by the place automation from the place's own site or menu; each line may be missing.
+  intro?: PlaceIntro;
 };
+export type PlaceIntro = { vibe?: string; order?: string; when?: string; vibeEn?: string; orderEn?: string; whenEn?: string; sourceUrl: string };
+const INTRO_FIELDS = ['vibe', 'order', 'when', 'vibeEn', 'orderEn', 'whenEn'] as const;
 export type PlaceRecommendation = { placeId: string; reason: string; reasonEn?: string; sourceUrl: string; verifiedAt: string };
 
 type PhotoCatalog = {
@@ -115,7 +119,9 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
           || (p.nightlife !== undefined && p.nightlife !== true)
           || (p.priceLevel !== undefined && ![1, 2, 3, 4].includes(p.priceLevel))
           // Unknown subcategory names are ignored on read, so a later value does not reject the catalog.
-          || (p.subcategories !== undefined && (!Array.isArray(p.subcategories) || p.subcategories.length > 12 || p.subcategories.some(value => !text(value, 40))))) invalid();
+          || (p.subcategories !== undefined && (!Array.isArray(p.subcategories) || p.subcategories.length > 12 || p.subcategories.some(value => !text(value, 40))))
+          || (p.intro !== undefined && (!p.intro || typeof p.intro !== 'object' || !https(p.intro.sourceUrl) || !INTRO_FIELDS.some(key => p.intro![key] !== undefined)
+            || INTRO_FIELDS.some(key => p.intro![key] !== undefined && !text(p.intro![key], 160))))) invalid();
         seen.add(p.id); ids.add(p.id);
       }
     }

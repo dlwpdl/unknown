@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { friendErrorMessage, loadFriendSavedPlaces, loadMapScope, loadMerchantSaves, parseFriendSavedPlaces, parseProfileOverview, savedPlaceCities, setFriendship } from '../src/lib/profile-friends.ts';
+import { friendErrorMessage, loadFriendSavedPlaces, loadMapScope, loadMerchantSaves, loadPlaceSaves, parseFriendSavedPlaces, parseProfileOverview, savedPlaceCities, setFriendship } from '../src/lib/profile-friends.ts';
 import { saveMerchantIntro } from '../src/lib/merchant-conveniences.ts';
 import { mapMerchantProfile } from '../src/lib/merchant-profile.ts';
 import { notificationRoute } from '../src/lib/notification-preferences.ts';
@@ -36,6 +36,20 @@ test('friend actions call the server once and surface its refusal', async () => 
   await assert.rejects(setFriendship(client(new Error('FRIEND_UNAVAILABLE')), user, 'request'), /FRIEND_UNAVAILABLE/);
   assert.equal(friendErrorMessage(new Error('FRIEND_UNAVAILABLE')), '지금은 친구를 맺을 수 없어요.', 'operated, blocked and reported pairs all read the same');
   assert.equal(await loadMerchantSaves({ rpc: async () => ({ data: null, error: { code: 'PGRST202' } }) }, merchant), null);
+});
+
+test('place saves: keys only for similar places, friends checked like a business', async () => {
+  const calls = [];
+  const data = { placeKey: 'osm:node:1', saverCount: 7, weekCount: 2, friends: [{ id: user.toUpperCase(), nickname: '민지', savedAt: '2026-11-04T03:00:00Z' }],
+    similar: [{ placeKey: 'osm:way:9', saverCount: 5, weekCount: 1 }] };
+  const client = value => ({ rpc: async (name, args) => { calls.push([name, args]); return { data: value, error: null }; } });
+  const saves = await loadPlaceSaves(client(data), 'vancouver', 'osm:node:1');
+  assert.deepEqual(calls, [['get_place_saves', { p_city_id: 'vancouver', p_place_key: 'osm:node:1' }]]);
+  assert.deepEqual(JSON.parse(JSON.stringify(saves)), { saverCount: 7, weekCount: 2, friends: [{ id: user, nickname: '민지', savedAt: '2026-11-04T03:00:00Z' }], similar: [{ placeKey: 'osm:way:9', saverCount: 5, weekCount: 1 }] });
+  assert.equal(await loadPlaceSaves(client(null), 'vancouver', 'osm:node:1'), null);
+  assert.equal(await loadPlaceSaves({ rpc: async () => ({ data: null, error: { code: 'PGRST202' } }) }, 'vancouver', 'osm:node:1'), null, 'an older server shows nothing');
+  for (const bad of [{ ...data, weekCount: -1 }, { ...data, similar: [{ placeKey: 'javascript:1', saverCount: 1, weekCount: 0 }] }, { ...data, similar: Array(6).fill(data.similar[0]) }, { ...data, friends: [{ id: 'x', nickname: 'a', savedAt: 'now' }] }])
+    await assert.rejects(loadPlaceSaves(client(bad), 'vancouver', 'osm:node:1'), /INVALID_PROFILE_RESPONSE/);
 });
 
 test('the business intro is trimmed, checked before sending and verified after saving', async () => {

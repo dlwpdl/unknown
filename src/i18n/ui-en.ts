@@ -1,4 +1,11 @@
 export const uiEnglish: Record<string, string> = {
+  "이번 주 +{0}": "+{0} this week",
+  "뭘 할까": "What to do",
+  "언제 갈까": "When to go",
+  "소개 출처 보기": "See where this intro comes from",
+  "{0} 장소 보기": "View {0}",
+  "이 장소가 들어간 목록": "Lists this place is on",
+  "{0} 목록을 지도에서 보기": "See the {0} list on the map",
   "{0} 신고하기": "Report {0}",
   "{0} 저장한 곳 {1}곳": "{0}: {1} saved places",
   "{0}/{1}자": "{0}/{1}",

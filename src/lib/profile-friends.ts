@@ -22,6 +22,12 @@ export type MerchantSaves = {
   friends: { id: string; nickname: string; savedAt: string }[];
   similar: { merchantId: string; name: string; saverCount: number; weekCount: number }[];
 };
+// A map place: the app names similar places from its own catalog, so only keys come back.
+export type PlaceSaves = {
+  saverCount: number; weekCount: number;
+  friends: MerchantSaves['friends'];
+  similar: { placeKey: string; saverCount: number; weekCount: number }[];
+};
 
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 const CITY = /^[a-z][a-z0-9-]{0,63}$/;
@@ -110,6 +116,24 @@ export async function loadMerchantSaves(client: SupabaseClient, merchantId: stri
   if (error?.code === 'PGRST202') return null;
   if (error) throw error;
   return parseMerchantSaves(data);
+}
+
+export function parsePlaceSaves(value: unknown): PlaceSaves | null {
+  if (value === null) return null;
+  if (!object(value)) invalid();
+  const merchant = parseMerchantSaves({ ...value, similar: [] })!;
+  return {
+    saverCount: merchant.saverCount, weekCount: count(value.weekCount), friends: merchant.friends,
+    similar: list(value.similar, 5).map(place => object(place) && typeof place.placeKey === 'string' && PLACE.test(place.placeKey)
+      ? { placeKey: place.placeKey, saverCount: count(place.saverCount), weekCount: count(place.weekCount) } : invalid()),
+  };
+}
+
+export async function loadPlaceSaves(client: SupabaseClient, cityId: string, placeKey: string): Promise<PlaceSaves | null> {
+  const { data, error } = await client.rpc('get_place_saves', { p_city_id: cityId, p_place_key: placeKey });
+  if (error?.code === 'PGRST202') return null;
+  if (error) throw error;
+  return parsePlaceSaves(data);
 }
 
 // 지도 '보여 줄 곳': places in one city saved by friends who share them (get_friend_saved_places). friendCount is every

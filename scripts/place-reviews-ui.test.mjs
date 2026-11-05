@@ -262,7 +262,7 @@ function detailViewport(mode = 'auto') {
     '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
     '@/hooks/use-content-translation': { ...translationHookDefaults, useTranslationPreference: () => ({ mode }) },
-    '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
+    '@/components/place-saves': { PlaceSavedBy: 'PlaceSavedBy', PlaceRelated: 'PlaceRelated', usePlaceSaves: () => null }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'toronto' } }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'guest' } }) },

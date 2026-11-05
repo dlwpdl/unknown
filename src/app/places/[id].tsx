@@ -13,6 +13,7 @@ import { PlaceReviews } from '@/components/place-reviews';
 import { PlaceExternalRatings } from '@/components/place-external-ratings';
 import { PlaceHours } from '@/components/place-hours';
 import { PageHeader } from '@/components/page-header';
+import { PlaceRelated, PlaceSavedBy, usePlaceSaves } from '@/components/place-saves';
 import { PostMapLink } from '@/components/post-map-link';
 import { PostPhotoCredits } from '@/components/post-photo-credits';
 import { StateCard } from '@/components/state-card';
@@ -57,6 +58,7 @@ export default function PlaceDetailScreen() {
   try { if (city) found = getCityPlaces(city.id).find(item => item.id === id) ?? (typeof id === 'string' ? deliveryPartnerPlace(city.id, id) : undefined); } catch { /* Invalid/missing catalog stays an explicit missing-place state. */ }
   const place = found, website = place?.website ? safeMerchantSourceUrl(place.website) : null;
   const targetId = place?.id, loadedCityId = place?.cityId;
+  const saves = usePlaceSaves(loadedCityId, targetId, isFocused && !isAuthLoading, userId);
   const saved = useSavedEntry(place ? { kind: 'place', id: place.id, cityId: place.cityId } : null, !!place && !!city);
   const linkScope = useRef<object | null>(null);
   useLayoutEffect(() => {
@@ -110,6 +112,7 @@ export default function PlaceDetailScreen() {
         {!!place.recommendation && <>
           <ThemedText>{language === 'en' ? place.recommendation.reasonEn ?? place.recommendation.reason : place.recommendation.reason}</ThemedText>
         </>}
+        <PlaceSavedBy place={place} saves={saves} />
         <View style={[styles.facts, { backgroundColor: theme.card }]}>
           <ThemedText type="smallBold" themeColor="accent">{place.category === 'food' ? tr("맛집") : place.category === 'cafe' ? tr("카페") : tr("가볼 만한 곳")}</ThemedText>
           <ThemedText>{place.address || tr("등록된 주소 정보가 없어요. 지도에서 위치를 확인해 주세요.")}</ThemedText>
@@ -125,6 +128,7 @@ export default function PlaceDetailScreen() {
         </Pressable>
         {place.id.startsWith('osm:') && <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} />}
         {place.id.startsWith('osm:') && <PlaceExternalRatings key={`${city.id}:${place.id}`} cityId={city.id} placeId={place.id} />}
+        <PlaceRelated place={place} saves={saves} />
         {/* Business-linked places redirect to the company page, so only a booking-site website can show here. */}
         <ReservationButton website={place.website} />
         {mapsUrl && <PostMapLink url={mapsUrl} label={place.name} onOpened={() => record('place_directions')} />}

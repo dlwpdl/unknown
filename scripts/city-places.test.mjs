@@ -426,7 +426,7 @@ function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = da
     '@/lib/product-analytics': product,
     '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
-    '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) }, '@/components/page-header': { PageHeader: 'PageHeader' },
+    '@/components/place-saves': { PlaceSavedBy: 'PlaceSavedBy', PlaceRelated: 'PlaceRelated', usePlaceSaves: () => null }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) }, '@/components/page-header': { PageHeader: 'PageHeader' },
     '@/hooks/use-current-location': { useCurrentLocation: () => currentLocation }, '@/lib/discovery-sort': distance, '@/constants/design-system': { ControlStyles: { pill: {} } }, '@/components/city-popular-places': { NearbyPlacesLocation: 'NearbyPlacesLocation' },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
     '@/hooks/use-place-review-summaries': { usePlaceReviewSummaries: (cityId, ids) => { ratingScopes.push({ cityId, ids }); return {}; } },
@@ -1155,4 +1155,60 @@ test('actual Expo production compiled PlacesList updates on a catalog-only revis
  // Match React's cached-element bailout, while external-store subscribers update independently.
  for(const fn of [...subscribers]){if(fn===exports.default)rootRender();else if(fn===childElement.type)tree=render(fn,childElement.props);}
  assert.deepEqual(ids(),['replacement-first','newly-added'],'catalog-only refresh must reach rows without city, fix, query or category changes');
+});
+
+test('G2 place intro: a sourced intro reaches the place, a bad one rejects the whole catalog', () => {
+  const api = data(), next = dailyCatalog(), id = next.cities.toronto.places[0].id;
+  next.cities.toronto.places[0].intro = { vibe: '조용한 동네 카페', order: '라테', sourceUrl: 'https://example.ca/menu' };
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+  assert.deepEqual(JSON.parse(JSON.stringify(api.getCityPlaces('toronto').find(place => place.id === id).intro)), next.cities.toronto.places[0].intro);
+  for (const intro of [{ vibe: 'x', sourceUrl: 'http://example.ca/' }, { sourceUrl: 'https://example.ca/' }, { vibe: 'x'.repeat(161), sourceUrl: 'https://example.ca/' }, { vibe: 'a\u0000b', sourceUrl: 'https://example.ca/' }, null]) {
+    const fresh = data(), original = JSON.stringify(fresh.getCityPlaces('toronto')), bad = dailyCatalog(); bad.cities.toronto.places[0].intro = intro;
+    assert.throws(() => fresh.replaceCityPlacesCatalog(bad, fixtureNow), /INVALID_PLACE_CATALOG/, JSON.stringify(intro));
+    assert.equal(JSON.stringify(fresh.getCityPlaces('toronto')), original);
+  }
+});
+
+test('G2 place saves: friends by name, similar places named from the catalog, lists open the map filter', () => {
+  const routes = [], feedback = [], opened = [];
+  const jsx = (type, props, key) => ({ type, props, key });
+  const tr = (text, ...args) => args.reduce((value, arg, index) => value.replace(`{${index}}`, arg), text);
+  const catalogPlaces = [{ id: 'osm:node:2', name: 'Second Cafe' }, { id: 'osm:node:3', name: 'Third Bar' }];
+  const ui = module('src/components/place-saves.tsx', {
+    react: { useState: v => [v, () => {}], useEffect() {} }, 'react/jsx-runtime': { jsx, jsxs: jsx },
+    'expo-router': { useRouter: () => ({ push: p => routes.push(p), navigate: p => routes.push(p) }) },
+    'react-native': { StyleSheet: { create: v => v }, View: 'View', Linking: { openURL: async url => { opened.push(url); } } },
+    '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'ThemedText' },
+    '@/constants/design-system': { ControlStyles: { pill: {} }, controlPresentation: () => ({ container: {} }) },
+    '@/hooks/use-language': { useLanguage: () => ({ tr, language: 'ko', locale: 'ko-KR' }) }, '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/lib/city-places': { getCityPlaces: () => catalogPlaces }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: v => feedback.push(v) }) },
+    '@/lib/profile-friends': { loadPlaceSaves: async () => null }, '@/lib/supabase': { supabase: {} },
+  });
+  const nodes = tree => { const out = []; const walk = n => { if (Array.isArray(n)) n.forEach(walk); else if (n && typeof n === 'object') { out.push(n); walk(n.props?.children); } }; walk(tree); return out; };
+  const text = tree => nodes(tree).filter(n => n.type === 'ThemedText').map(n => [n.props.children].flat().join('')).join(' | ');
+  const place = { id: 'osm:node:1', cityId: 'vancouver', name: 'First', category: 'food', recommendation: { placeId: 'osm:node:1' }, glingVisited: { sourceUrl: 'https://gling.ca' },
+    intro: { vibe: '조용해요', when: '평일 저녁', sourceUrl: 'https://example.ca/menu' } };
+  const saves = { saverCount: 12, weekCount: 2, friends: [{ id: 'u1', nickname: '민지', savedAt: '2026-11-04T00:00:00Z' }],
+    similar: [{ placeKey: 'osm:node:9', saverCount: 9, weekCount: 0 }, { placeKey: 'osm:node:2', saverCount: 5, weekCount: 1 }, { placeKey: 'osm:node:3', saverCount: 3, weekCount: 0 }] };
+  const top = ui.PlaceSavedBy({ place, saves }), top_text = text(top);
+  assert.match(top_text, /저장한 사람 12명 · 이번 주 \+2/);
+  assert.match(top_text, /민지님이 저장/);
+  assert.match(top_text, /분위기 \| 조용해요 \| 언제 갈까 \| 평일 저녁/, 'a missing line is left out, never guessed');
+  assert.ok(!top_text.includes('뭘 시킬까'));
+  nodes(top).find(n => n.props?.analyticsId === 'places.saves.friend').props.onPress();
+  assert.deepEqual(JSON.parse(JSON.stringify(routes.pop())), { pathname: '/user/[id]', params: { id: 'u1', nickname: '민지' } });
+  nodes(top).find(n => n.props?.analyticsId === 'places.intro.source').props.onPress();
+  assert.deepEqual([...opened], ['https://example.ca/menu']);
+  const bottom = ui.PlaceRelated({ place, saves }), bottom_text = text(bottom);
+  assert.match(bottom_text, /1 \| Second Cafe \| 저장 5 · 이번 주 \+1/, 'an unknown key is dropped and the rest renumber');
+  assert.match(bottom_text, /2 \| Third Bar \| 저장 3/);
+  nodes(bottom).find(n => n.props?.analyticsId === 'places.similar').props.onPress();
+  assert.deepEqual(JSON.parse(JSON.stringify(routes.pop())), { pathname: '/places/[id]', params: { id: 'osm:node:2', cityId: 'vancouver' } });
+  const lists = nodes(bottom).filter(n => n.props?.analyticsId === 'places.list');
+  assert.deepEqual(lists.map(n => n.props.accessibilityLabel), ['TOP 50 목록을 지도에서 보기', 'gling Visited 목록을 지도에서 보기']);
+  lists[1].props.onPress();
+  assert.deepEqual(JSON.parse(JSON.stringify(routes.pop())), { pathname: '/map', params: { cityId: 'vancouver', category: 'visited' } });
+  assert.ok(feedback.length >= 4 && feedback.every(v => v === 'selection'));
+  const empty = [ui.PlaceSavedBy({ place: { ...place, intro: undefined }, saves: null }), ui.PlaceRelated({ place: { ...place, recommendation: undefined, glingVisited: undefined }, saves: { ...saves, similar: [] } })];
+  assert.equal(text(empty), '', 'no saves, intro or lists shows nothing');
 });
