@@ -2,6 +2,7 @@ import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'e
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FlatList, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SymbolView } from 'expo-symbols';
 
 import { Pressable } from '@/components/analytics-controls';
 import { WebshopComparisonSheet } from '@/components/business-webshop';
@@ -12,7 +13,7 @@ import { ShareCardSheet } from '@/components/share-card';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { ControlStyles } from '@/constants/design-system';
+import { ControlStyles, IconSize } from '@/constants/design-system';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useLanguage } from '@/hooks/use-language';
@@ -193,6 +194,15 @@ export default function SavedScreen() {
       ListHeaderComponent={<View style={styles.header}>
         <View style={styles.intro}><ThemedText type="section">{ko ? '다시 보고 싶은 것들' : 'Worth coming back to'}</ThemedText>
           <ThemedText type="supporting" themeColor="textSecondary">{ko ? '저장한 항목과 폴더는 나만 볼 수 있어요.' : 'Your saved items and folders are private.'}</ThemedText></View>
+        {/* Owner 2026-11-04 "가져오기: 검색창 위 한 줄로": its own row, so it never reads as a folder. */}
+        <Pressable analyticsId="saved.import" accessibilityRole="button" accessibilityLabel={ko ? '다른 앱에서 가져오기' : 'Import from other apps'} disabled={busy}
+          onPress={() => { play('selection'); closeTransient(); router.push('/profile/import'); }}
+          style={({ pressed }) => [styles.import, { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.card, opacity: busy ? 0.6 : 1 }]}>
+          <SymbolView name={{ ios: 'square.and.arrow.down', android: 'download', web: 'download' }} size={IconSize.toolbar} tintColor={theme.accent} accessible={false} />
+          <View style={styles.importText}><ThemedText type="menu">{ko ? '다른 앱에서 가져오기' : 'Import from other apps'}</ThemedText>
+            <ThemedText type="supporting" themeColor="textSecondary" numberOfLines={1}>{ko ? '구글맵 목록 · 인스타 릴스 · 메모' : 'Google Maps lists · Instagram reels · notes'}</ThemedText></View>
+          <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={IconSize.chevron} tintColor={theme.textSecondary} accessible={false} />
+        </Pressable>
         <View style={[ControlStyles.field, styles.search, { borderColor: theme.line, backgroundColor: theme.card }]}>
           <TextInput value={search} maxLength={120} editable={!busy} accessibilityLabel={ko ? '저장한 항목 검색' : 'Search saved items'} placeholder={ko ? '저장한 항목 검색' : 'Search saved items'} placeholderTextColor={theme.textSecondary}
             style={[styles.input, { color: theme.text }]} returnKeyType="search" onChangeText={value => { closeTransient(); setSearch(value); }} onSubmitEditing={() => { play('selection'); setQuery(search.trim()); }} />
@@ -202,7 +212,6 @@ export default function SavedScreen() {
         <View style={styles.folders}><ThemedText type="label" themeColor="textSecondary">{ko ? '내 폴더' : 'My folders'}</ThemedText>
           <View style={styles.wrap}><SavedLibraryButton analyticsId="saved.folder.all" label={ko ? '전체 저장' : 'All saved'} selected={!folderId} disabled={busy} onPress={() => { closeTransient(); setFolderId(null); }} />
             {folders.map(folder => <SavedLibraryButton key={folder.id} analyticsId="saved.folder.select" testID={`saved.folder.${folder.id}`} label={folder.name} selected={folderId === folder.id} disabled={busy} onPress={() => { closeTransient(); setFolderId(folder.id); }} />)}
-            <SavedLibraryButton analyticsId="saved.import" label={ko ? '가져오기' : 'Import'} disabled={busy} onPress={() => { closeTransient(); router.push('/profile/import'); }} />
             <SavedLibraryButton analyticsId="saved.folder.new" label={ko ? '+ 새 폴더' : '+ New folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'create' } }); }} />
             {!!selectedFolder && <SavedLibraryButton analyticsId="saved.folder.manage" label={ko ? '폴더 관리' : 'Manage folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'rename', folder: selectedFolder } }); }} />}
             {/* Filters and search drop places from the list, so sharing waits until the whole folder shows. */}
@@ -237,7 +246,8 @@ export default function SavedScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, alignItems: 'center' }, safeArea: { flex: 1, width: '100%', maxWidth: MaxContentWidth },
   list: { flexGrow: 1, paddingHorizontal: Spacing.three, paddingBottom: Spacing.five }, header: { paddingTop: Spacing.three, paddingBottom: Spacing.three, gap: Spacing.three },
-  intro: { gap: Spacing.one }, search: { flexDirection: 'row', alignItems: 'center' }, input: { flex: 1, minWidth: 0, minHeight: 48, fontSize: 16, paddingVertical: Spacing.two },
+  intro: { gap: Spacing.one }, import: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 56, borderWidth: 1, borderRadius: 14, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
+  importText: { flex: 1, minWidth: 0, gap: 2 }, search: { flexDirection: 'row', alignItems: 'center' }, input: { flex: 1, minWidth: 0, minHeight: 48, fontSize: 16, paddingVertical: Spacing.two },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, folders: { gap: Spacing.two },
   summary: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: Spacing.two },
   separator: { height: Spacing.two }, state: { marginTop: Spacing.three }, footer: { gap: Spacing.two, paddingVertical: Spacing.three },

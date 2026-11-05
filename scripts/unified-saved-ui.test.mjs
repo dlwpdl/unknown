@@ -37,7 +37,7 @@ function screen(overrides = {}) {
     '@/components/business-webshop': { WebshopComparisonSheet: 'WebshopComparisonSheet' },
     '@/components/share-card': { ShareCardSheet: 'ShareCardSheet' }, '@/lib/city-places': { getCityPlaces: () => [] },
     '@/lib/share-card': { savedListPlaces: rows => rows.filter(row => row.target.kind === 'place') },
-    '@/constants/theme': { Depth: {}, Spacing: { one: 4, two: 8, three: 16, four: 24, five: 32 }, MaxContentWidth: 800 }, '@/constants/design-system': { ControlStyles: { icon: {}, pill: {}, field: {} }, controlPresentation: () => ({ container: {}, text: {} }) },
+    '@/constants/theme': { Depth: {}, Spacing: { one: 4, two: 8, three: 16, four: 24, five: 32 }, MaxContentWidth: 800 }, '@/constants/design-system': { ControlStyles: { icon: {}, pill: {}, field: {} }, IconSize: { toolbar: 21, chevron: 14 }, controlPresentation: () => ({ container: {}, text: {} }) },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', locale: 'ko-KR', tr: x => x, t: { profile: { savedLoading: '불러오는 중' } } }) }, '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
     '@/lib/auth': { useAuth: () => ({ isAuthed: !!account, isAuthLoading: false, me: { id: account ?? 'guest' } }) }, '@/lib/saved-items': api,
     '@/lib/webshops': { loadPublicWebshop: async (...args) => { calls.push({ name: 'loadPublicWebshop', args: args.slice(1) }); return overrides.offer ? overrides.offer(...args) : { merchantId: id }; } },
@@ -129,12 +129,21 @@ function library(component, initialProps) {
     'react-native':{View:'View',TextInput:'TextInput',ScrollView:'ScrollView',Modal:'Modal',KeyboardAvoidingView:'KeyboardAvoidingView',Platform:{OS:'web'},StyleSheet:{create:value=>value}},
     'expo-image':{Image:'Image'},'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},
     '@/components/analytics-controls':{Pressable:'Pressable'},'@/components/business-webshop':{UberOrderNotice:'UberOrderNotice'},'@/components/post-zoom-link':{PostZoomLink:'PostZoomLink'},'@/components/themed-text':{ThemedText:'Text'},
-    '@/constants/design-system':{ControlMotion:{settleMs:180},ControlStyles:{pill:{},field:{}},controlPresentation:()=>({container:{},text:{}})},'@/constants/theme':{Spacing:{one:4,two:8,three:16}},
+    '@/constants/design-system':{ControlMotion:{settleMs:180},ControlStyles:{pill:{},field:{},icon:{}},IconSize:{toolbar:21},controlPresentation:()=>({container:{},text:{}})},'@/constants/theme':{Spacing:{one:4,two:8,three:16}},
     '@/hooks/use-language':{useLanguage:()=>({language:'ko'})},'@/hooks/use-theme':{useTheme:()=>({})},'@/lib/interaction-feedback':{useInteractionFeedback:()=>({play:value=>feedback.push(value)})}};
   const exported={},code=ts.transpileModule(readFileSync(new URL('../src/components/saved-library.tsx',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
   vm.runInNewContext(code,{exports:exported,require:name=>modules[name]??{}});
   return{feedback,render(next){if(next)props={...props,...next};index=0;return exported[component](props);}};
 }
+test('folder and unsave sit behind the card menu and still reach the screen handlers',()=>{
+  const calls=[],view=library('SavedItemCard',{item,folders:[folder],onOpen(){},onRemove(){calls.push('remove')},onOrganize(){calls.push('organize')}});
+  assert.equal(nodes(view.render()).some(node=>Array.isArray(node.props?.actions)),false,'the menu stays closed until ··· is pressed');
+  control(view.render(),`saved.menu.${item.key}`).props.onPress();
+  const sheet=nodes(view.render()).find(node=>Array.isArray(node.props?.actions));
+  assert.deepEqual(Array.from(sheet.props.actions,action=>action.analyticsId),['saved.organize','saved.remove']);
+  sheet.props.actions.forEach(action=>action.onPress());assert.deepEqual(calls,['organize','remove']);
+  sheet.props.onClose();assert.equal(nodes(view.render()).some(node=>Array.isArray(node.props?.actions)),false);
+});
 const editorProps=()=>({folders:[folder],busy:false,error:null,onClose(){},onCreate(){},onRename(){},onDelete(){},onAssign(){},onCreateForItem(){},onRequestDelete(){}});
 
 test('folder form validates names and retains the draft after a rejected save',()=>{
@@ -177,7 +186,7 @@ test('a saved post grows out of its open row; other saved kinds keep their plain
 
 test('saved telemetry carries fixed action identifiers without target or folder identities',()=>{
   const root=library('SavedItemCard',{item,folders:[folder],onOpen(){},onRemove(){},onOrganize(){},onCompare(){}}).render();
-  const ids=nodes(root).map(node=>node.props?.analyticsId).filter(Boolean);assert.deepEqual(ids,['saved.open.merchant','saved.organize','saved.remove','saved.compare']);assert.equal(ids.some(value=>value.includes(item.target.id)),false);
+  const ids=nodes(root).map(node=>node.props?.analyticsId).filter(Boolean);assert.deepEqual(ids,['saved.open.merchant','saved.menu','saved.compare']);assert.equal(ids.some(value=>value.includes(item.target.id)),false);
   const sheet=library('SavedFolderSheet',{...editorProps(),editor:{kind:'item',item}}).render();assert.equal(control(sheet,`saved.editor.folder.${folder.id}`).props.analyticsId,'saved.editor.select');
 });
 

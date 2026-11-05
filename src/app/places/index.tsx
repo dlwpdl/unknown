@@ -6,6 +6,7 @@ import { StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 
+import { PageHeader } from '@/components/page-header';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { NearbyPlacesLocation } from '@/components/city-popular-places';
@@ -57,15 +58,8 @@ function PlacesList({ city, nearby = false }: { city?: (typeof CITIES)[number]; 
     catch { error = '이 도시의 장소 정보를 불러오지 못했어요.'; }
   }
   const ratings = usePlaceReviewSummaries(city?.id ?? '', recommendations.slice(0, 50).map(place => place.id));
-  return <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
-    <View style={[styles.header, { borderBottomColor: theme.line }]}>
-      <Pressable analyticsId="places.back" accessibilityRole="button" accessibilityLabel={tr("이전 화면으로 돌아가기")}
-        onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/'); }} style={styles.back}>
-        <SymbolView name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }} size={19} tintColor={theme.text} />
-        <ThemedText type="smallBold">{tr("장소 둘러보기")}</ThemedText>
-      </Pressable>
-      {!!city && <ThemedText type="small" themeColor="textSecondary">{tr(city.name)}</ThemedText>}
-    </View>
+  return <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.screen, { backgroundColor: theme.background }]}>
+    <PageHeader title={tr('장소 둘러보기')} analyticsId="places.back" />
     <ScrollView analyticsId="places.list.scroll" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       {!city ? <StateCard kind="error" title={tr("도시를 확인해 주세요")} body={tr("홈에서 도시를 선택한 뒤 다시 열어 주세요.")} />
         : error ? <StateCard kind="error" title={tr("장소를 불러오지 못했어요")} body={tr(error)} /> : <>
@@ -120,10 +114,7 @@ function PlacesList({ city, nearby = false }: { city?: (typeof CITIES)[number]; 
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  header: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.one,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth },
   content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', padding: Spacing.three, gap: Spacing.three },
-  back: { minHeight: 44, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   title: { fontSize: 24, lineHeight: 34, fontWeight: '700' },
   search: { minHeight: 48, borderWidth: 1, borderRadius: 14, paddingHorizontal: Spacing.three, fontSize: 16 },
   heading: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },

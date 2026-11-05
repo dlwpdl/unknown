@@ -16,7 +16,8 @@ import * as openingHours from '../src/lib/opening-hours.ts';
 
 const source = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
 // The list sheet's header (summary, sub-filters, sort) is a prop, so it is walked like children.
-const children = node => [node?.props?.children, ...(node?.props?.header ? [node.props.header] : [])].flat(Infinity);
+// The routed map's list/map switch rides in the PageHeader's right slot, so that prop is walked too.
+const children = node => [node?.props?.children, ...(node?.props?.header ? [node.props.header] : []), ...(node?.props?.right ? [node.props.right] : [])].flat(Infinity);
 const nodes = node => !node || typeof node !== 'object' || node.type === 'Modal' && !node.props.visible ? [] : [node, ...children(node).flatMap(nodes)];
 const text = node => node == null || typeof node === 'boolean' ? '' : typeof node === 'object' ? children(node).map(text).join(' ') : String(node);
 // The filter sheet's own 지도 보기, not the header's list/map switch with the same name.
@@ -42,7 +43,7 @@ function mount({ cities = [], routeParams = {}, light = false, reduced = false, 
     'expo-router': { useFocusEffect: fn => focusEffects.push(fn), useIsFocused: () => focused, useLocalSearchParams: () => routeParams, useRouter: () => ({ push: route => routes.push(route), setParams: params => routes.push({ setParams: params }) }) },
     '@/lib/mock': { CITIES: cities },
     '@/constants/theme': { Colors: { dark: { ...theme, card: '#171722' }, light: theme } }, '@/constants/design-system': designSystem, '@/hooks/use-language': { useLanguage: () => ({ tr }) },
-    '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' },
+    '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' }, '@/components/page-header': { PageHeader: 'PageHeader' },
     '@/components/selection-chip': { SelectionChip: 'Pressable' }, '@/components/disclosure': { animateLayout() {} },
     '@/lib/delivery-partners': { DELIVERY_PARTNERS: [], deliveryPartnerPlace: () => undefined },
     '@/lib/webshops': { bindBusinessPlaces: (...args) => bindBusinessPlaces(...args).map(item => ({ ...item, ...business[item.sourceId] })), loadCityBusinessLinks: loadLinks, loadCityBusinessMapPhotos: loadPhotos, loadCityWebshops: loadWebshops },

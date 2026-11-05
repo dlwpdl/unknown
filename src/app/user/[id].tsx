@@ -1,4 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
+import { PageHeader } from '@/components/page-header';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable } from '@/components/analytics-controls';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -120,29 +121,13 @@ export default function AuthorPostsRoute() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <View style={styles.header}>
-          <Pressable analyticsId="app_user_[id].pressable.1"
-            onPress={goBack}
-            accessibilityRole="button"
-            accessibilityLabel={t.authorPosts.back}
-            style={({ pressed }) => [styles.backButton, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
-            <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} />
-          </Pressable>
-          <View style={styles.heading}>
-            <ThemedText type="smallBold" style={{ fontSize: 16 }}>{tr("사용자 프로필")}</ThemedText>
-            {current && (
-              <ThemedText type="small" themeColor="textSecondary">
-                {t.authorPosts.count(count(posts.length))}
-              </ThemedText>
-            )}
-          </View>
-          {publicProfile && <Pressable analyticsId="user.more" accessibilityRole="button" accessibilityLabel={tr('더보기')} accessibilityHint={tr('프로필 저장, 신고, 차단')}
-            onPress={() => { play('selection'); setMenu('open'); }}
-            style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
-            <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={IconSize.toolbar} tintColor={theme.text} />
-          </Pressable>}
-        </View>
+      <SafeAreaView style={styles.container} edges={['left', 'right']}>
+        <PageHeader title={tr("사용자 프로필")} analyticsId="app_user_[id].pressable.1" right={publicProfile ? <Pressable analyticsId="user.more" accessibilityRole="button" accessibilityLabel={tr('더보기')} accessibilityHint={tr('프로필 저장, 신고, 차단')}
+          onPress={() => { play('selection'); setMenu('open'); }}
+          style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
+          <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={IconSize.toolbar} tintColor={theme.text} />
+        </Pressable> : undefined} />
+        {current && <ThemedText type="small" themeColor="textSecondary" style={styles.count}>{t.authorPosts.count(count(posts.length))}</ThemedText>}
         {!!saved.error && <ThemedText type="small" accessibilityRole="alert" style={styles.saveError}>{saved.error}</ThemedText>}
 
 
@@ -228,9 +213,7 @@ export default function AuthorPostsRoute() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingBottom: 8, gap: 8, flexDirection: 'row', alignItems: 'center' },
-  backButton: { alignSelf: 'flex-start', minWidth: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  heading: { flex: 1, minWidth: 0, gap: 2, paddingBottom: 4 },
+  count: { paddingHorizontal: 16, paddingBottom: 8, textAlign: 'center' },
   saveError: { paddingHorizontal: 16, paddingBottom: 8 },
   list: { paddingHorizontal: 16, paddingBottom: 32, gap: 12 },
   profile: { gap: 16, marginBottom: 16 },

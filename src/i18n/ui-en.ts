@@ -165,6 +165,7 @@ export const uiEnglish: Record<string, string> = {
   "소유권이 확인된 내 비즈니스가 필요해요. 운영 담당자는 웹에서 배정된 비즈니스를 관리할 수 있어요. 이전에 연결한 AI는 아래에서 해제할 수 있어요.": "You’ll need a business with verified ownership. Operators can manage their assigned businesses on the web. You can disconnect previously connected AI tools below.",
   "글링 | 캐나다 한인 커뮤니티": "Gling | Korean Community in Canada",
   "비즈니스 찾기": "Find businesses",
+  "{0} 비즈니스": "Businesses in {0}",
   "새 소식으로 돌아가기": "Back to updates",
   "이름, 업종으로 검색": "Search by name or industry",
   "비즈니스 검색": "Search businesses",

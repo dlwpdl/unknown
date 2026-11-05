@@ -1,18 +1,28 @@
 import { Image } from 'expo-image';
+import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
 import { UberOrderNotice } from '@/components/business-webshop';
+import { CityPlacePhoto } from '@/components/city-place-photo';
 import { DragSheet } from '@/components/drag-sheet';
+import { MeetupManageSheet } from '@/components/meetup-manage-sheet';
 import { PostZoomLink } from '@/components/post-zoom-link';
 import { ThemedText } from '@/components/themed-text';
-import { ControlMotion, ControlStyles, controlPresentation } from '@/constants/design-system';
+import { ControlMotion, ControlStyles, controlPresentation, IconSize } from '@/constants/design-system';
 import { Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
+import { getCityPlaces } from '@/lib/city-places';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import type { SavedFolder, SavedItem } from '@/lib/saved-items';
+
+const KIND_SYMBOL = { merchant: ['building.2', 'storefront'], place: ['mappin.and.ellipse', 'place'], post: ['doc.text', 'article'], user: ['person', 'person'] } as const;
+function savedPlace(item: SavedItem) {
+  if (item.target.kind !== 'place' || !item.target.cityId) return undefined;
+  try { return getCityPlaces(item.target.cityId).find(place => place.id === item.target.id); } catch { return undefined; }
+}
 
 export function SavedLibraryButton({ analyticsId: id, testID, label, onPress, disabled = false, selected = false, primary = false }: {
   analyticsId: string; testID?: string; label: string; onPress: () => void; disabled?: boolean; selected?: boolean; primary?: boolean;
@@ -35,26 +45,37 @@ export function SavedItemCard({ item, folders, disabled = false, compareBusy = f
     : item.target.kind === 'place' ? ko ? '장소' : 'Place' : item.target.kind === 'user' ? ko ? '사람' : 'Person'
       : item.postType === 'job' ? ko ? '채용' : 'Job' : item.postType === 'meetup' ? ko ? '모임' : 'Meetup' : ko ? '글' : 'Post';
   const names = folders.filter(folder => item.folderIds.includes(folder.id)).map(folder => folder.name);
+  const [menuOpen, setMenuOpen] = useState(false), place = savedPlace(item), symbol = KIND_SYMBOL[item.target.kind];
+  // Owner 2026-11-04 "저장함: 사진 넣고 버튼은 ···": every card leads with a picture, and folder/unsave live behind ··· like the feed card menu.
+  const thumb = place ? <CityPlacePhoto place={place} style={styles.image} />
+    : item.imageUrl ? <Image source={{ uri: item.imageUrl }} style={styles.image} contentFit="cover" transition={ControlMotion.settleMs} accessible={false} />
+      : <View style={[styles.image, styles.empty, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: symbol[0], android: symbol[1], web: symbol[1] }} size={22} tintColor={theme.textSecondary} /></View>;
   // A saved post grows out of this row (owner 2026-11-02): PostZoomLink navigates after onOpen. Object style for the link's Slot.
   const open = <Pressable analyticsId={{ merchant: 'saved.open.merchant', place: 'saved.open.place', post: 'saved.open.post', user: 'saved.open.user' }[item.target.kind]} testID={`saved.open.${item.key}`} accessibilityRole="button" accessibilityLabel={`${item.title} · ${ko ? '열기' : 'Open'}`}
       onPress={() => { play('selection'); onOpen(); }} style={styles.open}>
-      {!!item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.image} contentFit="cover" transition={ControlMotion.settleMs} accessible={false} />}
+      {thumb}
       <View style={styles.grow}>
         <View style={styles.meta}><ThemedText type="label" themeColor="accent">{kind}</ThemedText>
           {item.closed && <ThemedText type="label" themeColor="textSecondary">{ko ? '마감' : 'Closed'}</ThemedText>}</View>
         <ThemedText type="menu" numberOfLines={3}>{item.title}</ThemedText>
         {!!item.subtitle && <ThemedText type="supporting" themeColor="textSecondary" numberOfLines={2}>{item.subtitle}</ThemedText>}
         {!!item.address && item.address !== item.subtitle && <ThemedText type="supporting" themeColor="textSecondary" numberOfLines={2}>{item.address}</ThemedText>}
+        {!!names.length && <ThemedText type="supporting" themeColor="textSecondary" numberOfLines={1}>{names.join(' · ')}</ThemedText>}
       </View>
     </Pressable>;
   return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-    {item.target.kind === 'post' ? <PostZoomLink id={item.target.id}>{open}</PostZoomLink> : open}
-    {item.target.kind === 'user' && <ThemedText type="supporting" themeColor="textSecondary">{ko ? '저장해도 상대에게 알림이 가지 않아요.' : 'They won’t be notified when you save them.'}</ThemedText>}
-    {!!names.length && <ThemedText type="supporting" themeColor="textSecondary">{names.join(' · ')}</ThemedText>}
-    <View style={styles.actions}>
-      <SavedLibraryButton analyticsId="saved.organize" testID={`saved.organize.${item.key}`} label={ko ? '폴더 정리' : 'Organize'} onPress={onOrganize} disabled={disabled} />
-      <SavedLibraryButton analyticsId="saved.remove" testID={`saved.remove.${item.key}`} label={ko ? '저장 해제' : 'Unsave'} onPress={onRemove} disabled={disabled} />
+    <View style={styles.row}>
+      <View style={styles.grow}>{item.target.kind === 'post' ? <PostZoomLink id={item.target.id}>{open}</PostZoomLink> : open}</View>
+      <Pressable analyticsId="saved.menu" testID={`saved.menu.${item.key}`} accessibilityRole="button" accessibilityLabel={`${item.title} · ${ko ? '메뉴' : 'Menu'}`}
+        accessibilityState={{ disabled }} disabled={disabled} onPress={() => { play('selection'); setMenuOpen(true); }} style={[ControlStyles.icon, { opacity: disabled ? 0.5 : 1 }]}>
+        <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={IconSize.toolbar} tintColor={theme.textSecondary} accessible={false} />
+      </Pressable>
     </View>
+    {item.target.kind === 'user' && <ThemedText type="supporting" themeColor="textSecondary">{ko ? '저장해도 상대에게 알림이 가지 않아요.' : 'They won’t be notified when you save them.'}</ThemedText>}
+    {menuOpen && <MeetupManageSheet visible title={item.title} onClose={() => setMenuOpen(false)} actions={[
+      { key: 'organize', analyticsId: 'saved.organize', label: ko ? '폴더 정리' : 'Organize', onPress: onOrganize, icon: { ios: 'folder', android: 'folder', web: 'folder' } },
+      { key: 'remove', analyticsId: 'saved.remove', label: ko ? '저장 해제' : 'Unsave', danger: true, onPress: onRemove, icon: { ios: 'bookmark.slash', android: 'bookmark_remove', web: 'bookmark_remove' } },
+    ]} />}
     {item.hasWebshop && onCompare && <View style={[styles.offer, { borderTopColor: theme.line }]}>
       <SavedLibraryButton analyticsId="saved.compare" testID={`saved.compare.${item.key}`} label={compareBusy ? ko ? '현재 가격 확인 중…' : 'Checking current prices…' : ko ? '웹샵 가격 비교' : 'Compare webshop prices'} onPress={onCompare} disabled={disabled || compareBusy} primary />
       <UberOrderNotice />
@@ -113,9 +134,10 @@ export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCrea
 
 const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 }, card: { borderWidth: 1, borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
-  open: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two, minHeight: 44 }, image: { width: 56, height: 56, borderRadius: 12 },
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one },
+  open: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 44 }, image: { width: 64, height: 64, borderRadius: 12 }, empty: { alignItems: 'center', justifyContent: 'center' },
   meta: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginBottom: Spacing.one },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, action: { borderWidth: 1, maxWidth: '100%', paddingVertical: Spacing.two },
+  action: { borderWidth: 1, maxWidth: '100%', paddingVertical: Spacing.two },
   offer: { borderTopWidth: 1, paddingTop: Spacing.two, gap: Spacing.two },
   sheetContent: { padding: Spacing.three, gap: Spacing.three }, heading: { flexDirection: 'row', alignItems: 'flex-start', flexWrap: 'wrap', gap: Spacing.two },
   check: { minHeight: 48, borderWidth: 1, borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },

@@ -8,6 +8,7 @@ import { SymbolView } from 'expo-symbols';
 import { Animated, Platform, Share, StyleSheet, View, type ScrollViewInstance } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PageHeader } from '@/components/page-header';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { usePublicWebshop, WebshopBanner, WebshopComparisonSheet, WebshopOrderButton } from '@/components/business-webshop';
 import { DragSheet } from '@/components/drag-sheet';
@@ -254,12 +255,8 @@ export default function CompanyProfileRoute() {
       if (operation.active) { setPostResult(previous => previous?.key === listKey ? { ...previous, failed: true } : previous); play('warning'); }
     } finally { operation.reading = false; if (operation.active) setPostBusy(false); }
   }
-  return <ThemedView style={styles.page}><SafeAreaView style={styles.page} edges={['top', 'left', 'right']}>
-    <View style={[styles.header, { borderBottomColor: theme.line }]}>
-      <Pressable analyticsId="company.back" accessibilityRole="button" accessibilityLabel={tr("뒤로 가기")} style={styles.button}
-        onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/'); }}><ThemedText type="subtitle">‹</ThemedText></Pressable>
-      <ThemedText type="subtitle" numberOfLines={1} style={styles.heading}>{tr("비즈니스 프로필")}</ThemedText>
-      {profile && <>
+  return <ThemedView style={styles.page}><SafeAreaView style={styles.page} edges={['left', 'right']}>
+    <PageHeader title={tr("비즈니스 프로필")} analyticsId="company.back" right={profile ? <View style={styles.headerActions}>
           <Pressable analyticsId="company.save" accessibilityRole="button" accessibilityLabel={profile.saved ? tr("비즈니스 저장 취소") : tr("비즈니스 저장")}
             accessibilityState={{ selected: profile.saved, disabled: busy, busy: busy && actionBusy?.kind === 'save' }} disabled={busy}
             style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', selected: profile.saved, pressed, busy }).container]}
@@ -270,8 +267,7 @@ export default function CompanyProfileRoute() {
             onPress={() => { play('selection'); setMenu({ key, view: 'open' }); }}>
             <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={IconSize.toolbar} tintColor={theme.text} />
           </Pressable>
-      </>}
-    </View>
+    </View> : undefined} />
     <ScrollView ref={scroll} analyticsId="company.profile" contentContainerStyle={styles.content}>
       {profile ? <>
         <MerchantProfileHeader profile={{ ...profile, services: '', address: '' }} ratings={profile.review_post_id ? ratings : NO_REVIEWS}
@@ -436,8 +432,7 @@ export default function CompanyProfileRoute() {
 }
 const styles = StyleSheet.create({
   page: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1 },
-  heading: { flex: 1 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   button: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12 },
   actions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   inquiryBar: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 8, borderTopWidth: 1, gap: 10 },

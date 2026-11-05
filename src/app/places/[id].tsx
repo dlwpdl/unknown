@@ -12,6 +12,7 @@ import { ReservationButton } from '@/components/reservation-button';
 import { PlaceReviews } from '@/components/place-reviews';
 import { PlaceExternalRatings } from '@/components/place-external-ratings';
 import { PlaceHours } from '@/components/place-hours';
+import { PageHeader } from '@/components/page-header';
 import { PostMapLink } from '@/components/post-map-link';
 import { PostPhotoCredits } from '@/components/post-photo-credits';
 import { StateCard } from '@/components/state-card';
@@ -82,20 +83,14 @@ export default function PlaceDetailScreen() {
     play('selection');
     void Linking.openURL(url).then(() => { if (kind) record(kind); }).catch(() => { play('warning'); Alert.alert(tr("페이지를 열지 못했어요"), tr("잠시 후 다시 시도해 주세요.")); });
   };
-  return <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
-    <View style={[styles.header, { borderBottomColor: theme.line }]}>
-      <Pressable analyticsId="places.detail.back" accessibilityRole="button" accessibilityLabel={tr("이전 화면으로 돌아가기")}
-        onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace({ pathname: '/places', params: { cityId: city?.id ?? selected.id } }); }} style={styles.back}>
-        <SymbolView name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }} size={19} tintColor={theme.text} />
-        <ThemedText type="smallBold">{tr("돌아가기")}</ThemedText>
-      </Pressable>
-      {place && <View style={styles.headerActions}>
+  return <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.screen, { backgroundColor: theme.background }]}>
+    <PageHeader title={tr('장소')} analyticsId="places.detail.back" fallback={{ pathname: '/places', params: { cityId: city?.id ?? selected.id } }}
+      right={place ? <View style={styles.headerActions}>
         {city && <Pressable analyticsId="places.detail.share" accessibilityRole="button" accessibilityLabel={tr('장소 공유')} onPress={() => { play('selection'); setSharing(true); }} style={ControlStyles.icon}>
           <SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={IconSize.toolbar} tintColor={theme.text} accessible={false} />
         </Pressable>}
         <SavedEntryButton entry={saved} kind="place" analyticsId="save.place" />
-      </View>}
-    </View>
+      </View> : undefined} />
     {!!saved.error && <ThemedText type="small" accessibilityRole="alert" style={styles.saveError}>{saved.error}</ThemedText>}
     <ScrollView analyticsId="places.detail.scroll" contentContainerStyle={styles.content} scrollEventThrottle={100}
       onLayout={({ nativeEvent: { layout: { height } } }) => setViewport(previous => previous.height === height ? previous : { ...previous, height })}
@@ -154,11 +149,9 @@ export default function PlaceDetailScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  header: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.one, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   saveError: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', paddingHorizontal: Spacing.three },
   content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', padding: Spacing.three, gap: Spacing.three },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
-  back: { minHeight: 44, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   photo: { width: '100%', aspectRatio: 4 / 3, borderRadius: 16 },
   title: { fontSize: 26, lineHeight: 36, fontWeight: '700' },
   facts: { padding: Spacing.three, borderRadius: 16, gap: Spacing.two },

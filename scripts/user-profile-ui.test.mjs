@@ -35,7 +35,7 @@ function mount(file, name, data, props = {}, params = {}) {
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) },
     'expo-symbols': { SymbolView: 'SymbolView' },
     'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ canGoBack: () => true, back() {}, replace() {}, push: path => calls.push(['navigate', path]) }) },
-    '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/gling-loader': { GlingLoader: 'Loader' },
+    '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/page-header': { PageHeader: 'PageHeader' }, '@/components/gling-loader': { GlingLoader: 'Loader' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },
     '@/components/post-card': { PostCard: 'PostCard' }, '@/components/post-detail': { PostDetail: 'PostDetail' }, '@/components/post-zoom-link': { PostZoomLink: 'PostZoomLink' }, '@/lib/post-open': postOpen,
     '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: (target, visible) => { calls.push(['savedEntry', target, visible]); return { state: null, error: '', loading: false, busy: false, visible, onPress() {} }; } },
@@ -107,7 +107,7 @@ test('approved full profile keeps a compact title and reviews before the public 
     loadPublicUserActivity: async () => [], loadPublicUserProfile: async () => profile('author'),
   }, {}, { id: 'author', nickname: 'a long unverified route label' });
   context.after(() => harness.cleanup()); await harness.settle();
-  assert.ok(harness.nodes().some(node => node.props?.children === '사용자 프로필'));
+  assert.ok(harness.nodes().some(node => node.type === 'PageHeader' && node.props.title === '사용자 프로필'));
   const header = nodes(list(harness).props.ListHeaderComponent);
   assert.ok(header.findIndex(node => node.type === 'MannerSummary') < header.findIndex(node => node.props?.analyticsId === 'user.activity.story'));
 });

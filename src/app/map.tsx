@@ -1,6 +1,7 @@
 import { Colors } from '@/constants/theme';
 import { ControlMotion, ControlStyles, IconSize } from '@/constants/design-system';
 import { useLanguage } from '@/hooks/use-language';
+import { PageHeader } from '@/components/page-header';
 import { PostAdLabel } from '@/components/post-ad-label';
 import { hasAdLabel } from '@/lib/hashtags';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -420,13 +421,17 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   </Pressable>;
   const searchHere = !!moved && moved.bounds !== region && (moved.zoom ?? FAR_ZOOM) >= FAR_ZOOM && sheet !== 'full' && !cardShown;
   // As a tab there is no back button; the bottom edge already stops above the tab bar (iOS inset includes it, Android content ends at it).
-  return <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]} edges={['top', 'bottom', 'left', 'right']}>
-    <View style={[styles.header, tab && styles.tabHeader]}>
+  // The route opened from a list wears the shared round-back bar (owner 2026-11-04 "위쪽: 동그란 뒤로 + 가운데 제목"); the tab and the chat sheet keep their own row.
+  const routeHeader = !tab && !onClose;
+  const headerActions = <>{sheet === 'full' && <Pressable analyticsId="discovery.refresh" accessibilityRole="button" accessibilityLabel={tr("지도 결과 새로고침")} onPress={() => { play('selection'); refresh(); }} style={styles.icon}><SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={21} tintColor={theme.text} /></Pressable>}
+      <Pressable analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={listShown ? tr("지도 보기") : tr("리스트 보기")} onPress={() => listShown ? showMap() : showList('full')} style={styles.icon}><SymbolView name={listShown ? { ios: 'map', android: 'map', web: 'map' } : { ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' }} size={21} tintColor={theme.text} /></Pressable></>;
+  return <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]} edges={routeHeader ? ['bottom', 'left', 'right'] : ['top', 'bottom', 'left', 'right']}>
+    {routeHeader ? <PageHeader title={tr('{0} 지도', tr(city.name))} analyticsId="discovery.back" right={<View style={styles.headerActions}>{headerActions}</View>} />
+    : <View style={[styles.header, tab && styles.tabHeader]}>
       {!tab && <Pressable analyticsId="discovery.back" accessibilityRole="button" accessibilityLabel={tr("지도를 닫고 이전 화면으로")} onPress={() => { play('selection'); if (onClose) onClose(); else if (router.canGoBack()) router.back(); else router.replace('/'); }} style={styles.icon}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={21} tintColor={theme.text} /></Pressable>}
       <View style={styles.heading}><ThemedText accessibilityRole="header" style={styles.title}>{tr('{0} 지도', tr(city.name))}</ThemedText></View>
-      {sheet === 'full' && <Pressable analyticsId="discovery.refresh" accessibilityRole="button" accessibilityLabel={tr("지도 결과 새로고침")} onPress={() => { play('selection'); refresh(); }} style={styles.icon}><SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={21} tintColor={theme.text} /></Pressable>}
-      <Pressable analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={listShown ? tr("지도 보기") : tr("리스트 보기")} onPress={() => listShown ? showMap() : showList('full')} style={styles.icon}><SymbolView name={listShown ? { ios: 'map', android: 'map', web: 'map' } : { ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' }} size={21} tintColor={theme.text} /></Pressable>
-    </View>
+      {headerActions}
+    </View>}
     <View style={[styles.search, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}>
       {onClose ? <>
       <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={18} tintColor={theme.textSecondary} />
@@ -581,7 +586,7 @@ const styles = StyleSheet.create({
   unknownRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: 14 },
   searchHere: { position: 'absolute', alignSelf: 'center', minHeight: 44, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
   priceOptions: { flexDirection: 'row', gap: 8, paddingVertical: 8 }, priceOption: { flex: 1, minHeight: 48, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  screen: { flex: 1 }, header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 8 }, tabHeader: { paddingLeft: 16 },
+  screen: { flex: 1 }, header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 8 }, tabHeader: { paddingLeft: 16 }, headerActions: { flexDirection: 'row', alignItems: 'center' },
   icon: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }, heading: { flex: 1, gap: 2 }, title: { fontSize: 20, lineHeight: 28, fontWeight: '800', letterSpacing: -0.5 },
   unifiedSearch: { flex: 1, minWidth: 0, minHeight: 46, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }, unifiedSearchText: { flex: 1, minWidth: 0 },
   search: { marginHorizontal: 16, marginBottom: 10, borderWidth: StyleSheet.hairlineWidth, borderRadius: 14, flexDirection: 'row', alignItems: 'center', paddingLeft: 14, paddingRight: 4 }, input: { minHeight: 46, flex: 1, minWidth: 0, paddingHorizontal: 10, fontSize: 14 },

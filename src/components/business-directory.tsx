@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PageHeader } from '@/components/page-header';
 import { FlatList, Pressable, ScrollView } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
 import { SelectionChip } from '@/components/selection-chip';
@@ -120,16 +121,10 @@ export function BusinessDirectoryView({ cityName, query, industry, page, loading
 }) {
   const theme = useTheme(), { tr } = useLanguage(), { play } = useInteractionFeedback();
   const items = page?.items ?? [];
-  return <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.screen, { backgroundColor: theme.background }]}>
-    <View style={styles.header}>
-      <Pressable analyticsId="business.directory.back" accessibilityRole="button" accessibilityLabel={tr('새 소식으로 돌아가기')}
-        onPress={() => { play('selection'); onBack(); }} style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
-        <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={IconSize.toolbar} tintColor={theme.text} />
-      </Pressable>
-      <View style={styles.heading}><ThemedText accessibilityRole="header" style={Typography.sheetTitle}>{tr('비즈니스 찾기')}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">{tr(cityName)}</ThemedText></View>
-    </View>
+  return <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.screen, { backgroundColor: theme.background }]}>
+    <PageHeader title={tr('비즈니스 찾기')} analyticsId="business.directory.back" onBack={onBack} />
     <View style={styles.filters}>
+      <ThemedText type="small" themeColor="textSecondary">{tr('{0} 비즈니스', tr(cityName))}</ThemedText>
       <View style={[styles.search, ControlStyles.field, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={IconSize.inline} tintColor={theme.textSecondary} />
         <TextInput value={query} maxLength={200} onChangeText={onQuery} placeholder={tr('이름, 업종으로 검색')} placeholderTextColor={theme.textSecondary}
@@ -201,8 +196,6 @@ export function BusinessDirectoryRow({ item, saving, onOpen, onSave }: { item: B
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
-  heading: { flex: 1, gap: Spacing.one },
   filters: { paddingHorizontal: Spacing.three },
   search: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   input: { flex: 1, minWidth: 0, minHeight: 48, paddingVertical: Spacing.two },

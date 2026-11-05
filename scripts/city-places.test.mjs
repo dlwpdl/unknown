@@ -426,7 +426,7 @@ function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = da
     '@/lib/product-analytics': product,
     '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
-    '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
+    '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) }, '@/components/page-header': { PageHeader: 'PageHeader' },
     '@/hooks/use-current-location': { useCurrentLocation: () => currentLocation }, '@/lib/discovery-sort': distance, '@/constants/design-system': { ControlStyles: { pill: {} } }, '@/components/city-popular-places': { NearbyPlacesLocation: 'NearbyPlacesLocation' },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
     '@/hooks/use-place-review-summaries': { usePlaceReviewSummaries: (cityId, ids) => { ratingScopes.push({ cityId, ids }); return {}; } },
@@ -592,8 +592,10 @@ test('native detail searches Google maps by name, available address and Canadian
   assert.notEqual(query, p.latitude + ',' + p.longitude);
   assert.equal(url.searchParams.get('api'), '1');
   assert.equal(url.searchParams.has('query_place_id'), false);
-  nodes(tree).find(n => n.props?.analyticsId === 'places.detail.back').props.onPress();
-  assert.equal(ui.routes.at(-1), 'back'); assert.equal(ui.feedback.at(-1), 'selection');
+  // The back button lives in the shared PageHeader (its press is covered in navigation-back.test.mjs); this screen names it and its fallback.
+  const header = nodes(tree).find(n => n.type === 'PageHeader');
+  assert.equal(header.props.analyticsId, 'places.detail.back');
+  assert.deepEqual(JSON.parse(JSON.stringify(header.props.fallback)), { pathname: '/places', params: { cityId: 'toronto' } });
 });
 test('places without street addresses still search their names in the correct city, including French and Saint John NB', () => {
   for (const cityId of ['toronto', 'montreal', 'saint-john']) {
