@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
-import { Alert, Linking, Platform, StyleSheet, View } from 'react-native';
+import { Alert, Linking, Platform, StyleSheet, View, type ScrollViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
@@ -42,7 +42,8 @@ export default function PlaceDetailScreen() {
   useCityPlacesRevision();
   const { tr, language, locale: appLocale } = useLanguage();
   const [viewport, setViewport] = useState({ y: 0, height: 0 });
-  const [sharing, setSharing] = useState(false);
+  const [sharing, setSharing] = useState(false), [reviewRequest, setReviewRequest] = useState(0);
+  const scroll = useRef<ScrollViewInstance>(null), reviewsY = useRef(0);
   // The scroll position only decides which reviews auto-translate; other modes skip a re-render per scroll event.
   const trackViewport = useTranslationPreference().mode === 'auto';
   const { cityId, id } = useLocalSearchParams<{ cityId?: string; id?: string }>();
@@ -80,6 +81,9 @@ export default function PlaceDetailScreen() {
     }
   }, [userId, targetId, loadedCityId]);
   useEffect(() => { if (isFocused) record('place_view'); }, [isFocused, record]);
+  // G1: after saving as 가 봤음, open the review editor and bring it into view.
+  const reviewable = !!targetId?.startsWith('osm:');
+  const openReview = () => { setReviewRequest(value => value + 1); scroll.current?.scrollTo({ y: Math.max(0, reviewsY.current - 16), animated: true }); };
   const mapsUrl = place && city ? merchantMapsUrl([place.name, place.address, city.englishName, city.province, 'Canada'].filter(Boolean).join(', ')) : null;
   const openSource = (url: string, kind?: 'place_website') => {
     play('selection');
@@ -91,10 +95,11 @@ export default function PlaceDetailScreen() {
         {city && <Pressable analyticsId="places.detail.share" accessibilityRole="button" accessibilityLabel={tr('장소 공유')} onPress={() => { play('selection'); setSharing(true); }} style={ControlStyles.icon}>
           <SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={IconSize.toolbar} tintColor={theme.text} accessible={false} />
         </Pressable>}
-        <SavedEntryButton entry={saved} kind="place" analyticsId="save.place" />
+        <SavedEntryButton entry={saved} kind="place" analyticsId="save.place"
+          onBeen={reviewable ? openReview : undefined} />
       </View> : undefined} />
     {!!saved.error && <ThemedText type="small" accessibilityRole="alert" style={styles.saveError}>{saved.error}</ThemedText>}
-    <ScrollView analyticsId="places.detail.scroll" contentContainerStyle={styles.content} scrollEventThrottle={100}
+    <ScrollView ref={scroll} analyticsId="places.detail.scroll" contentContainerStyle={styles.content} scrollEventThrottle={100}
       onLayout={({ nativeEvent: { layout: { height } } }) => setViewport(previous => previous.height === height ? previous : { ...previous, height })}
       onScroll={trackViewport ? ({ nativeEvent }) => setViewport({ y: nativeEvent.contentOffset.y, height: nativeEvent.layoutMeasurement.height }) : undefined}>
       {!place || !city ? <StateCard kind="error" title={tr("장소를 찾지 못했어요")} body={tr("선택한 도시의 장소 목록에서 다시 열어 주세요.")} /> : <>
@@ -126,7 +131,9 @@ export default function PlaceDetailScreen() {
           onPress={() => { play('selection'); router.navigate(placeMapRoute(place)); }} style={styles.link}>
           <ThemedText type="smallBold" themeColor="accent">{tr('지도 보기')}</ThemedText>
         </Pressable>
-        {place.id.startsWith('osm:') && <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} />}
+        {place.id.startsWith('osm:') && <View onLayout={event => { reviewsY.current = event.nativeEvent.layout.y; }}>
+          <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} writeRequest={reviewRequest} />
+        </View>}
         {place.id.startsWith('osm:') && <PlaceExternalRatings key={`${city.id}:${place.id}`} cityId={city.id} placeId={place.id} />}
         <PlaceRelated place={place} saves={saves} />
         {/* Business-linked places redirect to the company page, so only a booking-site website can show here. */}

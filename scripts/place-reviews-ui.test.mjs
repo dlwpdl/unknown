@@ -330,3 +330,15 @@ test('place detail header shares the place as a card next to save', () => {
   assert.equal(sheet.props.visible, true); assert.equal(sheet.props.target.kind, 'place'); assert.equal(sheet.props.target.place.id, 'osm:node:1');
   sheet.props.onClose(); assert.equal(nodes(detail.render()).find(n => n.type === 'ShareCardSheet').props.visible, false);
 });
+
+test('G1: saving as 가 봤음 opens the editor once the rating has loaded, and only once per request', async () => {
+  const ui = view(); ui.place({ writeRequest: 1 });
+  assert.equal(find(ui.render(), 'places.reviews.body'), undefined, 'waits for the rating before opening');
+  await settle(); ui.render();
+  let tree = ui.render();
+  assert.ok(find(tree, 'places.reviews.body'), 'the editor opened by itself');
+  find(tree, 'places.reviews.cancel').props.onPress(); tree = ui.render(); tree = ui.render();
+  assert.equal(find(tree, 'places.reviews.body'), undefined, 'the same request does not reopen a closed editor');
+  ui.place({ writeRequest: 2 }); ui.render(); tree = ui.render();
+  assert.ok(find(tree, 'places.reviews.body'), 'a new 가 봤음 opens it again');
+});

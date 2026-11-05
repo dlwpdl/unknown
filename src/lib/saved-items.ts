@@ -4,7 +4,9 @@ export type SavedKind = 'post' | 'merchant' | 'place' | 'user';
 export type SavedFilter = 'all' | 'places' | 'posts' | 'jobs' | 'users';
 export type SavedTarget = { kind: SavedKind; id: string; cityId?: string };
 export type SavedCursor = { savedAt: string; key: string };
-export type SavedState = { target: SavedTarget; saved: boolean; available: boolean; savedAt: string | null; folderIds: string[] };
+// G1: a saved place is 가 보고 싶음 ('want') or 가 봤음 ('been'). Undefined means the server predates it, so the button stays a plain toggle.
+export type SavedPlaceStatus = 'want' | 'been';
+export type SavedState = { target: SavedTarget; saved: boolean; available: boolean; savedAt: string | null; folderIds: string[]; status?: SavedPlaceStatus | null };
 export type SavedFolder = { id: string; name: string };
 export type SavedItem = {
   key: string; target: SavedTarget; savedAt: string; title: string; subtitle: string;
@@ -47,7 +49,9 @@ function state(value: unknown, requested: SavedTarget): SavedState {
   if (value.saved !== (value.savedAt !== null)) invalid();
   const folders = folderIds(value.folderIds);
   if (!value.saved && folders.length) invalid();
-  return { target: resolved, saved: value.saved, available: value.available, savedAt: value.savedAt, folderIds: folders };
+  if (value.status !== undefined && (value.saved ? value.status !== 'want' && value.status !== 'been' : value.status !== null)) invalid();
+  return { target: resolved, saved: value.saved, available: value.available, savedAt: value.savedAt, folderIds: folders,
+    ...(value.status !== undefined ? { status: value.status as SavedPlaceStatus | null } : {}) };
 }
 async function call(client: SupabaseClient, name: string, values: Record<string, unknown> = {}): Promise<unknown> {
   const result = await client.rpc(name, values);
@@ -70,6 +74,19 @@ export async function setSavedItem(client: SupabaseClient, value: SavedTarget, s
   if (typeof saved !== 'boolean') throw new Error('INVALID_SAVED_TARGET');
   const result = state(await call(client, 'set_saved_item', { ...args(value), p_saved: saved }), value);
   if (result.saved !== saved) throw new Error('SAVE_NOT_VERIFIED');
+  return result;
+}
+function placeTarget(value: SavedTarget) { if (value.kind !== 'place' && value.kind !== 'merchant') throw new Error('INVALID_SAVED_TARGET'); return value; }
+export async function loadSavedPlaceState(client: SupabaseClient, value: SavedTarget): Promise<SavedState> {
+  const result = await client.rpc('get_saved_place_state', args(placeTarget(value)));
+  if (result.error?.code === 'PGRST202') return loadSavedItemState(client, value);
+  if (result.error) throw new Error(result.error.message);
+  return state(result.data, value);
+}
+export async function setSavedPlaceState(client: SupabaseClient, value: SavedTarget, status: SavedPlaceStatus | null): Promise<SavedState> {
+  if (status !== null && status !== 'want' && status !== 'been') throw new Error('INVALID_SAVED_TARGET');
+  const result = state(await call(client, 'set_saved_place_state', { ...args(placeTarget(value)), p_status: status }), value);
+  if (result.saved !== (status !== null) || result.status !== status) throw new Error('SAVE_NOT_VERIFIED');
   return result;
 }
 export async function loadSavedItems(client: SupabaseClient, options: { filter?: SavedFilter; query?: string; folderId?: string | null; cursor?: SavedCursor | null } = {}): Promise<SavedPage> {

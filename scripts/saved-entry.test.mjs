@@ -11,7 +11,7 @@ const state = (saved = false, target = resolved, available = true) => ({ target,
 const tick = () => new Promise(setImmediate);
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 
-function mount({ load = async () => state(), save = async (_client, _target, value) => state(value), target = rawPlace } = {}) {
+function mount({ load = async () => state(), save = async (_client, _target, value) => state(value), choose = async (_client, _target, status) => ({ ...state(status !== null), status }), target = rawPlace, onBeen } = {}) {
   const slots = [], cleanups = [], reads = [], writes = [], feedback = [], logins = [];
   let index = 0, effects = [], focused = true, hidden = () => false, visible = true;
   const auth = { isAuthed: true, isAuthLoading: false, me: { id: 'viewer' }, promptLogin: text => logins.push(text) };
@@ -29,7 +29,7 @@ function mount({ load = async () => state(), save = async (_client, _target, val
   const modules = {
     react, 'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'expo-router': { useIsFocused: () => focused }, 'expo-symbols': { SymbolView: 'Symbol' },
-    '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/gling-loader': { GlingLoader: 'Loader' },
+    '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/meetup-manage-sheet': { MeetupManageSheet: 'Sheet' },
     '@/constants/design-system': { ControlStyles: { icon: {} }, IconSize: { toolbar: 21 }, controlPresentation: (_theme, props) => ({ container: { opacity: props.busy ? 0.45 : 1 } }) },
     '@/hooks/use-language': { useLanguage: () => ({ language: 'ko' }) }, '@/hooks/use-theme': { useTheme: () => ({ accent: '#cbb9ff' }) },
     '@/hooks/use-content-visibility': { useContentVisibility: () => hidden }, '@/lib/auth': { useAuth: () => auth },
@@ -37,6 +37,9 @@ function mount({ load = async () => state(), save = async (_client, _target, val
     '@/lib/saved-items': {
       loadSavedItemState: (...args) => { reads.push(args[1]); return load(...args); },
       setSavedItem: (...args) => { writes.push([args[1], args[2]]); return save(...args); },
+      // Places read through the save-kind call; a server without it answers like the plain one, which these tests mostly use.
+      loadSavedPlaceState: (...args) => { reads.push(args[1]); return load(...args); },
+      setSavedPlaceState: (...args) => { writes.push([args[1], args[2]]); return choose(...args); },
     },
   };
   const exported = {};
@@ -46,7 +49,8 @@ function mount({ load = async () => state(), save = async (_client, _target, val
   return {
     auth, reads, writes, feedback, logins,
     render() { index = 0; entry = exported.useSavedEntry(target, visible); while (effects.length) effects.shift()(); return entry; },
-    button() { return exported.SavedEntryButton({ entry, kind: target.kind === 'user' ? 'user' : 'place', analyticsId: target.kind === 'user' ? 'save.user' : 'save.place' }); },
+    // The button's own state lives in fixed slots so a second render keeps the open sheet.
+    button() { index = 500; return exported.SavedEntryButton({ entry, kind: target.kind === 'user' ? 'user' : 'place', analyticsId: target.kind === 'user' ? 'save.user' : 'save.place', onBeen }); },
     target(value) { target = value; }, focus(value) { focused = value; }, visibility() { hidden = () => true; }, visible(value) { visible = value; },
     unmount() { cleanups.forEach(fn => fn?.()); },
   };
@@ -120,4 +124,38 @@ test('personal saving invokes only saved-state methods for a known visible profi
   const view = mount({ target, load: async () => state(false, target), save: async (_client, _target, value) => state(value, target) });
   view.visible(false); view.render(); assert.equal(view.reads.length, 0);
   view.visible(true); view.render(); await tick(); view.render().onPress(); await tick(); assert.equal(view.render().state.saved, true); assert.deepEqual(JSON.parse(JSON.stringify(view.writes[0][0])), target); view.unmount();
+});
+
+test('G1: a place with save kinds opens 가 보고 싶어요/가 봤어요, and 가 봤어요 saves then opens the review', async () => {
+  const been = [];
+  const view = mount({ load: async () => ({ ...state(false), status: null }), onBeen: () => been.push(true) });
+  view.render(); await tick(); view.render();
+  const press = () => nodes(view.button()).find(node => node.type === 'Pressable');
+  assert.equal(press().props.accessibilityLabel, '장소 저장');
+  press().props.onPress();
+  assert.equal(view.writes.length, 0, 'opening the choice writes nothing');
+  const sheet = nodes(view.button()).find(node => node.type === 'Sheet');
+  assert.deepEqual(JSON.parse(JSON.stringify(sheet.props.actions.map(action => [action.key, action.label, action.analyticsId]))), [['want', '가 보고 싶어요', 'save.place.want'], ['been', '가 봤어요', 'save.place.been']], 'no unsave before it is saved');
+  sheet.props.actions[1].onPress(); await tick(); await tick();
+  assert.deepEqual(JSON.parse(JSON.stringify(view.writes)), [[rawPlace, 'been']]);
+  assert.deepEqual(been, [true], 'the review editor opens only after the server confirmed 가 봤음');
+  const entry = view.render();
+  assert.equal(entry.state.status, 'been');
+  assert.equal(press().props.accessibilityLabel, '가 봤어요로 저장됨 · 바꾸기');
+  const saved = nodes(view.button()).find(node => node.type === 'Sheet');
+  assert.deepEqual(JSON.parse(JSON.stringify(saved.props.actions.map(action => action.key))), ['want', 'been', 'remove']);
+  assert.ok(view.feedback.includes('selection') && view.feedback.includes('success'));
+  view.unmount();
+});
+
+test('G1: a failed 가 봤어요 save keeps the old state and never opens the review', async () => {
+  const been = [];
+  const view = mount({ load: async () => ({ ...state(false), status: null }), choose: async () => { throw new Error('SAVE_NOT_VERIFIED'); }, onBeen: () => been.push(true) });
+  view.render(); await tick(); view.render();
+  nodes(view.button()).find(node => node.type === 'Pressable').props.onPress();
+  nodes(view.button()).find(node => node.type === 'Sheet').props.actions[1].onPress(); await tick(); await tick();
+  const entry = view.render();
+  assert.equal(entry.state.saved, false); assert.ok(entry.error); assert.deepEqual(been, []);
+  assert.ok(view.feedback.includes('warning'));
+  view.unmount();
 });
