@@ -138,11 +138,14 @@ test('media callers retain dark glass around their fixed light foreground', () =
 
 test('native tabs follow the palette and preserve feedback, badges and Android background', () => {
   for (const scheme of ['light', 'dark']) for (const platform of ['ios', 'android']) {
-    const feedback = [];
-    const NativeTabs = Object.assign(() => {}, { Trigger: Object.assign(() => {}, { Label: 'Label', Icon: 'Icon', Badge: 'Badge' }) });
+    const feedback = [], onMap = [];
+    const NativeTabs = Object.assign(() => {}, { Trigger: Object.assign(() => {}, { Label: 'Label', Icon: 'Icon', Badge: 'Badge' }), BottomAccessory: 'BottomAccessory' });
     const { default: AppTabs } = load('components/app-tabs.tsx', {
       'expo-router/unstable-native-tabs': { NativeTabs },
+      'react': { useState: value => [value, next => onMap.push(next)] },
       'react-native': { Platform: { OS: platform } },
+      '@/components/live-bubble-bar': { LIVE_ACCESSORY: platform === 'ios', LiveBubbleAccessory: 'LiveBubbleAccessory' },
+      '@/components/live-bubbles': { useMineUp: () => false },
       '@/constants/theme': { Colors },
       '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => Colors[scheme] },
       '@/i18n/ko': { t: { tabs: { today: 'Today', meetups: 'Meetups', write: 'Write', map: 'Map', chat: 'Chat', notifications: 'Notifications' } } },
@@ -163,11 +166,37 @@ test('native tabs follow the palette and preserve feedback, badges and Android b
     assert.equal(props.disableTransparentOnScrollEdge, true);
     for (const name of ['discover', 'chat']) props.screenListeners({ route: { name } }).tabPress();
     assert.deepEqual(feedback, ['selection', 'selection']);
+    for (const name of ['discover', 'chat']) props.screenListeners({ route: { name } }).focus();
+    assert.deepEqual(onMap, [true, false]);
+    assert.equal(props.children[6], false, 'no bubble of mine up, no accessory');
     // The map took the compose slot (owner 2026-11-01); compose stays only as a hidden route for old links.
-    assert.deepEqual(Array.from(props.children, child => child.props.name), ['index', 'meetups', 'discover', 'chat', 'notifications', 'compose']);
+    assert.deepEqual(Array.from(props.children.slice(0, 6), child => child.props.name), ['index', 'meetups', 'discover', 'chat', 'notifications', 'compose']);
     assert.equal(props.children[2].props.children[0].props.children, 'Map');
     assert.equal(props.children[5].props.hidden, true);
     assert.equal(props.children[3].props.children[2].props.children, '99+');
     assert.equal(props.children[4].props.children[2].props.children, '3');
+  }
+});
+
+test('my live bubble sits in the iOS 26 tab bar accessory on every tab but the map', () => {
+  const NativeTabs = Object.assign(() => {}, { Trigger: Object.assign(() => {}, { Label: 'Label', Icon: 'Icon', Badge: 'Badge' }), BottomAccessory: 'BottomAccessory' });
+  for (const accessory of [true, false]) for (const mineUp of [true, false]) for (const onMap of [true, false]) {
+    const { default: AppTabs } = load('components/app-tabs.tsx', {
+      'expo-router/unstable-native-tabs': { NativeTabs },
+      'react': { useState: () => [onMap, () => {}] },
+      'react-native': { Platform: { OS: 'ios' } },
+      '@/components/live-bubble-bar': { LIVE_ACCESSORY: accessory, LiveBubbleAccessory: 'LiveBubbleAccessory' },
+      '@/components/live-bubbles': { useMineUp: () => mineUp },
+      '@/constants/theme': { Colors },
+      '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => Colors.light },
+      '@/i18n/ko': { t: { tabs: { today: 'Today', meetups: 'Meetups', write: 'Write', map: 'Map', chat: 'Chat', notifications: 'Notifications' } } },
+      '@/hooks/use-unread-count': { useUnreadCount: () => 0 },
+      '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: () => {} }) },
+    });
+    const last = AppTabs().props.children[6];
+    if (accessory && mineUp && !onMap) {
+      assert.equal(last.type, 'BottomAccessory');
+      assert.equal(last.props.children.type, 'LiveBubbleAccessory');
+    } else assert.equal(last, false, `accessory=${accessory} mineUp=${mineUp} onMap=${onMap}`);
   }
 });

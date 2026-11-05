@@ -27,7 +27,7 @@ import { DISCOVERY_CATEGORIES } from '@/lib/discovery';
 import { loadPublicFeed, relativeTime } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import {
-  GREETINGS, LIVE, QUICK_PHRASES, approximatePoint, postingPlace, cancelLiveRequest, clampWithin, demoReceive, distanceMeters, durationLabel, endLiveBubble, getLive, liveErrorCode, liveNotice,
+  GREETINGS, LIVE, QUICK_PHRASES, approximatePoint, postingPlace, cancelLiveRequest, clampWithin, demoReceive, distanceMeters, durationLabel, endLiveBubble, extendLiveBubble, getLive, liveErrorCode, liveNotice,
   minutesLeft, postLiveBubble, refreshLive, replyToWave, respondLiveRequest, sendLiveRequest, subscribeLive, waveLiveBubble, type LiveAudience, type LiveBubble, type LiveKind, type LiveMap, type LivePerson, type LiveRequest, type LiveWave, type Point,
 } from '@/lib/live-bubbles';
 import type { LocationFix } from '@/lib/location';
@@ -42,6 +42,41 @@ export function useNow() {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(timer); }, []);
   return now;
+}
+const mineExpiry = () => getLive().map?.mine?.expiresAt ?? null;
+/** True while my bubble is up. Follows only its end time, so the tab bar re-renders when it goes up, comes down or is extended, not on every live-map update. */
+export function useMineUp() {
+  const expiresAt = useSyncExternalStore(subscribeLive, mineExpiry, mineExpiry);
+  const [over, setOver] = useState<string | null>(null);
+  useEffect(() => {
+    if (!expiresAt) return;
+    const timer = setTimeout(() => setOver(expiresAt), Math.max(0, Date.parse(expiresAt) - Date.now()));
+    return () => clearTimeout(timer);
+  }, [expiresAt]);
+  return !!expiresAt && over !== expiresAt;
+}
+/** 내리기 and 1시간 더 띄우기 with one busy guard and the same confirmations wherever they are offered. */
+export function useLiveActions() {
+  const { tr } = useLanguage(), { play } = useInteractionFeedback(), [busy, setBusy] = useState(false);
+  const run = async (action: () => Promise<unknown>, done: string) => {
+    if (busy) return;
+    play('selection'); setBusy(true);
+    try { await action(); play('success'); liveNotice(done); }
+    catch { play('warning'); liveNotice(tr('연결을 확인하고 다시 해 주세요.')); }
+    finally { setBusy(false); }
+  };
+  return { busy, end: () => void run(endLiveBubble, tr('말풍선을 내렸어요')), extend: () => void run(extendLiveBubble, tr('1시간 더 떠 있어요')) };
+}
+/** The last ten minutes of my bubble: 곧 내려가요 with 1시간 더 띄우기. */
+export function ExtendRow({ busy, onExtend }: { busy: boolean; onExtend: () => void }) {
+  const { tr } = useLanguage(), theme = useTheme();
+  return <View style={styles.extendRow}>
+    <ThemedText type="caption" themeColor="textSecondary" style={styles.flex} accessibilityLiveRegion="polite">{tr('말풍선이 곧 내려가요. 더 띄워 둘까요?')}</ThemedText>
+    <Pressable analyticsId="livemap.extend" accessibilityRole="button" accessibilityLabel={tr('1시간 더 띄우기')} accessibilityState={{ busy }} disabled={busy} onPress={onExtend}
+      style={({ pressed }) => [styles.dockPill, controlPresentation(theme, { tone: 'primary', pressed, busy }).container]}>
+      <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr('1시간 더 띄우기')}</ThemedText>
+    </Pressable>
+  </View>;
 }
 
 // Views the live-map notice must not cover (an open sheet's buttons, the map's bottom card); LiveNotice measures them when it shows.
@@ -108,6 +143,8 @@ export function LiveDock({ map, demo, now, onCompose, onReceived }: { map: LiveM
     : mine ? mine.audience === 'friends' ? tr('{0} 뒤 사라져요 · 친구한테만 보여요', left) : tr('{0} 뒤 사라져요 · 도시 전체에 보여요', left)
     : tr('누르면 대화 신청이 와요. 받을지는 내가 정해요');
   const action = pending || waves ? tr('보기') : mine ? tr('고치기') : tr('남기기'), clear = useKeepClearOfNotice();
+  // The tab bar's bubble bar steps aside on the map, and the ten-minute notification opens the map, so the extend lives here too.
+  const ending = !!mine && minutesLeft(mine.expiresAt, now) <= LIVE.warnMinutes, { busy, extend } = useLiveActions();
   return <View ref={clear} style={[styles.dock, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <Pressable analyticsId="livemap.dock" accessibilityRole="button" accessibilityLabel={`${title}, ${body}, ${action}`}
       onPress={() => { play('selection'); if (pending) onReceived(pending.id); else onCompose(); }} style={({ pressed }) => [styles.dockRow, { opacity: pressed ? 0.82 : 1 }]}>
@@ -118,6 +155,7 @@ export function LiveDock({ map, demo, now, onCompose, onReceived }: { map: LiveM
       </View>
       <View style={[styles.dockPill, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{action}</ThemedText></View>
     </Pressable>
+    {ending && <ExtendRow busy={busy} onExtend={extend} />}
     {/* Before posting too: the example then puts up a sample bubble of mine to receive on. */}
     {demo && !pending && <Pressable analyticsId="livemap.dev" accessibilityRole="button" accessibilityLabel={tr('개발용 예시: 손 흔들기·대화 신청 받아 보기')} onPress={() => { play('selection'); demoReceive(); }} style={styles.link}>
       <ThemedText type="caption" themeColor="accent">{tr('개발용 예시: 손 흔들기·대화 신청 받아 보기')}</ThemedText>
@@ -518,6 +556,7 @@ const styles = StyleSheet.create({
   dock: { borderWidth: 1, borderRadius: 18, padding: 12, gap: 4, shadowColor: '#000', shadowOpacity: 0.14, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
   dockRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10 },
   dockPill: { ...ControlStyles.pill, minHeight: 36, borderRadius: 18 },
+  extendRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   link: { minHeight: 44, justifyContent: 'center', alignSelf: 'center' },
   inlineLink: { minHeight: 32, justifyContent: 'center', alignSelf: 'flex-start' },
   scroll: { flexGrow: 0, flexShrink: 1 },
