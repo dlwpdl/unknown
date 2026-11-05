@@ -1,4 +1,11 @@
 export const uiEnglish: Record<string, string> = {
+  "이 사진을 글링 공식 SNS에 소개해도 돼요": "Gling can feature this photo on its official social accounts",
+  "체크해 두면 글링이 릴스나 게시물을 만들 때 이 사진을 골라 쓸 수 있어요. 마음이 바뀌면 설정에서 취소하면 돼요.": "Check it and Gling may pick this photo for its Reels or posts. Changed your mind? Withdraw it in Settings.",
+  "SNS에 소개해도 된다는 체크만 저장이 안 됐어요": "Your post is up, but the OK to feature it didn't save",
+  "글링 공식 SNS": "Gling's official social accounts",
+  "새 글에 미리 체크해 두기": "Pre-check it on new posts",
+  "켜 두면 사진을 붙인 새 글에서 ‘이 사진을 글링 공식 SNS에 소개해도 돼요’에 처음부터 체크가 돼 있어요. 끄면 지금까지 해 둔 체크가 모두 풀려요. 다시 켜도 되돌아오지 않아요.": "When on, new posts with photos start with “Gling can feature this photo on its official social accounts” already checked. Turning it off unchecks every post you've checked so far. Turning it back on won't restore them.",
+  "체크해 둔 글 {0}개, 체크 다 풀기": "Uncheck {0} checked posts",
   "이번 주 +{0}": "+{0} this week",
   "뭘 할까": "What to do",
   "언제 갈까": "When to go",
