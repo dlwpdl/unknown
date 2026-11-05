@@ -139,6 +139,8 @@ function canvas(markers = [marker], providedHtml, extra = {}, globals = {}) {
     setLngLat(point) { this.point = Array.from(point); return this; }
     addTo() { return this; }
     remove() { this.removed = true; }
+    getElement() { return this.element; }
+    setRotation(degrees) { this.rotation = degrees; return this; }
   }
   const context = { window, document: { createElement: () => ({ getContext: () => drawing, setAttribute(name, value) { this[name] = value; } }), addEventListener: (type, callback) => { listeners['document:' + type] = callback; } }, maplibregl: { Map, Marker, NavigationControl: class {} }, setTimeout: () => 1, clearTimeout() {}, console, ...globals };
   const html = providedHtml ?? discoveryMapHtml({ ...options, markers, ...extra });
@@ -170,6 +172,40 @@ test('own GPS marker stays separate from camera and place selection, updates and
   assert.deepEqual(ownMarker.point, [-123.15, 49.3]);
   c.window.glingDiscoveryUpdate(sessionId, { ...state, userLocation: null });
   assert.equal(ownMarker.removed, true);
+});
+
+test('M7: the location dot grows a facing cone only while a heading arrives, turned to it and dropped without one', () => {
+  const c = canvas();
+  const state = { markers: [marker], userLocation: { latitude: 49.29, longitude: -123.14 } };
+  c.window.glingDiscoveryUpdate(sessionId, state);
+  const dot = c.userMarkers[0];
+  assert.equal(dot.element['data-facing'], undefined, 'no heading keeps the plain dot');
+  c.window.glingDiscoveryUpdate(sessionId, { ...state, heading: 90 });
+  assert.equal(dot.element['data-facing'], '1');
+  assert.equal(dot.rotation, 90);
+  c.window.glingDiscoveryUpdate(sessionId, { ...state, heading: null });
+  assert.equal(dot.element['data-facing'], '0');
+  assert.equal(c.userMarkers.length, 1, 'the same dot is reused');
+  for (const heading of [-5, 360, NaN, '90']) {
+    assert.throws(() => discoveryMapScript({ ...state, heading }, sessionId));
+    c.window.glingDiscoveryUpdate(sessionId, { ...state, heading });
+    assert.equal(dot.element['data-facing'], '0', 'an invalid embedded heading never turns the cone on');
+  }
+  assert.ok(c.html.includes('.user-location-marker[data-facing="1"]::before'));
+});
+
+test('M5: a saved flag crosses the map boundary only as a boolean and draws the bookmark mark above the pins', () => {
+  assert.deepEqual(discoveryMarkers([{ ...marker, saved: true }]), [{ ...marker, saved: true }]);
+  assert.deepEqual(discoveryMarkers([{ ...marker, saved: false }]), [marker]);
+  assert.throws(() => discoveryMarkers([{ ...marker, saved: 'yes' }]), /INVALID_DISCOVERY_MARKER/);
+  const c = canvas([{ ...marker, saved: true }, { ...marker, id: 'place:2' }]);
+  assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.saved), [true, false]);
+  assert.ok(c.images['saved-mark']);
+  const layer = c.layers.find(layer => layer.id === 'discovery-saved');
+  assert.equal(JSON.stringify(layer.filter), '["==",["get","saved"],true]');
+  assert.ok(c.layers.indexOf(layer) > c.layers.findIndex(value => value.id === 'discovery-selected'), 'a chosen saved pin keeps its mark');
+  c.window.glingDiscoveryUpdate(sessionId, { markers: [marker, { ...marker, id: 'place:2', saved: true }] });
+  assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.saved), [false, true], 'saving from the card moves the mark without a reload');
 });
 
 test('own location validates both update boundaries and only forwards coordinates', () => {

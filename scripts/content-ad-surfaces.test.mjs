@@ -53,6 +53,7 @@ function mount(file, component, imports, globals = {}, props = {}) {
     '@/components/selection-chip': { SelectionChip: 'Pressable' },
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' },
     '@/components/feed-ad': { FeedAd: 'FeedAd' }, '@/lib/content-ad-placement': { contentAdPosition },
+    '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ state: null }) },
     '@/lib/ads': { adsSupported: true }, './lazy-sections': { FeedAd: 'FeedAd' },
     '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value, locale: 'ko-KR' }) },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/constants/theme': { Colors: {}, WebNightColors: {} },

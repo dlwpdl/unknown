@@ -585,6 +585,7 @@ export const uiEnglish: Record<string, string> = {
   "공개 정보, 외부 페이지 열기": "Public information, open an external page",
   "공개 정보 ↗": "Public info ↗",
   "{0} 지도": "{0} map",
+  "{0} 지도, 도시 바꾸기": "{0} map, change city",
   "동네에서 찾는 다음 목적지": "Find your next local stop",
   "지도 보기": "Map view",
   "지도에서 장소 찾기": "Find a place on the map",

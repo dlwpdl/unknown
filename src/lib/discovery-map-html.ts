@@ -4,11 +4,13 @@ import { TOP25_GOLD } from './discovery.ts';
 import { MAP_PIN_ART } from './map-pin-art.ts';
 
 // `icon` names the category's 3D art (MAP_PIN_ART): up close the pin is that picture in a white circle, further out a category-coloured dot.
-export type DiscoveryMarker = { id: string; latitude: number; longitude: number; color: string; label: string; sublabel?: string; featured?: boolean; icon?: string; top25?: boolean; discount?: number };
+// `saved` marks a place the viewer saved (M5, owner 2026-11-05): a small bookmark at the pin's top right.
+export type DiscoveryMarker = { id: string; latitude: number; longitude: number; color: string; label: string; sublabel?: string; featured?: boolean; icon?: string; top25?: boolean; discount?: number; saved?: boolean };
 /** A city pill for the far zoom stage. Only open cities can be tapped. */
 export type DiscoveryCity = { id: string; name: string; englishName: string; open: boolean };
 type Center = { latitude: number; longitude: number; requestId?: number };
-type MapState = { markers: DiscoveryMarker[]; cities?: DiscoveryCity[]; selectedId?: string | null; center?: Center | null; userLocation?: { latitude: number; longitude: number } | null; bottomInset?: number; topInset?: number };
+// `heading` is the phone's facing direction in degrees from north (M7); null keeps the plain location dot.
+type MapState = { markers: DiscoveryMarker[]; cities?: DiscoveryCity[]; selectedId?: string | null; center?: Center | null; userLocation?: { latitude: number; longitude: number } | null; heading?: number | null; bottomInset?: number; topInset?: number };
 type MapUpdate = Omit<MapState, 'markers' | 'cities'> & { markers?: DiscoveryMarker[] };
 export type DiscoveryBounds = { west: number; south: number; east: number; north: number };
 type DiscoveryMessage = { type: 'ready' | 'error' | 'feedback' } | { type: 'select'; id: string } | { type: 'credits'; url: string } | { type: 'moved'; bounds: DiscoveryBounds; zoom?: number } | { type: 'city'; id: string };
@@ -28,10 +30,10 @@ export function discoveryMarkers(markers: DiscoveryMarker[]): DiscoveryMarker[] 
       || !coordinate(marker) || typeof marker.color !== 'string' || !/^#[a-f\d]{6}$/i.test(marker.color)
       || (marker.sublabel !== undefined && (typeof marker.sublabel !== 'string' || marker.sublabel.length > 40)) || (marker.featured !== undefined && typeof marker.featured !== 'boolean')
       || (marker.icon !== undefined && (typeof marker.icon !== 'string' || !/^[a-z][a-z0-9_-]{0,23}$/.test(marker.icon)))
-      || (marker.top25 !== undefined && typeof marker.top25 !== 'boolean') || (marker.discount !== undefined && (!Number.isFinite(marker.discount) || marker.discount <= 0 || marker.discount > 100))) throw new Error('INVALID_DISCOVERY_MARKER');
+      || (marker.top25 !== undefined && typeof marker.top25 !== 'boolean') || (marker.saved !== undefined && typeof marker.saved !== 'boolean') || (marker.discount !== undefined && (!Number.isFinite(marker.discount) || marker.discount <= 0 || marker.discount > 100))) throw new Error('INVALID_DISCOVERY_MARKER');
     ids.add(marker.id);
     const sublabel = marker.sublabel?.replace(/[\u0000-\u001f\u007f]/g, ' ').trim();
-    return { id: marker.id, latitude: marker.latitude, longitude: marker.longitude, color: marker.color, label: marker.label.replace(/[\u0000-\u001f\u007f]/g, ' '), ...(sublabel ? { sublabel } : {}), ...(marker.featured ? { featured: true } : {}), ...(marker.icon ? { icon: marker.icon } : {}), ...(marker.top25 ? { top25: true } : {}), ...(marker.discount ? { discount: marker.discount } : {}) };
+    return { id: marker.id, latitude: marker.latitude, longitude: marker.longitude, color: marker.color, label: marker.label.replace(/[\u0000-\u001f\u007f]/g, ' '), ...(sublabel ? { sublabel } : {}), ...(marker.featured ? { featured: true } : {}), ...(marker.icon ? { icon: marker.icon } : {}), ...(marker.top25 ? { top25: true } : {}), ...(marker.discount ? { discount: marker.discount } : {}), ...(marker.saved ? { saved: true } : {}) };
   });
 }
 
@@ -43,13 +45,15 @@ function cityPills(cities: DiscoveryCity[], cityName: string) {
   });
 }
 
-function state({ markers, selectedId = null, center = null, userLocation = null, bottomInset = 0, topInset = 0 }: MapUpdate) {
+const facing = (value: unknown) => value === null || typeof value === 'number' && Number.isFinite(value) && value >= 0 && value < 360;
+function state({ markers, selectedId = null, center = null, userLocation = null, heading = null, bottomInset = 0, topInset = 0 }: MapUpdate) {
   if (selectedId !== null && !text(selectedId, 180)) throw new Error('INVALID_DISCOVERY_SELECTION');
   if (center !== null && !coordinate(center)) throw new Error('INVALID_DISCOVERY_CENTER');
   if (userLocation !== null && !coordinate(userLocation)) throw new Error('INVALID_DISCOVERY_LOCATION');
+  if (!facing(heading)) throw new Error('INVALID_DISCOVERY_HEADING');
   if (!Number.isFinite(topInset) || topInset < 0 || topInset > 1000) throw new Error('INVALID_DISCOVERY_INSET');
   if (!Number.isFinite(bottomInset) || bottomInset < 0 || bottomInset > 1000) throw new Error('INVALID_DISCOVERY_INSET');
-  return { ...(markers !== undefined ? { markers: discoveryMarkers(markers) } : {}), selectedId, center: center && { latitude: center.latitude, longitude: center.longitude, ...(center.requestId !== undefined ? { requestId: center.requestId } : {}) }, userLocation: userLocation && { latitude: userLocation.latitude, longitude: userLocation.longitude }, bottomInset, topInset };
+  return { ...(markers !== undefined ? { markers: discoveryMarkers(markers) } : {}), selectedId, center: center && { latitude: center.latitude, longitude: center.longitude, ...(center.requestId !== undefined ? { requestId: center.requestId } : {}) }, userLocation: userLocation && { latitude: userLocation.latitude, longitude: userLocation.longitude }, heading, bottomInset, topInset };
 }
 
 export function discoveryMapMessage(raw: string, sessionId: string, markers: DiscoveryMarker[], cityIds: readonly string[] = []): DiscoveryMessage | null {
@@ -86,15 +90,17 @@ export function discoveryMapHtml({ markers, cities = [], cityName, sessionId, se
 html,body,#map{margin:0;width:100%;height:100%;overflow:hidden;background:#efeee9}.maplibregl-ctrl-top-left{top:calc(var(--map-top-inset,0px) + 12px);left:12px}.maplibregl-ctrl-group{border-radius:14px;overflow:hidden;box-shadow:0 2px 12px #3020471a}.maplibregl-ctrl-group button{width:44px;height:44px}.maplibregl-ctrl-group button:active{background:#ebe5f6}.maplibregl-ctrl-group button:focus-visible,#credits a:focus-visible{outline:3px solid ${accent};outline-offset:-3px}#credits{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:flex-end;flex-wrap:wrap;font:10px/1.3 system-ui;background:#fffffff0;color:#333;z-index:4}#credits a{color:#333;min-height:44px;display:inline-flex;align-items:center;padding:0 6px;box-sizing:border-box}#credits a:active{background:#ebe5f6}
 .city-pill{min-height:44px;padding:0 16px;border-radius:22px;border:1px solid #d9d3e6;background:#fff;color:#302047;font:700 14px/1.2 system-ui;box-shadow:0 2px 10px #30204726;cursor:pointer}.city-pill:active{background:#ebe5f6}.city-pill:disabled{color:#7a7287;background:#f6f4f9;box-shadow:none;cursor:default}.city-pill:focus-visible{outline:3px solid ${accent};outline-offset:2px}.city-pill[hidden]{display:none}
 .user-location-marker{width:16px;height:16px;background:#007aff;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 7px #007aff29,0 1px 5px #0004;pointer-events:none}
-</style></head><body><div id="map" aria-label="${language === 'en' ? 'City discovery map. Places are also available in the list. Mint dots mark webshop savings; percentages show the maximum verified representative-menu saving.' : '도시 탐색 지도. 장소 목록에서도 선택할 수 있어요. 민트색 점은 웹샵 할인, 숫자는 확인한 대표 메뉴 최대 할인율이에요.'}"></div><div id="credits"><a href="https://openfreemap.org/">OpenFreeMap</a><a href="https://www.openmaptiles.org/">© OpenMapTiles</a><a href="https://www.openstreetmap.org/copyright">© OpenStreetMap</a></div><script nonce="gling-map">${assets.javascript}</script><script nonce="gling-map">
-const config=${config},NEAR=${NEAR},FAR=${FAR},pills=[];let map,userMarker,loaded=false,failed=false,current=config,previousSelection=null,previousCenter=null,previousPadding=null;
+/* The facing cone points north and turns with the marker's rotation; it starts outside the dot so the white ring stays clean. */
+.user-location-marker[data-facing="1"]::before{content:'';position:absolute;left:50%;top:50%;width:72px;height:72px;margin:-36px 0 0 -36px;background:radial-gradient(circle,#007aff00 11px,#007aff70 12px,#007aff00 36px);-webkit-clip-path:polygon(50% 50%,20% 0,80% 0);clip-path:polygon(50% 50%,20% 0,80% 0)}
+</style></head><body><div id="map" aria-label="${language === 'en' ? 'City discovery map. Places are also available in the list. Mint dots mark webshop savings; percentages show the maximum verified representative-menu saving. A purple bookmark marks a place you saved.' : '도시 탐색 지도. 장소 목록에서도 선택할 수 있어요. 민트색 점은 웹샵 할인, 숫자는 확인한 대표 메뉴 최대 할인율이에요. 보라색 책갈피는 내가 저장한 곳이에요.'}"></div><div id="credits"><a href="https://openfreemap.org/">OpenFreeMap</a><a href="https://www.openmaptiles.org/">© OpenMapTiles</a><a href="https://www.openstreetmap.org/copyright">© OpenStreetMap</a></div><script nonce="gling-map">${assets.javascript}</script><script nonce="gling-map">
+const config=${config},NEAR=${NEAR},FAR=${FAR},pills=[];let map,userMarker,userHeading=null,loaded=false,failed=false,current=config,previousSelection=null,previousCenter=null,previousPadding=null;
 const send=payload=>{const message=JSON.stringify({...payload,sessionId:config.sessionId});if(window.ReactNativeWebView)window.ReactNativeWebView.postMessage(message);else window.parent.postMessage(message,config.parentOrigin==='null'?'*':config.parentOrigin)};
 const fail=()=>{if(!failed){failed=true;send({type:'error'})}};
 const validPoint=p=>p&&Number.isFinite(p.latitude)&&Math.abs(p.latitude)<=90&&Number.isFinite(p.longitude)&&Math.abs(p.longitude)<=180&&(p.requestId===undefined||Number.isSafeInteger(p.requestId)&&p.requestId>=0);
 const validText=(s,max)=>typeof s==='string'&&s.length>0&&s.length<=max&&!/[\\u0000-\\u001f\\u007f]/.test(s);
-const validState=s=>{if(!s||typeof s!=='object'||Array.isArray(s)||(s.markers!==undefined&&(!Array.isArray(s.markers)||s.markers.length>500))||(s.center!=null&&!validPoint(s.center))||(s.userLocation!=null&&!validPoint(s.userLocation))||(s.selectedId!=null&&!validText(s.selectedId,180))||(s.topInset!=null&&(!Number.isFinite(s.topInset)||s.topInset<0||s.topInset>1000))||(s.bottomInset!=null&&(!Number.isFinite(s.bottomInset)||s.bottomInset<0||s.bottomInset>1000)))return false;const ids=new Set();return s.markers===undefined||s.markers.every(m=>{if(!m||!validText(m.id,180)||ids.has(m.id)||typeof m.label!=='string'||m.label.length>80||!validPoint(m)||typeof m.color!=='string'||!/^#[a-f\\d]{6}$/i.test(m.color)||(m.sublabel!==undefined&&(typeof m.sublabel!=='string'||m.sublabel.length>40))||(m.featured!==undefined&&typeof m.featured!=='boolean')||(m.icon!==undefined&&(typeof m.icon!=='string'||!/^[a-z][a-z0-9_-]{0,23}$/.test(m.icon)))||(m.top25!==undefined&&typeof m.top25!=='boolean')||(m.discount!==undefined&&(!Number.isFinite(m.discount)||m.discount<=0||m.discount>100)))return false;ids.add(m.id);return true})};
-const sameMarkers=(a,b)=>a.length===b.length&&a.every((m,i)=>{const p=b[i];return m.id===p.id&&m.latitude===p.latitude&&m.longitude===p.longitude&&m.color===p.color&&m.label===p.label&&(m.sublabel||'')===(p.sublabel||'')&&(m.featured===true)===(p.featured===true)&&(m.icon||'')===(p.icon||'')&&(m.top25===true)===(p.top25===true)&&(m.discount||0)===(p.discount||0)});
-const geojson=(selection=false)=>({type:'FeatureCollection',features:current.markers.filter(m=>!selection||m.id===current.selectedId).map(m=>({type:'Feature',geometry:{type:'Point',coordinates:[m.longitude,m.latitude]},properties:{id:m.id,label:m.label,sublabel:m.sublabel||'',featured:m.featured===true,icon:m.icon||'',art:pinArt[m.icon]===true,color:m.color,top25:m.top25===true,discount:m.discount||0}}))});
+const validState=s=>{if(!s||typeof s!=='object'||Array.isArray(s)||(s.markers!==undefined&&(!Array.isArray(s.markers)||s.markers.length>500))||(s.center!=null&&!validPoint(s.center))||(s.userLocation!=null&&!validPoint(s.userLocation))||(s.heading!=null&&!(Number.isFinite(s.heading)&&s.heading>=0&&s.heading<360))||(s.selectedId!=null&&!validText(s.selectedId,180))||(s.topInset!=null&&(!Number.isFinite(s.topInset)||s.topInset<0||s.topInset>1000))||(s.bottomInset!=null&&(!Number.isFinite(s.bottomInset)||s.bottomInset<0||s.bottomInset>1000)))return false;const ids=new Set();return s.markers===undefined||s.markers.every(m=>{if(!m||!validText(m.id,180)||ids.has(m.id)||typeof m.label!=='string'||m.label.length>80||!validPoint(m)||typeof m.color!=='string'||!/^#[a-f\\d]{6}$/i.test(m.color)||(m.sublabel!==undefined&&(typeof m.sublabel!=='string'||m.sublabel.length>40))||(m.featured!==undefined&&typeof m.featured!=='boolean')||(m.icon!==undefined&&(typeof m.icon!=='string'||!/^[a-z][a-z0-9_-]{0,23}$/.test(m.icon)))||(m.top25!==undefined&&typeof m.top25!=='boolean')||(m.saved!==undefined&&typeof m.saved!=='boolean')||(m.discount!==undefined&&(!Number.isFinite(m.discount)||m.discount<=0||m.discount>100)))return false;ids.add(m.id);return true})};
+const sameMarkers=(a,b)=>a.length===b.length&&a.every((m,i)=>{const p=b[i];return m.id===p.id&&m.latitude===p.latitude&&m.longitude===p.longitude&&m.color===p.color&&m.label===p.label&&(m.sublabel||'')===(p.sublabel||'')&&(m.featured===true)===(p.featured===true)&&(m.icon||'')===(p.icon||'')&&(m.top25===true)===(p.top25===true)&&(m.saved===true)===(p.saved===true)&&(m.discount||0)===(p.discount||0)});
+const geojson=(selection=false)=>({type:'FeatureCollection',features:current.markers.filter(m=>!selection||m.id===current.selectedId).map(m=>({type:'Feature',geometry:{type:'Point',coordinates:[m.longitude,m.latitude]},properties:{id:m.id,label:m.label,sublabel:m.sublabel||'',featured:m.featured===true,icon:m.icon||'',art:pinArt[m.icon]===true,color:m.color,top25:m.top25===true,saved:m.saved===true,discount:m.discount||0}}))});
 const pinArt={};
 // Each 3D picture becomes a white round pin image; until it loads, or if it cannot, the place keeps its coloured dot.
 const loadPins=()=>{if(typeof Image==='undefined')return;Promise.all(Object.entries(config.art||{}).map(([id,src])=>new Promise(done=>{const img=new Image();img.onload=()=>{try{const s=3,d=36,c=document.createElement('canvas');c.width=c.height=d*s;const ctx=c.getContext('2d');ctx.scale(s,s);ctx.shadowColor='rgba(23,17,35,.22)';ctx.shadowBlur=4;ctx.shadowOffsetY=1;ctx.beginPath();ctx.arc(d/2,d/2,16,0,Math.PI*2);ctx.fillStyle='#ffffff';ctx.fill();ctx.shadowColor='transparent';ctx.drawImage(img,d/2-12,d/2-12,24,24);map.addImage('pin-'+id,ctx.getImageData(0,0,c.width,c.height),{pixelRatio:s});pinArt[id]=true}catch{}done()};img.onerror=()=>done();img.src=src}))).then(()=>{if(loaded&&Object.keys(pinArt).length)apply(true,true)})};
@@ -124,7 +130,9 @@ const ensureBadges=()=>{
 };
 const apply=(markersChanged=false,selectionChanged=false)=>{if(!loaded)return;if(markersChanged)map.getSource('discovery').setData(geojson());if(selectionChanged)map.getSource('discovery-selection').setData(geojson(true));
  const p=current.userLocation;
- if(p){if(!userMarker){const el=document.createElement('div');el.className='user-location-marker';el.setAttribute('role','img');el.setAttribute('aria-label','${language === 'en' ? 'Your location' : '내 위치'}');userMarker=new maplibregl.Marker({element:el}).setLngLat([p.longitude,p.latitude]).addTo(map)}else userMarker.setLngLat([p.longitude,p.latitude])}else if(userMarker){userMarker.remove();userMarker=null}
+ if(p){if(!userMarker){const el=document.createElement('div');el.className='user-location-marker';el.setAttribute('role','img');el.setAttribute('aria-label','${language === 'en' ? 'Your location' : '내 위치'}');userMarker=new maplibregl.Marker({element:el,rotationAlignment:'map',pitchAlignment:'viewport'}).setLngLat([p.longitude,p.latitude]).addTo(map);userHeading=null}else userMarker.setLngLat([p.longitude,p.latitude]);
+  // The whole marker turns with the map (a round dot looks the same), so only the cone shows the direction even when the map is rotated.
+  const h=current.heading??null;if(h!==userHeading){userHeading=h;userMarker.getElement().setAttribute('data-facing',h===null?'0':'1');userMarker.setRotation(h??0)}}else if(userMarker){userMarker.remove();userMarker=null}
  if(markersChanged)ensureBadges();map.setFilter('discovery-top25',top25Filter());for(const id of ['discovery-discount','discovery-discount-dot'])map.setFilter(id,['all',['>', ['get','discount'],0],['!=',['get','id'],current.selectedId??'']]);
  const height=map.getContainer().clientHeight,top=Math.min(current.topInset||0,Math.max(0,height-44)),bottom=Math.min(current.bottomInset||0,Math.max(0,height-top-44)),padding=top+':'+bottom,paddingChanged=padding!==previousPadding;
  map.getContainer().style.setProperty('--map-top-inset',top+'px');
@@ -150,6 +158,11 @@ try{
   tx.beginPath();tx.moveTo(14,1);tx.arcTo(39,1,39,39,13);tx.arcTo(39,39,1,39,13);tx.arcTo(1,39,1,1,13);tx.arcTo(1,1,39,1,13);tx.closePath();
   tx.fillStyle='rgba(255,255,255,0.95)';tx.fill();tx.strokeStyle='rgba(48,32,71,0.16)';tx.lineWidth=2;tx.stroke();
   map.addImage('name-tag',tx.getImageData(0,0,40,40),{pixelRatio:2,stretchX:[[16,24]],stretchY:[[16,24]]});
+  // My saved place: a lilac disc with a dark bookmark, white edge so it reads on the light map (corner m37 'saved' flag).
+  const mark=document.createElement('canvas');mark.width=mark.height=36;const mx=mark.getContext('2d');if(!mx)throw Error('SAVED_CANVAS');mx.scale(2,2);
+  mx.beginPath();mx.arc(9,9,8,0,Math.PI*2);mx.fillStyle='${accent}';mx.fill();mx.strokeStyle='#ffffff';mx.lineWidth=1.5;mx.stroke();
+  mx.beginPath();mx.moveTo(6,5);mx.lineTo(12,5);mx.lineTo(12,13);mx.lineTo(9,10.5);mx.lineTo(6,13);mx.closePath();mx.fillStyle='#171123';mx.fill();
+  map.addImage('saved-mark',mx.getImageData(0,0,36,36),{pixelRatio:2});
   map.addSource('discovery',{type:'geojson',data:geojson()});
   map.addSource('discovery-selection',{type:'geojson',data:geojson(true)});
   // Every place layer starts at the mid stage; below it only the city pills show.
@@ -173,6 +186,8 @@ try{
   add({id:'discovery-selected-label',type:'symbol',source:'discovery-selection',layout:{...nameFont,'text-field':['get','label'],'text-size':12,'text-offset':nameOffset,'text-allow-overlap':true,'icon-allow-overlap':true},paint:namePaint});
   add({id:'discovery-selected-hit',type:'circle',source:'discovery-selection',paint:{'circle-radius':22,'circle-opacity':0}});
   add({id:'discovery-selected-top25',type:'symbol',source:'discovery-selection',filter:['==',['get','top25'],true],layout:{'icon-image':'top25-full','icon-anchor':'left','icon-offset':[21,-24],'icon-allow-overlap':true,'icon-ignore-placement':true}});
+  // Above the selected ring so a saved pin keeps its mark when chosen; smaller at the dot stage.
+  add({id:'discovery-saved',type:'symbol',source:'discovery',filter:['==',['get','saved'],true],layout:{'icon-image':'saved-mark','icon-size':step(0.6,1),'icon-offset':[13,-13],'icon-allow-overlap':true,'icon-ignore-placement':true}});
   for(const [id,source] of [['discovery-discount','discovery'],['discovery-selected-discount','discovery-selection']]){
    const selection=source==='discovery-selection';
    add({id:id+'-dot',type:'circle',source,filter:['>', ['get','discount'],0],paint:{'circle-radius':4,'circle-color':'#8FD9C4','circle-stroke-color':'#ffffff','circle-stroke-width':1.5,'circle-translate':selection?[-12,10]:step(['literal',[-5,4]],['literal',[-12,10]]),'circle-translate-anchor':'viewport'}});

@@ -15,6 +15,8 @@ type Props = {
   /** City pills for the far zoom stage; tapping another open city calls onCity. */
   cities?: DiscoveryCity[]; onCity?: (id: string) => void;
   userLocation?: { latitude: number; longitude: number } | null;
+  /** Degrees from north the phone faces; draws the cone on the location dot. */
+  heading?: number | null;
   topInset?: number; bottomInset?: number;
 };
 
@@ -23,7 +25,7 @@ export function DiscoveryMap(props: Props) {
 }
 
 const NO_CITIES: DiscoveryCity[] = [];
-function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, center = null, userLocation = null, topInset = 0, bottomInset = 0, onSelect, onMoved, onCity }: Props) {
+function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, center = null, userLocation = null, heading = null, topInset = 0, bottomInset = 0, onSelect, onMoved, onCity }: Props) {
   const { language, tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const native = useRef<WebView<unknown>>(null), web = useRef<HTMLIFrameElement>(null), id = useId();
@@ -47,10 +49,10 @@ function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, cent
   const update = useMemo(() => {
     try {
       const state = { selectedId, center: center && { latitude: center.latitude, longitude: center.longitude, ...(center.requestId !== undefined ? { requestId: center.requestId } : {}) },
-        userLocation: userLocation && { latitude: userLocation.latitude, longitude: userLocation.longitude }, topInset, bottomInset };
+        userLocation: userLocation && { latitude: userLocation.latitude, longitude: userLocation.longitude }, heading, topInset, bottomInset };
       return { state, script: discoveryMapScript(state, sessionId) };
     } catch { return null; }
-  }, [selectedId, center, userLocation, topInset, bottomInset, sessionId]);
+  }, [selectedId, center, userLocation, heading, topInset, bottomInset, sessionId]);
   const sync = useCallback((forceMarkers = false) => {
     if (!update || !markerData) return;
     const includeMarkers = forceMarkers || sentMarkers.current?.sessionId !== sessionId || sentMarkers.current.key !== markerData.key;

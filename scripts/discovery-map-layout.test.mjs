@@ -27,7 +27,7 @@ const control = (tree, label) => { const result = nodes(tree).find(node => node.
 
 // Render the actual route and run its handlers; only native/external services are replaced.
 function mount({ cities = [], routeParams = {}, light = false, reduced = false, places = [], business = {}, origin = { latitude: 49.25, longitude: -122.86 }, registryReady = true, onClose, loadWebshops = async () => [], loadLinks = async () => ({}), loadPhotos = async () => ({}), loadScope = async () => ({ places: new Map(), friendCount: 0 }) } = {}) {
-  const routes = [], state = [], feedback = [], alerts = [], memoValues = [], effects = [], focusEffects = [], chosenCities = [];
+  const routes = [], state = [], feedback = [], alerts = [], memoValues = [], effects = [], focusEffects = [], chosenCities = [], compass = { watches: [], removed: 0 }, savedEntry = { targets: [], state: null };
   let index = 0, focused = true, viewer = 'guest', city = { id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver' };
   const theme = { background: light ? '#fff' : '#0B0B12', card: light ? '#fff' : '#171722', backgroundElement: '#222231', backgroundSelected: '#343443', text: '#F6F3F0', textSecondary: '#B7B4C3', accent: '#CBB9FF', accentInk: '#171123', line: '#343443' };
   const hooks = { useState(initial) { const slot = index++; if (!(slot in state)) { const value = typeof initial === 'function' ? initial() : initial; state[slot] = value && typeof value === 'object' && 'ready' in value && 'shops' in value ? { ...value, key: 'vancouver:guest', ready: registryReady } : value; } return [state[slot], next => { state[slot] = typeof next === 'function' ? next(state[slot]) : next; }]; }, useRef: current => ({ current }), useMemo: fn => { const value = fn(); memoValues.push(value); return value; }, useCallback: fn => fn, useEffect: (fn, deps) => effects.push({ fn, deps }) };
@@ -35,7 +35,8 @@ function mount({ cities = [], routeParams = {}, light = false, reduced = false, 
   const imports = {
     react: hooks, 'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
     'react-native': { ActivityIndicator: 'ActivityIndicator', Alert: { alert: (...args) => alerts.push(args) }, AppState: { currentState: 'active' }, Linking: {}, Modal: 'Modal', StyleSheet: { create: value => value, hairlineWidth: 1 }, TextInput: 'TextInput', View: 'View', KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'ios' } },
-    'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'SymbolView' }, 'expo-location': { Accuracy: { Balanced: 3 }, requestForegroundPermissionsAsync: async () => ({ granted: true }), getCurrentPositionAsync: async () => ({ coords: { ...origin, accuracy: 10 }, timestamp: Date.now(), mocked: false }) },
+    'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'SymbolView' }, 'expo-location': { Accuracy: { Balanced: 3 }, requestForegroundPermissionsAsync: async () => ({ granted: true }), getCurrentPositionAsync: async () => ({ coords: { ...origin, accuracy: 10 }, timestamp: Date.now(), mocked: false }),
+      watchHeadingAsync: async callback => { compass.watches.push(callback); return { remove() { compass.removed++; } }; } },
     'expo-web-browser': {}, '@/lib/merchant-source': {}, '@/lib/public-seo': {},
     '../../supabase/functions/_shared/ticketmaster': {},
     'react-native-reanimated': { __esModule: true, default: { View: 'ReanimatedView' }, useReducedMotion: () => reduced, LayoutAnimationConfig: 'LayoutAnimationConfig',
@@ -59,14 +60,14 @@ function mount({ cities = [], routeParams = {}, light = false, reduced = false, 
     '@/lib/discovery': discovery, '@/lib/discovery-sort': discoverySort, '@/lib/post-maps': postMaps, '@/lib/city-places': { getCityDiscoveryPlaces: () => places }, '@/lib/city-top25': { cityTop25Recommendations: () => [] }, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 }, '@/lib/discovery-data': { loadDiscoveryPosts: async () => ({ items: [], cursor: null, hasMore: false }) }, '@/lib/feed-data': {},
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) }, '@/lib/location': location, '@/lib/supabase': { supabase: {} },
     '@/lib/ticketmaster': { EVENT_CITIES: { vancouver: {} }, loadTicketmasterEvents: async () => ({ events: [], hasMore: false }) }, '@/components/post-ad-label': {}, '@/lib/hashtags': { hasAdLabel: () => false },
-    '@/components/drag-sheet': { DragSheet: 'DragSheet' }, '@/components/map-list-sheet': { MapListSheet: 'MapListSheet' }, '@/components/map-scope': { FriendSavedLine: 'FriendSavedLine', MapScopeSheet: 'MapScopeSheet' }, '@/lib/profile-friends': { loadMapScope: (...args) => loadScope(...args) }, '@/components/place-hours': { PlaceHours: 'PlaceHours' },
+    '@/components/drag-sheet': { DragSheet: 'DragSheet' }, '@/components/city-picker': { CityPicker: 'CityPicker' }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: target => { savedEntry.targets.push(target); return { state: savedEntry.state }; } }, '@/components/map-list-sheet': { MapListSheet: 'MapListSheet' }, '@/components/map-scope': { FriendSavedLine: 'FriendSavedLine', MapScopeSheet: 'MapScopeSheet' }, '@/lib/profile-friends': { loadMapScope: (...args) => loadScope(...args) }, '@/components/place-hours': { PlaceHours: 'PlaceHours' },
     '@/components/reservation-button': { ReservationButton: 'ReservationButton' }, '@/lib/opening-hours': openingHours,
     '@/lib/listing-details': { inBounds: (b, p) => p.latitude >= b.south && p.latitude <= b.north && p.longitude >= b.west && p.longitude <= b.east },
   };
   const exports = {};
   const code = ts.transpileModule(source + '\nexports.CityMap = CityMap; exports.DiscoveryCard = DiscoveryCard; exports.GlingVisitedBadge = GlingVisitedBadge;', { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(code, { exports, Date, AbortController, setTimeout, clearTimeout, require: name => { if (name.startsWith('@/assets/')) return name; assert.ok(Object.hasOwn(imports, name), name); return imports[name]; } });
-  return { render() { index = 0; memoValues.length = 0; effects.length = 0; focusEffects.length = 0; return exports.CityMap({ city: imports['@/lib/community-city'].useCommunityCity().city, onClose }); }, renderCard(item, distance) { index = 0; return exports.DiscoveryCard({ item, distance, viewerScope: 'guest', onOpen() {} }); }, renderBadge(selected) { index = 0; return exports.GlingVisitedBadge({ selected }); }, get days() { return memoValues[0]; }, get registryDependencies() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).deps; }, readRegistry() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).fn(); }, readResults() { return focusEffects.find(fn => String(fn).includes('loadPage(null)'))(); }, readScope() { return effects.find(value => String(value.fn).includes('loadMapScope')).fn(); }, setCity: id => { city = { ...city, id }; }, setViewer: id => { viewer = id; }, setFocused: value => { focused = value; }, feedback, alerts, routes, chosenCities };
+  return { render() { index = 0; memoValues.length = 0; effects.length = 0; focusEffects.length = 0; return exports.CityMap({ city: imports['@/lib/community-city'].useCommunityCity().city, onClose }); }, renderCard(item, distance) { index = 0; return exports.DiscoveryCard({ item, distance, viewerScope: 'guest', onOpen() {} }); }, renderBadge(selected) { index = 0; return exports.GlingVisitedBadge({ selected }); }, get days() { return memoValues[0]; }, get registryDependencies() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).deps; }, readRegistry() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).fn(); }, readResults() { return focusEffects.find(fn => String(fn).includes('loadPage(null)'))(); }, readScope() { return effects.find(value => String(value.fn).includes('loadMapScope')).fn(); }, readMine() { return effects.find(value => String(value.fn).includes("'mine'")).fn(); }, readCompass() { return effects.find(value => String(value.fn).includes('watchHeadingAsync')).fn(); }, compass, savedEntry, setCity: id => { city = { ...city, id }; }, setViewer: id => { viewer = id; }, setFocused: value => { focused = value; }, feedback, alerts, routes, chosenCities };
 }
 
 test('main categories toggle independently and event dates belong to the festival category', () => {
@@ -550,7 +551,7 @@ test('보여 줄 곳 keeps only the saved places inside the other filters, names
   control(tree, '보여 줄 곳, 모두').props.onPress(); tree = view.render();
   assert.equal(sheet().props.visible, true);
   assert.equal(sheet().props.scope, 'all');
-  assert.deepEqual(reads, [], 'nothing saved is read while 모두 shows');
+  assert.deepEqual(reads, [], 'the scope filter reads nothing while 모두 shows (the pin marks have their own read, tested below)');
 
   sheet().props.onPick('friends'); tree = view.render();
   assert.equal(sheet().props.visible, false);
@@ -591,4 +592,67 @@ test('보여 줄 곳 keeps only the saved places inside the other filters, names
   sheet().props.onPick('all'); tree = view.render();
   assert.deepEqual(listOf(tree), ['Lunch', 'Dinner', 'Cafe']);
   assert.equal(reads.length, 5, 'a signed-out visitor never reads saved places');
+});
+
+test('M5: my saved places carry a pin mark in 모두, and a save confirmed on the map card moves it at once', async () => {
+  const reads = [];
+  const view = mount({ places: [fixturePlace(1), fixturePlace(2), fixturePlace(3)],
+    loadScope: async (_client, scope, cityId, userId) => { reads.push([scope, cityId, userId]); return { places: new Map([['osm:node:2', null]]), friendCount: null }; } });
+  const savedPins = tree => Array.from(nodes(tree).find(node => node.type === 'DiscoveryMap').props.markers.filter(marker => marker.saved), marker => marker.label);
+  let tree = view.render();
+  assert.equal(view.readMine(), undefined, 'a signed-out visitor reads nothing');
+  assert.deepEqual(reads, []);
+  view.setViewer('member-1'); tree = view.render();
+  view.readResults(); view.readMine(); await new Promise(setImmediate); tree = view.render();
+  assert.deepEqual(reads, [['mine', 'vancouver', 'member-1']]);
+  assert.deepEqual(savedPins(tree), ['Place 2']);
+  assert.equal(view.savedEntry.targets.at(-1), null, 'no card, so no saved-state read');
+  const map = nodes(tree).find(node => node.type === 'DiscoveryMap');
+  map.props.onSelect(map.props.markers[0].id); tree = view.render();
+  assert.equal(JSON.stringify(view.savedEntry.targets.at(-1)), JSON.stringify({ kind: 'place', id: 'osm:node:1', cityId: 'vancouver' }));
+  const button = nodes(tree).find(node => node.type === 'SavedEntryButton');
+  assert.equal(button.props.analyticsId, 'save.place');
+  button.props.onBeen();
+  assert.equal(JSON.stringify(view.routes.at(-1)), JSON.stringify({ pathname: '/places/[id]', params: { id: 'osm:node:1', cityId: 'vancouver' } }), '가 봤어요 opens the place for its review');
+  view.savedEntry.state = { saved: true }; view.render(); tree = view.render();
+  assert.deepEqual(savedPins(tree), ['Place 1', 'Place 2']);
+  map.props.onSelect(map.props.markers[1].id); view.savedEntry.state = { saved: false }; view.render(); tree = view.render();
+  assert.deepEqual(savedPins(tree), ['Place 1'], 'unsaving drops the mark without waiting for a reload');
+  view.setViewer('member-2'); tree = view.render();
+  assert.deepEqual(savedPins(tree), [], 'another account never sees the last person\'s marks');
+});
+
+test('M7: the compass starts only on screen after a location fix, feeds the cone and stops when the map leaves', async () => {
+  const view = mount();
+  let tree = view.render();
+  assert.equal(view.readCompass(), undefined, 'no location yet, so no compass');
+  assert.equal(nodes(tree).find(node => node.type === 'DiscoveryMap').props.heading, null);
+  control(tree, '내 위치로 지도 이동').props.onPress(); await new Promise(setImmediate); tree = view.render();
+  const stop = view.readCompass(); await new Promise(setImmediate);
+  assert.equal(view.compass.watches.length, 1);
+  view.compass.watches[0]({ trueHeading: 181, magHeading: 165, accuracy: 3 }); tree = view.render();
+  assert.equal(nodes(tree).find(node => node.type === 'DiscoveryMap').props.heading, 180);
+  stop(); tree = view.render();
+  assert.equal(view.compass.removed, 1);
+  assert.equal(nodes(tree).find(node => node.type === 'DiscoveryMap').props.heading, null, 'leaving drops the cone');
+  view.compass.watches[0]({ trueHeading: 90, magHeading: 80, accuracy: 3 }); tree = view.render();
+  assert.equal(nodes(tree).find(node => node.type === 'DiscoveryMap').props.heading, null, 'a late reading after leaving is ignored');
+  view.setFocused(false); tree = view.render();
+  assert.equal(view.readCompass(), undefined, 'a hidden map does not listen');
+});
+
+test('M6: the map title opens the existing city picker with feedback', () => {
+  const view = mount({ onClose() {} });
+  let tree = view.render();
+  assert.ok(!nodes(tree).some(node => node.type === 'CityPicker'));
+  const title = control(tree, '밴쿠버 지도, 도시 바꾸기');
+  assert.equal(title.props.accessibilityRole, 'button');
+  assert.equal(title.props.analyticsId, 'discovery.open', 'a target the server already accepts');
+  assert.ok(nodes(title).some(node => node.type === 'SymbolView' && node.props.name.ios === 'chevron.down'));
+  title.props.onPress(); tree = view.render();
+  assert.equal(view.feedback.at(-1), 'selection');
+  const picker = nodes(tree).find(node => node.type === 'CityPicker');
+  assert.ok(picker, 'the same picker the home screen uses');
+  picker.props.onClose(); tree = view.render();
+  assert.ok(!nodes(tree).some(node => node.type === 'CityPicker'));
 });
