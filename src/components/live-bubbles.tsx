@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { Alert, StyleSheet, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
+import { Alert, StyleSheet, TextInput, View, type ViewInstance } from 'react-native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
@@ -42,6 +42,16 @@ export function useNow() {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(timer); }, []);
   return now;
+}
+
+// Views the live-map notice must not cover (an open sheet's buttons, the map's bottom card); LiveNotice measures them when it shows.
+const keepClear = new Set<RefObject<ViewInstance | null>>();
+export const keepClearViews = () => [...keepClear].flatMap(ref => ref.current ? [ref.current] : []);
+/** Attach the returned ref to a view the notice should sit above while it is on screen. */
+export function useKeepClearOfNotice() {
+  const ref = useRef<ViewInstance>(null);
+  useEffect(() => { keepClear.add(ref); return () => { keepClear.delete(ref); }; }, []);
+  return ref;
 }
 
 const BUBBLE_COLOR = '#8E6CE0', MEETUP_TAG = 5;
@@ -97,8 +107,8 @@ export function LiveDock({ map, demo, now, onCompose, onReceived }: { map: LiveM
   const body = pending ? tr('눌러서 프로필 보고 정하기') : waves ? tr('손 흔든 사람 {0}명 · {1} 뒤 사라져요', waves, left)
     : mine ? mine.audience === 'friends' ? tr('{0} 뒤 사라져요 · 친구한테만 보여요', left) : tr('{0} 뒤 사라져요 · 도시 전체에 보여요', left)
     : tr('누르면 대화 신청이 와요. 받을지는 내가 정해요');
-  const action = pending || waves ? tr('보기') : mine ? tr('고치기') : tr('남기기');
-  return <View style={[styles.dock, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  const action = pending || waves ? tr('보기') : mine ? tr('고치기') : tr('남기기'), clear = useKeepClearOfNotice();
+  return <View ref={clear} style={[styles.dock, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <Pressable analyticsId="livemap.dock" accessibilityRole="button" accessibilityLabel={`${title}, ${body}, ${action}`}
       onPress={() => { play('selection'); if (pending) onReceived(pending.id); else onCompose(); }} style={({ pressed }) => [styles.dockRow, { opacity: pressed ? 0.82 : 1 }]}>
       {pending ? <InitialAvatar name={pending.sender.nickname} /> : <CategoryIcon id="bubble" size={40} play={0} />}
@@ -219,7 +229,7 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
   const [locating, setLocating] = useState(!isAdmin), [problem, setProblem] = useState(''), [busy, setBusy] = useState(false), [atEdge, setAtEdge] = useState(false);
   const alive = useRef(true);
   // Fixed for this opening (the sheet mounts with a new key each time), so a moving map centre never re-runs the location check.
-  const [start] = useState(() => ({ demo: live.demo, center: mapCenter }));
+  const [start] = useState(() => ({ demo: live.demo, center: mapCenter })), footer = useKeepClearOfNotice();
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   const locate = useCallback(() => readFix().catch(error => { if (start.demo) return null; throw error; }).then(fix => postingPlace(fix, start.demo, start.center)).then(place => {
     if (alive.current) { setOrigin(place); setPoint(approximatePoint(place)); }
@@ -288,31 +298,34 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
         <Label>{tr('떠 있는 시간')}</Label>
         <View style={styles.choices}>{LIVE.durations.map(value => <Choice key={value} analyticsId="livemap.compose" selected={minutes === value} label={durationLabel(value)} onPress={() => { play('selection'); setMinutes(value); }} />)}</View>
         <ThemedText type="caption" themeColor="textSecondary">{tr('한 번에 하나만 띄울 수 있어요. 새로 남기면 전에 남긴 건 바뀌어요.')}{'\n'}{tr('대화 신청이 오면 받을지는 그때 정하면 돼요.')}</ThemedText>
-        <View style={styles.actions}>
-          {mine && <Secondary analyticsId="livemap.end" label={tr('내리기')} disabled={busy} onPress={() => void end()} />}
-          <View style={styles.flex}><RaisedActionButton analyticsId="livemap.compose.next" label={isAdmin ? mine ? tr('다시 띄우기') : tr('남기기') : tr('다음')} disabled={!ready} busy={busy}
-            onPress={() => { if (isAdmin) void submit(); else { play('selection'); setStep('preview'); } }} /></View>
-        </View>
       </> : step === 'preview' ? <>
         <ThemedText type="small" themeColor="textSecondary">{tr('대략 여기쯤이에요. 정확한 자리는 안 보여요')}</ThemedText>
         {point && <View style={styles.previewMap}><DiscoveryMap key={`${point.latitude},${point.longitude}`} markers={preview} cityName={city.englishName} center={point} zoom={15} onSelect={() => {}} /></View>}
         <ThemedText type="caption" themeColor="textSecondary">{tr('다른 사람이 보는 지도')}</ThemedText>
         {problemLine}
+      </> : <>
+        <ThemedText type="small" themeColor="textSecondary">{tr('핀을 끌어 옮기면 남들에게 보이는 자리도 같이 바뀌어요')}</ThemedText>
+        <View style={styles.previewMap}><PostPinMap pin={point} cityName={city.englishName} onSelect={move} /></View>
+        <ThemedText type="caption" accessibilityLiveRegion="polite" style={{ color: atEdge ? theme.accent : theme.textSecondary }}>{atEdge ? tr('100m까지만 옮길 수 있어요. 그 끝에 놓아 뒀어요.') : tr('100m 안에서 옮길 수 있어요')}</ThemedText>
+      </>}
+    </ScrollView>
+    {/* Pinned under the scrolling part, so a long sheet (with people who waved) never pushes the buttons off screen. */}
+    <View ref={footer} style={styles.footer}>
+      {step === 'write' ? <View style={styles.actions}>
+        {mine && <Secondary analyticsId="livemap.end" label={tr('내리기')} disabled={busy} onPress={() => void end()} />}
+        <View style={styles.flex}><RaisedActionButton analyticsId="livemap.compose.next" label={isAdmin ? mine ? tr('다시 띄우기') : tr('남기기') : tr('다음')} disabled={!ready} busy={busy}
+          onPress={() => { if (isAdmin) void submit(); else { play('selection'); setStep('preview'); } }} /></View>
+      </View> : step === 'preview' ? <>
         <View style={styles.actions}>
           <Secondary analyticsId="livemap.preview" label={tr('위치 바꾸기')} disabled={busy} onPress={() => { play('selection'); setAtEdge(false); setStep('adjust'); }} />
           <View style={styles.flex}><RaisedActionButton analyticsId="livemap.post" label={mine ? tr('다시 띄우기') : tr('남기기')} disabled={!ready} busy={busy} onPress={() => void submit()} /></View>
         </View>
         <Pressable analyticsId="livemap.preview" accessibilityRole="button" onPress={() => { play('selection'); setStep('write'); }} style={styles.link}><ThemedText type="smallBold" themeColor="accent">{tr('글 고치기')}</ThemedText></Pressable>
-      </> : <>
-        <ThemedText type="small" themeColor="textSecondary">{tr('핀을 끌어 옮기면 남들에게 보이는 자리도 같이 바뀌어요')}</ThemedText>
-        <View style={styles.previewMap}><PostPinMap pin={point} cityName={city.englishName} onSelect={move} /></View>
-        <ThemedText type="caption" accessibilityLiveRegion="polite" style={{ color: atEdge ? theme.accent : theme.textSecondary }}>{atEdge ? tr('100m까지만 옮길 수 있어요. 그 끝에 놓아 뒀어요.') : tr('100m 안에서 옮길 수 있어요')}</ThemedText>
-        <View style={styles.actions}>
-          <Secondary analyticsId="livemap.preview" label={tr('처음 자리로')} onPress={() => { play('selection'); setAtEdge(false); if (origin) setPoint(approximatePoint(origin)); }} />
-          <View style={styles.flex}><RaisedActionButton analyticsId="livemap.preview" label={tr('이 자리로 할게요')} onPress={() => { play('selection'); setStep('preview'); }} /></View>
-        </View>
-      </>}
-    </ScrollView>
+      </> : <View style={styles.actions}>
+        <Secondary analyticsId="livemap.preview" label={tr('처음 자리로')} onPress={() => { play('selection'); setAtEdge(false); if (origin) setPoint(approximatePoint(origin)); }} />
+        <View style={styles.flex}><RaisedActionButton analyticsId="livemap.preview" label={tr('이 자리로 할게요')} onPress={() => { play('selection'); setStep('preview'); }} /></View>
+      </View>}
+    </View>
   </DragSheet>;
 }
 
@@ -321,7 +334,7 @@ export function LiveRequestSheet({ visible, bubble, map, now, onClose, onDismiss
   visible: boolean; bubble: LiveBubble | null; map: LiveMap | null; now: number; onClose: () => void; onDismissed: () => void; onReport: (bubble: LiveBubble) => void; onBlock: (bubble: LiveBubble) => void;
 }) {
   const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), router = useRouter();
-  const [greeting, setGreeting] = useState(0), [busy, setBusy] = useState(false), [problem, setProblem] = useState('');
+  const [greeting, setGreeting] = useState(0), [busy, setBusy] = useState(false), [problem, setProblem] = useState(''), clear = useKeepClearOfNotice();
   const sent = bubble?.sent ?? null, pendingId = sent?.status === 'pending' ? sent.id : null, wavesLeft = map?.wavesLeft ?? 0;
   // Until the owner answers, look again every 15 seconds (the accepted push also arrives).
   useEffect(() => {
@@ -373,6 +386,7 @@ export function LiveRequestSheet({ visible, bubble, map, now, onClose, onDismiss
             <ThemedText type="caption" themeColor="textSecondary">{tr('신고')}</ThemedText></Pressable>
         </View>
       </View>
+      <View ref={clear} style={styles.stack}>
       {bubble.kind === 'pin' ? <ThemedText type="small" themeColor="textSecondary">{tr('글링이 남긴 핀이에요.')}</ThemedText>
       : sent?.status === 'pending' ? <>
         <ThemedText type="section" accessibilityLiveRegion="polite">{tr('대화 신청 보냈어요')}</ThemedText>
@@ -404,6 +418,7 @@ export function LiveRequestSheet({ visible, bubble, map, now, onClose, onDismiss
       {sent?.status === 'pending' && !!problem && <ThemedText type="small" accessibilityRole="alert">{tr(problem)}</ThemedText>}
       <Pressable analyticsId="livemap.request" accessibilityRole="button" accessibilityLabel={tr('{0}님 차단하기', name)} onPress={() => { play('selection'); onBlock(bubble); }} style={styles.link}>
         <ThemedText type="small" themeColor="textSecondary">{tr('차단하기')}</ThemedText></Pressable>
+      </View>
     </ScrollView>
   </DragSheet>;
 }
@@ -411,7 +426,7 @@ export function LiveRequestSheet({ visible, bubble, map, now, onClose, onDismiss
 /** What the bubble's owner sees: who asked, with which line, and accept or decline. */
 export function LiveReceivedSheet({ visible, request, onClose }: { visible: boolean; request: LiveRequest | null; onClose: () => void }) {
   const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), router = useRouter();
-  const [busy, setBusy] = useState(false), [problem, setProblem] = useState('');
+  const [busy, setBusy] = useState(false), [problem, setProblem] = useState(''), clear = useKeepClearOfNotice();
   if (!request) return <DragSheet visible={false} onClose={onClose}><View /></DragSheet>;
   const name = request.sender.nickname;
   const respond = async (response: 'accepted' | 'declined') => {
@@ -440,6 +455,7 @@ export function LiveReceivedSheet({ visible, request, onClose }: { visible: bool
           <ThemedText type="caption" themeColor="textSecondary">{tr('내 말풍선 ‘{0}’에 온 신청이에요', request.bubbleBody)}</ThemedText>
         </>}
       </View>
+      <View ref={clear} style={styles.stack}>
       {problem ? <ThemedText type="small" accessibilityRole="alert">{tr(problem)}</ThemedText> : null}
       {request.status === 'accepted' ? <>
         <ThemedText type="section" accessibilityLiveRegion="polite">{tr('수락했어요')}</ThemedText>
@@ -455,6 +471,7 @@ export function LiveReceivedSheet({ visible, request, onClose }: { visible: bool
         </View>
         <ThemedText type="caption" themeColor="textSecondary">{tr('거절해도 {0}님 화면엔 ‘이번엔 대화가 이어지지 않았어요’라고만 떠요.', name)}</ThemedText>
       </>}
+      </View>
     </ScrollView>
   </DragSheet>;
 }
@@ -512,6 +529,7 @@ const styles = StyleSheet.create({
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   choice: { minHeight: 44, paddingHorizontal: 14, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+  footer: { paddingTop: Spacing.two }, stack: { gap: Spacing.two + 4 },
   secondary: { borderWidth: 1 },
   pinMap: { height: 200, borderRadius: 14, overflow: 'hidden' },
   previewMap: { height: 260, borderRadius: 14, overflow: 'hidden' },

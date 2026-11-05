@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, AppState, Platform, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, AppState, Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
@@ -9,7 +9,7 @@ import { FullWindowOverlay } from 'react-native-screens';
 
 import { Pressable } from '@/components/analytics-controls';
 import { DragSheet } from '@/components/drag-sheet';
-import { useLive, useNow } from '@/components/live-bubbles';
+import { keepClearViews, useLive, useNow } from '@/components/live-bubbles';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles, controlPresentation } from '@/constants/design-system';
@@ -19,7 +19,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { LIVE, distanceMeters, durationLabel, endLiveBubble, extendLiveBubble, getLive, liveNotice, loadLiveMap, minutesLeft, refreshLive, resetLive } from '@/lib/live-bubbles';
+import { LIVE, distanceMeters, durationLabel, endLiveBubble, extendLiveBubble, getLive, liveNotice, loadLiveMap, minutesLeft, noticeBottom, noticeMs, refreshLive, resetLive, visibleNotice } from '@/lib/live-bubbles';
 import { mapCityCenter } from '@/lib/post-map-html';
 import { pushPermissionGranted, pushSupported } from '@/lib/push-notifications';
 import { supabase } from '@/lib/supabase';
@@ -147,18 +147,24 @@ function Pulse() {
 /** Short confirmations after a live-map action ("말풍선을 띄웠어요"…), floating above sheets on iOS like the upload card. */
 export function LiveNotice() {
   const { notice } = useLive(), insets = useSafeAreaInsets(), theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
-  const [shown, setShown] = useState<typeof notice>(null);
-  if (notice && notice.id !== shown?.id) setShown(notice);
+  const { height } = useWindowDimensions(), usual = insets.bottom + 96;
+  // The store keeps the last notice; once hidden it stays hidden (it used to come straight back and linger until the next one).
+  const [hiddenId, setHiddenId] = useState<number | null>(null), [placed, setPlaced] = useState<{ id: number; bottom: number } | null>(null);
+  const shown = visibleNotice(notice, hiddenId);
   useEffect(() => {
     if (!shown) return;
     AccessibilityInfo.announceForAccessibility(shown.text);
-    const timer = setTimeout(() => setShown(null), shown.requestId ? 6000 : 3000);
-    return () => clearTimeout(timer);
-  }, [shown]);
-  if (!shown) return null;
-  const card = <View pointerEvents="box-none" style={[styles.noticeLayer, { bottom: insets.bottom + 96 }]}>
+    // Sit above an open sheet's buttons or the map's bottom card, measured now that they are on screen.
+    let active = true;
+    void Promise.all(keepClearViews().map(view => new Promise<number>(resolve => view.measureInWindow((_x, y) => resolve(y)))))
+      .then(tops => { if (active) setPlaced({ id: shown.id, bottom: noticeBottom(usual, height, tops) }); });
+    const timer = setTimeout(() => setHiddenId(shown.id), noticeMs(shown));
+    return () => { active = false; clearTimeout(timer); };
+  }, [shown, usual, height]);
+  if (!shown || placed?.id !== shown.id) return null;
+  const card = <View pointerEvents="box-none" style={[styles.noticeLayer, { bottom: placed.bottom }]}>
     <Pressable analyticsId="livemap.banner" accessibilityRole={shown.requestId ? 'button' : 'text'} disabled={!shown.requestId}
-      onPress={() => { play('selection'); setShown(null); if (shown.requestId) router.push({ pathname: '/discover', params: { bubbleRequest: shown.requestId } }); }}
+      onPress={() => { play('selection'); setHiddenId(shown.id); if (shown.requestId) router.push({ pathname: '/discover', params: { bubbleRequest: shown.requestId } }); }}
       style={[styles.notice, { backgroundColor: theme.text }]}>
       <ThemedText type="smallBold" style={{ color: theme.background }}>{shown.text}</ThemedText>
     </Pressable>

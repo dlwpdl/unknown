@@ -57,9 +57,10 @@ export function postingPlace(fix: LocationFix | null, demoMode: boolean, fallbac
   if (!isFreshLocation(fix, now) || fix.accuracy! > 250) throw new Error('INACCURATE');
   return { latitude: fix.latitude, longitude: fix.longitude };
 }
+/** Whole minutes left, rounded (a fresh hour reads 1시간, not 1시간 1분); 0 only once it is over, so the last half minute reads 1분. */
 export function minutesLeft(expiresAt: string, now: number) {
-  const end = Date.parse(expiresAt);
-  return Number.isFinite(end) ? Math.max(0, Math.ceil((end - now) / 60000)) : 0;
+  const left = Date.parse(expiresAt) - now;
+  return Number.isFinite(left) && left > 0 ? Math.max(1, Math.round(left / 60000)) : 0;
 }
 export function durationLabel(minutes: number) {
   if (minutes < 60) return tr('{0}분', Math.max(1, minutes));
@@ -124,6 +125,18 @@ export const getLive = () => state;
 const set = (next: Partial<LiveState>) => { state = { ...state, ...next }; for (const listener of listeners) listener(); };
 /** A short confirmation shown over any screen; with a request id, tapping it opens that request. */
 export const liveNotice = (value: string, requestId?: string) => set({ notice: { id: Date.now(), text: value, ...(requestId ? { requestId } : {}) } });
+export type LiveNoticeItem = NonNullable<LiveState['notice']>;
+/** The notice still on screen: the latest one until it is hidden (by its timer or a tap); a hidden one never comes back. */
+export const visibleNotice = (notice: LiveNoticeItem | null, hiddenId: number | null) => notice && notice.id !== hiddenId ? notice : null;
+/** 3 seconds, or 6 when tapping it opens a request. */
+export const noticeMs = (notice: LiveNoticeItem) => notice.requestId ? 6000 : 3000;
+/**
+ * How far above the window bottom the notice sits: never lower than its usual place, and above every on-screen
+ * view that must stay readable (an open sheet's buttons, the map's bottom card), given each view's top edge.
+ */
+export function noticeBottom(usual: number, windowHeight: number, tops: number[]) {
+  return Math.max(usual, ...tops.filter(top => top > 0 && top < windowHeight).map(top => windowHeight - top + 8));
+}
 const dev = () => typeof __DEV__ !== 'undefined' && __DEV__;
 
 export async function loadLiveMap(client: SupabaseClient, userId: string, cityId: string, center: Point) {
