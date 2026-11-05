@@ -5,7 +5,7 @@ import { Pressable, ScrollView, Switch } from '@/components/analytics-controls';
 import Constants from 'expo-constants';
 import { Redirect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Linking, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -23,6 +23,7 @@ import { deleteMyAccount } from '@/lib/community-data';
 import { CONTACT_EMAIL } from '@/lib/legal-documents';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useMembership } from '@/lib/membership-provider';
+import { loadPhotoConsentSettings, setPhotoConsentDefault, type PhotoConsentSettings } from '@/lib/post-photo-consent';
 import { supabase } from '@/lib/supabase';
 import { adsSupported, showAdPrivacyOptions, testAds } from '@/lib/ads';
 
@@ -155,6 +156,7 @@ export default function SettingsScreen() {
 
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{tr("친구 공개")}</ThemedText>
           <ProfileSharingCard />
+          <PhotoConsentCard />
 
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{tr("위치 및 지역")}</ThemedText>
           <NearbyCityCard settings />
@@ -242,6 +244,52 @@ export default function SettingsScreen() {
       </SafeAreaView>
     </ThemedView>
   );
+}
+
+// 공식 SNS 사진 소개 (owner 2026-11-04 G4). 처음 값은 꺼짐이고 새 글 동의 칸의 처음 값이 된다. 끄면 서버가 전에 한 동의도
+// 모두 거둔다. 꺼 둔 채 글마다 체크한 사람은 스위치가 이미 꺼져 있으니, 그 글이 남아 있으면 취소 줄을 따로 보여 준다.
+function PhotoConsentCard() {
+  const { tr } = useLanguage();
+  const theme = useTheme(), { play } = useInteractionFeedback(), { me } = useAuth();
+  const [state, setState] = useState<{ user: string; value?: PhotoConsentSettings | null; busy: boolean; error: string }>();
+  const current = state?.user === me.id ? state : undefined;
+  useEffect(() => {
+    let active = true;
+    void loadPhotoConsentSettings(supabase).then(value => { if (active) setState({ user: me.id, value, busy: false, error: '' }); })
+      .catch(() => { if (active) setState({ user: me.id, busy: false, error: tr('설정을 불러오지 못했어요. 잠시 후 다시 열어 주세요.') }); });
+    return () => { active = false; };
+  }, [me.id, tr]);
+  if (current?.value === null) return null; // 구서버: 동의 칸이 없다
+  const value = current?.value, busy = !!current?.busy, disabled = !value || busy;
+  const label = tr('새 글에 미리 체크해 두기');
+  const change = async (on: boolean) => {
+    if (!current || !value || busy) return;
+    play('selection'); setState({ ...current, value: { ...value, on }, busy: true, error: '' });
+    try { setState({ user: me.id, value: await setPhotoConsentDefault(supabase, on), busy: false, error: '' }); play('success'); }
+    catch { setState({ user: me.id, value, busy: false, error: tr('바꾸지 못했어요. 다시 시도해 주세요.') }); play('warning'); }
+  };
+  return <>
+    <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{tr('글링 공식 SNS')}</ThemedText>
+    <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      <View style={styles.row}>
+        <View style={styles.navCopy}>
+          <ThemedText type="smallBold">{label}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr('켜 두면 사진을 붙인 새 글에서 ‘이 사진을 글링 공식 SNS에 소개해도 돼요’에 처음부터 체크가 돼 있어요. 끄면 지금까지 해 둔 체크가 모두 풀려요. 다시 켜도 되돌아오지 않아요.')}</ThemedText>
+        </View>
+        <Switch analyticsId="profile.settings.photo-consent" value={value?.on ?? false} disabled={disabled} onValueChange={on => void change(on)}
+          accessibilityLabel={label} accessibilityState={{ disabled, busy }}
+          trackColor={{ false: theme.line, true: theme.accent }} ios_backgroundColor={theme.line} />
+      </View>
+      {value && !value.on && value.consentedPosts > 0 && <>
+        <View style={[styles.divider, { backgroundColor: theme.line }]} />
+        <Pressable analyticsId="profile.settings.photo-consent.withdraw" accessibilityRole="button" disabled={disabled} accessibilityState={{ disabled, busy }}
+          onPress={() => void change(false)} style={({ pressed }) => [styles.navRow, { opacity: busy ? 0.55 : 1 }, pressed && { backgroundColor: theme.backgroundSelected }]}>
+          <ThemedText type="smallBold" style={[styles.navCopy, { color: theme.accent }]}>{tr('SNS 소개를 허락한 글 {0}개 모두 취소하기', value.consentedPosts)}</ThemedText>
+        </Pressable>
+      </>}
+    </View>
+    {!!current?.error && <ThemedText type="small" accessibilityRole="alert">{current.error}</ThemedText>}
+  </>;
 }
 
 const styles = StyleSheet.create({

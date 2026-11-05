@@ -88,3 +88,12 @@ test('a retry the server calls a duplicate story was saved by the earlier try; o
   clearPostUpload();
   assert.equal(getPostUpload(), null);
 });
+
+test('a post that is up but missed a follow-up save finishes done and carries one quiet line', async () => {
+  startPostUpload(job([Promise.resolve('SNS에 소개해도 된다는 체크만 저장이 안 됐어요')])); await settle();
+  assert.equal(getPostUpload().status, 'done', 'the post itself is up, so this is not a failure');
+  assert.equal(getPostUpload().notice, 'SNS에 소개해도 된다는 체크만 저장이 안 됐어요');
+  clearPostUpload();
+  startPostUpload(job([Promise.resolve()])); await settle();
+  assert.equal(getPostUpload().notice, undefined, 'a normal post shows its title as before');
+});

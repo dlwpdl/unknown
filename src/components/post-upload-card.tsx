@@ -64,7 +64,7 @@ function UploadCard({ upload }: { upload: PostUpload }) {
   const line = phase === 'up' ? photos ? tr('사진 {0}장 올리는 중', upload.photoCount) : tr('글 올리는 중')
     : phase === 'done' ? photos ? tr('사진을 올렸어요') : tr('글을 올렸어요')
     : photos ? tr('사진을 올리지 못했어요') : t.write.submitErrorTitle;
-  const detail = phase === 'failed' ? photos ? tr('쓴 글과 사진은 그대로 있어요') : tr('쓴 글은 그대로 있어요') : upload.title;
+  const detail = phase === 'failed' ? photos ? tr('쓴 글과 사진은 그대로 있어요') : tr('쓴 글은 그대로 있어요') : phase === 'done' && upload.notice ? upload.notice : upload.title;
   const retryable = upload.status === 'failed' && canRetryUpload(upload.error);
 
   useEffect(() => {
@@ -119,13 +119,13 @@ function UploadCard({ upload }: { upload: PostUpload }) {
             Animated.timing(fade, { toValue: 0, duration: 160, delay: 120, easing: Easing.linear, useNativeDriver: true }),
           ]);
       leave.start(() => clearPostUpload(upload.key));
-    }, UploadMotion.holdMs);
+    }, upload.notice ? UploadMotion.holdMs * 2 : UploadMotion.holdMs); // 알림 한 줄은 읽을 시간을 더 준다
     return () => { clearTimeout(timer); leave?.stop(); };
-  }, [finished, reduced, enter, fade, upload.key]);
+  }, [finished, reduced, enter, fade, upload.key, upload.notice]);
 
   useEffect(() => {
-    AccessibilityInfo.announceForAccessibility(phase === 'failed' ? `${line}. ${detail}` : line);
-  }, [phase, line, detail]);
+    AccessibilityInfo.announceForAccessibility(phase === 'failed' || (phase === 'done' && upload.notice) ? `${line}. ${detail}` : line);
+  }, [phase, line, detail, upload.notice]);
 
   const edit = () => {
     play('selection');
@@ -154,7 +154,7 @@ function UploadCard({ upload }: { upload: PostUpload }) {
         </View>
         <Rise key={phase} reduced={reduced}>
           <ThemedText type="menu" numberOfLines={1}>{line}</ThemedText>
-          <ThemedText type="supporting" themeColor="textSecondary" numberOfLines={1}>{detail}</ThemedText>
+          <ThemedText type="supporting" themeColor="textSecondary" numberOfLines={phase === 'done' && upload.notice ? 2 : 1}>{detail}</ThemedText>
         </Rise>
       </View>
       {upload.status === 'failed' ? <View style={styles.actions}>

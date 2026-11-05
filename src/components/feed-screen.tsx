@@ -85,6 +85,7 @@ import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, hasAdLabel, MAX_
 import { canAddPostImage, MAX_POST_IMAGES } from '@/lib/image-upload';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { normalizePoll, type PollDraft } from '@/lib/post-polls';
+import { loadPhotoConsentSettings, savePostPhotoConsent } from '@/lib/post-photo-consent';
 import { clearPostUpload, getPostUpload, savedByEarlierTry, startPostUpload, type UploadPhoto } from '@/lib/post-upload';
 import { TAGS } from '@/lib/mock';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
@@ -168,6 +169,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const writerListingResult = writerListing && writerListingDraft ? listingFromDraft(writerListing, writerListingDraft, { title: title.trim(), cityId: draftCity.id }, language) : null;
   const [hashtagInput, setHashtagInput] = useState('');
   const [draftImages, setDraftImages] = useState<PreparedImage[]>([]);
+  // 공식 SNS 소개 동의 칸(사진을 붙였을 때만 보인다). null: 아직 모르거나 구서버라 칸을 숨긴다.
+  const [photoConsent, setPhotoConsent] = useState<boolean | null>(null);
   const [creatingDraft, setCreatingDraft] = useState(false);
   const [aiDraftReady, setAiDraftReady] = useState(false);
   const [aiFields, setAiFields] = useState<DraftField[]>([]);
@@ -515,7 +518,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     void loadListingQuota(supabase).then(setListingQuota).catch(() => {});
     const revision = ++writerRevision.current;
     draftLocation.current = null;
-    if (!title.trim() && !body.trim() && !hashtagInput.trim() && draftImages.length === 0 && !pollDraft) {
+    const fresh = !title.trim() && !body.trim() && !hashtagInput.trim() && draftImages.length === 0 && !pollDraft;
+    // 새 초안은 설정 값으로 다시 시작한다. 쓰던 초안은 고른 값을 그대로 둔다. 불러오기 전에는 칸이 안 보여 누를 수 없다.
+    if (fresh || photoConsent === null) void loadPhotoConsentSettings(supabase).then(saved => setPhotoConsent(current => current ?? saved?.on ?? null)).catch(() => {});
+    if (fresh) {
+      setPhotoConsent(null);
       setDraftCity(city);
       // Writing from 부동산·구인구직·중고거래 starts in that category with its fields.
       const listingTag = listingCategory && TAGS.find(item => item.slug === listingCategory);
@@ -528,7 +535,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       if (revision !== writerRevision.current) return;
       draftLocation.current = fix;
     });
-  }, [isAuthed, promptLogin, business, writing, city, location, title, body, hashtagInput, draftImages, pollDraft, play, t.auth.reasonWrite, listingCategory, stillUploading]);
+  }, [isAuthed, promptLogin, business, writing, city, location, title, body, hashtagInput, draftImages, pollDraft, photoConsent, play, t.auth.reasonWrite, listingCategory, stillUploading]);
 
   useEffect(() => {
     if (!writing) { writerRevision.current++; draftLocation.current = null; }
@@ -684,6 +691,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     const revision = feedRevision.current;
     const hashtags = parseHashtags(hashtagInput);
     const fix = draftLocation.current; // 창이 닫히면 비워지니 지금 잡아 둔다
+    const consent = photoConsent === true && draftImages.length > 0;
     const input = {
       userId: me.id,
       cityId: draftCity.id,
@@ -738,6 +746,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       setPriceInput('');
       setListingDraft(null);
       setListingTried(false);
+      // 글은 이미 올라갔다. 동의가 저장되지 않으면 실패로 돌리지 않고 다 올라간 카드에 한 줄로만 알린다.
+      if (consent && !(created.id && await savePostPhotoConsent(supabase, created.id))) return tr('SNS에 소개해도 된다는 체크만 저장이 안 됐어요');
     };
     // 위 카드로 날아갈 앞의 세 장이 지금 화면 어디 있는지 잰다. 못 재면 날지 않고 카드에만 쌓인다.
     const photos = await Promise.all(draftImages.slice(0, 3).map((image, index) => new Promise<UploadPhoto>((resolve) => {
@@ -1342,6 +1352,12 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                     </View>
                   )}
                   <ThemedText type="small" themeColor="textSecondary">{tr('사진 {0}/{1}', draftImages.length, MAX_POST_IMAGES)}</ThemedText>
+                  {photoConsent !== null && <Pressable analyticsId="compose.photo-consent" accessibilityRole="checkbox" accessibilityLabel={tr('이 사진을 글링 공식 SNS에 소개해도 돼요')}
+                    accessibilityHint={tr('체크해 두면 글링이 릴스나 게시물을 만들 때 이 사진을 골라 쓸 수 있어요. 마음이 바뀌면 설정에서 취소하면 돼요.')} accessibilityState={{ checked: photoConsent, disabled: submitting }} aria-checked={photoConsent} disabled={submitting}
+                    onPress={() => { play('selection'); setPhotoConsent(on => !on); }} style={styles.photoConsent}>
+                    <ThemedText>{photoConsent ? '▣' : '□'}{'  ' + tr('이 사진을 글링 공식 SNS에 소개해도 돼요')}</ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">{tr('체크해 두면 글링이 릴스나 게시물을 만들 때 이 사진을 골라 쓸 수 있어요. 마음이 바뀌면 설정에서 취소하면 돼요.')}</ThemedText>
+                  </Pressable>}
                 </View>}
                   {selectedHashtags.length > 0 && <View style={styles.selectedHashtags}>
                     {selectedHashtags.map((hashtag) => <Pressable analyticsId="components_feed-screen.pressable.27" key={hashtag} accessibilityRole="button" accessibilityLabel={tr("#{0} 삭제", (hashtag))}
@@ -1645,6 +1661,7 @@ const styles = StyleSheet.create({
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   photoTile: { width: '31%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden' },
   photoTileImage: { width: '100%', height: '100%' },
+  photoConsent: { minHeight: 44, justifyContent: 'center', gap: 2 },
   photoLaunched: { opacity: 0 },
   photoAiBadge: { position: 'absolute', left: 6, bottom: 6, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   aiFields: { marginHorizontal: Spacing.four, marginBottom: Spacing.two, borderRadius: 14, overflow: 'hidden' },

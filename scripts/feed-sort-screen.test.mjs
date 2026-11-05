@@ -22,8 +22,8 @@ const glowModule = imports => {
   vm.runInNewContext(source, { exports, require: name => imports[name] });
   return exports;
 };
-function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = false, width = 390, fontScale = 1, adPosition = index => index >= 3 && (index - 3) % 4 === 0 } = {}) {
-  const slots = [], effects = [], calls = [], writes = [], drafts = [], routes = [], feedback = [], params = {};
+function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = false, width = 390, fontScale = 1, adPosition = index => index >= 3 && (index - 3) % 4 === 0, photoConsent = null, consentSaves = [] } = {}) {
+  const slots = [], effects = [], calls = [], writes = [], drafts = [], routes = [], feedback = [], params = {}, consents = [];
   let viewer = 'viewer', authLoading = false;
   let at = 0;
   const slot = initial => { const index = at++; if (!(index in slots)) slots[index] = typeof initial === 'function' ? initial() : initial; return index; };
@@ -52,6 +52,9 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '@/lib/feed-data': { groupJournalPosts, appendUniquePosts, limitBusinessPosts, pinJustPosted, todayRowsAfter, loadPublicFeed: (...args) => new Promise((resolve, reject) => calls.push({ args, resolve, reject })) },
     '../../supabase/functions/_shared/post-links': { splitPostAttachments: body => ({ body }) },
     '@/lib/ai-draft': aiDraft, '@/lib/post-upload': postUpload, '@/lib/push-prompt': { requestPushPrompt() {} },
+    '@/lib/post-photo-consent': { loadPhotoConsentSettings: async () => photoConsent, savePostPhotoConsent: async (_client, id) => { consents.push(id); return consentSaves.shift() ?? true; } },
+    'expo-image-picker': { launchImageLibraryAsync: async () => ({ canceled: false, assets: [{ uri: 'file:///photo.jpg', mimeType: 'image/jpeg' }] }), UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' } },
+    '@/lib/post-image-picker': { isSupportedImage: () => true, preparePostImage: async asset => ({ uri: asset.uri, base64: 'AA', mimeType: 'image/jpeg' }) },
   };
   imports['@/components/screen-glow'] = glowModule(imports);
   const exports = {};
@@ -64,7 +67,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
   const render = () => { at = 0; effects.length = 0; return exports.default({ meetupsOnly }); };
   const refresh = () => { cleanup?.(); cleanup = effects.find(fn => String(fn).includes('return cancelFeedRequests'))(); };
   const list = () => nodes(render()).find(n => n.props?.analyticsId === 'components_feed-screen.flatlist.1').props;
-  return { calls, writes, drafts, routes, feedback, list, refresh, params, render, openWriter() { params.compose = '1'; render(); effects.find(fn => String(fn).includes("compose !== '1'"))(); return render(); }, openTopic: () => { render(); effects.find(fn => String(fn).includes('hashtag: undefined'))(); }, setViewer: next => { viewer = next; }, setAuthLoading: next => { authLoading = next; }, sort: () => { const props = list(); return props.renderItem({ item: null, index: 1 }).props; },
+  return { calls, writes, drafts, routes, feedback, consents, list, refresh, params, render, openWriter() { params.compose = '1'; render(); effects.find(fn => String(fn).includes("compose !== '1'"))(); return render(); }, openTopic: () => { render(); effects.find(fn => String(fn).includes('hashtag: undefined'))(); }, setViewer: next => { viewer = next; }, setAuthLoading: next => { authLoading = next; }, sort: () => { const props = list(); return props.renderItem({ item: null, index: 1 }).props; },
     publish: async () => {
       const inputs = nodes(render());
       inputs.find(n => n.props?.accessibilityLabel === t.write.titlePlaceholder).props.onChangeText('새 글');
@@ -475,4 +478,39 @@ test('Home search is a magnifier next to the profile that still says what it fin
     write.props.onPress();
     assert.equal(native.feedback.at(-1), 'reaction');
   }
+});
+
+test('the SNS photo box shows only with a photo, starts from the setting, and its save never fails the post', async () => {
+  const box = app => nodes(app.render()).find(n => n.props?.analyticsId === 'compose.photo-consent');
+  const addPhoto = async app => { nodes(app.render()).find(n => n.props?.analyticsId === 'components_feed-screen.pressable.25').props.onPress(); await new Promise(setImmediate); };
+  const app = screen({ createdPost: post('with-photo'), photoConsent: { on: true, consentedPosts: 0 }, consentSaves: [false] }); app.list(); app.refresh();
+  app.calls[0].resolve([]); await new Promise(setImmediate);
+  app.openWriter(); await new Promise(setImmediate);
+  assert.equal(box(app), undefined, 'no photo, no box');
+  await addPhoto(app);
+  assert.equal(box(app).props.accessibilityRole, 'checkbox');
+  assert.equal(box(app).props.accessibilityState.checked, true, 'the setting is the starting value');
+  box(app).props.onPress();
+  assert.equal(box(app).props.accessibilityState.checked, false);
+  assert.equal(app.feedback.at(-1), 'selection');
+  box(app).props.onPress();
+  await app.publish(); await new Promise(setImmediate);
+  assert.deepEqual(Array.from(app.consents), ['with-photo'], 'consent is saved for the post that went up');
+  assert.equal(postUpload.getPostUpload().status, 'done', 'a missed consent save leaves the post posted');
+  assert.equal(postUpload.getPostUpload().notice, 'SNS에 소개해도 된다는 체크만 저장이 안 됐어요');
+  postUpload.clearPostUpload();
+
+  const unchecked = screen({ createdPost: post('no-consent'), photoConsent: { on: false, consentedPosts: 0 } }); unchecked.list(); unchecked.refresh();
+  unchecked.calls[0].resolve([]); await new Promise(setImmediate);
+  unchecked.openWriter(); await new Promise(setImmediate); await addPhoto(unchecked);
+  assert.equal(box(unchecked).props.accessibilityState.checked, false);
+  await unchecked.publish(); await new Promise(setImmediate);
+  assert.deepEqual(Array.from(unchecked.consents), [], 'an unticked box sends nothing');
+  assert.equal(postUpload.getPostUpload().notice, undefined);
+  postUpload.clearPostUpload();
+
+  const older = screen({ createdPost: post('old-server'), photoConsent: null }); older.list(); older.refresh();
+  older.calls[0].resolve([]); await new Promise(setImmediate);
+  older.openWriter(); await new Promise(setImmediate); await addPhoto(older);
+  assert.equal(box(older), undefined, 'an older server has no consent calls, so the box stays hidden');
 });
