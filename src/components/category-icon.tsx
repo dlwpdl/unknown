@@ -26,6 +26,23 @@ const ART = {
   wine_bar: require('@/assets/images/map-categories/wine_bar.png'), pub: require('@/assets/images/map-categories/pub.png'),
   dessert: require('@/assets/images/map-categories/dessert.png'), brunch: require('@/assets/images/map-categories/brunch.png'),
   work_friendly: require('@/assets/images/map-categories/work_friendly.png'),
+  // Sub-categories added 2026-11-05 (subchip-icons-2026-11-05, owner 9cb7200d "세부칩에 들어갈 아이콘도 싹다 만들어").
+  park: require('@/assets/images/map-categories/park.png'), beach: require('@/assets/images/map-categories/beach.png'),
+  garden: require('@/assets/images/map-categories/garden.png'), viewpoint: require('@/assets/images/map-categories/viewpoint.png'),
+  trail: require('@/assets/images/map-categories/trail.png'), museum: require('@/assets/images/map-categories/museum.png'),
+  gallery: require('@/assets/images/map-categories/gallery.png'), library: require('@/assets/images/map-categories/library.png'),
+  zoo_aquarium: require('@/assets/images/map-categories/zoo_aquarium.png'), historic: require('@/assets/images/map-categories/historic.png'),
+  market: require('@/assets/images/map-categories/market.png'), theatre: require('@/assets/images/map-categories/theatre.png'),
+  club: require('@/assets/images/map-categories/club.png'), bar: require('@/assets/images/map-categories/bar.png'),
+  brewery: require('@/assets/images/map-categories/brewery.png'), live_music: require('@/assets/images/map-categories/live_music.png'),
+  korean: require('@/assets/images/map-categories/korean.png'), japanese: require('@/assets/images/map-categories/japanese.png'),
+  chinese: require('@/assets/images/map-categories/chinese.png'), vietnamese: require('@/assets/images/map-categories/vietnamese.png'),
+  thai: require('@/assets/images/map-categories/thai.png'), indian: require('@/assets/images/map-categories/indian.png'),
+  italian: require('@/assets/images/map-categories/italian.png'), mexican: require('@/assets/images/map-categories/mexican.png'),
+  burger: require('@/assets/images/map-categories/burger.png'), pizza: require('@/assets/images/map-categories/pizza.png'),
+  seafood: require('@/assets/images/map-categories/seafood.png'), vegan: require('@/assets/images/map-categories/vegan.png'),
+  bakery: require('@/assets/images/map-categories/bakery.png'), bubble_tea: require('@/assets/images/map-categories/bubble_tea.png'),
+  roastery: require('@/assets/images/map-categories/roastery.png'),
 } as const;
 const easing = Easing.bezier(...ALIVE_BEZIER);
 

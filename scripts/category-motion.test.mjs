@@ -5,8 +5,8 @@ import { ALIVE, ALIVE_MS, aliveMotion, aliveSteps } from '../src/lib/category-mo
 import { PLACE_SUBCATEGORIES } from '../src/lib/discovery.ts';
 
 const MAP_ICONS = ['top25', 'delivery', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used', 'events'];
-// Still pictures without a gesture: the row settings the owner picked, the live map's speech bubble (2026-11-05) and the sub-categories drawn so far (2026-11-04).
-const OWN_SUBCATEGORY_ICONS = ['lunch', 'dinner', 'late_night', 'solo', 'date', 'izakaya', 'pocha', 'cocktail_bar', 'wine_bar', 'pub', 'dessert', 'brunch', 'work_friendly'];
+// Still pictures without a gesture: the row settings the owner picked, the live map's speech bubble (2026-11-05) and every sub-category (all drawn by 2026-11-05).
+const OWN_SUBCATEGORY_ICONS = PLACE_SUBCATEGORIES.map(option => option.id);
 const STILL_ICONS = ['scope', 'all', 'open', 'visited', 'bubble', ...OWN_SUBCATEGORY_ICONS];
 
 test('every map icon has the mockup gesture and origin, and the artwork ships with the app', () => {
@@ -15,7 +15,9 @@ test('every map icon has the mockup gesture and origin, and the artwork ships wi
   assert.deepEqual(ALIVE.delivery, ['scoot', 0.5, 0.8], 'delivery scoots forward');
   assert.deepEqual(ALIVE.used, ['swing', 0.2, 0.2], 'the price tag dangles from its corner');
   const icon = readFileSync(new URL('../src/components/category-icon.tsx', import.meta.url), 'utf8');
-  assert.deepEqual([...icon.matchAll(/(\w+): require\('@\/assets\/images\/map-categories\/(\w+)\.png'\)/g)].map(match => match[1] === match[2] && match[1]), [...MAP_ICONS, ...STILL_ICONS], 'the ten moving icons, then the still ones');
+  const drawn = [...icon.matchAll(/(\w+): require\('@\/assets\/images\/map-categories\/(\w+)\.png'\)/g)].map(match => match[1] === match[2] && match[1]);
+  assert.deepEqual(drawn.slice(0, MAP_ICONS.length), MAP_ICONS, 'the ten moving icons first');
+  assert.deepEqual(drawn.slice(MAP_ICONS.length).sort(), [...STILL_ICONS].sort(), 'then the still ones, in any order');
   for (const id of [...MAP_ICONS, ...STILL_ICONS]) {
     assert.ok(existsSync(new URL(`../assets/images/map-categories/${id}.png`, import.meta.url)), id);
     assert.ok(icon.includes(`require('@/assets/images/map-categories/${id}.png')`), id);
