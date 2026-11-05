@@ -315,6 +315,14 @@ test('pins and selected pins show tappable labels with the live style glyph font
   const selectedLabel = c.layers.find(layer => layer.id === 'discovery-selected-label');
   assert.equal(selectedLabel.source, 'discovery-selection');
   assert.deepEqual(Array.from(selectedLabel.layout['text-field']), ['get', 'label']);
+  for (const id of ['discovery-labels', 'discovery-featured-labels', 'discovery-art-featured-labels', 'discovery-selected-label']) {
+    const { layout, paint } = c.layers.find(layer => layer.id === id);
+    assert.equal(layout['icon-image'], 'name-tag', `${id} names sit on a white tag`);
+    assert.equal(layout['icon-text-fit'], 'both');
+    assert.equal(paint['text-halo-width'], undefined);
+  }
+  assert.ok(c.images['name-tag'].options.stretchX, 'the tag stretches around the name');
+  assert.equal(c.layers.find(layer => layer.id === 'discovery-art-featured').layout['text-field'], undefined, 'the picture pin keeps its own image');
   await c.listeners.click({ point: { x: 0, y: 0 } });
   assert.ok(c.map.queryOptions.layers.includes('discovery-labels'));
   assert.ok(c.map.queryOptions.layers.includes('discovery-selected-label'));

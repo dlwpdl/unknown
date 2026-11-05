@@ -99,7 +99,7 @@ const pinArt={};
 // Each 3D picture becomes a white round pin image; until it loads, or if it cannot, the place keeps its coloured dot.
 const loadPins=()=>{if(typeof Image==='undefined')return;Promise.all(Object.entries(config.art||{}).map(([id,src])=>new Promise(done=>{const img=new Image();img.onload=()=>{try{const s=3,d=36,c=document.createElement('canvas');c.width=c.height=d*s;const ctx=c.getContext('2d');ctx.scale(s,s);ctx.shadowColor='rgba(23,17,35,.22)';ctx.shadowBlur=4;ctx.shadowOffsetY=1;ctx.beginPath();ctx.arc(d/2,d/2,16,0,Math.PI*2);ctx.fillStyle='#ffffff';ctx.fill();ctx.shadowColor='transparent';ctx.drawImage(img,d/2-12,d/2-12,24,24);map.addImage('pin-'+id,ctx.getImageData(0,0,c.width,c.height),{pixelRatio:s});pinArt[id]=true}catch{}done()};img.onerror=()=>done();img.src=src}))).then(()=>{if(loaded&&Object.keys(pinArt).length)apply(true,true)})};
 const move=camera=>map.easeTo({...camera,duration:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?0:300});
-const hitLayers=['discovery-selected-discount','discovery-selected-discount-dot','discovery-discount','discovery-discount-dot','discovery-selected-top25','discovery-selected-hit','discovery-selected-label','discovery-top25','discovery-hit','discovery-labels','discovery-featured-labels'];
+const hitLayers=['discovery-selected-discount','discovery-selected-discount-dot','discovery-discount','discovery-discount-dot','discovery-selected-top25','discovery-selected-hit','discovery-selected-label','discovery-top25','discovery-hit','discovery-labels','discovery-featured-labels','discovery-art-featured-labels'];
 const notSelected=()=>['!=',['get','id'],current.selectedId??''];
 const top25Filter=()=>['all',['==',['get','top25'],true],notSelected()];
 const stage=()=>{const far=map.getZoom()<FAR;for(const pill of pills)pill.hidden=!far};
@@ -129,7 +129,7 @@ const apply=(markersChanged=false,selectionChanged=false)=>{if(!loaded)return;if
  const height=map.getContainer().clientHeight,top=Math.min(current.topInset||0,Math.max(0,height-44)),bottom=Math.min(current.bottomInset||0,Math.max(0,height-top-44)),padding=top+':'+bottom,paddingChanged=padding!==previousPadding;
  map.getContainer().style.setProperty('--map-top-inset',top+'px');
  if(paddingChanged){map.setPadding({top,right:0,left:0,bottom});previousPadding=padding}
- map.setFilter('discovery-labels',notSelected());map.setFilter('discovery-featured-labels',['all',['==',['get','featured'],true],['!=',['get','art'],true],notSelected()]);map.setFilter('discovery-art-featured',['all',['==',['get','art'],true],['==',['get','featured'],true],notSelected()]);
+ map.setFilter('discovery-labels',notSelected());map.setFilter('discovery-featured-labels',['all',['==',['get','featured'],true],['!=',['get','art'],true],notSelected()]);for(const id of ['discovery-art-featured','discovery-art-featured-labels'])map.setFilter(id,['all',['==',['get','art'],true],['==',['get','featured'],true],notSelected()]);
  const selected=current.markers.find(m=>m.id===current.selectedId),c=current.center;
  const changedCenter=c&&(!previousCenter||c.latitude!==previousCenter.latitude||c.longitude!==previousCenter.longitude||c.requestId!==previousCenter.requestId);
  if(c&&(changedCenter||paddingChanged))move({center:[c.longitude,c.latitude]});else if(selected&&(current.selectedId!==previousSelection||paddingChanged))move({center:[selected.longitude,selected.latitude]});
@@ -145,26 +145,32 @@ try{
  const timer=setTimeout(fail,15000);
  map.on('load',()=>{try{
   ensureBadges();
+  // Every place name sits on its own white tag so it never runs into the map's street and shop names (owner 2026-11-04 "글이 백그라운드가없으니 지도에 뜨는 글과 겹쳐서").
+  const tag=document.createElement('canvas');tag.width=tag.height=40;const tx=tag.getContext('2d');if(!tx)throw Error('NAME_CANVAS');
+  tx.beginPath();tx.moveTo(14,1);tx.arcTo(39,1,39,39,13);tx.arcTo(39,39,1,39,13);tx.arcTo(1,39,1,1,13);tx.arcTo(1,1,39,1,13);tx.closePath();
+  tx.fillStyle='rgba(255,255,255,0.95)';tx.fill();tx.strokeStyle='rgba(48,32,71,0.16)';tx.lineWidth=2;tx.stroke();
+  map.addImage('name-tag',tx.getImageData(0,0,40,40),{pixelRatio:2,stretchX:[[16,24]],stretchY:[[16,24]]});
   map.addSource('discovery',{type:'geojson',data:geojson()});
   map.addSource('discovery-selection',{type:'geojson',data:geojson(true)});
   // Every place layer starts at the mid stage; below it only the city pills show.
   const add=layer=>map.addLayer({minzoom:FAR,...layer}),step=(mid,near)=>['step',['zoom'],mid,NEAR,near];
-  const nameFont={'text-font':['Noto Sans Regular'],'text-anchor':'left','text-max-width':14};
+  const nameFont={'text-font':['Noto Sans Regular'],'text-anchor':'left','text-max-width':14,'icon-image':'name-tag','icon-text-fit':'both','icon-text-fit-padding':[2,6,2,6]},namePaint={'text-color':'#302047'};
   // Places whose picture is loaded swap the near dot for the picture pin; names sit a little further out from the bigger pin.
   // Further out every place is a dot and a named (featured) place gets a smaller picture pin on top where it does not collide (corner-map-today 2026-11-04 zoom stages).
   const art=['==',['get','art'],true],midArt=['all',art,['==',['get','featured'],true]],dot=['case',art,0,1],nameOffset=['case',art,['literal',[2.4,0]],['literal',[2,0]]],artPin={'icon-image':['concat','pin-',['get','icon']],'icon-allow-overlap':true,'icon-ignore-placement':true};
   add({id:'discovery-pins',type:'circle',source:'discovery',paint:{'circle-radius':step(4,11),'circle-color':['get','color'],'circle-stroke-color':'#ffffff','circle-stroke-width':step(1.5,2),'circle-opacity':step(1,dot),'circle-stroke-opacity':step(1,dot)}});
   add({id:'discovery-art',type:'symbol',source:'discovery',minzoom:NEAR,filter:art,layout:artPin});
-  add({id:'discovery-labels',type:'symbol',source:'discovery',minzoom:NEAR,layout:{...nameFont,'text-field':['case',['!=',['get','sublabel'],''],['format',['get','label'],{},'\\n',{},['get','sublabel'],{'font-scale':0.85,'text-color':'#6b6280'}],['get','label']],'text-size':12,'text-offset':nameOffset,'text-padding':4},paint:{'text-color':'#302047','text-halo-color':'#ffffff','text-halo-width':2}});
-  add({id:'discovery-featured-labels',type:'symbol',source:'discovery',maxzoom:NEAR,filter:['all',['==',['get','featured'],true],['!',art]],layout:{...nameFont,'text-field':['get','label'],'text-size':11,'text-offset':[1,0],'text-padding':6},paint:{'text-color':'#302047','text-halo-color':'#ffffff','text-halo-width':2}});
+  add({id:'discovery-labels',type:'symbol',source:'discovery',minzoom:NEAR,layout:{...nameFont,'text-field':['case',['!=',['get','sublabel'],''],['format',['get','label'],{},'\\n',{},['get','sublabel'],{'font-scale':0.85,'text-color':'#6b6280'}],['get','label']],'text-size':12,'text-offset':nameOffset,'text-padding':4},paint:namePaint});
+  add({id:'discovery-featured-labels',type:'symbol',source:'discovery',maxzoom:NEAR,filter:['all',['==',['get','featured'],true],['!',art]],layout:{...nameFont,'text-field':['get','label'],'text-size':11,'text-offset':[1,0],'text-padding':6},paint:namePaint});
   add({id:'discovery-hit',type:'circle',source:'discovery',paint:{'circle-radius':22,'circle-opacity':0}});
   add({id:'discovery-top25',type:'circle',source:'discovery',filter:top25Filter(),paint:{'circle-radius':step(7,['case',art,20,15]),'circle-opacity':0,'circle-stroke-color':'#9C7637','circle-stroke-width':step(1.5,2)}});
-  // Pin and name are one symbol above the other names, so pins are placed first: a pin that collides drops back to its dot, a name that collides leaves the pin bare. It also covers the small TOP 50 ring under it.
-  add({id:'discovery-art-featured',type:'symbol',source:'discovery',maxzoom:NEAR,filter:midArt,layout:{...artPin,...nameFont,'icon-size':0.75,'icon-allow-overlap':false,'icon-ignore-placement':false,'text-field':['get','label'],'text-size':11,'text-offset':[1.8,0],'text-padding':6,'text-optional':true},paint:{'text-color':'#302047','text-halo-color':'#ffffff','text-halo-width':2}});
+  // Pins are placed before their names: a pin that collides drops back to its dot, and its name (the tag layer after it) only shows where it fits. The pin also covers the small TOP 50 ring under it.
+  add({id:'discovery-art-featured',type:'symbol',source:'discovery',maxzoom:NEAR,filter:midArt,layout:{...artPin,'icon-size':0.75,'icon-allow-overlap':false,'icon-ignore-placement':false}});
+  add({id:'discovery-art-featured-labels',type:'symbol',source:'discovery',maxzoom:NEAR,filter:midArt,layout:{...nameFont,'text-field':['get','label'],'text-size':11,'text-offset':[1.8,0],'text-padding':6},paint:namePaint});
   add({id:'discovery-selected',type:'circle',source:'discovery-selection',paint:{'circle-radius':['case',art,21,17],'circle-color':'#ffffff','circle-stroke-color':'${accent}','circle-stroke-width':4}});
   add({id:'discovery-selected-pin',type:'circle',source:'discovery-selection',paint:{'circle-radius':11,'circle-color':['get','color'],'circle-stroke-color':'#ffffff','circle-stroke-width':2,'circle-opacity':dot,'circle-stroke-opacity':dot}});
   add({id:'discovery-selected-art',type:'symbol',source:'discovery-selection',filter:art,layout:artPin});
-  add({id:'discovery-selected-label',type:'symbol',source:'discovery-selection',layout:{...nameFont,'text-field':['get','label'],'text-size':12,'text-offset':nameOffset,'text-allow-overlap':true},paint:{'text-color':'#302047','text-halo-color':'#ffffff','text-halo-width':2}});
+  add({id:'discovery-selected-label',type:'symbol',source:'discovery-selection',layout:{...nameFont,'text-field':['get','label'],'text-size':12,'text-offset':nameOffset,'text-allow-overlap':true,'icon-allow-overlap':true},paint:namePaint});
   add({id:'discovery-selected-hit',type:'circle',source:'discovery-selection',paint:{'circle-radius':22,'circle-opacity':0}});
   add({id:'discovery-selected-top25',type:'symbol',source:'discovery-selection',filter:['==',['get','top25'],true],layout:{'icon-image':'top25-full','icon-anchor':'left','icon-offset':[21,-24],'icon-allow-overlap':true,'icon-ignore-placement':true}});
   for(const [id,source] of [['discovery-discount','discovery'],['discovery-selected-discount','discovery-selection']]){
