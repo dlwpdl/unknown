@@ -78,6 +78,8 @@ export function notificationRoute(value: unknown, notification?: { kind?: unknow
   if (new RegExp(`^/chat\\?requestId=${uuid}$`, 'i').test(value)) return '/chat?view=requests';
   if (new RegExp(`^/company/${uuid}\\?review=(?:usage|employment)$`, 'i').test(value)) return value;
   if (new RegExp(`^/profile/merchant\\?merchant=${uuid}$`, 'i').test(value)) return value;
+  // 동네 말풍선 지도: a chat request or wave reply opens that request on the map; the ten-minute warning opens the map.
+  if (value === '/discover' || new RegExp(`^/discover\\?bubbleRequest=${uuid}$`, 'i').test(value)) return value;
   // Friend requests and acceptances open the other person's profile.
   if (new RegExp(`^/user/${uuid}$`, 'i').test(value)) return value;
   // A member's suggested place that went on the map (place_suggestion_added).

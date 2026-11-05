@@ -17,7 +17,7 @@ const ART = {
   used: require('@/assets/images/map-categories/used.png'), events: require('@/assets/images/map-categories/events.png'),
   // Map row settings (owner picks 2026-11-04): 보여 줄 곳, 전체, 지금 영업 중, Visited (the gling logo tag).
   scope: require('@/assets/images/map-categories/scope.png'), all: require('@/assets/images/map-categories/all.png'), open: require('@/assets/images/map-categories/open.png'),
-  visited: require('@/assets/images/map-categories/visited.png'),
+  visited: require('@/assets/images/map-categories/visited.png'), bubble: require('@/assets/images/map-categories/bubble.png'),
   // Sub-categories (subchip-icons-2026-11-04, owner: all 13 approved).
   lunch: require('@/assets/images/map-categories/lunch.png'), dinner: require('@/assets/images/map-categories/dinner.png'),
   late_night: require('@/assets/images/map-categories/late_night.png'), solo: require('@/assets/images/map-categories/solo.png'),

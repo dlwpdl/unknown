@@ -48,6 +48,8 @@ function mount({ cities = [], routeParams = {}, light = false, reduced = false, 
     '@/components/selection-chip': { SelectionChip: 'Pressable' }, '@/components/disclosure': { animateLayout() {} },
     '@/lib/delivery-partners': { DELIVERY_PARTNERS: [], deliveryPartnerPlace: () => undefined },
     '@/lib/webshops': { bindBusinessPlaces: (...args) => bindBusinessPlaces(...args).map(item => ({ ...item, ...business[item.sourceId] })), loadCityBusinessLinks: loadLinks, loadCityBusinessMapPhotos: loadPhotos, loadCityWebshops: loadWebshops },
+    '@/components/live-bubbles': { useLive: () => ({ status: 'idle', map: null }), useLiveMarkers: () => [], useMeetupMarkers: () => [], LiveDock: 'LiveDock', LiveSheets: 'LiveSheets' },
+    '@/lib/live-bubbles': { loadLiveMap: async () => {} }, '@/lib/post-map-html': { mapCityCenter: () => [-123.12, 49.28] },
     '@/components/discovery-map': { DiscoveryMap: 'DiscoveryMap' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
     '@/components/city-place-photo': { CityPlacePhoto: 'CityPlacePhoto' }, '@/components/category-icon': { CategoryIcon: 'CategoryIcon' },
     '@/components/feed-ad': { FeedAd: 'FeedAd' }, '@/lib/ads': { adsSupported: false }, '@/lib/content-ad-placement': { contentAdPosition },
@@ -93,7 +95,8 @@ test('main categories toggle independently and event dates belong to the festiva
 test('the quick category row preserves the owner-selected restaurant, cafe, festival and nightlife order', () => {
   const tree = mount().render();
   const row = nodes(tree).find(node => node.type === 'ScrollView' && node.props.horizontal);
-  assert.deepEqual(children(row).map(node => node.props.accessibilityLabel), ['보여 줄 곳, 모두', '전체', '지금 영업 중', 'gling Visited', 'TOP 50', '배달 할인', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳', '부동산', '중고거래']);
+  // The live-map chips (말풍선, 근처 모임) are for members only, so a guest sees the row as before.
+  assert.deepEqual(children(row).filter(Boolean).map(node => node.props.accessibilityLabel), ['보여 줄 곳, 모두', '전체', '지금 영업 중', 'gling Visited', 'TOP 50', '배달 할인', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳', '부동산', '중고거래']);
 });
 
 test('gling Visited selects only attested map pins while dining, cafe and All remain independent', () => {
@@ -424,7 +427,7 @@ test('main Map opens common search while embedded Map retains its local input an
 });
 
 const fixturePlace = (id, patch = {}) => ({ id: `osm:node:${id}`, cityId: 'vancouver', name: `Place ${id}`, category: 'food', address: 'A', latitude: 49.25 + id / 1000, longitude: -122.86, sourceUrl: `https://www.openstreetmap.org/node/${id}`, ...patch });
-const pinsOf = tree => nodes(tree).find(node => node.type === 'DiscoveryMap').props.markers.map(marker => marker.label);
+const pinsOf = tree => Array.from(nodes(tree).find(node => node.type === 'DiscoveryMap').props.markers.map(marker => marker.label));
 const listOf = tree => Array.from(nodes(tree).find(node => node.type === 'FlatList').props.data.map(item => item.title));
 const footerOf = tree => nodes(nodes(tree).find(node => node.type === 'FlatList').props.ListFooterComponent);
 

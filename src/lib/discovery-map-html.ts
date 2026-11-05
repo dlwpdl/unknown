@@ -79,13 +79,16 @@ export function discoveryMapScript(update: MapUpdate, sessionId: string) {
   return `window.glingDiscoveryUpdate?.(${json(sessionId)},${json(state(update))});true;`;
 }
 
-export function discoveryMapHtml({ markers, cities = [], cityName, sessionId, selectedId = null, center = null, userLocation = null, bottomInset = 0, topInset = 0, accent = '#CBB9FF', parentOrigin = 'null', language = 'ko' }: MapState & {
+export function discoveryMapHtml({ markers, cities = [], cityName, sessionId, selectedId = null, center = null, userLocation = null, bottomInset = 0, topInset = 0, accent = '#CBB9FF', parentOrigin = 'null', language = 'ko', zoom = 11 }: MapState & {
   cityName: string; sessionId: string; accent?: string; parentOrigin?: string; language?: 'ko' | 'en';
+  /** Starting zoom; a small preview opens close enough (NEAR) to show the 3D art. */
+  zoom?: number;
 }) {
+  if (!Number.isFinite(zoom) || zoom < 1 || zoom > 18) throw new Error('INVALID_DISCOVERY_ZOOM');
   if (!text(sessionId, 180) || !['ko', 'en'].includes(language) || !/^#[a-f\d]{6}$/i.test(accent)) throw new Error('INVALID_DISCOVERY_CONFIG');
   if (markers === undefined) throw new Error('INVALID_DISCOVERY_MARKERS');
   if (parentOrigin !== 'null' && (!/^https?:\/\//.test(parentOrigin) || new URL(parentOrigin).origin !== parentOrigin)) throw new Error('INVALID_DISCOVERY_ORIGIN');
-  const config = json({ ...state({ markers, selectedId, center, userLocation, bottomInset, topInset }), cities: cityPills(cities, cityName), cityCenter: mapCityCenter(cityName), sessionId, parentOrigin, credits, art: MAP_PIN_ART });
+  const config = json({ ...state({ markers, selectedId, center, userLocation, bottomInset, topInset }), cities: cityPills(cities, cityName), cityCenter: mapCityCenter(cityName), sessionId, parentOrigin, credits, art: MAP_PIN_ART, zoom });
   return `<!doctype html><html lang="${language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-gling-map' blob:; style-src 'unsafe-inline'; worker-src blob:; connect-src https://tiles.openfreemap.org; img-src data: blob: https://tiles.openfreemap.org; base-uri 'none'; form-action 'none'; object-src 'none'"><style>${assets.css}
 html,body,#map{margin:0;width:100%;height:100%;overflow:hidden;background:#efeee9}.maplibregl-ctrl-top-left{top:calc(var(--map-top-inset,0px) + 12px);left:12px}.maplibregl-ctrl-group{border-radius:14px;overflow:hidden;box-shadow:0 2px 12px #3020471a}.maplibregl-ctrl-group button{width:44px;height:44px}.maplibregl-ctrl-group button:active{background:#ebe5f6}.maplibregl-ctrl-group button:focus-visible,#credits a:focus-visible{outline:3px solid ${accent};outline-offset:-3px}#credits{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:flex-end;flex-wrap:wrap;font:10px/1.3 system-ui;background:#fffffff0;color:#333;z-index:4}#credits a{color:#333;min-height:44px;display:inline-flex;align-items:center;padding:0 6px;box-sizing:border-box}#credits a:active{background:#ebe5f6}
 .city-pill{min-height:44px;padding:0 16px;border-radius:22px;border:1px solid #d9d3e6;background:#fff;color:#302047;font:700 14px/1.2 system-ui;box-shadow:0 2px 10px #30204726;cursor:pointer}.city-pill:active{background:#ebe5f6}.city-pill:disabled{color:#7a7287;background:#f6f4f9;box-shadow:none;cursor:default}.city-pill:focus-visible{outline:3px solid ${accent};outline-offset:2px}.city-pill[hidden]{display:none}
@@ -147,7 +150,7 @@ window.glingDiscoveryUpdate=(sessionId,update)=>{if(sessionId!==config.sessionId
 window.addEventListener('message',e=>{if(e.source!==window.parent||e.origin!==config.parentOrigin||!e.data||e.data.type!=='discovery.update'||e.data.sessionId!==config.sessionId)return;window.glingDiscoveryUpdate(e.data.sessionId,e.data.state)});
 document.addEventListener('click',e=>{const a=e.target.closest?.('#credits a'),pill=e.target.closest?.('.city-pill');if(pill){const c=config.cities.find(c=>c.id===pill.getAttribute('data-city'));if(c&&c.open){send({type:'feedback'});if(c.current)move({center:c.center,zoom:11});else send({type:'city',id:c.id})}}else if(a){e.preventDefault();if(config.credits.includes(a.href)){send({type:'feedback'});send({type:'credits',url:a.href})}}else if(e.target.closest?.('.maplibregl-ctrl-group button'))send({type:'feedback'})});
 try{
- map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/positron',center:config.center?[config.center.longitude,config.center.latitude]:config.cityCenter,zoom:11,attributionControl:false});
+ map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/positron',center:config.center?[config.center.longitude,config.center.latitude]:config.cityCenter,zoom:config.zoom,attributionControl:false});
  window.glingMap=map;
  map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-left');
  const timer=setTimeout(fail,15000);

@@ -34,7 +34,7 @@ export function getCommunityActionError(error: unknown) {
 }
 
 export type PostDraftImage = { base64: string; mimeType: string; thumbBase64?: string; width?: number; height?: number };
-export type ReportTarget = 'user' | 'post' | 'comment' | 'message' | 'merchant_review' | 'merchant_review_reply' | 'meetup_review';
+export type ReportTarget = 'user' | 'post' | 'comment' | 'message' | 'merchant_review' | 'merchant_review_reply' | 'meetup_review' | 'live_bubble';
 export type ReportReason = 'spam' | 'harassment' | 'hate' | 'sexual' | 'privacy' | 'other';
 
 export type ConversationPreview = {

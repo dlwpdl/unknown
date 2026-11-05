@@ -18,6 +18,8 @@ type Props = {
   /** Degrees from north the phone faces; draws the cone on the location dot. */
   heading?: number | null;
   topInset?: number; bottomInset?: number;
+  /** Starting zoom (default 11, the whole city). */
+  zoom?: number;
 };
 
 export function DiscoveryMap(props: Props) {
@@ -25,12 +27,12 @@ export function DiscoveryMap(props: Props) {
 }
 
 const NO_CITIES: DiscoveryCity[] = [];
-function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, center = null, userLocation = null, heading = null, topInset = 0, bottomInset = 0, onSelect, onMoved, onCity }: Props) {
+function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, center = null, userLocation = null, heading = null, topInset = 0, bottomInset = 0, zoom, onSelect, onMoved, onCity }: Props) {
   const { language, tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const native = useRef<WebView<unknown>>(null), web = useRef<HTMLIFrameElement>(null), id = useId();
   const sentMarkers = useRef<{ sessionId: string; key: string } | null>(null);
-  const [seed] = useState({ markers, cityName, selectedId, center, userLocation, topInset, bottomInset });
+  const [seed] = useState({ markers, cityName, selectedId, center, userLocation, topInset, bottomInset, zoom });
   const [failed, setFailed] = useState(false), [retry, setRetry] = useState(0);
   const [readySession, setReadySession] = useState<string | null>(null);
   const sessionId = `${id}.${retry}`;

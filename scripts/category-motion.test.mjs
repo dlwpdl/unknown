@@ -5,9 +5,9 @@ import { ALIVE, ALIVE_MS, aliveMotion, aliveSteps } from '../src/lib/category-mo
 import { PLACE_SUBCATEGORIES } from '../src/lib/discovery.ts';
 
 const MAP_ICONS = ['top25', 'delivery', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used', 'events'];
-// Still pictures without a gesture: the row settings the owner picked and the sub-categories drawn so far (2026-11-04).
+// Still pictures without a gesture: the row settings the owner picked, the live map's speech bubble (2026-11-05) and the sub-categories drawn so far (2026-11-04).
 const OWN_SUBCATEGORY_ICONS = ['lunch', 'dinner', 'late_night', 'solo', 'date', 'izakaya', 'pocha', 'cocktail_bar', 'wine_bar', 'pub', 'dessert', 'brunch', 'work_friendly'];
-const STILL_ICONS = ['scope', 'all', 'open', 'visited', ...OWN_SUBCATEGORY_ICONS];
+const STILL_ICONS = ['scope', 'all', 'open', 'visited', 'bubble', ...OWN_SUBCATEGORY_ICONS];
 
 test('every map icon has the mockup gesture and origin, and the artwork ships with the app', () => {
   assert.deepEqual(Object.keys(ALIVE).sort(), [...MAP_ICONS].sort());
