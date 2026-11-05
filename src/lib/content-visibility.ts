@@ -2,7 +2,7 @@
 // already-rendered content and responses that were in flight when the user acted.
 // 'listed_post' is a post as a list row: it also drops posts hidden with 이 글 숨기기 (owner 2026-11-04), which
 // leave the lists only. 'post' keeps meaning gone everywhere (reported), so detail, links and my meetups still open a hidden post.
-export type HiddenTarget = 'post' | 'listed_post' | 'comment' | 'message' | 'user' | 'merchant_review' | 'merchant_review_reply' | 'meetup_review';
+export type HiddenTarget = 'post' | 'listed_post' | 'comment' | 'message' | 'user' | 'merchant_review' | 'merchant_review_reply' | 'meetup_review' | 'live_bubble';
 const hidden = new Map<string, Set<string>>();
 const listeners = new Set<() => void>();
 let revision = 0;

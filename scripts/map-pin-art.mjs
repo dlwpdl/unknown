@@ -5,7 +5,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const IDS = ['dining', 'cafe', 'nightlife', 'festival', 'events', 'places', 'housing', 'used', 'shopping', 'travel'];
+const IDS = ['dining', 'cafe', 'nightlife', 'festival', 'events', 'places', 'housing', 'used', 'shopping', 'travel', 'bubble', 'visited'];
 const dir = mkdtempSync(join(tmpdir(), 'pin-art-'));
 const lines = IDS.map(id => {
   const out = join(dir, `${id}.png`);
