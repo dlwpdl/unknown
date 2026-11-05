@@ -27,7 +27,7 @@ import { DISCOVERY_CATEGORIES } from '@/lib/discovery';
 import { loadPublicFeed, relativeTime } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import {
-  GREETINGS, LIVE, QUICK_PHRASES, approximatePoint, postingPlace, cancelLiveRequest, clampWithin, demoReceive, distanceMeters, durationLabel, endLiveBubble, extendLiveBubble, getLive, liveErrorCode, liveNotice,
+  GREETINGS, LIVE, QUICK_PHRASES, lastMyPoint, postingPlace, shownPoint, cancelLiveRequest, clampWithin, demoReceive, distanceMeters, durationLabel, endLiveBubble, extendLiveBubble, getLive, liveErrorCode, liveNotice,
   minutesLeft, postLiveBubble, refreshLive, replyToWave, respondLiveRequest, sendLiveRequest, subscribeLive, waveLiveBubble, type LiveAudience, type LiveBubble, type LiveKind, type LiveMap, type LivePerson, type LiveRequest, type LiveWave, type Point,
 } from '@/lib/live-bubbles';
 import type { LocationFix } from '@/lib/location';
@@ -268,10 +268,10 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
   const [locating, setLocating] = useState(!isAdmin), [problem, setProblem] = useState(''), [busy, setBusy] = useState(false), [atEdge, setAtEdge] = useState(false);
   const alive = useRef(true);
   // Fixed for this opening (the sheet mounts with a new key each time), so a moving map centre never re-runs the location check.
-  const [start] = useState(() => ({ demo: live.demo, center: mapCenter })), footer = useKeepClearOfNotice();
+  const [start] = useState(() => ({ demo: live.demo, center: mapCenter, last: isAdmin ? null : lastMyPoint() })), footer = useKeepClearOfNotice();
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   const locate = useCallback(() => readFix().catch(error => { if (start.demo) return null; throw error; }).then(fix => postingPlace(fix, start.demo, start.center)).then(place => {
-    if (alive.current) { setOrigin(place); setPoint(approximatePoint(place)); }
+    if (alive.current) { setOrigin(place); setPoint(shownPoint(place, start.last)); }
   }, error => { if (alive.current) setProblem(locationProblem(error instanceof Error ? error.message : '')); }).finally(() => { if (alive.current) setLocating(false); }), [start]);
   useEffect(() => { if (!isAdmin) void locate(); }, [isAdmin, locate]);
   const ready = !!body.trim() && !!point && !busy && (isAdmin || !!origin);
@@ -298,8 +298,11 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
     // The 100 m is measured before the pin settles on the ~100 m grid, the point others will see.
     const next = clampWithin(origin, pin), edge = distanceMeters(pin, next) > 1;
     if (edge) play('warning');
-    setAtEdge(edge); setPoint(approximatePoint(next));
+    setAtEdge(edge); setPoint(shownPoint(next, start.last));
   };
+  // Back near my last bubble, the server keeps its point, so a moved pin stays put; say why rather than look stuck.
+  const kept = !!start.last && !!point && point.latitude === start.last.latitude && point.longitude === start.last.longitude;
+  const keptLine = kept && <ThemedText type="caption" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr('전에 띄운 자리와 가까워서 같은 자리에 보여요')}</ThemedText>;
   const title = step === 'preview' ? tr('남들에게 이렇게 보여요') : step === 'adjust' ? tr('위치 바꾸기') : mine ? tr('내 말풍선') : tr('말풍선 남기기');
   const preview: DiscoveryMarker[] = point ? [{ id: 'preview', ...point, color: BUBBLE_COLOR, label: body.trim().slice(0, 80) || tr('한마디'), sublabel: tr('나 · {0} 남음', durationLabel(minutes)), icon: kind === 'pin' && isAdmin ? 'visited' : 'bubble' }] : [];
   const problemLine = !!problem && <View style={[styles.notice, { backgroundColor: theme.backgroundElement }]}>
@@ -342,11 +345,13 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
         <ThemedText type="small" themeColor="textSecondary">{tr('대략 여기쯤이에요. 정확한 자리는 안 보여요')}</ThemedText>
         {point && <View style={styles.previewMap}><DiscoveryMap key={`${point.latitude},${point.longitude}`} markers={preview} cityName={city.englishName} center={point} zoom={15} onSelect={() => {}} /></View>}
         <ThemedText type="caption" themeColor="textSecondary">{tr('다른 사람이 보는 지도')}</ThemedText>
+        {keptLine}
         {problemLine}
       </> : <>
         <ThemedText type="small" themeColor="textSecondary">{tr('핀을 끌어 옮기면 남들에게 보이는 자리도 같이 바뀌어요')}</ThemedText>
         <View style={styles.previewMap}><PostPinMap pin={point} cityName={city.englishName} onSelect={move} /></View>
         <ThemedText type="caption" accessibilityLiveRegion="polite" style={{ color: atEdge ? theme.accent : theme.textSecondary }}>{atEdge ? tr('100m까지만 옮길 수 있어요. 그 끝에 놓아 뒀어요.') : tr('100m 안에서 옮길 수 있어요')}</ThemedText>
+        {keptLine}
       </>}
     </ScrollView>
     {/* Pinned under the scrolling part, so a long sheet (with people who waved) never pushes the buttons off screen. */}
@@ -362,7 +367,7 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
         </View>
         <Pressable analyticsId="livemap.preview" accessibilityRole="button" onPress={() => { play('selection'); setStep('write'); }} style={styles.link}><ThemedText type="smallBold" themeColor="accent">{tr('글 고치기')}</ThemedText></Pressable>
       </> : <View style={styles.actions}>
-        <Secondary analyticsId="livemap.preview" label={tr('처음 자리로')} onPress={() => { play('selection'); setAtEdge(false); if (origin) setPoint(approximatePoint(origin)); }} />
+        <Secondary analyticsId="livemap.preview" label={tr('처음 자리로')} onPress={() => { play('selection'); setAtEdge(false); if (origin) setPoint(shownPoint(origin, start.last)); }} />
         <View style={styles.flex}><RaisedActionButton analyticsId="livemap.preview" label={tr('이 자리로 할게요')} onPress={() => { play('selection'); setStep('preview'); }} /></View>
       </View>}
     </View>
