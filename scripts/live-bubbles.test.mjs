@@ -150,3 +150,24 @@ test('the safety monitor reads a bubble line through its service-only function (
   assert.equal(content.authorId, 'a');
   await assert.rejects(exports.loadContent({ rpc: async () => ({ error: new Error('SERVICE_ROLE_REQUIRED') }) }, 'live_bubble', 'b1'), /SERVICE_ROLE_REQUIRED/);
 });
+
+test('live-map alerts read naturally in English, exactly as the migration writes them in Korean', async () => {
+  const { englishNotificationBody } = await import('../src/lib/notification-copy.ts');
+  const migration = readFileSync(new URL('../supabase/migrations/20261105030000_live_bubbles.sql', import.meta.url), 'utf8');
+  const bodies = [...migration.matchAll(/'live_bubble_(request|accepted|wave)',uid,'user',uid,\s*coalesce\(nickname,'이웃'\)\|\|'([^']+)'/g)].map(match => ['live_bubble_' + match[1], '하늘콩' + match[2]]);
+  assert.equal(bodies.length, 4, 'two request bodies, one accepted, one wave');
+  for (const [kind, body] of bodies) assert.match(englishNotificationBody({ kind, body }), /^하늘콩 [a-z]/, `${kind}: ${body}`);
+});
+
+test('every server call the app makes matches a function and its parameter names in the migration', () => {
+  const app = readFileSync(new URL('../src/lib/live-bubbles.ts', import.meta.url), 'utf8');
+  const migration = readFileSync(new URL('../supabase/migrations/20261105030000_live_bubbles.sql', import.meta.url), 'utf8');
+  const calls = [...app.matchAll(/client\.rpc\('([a-z_]+)'(?:, \{([^}]*)\})?/g)].map(([, name, args = '']) => [name, [...args.matchAll(/(p_[a-z_]+):/g)].map(match => match[1]).sort()]);
+  assert.equal(calls.length, 9);
+  for (const [name, args] of calls) {
+    const declared = new RegExp(`create function public\\.${name}\\(([^)]*)\\)`).exec(migration);
+    assert.ok(declared, `${name} exists`);
+    assert.deepEqual([...declared[1].matchAll(/(p_[a-z_]+) /g)].map(match => match[1]).sort(), args, `${name} takes exactly what the app sends`);
+    assert.match(migration, new RegExp(`grant execute on function[^;]*public\\.${name}\\(`), `${name} is granted to members`);
+  }
+});

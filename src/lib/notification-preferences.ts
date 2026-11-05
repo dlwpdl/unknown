@@ -138,7 +138,8 @@ export type SettingRow = { id: string; label: string; description?: string; keys
 export const NOTIFICATION_SETTING_GROUPS: { id: 'mine' | 'city' | 'account'; rows: SettingRow[] }[] = [
   { id: 'mine', rows: [
     { id: 'replies', label: '댓글·답글', description: '내 글과 내 댓글에 달린 것', keys: ['replies'] },
-    { id: 'likes', label: '좋아요', description: '한 글에 몇 명이 눌러도 한 번에 묶어서', keys: ['post_likes', 'comment_likes'] },
+    // 👋 손 흔들기 on a live-map bubble rings under post_likes (20261105030000), so this row turns it off too.
+    { id: 'likes', label: '좋아요·손 흔들기', description: '한 글에 몇 명이 눌러도 한 번에 묶어서', keys: ['post_likes', 'comment_likes'] },
     { id: 'messages', label: '메시지', description: '단톡방은 1분 안에 온 건 하나로', keys: ['messages'] },
     { id: 'meetups', label: '모임', description: '신청·수락·일정 변경·하루 전 안내', keys: ['meetups'] },
     { id: 'business', label: '비즈니스', description: '후기·답변·게시 문제', keys: ['merchant_reviews', 'merchant_operations'] },
