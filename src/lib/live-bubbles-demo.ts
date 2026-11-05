@@ -102,7 +102,7 @@ export function replyToWave(key: string, waveId: string) {
  */
 export function receive(key: string, now: number) {
   const value = world(key);
-  if (!value.mine) post(key, { cityId: '', body: '커피 한잔 할 사람', audience: 'city', minutes: 60, point: value.center, origin: value.center, kind: 'member' }, now, false);
+  if (!value.mine) post(key, { cityId: '', body: '커피 한잔 할 사람', audience: 'city', minutes: 60, point: value.center, kind: 'member' }, now, false);
   const waved = new Set(value.waves.map(item => item.sender.id));
   const waver = [PEOPLE[1], PEOPLE[3], PEOPLE[0], PEOPLE[2]].find(person => !waved.has(person.id));
   if (waver) value.waves = [{ id: nextId('wave'), sender: { id: waver.id, nickname: waver.nickname, trustLevel: waver.trustLevel }, createdAt: iso(now), reply: null, demo: true }, ...value.waves];
