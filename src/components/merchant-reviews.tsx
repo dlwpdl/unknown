@@ -151,7 +151,8 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
     }
   };
 
-  if (!page && !readError) return <GlingLoader color={theme.accent} accessibilityLabel={tr("후기를 불러오는 중…")} />;
+  // Null is also the final answer for a post with no business, so a loader here would never go away.
+  if (!page && !readError) return null;
   const mine = isAuthed && page?.my_review?.author_id === me.id ? page.my_review : null;
   const publicRows = page?.reviews.filter((row) => row.receipt_status === 'verified' && (row.review_kind ?? 'usage') === reviewKind) ?? [];
   const rows = page ? (mine?.status === 'published' ? [mine, ...publicRows.filter(({ id }) => id !== mine.id)] : publicRows)

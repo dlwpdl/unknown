@@ -9,6 +9,7 @@ import { DragSheet } from '@/components/drag-sheet';
 import { InitialAvatar, ListCard, ListLoading, ListRow, SectionLabel, Tag } from '@/components/list-card';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { SelectionChip } from '@/components/selection-chip';
+import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
@@ -39,9 +40,10 @@ function useMeetupLoyalty(postId: string, enabled = true) {
     return () => { active = false; };
   }, [key, postId, revision]);
   const state = key && loaded?.key === key ? loaded.value : null;
+  const failed = !!key && loaded?.key === key && !loaded.value;
   const setState = useCallback((value: MeetupLoyalty) => setLoaded({ key, value }), [key]);
   const refresh = useCallback(() => setRevision(value => value + 1), []);
-  return { state, setState, refresh };
+  return { state, failed, setState, refresh };
 }
 
 /** Attendance/host badges for the given people (or a meetup's host). Badges are a decoration: failures render nothing. */
@@ -289,10 +291,11 @@ export function MeetupNoticeManager({ postId }: { postId: string }) {
   const { tr, locale } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
-  const { state, refresh } = useMeetupLoyalty(postId);
+  const { state, failed, refresh } = useMeetupLoyalty(postId);
   const [body, setBody] = useState(''), [audience, setAudience] = useState<AnnouncementAudience>('members'), [mustRead, setMustRead] = useState(false);
   const [scheduled, setScheduled] = useState(false), [sendAt, setSendAt] = useState(() => new Date(Date.now() + 3600000).toISOString());
   const [busy, setBusy] = useState(false), [rowBusy, setRowBusy] = useState(''), [message, setMessage] = useState(''), pending = useRef(false);
+  if (failed) return <StateCard kind="error" title={tr('공지를 불러오지 못했어요')} body={tr('연결을 확인하고 다시 시도해 주세요.')} actionLabel={tr('다시 불러오기')} onAction={refresh} />;
   if (!state) return <ListLoading label={tr('불러오는 중이에요')} />;
   if (!state.isHost) return null;
   const plus = tierAtLeast(state.hostTier, 'plus');
@@ -397,7 +400,7 @@ export function MeetupAutoNext({ postId }: { postId: string }) {
 /** /meetup-tools members. Every host sees who is in; attendance counts, notes, regulars and check-in staff are Pro. */
 export function MeetupMemberList({ postId }: { postId: string }) {
   const { tr } = useLanguage();
-  const { state } = useMeetupLoyalty(postId);
+  const { state, failed, refresh: reload } = useMeetupLoyalty(postId);
   const pro = tierAtLeast(state?.hostTier, 'pro');
   const known = !!state;
   const [names, setNames] = useState<MeetupHostIdentity[] | null>(null), [members, setMembers] = useState<RosterMember[] | null>(null), [error, setError] = useState(''), [revision, setRevision] = useState(0);
@@ -411,6 +414,7 @@ export function MeetupMemberList({ postId }: { postId: string }) {
     return () => { active = false; };
   }, [known, pro, postId, revision]);
   const refresh = useCallback(() => setRevision(value => value + 1), []);
+  if (failed) return <StateCard kind="error" title={tr('멤버를 불러오지 못했어요')} body={tr('연결을 확인하고 다시 시도해 주세요.')} actionLabel={tr('다시 불러오기')} onAction={reload} />;
   if (!state) return <ListLoading label={tr('불러오는 중이에요')} />;
   if (!state.isHost) return null;
   const count = pro ? members?.length : names?.length;

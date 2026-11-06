@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { Buffer } from 'node:buffer';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const { loadMerchantReviews, loadMyMerchantReviews, writeMerchantReview, uploadMerchantReviewReceipt } = await import('../src/lib/merchant-reviews.ts').catch(() => ({}));
@@ -103,4 +104,8 @@ test('unknown kinds and mismatched employment responses cannot reveal another do
   await assert.rejects(writeMerchantReview(client, 'post', 8, '', '', 'other'), /INVALID_REVIEW_KIND/);
   assert.equal(calls, 0);
   await assert.rejects(loadMerchantReviews(client, 'post', 0, 'employment'), /MERCHANT_REVIEW_KIND_MISMATCH/);
+});
+
+test('a post with no business shows nothing: the server answers null for good, so no loader may wait on it', () => {
+  assert.match(readFileSync(new URL('../src/components/merchant-reviews.tsx', import.meta.url), 'utf8'), /if \(!page && !readError\) return null;/);
 });
