@@ -9,6 +9,7 @@ import { SymbolView } from 'expo-symbols';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Reanimated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { ChillingEvent } from '@/components/chilling-event';
+import { useMyOpenMeetupRequests } from '@/components/chilling-host-profile';
 import { DragSheet } from '@/components/drag-sheet';
 import { GlassSurface } from '@/components/glass-surface';
 import { MeetupKindSwitch } from '@/components/meetup-kind-switch';
@@ -95,6 +96,7 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
   const [sourceLabel, setSourceLabel] = useState(destination?.kind === 'place' ? destination.place.name : '');
   const [sourceError, setSourceError] = useState('');
   const [pendingCount, setPendingCount] = useState(0);
+  const myRequests = useMyOpenMeetupRequests();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -314,7 +316,7 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
         {!!query && <Pressable analyticsId="app_tabs_meetups.pressable.9" accessibilityRole="button" accessibilityLabel={tr("검색어 {0} 해제", (query))}
           onPress={() => { play('selection'); setSearch(''); setQuery(''); }} style={({ pressed }) => [styles.clear, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="small" style={Typography.menu} themeColor="accent">{tr("“{0}” 검색 중 · 지우기", (query))}</ThemedText></Pressable>}
       </>}
-      renderItem={({ item, index }) => <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: listOpacity }}><ChillingEvent post={item} city={tr(city.name)} onOpen={() => void open(item.id)} onAuthor={() => setUser({ ...item.author, mine: item.author.id === me.id })} /></Animated.View></Reanimated.View>}
+      renderItem={({ item, index }) => <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: listOpacity }}><ChillingEvent post={item} city={tr(city.name)} requestStatus={myRequests[item.id]} onOpen={() => void open(item.id)} onAuthor={() => setUser({ ...item.author, mine: item.author.id === me.id })} /></Animated.View></Reanimated.View>}
       ListEmptyComponent={sourceInvalid ? <StateCard kind="error" title={copy('장소·행사 정보를 확인하지 못했어요', 'Couldn’t verify this place or event')} body={copy('원래 상세에서 다시 열거나 전체 모임을 둘러보세요.', 'Open it again from its details, or browse all meetups.')} actionLabel={copy('전체 모임 보기', 'Browse all meetups')} onAction={clearDestination} /> : initialLoading ? <View style={styles.loadingState}><GlingLoader color={theme.accent} accessibilityLabel={tr("모임 불러오는 중")} /></View>
         : !loading && !error ? <Animated.View style={{ opacity: listOpacity }}>{city.state !== 'open'
         ? <StateCard title={tr("이 지역은 아직 준비 중이에요")} body={tr("다른 동네를 골라보거나, 곧 문을 열 때 알려드릴게요.")} />

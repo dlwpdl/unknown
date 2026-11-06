@@ -17,7 +17,7 @@ import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { selectChatBusiness } from '@/lib/chat-identity';
 import { getChillingError, loadMeetupParticipation, type MeetupParticipation } from '@/lib/chilling-data';
 import { chillingAvailability, chillingKind, chillingTimezoneLabel, meetupBarAction, recommendedAgeLabel } from '@/lib/chilling';
-import { MEETUPS_CHANGED_EVENT } from '@/lib/community-data';
+import { loadMyOpenMeetupRequests, MEETUPS_CHANGED_EVENT } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { meetupFeeAmount } from '@/lib/meetup-host-tools';
 import { supabase } from '@/lib/supabase';
@@ -26,6 +26,22 @@ import { useNewcomerStatus } from '@/components/newcomer';
 import { newcomerLocked } from '@/lib/newcomer';
 
 export type MeetupStatus = ReturnType<typeof useMeetupParticipation>;
+
+/** The viewer's open requests for a whole list: one read per screen, not one per card. */
+export function useMyOpenMeetupRequests() {
+  const { isAuthed, me } = useAuth();
+  const [requests, setRequests] = useState<Record<string, 'pending' | 'approved'>>({});
+  useFocusEffect(useCallback(() => {
+    if (!isAuthed) { setRequests({}); return; }
+    let active = true;
+    // A failed read leaves the plain card; opening the meetup still shows the real status.
+    const refresh = () => loadMyOpenMeetupRequests(supabase, me.id).then(value => { if (active) setRequests(value); }).catch(() => {});
+    void refresh();
+    const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, () => void refresh());
+    return () => { active = false; listener.remove(); };
+  }, [isAuthed, me.id]));
+  return requests;
+}
 
 /** One status lookup shared by the meetup summary and the bottom action bar. */
 export function useMeetupParticipation(post: Post) {

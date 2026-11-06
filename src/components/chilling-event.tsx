@@ -59,8 +59,8 @@ export function SeatBar({ room, flush = false }: { room: Pick<RoomPreview, 'memb
   </View>;
 }
 
-export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, onAuthor }: {
-  post: Post; city: string; onOpen: () => void; onAuthor: () => void;
+export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, onAuthor, requestStatus }: {
+  post: Post; city: string; onOpen: () => void; onAuthor: () => void; requestStatus?: 'pending' | 'approved';
 }) {
   const { tr, locale: appLocale } = useLanguage();
   const theme = useTheme();
@@ -79,8 +79,9 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
   const exchange = parseLanguageExchange(room);
   const seatsLeft = room?.capacity ? Math.max(0, room.capacity - room.memberCount) : null;
   const { labels, prefix } = useMeetupLabelPrefix(post);
+  const requestLabel = requestStatus === 'pending' ? tr('승인 대기') : requestStatus === 'approved' ? tr('참여 승인') : '';
   return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-    <Pressable analyticsId="components_chilling-event.pressable.2" onPress={() => { play('selection'); onOpen(); }} accessibilityRole="button" accessibilityLabel={`${prefix}${post.title}, ${exchange ? `${languagePairLabel(exchange)}, ` : ''}${schedule}${room?.fee ? `, ${tr('회비 {0}', meetupFeeAmount(room.fee.amount))}` : ''}${room?.recruitingClosed ? `, ${tr('모집 마감')}` : ''}`} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
+    <Pressable analyticsId="components_chilling-event.pressable.2" onPress={() => { play('selection'); onOpen(); }} accessibilityRole="button" accessibilityLabel={`${prefix}${post.title}, ${exchange ? `${languagePairLabel(exchange)}, ` : ''}${schedule}${room?.fee ? `, ${tr('회비 {0}', meetupFeeAmount(room.fee.amount))}` : ''}${room?.recruitingClosed ? `, ${tr('모집 마감')}` : ''}${requestLabel ? `, ${requestLabel}` : ''}`} style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}>
       {source && source.uri !== failed ? <Image source={source} transition={ControlMotion.settleMs} style={styles.photo} contentFit="cover" recyclingKey={post.id} onError={() => setFailed(source.uri)} /> :
         // Decorative only: the title right below already names the meetup.
         <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.poster, { backgroundColor: theme.card }]}>
@@ -93,6 +94,7 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
         {countdown && <View style={[styles.countdown, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={[styles.support, { color: theme.accentInk }]}>{countdown}</ThemedText></View>}
         <ThemedText type="smallBold" style={styles.support} themeColor="accent">{categoryLabel ? `${categoryLabel} · ` : ''}{group ? tr('정기모임') : tr('칠링')}</ThemedText>
         {exchange && <View style={[styles.countdown, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" style={styles.support}>{languagePairLabel(exchange)}</ThemedText></View>}
+        {!!requestLabel && <View style={[styles.countdown, { backgroundColor: theme.backgroundSelected }]}><ThemedText type="smallBold" style={styles.support}>{requestLabel}</ThemedText></View>}
         {room?.recruitingClosed && <View style={[styles.countdown, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" style={styles.support} themeColor="textSecondary">{tr('모집 마감')}</ThemedText></View>}
       </View>
       <ThemedText accessibilityRole="header" style={styles.title}>{post.title}</ThemedText>
