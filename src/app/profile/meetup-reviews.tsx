@@ -1,4 +1,5 @@
 import { FlatPressable as Pressable } from '@/components/flat-pressable';
+import { KeyboardScreen } from '@/components/keyboard-screen';
 import { useLanguage } from '@/hooks/use-language';
 import { loadMannerSummary, type MannerSummary as Summary } from '@/lib/user-profile';
 import { useEffect, useRef, useState } from 'react';
@@ -39,7 +40,7 @@ function Inbox() {
     return () => { active = false; };
   }, [isAuthed, me.id, retry]);
   const button = [styles.button, { backgroundColor: theme.backgroundElement, borderColor: theme.line }];
-  return <ThemedView style={{ flex: 1 }}><SafeAreaView style={{ flex: 1 }}><ScrollView contentContainerStyle={styles.page}>
+  return <KeyboardScreen><ThemedView style={{ flex: 1 }}><SafeAreaView style={{ flex: 1 }}><ScrollView contentContainerStyle={styles.page}>
     <Pressable accessibilityRole="button" accessibilityLabel={tr("뒤로 가기")} onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/profile'); }} style={button}><ThemedText>{tr("뒤로")}</ThemedText></Pressable>
     <ThemedText type="title">{tr("모임 후기 · 내 글링 리뷰")}</ThemedText>
     {!isAuthed ? <Pressable accessibilityRole="button" onPress={() => { play('selection'); promptLogin('후기와 비공개 평가를 관리하려면 로그인해주세요.'); }} style={button}><ThemedText>{tr("로그인")}</ThemedText></Pressable> : <>
@@ -59,7 +60,7 @@ function Inbox() {
       {!!error && <ThemedText accessibilityRole="alert">{tr(error)}</ThemedText>}
       <Pressable accessibilityRole="button" onPress={() => { play('selection'); setRetry(n => n + 1); }} style={button}><ThemedText type="small">{tr("최신 상태 다시 확인")}</ThemedText></Pressable>
     </>}
-  </ScrollView></SafeAreaView></ThemedView>;
+  </ScrollView></SafeAreaView></ThemedView></KeyboardScreen>;
 }
 function Feedback({ item, onChanged }: { item: MyMannerFeedback; onChanged: () => void }) {
   const { tr } = useLanguage();

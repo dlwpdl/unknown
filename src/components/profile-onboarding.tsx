@@ -6,7 +6,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Linking from 'expo-linking';
 import { useEffect, useRef, useState } from 'react';
-import { Modal, Platform, StyleSheet, TextInput, View, type KeyDownEvent } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, StyleSheet, TextInput, View, type KeyDownEvent } from 'react-native';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
@@ -208,7 +208,7 @@ export function ProfileOnboarding({
     <Modal visible={visible} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => {}}>
       <SafeAreaProvider style={[styles.screen, { backgroundColor: theme.background }]}>
       {welcomeProfile ? <WelcomeMoment nickname={welcomeProfile.nickname} cityId={welcomeProfile.city_id} onContinue={() => onComplete(welcomeProfile)} /> : <>
-        <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView behavior="padding" style={styles.safeArea}><SafeAreaView style={styles.safeArea}>
           <ScrollView analyticsId="components_profile-onboarding.scrollview.1" contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <ThemedText type="smallBold" style={{ color: theme.accent }}>{t.onboarding.step}</ThemedText>
             <View style={styles.copy}>
@@ -337,7 +337,7 @@ export function ProfileOnboarding({
               </ThemedText>
             </Pressable>
           </View>
-        </SafeAreaView>
+        </SafeAreaView></KeyboardAvoidingView>
       </>}
       </SafeAreaProvider>
     </Modal>
