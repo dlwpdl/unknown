@@ -720,7 +720,7 @@ function photoModule(imports = {}) {
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { useWindowDimensions: () => ({ width: 390, fontScale: 1 }), StyleSheet: { create: v => v, absoluteFill: {} }, View: 'View' },
     'expo-image': { Image: 'Image' },
-    'expo-symbols': { SymbolView: 'SymbolView' },
+    'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
     '@/hooks/use-theme': { useTheme: () => ({}) },
     ...imports,
   });

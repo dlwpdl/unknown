@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Linking, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import type { SymbolViewProps } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable } from '@/components/analytics-controls';
 import { PostPinMap } from '@/components/post-pin-map';

@@ -1,5 +1,5 @@
 import { Stack, useRouter, type Href } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import type { ReactNode } from 'react';
 
 import { Pressable } from '@/components/analytics-controls';

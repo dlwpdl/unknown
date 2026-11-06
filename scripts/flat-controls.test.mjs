@@ -98,7 +98,7 @@ test('primary buttons retain 44/52-point targets, labels and callbacks without d
     if (name === '@/components/analytics-controls') return { Pressable: 'Pressable' };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
     if (name === '@/constants/design-system') return designSystem;
-    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null };
+    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ accent: '#CBB9FF', accentInk: '#171123' }) };
     throw new Error(name);
   } });

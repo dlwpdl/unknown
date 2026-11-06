@@ -4,7 +4,7 @@ import { Pressable } from '@/components/analytics-controls';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert, DeviceEventEmitter, Platform, StyleSheet, View } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { animateLayout, Disclosure } from '@/components/disclosure';

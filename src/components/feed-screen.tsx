@@ -4,7 +4,7 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView, FlatList } from '@/components/analytics-controls';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import Reanimated, { FadeIn, FadeInDown, FadeOut, useReducedMotion } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter, useScrollToTop } from 'expo-router';

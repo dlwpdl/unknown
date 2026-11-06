@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Keyboard, Modal, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';

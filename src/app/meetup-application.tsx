@@ -5,7 +5,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, DeviceEventEmitter, LayoutAnimation, Platform, StyleSheet, UIManager, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { Image } from 'expo-image';
 import { ControlMotion } from '@/constants/design-system';
 import { SafeAreaView } from 'react-native-safe-area-context';

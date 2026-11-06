@@ -1,6 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';

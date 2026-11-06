@@ -2,7 +2,7 @@ import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'e
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FlatList, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable } from '@/components/analytics-controls';
 import { WebshopComparisonSheet } from '@/components/business-webshop';

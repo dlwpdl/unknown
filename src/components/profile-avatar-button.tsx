@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { ClayCoinFill, ClayIcon, useClay } from '@/components/clay';

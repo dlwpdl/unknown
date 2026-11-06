@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import type { SymbolViewProps } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useCallback, useState } from 'react';
 import { Modal, Platform, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';

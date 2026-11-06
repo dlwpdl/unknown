@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PageHeader } from '@/components/page-header';

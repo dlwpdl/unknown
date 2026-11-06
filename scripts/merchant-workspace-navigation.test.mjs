@@ -41,7 +41,7 @@ function mount(name = 'MerchantTools', options = {}) {
     '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }], TAGS: [] }, '@/lib/image-upload': { MAX_POST_IMAGES: 20 },
     '@/lib/supabase': { supabase: { auth: { getSession: async () => ({ data: { session: { user: auth.me } } }) }, storage: { from: () => ({ createSignedUrls: async paths => ({ data: paths.map(path => ({ path, signedUrl: `signed:${path}` })) }) }) } } },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView', Switch: 'Switch' },
-    'expo-symbols': { SymbolView: 'SymbolView' },
+    'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
     '@/components/merchant-web-shell': { MerchantHome: 'MerchantHome', MerchantSidebar: 'MerchantSidebar', merchantShellStyles: {}, useMerchantSidebar: () => false },
   };
   const require = path => imports[path] ?? new Proxy({}, { get: (_, key) => key === '__esModule' ? true : String(key) });

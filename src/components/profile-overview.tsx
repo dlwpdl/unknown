@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { ClayPillFill, useClay } from '@/components/clay';
 import { Pressable, ScrollView, Switch } from '@/components/analytics-controls';

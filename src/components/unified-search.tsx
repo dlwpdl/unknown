@@ -3,7 +3,7 @@ import { Keyboard, StyleSheet, TextInput, View, type GestureResponderEvent } fro
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useIsFocused, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 
 import { FlatList, Pressable } from '@/components/analytics-controls';
 import { SelectionChip } from '@/components/selection-chip';

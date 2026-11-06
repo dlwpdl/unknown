@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { AppState, StyleSheet, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { DragSheet } from '@/components/drag-sheet';
 import { ThemedText } from '@/components/themed-text';

@@ -3,7 +3,7 @@ import { Pressable, SectionList } from '@/components/analytics-controls';
 import { useState } from 'react';
 import { KeyboardAvoidingView, LayoutAnimation, Platform, StyleSheet, TextInput, UIManager, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 
 import { GlassSurface } from '@/components/glass-surface';
 import { ThemedText } from '@/components/themed-text';

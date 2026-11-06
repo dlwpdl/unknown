@@ -64,11 +64,11 @@ function load(file, imports) {
     if (name in imports) return imports[name];
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if ((name === 'react-native' || name === '@/components/analytics-controls')) return { View: 'View', Text: 'Text', TextInput: 'TextInput', SectionList: 'SectionList', KeyboardAvoidingView: 'KeyboardAvoidingView', useWindowDimensions: () => ({ fontScale: 1 }), Platform: { OS: 'ios' }, LayoutAnimation: { configureNext() {}, Presets: { easeInEaseOut: {} } }, Image: 'Image', Pressable: 'Pressable', StyleSheet: { create: value => value, hairlineWidth: 1 } };
-    if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
+    if (name === 'expo-symbols' || name === '@/components/symbol-view') return { SymbolView: 'SymbolView' };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
     if (name === '@/components/glass-surface') return { GlassSurface: 'GlassSurface' };
     if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, four: 24 }, Depth: { card: {}, control: {} } };
-    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null };
+    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     throw new Error(`Unexpected import: ${name}`);
   }) });

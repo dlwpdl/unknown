@@ -40,7 +40,7 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
     'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) },
     'expo-router': { Link: Object.assign(() => {}, { AppleZoom: 'Zoom' }), useIsFocused: () => focus, useRouter: () => ({}), useFocusEffect: callback => effect(() => focus ? callback() : undefined, [callback, focus]) },
     'react-native': { AccessibilityInfo: { isScreenReaderEnabled: async () => screenReader, addEventListener: () => ({ remove() {} }) }, AppState: appState, View: 'View', StyleSheet: { create: value => value, flatten: value => value, absoluteFill: {} }, useWindowDimensions: () => windowDimensions, Easing: { inOut: value => value, sin: () => {} }, Animated: { View: 'AnimatedView', Value: class { interpolate() { return this; } setValue() {} }, timing() {}, sequence() {}, loop: () => ({ start: () => motion.push('start'), stop: () => motion.push('stop') }) } },
-    'react-native-reanimated': { useReducedMotion: () => reducedMotion }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'Symbol' },
+    'react-native-reanimated': { useReducedMotion: () => reducedMotion }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'Symbol' }, '@/components/symbol-view': { SymbolView: 'Symbol' },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16, four: 24 } },

@@ -42,7 +42,7 @@ test('the actual inbox row shows event name and description, reads both and reta
     '@/lib/product-analytics': product, '@/lib/mock': { CITIES: [] },
     '@/lib/supabase': { supabase: { rpc: async () => ({ data: false, error: null }) } },
     '@/constants/theme': { Depth: {}, Spacing: {}, MaxContentWidth: 920, TabBarHeight: 80 },
-    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/i18n/ko': { t },
     '@/lib/feed-data': { relativeTime: () => '방금' },
   };

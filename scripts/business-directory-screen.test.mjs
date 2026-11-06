@@ -21,7 +21,7 @@ function screen() {
   const imports = {
     react, 'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { StyleSheet: { create: s => s, hairlineWidth: 1 }, View: 'View', TextInput: 'TextInput', useWindowDimensions: () => ({ fontScale: 1 }) },
     'expo-router': { useFocusEffect: fn => { focuses.push(fn); }, useRouter: () => ({ canGoBack: () => true, back: () => routes.push('back'), replace: path => routes.push(path), push: target => routes.push(target) }) },
-    'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'SymbolView' }, 'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
+    'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' }, 'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     '@/components/analytics-controls': { Pressable: 'Pressable', FlatList: 'FlatList', ScrollView: 'ScrollView' }, '@/components/page-header': { PageHeader: 'PageHeader' },
     '@/components/themed-text': { ThemedText: 'ThemedText' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' }, '@/components/selection-chip': { SelectionChip: 'SelectionChip' }, '@/components/state-card': { StateCard: 'StateCard' },
     '@/constants/design-system': { ControlMotion: { pressedOpacity: .82 }, ControlStyles: { action: {}, icon: {}, field: {}, pill: {} }, IconSize: {}, Typography: { sheetTitle: {}, body: {} }, controlPresentation: () => ({ container: {} }) },

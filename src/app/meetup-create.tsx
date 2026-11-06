@@ -7,7 +7,7 @@ import { Alert, DeviceEventEmitter, KeyboardAvoidingView, LayoutAnimation, Platf
 import { requestPushPrompt } from '@/lib/push-prompt';
 import { Image } from 'expo-image';
 import { useReducedMotion } from 'react-native-reanimated';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { PopIn, StateCard } from '@/components/state-card';

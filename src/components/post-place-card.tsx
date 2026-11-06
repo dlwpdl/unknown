@@ -1,6 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';

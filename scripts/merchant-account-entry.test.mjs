@@ -29,7 +29,7 @@ function app(component = 'MerchantAccountEntry') {
   }).outputText;
   vm.runInNewContext(source, { exports, window: { confirm: () => true }, Date, require: withLanguageImports((name) => {
     if (name === 'react') return React;
-    if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
+    if (name === 'expo-symbols' || name === '@/components/symbol-view') return { SymbolView: 'SymbolView' };
     if (name === 'expo-image') return { Image: 'Image' };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'expo-router') return { useRouter: () => ({ push: path => routes.push(path), navigate: path => { navigated.push(path); routes.push(path); } }), useFocusEffect: fn => { focusEffect = fn; recordEffect(() => { focusCleanup = fn(); return focusCleanup; }, fn.deps); } };

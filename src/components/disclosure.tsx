@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Animated, Easing, LayoutAnimation, StyleSheet, View } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { Pressable } from '@/components/analytics-controls';

@@ -3,7 +3,7 @@ import { GlingLoader } from '@/components/gling-loader';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useFocusEffect, useIsFocused, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { AppState, StyleSheet, View } from 'react-native';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';

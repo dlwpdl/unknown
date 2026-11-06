@@ -4,7 +4,7 @@ import { Animated, StyleSheet, type PressableProps, type StyleProp, type ViewSty
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { ClayPillFill, useClay } from '@/components/clay';
-import { ThemedText } from '@/components/themed-text';
+import { ControlTextStyle, ThemedText } from '@/components/themed-text';
 import { ControlStyles } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -27,12 +27,15 @@ export function SelectionChip({ selected, disabled, onPress, style, baseColor, a
     {/* Shared by the category line, sort, notification tabs and every other chip group. */}
     {clay ? <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: fill }]}><ClayPillFill kind="on" /></Animated.View>
       : <Animated.View pointerEvents="none" style={[styles.fillLayer, { backgroundColor: theme.accent, opacity: fill }]} />}
-    {label ? <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : theme.text }}>{label}</ThemedText> : children}
+    <ControlTextStyle.Provider value={clay ? styles.clayText : null}>
+      {label ? <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : theme.text }}>{label}</ThemedText> : children}
+    </ControlTextStyle.Provider>
   </Pressable>;
 }
 
 const styles = StyleSheet.create({
   chip: { overflow: 'hidden', backgroundColor: 'transparent' },
   clayChip: { overflow: 'visible', paddingHorizontal: 18 },
+  clayText: { fontSize: 15, lineHeight: 20 },
   fillLayer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 22 },
 });

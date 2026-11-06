@@ -10,7 +10,7 @@ function card({ fontScale = 1 } = {}) {
   const jsx = (type, props) => ({ type, props });
   const imports = {
     react: { useState: initial => { const i = cursor++; if (!(i in slots)) slots[i] = initial; return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; } },
-    'react/jsx-runtime': { jsx, jsxs: jsx }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'SymbolView' },
+    'react/jsx-runtime': { jsx, jsxs: jsx }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
     'react-native': { View: 'View', StyleSheet: { create: value => value, hairlineWidth: 1 }, useWindowDimensions: () => ({ fontScale }) },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'ThemedText' },
     '@/components/post-ad-label': { PostAdLabel: 'PostAdLabel' }, '@/components/content-translation': { TranslationControl: 'TranslationControl' },

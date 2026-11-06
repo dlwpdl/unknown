@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, DeviceEventEmitter, Platform, StyleSheet, View } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable } from '@/components/analytics-controls';
 import type { MeetupManageSheet } from '@/components/meetup-manage-sheet';

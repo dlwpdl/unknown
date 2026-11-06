@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { MerchantAccountEntry } from '@/components/merchant-account-connections';
 import { LinkedAccountEntry } from '@/components/linked-account-entry';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useRouter } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';

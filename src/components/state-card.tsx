@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentProps, type ReactNode } from 'react';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { ClayIcon, ClayPillFill, useClay } from '@/components/clay';
 import { Animated, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';

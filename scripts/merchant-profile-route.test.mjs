@@ -40,7 +40,7 @@ function screen({ business = null, webshop = null, merchantSaves = async () => n
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     'expo-router': { useLocalSearchParams: () => ({ id: company }), useRouter: () => ({ push: value => routes.push(JSON.parse(JSON.stringify(value))) }), useFocusEffect: fn => imports.react.useEffect(() => focused ? fn() : undefined, [fn, focused]) },
     'expo-linking': { openURL: async url => { links.push(url); return openURL(url); } },
-    'expo-symbols': { SymbolView: 'Symbol' },
+    'expo-symbols': { SymbolView: 'Symbol' }, '@/components/symbol-view': { SymbolView: 'Symbol' },
     'expo-image': { Image: 'Image' },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },

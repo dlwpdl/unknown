@@ -1,5 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useEffect, useState } from 'react';
 import { LayoutAnimation, Platform, ScrollView, StyleSheet, UIManager, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

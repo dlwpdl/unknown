@@ -9,7 +9,7 @@ import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { loadBusinessChatMessages, sendBusinessChatMessage, editBusinessChatMessage, deleteBusinessChatMessage, markBusinessChatRead, setBusinessChatReaction, endBusinessConversation, blockBusinessConversation, subscribeBusinessChat } from '@/lib/business-chat';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
 import { Animated, AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, ScrollView, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, useWindowDimensions, type ScrollViewInstance, type ViewInstance, type KeyDownEvent } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';

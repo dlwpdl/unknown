@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import { StyleSheet, View } from 'react-native';
 import { useRef, useState } from 'react';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable } from '@/components/analytics-controls';
 import { DragSheet } from '@/components/drag-sheet';

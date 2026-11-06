@@ -36,7 +36,7 @@ test('destructive text meets AA contrast on light, dark and admin surfaces', () 
 
 function glass(scheme, platform = 'ios', api = true, liquid = true) {
   return load('components/glass-surface.tsx', {
-    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => Colors[scheme] },
     '@/constants/theme': { Colors },
     'react-native': { Platform: { OS: platform }, View: 'View', StyleSheet: { hairlineWidth: 0.5, create: styles => styles } },
@@ -145,6 +145,7 @@ test('native tabs follow the palette and preserve feedback, badges and Android b
       'expo-router/unstable-native-tabs': { NativeTabs },
       'react': { useState: value => [value, next => onMap.push(next)] },
       'react-native': { Platform: { OS: platform } },
+      '@/components/clay': { useClay: () => false, CLAY_TABS: {}, CLAY_TABS_DARK: {} },
       '@/components/live-bubble-bar': { LIVE_ACCESSORY: platform === 'ios', LiveBubbleAccessory: 'LiveBubbleAccessory' },
       '@/components/live-bubbles': { useMineUp: () => false },
       '@/constants/theme': { Colors },
@@ -186,6 +187,7 @@ test('my live bubble sits in the iOS 26 tab bar accessory on every tab but the m
       'expo-router/unstable-native-tabs': { NativeTabs },
       'react': { useState: () => [onMap, () => {}] },
       'react-native': { Platform: { OS: 'ios' } },
+      '@/components/clay': { useClay: () => false, CLAY_TABS: {}, CLAY_TABS_DARK: {} },
       '@/components/live-bubble-bar': { LIVE_ACCESSORY: accessory, LiveBubbleAccessory: 'LiveBubbleAccessory' },
       '@/components/live-bubbles': { useMineUp: () => mineUp },
       '@/constants/theme': { Colors },

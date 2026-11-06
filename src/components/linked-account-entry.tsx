@@ -1,6 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { useFocusEffect } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
 import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';

@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';

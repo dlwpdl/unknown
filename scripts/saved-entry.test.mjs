@@ -28,7 +28,7 @@ function mount({ load = async () => state(), save = async (_client, _target, val
   };
   const modules = {
     react, 'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
-    'expo-router': { useIsFocused: () => focused }, 'expo-symbols': { SymbolView: 'Symbol' },
+    'expo-router': { useIsFocused: () => focused }, 'expo-symbols': { SymbolView: 'Symbol' }, '@/components/symbol-view': { SymbolView: 'Symbol' },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/meetup-manage-sheet': { MeetupManageSheet: 'Sheet' },
     '@/constants/design-system': { ControlStyles: { icon: {} }, IconSize: { toolbar: 21 }, controlPresentation: (_theme, props) => ({ container: { opacity: props.busy ? 0.45 : 1 } }) },
     '@/hooks/use-language': { useLanguage: () => ({ language: 'ko' }) }, '@/hooks/use-theme': { useTheme: () => ({ accent: '#cbb9ff' }) },

@@ -93,7 +93,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     '@/lib/merchant-source': { merchantMapsUrl, merchantPhoneUrl, safeMerchantSourceUrl }, '@/lib/post-maps': maps,
     '../../../supabase/functions/_shared/post-links': postLinks,
     '@/lib/post-map-html': { mapMessage, mapHtml: () => '<html/>', mapPinScript: () => '', mapPreviews: new Map(), rememberMapPreview() {} },
-    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/constants/theme': { Depth: {}, Spacing: {} }, '@/lib/event-videos': { eventVideo: () => null }, '@/lib/feed-data': { relativeTime: () => '' },
     '@/lib/behavior-analytics': ctx.realBehavior ? realBehavior : { configureBehavior: value => { transport = value; }, behavior() {}, behaviorScreen() {}, flushBehavior: async () => {} },

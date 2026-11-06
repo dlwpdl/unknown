@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { openBrowserAsync } from 'expo-web-browser';
 // shortcut: React Native's own Clipboard is deprecated (a dev-only warning); move to expo-clipboard with the next native build.
 import { Alert, Clipboard, Linking, Platform, StyleSheet, View, type ScrollViewInstance } from 'react-native';

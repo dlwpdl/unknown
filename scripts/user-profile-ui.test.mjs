@@ -33,7 +33,7 @@ function mount(file, name, data, props = {}, params = {}) {
     react, 'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { FlatList: 'FlatList', View: 'View', Modal: 'Modal', DeviceEventEmitter: { addListener: (name, listener) => { calls.push(['listen', name, listener]); return { remove() {} }; } }, Platform: { OS: data.os ?? 'ios' }, StyleSheet: { create: x => x }, Alert: { alert: (...args) => calls.push(['alert', ...args]) } },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) },
-    'expo-symbols': { SymbolView: 'SymbolView' },
+    'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
     'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ canGoBack: () => true, back() {}, replace() {}, push: path => calls.push(['navigate', path]) }) },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/page-header': { PageHeader: 'PageHeader' }, '@/components/gling-loader': { GlingLoader: 'Loader' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },

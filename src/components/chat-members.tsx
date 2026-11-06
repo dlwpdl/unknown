@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { Pressable, FlatList } from '@/components/analytics-controls';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, AppState, Modal, Platform, StyleSheet, View } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
 

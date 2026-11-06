@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { ClayBoxFill, ClayCoinFill, ClayIcon, useClay, useClayBox } from '@/components/clay';
 import { Alert, Animated, DeviceEventEmitter, Easing, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useRouter } from 'expo-router';

@@ -5,7 +5,7 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Animated, Easing, LayoutAnimation, Platform, RefreshControl, StyleSheet, UIManager, View } from 'react-native';

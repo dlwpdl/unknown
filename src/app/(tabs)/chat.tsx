@@ -4,7 +4,7 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, FlatList } from '@/components/analytics-controls';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, Animated, AppState, DeviceEventEmitter, Keyboard, LayoutAnimation, Modal, Platform, StyleSheet, UIManager, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';

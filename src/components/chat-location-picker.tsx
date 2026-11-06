@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import * as Location from 'expo-location';
 import { useEffect, useRef, useState, type ComponentProps } from 'react';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { AppState, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

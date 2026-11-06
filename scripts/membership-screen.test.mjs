@@ -33,7 +33,7 @@ test('membership keeps stories and direct chat free while preserving meetup and 
       return [states[index], next => { states[index] = typeof next === 'function' ? next(states[index]) : next; }];
     } };
     if (name === 'expo-router') return { useFocusEffect() {}, useRouter: () => ({ canGoBack: () => false, replace() {} }) };
-    if (name === 'expo-symbols') return { SymbolView: 'SymbolView' };
+    if (name === 'expo-symbols' || name === '@/components/symbol-view') return { SymbolView: 'SymbolView' };
     if (name === 'react-native-reanimated') return { useReducedMotion: () => reducedMotion };
     if ((name === 'react-native' || name === '@/components/analytics-controls')) return { View: 'View', ScrollView: 'ScrollView', Pressable: 'Pressable', Alert: { alert: (...args) => { confirmation = args; } }, Linking: { openURL: async url => { opened.push(url); } }, Animated: { Value: AnimatedValue, View: 'View', timing: (value, options) => ({ start() { value.setValue(options.toValue); } }) }, StyleSheet: { create: styles => styles } };
     if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView' };

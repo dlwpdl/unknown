@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import { Stack, useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { useTheme } from '@/hooks/use-theme';

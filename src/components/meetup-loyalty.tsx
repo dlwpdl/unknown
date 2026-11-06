@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { Pressable, Switch } from '@/components/analytics-controls';
 import { ChillingDateInput } from '@/components/chilling-date-input';

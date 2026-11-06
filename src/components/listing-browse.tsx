@@ -1,7 +1,8 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
 import { Modal, PanResponder, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import type { SymbolViewProps } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';

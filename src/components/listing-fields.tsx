@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Modal, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';

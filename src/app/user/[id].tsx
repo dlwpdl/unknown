@@ -4,7 +4,7 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Pressable } from '@/components/analytics-controls';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { Alert, DeviceEventEmitter, FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 

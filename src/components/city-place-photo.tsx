@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Image, type ImageProps } from 'expo-image';
 import { useState } from 'react';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { StyleSheet, type StyleProp, View, type ViewStyle } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';

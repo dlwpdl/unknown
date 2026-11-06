@@ -5,7 +5,7 @@ import { Pressable } from '@/components/analytics-controls';
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import Head from 'expo-router/head';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { DeviceEventEmitter, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 

@@ -26,7 +26,7 @@ function screen({load=async()=>page(),initialQuery='',initialKind='all'}={}) {
   const modules={
     react:hooks,'react/jsx-runtime':{jsx:(type,props,key)=>({type,props,key}),jsxs:(type,props,key)=>({type,props,key})},
     'react-native':{View:'View',TextInput:'TextInput',Keyboard:{dismiss(){}},Platform:{OS:'ios'},StyleSheet:{create:x=>x,flatten:x=>Object.assign({},...[x].flat(Infinity).filter(Boolean)),hairlineWidth:1},useWindowDimensions:()=>({width:390,fontScale:1})},
-    'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},'expo-image':{Image:'Image'},'expo-symbols':{SymbolView:'Symbol'},
+    'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},'expo-image':{Image:'Image'},'expo-symbols':{SymbolView:'Symbol'},'@/components/symbol-view':{SymbolView:'Symbol'},
     'expo-router':{useIsFocused:()=>focused,useRouter:()=>({push:route=>routes.push(route),canGoBack:()=>true,back:()=>routes.push('back'),replace:route=>routes.push(route)})},
     '@/components/analytics-controls':{Pressable:'Pressable',FlatList:'FlatList'},'@/components/selection-chip':{SelectionChip:'Chip'},'@/components/state-card':{StateCard:'StateCard'},'@/components/themed-text':{ThemedText:'Text'},'@/components/gling-loader':{GlingLoader:'Loader'},'@/components/post-zoom-link':{PostZoomLink:'PostZoomLink'},
     '@/constants/theme':{Spacing:{one:4,two:8,three:12,four:16,five:20,six:24},MaxContentWidth:800},'@/constants/design-system':{ControlMotion:{settleMs:180},ControlStyles:{icon:{},pill:{},field:{},action:{}},ControlMetrics:{touch:44},IconSize:{toolbar:21},Typography:{body:{fontSize:16}}},

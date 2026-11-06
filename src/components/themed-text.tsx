@@ -1,4 +1,4 @@
-import { Children } from 'react';
+import { Children, createContext, useContext } from 'react';
 import { Platform, StyleSheet, Text, type TextProps, type TextStyle } from 'react-native';
 
 import { Fonts, ThemeColor } from '@/constants/theme';
@@ -10,8 +10,12 @@ export type ThemedTextProps = TextProps & {
   themeColor?: ThemeColor;
 };
 
+// A clay control's label size (mockup v2, owner "이대로"). A size the caller set on the text itself still wins.
+export const ControlTextStyle = createContext<TextStyle | null>(null);
+
 export function ThemedText({ children, style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
   const theme = useTheme();
+  const controlText = useContext(ControlTextStyle);
   // Display sizes are already large; uncapped they wrap screen titles to three lines at accessibility sizes. Body text still scales fully.
   const display = (StyleSheet.flatten([styles[type], style])?.fontSize ?? 0) >= 24;
 
@@ -23,6 +27,7 @@ export function ThemedText({ children, style, type = 'default', themeColor, ...r
         { color: theme[themeColor ?? 'text'] },
         Platform.OS === 'web' && styles.wordWrap,
         styles[type],
+        controlText,
         style,
       ]}
       maxFontSizeMultiplier={display ? 1.3 : undefined}

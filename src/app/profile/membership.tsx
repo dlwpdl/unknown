@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useFocusEffect } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Animated, LayoutAnimation, Linking, Platform, StyleSheet, UIManager, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';

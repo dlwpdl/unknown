@@ -114,7 +114,7 @@ async function shareNotice({ shares = true, failHide = false } = {}) {
     react: { useState: initial => { const at = slot(initial); return [state[at], next => { state[at] = typeof next === 'function' ? next(state[at]) : next; }]; }, useRef: value => state[slot(() => ({ current: value }))], useMemo: fn => fn(), useEffect() {} },
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }), Fragment: 'Fragment' },
     '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async key => storage.get(key) ?? null, setItem: async (key, value) => { storage.set(key, value); } } },
-    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/hooks/use-language': { useLanguage: () => ({ tr }) }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/auth': { useAuth: () => ({ me: { id: 'member' } }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/profile-friends': { loadProfileOverview: async (_client, id) => { overviewReads.push(id); return { sharesSavedPlaces: shares }; },

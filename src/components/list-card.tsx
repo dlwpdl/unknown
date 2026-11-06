@@ -1,6 +1,6 @@
 import { Children, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';

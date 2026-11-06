@@ -32,7 +32,7 @@ function compiledView(file, exportName) {
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { View: 'View', StyleSheet: { create: value => value, hairlineWidth: 1 } },
     'expo-router': { Stack: Object.assign(() => null, { Screen: 'Screen' }), useRouter: () => router },
-    'expo-symbols': { SymbolView: 'SymbolView' },
+    'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
     'react-native-reanimated': { useReducedMotion: () => false },
     '@/components/analytics-controls': { Pressable: 'Pressable' },
     '@/components/themed-text': { ThemedText: 'Text' },

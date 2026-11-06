@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';

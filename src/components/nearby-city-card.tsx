@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import { StyleSheet, View } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { ThemedText } from '@/components/themed-text';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';

@@ -5,7 +5,7 @@ import { Pressable, FlatList, ScrollView, Switch } from '@/components/analytics-
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Animated, DeviceEventEmitter, Easing, Keyboard, LayoutAnimation, Modal, Platform, StyleSheet, TextInput, UIManager, useWindowDimensions, View, type TextInputInstance } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Reanimated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { ChillingEvent } from '@/components/chilling-event';

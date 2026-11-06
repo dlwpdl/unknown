@@ -127,7 +127,7 @@ test('every profile header can go back or leave a direct entry, with accessible 
     'expo-router': { Stack: Object.assign(() => {}, { Screen: 'Screen' }), useRouter: () => ({
       canGoBack: () => hasHistory, back: () => actions.push('back'), replace: path => actions.push(path),
     }) },
-    'expo-symbols': { SymbolView: 'SymbolView' },
+    'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
     'react-native-reanimated': { useReducedMotion: () => reducedMotion },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => actions.push(kind) }) },
     '@/i18n/ko': { t: { tabs: { profile: '나' }, profile: { guidelines: '이용 수칙', settings: '설정' }, notifications: { title: '알림' } } },
@@ -181,7 +181,7 @@ test('shared posts remain escapable during loading, failure and absence, and nev
     '@react-native-async-storage/async-storage': { __esModule: true, default: {} },
     '@/lib/shared-post-return': { clearSharedPostReturn: async () => {}, rememberSharedPostReturn: async () => {} },
     '@/lib/post-open': postOpen,
-    'expo-symbols': { SymbolView: 'SymbolView' },
+    'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
     '@/components/post-detail': { PostDetail: 'PostDetail' },
     '@/components/shared-link-card': { SharedPreviewContent: 'SharedPreviewContent' },
     '@/lib/shared-link-preview': { loadSharedLinkPreview: () => { throw new Error('Authenticated navigation must not load a guest preview'); } },

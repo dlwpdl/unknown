@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useCallback, useEffect, useState } from 'react';
 import { DeviceEventEmitter, StyleSheet, View } from 'react-native';
 

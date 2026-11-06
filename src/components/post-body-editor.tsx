@@ -1,6 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, TextInput, View, type TextInputProps, type TextInputInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';

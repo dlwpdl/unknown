@@ -17,7 +17,7 @@ function control(props) {
     'react-native': { View: 'View', StyleSheet: { create: value => value }, Animated: { Value, View: 'AnimatedView' } },
     'react-native-reanimated': { useReducedMotion: () => true },
     '@/hooks/use-language': { useLanguage: () => ({ tr: value => value }) },
-    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/constants/design-system': designSystem,
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) },

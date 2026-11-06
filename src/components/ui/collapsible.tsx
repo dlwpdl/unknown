@@ -1,5 +1,5 @@
 import { Pressable } from '@/components/analytics-controls';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { PropsWithChildren, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type Re
 import { Alert, StyleSheet, TextInput, View, type ViewInstance } from 'react-native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { CategoryIcon } from '@/components/category-icon';

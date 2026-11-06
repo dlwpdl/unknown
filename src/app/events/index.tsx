@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Link, useRouter } from 'expo-router';
 import { Animated, Easing, Modal, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
 import { FlatList, Pressable, ScrollView } from '@/components/analytics-controls';

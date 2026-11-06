@@ -9,7 +9,7 @@ import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'e
 import { Alert, AppState, KeyboardAvoidingView, Linking, Modal, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { ClayBoxFill, ClayIcon, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { openBrowserAsync } from 'expo-web-browser';
 import { safeTicketUrl } from '../../supabase/functions/_shared/ticketmaster';
@@ -497,8 +497,9 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       {/* M6 (owner 2026-11-05): the title opens the same city picker as the home screen; the small arrow says it can be pressed.
         shortcut: reuses the registered 'discovery.open' target (the home map button removed 2026-11-01) since new targets need a migration; register 'discovery.city' when one ships. */}
       <View style={styles.heading}><Pressable analyticsId="discovery.open" accessibilityRole="button" accessibilityLabel={tr('{0} 지도, 도시 바꾸기', tr(city.name))} accessibilityState={{ expanded: cityOpen }}
-        onPress={() => { play('selection'); setCityOpen(true); }} style={styles.titleButton}>
-        <ThemedText style={[styles.title, styles.titleText]}>{tr('{0} 지도', tr(city.name))}</ThemedText>
+        onPress={() => { play('selection'); setCityOpen(true); }} style={[styles.titleButton, clay && styles.titleButtonClay]}>
+        {clay && <ClayPillFill kind="white" />}
+        <ThemedText numberOfLines={1} style={[styles.title, styles.titleText, clay && styles.titleTextClay]}>{tr('{0} 지도', tr(city.name))}</ThemedText>
         <ClayIcon clay="chevron" name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={IconSize.chevron} tintColor={theme.textSecondary} />
       </Pressable></View>
       {headerActions}
@@ -667,6 +668,7 @@ const styles = StyleSheet.create({
   priceOptions: { flexDirection: 'row', gap: 8, paddingVertical: 8 }, priceOption: { flex: 1, minHeight: 48, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   screen: { flex: 1 }, header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 8 }, tabHeader: { paddingLeft: 16 }, headerActions: { flexDirection: 'row', alignItems: 'center' },
   icon: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }, heading: { flex: 1, gap: 2 },
+  titleButtonClay: { paddingHorizontal: 18, gap: 6 }, titleTextClay: { fontSize: 16, lineHeight: 22, fontWeight: '700', letterSpacing: 0 },
   titleButton: { alignSelf: 'flex-start', maxWidth: '100%', minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 4 }, titleText: { flexShrink: 1 }, title: { fontSize: 20, lineHeight: 28, fontWeight: '800', letterSpacing: -0.5 },
   unifiedSearch: { flex: 1, minWidth: 0, minHeight: 46, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }, unifiedSearchText: { flex: 1, minWidth: 0 },
   search: { marginHorizontal: 16, marginBottom: 10, borderWidth: StyleSheet.hairlineWidth, borderRadius: 14, flexDirection: 'row', alignItems: 'center', paddingLeft: 14, paddingRight: 4 }, input: { minHeight: 46, flex: 1, minWidth: 0, paddingHorizontal: 10, fontSize: 14 },

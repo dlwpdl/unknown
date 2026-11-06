@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Share, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useReducedMotion } from 'react-native-reanimated';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';

@@ -44,7 +44,7 @@ function invite({ denied = false, failure = null } = {}) {
       'react-native': native, '@/components/analytics-controls': { Pressable: 'Pressable' },
       '@react-native-async-storage/async-storage': { default: { getItem: async () => null, setItem: async (...args) => writes.push(args) } },
       'react-native-safe-area-context': { useSafeAreaInsets: () => ({ bottom: 0 }) },
-      'react-native-reanimated': { useReducedMotion: () => false }, 'expo-symbols': { SymbolView: 'SymbolView' },
+      'react-native-reanimated': { useReducedMotion: () => false }, 'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
       '@/components/themed-text': { ThemedText: 'ThemedText' }, '@/components/drag-sheet': { DragSheet: 'DragSheet' }, '@/constants/theme': { Spacing: {} },
       '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
       '@/lib/auth': { useAuth: () => ({ isAuthed: true, isAdmin: false, me: { id: 'member' } }) },

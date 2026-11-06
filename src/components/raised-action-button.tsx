@@ -25,9 +25,9 @@ export function RaisedActionButton({ analyticsId, label, onPress, disabled = fal
     <View style={compact ? styles.compact : styles.wide}>
       <Pressable analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: blocked, busy }} disabled={blocked}
         onPress={() => { if (!blocked) onPress(); }}
-        style={({ pressed }) => [styles.touch, compact ? styles.compactTouch : styles.wideTouch, clay && compact && styles.compactClay, controlPresentation(theme, { tone, clay, pressed, disabled, busy }).container, tone === 'secondary' && { backgroundColor: 'transparent' }]}>
+        style={({ pressed }) => [styles.touch, compact ? styles.compactTouch : styles.wideTouch, clay && (compact ? styles.compactClay : styles.wideClay), controlPresentation(theme, { tone, clay, pressed, disabled, busy }).container, tone === 'secondary' && { backgroundColor: 'transparent' }]}>
         {clay && <ClayPillFill kind={tone === 'primary' ? 'cta' : 'white'} />}
-        <ThemedText type="smallBold" style={[styles.label, !compact && styles.wideLabel, { color: tone === 'primary' ? theme.accentInk : theme.text }]}>{label}</ThemedText>
+        <ThemedText type="smallBold" style={[styles.label, clay && compact && styles.compactClayLabel, !compact && styles.wideLabel, { color: tone === 'primary' ? theme.accentInk : theme.text }]}>{label}</ThemedText>
       </Pressable>
     </View>
   </View>;
@@ -40,6 +40,8 @@ const styles = StyleSheet.create({
   touch: {  alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'transparent' },
   compactTouch: { ...ControlStyles.action, minHeight: ControlMetrics.touch, paddingHorizontal: 16 },
   compactClay: { paddingHorizontal: 18 },
+  compactClayLabel: { fontSize: 15, lineHeight: 20 },
+  wideClay: { paddingHorizontal: 24 },
   wideTouch: { ...ControlStyles.action, minHeight: ControlMetrics.actionWide },
   label: { textAlign: 'center' },
   wideLabel: { fontSize: 16 },

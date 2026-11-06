@@ -3,7 +3,7 @@ import { Pressable, FlatList } from '@/components/analytics-controls';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import {
   Alert,
   DeviceEventEmitter,

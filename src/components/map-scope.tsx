@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
