@@ -7,6 +7,8 @@ import { CITY_TOP25, type CityTop25Place } from './city-top25.ts';
 import type { CityPlace } from './city-places.ts';
 
 export const TOP25_GOLD = '#F4CA78';
+// M1 (owner 2026-11-05): a place's state, decided on the server from our own save numbers. The dot always comes with the word, so colour is never the only signal.
+export const PLACE_STATUS = { trending: { label: '뜨는 중', empty: '지금 뜨는 곳이 없어요', color: '#E8743B' }, popular: { label: '인기', empty: '인기 있는 곳이 없어요', color: '#E0559A' } } as const;
 
 // `art` is the 3D picture drawn in the category's map pin (src/lib/map-pin-art.ts); categories without their own share the nearest one.
 export const DISCOVERY_CATEGORIES = [

@@ -12,7 +12,7 @@ import { isFreshLocation } from '../src/lib/location.ts';
 
 const source = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
 // The price, sub-filter, area and open-now steps of the result pipeline, all switched off.
-const noRefine = { PRICE_FILTERS, PLACE_SUBCATEGORIES, discoveryRefines, cityClock, openState, priceLevels: [], subcategories: [], region: null, openNow: false, showUnknown: false };
+const noRefine = { PRICE_FILTERS, PLACE_SUBCATEGORIES, discoveryRefines, cityClock, openState, priceLevels: [], subcategories: [], region: null, openNow: false, showUnknown: false, placeSaves: null, statusFilter: null, sortBy: 'near' };
 const compile = text => ts.transpileModule(text, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const previous = { key: 'viewer-and-city', page: 0, items: [{ id: 'post:old' }], cursor: { id: 'last-post', sortAt: '2026-10-14' }, postMore: true, eventMore: false };

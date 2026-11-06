@@ -208,6 +208,23 @@ test('M7: the location dot grows a facing cone only while a heading arrives, tur
   assert.ok(c.html.includes('.user-location-marker[data-facing="1"]::before'));
 });
 
+test('M1: a state colour crosses the map boundary only as a hex value and draws its dot above the pins', () => {
+  assert.deepEqual(discoveryMarkers([{ ...marker, statusColor: '#E8743B' }]), [{ ...marker, statusColor: '#E8743B' }]);
+  assert.deepEqual(discoveryMarkers([marker]), [marker], 'a place without a state stays as it was');
+  for (const bad of ['orange', 7, '#fff', '#E8743B;background:url(x)']) assert.throws(() => discoveryMarkers([{ ...marker, statusColor: bad }]), /INVALID_DISCOVERY_MARKER/);
+  const c = canvas([{ ...marker, statusColor: '#E8743B' }, { ...marker, id: 'place:2' }]);
+  assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.statusColor), ['#E8743B', '']);
+  const layer = c.layers.find(layer => layer.id === 'discovery-status');
+  assert.equal(JSON.stringify(layer.filter), '["!=",["get","statusColor"],""]');
+  assert.equal(JSON.stringify(layer.paint['circle-color']), '["get","statusColor"]');
+  assert.ok(c.layers.indexOf(layer) > c.layers.findIndex(value => value.id === 'discovery-selected'), 'a chosen pin keeps its dot');
+  c.window.glingDiscoveryUpdate(sessionId, { markers: [marker, { ...marker, id: 'place:2', statusColor: '#E0559A' }] });
+  assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.statusColor), ['', '#E0559A'], 'a new read moves the dot without a reload');
+  c.window.glingDiscoveryUpdate(sessionId, { markers: [marker, { ...marker, id: 'place:2', statusColor: 'url(x)' }] });
+  assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.statusColor), ['', '#E0559A'], 'the page refuses a bad colour too');
+  assert.ok(c.html.includes('주황색 점은 요즘 뜨는 곳, 분홍색 점은 인기 있는 곳이에요.'), 'the map label says what the colours mean');
+});
+
 test('M5: a saved flag crosses the map boundary only as a boolean and draws the bookmark mark above the pins', () => {
   assert.deepEqual(discoveryMarkers([{ ...marker, saved: true }]), [{ ...marker, saved: true }]);
   assert.deepEqual(discoveryMarkers([{ ...marker, saved: false }]), [marker]);
