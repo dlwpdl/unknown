@@ -18,6 +18,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { formatMeetupTime, meetupZone } from '@/lib/chilling-date';
+import { loadPublicMeetupContext } from '@/lib/feed-data';
 import { focusSession, inAttendanceWindow, sessionRange, upcomingSessions } from '@/lib/meetup-host-home';
 import { loadMeetupLoyalty, staffCheckIn, tierAtLeast } from '@/lib/meetup-loyalty';
 import { checkInMeetup, claimMeetupAttendance, confirmMeetupAttendance, createMeetupSession, loadMeetupReviews, loadMeetupSessions, writeMeetupReview, type MeetupReviewPage, type MeetupSessions, type MeetupSession } from '@/lib/meetup-reviews';
@@ -40,6 +42,7 @@ function Reviews({ postId, kind, attendanceOnly = false, reviewsOnly = false, on
   const [canStaffCheckIn, setCanStaffCheckIn] = useState(false), [loaded, setLoaded] = useState(false);
   const [report, setReport] = useState<MeetupReviewPage['reviews'][number] | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [zone, setZone] = useState(() => meetupZone());
   useEffect(() => {
     if (!sessions?.member) return;
     const timer = setInterval(() => setNow(Date.now()), 60000);
@@ -49,9 +52,10 @@ function Reviews({ postId, kind, attendanceOnly = false, reviewsOnly = false, on
     let active = true;
     void (async () => {
       try {
-        const [next, participation, loyalty] = await Promise.all([kind === 'group' && !attendanceOnly ? loadMeetupReviews(supabase, postId) : null, isAuthed && !reviewsOnly ? loadMeetupSessions(supabase, postId) : null,
-          isAuthed && attendanceOnly ? loadMeetupLoyalty(supabase, postId).catch(() => null) : null]);
-        if (active) { setPage(next); setSessions(participation); setCanStaffCheckIn(!!loyalty && (loyalty.isStaff || (loyalty.isHost && tierAtLeast(loyalty.hostTier, 'pro')))); setNow(Date.now()); setError(''); setLoaded(true); }
+        const [next, participation, loyalty, context] = await Promise.all([kind === 'group' && !attendanceOnly ? loadMeetupReviews(supabase, postId) : null, isAuthed && !reviewsOnly ? loadMeetupSessions(supabase, postId) : null,
+          isAuthed && attendanceOnly ? loadMeetupLoyalty(supabase, postId).catch(() => null) : null,
+          isAuthed && !reviewsOnly ? loadPublicMeetupContext(supabase, postId).catch(() => null) : null]);
+        if (active) { setPage(next); setSessions(participation); setZone(meetupZone(context?.room, context?.cityId)); setCanStaffCheckIn(!!loyalty && (loyalty.isStaff || (loyalty.isHost && tierAtLeast(loyalty.hostTier, 'pro')))); setNow(Date.now()); setError(''); setLoaded(true); }
       } catch { if (active) { setError("모임 후기·참석 정보를 불러오지 못했어요."); setLoaded(true); } }
     })();
     return () => { active = false; };
@@ -88,12 +92,12 @@ function Reviews({ postId, kind, attendanceOnly = false, reviewsOnly = false, on
       </View>)}
       {!!page && page.reviews.length > 0 && page.reviews.length % 20 === 0 && <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => void more()} style={button}>{fill}<ThemedText type="small">{tr("이전 후기 더 보기")}</ThemedText></Pressable>}
     </>}
-    {sessions?.member && <Attendance sessions={sessions} kind={kind} postId={postId} meId={me.id} now={now} sessionId={sessionId} canStaffCheckIn={canStaffCheckIn} busy={busy} onCreate={() => void create()} onChanged={() => setRetry(n => n + 1)} />}
+    {sessions?.member && <Attendance zone={zone} sessions={sessions} kind={kind} postId={postId} meId={me.id} now={now} sessionId={sessionId} canStaffCheckIn={canStaffCheckIn} busy={busy} onCreate={() => void create()} onChanged={() => setRetry(n => n + 1)} />}
     {!!error && <><ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText><Pressable accessibilityRole="button" onPress={() => { play('selection'); setRetry(n => n + 1); }} style={button}>{fill}<ThemedText type="small">{tr("다시 불러오기")}</ThemedText></Pressable></>}
     {report && <ReportSheet visible targetType="meetup_review" targetId={report.id} reportedUserId={report.authorId} reportedNickname={report.nickname} onClose={() => { setReport(null); setRetry(n => n + 1); }} />}
   </View>;
 }
-function Attendance({ sessions, kind, postId, meId, now, sessionId, canStaffCheckIn, busy, onCreate, onChanged }: { sessions: MeetupSessions; kind: 'once' | 'group'; postId: string; meId: string; now: number; sessionId?: string; canStaffCheckIn: boolean; busy: boolean; onCreate: () => void; onChanged: () => void }) {
+function Attendance({ zone, sessions, kind, postId, meId, now, sessionId, canStaffCheckIn, busy, onCreate, onChanged }: { zone: string; sessions: MeetupSessions; kind: 'once' | 'group'; postId: string; meId: string; now: number; sessionId?: string; canStaffCheckIn: boolean; busy: boolean; onCreate: () => void; onChanged: () => void }) {
   const { tr, locale } = useLanguage();
   const router = useRouter();
   const focus = sessionId ? sessions.sessions.find(session => session.id === sessionId) ?? null : focusSession(sessions.sessions, now);
@@ -103,12 +107,12 @@ function Attendance({ sessions, kind, postId, meId, now, sessionId, canStaffChec
     ? <RaisedActionButton analyticsId="meetup.attendance.open" label={tr("이번 모임 참석 확인 열기")} busy={busy} onPress={onCreate} />
     : <ThemedText themeColor="textSecondary" style={Typography.body}>{tr('아직 등록된 회차가 없어요.')}</ThemedText>;
   return <View>
-    <Session key={focus.id} now={now} session={focus} meId={meId} kind={kind} isHost={sessions.isHost} canStaffCheckIn={canStaffCheckIn} onChanged={onChanged} />
-    {upcoming && Date.parse(focus.startsAt) > now && <MeetupRsvp postId={postId} />}
+    <Session key={focus.id} zone={zone} now={now} session={focus} meId={meId} kind={kind} isHost={sessions.isHost} canStaffCheckIn={canStaffCheckIn} onChanged={onChanged} />
+    {upcoming && Date.parse(focus.startsAt) > now && <MeetupRsvp postId={postId} zone={zone} />}
     {others.length > 0 && <>
       <SectionLabel>{tr('다른 회차')}</SectionLabel>
-      <ListCard>{others.map(session => <ListRow key={session.id} analyticsId="meetup.attendance.session" title={new Intl.DateTimeFormat(locale, { month: 'long', day: 'numeric', weekday: 'short' }).format(new Date(session.startsAt))}
-        detail={session.verified ? tr("참석 확인됨") : session.checkedIn ? tr("체크인 완료") : sessionRange(session, locale)}
+      <ListCard>{others.map(session => <ListRow key={session.id} analyticsId="meetup.attendance.session" title={formatMeetupTime(session.startsAt, locale, zone, { month: 'long', day: 'numeric', weekday: 'short' })}
+        detail={session.verified ? tr("참석 확인됨") : session.checkedIn ? tr("체크인 완료") : sessionRange(session, locale, zone)}
         onPress={() => router.push({ pathname: '/meetup-tools', params: { postId, kind, host: sessions.isHost ? '1' : '0', section: 'session', sessionId: session.id } })} />)}</ListCard>
     </>}
   </View>;
@@ -147,7 +151,7 @@ function ScoreStepper({ score, disabled, onChange }: { score: number; disabled: 
   </View>;
 }
 
-function Session({ session, meId, kind, isHost, canStaffCheckIn, onChanged, now }: { session: MeetupSession; meId: string; kind: 'once' | 'group'; isHost: boolean; canStaffCheckIn: boolean; onChanged: () => void; now: number }) {
+function Session({ zone, session, meId, kind, isHost, canStaffCheckIn, onChanged, now }: { zone: string; session: MeetupSession; meId: string; kind: 'once' | 'group'; isHost: boolean; canStaffCheckIn: boolean; onChanged: () => void; now: number }) {
   const { tr, locale: appLocale } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback(), router = useRouter();
   const [busy, setBusy] = useState(false), pending = useRef(false), [notice, setNotice] = useState('');
@@ -183,11 +187,11 @@ function Session({ session, meId, kind, isHost, canStaffCheckIn, onChanged, now 
   const card = (title: string, detail?: string) => <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText style={Typography.menu}>{title}</ThemedText>{!!detail && <ThemedText themeColor="textSecondary" style={Typography.supporting}>{detail}</ThemedText>}</View>;
   return <View style={styles.session}>
     <View>
-      <ThemedText accessibilityRole="header" style={Typography.sheetTitle}>{new Intl.DateTimeFormat(appLocale, { month: 'long', day: 'numeric', weekday: 'long' }).format(new Date(session.startsAt))}</ThemedText>
-      <ThemedText themeColor="textSecondary" style={Typography.supporting}>{sessionRange(session, appLocale)}</ThemedText>
+      <ThemedText accessibilityRole="header" style={Typography.sheetTitle}>{formatMeetupTime(session.startsAt, appLocale, zone, { month: 'long', day: 'numeric', weekday: 'long' })}</ThemedText>
+      <ThemedText themeColor="textSecondary" style={Typography.supporting}>{sessionRange(session, appLocale, zone)}</ThemedText>
     </View>
     {(!ended || inWindow || session.verified) && <Steps current={stage} last={kind === 'once' ? tr('매너 평가') : tr('후기')} />}
-    {!started && card(tr('체크인은 모임 시작부터 열려요'), new Date(session.startsAt).toLocaleTimeString(appLocale, { hour: 'numeric', minute: '2-digit' }))}
+    {!started && card(tr('체크인은 모임 시작부터 열려요'), formatMeetupTime(session.startsAt, appLocale, zone, { hour: 'numeric', minute: '2-digit' }))}
     {started && !ended && (session.checkedIn ? card(tr('체크인했어요'), tr('끝나고 함께한 분을 서로 확인해 주세요.'))
       : <RaisedActionButton analyticsId="meetup.attendance.check-in" label={tr("현장 체크인")} busy={busy} onPress={() => void act(async () => { await checkInMeetup(supabase, session.id); askForStoreReviewSoon(); }, tr("체크인했어요. 끝나고 서로 참석을 확인해 주세요."))} />)}
     {started && !ended && <View>

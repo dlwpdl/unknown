@@ -279,6 +279,7 @@ function JoinForm({ postId }: { postId: string }) {
     <Disclosure analyticsId="meetup.join.policy" title={copy('누가 무엇을 보나요', 'Who sees what')}>
       <View style={styles.who}>
         <ThemedText style={Typography.supporting} themeColor="textSecondary"><ThemedText style={Typography.supporting}>{tr("승인된 뒤 멤버")}</ThemedText>{` ${profile?.shareWithMembers ? tr("모임 이름 · 사진 · 짧은 소개") : tr("모임 이름만 · 사진·소개 공유는 프로필에서 바꿀 수 있어요")}`}</ThemedText>
+        <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr("프로필을 고쳐도 이미 보낸 신청은 그대로예요.")}</ThemedText>
         <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr("다른 신청자에게는 보이지 않아요. 취소·거절·탈퇴·차단·모임 종료 뒤에는 새로 볼 수 없지만, 이미 본 내용은 되돌릴 수 없어요.")}</ThemedText>
       </View>
       <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('승인 전까지는 자리가 잡히지 않아요. 신청은 호스트가 답하기 전까지 이 화면에서 취소할 수 있어요. 취소하거나 거절되면 24시간 뒤에 다시 신청할 수 있어요.')}</ThemedText>

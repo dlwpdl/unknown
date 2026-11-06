@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import * as designSystem from '../src/constants/design-system.ts';
 import * as chilling from '../src/lib/chilling.ts';
+import * as chillingDate from '../src/lib/chilling-date.ts';
 import { translateUi } from '../src/i18n/index.ts';
 import { ticketmasterReference } from '../supabase/functions/_shared/ticketmaster.ts';
 import { splitEventMeetupBody } from './test-meetup-source-imports.mjs';
@@ -49,7 +50,7 @@ function screen({ meId = 'host', meetup = { id: 'p1', cityId: 'vancouver', title
     '@/lib/membership-provider': { useMembership: () => ({ membership: null }) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/chilling-data': { getChillingError: error => error.message, getChillingErrorCode: error => error.message },
-    '@/lib/chilling': { ...chilling, configureChillingEvent: async (_client, postId, draft) => { configured.push({ postId, draft }); if (configure) await configure(draft); } },
+    '@/lib/chilling-date': chillingDate, '@/lib/chilling': { ...chilling, configureChillingEvent: async (_client, postId, draft) => { configured.push({ postId, draft }); if (configure) await configure(draft); } },
     '@/lib/community-data': { MEETUPS_CHANGED_EVENT: 'meetups.changed', editPost: async (_client, postId, patch, replacement) => { edited.push({ postId, patch, replacement }); if (edit) await edit(patch); } },
     '@/lib/feed-data': { loadPublicMeetupContext: async () => meetup, loadPublicPost: photos },
     'react-native-reanimated': { useReducedMotion: () => true },

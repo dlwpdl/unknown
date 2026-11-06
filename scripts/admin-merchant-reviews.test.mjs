@@ -63,7 +63,7 @@ const sessionImports = () => ({
   '@/components/disclosure': { Disclosure: 'Disclosure' }, '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' },
   '@/components/list-card': { InitialAvatar: 'Avatar', ListCard: 'ListCard', ListRow: 'ListRow', SectionLabel: 'SectionLabel', Tag: 'Tag' },
   '@/components/manner-review': { MannerReviewButton: 'MannerReviewButton' }, '@/components/meetup-host-tools': { MeetupHostTools: 'HostTools' }, '@/components/meetup-rsvp': { MeetupRsvp: 'Rsvp' },
-  '@/lib/meetup-host-home': module('../src/lib/meetup-host-home.ts'), '@/lib/meetup-loyalty': module('../src/lib/meetup-loyalty.ts'), '@/lib/meetup-reviews': module('../src/lib/meetup-reviews.ts'),
+  '@/lib/chilling-date': module('../src/lib/chilling-date.ts'), '@/lib/meetup-host-home': module('../src/lib/meetup-host-home.ts', { './chilling-date.ts': module('../src/lib/chilling-date.ts') }), '@/lib/meetup-loyalty': module('../src/lib/meetup-loyalty.ts'), '@/lib/meetup-reviews': module('../src/lib/meetup-reviews.ts'),
 });
 
 test('a meetup session keeps check-in, attendance confirmation and personal feedback within their distinct windows', () => {

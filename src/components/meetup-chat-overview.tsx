@@ -18,6 +18,7 @@ import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
+import { meetupZone } from '@/lib/chilling-date';
 import { chillingSchedule, chillingTimezoneLabel } from '@/lib/chilling';
 import { loadPublicMeetupContext, type PublicMeetupContext } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -81,8 +82,8 @@ export function MeetupChatOverview({ postId, currentUserId, onClose }: { postId:
   const place = post ? splitPlaceMeetupBody(post.body, post.cityId)?.place : null;
   const address = post ? postPublicAddress(post.body) ?? (place ? [place.name, place.address].filter(Boolean).join(' · ') : null) : null;
   const mapUrl = post ? postMapBody(post.body).url ?? (place ? pinUrl(place) : null) : null;
-  // Same meetup-zone schedule as the summary card; sessions without a stored zone fall back to the device zone.
-  const timezone = post?.room?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  // Same meetup-zone schedule as the summary card; regular meetups store no zone and follow their city.
+  const timezone = meetupZone(post?.room, post?.cityId);
   const schedule = (startsAt: string, endsAt: string, style: typeof styles.nextDate | typeof styles.bodyText) => {
     const zone = chillingTimezoneLabel({ startsAt, timezone }, locale);
     return <><ThemedText style={style}>{chillingSchedule({ eventKind: 'once', startsAt, endsAt, timezone }, locale)}</ThemedText>

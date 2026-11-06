@@ -37,7 +37,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
 import { chillingProfilePreview, createChillingEvent, getChillingError, getChillingErrorCode, loadChillingProfile, type ChillingProfile } from '@/lib/chilling-data';
-import { chillingCapacityLimit, chillingTimezoneLabel, normalizeChillingEvent, shiftChillingSchedule, type ChillingEventDraft } from '@/lib/chilling';
+import { defaultMeetupStart, meetupZone, moveMeetupZone } from '@/lib/chilling-date';
+import { chillingCapacityLimit, normalizeChillingEvent, shiftChillingSchedule, type ChillingEventDraft } from '@/lib/chilling';
 import { getCommunityActionError, MEETUPS_CHANGED_EVENT } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useMembership } from '@/lib/membership-provider';
@@ -108,10 +109,13 @@ function MeetupCreateForm() {
   const [question, setQuestion] = useState(() => tr('어떤 분위기의 모임을 기대하세요?'));
   const [hostPreview, setHostPreview] = useState<ChillingProfile | null>(null);
   const [hostConsent, setHostConsent] = useState(false), [profileSheet, setProfileSheet] = useState(false);
+  const zone = meetupZone(null, meetupCity?.id ?? city.id);
   const [event, setEvent] = useState<ChillingEventDraft>(() => {
-    const start = new Date(Date.now() + 86400000); start.setMinutes(0, 0, 0);
-    return { kind: ticketmasterEventId ? 'once' : requestedKind ?? 'once', startsAt: start.toISOString(), endsAt: new Date(start.getTime() + 3600000).toISOString(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, cadence: '', capacity: 6, category: 'casual' };
+    const start = defaultMeetupStart(zone);
+    return { kind: ticketmasterEventId ? 'once' : requestedKind ?? 'once', startsAt: start, endsAt: new Date(Date.parse(start) + 3600000).toISOString(), timezone: zone, cadence: '', capacity: 6, category: 'casual' };
   });
+  // The city can settle after this screen opens (saved profile, login). Keep the clock time the host sees.
+  if (event.timezone !== zone) setEvent({ ...event, timezone: zone, startsAt: moveMeetupZone(event.startsAt, event.timezone, zone), endsAt: moveMeetupZone(event.endsAt, event.timezone, zone) });
   const [capacity, setCapacity] = useState('6');
   const [ageMin, setAgeMin] = useState(''), [ageMax, setAgeMax] = useState('');
   const [newcomer, setNewcomer] = useState({ welcome: false, only: false });
@@ -323,8 +327,6 @@ function MeetupCreateForm() {
     if (!ticketmasterEventId && title.trim().length > MEETUP_TITLE_MAX) { showValidation(aiCopy(`모임 제목은 ${MEETUP_TITLE_MAX}자까지 적어 주세요.`, `Keep the title to ${MEETUP_TITLE_MAX} characters.`), tr('모임 제목')); return; }
     if (pickedPlace && !splitPlaceMeetupBody(body.trim() + eventDetails, meetupCity.id)) { play('warning'); setError(aiCopy('장소 연결 정보를 다시 확인해 주세요. 작성한 내용은 그대로예요.', 'Check the linked place again. Your writing is unchanged.')); setErrorField(null); return; }
     if (!body.trim()) { showValidation(aiCopy('모임 소개를 적어주세요.', 'Add an introduction.'), tr('모임 소개')); return; }
-    const deviceZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (event.kind === 'once' && event.timezone !== deviceZone) { setEvent(current => ({ ...current, timezone: deviceZone })); showValidation(tr("기기 시간대가 바뀌어 일정 시간대를 맞췄어요. 시작·종료 시각을 다시 확인해 주세요."), 'schedule'); return; }
     if (event.kind === 'once' && new Date(event.startsAt) < new Date()) { showValidation(tr("시작 시각이 이미 지났어요. 지금 이후로 선택해 주세요."), 'schedule'); return; }
     if (!question.trim()) { showValidation(aiCopy('신청 질문을 적어주세요.', 'Add an application question.'), tr('신청할 때 물어볼 질문')); return; }
     // Content is checked first so that, after login, one tap on the same button opens the meetup.
@@ -465,12 +467,12 @@ function MeetupCreateForm() {
       <View onLayout={event => { cardY.current.when = event.nativeEvent.layout.y; }} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <ThemedText accessibilityRole="header" style={styles.cardTitle}>{aiCopy('언제, 어디서 만나요?', 'When and where?')}</ThemedText>
       {!kindChosen ? null : event.kind === 'group' ? field('meetup.create.cadence', tr("활동 주기"), event.cadence, cadence => setEvent({ ...event, cadence }), tr("예: 매주 토요일 오전"), 80) : <View onLayout={event => { fieldY.current.schedule = event.nativeEvent.layout.y; }} style={styles.field}>
-        <ChillingDateInput analyticsId="meetup.create.schedule.start" label={tr("시작")} value={event.startsAt} minimumDate={new Date()} onChange={startsAt => { sourceEdited.current = true; setTouched(true); if (errorField === 'schedule') { setError(''); setErrorField(null); } setEvent(current => ({ ...current, ...shiftChillingSchedule(current, startsAt) })); }} disabled={saving || !eventReady} />
-        <ChillingDateInput analyticsId="meetup.create.schedule.end" label={tr("종료")} value={event.endsAt} minimumDate={new Date()} onChange={endsAt => { sourceEdited.current = true; setTouched(true); if (errorField === 'schedule') { setError(''); setErrorField(null); } setEvent(current => ({ ...current, endsAt })); }} disabled={saving || !eventReady} />
+        <ChillingDateInput analyticsId="meetup.create.schedule.start" label={tr("시작")} value={event.startsAt} zone={event.timezone} minimumDate={new Date()} onChange={startsAt => { sourceEdited.current = true; setTouched(true); if (errorField === 'schedule') { setError(''); setErrorField(null); } setEvent(current => ({ ...current, ...shiftChillingSchedule(current, startsAt) })); }} disabled={saving || !eventReady} />
+        <ChillingDateInput analyticsId="meetup.create.schedule.end" label={tr("종료")} value={event.endsAt} zone={event.timezone} minimumDate={new Date()} onChange={endsAt => { sourceEdited.current = true; setTouched(true); if (errorField === 'schedule') { setError(''); setErrorField(null); } setEvent(current => ({ ...current, endsAt })); }} disabled={saving || !eventReady} />
         {errorField === 'schedule' && !!error && <ThemedText accessibilityRole="alert" themeColor="danger" style={styles.bodyText}>{tr(error)}</ThemedText>}
         {!!ticketmasterEventId && eventReady && <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("모임 종료는 행사 시작 2시간 뒤로 임시 설정했어요. 실제 만날 시간과 종료 시간을 확인해 주세요.")}</ThemedText>}
-        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{chillingTimezoneLabel({ timezone: event.timezone }) ? tr("{0} 기준 · 끝나면 새 신청을 받지 않아요.", chillingTimezoneLabel({ timezone: event.timezone })) : tr("끝나면 새 신청을 받지 않아요.")}</ThemedText>
-        <Disclosure analyticsId="meetup-create.timezone-details" title={tr("시간대 안내")}><ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("이 기기의 시간대 기준이에요. 활동 지역과 시간대가 다르면 기기 시간에 맞춰 골라 주세요.")}</ThemedText></Disclosure>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("{0} 시간 기준 · 끝나면 새 신청을 받지 않아요.", tr(meetupCity?.name ?? city.name))}</ThemedText>
+        <Disclosure analyticsId="meetup-create.timezone-details" title={tr("시간대 안내")}><ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("다른 도시에서 만들어도 모임 도시 시각으로 저장돼요. 폰 시계와 달라 보일 수 있어요.")}</ThemedText></Disclosure>
       </View>}
       {sourcePlace && <View style={styles.field}><ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{aiCopy('함께 갈 장소', 'Where we’re going')} · {tr(meetupCity?.name ?? city.name)}</ThemedText><ThemedText style={[styles.bodyText, Typography.section]}>{sourcePlace.name}</ThemedText>
         <Pressable analyticsId="meetup.create.place.map" accessibilityRole="button" accessibilityLabel={aiCopy('선택한 장소 지도 보기', 'View the selected place on the map')} onPress={() => { play('selection'); router.navigate(placeMapRoute(sourcePlace)); }} style={({ pressed }) => [ControlStyles.action, controlPresentation(theme, { pressed, clay }).container, clay ? styles.clayPill : { borderWidth: 1 }]}><ClayControlFill /><ThemedText type="smallBold" style={[styles.label, controlPresentation(theme).text]}>{aiCopy('장소 지도 보기', 'View place map')}</ThemedText></Pressable>

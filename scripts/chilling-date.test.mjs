@@ -7,7 +7,7 @@ test('local date entry round trips without manual UTC offsets and rejects imposs
   assert.equal(parseLocalDateInput('2027-01-12T17:30'), date.toISOString());
   assert.equal(parseLocalDateInput('2027-02-30T12:00'), '');
   assert.equal(parseLocalDateInput(''), '');
-  const picked = new Date('2027-03-14T00:00:00Z');
+  const picked = new Date(2027, 2, 14, 9, 0);
   const merged = new Date(mergePickerDate(date.toISOString(), picked, 'date'));
   assert.deepEqual([merged.getFullYear(), merged.getMonth(), merged.getDate(), merged.getHours(), merged.getMinutes()], [2027, 2, 14, 17, 30]);
 });

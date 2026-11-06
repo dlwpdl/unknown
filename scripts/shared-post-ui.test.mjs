@@ -7,6 +7,7 @@ import ts from 'typescript';
 import { translateUi, translationsFor } from '../src/i18n/index.ts';
 import { appendUniquePosts, getPostImageSource } from '../src/lib/feed-data.ts';
 import { chillingSchedule } from '../src/lib/chilling.ts';
+import * as chillingDate from '../src/lib/chilling-date.ts';
 import * as sharing from '../src/lib/sharing.ts';
 import * as sharedPostReturn from '../src/lib/shared-post-return.ts';
 import { getOAuthCode } from '../src/lib/kakao-auth.ts';
@@ -120,7 +121,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/lib/community-data': { recordPostShare: async () => { calls.push(['count-share']); return 1; }, loadTradeProfile: async () => null, startDirectConversation: async () => 'direct-conversation', loadConversations: (...args) => { calls.push(['inbox', ...args.slice(1)]); return data.inbox?.(...args) ?? Promise.resolve(page([conversation('chat-a')])); },
       sendDirectMessage: (...args) => { calls.push(['send', ...args.slice(1)]); return data.send?.(...args) ?? Promise.resolve('saved-message'); } },
     '@/lib/feed-data': { appendUniquePosts, getPostImageSource, loadPublicPost: (...args) => { calls.push(['full-post', args[1], auth.me.id]); return data.fullPost?.(...args) ?? Promise.resolve(post()); } },
-    '@/lib/chilling': { chillingSchedule }, '@/lib/sharing': sharing, '@/lib/kakao-auth': { getOAuthCode },
+    '@/lib/chilling': { chillingSchedule }, '@/lib/chilling-date': chillingDate, '@/lib/sharing': sharing, '@/lib/kakao-auth': { getOAuthCode },
     '@/lib/user-profile': { loadMannerSummary: async () => ({ meeting: { participants: 0, score: null }, chat: { participants: 0, score: null } }) },
     '@/lib/content-visibility': { subscribeVisibility, visibilityRevision },
     '@/lib/shared-link-preview': { loadSharedLinkPreview: (...args) => { calls.push(['preview', args[1], auth.me.id]); return data.preview?.(...args) ?? Promise.resolve(preview()); } },

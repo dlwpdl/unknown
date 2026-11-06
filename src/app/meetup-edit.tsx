@@ -19,6 +19,7 @@ import { Spacing } from '@/constants/theme';
 import { Typography } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
+import { meetupZone } from '@/lib/chilling-date';
 import { getChillingError, getChillingErrorCode } from '@/lib/chilling-data';
 import { chillingAvailability, chillingCapacityLimit, chillingTimezoneLabel, configureChillingEvent, normalizeChillingEvent, shiftChillingSchedule, type ChillingEventDraft } from '@/lib/chilling';
 import { editPost, MEETUPS_CHANGED_EVENT } from '@/lib/community-data';
@@ -77,7 +78,7 @@ function MeetupEditForm({ postId }: { postId: string }) {
       setMeetup(value);
       if (!value) return;
       const parts = splitMeetupBody(value.body, value.cityId), room = value.room;
-      const draft: ChillingEventDraft = { kind: room.eventKind ?? 'group', startsAt: room.startsAt ?? '', endsAt: room.endsAt ?? '', timezone: room.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone, cadence: room.cadence ?? '', capacity: room.capacity ?? 8, category: room.category };
+      const draft: ChillingEventDraft = { kind: room.eventKind ?? 'group', startsAt: room.startsAt ?? '', endsAt: room.endsAt ?? '', timezone: meetupZone(room, value.cityId), cadence: room.cadence ?? '', capacity: room.capacity ?? 8, category: room.category };
       // Headed intros are compared in their saved shape, so opening the editor alone never marks the form dirty.
       const sections = parseMeetupSections(parts.intro);
       const next = { title: value.title, intro: sections ? joinMeetupSections(sections) : parts.intro, event: draft, capacity: String(draft.capacity),
@@ -225,8 +226,8 @@ function MeetupEditForm({ postId }: { postId: string }) {
               <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('모임 종류는 바꿀 수 없어요.')}</ThemedText>
             </View>
             {event.kind === 'group' ? input('cadence', tr('활동 주기'), event.cadence, cadence => setEvent({ ...event, cadence }), tr('예: 매주 토요일 오전'), 80) : <View onLayout={layout => { fieldY.current.schedule = layout.nativeEvent.layout.y; }} style={styles.field}>
-              <ChillingDateInput label={tr('시작')} value={event.startsAt} minimumDate={new Date()} onChange={startsAt => { clear('schedule'); setEvent(current => current && { ...current, ...shiftChillingSchedule(current, startsAt) }); }} disabled={saving} />
-              <ChillingDateInput label={tr('종료')} value={event.endsAt} minimumDate={new Date()} onChange={endsAt => { clear('schedule'); setEvent(current => current && { ...current, endsAt }); }} disabled={saving} />
+              <ChillingDateInput label={tr('시작')} value={event.startsAt} zone={event.timezone} minimumDate={new Date()} onChange={startsAt => { clear('schedule'); setEvent(current => current && { ...current, ...shiftChillingSchedule(current, startsAt) }); }} disabled={saving} />
+              <ChillingDateInput label={tr('종료')} value={event.endsAt} zone={event.timezone} minimumDate={new Date()} onChange={endsAt => { clear('schedule'); setEvent(current => current && { ...current, endsAt }); }} disabled={saving} />
               <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{chillingTimezoneLabel({ timezone: event.timezone })}</ThemedText>
               {fieldError('schedule')}
             </View>}

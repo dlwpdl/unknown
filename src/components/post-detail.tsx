@@ -77,6 +77,7 @@ import { ControlStyles, Typography, controlPresentation } from '@/constants/desi
 import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 import { supabase } from '@/lib/supabase';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
+import { meetupZone } from '@/lib/chilling-date';
 import { chillingAvailability, chillingSchedule, chillingTimezoneLabel, recommendedAgeLabel } from '@/lib/chilling';
 import { getChillingError, loadChillingHostProfile, type ChillingProfile } from '@/lib/chilling-data';
 import { meetupFeeAmount, meetupFeeDue } from '@/lib/meetup-host-tools';
@@ -1173,7 +1174,7 @@ function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavi
     <MeetupFacts post={post} canEnterChat={canEnterChat} own={own} />
     {!!statusNote && <View style={[styles.statusNote, clayBox ? styles.clayCard : { backgroundColor: theme.backgroundSelected }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="small">{statusNote}</ThemedText></View>}
     {!!statusError && <StateCard kind="error" title={tr('신청 상태를 불러오지 못했어요')} body={tr(statusError)} actionLabel={tr('다시 불러오기')} onAction={status.retry} />}
-    <MeetupRsvp postId={post.id} flush />
+    <MeetupRsvp postId={post.id} zone={meetupZone(post.room, post.cityId)} flush />
     {(!!tools || canEnterChat) && <ListCard>
       {!!tools && <ListRow analyticsId="meetup.detail.tools" title={tools} onPress={() => { onBeforeNavigate?.(); router.push({ pathname: '/meetup-tools', params: { postId: post.id, kind: room.eventKind ?? 'group', host: own ? '1' : '0' } }); }} />}
       {canEnterChat && <ListRow analyticsId="meetup.detail.my-request" title={tr('내 신청 보기')} onPress={() => { onBeforeNavigate?.(); router.push({ pathname: '/meetup-join', params: { postId: post.id } }); }} />}

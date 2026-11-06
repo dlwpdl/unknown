@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getLocale } from '../i18n/index.ts';
+import { clockZone } from './chilling-date.ts';
 import { normalizeLanguageExchange, type LanguageExchange } from './meetup-language.ts';
 
 export type ChillingKind = 'once' | 'group';
@@ -52,16 +53,16 @@ export function chillingSchedule(room: ChillingSchedule, locale = getLocale()): 
   if (chillingKind(room) === 'group') return room.cadence?.trim() || (locale === 'en-CA' ? 'Schedule set in the group' : '일정은 모임에서 정해요');
   if (!room.startsAt || !room.timezone) return missing;
   try {
+    const timeZone = clockZone(room.timezone, Date.parse(room.startsAt));
     const formatter = new Intl.DateTimeFormat(locale, {
-      timeZone: room.timezone, month: 'long', day: 'numeric', weekday: 'short',
+      timeZone, month: 'long', day: 'numeric', weekday: 'short',
       hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
     });
     const start = formatter.format(new Date(room.startsAt));
     if (!room.endsAt) return start;
-    const timeZone = room.timezone;
     const day = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone });
     const end = day(room.startsAt) === day(room.endsAt)
-      ? new Intl.DateTimeFormat(locale, { timeZone: room.timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(room.endsAt))
+      ? new Intl.DateTimeFormat(locale, { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(room.endsAt))
       : formatter.format(new Date(room.endsAt));
     return `${start} – ${end}`;
   } catch { return missing; }
