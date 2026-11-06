@@ -22,6 +22,13 @@ const ART: Record<string, { clay: ClayName }> = {
   link: { clay: 'link' }, phone: { clay: 'phone' }, globe: { clay: 'globe' }, gift: { clay: 'gift' }, envelope: { clay: 'envelope' }, megaphone: { clay: 'megaphone' },
   'flame.fill': { clay: 'flame' }, 'arrow.up.right': { clay: 'open' },
   'fork.knife': { clay: 'chip_dining' }, house: { clay: 'home' }, tray: { clay: 'empty' },
+  eye: { clay: 'eye' }, 'eye.slash': { clay: 'eye_off' }, 'bookmark.slash': { clay: 'bookmark_off' }, 'arrow.up.circle': { clay: 'up' }, 'arrow.up.to.line': { clay: 'up' },
+  'sun.horizon': { clay: 'sun' }, 'person.badge.minus': { clay: 'person_remove' }, 'arrow.uturn.left': { clay: 'reply' }, 'arrowshape.turn.up.left.fill': { clay: 'reply' },
+  'stop.circle': { clay: 'stop' }, 'pause.circle': { clay: 'pause' }, 'play.fill': { clay: 'play' }, paperclip: { clay: 'paperclip' },
+  'arrow.triangle.turn.up.right.diamond': { clay: 'directions' }, shield: { clay: 'shield' }, 'shield.lefthalf.filled': { clay: 'shield' }, 'square.and.arrow.down': { clay: 'download' },
+  folder: { clay: 'folder' }, star: { clay: 'star' }, 'star.circle': { clay: 'star' }, 'hand.point.up.left': { clay: 'hand' }, 'square.grid.2x2': { clay: 'grid' },
+  'doc.on.doc': { clay: 'copy' }, number: { clay: 'number' }, 'person.crop.rectangle': { clay: 'id_card' }, 'arrow.turn.down.right': { clay: 'indent' },
+  exclamationmark: { clay: 'warn' }, 'arrow.triangle.2.circlepath': { clay: 'refresh' }, 'line.3.horizontal': { clay: 'list' }, 'text.alignleft': { clay: 'list' },
 };
 
 const ON_FILL: Partial<Record<ClayName, ClayName>> = { plus_ink: 'plus', check: 'check_on' };
