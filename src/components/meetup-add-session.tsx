@@ -15,6 +15,8 @@ import { Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { chillingTimezoneLabel } from '@/lib/chilling';
+import { clockZone, defaultMeetupStart, formatMeetupTime } from '@/lib/chilling-date';
 import { confirmMeetupOccurrence, proposeMeetupDates, type MeetupOccurrence } from '@/lib/meetup-host-tools';
 import { createMeetupSession } from '@/lib/meetup-reviews';
 import { supabase } from '@/lib/supabase';
@@ -29,18 +31,18 @@ const errors: Record<string, string> = {
 };
 
 /** One session, or up to four repeating dates at once. Nothing is created until the button is pressed. */
-export function MeetupAddSession({ postId, visible, canRepeat, canSingle = true, onClose, onAdded }: { postId: string; visible: boolean; canRepeat: boolean; canSingle?: boolean; onClose: () => void; onAdded: (count: number) => void }) {
+export function MeetupAddSession({ postId, zone, visible, canRepeat, canSingle = true, onClose, onAdded }: { postId: string; zone: string; visible: boolean; canRepeat: boolean; canSingle?: boolean; onClose: () => void; onAdded: (count: number) => void }) {
   const { tr, locale } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback(), focused = useIsFocused();
-  // Tomorrow, two hours long: the same default as before.
-  const [startsAt, setStartsAt] = useState(() => new Date(Date.now() + 86400000).toISOString());
+  // Tomorrow 7 p.m. in the meetup's city, two hours long.
+  const [startsAt, setStartsAt] = useState(() => defaultMeetupStart(zone));
   const [length, setLength] = useState<number>(2), [repeat, setRepeat] = useState<Repeat>(canSingle ? 'none' : 'weekly');
   const [dates, setDates] = useState<MeetupOccurrence[]>([]), [picked, setPicked] = useState<string[]>([]);
   const [busy, setBusy] = useState(false), [loadingDates, setLoadingDates] = useState(false), [error, setError] = useState('');
   const pending = useRef(false), generation = useRef(0), live = useRef(false);
   useLayoutEffect(() => { live.current = true; generation.current++; return () => { live.current = false; }; }, [postId, focused]);
   const endsAt = new Date(Date.parse(startsAt) + length * HOUR).toISOString();
-  const end = new Date(endsAt).toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
+  const end = formatMeetupTime(endsAt, locale, zone, { hour: 'numeric', minute: '2-digit' });
   const repeating = repeat !== 'none';
 
   // A new repeating preview starts loading in the same render that asks for it.
@@ -50,13 +52,14 @@ export function MeetupAddSession({ postId, visible, canRepeat, canSingle = true,
   useEffect(() => {
     if (!visible || !repeating) return;
     let active = true;
-    proposeMeetupDates(supabase, postId, startsAt, endsAt, repeat as 'weekly' | 'fortnightly').then(result => {
+    // The database may still have old zone data, so it steps the dates on the same clock the app uses.
+    proposeMeetupDates(supabase, postId, startsAt, endsAt, repeat as 'weekly' | 'fortnightly', 4, clockZone(zone, Date.parse(startsAt))).then(result => {
       if (active) { setDates(result); setPicked(result.map(date => date.startsAt)); }
     }, failure => { if (active) { setDates([]); setPicked([]); setError((failure as Error)?.message || 'unknown'); play('warning'); } })
       .finally(() => { if (active) setLoadingDates(false); });
     return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- a preview only depends on the chosen time and repeat
-  }, [visible, postId, startsAt, endsAt, repeat]);
+  }, [visible, postId, zone, startsAt, endsAt, repeat]);
 
   async function add() {
     const request = generation.current, current = () => live.current && request === generation.current;
@@ -81,13 +84,13 @@ export function MeetupAddSession({ postId, visible, canRepeat, canSingle = true,
 
   return <DragSheet visible={visible} onClose={onClose} dismissible={!busy} title={tr('회차 추가')}>
     <ScrollView keyboardShouldPersistTaps="handled" style={styles.scroll} contentContainerStyle={styles.content}>
-      <ChillingDateInput label={tr('언제 시작하나요')} value={startsAt} disabled={busy} minimumDate={new Date()} onChange={value => { play('selection'); setStartsAt(value); }} />
+      <ChillingDateInput label={tr('언제 시작하나요')} value={startsAt} zone={zone} disabled={busy} minimumDate={new Date()} onChange={value => { play('selection'); setStartsAt(value); }} />
       <ThemedText style={Typography.label}>{tr('얼마나 하나요')}</ThemedText>
       <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel={tr('얼마나 하나요')}>
         {LENGTHS.map(hours => <SelectionChip key={hours} analyticsId="meetup.session.length" selected={length === hours} disabled={busy} accessibilityRole="radio" accessibilityState={{ checked: length === hours, disabled: busy }}
           label={tr('{0}시간', hours)} onPress={() => { play('selection'); setLength(hours); }} />)}
       </View>
-      <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('{0}에 끝나요', end)} · {Intl.DateTimeFormat().resolvedOptions().timeZone}</ThemedText>
+      <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('{0}에 끝나요', end)} · {chillingTimezoneLabel({ startsAt, timezone: zone }, locale)}</ThemedText>
       <ThemedText style={Typography.label}>{tr('반복')}</ThemedText>
       <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel={tr('반복')}>
         {([['none', tr('한 번만')], ['weekly', tr('매주')], ['fortnightly', tr('격주')]] as const).map(([value, label]) => {
@@ -107,7 +110,7 @@ export function MeetupAddSession({ postId, visible, canRepeat, canSingle = true,
             <View style={[styles.box, { borderColor: checked ? theme.accent : theme.textSecondary, backgroundColor: checked ? theme.accent : 'transparent' }]}>
               {checked && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={IconSize.chevron} tintColor={theme.accentInk} />}
             </View>
-            <ThemedText style={Typography.body}>{new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(date.startsAt))}</ThemedText>
+            <ThemedText style={Typography.body}>{formatMeetupTime(date.startsAt, locale, zone, { month: 'short', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' })}</ThemedText>
           </Pressable>;
         })}
       </>}

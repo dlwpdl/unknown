@@ -12,16 +12,17 @@ import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { chillingSchedule } from '@/lib/chilling';
 import { loadMeetupRsvp, setMeetupRsvp, type MeetupRsvp as Rsvp } from '@/lib/meetup-convenience';
 import { supabase } from '@/lib/supabase';
 
 /** "갈게요 / 못 가요" for the next session. Free for members; the head count is shown to plus+ hosts by the server. */
-export function MeetupRsvp({ postId, flush = false }: { postId: string; flush?: boolean }) {
+export function MeetupRsvp({ postId, zone, flush = false }: { postId: string; zone: string; flush?: boolean }) {
   const { isAuthed, me } = useAuth();
-  return isAuthed ? <RsvpBlock key={`${me.id}:${postId}`} postId={postId} flush={flush} /> : null;
+  return isAuthed ? <RsvpBlock key={`${me.id}:${postId}`} postId={postId} zone={zone} flush={flush} /> : null;
 }
 
-function RsvpBlock({ postId, flush }: { postId: string; flush: boolean }) {
+function RsvpBlock({ postId, zone, flush }: { postId: string; zone: string; flush: boolean }) {
   const { tr, locale } = useLanguage();
   const theme = useTheme(), clay = useClay(), clayBox = useClayBox(), router = useRouter(), { play } = useInteractionFeedback(), reduced = useReducedMotion();
   const [rsvp, setRsvp] = useState<Rsvp | null>(null), [failed, setFailed] = useState(false), [saving, setSaving] = useState(false), [error, setError] = useState(false);
@@ -36,7 +37,7 @@ function RsvpBlock({ postId, flush }: { postId: string; flush: boolean }) {
     <ThemedText type="small" themeColor="textSecondary">{tr('참석 정보를 불러오지 못했어요. 다시 불러오기')}</ThemedText>
   </Pressable>;
   if (!rsvp?.available || !rsvp.startsAt) return null;
-  const when = new Date(rsvp.startsAt).toLocaleString(locale, { month: 'long', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' });
+  const when = chillingSchedule({ eventKind: 'once', startsAt: rsvp.startsAt, timezone: zone }, locale);
   const answer = async (going: boolean, release = false) => {
     if (saving) return;
     setSaving(true); setError(false);

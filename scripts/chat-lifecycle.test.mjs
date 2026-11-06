@@ -16,6 +16,7 @@ import { count, t } from '../src/i18n/ko.ts';
 import { isFreshLocation } from '../src/lib/location.ts';
 import { googlePinUrl, postMapBody, postPublicAddress } from '../src/lib/post-maps.ts';
 import { chillingSchedule, chillingTimezoneLabel } from '../src/lib/chilling.ts';
+import * as chillingDate from '../src/lib/chilling-date.ts';
 import * as meetupLanguage from '../src/lib/meetup-language.ts';
 import * as product from '../src/lib/product-analytics.ts';
 import { translateUi, translationsFor } from '../src/i18n/index.ts';
@@ -139,6 +140,7 @@ export function mount(file, exportName, data, props = {}, params = {}) {
       if (name === '@/lib/chat-details') return { ...chatDetails, ...(data.loadChatMembers ? { loadChatMembers: data.loadChatMembers } : {}) };
       if (name === '@/lib/chilling-profile-media') return { loadMeetupProfilePhoto: data.loadMeetupProfilePhoto };
       if (name === '@/lib/chilling') return { chillingSchedule, chillingTimezoneLabel };
+      if (name === '@/lib/chilling-date') return chillingDate;
       if (name === '@/lib/meetup-language') return meetupLanguage;
       if (name === '@/lib/chat-location') return chatLocation;
       if (name === '@/lib/location') return { isFreshLocation };

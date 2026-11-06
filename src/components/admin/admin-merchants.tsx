@@ -16,6 +16,7 @@ import { AdminButton, AdminCard, AdminFacts, AdminInfo, AdminMoreMenu, AdminPill
 import { merchantContactLinks, merchantEventId } from '@/lib/merchant-source';
 import { setAdminMerchantOwner } from '@/lib/admin-merchants';
 import { loadAdminProfilesByIds } from '@/lib/admin-data';
+import { CITY_ZONE } from '@/lib/chilling-date';
 import { MerchantWorkspace } from '@/components/merchant-workspace';
 import { MerchantProfileEditor } from '@/components/merchant-profile-editor';
 import {
@@ -424,4 +425,3 @@ function MerchantOwnerForm({ merchant, busy, save, onDirty }: { merchant: Mercha
     </fieldset>
   </form></AdminCard>;
 }
-const CITY_ZONE: Record<string, string> = { toronto: 'America/Toronto', montreal: 'America/Toronto', ottawa: 'America/Toronto', calgary: 'America/Edmonton', edmonton: 'America/Edmonton', winnipeg: 'America/Winnipeg', saskatoon: 'America/Regina', regina: 'America/Regina', 'saint-john': 'America/Moncton', halifax: 'America/Halifax' };

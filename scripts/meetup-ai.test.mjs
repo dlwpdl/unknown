@@ -8,6 +8,7 @@ import { chillingProfilePreview } from '../src/lib/chilling-data.ts';
 import { meetupAllowed, isFestivalEvent, ticketmasterReference } from '../supabase/functions/_shared/ticketmaster.ts';
 import * as designSystem from '../src/constants/design-system.ts';
 import * as chilling from '../src/lib/chilling.ts';
+import * as chillingDate from '../src/lib/chilling-date.ts';
 import * as meetupDraft from '../src/lib/meetup-create-draft.ts';
 import { translateUi, translationsFor } from '../src/i18n/index.ts';
 
@@ -81,7 +82,7 @@ export function form({ params = {}, sourceEvent, catalogReady = true, membership
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/supabase': { supabase: { functions: { invoke: (...args) => new Promise((resolve, reject) => requests.push({ args, resolve, reject })) } } },
     '@/lib/chilling-data': { chillingProfilePreview, getChillingError: error => error.message, getChillingErrorCode: error => error.message, loadChillingProfile: async (_client, preview) => { profileReads.push(preview); return loadProfile ? loadProfile(hostProfile) : hostProfile; }, createChillingEvent: async (_client, value) => { writes.push(value); return create ? create(value) : 'new-meetup'; } },
-    '@/lib/chilling': chilling,
+    '@/lib/chilling': chilling, '@/lib/chilling-date': chillingDate,
     '@/lib/community-data': { getCommunityActionError: () => null, MEETUPS_CHANGED_EVENT: 'meetups.changed' },
     '@/lib/behavior-analytics': { behavior() {} },
     '@/lib/meetup-create-draft': meetupDraft,
@@ -400,6 +401,17 @@ test('the schedule waits for a chosen kind and a loaded event, keeps its duratio
   event.loadEvent(); await settle();
   assert.ok(dates(event).every(n => !n.props.disabled));
   assert.equal(dates(event)[0].props.value, sourceEvent.startsAt);
+});
+
+test('a one-time meetup opens at tomorrow 7 p.m. on its city clock and saves the city zone, not the device zone', async () => {
+  const app = form({ chooseKind: false });
+  nodes(app.render()).find(n => n.type === 'MeetupKindSwitch').props.onChange('once');
+  const [start, end] = nodes(app.render()).filter(n => n.type === 'ChillingDateInput');
+  assert.deepEqual([start.props.zone, end.props.zone], ['America/Vancouver', 'America/Vancouver']);
+  assert.equal(start.props.value, chillingDate.defaultMeetupStart('America/Vancouver'));
+  assert.equal(Date.parse(end.props.value) - Date.parse(start.props.value), 3600000);
+  // The old pre-save check against the device zone is gone, so a host in another zone is not sent back.
+  assert.equal(readFileSync(new URL('../src/app/meetup-create.tsx', import.meta.url), 'utf8').includes('resolvedOptions'), false);
 });
 
 test('English hosts get an English event invitation with the fixed reference tail', () => {

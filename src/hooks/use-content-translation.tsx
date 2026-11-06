@@ -69,13 +69,13 @@ export function ContentTranslationProvider({ children }: PropsWithChildren) {
           ? 'Gling uses AI to translate Korean posts and comments into English. Translations can have mistakes, and you can always tap to see the original.'
           : '글링이 AI로 영어 글과 댓글을 한국어로 번역해요. 번역이 틀릴 수 있으니 언제든 원문을 눌러 확인할 수 있어요.',
         [
-          { text: language === 'en' ? 'Not now' : '나중에', style: 'cancel', onPress: () => { answered = true; play('selection'); resolve(false); } },
+          { text: language === 'en' ? 'Not now' : '나중에', style: 'cancel', onPress: () => { answered = true; play('selection'); void save('off').then(() => resolve(false)); } },
           { text: language === 'en' ? 'Translate' : '번역하기', onPress: () => {
             answered = true; play('selection');
             if (current.current !== scope) { resolve(false); return; }
             void save(next).then(resolve);
           } },
-        ], { cancelable: true, onDismiss: () => { if (!answered) resolve(false); } });
+        ], { cancelable: true, onDismiss: () => { if (!answered) void save('off').then(() => resolve(false)); } });
     });
   }, [scope, ready, mode, save, language, play]);
 

@@ -10,6 +10,8 @@ import * as reviews from '../src/lib/meetup-reviews.ts';
 import * as loyalty from '../src/lib/meetup-loyalty.ts';
 import * as convenience from '../src/lib/meetup-convenience.ts';
 import * as hostHome from '../src/lib/meetup-host-home.ts';
+import * as chilling from '../src/lib/chilling.ts';
+import * as chillingDate from '../src/lib/chilling-date.ts';
 
 const postId = 'a1620000-0000-0000-0000-000000000001';
 const ownerId = 'a1610000-0000-0000-0000-000000000001';
@@ -69,6 +71,7 @@ export function mount(file, exportName, initialProps = {}, options = {}) {
     'react-native': { StyleSheet: { create: value => value, hairlineWidth: 1 }, View: 'View', ScrollView: 'ScrollView', RefreshControl: 'RefreshControl', TextInput: 'TextInput', useWindowDimensions: () => ({ width: 390, height: 844 }), Alert: { alert: (...args) => alerts.push(args) }, Platform: { get OS() { return ctx.platform ?? 'ios'; } } },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'ThemedText' },
     '@/components/chilling-date-input': { ChillingDateInput: 'ChillingDateInput' },
+    '@/lib/chilling': chilling, '@/lib/chilling-date': chillingDate, '@/lib/feed-data': { loadPublicMeetupContext: async () => ctx.meetupContext ?? null },
     '@/components/drag-sheet': { DragSheet: 'DragSheet' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' }, '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' }, '@/components/selection-chip': { SelectionChip: 'SelectionChip' },
     '@/components/list-card': { ListCard: 'ListCard', ListLoading: 'ListLoading', ListRow: 'ListRow', SectionLabel: 'SectionLabel', Tag: 'Tag', InitialAvatar: 'InitialAvatar' },
     '@/components/state-card': { StateCard: 'StateCard' },
@@ -309,7 +312,7 @@ test('host fee section validates on device, saves, marks paid and clears only af
   assert.match(text(ui.tree), /200자까지/); assert.equal(fee(ui, 'meetup.fee.save').props.disabled, true);
   fee(ui, 'meetup-fee-note').props.onChangeText('  e-Transfer로 보내주세요 ');
   fee(ui, 'meetup.fee.due').props.onPress(); await ui.flush();
-  nodes(ui.tree).find(node => node.type === 'ChillingDateInput' && node.props.label === '이 날까지 내주세요').props.onChange(new Date(2031, 10, 1, 12).toISOString()); await ui.flush();
+  nodes(ui.tree).find(node => node.type === 'ChillingDateInput' && node.props.label === '회비 마감일').props.onChange(new Date(2031, 10, 1, 12).toISOString()); await ui.flush();
   assert.equal(ui.calls.some(([name]) => name === 'set_meetup_fee'), false);
   ui.ctx.fee = { amount: 15.5, note: 'e-Transfer로 보내주세요', dueOn: '2031-11-01' };
   fee(ui, 'meetup.fee.save').props.onPress(); await ui.flush();
@@ -353,7 +356,7 @@ test('fee server errors are explained and closed or waitlist-only panels hide fe
 });
 
 const addSession = (props, options) => { const added = [], closed = [];
-  const ui = mount('meetup-add-session', 'MeetupAddSession', { postId, visible: true, canRepeat: true, onClose: () => closed.push(true), onAdded: count => added.push(count), ...props }, options);
+  const ui = mount('meetup-add-session', 'MeetupAddSession', { postId, zone: 'America/Toronto', visible: true, canRepeat: true, onClose: () => closed.push(true), onAdded: count => added.push(count), ...props }, options);
   return { ui, added, closed }; };
 const chip = (ui, label) => nodes(ui.tree).find(node => node.type === 'SelectionChip' && node.props.label === label);
 const addButton = ui => nodes(ui.tree).find(node => node.props?.analyticsId === 'meetup.session.add');
@@ -371,6 +374,18 @@ test('add session: one session by default, ends two hours later, created only on
   const created = ui.calls.find(([name]) => name === 'create_meetup_session');
   assert.equal(created[1].p_starts_at, '2031-01-01T18:00:00.000Z'); assert.equal(created[1].p_ends_at, '2031-01-01T21:00:00.000Z');
   assert.deepEqual(added, [1]); assert.equal(closed.length, 1); assert.ok(ui.feedback.includes('success'));
+});
+
+test('add session: the picker and repeat dates follow the meetup city, on a clock old zone data cannot shift', async () => {
+  for (const [zone, sent] of [['America/Toronto', 'America/Toronto'], ['America/Vancouver', 'America/Phoenix']]) {
+    const { ui } = addSession({ zone });
+    await ui.flush();
+    const input = nodes(ui.tree).find(node => node.type === 'ChillingDateInput');
+    assert.equal(input.props.zone, zone);
+    assert.equal(input.props.value, chillingDate.defaultMeetupStart(zone));
+    chip(ui, '매주').props.onPress(); await ui.flush();
+    assert.equal(ui.calls.find(([name]) => name === 'propose_meetup_dates')[1].p_timezone, sent);
+  }
 });
 
 test('add session: a repeat previews dates, nothing is created until pressed and a double press adds once', async () => {

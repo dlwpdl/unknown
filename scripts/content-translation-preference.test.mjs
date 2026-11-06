@@ -50,11 +50,13 @@ test('saved off/manual choices and guests never receive an automatic setup promp
   }
 });
 
-test('changing to English offers setup, cancellation stays off, and stale acceptance cannot enable another account', async () => {
+test('changing to English offers setup, a refusal stays off and is remembered, and stale acceptance cannot enable another account', async () => {
   const ui = mount({ language: 'ko' }); await ui.settle(); assert.equal(ui.dialogs.length, 0);
   ui.language('en'); await ui.settle(); assert.equal(ui.dialogs.length, 1);
   ui.dialogs[0][2][0].onPress(); assert.equal((await ui.settle()).mode, 'off'); assert.equal(ui.dialogs.length, 1);
   ui.viewer('viewer-b'); await ui.settle();
   ui.dialogs[0][2][1].onPress(); await ui.settle();
-  assert.equal(ui.writes.length, 0); ui.cleanup();
+  assert.deepEqual(ui.writes, [['gling.content-translation.v2:viewer-a', 'off']]); ui.cleanup();
+  // The next launch finds the refusal and does not ask again; settings still offer it.
+  const next = mount({ stored: 'off' }); await next.settle(); assert.equal(next.dialogs.length, 0); next.cleanup();
 });

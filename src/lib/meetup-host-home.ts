@@ -1,3 +1,4 @@
+import { formatMeetupTime, meetupZone, zoneDayGap } from './chilling-date.ts';
 import type { MeetupSession } from './meetup-reviews.ts';
 
 export const ATTENDANCE_WINDOW_MS = 7 * 86400000;
@@ -55,20 +56,17 @@ export function hostTodos({ sessions, pending, unpaid, now }: { sessions: Meetup
   ];
 }
 
-const DAY = 86400000;
-const dayStart = (time: number) => { const date = new Date(time); date.setHours(0, 0, 0, 0); return date.getTime(); };
 
 /** "Today 9:00 AM", "Tomorrow 9:00 AM", otherwise month, day, weekday and time. `tr` keeps the wording translatable. */
-export function sessionWhen(iso: string, locale: string, now: number, tr: (text: string, ...values: unknown[]) => string) {
-  const time = Date.parse(iso), date = new Date(iso);
-  const clock = date.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
-  const days = Math.round((dayStart(time) - dayStart(now)) / DAY);
+export function sessionWhen(iso: string, locale: string, now: number, tr: (text: string, ...values: unknown[]) => string, zone = meetupZone()) {
+  const clock = formatMeetupTime(iso, locale, zone, { hour: 'numeric', minute: '2-digit' });
+  const days = zoneDayGap(now, Date.parse(iso), zone);
   if (days === 0) return tr('오늘 {0}', clock);
   if (days === 1) return tr('내일 {0}', clock);
-  return new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(date);
+  return formatMeetupTime(iso, locale, zone, { month: 'short', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' });
 }
 
-export function sessionRange(session: { startsAt: string; endsAt: string }, locale: string) {
-  const clock = (iso: string) => new Date(iso).toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
+export function sessionRange(session: { startsAt: string; endsAt: string }, locale: string, zone = meetupZone()) {
+  const clock = (iso: string) => formatMeetupTime(iso, locale, zone, { hour: 'numeric', minute: '2-digit' });
   return `${clock(session.startsAt)}–${clock(session.endsAt)}`;
 }

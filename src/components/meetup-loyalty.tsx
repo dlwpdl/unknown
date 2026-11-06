@@ -5,6 +5,8 @@ import { SymbolView } from '@/components/symbol-view';
 import { ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { Pressable, Switch } from '@/components/analytics-controls';
 import { ChillingDateInput } from '@/components/chilling-date-input';
+import { meetupZone } from '@/lib/chilling-date';
+import { loadPublicMeetupContext } from '@/lib/feed-data';
 import { DragSheet } from '@/components/drag-sheet';
 import { InitialAvatar, ListCard, ListLoading, ListRow, SectionLabel, Tag } from '@/components/list-card';
 import { RaisedActionButton } from '@/components/raised-action-button';
@@ -152,17 +154,19 @@ export function MeetupRoomTop({ postId }: { postId: string }) {
   const [rsvp, setRsvp] = useState<Rsvp | null>(null);
   // "Today/tomorrow" is judged at the time the answer arrived or changed.
   const [now, setNow] = useState(() => Date.now());
+  const [zone, setZone] = useState(() => meetupZone());
   const showRsvp = (next: Rsvp) => { setRsvp(next); setNow(Date.now()); };
   useEffect(() => {
     let active = true;
-    loadMeetupRsvp(supabase, postId).then(value => { if (active) showRsvp(value); }, () => {});
+    Promise.all([loadMeetupRsvp(supabase, postId), loadPublicMeetupContext(supabase, postId).catch(() => null)])
+      .then(([value, context]) => { if (active) { setZone(meetupZone(context?.room, context?.cityId)); showRsvp(value); } }, () => {});
     return () => { active = false; };
   }, [postId]);
   const notices = pinnedNotices(state);
   const hasSession = !!rsvp?.available && !!rsvp.startsAt;
   if (!hasSession && !(state && notices.length)) return null;
   const content = <>
-    {hasSession && <NextSessionLine postId={postId} rsvp={rsvp!} now={now} onChange={showRsvp} />}
+    {hasSession && <NextSessionLine postId={postId} rsvp={rsvp!} now={now} zone={zone} onChange={showRsvp} />}
     {!!state && notices.length > 0 && <View style={hasSession ? [styles.boardLine, clayBox && styles.boardLineInset, { borderTopColor: theme.line }] : undefined}><NoticeBoard postId={postId} state={state} notices={notices} onChanged={refresh} /></View>}
   </>;
   // The clay tile overhangs the card, so only the content inside is clipped to its corners.
@@ -170,7 +174,7 @@ export function MeetupRoomTop({ postId }: { postId: string }) {
   return <View style={[styles.roomTop, { backgroundColor: theme.backgroundElement }]}>{content}</View>;
 }
 
-function NextSessionLine({ postId, rsvp, now, onChange }: { postId: string; rsvp: Rsvp; now: number; onChange: (next: Rsvp) => void }) {
+function NextSessionLine({ postId, rsvp, now, zone, onChange }: { postId: string; rsvp: Rsvp; now: number; zone: string; onChange: (next: Rsvp) => void }) {
   const { tr, locale } = useLanguage();
   const { play } = useInteractionFeedback();
   const [saving, setSaving] = useState(false), [failed, setFailed] = useState(false);
@@ -181,7 +185,7 @@ function NextSessionLine({ postId, rsvp, now, onChange }: { postId: string; rsvp
     catch { setFailed(true); play('warning'); }
     finally { setSaving(false); }
   };
-  const when = sessionWhen(rsvp.startsAt!, locale, now, tr);
+  const when = sessionWhen(rsvp.startsAt!, locale, now, tr, zone);
   return <View style={styles.nextLine}>
     <View style={styles.flex}>
       <ThemedText style={Typography.label}>{tr('다음 회차')} · {when}</ThemedText>

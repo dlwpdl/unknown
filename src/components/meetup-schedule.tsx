@@ -15,18 +15,19 @@ import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { daysLeftToConfirm, inAttendanceWindow, liveSession, pastSessions, sessionRange, upcomingSessions } from '@/lib/meetup-host-home';
 import { loadMeetupHostTools, type MeetupHostToolsState } from '@/lib/meetup-host-tools';
+import { formatMeetupTime, meetupZone } from '@/lib/chilling-date';
+import { loadPublicMeetupContext } from '@/lib/feed-data';
 import { loadMeetupSessions, type MeetupSession, type MeetupSessions } from '@/lib/meetup-reviews';
 import { supabase } from '@/lib/supabase';
 
-function DateTile({ iso, on }: { iso: string; on: boolean }) {
+function DateTile({ iso, on, zone }: { iso: string; on: boolean; zone: string }) {
   const { locale } = useLanguage();
   const theme = useTheme();
-  const date = new Date(iso);
   const color = { color: on ? theme.accentInk : theme.textSecondary };
   return <View style={[styles.tile, { backgroundColor: on ? theme.accent : theme.backgroundElement }]}>
-    <ThemedText style={[Typography.caption, color]}>{date.toLocaleDateString(locale, { month: 'short' })}</ThemedText>
-    <ThemedText style={[Typography.menu, { color: on ? theme.accentInk : theme.text }]}>{date.getDate()}</ThemedText>
-    <ThemedText style={[Typography.caption, color]}>{date.toLocaleDateString(locale, { weekday: 'short' })}</ThemedText>
+    <ThemedText style={[Typography.caption, color]}>{formatMeetupTime(iso, locale, zone, { month: 'short' })}</ThemedText>
+    <ThemedText style={[Typography.menu, { color: on ? theme.accentInk : theme.text }]}>{formatMeetupTime(iso, 'en-CA', zone, { day: 'numeric' })}</ThemedText>
+    <ThemedText style={[Typography.caption, color]}>{formatMeetupTime(iso, locale, zone, { weekday: 'short' })}</ThemedText>
   </View>;
 }
 
@@ -38,11 +39,14 @@ export function MeetupSchedule({ postId, kind, host }: { postId: string; kind: '
   const [failed, setFailed] = useState(false), [adding, setAdding] = useState(false), [revision, setRevision] = useState(0), [added, setAdded] = useState(0);
   // Live/upcoming/past are judged at the time the sessions arrived.
   const [now, setNow] = useState(() => Date.now());
+  const [zone, setZone] = useState(() => meetupZone());
   useFocusEffect(useCallback(() => {
     let active = true;
-    Promise.all([loadMeetupSessions(supabase, postId), loadMeetupHostTools(supabase, postId)])
-      .then(([nextSessions, nextTools]) => { if (active) { setSessions(nextSessions); setTools(nextTools); setNow(Date.now()); setFailed(false); } }, () => { if (active) setFailed(true); });
+    Promise.all([loadMeetupSessions(supabase, postId), loadMeetupHostTools(supabase, postId), loadPublicMeetupContext(supabase, postId).catch(() => null)])
+      .then(([nextSessions, nextTools, context]) => { if (active) { setSessions(nextSessions); setTools(nextTools); setZone(meetupZone(context?.room, context?.cityId)); setNow(Date.now()); setFailed(false); } }, () => { if (active) setFailed(true); });
     return () => { active = false; };
+  // revision re-reads the sessions after adding one or retrying. The compiler drops a dependency the body does not read unless this line skips it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId, revision]));
   if (failed) return <StateCard kind="error" title={tr('일정을 불러오지 못했어요')} body={tr('연결을 확인하고 다시 시도해 주세요.')} actionLabel={tr('다시 불러오기')} onAction={() => setRevision(value => value + 1)} />;
   if (!sessions || !tools) return <ListLoading label={tr('불러오는 중이에요')} />;
@@ -60,18 +64,18 @@ export function MeetupSchedule({ postId, kind, host }: { postId: string; kind: '
   };
   return <View>
     <SectionLabel>{tr('앞으로')}</SectionLabel>
-    {upcoming.length ? <ListCard>{upcoming.map((session, index) => <ListRow key={session.id} analyticsId="meetup.schedule.session" title={tr('{0} · {1}시간', sessionRange(session, locale), length(session))} detail={summary(session)}
-      leading={<DateTile iso={session.startsAt} on={index === 0} />} trailing={session.id === live?.id ? <Tag label={tr('지금')} /> : index === 0 ? <Tag label={tr('다음 회차')} /> : undefined} onPress={() => open(session)} />)}</ListCard>
+    {upcoming.length ? <ListCard>{upcoming.map((session, index) => <ListRow key={session.id} analyticsId="meetup.schedule.session" title={tr('{0} · {1}시간', sessionRange(session, locale, zone), length(session))} detail={summary(session)}
+      leading={<DateTile iso={session.startsAt} on={index === 0} zone={zone} />} trailing={session.id === live?.id ? <Tag label={tr('지금')} /> : index === 0 ? <Tag label={tr('다음 회차')} /> : undefined} onPress={() => open(session)} />)}</ListCard>
       : <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('아직 잡힌 회차가 없어요.')}</ThemedText>}
     {canAdd && <View style={styles.add}><RaisedActionButton analyticsId="meetup.schedule.add" tone="secondary" label={tr('회차 추가')} onPress={() => { play('selection'); setAdding(true); }} /></View>}
     {added > 0 && <ThemedText accessibilityLiveRegion="polite" themeColor="textSecondary" style={[Typography.supporting, styles.note]}>{tr('회차 {0}개를 등록했어요.', added)}</ThemedText>}
     {past.length > 0 && <>
       <SectionLabel>{tr('지난 회차')}</SectionLabel>
-      <ListCard>{past.map(session => <ListRow key={session.id} analyticsId="meetup.schedule.session" title={sessionRange(session, locale)} detail={summary(session)} leading={<DateTile iso={session.startsAt} on={false} />}
+      <ListCard>{past.map(session => <ListRow key={session.id} analyticsId="meetup.schedule.session" title={sessionRange(session, locale, zone)} detail={summary(session)} leading={<DateTile iso={session.startsAt} on={false} zone={zone} />}
         trailing={inAttendanceWindow(session, now) ? <Tag label={tr('{0}일 남음', daysLeftToConfirm(session, now))} tone="quiet" /> : undefined} onPress={() => open(session)} />)}</ListCard>
     </>}
     {sessions.isHost && <MeetupAutoNext postId={postId} />}
-    {canAdd && <MeetupAddSession postId={postId} visible={adding} canSingle={sessions.isHost} canRepeat={tools.canManageSessions} onClose={() => setAdding(false)} onAdded={count => { setAdded(count); setRevision(value => value + 1); }} />}
+    {canAdd && <MeetupAddSession postId={postId} zone={zone} visible={adding} canSingle={sessions.isHost} canRepeat={tools.canManageSessions} onClose={() => setAdding(false)} onAdded={count => { setAdded(count); setRevision(value => value + 1); }} />}
   </View>;
 }
 
