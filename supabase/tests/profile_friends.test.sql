@@ -67,7 +67,8 @@ select ok(has_function_privilege('anon','public.get_profile_overview(uuid)','exe
 
 set local role anon;
 select set_config('request.jwt.claims','{"role":"anon"}',true);
-select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>'savedCount','2','anonymous visitors see the count of places and businesses only');
+select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedCount','null'::jsonb,'anonymous visitors do not see how many places someone saved');
+select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedWeekStreak','null'::jsonb,'anonymous visitors do not see the saving streak');
 select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedPlaces','null'::jsonb,'anonymous visitors never see saved places');
 select ok(not public.get_profile_overview('e5100000-0000-4000-8000-000000000002') ? 'canRequestFriend','no field says whom a request would reach');
 select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>'meetupCount','1','meetup posts are counted');
@@ -145,13 +146,16 @@ select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>
 select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedPlaces','null'::jsonb,'a friend sees nothing once B turns it off');
 select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>'mapHiddenReason','not_shared','a friend is told B does not share');
+select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedCount','null'::jsonb,'a friend who hides their saves shows no saved count');
 select is(public.get_merchant_saves('e5110000-0000-4000-8000-000000000001')->'friends','[]'::jsonb,'a friend who turned it off is not named on the business');
 select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000002","role":"authenticated"}',true);
 select is(public.set_profile_sharing(true)->>'savedPlacesToFriends','true','B turns sharing back on');
 select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select is(jsonb_array_length(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedPlaces'),2,'the map comes back');
+select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->>'savedCount','2','a sharing friend shows how many places they saved');
 select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000003","role":"authenticated"}',true);
 select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedPlaces','null'::jsonb,'sharing reaches friends only');
+select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000002')->'savedCount','null'::jsonb,'a non-friend does not see how many places someone saved');
 select is(public.get_merchant_saves('e5110000-0000-4000-8000-000000000001')->'friends','[]'::jsonb,'a non-friend sees no names');
 
 -- Unfriending, blocking and reporting end it.

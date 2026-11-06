@@ -109,7 +109,7 @@ export default function ProfileScreen() {
   const cityName = CITIES.find(({ id }) => id === summary?.cityId)?.name ?? summary?.cityId ?? '';
   const own = overview?.user === me.id ? overview.value : null;
   const stats = [
-    ['saved', own ? count(own.savedCount) : '–', tr('저장한 곳'), () => router.push({ pathname: '/profile/saved', params: { filter: 'places' } })],
+    ['saved', own?.savedCount != null ? count(own.savedCount) : '–', tr('저장한 곳'), () => router.push({ pathname: '/profile/saved', params: { filter: 'places' } })],
     ['friends', own ? count(own.friendCount) : '–', tr('친구'), () => router.push('/profile/friends')],
     ['posts', count(summary?.posts ?? 0), tr('쓴 글'), null],
   ] as const;

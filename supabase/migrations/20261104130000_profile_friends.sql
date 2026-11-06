@@ -101,8 +101,8 @@ language sql stable set search_path='' as $$
   where r.w=anchor.s-((r.n-1)*7)::integer
 $$;
 
--- Counts are public like the 시안: saved count, streak, meetups, friends. The saved places themselves are returned only
--- to the owner, or to a friend unless the owner turned sharing off. No field says whether a request would be refused
+-- Meetup and friend counts are public. The saved places, saved count and streak go only to the owner, or to a friend unless
+-- the owner turned sharing off: a public count that rises with each save, read next to a place's public count, shows what someone saved. No field says whether a request would be refused
 -- (operated character, block, report): the button always shows and set_friendship answers FRIEND_UNAVAILABLE.
 create function public.get_profile_overview(p_user_id uuid) returns jsonb
 language plpgsql stable security definer set search_path='' as $$
@@ -117,9 +117,9 @@ begin
   state:=case when own or uid is null then null else private.friendship_state(uid,p_user_id) end;
   shows:=own or (state='friends' and not private.is_operated_character(p_user_id)
     and coalesce((select s.saved_places_to_friends from private.profile_sharing s where s.user_id=p_user_id),true));
-  select count(*)::integer,private.saved_week_streak(coalesce(array_agg(p.saved_at),'{}'::timestamptz[]),now())
-    into total,streak from private.profile_saved_places(p_user_id) p;
   if shows then
+    select count(*)::integer,private.saved_week_streak(coalesce(array_agg(p.saved_at),'{}'::timestamptz[]),now())
+      into total,streak from private.profile_saved_places(p_user_id) p;
     select coalesce(jsonb_agg(jsonb_build_object('cityId',p.city_id,'placeKey',p.place_key,'merchantId',p.merchant_id) order by p.saved_at desc),'[]'::jsonb)
       into places from (select * from private.profile_saved_places(p_user_id) x where x.place_key is not null order by x.saved_at desc limit 300) p;
   end if;

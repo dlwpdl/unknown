@@ -90,9 +90,11 @@ export function ProfileSavedMap({ overview, homeCityId }: { overview: ProfileOve
 export function ProfileRecordTiles({ overview }: { overview: ProfileOverview }) {
   const { tr } = useLanguage(), theme = useTheme(), clayBox = useClayBox(), router = useRouter(), { play } = useInteractionFeedback(), reduced = useReducedMotion();
   const tiles: { id: string; value: string; label: string; open?: () => void }[] = [
-    { id: 'streak', value: tr('{0}주', count(overview.savedWeekStreak)), label: tr('연속 저장') },
-    { id: 'saved', value: count(overview.savedCount), label: tr('저장한 곳'),
-      open: overview.own ? () => router.push({ pathname: '/profile/saved', params: { filter: 'places' } }) : undefined },
+    ...(overview.savedWeekStreak === null || overview.savedCount === null ? [] : [
+      { id: 'streak', value: tr('{0}주', count(overview.savedWeekStreak)), label: tr('연속 저장') },
+      { id: 'saved', value: count(overview.savedCount), label: tr('저장한 곳'),
+        open: overview.own ? () => router.push({ pathname: '/profile/saved', params: { filter: 'places' } }) : undefined },
+    ]),
     { id: 'meetups', value: count(overview.meetupCount), label: tr('연 모임') },
   ];
   return <ScrollView analyticsId="profile.records" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tiles}>

@@ -14,8 +14,10 @@ const overview = { userId: user, own: false, savedCount: 2, savedWeekStreak: 3, 
 
 test('profile overview keeps a hidden map hidden and rejects malformed rows', () => {
   assert.deepEqual(parseProfileOverview(overview).savedPlaces[1], { cityId: 'toronto', placeKey: 'partner:shop', merchantId: merchant });
-  const hidden = parseProfileOverview({ ...overview, friendship: 'none', savedPlaces: null, mapHiddenReason: 'not_friends' });
+  const hidden = parseProfileOverview({ ...overview, friendship: 'none', savedCount: null, savedWeekStreak: null, savedPlaces: null, mapHiddenReason: 'not_friends' });
   assert.equal(hidden.savedPlaces, null);
+  assert.equal(hidden.savedCount, null);
+  assert.equal(hidden.savedWeekStreak, null);
   assert.equal(hidden.mapHiddenReason, 'not_friends');
   assert.equal(parseProfileOverview(null), null);
   for (const bad of [{ ...overview, savedCount: -1 }, { ...overview, friendship: 'maybe' }, { ...overview, mapHiddenReason: 'secret' },

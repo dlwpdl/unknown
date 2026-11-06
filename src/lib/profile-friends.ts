@@ -6,7 +6,9 @@ export type FriendshipState = 'none' | 'outgoing' | 'incoming' | 'friends';
 export type FriendAction = 'request' | 'accept' | 'decline' | 'cancel' | 'remove';
 export type SavedPlacePin = { cityId: string; placeKey: string; merchantId: string | null };
 export type ProfileOverview = {
-  userId: string; own: boolean; savedCount: number; savedWeekStreak: number; meetupCount: number; friendCount: number;
+  userId: string; own: boolean; meetupCount: number; friendCount: number;
+  // null: this viewer may not see the saved places, so not how many either.
+  savedCount: number | null; savedWeekStreak: number | null;
   // No field says whether a request would be refused: the button always shows and the server answers FRIEND_UNAVAILABLE.
   friendship: FriendshipState | null;
   // null: not visible to this viewer (mapHiddenReason says why). The owner and sharing friends get an array.
@@ -56,7 +58,7 @@ export function parseProfileOverview(value: unknown): ProfileOverview | null {
   if (reason !== null && reason !== 'not_friends' && reason !== 'not_shared') invalid();
   if (value.sharesSavedPlaces !== null && typeof value.sharesSavedPlaces !== 'boolean') invalid();
   const requests = value.friendRequestCount === null || value.friendRequestCount === undefined ? null : count(value.friendRequestCount);
-  return { userId: uuid(value.userId), own: value.own, savedCount: count(value.savedCount), savedWeekStreak: count(value.savedWeekStreak),
+  return { userId: uuid(value.userId), own: value.own, savedCount: value.savedCount === null ? null : count(value.savedCount), savedWeekStreak: value.savedWeekStreak === null ? null : count(value.savedWeekStreak),
     meetupCount: count(value.meetupCount), friendCount: count(value.friendCount), friendship,
     savedPlaces, mapHiddenReason: reason, sharesSavedPlaces: value.sharesSavedPlaces, friendRequestCount: requests };
 }

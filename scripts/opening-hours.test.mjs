@@ -74,8 +74,9 @@ test('every bundled catalog value is either read or left unknown, and Vancouver 
 });
 
 test('the local clock follows the city time zone, including the daylight saving change', () => {
-  // 2026-11-04 06:30 UTC is Tuesday 22:30 in Vancouver (PST) and Wednesday 01:30 in Toronto.
-  const now = Date.parse('2026-11-04T06:30:00Z');
+  // 2025-11-05 06:30 UTC is Tuesday 22:30 in Vancouver (PST) and Wednesday 01:30 in Toronto.
+  // Not a later date: BC stopped changing clocks in 2026, so older and newer time zone data disagree after that.
+  const now = Date.parse('2025-11-05T06:30:00Z');
   assert.deepEqual(localClock('America/Vancouver', now), at(TU, '22:30'));
   assert.deepEqual(cityClock('toronto', now), at(WE, '01:30'));
   assert.equal(cityClock('unknown-city', now), null);
