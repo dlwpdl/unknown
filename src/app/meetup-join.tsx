@@ -3,7 +3,7 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useFocusEffect, useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
-import { Alert, Animated, AppState, DeviceEventEmitter, Easing, KeyboardAvoidingView, Modal, Platform, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Animated, AppState, DeviceEventEmitter, Easing, KeyboardAvoidingView, Modal, Platform, RefreshControl, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { requestPushPrompt } from '@/lib/push-prompt';
 import { SymbolView } from 'expo-symbols';
@@ -77,6 +77,7 @@ export default function MeetupJoinRoute() {
   return <JoinForm key={`${postId}:${isAuthed ? me.id : 'guest'}`} postId={postId} />;
 }
 function JoinForm({ postId }: { postId: string }) {
+  const { fontScale } = useWindowDimensions();
   const { tr, t, language, locale: appLocale } = useLanguage();
   const theme = useTheme(), router = useRouter(), hidden = useContentVisibility();
   const copy = (ko: string, en: string) => language === 'en' ? en : ko;
@@ -253,11 +254,11 @@ function JoinForm({ postId }: { postId: string }) {
   const introCard = () => <View style={[styles.card, styles.questionCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <ThemedText accessibilityRole="header" style={Typography.section}>{tr('호스트에게 보낼 내 소개')}</ThemedText>
     <View style={styles.pair}>
-      <View style={styles.pairItem}>
+      <View style={[styles.pairItem, { flexBasis: 140 * fontScale }]}>
         <ThemedText style={Typography.label}>{tr("모임에서 쓸 이름")}</ThemedText>
         <TextInput value={draft?.name ?? ''} onChangeText={name => setDraft(current => current && { ...current, name })} accessibilityLabel={tr("모임에서 쓸 이름")} maxLength={30} editable={!sending} placeholder={tr("모임에서 불리고 싶은 이름")} placeholderTextColor={theme.textSecondary} style={[ControlStyles.field, styles.field, { borderColor: theme.line, color: theme.text, backgroundColor: theme.background }]} />
       </View>
-      <View style={styles.pairItem}>
+      <View style={[styles.pairItem, { flexBasis: 140 * fontScale }]}>
         <ThemedText style={Typography.label}>{tr("활동 지역")}</ThemedText>
         <Pressable analyticsId="meetup.join.city" accessibilityRole="button" accessibilityLabel={`${tr("활동 지역")}, ${language === 'en' ? draftCity.englishName : draftCity.name}`} disabled={sending} onPress={() => { play('selection'); setCityOpen(true); }} style={({ pressed }) => [ControlStyles.field, styles.city, { borderColor: theme.line, backgroundColor: theme.background, opacity: pressed ? 0.7 : 1 }]}>
           <ThemedText numberOfLines={1} style={styles.flex}>{language === 'en' ? draftCity.englishName : draftCity.name}</ThemedText>
@@ -458,7 +459,7 @@ const styles = StyleSheet.create({
   questionCard: { padding: Spacing.three, gap: Spacing.two },
   input: { minHeight: 104, borderWidth: 1, borderRadius: 12, padding: Spacing.three, fontSize: 16, textAlignVertical: 'top' }, count: { textAlign: 'right' },
   // Name and area sit side by side and stack on narrow screens or large text.
-  pair: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, pairItem: { flexGrow: 1, flexBasis: 140, minWidth: 0, gap: Spacing.one },
+  pair: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, pairItem: { flexGrow: 1, minWidth: 0, gap: Spacing.one },
   field: { borderWidth: 1, paddingHorizontal: Spacing.three, fontSize: 16 },
   city: { borderWidth: 1, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   examples: { gap: Spacing.one, paddingHorizontal: Spacing.three }, examplesRow: { marginHorizontal: -Spacing.three },

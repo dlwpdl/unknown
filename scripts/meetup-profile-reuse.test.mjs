@@ -11,7 +11,7 @@ import { translateUi } from '../src/i18n/index.ts';
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 export const saved = { version: 2, revision: 'saved', displayName: '산책친구', cityId: 'vancouver', intro: '주말에 걸어요', interests: ['산책'], promptOne: '함께 걸어요', promptTwo: '느긋하게', promptOneId: 'meet', promptTwoId: 'join', photoPaths: [], publicPhotoPath: null, shareWithMembers: false, preferences: { activities: [], availability: '', pace: 'any' } };
 const owner = '00000000-0000-4000-8000-000000000001';
-export function profile(value, { upload, failSave = true, language = 'ko', theme = {} } = {}) {
+export function profile(value, { upload, failSave = true, language = 'ko', theme = {}, nickname, fontScale = 1 } = {}) {
   const slots = [], effects = [], writes = [], routes = [], uploads = [], cleanup = [];
   let at = 0, actor = owner, focused, focusCleanup, guard;
   const effect = (fn, deps) => { const i = at++, previous = slots[i]; if (!previous || deps.some((dep, index) => dep !== previous.deps[index])) { slots[i] = { deps }; effects.push(() => { previous?.cleanup?.(); slots[i].cleanup = fn(); }); } };
@@ -25,13 +25,13 @@ export function profile(value, { upload, failSave = true, language = 'ko', theme
     'react-native-safe-area-context': { SafeAreaProvider: 'SafeAreaProvider', SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) },
     react,
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': { AccessibilityInfo: { announceForAccessibility() {} }, View: 'View', TextInput: 'Input', KeyboardAvoidingView: 'KeyboardAvoidingView', Modal: 'Modal', StyleSheet: { create: x => x }, Platform: { OS: 'web' }, Keyboard: { dismiss() {} } },
+    'react-native': { AccessibilityInfo: { announceForAccessibility() {} }, View: 'View', TextInput: 'Input', KeyboardAvoidingView: 'KeyboardAvoidingView', Modal: 'Modal', StyleSheet: { create: x => x }, Platform: { OS: 'web' }, Keyboard: { dismiss() {} }, useWindowDimensions: () => ({ fontScale }) },
     'expo-router': { usePreventRemove: when => { guard = when; }, useLocalSearchParams: () => ({}), useFocusEffect: fn => { focused = fn; }, useRouter: () => ({ canGoBack: () => true, back: () => routes.push('back') }) },
     'expo-image-picker': { UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' }, launchImageLibraryAsync: async () => ({ canceled: false, assets: [{ uri: 'fixture-photo' }] }) },
     'react-native-reanimated': { useReducedMotion: () => true },
     '@/hooks/use-language': { useLanguage: () => ({ language, tr: (s, ...args) => translateUi(language, s, ...args) }) },
     '@/hooks/use-theme': { useTheme: () => theme },
-    '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: actor, cityId: 'vancouver' } }) },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: actor, cityId: 'vancouver', nickname } }) },
     '@/lib/chilling-data': { ...data, loadChillingProfile: async () => value, getChillingError: () => '저장하지 못했어요. 다시 시도해 주세요.' },
     '@/lib/supabase': { supabase: { rpc: async (name, args) => { assert.equal(name, 'save_chilling_profile'); writes.push(args.p_profile); return { data: null, error: failSave ? Error('save failed') : null }; } } },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
@@ -61,16 +61,48 @@ test('a complete account meetup profile opens its item list and keeps save failu
   assert.ok(nodes(footer).some(node => node.props?.accessibilityRole === 'alert'));
 });
 
-test('a missing or incomplete meetup profile still begins at the first required setup step', async () => {
+test('a missing or incomplete meetup profile opens one screen that saves, not a set of steps', async () => {
   for (const value of [null, { ...saved, intro: '' }]) {
     const app = profile(value); app.render(); await new Promise(setImmediate);
     const tree = app.render();
-    assert.equal(nodes(tree).some(node => node.props?.analyticsId === 'app_meetup-profile.pressable.8'), false);
-    assert.ok(nodes(tree).some(node => node.props?.analyticsId === 'app_meetup-profile.pressable.13'));
+    assert.equal(nodes(tree).find(node => node.props?.analyticsId === 'app_meetup-profile.pressable.8').props.disabled, true);
+    assert.equal(nodes(tree).some(node => node.props?.analyticsId === 'meetup-profile.edit-item'), false);
     assert.equal(app.writes.length, 0);
   }
 });
-
+test('the nickname fills an empty name, a saved name stays, and name, area and a picked intro are enough to save', async () => {
+  const app = profile(null, { failSave: false, nickname: '글링친구' }); app.render(); await new Promise(setImmediate);
+  const input = () => nodes(app.render()).find(node => node.props?.accessibilityLabel === '모임에서 쓸 이름');
+  assert.equal(input().props.value, '글링친구');
+  assert.equal(app.render() && app.guarded(), false, 'A filled-in nickname alone is not an edit to protect.');
+  nodes(app.render()).find(node => node.props?.label === '먼저 말을 거는 편이에요').props.onPress();
+  const save = nodes(app.render()).find(node => node.props?.analyticsId === 'app_meetup-profile.pressable.8');
+  assert.equal(save.props.disabled, false);
+  save.props.onPress(); await new Promise(setImmediate);
+  assert.deepEqual([app.writes[0].displayName, app.writes[0].cityId, app.writes[0].intro], ['글링친구', 'vancouver', '먼저 말을 거는 편이에요']);
+  assert.equal(app.writes[0].shareWithMembers, false, 'Sharing with members stays off unless switched on.');
+  const kept = profile({ ...saved, intro: '' }, { nickname: '글링친구' }); kept.render(); await new Promise(setImmediate);
+  assert.equal(nodes(kept.render()).find(node => node.props?.accessibilityLabel === '모임에서 쓸 이름').props.value, saved.displayName);
+});
+test('name and area stop sharing a row as the text grows, so a nickname is not cut off', async () => {
+  const basis = async fontScale => {
+    const app = profile(null, { nickname: '지혜로운솔방울', fontScale }); app.render(); await new Promise(setImmediate);
+    return nodes(app.render()).filter(node => node.props?.style?.[1]?.flexBasis).map(node => node.props.style[1].flexBasis);
+  };
+  assert.deepEqual(await basis(1), [140, 140]);
+  assert.deepEqual(await basis(1.5), [210, 210]);
+});
+test('an older profile says the whole profile goes to the host and keeps its extras when saved', async () => {
+  const older = { ...saved, version: 1 };
+  const app = profile(older, { failSave: false }); app.render(); await new Promise(setImmediate);
+  const copy = tree => nodes(tree).map(node => node.props?.children).flat(Infinity).filter(item => typeof item === 'string');
+  assert.ok(copy(app.render()).includes('신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요. 다른 신청자에게는 안 보여요.'));
+  nodes(app.render()).find(node => node.props?.analyticsId === 'app_meetup-profile.pressable.8').props.onPress(); await new Promise(setImmediate);
+  assert.deepEqual([...app.writes[0].interests], saved.interests);
+  assert.equal(app.writes[0].promptOne, saved.promptOne);
+  const fresh = profile(null); fresh.render(); await new Promise(setImmediate);
+  assert.ok(copy(fresh.render()).includes('신청을 보내면 호스트가 내 이름, 지역, 소개, 답변을 봐요. 다른 신청자에게는 안 보여요.'));
+});
 test('a retained completed-profile save cannot write old account data after unmount or a new account commit', async () => {
   for (const leave of ['unmount', 'account']) {
     const app = profile(saved, { failSave: false }); app.render(); await new Promise(setImmediate);
@@ -156,19 +188,12 @@ test('emptying a required item from its list blocks saving and names what is mis
   assert.ok(nodes(tree).some(node => typeof node.props?.children === 'string' && node.props.children.includes('남은 필수 항목')));
 });
 
-test('first-time steps show the shared explanation once and keep the public photo on the review step', async () => {
+test('the first-time screen shows the shared explanation once and leaves the optional items for later', async () => {
   const note = '일반 프로필과 별개로 계정당 하나를 만들고, 모든 모임에서 함께 사용해요.';
   const app = profile({ ...saved, intro: '' }); app.render(); await new Promise(setImmediate);
-  const seen = [];
-  nodes(app.render()).find(node => node.props?.accessibilityLabel === '한 줄 소개 직접 입력').props.onPress();
-  nodes(app.render()).find(node => node.props?.accessibilityLabel === '한 줄 소개 직접 입력').props.onChangeText('안녕하세요');
-  for (let step = 0; step < 5; step++) {
-    const tree = app.render();
-    seen.push(nodes(tree).filter(node => node.props?.children === note).length);
-    if (step < 4) nodes(tree).find(node => node.props?.analyticsId === 'app_meetup-profile.pressable.13').props.onPress();
-    else assert.ok(nodes(tree).some(node => node.props?.analyticsId === 'meetup-profile.public-photo-none'), 'Choosing the public photo no longer needs the public tab.');
-  }
-  assert.deepEqual(seen, [1, 0, 0, 0, 0]);
+  const tree = app.render();
+  assert.equal(nodes(tree).filter(node => node.props?.children === note).length, 1);
+  for (const later of ['app_meetup-profile.pressable.5', 'app_meetup-profile.pressable.10', 'meetup-profile.public-photo-none', 'meetup-profile.pace']) assert.equal(nodes(tree).some(node => node.props?.analyticsId === later), false, later);
 });
 
 test('moving a photo by button or by drag saves the new order and keeps the public photo on the same picture', async () => {
