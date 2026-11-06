@@ -217,6 +217,13 @@ const firstApplication = async (options = {}) => {
   intro.props.onChangeText('주말에 걸어요'); answer.props.onChangeText('쓰던 답변'); await ui.flush();
   return ui;
 };
+test('the one-screen notice names everything the host will see, including what an older profile keeps', async () => {
+  const fresh = mountParticipant('join', { profile: null }); await fresh.flush();
+  assert.match(text(fresh.tree), /내 이름, 지역, 소개, 답변을 봐요/); fresh.unmount();
+  const older = mountParticipant('join', { profile: { ...participantProfile, version: 1 } }); await older.flush();
+  assert.equal(inputs(older).length > 1, true, 'an older profile still gets the one-screen form');
+  assert.match(text(older.tree), /내 모임 프로필과 답변을 봐요/); assert.doesNotMatch(text(older.tree), /내 이름, 지역, 소개, 답변을 봐요/); older.unmount();
+});
 test('without a profile one screen saves it and sends the request, in that order, with the saved revision', async () => {
   const ui = mountParticipant('join', { profile: null }); await ui.flush();
   assert.equal(inputs(ui)[0].props.value, '하늘', 'the app nickname is already filled in');

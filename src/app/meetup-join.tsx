@@ -388,7 +388,10 @@ function JoinForm({ postId }: { postId: string }) {
                   {profileError ? <StateCard layout="start" kind="error" title={tr('모임 프로필을 불러오지 못했어요')} body={tr(profileError)} /> : introCard()}
                   {languagePicker()}
                   {question()}
-                  {!profileError && whoSees(tr('신청을 보내면 호스트가 내 이름, 지역, 소개, 답변을 봐요. 다른 신청자에게는 안 보여요.'))}
+                  {!profileError && whoSees(profile
+                    // An older profile keeps its interests, prompts and photos, and those reach the host too.
+                    ? tr('신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요. 다른 신청자에게는 안 보여요.')
+                    : tr('신청을 보내면 호스트가 내 이름, 지역, 소개, 답변을 봐요. 다른 신청자에게는 안 보여요.'))}
                 </>}
                 {view === 'form' && <>
                   {meetCard()}

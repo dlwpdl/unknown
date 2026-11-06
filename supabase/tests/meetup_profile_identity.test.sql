@@ -92,6 +92,8 @@ select set_config('storage.operation','storage.object.list',true);
 select is((select count(*)::integer from storage.objects where bucket_id='meetup-profiles'),0,'listing stays denied');
 select set_config('storage.operation','storage.object.create_signed_url',true);
 select is((select count(*)::integer from storage.objects where bucket_id='meetup-profiles'),0,'signed URL operation denied including public host photo');
+select set_config('storage.operation','storage.object.sign',true);
+select is((select count(*)::integer from storage.objects where bucket_id='meetup-profiles'),0,'real signing operation denied including public host photo');
 select set_config('storage.operation','storage.object.get_authenticated',true);
 reset role;
 select set_config('request.jwt.claims','{"sub":"51900000-0000-4000-8000-000000000001","role":"authenticated"}',true);
