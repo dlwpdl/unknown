@@ -118,7 +118,8 @@ export function ClayIcon({ clay, claySize, name, size = 21, tintColor }: { clay:
 /** Stretched behind a control's content. The caller clears the control's own background. */
 export function ClayPillFill({ kind }: { kind: ClayPillKind }) {
   const { cap, end, drop, dark, ...light } = PILLS[kind], { l, m, r } = useDark() ? dark : light;
-  return <View pointerEvents="none" style={[styles.pill, { bottom: drop as ViewStyle['bottom'] }]}>
+  // Android fades a dimmed (disabled) control's children one by one, so the slices' overlap would show as two vertical lines; the layer fades them as one.
+  return <View pointerEvents="none" renderToHardwareTextureAndroid style={[styles.pill, { bottom: drop as ViewStyle['bottom'] }]}>
     <View style={{ height: '100%', aspectRatio: cap }} />
     <Image source={m} style={styles.middle} contentFit="fill" accessible={false} />
     <View style={{ height: '100%', aspectRatio: cap }} />

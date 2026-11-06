@@ -31,6 +31,10 @@ test('clay is on in both themes and off on the web and the admin theme, and 9-sl
   assert.match(clay, /if \(!pill\) return name \? <SymbolView/);
 });
 
+test('a dimmed pill fades as one piece on Android, so the slices do not show as two vertical lines', () => {
+  assert.match(clay, /<View pointerEvents="none" renderToHardwareTextureAndroid style=\{\[styles\.pill,/);
+});
+
 test('every pill, box and photo dome has its dark drawing, and a dark icon only names a drawing the light set has', () => {
   for (const kind of ['on', 'white', 'cta', 'tray', 'line']) for (const end of ['l', 'm', 'r']) assert.ok(clay.includes(`pill_${kind}_d_${end}.png`), `${kind} ${end}`);
   for (const name of ['text_d', 'tile_d', 'photo_dome_d']) assert.ok(clay.includes(`${name}.png`), name);
