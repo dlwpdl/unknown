@@ -6,6 +6,7 @@ import { SymbolView } from 'expo-symbols';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { CategoryIcon } from '@/components/category-icon';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { DiscoveryMap, type DiscoveryMarker } from '@/components/discovery-map';
 import { DragSheet } from '@/components/drag-sheet';
 import { InitialAvatar, Tag } from '@/components/list-card';
@@ -70,10 +71,12 @@ export function useLiveActions() {
 /** The last ten minutes of my bubble: 곧 내려가요 with 1시간 더 띄우기. */
 export function ExtendRow({ busy, onExtend }: { busy: boolean; onExtend: () => void }) {
   const { tr } = useLanguage(), theme = useTheme();
+  const clay = useClay();
   return <View style={styles.extendRow}>
     <ThemedText type="caption" themeColor="textSecondary" style={styles.flex} accessibilityLiveRegion="polite">{tr('말풍선이 곧 내려가요. 더 띄워 둘까요?')}</ThemedText>
     <Pressable analyticsId="livemap.extend" accessibilityRole="button" accessibilityLabel={tr('1시간 더 띄우기')} accessibilityState={{ busy }} disabled={busy} onPress={onExtend}
-      style={({ pressed }) => [styles.dockPill, controlPresentation(theme, { tone: 'primary', pressed, busy }).container]}>
+      style={({ pressed }) => [styles.dockPill, clay && styles.dockPillClay, controlPresentation(theme, { tone: 'primary', pressed, busy, clay }).container]}>
+      {clay && <ClayPillFill kind="cta" />}
       <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr('1시간 더 띄우기')}</ThemedText>
     </Pressable>
   </View>;
@@ -134,6 +137,7 @@ export function useMeetupMarkers(cityId: string, viewerScope: string, now: numbe
 
 /** The card under the map: leave a bubble, see mine, or open a request someone sent. */
 export function LiveDock({ map, demo, now, onCompose, onReceived }: { map: LiveMap; demo: boolean; now: number; onCompose: () => void; onReceived: (id: string) => void }) {
+  const clay = useClay();
   const theme = useTheme(), { tr } = useLanguage(), { play } = useInteractionFeedback();
   const pending = map.received.find(request => request.status === 'pending');
   const mine = map.mine && minutesLeft(map.mine.expiresAt, now) > 0 ? map.mine : null;
@@ -153,7 +157,7 @@ export function LiveDock({ map, demo, now, onCompose, onReceived }: { map: LiveM
         <ThemedText type="smallBold" numberOfLines={1}>{title}</ThemedText>
         <ThemedText type="caption" themeColor="textSecondary" numberOfLines={2}>{body}</ThemedText>
       </View>
-      <View style={[styles.dockPill, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{action}</ThemedText></View>
+      <View style={[styles.dockPill, clay && styles.dockPillClay, { backgroundColor: clay ? 'transparent' : theme.accent }]}>{clay && <ClayPillFill kind="on" />}<ThemedText type="smallBold" style={{ color: theme.accentInk }}>{action}</ThemedText></View>
     </Pressable>
     {ending && <ExtendRow busy={busy} onExtend={extend} />}
     {/* Before posting too: the example then puts up a sample bubble of mine to receive on. */}
@@ -207,6 +211,7 @@ const actionProblem = (error: unknown) => {
 /** Who waved at my bubble (only I see this), each with a chat request back or where that request stands. */
 function WaveList({ waves, now, onClose }: { waves: LiveWave[]; now: number; onClose: () => void }) {
   const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), router = useRouter();
+  const clay = useClay();
   const [busy, setBusy] = useState<string | null>(null), [problem, setProblem] = useState('');
   const reply = async (wave: LiveWave) => {
     if (busy) return;
@@ -231,10 +236,12 @@ function WaveList({ waves, now, onClose }: { waves: LiveWave[]; now: number; onC
           : wave.reply?.status === 'accepted' ? tr('{0}님이 대화 신청을 받았어요', wave.sender.nickname) : relativeTime(wave.createdAt, now)}</ThemedText>
       </View>
       {!wave.reply ? <Pressable analyticsId="livemap.wave.reply" accessibilityRole="button" accessibilityLabel={tr('{0}님에게 대화 신청', wave.sender.nickname)} disabled={!!busy} onPress={() => void reply(wave)}
-        style={({ pressed }) => [ControlStyles.pill, styles.wavePill, controlPresentation(theme, { tone: 'primary', pressed, busy: busy === wave.id }).container]}>
+        style={({ pressed }) => [ControlStyles.pill, styles.wavePill, controlPresentation(theme, { tone: 'primary', pressed, busy: busy === wave.id, clay }).container]}>
+        {clay && <ClayPillFill kind="cta" />}
         <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr('대화 신청')}</ThemedText>
       </Pressable> : wave.reply.status === 'accepted' && <Pressable analyticsId="livemap.chat" accessibilityRole="button" onPress={() => openChat(wave.reply?.conversationId ?? null)}
-        style={({ pressed }) => [ControlStyles.pill, styles.wavePill, controlPresentation(theme, { pressed }).container]}>
+        style={({ pressed }) => [ControlStyles.pill, styles.wavePill, controlPresentation(theme, { pressed, clay }).container]}>
+        {clay && <ClayPillFill kind="white" />}
         <ThemedText type="smallBold">{tr('대화하러 가기')}</ThemedText>
       </Pressable>}
     </View>)}
@@ -565,6 +572,7 @@ const styles = StyleSheet.create({
   dock: { borderWidth: 1, borderRadius: 18, padding: 12, gap: 4, shadowColor: '#000', shadowOpacity: 0.14, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
   dockRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10 },
   dockPill: { ...ControlStyles.pill, minHeight: 36, borderRadius: 18 },
+  dockPillClay: { paddingHorizontal: 20 },
   extendRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   link: { minHeight: 44, justifyContent: 'center', alignSelf: 'center' },
   inlineLink: { minHeight: 32, justifyContent: 'center', alignSelf: 'flex-start' },

@@ -10,6 +10,7 @@ import { Alert, AppState, KeyboardAvoidingView, Linking, Modal, Platform, StyleS
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
+import { ClayBoxFill, ClayIcon, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { openBrowserAsync } from 'expo-web-browser';
 import { safeTicketUrl } from '../../supabase/functions/_shared/ticketmaster';
 import * as Location from 'expo-location';
@@ -91,6 +92,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const { tr, language } = useLanguage();
   const searchLabel = language === 'en' ? 'Search businesses, places and people' : '비즈니스·장소·사람·이야기 검색';
   const theme = useTheme(), router = useRouter(), reduced = useReducedMotion();
+  const clay = useClay(), clayBox = useClayBox();
   const top25Ink = theme === Colors.light ? '#68543A' : TOP25_GOLD;
   const { isAuthed, me, promptLogin } = useAuth(), hidden = useContentVisibility();
   const isFocused = useIsFocused(), targetFocusRef = useRef<string | null>(null);
@@ -487,7 +489,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   // The route opened from a list wears the shared round-back bar (owner 2026-11-04 "위쪽: 동그란 뒤로 + 가운데 제목"); the tab and the chat sheet keep their own row.
   const routeHeader = !tab && !onClose;
   const headerActions = <>{sheet === 'full' && <Pressable analyticsId="discovery.refresh" accessibilityRole="button" accessibilityLabel={tr("지도 결과 새로고침")} onPress={() => { play('selection'); refresh(); }} style={styles.icon}><SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={21} tintColor={theme.text} /></Pressable>}
-      <Pressable analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={listShown ? tr("지도 보기") : tr("리스트 보기")} onPress={() => listShown ? showMap() : showList('full')} style={styles.icon}><SymbolView name={listShown ? { ios: 'map', android: 'map', web: 'map' } : { ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' }} size={21} tintColor={theme.text} /></Pressable></>;
+      <Pressable analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={listShown ? tr("지도 보기") : tr("리스트 보기")} onPress={() => listShown ? showMap() : showList('full')} style={styles.icon}><ClayIcon clay={listShown ? 'map' : 'list'} claySize={28} name={listShown ? { ios: 'map', android: 'map', web: 'map' } : { ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' }} size={21} tintColor={theme.text} /></Pressable></>;
   return <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]} edges={routeHeader ? ['bottom', 'left', 'right'] : ['top', 'bottom', 'left', 'right']}>
     {routeHeader ? <PageHeader title={tr('{0} 지도', tr(city.name))} analyticsId="discovery.back" right={<View style={styles.headerActions}>{headerActions}</View>} />
     : <View style={[styles.header, tab && styles.tabHeader]}>
@@ -497,20 +499,20 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       <View style={styles.heading}><Pressable analyticsId="discovery.open" accessibilityRole="button" accessibilityLabel={tr('{0} 지도, 도시 바꾸기', tr(city.name))} accessibilityState={{ expanded: cityOpen }}
         onPress={() => { play('selection'); setCityOpen(true); }} style={styles.titleButton}>
         <ThemedText style={[styles.title, styles.titleText]}>{tr('{0} 지도', tr(city.name))}</ThemedText>
-        <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={IconSize.chevron} tintColor={theme.textSecondary} />
+        <ClayIcon clay="chevron" name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={IconSize.chevron} tintColor={theme.textSecondary} />
       </Pressable></View>
       {headerActions}
     </View>}
     <View style={[styles.search, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}>
       {onClose ? <>
-      <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={18} tintColor={theme.textSecondary} />
+      <ClayIcon clay="search" claySize={24} name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={18} tintColor={theme.textSecondary} />
       <TextInput value={query} onChangeText={setQuery} onFocus={() => play('selection')} placeholder={tr("등록된 장소·매물·행사 검색")} accessibilityLabel={tr("등록된 장소 매물 행사 검색")} placeholderTextColor={theme.textSecondary} maxLength={100} returnKeyType="search" style={[styles.input, { color: theme.text }]} />
       </> : <Pressable analyticsId="search.entry.map" accessibilityRole="button" accessibilityLabel={searchLabel} onPress={() => { play('selection'); router.push({ pathname: '/search', params: { cityId: city.id, ...(query ? { query } : {}) } }); }} style={({ pressed }) => [styles.unifiedSearch, { opacity: pressed ? 0.82 : 1 }]}>
-        <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={18} tintColor={theme.textSecondary} /><ThemedText style={styles.unifiedSearchText} themeColor={query ? 'text' : 'textSecondary'}>{query || searchLabel}</ThemedText>
+        <ClayIcon clay="search" claySize={24} name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={18} tintColor={theme.textSecondary} /><ThemedText style={styles.unifiedSearchText} themeColor={query ? 'text' : 'textSecondary'}>{query || searchLabel}</ThemedText>
       </Pressable>}
       {!!query && <Pressable analyticsId="discovery.search" accessibilityRole="button" accessibilityLabel={tr("검색어 지우기")} onPress={() => { play('selection'); setQuery(''); }} style={styles.icon}><ThemedText>×</ThemedText></Pressable>}
       <Pressable analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr("분류와 날짜 필터 열기")} accessibilityState={{ expanded: filtersOpen }} onPress={() => { play('selection'); setFiltersOpen(true); }} style={styles.icon}>
-        <SymbolView name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }} size={21} tintColor={selectedFilters.length || dateFilter !== 'all' ? theme.accent : theme.text} />
+        <ClayIcon clay="sliders" claySize={28} name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }} size={21} tintColor={selectedFilters.length || dateFilter !== 'all' ? theme.accent : theme.text} />
         {(selectedFilters.length > 0 || dateFilter !== 'all') && <View style={[styles.filterDot, { backgroundColor: theme.accent }]} />}
       </Pressable>
     </View>
@@ -522,15 +524,15 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
         bottomInset={cardShown || sheet === 'closed' ? rowBottom : sheetCover} onSelect={selectPin} onMoved={(bounds, zoom) => setMoved({ bounds, zoom })} onCity={chooseCity} />
       <View testID="map-filter-overlay" pointerEvents="box-none" onLayout={event => setMapFiltersHeight(event.nativeEvent.layout.height)} style={sheet === 'full' ? [styles.mapFilters, { backgroundColor: theme.background }] : styles.mapFilters}>{quickFilters}</View>
       <View style={[styles.mapControls, { top: mapFiltersHeight + 12 }]}>
-        <Pressable analyticsId="discovery.current" accessibilityRole="button" accessibilityLabel={locating ? tr("현재 위치 확인 중") : tr("내 위치로 지도 이동")} disabled={locating} onPress={() => { play('selection'); void locate(); }} style={[styles.mapControl, { backgroundColor: theme.card, borderColor: theme.line }]}>{locating ? <GlingLoader size={12} accessibilityLabel={tr("현재 위치 확인 중")} /> : <SymbolView name={{ ios: 'location', android: 'my_location', web: 'my_location' }} size={21} tintColor={theme.text} />}</Pressable>
-        <Pressable analyticsId="discovery.refresh" accessibilityRole="button" accessibilityLabel={tr("지도 결과 새로고침")} onPress={() => { play('selection'); refresh(); }} style={[styles.mapControl, { backgroundColor: theme.card, borderColor: theme.line }]}><SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={21} tintColor={theme.text} /></Pressable>
+        <Pressable analyticsId="discovery.current" accessibilityRole="button" accessibilityLabel={locating ? tr("현재 위치 확인 중") : tr("내 위치로 지도 이동")} disabled={locating} onPress={() => { play('selection'); void locate(); }} style={[styles.mapControl, { backgroundColor: clayBox ? 'transparent' : theme.card, borderColor: clayBox ? 'transparent' : theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}{locating ? <GlingLoader size={12} accessibilityLabel={tr("현재 위치 확인 중")} /> : <ClayIcon clay="locate" claySize={24} name={{ ios: 'location', android: 'my_location', web: 'my_location' }} size={21} tintColor={theme.text} />}</Pressable>
+        <Pressable analyticsId="discovery.refresh" accessibilityRole="button" accessibilityLabel={tr("지도 결과 새로고침")} onPress={() => { play('selection'); refresh(); }} style={[styles.mapControl, { backgroundColor: clayBox ? 'transparent' : theme.card, borderColor: clayBox ? 'transparent' : theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}<ClayIcon clay="refresh" claySize={24} name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={21} tintColor={theme.text} /></Pressable>
       </View>
       {searchHere && <Pressable analyticsId="discovery.search-here" accessibilityRole="button" onPress={() => { play('selection'); setRegion(moved.bounds); setSelectedId(null); }}
         style={({ pressed }) => [styles.searchHere, { top: mapFiltersHeight + 12, backgroundColor: theme.card, borderColor: theme.line, opacity: pressed ? 0.82 : 1 }]}>
         <SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={IconSize.inline} tintColor={theme.accent} />
         <ThemedText type="smallBold" themeColor="accent">{tr('이 지역에서 다시 찾기')}</ThemedText>
       </Pressable>}
-      {sheet === 'closed' && <Pressable ref={listClear} analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={tr("리스트 보기")} onPress={() => showList('half')} style={[styles.listLink, { backgroundColor: theme.card, borderColor: theme.line, bottom: rowBottom }]}><SymbolView name={{ ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' }} size={18} tintColor={theme.text} /><View style={styles.listLinkText}><ThemedText type="smallBold" accessibilityLiveRegion="polite">{tr('목록 {0}개', items.length)}{limited || more ? '+' : ''}</ThemedText><ThemedText type="caption" themeColor="accent">{sortLabel}</ThemedText></View></Pressable>}
+      {sheet === 'closed' && <Pressable ref={listClear} analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={tr("리스트 보기")} onPress={() => showList('half')} style={[styles.listLink, { backgroundColor: clay ? 'transparent' : theme.card, borderColor: clay ? 'transparent' : theme.line, bottom: rowBottom }]}>{clay && <ClayPillFill kind="white" />}<ClayIcon clay="list" claySize={24} name={{ ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' }} size={18} tintColor={theme.text} /><View style={styles.listLinkText}><ThemedText type="smallBold" accessibilityLiveRegion="polite">{tr('목록 {0}개', items.length)}{limited || more ? '+' : ''}</ThemedText><ThemedText type="caption" themeColor="accent">{sortLabel}</ThemedText></View></Pressable>}
       {cardShown ? <Reanimated.View entering={reduced ? undefined : SlideInDown.duration(ControlMotion.expandMs)} exiting={reduced ? undefined : SlideOutDown.duration(ControlMotion.sheetCloseMs)}
         onLayout={event => setCardHeight(event.nativeEvent.layout.height)} style={[styles.selected, { backgroundColor: theme.card, borderColor: theme.line }]}>
           <ScrollView analyticsId="discovery.detail" accessibilityLabel={tr("선택한 장소 상세, 스크롤로 더 보기")} style={styles.selectedScroll} contentContainerStyle={styles.selectedContent}>

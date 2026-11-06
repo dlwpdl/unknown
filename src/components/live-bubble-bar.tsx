@@ -8,6 +8,7 @@ import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withRepea
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FullWindowOverlay } from 'react-native-screens';
 
+import { ClayPillFill, useClay } from '@/components/clay';
 import { Pressable } from '@/components/analytics-controls';
 import { DragSheet } from '@/components/drag-sheet';
 import { ExtendRow, keepClearViews, useLive, useLiveActions, useNow } from '@/components/live-bubbles';
@@ -137,6 +138,7 @@ export function LiveBubbleBar() {
 export function LiveBubbleAccessory() {
   const inline = NativeTabs.BottomAccessory.usePlacement() === 'inline';
   const { tr } = useLanguage(), theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback(), live = useLive(), now = useNow();
+  const clay = useClay();
   const { busy, end, extend } = useLiveActions();
   const mine = live.map?.mine, left = mine ? minutesLeft(mine.expiresAt, now) : 0;
   if (!mine || !left) return null;
@@ -148,7 +150,8 @@ export function LiveBubbleAccessory() {
       <ThemedText type="smallBold" numberOfLines={1} style={styles.flex}>{inline ? time : ending ? tr('곧 내려가요 · {0}', time) : tr('내 말풍선이 떠 있어요 · {0} 남음', time)}</ThemedText>
     </Pressable>
     {ending && !inline && <Pressable analyticsId="livemap.extend" accessibilityRole="button" accessibilityLabel={tr('1시간 더 띄우기')} accessibilityState={{ busy }} disabled={busy} onPress={extend}
-      style={({ pressed }) => [ControlStyles.pill, styles.pill, styles.tight, controlPresentation(theme, { tone: 'primary', pressed, busy }).container]}>
+      style={({ pressed }) => [ControlStyles.pill, styles.pill, styles.tight, controlPresentation(theme, { tone: 'primary', pressed, busy, clay }).container]}>
+      {clay && <ClayPillFill kind="cta" />}
       <ThemedText type="smallBold" numberOfLines={1} style={{ color: theme.accentInk }}>{tr('1시간 더 띄우기')}</ThemedText>
     </Pressable>}
     <Pressable analyticsId="livemap.end" accessibilityRole="button" accessibilityLabel={tr('말풍선 내리기')} accessibilityState={{ busy }} disabled={busy} onPress={end}
