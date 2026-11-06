@@ -50,7 +50,6 @@
   "app_meetup-profile.pressable.10": "src/app/meetup-profile.tsx",
   "app_meetup-profile.pressable.11": "src/app/meetup-profile.tsx",
   "app_meetup-profile.pressable.12": "src/app/meetup-profile.tsx",
-  "app_meetup-profile.pressable.13": "src/app/meetup-profile.tsx",
   "app_post_[id].pressable.1": "src/app/post/[id].tsx",
   "app_auth_callback.pressable.1": "src/app/auth/callback.tsx",
   "app_tabs_meetups.flatlist.1": "src/app/(tabs)/meetups.tsx",
