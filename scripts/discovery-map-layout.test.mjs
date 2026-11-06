@@ -279,6 +279,9 @@ test('map categories float over the map and list categories keep normal flow', (
     assert.equal(overlay.props.style.position, 'absolute');
     assert.equal(overlay.props.style.backgroundColor, undefined);
     assert.ok(nodes(tree).some(node => children(node).includes(map) && children(node).includes(overlay)));
+    const fade = children(overlay)[0];
+    assert.equal(fade.props.pointerEvents, 'none', 'the fade behind the chips never takes a tap');
+    assert.match(Object.assign({}, ...fade.props.style).backgroundImage, /^linear-gradient\(to bottom, .*00 100%\)$/, 'it fades out toward the map');
     assert.equal(control(overlay, '전체').props.baseColor, undefined, '전체 is a picture with its name, nothing behind it');
     assert.equal(control(overlay, 'gling Visited').props.baseColor, undefined, 'no chip in the row has a pill behind it');
     overlay.props.onLayout({ nativeEvent: { layout: { height: 68 } } }); tree = view.render();
@@ -290,6 +293,7 @@ test('map categories float over the map and list categories keep normal flow', (
     const above = nodes(tree).find(node => node.props?.testID === 'map-filter-overlay');
     assert.ok(above, 'categories stay above the full list so they can still be switched');
     assert.equal(Object.assign({}, ...above.props.style).backgroundColor, light ? '#fff' : '#0B0B12');
+    assert.ok(!nodes(above).some(node => Object.assign({}, ...[node.props?.style ?? {}].flat()).backgroundImage), 'over the full list the row is solid, no fade');
     assert.equal(nodes(tree).find(node => node.type === 'MapListSheet').props.positions.full, 68, 'the full list stops under the chips');
   }
 });
