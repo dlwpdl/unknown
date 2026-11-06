@@ -5,8 +5,7 @@ import { useCallback, useRef, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, DeviceEventEmitter, LayoutAnimation, Platform, StyleSheet, UIManager, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { SymbolView } from 'expo-symbols';
-import { Image } from 'expo-image';
+import { SymbolView } from '@/components/symbol-view';
 import { ControlMotion } from '@/constants/design-system';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
@@ -17,6 +16,7 @@ import { MeetupHistoryChoice } from '@/components/meetup-room-summary';
 import { MeetupLanguageCounts } from '@/components/meetup-language';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { StateCard } from '@/components/state-card';
+import { ClayBoxFill, ClayPhoto, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -44,7 +44,7 @@ export default function MeetupApplicationRoute() {
 }
 function Application({ requestId }: { requestId: string }) {
   const { tr } = useLanguage();
-  const router = useRouter(), theme = useTheme(), hidden = useContentVisibility();
+  const router = useRouter(), theme = useTheme(), clay = useClay(), clayBox = useClayBox(), hidden = useContentVisibility();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion(), { height } = useWindowDimensions();
   const { isAuthed, me, promptLogin } = useAuth();
@@ -134,7 +134,7 @@ function Application({ requestId }: { requestId: string }) {
       : visible ? <>
       {application.request?.post && <ThemedText type="small" themeColor="textSecondary">{application.request.post.title}{" " + tr("· 참여 신청")}</ThemedText>}
       <View style={styles.identity}>
-        {identity?.photoUri ? <Image source={{ uri: identity.photoUri }} transition={ControlMotion.settleMs} cachePolicy="none" style={styles.avatar} contentFit="cover" accessibilityLabel={tr("{0} 모임 사진", identity.nickname)} />
+        {identity?.photoUri ? <ClayPhoto uri={identity.photoUri} size={styles.avatar.width} transition={ControlMotion.settleMs} cachePolicy="none" accessibilityLabel={tr("{0} 모임 사진", identity.nickname)} />
           : <View style={[styles.avatar, styles.initial, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle">{(identity?.nickname ?? tr("신청자")).slice(0, 1)}</ThemedText></View>}
         <View style={styles.identityBody}><ThemedText style={styles.name}>{identity?.nickname ?? tr("신청자")}</ThemedText>
           {!!identity?.city_id && <ThemedText type="small" themeColor="textSecondary">{tr(CITIES.find(city => city.id === identity.city_id)?.name ?? identity.city_id)}</ThemedText>}
@@ -142,14 +142,14 @@ function Application({ requestId }: { requestId: string }) {
         </View>
       </View>
       {application.request?.host_id === me.id && <MeetupLanguageCounts postId={application.postId} requestId={requestId} />}
-      <View style={[styles.answerCard, { backgroundColor: theme.card }]}><ThemedText type="smallBold" themeColor="accent">{tr("호스트 질문에 대한 답변")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{application.question}</ThemedText><ThemedText style={styles.answer}>{application.answer}</ThemedText></View>
+      <View style={[styles.answerCard, clayBox ? { overflow: 'visible' } : { backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="smallBold" themeColor="accent">{tr("호스트 질문에 대한 답변")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{application.question}</ThemedText><ThemedText style={styles.answer}>{application.answer}</ThemedText></View>
       <View style={styles.headingRow}><ThemedText type="smallBold">{tr("함께할 사람의 모임 프로필")}</ThemedText>
         <Tag label={tr("신청 당시")} /></View>
       <ChillingProfileCard profile={application.profile} />
       {!own && manner && <MannerSummary summary={manner} />}
       <InfoNote>{tr("이름·사진·소개·답변은 신청할 때 보낸 그대로예요. 그 뒤에 프로필을 고쳐도 여기는 바뀌지 않아요.")}</InfoNote>
     </> : <StateCard kind={error ? 'error' : requestStatus?.status === 'approved' ? 'success' : 'blocked'} title={error ? tr("신청 정보를 불러오지 못했어요") : requestStatus ? { pending: tr("신청은 승인 대기 중이에요"), approved: tr("이미 승인된 신청이에요"), rejected: tr("거절된 신청이에요"), cancelled: tr("취소된 신청이에요") }[requestStatus.status] : tr("신청 프로필을 볼 수 없어요")} body={tr(error || '공유된 신청 프로필은 현재 열람할 수 없어요.')} actionLabel={error ? tr('다시 불러오기') : undefined} onAction={() => setRetry(x => x + 1)} />}
-    {!!actionError && <Pressable analyticsId="app_meetup-application.pressable.2" onPress={() => { play('selection'); setRetry(x => x + 1); }} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent">{tr("현재 상태 다시 확인")}</ThemedText></Pressable>}
+    {!!actionError && <Pressable analyticsId="app_meetup-application.pressable.2" onPress={() => { play('selection'); setRetry(x => x + 1); }} style={[styles.button, clay && styles.clayPad]} accessibilityRole="button">{clay && <ClayPillFill kind="white" />}<ThemedText themeColor="accent">{tr("현재 상태 다시 확인")}</ThemedText></Pressable>}
   </ScrollView>}
   {!loading && canRespond && <View style={[styles.footer, { backgroundColor: theme.background, borderColor: theme.line }]}>
     {/* Bounded so large text can't push the approve button off screen; it fits without scrolling at normal sizes. */}
@@ -160,7 +160,7 @@ function Application({ requestId }: { requestId: string }) {
       <View style={styles.decideRow}><SymbolView name={{ ios: 'exclamationmark.circle', android: 'error', web: 'error' }} size={13} tintColor={theme.danger} /><ThemedText type="small" themeColor="textSecondary" style={styles.flex}>{tr("정원이 찼거나 참여할 수 있는 모임 수를 넘으면 승인할 수 없어요.")}</ThemedText></View>
     </ScrollView>
     <RaisedActionButton analyticsId="app_meetup-application.pressable.3" disabled={responding || approvalBlocked} busy={responding} onPress={() => { play('selection'); void respond('approved'); }} label={responding ? tr("처리 중…") : approvalBlocked ? tr("현재 승인할 수 없어요") : tr("{0}님 참여 승인", (identity?.nickname ?? tr('신청자')))} />
-    <Pressable analyticsId="app_meetup-application.pressable.4" accessibilityRole="button" accessibilityLabel={tr("참여 신청 거절")} disabled={responding} accessibilityState={{ disabled: responding }} onPress={confirmReject} style={styles.reject}><ThemedText type="smallBold" themeColor="textSecondary">{tr("거절하기")}</ThemedText></Pressable>
+    <Pressable analyticsId="app_meetup-application.pressable.4" accessibilityRole="button" accessibilityLabel={tr("참여 신청 거절")} disabled={responding} accessibilityState={{ disabled: responding }} onPress={confirmReject} style={[styles.reject, clay && styles.clayPad]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold" themeColor="textSecondary">{tr("거절하기")}</ThemedText></Pressable>
   </View>}
   {!loading && outcome && <View style={[styles.footer, { backgroundColor: theme.background, borderColor: theme.line }]}>
     {next ? <>
@@ -170,7 +170,7 @@ function Application({ requestId }: { requestId: string }) {
   </View>}
   </SafeAreaView></ThemedView>;
 }
-const styles = StyleSheet.create({ fill: { flex: 1 }, center: { flex: 1, alignItems: 'center', justifyContent: 'center' }, header: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.three }, back: { width: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }, headerTitle: { flex: 1, textAlign: 'center', fontSize: 17, lineHeight: 22, fontWeight: '600' }, content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', padding: Spacing.four, gap: Spacing.four }, button: { minHeight: 44, justifyContent: 'center' },
+const styles = StyleSheet.create({ fill: { flex: 1 }, center: { flex: 1, alignItems: 'center', justifyContent: 'center' }, header: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.three }, back: { width: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }, headerTitle: { flex: 1, textAlign: 'center', fontSize: 17, lineHeight: 22, fontWeight: '600' }, content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', padding: Spacing.four, gap: Spacing.four }, clayPad: { overflow: 'visible', paddingHorizontal: 18, alignSelf: 'center' }, button: { minHeight: 44, justifyContent: 'center' },
   identity: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three }, identityBody: { flex: 1, gap: Spacing.one }, avatar: { width: 80, height: 80, borderRadius: 26 }, initial: { alignItems: 'center', justifyContent: 'center' }, name: { fontSize: 26, lineHeight: 34, fontWeight: '700' },
   answerCard: { borderRadius: 20, padding: Spacing.four, gap: Spacing.two }, answer: { fontSize: 17, lineHeight: 26 },
   headingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },

@@ -5,7 +5,7 @@ import { Pressable, FlatList, ScrollView, Switch } from '@/components/analytics-
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Animated, DeviceEventEmitter, Easing, Keyboard, LayoutAnimation, Modal, Platform, StyleSheet, TextInput, UIManager, useWindowDimensions, View, type TextInputInstance } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Reanimated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { ChillingEvent } from '@/components/chilling-event';
@@ -19,8 +19,10 @@ import { ListCard, ListRow, SectionLabel } from '@/components/list-card';
 import { MyMeetups } from '@/components/my-meetups';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { relationshipSlotData } from '@/components/relationship-slot-card';
+import { ClayCoinFill, ClayIcon, ClayPillFill, useClay } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
+import { useScreenGlow } from '@/components/screen-glow';
 import { TabContent } from '@/components/tab-content';
 import { ThemedText } from '@/components/themed-text';
 import { UserSheet, type SheetUser } from '@/components/user-sheet';
@@ -61,9 +63,9 @@ export default function MeetupsScreen() {
 
 // Acting as a business this tab is "내 가게": the same workspace as the profile entry, under the tab header.
 function BusinessHome() {
-  const { tr } = useLanguage(), theme = useTheme();
-  return <TabContent style={styles.root}><SafeAreaView edges={['top', 'left', 'right']} style={[styles.root, { backgroundColor: theme.background }]}>
-    <View style={[styles.head, styles.headFixed, { backgroundColor: theme.background }]}>
+  const { tr } = useLanguage(), glow = useScreenGlow(), screenGlow = glow.image();
+  return <TabContent style={[styles.root, screenGlow != null && { backgroundImage: screenGlow }]} onLayout={glow.onLayout}><SafeAreaView edges={['top', 'left', 'right']} style={styles.root}>
+    <View style={[styles.head, styles.headFixed]}>
       <ThemedText accessibilityRole="header" style={[styles.title, { flex: 1 }]}>{tr('내 가게')}</ThemedText>
       <ProfileAvatarButton />
     </View>
@@ -75,6 +77,9 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
   const { tr, t, language } = useLanguage();
   const copy = (ko: string, en: string) => language === 'en' ? en : ko;
   const theme = useTheme(), router = useRouter(), insets = useSafeAreaInsets();
+  const clay = useClay();
+  // 오늘 탭과 같은 배경 빛(사장님 2026-11-04 '빛 넣을 탭: 지도 빼고 다'). 제목 줄은 투명이라 빛이 비친다.
+  const glow = useScreenGlow(), screenGlow = glow.image();
   const reducedMotion = useReducedMotion();
   const { width: screenWidth, fontScale } = useWindowDimensions();
   // Large text stacks the header on purpose; at other sizes the controls stay beside the title and wrap only when they don't fit.
@@ -185,7 +190,7 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
   }, [isAuthed, me.id]));
   const open = useCallback(async (id: string) => { router.push({ pathname: '/post/[id]', params: { id } }); }, [router]);
   const filtered = posts.filter(p => p.cityId === city.id && matchesChilling(p, kind, category) && matchesChillingWindow(p, dateWindow)
-    && (!seatsOnly || hasOpenSeat(p.room)) && !hidden('post', p.id, p.author.id)
+    && (!seatsOnly || hasOpenSeat(p.room)) && !hidden('listed_post', p.id, p.author.id)
     && (!destination || matchesMeetupDestination(p, destination))
     && (!destination || !query || `${p.title}\n${p.body}`.toLocaleLowerCase().includes(query.toLocaleLowerCase())));
   const visible = sortChillings(filtered, kind);
@@ -251,17 +256,18 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
   };
   const clearDestination = () => { if (!remember(kind, 'browse')) return; setView('browse'); play('selection'); router.setParams({ placeId: '', placeCityId: '', ticketmasterEventId: '', ticketmasterCityId: '' }); };
   const createDisabled = sourceInvalid || (destination?.kind === 'event' && !sourceLabel);
-  return <TabContent style={styles.root}><SafeAreaView edges={['top', 'left', 'right']} style={[styles.root, { backgroundColor: theme.background }]}>
+  return <TabContent style={[styles.root, screenGlow != null && { backgroundImage: screenGlow }]} onLayout={glow.onLayout}><SafeAreaView edges={['top', 'left', 'right']} style={styles.root}>
     {/* 헤더는 스크롤과 함께 사라지면 안 된다(홈과 동일). 목록 밖에 두고 고정한다. */}
-    <View style={[styles.head, styles.headFixed, { backgroundColor: theme.background }]}>
+    <View style={[styles.head, styles.headFixed]}>
       <ThemedText accessibilityRole="header" style={[styles.title, compactHeader && styles.titleLarge]}>{t.tabs.meetups}</ThemedText>
       <View style={[styles.headActions, compactHeader && styles.headActionsLarge]}>
-        <GlassSurface tone="control" interactive={!destination} style={[styles.cityGlass, compactHeader && styles.cityGlassLarge]}>{destination ? <View style={styles.city}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.cityText}>{tr("{0}에서", tr(city.name))}</ThemedText></View> : <Pressable analyticsId="app_tabs_meetups.pressable.1" onPress={() => { play('selection'); setCityPicker(true); }} accessibilityRole="button" accessibilityLabel={tr("{0} 활동 지역 선택", tr(city.name))} style={({ pressed }) => [styles.city, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.cityText}>{tr("{0}에서", tr(city.name))}</ThemedText><SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={IconSize.chevron} tintColor={theme.textSecondary} /></Pressable>}</GlassSurface>
+        <GlassSurface tone="control" clay="white" interactive={!destination} style={[styles.cityGlass, compactHeader && styles.cityGlassLarge]}>{destination ? <View style={styles.city}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.cityText}>{tr("{0}에서", tr(city.name))}</ThemedText></View> : <Pressable analyticsId="app_tabs_meetups.pressable.1" onPress={() => { play('selection'); setCityPicker(true); }} accessibilityRole="button" accessibilityLabel={tr("{0} 활동 지역 선택", tr(city.name))} style={({ pressed }) => [styles.city, clay && styles.cityClay, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.cityText}>{tr("{0}에서", tr(city.name))}</ThemedText><ClayIcon clay="chevron" name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={IconSize.chevron} tintColor={theme.textSecondary} /></Pressable>}</GlassSurface>
         {/* 만들기는 화면당 하나뿐인 primary. 하단에 떠 있으면 카드를 가려서 헤더에 고정한다. */}
         <Pressable analyticsId="app_tabs_meetups.pressable.3" accessibilityRole="button" accessibilityLabel={destination ? copy('이곳에 갈 모임 만들기', 'Start a meetup here') : tr("모임 만들기")} accessibilityState={{ disabled: createDisabled }} disabled={createDisabled}
           onPress={() => { play('selection'); action('/meetup-create'); }}
-          style={({ pressed }) => [styles.circle, { backgroundColor: theme.accent, opacity: createDisabled ? 0.4 : pressed ? 0.85 : 1 }]}>
-          <SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} size={20} tintColor={theme.accentInk} />
+          style={({ pressed }) => [styles.circle, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: createDisabled ? 0.4 : pressed ? 0.85 : 1 }]}>
+          {clay && <ClayCoinFill me />}
+          <ClayIcon clay="plus" claySize={22} name={{ ios: 'plus', android: 'add', web: 'add' }} size={20} tintColor={theme.accentInk} />
         </Pressable>
         <ProfileAvatarButton />
       </View>
@@ -275,10 +281,13 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
         <View style={styles.tabLabel}><ThemedText style={Typography.menu} themeColor={view === value ? 'text' : 'textSecondary'}>{label}</ThemedText>
           {value === 'mine' && pendingCount > 0 && <View accessibilityLabel={tr("참여 신청 {0}건", pendingCount === 50 ? '50+' : pendingCount)} style={[styles.badge, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={[styles.badgeText, { color: theme.accentInk }]}>{pendingCount === 50 ? '50+' : pendingCount}</ThemedText></View>}</View>
       </Pressable>)}
-      {!!tabFrames.browse && !!tabFrames.mine && <Animated.View pointerEvents="none" style={[styles.tabLine, { backgroundColor: theme.accent, transform: [
+      {!!tabFrames.browse && !!tabFrames.mine && (clay ? <Animated.View pointerEvents="none" style={[styles.tabLineClay, { width: tabFrames.browse.width, transform: [
+        { translateX: viewProgress.interpolate({ inputRange: [0, 1], outputRange: [tabFrames.browse.x, tabFrames.mine.x + (tabFrames.mine.width - tabFrames.browse.width) / 2] }) },
+        { scaleX: viewProgress.interpolate({ inputRange: [0, 1], outputRange: [1, tabFrames.mine.width / tabFrames.browse.width] }) },
+      ] }]}><ClayPillFill kind="line" /></Animated.View> : <Animated.View pointerEvents="none" style={[styles.tabLine, { backgroundColor: theme.accent, transform: [
         { translateX: viewProgress.interpolate({ inputRange: [0, 1], outputRange: [tabFrames.browse.x + tabFrames.browse.width / 2 - 0.5, tabFrames.mine.x + tabFrames.mine.width / 2 - 0.5] }) },
         { scaleX: viewProgress.interpolate({ inputRange: [0, 1], outputRange: [tabFrames.browse.width, tabFrames.mine.width] }) },
-      ] }]} />}
+      ] }]} />)}
     </View>
     {/* 내 모임은 처음 열 때 마운트한다. 둘러보기는 계속 살아 있어 돌아와도 스크롤이 그대로다. */}
     <View style={styles.panes}>
@@ -292,19 +301,19 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
         </View>}
         <View style={styles.filterRow}>
           <View style={styles.kindControl}><MeetupKindSwitch value={kind === 'all' ? null : kind} onChange={changeKind} onAll={() => changeKind('all')} analyticsId="app_tabs_meetups.pressable.4" /></View>
-          <View style={styles.filterActions}><GlassSurface tone="control" interactive style={[styles.filterGlass, activeFilters > 0 && { borderColor: theme.accent }]}><Pressable analyticsId="app_tabs_meetups.pressable.14" accessibilityRole="button" accessibilityLabel={activeFilters ? tr("필터, {0}개 적용됨", (activeFilters)) : tr("필터")}
+          <View style={styles.filterActions}><GlassSurface tone="control" clay="tile" interactive style={[styles.filterGlass, activeFilters > 0 && { borderColor: theme.accent }]}><Pressable analyticsId="app_tabs_meetups.pressable.14" accessibilityRole="button" accessibilityLabel={activeFilters ? tr("필터, {0}개 적용됨", (activeFilters)) : tr("필터")}
             onPress={() => { play('reaction'); setFiltersOpen(true); }}
             style={({ pressed }) => [styles.filterButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
-            <SymbolView name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }} size={16} tintColor={activeFilters ? theme.accent : theme.text} />
+            <ClayIcon clay="sliders" claySize={22} name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }} size={16} tintColor={activeFilters ? theme.accent : theme.text} />
             <ThemedText type="smallBold" style={Typography.menu} themeColor={activeFilters ? 'accent' : 'text'}>{activeFilters ? tr("필터 · {0}", (activeFilters)) : tr("필터")}</ThemedText>
           </Pressable></GlassSurface>
-      <GlassSurface tone="control" interactive style={styles.circleGlass}><Pressable analyticsId="meetups.discovery.open" accessibilityRole="button" accessibilityLabel={tr('부동산·중고거래·장소·행사 통합 지도')}
+      <GlassSurface tone="control" clay="white" interactive style={styles.circleGlass}><Pressable analyticsId="meetups.discovery.open" accessibilityRole="button" accessibilityLabel={tr('부동산·중고거래·장소·행사 통합 지도')}
         onPress={() => { play('reaction'); router.push('/map'); }} style={({ pressed }) => [styles.circle, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
-        <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={21} tintColor={theme.text} />
+        <ClayIcon clay="map" claySize={26} name={{ ios: 'map', android: 'map', web: 'map' }} size={21} tintColor={theme.text} />
       </Pressable></GlassSurface>
-      <GlassSurface tone="control" interactive style={styles.circleGlass}><Pressable analyticsId="app_tabs_meetups.pressable.13" accessibilityRole="button" accessibilityLabel={searchOpen ? tr("검색 닫기") : tr("모임 검색")} accessibilityState={{ expanded: searchOpen }}
+      <GlassSurface tone="control" clay="white" interactive style={styles.circleGlass}><Pressable analyticsId="app_tabs_meetups.pressable.13" accessibilityRole="button" accessibilityLabel={searchOpen ? tr("검색 닫기") : tr("모임 검색")} accessibilityState={{ expanded: searchOpen }}
         onPress={toggleSearch} style={({ pressed }) => [styles.circle, { backgroundColor: pressed || searchOpen ? 'rgba(255,255,255,0.13)' : 'transparent' }]}>
-        <SymbolView name={{ ios: searchOpen ? 'xmark' : 'magnifyingglass', android: searchOpen ? 'close' : 'search', web: searchOpen ? 'close' : 'search' }} size={20} tintColor={searchOpen ? theme.accent : theme.text} />
+        {searchOpen || !clay ? <SymbolView name={{ ios: searchOpen ? 'xmark' : 'magnifyingglass', android: searchOpen ? 'close' : 'search', web: searchOpen ? 'close' : 'search' }} size={20} tintColor={searchOpen ? theme.accent : theme.text} /> : <ClayIcon clay="search" claySize={26} size={20} />}
       </Pressable></GlassSurface></View>
         </View>
         {searchOpen && <Animated.View style={[styles.searchRow, { opacity: reducedMotion ? 1 : searchMotion, transform: [{ translateY: searchMotion.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }, { scale: searchMotion.interpolate({ inputRange: [0, 1], outputRange: [0.98, 1] }) }] }]}>
@@ -372,6 +381,7 @@ const styles = StyleSheet.create({
   viewTab: { minHeight: 52, justifyContent: 'center', paddingTop: Spacing.two, paddingBottom: Spacing.two + 3 },
   // Width 1 scaled to the tab's width: transforms keep it on the native driver with the panes.
   tabLine: { position: 'absolute', left: 0, bottom: 0, width: 1, height: 3 },
+  tabLineClay: { position: 'absolute', left: 0, bottom: 0, height: 6 },
   panes: { flex: 1, overflow: 'hidden' },
   dot: { width: 8, height: 8, borderRadius: 4 },
   support: { ...Typography.supporting, fontSize: 14, lineHeight: 20 },
@@ -382,7 +392,7 @@ const styles = StyleSheet.create({
   headFixed: { marginBottom: 0, paddingHorizontal: 22, paddingTop: Spacing.one, paddingBottom: 10, width: '100%', maxWidth: 640, alignSelf: 'center', flexWrap: 'wrap' }, titleLarge: { width: '100%' },
   // City, create and profile move together; on their own line the city label shrinks (one line, truncated) before anything else.
   headActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 'auto', flexShrink: 1 }, headActionsLarge: { flexGrow: 1 },
-  city: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.one, borderRadius: 12, paddingHorizontal: Spacing.two, flexShrink: 1 }, cityText: { fontSize: 14, lineHeight: 20, flexShrink: 1 }, cityGlass: { marginLeft: 'auto', flexShrink: 1, borderRadius: 12 }, cityGlassLarge: { flex: 1, minWidth: 0 }, title: Typography.screenTitle, circle: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }, circleGlass: { borderRadius: 22 }, filterGlass: { borderRadius: 12 },
+  city: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.one, borderRadius: 12, paddingHorizontal: Spacing.two, flexShrink: 1 }, cityClay: { paddingHorizontal: 18 }, cityText: { fontSize: 14, lineHeight: 20, flexShrink: 1 }, cityGlass: { marginLeft: 'auto', flexShrink: 1, borderRadius: 12 }, cityGlassLarge: { flex: 1, minWidth: 0 }, title: Typography.screenTitle, circle: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }, circleGlass: { borderRadius: 22 }, filterGlass: { borderRadius: 12 },
   filterRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 20 },
   // Row direction keeps the switch's flex:1 horizontal; narrow screens wrap filter+search together.
   kindControl: { flexGrow: 1, flexBasis: 200, minWidth: 200, flexDirection: 'row' }, filterActions: { flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 'auto' },

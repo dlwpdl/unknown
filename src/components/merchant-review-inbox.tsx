@@ -5,6 +5,7 @@ import { Pressable } from '@/components/analytics-controls';
 import { MerchantReviewCard } from '@/components/merchant-reviews';
 import { MerchantHelp, MerchantSegments, MerchantStat, MerchantStats } from '@/components/merchant-ui';
 import { ReportSheet } from '@/components/report-sheet';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useTheme } from '@/hooks/use-theme';
@@ -24,7 +25,7 @@ export function MerchantReviewInbox({ merchantId, onDirty, bare = false }: Inbox
 
 function ScopedInbox({ merchantId, onDirty, bare = false }: InboxProps) {
   const { tr } = useLanguage();
-  const theme = useTheme(), { play } = useInteractionFeedback(), { me } = useAuth();
+  const theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback(), { me } = useAuth();
   const hidden = useContentVisibility();
   const [rows, setRows] = useState<MerchantReview[]>([]), [hasMore, setHasMore] = useState(false);
   const [offset, setOffset] = useState(0), [revision, setRevision] = useState(0);
@@ -81,7 +82,7 @@ function ScopedInbox({ merchantId, onDirty, bare = false }: InboxProps) {
       {usageScores.length > 0 && <MerchantStat label={hasMore ? tr("불러온 후기 평균") : tr("평균")}
         value={`${(usageScores.reduce((sum, score) => sum + score, 0) / usageScores.length).toFixed(1)} / 10`} />}
     </MerchantStats>}
-    <View style={[styles.section, { borderColor: theme.line, backgroundColor: theme.card }]}>
+    <View style={[styles.section, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
     <View style={styles.header}>
       {!bare && <ThemedText type="subtitle">{tr("받은 후기")}</ThemedText>}
       {visible.length > 0 && <MerchantSegments items={[{ key: 'needs', label: tr("답글 필요") }, { key: 'all', label: tr("전체") }]} value={filter} onChange={setPicked} />}
@@ -123,6 +124,7 @@ function ScopedInbox({ merchantId, onDirty, bare = false }: InboxProps) {
   </View>;
 }
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   page: { gap: 12 },
   section: { padding: 16, gap: 12, borderWidth: 1, borderRadius: 12 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' },

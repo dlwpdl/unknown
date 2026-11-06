@@ -6,7 +6,6 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { appendUniquePosts, getPostImageSource } from '../src/lib/feed-data.ts';
 import * as conveniences from '../src/lib/merchant-conveniences.ts';
-import * as savedItems from '../src/lib/saved-items.ts';
 import { safeMerchantSourceUrl } from '../src/lib/merchant-source.ts';
 import { translationSource } from './test-meetup-source-imports.mjs';
 
@@ -18,11 +17,13 @@ const profile = { id: company, name: '회사', services: '등록된 소개', add
 const settle = () => new Promise(setImmediate);
 const nodes = root => !root || typeof root !== 'object' ? [] : [root, ...Object.values(root).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 
-function screen({ business = null, webshop = null, loadReviews = async (_, __, ___, kind) => ({ review_kind: kind, rating_average: kind === 'usage' ? 8.833333333 : 7, review_count: 3 }), loadPosts = async (_, __, kind) => ({ ...content, kind }), loadProfile = async () => profile, loadSavedState, rpc = async () => ({ data: true }), openURL = async () => {} } = {}) {
+function screen({ business = null, webshop = null, merchantSaves = async () => null, businessLinks = {}, loadReviews = async (_, __, ___, kind) => ({ review_kind: kind, rating_average: kind === 'usage' ? 8.833333333 : 7, review_count: 3 }), loadPosts = async (_, __, kind) => ({ ...content, kind }), loadProfile = async () => profile, saved = false, rpc = async () => ({ data: true }), openURL = async () => {} } = {}) {
   const state = [], cleanup = new Map(), calls = [], postCalls = [], routes = [], feedback = [], rpcCalls = [], login = [], links = [];
-  let index = 0, account = 'author', hidden = () => false, focused = true, lastProfile = profile;
-  const savedReads = [];
-  const savedState = (saved) => ({ target: { kind: 'merchant', id: company }, saved, available: !!lastProfile, savedAt: saved ? '2026-10-23T12:00:00Z' : null, folderIds: [] });
+  let index = 0, account = 'author', hidden = () => false, focused = true;
+  // The shared saved sheet (saved-entry.test.mjs) owns reads, writes and their race guards; this screen only places it.
+  const savedTargets = [], entry = { error: '' };
+  const setSaved = value => { entry.state = { target: { kind: 'merchant', id: company }, saved: value, available: true, savedAt: value ? '2026-10-23T12:00:00Z' : null, folderIds: [], status: value ? 'want' : null }; };
+  setSaved(saved);
   const imports = {
     '@/components/business-webshop': { usePublicWebshop: () => ({ shop: webshop, failed: false, retry() {} }), WebshopBanner: 'WebshopBanner', WebshopOrderButton: 'WebshopOrderButton', WebshopComparisonSheet: 'WebshopComparisonSheet' },
     react: {
@@ -39,33 +40,35 @@ function screen({ business = null, webshop = null, loadReviews = async (_, __, _
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     'expo-router': { useLocalSearchParams: () => ({ id: company }), useRouter: () => ({ push: value => routes.push(JSON.parse(JSON.stringify(value))) }), useFocusEffect: fn => imports.react.useEffect(() => focused ? fn() : undefined, [fn, focused]) },
     'expo-linking': { openURL: async url => { links.push(url); return openURL(url); } },
-    'expo-symbols': { SymbolView: 'Symbol' },
+    'expo-symbols': { SymbolView: 'Symbol' }, '@/components/symbol-view': { SymbolView: 'Symbol' },
     'expo-image': { Image: 'Image' },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },
     '@/components/merchant-profile-header': { MerchantProfileHeader: 'ProfileHeader' }, '@/components/merchant-reviews': { MerchantReviews: 'Reviews' },
     '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
-    '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/hooks/use-chat-identity': { useChatIdentity: () => business },
     '@/lib/chat-identity': { chatBusinessIdentity: () => business },
     '@/lib/auth': { useAuth: () => ({ isAuthed: !!account, isAuthLoading: false, me: { id: account ?? 'guest' }, promptLogin: reason => login.push(reason) }) },
     '@/lib/merchant-conveniences': conveniences,
-    '@/lib/saved-items': savedItems,
+    '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: (...args) => { savedTargets.push(args); return entry; } },
     '@/lib/merchant-source': { safeMerchantSourceUrl }, '@/lib/translation-source': translationSource,
-    '@/lib/merchant-profile': { loadMerchantProfile: async (...args) => { lastProfile = await loadProfile(...args); return lastProfile; },
+    '@/lib/merchant-profile': { loadMerchantProfile: async (...args) => loadProfile(...args),
       loadMerchantProfilePosts: async (...args) => { postCalls.push(args); return loadPosts(...args); } },
     '@/lib/feed-data': { getPostImageSource, appendUniquePosts },
+    '@/lib/profile-friends': { loadMerchantSaves: async (...args) => merchantSaves(...args) },
+    '@/lib/webshops': { loadCityBusinessLinks: async () => businessLinks },
+    '@/lib/discovery': { placeMapRoute: place => ({ pathname: '/map', params: { cityId: place.cityId, placeId: place.id } }) },
+    '@/lib/public-seo': { publicCompanyUrl: id => `https://gling.example/company/${id}` },
     '@/lib/merchant-reviews': { loadMerchantReviews: async (...args) => { calls.push(args); return loadReviews(...args); } },
     '@/lib/supabase': { supabase: { rpc: async (name, args) => {
-      if (name === 'get_saved_item_state') { savedReads.push(args); return { data: loadSavedState ? await loadSavedState(args) : savedState(lastProfile?.saved === true) }; }
       rpcCalls.push([name, args]);
-      const result = await rpc(name, args);
-      return name === 'set_saved_item' && typeof result.data === 'boolean' ? { ...result, data: savedState(result.data) } : result;
+      return rpc(name, args);
     } } },
   };
   const exports = {}, source = ts.transpileModule(readFileSync(new URL('../src/app/company/[id].tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(source, { exports, Error, require: withLanguageImports(name => imports[name] ?? {}) });
-  return { calls, postCalls, routes, feedback, rpcCalls, savedReads, login, links, hidePost(id) { hidden = (type, target, author) => type === 'post' && (target === id || author === 'blocked-writer'); }, setAccount(value) { account = value; }, setFocus(value) { focused = value; }, unmount() { for (const fn of cleanup.values()) fn(); }, render() { index = 0; return exports.default(); } };
+  return { calls, postCalls, routes, feedback, rpcCalls, savedTargets, setSaved, login, links, hidePost(id) { hidden = (type, target, author) => type === 'post' && (target === id || author === 'blocked-writer'); }, setAccount(value) { account = value; }, setFocus(value) { focused = value; }, unmount() { for (const fn of cleanup.values()) fn(); }, render() { index = 0; return exports.default(); } };
 }
 
 const control = (root, id) => nodes(root).find(node => node.props?.analyticsId === id);
@@ -73,7 +76,7 @@ const text = root => nodes(root).flatMap(node => [node.props?.children].flat().f
 
 test('company tabs show real counts, select hiring and open a real post detail', async () => {
   const view = screen(); view.render(); await settle(); view.render(); await settle();
-  assert.equal(control(view.render(), 'company.tab.about').props.accessibilityState.selected, true);
+  assert.equal(control(view.render(), 'company.tab.posts').props.accessibilityState.selected, true, 'a business opens on its news');
   control(view.render(), 'company.tab.posts').props.onPress(); view.render(); await settle(); view.render(); await settle();
   let root = view.render();
   assert.equal(control(root, 'company.tab.posts')?.props.accessibilityState.selected, true);
@@ -95,7 +98,7 @@ test('company tabs show real counts, select hiring and open a real post detail',
 test('real zero counts keep all tabs and the no-jobs state removes the hiring badge', async () => {
   const view = screen({ loadPosts: async (_, __, kind) => ({ ...content, kind, post_count: 0, job_count: 0, posts: [], nextOffset: 0 }) });
   view.render(); await settle(); view.render(); await settle();
-  assert.equal(control(view.render(), 'company.tab.about').props.accessibilityState.selected, true);
+  assert.equal(control(view.render(), 'company.tab.posts').props.accessibilityState.selected, true, 'a business opens on its news');
   control(view.render(), 'company.tab.posts').props.onPress(); view.render(); await settle(); view.render(); await settle();
   let root = view.render();
   assert.equal(control(root, 'company.hiring'), undefined);
@@ -122,7 +125,7 @@ test('late company list responses from the previous account cannot restore its p
   const pending = [];
   const view = screen({ loadPosts: () => new Promise(resolve => pending.push(resolve)) });
   view.render(); await settle(); view.render(); await settle();
-  assert.equal(control(view.render(), 'company.tab.about').props.accessibilityState.selected, true);
+  assert.equal(control(view.render(), 'company.tab.posts').props.accessibilityState.selected, true, 'a business opens on its news');
   control(view.render(), 'company.tab.posts').props.onPress(); view.render(); await settle(); view.render(); await settle();
   view.setAccount('another'); view.render(); await settle(); view.render(); await settle();
   pending[0](content); await settle();
@@ -139,7 +142,7 @@ test('visible retry resumes the failed page and preserves earlier pages without 
     count++; return new Promise((done, fail) => { resolve = done; reject = fail; });
   } });
   view.render(); await settle(); view.render(); await settle();
-  assert.equal(control(view.render(), 'company.tab.about').props.accessibilityState.selected, true);
+  assert.equal(control(view.render(), 'company.tab.posts').props.accessibilityState.selected, true, 'a business opens on its news');
   control(view.render(), 'company.tab.posts').props.onPress(); view.render(); await settle(); view.render(); await settle();
   let root = view.render(), more = control(root, 'company.posts.more');
   assert.ok(more);
@@ -245,60 +248,33 @@ test('a failed or revoked recipient request preserves the profile and never open
   assert.deepEqual(view.routes, []); assert.ok(view.feedback.includes('warning'));
 });
 
-test('guest inquiry and save prompt for login without making a mutation', async () => {
+test('guest inquiry prompts for login without making a mutation', async () => {
   const view = screen(); view.setAccount(null); view.render(); await settle();
-  const root = view.render();
-  control(root, 'company.inquiry').props.onPress();
-  control(root, 'company.save').props.onPress(); await settle();
-  assert.equal(view.login.length, 2); assert.equal(view.rpcCalls.length, 0); assert.equal(view.routes.length, 0);
-  assert.equal(view.savedReads.length, 0);
+  control(view.render(), 'company.inquiry').props.onPress(); await settle();
+  assert.equal(view.login.length, 1); assert.equal(view.rpcCalls.length, 0); assert.equal(view.routes.length, 0);
 });
 
-test('the sole company bookmark reads the canonical save without enabling news notifications', async () => {
-  const view = screen({ loadProfile: async () => ({ ...profile, notifications_enabled: false }),
-    loadSavedState: async () => ({ target: { kind: 'merchant', id: company }, saved: true, available: true, savedAt: '2026-10-23T12:00:00Z', folderIds: [] }) });
-  view.render(); await settle(); const root = view.render();
-  assert.equal(nodes(root).filter(node => node.props?.analyticsId === 'company.save').length, 1);
-  assert.equal(control(root, 'company.save').props.accessibilityState.selected, true);
+test('B1: the sole company bookmark is the place save sheet for this business, and 가 봤어요 opens its reviews', async () => {
+  const view = screen({ saved: true, loadProfile: async () => ({ ...profile, notifications_enabled: false }) });
+  view.render(); await settle(); let root = view.render();
+  const buttons = nodes(root).filter(node => node.props?.analyticsId === 'company.save');
+  assert.equal(buttons.length, 1); assert.equal(buttons[0].type, 'SavedEntryButton');
+  assert.equal(buttons[0].props.kind, 'place', '가 보고 싶어요·가 봤어요, not a one-tap toggle');
+  assert.deepEqual(JSON.parse(JSON.stringify(view.savedTargets.at(-1))), [{ kind: 'merchant', id: company }, true]);
   assert.equal(control(root, 'company.notifications').props.accessibilityState.selected, false);
-  assert.deepEqual(view.savedReads[0], { p_kind: 'merchant', p_id: company, p_city_id: null });
+  buttons[0].props.onBeen(); root = view.render();
+  assert.equal(control(root, 'company.tab.reviews').props.accessibilityState.selected, true);
+  assert.equal(nodes(root).find(node => node.type === 'Reviews').props.reviewKind, 'usage');
   assert.equal(view.rpcCalls.length, 0);
 });
 
-test('a late canonical company saved read cannot overwrite another viewer', async () => {
-  const pending = [];
-  const view = screen({ loadSavedState: () => new Promise(resolve => pending.push(resolve)) });
-  view.render(); await settle(); view.setAccount('another'); view.render(); await settle();
-  pending[0]({ target: { kind: 'merchant', id: company }, saved: true, available: true, savedAt: '2026-10-23T12:00:00Z', folderIds: [] });
-  await settle(); assert.equal(control(view.render(), 'company.save').props.accessibilityState.selected, false);
-  pending[1]({ target: { kind: 'merchant', id: company }, saved: false, available: true, savedAt: null, folderIds: [] });
-  await settle(); assert.equal(control(view.render(), 'company.save').props.accessibilityState.selected, false);
-});
-
-test('saving waits for the server, suppresses duplicate taps and a rejected unsave retains the saved state', async () => {
-  let saved = false, finish;
-  const view = screen({ loadProfile: async () => ({ ...profile, saved }), rpc: async (_name, args) => new Promise(resolve => { finish = value => { if (!value.error) saved = args.p_saved; resolve(value); }; }) });
-  view.render(); await settle(); let root = view.render();
-  assert.equal(control(root, 'company.save').props.accessibilityState.selected, false);
-  control(root, 'company.save').props.onPress(); control(root, 'company.save').props.onPress();
-  assert.equal(view.rpcCalls.length, 1); assert.equal(control(view.render(), 'company.save').props.accessibilityState.selected, false);
-  finish({ data: true }); await settle(); view.render(); await settle(); root = view.render();
-  assert.equal(control(root, 'company.save').props.accessibilityState.selected, true);
-  control(root, 'company.save').props.onPress(); finish({ error: { message: 'offline' } }); await settle(); root = view.render();
-  assert.equal(control(root, 'company.save').props.accessibilityState.selected, true);
-  assert.match(text(root), /저장 상태를 바꾸지 못했어요/);
-});
-
-test('late inquiry/save completion cannot navigate or restore the previous account state', async () => {
-  for (const action of ['company.inquiry', 'company.save']) {
-    let finish;
-    const view = screen({ rpc: () => new Promise(resolve => { finish = resolve; }) });
-    view.render(); await settle(); control(view.render(), action).props.onPress();
-    view.setAccount('another'); view.render(); await settle(); view.render();
-    finish({ data: action === 'company.inquiry' ? '55555555-5555-4555-8555-555555555555' : true }); await settle();
-    assert.deepEqual(view.routes, []);
-    assert.equal(control(view.render(), 'company.save').props.accessibilityState.selected, false);
-  }
+test('late inquiry completion cannot navigate for the previous account', async () => {
+  let finish;
+  const view = screen({ rpc: () => new Promise(resolve => { finish = resolve; }) });
+  view.render(); await settle(); control(view.render(), 'company.inquiry').props.onPress();
+  view.setAccount('another'); view.render(); await settle(); view.render();
+  finish({ data: '55555555-5555-4555-8555-555555555555' }); await settle();
+  assert.deepEqual(view.routes, []);
 });
 
 test('about actions show actual hours and only fixed phone/map URLs using the registered address', async () => {
@@ -319,22 +295,21 @@ test('external-link failure is visible while leaving the current profile and con
   assert.match(text(view.render()), /연결을 열지 못했어요/); assert.ok(control(view.render(), 'company.contact.phone'));
 });
 
-test('an inquiry completed after leaving this profile cannot navigate; returning reads the current server saved state', async () => {
-  let finish, saved = false;
-  const view = screen({ loadProfile: async () => ({ ...profile, saved }), rpc: () => new Promise(resolve => { finish = resolve; }) });
+test('an inquiry completed after leaving this profile cannot navigate, and returning keeps the inquiry available', async () => {
+  let finish;
+  const view = screen({ rpc: () => new Promise(resolve => { finish = resolve; }) });
   view.render(); await settle(); control(view.render(), 'company.inquiry').props.onPress();
   view.setFocus(false); view.render(); finish({ data: '55555555-5555-4555-8555-555555555555' }); await settle();
   assert.deepEqual(view.routes, []);
-  saved = true; view.setFocus(true); view.render(); await settle(); const root = view.render();
-  assert.equal(control(root, 'company.save').props.accessibilityState.selected, true);
-  assert.equal(control(root, 'company.inquiry').props.disabled, false);
+  view.setFocus(true); view.render(); await settle();
+  assert.equal(control(view.render(), 'company.inquiry').props.disabled, false);
 });
 
  test('business update opt-in is absent until saved and busy writes keep confirmed state', async () => {
   let finish;
   const unsaved = screen(); unsaved.render(); await settle();
   assert.equal(control(unsaved.render(), 'company.notifications'), undefined);
-  const view = screen({ loadProfile: async () => ({ ...profile, saved: true, notifications_enabled: false }), rpc: () => new Promise(resolve => { finish = resolve; }) });
+  const view = screen({ saved: true, loadProfile: async () => ({ ...profile, notifications_enabled: false }), rpc: () => new Promise(resolve => { finish = resolve; }) });
   view.render(); await settle(); let root = view.render();
   const button = control(root, 'company.notifications');
   assert.equal(button.props.accessibilityState.selected, false);
@@ -348,21 +323,23 @@ test('an inquiry completed after leaving this profile cannot navigate; returning
  });
  test('late business opt-in response cannot apply to another account', async () => {
   let finish;
-  const view = screen({ loadProfile: async () => ({ ...profile, saved: true, notifications_enabled: false }), rpc: () => new Promise(resolve => { finish = resolve; }) });
+  const view = screen({ saved: true, loadProfile: async () => ({ ...profile, notifications_enabled: false }), rpc: () => new Promise(resolve => { finish = resolve; }) });
   view.render(); await settle(); control(view.render(), 'company.notifications').props.onPress();
   view.setAccount('another'); view.render(); await settle();
   finish({ data: true }); await settle();
   assert.equal(control(view.render(), 'company.notifications').props.accessibilityState.selected, false);
  });
 
- test('failed business opt-in preserves OFF and removal immediately drops the choice', async () => {
+ test('failed business opt-in preserves ON; an unsave drops the choice and a re-save starts OFF', async () => {
   let failure = true;
-  const view = screen({ loadProfile: async () => ({ ...profile, saved: true, notifications_enabled: true }), rpc: async (name) => failure ? { error: { message: 'offline' } } : { data: false } });
+  const view = screen({ saved: true, loadProfile: async () => ({ ...profile, notifications_enabled: true }), rpc: async () => failure ? { error: { message: 'offline' } } : { data: false } });
   view.render(); await settle(); control(view.render(), 'company.notifications').props.onPress(); await settle();
   assert.equal(control(view.render(), 'company.notifications').props.accessibilityState.selected, true);
   assert.match(text(view.render()), /새 소식 설정을 바꾸지 못했어요/);
-  failure = false; control(view.render(), 'company.save').props.onPress(); await settle();
+  failure = false; view.setSaved(false); view.render();
   assert.equal(control(view.render(), 'company.notifications'), undefined);
+  view.setSaved(true);
+  assert.equal(control(view.render(), 'company.notifications').props.accessibilityState.selected, false, 'the server drops it with the unsave');
  });
 
 test('webshop offer and main action open the same comparison while existing tabs and the sole bookmark remain', async () => {
@@ -412,4 +389,30 @@ test('comparison labels menu observations and checkout quotes with their own dat
     context.shop = { verifiedAt: null };
     assert.equal(evaluate(menu), '');
   }
+});
+
+test('the business profile shows real saves, its own intro lines and opens its Gling map pin', async () => {
+  const friend = '33333333-3333-4333-8333-333333333333', other = '44444444-4444-4444-8444-444444444444';
+  const view = screen({
+    loadProfile: async () => ({ ...profile, city_id: 'vancouver', intro_vibe: '조용해요', intro_order: '', intro_tip: '창가 자리가 먼저 차요' }),
+    merchantSaves: async () => ({ saverCount: 7, weekCount: 3, firstIsMe: true, friends: [{ id: friend, nickname: '하늘', savedAt: '2026-11-01T00:00:00Z', first: false }], similar: [{ merchantId: other, name: '옆집', saverCount: 5, weekCount: 2 }] }),
+    businessLinks: { 'osm:node:42': company },
+  });
+  view.render(); await settle(); view.render(); await settle(); let root = view.render();
+  assert.match(text(root), /저장한 사람 7명\s+· 이번 주 \+3/);
+  assert.match(text(root), /내가 처음 저장했어요/, 'G5: the viewer sees that they were first');
+  assert.match(text(root), /조용해요/); assert.match(text(root), /창가 자리가 먼저 차요/);
+  assert.doesNotMatch(text(root), /뭘 시킬까/, 'an empty intro line is hidden');
+  control(root, 'company.saves.friend').props.onPress();
+  assert.deepEqual(view.routes.at(-1), { pathname: '/user/[id]', params: { id: friend, nickname: '하늘' } });
+  control(root, 'company.similar').props.onPress();
+  assert.deepEqual(view.routes.at(-1), { pathname: '/company/[id]', params: { id: other } });
+  control(root, 'company.location').props.onPress();
+  assert.deepEqual(view.routes.at(-1), { pathname: '/map', params: { cityId: 'vancouver', placeId: 'osm:node:42' } });
+  assert.deepEqual(view.links, [], 'a linked business stays inside Gling');
+  const empty = screen({ merchantSaves: async () => ({ saverCount: 0, weekCount: 0, firstIsMe: false, friends: [], similar: [] }) });
+  empty.render(); await settle(); root = empty.render();
+  assert.doesNotMatch(text(root), /저장한 사람|같이 저장된 곳|분위기/, 'sections without data stay hidden');
+  control(root, 'company.location').props.onPress(); await settle();
+  assert.equal(empty.links.length, 1, 'an unlinked business still opens its registered address');
 });

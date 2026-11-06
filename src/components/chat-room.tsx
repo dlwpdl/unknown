@@ -9,7 +9,7 @@ import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { loadBusinessChatMessages, sendBusinessChatMessage, editBusinessChatMessage, deleteBusinessChatMessage, markBusinessChatRead, setBusinessChatReaction, endBusinessConversation, blockBusinessConversation, subscribeBusinessChat } from '@/lib/business-chat';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
 import { Animated, AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, ScrollView, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, useWindowDimensions, type ScrollViewInstance, type ViewInstance, type KeyDownEvent } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -33,6 +33,7 @@ import type { ChatLocation } from '@/lib/chat-location';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { MAX_POST_IMAGES } from '@/lib/image-upload';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { MannerReviewButton } from '@/components/manner-review';
 import { ThemedView } from '@/components/themed-view';
@@ -92,13 +93,14 @@ function messagePreview(message: Pick<ChatMessageRecord, 'body' | 'kind' | 'dele
 }
 function RoomAction({ label, onPress, disabled = false, primary = false, danger = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean; danger?: boolean }) {
 
-  const theme = useTheme();
+  const theme = useTheme(), clay = useClay();
   const { play } = useInteractionFeedback();
-  return <Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} onPress={() => { if (disabled) return; play('selection'); onPress(); }} style={({ pressed }) => [styles.action, danger && styles.dangerAction, primary && !danger && Depth.control, primary && (danger
+  return <Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled} onPress={() => { if (disabled) return; play('selection'); onPress(); }} style={({ pressed }) => [styles.action, clay && styles.actionClay, danger && styles.dangerAction, !clay && primary && !danger && Depth.control, !clay && primary && (danger
     ? { backgroundColor: theme.card, borderColor: theme.danger, borderWidth: 1 }
     : { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3 }), { opacity: disabled ? 0.55 : pressed ? 0.82 : 1 }]}>
+    {clay && <ClayPillFill kind={primary && !danger ? 'cta' : 'white'} />}
     {danger && <SymbolView name={{ ios: 'stop.circle', android: 'stop_circle', web: 'stop_circle' }} size={18} tintColor={theme.danger} />}
-    <ThemedText type="smallBold" style={{ color: danger ? theme.danger : primary ? theme.accentInk : theme.accent, flexShrink: 1 }}>{label}</ThemedText></Pressable>;
+    <ThemedText type="smallBold" style={{ color: danger ? theme.danger : primary ? theme.accentInk : clay ? theme.text : theme.accent, flexShrink: 1 }}>{label}</ThemedText></Pressable>;
 }
 
 export function ChatLocationMessage({ latitude, longitude, label }: { latitude: number; longitude: number; label?: string | null }) {
@@ -140,7 +142,7 @@ export function ChatLocationMessage({ latitude, longitude, label }: { latitude: 
 
 export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { conversation: ConversationPreview; currentUserId: string; onClose: () => void; onChanged: () => Promise<void> }) {
   const { tr, t, language, locale: appLocale } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clay = useClay();
   const hidden = useContentVisibility();
   const auth = useAuth(), selectedBusiness = useChatIdentity(), router = useRouter();
   const business = conversation.kind === 'business';
@@ -807,9 +809,10 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           return (
             <Pressable analyticsId="components_chat-room.pressable.2" key={label} onPress={() => { play('selection'); setReviewPick(value); }} accessibilityRole="radio"
               accessibilityState={{ selected: on, disabled: busy }} disabled={busy}
-              style={({ pressed }) => [styles.reviewOption, Depth.control,
-                { borderColor: on ? theme.accent : theme.line, backgroundColor: theme.card, }]}>
-              <ThemedText type="smallBold" style={on ? { color: theme.accent } : undefined}>{label}</ThemedText>
+              style={({ pressed }) => [styles.reviewOption, !clay && Depth.control, clay && styles.pillClay,
+                { borderColor: clay ? 'transparent' : on ? theme.accent : theme.line, backgroundColor: clay ? 'transparent' : theme.card, }]}>
+              {clay && <ClayPillFill kind={on ? 'on' : 'white'} />}
+              <ThemedText type="smallBold" style={on ? { color: clay ? theme.accentInk : theme.accent } : undefined}>{label}</ThemedText>
             </Pressable>
           );
         })}
@@ -901,7 +904,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
               : <View style={styles.row}>{message.sender_kind === 'business' ? <Pressable analyticsId="chat.sender-profile" accessibilityRole="button" accessibilityLabel={tr('{0} 프로필 보기', author.nickname)} onPress={() => { play('selection'); onClose(); router.push({ pathname: '/company/[id]', params: { id: author.id } }); }} style={[styles.avatar, { width: 44, height: 44, borderRadius: 22, backgroundColor: theme.backgroundElement }]}>{message.avatarUri ? <Image source={{ uri: message.avatarUri }} style={{ width: 36, height: 36, borderRadius: 18 }} /> : <ThemedText type="smallBold" themeColor="navy">{author.nickname[0]}</ThemedText>}</Pressable> : <Pressable analyticsId="meetup.message-profile" accessibilityRole={group ? "button" : undefined} accessibilityLabel={tr("{0} 모임 프로필", author.nickname)} disabled={!group} onPress={() => { if (!conversation.groupPostId) return; play('selection'); onClose(); router.push({ pathname: '/meetup-profile', params: { postId: conversation.groupPostId, userId: author.id } }); }} style={[styles.avatar, { backgroundColor: theme.backgroundElement, width: 44, height: 44, borderRadius: 22 }]}>{group ? <ChatMemberAvatar viewerId={currentUserId} roomId={conversation.id} path={memberPhotoPath} active={visibleMemberMessages?.scope === scopeKey && visibleMemberMessages.ids.has(message.id)} style={{ width: 36, height: 36, borderRadius: 18 }} fallback={<ThemedText type="smallBold" themeColor="accent">{author.nickname[0]}</ThemedText>} /> : <ThemedText type="smallBold" themeColor="accent">{author.nickname[0]}</ThemedText>}</Pressable>}<View style={styles.rowBody}><ThemedText type="smallBold">{author.nickname}</ThemedText><BubblePressable analyticsId="components_chat-room.pressable.heart" {...menuProps} message={message} onMenu={openMessageMenu} onPress={(event: { nativeEvent?: { timestamp?: number } }) => onBubblePress(event?.nativeEvent?.timestamp ?? 0)} accessibilityRole={message.kind === 'location' ? 'link' : 'button'} accessibilityLabel={tr(message.deleted_at ? tr("삭제된 메시지입니다.") : attachment ? message.kind === 'image' ? tr("사진 크게 보기") : locationAccessibility : tr("메시지에 하트 (두 번 탭)"))} style={[styles.bubble, { backgroundColor: theme.card, borderColor: theme.line }]}>{content}</BubblePressable>{heart}{time}</View></View>}
             {sharedUrl && <SharedLinkCard key={`${message.id}:${currentUserId}`} url={sharedUrl} />}
           </View>;
-        }} />{awayFromLatest && <Pressable analyticsId="components_chat-room.jump-latest" accessibilityRole="button" accessibilityLabel={tr("최근 메시지로 내려가기")} onPress={() => { play('selection'); followingLatest.current = true; setAwayFromLatest(false); messageList.current?.scrollToEnd({ animated: true }); }} style={[styles.jumpLatest, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">{tr("↓ 최근 메시지")}</ThemedText></Pressable>}</View> : <View style={styles.request}><ThemedText type="small" themeColor="textSecondary">{tr("처리되거나 취소된 요청이에요. 대화 목록에서 새로 확인해 주세요.")}</ThemedText></View>}
+        }} />{awayFromLatest && <Pressable analyticsId="components_chat-room.jump-latest" accessibilityRole="button" accessibilityLabel={tr("최근 메시지로 내려가기")} onPress={() => { play('selection'); followingLatest.current = true; setAwayFromLatest(false); messageList.current?.scrollToEnd({ animated: true }); }} style={[styles.jumpLatest, clay && styles.jumpClay, { backgroundColor: clay ? 'transparent' : theme.card, borderColor: clay ? 'transparent' : theme.line }]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold" themeColor={clay ? undefined : 'accent'}>{tr("↓ 최근 메시지")}</ThemedText></Pressable>}</View> : <View style={styles.request}><ThemedText type="small" themeColor="textSecondary">{tr("처리되거나 취소된 요청이에요. 대화 목록에서 새로 확인해 주세요.")}</ThemedText></View>}
       {business && !businessReady && !loading && <RoomAction label={tr('대화 접근 다시 확인')} onPress={() => { setError(null); void refreshMessages(); }} />}
       {!!error && <ThemedText accessibilityRole="alert" type="small" themeColor="accent" style={styles.feedback}>{tr(error)}</ThemedText>}{notice && <ThemedText type="small" accessibilityLiveRegion="polite" style={styles.feedback}>{tr(notice)}</ThemedText>}
       {confirmBlock && <View style={[styles.confirmation, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold">{tr('{0}님을 차단할까요?', confirmBlock.nickname)}</ThemedText><ThemedText type="small">{tr('차단하면 상대의 글과 메시지가 내 화면에 더 이상 보이지 않아요. 기존 대화 기록은 보관돼요.')}</ThemedText><View style={styles.messageActions}><RoomAction label={t.profile.cancel} onPress={() => setConfirmBlock(null)} /><RoomAction label={t.chat.block} onPress={() => { setConfirmBlock(null); void block(confirmBlock.id); }} primary danger /></View></View>}
@@ -934,7 +937,8 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           </View>)}
         </ScrollView>
         <Pressable analyticsId="chat.photo.send" accessibilityRole="button" accessibilityLabel={tr(sending ? tr("사진 보내는 중") : tr("{0}장 보내기", (selectedPhotos.length)))} accessibilityState={{ disabled: sending || pickingPhoto }} disabled={sending || pickingPhoto}
-          onPress={() => { play('selection'); void sendPhoto(); }} style={({ pressed }) => [styles.photoSend, { backgroundColor: theme.accent, opacity: sending ? 0.5 : pressed ? 0.85 : 1 }]}>
+          onPress={() => { play('selection'); void sendPhoto(); }} style={({ pressed }) => [styles.photoSend, clay && styles.photoSendClay, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: sending ? 0.5 : pressed ? 0.85 : 1 }]}>
+          {clay && <ClayPillFill kind="cta" />}
           <SymbolView name={{ ios: 'paperplane.fill', android: 'send', web: 'send' }} size={18} tintColor={theme.accentInk} /><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr(sending ? tr("보내는 중") : tr("{0}장 보내기", (selectedPhotos.length)))}</ThemedText>
         </Pressable>
       </ScrollView>}
@@ -946,22 +950,25 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
             const disabled = sending || pickingPhoto || replyLocked || busy || !!uncertainSuggestion && uncertainSuggestion !== body;
             return <Pressable key={body} analyticsId="components_chat-room.suggestion" accessibilityRole="button" accessibilityLabel={tr("{0} 보내기", (body))}
               disabled={disabled} accessibilityState={{ disabled }} onPress={() => { play('selection'); void send(body); }}
-              style={({ pressed }) => [styles.suggestion, { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement, opacity: disabled ? 0.5 : 1 }]}>
-              <ThemedText type="small" themeColor="accent">{body}</ThemedText>
+              style={({ pressed }) => [styles.suggestion, clay && styles.pillClay, { borderColor: clay ? 'transparent' : theme.line, backgroundColor: clay ? 'transparent' : pressed ? theme.backgroundSelected : theme.backgroundElement, opacity: disabled ? 0.5 : clay && pressed ? 0.82 : 1 }]}>
+              {clay && <ClayPillFill kind="white" />}
+              <ThemedText type="small" themeColor={clay ? undefined : 'accent'}>{body}</ThemedText>
             </Pressable>;
           })}</View>
         </View>}
         <View style={[styles.composer, { borderTopColor: theme.line, backgroundColor: theme.card, paddingBottom: attachmentsOpen ? Spacing.one : Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>
-          <Pressable analyticsId="components_chat-room.add-attachment" accessibilityRole="button" accessibilityLabel={tr(attachmentsOpen ? tr("첨부 메뉴 닫기") : tr("첨부 메뉴 열기"))} accessibilityState={{ expanded: attachmentsOpen, disabled: sending || pickingPhoto || replyLocked }} disabled={sending || pickingPhoto || replyLocked} onPress={openAttachments} style={({ pressed }) => [styles.addAttachment, { backgroundColor: attachmentsOpen ? theme.backgroundSelected : theme.backgroundElement, opacity: pressed ? 0.7 : 1 }]}><SymbolView name={{ ios: attachmentsOpen ? 'xmark' : 'plus', android: attachmentsOpen ? 'close' : 'add', web: attachmentsOpen ? 'close' : 'add' }} size={21} tintColor={theme.accent} /></Pressable>
+          <Pressable analyticsId="components_chat-room.add-attachment" accessibilityRole="button" accessibilityLabel={tr(attachmentsOpen ? tr("첨부 메뉴 닫기") : tr("첨부 메뉴 열기"))} accessibilityState={{ expanded: attachmentsOpen, disabled: sending || pickingPhoto || replyLocked }} disabled={sending || pickingPhoto || replyLocked} onPress={openAttachments} style={({ pressed }) => [styles.addAttachment, clay && { overflow: 'visible' }, { backgroundColor: clay ? 'transparent' : attachmentsOpen ? theme.backgroundSelected : theme.backgroundElement, opacity: pressed ? 0.7 : 1 }]}>{clay && <ClayPillFill kind={attachmentsOpen ? 'on' : 'white'} />}<SymbolView name={{ ios: attachmentsOpen ? 'xmark' : 'plus', android: attachmentsOpen ? 'close' : 'add', web: attachmentsOpen ? 'close' : 'add' }} size={21} tintColor={theme.accent} /></Pressable>
           <TextInput value={draft} onChangeText={setDraft} maxLength={2000} multiline placeholder={t.chat.messagePlaceholder} accessibilityLabel={t.chat.messagePlaceholder} placeholderTextColor={theme.textSecondary} returnKeyType="send" submitBehavior="submit" onSubmitEditing={() => void send()} style={[styles.input, styles.composerInput, { color: theme.text, backgroundColor: theme.background, borderColor: theme.line }]} />
           <RoomAction label={sending ? t.chat.sending : t.chat.send} onPress={() => void send()} disabled={sending || pickingPhoto || replyLocked || busy || !draft.trim()} primary={selectedPhotos.length === 0} />
         </View>
-        {attachmentsOpen && <View accessibilityLabel={tr("첨부 방법")} style={[styles.attachmentMenu, { backgroundColor: theme.card, borderColor: theme.line, marginBottom: Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>
-          <Pressable analyticsId="components_chat-room.attachment-photo" accessibilityRole="button" accessibilityLabel={tr("사진 보내기")} disabled={sending || pickingPhoto || replyLocked} accessibilityState={{ disabled: sending || pickingPhoto || replyLocked }} onPress={() => { play('selection'); setAttachmentMenu(false); void pickPhoto(); }} style={({ pressed }) => [styles.attachmentOption, { backgroundColor: pressed ? theme.backgroundElement : 'transparent' }]}>
+        {attachmentsOpen && <View accessibilityLabel={tr("첨부 방법")} style={[styles.attachmentMenu, clay && { backgroundColor: 'transparent', borderColor: 'transparent', gap: 8 }, !clay && { backgroundColor: theme.card, borderColor: theme.line }, { marginBottom: Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>
+          <Pressable analyticsId="components_chat-room.attachment-photo" accessibilityRole="button" accessibilityLabel={tr("사진 보내기")} disabled={sending || pickingPhoto || replyLocked} accessibilityState={{ disabled: sending || pickingPhoto || replyLocked }} onPress={() => { play('selection'); setAttachmentMenu(false); void pickPhoto(); }} style={({ pressed }) => [styles.attachmentOption, clay && styles.pillClay, { backgroundColor: !clay && pressed ? theme.backgroundElement : 'transparent', opacity: clay && pressed ? 0.82 : 1 }]}>
+            {clay && <ClayPillFill kind="white" />}
             <View style={[styles.attachmentIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'photo.on.rectangle', android: 'photo_library', web: 'photo_library' }} size={20} tintColor={theme.accent} /></View>
             <View style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}><ThemedText type="smallBold" style={{ fontSize: 15 }}>{tr("사진 보내기")}</ThemedText><ThemedText type="small" themeColor="textSecondary" style={{ fontSize: 12 }}>{tr("최대 20장")}</ThemedText></View><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
           </Pressable>
-          <Pressable analyticsId="components_chat-room.attachment-location" accessibilityRole="button" accessibilityLabel={tr("위치 공유하기")} disabled={sending || pickingPhoto || replyLocked} accessibilityState={{ disabled: sending || pickingPhoto || replyLocked }} onPress={() => { play('selection'); setAttachmentMenu(false); setLocationOpen(true); }} style={({ pressed }) => [styles.attachmentOption, { backgroundColor: pressed ? theme.backgroundElement : 'transparent' }]}>
+          <Pressable analyticsId="components_chat-room.attachment-location" accessibilityRole="button" accessibilityLabel={tr("위치 공유하기")} disabled={sending || pickingPhoto || replyLocked} accessibilityState={{ disabled: sending || pickingPhoto || replyLocked }} onPress={() => { play('selection'); setAttachmentMenu(false); setLocationOpen(true); }} style={({ pressed }) => [styles.attachmentOption, clay && styles.pillClay, { backgroundColor: !clay && pressed ? theme.backgroundElement : 'transparent', opacity: clay && pressed ? 0.82 : 1 }]}>
+            {clay && <ClayPillFill kind="white" />}
             <View style={[styles.attachmentIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={20} tintColor={theme.accent} /></View>
             <ThemedText type="smallBold" style={{ flex: 1, fontSize: 15 }}>{tr("위치 공유하기")}</ThemedText><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
           </Pressable>
@@ -1066,6 +1073,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
 }
 
 const styles = StyleSheet.create({
+  actionClay: { overflow: 'visible', paddingHorizontal: 18 }, pillClay: { overflow: 'visible', paddingHorizontal: 18 }, jumpClay: { overflow: 'visible', shadowOpacity: 0, elevation: 0 }, photoSendClay: { overflow: 'visible', paddingHorizontal: 24 },
   bubbleMenu: { position: 'absolute', flexDirection: 'row', flexWrap: 'wrap', borderWidth: 1, borderRadius: 16, padding: 4, shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 10 },
   bubbleMenuAction: { minWidth: 64, minHeight: 44, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
   quoteText: { borderLeftWidth: 2, paddingLeft: 8, marginBottom: 8 },

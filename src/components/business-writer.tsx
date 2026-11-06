@@ -1,5 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import type { SymbolViewProps } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { ListingFields } from '@/components/listing-fields';
 import { PostPhotoEditor, type EditablePostImage } from '@/components/post-photo-editor';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
 import { Typography } from '@/constants/design-system';
@@ -43,7 +45,7 @@ const ERRORS: Record<string, string> = {
 
 // Business posts go through the merchant draft → approve → publish path so the server stamps business authorship.
 export function BusinessWriter({ business, visible, onClose, onPublished }: { business: BusinessChatIdentity; visible: boolean; onClose: () => void; onPublished: () => void }) {
-  const { tr, language } = useLanguage(), theme = useTheme(), { me } = useAuth(), { play } = useInteractionFeedback();
+  const { tr, language } = useLanguage(), theme = useTheme(), { me } = useAuth(), { play } = useInteractionFeedback(), clay = useClay(), clayBox = useClayBox();
   const [kind, setKind] = useState<Kind>('news');
   const [form, setForm] = useState({ title: '', body: '' });
   // 직원 구해요 uses the same 구인구직 fields as the community writer.
@@ -134,7 +136,8 @@ export function BusinessWriter({ business, visible, onClose, onPublished }: { bu
   return <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
     <SafeAreaView edges={['top', 'bottom']} style={[styles.root, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
-        <Pressable analyticsId="business.writer.close" accessibilityRole="button" accessibilityLabel={tr('닫기')} onPress={close} style={[styles.circle, { backgroundColor: theme.backgroundElement }]}>
+        <Pressable analyticsId="business.writer.close" accessibilityRole="button" accessibilityLabel={tr('닫기')} onPress={close} style={[styles.circle, clay && { overflow: 'visible' }, { backgroundColor: clay ? 'transparent' : theme.backgroundElement }]}>
+          {clay && <ClayPillFill kind="white" />}
           <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={16} tintColor={theme.text} />
         </Pressable>
         <ThemedText accessibilityRole="header" numberOfLines={1} style={[Typography.menu, styles.title]}>{tr('{0} 글쓰기', business.name)}</ThemedText>
@@ -146,7 +149,8 @@ export function BusinessWriter({ business, visible, onClose, onPublished }: { bu
             const selected = kind === item.key;
             return <Pressable key={item.key} analyticsId={`business.writer.kind.${item.key}`} accessibilityRole="radio" accessibilityState={{ selected, disabled: busy }} disabled={busy}
               onPress={() => { play('selection'); setKind(item.key); }}
-              style={[styles.kind, { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.backgroundSelected : theme.card }]}>
+              style={[styles.kind, clayBox && { overflow: 'visible' }, { borderColor: clayBox ? 'transparent' : selected ? theme.accent : theme.line, backgroundColor: clayBox ? 'transparent' : selected ? theme.backgroundSelected : theme.card }]}>
+              {clayBox && <ClayBoxFill kind="tile" />}
               <SymbolView name={item.icon} size={22} tintColor={selected ? theme.accent : theme.textSecondary} />
               <ThemedText type="smallBold" style={{ color: selected ? theme.accent : theme.text, textAlign: 'center' }}>{tr(item.label)}</ThemedText>
             </Pressable>;
@@ -160,7 +164,8 @@ export function BusinessWriter({ business, visible, onClose, onPublished }: { bu
             {input('내용', 'body', kind === 'menu' ? '가격, 맛, 언제부터 파는지' : '언제, 무엇을, 어떻게 하는지', true)}
           </>}
           <View style={styles.photoHead}><ThemedText type="smallBold">{tr('사진')} {photos.length}/{MAX_POST_IMAGES}</ThemedText>
-            {photos.length < MAX_POST_IMAGES && <Pressable analyticsId="business.writer.photos" accessibilityRole="button" accessibilityLabel={tr('사진 추가')} disabled={busy} onPress={() => { play('selection'); void pickPhotos(); }} style={[styles.chip, { backgroundColor: theme.backgroundElement }]}>
+            {photos.length < MAX_POST_IMAGES && <Pressable analyticsId="business.writer.photos" accessibilityRole="button" accessibilityLabel={tr('사진 추가')} disabled={busy} onPress={() => { play('selection'); void pickPhotos(); }} style={[styles.chip, clay && { overflow: 'visible', paddingHorizontal: 18 }, { backgroundColor: clay ? 'transparent' : theme.backgroundElement }]}>
+              {clay && <ClayPillFill kind="white" />}
               <ThemedText type="smallBold">{tr('＋ 사진')}</ThemedText>
             </Pressable>}
           </View>

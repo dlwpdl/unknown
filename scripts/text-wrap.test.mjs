@@ -12,7 +12,7 @@ function render(platform, props) {
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const exports = {};
   vm.runInNewContext(code, { exports, require(name) {
-    if (name === 'react') return React;
+    if (name === 'react') return { ...React, useContext: () => null };
     if (name === 'react/jsx-runtime') return jsx;
     if (name === 'react-native') return { Text: 'Text', StyleSheet: { create: value => value, flatten: value => Object.assign({}, ...[value].flat(Infinity).filter(Boolean)) }, Platform: { OS: platform, select: values => values[platform] ?? values.default } };
     if (name === '@/constants/theme') return { Fonts: { mono: 'monospace' } };

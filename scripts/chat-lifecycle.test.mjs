@@ -94,11 +94,12 @@ export function mount(file, exportName, data, props = {}, params = {}) {
     clearTimeout(id) { timers.delete(id); },
     setInterval() { return 0; }, clearInterval() {},
     require: languageImports((name) => {
+      if (name === '@/components/screen-glow') return { useScreenGlow: () => ({ onLayout() {}, image: () => undefined }) };
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === 'react') return react;
       if (name === 'react-native') return new Proxy({
         Keyboard: { dismiss() {}, addListener(name, callback) { keyboardListeners.set(name, callback); return { remove() { keyboardListeners.delete(name); } }; } },
-        StyleSheet: { create: value => value }, Platform: { OS: data.platform ?? 'ios' }, useWindowDimensions: () => ({ width: 390, height: 844 }),
+        StyleSheet: { create: value => value, flatten: value => Object.assign({}, ...[value].flat()) }, Platform: { OS: data.platform ?? 'ios' }, useWindowDimensions: () => ({ width: 390, height: 844 }),
         LayoutAnimation: { configureNext: config => animations.push(config), Presets: { easeInEaseOut: {} }, Types: { easeOut: 'easeOut' }, Properties: { opacity: 'opacity' } },
         AppState: { currentState: 'active', addEventListener(_name, callback) { appListeners.add(callback); return { remove: () => appListeners.delete(callback) }; } },
         DeviceEventEmitter: { addListener: () => ({ remove() {} }) },
@@ -120,6 +121,7 @@ export function mount(file, exportName, data, props = {}, params = {}) {
       if (name === '@/lib/membership-provider') return { useMembership: () => ({ refresh: refreshMembership }) };
       if (name === '@/components/relationship-slot-card') return { relationshipSlotData: () => null };
       if (name === '@/hooks/use-theme') return { useTheme: () => data.theme ?? ({}) };
+      if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
       if (name === '@/hooks/use-content-visibility') return { useContentVisibility: () => {
         effect(() => subscribeVisibility(() => { dirty = true; }), []);
         return react.useCallback((type, id, authorId) => isContentHidden(auth.me.id, type, id, authorId), [auth.me.id, visibilityRevision()]);

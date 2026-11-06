@@ -2,6 +2,7 @@ import { ControlMotion, Typography } from '@/constants/design-system';
 import { useLanguage } from '@/hooks/use-language';
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -10,7 +11,7 @@ import { CITIES } from '@/lib/mock';
 
 export function ChillingProfileCard({ profile }: { profile: ChillingProfile }) {
   const { tr, language } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
   const city = CITIES.find(value => value.id === profile.cityId);
   return <View style={styles.card}>
     <View style={styles.identity}>
@@ -24,7 +25,7 @@ export function ChillingProfileCard({ profile }: { profile: ChillingProfile }) {
     {!!profile.intro && <ThemedText style={[styles.bodyText, styles.intro]}>{profile.intro}</ThemedText>}
     {profile.interests.length > 0 && <View style={styles.interests}>{profile.interests.map(interest => <View key={interest} style={[styles.interest, { backgroundColor: theme.backgroundElement }]}><ThemedText type="small" themeColor="accent" style={styles.label}>{interest}</ThemedText></View>)}</View>}
     {[[tr(CHILLING_PROMPTS[profile.promptOneId ?? 'meet']), profile.promptOne], [tr(CHILLING_PROMPTS[profile.promptTwoId ?? 'join']), profile.promptTwo]].filter(([, answer]) => !!answer).map(([question, answer]) =>
-      <View key={question} style={[styles.prompt, { backgroundColor: theme.backgroundElement }]}>
+      <View key={question} style={[styles.prompt, clayBox ? styles.clayCard : { backgroundColor: theme.backgroundElement }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ThemedText type="smallBold" themeColor="accent" style={styles.label}>{question}</ThemedText>
         <ThemedText style={[styles.bodyText, styles.answer]}>{answer}</ThemedText>
       </View>)}
@@ -32,6 +33,7 @@ export function ChillingProfileCard({ profile }: { profile: ChillingProfile }) {
 }
 const styles = StyleSheet.create({
   label: { ...Typography.menu }, helper: { fontSize: 14, lineHeight: 22 }, bodyText: { fontSize: 16, lineHeight: 24 },
+  clayCard: { backgroundColor: 'transparent', overflow: 'visible' },
   card: { gap: Spacing.three }, prompt: { borderRadius: 18, padding: Spacing.four, gap: Spacing.two },
   name: { fontSize: 24, lineHeight: 30 }, intro: { fontSize: 17, lineHeight: 25 }, answer: { fontSize: 17, lineHeight: 25 },
   identity: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three }, identityBody: { flex: 1, gap: Spacing.one },

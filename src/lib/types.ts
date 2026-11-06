@@ -39,6 +39,7 @@ export interface Author {
   neighborhood?: string;
   verified: boolean; // true면 L2 추가 확인, false면 L1 소셜 계정 확인
   trustLevel?: 2 | 3; // 2 = 신분증 확인, 3 = 믿을 수 있는 호스트. 없으면 verified로 판단
+  avatarUrl?: string; // 회원 사진. 비회원이 보거나 사진이 없으면 비어 있고 첫 글자를 보여 준다.
 }
 
 export interface RoomPreview {

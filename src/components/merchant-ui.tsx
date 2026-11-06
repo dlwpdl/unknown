@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
@@ -36,8 +37,9 @@ export function MerchantHelp({ items, label }: { items: string[]; label?: string
 }
 
 export function MerchantStat({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
-  const theme = useTheme();
-  return <View style={[styles.stat, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  const theme = useTheme(), clayBox = useClayBox();
+  return <View style={[styles.stat, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{label}</ThemedText>
     <ThemedText type="subtitle" themeColor={accent ? 'accent' : 'text'} numberOfLines={1}>{value}</ThemedText>
   </View>;
@@ -103,6 +105,7 @@ const styles = StyleSheet.create({
   helpList: { gap: 4 },
   stats: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   stat: { flexGrow: 1, flexBasis: 150, gap: 4, padding: 14, borderWidth: 1, borderRadius: 16 },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   meter: { gap: 6 },
   meterLabel: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
   track: { height: 8, borderRadius: 99, overflow: 'hidden' },

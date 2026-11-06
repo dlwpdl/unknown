@@ -18,7 +18,7 @@ import { postInfoParts } from '../src/lib/post-info.ts';
 import { stripListingLead } from '../src/lib/listing-details.ts';
 import { parseMeetupSections } from '../src/lib/meetup-sections.ts';
 import { translationSource } from './test-meetup-source-imports.mjs';
-import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
+import { photoCreditNames, splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 import * as postLinks from '../supabase/functions/_shared/post-links.ts';
 import * as postReactions from '../src/lib/post-reactions.ts';
 import * as postOpen from '../src/lib/post-open.ts';
@@ -78,10 +78,10 @@ function mount(file, name, data = {}, props = {}) {
   const jsx = (type, props, key) => ({ type, props, key });
   const imports = {
     react, 'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
-    'react-native': { View: 'View', Modal: 'Modal', StyleSheet: { create: value => value }, Animated: { Value: class { interpolate() { return 0; } }, View: 'Animated.View' }, Easing: {}, Platform: { OS: data.os ?? 'ios' }, Alert: { alert: (...args) => calls.push(['alert', ...args]) },
+    'react-native': { View: 'View', Modal: 'Modal', StyleSheet: { create: value => value }, useWindowDimensions: () => ({ width: 390, height: 844, fontScale: 1 }), Animated: { Value: class { interpolate() { return 0; } }, View: 'Animated.View' }, Easing: {}, Platform: { OS: data.os ?? 'ios' }, Alert: { alert: (...args) => calls.push(['alert', ...args]) },
       Share: { sharedAction: 'sharedAction', dismissedAction: 'dismissedAction', share: payload => { calls.push(['share', payload]); return data.share?.(payload) ?? Promise.resolve({ action: 'sharedAction' }); } } },
     'react-native-reanimated': { useReducedMotion: () => true },
-    'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'SymbolView' }, 'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) },
+    'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' }, 'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) },
     'expo-router': { useLocalSearchParams: () => data.params ?? {}, useIsFocused: () => data.focused !== false, useFocusEffect: fn => react.useEffect(() => data.focused === false ? undefined : fn(), [fn, data.focused]), useRouter: () => ({ canGoBack: () => false, back: () => calls.push(['back']), push: path => calls.push(['navigate', path]), replace: path => calls.push(['navigate', path]) }) },
     '@react-native-async-storage/async-storage': { __esModule: true, default: nativeStorage },
     '@/lib/shared-post-return': sharedPostReturn, '@/lib/post-open': postOpen,
@@ -93,7 +93,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/components/content-translation': { TranslationControl: 'TranslationControl', TranslatedCommentBody: 'TranslatedCommentBody' },
     '@/hooks/use-content-translation': { useContentTranslation: (_kind, _id, source) => ({ display: source, translated: false, original: true }) },
     '@/lib/translation-source': translationSource, '@/lib/business-disclosure': translationSource,
-    '@/lib/post-photo-credits': { splitPostPhotoCredits },
+    '@/lib/post-photo-credits': { photoCreditNames, splitPostPhotoCredits },
     '@/lib/post-reactions': postReactions,
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
     '../../supabase/functions/_shared/post-links': postLinks, '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
@@ -104,10 +104,13 @@ function mount(file, name, data = {}, props = {}) {
     '@/components/post-ad-label': { PostAdLabel: 'PostAdLabel' },
     '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' },
     '@/components/meetup-loyalty': { MeetupFollowEncore: 'MeetupFollowEncore' },
-    '@/constants/theme': { Depth: {}, Spacing: { one: 4, two: 8, three: 16 } }, '@/i18n/ko': { count, t },
+    '@/constants/theme': { Depth: {}, MaxContentWidth: 800, Spacing: { one: 4, two: 8, three: 16, four: 24 } }, '@/i18n/ko': { count, t },
+    '@/components/meetup-manage-sheet': { MeetupManageSheet: 'MeetupManageSheet' }, '@/components/post-place-card': { PostPlaceCard: 'PostPlaceCard' },
+    '@/lib/meetup-destination': { splitPlaceMeetupBody: () => null }, '@/lib/place-reviews': { placeReviewPlace: () => null, placeReviewText: body => body },
     '@/lib/listing-details': { stripListingLead }, '@/components/listing-card': { ListingInfo: 'ListingInfo' },
     '@/lib/hashtags': { uniqueHashtags }, '@/lib/post-maps': { postLocationUrl, postMapBody }, '@/lib/meetup-ai': { visibleMeetupBody: body => body },
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' }, '@/components/post-detail': { PostDetail: 'PostDetail' }, '@/components/shared-link-card': { SharedPreviewContent: 'SharedPreviewContent' },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/hooks/use-content-visibility': { useContentVisibility: () => data.hidden ?? unhidden },
     '@/hooks/use-chat-identity': { useChatIdentity: () => data.businessIdentity ?? null },
     '@/lib/business-chat': { startBusinessConversation: async (...args) => { calls.push(['business-start', ...args.slice(1)]); return 'business-conversation'; }, sendBusinessChatMessage: async (...args) => { calls.push(['business-send', ...args.slice(1)]); return 'business-message'; } },
@@ -255,6 +258,13 @@ test('authenticated routes reveal the body and immediately remove the cached bod
   assert.ok(!harness.nodes().some(node => node.type === 'PostDetail'), 'signout must hide cached content before a preview response arrives');
   assert.ok(!JSON.stringify(harness.render()).includes('private-body-and-venue-sentinel')); await harness.settle();
   assert.equal(harness.calls.filter(call => call[0] === 'full-post').length, 1); assert.equal(harness.calls.filter(call => call[0] === 'preview').length, 1);
+});
+
+test('the Today card edit link opens the detail straight into editing; a plain link does not (owner 2026-11-04)', async context => {
+  for (const [params, editOnOpen] of [[{ id, edit: '1' }, true], [{ id }, false], [{ id, edit: 'yes' }, false]]) {
+    const harness = mount('../src/app/post/[id].tsx', 'default', { params }); context.after(() => harness.unmount()); await harness.settle();
+    assert.equal(harness.nodes().find(node => node.type === 'PostDetail')?.props.editOnOpen, editOnOpen, JSON.stringify(params));
+  }
 });
 
 test('signout discards a late full-post response without exposing its body', async context => {

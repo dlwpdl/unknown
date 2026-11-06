@@ -72,6 +72,28 @@ export function setBusinessImageSession(viewer: string | null, token: string | n
   businessImageSessionRevision++;
 }
 
+// Owner 2026-11-04 ('글 사이 줄'): in 오늘 '전체' the place row follows the second post, then festivals and places take turns
+// every TODAY_ROW_EVERY posts. 4 is the ad cadence offset by two posts, so a turn never takes an ad's slot (and shifts if that cadence changes).
+// A list too short for a row's first turn shows it under the last post, or under the empty state at index -1.
+export const TODAY_ROW_EVERY = 4;
+export type TodayRow = { kind: 'places' | 'festivals'; page: number };
+export function todayRowsAfter(index: number, postCount: number, isAdSlot: (index: number) => boolean): TodayRow[] {
+  const slot = (turn: number) => { let at = 1 + turn * TODAY_ROW_EVERY; while (isAdSlot(at)) at++; return at; };
+  const row = (turn: number): TodayRow => ({ kind: turn % 2 ? 'festivals' : 'places', page: turn >> 1 });
+  const rows: TodayRow[] = [];
+  for (let turn = 0; slot(turn) <= index; turn++) if (slot(turn) === index) rows.push(row(turn));
+  if (index === postCount - 1) for (const turn of [0, 1]) if (slot(turn) > index) rows.push(row(turn));
+  return rows;
+}
+
+// Owner 2026-11-04 ('오늘 글 순서'): the post I just wrote stays first in 오늘 for ten minutes, whatever the sort or a refresh brings back.
+export const JUST_POSTED_MS = 10 * 60_000;
+export type JustPosted<T> = { post: T; at: number; viewer: string };
+export function pinJustPosted<T extends { id: string }>(posts: readonly T[], pin: JustPosted<T> | null, viewer: string, now = Date.now()): readonly T[] {
+  if (!pin || pin.viewer !== viewer || now - pin.at > JUST_POSTED_MS) return posts;
+  return [posts.find(({ id }) => id === pin.post.id) ?? pin.post, ...posts.filter(({ id }) => id !== pin.post.id)];
+}
+
 // Owner 2026-10-25: 오늘 '전체' carries at most one business post per five; business hiring stays in 구인구직.
 export function limitBusinessPosts<T extends { business?: unknown; tag: { slug: string } }>(posts: readonly T[]) {
   let sinceBusiness = 4;
@@ -259,13 +281,34 @@ export function mapPublicFeed(
   }));
 }
 
+// Members' photos on post cards (owner 2026-11-06 "사진 넣기"). The profiles and avatars rules already keep blocked members and guests out; those keep the first letter, as does any failed read.
+// A meetup post shows the host's separate meetup identity, so it never gets their account photo. A business post replaces the author in hydratePublicPosts, which drops this.
+const signedAvatars = new Map<string, SignedImage>();
+export async function attachAuthorPhotos(client: SupabaseClient, posts: Post[]): Promise<Post[]> {
+  try {
+    const ids = [...new Set(posts.filter(post => !post.room).map(post => post.author.id))];
+    if (!ids.length) return posts;
+    const profiles = await client.from('profiles').select('id,avatar_path').in('id', ids);
+    if (profiles.error || !profiles.data) return posts;
+    const rows = profiles.data as { id: string; avatar_path: string | null }[], now = Date.now();
+    const missing = [...new Set(rows.flatMap(row => row.avatar_path ? [row.avatar_path] : []))].filter(path => (signedAvatars.get(path)?.expiresAt ?? 0) <= now);
+    if (missing.length) {
+      const signed = await client.storage.from('avatars').createSignedUrls(missing, 3600);
+      for (const { path, signedUrl } of signed.data ?? []) if (path && signedUrl) signedAvatars.set(path, { url: signedUrl, expiresAt: now + 55 * 60_000 });
+    }
+    const photos = new Map(rows.map(row => [row.id, row.avatar_path ? signedAvatars.get(row.avatar_path)?.url : undefined]));
+    return posts.map(post => !post.room && photos.get(post.author.id) ? { ...post, author: { ...post.author, avatarUrl: photos.get(post.author.id) } } : post);
+  } catch { return posts; }
+}
+
 export async function hydratePublicPosts(client: SupabaseClient, posts: Post[], viewerScope?: string): Promise<Post[]> {
   if (!posts.length) return [];
   if (posts.length > 50) throw new Error('BUSINESS_IDENTITY_READ_FAILED');
   const ids = [...new Set(posts.map(post => post.id))];
   const [images, response] = await Promise.all([
     Promise.all([attachSignedPostImages(client, posts, viewerScope), loadListingDetails(client, posts)])
-      .then(([signed, details]) => details.size ? signed.map(post => details.has(post.id) ? { ...post, listingDetails: details.get(post.id) } : post) : signed),
+      .then(([signed, details]) => details.size ? signed.map(post => details.has(post.id) ? { ...post, listingDetails: details.get(post.id) } : post) : signed)
+      .then(hydrated => attachAuthorPhotos(client, hydrated)),
     client.rpc('get_public_post_businesses', { p_post_ids: ids }),
   ]);
   // Before this additive migration there are no explicitly attributed business posts.

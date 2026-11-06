@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Pressable } from '@/components/analytics-controls';
 import { ReportSheet } from '@/components/report-sheet';
 import { GlingLoader } from '@/components/gling-loader';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { MerchantRatingBar } from '@/components/merchant-rating-bar';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
@@ -38,7 +39,7 @@ export function MerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, o
 function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, onChanged }: Props) {
   const { tr } = useLanguage();
   const employment = reviewKind === 'employment', proofLabel = employment ? '근무 증빙' : '영수증';
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
   const { isAuthed, isAuthLoading, me, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
   const hidden = useContentVisibility();
@@ -184,7 +185,7 @@ function ScopedMerchantReviews({ postId, reviewKind = 'usage', onOpenProfile, on
     {mine?.status === 'removed' && <ThemedText type="small" themeColor="textSecondary">{tr("내 후기는 관리자 검토로 숨겨졌어요.")}</ThemedText>}
     {page && isAuthed && !page.can_review && mine?.status !== 'removed' && <ThemedText type="small" themeColor="textSecondary">{tr("이 계정에서는 후기를 남길 수 없어요.")}</ThemedText>}
     {!!notice && <ThemedText type="small" themeColor="accent" accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
-    {editing && <View style={[styles.editor, { backgroundColor: theme.card, borderColor: theme.line }]}>
+    {editing && <View style={[styles.editor, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
       <View style={styles.header}>
         <ThemedText type="smallBold">{score == null ? tr("점수를 선택해 주세요") : tr("{0}점 / 10점", (score.toFixed(1)))}</ThemedText>
         <Pressable analyticsId="merchant.review.cancel" accessibilityRole="button" disabled={saving || pickingReceipt} accessibilityState={{ disabled: saving || pickingReceipt }}
@@ -291,6 +292,7 @@ export function MerchantReviewCard({ review, own = false, onReport, onReportRepl
 }
 
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   section: { marginTop: 24, paddingTop: 20, borderTopWidth: 1, gap: 12 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' },
   heading: { fontSize: 17, lineHeight: 24, flexShrink: 1 },

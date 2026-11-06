@@ -1,9 +1,10 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { MEMBERSHIP_LIMITS, type MembershipSnapshot } from '@/lib/membership';
@@ -32,7 +33,7 @@ export function RelationshipSlotCard({ kind, membership, loading = false, onMemb
   kind: Kind; membership: MembershipSnapshot | null; loading?: boolean; onMembershipPress?: () => void;
 }) {
   const { tr, t } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
   const data = relationshipSlotData(membership, kind);
   const title = tr(kind === 'meetup' ? '모임 자리' : '1:1 대화 자리');
   const unknown = tr(loading ? '자리를 확인하고 있어요' : '자리 정보를 다시 확인해 주세요');
@@ -42,7 +43,8 @@ export function RelationshipSlotCard({ kind, membership, loading = false, onMemb
     : tr('{0}, {1}', title, unknown);
   const colors = { active: theme.accent, locked: theme.navy };
 
-  return <View style={[styles.card, Depth.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.card, clayBox ? styles.clayCard : [Depth.card, { backgroundColor: theme.card, borderColor: theme.line }]]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     <View style={styles.content}>
       <View style={styles.header}>
         <ThemedText type="smallBold">{title}</ThemedText>
@@ -70,14 +72,19 @@ export function RelationshipSlotCard({ kind, membership, loading = false, onMemb
       </View>
       {data?.overLimit && <ThemedText type="small" themeColor="textSecondary">{tr("현재 한도보다 많은 자리를 사용하고 있어요. 기존 관계는 유지돼요.")}</ThemedText>}
     </View>
-    {onMembershipPress && <Pressable analyticsId="components_relationship-slot-card.pressable.1" accessibilityRole="button" onPress={onMembershipPress} style={({ pressed }) => [styles.action, { borderTopColor: theme.line, backgroundColor: theme.background, opacity: pressed ? 0.65 : 1 }]}>
+    {onMembershipPress && (clayBox ? <View style={styles.clayFoot}><View style={[styles.clayLine, { backgroundColor: theme.line }]} /><Pressable analyticsId="components_relationship-slot-card.pressable.1" accessibilityRole="button" onPress={onMembershipPress} style={({ pressed }) => [styles.action, clayBox ? { borderTopWidth: 0, backgroundColor: 'transparent' } : { borderTopColor: theme.line, backgroundColor: theme.background }, { opacity: pressed ? 0.65 : 1 }]}>
       <ThemedText type="smallBold" themeColor="accent" style={styles.flex}>{tr("멤버십과 모임 자리 보기")}</ThemedText><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.accent} /></View>
-    </Pressable>}
+    </Pressable></View> : <Pressable analyticsId="components_relationship-slot-card.pressable.1" accessibilityRole="button" onPress={onMembershipPress} style={({ pressed }) => [styles.action, clayBox ? { borderTopWidth: 0, backgroundColor: 'transparent' } : { borderTopColor: theme.line, backgroundColor: theme.background }, { opacity: pressed ? 0.65 : 1 }]}>
+      <ThemedText type="smallBold" themeColor="accent" style={styles.flex}>{tr("멤버십과 모임 자리 보기")}</ThemedText><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.accent} /></View>
+    </Pressable>)}
   </View>;
 }
 
 const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: 12 },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
+  clayFoot: { borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
+  clayLine: { height: StyleSheet.hairlineWidth, marginHorizontal: Spacing.three },
   content: { padding: Spacing.three, gap: Spacing.two },
   header: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
   tier: { borderRadius: 6, paddingHorizontal: Spacing.two, paddingVertical: Spacing.half },

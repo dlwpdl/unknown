@@ -41,9 +41,10 @@ export function mountParticipant(screen, options = {}) {
     react, 'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }), Fragment: 'Fragment' }, 'react-native': native,
     'expo-router': { useFocusEffect: fn => effect(fn, [fn]), usePreventRemove: (active, fn) => { ctx.preventRemove = active ? fn : null; }, useRouter: () => ({ push: route => calls.push(['push', JSON.parse(JSON.stringify(route))]), replace: route => calls.push(['replace', JSON.parse(JSON.stringify(route))]), back: () => calls.push(['back']), canGoBack: () => !!ctx.canGoBack, setParams: value => calls.push(['params', value]) }) },
     'react-native-reanimated': { __esModule: true, default: { View: 'View' }, FadeInDown: { delay: () => ({ duration() {} }) }, useReducedMotion: () => true },
-    'react-native-safe-area-context': { SafeAreaView: 'View', useSafeAreaInsets: () => ({ bottom: 0, right: 0 }) }, 'expo-symbols': { SymbolView: 'Symbol' },
+    'react-native-safe-area-context': { SafeAreaView: 'View', useSafeAreaInsets: () => ({ bottom: 0, right: 0 }) }, 'expo-symbols': { SymbolView: 'Symbol' }, '@/components/symbol-view': { SymbolView: 'Symbol' },
     '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async key => { calls.push(['read-pref', key]); return ctx.readPreference ? ctx.readPreference(key) : ctx.preference ?? null; }, setItem: async (key, value) => calls.push(['write-pref', key, JSON.parse(value)]) } },
     '@/hooks/use-language': { useLanguage: () => ({ language: ctx.language, locale: ctx.language === 'en' ? 'en-CA' : 'ko-KR', t: translationsFor(ctx.language), tr: (value, ...args) => translateUi(ctx.language, value, ...args) }) },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'Symbol', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/app/profile/merchant': { default: 'MerchantScreen' }, '@/hooks/use-theme': { useTheme: () => ctx.theme ?? {} }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
     '@/lib/auth': { useAuth: () => ctx.auth }, '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버', state: 'open' } }) },
     '@/lib/membership-provider': { useMembership: () => ({ membership: {}, refresh: noop }) }, '@/components/relationship-slot-card': { relationshipSlotData: () => null },
@@ -66,6 +67,7 @@ export function mountParticipant(screen, options = {}) {
   const exports = {};
   vm.runInNewContext(ts.transpileModule(source + `\nexport { ${exportName} };`, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText, { exports, require: name => {
     if (name in imports) return imports[name];
+    if (name === '@/components/screen-glow') return { useScreenGlow: () => ({ onLayout() {}, image: () => undefined }) };
     if (name.startsWith('@/components/')) return new Proxy({}, { get: (_, key) => key });
     throw new Error(`Unexpected import ${name}`);
   }, Date, Intl, JSON, setTimeout: () => 0, clearTimeout() {}, requestAnimationFrame: fn => fn() });
@@ -367,10 +369,11 @@ test('the meetup card, schedule and fee line render the compact CAD fee in both 
       '@/hooks/use-language': { useLanguage: () => ({ language, locale: language === 'en' ? 'en-CA' : 'ko-KR', tr: (value, ...args) => translateUi(language, value, ...args) }) },
       '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/auth': { useAuth: () => ({ me: { id: 'viewer' }, isAuthed: true }) }, '@/lib/chilling': chilling, '@/lib/meetup-language': meetupLanguage, '@/lib/meetup-host-tools': hostTools,
       '@/lib/feed-data': { getPostImageSource: () => null }, '@/lib/community-data': {}, '@/lib/supabase': {}, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
-      '@/components/newcomer': { MeetupLabelBadges: 'MeetupLabelBadges', useMeetupLabelPrefix: () => '' },
+      '@/components/newcomer': { MeetupLabelBadges: 'MeetupLabelBadges', useMeetupLabelPrefix: () => '' }, '@/components/clay': { useClay: () => false, ClayPillFill: () => null },
     };
     vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, { exports, require: name => {
       if (name in imports) return imports[name];
+      if (name === '@/components/screen-glow') return { useScreenGlow: () => ({ onLayout() {}, image: () => undefined }) };
       if (name.startsWith('@/components/')) return new Proxy({}, { get: (_, key) => key });
       throw new Error(`Unexpected import ${name}`);
     }, Date, Intl });

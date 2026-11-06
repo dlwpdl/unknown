@@ -18,6 +18,15 @@ export const Colors = {
     accentInk: '#FFFFFF',
     navy: '#34506B',
     danger: '#B33246',
+    // 곧 닫음(PlaceHours). 흰 카드에서 5.6:1, 다크 카드에서 9:1.
+    orange: '#A84E00',
+    // 배경 빛(components/screen-glow, 오늘·모임·채팅·알림): 위쪽 빛은 시안 corner-style-today-feed의 --glow-a·--glow-b.
+    // 본문 빛(body*)은 눈에 보이는 보라·푸른 회색이다(사장님 2026-11-04 "조금 더 진하게"). 글자 대비는 가장 진한 곳에서 4% 안으로만 내려간다.
+    // 라이트는 위쪽 빛 투명도 0.5배, 본문 빛은 바탕 쪽으로 50% 되돌림(사장님 2026-11-04 "라이트테마 그라데이션 조금 연하게해줘 30%정도" → 30·50·70% 비교 뒤 "50%로 정햇어").
+    glowA: 'rgba(110,74,162,0.085)',
+    glowB: 'rgba(52,80,107,0.06)',
+    bodyGlowA: '#F8F4FD',
+    bodyGlowB: '#F2F5FD',
   },
   dark: {
     text: '#F6F3F0',
@@ -32,6 +41,11 @@ export const Colors = {
     accentInk: '#171123',
     navy: '#B9C8FF',
     danger: '#FF8585',
+    orange: '#FFA45C',
+    glowA: 'rgba(203,185,255,0.15)',
+    glowB: 'rgba(185,200,255,0.07)',
+    bodyGlowA: '#0D0A17',
+    bodyGlowB: '#090B17',
     // Measured / estimated marks on the dark campaign report (/report); its light screen uses Colors.admin's. 7:1+ on their backgrounds.
     success: '#7FD4A6',
     successBackground: '#173B2B',
@@ -51,6 +65,12 @@ export const Colors = {
     accentInk: '#FFFFFF',
     navy: '#3C5D8E',
     danger: '#B33246',
+    orange: '#A84E00',
+    // Admin never shows the Today tab; same recipe on its own accent/navy keeps useTheme() typed.
+    glowA: 'rgba(101,80,166,0.17)',
+    glowB: 'rgba(60,93,142,0.12)',
+    bodyGlowA: '#F7F6FF',
+    bodyGlowB: '#F4F7FF',
     dangerBackground: '#FBEFF1',
     success: '#257454',
     successBackground: '#EBF5EF',

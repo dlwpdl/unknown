@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import { Stack, useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { useTheme } from '@/hooks/use-theme';
@@ -42,8 +42,11 @@ export default function ProfileLayout() {
       <Stack.Screen name="invite" options={{ title: tr('친구 초대') }} />
       <Stack.Screen name="trust" options={{ title: tr('인증 단계') }} />
       <Stack.Screen name="saved" options={{ title: t.profile.saved }} />
+      <Stack.Screen name="import" options={{ title: tr('가져오기') }} />
       <Stack.Screen name="promotions" options={{ title: tr(PROMOTIONS_PREVIEW_ENABLED ? '홍보 크레딧' : ''), headerShown: PROMOTIONS_PREVIEW_ENABLED }} />
       <Stack.Screen name="settings" options={{ title: t.profile.settings }} />
+      <Stack.Screen name="menu" options={{ title: tr('더보기') }} />
+      <Stack.Screen name="friends" options={{ title: tr('친구') }} />
       <Stack.Screen name="notifications" options={{ title: tr('알림 설정') }} />
       <Stack.Screen name="inbox" options={{ title: t.notifications.title }} />
     </Stack>

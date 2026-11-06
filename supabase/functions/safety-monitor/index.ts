@@ -121,6 +121,11 @@ async function loadContent(client, targetType: string, targetId: string, claim =
     if (result.error) throw result.error;
     return result.data;
   }
+  if (targetType === 'live_bubble') {
+    const result = await client.rpc('get_live_bubble_safety_content', { p_target_id: targetId });
+    if (result.error) throw result.error;
+    return result.data;
+  }
   if (!['post', 'comment'].includes(targetType)) throw new Error('UNSUPPORTED_TARGET_TYPE');
   const table = targetType === 'post' ? 'posts' : 'comments';
   const columns = targetType === 'post' ? 'title,body,hashtags,author_id,room_preview,post_polls(question,options)' : 'body,author_id';

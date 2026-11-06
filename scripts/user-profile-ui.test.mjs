@@ -31,17 +31,21 @@ function mount(file, name, data, props = {}, params = {}) {
   const jsx = (type, props, key) => ({ type, props, key });
   const imports = {
     react, 'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': { FlatList: 'FlatList', View: 'View', Modal: 'Modal', DeviceEventEmitter: { addListener: (name, listener) => { calls.push(['listen', name, listener]); return { remove() {} }; } }, Platform: { OS: data.os ?? 'ios' }, StyleSheet: { create: x => x }, Alert: { alert: (...args) => calls.push(['alert', ...args]) } },
+    'react-native': { Animated: { View: 'View', Value: class { setValue() {} interpolate() { return 0; } }, timing: () => ({ start() {}, stop() {} }) }, Easing: { out: fn => fn, cubic: 0 }, FlatList: 'FlatList', View: 'View', Modal: 'Modal', DeviceEventEmitter: { addListener: (name, listener) => { calls.push(['listen', name, listener]); return { remove() {} }; } }, Platform: { OS: data.os ?? 'ios' }, StyleSheet: { create: x => x }, Alert: { alert: (...args) => calls.push(['alert', ...args]) } },
+    'react-native-reanimated': { useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) },
-    'expo-symbols': { SymbolView: 'SymbolView' },
+    'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
     'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ canGoBack: () => true, back() {}, replace() {}, push: path => calls.push(['navigate', path]) }) },
-    '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/gling-loader': { GlingLoader: 'Loader' },
+    '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/page-header': { PageHeader: 'PageHeader' }, '@/components/gling-loader': { GlingLoader: 'Loader' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },
     '@/components/post-card': { PostCard: 'PostCard' }, '@/components/post-detail': { PostDetail: 'PostDetail' }, '@/components/post-zoom-link': { PostZoomLink: 'PostZoomLink' }, '@/lib/post-open': postOpen,
     '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: (target, visible) => { calls.push(['savedEntry', target, visible]); return { state: null, error: '', loading: false, busy: false, visible, onPress() {} }; } },
     '@/components/manner-summary': { MannerSummary: 'MannerSummary' }, '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/drag-sheet': { DragSheet: 'DragSheet' },
     '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/constants/theme': { Spacing: {}, Depth: { control: {} } }, '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/constants/design-system': { ControlStyles: {}, IconSize: {}, controlPresentation: () => ({ container: {} }) },
+    '@/components/profile-overview': { FriendButton: 'FriendButton', ProfileRecordTiles: 'ProfileRecordTiles', ProfileSavedMap: 'ProfileSavedMap' },
+    '@/lib/profile-friends': { loadProfileOverview: data.loadProfileOverview ?? (async () => null) },
     '@/hooks/use-chat-identity': { useChatIdentity: () => data.businessIdentity ?? null },
     '@/lib/business-chat': { startBusinessConversation: data.startBusinessConversation },
     '@/lib/chat-identity': { chatBusinessIdentity: () => data.businessIdentity ?? null },
@@ -104,7 +108,7 @@ test('approved full profile keeps a compact title and reviews before the public 
     loadPublicUserActivity: async () => [], loadPublicUserProfile: async () => profile('author'),
   }, {}, { id: 'author', nickname: 'a long unverified route label' });
   context.after(() => harness.cleanup()); await harness.settle();
-  assert.ok(harness.nodes().some(node => node.props?.children === '사용자 프로필'));
+  assert.ok(harness.nodes().some(node => node.type === 'PageHeader' && node.props.title === '사용자 프로필'));
   const header = nodes(list(harness).props.ListHeaderComponent);
   assert.ok(header.findIndex(node => node.type === 'MannerSummary') < header.findIndex(node => node.props?.analyticsId === 'user.activity.story'));
 });
@@ -262,4 +266,26 @@ test('iOS mini profiles preserve both existing full-profile destinations', async
     const destination = harness.calls.find(call => call[0] === 'navigate')?.[1];
     if (own) assert.equal(destination, '/profile'); else { assert.equal(destination?.pathname, '/user/[id]'); assert.equal(destination?.params?.id, 'neighbor'); }
   }
+});
+
+test('someone else\'s profile shows the friend button and keeps save, report and block behind ···', async context => {
+  const overview = { userId: 'author', own: false, savedCount: null, savedWeekStreak: null, meetupCount: 0, friendCount: 2, friendship: 'none',
+    savedPlaces: null, mapHiddenReason: 'not_friends', sharesSavedPlaces: null, friendRequestCount: null };
+  const harness = mount('../src/app/user/[id].tsx', 'default', {
+    loadPublicUserActivity: async () => [], loadPublicUserProfile: async () => profile('author'), loadProfileOverview: async () => overview,
+  }, {}, { id: 'author' });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const header = nodes(list(harness).props.ListHeaderComponent);
+  assert.equal(header.find(node => node.type === 'FriendButton')?.props.overview, overview);
+  assert.equal(header.find(node => node.type === 'ProfileSavedMap')?.props.overview, overview, 'the locked map explains friends see saved places');
+  const sheet = () => harness.nodes().find(node => node.type === 'DragSheet');
+  assert.equal(sheet().props.visible, false);
+  control(harness, 'user.more').props.onPress(); harness.render();
+  assert.equal(sheet().props.visible, true);
+  assert.ok(nodes(sheet()).some(node => node.type === 'SavedEntryButton'), 'the private person save lives in the ··· sheet');
+  control(harness, 'user.menu.report').props.onPress(); harness.render();
+  assert.ok(!harness.nodes().some(node => node.type === 'ReportSheet'), 'the report waits for the menu to close');
+  sheet().props.onDismissed(); harness.render();
+  const report = harness.nodes().find(node => node.type === 'ReportSheet');
+  assert.equal(report.props.targetType, 'user'); assert.equal(report.props.reportedUserId, 'author');
 });

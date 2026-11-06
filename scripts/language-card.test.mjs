@@ -16,7 +16,10 @@ function card(save = async () => true) {
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'react-native') return { View: 'View', Modal: 'Modal', ScrollView: 'ScrollView', StyleSheet: { create: value => value } };
     if (name === '@/components/analytics-controls') return { Pressable: 'Pressable' };
+    if (name === '@/components/symbol-view') return { SymbolView: 'SymbolView' };
     if (name === '@/components/flat-pressable') return { FlatPressable: 'FlatPressable' };
+    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
+    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
     if (name === '@/hooks/use-language') return { useLanguage: () => language };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };

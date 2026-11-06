@@ -2,11 +2,13 @@ import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PageHeader } from '@/components/page-header';
 import { FlatList, Pressable, ScrollView } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
+import { ClayControlFill, ClayPillFill, useClay } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
@@ -118,18 +120,12 @@ export function BusinessDirectoryView({ cityName, query, industry, page, loading
   onQuery: (value: string) => void; onIndustry: (value: string | null) => void; onSave: (item: BusinessDirectoryItem) => void;
   onMore: () => void; onRetry: () => void; onBack: () => void; onOpen: (item: BusinessDirectoryItem) => void;
 }) {
-  const theme = useTheme(), { tr } = useLanguage(), { play } = useInteractionFeedback();
+  const theme = useTheme(), { tr } = useLanguage(), { play } = useInteractionFeedback(), clay = useClay();
   const items = page?.items ?? [];
-  return <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.screen, { backgroundColor: theme.background }]}>
-    <View style={styles.header}>
-      <Pressable analyticsId="business.directory.back" accessibilityRole="button" accessibilityLabel={tr('새 소식으로 돌아가기')}
-        onPress={() => { play('selection'); onBack(); }} style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
-        <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={IconSize.toolbar} tintColor={theme.text} />
-      </Pressable>
-      <View style={styles.heading}><ThemedText accessibilityRole="header" style={Typography.sheetTitle}>{tr('비즈니스 찾기')}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">{tr(cityName)}</ThemedText></View>
-    </View>
+  return <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.screen, { backgroundColor: theme.background }]}>
+    <PageHeader title={tr('비즈니스 찾기')} analyticsId="business.directory.back" onBack={onBack} />
     <View style={styles.filters}>
+      <ThemedText type="small" themeColor="textSecondary">{tr('{0} 비즈니스', tr(cityName))}</ThemedText>
       <View style={[styles.search, ControlStyles.field, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={IconSize.inline} tintColor={theme.textSecondary} />
         <TextInput value={query} maxLength={200} onChangeText={onQuery} placeholder={tr('이름, 업종으로 검색')} placeholderTextColor={theme.textSecondary}
@@ -143,8 +139,9 @@ export function BusinessDirectoryView({ cityName, query, industry, page, loading
         {[null, ...new Set([...(page?.industries ?? []), ...(industry ? [industry] : [])])].map(value => <SelectionChip key={value ?? 'all'}
           analyticsId="business.directory.industry" accessibilityRole="button" accessibilityState={{ selected: industry === value }}
           selected={industry === value} onPress={() => { play('selection'); onIndustry(value); }}
-          style={[ControlStyles.pill, { borderWidth: 1, borderColor: theme.line }]}>
-          <ThemedText type="smallBold" style={{ color: industry === value ? theme.accentInk : theme.textSecondary }}>{value === null ? tr('전체') : tr(value)}</ThemedText>
+          style={[ControlStyles.pill, { borderWidth: 1, borderColor: clay ? 'transparent' : theme.line }]}>
+          {clay && industry !== value && <ClayPillFill kind="white" />}
+          <ThemedText type="smallBold" style={{ color: industry === value ? theme.accentInk : clay ? theme.text : theme.textSecondary }}>{value === null ? tr('전체') : tr(value)}</ThemedText>
         </SelectionChip>)}
       </ScrollView>
     </View>
@@ -161,7 +158,8 @@ export function BusinessDirectoryView({ cityName, query, industry, page, loading
         {!!page?.hasMore && <Pressable analyticsId={appendFailed ? 'business.directory.retry' : 'business.directory.more'} accessibilityRole="button"
           disabled={loadingMore} accessibilityState={{ disabled: loadingMore, busy: loadingMore }}
           onPress={() => { play('selection'); if (appendFailed) onRetry(); else onMore(); }}
-          style={({ pressed }) => [ControlStyles.action, { borderWidth: 1 }, controlPresentation(theme, { pressed, busy: loadingMore }).container]}>
+          style={({ pressed }) => [ControlStyles.action, { borderWidth: 1 }, clay && { overflow: 'visible', paddingHorizontal: 18 }, controlPresentation(theme, { pressed, busy: loadingMore, clay }).container]}>
+          <ClayControlFill />
           <ThemedText type="smallBold">{tr(loadingMore ? '불러오는 중…' : appendFailed ? '다시 시도' : '더 보기')}</ThemedText>
         </Pressable>}
       </View>}
@@ -201,8 +199,6 @@ export function BusinessDirectoryRow({ item, saving, onOpen, onSave }: { item: B
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
-  heading: { flex: 1, gap: Spacing.one },
   filters: { paddingHorizontal: Spacing.three },
   search: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   input: { flex: 1, minWidth: 0, minHeight: 48, paddingVertical: Spacing.two },

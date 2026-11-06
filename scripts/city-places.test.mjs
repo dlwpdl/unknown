@@ -170,6 +170,21 @@ test('regional Openverse photos reuse the existing exact Flickr identity and lic
   }
 });
 
+test('optional price level and sub-filter values download with the catalog while malformed ones are rejected', () => {
+  const api = data();
+  const next = (patch, time) => { const value = catalog(); value.collectedAt = new Date(time).toISOString(); Object.assign(value.cities.vancouver.places[0], patch); return value; };
+  assert.equal(api.replaceCityPlacesCatalog(next({ priceLevel: 2, subcategories: ['lunch', 'a-later-value'] }, fixtureTime), fixtureNow), true);
+  const place = api.getCityPlaces('vancouver').find(row => row.id === catalog().cities.vancouver.places[0].id);
+  assert.equal(place.priceLevel, 2);
+  assert.deepEqual(Array.from(place.subcategories), ['lunch', 'a-later-value'], 'a later sub-filter name does not reject the catalog');
+  let time = fixtureTime;
+  for (const bad of [{ priceLevel: 0 }, { priceLevel: 5 }, { priceLevel: '2' }, { priceLevel: 1.5 }, { priceLevel: true }, { subcategories: 'lunch' }, { subcategories: [''] },
+    { subcategories: ['x'.repeat(41)] }, { subcategories: Array(13).fill('lunch') }, { subcategories: ['bad\u0000value'] }]) {
+    time += 1000;
+    assert.throws(() => api.replaceCityPlacesCatalog(next(bad, time), fixtureNow), /INVALID_PLACE_CATALOG/, JSON.stringify(bad));
+  }
+});
+
 test('reviewed Coquitlam-area records use the existing exact map and scoped search contracts', async () => {
   const seed = catalog(), api = data(), city = seed.cities.vancouver;
   assert.equal(Object.keys(seed.cities).length, 11);
@@ -428,9 +443,9 @@ function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = da
     '@/lib/community-city': { useCommunityCity: () => ({ city: cities[0] }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'anonymous' } }) },
     '@/lib/product-analytics': product,
-    '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
-    '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
+    '@/components/place-saves': { PlaceSavedBy: 'PlaceSavedBy', PlaceRelated: 'PlaceRelated', usePlaceSaves: () => null }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) }, '@/components/page-header': { PageHeader: 'PageHeader' },
     '@/hooks/use-current-location': { useCurrentLocation: () => currentLocation }, '@/lib/discovery-sort': distance, '@/constants/design-system': { ControlStyles: { pill: {} } }, '@/components/city-popular-places': { NearbyPlacesLocation: 'NearbyPlacesLocation' },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
     '@/hooks/use-place-review-summaries': { usePlaceReviewSummaries: (cityId, ids) => { ratingScopes.push({ cityId, ids }); return {}; } },
@@ -467,6 +482,16 @@ test('the city places entry gives each preview card its own compact rating scope
   cards[0].props.onPress();
   assert.equal(ui.routes.at(-1).pathname, '/map');
   assert.equal(ui.opened.length, 0, 'review entry stays inside Gling');
+});
+test('a later place row between Today posts shows the next three places without the location prompt, and none past the list (owner 2026-11-04)', () => {
+  const ui = screen('src/components/city-popular-places.tsx'), all = data().getCityDiscoveryPlaces('vancouver');
+  const ids = tree => nodes(tree).filter(node => node.props?.analyticsId === 'today.places.place-open').map(card => nodes(card).find(node => node.type === 'PlaceReviewSummary').props.rating.placeId);
+  const first = ui.render({ cityId: 'vancouver' }), second = ui.render({ cityId: 'vancouver', page: 1 });
+  assert.deepEqual(Array.from(ids(second)), Array.from(all.slice(3, 6), place => place.id));
+  assert.equal(ids(first).some(id => ids(second).includes(id)), false, 'no place repeats between rows');
+  assert.ok(nodes(first).some(node => node.props?.analyticsId === 'today.places.locate'));
+  assert.equal(nodes(second).some(node => node.props?.analyticsId === 'today.places.locate'), false, 'the location prompt stays on the first row');
+  assert.equal(ui.render({ cityId: 'vancouver', page: Math.ceil(all.length / 3) }), null, 'a turn past the list is skipped');
 });
 test('real OSM data covers every city with canonical IDs, coordinates and extraction provenance', () => {
   assert.equal(typeof data().getCityPlaces, 'function', 'actual data loader is missing');
@@ -586,8 +611,10 @@ test('native detail searches Google maps by name, available address and Canadian
   assert.notEqual(query, p.latitude + ',' + p.longitude);
   assert.equal(url.searchParams.get('api'), '1');
   assert.equal(url.searchParams.has('query_place_id'), false);
-  nodes(tree).find(n => n.props?.analyticsId === 'places.detail.back').props.onPress();
-  assert.equal(ui.routes.at(-1), 'back'); assert.equal(ui.feedback.at(-1), 'selection');
+  // The back button lives in the shared PageHeader (its press is covered in navigation-back.test.mjs); this screen names it and its fallback.
+  const header = nodes(tree).find(n => n.type === 'PageHeader');
+  assert.equal(header.props.analyticsId, 'places.detail.back');
+  assert.deepEqual(JSON.parse(JSON.stringify(header.props.fallback)), { pathname: '/places', params: { cityId: 'toronto' } });
 });
 test('places without street addresses still search their names in the correct city, including French and Saint John NB', () => {
   for (const cityId of ['toronto', 'montreal', 'saint-john']) {
@@ -712,8 +739,8 @@ function photoModule(imports = {}) {
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { useWindowDimensions: () => ({ width: 390, fontScale: 1 }), StyleSheet: { create: v => v, absoluteFill: {} }, View: 'View' },
     'expo-image': { Image: 'Image' },
-    'expo-symbols': { SymbolView: 'SymbolView' },
-    '@/hooks/use-theme': { useTheme: () => ({}) },
+    'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
     ...imports,
   });
 }
@@ -1002,7 +1029,7 @@ test('direct Flickr photos keep their provenance and preserve both legacy photo 
   assert.equal(places.find(place => place.id === original.placeId).photo?.uri, original.uri);
   const detail = nodes(screen('src/app/places/[id].tsx', { cityId: 'toronto', id: direct.placeId }, false, api).render());
   const credits = detail.find(node => node.type === 'PostPhotoCredits').props.credits;
-  for (const value of [direct.title, direct.artist, direct.sourceUrl, direct.licenseUrl, '사진은 촬영 시점의 모습']) assert.ok(credits.includes(value));
+  for (const value of [direct.title, direct.artist, direct.sourceUrl, direct.licenseUrl, '사진은 찍은 때의 모습']) assert.ok(credits.includes(value));
   assert.equal(detail.some(node => node.type === 'ThemedText' && typeof node.props.children === 'string'
     && node.props.children.includes('Openverse로 찾은 사진')), false);
 });
@@ -1147,4 +1174,61 @@ test('actual Expo production compiled PlacesList updates on a catalog-only revis
  // Match React's cached-element bailout, while external-store subscribers update independently.
  for(const fn of [...subscribers]){if(fn===exports.default)rootRender();else if(fn===childElement.type)tree=render(fn,childElement.props);}
  assert.deepEqual(ids(),['replacement-first','newly-added'],'catalog-only refresh must reach rows without city, fix, query or category changes');
+});
+
+test('G2 place intro: a sourced intro reaches the place, a bad one rejects the whole catalog', () => {
+  const api = data(), next = dailyCatalog(), id = next.cities.toronto.places[0].id;
+  next.cities.toronto.places[0].intro = { vibe: '조용한 동네 카페', order: '라테', sourceUrl: 'https://example.ca/menu' };
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+  assert.deepEqual(JSON.parse(JSON.stringify(api.getCityPlaces('toronto').find(place => place.id === id).intro)), next.cities.toronto.places[0].intro);
+  for (const intro of [{ vibe: 'x', sourceUrl: 'http://example.ca/' }, { sourceUrl: 'https://example.ca/' }, { vibe: 'x'.repeat(161), sourceUrl: 'https://example.ca/' }, { vibe: 'a\u0000b', sourceUrl: 'https://example.ca/' }, null]) {
+    const fresh = data(), original = JSON.stringify(fresh.getCityPlaces('toronto')), bad = dailyCatalog(); bad.cities.toronto.places[0].intro = intro;
+    assert.throws(() => fresh.replaceCityPlacesCatalog(bad, fixtureNow), /INVALID_PLACE_CATALOG/, JSON.stringify(intro));
+    assert.equal(JSON.stringify(fresh.getCityPlaces('toronto')), original);
+  }
+});
+
+test('G2 place saves: friends by name, similar places named from the catalog, lists open the map filter', () => {
+  const routes = [], feedback = [], opened = [];
+  const jsx = (type, props, key) => ({ type, props, key });
+  const tr = (text, ...args) => args.reduce((value, arg, index) => value.replace(`{${index}}`, arg), text);
+  const catalogPlaces = [{ id: 'osm:node:2', name: 'Second Cafe' }, { id: 'osm:node:3', name: 'Third Bar' }];
+  const ui = module('src/components/place-saves.tsx', {
+    react: { useState: v => [v, () => {}], useEffect() {} }, 'react/jsx-runtime': { jsx, jsxs: jsx },
+    'expo-router': { useRouter: () => ({ push: p => routes.push(p), navigate: p => routes.push(p) }) },
+    'react-native': { StyleSheet: { create: v => v }, View: 'View', Linking: { openURL: async url => { opened.push(url); } } },
+    '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'ThemedText' },
+    '@/constants/design-system': { ControlStyles: { pill: {} }, controlPresentation: () => ({ container: {} }) },
+    '@/hooks/use-language': { useLanguage: () => ({ tr, language: 'ko', locale: 'ko-KR' }) }, '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/lib/city-places': { getCityPlaces: () => catalogPlaces }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: v => feedback.push(v) }) },
+    '@/lib/profile-friends': { loadPlaceSaves: async () => null }, '@/lib/supabase': { supabase: {} },
+  });
+  const nodes = tree => { const out = []; const walk = n => { if (Array.isArray(n)) n.forEach(walk); else if (n && typeof n === 'object') { out.push(n); walk(n.props?.children); } }; walk(tree); return out; };
+  const text = tree => nodes(tree).filter(n => n.type === 'ThemedText').map(n => [n.props.children].flat().join('')).join(' | ');
+  const place = { id: 'osm:node:1', cityId: 'vancouver', name: 'First', category: 'food', recommendation: { placeId: 'osm:node:1' }, glingVisited: { sourceUrl: 'https://gling.ca' },
+    intro: { vibe: '조용해요', when: '평일 저녁', sourceUrl: 'https://example.ca/menu' } };
+  const saves = { saverCount: 12, weekCount: 2, firstIsMe: true, friends: [{ id: 'u1', nickname: '민지', savedAt: '2026-11-04T00:00:00Z', first: true }],
+    similar: [{ placeKey: 'osm:node:9', saverCount: 9, weekCount: 0 }, { placeKey: 'osm:node:2', saverCount: 5, weekCount: 1 }, { placeKey: 'osm:node:3', saverCount: 3, weekCount: 0 }] };
+  const top = ui.PlaceSavedBy({ place, saves }), top_text = text(top);
+  assert.match(top_text, /저장한 사람 12명 · 이번 주 \+2/);
+  assert.match(top_text, /민지님이 처음 저장/, 'G5: a sharing friend who saved it first is marked');
+  assert.match(top_text, /내가 처음 저장했어요/);
+  assert.match(top_text, /분위기 \| 조용해요 \| 언제 갈까 \| 평일 저녁/, 'a missing line is left out, never guessed');
+  assert.ok(!top_text.includes('뭘 시킬까'));
+  nodes(top).find(n => n.props?.analyticsId === 'places.saves.friend').props.onPress();
+  assert.deepEqual(JSON.parse(JSON.stringify(routes.pop())), { pathname: '/user/[id]', params: { id: 'u1', nickname: '민지' } });
+  nodes(top).find(n => n.props?.analyticsId === 'places.intro.source').props.onPress();
+  assert.deepEqual([...opened], ['https://example.ca/menu']);
+  const bottom = ui.PlaceRelated({ place, saves }), bottom_text = text(bottom);
+  assert.match(bottom_text, /1 \| Second Cafe \| 저장 5 · 이번 주 \+1/, 'an unknown key is dropped and the rest renumber');
+  assert.match(bottom_text, /2 \| Third Bar \| 저장 3/);
+  nodes(bottom).find(n => n.props?.analyticsId === 'places.similar').props.onPress();
+  assert.deepEqual(JSON.parse(JSON.stringify(routes.pop())), { pathname: '/places/[id]', params: { id: 'osm:node:2', cityId: 'vancouver' } });
+  const lists = nodes(bottom).filter(n => n.props?.analyticsId === 'places.list');
+  assert.deepEqual(lists.map(n => n.props.accessibilityLabel), ['TOP 50 목록을 지도에서 보기', 'gling Visited 목록을 지도에서 보기']);
+  lists[1].props.onPress();
+  assert.deepEqual(JSON.parse(JSON.stringify(routes.pop())), { pathname: '/map', params: { cityId: 'vancouver', category: 'visited' } });
+  assert.ok(feedback.length >= 4 && feedback.every(v => v === 'selection'));
+  const empty = [ui.PlaceSavedBy({ place: { ...place, intro: undefined }, saves: null }), ui.PlaceRelated({ place: { ...place, recommendation: undefined, glingVisited: undefined }, saves: { ...saves, similar: [] } })];
+  assert.equal(text(empty), '', 'no saves, intro or lists shows nothing');
 });

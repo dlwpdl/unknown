@@ -1,4 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
+import { SymbolView } from '@/components/symbol-view';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { Pressable } from '@/components/analytics-controls';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -26,6 +28,7 @@ function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nic
   const { setProfileNickname } = useAuth();
   const { tr } = useLanguage();
   const theme = useTheme();
+  const clay = useClay(), clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
   const active = useRef(true);
@@ -85,7 +88,8 @@ function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nic
     finally { saving.current = false; if (active.current) setBusy(false); }
   };
 
-  return <View style={[styles.card, { borderColor: theme.line, backgroundColor: theme.card }]}>
+  return <View style={[styles.card, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.card }]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     <NicknameEditor nickname={nickname} onSave={setProfileNickname} />
     <View style={[styles.divider, { backgroundColor: theme.line }]} />
     {!data ? <>
@@ -101,12 +105,13 @@ function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nic
       <Pressable analyticsId="components_personal-info-card.pressable.6" accessibilityRole="button" accessibilityState={{ expanded: editing, disabled: busy }} disabled={busy}
         onPress={() => { play('selection'); animateLayout(reducedMotion); setEditing(value => !value); }} style={styles.editRow}>
         <ThemedText type="smallBold" style={{ color: theme.accent }}>{editing ? tr("계정 정보 닫기") : data.full_name ? tr("비공개 계정 정보 수정") : tr("비공개 계정 정보 입력")}</ThemedText>
-        <ThemedText themeColor="textSecondary">{editing ? '⌃' : '›'}</ThemedText>
+        <SymbolView name={editing ? { ios: 'chevron.up', android: 'expand_less', web: 'expand_less' } : { ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
       </Pressable>
       {editing && <View style={styles.editor}>
         <PersonalInfoFields value={draft} disabled={busy} onChange={(value) => { setDraft(value); setError(null); setNotice(null); setConfirmDelete(false); }} />
         {error && <ThemedText accessibilityRole="alert" type="small" style={{ color: theme.accent }}>{tr(error)}</ThemedText>}
-        <Pressable analyticsId="components_personal-info-card.pressable.2" disabled={busy} onPress={() => void save()} accessibilityRole="button" accessibilityState={{ disabled: busy, busy }} style={({ pressed }) => [styles.button, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: busy ? 0.55 : 1, }]}>
+        <Pressable analyticsId="components_personal-info-card.pressable.2" disabled={busy} onPress={() => void save()} accessibilityRole="button" accessibilityState={{ disabled: busy, busy }} style={({ pressed }) => [styles.button, clay ? styles.clay : Depth.control, { backgroundColor: clay ? 'transparent' : theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: clay ? 0 : 3, opacity: busy ? 0.55 : 1, }]}>
+          {clay && <ClayPillFill kind="cta" />}
           <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{busy ? tr("저장 중…") : tr("계정 정보 저장")}</ThemedText>
         </Pressable>
         {data.full_name && !confirmDelete && <Pressable analyticsId="components_personal-info-card.pressable.3" disabled={busy} onPress={() => { play('selection'); animateLayout(reducedMotion); setConfirmDelete(true); }} accessibilityRole="button" style={styles.button}><ThemedText type="smallBold" style={{ color: theme.accent }}>{tr("저장된 이름·생년월일 삭제")}</ThemedText></Pressable>}
@@ -131,5 +136,7 @@ const styles = StyleSheet.create({
   editRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   editor: { gap: Spacing.three },
   button: { minHeight: 44, paddingHorizontal: Spacing.three, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
+  clay: { overflow: 'visible', paddingHorizontal: 18 },
   confirm: { gap: Spacing.two }, actions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: Spacing.two },
 });

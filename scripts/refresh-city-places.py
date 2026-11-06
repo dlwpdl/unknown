@@ -98,6 +98,13 @@ def build_catalog(seed, elements, now):
             if 'nightlife' in original:  # optional marker for the app's 나이트라이프 filter; older apps ignore it
                 if original['nightlife'] is not True: raise ValueError('INVALID_PLACE_NIGHTLIFE')
                 p['nightlife'] = True
+            if 'priceLevel' in original:  # optional 1-4 ($-$$$$) from a cited source; older apps ignore it
+                if original['priceLevel'] not in [1, 2, 3, 4] or isinstance(original['priceLevel'], bool): raise ValueError('INVALID_PLACE_PRICE')
+                p['priceLevel'] = original['priceLevel']
+            if 'subcategories' in original:  # optional map sub-filters, see PLACE_SUBCATEGORIES in src/lib/discovery.ts
+                values = original['subcategories']
+                if not isinstance(values, list) or len(values) > 12 or len(set(values)) != len(values) or any(not isinstance(v, str) or not 0 < len(v) <= 40 or re.search(r'[\x00-\x1f\x7f]', v) for v in values): raise ValueError('INVALID_PLACE_SUBCATEGORIES')
+                p['subcategories'] = values
             if p['openingHours'] is not None and (not isinstance(p['openingHours'], str) or not 0 < len(p['openingHours']) <= 1000): raise ValueError('INVALID_PLACE_HOURS')
             if not all(isinstance(p[k], (int,float)) and math.isfinite(p[k]) for k in ['latitude','longitude']) or not (40 <= p['latitude'] <= 85 and -142 <= p['longitude'] <= -52): raise ValueError('INVALID_PLACE_LOCATION')
             e = indexed.get(ident)

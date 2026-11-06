@@ -29,6 +29,15 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
   reply: [[/^(.+)님이 내 댓글에 답글을 남겼어요\.$/, m => `${m[1]} replied to your comment.`]],
   comment_like: [[/^(.+)님이 내 댓글에 공감했어요\.$/, m => `${m[1]} liked your comment.`]],
   post_like: [[/^(.+)님이 내 글에 공감했어요\.$/, m => `${m[1]} liked your post.`]],
+  friend_request: [[/^(.+)님이 친구 요청을 보냈어요\.$/, m => `${m[1]} sent you a friend request.`]],
+  friend_accepted: [[/^(.+)님과 친구가 됐어요\.$/, m => `You and ${m[1]} are now friends.`]],
+  // 동네 말풍선 지도 (20261105030000).
+  live_bubble_request: [
+    [/^(.+)님이 말풍선을 보고 대화를 신청했어요\.$/, m => `${m[1]} saw your bubble and asked to chat.`],
+    [/^(.+)님이 손 흔들기에 답해 대화를 신청했어요\.$/, m => `${m[1]} answered your wave and asked to chat.`],
+  ],
+  live_bubble_accepted: [[/^(.+)님이 대화 신청을 받았어요\. 지금 이야기해 보세요\.$/, m => `${m[1]} accepted your chat request. Say hi now.`]],
+  live_bubble_wave: [[/^(.+)님이 손을 흔들었어요\.$/, m => `${m[1]} waved at you.`]],
   meetup_reminder: [
     [/^(.+) 모임이 24시간 뒤에 시작해요\. \((\d{2})\/(\d{2}) (\d{2}):(\d{2}) · 모임 장소 기준\)$/, m => `“${m[1]}” starts in 24 hours (${monthDay(m[2], m[3], [m[4], m[5]])}, local time).`],
     [/^(.+) 모임이 1시간 뒤에 시작해요\.$/, m => `“${m[1]}” starts in an hour.`],
@@ -80,6 +89,8 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
     [/^(.+): 사진을 보냈어요\.$/, m => `${m[1]}: Sent a photo.`],
     [/^(.+): 위치를 보냈어요\.$/, m => `${m[1]}: Shared a location.`],
   ],
+  // Reply to a member's import request: 20261104232000_place_suggestions.sql.
+  place_suggestion_added: [[/^요청하신 ‘(.+)’, 글링 지도에 올리고 저장해 뒀어요\.$/, m => `“${m[1]}”, the place you asked for, is on the gling map now. We saved it for you.`]],
   admin_digest: [
     [/^새로 가입한 사람 (\d+)명, 운영 모임 참여 신청 (\d+)건이 있어요\.$/, m => `${m[1]} new ${m[1] === '1' ? 'member' : 'members'} and ${m[2]} ${m[2] === '1' ? 'request' : 'requests'} to join Gling-run meetups.`],
     [/^새로 가입한 사람이 (\d+)명 있어요\.$/, m => `${m[1]} new ${m[1] === '1' ? 'member' : 'members'} joined.`],

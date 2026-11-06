@@ -1,6 +1,8 @@
 // Server queries persist these choices. This account-scoped overlay also filters
 // already-rendered content and responses that were in flight when the user acted.
-export type HiddenTarget = 'post' | 'comment' | 'message' | 'user' | 'merchant_review' | 'merchant_review_reply' | 'meetup_review';
+// 'listed_post' is a post as a list row: it also drops posts hidden with 이 글 숨기기 (owner 2026-11-04), which
+// leave the lists only. 'post' keeps meaning gone everywhere (reported), so detail, links and my meetups still open a hidden post.
+export type HiddenTarget = 'post' | 'listed_post' | 'comment' | 'message' | 'user' | 'merchant_review' | 'merchant_review_reply' | 'meetup_review' | 'live_bubble';
 const hidden = new Map<string, Set<string>>();
 const listeners = new Set<() => void>();
 let revision = 0;
@@ -13,9 +15,16 @@ export function hideContent(viewerId: string, type: HiddenTarget, id: string) {
   for (const listener of listeners) listener();
 }
 
+// Undo, or putting a post back when saving the hide failed.
+export function showContent(viewerId: string, type: HiddenTarget, id: string) {
+  if (!hidden.get(viewerId)?.delete(`${type}:${id}`)) return;
+  revision++;
+  for (const listener of listeners) listener();
+}
+
 export function isContentHidden(viewerId: string, type: HiddenTarget, id: string, authorId?: string) {
   const keys = hidden.get(viewerId);
-  return !!(keys?.has(`${type}:${id}`) || (authorId && keys?.has(`user:${authorId}`)));
+  return !!(keys?.has(`${type}:${id}`) || (type === 'listed_post' && keys?.has(`post:${id}`)) || (authorId && keys?.has(`user:${authorId}`)));
 }
 
 export const visibilityRevision = () => revision;

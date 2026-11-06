@@ -3,6 +3,7 @@ import { Alert, Platform, Share, StyleSheet, View } from 'react-native';
 // shortcut: toqr is locked through Expo CLI (same import as the public web pages); recheck when upgrading Expo.
 import { toQR } from 'toqr';
 
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
@@ -29,10 +30,12 @@ export function useInviteShare() {
   };
 }
 
-export function InviteStats({ items }: { items: [string, number][] }) {
-  const theme = useTheme();
+/** nested: drawn inside another clay card, so the tiles stay flat on theme.background. */
+export function InviteStats({ items, nested = false }: { items: [string, number][]; nested?: boolean }) {
+  const theme = useTheme(), clay = useClayBox(), clayBox = clay && !nested;
   return <View style={styles.stats}>
-    {items.map(([label, value]) => <View key={label} accessible accessibilityLabel={`${label} ${value}`} style={[styles.stat, { backgroundColor: theme.backgroundElement }]}>
+    {items.map(([label, value]) => <View key={label} accessible accessibilityLabel={`${label} ${value}`} style={[styles.stat, { backgroundColor: clayBox ? 'transparent' : clay ? theme.background : theme.backgroundElement }]}>
+      {clayBox && <ClayBoxFill kind="tile" />}
       <ThemedText type="small" themeColor="textSecondary">{label}</ThemedText>
       <ThemedText type="smallBold" style={styles.statValue}>{value}</ThemedText>
     </View>)}

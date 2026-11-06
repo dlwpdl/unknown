@@ -1,37 +1,45 @@
-import { useFocusEffect, useIsFocused, useRouter } from 'expo-router';
+import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { FlatList, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable } from '@/components/analytics-controls';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { WebshopComparisonSheet } from '@/components/business-webshop';
 import { GlingLoader } from '@/components/gling-loader';
 import { LoginPanel } from '@/components/login-panel';
 import { SavedFolderSheet, SavedItemCard, SavedLibraryButton, type SavedFolderEditor } from '@/components/saved-library';
+import { ShareCardSheet } from '@/components/share-card';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { ControlStyles } from '@/constants/design-system';
+import { ControlStyles, IconSize } from '@/constants/design-system';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
+import { getCityPlaces } from '@/lib/city-places';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import {
   createSavedFolder, deleteSavedFolder, loadSavedFolders, loadSavedItems, renameSavedFolder,
   setSavedItem, setSavedItemFolders, type SavedFilter, type SavedFolder, type SavedItem, type SavedPage,
 } from '@/lib/saved-items';
+import { savedListPlaces } from '@/lib/share-card';
 import { supabase } from '@/lib/supabase';
 import { loadPublicWebshop } from '@/lib/webshops';
 
 type SavedReadOperation = { active: boolean; reading: boolean; accountId: string; key: string; visibility: ReturnType<typeof useContentVisibility> };
 
 export default function SavedScreen() {
-  const auth = useAuth(), theme = useTheme(), router = useRouter(), hidden = useContentVisibility(), focused = useIsFocused();
+  const auth = useAuth(), theme = useTheme(), clayBox = useClayBox(), router = useRouter(), hidden = useContentVisibility(), focused = useIsFocused();
   const { language } = useLanguage(), { play } = useInteractionFeedback(), ko = language === 'ko';
-  const [filter, setFilter] = useState<SavedFilter>('all'), [folderId, setFolderId] = useState<string | null>(null);
+  // The profile's '저장한 곳' count and tile open this list already narrowed to places.
+  const { filter: initialFilter } = useLocalSearchParams<{ filter?: string }>();
+  const [filter, setFilter] = useState<SavedFilter>(initialFilter === 'places' ? 'places' : 'all'), [folderId, setFolderId] = useState<string | null>(null);
   const [search, setSearch] = useState(''), [query, setQuery] = useState(''), [revision, setRevision] = useState(0);
+  const [sharingList, setSharingList] = useState(false);
   const pendingSearch = search.trim() !== query;
   const key = JSON.stringify([auth.isAuthLoading ? 'loading' : auth.isAuthed ? auth.me.id : 'guest', filter, folderId, query]);
   const [result, setResult] = useState<{ key: string; visibility: typeof hidden; operation: SavedReadOperation; page: SavedPage | null; folders: SavedFolder[]; failed: boolean; appendFailed: boolean } | null>(null);
@@ -186,7 +194,17 @@ export default function SavedScreen() {
       refreshing={loading && !busy} onRefresh={reload}
       ListHeaderComponent={<View style={styles.header}>
         <View style={styles.intro}><ThemedText type="section">{ko ? '다시 보고 싶은 것들' : 'Worth coming back to'}</ThemedText>
-          <ThemedText type="supporting" themeColor="textSecondary">{ko ? '저장한 항목과 폴더는 나만 볼 수 있어요.' : 'Your saved items and folders are private.'}</ThemedText></View>
+          <ThemedText type="supporting" themeColor="textSecondary">{ko ? '저장한 장소는 친구에게도 보여요. 설정에서 끌 수 있고, 나머지는 나만 볼 수 있어요.' : 'Friends can see your saved places unless you turn it off in Settings. Everything else stays private.'}</ThemedText></View>
+        {/* Owner 2026-11-04 "가져오기: 검색창 위 한 줄로": its own row, so it never reads as a folder. */}
+        <Pressable analyticsId="saved.import" accessibilityRole="button" accessibilityLabel={ko ? '다른 앱에서 가져오기' : 'Import from other apps'} disabled={busy}
+          onPress={() => { play('selection'); closeTransient(); router.push('/profile/import'); }}
+          style={({ pressed }) => [styles.import, clayBox ? { borderColor: 'transparent', backgroundColor: 'transparent', overflow: 'visible', opacity: busy ? 0.6 : pressed ? 0.8 : 1 } : { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.card, opacity: busy ? 0.6 : 1 }]}>
+          {clayBox && <ClayBoxFill kind="tile" />}
+          <SymbolView name={{ ios: 'square.and.arrow.down', android: 'download', web: 'download' }} size={IconSize.toolbar} tintColor={theme.accent} accessible={false} />
+          <View style={styles.importText}><ThemedText type="menu">{ko ? '다른 앱에서 가져오기' : 'Import from other apps'}</ThemedText>
+            <ThemedText type="supporting" themeColor="textSecondary" numberOfLines={1}>{ko ? '구글맵 목록 · 인스타 릴스 · 메모' : 'Google Maps lists · Instagram reels · notes'}</ThemedText></View>
+          <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={IconSize.chevron} tintColor={theme.textSecondary} accessible={false} />
+        </Pressable>
         <View style={[ControlStyles.field, styles.search, { borderColor: theme.line, backgroundColor: theme.card }]}>
           <TextInput value={search} maxLength={120} editable={!busy} accessibilityLabel={ko ? '저장한 항목 검색' : 'Search saved items'} placeholder={ko ? '저장한 항목 검색' : 'Search saved items'} placeholderTextColor={theme.textSecondary}
             style={[styles.input, { color: theme.text }]} returnKeyType="search" onChangeText={value => { closeTransient(); setSearch(value); }} onSubmitEditing={() => { play('selection'); setQuery(search.trim()); }} />
@@ -197,7 +215,9 @@ export default function SavedScreen() {
           <View style={styles.wrap}><SavedLibraryButton analyticsId="saved.folder.all" label={ko ? '전체 저장' : 'All saved'} selected={!folderId} disabled={busy} onPress={() => { closeTransient(); setFolderId(null); }} />
             {folders.map(folder => <SavedLibraryButton key={folder.id} analyticsId="saved.folder.select" testID={`saved.folder.${folder.id}`} label={folder.name} selected={folderId === folder.id} disabled={busy} onPress={() => { closeTransient(); setFolderId(folder.id); }} />)}
             <SavedLibraryButton analyticsId="saved.folder.new" label={ko ? '+ 새 폴더' : '+ New folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'create' } }); }} />
-            {!!selectedFolder && <SavedLibraryButton analyticsId="saved.folder.manage" label={ko ? '폴더 관리' : 'Manage folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'rename', folder: selectedFolder } }); }} />}</View>
+            {!!selectedFolder && <SavedLibraryButton analyticsId="saved.folder.manage" label={ko ? '폴더 관리' : 'Manage folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'rename', folder: selectedFolder } }); }} />}
+            {/* Filters and search drop places from the list, so sharing waits until the whole folder shows. */}
+            {!!selectedFolder && !query && (filter === 'all' || filter === 'places') && <SavedLibraryButton analyticsId="saved.folder.share" label={ko ? '목록 공유' : 'Share list'} disabled={busy || loading} onPress={() => { closeTransient(); setSharingList(true); }} />}</View>
         </View>
         <View style={styles.summary}><ThemedText type="supporting" themeColor="textSecondary">{selectedFolder?.name ?? (ko ? '전체 저장' : 'All saved')}{current && !current.failed ? ko ? ` · ${rows.length}개 표시 중` : ` · ${rows.length} shown` : ''}</ThemedText>
           <ThemedText type="supporting" themeColor="textSecondary">{ko ? '최근 저장순' : 'Recently saved'}</ThemedText></View>
@@ -220,6 +240,7 @@ export default function SavedScreen() {
       editor={activeEditor} folders={folders} busy={busy} error={error} onClose={() => { if (!busy) { setEditor(null); setMessage(null); } }} onCreate={saveFolder} onRename={saveFolder} onDelete={() => void deleteFolder()} onAssign={assign}
       onCreateForItem={ids => { if (activeEditor.kind === 'item') { setMessage(null); setEditor({ key, visibility: hidden, value: { kind: 'create', returnItem: { ...activeEditor.item, folderIds: ids } } }); } }}
       onRequestDelete={() => { if (activeEditor.kind === 'rename') { setMessage(null); setEditor({ key, visibility: hidden, value: { kind: 'delete', folder: activeEditor.folder } }); } }} />}
+    {selectedFolder && sharingList && (() => { const places = savedListPlaces(rows, getCityPlaces); return <ShareCardSheet visible onClose={() => setSharingList(false)} target={{ kind: 'list', name: selectedFolder.name, places, count: page?.hasMore ? null : places.length }} />; })()}
     {!pendingSearch && offer?.key === key && offer.visibility === hidden && <WebshopComparisonSheet client={supabase} shop={offer.shop} name={offer.name} visible onClose={() => setOffer(null)} />}
   </SafeAreaView></ThemedView>;
 }
@@ -227,7 +248,8 @@ export default function SavedScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, alignItems: 'center' }, safeArea: { flex: 1, width: '100%', maxWidth: MaxContentWidth },
   list: { flexGrow: 1, paddingHorizontal: Spacing.three, paddingBottom: Spacing.five }, header: { paddingTop: Spacing.three, paddingBottom: Spacing.three, gap: Spacing.three },
-  intro: { gap: Spacing.one }, search: { flexDirection: 'row', alignItems: 'center' }, input: { flex: 1, minWidth: 0, minHeight: 48, fontSize: 16, paddingVertical: Spacing.two },
+  intro: { gap: Spacing.one }, import: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 56, borderWidth: 1, borderRadius: 14, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
+  importText: { flex: 1, minWidth: 0, gap: 2 }, search: { flexDirection: 'row', alignItems: 'center' }, input: { flex: 1, minWidth: 0, minHeight: 48, fontSize: 16, paddingVertical: Spacing.two },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, folders: { gap: Spacing.two },
   summary: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: Spacing.two },
   separator: { height: Spacing.two }, state: { marginTop: Spacing.three }, footer: { gap: Spacing.two, paddingVertical: Spacing.three },

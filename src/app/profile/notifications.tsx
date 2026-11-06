@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, AppState, DeviceEventEmitter, Linking, Platform, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ControlMotion } from '@/constants/design-system';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -29,6 +30,7 @@ export default function NotificationSettingsScreen() {
 
 function NotificationSettings({ userId, cityName }: { userId: string; cityName: string }) {
   const { tr } = useLanguage();
+  const clay = useClay(), clayBox = useClayBox();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const { fontScale } = useWindowDimensions();
@@ -101,7 +103,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
     <ScrollView analyticsId="app_profile_notifications.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       <ThemedText type="small" themeColor="textSecondary">{tr("종류마다 앱 알림 목록과 휴대폰 푸시를 따로 켜고 끌 수 있어요.")}</ThemedText>
       {saveError && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">{tr("설정을 저장하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.")}</ThemedText>}
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ToggleRow label={tr("휴대폰 푸시 알림")} value={preferences.push_enabled} onChange={value => void save({ push_enabled: value })} disabled={busy || (!pushConfigured && !preferences.push_enabled)} />
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{!pushSupported ? tr("휴대폰 앱에서 푸시 알림을 켤 수 있어요.")
           : !pushConfigured ? tr("휴대폰 알림 연결을 준비하고 있어요.")
@@ -112,7 +114,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
         <View style={styles.groupHead}>
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.label}>{group.id === 'mine' ? tr("나한테 온 것") : group.id === 'city' ? tr("{0} 소식", tr(cityName)) : tr("계정")}</ThemedText>
         </View>
-        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+        <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
           {group.rows.map(row => {
             const state = settingState(preferences, row);
             const description = row.id === 'interests' && preferences.interest_hashtags.length ? preferences.interest_hashtags.map(tag => `#${tag}`).join(' ') : row.description && tr(row.description);
@@ -122,7 +124,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
         </View>
       </View>)}
       <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{tr("미리보기")}</ThemedText>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ToggleRow label={tr("잠금화면에 메시지 내용 보이기")} value={preferences.message_preview ?? false} onChange={value => void save({ message_preview: value })} disabled={busy} />
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{preferences.message_preview
           ? tr("잠금 화면에 보낸 사람과 짧은 메시지가 표시돼요. 사진은 사진 안내만 보여요.")
@@ -133,8 +135,9 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
       <View style={styles.tags}>{TAGS.map(tag => <Pressable analyticsId="app_profile_notifications.pressable.3" key={tag.id} accessibilityRole="checkbox" accessibilityState={{ checked: tagIds.includes(tag.id), disabled: busy }}
         aria-checked={tagIds.includes(tag.id)}
         disabled={busy} onPress={() => { play('selection'); setTagIds(current => current.includes(tag.id) ? current.filter(id => id !== tag.id) : [...current, tag.id].sort((a, b) => a - b)); }}
-        style={({ pressed }) => [styles.tag, Depth.control, { backgroundColor: tagIds.includes(tag.id) ? theme.accent : theme.backgroundElement, borderBottomColor: tagIds.includes(tag.id) ? theme.accentDepth : theme.line, borderBottomWidth: 3, }]}>
-        <ThemedText type="smallBold" style={{ color: tagIds.includes(tag.id) ? theme.accentInk : theme.textSecondary }}>{tr(tag.label)}</ThemedText>
+        style={({ pressed }) => [styles.tag, clay ? styles.clayPad : Depth.control, clay ? { backgroundColor: 'transparent' } : { backgroundColor: tagIds.includes(tag.id) ? theme.accent : theme.backgroundElement, borderBottomColor: tagIds.includes(tag.id) ? theme.accentDepth : theme.line, borderBottomWidth: 3, }]}>
+        {clay && <ClayPillFill kind={tagIds.includes(tag.id) ? 'on' : 'white'} />}
+        <ThemedText type="smallBold" style={{ color: tagIds.includes(tag.id) ? theme.accentInk : clay ? theme.text : theme.textSecondary }}>{tr(tag.label)}</ThemedText>
       </Pressable>)}</View>
       <TextInput accessibilityLabel={tr("관심 해시태그")} value={hashtags} onChangeText={setHashtags} editable={!busy}
         placeholder={tr("#러닝 #맛집 #워홀")} placeholderTextColor={theme.textSecondary} maxLength={1000} autoCapitalize="none" autoCorrect={false}
@@ -143,8 +146,9 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
       {invalidHashtags && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">{tr("해시태그는 20개까지, 각각 50자 이내로 적어주세요.")}</ThemedText>}
       <Pressable analyticsId="app_profile_notifications.pressable.4" accessibilityRole="button" disabled={busy || !interestsChanged || invalidHashtags} accessibilityState={{ disabled: busy || !interestsChanged || invalidHashtags, busy }}
         aria-busy={busy}
-        style={({ pressed }) => [styles.save, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: busy || !interestsChanged || invalidHashtags ? 0.45 : 1, }]}
+        style={({ pressed }) => [styles.save, clay ? styles.clayWide : Depth.control, { backgroundColor: clay ? 'transparent' : theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: clay ? 0 : 3, opacity: busy || !interestsChanged || invalidHashtags ? 0.45 : 1, }]}
         onPress={() => { play('selection'); void save({ interest_tag_ids: tagIds, interest_hashtags: parsedHashtags }); }}>
+        {clay && <ClayPillFill kind="cta" />}
         <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr("관심 태그 저장")}</ThemedText>
       </Pressable>
       <ThemedText type="small" themeColor="textSecondary">{tr("안전·계정 이용에 꼭 필요한 안내는 앱의 알림 목록에 남습니다.")}</ThemedText>
@@ -167,12 +171,14 @@ function CategoryRow({ label, description, app, push, pushDisabled, locked, disa
 
 function Pill({ text, label, value, disabled, locked, onChange }: { text: string; label: string; value: boolean; disabled: boolean; locked: boolean; onChange: (next: boolean) => void }) {
   const theme = useTheme();
+  const clay = useClay();
   const { play } = useInteractionFeedback();
   return <Pressable analyticsId="app_profile_notifications.pressable.5" accessibilityRole="switch" accessibilityLabel={label} accessibilityState={{ checked: value, disabled }} aria-checked={value}
     disabled={disabled} hitSlop={{ top: 8, bottom: 8 }} onPress={() => { play('selection'); onChange(!value); }}
-    style={({ pressed }) => [styles.pill, { backgroundColor: value ? theme.accent : theme.backgroundSelected,
+    style={({ pressed }) => [styles.pill, clay && { overflow: 'visible' }, { backgroundColor: clay ? 'transparent' : value ? theme.accent : theme.backgroundSelected,
       opacity: locked ? 0.55 : disabled ? ControlMotion.disabledOpacity : pressed ? ControlMotion.pressedOpacity : 1 }]}>
-    <ThemedText type="smallBold" style={{ color: value ? theme.accentInk : theme.textSecondary }}>{text}</ThemedText>
+    {clay && <ClayPillFill kind={value ? 'on' : 'white'} />}
+    <ThemedText type="smallBold" style={{ color: value ? theme.accentInk : clay ? theme.text : theme.textSecondary }}>{text}</ThemedText>
   </Pressable>;
 }
 
@@ -200,6 +206,9 @@ const styles = StyleSheet.create({
   group: { gap: Spacing.two }, groupHead: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.two, paddingHorizontal: Spacing.three },
   pill: { width: 44, minHeight: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, tag: { minHeight: 44, borderRadius: 22, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, justifyContent: 'center' },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
+  clayPad: { overflow: 'visible', paddingHorizontal: 18 },
+  clayWide: { overflow: 'visible', paddingHorizontal: 24 },
   input: { minHeight: 48, borderWidth: 1, borderRadius: 10, padding: Spacing.three, fontSize: 16 },
   save: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, padding: Spacing.two },
 });

@@ -1,11 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import type { SymbolViewProps } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useCallback, useState } from 'react';
 import { Modal, Platform, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { animateLayout } from '@/components/disclosure';
 import { PopIn } from '@/components/state-card';
@@ -44,6 +46,7 @@ const TOUR: { icon: Icon; title: string; body: string }[] = [
 export function StartGuide({ cityName, onPickCity, onOpenMeetups }: { cityName: string; onPickCity: () => void; onOpenMeetups: () => void }) {
   const { tr } = useLanguage();
   const theme = useTheme();
+  const clay = useClay(), clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
   const [state, setState] = useState<GuideState | null>(null);
@@ -76,7 +79,8 @@ export function StartGuide({ cityName, onPickCity, onOpenMeetups }: { cityName: 
   ];
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+    <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>
+      {clayBox && <ClayBoxFill kind="tile" />}
       <View style={styles.head}>
         <View style={styles.flex}>
           <ThemedText accessibilityRole="header" style={Typography.section}>{tr('처음이세요? 여기서부터 시작해요')}</ThemedText>
@@ -126,7 +130,8 @@ export function StartGuide({ cityName, onPickCity, onOpenMeetups }: { cityName: 
             ))}
             <Pressable analyticsId="start-guide.tour.done" accessibilityRole="button"
               onPress={() => { play('selection'); setTouring(false); complete('tour'); }}
-              style={({ pressed }) => [ControlStyles.action, styles.tourDone, controlPresentation(theme, { tone: 'primary', pressed }).container]}>
+              style={({ pressed }) => [ControlStyles.action, styles.tourDone, controlPresentation(theme, { tone: 'primary', pressed, clay }).container]}>
+              {clay && <ClayPillFill kind="cta" />}
               <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr('알겠어요')}</ThemedText>
             </Pressable>
           </ScrollView>
@@ -138,6 +143,7 @@ export function StartGuide({ cityName, onPickCity, onOpenMeetups }: { cityName: 
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   card: { borderWidth: 1, borderRadius: 20, padding: Spacing.three, gap: Spacing.two, marginTop: Spacing.three },
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two, marginBottom: Spacing.one },
   step: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: Spacing.three, minHeight: 44 },

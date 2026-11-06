@@ -24,7 +24,7 @@ function fixture(statusName, drafts = [], outcome = null) {
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'react-native': { View: 'View', TextInput: 'Input', Alert: {}, Linking: { openURL: async value => calls.push(['open', value]) }, Platform: { OS: 'web' }, StyleSheet: { create: value => value, hairlineWidth: 1 } },
     'expo-image': { Image: 'Image' }, '@react-native-async-storage/async-storage': { getItem: async key => storage.get(key) ?? null, setItem: async (key, value) => storage.set(key, value), removeItem: async key => { calls.push(['remove', key]); storage.delete(key); } },
-    '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/merchant-ui': { MerchantBadge: 'Badge', MerchantHelp: 'Help' }, '@/components/themed-text': { ThemedText: 'Text' }, '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/merchant-ui': { MerchantBadge: 'Badge', MerchantHelp: 'Help' }, '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/components/themed-text': { ThemedText: 'Text' }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/auth': { useAuth: () => ({ me: { id: 'owner' } }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => calls.push(['feedback', value]) }) },
     '@/lib/merchant-source': { merchantEventId: () => 'new-request' }, '@/lib/supabase': { supabase: {} },
     '@/lib/naver-cafe': { parseCafeBoardUrl,

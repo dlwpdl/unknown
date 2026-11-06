@@ -28,3 +28,10 @@ export function nearbyCommunity(fix: LocationFix, now = Date.now()): string | nu
   }
   return null;
 }
+
+// M7 (owner 2026-11-05): the map is north-up, so the facing cone uses true north, then magnetic north; no usable reading means no cone.
+// shortcut: 5° steps so a steady hand does not re-render the map on every sensor tick; go finer if the cone looks jumpy on a device.
+export function facingDegrees(reading: { trueHeading: number; magHeading: number } | null | undefined): number | null {
+  const degrees = [reading?.trueHeading, reading?.magHeading].find(value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 360);
+  return degrees === undefined ? null : Math.round(degrees / 5) * 5 % 360;
+}

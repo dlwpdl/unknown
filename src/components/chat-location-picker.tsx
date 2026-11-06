@@ -1,11 +1,12 @@
 import { useLanguage } from '@/hooks/use-language';
 import * as Location from 'expo-location';
 import { useEffect, useRef, useState, type ComponentProps } from 'react';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { AppState, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable } from '@/components/analytics-controls';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { PostPinMap } from '@/components/post-pin-map';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
@@ -16,16 +17,17 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 function LocationAction({ label, onPress, disabled = false, primary = false, icon }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean; icon?: ComponentProps<typeof SymbolView>['name'] }) {
 
-  const theme = useTheme(), { play } = useInteractionFeedback();
+  const theme = useTheme(), { play } = useInteractionFeedback(), clay = useClay();
   return <Pressable analyticsId={'chat-location.' + (primary ? 'send' : label)} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled}
-    onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.button, { backgroundColor: primary ? theme.accent : 'transparent', opacity: disabled ? 0.45 : pressed ? 0.7 : 1 }]}>
+    onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.button, clay && styles.buttonClay, { backgroundColor: primary && !clay ? theme.accent : 'transparent', opacity: disabled ? 0.45 : pressed ? 0.7 : 1 }]}>
+    {clay && <ClayPillFill kind={primary ? 'cta' : 'white'} />}
     {icon && <SymbolView name={icon} size={18} tintColor={primary ? theme.accentInk : theme.accent} />}
     <ThemedText type="smallBold" style={{ color: primary ? theme.accentInk : theme.text }}>{label}</ThemedText></Pressable>;
 }
 
 export function ChatLocationPicker({ sending, onSend, onClose }: { sending: boolean; onSend: (point: ChatLocation) => Promise<void>; onClose: () => void }) {
   const { tr } = useLanguage();
-  const theme = useTheme(), insets = useSafeAreaInsets(), reducedMotion = useReducedMotion(), { height } = useWindowDimensions();
+  const theme = useTheme(), clay = useClay(), insets = useSafeAreaInsets(), reducedMotion = useReducedMotion(), { height } = useWindowDimensions();
   const { play } = useInteractionFeedback();
   const revision = useRef(0);
   const [ready, setReady] = useState(false), [busy, setBusy] = useState(false);
@@ -79,7 +81,8 @@ export function ChatLocationPicker({ sending, onSend, onClose }: { sending: bool
       <Pressable analyticsId="chat-location.dismiss" accessibilityRole="button" accessibilityLabel={tr("위치 공유 닫기")} disabled={sending} onPress={() => { play('selection'); close(); }} style={StyleSheet.absoluteFill} />
       <View style={[styles.sheet, { maxHeight: Math.min(height * 0.82, 640), backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, 12) }]} accessibilityViewIsModal>
         <View style={styles.row}><ThemedText type="smallBold" style={{ flex: 1, fontSize: 18 }}>{tr("위치 공유하기")}</ThemedText>
-          <Pressable analyticsId="chat-location.close" accessibilityRole="button" accessibilityLabel={tr("위치 공유 닫기")} accessibilityState={{ disabled: sending }} disabled={sending} onPress={() => { play('selection'); close(); }} style={({ pressed }) => [styles.close, { backgroundColor: theme.backgroundElement, opacity: sending ? 0.45 : pressed ? 0.7 : 1 }]}>
+          <Pressable analyticsId="chat-location.close" accessibilityRole="button" accessibilityLabel={tr("위치 공유 닫기")} accessibilityState={{ disabled: sending }} disabled={sending} onPress={() => { play('selection'); close(); }} style={({ pressed }) => [styles.close, clay && { overflow: 'visible' }, { backgroundColor: clay ? 'transparent' : theme.backgroundElement, opacity: sending ? 0.45 : pressed ? 0.7 : 1 }]}>
+            {clay && <ClayPillFill kind="white" />}
             <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} />
           </Pressable>
         </View>
@@ -90,7 +93,7 @@ export function ChatLocationPicker({ sending, onSend, onClose }: { sending: bool
           </View>
           <View pointerEvents={sending ? 'none' : 'auto'} style={[styles.map, { height: Math.min(240, height * 0.32), backgroundColor: theme.backgroundElement }]}>
             <PostPinMap pin={selection} onSelect={select} onReadyChange={setReady} bottomInset={68} />
-            <View style={[styles.current, { backgroundColor: theme.card, borderColor: theme.line }]}><LocationAction label={busy ? tr("위치 찾는 중") : tr("현재 위치 선택")} icon={{ ios: 'location.fill', android: 'my_location', web: 'my_location' }} onPress={() => void locate(false)} disabled={busy || sending} /></View>
+            <View style={[styles.current, { backgroundColor: clay ? 'transparent' : theme.card, borderColor: clay ? 'transparent' : theme.line }]}><LocationAction label={busy ? tr("위치 찾는 중") : tr("현재 위치 선택")} icon={{ ios: 'location.fill', android: 'my_location', web: 'my_location' }} onPress={() => void locate(false)} disabled={busy || sending} /></View>
           </View>
           {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
           <View style={styles.place}><View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden style={[styles.placeIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={22} tintColor={theme.accent} /></View>
@@ -114,6 +117,7 @@ const styles = StyleSheet.create({
   content: { gap: 12 }, row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   search: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 12, borderRadius: 14 }, input: { flex: 1, minWidth: 0, minHeight: 48, fontSize: 16 },
   close: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  buttonClay: { overflow: 'visible', paddingHorizontal: 18 },
   button: { minHeight: 48, minWidth: 48, flexDirection: 'row', gap: 8, justifyContent: 'center', alignItems: 'center', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12 },
   place: { flexDirection: 'row', alignItems: 'center', gap: 12 }, placeIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   map: { minHeight: 140, overflow: 'hidden', borderRadius: 16 }, current: { position: 'absolute', bottom: 12, left: 12, borderWidth: 1, borderRadius: 24 },

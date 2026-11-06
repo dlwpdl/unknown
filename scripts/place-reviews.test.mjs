@@ -37,6 +37,15 @@ function fixture({ feed = async () => [], create = async () => ({ id: saved, pos
   return { ...api, calls, client };
 }
 
+test('a Today card finds the catalog place a review points at, and no place for any other post', () => {
+  const api = fixture();
+  const body = api.placeReviewBody(place.cityId, place.id, '해질 때 산책하기 좋아요.');
+  assert.equal(api.placeReviewPlace({ body, cityId: place.cityId })?.id, place.id);
+  assert.equal(api.placeReviewPlace({ body: '그냥 동네 이야기', cityId: place.cityId }), null);
+  assert.equal(api.placeReviewPlace({ body: `${body}\n\n덧붙인 줄`, cityId: place.cityId }), null, 'the reference must be the last line');
+  assert.equal(api.placeReviewPlace({ body, cityId: 'vancouver' }), null, 'a place from another city does not resolve');
+});
+
 test('scored place reviews use the verified catalog, half-point scale and atomic rating RPC', async () => {
   const api = fixture({ rpc: async () => ({ data: { id: saved, score: 8.5 }, error: null }) });
   assert.equal(typeof api.writeRatedPlaceReview, 'function');

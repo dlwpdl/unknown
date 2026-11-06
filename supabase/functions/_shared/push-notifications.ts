@@ -21,7 +21,7 @@ const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const uuid = new RegExp(`^${UUID}$`, 'i');
 // 앱의 notificationRoute()와 같은 목적지 목록을 유지한다. 관리자 알림(/admin?section=…)이 빠지면
 // 서버가 보낸 화면 대신 /notifications 로 열리므로 두 곳을 함께 고쳐야 한다.
-const routePattern = new RegExp(`^(?:/post/${UUID}(?:\\?commentId=${UUID})?|/company/${UUID}\\?review=(?:usage|employment)|/chat\\?(?:conversationId=${UUID}(?:&view=requests|&businessId=${UUID})?|requestId=${UUID}|view=requests)|/profile/(?:guidelines|settings|meetup-reviews|merchant\\?merchant=${UUID})|/notifications|/admin(?:\\?(?:section=(?:alerts|analytics|conversations|errors|overview|posts|reports|safety|trending|users)|(?:safety|alert)=(?:${UUID}|[1-9][0-9]*)))?)$`, 'i');
+const routePattern = new RegExp(`^(?:/post/${UUID}(?:\\?commentId=${UUID})?|/company/${UUID}\\?review=(?:usage|employment)|/chat\\?(?:conversationId=${UUID}(?:&view=requests|&businessId=${UUID})?|requestId=${UUID}|view=requests)|/profile/(?:guidelines|settings|meetup-reviews|merchant\\?merchant=${UUID})|/user/${UUID}|/places/(?:osm:(?:node|way|relation):[1-9][0-9]{0,19}|partner:[a-z0-9]+(?:-[a-z0-9]+)*)\\?cityId=[a-z][a-z0-9-]{0,63}|/notifications|/admin(?:\\?(?:section=(?:alerts|analytics|conversations|errors|overview|posts|reports|safety|trending|users)|(?:safety|alert)=(?:${UUID}|[1-9][0-9]*)))?)$`, 'i');
 const json = (value: unknown, status = 200) => Response.json(value, { status });
 const RECOMMENDATIONS = ['trending', 'city_food', 'city_places', 'merchant_updates', 'weekly_ranking', 'interests', 'nearby'];
 const ROUNDS = 5; // ~500 sends per invocation, in Expo's 100-message batches

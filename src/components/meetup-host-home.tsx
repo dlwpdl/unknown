@@ -3,6 +3,7 @@ import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import { Pressable } from '@/components/analytics-controls';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ListCard, ListLoading, ListRow, SectionLabel } from '@/components/list-card';
 import { MeetupReviews } from '@/components/meetup-reviews';
 import { RaisedActionButton } from '@/components/raised-action-button';
@@ -44,8 +45,9 @@ async function loadHome(postId: string): Promise<Home> {
 }
 
 function Stat({ label, value, total }: { label: string; value: string; total?: string }) {
-  const theme = useTheme();
-  return <View style={[styles.stat, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  const theme = useTheme(), clayBox = useClayBox();
+  return <View style={[styles.stat, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     <ThemedText themeColor="textSecondary" style={Typography.caption}>{label}</ThemedText>
     <ThemedText style={Typography.section}>{value}{!!total && <ThemedText themeColor="textSecondary" style={Typography.supporting}>/{total}</ThemedText>}</ThemedText>
   </View>;
@@ -122,8 +124,9 @@ export function MeetupHostHome({ postId, kind }: { postId: string; kind: 'once' 
 
 export function MeetupEditLink({ postId }: { postId: string }) {
   const { tr } = useLanguage();
-  const router = useRouter(), { play } = useInteractionFeedback();
-  return <Pressable analyticsId="meetup.home.edit" accessibilityRole="button" accessibilityLabel={tr('모임 수정')} style={styles.edit} onPress={() => { play('selection'); router.push({ pathname: '/meetup-edit', params: { postId } }); }}>
+  const router = useRouter(), { play } = useInteractionFeedback(), clay = useClay();
+  return <Pressable analyticsId="meetup.home.edit" accessibilityRole="button" accessibilityLabel={tr('모임 수정')} style={[styles.edit, clay && styles.clayEdit]} onPress={() => { play('selection'); router.push({ pathname: '/meetup-edit', params: { postId } }); }}>
+    {clay && <ClayPillFill kind="white" />}
     <ThemedText type="smallBold" themeColor="accent">{tr('모임 수정')}</ThemedText>
   </Pressable>;
 }
@@ -135,5 +138,7 @@ const styles = StyleSheet.create({
   stats: { flexDirection: 'row', gap: Spacing.two },
   stat: { flex: 1, padding: Spacing.three, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth },
   footer: { paddingHorizontal: 22, paddingTop: Spacing.two, paddingBottom: Spacing.two },
+  clayEdit: { overflow: 'visible', paddingHorizontal: 18, alignSelf: 'flex-start' },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   edit: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.one },
 });

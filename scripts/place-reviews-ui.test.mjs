@@ -35,7 +35,7 @@ function view({ load = async () => ({ posts: [], cursor: null, hasMore: false })
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/post-card': { PostCard: 'PostCard' }, '@/components/state-card': { StateCard: 'StateCard' }, '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' },
     '@/components/merchant-rating-bar': { MerchantRatingBar: 'MerchantRatingBar', GlingRatingIcon: 'GlingRatingIcon' },
-    '@/hooks/use-theme': { useTheme: () => ({ line: '#343443', card: '#171722', text: '#F6F3F0', accent: '#CBB9FF' }) },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({ line: '#343443', card: '#171722', text: '#F6F3F0', accent: '#CBB9FF' }) },
     '@/hooks/use-language': { useLanguage: () => ({ language, tr }) }, '@/i18n': { tr },
     '@/hooks/use-content-visibility': { useContentVisibility: () => (_type, id, writer) => hidden.has(id) || hidden.has(writer) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: !!account, isAuthLoading: false, me: { id: account ?? 'guest' }, promptLogin: reason => calls.logins.push(reason) }) },
@@ -259,10 +259,10 @@ function detailViewport(mode = 'auto') {
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/components/place-reviews': { PlaceReviews: 'PlaceReviews' },
     '@/hooks/use-language': { useLanguage: () => ({ tr, locale: 'en-CA' }) }, '@/i18n': { tr, getLocale: () => 'en-CA' },
-    '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
     '@/hooks/use-content-translation': { ...translationHookDefaults, useTranslationPreference: () => ({ mode }) },
-    '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
+    '@/components/place-saves': { PlaceSavedBy: 'PlaceSavedBy', PlaceRelated: 'PlaceRelated', usePlaceSaves: () => null }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'toronto' } }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'guest' } }) },
@@ -271,6 +271,8 @@ function detailViewport(mode = 'auto') {
     '@/lib/merchant-source': { safeMerchantSourceUrl: () => null, merchantMapsUrl: () => null },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16 }, MaxContentWidth: 920 },
+    '@/constants/design-system': { ControlStyles: { icon: {} }, IconSize: { toolbar: 21 } },
+    '@/components/share-card': { ShareCardSheet: 'ShareCardSheet' },
   };
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/app/places/[id].tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText,
     { exports, require: name => imports[name] ?? {} });
@@ -316,4 +318,27 @@ test('F1: a tall review is eligible at half of the smaller row/viewport height',
   ui.viewport({ y: 700, height: 600 }); assert.equal(translates(ui.render(), 'tall'), true);
   ui.viewport({ y: 2500, height: 600 }); assert.equal(translates(ui.render(), 'tall'), true);
   ui.viewport({ y: 2501, height: 600 }); assert.equal(translates(ui.render(), 'tall'), false);
+});
+
+test('place detail header shares the place as a card next to save', () => {
+  const detail = detailViewport();
+  const share = nodes(detail.render()).find(n => n.props?.analyticsId === 'places.detail.share');
+  assert.equal(share.props.accessibilityRole, 'button');
+  assert.equal(nodes(detail.render()).find(n => n.type === 'ShareCardSheet').props.visible, false);
+  share.props.onPress();
+  const sheet = nodes(detail.render()).find(n => n.type === 'ShareCardSheet');
+  assert.equal(sheet.props.visible, true); assert.equal(sheet.props.target.kind, 'place'); assert.equal(sheet.props.target.place.id, 'osm:node:1');
+  sheet.props.onClose(); assert.equal(nodes(detail.render()).find(n => n.type === 'ShareCardSheet').props.visible, false);
+});
+
+test('G1: saving as 가 봤음 opens the editor once the rating has loaded, and only once per request', async () => {
+  const ui = view(); ui.place({ writeRequest: 1 });
+  assert.equal(find(ui.render(), 'places.reviews.body'), undefined, 'waits for the rating before opening');
+  await settle(); ui.render();
+  let tree = ui.render();
+  assert.ok(find(tree, 'places.reviews.body'), 'the editor opened by itself');
+  find(tree, 'places.reviews.cancel').props.onPress(); tree = ui.render(); tree = ui.render();
+  assert.equal(find(tree, 'places.reviews.body'), undefined, 'the same request does not reopen a closed editor');
+  ui.place({ writeRequest: 2 }); ui.render(); tree = ui.render();
+  assert.ok(find(tree, 'places.reviews.body'), 'a new 가 봤음 opens it again');
 });

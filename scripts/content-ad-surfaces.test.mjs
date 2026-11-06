@@ -7,6 +7,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { bindBusinessPlaces } from '../src/lib/webshops.ts';
 import * as discovery from '../src/lib/discovery.ts';
+import * as openingHours from '../src/lib/opening-hours.ts';
 import { contentAdPosition } from '../src/lib/content-ad-placement.ts';
 import { appendUniquePosts } from '../src/lib/feed-data.ts';
 import { safeMerchantSourceUrl } from '../src/lib/merchant-source.ts';
@@ -52,12 +53,16 @@ function mount(file, component, imports, globals = {}, props = {}) {
     '@/components/selection-chip': { SelectionChip: 'Pressable' },
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' },
     '@/components/feed-ad': { FeedAd: 'FeedAd' }, '@/lib/content-ad-placement': { contentAdPosition },
+    '@/components/live-bubbles': { useLive: () => ({ status: 'idle', map: null }), useLiveMarkers: () => [], useMeetupMarkers: () => [], useKeepClearOfNotice: () => ({ current: null }), LiveDock: 'LiveDock', LiveSheets: 'LiveSheets' },
+    '@/lib/live-bubbles': { loadLiveMap: async () => {} }, '@/lib/profile-friends': { loadCityPlaceSaves: async () => null }, '@/lib/post-map-html': { mapCityCenter: () => [-123.12, 49.28] },
+    '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ state: null }) },
     '@/lib/ads': { adsSupported: true }, './lazy-sections': { FeedAd: 'FeedAd' },
     '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value, locale: 'ko-KR' }) },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/constants/theme': { Colors: {}, WebNightColors: {} },
     '@/lib/community-city': { useCommunityCity: () => ({ city }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'guest' } }) }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
-    '@/lib/hashtags': { hasAdLabel: () => false },
+    '@/lib/hashtags': { hasAdLabel: () => false }, '@/lib/opening-hours': openingHours, '@/lib/mock': { CITIES: [city] },
     '@/lib/merchant-source': { safeMerchantSourceUrl }, '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.ej-entertainment.com' },
   };
   const exports = {};

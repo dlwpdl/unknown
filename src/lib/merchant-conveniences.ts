@@ -55,3 +55,21 @@ export async function saveMerchantContact(client: SupabaseClient, merchantId: st
   catch { throw new Error('MERCHANT_CONTACT_SAVE_NOT_VERIFIED'); }
   return attachMerchantProfileImages(client, { ...profile, map_photo_path: row.map_photo_path ?? null, updated_at: row.updated_at, can_edit: row.can_edit });
 }
+
+export const MERCHANT_INTRO_MAX = 160;
+// The business writes its own three lines (P6). The server re-checks length, control characters and links.
+export async function saveMerchantIntro(client: SupabaseClient, merchantId: string, intro: { vibe: string; order: string; tip: string }, expectedUpdatedAt: string): Promise<MyMerchantProfile> {
+  const lines = [intro.vibe, intro.order, intro.tip].map(line => typeof line === 'string' ? line.trim() : null);
+  if (!UUID.test(merchantId) || lines.some(line => line === null || [...line].length > MERCHANT_INTRO_MAX || /[\x00-\x1f\x7f]/.test(line) || /(https?:\/\/|www\.)/i.test(line))
+    || typeof expectedUpdatedAt !== 'string' || !Number.isFinite(Date.parse(expectedUpdatedAt))) throw new Error('INVALID_MERCHANT_INTRO');
+  const [vibe, order, tip] = lines as string[];
+  const result = await client.rpc('save_merchant_intro', { p_merchant_id: merchantId, p_vibe: vibe, p_order: order, p_tip: tip, p_expected_updated_at: expectedUpdatedAt });
+  if (result.error) throw new Error(result.error.message);
+  const row = result.data;
+  if (row?.id !== merchantId || row.intro_vibe !== vibe || row.intro_order !== order || row.intro_tip !== tip || typeof row.can_edit !== 'boolean'
+    || typeof row.updated_at !== 'string' || !Number.isFinite(Date.parse(row.updated_at))) throw new Error('MERCHANT_INTRO_SAVE_NOT_VERIFIED');
+  let profile;
+  try { profile = mapMerchantProfile(row); }
+  catch { throw new Error('MERCHANT_INTRO_SAVE_NOT_VERIFIED'); }
+  return attachMerchantProfileImages(client, { ...profile, map_photo_path: row.map_photo_path ?? null, updated_at: row.updated_at, can_edit: row.can_edit });
+}

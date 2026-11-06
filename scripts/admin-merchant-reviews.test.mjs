@@ -40,7 +40,7 @@ function view(file, name, { rpc = async () => ({ data: null }), storage = {}, us
     '@/lib/admin': labels, '@/lib/admin-labels': { displayName: (profile, id) => profile?.nickname ?? id, shortId: id => id.slice(0, 6) },
     '@/lib/admin-layout': { isCompactAdminWidth: () => false }, '@/lib/admin-data': adminData,
     '@/lib/auth': { useAuth: () => ({ me: user, isAuthed: true }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => calls.push(['feedback', kind]) }) },
-    '@/hooks/use-theme': { useTheme: () => ({ line: '#343443', card: '#171722', textSecondary: '#B7B4C3' }) },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({ line: '#343443', card: '#171722', textSecondary: '#B7B4C3' }) },
     '@/lib/supabase': { supabase: { rpc, storage } },
     '@/i18n/ko': { count }, '@/lib/mock': { CITIES: [] },
     './admin-table-controls': controls, '@/components/admin/admin-table-controls': controls, '@/components/admin/admin-merchant-review-content': { AdminMerchantReviewContent: 'ReviewContent' },

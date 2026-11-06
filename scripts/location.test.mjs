@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { nearbyCommunity, isFreshLocation } from '../src/lib/location.ts';
+import { facingDegrees, nearbyCommunity, isFreshLocation } from '../src/lib/location.ts';
 
 test('only fresh, usable fixes recommend an open nearby community', () => {
   const now = Date.now();
@@ -25,4 +25,13 @@ test('nearby distance uses the existing Map-quality freshness and accuracy bound
   assert.equal(isFreshNearbyLocation(fix,now),true);
   for(const change of [{accuracy:251},{measuredAt:now-120001},{mocked:true},{latitude:NaN},{longitude:181}])assert.equal(isFreshNearbyLocation({...fix,...change},now),false);
   assert.equal(isFreshLocation({...fix,accuracy:1000},now),true,'Existing broad community consent logic is unchanged');
+});
+
+test('the map facing cone takes true north first, falls back to magnetic north and drops unusable readings', () => {
+  assert.equal(facingDegrees({ trueHeading: 92, magHeading: 75, accuracy: 3 }), 90);
+  assert.equal(facingDegrees({ trueHeading: -1, magHeading: 76.4, accuracy: 1 }), 75, 'no true north (no location yet) uses magnetic north');
+  assert.equal(facingDegrees({ trueHeading: 358, magHeading: 0 }), 0, 'a reading just west of north wraps to 0');
+  for (const reading of [null, undefined, { trueHeading: -1, magHeading: -1 }, { trueHeading: NaN, magHeading: Infinity }, { trueHeading: 400, magHeading: '90' }]) {
+    assert.equal(facingDegrees(reading), null);
+  }
 });

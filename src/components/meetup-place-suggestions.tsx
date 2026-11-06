@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { Typography } from '@/constants/design-system';
 import { Spacing } from '@/constants/theme';
@@ -16,7 +17,7 @@ export function MeetupPlaceSuggestions({ cityId, category, text, selectedId, onP
   cityId: string; category: string; text: string; selectedId: string | null; onPick: (place: CityPlace | null) => void; disabled?: boolean;
 }) {
   const { tr, language } = useLanguage();
-  const theme = useTheme(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback();
   const places = useMemo(() => { // Only OSM places can be linked as a meetup place (placeMeetupTail).
     try { return getCityDiscoveryPlaces(cityId).filter(place => /^osm:(node|way|relation):[1-9]\d*$/.test(place.id)); } catch { return []; } }, [cityId]);
   const picks = useMemo(() => {
@@ -33,7 +34,8 @@ export function MeetupPlaceSuggestions({ cityId, category, text, selectedId, onP
       return <Pressable key={place.id} analyticsId={selected ? 'meetup-create.place.clear' : 'meetup-create.place.pick'} accessibilityRole="button"
         accessibilityState={{ selected, disabled: !!disabled }} accessibilityHint={selected ? tr('선택을 풀어요') : tr('모임 장소로 골라요')} disabled={disabled}
         onPress={() => { play('selection'); onPick(selected ? null : place); }}
-        style={({ pressed }) => [styles.place, { borderColor: selected ? theme.accent : theme.line, backgroundColor: theme.card, opacity: disabled ? 0.45 : pressed ? 0.82 : 1 }]}>
+        style={({ pressed }) => [styles.place, { borderColor: selected ? theme.accent : clayBox ? 'transparent' : theme.line, backgroundColor: clayBox ? 'transparent' : theme.card, opacity: disabled ? 0.45 : pressed ? 0.82 : 1 }]}>
+        {clayBox && <ClayBoxFill kind="tile" />}
         <CityPlacePhoto place={place} style={styles.photo} />
         <View style={styles.text}>
           <ThemedText type="smallBold" numberOfLines={1}>{place.name}</ThemedText>

@@ -3,10 +3,11 @@ import { GlingLoader } from '@/components/gling-loader';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useFocusEffect, useIsFocused, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { AppState, StyleSheet, View } from 'react-native';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ControlMotion, MiniCard } from '@/constants/design-system';
 import { Spacing } from '@/constants/theme';
@@ -17,9 +18,9 @@ import { supabase } from '@/lib/supabase';
 import { EVENT_CITIES, eventPriceLabel, eventTime, festivalLocalDay, type EventCity, type TicketmasterEvent } from '@/lib/ticketmaster';
 
 // 큰 회전 카드 대신 작은 가로 줄 (owner 2026-10-30). 불러오기·하루 바뀜·앱 복귀 때 다시 읽는 동작은 그대로다.
-export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityReady }: { cityId: string; refreshKey: number; cityLoading: boolean; onCityReady: (cityId: string) => void }) {
+export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, page = 0 }: { cityId: string; refreshKey: number; cityLoading: boolean; page?: number }) {
   const { tr } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
   const router = useRouter();
   const { play } = useInteractionFeedback();
   const isFocused = useIsFocused();
@@ -29,18 +30,15 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityRea
   const current = result?.key === key ? result : null;
 
   useFocusEffect(useCallback(() => {
-    if (!Object.hasOwn(EVENT_CITIES, cityId)) { onCityReady(cityId); return; }
+    if (!Object.hasOwn(EVENT_CITIES, cityId)) return;
     let active = true;
     loadPublicFestivals(supabase, cityId)
       .then(data => {
-        if (active) {
-          setResult({ key, events: data.events, error: '', nextRefreshAt: data.nextRefreshAt });
-          onCityReady(cityId);
-        }
+        if (active) setResult({ key, events: data.events, error: '', nextRefreshAt: data.nextRefreshAt });
       })
-      .catch(() => { if (active) { setResult({ key, events: [], error: '행사 정보를 불러오지 못했어요.', nextRefreshAt: new Date(Date.now() + 15 * 60000).toISOString() }); onCityReady(cityId); } });
+      .catch(() => { if (active) setResult({ key, events: [], error: '행사 정보를 불러오지 못했어요.', nextRefreshAt: new Date(Date.now() + 15 * 60000).toISOString() }); });
     return () => { active = false; };
-  }, [cityId, key, onCityReady]));
+  }, [cityId, key]));
 
   useEffect(() => {
     if (!isFocused || !Object.hasOwn(EVENT_CITIES, cityId)) return;
@@ -61,6 +59,9 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityRea
   }, [cityId, current, isFocused]);
 
   if (!Object.hasOwn(EVENT_CITIES, cityId)) return null;
+  // page: the Nth festival turn between 오늘 posts (owner 2026-11-04). Every turn lists the whole row (owner 2026-10-30);
+  // with no events the turn is skipped, and only the first turn shows the loader and the retry.
+  if ((page > 0 || (current && !current.error)) && !current?.events.length) return null;
   const browse = () => { play('selection'); router.push('/events'); };
   return <View style={styles.section}>
     <View style={styles.heading}>
@@ -70,9 +71,8 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, onCityRea
       </Pressable>
     </View>
     {!current ? <View style={[styles.loading, { backgroundColor: cityLoading ? theme.backgroundElement : 'transparent' }]}>{!cityLoading && <GlingLoader color={theme.accent} accessibilityLabel={tr("행사 불러오는 중")} />}</View>
-        : current.error ? <Pressable analyticsId="today.events.retry" accessibilityRole="button" onPress={() => { play('selection'); setAttempt(value => value + 1); }} style={[styles.message, { borderColor: theme.line, backgroundColor: theme.card }]}><ThemedText type="small" themeColor="textSecondary">{current.error}{" " + tr("눌러서 다시 시도해 주세요.")}</ThemedText></Pressable>
-          : current.events.length === 0 ? <View style={[styles.message, { borderColor: theme.line, backgroundColor: theme.card }]}><ThemedText type="small" themeColor="textSecondary">{tr("예정된 페스티벌이 아직 없어요. 나중에 다시 확인해 주세요.")}</ThemedText></View>
-            : <ScrollView analyticsId="today.events.carousel" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
+        : current.error ? <Pressable analyticsId="today.events.retry" accessibilityRole="button" onPress={() => { play('selection'); setAttempt(value => value + 1); }} style={[styles.message, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="small" themeColor="textSecondary">{current.error}{" " + tr("눌러서 다시 시도해 주세요.")}</ThemedText></Pressable>
+          : <ScrollView analyticsId="today.events.carousel" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
               {current.events.map(event => <EventRowCard key={event.id} event={event} cityId={cityId} />)}
             </ScrollView>}
     <ThemedText type="caption" themeColor="textSecondary">{tr("행사 정보: Ticketmaster · 일정과 판매 상태는 변경될 수 있어요")}</ThemedText>
@@ -107,5 +107,6 @@ const styles = StyleSheet.create({
   photo: { width: '100%', height: MiniCard.photoHeight, borderRadius: MiniCard.radius, marginBottom: Spacing.one },
   fallback: { alignItems: 'center', justifyContent: 'center' },
   loading: { minHeight: MiniCard.photoHeight + 72, borderRadius: MiniCard.radius, justifyContent: 'center' },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   message: { minHeight: 88, borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, padding: 16, justifyContent: 'center' },
 });

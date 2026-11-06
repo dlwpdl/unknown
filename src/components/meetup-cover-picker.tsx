@@ -5,7 +5,8 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { SymbolView } from 'expo-symbols';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
+import { SymbolView } from '@/components/symbol-view';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { isSupportedImage, preparePostImage } from '@/lib/post-image-picker';
@@ -16,7 +17,7 @@ export type MeetupCover = PostDraftImage & { uri: string };
 
 export function MeetupCoverPicker({ value, onChange, onPickingChange, disabled }: { value: MeetupCover | null; onChange: (image: MeetupCover | null) => void; onPickingChange: (busy: boolean) => void; disabled: boolean }) {
   const { tr } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const [picking, setPicking] = useState(false), [error, setError] = useState('');
   const busy = useRef(false), mounted = useRef(true);
@@ -41,7 +42,8 @@ export function MeetupCoverPicker({ value, onChange, onPickingChange, disabled }
     } finally { if (mounted.current) { busy.current = false; setPicking(false); onPickingChange(false); } }
   };
   return <View style={styles.root}>
-    <Pressable analyticsId="meetup.create.cover" accessibilityRole="button" accessibilityLabel={value ? tr("모임 사진 변경") : tr("모임 사진 추가")} accessibilityState={{ disabled: disabled || picking, busy: picking }} disabled={disabled || picking} onPress={pick} style={({ pressed }) => [styles.cover, value ? styles.coverFilled : styles.coverEmpty, { borderColor: theme.line, backgroundColor: theme.backgroundElement, opacity: pressed ? 0.65 : 1 }]}>
+    <Pressable analyticsId="meetup.create.cover" accessibilityRole="button" accessibilityLabel={value ? tr("모임 사진 변경") : tr("모임 사진 추가")} accessibilityState={{ disabled: disabled || picking, busy: picking }} disabled={disabled || picking} onPress={pick} style={({ pressed }) => [styles.cover, value ? styles.coverFilled : styles.coverEmpty, clayBox && !value ? styles.clayCover : { borderColor: theme.line, backgroundColor: theme.backgroundElement }, { opacity: pressed ? 0.65 : 1 }]}>
+      {clayBox && !value && <ClayBoxFill kind="tile" />}
       {value ? <Image source={{ uri: value.uri }} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("선택한 모임 사진")} /> : <><SymbolView name={{ ios: 'photo', android: 'photo_library', web: 'photo_library' }} size={20} tintColor={theme.textSecondary} /><ThemedText type="smallBold" style={Typography.menu}>{tr("모임 사진 추가")}</ThemedText><ThemedText type="small" themeColor="textSecondary" style={[styles.helper, styles.choose]}>{tr("선택 ›")}</ThemedText></>}
     </Pressable>
     <View style={styles.actions}><ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{picking ? tr("사진을 준비하고 있어요…") : value ? tr("사진을 눌러 변경할 수 있어요") : tr("사진 1장 · 무료 · 최대 2MB")}</ThemedText>
@@ -54,6 +56,6 @@ const styles = StyleSheet.create({
   helper: { fontSize: 14, lineHeight: 22 },
   root: { gap: 8 }, cover: { width: '100%', borderWidth: 1, borderRadius: 16, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', gap: 8 },
   coverFilled: { aspectRatio: 2.1 }, coverEmpty: { minHeight: 72, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'center', justifyContent: 'flex-start', paddingHorizontal: 16, paddingVertical: 12 },
-  choose: { marginLeft: 'auto' },
+  choose: { marginLeft: 'auto' }, clayCover: { overflow: 'visible', borderWidth: 0, backgroundColor: 'transparent' },
   actions: { minHeight: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 }, remove: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });

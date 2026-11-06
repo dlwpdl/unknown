@@ -11,6 +11,8 @@ function controls(language = 'ko') {
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { View: 'View', StyleSheet: { create: value => value } },
     '@/components/analytics-controls': { Pressable: 'Pressable', Switch: 'Switch' },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/components/themed-text': { ThemedText: 'Text' },
     '@/hooks/use-content-translation': {},
     '@/hooks/use-language': { useLanguage: () => ({ language }) },

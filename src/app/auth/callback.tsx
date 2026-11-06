@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { GlingLoader } from '@/components/gling-loader';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles } from '@/constants/design-system';
@@ -92,6 +93,7 @@ export default function AuthCallbackRoute() {
   const copy = language === 'ko'
     ? { pending: '로그인을 완료하는 중이에요.', error: '로그인을 완료하지 못했어요.', help: '다시 시도하거나 공유 글로 돌아가 주세요.', retry: '다시 시도', back: '공유 글로 돌아가기' }
     : { pending: 'Finishing sign-in…', error: 'Couldn’t finish signing in.', help: 'Try again or return to the shared post.', retry: 'Try again', back: 'Return to shared post' };
+  const clay = useClay();
   const failed = error && !isAuthLoading, disabled = busy || isAuthLoading;
   return <View style={[styles.page, { backgroundColor: theme.background }]}>
     {!failed && <GlingLoader accessibilityLabel={copy.pending} />}
@@ -105,7 +107,8 @@ export default function AuthCallbackRoute() {
           if (isAuthed) run('resume');
           else if (authError) run('back');
           else { attempted.current = null; failedExchange.current = null; setRetry(value => value + 1); }
-        }} style={({ pressed }) => [ControlStyles.action, { backgroundColor: theme.accent, opacity: disabled ? 0.45 : pressed ? 0.82 : 1 }]}>
+        }} style={({ pressed }) => [ControlStyles.action, clay && styles.clay, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: disabled ? 0.45 : pressed ? 0.82 : 1 }]}>
+        {clay && <ClayPillFill kind="cta" />}
         <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{copy.retry}</ThemedText>
       </Pressable>
     </>}
@@ -118,5 +121,6 @@ export default function AuthCallbackRoute() {
 }
 const styles = StyleSheet.create({
   page: { flex: 1, minHeight: '100%', alignItems: 'center', justifyContent: 'center', padding: Spacing.four, gap: Spacing.two },
+  clay: { overflow: 'visible', paddingHorizontal: 18 },
   copy: { textAlign: 'center' },
 });

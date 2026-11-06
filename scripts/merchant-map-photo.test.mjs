@@ -79,7 +79,7 @@ test('rendered image prioritizes map photo, falls back with original attribution
   const slots = []; let index = 0;
   const jsx = (type, props) => ({ type, props });
   const imports = { react: { useState: initial => { const i = index++; if (!(i in slots)) slots[i] = initial; return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; } },
-    'react/jsx-runtime': { jsx, jsxs: jsx }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'Symbol' }, 'react-native': { View: 'View', StyleSheet: { create: value => value, absoluteFill: {} } }, '@/hooks/use-theme': { useTheme: () => ({}) } };
+    'react/jsx-runtime': { jsx, jsxs: jsx }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'Symbol' }, '@/components/symbol-view': { SymbolView: 'Symbol' }, 'react-native': { View: 'View', StyleSheet: { create: value => value, absoluteFill: {} } }, '@/hooks/use-theme': { useTheme: () => ({}) } };
   const exports = {};
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/components/city-place-photo.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText,
     { exports, require: withLanguageImports(name => name.endsWith('.webp') ? 1 : imports[name] ?? {}) });

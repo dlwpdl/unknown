@@ -2,7 +2,7 @@ import { behavior } from './behavior-analytics.ts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { chillingAvailability } from './chilling.ts';
-import { hideContent } from './content-visibility.ts';
+import { hideContent, showContent } from './content-visibility.ts';
 import { isThumbPath, MAX_IMAGE_BYTES, MAX_POST_IMAGES, thumbPathFor } from './image-upload.ts';
 import { normalizePoll, type PollDraft } from './post-polls.ts';
 import { chatImagePaths } from './chat-details.ts';
@@ -34,7 +34,7 @@ export function getCommunityActionError(error: unknown) {
 }
 
 export type PostDraftImage = { base64: string; mimeType: string; thumbBase64?: string; width?: number; height?: number };
-export type ReportTarget = 'user' | 'post' | 'comment' | 'message' | 'merchant_review' | 'merchant_review_reply' | 'meetup_review';
+export type ReportTarget = 'user' | 'post' | 'comment' | 'message' | 'merchant_review' | 'merchant_review_reply' | 'meetup_review' | 'live_bubble';
 export type ReportReason = 'spam' | 'harassment' | 'hate' | 'sexual' | 'privacy' | 'other';
 
 export type ConversationPreview = {
@@ -362,6 +362,17 @@ export async function reportContent(
   if (result.error) throw result.error;
   if (targetType !== 'user') hideContent(viewerId, targetType, targetId);
   return result.data as string;
+}
+
+// 이 글 숨기기 (owner 2026-11-04): the post leaves my lists at once, the server remembers it, and a failed save puts it back.
+// No report is filed. Undo is the same call with hidden=false.
+export async function setPostHidden(client: SupabaseClient, viewerId: string, postId: string, hidden: boolean) {
+  (hidden ? hideContent : showContent)(viewerId, 'listed_post', postId);
+  const result = await client.rpc('set_post_hidden', { p_post_id: postId, p_hidden: hidden });
+  if (result.error) {
+    (hidden ? showContent : hideContent)(viewerId, 'listed_post', postId);
+    throw result.error;
+  }
 }
 
 export async function blockUser(client: SupabaseClient, userId: string, blockedUserId: string) {
@@ -896,7 +907,7 @@ export async function deleteMyAccount(client: SupabaseClient, appleAuthorization
 export async function loadProfileSummary(client: SupabaseClient, userId: string): Promise<ProfileSummary> {
   const [profile, posts] = await Promise.all([
     client.from('profiles').select('city_id,neighborhood').eq('id', userId).single(),
-    client.from('posts').select('like_count,tag_id').eq('author_id', userId),
+    client.from('posts').select('like_count,tag_id,status,room_preview').eq('author_id', userId),
   ]);
   if (profile.error) throw profile.error;
   if (posts.error) throw posts.error;
@@ -904,7 +915,8 @@ export async function loadProfileSummary(client: SupabaseClient, userId: string)
   return {
     cityId: profile.data.city_id,
     neighborhood: profile.data.neighborhood,
-    posts: rows.length,
+    // Same rows as the 내 글/구해요·팔아요 tabs (loadMyPosts), so the number never says 2 over empty lists.
+    posts: rows.filter(({ status, room_preview }) => status === 'published' && room_preview == null).length,
     likes: rows.reduce((sum, post) => sum + post.like_count, 0),
     meetups: rows.filter(({ tag_id }) => tag_id === 5).length,
   };

@@ -14,13 +14,22 @@ export type CityPlace = {
   id: string; cityId: string; name: string; category: Exclude<PlaceCategory, 'all'>;
   latitude: number; longitude: number; address: string; sourceUrl: string;
   website?: string | null; openingHours?: string | null;
+  // P3 전화·인스타 buttons: no bundled place has these yet (0/1250 on 2026-11-05); the screen checks them before showing a button.
+  phone?: string | null; instagram?: string | null;
   nightlife?: true;
+  // Filled by the place automation when a source backs it; absent means unknown, never a guess.
+  priceLevel?: 1 | 2 | 3 | 4;
+  subcategories?: string[];
   photo?: PlacePhoto | null;
   mapPhotoUri?: string;
   recommendation?: PlaceRecommendation;
   diningRecommendation?: PlaceRecommendation;
   glingVisited?: { sourceUrl: string };
+  // 소개 3칸 (G2), written by the place automation from the place's own site or menu; each line may be missing.
+  intro?: PlaceIntro;
 };
+export type PlaceIntro = { vibe?: string; order?: string; when?: string; vibeEn?: string; orderEn?: string; whenEn?: string; sourceUrl: string };
+const INTRO_FIELDS = ['vibe', 'order', 'when', 'vibeEn', 'orderEn', 'whenEn'] as const;
 export type PlaceRecommendation = { placeId: string; reason: string; reasonEn?: string; sourceUrl: string; verifiedAt: string };
 
 type PhotoCatalog = {
@@ -114,7 +123,12 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
           || !Number.isFinite(p.longitude) || p.longitude < -142 || p.longitude > -52 || typeof p.address !== 'string' || p.address.length > 1000
           || p.sourceUrl !== `https://www.openstreetmap.org/${p.id.split(':').slice(1).join('/')}`
           || (p.website != null && !https(p.website)) || (p.openingHours != null && !text(p.openingHours, 1000))
-          || (p.nightlife !== undefined && p.nightlife !== true)) invalid();
+          || (p.nightlife !== undefined && p.nightlife !== true)
+          || (p.priceLevel !== undefined && ![1, 2, 3, 4].includes(p.priceLevel))
+          // Unknown subcategory names are ignored on read, so a later value does not reject the catalog.
+          || (p.subcategories !== undefined && (!Array.isArray(p.subcategories) || p.subcategories.length > 12 || p.subcategories.some(value => !text(value, 40))))
+          || (p.intro !== undefined && (!p.intro || typeof p.intro !== 'object' || !https(p.intro.sourceUrl) || !INTRO_FIELDS.some(key => p.intro![key] !== undefined)
+            || INTRO_FIELDS.some(key => p.intro![key] !== undefined && !text(p.intro![key], 160))))) invalid();
         seen.add(p.id); ids.add(p.id);
       }
     }

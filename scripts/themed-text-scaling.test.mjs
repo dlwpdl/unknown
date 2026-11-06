@@ -7,7 +7,7 @@ import ts from 'typescript';
 function themedText() {
   const flatten = value => Array.isArray(value) ? Object.assign({}, ...value.map(flatten)) : value || {};
   const imports = {
-    react: { Children: { map: (children, fn) => [children].flat().map(fn) } },
+    react: { Children: { map: (children, fn) => [children].flat().map(fn) }, createContext: () => ({}), useContext: () => null },
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'react-native': { Platform: { OS: 'ios', select: value => value.ios }, Text: 'Text', StyleSheet: { create: value => value, flatten } },
     '@/constants/theme': { Fonts: {} }, '@/hooks/use-theme': { useTheme: () => ({ text: '#fff' }) },

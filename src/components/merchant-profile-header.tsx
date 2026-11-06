@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { ControlMotion } from '@/constants/design-system';
 import { useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
+import { SymbolView } from '@/components/symbol-view';
 import { ThemedText } from '@/components/themed-text';
 import { Pressable } from '@/components/analytics-controls';
 import { useTheme } from '@/hooks/use-theme';
@@ -40,7 +41,7 @@ export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props
           <ThemedText type="smallBold" style={styles.ratingLabel}>{label}</ThemedText>
           <MerchantRatingBar score={average} reviewKind={kind} label={label} />
           <ThemedText type="small" themeColor="textSecondary" style={styles.ratingValue}>{value}</ThemedText>
-          <ThemedText themeColor="textSecondary" accessible={false}>›</ThemedText>
+          <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
         </Pressable>;
       })}</View>}
     </View>

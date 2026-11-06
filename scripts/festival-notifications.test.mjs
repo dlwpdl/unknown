@@ -28,6 +28,7 @@ test('the actual inbox row shows event name and description, reads both and reta
   let state = 0, memo = 0, cache, tab = 'city'; const routes = [], feedback = [], exports = {};
   const jsx = (type, props) => ({ type, props });
   const imports = {
+    '@/components/screen-glow': { useScreenGlow: () => ({ onLayout() {}, image: () => undefined }) },
     react: { useLayoutEffect: fn => fn(), useEffect() {}, useMemo: fn => { const value = fn(); if (memo++ === 0) cache = value; return value; },
       useState: value => [state++ === 0 ? { token: cache, rows: items, hasMore: false } : value === 'mine' ? tab : typeof value === 'boolean' ? false : value, () => {}], useRef: current => ({ current }), useCallback: fn => fn },
     'react/jsx-runtime': { jsx, jsxs: jsx },
@@ -41,6 +42,7 @@ test('the actual inbox row shows event name and description, reads both and reta
     '@/lib/product-analytics': product, '@/lib/mock': { CITIES: [] },
     '@/lib/supabase': { supabase: { rpc: async () => ({ data: false, error: null }) } },
     '@/constants/theme': { Depth: {}, Spacing: {}, MaxContentWidth: 920, TabBarHeight: 80 },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/i18n/ko': { t },
     '@/lib/feed-data': { relativeTime: () => '방금' },
   };

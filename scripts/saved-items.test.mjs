@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { loadSavedItems, loadSavedItemState, setSavedItem, loadSavedFolders, createSavedFolder, renameSavedFolder, deleteSavedFolder, setSavedItemFolders } from '../src/lib/saved-items.ts';
+import { loadSavedItems, loadSavedItemState, loadSavedPlaceState, setSavedPlaceState, setSavedItem, loadSavedFolders, createSavedFolder, renameSavedFolder, deleteSavedFolder, setSavedItemFolders } from '../src/lib/saved-items.ts';
 
 const merchant = 'e2310000-0000-4000-8000-000000000001';
 const person = 'e2300000-0000-4000-8000-000000000002';
@@ -63,4 +63,25 @@ test('private folder calls validate ownership identifiers and require verified s
   await assert.rejects(createSavedFolder(c, '  '), /INVALID_SAVED_FOLDER/);
   await assert.rejects(deleteSavedFolder(client(false), folder), /FOLDER_DELETE_NOT_VERIFIED/);
   await assert.rejects(setSavedItemFolders(client(false), place, []), /FOLDERS_NOT_VERIFIED/);
+});
+
+test('G1 save kinds: status rides on the canonical state, older servers fall back, mismatches are refused', async () => {
+  const been = { ...state, status: 'been' };
+  const c = client(been);
+  assert.deepEqual(await loadSavedPlaceState(c, place), been);
+  assert.deepEqual(c.calls[0], ['get_saved_place_state', { p_kind: 'place', p_id: place.id, p_city_id: 'vancouver' }]);
+  assert.deepEqual(await setSavedPlaceState(c, place, 'been'), been);
+  assert.deepEqual(c.calls[1], ['set_saved_place_state', { p_kind: 'place', p_id: place.id, p_city_id: 'vancouver', p_status: 'been' }]);
+  await assert.rejects(setSavedPlaceState(client({ ...state, status: 'want' }), place, 'been'), /SAVE_NOT_VERIFIED/);
+  await assert.rejects(setSavedPlaceState(client(been), place, null), /SAVE_NOT_VERIFIED/);
+  const unsaved = { ...state, saved: false, savedAt: null, folderIds: [], status: null };
+  assert.deepEqual(await setSavedPlaceState(client(unsaved), place, null), unsaved);
+  for (const bad of [{ ...state, status: null }, { ...unsaved, status: 'want' }, { ...state, status: 'loved' }]) await assert.rejects(loadSavedPlaceState(client(bad), place), /INVALID_SAVED_RESPONSE/);
+  await assert.rejects(setSavedPlaceState(client(been), place, 'loved'), /INVALID_SAVED_TARGET/);
+  await assert.rejects(loadSavedPlaceState(client(been), { kind: 'user', id: person }), /INVALID_SAVED_TARGET/);
+  const calls = [];
+  const old = { rpc: async (name, args) => { calls.push(name); return name === 'get_saved_place_state' ? { data: null, error: { code: 'PGRST202', message: 'missing' } } : { data: state, error: null }; } };
+  const fallback = await loadSavedPlaceState(old, place);
+  assert.equal(fallback.status, undefined, 'an older server keeps the plain toggle');
+  assert.deepEqual(calls, ['get_saved_place_state', 'get_saved_item_state']);
 });

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
@@ -39,7 +40,7 @@ const prompts = ['글링에 주말 알바 구인글 초안 써줘', '우리 가�
 
 export function MerchantMcpGuide({ endpoint }: { endpoint: string }) {
   const { tr } = useLanguage();
-  const theme = useTheme(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback();
   const [selected, setSelected] = useState('claude'), [copied, setCopied] = useState('');
   const list = clients(endpoint), client = list.find(item => item.key === selected) ?? list[0];
   async function copy(text: string) {
@@ -52,7 +53,7 @@ export function MerchantMcpGuide({ endpoint }: { endpoint: string }) {
     style={({ pressed }) => [styles.button, primary ? { backgroundColor: theme.accent, borderColor: theme.accent } : { borderColor: theme.line }, { opacity: pressed ? 0.7 : 1 }]}>
     <ThemedText type="smallBold" style={primary ? { color: theme.accentInk } : undefined}>{label}</ThemedText>
   </Pressable>;
-  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
     <ThemedText type="subtitle" accessibilityRole="header">{tr('쓰는 AI에 글링 연결하기')}</ThemedText>
     <ThemedText themeColor="textSecondary">{tr('쓰고 있는 AI를 고르고 아래 3단계를 따라 하세요. AI가 만든 초안은 여기서 확인한 뒤 게시해요.')}</ThemedText>
     <View style={[styles.tabs, { backgroundColor: theme.backgroundElement }]} accessibilityRole="tablist">
@@ -90,6 +91,7 @@ export function MerchantMcpGuide({ endpoint }: { endpoint: string }) {
 }
 
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   card: { gap: 16, padding: 24, borderRadius: 20, borderWidth: 1 },
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, padding: 4, borderRadius: 14 },
   tab: { flexGrow: 1, minHeight: 44, minWidth: 120, paddingHorizontal: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },

@@ -3,11 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Share, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useReducedMotion } from 'react-native-reanimated';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { StateCard } from '@/components/state-card';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { chatBusinessIdentity } from '@/lib/chat-identity';
@@ -31,7 +32,7 @@ export function PostShareSheet(props: ShareSheetProps) {
 }
 function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps) {
   const { tr, locale: appLocale } = useLanguage();
-  const theme = useTheme(), { me, isAuthed } = useAuth(), { play } = useInteractionFeedback(), router = useRouter();
+  const theme = useTheme(), { me, isAuthed } = useAuth(), { play } = useInteractionFeedback(), router = useRouter(), clay = useClay();
   // Reduced motion: the sheet fades in instead of sliding (owner 2026-11-02).
   const reducedMotion = useReducedMotion();
   const business = useChatIdentity(), asBusinessId = business?.id ?? null;
@@ -51,7 +52,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
   }, [visible, isAuthed, me.id, retry, asBusinessId]);
   const url = buildSharedPostUrl(post.id), image = getPostImageSource(post, me.id);
   const invite = Boolean(post.room), label = invite ? me.id === post.author.id ? '내 모임에 초대하기' : '모임 같이 가요' : post.tag.slug === 'festival' ? '페스티벌 같이 가요' : '게시물 공유';
-  const control = [styles.button, { backgroundColor: theme.backgroundElement, borderColor: theme.line }];
+  const control = [styles.button, clay && styles.buttonClay, { backgroundColor: clay ? 'transparent' : theme.backgroundElement, borderColor: clay ? 'transparent' : theme.line }];
   const requesting = busy || Boolean(loading && inbox);
   const dismiss = () => { if (!pending.current) { play('selection'); onClose(); } };
   async function external(copy = false) {
@@ -101,7 +102,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
         <View accessible={false} style={[styles.handle, { backgroundColor: theme.line }]} />
         <View style={styles.header}><ThemedText type="smallBold" style={styles.heading}>{tr(label)}</ThemedText>
           <Pressable analyticsId="post.share.close" accessibilityRole="button" accessibilityLabel={tr("공유 닫기")} disabled={requesting} accessibilityState={{ disabled: requesting }}
-            onPress={dismiss} style={[styles.close, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={20} tintColor={theme.text} accessible={false} /></Pressable>
+            onPress={dismiss} style={[styles.close, clay && { overflow: 'visible' }, { backgroundColor: clay ? 'transparent' : theme.backgroundElement }]}>{clay && <ClayPillFill kind="white" />}<SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={20} tintColor={theme.text} accessible={false} /></Pressable>
         </View>
         <ScrollView analyticsId="post.share.sheet" style={styles.scroll} contentContainerStyle={styles.content}>
           <View style={[styles.preview, { borderColor: theme.line }]}>
@@ -120,7 +121,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
           {loading && <StateCard kind="pending" title={tr("대화를 불러오는 중…")} body={tr("잠시만 기다려주세요.")} />}
           {!loading && inbox && !inbox.conversations.some(c => c.status === 'active') && <StateCard kind="empty" title={tr("진행 중인 대화가 없어요")} body={tr(Platform.OS === 'web' ? '다른 앱으로 공유하거나 링크를 복사해보세요.' : '아래 버튼으로 다른 앱에 공유해보세요.')} />}
           {!inbox && !loading && <><StateCard kind="error" title={tr("대화를 불러오지 못했어요")} body={tr("공유 링크는 다른 앱으로 보낼 수 있어요.")} />
-            <Pressable analyticsId="post.share.retry" accessibilityRole="button" disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => { play('selection'); setLoading(true); setRetry(value => value + 1); }} style={control}><ThemedText type="smallBold">{tr("대화 목록 다시 확인")}</ThemedText></Pressable>
+            <Pressable analyticsId="post.share.retry" accessibilityRole="button" disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => { play('selection'); setLoading(true); setRetry(value => value + 1); }} style={control}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold">{tr("대화 목록 다시 확인")}</ThemedText></Pressable>
           </>}
           {inbox?.conversations.filter(c => c.status === 'active').map(conversation => {
             const done = sent.includes(conversation.id), unconfirmed = uncertain.includes(conversation.id), disabled = requesting || done || unconfirmed;
@@ -131,18 +132,18 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
                 ? <SymbolView name={{ ios: 'person.2', android: 'groups', web: 'groups' }} size={20} tintColor={theme.textSecondary} accessible={false} />
                 : <ThemedText type="smallBold" themeColor="navy">{Array.from(conversation.title.trim())[0] || '?'}</ThemedText>}</View>
               <View style={styles.conversationText}><ThemedText type="smallBold" style={styles.conversationTitle} numberOfLines={2}>{conversation.title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr(conversation.kind === 'group' ? tr("모임 대화") : tr("1:1 대화"))}</ThemedText></View>
-              <View style={[styles.sendMarker, { backgroundColor: done || unconfirmed ? 'transparent' : theme.backgroundElement }]}><ThemedText type="small" themeColor={done ? 'accent' : 'textSecondary'}>{tr(done ? tr("✓ 보냈어요") : unconfirmed ? tr("확인 필요") : tr("보내기"))}</ThemedText></View>
+              <View style={[styles.sendMarker, clay && styles.sendMarkerClay, { backgroundColor: done || unconfirmed || clay ? 'transparent' : theme.backgroundElement }]}>{clay && !(done || unconfirmed) && <ClayPillFill kind="white" />}<ThemedText type="small" themeColor={done ? 'accent' : 'textSecondary'}>{tr(done ? tr("✓ 보냈어요") : unconfirmed ? tr("확인 필요") : tr("보내기"))}</ThemedText></View>
             </Pressable>;
           })}
           {uncertain.map(id => <Pressable key={id} analyticsId="post.share.verify-chat" accessibilityRole="button" accessibilityLabel={tr("전송 결과를 대화에서 확인")} disabled={requesting} accessibilityState={{ disabled: requesting }}
-            onPress={() => { if (pending.current) return; play('selection'); onClose(); router.push({ pathname: '/chat', params: { conversationId: id, ...(business ? { businessId: business.id } : {}) } }); }} style={control}><ThemedText type="smallBold">{tr("대화를 열어 전송 결과 확인")}</ThemedText></Pressable>)}
+            onPress={() => { if (pending.current) return; play('selection'); onClose(); router.push({ pathname: '/chat', params: { conversationId: id, ...(business ? { businessId: business.id } : {}) } }); }} style={control}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold">{tr("대화를 열어 전송 결과 확인")}</ThemedText></Pressable>)}
         </ScrollView>
         <View style={[styles.footer, { borderColor: theme.line }]}>
           {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite" themeColor="textSecondary">{typeof notice === 'string' ? tr(notice) : tr('{0} 대화로 보냈어요.', notice.conversationTitle)}</ThemedText>}
           <ThemedText type="small" themeColor="textSecondary">{tr(invite ? tr("초대받은 사람도 로그인 후 참여 신청과 호스트 승인이 필요해요. 상세 집결 정보는 승인된 모임 대화에서만 확인해요.") : tr("글링에서 로그인 후 전체 내용을 확인해요."))}</ThemedText>
           <Pressable analyticsId="post.share.external" accessibilityRole="button" accessibilityLabel={tr(invite ? tr("초대 링크 공유") : tr("다른 앱으로 공유"))} disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => void external()}
-            style={[styles.button, styles.external, { backgroundColor: theme.accent, borderColor: theme.accent }]}><SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={20} tintColor={theme.accentInk} accessible={false} /><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr(invite ? tr("초대 링크 공유") : tr("다른 앱으로 공유"))}</ThemedText></Pressable>
-          {Platform.OS === 'web' && <Pressable analyticsId="post.share.copy" accessibilityRole="button" disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => void external(true)} style={control}><ThemedText type="smallBold">{tr("링크 복사")}</ThemedText></Pressable>}
+            style={[styles.button, styles.external, clay && styles.externalClay, { backgroundColor: clay ? 'transparent' : theme.accent, borderColor: clay ? 'transparent' : theme.accent }]}>{clay && <ClayPillFill kind="cta" />}<SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={20} tintColor={theme.accentInk} accessible={false} /><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr(invite ? tr("초대 링크 공유") : tr("다른 앱으로 공유"))}</ThemedText></Pressable>
+          {Platform.OS === 'web' && <Pressable analyticsId="post.share.copy" accessibilityRole="button" disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => void external(true)} style={control}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold">{tr("링크 복사")}</ThemedText></Pressable>}
         </View>
       </View>
     </SafeAreaView>
@@ -163,5 +164,6 @@ const styles = StyleSheet.create({
   conversation: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, paddingVertical: 8 },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   conversationText: { flex: 1, gap: 2 }, conversationTitle: { fontSize: 14, lineHeight: 20 }, sendMarker: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20 },
+  buttonClay: { overflow: 'visible', paddingHorizontal: 18 }, externalClay: { overflow: 'visible', paddingHorizontal: 24 }, sendMarkerClay: { overflow: 'visible', paddingHorizontal: 18 },
   footer: { flexShrink: 0, marginHorizontal: 20, paddingTop: 12, borderTopWidth: 1, gap: 12 }, external: { minHeight: 48, flexDirection: 'row', gap: 8 },
 });

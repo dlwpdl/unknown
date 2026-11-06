@@ -7,20 +7,28 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { t } from '../src/i18n/ko.ts';
 import { TAGS } from '../src/lib/mock.ts';
-import { groupJournalPosts, appendUniquePosts, limitBusinessPosts } from '../src/lib/feed-data.ts';
+import { groupJournalPosts, appendUniquePosts, limitBusinessPosts, pinJustPosted, todayRowsAfter } from '../src/lib/feed-data.ts';
 import { withPostMap, postMapBody, googlePinUrl } from '../src/lib/post-maps.ts';
 import * as listingDetails from '../src/lib/listing-details.ts';
 import * as neighborhoods from '../src/lib/neighborhoods.ts';
+import * as postUpload from '../src/lib/post-upload.ts';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
-function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = false, width = 390, fontScale = 1 } = {}) {
-  const slots = [], effects = [], calls = [], writes = [], drafts = [], routes = [], feedback = [], params = {};
+const theme = { background: '#0B0B12', accent: '#CBB9FF', glowA: 'rgba(203,185,255,0.15)', glowB: 'rgba(185,200,255,0.07)', bodyGlowA: '#0D0A17', bodyGlowB: '#090B17' };
+// The shared background part runs for real inside the screen's mocked hooks.
+const glowModule = imports => {
+  const exports = {};
+  const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/screen-glow.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
+  vm.runInNewContext(source, { exports, require: name => imports[name] });
+  return exports;
+};
+function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = false, width = 390, fontScale = 1, adPosition = index => index >= 3 && (index - 3) % 4 === 0, photoConsent = null, consentSaves = [] } = {}) {
+  const slots = [], effects = [], calls = [], writes = [], drafts = [], routes = [], feedback = [], params = {}, consents = [];
   let viewer = 'viewer', authLoading = false;
   let at = 0;
   const slot = initial => { const index = at++; if (!(index in slots)) slots[index] = typeof initial === 'function' ? initial() : initial; return index; };
   class Value { constructor(value) { this.value = value; } setValue(value) { this.value = value; } stopAnimation() {} interpolate() { return 0; } }
   const jsx = (type, props) => type === 'PostBodyEditor' && props.renderLayout ? props.renderLayout({ input: { type, props }, attachments: null, actions: { type: 'EditorActions', props: {} } }) : ({ type, props });
-  const theme = { background: '#0B0B12', accent: '#CBB9FF' };
   const imports = {
     react: { useState: initial => { const i = slot(initial); return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; }, useRef: initial => slots[slot(() => ({ current: initial }))], useMemo: fn => fn(), useCallback: fn => fn, useEffect: fn => effects.push(fn) },
     'react/jsx-runtime': { jsx, jsxs: jsx },
@@ -28,6 +36,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ push: path => routes.push(path), navigate: path => routes.push(path), setParams: next => Object.assign(params, next) }), useScrollToTop() {} },
     'react-native-reanimated': { default: { View: 'ReanimatedView' }, useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', SafeAreaProvider: 'SafeAreaProvider', useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/hooks/use-theme': { useTheme: () => theme }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
     '@/components/daily-chip': { todayLabel: () => '10월 12일 월요일' },
     '@/components/chilling-host-profile': { useMyOpenMeetupRequests: () => ({}) },
@@ -36,16 +45,20 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '@/i18n/ko': { t }, '@/lib/mock': { TAGS }, '@/lib/auth': { useAuth: () => ({ isAuthed: viewer !== null, isAuthLoading: authLoading, me: { id: viewer ?? 'guest' }, promptLogin() {} }) },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버', state: 'open' }, setCity() {} }) },
     '@/lib/location-provider': { useCommunityLocation: () => ({ record() {}, capture: async () => null }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
-    '@/lib/community-data': { loadListingQuota: async () => ({ used: 0, max: 3 }), createCommunityPost: () => deferPublish ? new Promise(resolve => writes.push({ resolve })) : Promise.resolve({ id: createdPost.id, post: createdPost }), getCommunityActionError: () => null, isContentRejected: () => false },
+    '@/lib/community-data': { loadListingQuota: async () => ({ used: 0, max: 3 }), createCommunityPost: (_client, input) => deferPublish ? new Promise((resolve, reject) => writes.push({ input, resolve, reject })) : Promise.resolve({ id: createdPost.id, post: createdPost }), getCommunityActionError: () => null, isContentRejected: () => false },
     '@/lib/post-maps': { withPostMap, postMapBody, googlePinUrl }, '@/lib/listing-details': listingDetails, '@/lib/neighborhoods': neighborhoods,
     '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async () => null, setItem: async () => {} } },
     '@/lib/hashtags': { getSuggestedHashtags: () => [], parseHashtags: () => [], canonicalizeHashtag: value => value },
-    '@/lib/ads': { adsSupported: false }, '@/lib/supabase': { supabase: { functions: { invoke: (...args) => new Promise((resolve, reject) => drafts.push({ args, resolve, reject })) } } },
+    '@/lib/ads': { adsSupported: false, feedAdPosition: adPosition }, '@/lib/supabase': { supabase: { functions: { invoke: (...args) => new Promise((resolve, reject) => drafts.push({ args, resolve, reject })) } } },
     '@/hooks/use-chat-identity': { useChatIdentity: () => null },
-    '@/lib/feed-data': { groupJournalPosts, appendUniquePosts, limitBusinessPosts, loadPublicFeed: (...args) => new Promise((resolve, reject) => calls.push({ args, resolve, reject })) },
+    '@/lib/feed-data': { groupJournalPosts, appendUniquePosts, limitBusinessPosts, pinJustPosted, todayRowsAfter, loadPublicFeed: (...args) => new Promise((resolve, reject) => calls.push({ args, resolve, reject })) },
     '../../supabase/functions/_shared/post-links': { splitPostAttachments: body => ({ body }) },
-    '@/lib/ai-draft': aiDraft,
+    '@/lib/ai-draft': aiDraft, '@/lib/post-upload': postUpload, '@/lib/push-prompt': { requestPushPrompt() {} },
+    '@/lib/post-photo-consent': { loadPhotoConsentSettings: async () => photoConsent, savePostPhotoConsent: async (_client, id) => { consents.push(id); return consentSaves.shift() ?? true; } },
+    'expo-image-picker': { launchImageLibraryAsync: async () => ({ canceled: false, assets: [{ uri: 'file:///photo.jpg', mimeType: 'image/jpeg' }] }), UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' } },
+    '@/lib/post-image-picker': { isSupportedImage: () => true, preparePostImage: async asset => ({ uri: asset.uri, base64: 'AA', mimeType: 'image/jpeg' }) },
   };
+  imports['@/components/screen-glow'] = glowModule(imports);
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/feed-screen.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
   vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
@@ -56,7 +69,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
   const render = () => { at = 0; effects.length = 0; return exports.default({ meetupsOnly }); };
   const refresh = () => { cleanup?.(); cleanup = effects.find(fn => String(fn).includes('return cancelFeedRequests'))(); };
   const list = () => nodes(render()).find(n => n.props?.analyticsId === 'components_feed-screen.flatlist.1').props;
-  return { calls, writes, drafts, routes, feedback, list, refresh, params, render, openWriter() { params.compose = '1'; render(); effects.find(fn => String(fn).includes("compose !== '1'"))(); return render(); }, openTopic: () => { render(); effects.find(fn => String(fn).includes('hashtag: undefined'))(); }, setViewer: next => { viewer = next; }, setAuthLoading: next => { authLoading = next; }, sort: () => { const props = list(); return props.renderItem({ item: null, index: 1 }).props; },
+  return { calls, writes, drafts, routes, feedback, consents, list, refresh, params, render, openWriter() { params.compose = '1'; render(); effects.find(fn => String(fn).includes("compose !== '1'"))(); return render(); }, openTopic: () => { render(); effects.find(fn => String(fn).includes('hashtag: undefined'))(); }, setViewer: next => { viewer = next; }, setAuthLoading: next => { authLoading = next; }, sort: () => { const props = list(); return props.renderItem({ item: null, index: 1 }).props; },
     publish: async () => {
       const inputs = nodes(render());
       inputs.find(n => n.props?.accessibilityLabel === t.write.titlePlaceholder).props.onChangeText('새 글');
@@ -117,6 +130,32 @@ test('today has a pinned sort row and preserves server order, including meetup p
   assert.deepEqual(Array.from(props.stickyHeaderIndices), [1]);
   assert.deepEqual(Array.from(props.data.filter(Boolean), p => p.id), ['new', 'older-meetup']);
   assert.equal(app.sort().sort, 'latest');
+});
+
+test('today background light is fixed to the screen; the sort row is clear until pinned, then repaints the same light at its spot', () => {
+  const layout = (node, box) => node.props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 0, height: 0, ...box } } });
+  const app = screen({ os: 'ios' });
+  let tree = nodes(app.render());
+  layout(tree.find(n => n.type === 'TabContent'), { width: 400, height: 800 });
+  layout(tree.find(n => n.type === 'SafeAreaView' && n.props.edges).props.children, { y: 47 });
+  layout(tree.find(n => [n.props?.children].flat().some(child => child?.props?.analyticsId === 'components_feed-screen.flatlist.1')), { y: 130 });
+  tree = nodes(app.render());
+  const { screenGlowImage } = glowModule({});
+  const glow = y => screenGlowImage(theme, 400, 800, 0, y);
+  assert.equal([tree.find(n => n.type === 'TabContent').props.style].flat().find(style => style?.backgroundImage)?.backgroundImage, glow(0), 'screen-sized header light and body tint');
+  const head = tree.find(n => [n.props?.children].flat(Infinity).some(child => child?.props?.analyticsId === 'feed.home'));
+  assert.equal([head.props.style].flat().some(style => style?.backgroundColor), false, 'header row lets the light through');
+  layout(app.list().renderItem({ item: null, index: 0 }), { height: 300 });
+  const bar = () => Object.assign({}, ...[app.sort().style].flat(Infinity).filter(Boolean));
+  app.list().onScroll({ nativeEvent: { contentOffset: { y: 120 } } });
+  assert.equal(bar().backgroundColor, 'transparent', 'at rest the row shows the screen light behind it');
+  app.list().onScroll({ nativeEvent: { contentOffset: { y: 300 } } });
+  assert.equal(bar().backgroundColor, undefined, 'pinned: the row keeps its opaque background so posts stay hidden underneath');
+  assert.equal(bar().backgroundImage, glow(177), 'pinned at the list top (47 + 130), so the light lines up with the header');
+  assert.equal(bar().marginHorizontal, -16, 'and covers the list gutters edge to edge');
+  const meetups = screen({ meetupsOnly: true });
+  layout(nodes(meetups.render()).find(n => n.type === 'TabContent'), { width: 400, height: 800 });
+  assert.equal([nodes(meetups.render()).find(n => n.type === 'TabContent').props.style].flat().some(style => style?.backgroundImage), false, 'other screens stay plain');
 });
 
 test('switching order invalidates an older request and the next request keeps popular mode', async () => {
@@ -180,16 +219,29 @@ test('a top-page refresh does not simultaneously request a page from the previou
   assert.equal(app.calls.length, 2, 'paging waits for the refreshed first page');
 });
 
-test('publishing in popular mode refreshes the server ranking instead of prepending an unranked post', async () => {
+test('publishing in popular mode refreshes the server ranking and keeps my new post on top (owner 2026-11-04)', async () => {
   const app = screen({ createdPost: post('just-published') }); app.list(); app.refresh();
   app.sort().onChange('popular'); app.list(); app.refresh();
   app.calls[1].resolve([post('top-ranked', { popularityScore: 99 })]); await new Promise(setImmediate);
   await app.publish();
-  assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => p.id), ['top-ranked']);
+  assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => p.id), ['just-published', 'top-ranked']);
   assert.equal(app.calls.length, 3, 'publication must refresh the ranking');
   assert.equal(app.calls[2].args[5].sort, 'popular');
-  app.calls[2].resolve([post('top-ranked'), post('just-published')]); await new Promise(setImmediate);
-  assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => p.id), ['top-ranked', 'just-published']);
+  app.calls[2].resolve([post('top-ranked'), post('just-published', { likes: 2 })]); await new Promise(setImmediate);
+  assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => [p.id, p.likes]), [['just-published', 2], ['top-ranked', undefined]], 'the ranked copy replaces the local one, still on top');
+  assert.equal(app.calls[2].args[4], null, 'the ranking cursor still comes from the server page');
+});
+
+test('my new post stays on top through a pull-to-refresh that brings back newer posts or leaves it out', async () => {
+  const app = screen({ createdPost: post('just-published') }); app.list(); app.refresh();
+  app.calls[0].resolve([post('previous')]); await new Promise(setImmediate);
+  await app.publish();
+  app.list().onRefresh();
+  app.calls[1].resolve([post('someone-newer'), post('previous')]); await new Promise(setImmediate);
+  assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => p.id), ['just-published', 'someone-newer', 'previous']);
+  app.setViewer(null); app.list(); app.refresh();
+  app.calls[2].resolve([post('guest-view')]); await new Promise(setImmediate);
+  assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => p.id), ['guest-view'], 'another account never sees the pin');
 });
 
 test('publishing in latest mode retains the immediate new-post preview', async () => {
@@ -224,6 +276,98 @@ test('an old publish completion cannot refresh or overwrite a feed after account
   app.writes[0].resolve({ id: 'old-member-publish', post: post('old-member-publish') }); await new Promise(setImmediate);
   assert.equal(app.calls.length, 3, 'previous account must not start a new feed request');
   assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => p.id), ['guest-post']);
+});
+
+test('today 전체 puts festivals and places after the second post, drops the date line and uses the photo-feed card (owner 2026-11-03)', async () => {
+  const sectionTypes = tree => nodes(tree).filter(n => n.type === 'LocalEventsCarousel' || n.type === 'CityPopularPlaces').map(n => n.type);
+  const app = screen({ os: 'ios' }); app.list(); app.refresh();
+  assert.equal(app.list().accessibilityElementsHidden, true, 'the city cover shows while the first page loads');
+  const posts = [post('one'), post('two'), post('three')];
+  app.calls[0].resolve(posts); await new Promise(setImmediate);
+  const props = app.list();
+  assert.equal(props.accessibilityElementsHidden, false, 'the city cover lifts with the posts, without waiting for festivals');
+  assert.deepEqual(posts.map((item, index) => sectionTypes(props.renderItem({ item, index: index + 2 }))), [[], ['CityPopularPlaces'], ['LocalEventsCarousel']], 'places after the second post; a short list ends with festivals');
+  const header = props.renderItem({ item: null, index: 0 });
+  assert.deepEqual(sectionTypes(header), []);
+  assert.ok(!nodes(header).some(n => n.props?.children === '10월 12일 월요일'), 'no date line on Today');
+  assert.equal(nodes(props.renderItem({ item: posts[0], index: 2 })).find(n => n.type === 'PostCard').props.feed, true);
+
+  const one = screen({ os: 'ios' }); one.list(); one.refresh();
+  one.calls[0].resolve([post('only')]); await new Promise(setImmediate);
+  assert.deepEqual(sectionTypes(one.list().renderItem({ item: post('only'), index: 2 })), ['CityPopularPlaces', 'LocalEventsCarousel']);
+
+  const empty = screen({ os: 'ios' }); empty.list(); empty.refresh();
+  empty.calls[0].resolve([]); await new Promise(setImmediate);
+  const footer = empty.list().ListFooterComponent;
+  assert.ok(nodes(footer).some(n => n.props?.children === t.feed.emptyTitle));
+  assert.deepEqual(sectionTypes(footer), ['CityPopularPlaces', 'LocalEventsCarousel'], 'with no posts they follow the empty state');
+
+  const long = screen({ os: 'ios' }); long.list(); long.refresh();
+  const thirty = Array.from({ length: 30 }, (_, i) => post(`p${i}`));
+  long.calls[0].resolve(thirty); await new Promise(setImmediate);
+  const rows = thirty.flatMap((item, index) => nodes(long.list().renderItem({ item, index: index + 2 }))
+    .filter(n => n.type === 'LocalEventsCarousel' || n.type === 'CityPopularPlaces').map(n => `${index}:${n.type === 'CityPopularPlaces' ? 'places' : 'festivals'}${n.props.page}`));
+  assert.deepEqual(rows, ['1:places0', '5:festivals0', '9:places1', '13:festivals1', '17:places2', '21:festivals2', '25:places3', '29:festivals3'],
+    'they take turns every four posts, two posts away from the ads after posts 4, 8, 12…');
+
+  // The web ad rule needs the list length (contentAdPosition(index, total)); without it every slot would look ad-free.
+  const web = screen({ os: 'ios', adPosition: (index, total) => Number.isSafeInteger(total) && index === 1 });
+  web.list(); web.refresh();
+  web.calls[0].resolve(thirty); await new Promise(setImmediate);
+  assert.equal(nodes(web.list().renderItem({ item: thirty[1], index: 3 })).some(n => n.type === 'CityPopularPlaces'), false, 'no row in the ad slot');
+  assert.equal(nodes(web.list().renderItem({ item: thirty[2], index: 4 })).find(n => n.type === 'CityPopularPlaces')?.props.page, 0, 'the row moves past it');
+
+  const food = nodes(app.render()).find(node => node.props?.analyticsId === 'components_feed-screen.pressable.3' && nodes(node).some(child => child.props?.children === '맛집'));
+  food.props.onPress(); app.list(); app.refresh();
+  app.calls.at(-1).resolve(posts); await new Promise(setImmediate);
+  assert.deepEqual(posts.flatMap((item, index) => sectionTypes(app.list().renderItem({ item, index: index + 2 }))), [], 'a category list shows posts only');
+
+  const meetups = screen({ os: 'ios', meetupsOnly: true });
+  const meetupProps = meetups.list();
+  assert.ok(nodes(meetupProps.renderItem({ item: null, index: 0 })).some(n => n.props?.children === '10월 12일 월요일'), 'the meetups tab keeps its title rows');
+  assert.equal(nodes(meetupProps.renderItem({ item: post('meetup', { room: { id: 'room' } }), index: 1 })).find(n => n.type === 'PostCard').props.feed, false);
+});
+
+test('posting closes the writer at once, blocks a second post, and a failed upload keeps the whole draft', async () => {
+  const app = screen({ deferPublish: true }); app.list(); app.refresh();
+  app.calls[0].resolve([post('previous')]); await new Promise(setImmediate);
+  const writerOpen = () => nodes(app.render()).some(n => n.type === 'Modal' && n.props.visible && nodes(n).some(c => c.props?.analyticsId === 'components_feed-screen.pressable.14'));
+  app.openWriter();
+  assert.equal(writerOpen(), true);
+  await app.publish();
+  assert.equal(writerOpen(), false, 'the writer closes before the server answers (owner 2026-11-04 ③)');
+  assert.equal(postUpload.getPostUpload().status, 'uploading');
+  assert.equal(postUpload.getPostUpload().title, '새 글');
+  assert.equal(app.writes[0].input.body, '새 본문', 'the same values go to the server as before');
+  app.openWriter();
+  assert.equal(writerOpen(), false, 'one post at a time: the writer stays shut while one uploads');
+  assert.equal(app.feedback.at(-1), 'warning');
+  app.writes[0].reject(new Error('Failed to fetch')); await new Promise(setImmediate);
+  assert.equal(postUpload.getPostUpload().status, 'failed');
+  assert.deepEqual(Array.from(app.list().data.filter(Boolean), p => p.id), ['previous'], 'nothing is added for a failed post');
+  app.openWriter();
+  assert.equal(writerOpen(), true, 'editing reopens the writer');
+  const tree = nodes(app.render());
+  assert.equal(tree.find(n => n.props?.accessibilityLabel === t.write.titlePlaceholder).props.value, '새 글');
+  assert.equal(tree.find(n => n.props?.accessibilityLabel === t.write.bodyLabel).props.value, '새 본문');
+  assert.equal(postUpload.getPostUpload(), null, 'the writer takes over the failed card; its draft is right here');
+});
+
+test('a retry the server calls a duplicate counts as posted: no second post, no error, and the draft clears', async () => {
+  const app = screen({ deferPublish: true }); app.list(); app.refresh();
+  app.calls[0].resolve([post('previous')]); await new Promise(setImmediate);
+  await app.publish();
+  app.writes[0].reject(new Error('Failed to fetch')); await new Promise(setImmediate);
+  assert.equal(postUpload.retryPostUpload(), true);
+  assert.equal(postUpload.retryPostUpload(), false, 'a double tap sends once');
+  assert.equal(app.writes.length, 2);
+  assert.deepEqual(app.writes[1].input, app.writes[0].input, 'the retry sends exactly the kept draft');
+  app.writes[1].reject(new Error('DUPLICATE_POST')); await new Promise(setImmediate);
+  assert.equal(postUpload.getPostUpload().status, 'done');
+  assert.equal(app.feedback.filter(kind => kind === 'warning').length, 1, 'only the first, real failure warned');
+  assert.equal(app.calls.length, 2, 'the feed reloads to show the post the earlier try saved');
+  assert.equal(nodes(app.render()).find(n => n.props?.accessibilityLabel === t.write.titlePlaceholder).props.value, '');
+  postUpload.clearPostUpload();
 });
 
 test('error and empty states appear below the sorting control, where results normally appear', async () => {
@@ -336,4 +480,39 @@ test('Home search is a magnifier next to the profile that still says what it fin
     write.props.onPress();
     assert.equal(native.feedback.at(-1), 'reaction');
   }
+});
+
+test('the SNS photo box shows only with a photo, starts from the setting, and its save never fails the post', async () => {
+  const box = app => nodes(app.render()).find(n => n.props?.analyticsId === 'compose.photo-consent');
+  const addPhoto = async app => { nodes(app.render()).find(n => n.props?.analyticsId === 'components_feed-screen.pressable.25').props.onPress(); await new Promise(setImmediate); };
+  const app = screen({ createdPost: post('with-photo'), photoConsent: { on: true, consentedPosts: 0 }, consentSaves: [false] }); app.list(); app.refresh();
+  app.calls[0].resolve([]); await new Promise(setImmediate);
+  app.openWriter(); await new Promise(setImmediate);
+  assert.equal(box(app), undefined, 'no photo, no box');
+  await addPhoto(app);
+  assert.equal(box(app).props.accessibilityRole, 'checkbox');
+  assert.equal(box(app).props.accessibilityState.checked, true, 'the setting is the starting value');
+  box(app).props.onPress();
+  assert.equal(box(app).props.accessibilityState.checked, false);
+  assert.equal(app.feedback.at(-1), 'selection');
+  box(app).props.onPress();
+  await app.publish(); await new Promise(setImmediate);
+  assert.deepEqual(Array.from(app.consents), ['with-photo'], 'consent is saved for the post that went up');
+  assert.equal(postUpload.getPostUpload().status, 'done', 'a missed consent save leaves the post posted');
+  assert.equal(postUpload.getPostUpload().notice, 'SNS에 소개해도 된다는 체크만 저장이 안 됐어요');
+  postUpload.clearPostUpload();
+
+  const unchecked = screen({ createdPost: post('no-consent'), photoConsent: { on: false, consentedPosts: 0 } }); unchecked.list(); unchecked.refresh();
+  unchecked.calls[0].resolve([]); await new Promise(setImmediate);
+  unchecked.openWriter(); await new Promise(setImmediate); await addPhoto(unchecked);
+  assert.equal(box(unchecked).props.accessibilityState.checked, false);
+  await unchecked.publish(); await new Promise(setImmediate);
+  assert.deepEqual(Array.from(unchecked.consents), [], 'an unticked box sends nothing');
+  assert.equal(postUpload.getPostUpload().notice, undefined);
+  postUpload.clearPostUpload();
+
+  const older = screen({ createdPost: post('old-server'), photoConsent: null }); older.list(); older.refresh();
+  older.calls[0].resolve([]); await new Promise(setImmediate);
+  older.openWriter(); await new Promise(setImmediate); await addPhoto(older);
+  assert.equal(box(older), undefined, 'an older server has no consent calls, so the box stays hidden');
 });

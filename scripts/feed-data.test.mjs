@@ -3,13 +3,18 @@ import test from 'node:test';
 
 import {
   appendUniquePosts,
+  attachAuthorPhotos,
   attachSignedPostImages,
   getPostImageSource,
   groupJournalPosts,
   limitBusinessPosts,
   loadAuthorPosts,
   mapPublicFeed,
+  JUST_POSTED_MS,
+  pinJustPosted,
+  todayRowsAfter,
 } from '../src/lib/feed-data.ts';
+import { contentAdPosition } from '../src/lib/content-ad-placement.ts';
 
 test('프로필 화면은 작성자 글 RPC에 작성자와 커서를 넘기고 카드로 바꾼다', async () => {
   const calls = [];
@@ -224,4 +229,61 @@ test('오늘 전체는 비즈니스 글을 5개 중 최대 1개만 섞고 비즈
   const p = (id, business = false, slug = 'life') => ({ id, business: business ? { id: 'm' } : undefined, tag: { slug } });
   const posts = [p('b1', true), p('b2', true), p('a'), p('b3', true, 'jobs'), p('c'), p('d'), p('e'), p('b4', true), p('f')];
   assert.deepEqual(limitBusinessPosts(posts).map(({ id }) => id), ['b1', 'a', 'c', 'd', 'e', 'b4', 'f']);
+});
+
+// Same cadence as src/lib/ads.ts feedAdPosition (that module needs the native SDK, so the rule is restated here).
+const adSlot = index => index >= 3 && (index - 3) % 4 === 0;
+const rowsIn = (count, isAdSlot = adSlot) => Array.from({ length: count }, (_, index) => todayRowsAfter(index, count, isAdSlot)
+  .map(({ kind, page }) => `${index}:${kind}${page}`)).flat();
+
+test('오늘 전체 글 사이 줄은 두 번째 글 뒤 가볼 만한 곳부터 4글마다 페스티벌과 번갈아 나오고 광고 자리는 피한다', () => {
+  assert.deepEqual(rowsIn(30), ['1:places0', '5:festivals0', '9:places1', '13:festivals1', '17:places2', '21:festivals2', '25:places3', '29:festivals3']);
+  for (let index = 0; index < 200; index++) if (adSlot(index)) assert.deepEqual(todayRowsAfter(index, 200, adSlot), [], `ad slot ${index}`);
+  const everyThird = index => index >= 2 && (index - 2) % 3 === 0;
+  const shifted = rowsIn(30, everyThird);
+  assert.deepEqual(shifted.slice(0, 3), ['1:places0', '6:festivals0', '9:places1'], 'a changed ad cadence pushes the row past the ad');
+  for (const row of shifted) assert.equal(everyThird(Number(row.split(':')[0])), false, row);
+});
+
+test('웹 광고 자리(contentAdPosition, 글 수까지 보는 방식)와도 글 사이 줄이 겹치지 않는다', () => {
+  for (let total = 0; total <= 120; total++) {
+    const web = at => contentAdPosition(at, total);
+    for (let index = -1; index < total; index++) if (web(index)) assert.deepEqual(todayRowsAfter(index, total, web), [], `total ${total}, ad after ${index}`);
+  }
+  assert.deepEqual(rowsIn(30, at => contentAdPosition(at, 30)), rowsIn(30), 'the web cadence lands the rows where the app does');
+});
+
+test('글이 짧으면 아직 차례가 안 온 줄은 마지막 글 아래에, 글이 없으면 빈 화면 아래에 나온다', () => {
+  assert.deepEqual(todayRowsAfter(-1, 0, adSlot), [{ kind: 'places', page: 0 }, { kind: 'festivals', page: 0 }]);
+  assert.deepEqual(rowsIn(1), ['0:places0', '0:festivals0']);
+  assert.deepEqual(rowsIn(2), ['1:places0', '1:festivals0']);
+  assert.deepEqual(rowsIn(4), ['1:places0', '3:festivals0']);
+  assert.deepEqual(rowsIn(6), ['1:places0', '5:festivals0']);
+});
+
+test('방금 쓴 내 글은 정렬·새로고침과 상관없이 10분 동안 맨 위에 있고, 서버에서 온 최신 내용으로 보인다', () => {
+  const mine = { id: 'mine', likes: 0 }, pin = { post: mine, at: 1_000_000, viewer: 'me' };
+  const server = [{ id: 'top' }, { id: 'mine', likes: 3 }, { id: 'other' }];
+  assert.deepEqual(pinJustPosted(server, pin, 'me', 1_000_000 + 60_000), [{ id: 'mine', likes: 3 }, { id: 'top' }, { id: 'other' }]);
+  assert.deepEqual(pinJustPosted([{ id: 'top' }], pin, 'me', 1_000_000), [mine, { id: 'top' }], 'kept on top even when a refresh or 인기순 page leaves it out');
+  assert.deepEqual(pinJustPosted(server, pin, 'me', 1_000_000 + JUST_POSTED_MS + 1), server, 'after ten minutes the server order returns');
+  assert.deepEqual(pinJustPosted(server, pin, 'someone-else', 1_000_000), server, 'another account never sees the pin');
+  assert.deepEqual(pinJustPosted(server, null, 'me'), server);
+});
+
+test('글 카드 회원 사진은 회원 글에만 붙고, 모임 글은 호스트의 별도 신원이라 빠지며, 비회원·읽기 실패면 첫 글자로 남는다', async () => {
+  const posts = [{ id: 'a', author: { id: 'u1' } }, { id: 'b', author: { id: 'u2' }, room: { id: 'r' } }, { id: 'c', author: { id: 'u3' } }];
+  const asked = [];
+  const client = {
+    from: table => { assert.equal(table, 'profiles'); return { select: () => ({ in: (_, ids) => { asked.push(ids); return Promise.resolve({ error: null, data: [{ id: 'u1', avatar_path: 'u1/avatar.jpg' }, { id: 'u3', avatar_path: null }] }); } }) }; },
+    storage: { from: bucket => { assert.equal(bucket, 'avatars'); return { createSignedUrls: async paths => ({ data: paths.map(path => ({ path, signedUrl: `signed:${path}` })) }) }; } },
+  };
+  const result = await attachAuthorPhotos(client, posts);
+  assert.deepEqual(asked, [['u1', 'u3']], 'the meetup host is never looked up');
+  assert.equal(result[0].author.avatarUrl, 'signed:u1/avatar.jpg');
+  assert.equal(result[1].author.avatarUrl, undefined);
+  assert.equal(result[2].author.avatarUrl, undefined);
+  const guest = { from: () => ({ select: () => ({ in: () => Promise.resolve({ data: null, error: { code: '42501' } }) }) }) };
+  assert.equal(await attachAuthorPhotos(guest, posts), posts);
+  assert.equal(await attachAuthorPhotos({ from: () => { throw new Error('offline'); } }, posts), posts);
 });

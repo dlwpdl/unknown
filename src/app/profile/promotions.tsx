@@ -10,6 +10,7 @@ import type { PurchasesPackage } from 'react-native-purchases';
 
 import { LoginPanel } from '@/components/login-panel';
 import { InfoNote, StatusLine } from '@/components/notice-blocks';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -29,8 +30,9 @@ type WalletState = { userId: string; wallet: PromotionWallet; posts: { id: strin
 function ActionButton({ label, onPress, disabled = false, primary = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
 
   const theme = useTheme();
+  const clay = useClay();
   const { play } = useInteractionFeedback();
-  return <Pressable analyticsId="app_profile_promotions.pressable.1" accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.button, primary && { backgroundColor: theme.accent }, { opacity: disabled ? 0.5 : pressed ? 0.75 : 1 }]}><ThemedText type="smallBold" style={primary ? { color: theme.accentInk } : undefined}>{label}</ThemedText></Pressable>;
+  return <Pressable analyticsId="app_profile_promotions.pressable.1" accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.button, clay && { overflow: 'visible', paddingHorizontal: 18, backgroundColor: 'transparent', borderWidth: 0 }, !clay && primary && { backgroundColor: theme.accent }, { opacity: disabled ? 0.5 : pressed ? 0.75 : 1 }]}>{clay && <ClayPillFill kind={primary ? 'cta' : 'white'} />}<ThemedText type="smallBold" style={primary ? { color: theme.accentInk } : undefined}>{label}</ThemedText></Pressable>;
 }
 
 export default function PromotionsRoute() {
@@ -42,7 +44,7 @@ function PromotionsScreen() {
   const date = (value: string) => new Date(value).toLocaleDateString(appLocale);
   const number = (value: number) => value.toLocaleString(appLocale);
   const statuses = { get active() { return tr("홍보 중"); }, get paused() { return tr("중단됨"); }, get completed() { return tr("노출 완료"); }, get refunded() { return tr("환불됨"); } };
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const auth = useAuth();
   const router = useRouter();
@@ -170,10 +172,10 @@ function PromotionsScreen() {
 
   if (auth.isAuthLoading) return <GlingLoader style={styles.container} color={theme.accent} accessibilityLabel={tr("로그인 확인 중")} />;
   if (!auth.isAuthed) return <LoginPanel reason="홍보 크레딧과 내 글을 확인하려면 로그인해 주세요." onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
-  const card = [styles.card, Depth.card, { backgroundColor: theme.card, borderColor: theme.line }];
+  const card = clayBox ? [styles.card, styles.clayCard] : [styles.card, Depth.card, { backgroundColor: theme.card, borderColor: theme.line }];
   return <ThemedView style={styles.container}><SafeAreaView edges={['bottom']} style={styles.safeArea}><ScrollView analyticsId="app_profile_promotions.scrollview.1" contentContainerStyle={styles.content}>
     <View style={styles.intro}><ThemedText type="smallBold" themeColor="accent">{tr("내 글을 더 멀리")}</ThemedText><ThemedText type="subtitle" accessibilityRole="header">{tr("홍보 크레딧")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("미리 구매하고, 알리고 싶은 글에 사용해요.")}</ThemedText></View>
-    <View style={card}><ThemedText type="small" themeColor="textSecondary">{tr("사용 가능한 크레딧")}</ThemedText><ThemedText style={styles.balance}>{wallet ? tr("{0} 크레딧", (number(wallet.balance))) : loading ? tr("확인 중") : tr("확인 필요")}</ThemedText>{wallet && wallet.testBalance !== 0 && <ThemedText type="small" themeColor="textSecondary">{tr('테스트 크레딧 {0} · 실제 홍보에 사용할 수 없어요.', number(wallet.testBalance))}</ThemedText>}</View>
+    <View style={card}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="small" themeColor="textSecondary">{tr("사용 가능한 크레딧")}</ThemedText><ThemedText style={styles.balance}>{wallet ? tr("{0} 크레딧", (number(wallet.balance))) : loading ? tr("확인 중") : tr("확인 필요")}</ThemedText>{wallet && wallet.testBalance !== 0 && <ThemedText type="small" themeColor="textSecondary">{tr('테스트 크레딧 {0} · 실제 홍보에 사용할 수 없어요.', number(wallet.testBalance))}</ThemedText>}</View>
     <View style={styles.flow}>{([
       ['크레딧 충전', '무료 회원도 살 수 있어요.'],
       ['글 고르고 추가 노출 선택', '원래 보이는 만큼(자연 노출)은 크레딧에서 빠지지 않아요.'],
@@ -187,14 +189,14 @@ function PromotionsScreen() {
     {purchasePending === userId && <ActionButton label={tr("결제 확인 문의")} onPress={() => router.push('/profile/settings')} disabled={busy} />}
     <ActionButton label={loading ? tr("확인 중…") : tr("잔액과 내역 새로 확인")} onPress={() => void refresh()} disabled={busy || loading} />
     <View style={styles.section}><ThemedText type="smallBold" accessibilityRole="header">{tr("크레딧 구매")}</ThemedText>
-      {visibleOffers.map((offer) => <View key={offer.id} style={card}><View style={styles.row}><ThemedText type="smallBold">{tr('{0} 크레딧', number(offer.credits))}</ThemedText><ThemedText type="smallBold">{offer.price}</ThemedText></View><ActionButton label={tr("{0}에 구매", (offer.price))} onPress={() => void purchase(offer)} disabled={busy || loading || !wallet || !!unavailable || purchasePending === userId} primary /></View>)}
+      {visibleOffers.map((offer) => <View key={offer.id} style={card}>{clayBox && <ClayBoxFill kind="tile" />}<View style={styles.row}><ThemedText type="smallBold">{tr('{0} 크레딧', number(offer.credits))}</ThemedText><ThemedText type="smallBold">{offer.price}</ThemedText></View><ActionButton label={tr("{0}에 구매", (offer.price))} onPress={() => void purchase(offer)} disabled={busy || loading || !wallet || !!unavailable || purchasePending === userId} primary /></View>)}
       {!!storeNotice && <ThemedText type="small" themeColor="textSecondary">{tr(storeNotice)}</ThemedText>}
     </View>
     <View style={styles.section}><ThemedText type="smallBold" accessibilityRole="header">{tr("내 글 끌어올리기")}</ThemedText>
       {wallet && !wallet.configured && <ThemedText type="small" themeColor="textSecondary">{tr("게시글 홍보를 준비하고 있어요. 시작할 수 있게 되면 보관한 크레딧을 사용할 수 있어요.")}</ThemedText>}
       {posts.length === 0 && !loading && <ThemedText type="small" themeColor="textSecondary">{tr("지금 홍보할 수 있는 내 글이 없어요. 글을 게시한 뒤 여기에서 선택해 주세요.")}</ThemedText>}
-      {posts.map((post) => <Pressable analyticsId="app_profile_promotions.pressable.2" key={post.id} accessibilityRole="radio" accessibilityState={{ checked: selected === post.id, disabled: busy }} disabled={busy} onPress={() => { play('selection'); setSelection({ userId, postId, id: post.id }); setConfirmation(''); }} style={[card, selected === post.id && { borderColor: theme.accent }]}><ThemedText type="smallBold">{selected === post.id ? '✓ ' : ''}{post.title}</ThemedText></Pressable>)}
-      {!!selected && <View style={card}><ThemedText type="smallBold">{tr("추가 홍보 노출")}</ThemedText><View style={styles.row}>{[900, 1700].map((amount) => <Pressable analyticsId="app_profile_promotions.pressable.3" key={amount} accessibilityRole="radio" accessibilityState={{ checked: amount === budget, disabled: busy }} disabled={busy} onPress={() => { play('selection'); setBudget(amount); setConfirmation(''); }} style={[styles.choice, { borderColor: amount === budget ? theme.accent : theme.line }]}><ThemedText type="smallBold">{tr('{0}회 노출', number(amount))}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('{0} 크레딧', number(amount))}</ThemedText></Pressable>)}</View>
+      {posts.map((post) => <Pressable analyticsId="app_profile_promotions.pressable.2" key={post.id} accessibilityRole="radio" accessibilityState={{ checked: selected === post.id, disabled: busy }} disabled={busy} onPress={() => { play('selection'); setSelection({ userId, postId, id: post.id }); setConfirmation(''); }} style={[card, selected === post.id && { borderColor: theme.accent }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="smallBold">{selected === post.id ? '✓ ' : ''}{post.title}</ThemedText></Pressable>)}
+      {!!selected && <View style={card}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="smallBold">{tr("추가 홍보 노출")}</ThemedText><View style={styles.row}>{[900, 1700].map((amount) => <Pressable analyticsId="app_profile_promotions.pressable.3" key={amount} accessibilityRole="radio" accessibilityState={{ checked: amount === budget, disabled: busy }} disabled={busy} onPress={() => { play('selection'); setBudget(amount); setConfirmation(''); }} style={[styles.choice, { borderColor: amount === budget ? theme.accent : theme.line }]}><ThemedText type="smallBold">{tr('{0}회 노출', number(amount))}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('{0} 크레딧', number(amount))}</ThemedText></Pressable>)}</View>
         {wallet?.slotStatus === 'ready' && wallet.slotAvailable !== null
           ? <StatusLine tone={wallet.slotAvailable === 0 ? 'warn' : 'ok'} title={tr("새 대화 수락 가능 {0}개", (wallet.slotAvailable))} detail={wallet.slotAvailable === 0 ? tr("요청은 계속 받아요. 자리가 생기면 수락할 수 있고, 홍보도 그대로 진행할 수 있어요.") : undefined} />
           : <StatusLine tone="warn" title={tr("대화 자리 확인 준비 중")} detail={tr("지금 수락할 수 있는 대화 수를 확인하지 못했어요. 홍보를 시작해도 대화 자리가 늘지는 않아요.")} />}
@@ -204,7 +206,7 @@ function PromotionsScreen() {
       </View>}
     </View>
     <View style={styles.section}><ThemedText type="smallBold" accessibilityRole="header">{tr("홍보 현황")}</ThemedText>{wallet?.campaigns.length === 0 && <ThemedText type="small" themeColor="textSecondary">{tr("아직 시작한 홍보가 없어요.")}</ThemedText>}
-      {wallet?.campaigns.map((campaign) => <View key={campaign.id} style={card}><View style={styles.row}><ThemedText type="smallBold" style={styles.flex}>{campaign.title}</ThemedText><ThemedText type="small" themeColor="accent">{statuses[campaign.status]}</ThemedText></View><ThemedText type="small" themeColor="textSecondary">{campaign.environment !== 'PRODUCTION' ? tr("테스트 · ") : ''}{date(campaign.createdAt)}{" " + tr('· 추가 노출 {0} / {1}회', number(campaign.delivered), number(campaign.budget))}</ThemedText>{campaign.status === 'active' && <>{pauseId === campaign.id && <ThemedText type="small">{tr("홍보를 중단하면 남은 노출에 해당하는 크레딧이 잔액으로 돌아와요.")}</ThemedText>}<ActionButton label={pauseId === campaign.id ? tr("중단하고 남은 크레딧 돌려받기") : tr("홍보 중단")} onPress={() => pauseId === campaign.id ? void stop(campaign.id) : setPauseId(campaign.id)} disabled={busy} />{pauseId === campaign.id && <ActionButton label={tr("계속 홍보하기")} onPress={() => setPauseId(null)} disabled={busy} />}</>}</View>)}
+      {wallet?.campaigns.map((campaign) => <View key={campaign.id} style={card}>{clayBox && <ClayBoxFill kind="tile" />}<View style={styles.row}><ThemedText type="smallBold" style={styles.flex}>{campaign.title}</ThemedText><ThemedText type="small" themeColor="accent">{statuses[campaign.status]}</ThemedText></View><ThemedText type="small" themeColor="textSecondary">{campaign.environment !== 'PRODUCTION' ? tr("테스트 · ") : ''}{date(campaign.createdAt)}{" " + tr('· 추가 노출 {0} / {1}회', number(campaign.delivered), number(campaign.budget))}</ThemedText>{campaign.status === 'active' && <>{pauseId === campaign.id && <ThemedText type="small">{tr("홍보를 중단하면 남은 노출에 해당하는 크레딧이 잔액으로 돌아와요.")}</ThemedText>}<ActionButton label={pauseId === campaign.id ? tr("중단하고 남은 크레딧 돌려받기") : tr("홍보 중단")} onPress={() => pauseId === campaign.id ? void stop(campaign.id) : setPauseId(campaign.id)} disabled={busy} />{pauseId === campaign.id && <ActionButton label={tr("계속 홍보하기")} onPress={() => setPauseId(null)} disabled={busy} />}</>}</View>)}
     </View>
     <View style={styles.section}><ThemedText type="smallBold" accessibilityRole="header">{tr("구매 내역")}</ThemedText>{wallet?.purchases.length === 0 && <ThemedText type="small" themeColor="textSecondary">{tr("아직 구매 내역이 없어요.")}</ThemedText>}{wallet?.purchases.map((purchase) => <View key={purchase.id} style={[styles.history, { borderBottomColor: theme.line }]}><ThemedText type="smallBold">{tr('{0} 크레딧 · {1}', number(purchase.credits), purchase.refunded ? tr('환불됨') : tr('충전'))}</ThemedText><ThemedText type="small" themeColor="textSecondary">{purchase.environment !== 'PRODUCTION' ? tr("테스트 · ") : ''}{date(purchase.createdAt)}</ThemedText></View>)}</View>
   </ScrollView></SafeAreaView></ThemedView>;
@@ -216,6 +218,7 @@ const styles = StyleSheet.create({
   content: { padding: Spacing.three, paddingBottom: Spacing.five, gap: Spacing.three },
   intro: { gap: Spacing.two, paddingVertical: Spacing.two },
   section: { gap: Spacing.two, paddingTop: Spacing.two },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   card: { padding: Spacing.three, borderWidth: 1, borderRadius: 12, gap: Spacing.two, minHeight: 44 },
   balance: { fontSize: 26, lineHeight: 34, fontWeight: 700, fontVariant: ['tabular-nums'] },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: Spacing.two },

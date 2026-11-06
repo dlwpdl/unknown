@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import { Alert, DeviceEventEmitter, StyleSheet, View } from 'react-native';
 
+import { ClayPillFill, useClay } from '@/components/clay';
 import { DragSheet } from '@/components/drag-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ControlMetrics, ControlMotion, ControlStyles } from '@/constants/design-system';
@@ -31,6 +32,7 @@ export function PushInvite() {
   const { tr } = useLanguage();
   const { isAuthed, me } = useAuth();
   const theme = useTheme();
+  const clay = useClay();
   const { play } = useInteractionFeedback();
   // reason stays set until the sheet has slid away so its words do not vanish mid-close.
   const [reason, setReason] = useState<PushPromptReason | null>(null);
@@ -104,7 +106,8 @@ export function PushInvite() {
           </View>
           <Pressable lens analyticsId="components_push-invite.pressable.2" onPress={() => void allow()} disabled={busy} accessibilityRole="button"
             accessibilityState={{ disabled: busy, busy }}
-            style={({ pressed }) => [styles.primary, { backgroundColor: theme.accent, opacity: busy ? ControlMotion.disabledOpacity : pressed ? ControlMotion.pressedOpacity : 1 }]}>
+            style={({ pressed }) => [styles.primary, clay && styles.primaryClay, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: busy ? ControlMotion.disabledOpacity : pressed ? ControlMotion.pressedOpacity : 1 }]}>
+            {clay && <ClayPillFill kind="cta" />}
             <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{busy ? tr("설정 중") : tr("알림 받기")}</ThemedText>
           </Pressable>
           <Pressable lens analyticsId="components_push-invite.pressable.3" onPress={() => void close()} disabled={busy} accessibilityRole="button"
@@ -122,5 +125,6 @@ const styles = StyleSheet.create({
   preview: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, borderRadius: 14, padding: Spacing.three, marginVertical: Spacing.two },
   previewIcon: { width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   primary: { ...ControlStyles.action, minHeight: ControlMetrics.actionWide },
+  primaryClay: { overflow: 'visible', paddingHorizontal: 24 },
   secondary: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });
