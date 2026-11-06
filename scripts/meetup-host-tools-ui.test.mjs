@@ -71,6 +71,7 @@ export function mount(file, exportName, initialProps = {}, options = {}) {
     '@/components/chilling-date-input': { ChillingDateInput: 'ChillingDateInput' },
     '@/components/drag-sheet': { DragSheet: 'DragSheet' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' }, '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' }, '@/components/selection-chip': { SelectionChip: 'SelectionChip' },
     '@/components/list-card': { ListCard: 'ListCard', ListLoading: 'ListLoading', ListRow: 'ListRow', SectionLabel: 'SectionLabel', Tag: 'Tag', InitialAvatar: 'InitialAvatar' },
+    '@/components/state-card': { StateCard: 'StateCard' },
     'expo-symbols': { SymbolView: 'SymbolView' }, '@/constants/theme': { Spacing: { half: 2, one: 4, two: 8, three: 16, four: 24, five: 32, six: 64 } },
     '@/lib/meetup-reviews': reviews, '@/lib/meetup-loyalty': loyalty, '@/lib/meetup-convenience': convenience, '@/lib/meetup-host-home': hostHome,
     '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async key => ctx.storage?.[key] ?? null, setItem: async (key, value) => { (ctx.storage ??= {})[key] = value; } } },
@@ -437,6 +438,19 @@ const room = (state, options = {}) => mount('meetup-loyalty', 'MeetupRoomTop', {
 const sheet = ui => nodes(ui.tree).find(node => node.type === 'DragSheet');
 const ids = (ui, id) => nodes(ui.tree).filter(node => node.props?.analyticsId === id);
 const dots = ui => nodes(ui.tree).filter(node => node.props?.accessibilityLabel === '안 읽음');
+
+for (const [screen, title] of [['MeetupNoticeManager', '공지를 불러오지 못했어요'], ['MeetupMemberList', '멤버를 불러오지 못했어요']]) {
+  test(`${screen}: a failed read offers a retry instead of a loader that never ends`, async () => {
+    let offline = true;
+    const ui = mount('meetup-loyalty', screen, { postId }, { rpc: async () => offline ? { data: null, error: { message: 'offline' } } : { data: { isHost: false }, error: null } });
+    await ui.flush();
+    const card = nodes(ui.tree).find(node => node.type === 'StateCard');
+    assert.equal(card?.props.title, title);
+    assert.equal(nodes(ui.tree).some(node => node.type === 'ListLoading'), false);
+    offline = false; card.props.onAction(); await ui.flush();
+    assert.equal(nodes(ui.tree).some(node => node.type === 'StateCard'), false);
+  });
+}
 
 test('room top: nothing to show renders nothing at all, so no empty frame sits above the chat', async () => {
   const ui = room({ isHost: false, pinned: null, pinnedNotices: [] }); await ui.flush();
