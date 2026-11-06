@@ -76,7 +76,7 @@ test('the combined screen includes its current-city catalog while backend rows a
   vm.runInNewContext(compile(`exports.run = () => { ${mapSource.slice(start, end)} return items; };`), {
     exports, bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, scope: 'all', registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null, current: null, catalogItems: [discovery.discoveryPlace(place)], city: { id: place.cityId }, now: Date.now(), selectedFilters: [], query: '', days: [],
     hidden: () => false, discoveryEvent: () => null, discoveryEventOnDays: discovery.discoveryEventOnDays, mergeCityTop25: discovery.mergeCityTop25, discoveryMatches: discovery.discoveryMatches,
-    PRICE_FILTERS: discovery.PRICE_FILTERS, PLACE_SUBCATEGORIES: discovery.PLACE_SUBCATEGORIES, discoveryRefines: discovery.discoveryRefines, cityClock, openState, priceLevels: [], subcategories: [], region: null, openNow: false, showUnknown: false, placeSaves: null,
+    PRICE_FILTERS: discovery.PRICE_FILTERS, PLACE_SUBCATEGORIES: discovery.PLACE_SUBCATEGORIES, discoveryRefines: discovery.discoveryRefines, cityClock, openState, priceLevels: [], subcategories: [], region: null, openNow: false, showUnknown: false, placeSaves: null, statusFilter: null,
   });
   assert.equal(exports.run().length, 1);
   assert.equal(exports.run()[0].sourceId, place.id);

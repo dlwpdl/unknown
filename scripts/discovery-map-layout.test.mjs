@@ -679,6 +679,74 @@ test('M3: an older server, a failed read or an empty city hides the totals and l
   assert.deepEqual(listOf(tree), ['Place 1', 'Place 2'], 'with no totals left the chosen order falls back to nearest');
 });
 
+test('M1: 뜨는 중·인기 show on the pin and the card and filter the list; an older server changes nothing', async () => {
+  const places = [fixturePlace(1), fixturePlace(2), fixturePlace(3, { subcategories: ['lunch'] }), fixturePlace(4, { priceLevel: 1 })];
+  const totals = new Map([['osm:node:1', { saverCount: 2, status: null }], ['osm:node:2', { saverCount: 12, status: 'popular' }], ['osm:node:3', { saverCount: 4, status: 'trending' }]]);
+  const view = mount({ places, loadSaves: async () => totals });
+  let tree = view.render();
+  view.readSaves(); await new Promise(setImmediate); tree = view.render();
+  const pin = (markers, label) => markers.find(marker => marker.label === label);
+  const markers = () => Array.from(nodes(tree).find(node => node.type === 'DiscoveryMap').props.markers);
+  assert.equal(pin(markers(), 'Place 2').statusColor, discovery.PLACE_STATUS.popular.color);
+  assert.ok(pin(markers(), 'Place 2').sublabel.startsWith('인기 · '), 'the second line leads with the state');
+  assert.equal(pin(markers(), 'Place 3').statusColor, discovery.PLACE_STATUS.trending.color);
+  assert.ok(pin(markers(), 'Place 3').sublabel.startsWith('뜨는 중 · '));
+  assert.equal(pin(markers(), 'Place 1').statusColor, undefined, 'a save count alone is no state');
+  assert.ok(!pin(markers(), 'Place 1').sublabel.includes('·'));
+  const chip = label => nodes(tree).find(node => node.props?.accessibilityLabel === label);
+  assert.ok(chip('뜨는 중') && chip('인기'));
+  assert.equal(chip('인기').props.analyticsId, 'discovery.subcategory', 'a registered target, so old servers keep the analytics batch');
+  assert.ok(chip('인기').props.style.flat().some(style => style?.minHeight === 44), 'a 44pt target');
+  chip('인기').props.onPress(); tree = view.render();
+  assert.deepEqual(listOf(tree), ['Place 2']);
+  assert.deepEqual(markers().map(marker => marker.label), ['Place 2'], 'the pins follow the list');
+  assert.equal(chip('인기').props.selected, true);
+  assert.ok(view.feedback.includes('selection'));
+  chip('인기').props.onPress(); tree = view.render();
+  assert.equal(listOf(tree).length, 4, 'pressing it again clears it');
+  chip('뜨는 중').props.onPress(); tree = view.render();
+  assert.deepEqual(listOf(tree), ['Place 3']);
+  const card = view.renderCard(nodes(tree).find(node => node.type === 'FlatList').props.data[0], null, { saverCount: 12, status: 'popular' });
+  const line = nodes(card).find(node => node.props?.accessibilityLabel === '인기 · 저장 12명');
+  assert.ok(line, 'the word and the total read as one line');
+  assert.equal(nodes(line).find(node => node.type === 'View' && node !== line).props.style.flat().at(-1).backgroundColor, discovery.PLACE_STATUS.popular.color, 'the same colour as the pin');
+
+  const unknown = mount({ places, loadSaves: async () => new Map([['osm:node:2', { saverCount: 12, status: null }]]) });
+  tree = unknown.render(); unknown.readSaves(); await new Promise(setImmediate); tree = unknown.render();
+  assert.equal(chip('인기'), undefined, 'no place has it, so no chip');
+
+  for (const loadSaves of [async () => null, async () => { throw new Error('offline'); }]) {
+    const old = mount({ places, loadSaves });
+    tree = old.render(); old.readSaves(); await new Promise(setImmediate); tree = old.render();
+    assert.equal(chip('인기'), undefined);
+    assert.equal(chip('뜨는 중'), undefined);
+    assert.ok(markers().every(marker => marker.statusColor === undefined && !marker.sublabel.includes('·')));
+    assert.equal(listOf(tree).length, 4);
+  }
+});
+
+test('M1: an empty result under a state filter offers to clear it, and the choice lapses when the state goes away', async () => {
+  const places = [fixturePlace(1), fixturePlace(2, { openingHours: 'Mo-Su off' })];
+  let answer = new Map([['osm:node:2', { saverCount: 12, status: 'popular' }]]);
+  const view = mount({ places, loadSaves: async () => answer });
+  let tree = view.render();
+  view.readResults(); view.readSaves(); await new Promise(setImmediate); tree = view.render();
+  const chip = label => nodes(tree).find(node => node.props?.accessibilityLabel === label);
+  chip('인기').props.onPress(); tree = view.render();
+  assert.deepEqual(listOf(tree), ['Place 2']);
+  control(tree, '지금 영업 중').props.onPress(); tree = view.render();
+  const empty = emptyCards(tree)[0];
+  assert.equal(empty.props.title, '인기 있는 곳이 없어요');
+  assert.equal(empty.props.actionLabel, '인기 필터 풀기');
+  empty.props.onAction(); tree = view.render();
+  assert.equal(chip('인기').props.selected, false, 'its action clears the filter');
+  control(tree, '지금 영업 중').props.onPress(); chip('인기').props.onPress(); tree = view.render();
+  assert.deepEqual(listOf(tree), ['Place 2']);
+  answer = new Map(); view.readSaves(); await new Promise(setImmediate); tree = view.render();
+  assert.equal(chip('인기'), undefined);
+  assert.equal(listOf(tree).length, 2, 'the place lost its state, so the filter stops counting instead of emptying the list');
+});
+
 test('M7: the compass starts only on screen after a location fix, feeds the cone and stops when the map leaves', async () => {
   const view = mount();
   let tree = view.render();

@@ -46,6 +46,8 @@ test('city place saves: totals by place key; an older server is null, other fail
   assert.equal(saves.get('osm:node:1').saverCount, 7);
   assert.equal(saves.get('partner:cafe-1').saverCount, 1);
   assert.equal(saves.size, 2);
+  const states = await loadCityPlaceSaves(client([{ placeKey: 'osm:node:1', saverCount: 3, status: 'trending' }, { placeKey: 'osm:node:2', saverCount: 10, status: 'popular' }, { placeKey: 'osm:node:3', saverCount: 1, status: 'someday' }, { placeKey: 'osm:node:4', saverCount: 1 }]), 'vancouver');
+  assert.deepEqual(['osm:node:1', 'osm:node:2', 'osm:node:3', 'osm:node:4'].map(key => states.get(key).status), ['trending', 'popular', null, null], 'a status this app does not know shows nothing');
   assert.equal((await loadCityPlaceSaves(client([]), 'vancouver')).size, 0);
   assert.equal(await loadCityPlaceSaves(client(null, { code: 'PGRST202' }), 'vancouver'), null, 'an older server shows nothing');
   await assert.rejects(loadCityPlaceSaves(client(null, { code: '57014', message: 'timeout' }), 'vancouver'));

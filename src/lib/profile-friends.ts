@@ -140,11 +140,13 @@ export async function loadPlaceSaves(client: SupabaseClient, cityId: string, pla
 }
 
 // 지도 목록·핀 (M1·M3, owner 2026-11-05): every saved place's total in one city, never who. null is an older server without the function; the map then shows none of it.
-export type CityPlaceSave = { saverCount: number };
+export type PlaceStatus = 'trending' | 'popular';
+export type CityPlaceSave = { saverCount: number; status: PlaceStatus | null };
 export function parseCityPlaceSaves(value: unknown): Map<string, CityPlaceSave> {
   return new Map(list(value, 2000).map(place => {
     if (!object(place) || typeof place.placeKey !== 'string' || !PLACE.test(place.placeKey)) invalid();
-    return [place.placeKey, { saverCount: count(place.saverCount) }] as const;
+    // A status this app does not know yet just shows nothing.
+    return [place.placeKey, { saverCount: count(place.saverCount), status: place.status === 'trending' || place.status === 'popular' ? place.status : null }] as const;
   }));
 }
 export async function loadCityPlaceSaves(client: SupabaseClient, cityId: string): Promise<Map<string, CityPlaceSave> | null> {
