@@ -11,7 +11,7 @@ import { Modal, Platform, StyleSheet, TextInput, View, type KeyDownEvent } from 
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
-import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
+import { ClayBoxFill, ClayCoinFill, ClayPhoto, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { PersonalInfoFields, type PersonalInfoDraft } from '@/components/personal-info-fields';
 import { WelcomeMoment } from '@/components/welcome-moment';
@@ -221,11 +221,11 @@ export function ProfileOnboarding({
             </View>
 
             {!consentOnly && <View style={styles.photoSection}>
-              <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}>
-                {photoUri ? (
+              <View style={[styles.avatar, clay ? { overflow: 'visible' } : { backgroundColor: theme.backgroundElement }]}>
+                {photoUri ? clay ? <ClayPhoto uri={photoUri} size={88} /> : (
                   <Image source={{ uri: photoUri }} style={styles.avatarImage} contentFit="cover" transition={ControlMotion.settleMs} />
                 ) : (
-                  <ThemedText type="subtitle" style={{ color: theme.navy }}>{nickname.trim()[0] ?? t.appName[0].toUpperCase()}</ThemedText>
+                  <>{clay && <ClayCoinFill />}<ThemedText type="subtitle" style={{ color: theme.navy }}>{nickname.trim()[0] ?? t.appName[0].toUpperCase()}</ThemedText></>
                 )}
               </View>
               <View style={styles.photoActions}>
@@ -297,7 +297,7 @@ export function ProfileOnboarding({
                 accessibilityState={{ checked: allChecked, disabled: saving }}
                 {...(Platform.OS === 'web' ? { onKeyDown: (event: KeyDownEvent) => { if (event.nativeEvent.key === ' ') { event.preventDefault(); toggleAll(); } } } : {})}
                 style={[styles.consent, styles.allConsent, { borderBottomColor: theme.line }]}>
-                <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { backgroundColor: someAccepted ? theme.accent : 'transparent', borderColor: someAccepted ? theme.accent : theme.line }]}>
+                <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { backgroundColor: someAccepted ? theme.accent : 'transparent', borderColor: someAccepted ? theme.accent : theme.textSecondary }]}>
                   {someAccepted && <SymbolView name={allAccepted ? { ios: 'checkmark', android: 'check', web: 'check' } : { ios: 'minus', android: 'remove', web: 'remove' }} size={14} tintColor={theme.accentInk} />}
                 </View>
                 <ThemedText type="smallBold" style={styles.consentText}>{tr("모두 동의")}{askPersonalInfo && <ThemedText type="small" themeColor="textSecondary"> {" " + tr("(선택 포함)")}</ThemedText>}</ThemedText>
@@ -311,7 +311,7 @@ export function ProfileOnboarding({
                       aria-checked={item.checked} accessibilityState={{ checked: item.checked, disabled: saving }}
                       {...(Platform.OS === 'web' ? { onKeyDown: (event: KeyDownEvent) => { if (event.nativeEvent.key === ' ') { event.preventDefault(); toggle(); } } } : {})}
                       style={styles.consent}>
-                      <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { backgroundColor: item.checked ? theme.accent : 'transparent', borderColor: item.checked ? theme.accent : theme.line }]}>
+                      <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { backgroundColor: item.checked ? theme.accent : 'transparent', borderColor: item.checked ? theme.accent : theme.textSecondary }]}>
                         {item.checked && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={14} tintColor={theme.accentInk} />}
                       </View>
                       <ThemedText type="small" style={styles.consentText}>{tr(item.label)}</ThemedText>

@@ -229,7 +229,7 @@ export default function MembershipScreen() {
               {clayBox && <ClayBoxFill kind="tile" />}
               <View style={styles.planHeading}>
                 <ThemedText style={styles.planName}>{tr(plan.name)}</ThemedText>
-                <View style={[styles.radio, { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.accent : 'transparent' }]}>
+                <View style={[styles.radio, { borderColor: selected ? theme.accent : theme.textSecondary, backgroundColor: selected ? theme.accent : 'transparent' }]}>
                   {selected && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={12} tintColor={theme.accentInk} />}
                 </View>
               </View>

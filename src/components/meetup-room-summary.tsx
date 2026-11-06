@@ -61,7 +61,7 @@ export function MeetupHistoryChoice({ value, onChange, disabled }: { value: bool
   const { play } = useInteractionFeedback();
   return <Pressable analyticsId="meetup.request.history" accessibilityRole="checkbox" accessibilityState={{ checked: value, disabled: !!disabled }} aria-checked={value} disabled={disabled}
     onPress={() => { play('selection'); onChange(!value); }} style={({ pressed }) => [styles.choice, { opacity: disabled ? 0.45 : pressed ? 0.82 : 1 }]}>
-    <View aria-hidden accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.checkbox, { borderColor: value ? theme.accent : theme.line, backgroundColor: value ? theme.accent : theme.card }]}>
+    <View aria-hidden accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.checkbox, { borderColor: value ? theme.accent : theme.textSecondary, backgroundColor: value ? theme.accent : theme.card }]}>
       {value && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={IconSize.chevron} tintColor={theme.accentInk} />}
     </View>
     <View style={styles.body}>

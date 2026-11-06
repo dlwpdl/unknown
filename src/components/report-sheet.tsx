@@ -187,7 +187,7 @@ export function ReportSheet({
               accessibilityRole="checkbox"
               accessibilityState={{ checked: blockAfter }}
                   style={({ pressed }) => [styles.blockRow, { opacity: pressed ? 0.65 : 1 }]}>
-              <View style={[styles.checkbox, { borderColor: blockAfter ? theme.accent : theme.line, backgroundColor: blockAfter ? theme.accent : theme.card }]}>
+              <View style={[styles.checkbox, { borderColor: blockAfter ? theme.accent : theme.textSecondary, backgroundColor: blockAfter ? theme.accent : theme.card }]}>
                 {blockAfter && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={14} tintColor={theme.accentInk} />}
               </View>
               <View style={styles.copy}>

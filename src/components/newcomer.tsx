@@ -159,7 +159,7 @@ export function NewcomerProgressCard() {
     </View>
     <View style={styles.steps} accessibilityRole="list">
       {steps.map(([label, done], index) => <View key={label} style={styles.step} accessible accessibilityLabel={`${tr(label)}, ${done ? tr('완료') : tr('아직')}`}>
-        <View style={[styles.dot, done ? { backgroundColor: theme.accent } : { borderWidth: 1, borderColor: theme.line }]}>
+        <View style={[styles.dot, done ? { backgroundColor: theme.accent } : { borderWidth: 1, borderColor: theme.textSecondary }]}>
           {done ? <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={IconSize.chevron} tintColor={theme.accentInk} />
             : <ThemedText type="smallBold" themeColor="textSecondary">{index + 1}</ThemedText>}
         </View>

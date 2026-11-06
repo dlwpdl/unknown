@@ -104,7 +104,7 @@ export function MeetupAddSession({ postId, visible, canRepeat, canSingle = true,
           const checked = picked.includes(date.startsAt);
           return <Pressable key={date.startsAt} analyticsId="meetup.session.date" accessibilityRole="checkbox" accessibilityState={{ checked, disabled: busy }} disabled={busy} style={styles.check}
             onPress={() => { play('selection'); setPicked(value => checked ? value.filter(item => item !== date.startsAt) : [...value, date.startsAt]); }}>
-            <View style={[styles.box, { borderColor: checked ? theme.accent : theme.line, backgroundColor: checked ? theme.accent : 'transparent' }]}>
+            <View style={[styles.box, { borderColor: checked ? theme.accent : theme.textSecondary, backgroundColor: checked ? theme.accent : 'transparent' }]}>
               {checked && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={IconSize.chevron} tintColor={theme.accentInk} />}
             </View>
             <ThemedText style={Typography.body}>{new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(date.startsAt))}</ThemedText>
