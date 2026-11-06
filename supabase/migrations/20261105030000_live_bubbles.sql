@@ -161,8 +161,8 @@ end $$;
 create function public.post_live_bubble(p_city_id text,p_body text,p_audience text,p_minutes integer,p_latitude double precision,p_longitude double precision,
   p_kind text default 'member')
 returns uuid language plpgsql security definer set search_path='' as $$
-declare uid uuid:=auth.uid(); admin boolean; body text:=btrim(coalesce(p_body,'')); last private.live_bubbles; lat double precision:=p_latitude; lon double precision:=p_longitude;
-  meters double precision; hours double precision; new_id uuid;
+declare uid uuid:=auth.uid(); admin boolean; body text:=btrim(coalesce(p_body,'')); last private.live_bubbles; near private.live_bubbles;
+  lat double precision:=p_latitude; lon double precision:=p_longitude; meters double precision; hours double precision; new_id uuid;
 begin
   perform private.assert_live_member(uid);
   -- An admin right now, signed in with the second step; once having been one is not enough to place 글링 pins anywhere.
@@ -176,10 +176,14 @@ begin
   -- A member's bubble sits on the ~100 m grid whatever the app sent; a 글링 pin keeps the exact spot the admin chose.
   if p_kind='member' then lat:=round(p_latitude::numeric,3)::double precision; lon:=round(p_longitude::numeric,3)::double precision; end if;
   if not admin then
+    -- Back in the cell of a point I showed before, or one next to it: keep the most recent such point, so a home near a grid line never shows
+    -- two points by turns, even with posts from work in between (review F2, N2; bubbles and so this memory last 7 days after going down).
+    -- A point shown only to friends is never reused for a city-wide bubble (N1).
+    select * into near from private.live_bubbles b where b.author_id=uid and b.kind='member' and abs(b.latitude-lat)<=0.0011 and abs(b.longitude-lon)<=0.0011
+      and (b.audience='city' or p_audience='friends') order by b.created_at desc limit 1;
+    if near.id is not null then lat:=near.latitude; lon:=near.longitude; end if;
     select * into last from private.live_bubbles b where b.author_id=uid order by b.created_at desc limit 1;
     if last.id is not null then
-      -- Back in the last point's cell or one next to it: keep that point, so someone living near a grid line never shows two points by turns.
-      if abs(last.latitude-lat)<=0.0011 and abs(last.longitude-lon)<=0.0011 then lat:=last.latitude; lon:=last.longitude; end if;
       meters:=private.live_distance_m(last.latitude,last.longitude,lat,lon);
       hours:=greatest(extract(epoch from now()-last.created_at)/3600,1/3600.0);
       -- Small hops are GPS noise; within an hour nobody covers ground faster than 200 km/h, and nobody ever faster than a plane.

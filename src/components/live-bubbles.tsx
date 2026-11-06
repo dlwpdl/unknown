@@ -27,7 +27,7 @@ import { DISCOVERY_CATEGORIES } from '@/lib/discovery';
 import { loadPublicFeed, relativeTime } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import {
-  GREETINGS, LIVE, QUICK_PHRASES, lastMyPoint, postingPlace, shownPoint, cancelLiveRequest, clampWithin, demoReceive, distanceMeters, durationLabel, endLiveBubble, extendLiveBubble, getLive, liveErrorCode, liveNotice,
+  GREETINGS, LIVE, QUICK_PHRASES, approximatePoint, myShownPoints, postingPlace, shownPoint, cancelLiveRequest, clampWithin, demoReceive, distanceMeters, durationLabel, endLiveBubble, extendLiveBubble, getLive, liveErrorCode, liveNotice,
   minutesLeft, postLiveBubble, refreshLive, replyToWave, respondLiveRequest, sendLiveRequest, subscribeLive, waveLiveBubble, type LiveAudience, type LiveBubble, type LiveKind, type LiveMap, type LivePerson, type LiveRequest, type LiveWave, type Point,
 } from '@/lib/live-bubbles';
 import type { LocationFix } from '@/lib/location';
@@ -264,14 +264,16 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
   const [step, setStep] = useState<'write' | 'preview' | 'adjust'>('write');
   const [body, setBody] = useState(mine?.body ?? ''), [audience, setAudience] = useState<LiveAudience>(mine?.audience ?? 'city');
   const [minutes, setMinutes] = useState<number>(60), [kind, setKind] = useState<LiveKind>(mine?.kind ?? 'member');
-  const [origin, setOrigin] = useState<Point | null>(null), [point, setPoint] = useState<Point | null>(() => isAdmin ? mine ?? mapCenter : null);
+  const [origin, setOrigin] = useState<Point | null>(null), [spot, setSpot] = useState<Point | null>(() => isAdmin ? mine ?? mapCenter : null);
   const [locating, setLocating] = useState(!isAdmin), [problem, setProblem] = useState(''), [busy, setBusy] = useState(false), [atEdge, setAtEdge] = useState(false);
   const alive = useRef(true);
   // Fixed for this opening (the sheet mounts with a new key each time), so a moving map centre never re-runs the location check.
-  const [start] = useState(() => ({ demo: live.demo, center: mapCenter, last: isAdmin ? null : lastMyPoint() })), footer = useKeepClearOfNotice();
+  const [start] = useState(() => ({ demo: live.demo, center: mapCenter, before: isAdmin ? [] : myShownPoints() })), footer = useKeepClearOfNotice();
+  // Where the bubble will really show, for the chosen audience: what the server keeps (an admin's spot stays exact).
+  const point = spot && !isAdmin ? shownPoint(spot, start.before, audience) : spot;
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   const locate = useCallback(() => readFix().catch(error => { if (start.demo) return null; throw error; }).then(fix => postingPlace(fix, start.demo, start.center)).then(place => {
-    if (alive.current) { setOrigin(place); setPoint(shownPoint(place, start.last)); }
+    if (alive.current) { setOrigin(place); setSpot(place); }
   }, error => { if (alive.current) setProblem(locationProblem(error instanceof Error ? error.message : '')); }).finally(() => { if (alive.current) setLocating(false); }), [start]);
   useEffect(() => { if (!isAdmin) void locate(); }, [isAdmin, locate]);
   const ready = !!body.trim() && !!point && !busy && (isAdmin || !!origin);
@@ -298,10 +300,10 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
     // The 100 m is measured before the pin settles on the ~100 m grid, the point others will see.
     const next = clampWithin(origin, pin), edge = distanceMeters(pin, next) > 1;
     if (edge) play('warning');
-    setAtEdge(edge); setPoint(shownPoint(next, start.last));
+    setAtEdge(edge); setSpot(next);
   };
-  // Back near my last bubble, the server keeps its point, so a moved pin stays put; say why rather than look stuck.
-  const kept = !!start.last && !!point && point.latitude === start.last.latitude && point.longitude === start.last.longitude;
+  // Back near an earlier bubble, the server keeps its point, so a moved pin stays put; say why rather than look stuck.
+  const grid = spot && approximatePoint(spot), kept = !isAdmin && !!point && !!grid && (point.latitude !== grid.latitude || point.longitude !== grid.longitude);
   const keptLine = kept && <ThemedText type="caption" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr('전에 띄운 자리와 가까워서 같은 자리에 보여요')}</ThemedText>;
   const title = step === 'preview' ? tr('남들에게 이렇게 보여요') : step === 'adjust' ? tr('위치 바꾸기') : mine ? tr('내 말풍선') : tr('말풍선 남기기');
   const preview: DiscoveryMarker[] = point ? [{ id: 'preview', ...point, color: BUBBLE_COLOR, label: body.trim().slice(0, 80) || tr('한마디'), sublabel: tr('나 · {0} 남음', durationLabel(minutes)), icon: kind === 'pin' && isAdmin ? 'visited' : 'bubble' }] : [];
@@ -319,7 +321,7 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
           <Label>{tr('남기는 방식')}</Label>
           <View style={styles.choices}>{(['pin', 'member'] as const).map(value => <Choice key={value} analyticsId="livemap.compose" selected={kind === value} label={value === 'pin' ? tr('관리자 핀') : tr('회원처럼')} onPress={() => { play('selection'); setKind(value); }} />)}</View>
           <ThemedText type="caption" themeColor="textSecondary">{kind === 'pin' ? tr('글링 표시가 붙은 핀으로 떠요. 공지나 행사를 알릴 때 쓰기 좋아요.') : tr('회원 말풍선과 똑같이 보여요. 관리자라는 표시는 안 붙어요.')}</ThemedText>
-          <View style={styles.pinMap}><PostPinMap pin={point} cityName={city.englishName} onSelect={pin => setPoint(pin)} /></View>
+          <View style={styles.pinMap}><PostPinMap pin={point} cityName={city.englishName} onSelect={pin => setSpot(pin)} /></View>
           <ThemedText type="caption" themeColor="textSecondary">{tr('두 방식 모두 핀을 끌어 아무 데나 옮길 수 있어요')}</ThemedText>
         </> : <View style={[styles.info, { backgroundColor: theme.backgroundElement }]}>
           <SymbolView name={{ ios: 'location', android: 'my_location', web: 'my_location' }} size={IconSize.toolbar} tintColor={theme.accent} />
@@ -367,7 +369,7 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
         </View>
         <Pressable analyticsId="livemap.preview" accessibilityRole="button" onPress={() => { play('selection'); setStep('write'); }} style={styles.link}><ThemedText type="smallBold" themeColor="accent">{tr('글 고치기')}</ThemedText></Pressable>
       </> : <View style={styles.actions}>
-        <Secondary analyticsId="livemap.preview" label={tr('처음 자리로')} onPress={() => { play('selection'); setAtEdge(false); if (origin) setPoint(shownPoint(origin, start.last)); }} />
+        <Secondary analyticsId="livemap.preview" label={tr('처음 자리로')} onPress={() => { play('selection'); setAtEdge(false); if (origin) setSpot(origin); }} />
         <View style={styles.flex}><RaisedActionButton analyticsId="livemap.preview" label={tr('이 자리로 할게요')} onPress={() => { play('selection'); setStep('preview'); }} /></View>
       </View>}
     </View>

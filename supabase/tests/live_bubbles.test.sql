@@ -100,6 +100,16 @@ select lives_ok($$select public.post_live_bubble('live-test','다시 왔어요',
 select is((select jsonb_build_array(m->'latitude',m->'longitude') from (select public.get_live_map('live-test')->'mine' m) x),'[49.264,-123.101]'::jsonb,'and her bubble keeps its last point');
 select lives_ok($$select public.post_live_bubble('live-test','이사 왔어요','city',30,49.2667,-123.1007,'member')$$,'from three cells away');
 select is((select jsonb_build_array(m->'latitude',m->'longitude') from (select public.get_live_map('live-test')->'mine' m) x),'[49.267,-123.101]'::jsonb,'it moves to the new cell');
+-- A point shown only to friends never comes back on a city-wide bubble (N1).
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000013","role":"authenticated"}',true);
+select lives_ok($$select public.post_live_bubble('live-test','집이에요','friends',30,49.2700,-123.1007,'member')$$,'K2 posts friends-only from home');
+select lives_ok($$select public.post_live_bubble('live-test','옆 카페예요','city',30,49.2711,-123.1007,'member')$$,'then city-wide from the café next door');
+select is((select jsonb_build_array(m->'latitude',m->'longitude') from (select public.get_live_map('live-test')->'mine' m) x),'[49.271,-123.101]'::jsonb,
+  'the café bubble keeps its own point, not the friends-only home one');
+-- Between home and work: the nearby earlier point still wins over the latest far one (N2).
+select lives_ok($$select public.post_live_bubble('live-test','다시 남쪽','city',30,49.2614,-123.1003,'member')$$,'back by her first city-wide spot, across its grid line');
+select is((select jsonb_build_array(m->'latitude',m->'longitude') from (select public.get_live_map('live-test')->'mine' m) x),'[49.262,-123.1]'::jsonb,
+  'it shows that earlier point again, though the café bubble came last');
 
 -- 글링 pins (F5): only someone who is an admin right now with the second sign-in step, at the exact spot, and naming no admin account.
 select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000016","role":"authenticated"}',true);
