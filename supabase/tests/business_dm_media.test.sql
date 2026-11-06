@@ -27,7 +27,7 @@ select is((select count(*) from storage.objects where name=current_setting('test
 select set_config('storage.operation','storage.object.list_v2',true);
 select is((select count(*) from storage.objects where name=current_setting('test.chat_path')),0::bigint,'list v2 cannot expose owner metadata');
 select set_config('storage.operation','object.get_authenticated_info',true);
-select is((select count(*) from storage.objects where name=current_setting('test.chat_path')),0::bigint,'object info cannot expose uploader identity');
+select is((select count(*) from storage.objects where name=current_setting('test.chat_path')),1::bigint,'the lookup before a download uses the same gate as the download');
 select set_config('storage.operation','storage.object.get_authenticated',true);
 select is((select count(*) from storage.objects where name=current_setting('test.chat_path')),1::bigint,'current JWT authenticated download is allowed');
 reset role;
@@ -35,12 +35,19 @@ select set_config('request.jwt.claims','{"sub":"b1900000-0000-4000-8000-00000000
 set local role authenticated;
 select is((select count(*) from storage.objects where name=current_setting('test.chat_path')),1::bigint,'personal peer can download sent business image');
 select is((select count(*) from storage.objects where name=current_setting('test.unsent_path')),0::bigint,'peer cannot download another endpoint staged image');
+select set_config('storage.operation','object.get_authenticated_info',true);
+select is((select count(*) from storage.objects where name=current_setting('test.chat_path')),1::bigint,'personal peer passes the lookup before downloading a sent image');
+select is((select count(*) from storage.objects where name=current_setting('test.unsent_path')),0::bigint,'peer fails the lookup for another endpoint staged image');
+select set_config('storage.operation','storage.object.get_authenticated',true);
 reset role;
 delete from private.merchant_operators where merchant_id='b1910000-0000-4000-8000-000000000001' and user_id='b1900000-0000-4000-8000-000000000002';
 select set_config('request.jwt.claims','{"sub":"b1900000-0000-4000-8000-000000000002","role":"authenticated"}',true);
 set local role authenticated;
 select is((select count(*) from storage.objects where name=current_setting('test.chat_path')),0::bigint,'revoked real uploader loses authenticated image access');
 select is((select count(*) from storage.objects where name=current_setting('test.unsent_path')),0::bigint,'revoked uploader loses staged image access');
+select set_config('storage.operation','object.get_authenticated_info',true);
+select is((select count(*) from storage.objects where name=current_setting('test.chat_path')),0::bigint,'revoked real uploader fails the lookup too');
+select is((select count(*) from storage.objects where name=current_setting('test.unsent_path')),0::bigint,'revoked uploader fails the lookup for a staged image');
 select set_config('storage.operation','storage.object.delete_many',true);
 delete from storage.objects where name=current_setting('test.unsent_path');
 reset role;

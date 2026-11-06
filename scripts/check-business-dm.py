@@ -147,6 +147,7 @@ def main():
     profiles = ROOT / 'supabase/migrations/20261018042000_business_chat_profiles.sql'
     if profiles.exists():
         source += '\n' + profiles.read_text()
+    source += '\n' + (ROOT / 'supabase/migrations/20261106120000_business_chat_read_preflight.sql').read_text()
     snapshot = """select jsonb_build_object(
       'functions',(select md5(string_agg(pg_get_functiondef(p.oid),E'\\n' order by p.oid)) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in ('public','private') and p.prokind='f'),
       'classes',(select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname in ('public','private','realtime','storage')),
