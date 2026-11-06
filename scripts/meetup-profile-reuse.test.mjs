@@ -114,6 +114,20 @@ test('leaving an edited own profile asks first, an untouched one leaves freely',
   assert.equal(app.guarded(), true);
 });
 
+test('a successful save leaves without asking, and a failed one keeps asking', async () => {
+  for (const failSave of [false, true]) {
+    const app = profile(saved, { failSave }); app.render(); await new Promise(setImmediate);
+    app.render(); app.focus();
+    openItem(app, '모임에서 쓸 이름');
+    nodes(app.render()).find(node => node.props?.accessibilityLabel === '모임에서 쓸 이름').props.onChangeText('새 이름');
+    nodes(app.render()).find(node => node.props?.analyticsId === 'app_meetup-profile.pressable.8').props.onPress();
+    await new Promise(setImmediate); app.render();
+    assert.deepEqual(app.routes, failSave ? [] : ['back']);
+    // router.back() runs after the save settles, so a guard back on by then would block it and call the saved edit unsaved.
+    assert.equal(app.guarded(), failSave, failSave ? 'A failed save still protects the edit.' : 'A saved edit is not an unsaved change.');
+  }
+});
+
 test('one item opens straight from the list, the arrow returns to the list and the edit stays in the draft', async () => {
   const app = profile(saved, { failSave: false }); app.render(); await new Promise(setImmediate);
   let tree = app.render();

@@ -38,6 +38,7 @@ export const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...
 
 export function form({ params = {}, sourceEvent, catalogReady = true, membership = {}, loadProfile, create, chooseKind = true, language = 'ko', themeOverride } = {}) {
   const slots = [], requests = [], writes = [], feedback = [], layouts = [], effects = [], alerts = [], routes = [], profileReads = [], updates = [], events = [];
+  let guard;
   let at = 0, focused, focusCleanup;
   let catalog = catalogReady ? JSON.parse(readFileSync(new URL('../src/lib/city-places.catalog.json', import.meta.url), 'utf8')) : null;
   const destinations = {};
@@ -70,7 +71,7 @@ export function form({ params = {}, sourceEvent, catalogReady = true, membership
     },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { View: 'View', TextInput: 'TextInput', KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'web' }, StyleSheet: { create: x => x, hairlineWidth: 1 }, Alert: { alert: (...args) => alerts.push(args) }, DeviceEventEmitter: { emit: value => events.push(value) } },
-    'expo-router': { useLocalSearchParams: () => params, useFocusEffect: callback => { focused = callback; }, usePreventRemove() {}, useRouter: () => ({ replace: path => routes.push(path), push: path => routes.push(path) }) },
+    'expo-router': { useLocalSearchParams: () => params, useFocusEffect: callback => { focused = callback; }, usePreventRemove(when) { guard = when; }, useRouter: () => ({ replace: path => routes.push(path), push: path => routes.push(path) }) },
     'react-native-reanimated': { useReducedMotion: () => true },
     '@/hooks/use-language': { useLanguage: () => ({ language, tr: (s, ...args) => translateUi(language, s, ...args), t }) },
     '@/hooks/use-theme': { useTheme: () => theme },
@@ -109,7 +110,7 @@ export function form({ params = {}, sourceEvent, catalogReady = true, membership
   const edit = (label, value) => { if (label === '모임 주제') openAssistance(); const input = find(label); assert.ok(input, label); input.props.onChangeText(value); };
   if (chooseKind) nodes(render()).find(node => node.type === 'MeetupKindSwitch')?.props.onChange('once');
   const flushEffects = () => effects.splice(0).forEach(effect => effect());
-  return { render, find, edit, openAssistance, requests, writes, feedback, alerts, routes, profileReads, updates, events, unmount: () => { focusCleanup?.(); unmount?.(); }, focus: () => { focusCleanup?.(); focusCleanup = focused?.(); }, blur: () => focusCleanup?.(), loadEvent: flushEffects, changeProfileRevision: revision => { hostProfile = { ...hostProfile, revision }; }, removeProfile: () => { hostProfile = null; },
+  return { guarded: () => guard, render, find, edit, openAssistance, requests, writes, feedback, alerts, routes, profileReads, updates, events, unmount: () => { focusCleanup?.(); unmount?.(); }, focus: () => { focusCleanup?.(); focusCleanup = focused?.(); }, blur: () => focusCleanup?.(), loadEvent: flushEffects, changeProfileRevision: revision => { hostProfile = { ...hostProfile, revision }; }, removeProfile: () => { hostProfile = null; },
     hydrateCatalog: () => { catalog = JSON.parse(readFileSync(new URL('../src/lib/city-places.catalog.json', import.meta.url), 'utf8')); render(); flushEffects(); },
     preview: () => nodes(render()).find(n => typeof n.type === 'string' && n.type === 'MeetupAiDraftPreview'),
     generate: () => { openAssistance(); find('app_meetup-create.ai-draft').props.onPress(); },
@@ -215,6 +216,16 @@ test('profile preview reads resolving after blur or unmount cannot update the pr
   pending[1].resolve(pending[1].profile); await settle();
   assert.equal(app.updates.length, beforeUnmountReply);
   assert.equal(app.writes.length, 0); assert.equal(app.routes.length, 0);
+});
+
+test('a created meetup leaves for its post without asking to discard the form', async () => {
+  const app = form({ create: async () => 'created-server-post' });
+  app.focus(); await settle(); app.edit('모임 제목', '산책'); app.edit('모임 소개', '함께 걸어요');
+  app.find('meetup-create.host-consent').props.onPress();
+  app.render(); assert.equal(app.guarded(), true, 'The filled form is protected before it is sent.');
+  app.find('meetup.create.submit').props.onPress(); await settle(); app.render();
+  assert.equal(app.routes.length, 1);
+  assert.equal(app.guarded(), false, 'A guard back on would block the move and invite creating the meetup twice.');
 });
 
 test('a created meetup response cannot navigate or celebrate a form that blurred, refocused, or unmounted, but still refreshes lists', async () => {

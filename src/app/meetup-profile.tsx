@@ -138,7 +138,9 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
   const snapshot = JSON.stringify([profile, tags, tagDraft, photos.map(photo => photo.path ?? photo.uri), publicPhotoIndex, privateActivities]);
   const [baseline, setBaseline] = useState<string | null>(null), [baseFor, setBaseFor] = useState<string | null>(null);
   if ((loaded ? viewer : null) !== baseFor) { setBaseFor(loaded ? viewer : null); setBaseline(loaded ? snapshot : null); }
-  usePreventRemove(!postId && loaded && !saving && (!!editing || (baseline !== null && baseline !== snapshot)), ({ repeat }) => {
+  // router.back()/replace() are queued and run after finally clears saving, so a finished save must drop this guard itself.
+  const [leaving, setLeaving] = useState(false);
+  usePreventRemove(!leaving && !postId && loaded && !saving && (!!editing || (baseline !== null && baseline !== snapshot)), ({ repeat }) => {
     // Android back and the iOS swipe mean the same as the arrow here: back to the list, edits kept.
     if (editing) { closeItem(); return; }
     const title = tr('작성 중인 프로필에서 나갈까요?'), message = tr('작성한 내용은 저장되지 않아요.');
@@ -209,7 +211,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
       if (!current()) return;
       await saveChillingProfile(supabase, { ...draft, photoPaths: paths, publicPhotoPath: publicPhotoIndex === null ? null : paths[publicPhotoIndex] ?? null });
       saved = true;
-      if (current()) { play('success'); back(); }
+      if (current()) { play('success'); setLeaving(true); back(); }
     } catch (e) { if (current()) { play('warning'); setError(getChillingError(e)); } }
     // An abandoned or failed save must not leave uploaded photos behind in storage.
     finally { if (!saved && uploaded.length) await removeUnsavedMeetupPhotos(supabase, uploaded); saveBusy.current = false; if (mounted.current && viewerRef.current === viewer) setSaving(false); }
