@@ -3,10 +3,10 @@ import { Pressable } from '@/components/analytics-controls';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { Animated, LayoutAnimation, Platform, StyleSheet, UIManager, View } from 'react-native';
-import { SymbolView } from 'expo-symbols';
 import Reanimated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 
 import { PostZoomLink } from '@/components/post-zoom-link';
+import { ClayIcon, ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { GlingLoader } from '@/components/gling-loader';
 import { Spacing } from '@/constants/theme';
@@ -32,6 +32,7 @@ const ROTATE_MIN = 4;
 // linked: signed in, so a row grows the post straight out of itself (owner 2026-11-02); guests keep onOpen and its login gate.
 export function WeeklyRanking({ cityId, refreshKey, linked = false, onOpen }: { cityId: string; refreshKey?: number; linked?: boolean; onOpen: (postId: string) => Promise<void> }) {
   const { tr } = useLanguage();
+  const clay = useClay();
   const theme = useTheme();
   const hidden = useContentVisibility();
   const reducedMotion = useReducedMotion();
@@ -129,13 +130,15 @@ export function WeeklyRanking({ cityId, refreshKey, linked = false, onOpen }: { 
         <Pressable analyticsId="components_weekly-ranking.pressable.1" onPress={toggle} accessibilityRole="button"
           accessibilityState={{ expanded }} accessibilityLabel={tr("이번 주 많이 읽은 글 {0}편, 눌러서 전체 보기", (count(total)))}
           style={styles.foldTouch}>
-          <View style={[styles.fold, { backgroundColor: theme.backgroundElement }]}>
+          <View style={[styles.fold, { backgroundColor: clay ? 'transparent' : theme.backgroundElement }]}>
+            {clay && <ClayPillFill kind="tray" />}
             <Animated.View style={[styles.collapsed, { opacity: fade }]}>
+              <ClayIcon clay="trophy" claySize={24} size={18} />
               <ThemedText type="smallBold" style={[styles.label, { color: theme.accent }]}>
                 {tr('이번 주 {0}위', showing.rank)}</ThemedText>
               <ThemedText type="small" numberOfLines={1} style={styles.title}>{showing.title}</ThemedText>
               <Animated.View style={{ transform: [{ rotate: arrow.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] }) }] }}>
-                <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={13} tintColor={theme.textSecondary} />
+                <ClayIcon clay="chevron" name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={13} tintColor={theme.textSecondary} />
               </Animated.View>
             </Animated.View>
           </View>
@@ -154,7 +157,7 @@ export function WeeklyRanking({ cityId, refreshKey, linked = false, onOpen }: { 
           <View style={styles.hintGroup}>
             <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>{tr("접기")}</ThemedText>
             <Animated.View style={{ transform: [{ rotate: arrow.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] }) }] }}>
-              <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={13} tintColor={theme.textSecondary} />
+              <ClayIcon clay="chevron" name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={13} tintColor={theme.textSecondary} />
             </Animated.View>
           </View>
         </Pressable>

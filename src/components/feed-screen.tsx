@@ -50,6 +50,7 @@ import { ProfileAvatarButton } from '@/components/profile-avatar-button';
 import { BusinessWriter } from '@/components/business-writer';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { RaisedActionButton } from '@/components/raised-action-button';
+import { ClayIcon, ClayPillFill, useClay, type ClayName } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
 import { StartGuide } from '@/components/start-guide';
@@ -60,7 +61,7 @@ import { useScreenGlow } from '@/components/screen-glow';
 import { TabContent } from '@/components/tab-content';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
+import { Colors, Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { ControlMetrics, ControlMotion, ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
@@ -104,6 +105,7 @@ import { splitPostAttachments, withPostAttachments } from '../../supabase/functi
 
 // 전체 · 라이프 · 맛집 · 비즈니스 · 페스티벌 · 부동산 · 정착, the rest in 더보기 (owner 2026-11-01).
 const PRIMARY_TAGS: (number | null)[] = [null, 1, 4, 17, 16, 14, 12];
+const TAG_ART: Record<string, ClayName> = { all: 'chip_all', 1: 'chip_life', 4: 'chip_dining', 17: 'chip_business', 16: 'chip_festival', 14: 'chip_housing', 12: 'chip_settlement' };
 const TAG_HINTS: Record<string, string> = {
   housing: '렌트·매매·쉐어 구하기', jobs: '알바·채용·구직', used: '물건 사고팔기', settlement: '비자·PR·보험·은행',
   food: '식당·카페 후기와 추천', meetup: '같이 할 사람 찾기', life: '일상 이야기·잡담', business: '한인 가게 소식',
@@ -127,6 +129,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const insets = useSafeAreaInsets();
   const bottomClear = insets.bottom + TabBarHeight; // 탭바 + 홈 인디케이터 실측 높이
   // 글쓰기 탭 대신 떠 있는 버튼 (owner 2026-11-01 A안). 웹은 아래 탭에 글쓰기가 그대로 있다.
+  const clay = useClay();
   const writeFab = Platform.OS !== 'web' && !meetupsOnly;
   const writeFabCompact = viewportWidth < 380; // 폴드 바깥 화면 같은 좁은 폭에서는 + 하나만
   // 실측: iOS 탭 화면의 insets.bottom은 이미 탭바까지 포함(탭마다 SafeAreaProvider), 안드로이드 탭 내용은 탭바 위에서 끝난다.
@@ -851,27 +854,27 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         <View style={[styles.headRow, expandedHeader && styles.headRowLarge]}>
           <Pressable analyticsId="feed.home" accessibilityRole="button" accessibilityLabel={`${t.appName}, ${t.tabs.today}`}
             onPress={() => { play('selection'); router.navigate('/'); }} style={[styles.homeButton, expandedHeader && styles.homeButtonLarge]}>
-            {/* The 3D clay wordmark reads on both themes (owner cefa3390 "헤더 글링로고도 3d … 만들어놓은걸로"). */}
-            <Image source={require('@/assets/brand/gling-3d-wordmark.png')} style={[styles.wordmark, (viewportWidth < 380 || fontScale > 1.2) && styles.wordmarkCompact]} contentFit="contain" accessible={false} />
+            {/* Black clay on light screens, white clay on dark ones (owner 6aa0942b). */}
+            <Image source={theme === Colors.dark ? require('@/assets/brand/gling-3d-wordmark-dark.png') : require('@/assets/brand/gling-3d-wordmark.png')} style={[styles.wordmark, (viewportWidth < 380 || fontScale > 1.2) && styles.wordmarkCompact]} contentFit="contain" accessible={false} />
           </Pressable>
-          <GlassSurface tone="control" interactive style={[styles.cityGlass, expandedHeader && styles.cityGlassLarge]}><Pressable analyticsId="components_feed-screen.pressable.1"
+          <GlassSurface tone="control" clay="white" interactive style={[styles.cityGlass, expandedHeader && styles.cityGlassLarge]}><Pressable analyticsId="components_feed-screen.pressable.1"
             onPress={() => { play('reaction'); setCityPicker(true); }} accessibilityRole="button"
             accessibilityLabel={`${tr(city.name)}, ${t.feed.cityPickerTitle}`}
-            style={({ pressed }) => [styles.cityButton, controlPresentation(theme, { pressed, reducedMotion }).container]}>
+            style={({ pressed }) => [styles.cityButton, clay && styles.cityButtonClay, controlPresentation(theme, { pressed, reducedMotion, clay }).container]}>
             <ThemedText type="smallBold" numberOfLines={1} style={styles.city}>{tr(city.name)}</ThemedText>
-            <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.text} />
+            <ClayIcon clay="chevron" name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.text} />
           </Pressable></GlassSurface>
           {/* 검색칸이 카테고리 줄과 겹쳐 보여 프로필 옆 돋보기로 (owner 2026-11-01); 읽어 주기 이름에 찾는 것을 남김. */}
           <View style={styles.iconGlass}><Pressable analyticsId="components_feed-screen.pressable.2"
             onPress={() => { play('selection'); openSearch(); }} accessibilityRole="button" accessibilityLabel={searchHint} accessibilityHint={tr('검색 화면이 열려요')}
             style={({ pressed }) => [styles.iconButton, controlPresentation(theme, { tone: 'ghost', pressed, reducedMotion }).container]}>
-            <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={IconSize.toolbar} tintColor={theme.text} />
+            <ClayIcon clay="search" claySize={26} name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={IconSize.toolbar} tintColor={theme.text} />
           </Pressable></View>
           <ProfileAvatarButton onBusinessSwitchAvailabilityChange={setHasBusinessSwitch} />
         </View>
         {cityOpen && !meetupsOnly && (
           <View style={styles.categoryHead}>
-            <GlassSurface tone="control" style={styles.chipGlass}><ScrollView analyticsId="components_feed-screen.scrollview.1" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
+            <GlassSurface tone="control" clay="tray" style={styles.chipGlass}><ScrollView analyticsId="components_feed-screen.scrollview.1" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
               {/* 처음 보이는 칩: PRIMARY_TAGS (owner 2026-11-01 순서); 나머지는 '더보기' 시트. */}
               {[...PRIMARY_TAGS, ...(tagFilter != null && !PRIMARY_TAGS.includes(tagFilter) ? [tagFilter] : [])].map((id) => {
                 const label = id == null ? t.feed.filterAll : tr(TAGS.find((tg) => tg.id === id)!.label);
@@ -882,16 +885,17 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                     onPress={() => changeTagFilter(id)}
                     accessibilityRole="button"
                     accessibilityState={{ selected: active }}
-                    style={[styles.filterChip, { borderBottomColor: 'transparent' }]}>
+                    style={[styles.filterChip, clay && styles.clayChip, { borderBottomColor: 'transparent' }]}>
+                    {TAG_ART[id ?? 'all'] && <ClayIcon clay={TAG_ART[id ?? 'all']} claySize={22} size={22} />}
                     <ThemedText type="smallBold" style={{ color: active ? theme.accentInk : theme.textSecondary }}>{label}</ThemedText>
                   </SelectionChip></Animated.View>
                 );
               })}
               <Pressable analyticsId="feed.categories.more" accessibilityRole="button" accessibilityLabel={tr('카테고리 전체 보기')}
                 onPress={() => { play('selection'); setCategorySheet(true); }}
-                style={({ pressed }) => [styles.filterChip, { flexDirection: 'row', gap: 4, borderBottomColor: 'transparent', backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
+                style={({ pressed }) => [styles.filterChip, { flexDirection: 'row', gap: 4, borderBottomColor: 'transparent', backgroundColor: pressed ? theme.backgroundSelected : clay ? 'transparent' : theme.backgroundElement }]}>
                 <ThemedText type="smallBold" themeColor="accent">{tr('더보기')}</ThemedText>
-                <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={IconSize.chevron} tintColor={theme.accent} />
+                <ClayIcon clay="chevron" name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={IconSize.chevron} tintColor={theme.accent} />
               </Pressable>
             </ScrollView></GlassSurface>
           </View>
@@ -997,8 +1001,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           <GlingLoader color={theme.accent} accessibilityLabel={loadingCover === 'page' ? tr("{0} 소식 불러오는 중", tr(city.name)) : tr("글 불러오는 중")} />
         </Reanimated.View>}</View>
         {writeFab && <Pressable analyticsId="feed.write" accessibilityRole="button" accessibilityLabel={t.tabs.write} onPress={openWriter}
-          style={({ pressed }) => [ControlStyles.pill, styles.writeFab, writeFabCompact && styles.writeFabCompact, { bottom: (Platform.OS === 'ios' ? insets.bottom : 0) + Spacing.three }, controlPresentation(theme, { tone: 'primary', pressed, reducedMotion }).container]}>
-          <SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} size={IconSize.toolbar} tintColor={theme.accentInk} />
+          style={({ pressed }) => [ControlStyles.pill, styles.writeFab, writeFabCompact && styles.writeFabCompact, { bottom: (Platform.OS === 'ios' ? insets.bottom : 0) + Spacing.three }, controlPresentation(theme, { tone: 'primary', clay, pressed, reducedMotion }).container]}>
+          {clay && <ClayPillFill kind="cta" />}
+          <ClayIcon clay="pencil" claySize={24} name={{ ios: 'plus', android: 'add', web: 'add' }} size={IconSize.toolbar} tintColor={theme.accentInk} />
           {!writeFabCompact && <ThemedText type="label" style={{ color: theme.accentInk }}>{t.tabs.write}</ThemedText>}
         </Pressable>}
       </View></SafeAreaView>
@@ -1516,6 +1521,7 @@ const styles = StyleSheet.create({
   iconGlass: { borderRadius: ControlStyles.icon.borderRadius },
   iconButton: ControlStyles.icon,
   cityButton: { ...ControlStyles.pill, flexDirection: 'row', gap: Spacing.one, flexShrink: 1, paddingHorizontal: 12 },
+  cityButtonClay: { paddingHorizontal: 16 },
   city: { ...Typography.label, flexShrink: 1 },
   unreadBadge: { position: 'absolute', top: 0, right: 0, minWidth: 18, borderRadius: 9, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
   unreadText: { fontSize: 10, lineHeight: 14, fontVariant: ['tabular-nums'] },
@@ -1523,6 +1529,7 @@ const styles = StyleSheet.create({
   todayHeader: { paddingBottom: Spacing.one },
   journalStatusRow: { minHeight: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
   writeFab: { position: 'absolute', right: Spacing.three, minHeight: ControlMetrics.action, flexDirection: 'row', gap: Spacing.one, borderWidth: 1 },
+  clayChip: { flexDirection: 'row', gap: 4, paddingLeft: 8, paddingRight: 12 },
   writeFabCompact: { width: ControlMetrics.action, paddingHorizontal: 0 },
   journalDate: { fontSize: 12, lineHeight: 18, letterSpacing: 0.8 },
   feedArea: { flex: 1 },

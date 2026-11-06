@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { Platform, StyleSheet, View } from 'react-native';
 
+import { ClayCoinFill, ClayIcon, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
@@ -21,6 +22,7 @@ export function ProfileAvatarButton({ enableBusinessSwitch = true, onBusinessSwi
   const { isAuthed, me } = useAuth();
   const { play } = useInteractionFeedback();
   const business = useChatIdentity();
+  const clay = useClay();
   if (Platform.OS === 'web') return null;
   return (
     <View style={styles.row}>{business ? <Pressable analyticsId="components_profile-avatar-button.pressable.1" onPress={() => { play('selection'); router.push('/profile'); }} accessibilityRole="button" accessibilityLabel={tr('{0} 이름으로 쓰는 중', business.name)} accessibilityHint={t.tabs.profile}
@@ -33,8 +35,8 @@ export function ProfileAvatarButton({ enableBusinessSwitch = true, onBusinessSwi
       {isAuthed && me.photoUri
         ? <Image transition={ControlMotion.settleMs} source={{ uri: me.photoUri }} style={styles.avatar} contentFit="cover" accessible={false} />
         : isAuthed
-          ? <View style={[styles.avatar, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{me.nickname[0]}</ThemedText></View>
-          : <SymbolView name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} size={24} tintColor={theme.text} />}
+          ? <View style={[styles.avatar, { backgroundColor: clay ? 'transparent' : theme.accent }]}>{clay && <ClayCoinFill me />}<ThemedText type="smallBold" style={{ color: theme.accentInk }}>{me.nickname[0]}</ThemedText></View>
+          : <ClayIcon clay="person" claySize={28} name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} size={24} tintColor={theme.text} />}
     </Pressable>
     </View>}{enableBusinessSwitch && <ChatIdentitySwitcher target="business" onAvailabilityChange={onBusinessSwitchAvailabilityChange} />}</View>
   );
