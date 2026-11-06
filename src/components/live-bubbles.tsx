@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
   dock: { borderWidth: 1, borderRadius: 18, padding: 12, gap: 4, shadowColor: '#000', shadowOpacity: 0.14, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
   dockRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10 },
   dockPill: { ...ControlStyles.pill, minHeight: 36, borderRadius: 18 },
-  dockPillClay: { paddingHorizontal: 20 },
+  dockPillClay: { paddingHorizontal: 16 },
   extendRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   link: { minHeight: 44, justifyContent: 'center', alignSelf: 'center' },
   inlineLink: { minHeight: 32, justifyContent: 'center', alignSelf: 'flex-start' },

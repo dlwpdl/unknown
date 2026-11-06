@@ -66,9 +66,11 @@ export function ClayIcon({ clay, claySize, name, size = 21, tintColor }: { clay:
 export function ClayPillFill({ kind }: { kind: ClayPillKind }) {
   const { l, m, r, cap, drop } = PILLS[kind];
   return <View pointerEvents="none" style={[styles.pill, { bottom: drop as ViewStyle['bottom'] }]}>
-    <Image source={l} style={{ height: '100%', aspectRatio: cap, maxWidth: '50%' }} contentFit="fill" accessible={false} />
+    <Image source={l} style={{ height: '100%', aspectRatio: cap }} contentFit="fill" accessible={false} />
     <Image source={m} style={styles.middle} contentFit="fill" accessible={false} />
-    <Image source={r} style={{ height: '100%', aspectRatio: cap, maxWidth: '50%' }} contentFit="fill" accessible={false} />
+    {/* The right end is pinned, so on a 44pt round button the two ends overlap instead of spilling past it. A % maxWidth does not work here: Yoga resolves it against the text width. */}
+    <View style={{ height: '100%', aspectRatio: cap }} />
+    <Image source={r} style={[styles.rightEnd, { aspectRatio: cap }]} contentFit="fill" accessible={false} />
   </View>;
 }
 
@@ -86,5 +88,6 @@ export function ClayCoinFill({ me = false }: { me?: boolean }) {
 const styles = StyleSheet.create({
   pill: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row' },
   middle: { flex: 1, height: '100%' },
+  rightEnd: { position: 'absolute', top: 0, bottom: 0, right: 0 },
   coin: { position: 'absolute', top: '-3%', left: '-3%', width: '106%', height: '106%' },
 });

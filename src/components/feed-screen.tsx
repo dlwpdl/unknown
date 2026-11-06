@@ -1521,7 +1521,7 @@ const styles = StyleSheet.create({
   iconGlass: { borderRadius: ControlStyles.icon.borderRadius },
   iconButton: ControlStyles.icon,
   cityButton: { ...ControlStyles.pill, flexDirection: 'row', gap: Spacing.one, flexShrink: 1, paddingHorizontal: 12 },
-  cityButtonClay: { paddingHorizontal: 16 },
+  cityButtonClay: { paddingHorizontal: 18 },
   city: { ...Typography.label, flexShrink: 1 },
   unreadBadge: { position: 'absolute', top: 0, right: 0, minWidth: 18, borderRadius: 9, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
   unreadText: { fontSize: 10, lineHeight: 14, fontVariant: ['tabular-nums'] },
