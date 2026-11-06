@@ -7,6 +7,7 @@ import { ChillingDateInput } from '@/components/chilling-date-input';
 import { DragSheet } from '@/components/drag-sheet';
 import { GlingLoader } from '@/components/gling-loader';
 import { ListCard, SectionLabel } from '@/components/list-card';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
 import { useLanguage } from '@/hooks/use-language';
@@ -54,6 +55,7 @@ const feeErrors: Record<string, readonly [string, string]> = {
 
 function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, cta, fallback }: MeetupHostToolsProps & { waitlistOnly: boolean }) {
   const { language, tr, locale } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), { me, isAuthed } = useAuth();
+  const clay = useClay();
   const viewer = isAuthed ? me.id : '', focused = useIsFocused();
   const say = (ko: string, en: string) => tr(language === 'ko' ? ko : en);
   const [state, setState] = useState<MeetupHostToolsState | null>(null), [roster, setRoster] = useState<MeetupHostIdentity[]>([]);
@@ -221,7 +223,7 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
               <Pressable analyticsId="meetup.fee.due" accessibilityRole="button" disabled={locked} accessibilityState={{ disabled: locked }} style={button} onPress={() => { play('selection'); setFeeDue(feeDue ? '' : meetupFeeDueOn(new Date(Date.now() + 7 * 86400000).toISOString())); }}><ThemedText type="small" style={styles.bodyText}>{feeDue ? say('기한 빼기', 'Remove due date') : say('기한 정하기 (선택)', 'Add a due date (optional)')}</ThemedText></Pressable>
               {!!feeDue && <ChillingDateInput label={say('이 날까지 내주세요', 'Pay by')} value={meetupFeeDueIso(feeDue)} disabled={locked} onChange={value => { play('selection'); setFeeDue(meetupFeeDueOn(value)); }} />}
               {!!feeIssue && <ThemedText type="small" themeColor="danger" accessibilityLiveRegion="polite" style={styles.helper}>{say(...(feeErrors[feeIssue] ?? feeErrors.INVALID_MEETUP_FEE))}</ThemedText>}
-              <Pressable analyticsId="meetup.fee.save" accessibilityRole="button" disabled={locked || !feeAmount.trim() || !!feeIssue} accessibilityState={{ disabled: locked || !feeAmount.trim() || !!feeIssue }} style={({ pressed }) => [ControlStyles.action, controlPresentation(theme, { tone: 'primary', pressed, disabled: locked || !feeAmount.trim() || !!feeIssue }).container]} onPress={() => void act(() => setMeetupFee(supabase, postId, meetupFeeInput(feeAmount, feeNote, feeDue)), 'feeSaved', value => value.isHost && value.available)}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{fee ? say('회비 바꾸기', 'Update fee') : say('회비 저장', 'Save fee')}</ThemedText></Pressable>
+              <Pressable analyticsId="meetup.fee.save" accessibilityRole="button" disabled={locked || !feeAmount.trim() || !!feeIssue} accessibilityState={{ disabled: locked || !feeAmount.trim() || !!feeIssue }} style={({ pressed }) => [ControlStyles.action, controlPresentation(theme, { tone: 'primary', pressed, disabled: locked || !feeAmount.trim() || !!feeIssue, clay }).container]} onPress={() => void act(() => setMeetupFee(supabase, postId, meetupFeeInput(feeAmount, feeNote, feeDue)), 'feeSaved', value => value.isHost && value.available)}>{clay && <ClayPillFill kind="cta" />}<ThemedText type="smallBold" style={{ color: theme.accentInk }}>{fee ? say('회비 바꾸기', 'Update fee') : say('회비 저장', 'Save fee')}</ThemedText></Pressable>
               {fee && <HostWide analyticsId="meetup.fee.clear" label={say('회비 없애기', 'Remove fee')} onPress={() => confirmRemoval(say('회비 없애기', 'Remove fee'), say('회비를 없앨까요? 모임에서 회비 안내가 사라져요.', 'Remove the fee? It will no longer show on the meetup.'), () => void act(() => setMeetupFee(supabase, postId, null), 'feeCleared', value => value.isHost && value.available))} danger locked={locked} />}
             </View>
           </DragSheet>
