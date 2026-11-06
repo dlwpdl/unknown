@@ -65,6 +65,8 @@ export function MeetupHostHome({ postId, kind }: { postId: string; kind: 'once' 
     let active = true;
     loadHome(postId).then(value => { if (active) { setHome(value); setNow(Date.now()); setFailed(false); } }, () => { if (active) setFailed(true); });
     return () => { active = false; };
+  // revision re-reads the home after a pull to refresh or a retry. The compiler drops a dependency the body does not read unless this line skips it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId, revision]));
   if (failed && !home) return <View style={styles.pad}><StateCard kind="error" title={tr('호스트 관리를 불러오지 못했어요')} body={tr('연결을 확인하고 다시 시도해 주세요.')} actionLabel={tr('다시 불러오기')} onAction={() => setRevision(value => value + 1)} /></View>;
   if (!home) return <ListLoading label={tr('불러오는 중이에요')} />;

@@ -312,7 +312,7 @@ test('host fee section validates on device, saves, marks paid and clears only af
   assert.match(text(ui.tree), /200자까지/); assert.equal(fee(ui, 'meetup.fee.save').props.disabled, true);
   fee(ui, 'meetup-fee-note').props.onChangeText('  e-Transfer로 보내주세요 ');
   fee(ui, 'meetup.fee.due').props.onPress(); await ui.flush();
-  nodes(ui.tree).find(node => node.type === 'ChillingDateInput' && node.props.label === '이 날까지 내주세요').props.onChange(new Date(2031, 10, 1, 12).toISOString()); await ui.flush();
+  nodes(ui.tree).find(node => node.type === 'ChillingDateInput' && node.props.label === '회비 마감일').props.onChange(new Date(2031, 10, 1, 12).toISOString()); await ui.flush();
   assert.equal(ui.calls.some(([name]) => name === 'set_meetup_fee'), false);
   ui.ctx.fee = { amount: 15.5, note: 'e-Transfer로 보내주세요', dueOn: '2031-11-01' };
   fee(ui, 'meetup.fee.save').props.onPress(); await ui.flush();

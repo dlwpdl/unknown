@@ -45,6 +45,8 @@ export function MeetupSchedule({ postId, kind, host }: { postId: string; kind: '
     Promise.all([loadMeetupSessions(supabase, postId), loadMeetupHostTools(supabase, postId), loadPublicMeetupContext(supabase, postId).catch(() => null)])
       .then(([nextSessions, nextTools, context]) => { if (active) { setSessions(nextSessions); setTools(nextTools); setZone(meetupZone(context?.room, context?.cityId)); setNow(Date.now()); setFailed(false); } }, () => { if (active) setFailed(true); });
     return () => { active = false; };
+  // revision re-reads the sessions after adding one or retrying. The compiler drops a dependency the body does not read unless this line skips it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId, revision]));
   if (failed) return <StateCard kind="error" title={tr('일정을 불러오지 못했어요')} body={tr('연결을 확인하고 다시 시도해 주세요.')} actionLabel={tr('다시 불러오기')} onAction={() => setRevision(value => value + 1)} />;
   if (!sessions || !tools) return <ListLoading label={tr('불러오는 중이에요')} />;
