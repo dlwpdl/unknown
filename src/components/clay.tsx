@@ -3,7 +3,7 @@ import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { Image as NativeImage, Platform, StyleSheet, View, type ImageSourcePropType, type ViewStyle } from 'react-native';
 
 import { Colors } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { useDesign, useTheme } from '@/hooks/use-theme';
 
 // Gling's own clay artwork (owner 2026-11-05 "우리가 지금 칩 처럼 만들어야함"): the same Three.js renders as the map chips,
 // app-3d-ui-2026-11-05/build/slice_for_app.py. The dark theme has its own lighting: a purple floor glow and a rim, because a black shadow disappears on a dark screen (owner 2026-11-06).
@@ -101,10 +101,11 @@ export const CLAY_TABS_DARK = {
 
 const useDark = () => useTheme() === Colors.dark;
 export function useClay() {
-  return useTheme() !== Colors.admin && Platform.OS !== 'web';
+  const design = useDesign(), theme = useTheme();
+  return design === '3d' && theme !== Colors.admin && Platform.OS !== 'web';
 }
 export function useClayBox() {
-  return useTheme() !== Colors.admin && Platform.OS === 'ios';
+  return useClay() && Platform.OS === 'ios';
 }
 
 /** A control icon: the clay drawing where it applies, otherwise the same flat symbol as before. The layout box stays `size`, so nothing around it moves. */

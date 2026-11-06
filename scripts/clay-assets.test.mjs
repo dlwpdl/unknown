@@ -25,9 +25,9 @@ test('the tab bar draws clay icons on iOS and keeps the system symbols where it 
   for (const symbol of ['house.fill', 'person.2.fill', 'map.fill', 'bubble.left.and.bubble.right.fill', 'bell.fill']) assert.ok(tabs.includes(symbol), symbol);
 });
 
-test('clay is on in both themes and off on the web and the admin theme, and 9-slice boxes stay iOS only', () => {
-  assert.match(clay, /useClay\(\) \{\s*return useTheme\(\) !== Colors\.admin && Platform\.OS !== 'web';/);
-  assert.match(clay, /useClayBox\(\) \{\s*return useTheme\(\) !== Colors\.admin && Platform\.OS === 'ios';/);
+test('clay follows the 2D·3D choice in both themes, is off on the web and the admin theme, and 9-slice boxes stay iOS only', () => {
+  assert.match(clay, /useClay\(\) \{\s*const design = useDesign\(\), theme = useTheme\(\);\s*return design === '3d' && theme !== Colors\.admin && Platform\.OS !== 'web';/);
+  assert.match(clay, /useClayBox\(\) \{\s*return useClay\(\) && Platform\.OS === 'ios';/);
   assert.match(clay, /if \(!pill\) return name \? <SymbolView/);
 });
 

@@ -39,7 +39,7 @@ function Card({ children, accent, style }: { children: ReactNode; accent?: boole
 export default function SettingsScreen() {
   const { tr, t } = useLanguage();
   const theme = useTheme();
-  const { scheme, isSaving: themeSaving, setScheme } = useThemePreference();
+  const { scheme, design, isSaving: themeSaving, setScheme, setDesign } = useThemePreference();
   const router = useRouter();
   const { isAuthed, isAuthLoading, me, prepareAppleAccountDeletion, setProfilePhoto, signOut } = useAuth();
   const { hapticsEnabled, play, setHapticsEnabled, setSoundEnabled, soundEnabled } = useInteractionFeedback();
@@ -153,6 +153,30 @@ export default function SettingsScreen() {
                 }}
               />
             </View>
+            {/* The web is always flat, so the switch would do nothing there. */}
+            {Platform.OS !== 'web' && <View style={styles.appearanceRow}>
+              <View style={styles.navCopy}>
+                <ThemedText type="smallBold">{t.profile.clayDesign}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">{t.profile.clayDesignNote}</ThemedText>
+              </View>
+              <Switch analyticsId="app_profile_settings.switch.design"
+                value={design === '3d'}
+                disabled={themeSaving}
+                accessibilityLabel={t.profile.clayDesign}
+                accessibilityHint={t.profile.clayDesignHint}
+                accessibilityState={{ disabled: themeSaving, busy: themeSaving }}
+                hitSlop={7}
+                trackColor={{ false: '#837B91', true: theme.accent }}
+                thumbColor={design === '3d' ? theme.accentInk : '#FFFFFF'}
+                ios_backgroundColor="#837B91"
+                onValueChange={(enabled) => {
+                  play('selection');
+                  void setDesign(enabled ? '3d' : '2d').then((saved) => {
+                    if (!saved) { play('warning'); Alert.alert(t.profile.appearanceSaveErrorTitle, t.profile.appearanceSaveErrorBody); }
+                  });
+                }}
+              />
+            </View>}
           </Card>
 
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{tr("알림")}</ThemedText>
