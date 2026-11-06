@@ -3,6 +3,7 @@ import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
+import { ClayBoxFill, ClayCoinFill, ClayIcon, useClay, useClayBox } from '@/components/clay';
 import { Alert, Animated, DeviceEventEmitter, Easing, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -80,6 +81,7 @@ export function PostCard({
 }) {
   const { tr, t, locale: appLocale } = useLanguage();
   const theme = useTheme(), router = useRouter();
+  const clay = useClay(), clayBox = useClayBox();
   const { isAuthed, me, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
@@ -100,6 +102,7 @@ export function PostCard({
   const [shareCount, setShareCount] = useState(post.shares ?? 0);
   const [reportOpen, setReportOpen] = useState(false);
   const [failedBusinessLogo, setFailedBusinessLogo] = useState<string | null>(null);
+  const cardLogo = !!post.business?.avatarUri && failedBusinessLogo !== post.business.avatarUri;
   const [shareOpen, setShareOpen] = useState(false);
   const [failedPhoto, setFailedPhoto] = useState<{ postId: string; uri: string } | null>(null);
   const [loadedPhoto, setLoadedPhoto] = useState<{ key: string; aspectRatio: number } | null>(null);
@@ -307,7 +310,8 @@ export function PostCard({
           {/* The nickname beside it is the screen-reader control for the same profile. */}
           <Pressable analyticsId="components_post-card.pressable.4" onPress={openAuthor} disabled={!onAuthor} hitSlop={2}
             accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
-            style={[styles.feedAvatar, { backgroundColor: theme.backgroundSelected }]}>
+            style={[styles.feedAvatar, { backgroundColor: clay && !logo ? 'transparent' : theme.backgroundSelected }, clay && !logo && styles.clayAvatar]}>
+            {clay && !logo && <ClayCoinFill />}
             {logo ? <Image source={{ uri: logo }} style={StyleSheet.absoluteFill} contentFit="cover" accessibilityIgnoresInvertColors onError={() => setFailedBusinessLogo(logo)} />
               : <ThemedText type="menu" style={{ color: theme.accent }}>{[...name][0]}</ThemedText>}
           </Pressable>
@@ -325,13 +329,14 @@ export function PostCard({
               </View>
               <Pressable analyticsId="post.manage.open" accessibilityRole="button" accessibilityLabel={tr('글 메뉴')}
                 onPress={() => { play('selection'); setMenuOpen(true); }} style={[ControlStyles.icon, styles.feedMore]}>
-                <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
+                <ClayIcon clay="more" claySize={26} name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
               </Pressable>
             </View>
             {proxied.proxy && <ThemedText type="small" themeColor="textSecondary">{tr('글링이 비즈니스 허락을 받고 대신 올렸어요')}</ThemedText>}
             <Pressable analyticsId="components_post-card.pressable.2" onPress={openPost} disabled={!onPress}
               accessibilityRole={onPress ? 'button' : undefined} accessibilityLabel={onPress ? `${tr(post.tag.label)} · ${title}` : undefined}
-              style={slides.length ? undefined : [styles.textOnly, { backgroundColor: theme.backgroundElement }]}>
+              style={slides.length ? undefined : [styles.textOnly, { backgroundColor: clayBox ? 'transparent' : theme.backgroundElement }]}>
+              {clayBox && !slides.length && <ClayBoxFill kind="text" />}
               {slides.length ? text(title) : <>
                 <ThemedText type="menu">{title}</ThemedText>
                 {!!feedText && text()}
@@ -374,21 +379,21 @@ export function PostCard({
         <View style={styles.feedActs}>
           <Pressable analyticsId="components_post-card.pressable.7" onPress={toggleLike} disabled={!!busyReaction} accessibilityRole="button" accessibilityLabel={t.feed.likes(likeCount)}
             accessibilityState={{ selected: likedOn, disabled: !!busyReaction, busy: busyReaction === 'like' }} style={styles.feedAct}>
-            <SymbolView name={{ ios: likedOn ? 'heart.fill' : 'heart', android: 'favorite', web: 'favorite' }} size={IconSize.toolbar} tintColor={likedOn ? theme.accent : theme.textSecondary} />
+            <ClayIcon clay={likedOn ? 'heart_on' : 'heart'} claySize={26} name={{ ios: likedOn ? 'heart.fill' : 'heart', android: 'favorite', web: 'favorite' }} size={IconSize.toolbar} tintColor={likedOn ? theme.accent : theme.textSecondary} />
             <ThemedText type={likedOn ? 'smallBold' : 'small'} style={[styles.footItem, { color: likedOn ? theme.accent : theme.textSecondary }]}>{count(likeCount)}</ThemedText>
           </Pressable>
           <Pressable analyticsId="components_post-card.pressable.8" onPress={openPost} disabled={!onPress} accessibilityRole={onPress ? 'button' : undefined}
             accessibilityLabel={t.feed.comments(post.comments)} style={styles.feedAct}>
-            <SymbolView name={{ ios: 'bubble.right', android: 'chat_bubble', web: 'chat_bubble' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
+            <ClayIcon clay="bubble" claySize={26} name={{ ios: 'bubble.right', android: 'chat_bubble', web: 'chat_bubble' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
             <ThemedText type="small" themeColor="textSecondary" style={styles.footItem}>{count(post.comments)}</ThemedText>
           </Pressable>
           <Pressable analyticsId="components_post-card.pressable.10" onPress={() => void share()} accessibilityRole="button"
             accessibilityLabel={tr("{0} · {1}", (tr(post.room ? '모임 초대 링크 공유' : '게시물 링크 공유')), (t.feed.shares(shareCount)))} style={styles.feedAct}>
-            <SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
+            <ClayIcon clay="share" claySize={26} name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
           </Pressable>
           <Pressable analyticsId="components_post-card.pressable.9" onPress={() => void toggleSave()} disabled={!!busyReaction} accessibilityRole="button" accessibilityLabel={savedOn ? tr('저장 취소') : tr('저장')}
             accessibilityState={{ selected: savedOn, disabled: !!busyReaction, busy: busyReaction === 'save' }} style={[styles.feedAct, styles.feedSave]}>
-            <SymbolView name={{ ios: savedOn ? 'bookmark.fill' : 'bookmark', android: savedOn ? 'bookmark_added' : 'bookmark', web: savedOn ? 'bookmark_added' : 'bookmark' }} size={IconSize.toolbar} tintColor={savedOn ? theme.accent : theme.textSecondary} />
+            <ClayIcon clay={savedOn ? 'bookmark_on' : 'bookmark'} claySize={26} name={{ ios: savedOn ? 'bookmark.fill' : 'bookmark', android: savedOn ? 'bookmark_added' : 'bookmark', web: savedOn ? 'bookmark_added' : 'bookmark' }} size={IconSize.toolbar} tintColor={savedOn ? theme.accent : theme.textSecondary} />
           </Pressable>
         </View>
         {/* 남의 글(운영 캐릭터·비즈니스 글 포함)은 이 글 숨기기 → 신고. 상세의 신고 버튼은 그대로다. */}
@@ -427,7 +432,8 @@ export function PostCard({
             disabled={!onAuthor}
             accessibilityRole={onAuthor ? 'button' : undefined}
             style={({ pressed }) => [styles.author, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent', transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-            <View style={[styles.avatar, { backgroundColor: mine ? theme.accent : theme.backgroundElement }]}>
+            <View style={[styles.avatar, clay && !cardLogo && styles.clayCardAvatar, { backgroundColor: clay && !cardLogo ? 'transparent' : mine ? theme.accent : theme.backgroundElement }]}>
+              {clay && !cardLogo && <ClayCoinFill me={mine} />}
               {post.business?.avatarUri && failedBusinessLogo !== post.business.avatarUri ? <Image
                 source={{ uri: post.business.avatarUri }} style={{ width: 32, height: 32, borderRadius: 16 }} contentFit="cover"
                 accessibilityIgnoresInvertColors onError={() => setFailedBusinessLogo(post.business!.avatarUri!)} /> :
@@ -458,7 +464,8 @@ export function PostCard({
               accessibilityRole="button"
               accessibilityLabel={t.report.title(post.business?.name ?? post.author.nickname)}
               style={({ pressed }) => [styles.more, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent', transform: [{ scale: pressed ? 0.88 : 1 }] }]}>
-              <SymbolView
+              <ClayIcon
+                clay="more"
                 name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }}
                 size={22}
                 tintColor={theme.textSecondary}
@@ -588,7 +595,8 @@ export function PostCard({
             accessibilityRole="button"
             accessibilityLabel={t.feed.likes(likeCount)}
             accessibilityState={{ selected: likedOn, disabled: !!busyReaction, busy: busyReaction === 'like' }}>
-            <SymbolView
+            <ClayIcon
+              clay={likedOn ? 'heart_on' : 'heart'}
               name={{ ios: likedOn ? 'heart.fill' : 'heart', android: 'favorite', web: 'favorite' }}
               size={20}
               tintColor={likedOn ? theme.accent : theme.textSecondary}
@@ -605,7 +613,8 @@ export function PostCard({
             style={({ pressed }) => [styles.reaction, pressed && styles.pressed]}
             accessibilityRole={onPress ? 'button' : undefined}
             accessibilityLabel={t.feed.comments(post.comments)}>
-            <SymbolView
+            <ClayIcon
+              clay="bubble"
               name={{ ios: 'bubble.right', android: 'chat_bubble', web: 'chat_bubble' }}
               size={20}
               tintColor={theme.textSecondary}
@@ -630,7 +639,8 @@ export function PostCard({
                   { translateY: saveBurst.interpolate({ inputRange: [0, 1], outputRange: [0, y] }) },
                 ],
               }]} />)}
-              <SymbolView
+              <ClayIcon
+                clay={savedOn ? 'bookmark_on' : 'bookmark'}
                 name={{ ios: savedOn ? 'bookmark.fill' : 'bookmark', android: savedOn ? 'bookmark_added' : 'bookmark', web: savedOn ? 'bookmark_added' : 'bookmark' }}
                 size={20}
                 tintColor={savedOn ? theme.accent : theme.textSecondary}
@@ -647,7 +657,8 @@ export function PostCard({
             style={({ pressed }) => [styles.reaction, pressed && styles.pressed]}
             accessibilityRole="button"
             accessibilityLabel={tr("{0} · {1}", (tr(post.room ? '모임 초대 링크 공유' : '게시물 링크 공유')), (t.feed.shares(shareCount)))}>
-            <SymbolView
+            <ClayIcon
+              clay="share"
               name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }}
               size={20}
               tintColor={theme.textSecondary}
@@ -703,7 +714,7 @@ export function PostReactionToggle({ post, kind, showCount = false }: { post: Po
   return <Pressable analyticsId={like ? 'post.detail.like' : 'post.detail.save'} onPress={() => void toggle()} disabled={!!busy} accessibilityRole="button"
     accessibilityLabel={like ? t.feed.likes(total) : t.feed.saves(total)}
     accessibilityState={{ selected: on, disabled: !!busy, busy: busy === kind }} style={({ pressed }) => [styles.more, showCount && styles.reactionToggle, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
-    <SymbolView name={icon} size={21} tintColor={on ? theme.accent : theme.text} />
+    <ClayIcon clay={like ? (on ? 'heart_on' : 'heart') : (on ? 'bookmark_on' : 'bookmark')} name={icon} size={21} tintColor={on ? theme.accent : theme.text} />
     {showCount && total > 0 && <ThemedText type="smallBold" style={{ color: on ? theme.accent : theme.textSecondary }}>{count(total)}</ThemedText>}
   </Pressable>;
 }
@@ -767,6 +778,8 @@ const styles = StyleSheet.create({
   footItem: { fontVariant: ['tabular-nums'] },
   feedCard: { paddingTop: Spacing.one },
   feedGrid: { flexDirection: 'row', gap: FEED_TEXT_INSET - FEED_AVATAR },
+  clayAvatar: { overflow: 'visible' },
+  clayCardAvatar: { width: 32, height: 32, padding: 0 },
   feedAvatar: { width: FEED_AVATAR, height: FEED_AVATAR, borderRadius: FEED_AVATAR / 2, marginTop: 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   feedMain: { flex: 1, minWidth: 0 },
   feedHead: { flexDirection: 'row', alignItems: 'center', minHeight: 44 },
