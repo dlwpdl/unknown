@@ -25,7 +25,7 @@ export const en: Translations = {
     postImage: 'Photo', hashtagFilter: (hashtag) => `Filter by #${hashtag}`, cityVancouver: 'Vancouver',
     cityPickerTitle: 'Choose a city', cityPickerBody: 'Which city do you want to explore?',
     cityPickerNote: 'When you’re signed in, we save your city to your profile. No location access needed.',
-    citySoon: 'Coming soon', citySelected: 'Selected', cityCountry: 'Country', cityCanada: 'Canada', cityUnitedStates: 'United States',
+    citySoon: 'Coming soon', citySelected: 'Selected',
     citySearch: 'Search by city, province or state', citySearchClear: 'Clear search', cityOpenSection: 'Available now',
     cityNoResults: 'No cities found.', soonTitle: (name) => `${name} is coming soon`,
     soonBody: 'In the meantime, explore cities that are already open.', soonCta: 'Explore another city', filterAll: 'All',

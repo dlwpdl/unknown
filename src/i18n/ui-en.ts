@@ -2837,6 +2837,7 @@ export const uiEnglish: Record<string, string> = {
   "리자이나": "Regina",
   "세인트존": "Saint John",
   "할리팩스": "Halifax",
+  "서울": "Seoul",
   "서비스 소개": "Services",
   "프로필 사진": "Profile photo",
   "커버 사진": "Cover photo",

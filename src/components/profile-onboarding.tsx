@@ -263,7 +263,7 @@ export function ProfileOnboarding({
             {!consentOnly && <View style={styles.field}>
               <ThemedText type="smallBold">{t.onboarding.city}</ThemedText>
               <View style={styles.cityRow}>
-                {CITIES.filter(({ state }) => state === 'open').map((city) => {
+                {CITIES.filter(({ state }) => state === 'open').sort((a, b) => a.englishName.localeCompare(b.englishName, 'en')).map((city) => {
                   const selected = city.id === cityId;
                   return (
                     <Pressable analyticsId="components_profile-onboarding.pressable.6"
