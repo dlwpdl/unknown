@@ -3,13 +3,15 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useFocusEffect, useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
-import { Alert, Animated, AppState, DeviceEventEmitter, Easing, KeyboardAvoidingView, Platform, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Animated, AppState, DeviceEventEmitter, Easing, KeyboardAvoidingView, Modal, Platform, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { requestPushPrompt } from '@/lib/push-prompt';
 import { SymbolView } from 'expo-symbols';
 import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
+import { CityPicker } from '@/components/city-picker';
+import { SelectionChip } from '@/components/selection-chip';
 import { MeetupChips } from '@/components/chilling-host-profile';
 import { MeetupFacts } from '@/components/post-detail';
 import { Disclosure } from '@/components/disclosure';
@@ -18,7 +20,7 @@ import { InitialAvatar, ListCard, ListRow } from '@/components/list-card';
 import { MeetupWaitlist } from '@/components/meetup-host-tools';
 import { MeetupLanguagePicker } from '@/components/meetup-language';
 import { MEETUP_LANGUAGE_ENGLISH_NAMES, MEETUP_LANGUAGE_NAMES, loadMeetupLanguages, otherLanguage, parseLanguageExchange, sideOpen, type MeetupLanguage, type MeetupLanguages } from '@/lib/meetup-language';
-import { PopIn, StateCard } from '@/components/state-card';
+import { StateCard } from '@/components/state-card';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
 import { SeatBar } from '@/components/chilling-event';
@@ -30,7 +32,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { chillingAvailability, chillingKind, chillingSchedule, chillingTimezoneLabel, recommendedAgeLabel } from '@/lib/chilling';
 import { useAuth } from '@/lib/auth';
-import { chillingProfilePreview, getChillingError, getChillingErrorCode, loadChillingProfile, loadMeetupParticipation, requestChillingJoin, type ChillingProfile, type MeetupParticipation } from '@/lib/chilling-data';
+import { chillingProfilePreview, getChillingError, getChillingErrorCode, loadChillingProfile, loadMeetupParticipation, requestChillingJoin, saveChillingProfile, type ChillingProfile, type MeetupParticipation } from '@/lib/chilling-data';
 import { leaveMeetup, MEETUPS_CHANGED_EVENT, requestMeetupJoin } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadPublicPost } from '@/lib/feed-data';
@@ -86,7 +88,11 @@ function JoinForm({ postId }: { postId: string }) {
   const [participation, setParticipation] = useState<MeetupParticipation | null>(null), [feePaid, setFeePaid] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true), [error, setError] = useState(''), [retry, setRetry] = useState(0);
   const [languages, setLanguages] = useState<MeetupLanguages | null>(null), [speaks, setSpeaks] = useState<MeetupLanguage | null>(null);
-  const [answer, setAnswer] = useState(''), [consent, setConsent] = useState(false), [sending, setSending] = useState(false), [sent, setSent] = useState(false);
+  const [answer, setAnswer] = useState(''), [sending, setSending] = useState(false), [sent, setSent] = useState(false);
+  // Without a meetup profile, this screen fills in the three required fields; photos and preferences can wait.
+  const [draft, setDraft] = useState<{ name: string; cityId: string; intro: string } | null>(null), [cityOpen, setCityOpen] = useState(false);
+  const [savedOnly, setSavedOnly] = useState(false);
+  const insets = useSafeAreaInsets(), reducedMotion = useReducedMotion();
   const [errorCode, setErrorCode] = useState<string | null>(null), [profileError, setProfileError] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false);
   const editAfterSheet = useRef(false);
@@ -103,7 +109,7 @@ function JoinForm({ postId }: { postId: string }) {
     focusedScope.current = scope;
     busy.current = false; setSending(false);
     setNow(Date.now());
-    setConsent(false); setLoading(true); setError(''); setErrorCode(null); setProfileError(''); setPost(null); setProfile(null); setParticipation(null); setFeePaid(null); setLanguages(null); setSpeaks(null);
+    setLoading(true); setError(''); setErrorCode(null); setProfileError(''); setPost(null); setProfile(null); setParticipation(null); setFeePaid(null); setLanguages(null); setSpeaks(null);
     // Logged out, loadPublicPost fails (it also reads comments); the guest read gives the first photo and the public meetup fields.
     const read = !isAuthed ? loadSharedLinkPost(supabase, postId).then(value => { if (active) setPost(value); }) : loadPublicPost(supabase, postId).then(async value => {
       if (!active) return;
@@ -116,7 +122,7 @@ function JoinForm({ postId }: { postId: string }) {
       ]);
       // An unverified payment read shows the fee without a status rather than guessing.
       const payments = value?.room?.fee && request?.status === 'approved' ? await loadMeetupFeePayments(supabase, postId).catch(() => null) : null;
-      if (active) { setPost(value); setProfile(ownProfile); setParticipation(request); setFeePaid(payments && payments.some(row => row.user_id === me.id)); setSent(false); setLanguages(sides); setSpeaks(sides?.mine?.speaks ?? null); }
+      if (active) { setPost(value); setProfile(ownProfile); setDraft(current => current ?? { name: (ownProfile?.displayName || me.nickname || '').slice(0, 30), cityId: ownProfile?.cityId || me.cityId || value?.cityId || '', intro: ownProfile?.intro ?? '' }); setParticipation(request); setFeePaid(payments && payments.some(row => row.user_id === me.id)); setSent(false); setLanguages(sides); setSpeaks(sides?.mine?.speaks ?? null); }
     });
     void read.catch(e => { if (active) { setError(getChillingError(e)); setErrorCode(getChillingErrorCode(e)); } })
       .finally(() => { if (active) setLoading(false); });
@@ -170,26 +176,41 @@ function JoinForm({ postId }: { postId: string }) {
     if (Platform.OS === 'web') { if (globalThis.confirm(tr('이 모임의 참여 신청을 취소할까요?'))) void cancelRequest(scope); }
     else Alert.alert(tr("참여 신청 취소"), tr("호스트가 더 이상 신청 프로필을 볼 수 없어요."), [{ text: tr("돌아가기"), style: 'cancel' }, { text: tr("신청 취소"), style: 'destructive', onPress: () => void cancelRequest(scope) }]);
   };
+  const creating = modern && profile?.version !== 2;
+  const nameReady = !!draft?.name.trim(), introReady = !!draft?.intro.trim(), draftReady = nameReady && introReady;
   const submit = async () => {
     const scope = focusedScope.current;
-    if (!scope || !isAuthed || busy.current || unavailable || availability !== 'open' || paused || locked || coolingDown || own || !post || result || !answer.trim() || (modern && (profile?.version !== 2 || !consent)) || (exchange && (!choice || sideFull))) return;
+    if (!scope || !isAuthed || busy.current || unavailable || availability !== 'open' || paused || locked || coolingDown || own || !post || result || !answer.trim() || (creating && (!!profileError || !draftReady)) || (exchange && (!choice || sideFull))) return;
     busy.current = true; setSending(true); setError(''); setErrorCode(null);
     let submitted = false;
     try {
-      if (modern) await requestChillingJoin(supabase, post.id, answer, consent, profile!.revision ?? '', choice);
-      else await requestMeetupJoin(supabase, post.id, answer);
+      if (modern) {
+        let revision = profile?.revision ?? '';
+        if (creating) {
+          // A fresh read keeps whatever an older profile already holds; this screen only fills what it asks for.
+          const current = await loadChillingProfile(supabase);
+          await saveChillingProfile(supabase, { version: 2, displayName: draft!.name, cityId: draft!.cityId, intro: draft!.intro, interests: current?.interests ?? [], promptOne: current?.promptOne ?? '', promptTwo: current?.promptTwo ?? '',
+            photoPaths: current?.photoPaths ?? [], publicPhotoPath: current?.publicPhotoPath ?? null, promptOneId: current?.promptOneId ?? 'meet', promptTwoId: current?.promptTwoId ?? 'join', shareWithMembers: current?.shareWithMembers === true,
+            preferences: current?.preferences ?? { activities: [], availability: '', pace: 'any' } });
+          const saved = await loadChillingProfile(supabase, 'application');
+          if (focusedScope.current !== scope) return;
+          setProfile(saved); setSavedOnly(true); revision = saved?.revision ?? '';
+        }
+        await requestChillingJoin(supabase, post.id, answer, true, revision, choice);
+      } else await requestMeetupJoin(supabase, post.id, answer);
       if (focusedScope.current !== scope) return;
-      submitted = true; setAnswer(''); setSent(true); play('meetupRequested'); DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT); requestPushPrompt('meetup_request');
+      submitted = true; setSavedOnly(false); setAnswer(''); setSent(true); play('meetupRequested'); DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT); requestPushPrompt('meetup_request');
       const next = await loadMeetupParticipation(supabase, post.id, me.id);
       if (focusedScope.current === scope) setParticipation(next);
-    } catch (e) { if (focusedScope.current === scope) { play('warning'); setError(submitted ? "신청은 접수됐어요. 현재 상태를 다시 불러와 주세요." : getChillingError(e)); setErrorCode(submitted ? null : getChillingErrorCode(e)); if (!submitted && getChillingErrorCode(e) === 'CHILLING_PROFILE_CHANGED') { setConsent(false); setRetry(value => value + 1); } } }
+    } catch (e) { if (focusedScope.current === scope) { play('warning'); setError(submitted ? "신청은 접수됐어요. 현재 상태를 다시 불러와 주세요." : getChillingError(e)); setErrorCode(submitted ? null : getChillingErrorCode(e)); if (!submitted && getChillingErrorCode(e) === 'CHILLING_PROFILE_CHANGED') setRetry(value => value + 1); } }
     finally { if (focusedScope.current === scope) { busy.current = false; setSending(false); } }
   };
   const view = loading ? 'loading' : error && !post ? 'failed' : unavailable ? 'unavailable' : !isAuthed ? 'guest' : own ? 'own' : inactive ? 'inactive' : result ? 'result'
     : paused ? 'paused' : locked ? 'locked' : availability === 'full' ? 'full' : coolingDown ? 'cooling' : modern && profile?.version !== 2 ? 'noprofile' : 'form';
-  const writing = (view === 'form' || view === 'noprofile') && !!answer.trim() && !sending;
+  const writing = (view === 'form' || view === 'noprofile') && !sending && (!!answer.trim() || (view === 'noprofile' && !profileError && !!draft?.intro.trim()));
   usePreventRemove(writing, ({ repeat }) => {
-    const heading = tr('쓰던 답변이 사라져요'), message = tr('나가면 지금 쓴 답변은 남지 않아요.');
+    const answerOnly = !!answer.trim() && view === 'form';
+    const heading = answerOnly ? tr('쓰던 답변이 사라져요') : tr('쓰던 내용이 사라져요'), message = answerOnly ? tr('나가면 지금 쓴 답변은 남지 않아요.') : tr('나가면 지금 쓴 내용은 남지 않아요.');
     if (Platform.OS === 'web') { if (globalThis.confirm(`${heading}\n${message}`)) repeat(); return; }
     Alert.alert(heading, message, [{ text: tr('계속 쓰기'), style: 'cancel' }, { text: tr('나가기'), style: 'destructive', onPress: repeat }]);
   });
@@ -226,6 +247,41 @@ function JoinForm({ postId }: { postId: string }) {
     {sideFull && <StateCard layout="start" kind="blocked" title={copy(`${MEETUP_LANGUAGE_NAMES[choice!.speaks]} 쪽은 자리가 다 찼어요`, `${MEETUP_LANGUAGE_ENGLISH_NAMES[choice!.speaks]} spots are full`)} body={copy('이쪽 멤버가 빠지면 자리가 다시 열려요. 쓴 답변은 그대로 남아 있어요.', 'A seat opens again when someone on this side leaves. Your answer stays here.')}>
       <MeetupWaitlist postId={postId} language={choice} cta="secondary" />
     </StateCard>}
+  </>;
+  const INTRO_EXAMPLES = [tr("처음엔 조용하지만 금방 편해져요"), tr("먼저 말을 거는 편이에요"), tr("함께 활동하는 걸 좋아해요")];
+  const draftCity = CITIES.find(city => city.id === draft?.cityId) ?? CITIES[0];
+  const introCard = () => <View style={[styles.card, styles.questionCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
+    <ThemedText accessibilityRole="header" style={Typography.section}>{tr('호스트에게 보낼 내 소개')}</ThemedText>
+    <View style={styles.pair}>
+      <View style={styles.pairItem}>
+        <ThemedText style={Typography.label}>{tr("모임에서 쓸 이름")}</ThemedText>
+        <TextInput value={draft?.name ?? ''} onChangeText={name => setDraft(current => current && { ...current, name })} accessibilityLabel={tr("모임에서 쓸 이름")} maxLength={30} editable={!sending} placeholder={tr("모임에서 불리고 싶은 이름")} placeholderTextColor={theme.textSecondary} style={[ControlStyles.field, styles.field, { borderColor: theme.line, color: theme.text, backgroundColor: theme.background }]} />
+      </View>
+      <View style={styles.pairItem}>
+        <ThemedText style={Typography.label}>{tr("활동 지역")}</ThemedText>
+        <Pressable analyticsId="meetup.join.city" accessibilityRole="button" accessibilityLabel={`${tr("활동 지역")}, ${language === 'en' ? draftCity.englishName : draftCity.name}`} disabled={sending} onPress={() => { play('selection'); setCityOpen(true); }} style={({ pressed }) => [ControlStyles.field, styles.city, { borderColor: theme.line, backgroundColor: theme.background, opacity: pressed ? 0.7 : 1 }]}>
+          <ThemedText numberOfLines={1} style={styles.flex}>{language === 'en' ? draftCity.englishName : draftCity.name}</ThemedText>
+          <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={14} tintColor={theme.textSecondary} />
+        </Pressable>
+      </View>
+    </View>
+    <ThemedText style={Typography.label}>{tr("한 줄 소개")}</ThemedText>
+    <TextInput value={draft?.intro ?? ''} onChangeText={intro => setDraft(current => current && { ...current, intro })} accessibilityLabel={tr("한 줄 소개")} maxLength={160} editable={!sending} placeholder={tr('직접 쓰거나 아래에서 골라요')} placeholderTextColor={theme.textSecondary} style={[ControlStyles.field, styles.field, { borderColor: theme.line, color: theme.text, backgroundColor: theme.background }]} />
+    <ScrollView analyticsId="meetup.join.intro-examples" horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.examples} style={styles.examplesRow}>
+      {INTRO_EXAMPLES.map(example => <SelectionChip key={example} analyticsId="meetup.join.intro-example" label={example} selected={draft?.intro === example} disabled={sending} accessibilityState={{ selected: draft?.intro === example, disabled: sending }} onPress={() => { play('selection'); setDraft(current => current && { ...current, intro: current.intro === example ? '' : example }); }} />)}
+    </ScrollView>
+  </View>;
+  const whoSees = (lead: string) => <>
+    <ThemedText style={Typography.supporting} themeColor="textSecondary">{lead}</ThemedText>
+    <Disclosure analyticsId="meetup.join.policy" title={copy('누가 무엇을 보나요', 'Who sees what')}>
+      <View style={styles.who}>
+        <ThemedText style={Typography.supporting} themeColor="textSecondary"><ThemedText style={Typography.supporting}>{tr("승인된 뒤 멤버")}</ThemedText>{` ${profile?.shareWithMembers ? tr("모임 이름 · 사진 · 짧은 소개") : tr("모임 이름만 · 사진·소개 공유는 프로필에서 바꿀 수 있어요")}`}</ThemedText>
+        <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr("다른 신청자에게는 보이지 않아요. 취소·거절·탈퇴·차단·모임 종료 뒤에는 새로 볼 수 없지만, 이미 본 내용은 되돌릴 수 없어요.")}</ThemedText>
+      </View>
+      <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('승인 전까지는 자리가 잡히지 않아요. 신청은 호스트가 답하기 전까지 이 화면에서 취소할 수 있어요. 취소하거나 거절되면 24시간 뒤에 다시 신청할 수 있어요.')}</ThemedText>
+      <MeetupPolicyNotice mode="join" />
+    </Disclosure>
+    <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.')}</ThemedText>
   </>;
   const sentRow = (detail?: string) => <ListRow analyticsId="app_meetup-join.pressable.11" title={tr('보낸 프로필과 답변')} detail={detail} onPress={() => router.push({ pathname: '/meetup-application', params: { requestId: participation!.id } })} />;
   const footerError = !!error && !!post && <>
@@ -270,14 +326,15 @@ function JoinForm({ postId }: { postId: string }) {
         : browseButton}
     </View>;
   };
-  const sendHint = !answered && modern && !consent ? tr('답변을 쓰고 동의하면 보낼 수 있어요') : !answered ? tr('답변을 쓰면 보낼 수 있어요') : modern && !consent ? tr('동의에 체크하면 보낼 수 있어요') : tr('호스트에게만 보내요');
+  const askingProfile = view === 'noprofile' && !profileError;
+  const sendHint = askingProfile && !introReady && !answered ? tr('한 줄 소개와 답변을 쓰면 보낼 수 있어요') : askingProfile && !introReady ? tr('한 줄 소개를 쓰면 보낼 수 있어요') : !answered ? tr('답변을 쓰면 보낼 수 있어요') : askingProfile && !nameReady ? tr('이름을 쓰면 보낼 수 있어요') : tr('호스트에게만 보내요');
   const pullable = view === 'result' || view === 'paused' || view === 'locked' || view === 'full' || view === 'cooling' || view === 'inactive';
   return <ThemedView style={styles.fill}><SafeAreaView style={styles.fill}>
     <View style={[styles.head, { backgroundColor: theme.background }]}>
       <Pressable analyticsId="app_meetup-join.pressable.1" onPress={() => { play('selection'); back(); }} accessibilityRole="button" accessibilityLabel={tr("뒤로가기")} style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable>
       <ThemedText accessibilityRole="header" style={[Typography.menu, styles.headTitle]}>{tr("참여 신청")}</ThemedText><View style={styles.headSide} />
     </View>
-    <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.fill} behavior="padding">
       <ScrollView analyticsId="app_meetup-join.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, view === 'loading' && styles.loading]}
         refreshControl={pullable ? <RefreshControl refreshing={false} tintColor={theme.accent} onRefresh={() => { play('selection'); reload(); }} /> : undefined}>
         {view === 'loading' ? <GlingLoader color={theme.accent} accessibilityLabel={tr("신청 정보 불러오는 중")} />
@@ -302,7 +359,10 @@ function JoinForm({ postId }: { postId: string }) {
                   {status === 'approved' ? (!!post!.room!.fee || (modern && !!participation)) && <ListCard>
                     {!!post!.room!.fee && <ListRow title={tr('회비 {0}', meetupFeeAmount(post!.room!.fee.amount))} detail={[post!.room!.fee.note, post!.room!.fee.dueOn && tr('{0}까지', meetupFeeDue(post!.room!.fee.dueOn, appLocale)), feePaid == null ? '' : feePaid ? tr('냈음') : tr('아직 안 냈어요')].filter(Boolean).join(' · ') || undefined} />}
                     {modern && !!participation && sentRow()}
-                  </ListCard> : modern && !!participation && <ListCard>{sentRow(tr('호스트가 보는 그대로예요'))}</ListCard>}
+                  </ListCard> : modern && !!participation && <ListCard>
+                    {sentRow(tr('호스트가 보는 그대로예요'))}
+                    {!profile?.photoPaths?.length && !profile?.interests?.length && <ListRow analyticsId="meetup.join.fill-profile" title={tr('프로필 더 채우기')} detail={tr('사진과 취향은 나중에 넣어도 돼요')} onPress={() => { play('selection'); router.push('/meetup-profile'); }} />}
+                  </ListCard>}
                   {status === 'pending' && <Pressable analyticsId="app_meetup-join.pressable.12" accessibilityRole="button" disabled={sending} accessibilityState={{ disabled: sending, busy: sending }} onPress={confirmCancel} style={styles.button}><ThemedText style={[styles.support, styles.center]} themeColor="danger">{sending ? tr("취소 중…") : tr("신청 취소")}</ThemedText></Pressable>}
                   {!status && <RaisedActionButton analyticsId="app_meetup-join.pressable.9" tone="secondary" disabled={sending} onPress={() => { play('selection'); reload(); }} label={tr("다시 불러오기")} />}
                 </>}
@@ -325,9 +385,10 @@ function JoinForm({ postId }: { postId: string }) {
                 </>}
                 {view === 'noprofile' && <>
                   {meetCard()}
-                  <StateCard layout="start" kind={profileError ? 'error' : 'empty'} title={profileError ? tr('모임 프로필을 불러오지 못했어요') : profile ? tr('모임 프로필을 확인해 주세요') : tr('모임 프로필이 먼저 필요해요')} body={profileError ? tr(profileError) : profile ? tr('모임에서 쓸 이름과 공개 범위를 확인해 주세요. 기존 소개는 남아 있어요.') : tr('함께할 사람들에게 나를 소개하는 프로필이에요. 쓰던 답변은 그대로 남아요.')} />
+                  {profileError ? <StateCard layout="start" kind="error" title={tr('모임 프로필을 불러오지 못했어요')} body={tr(profileError)} /> : introCard()}
                   {languagePicker()}
                   {question()}
+                  {!profileError && whoSees(tr('신청을 보내면 호스트가 내 이름, 지역, 소개, 답변을 봐요. 다른 신청자에게는 안 보여요.'))}
                 </>}
                 {view === 'form' && <>
                   {meetCard()}
@@ -337,23 +398,15 @@ function JoinForm({ postId }: { postId: string }) {
                     <ListRow analyticsId="app_meetup-join.pressable.13" title={profile.displayName || tr('모임 멤버')} detail={tr('호스트에게 보낼 모임 프로필')} leading={<InitialAvatar name={profile.displayName || tr('모임 멤버')} />} onPress={() => setSheetOpen(true)} />
                   </ListCard>}
                   {question()}
-                  {modern && !!profile && <Pressable analyticsId="app_meetup-join.pressable.7" onPress={() => { play('selection'); setConsent(v => !v); }} disabled={sending} accessibilityRole="checkbox" accessibilityState={{ checked: consent, disabled: sending }}
-                    style={[styles.card, styles.consent, { borderColor: consent ? theme.accent : theme.line, backgroundColor: theme.card }]}>
-                    <View style={[styles.checkbox, consent ? { backgroundColor: theme.accent, borderColor: theme.accent } : { borderColor: theme.textSecondary }]}>{consent && <PopIn><SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={13} tintColor={theme.accentInk} /></PopIn>}</View>
-                    <View style={styles.flex}>
-                      <ThemedText type="smallBold" style={styles.support}>{tr("이 호스트에게 모임 프로필과 답변을 보내는 데 동의해요")}</ThemedText>
-                      <View style={styles.who}>
-                        <ThemedText style={Typography.supporting} themeColor="textSecondary"><ThemedText style={Typography.supporting}>{tr("호스트")}</ThemedText>{` ${tr("모임 프로필 · 신청 답변")}`}</ThemedText>
-                        <ThemedText style={Typography.supporting} themeColor="textSecondary"><ThemedText style={Typography.supporting}>{tr("승인된 뒤 멤버")}</ThemedText>{` ${profile.shareWithMembers ? tr("모임 이름 · 사진 · 짧은 소개") : tr("모임 이름만 · 사진·소개 공유는 프로필에서 바꿀 수 있어요")}`}</ThemedText>
-                        <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr("다른 신청자에게는 보이지 않아요. 취소·거절·탈퇴·차단·모임 종료 뒤에는 새로 볼 수 없지만, 이미 본 내용은 되돌릴 수 없어요.")}</ThemedText>
-                      </View>
-                    </View>
-                  </Pressable>}
-                  <Disclosure analyticsId="meetup.join.policy" title={copy('신청·취소 안내', 'Application and cancellation details')}>
-                    <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('승인 전까지는 자리가 잡히지 않아요. 신청은 호스트가 답하기 전까지 이 화면에서 취소할 수 있어요. 취소하거나 거절되면 24시간 뒤에 다시 신청할 수 있어요.')}</ThemedText>
-                    <MeetupPolicyNotice mode="join" />
-                  </Disclosure>
-                  <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.')}</ThemedText>
+                  {/* The send button is fixed and the form is scrolled to it, so this sits beside the answer. */}
+                  {savedOnly && <StateCard layout="start" kind="pending" title={tr('프로필은 저장했어요')} body={tr('신청은 아직 안 갔어요. 쓴 답변은 그대로 있으니 다시 보내 주세요.')} />}
+                  {modern ? whoSees(tr('신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요. 다른 신청자에게는 안 보여요.')) : <>
+                    <Disclosure analyticsId="meetup.join.policy" title={copy('신청·취소 안내', 'Application and cancellation details')}>
+                      <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('승인 전까지는 자리가 잡히지 않아요. 신청은 호스트가 답하기 전까지 이 화면에서 취소할 수 있어요. 취소하거나 거절되면 24시간 뒤에 다시 신청할 수 있어요.')}</ThemedText>
+                      <MeetupPolicyNotice mode="join" />
+                    </Disclosure>
+                    <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.')}</ThemedText>
+                  </>}
                 </>}
               </Rise>}
         {!!error && !!post && (own || inactive || result) && <><ThemedText style={styles.body} accessibilityRole="alert" themeColor="danger">{tr(error)}</ThemedText>
@@ -367,13 +420,18 @@ function JoinForm({ postId }: { postId: string }) {
         {view === 'result' && <RaisedActionButton analyticsId="app_meetup-join.pressable.3" onPress={() => { play('selection'); if (status === 'approved') router.replace({ pathname: '/chat', params: { view: 'group' } }); else router.replace({ pathname: '/(tabs)/meetups', params: { view: 'mine' } }); }} label={status === 'approved' ? tr("모임 대화 보기") : tr("내 모임에서 보기")} />}
         {(view === 'inactive' || view === 'paused' || view === 'locked' || view === 'cooling') && browseButton}
         {view === 'full' && <MeetupWaitlist postId={postId} language={choice} cta="primary" fallback={browseButton} />}
-        {view === 'noprofile' && <RaisedActionButton analyticsId="app_meetup-join.pressable.5" onPress={() => { play('selection'); profileRoute(); }} label={profileError ? tr("모임 프로필 열기") : profile ? tr('모임 프로필 확인하기') : tr("모임 프로필 만들기")} />}
-        {view === 'form' && <>
+        {view === 'noprofile' && !!profileError && <RaisedActionButton analyticsId="app_meetup-join.pressable.5" onPress={() => { play('selection'); profileRoute(); }} label={tr("모임 프로필 열기")} />}
+        {(view === 'form' || askingProfile) && <>
           <ThemedText style={[Typography.supporting, styles.center]} themeColor="textSecondary" accessibilityLiveRegion="polite">{sendHint}</ThemedText>
-          <RaisedActionButton analyticsId="app_meetup-join.pressable.8" onPress={() => { play('selection'); void submit(); }} disabled={sending || !answered || (modern && !consent) || (!!exchange && (!choice || sideFull))} busy={sending} label={sending ? tr("보내는 중…") : sideFull ? copy('고른 언어 쪽은 자리가 다 찼어요', 'This language side is full') : exchange && !choice ? copy('할 줄 아는 말을 골라 주세요', 'Choose the language you speak') : status ? tr("다시 신청하기") : modern ? tr("답변과 프로필 보내기") : tr("신청 답변 보내기")} />
+          <RaisedActionButton analyticsId="app_meetup-join.pressable.8" onPress={() => { play('selection'); void submit(); }} disabled={sending || !answered || (askingProfile && !draftReady) || (!!exchange && (!choice || sideFull))} busy={sending} label={sending ? tr("보내는 중…") : sideFull ? copy('고른 언어 쪽은 자리가 다 찼어요', 'This language side is full') : exchange && !choice ? copy('할 줄 아는 말을 골라 주세요', 'Choose the language you speak') : status ? modern ? tr('동의하고 다시 신청하기') : tr("다시 신청하기") : modern ? tr('동의하고 신청 보내기') : tr("신청 답변 보내기")} />
         </>}
       </View>}
     </KeyboardAvoidingView>
+    <Modal visible={cityOpen} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => { play('selection'); setCityOpen(false); }}>
+      <SafeAreaProvider style={[styles.fill, { backgroundColor: theme.background }]}>
+        <View style={[styles.fill, { paddingTop: insets.top, paddingBottom: insets.bottom }]}><CityPicker title={tr("활동 지역")} onClose={() => setCityOpen(false)} draft={{ city: draftCity, onSelect: city => { setDraft(current => current && { ...current, cityId: city.id }); setCityOpen(false); } }} /></View>
+      </SafeAreaProvider>
+    </Modal>
     <DragSheet visible={sheetOpen} onClose={() => setSheetOpen(false)} title={tr('호스트에게 이렇게 보여요')}
       onDismissed={() => { if (editAfterSheet.current) { editAfterSheet.current = false; profileRoute(); } }}>
       {!!profile && <ScrollView analyticsId="app_meetup-join.scrollview.1" contentContainerStyle={styles.sheetBody}>
@@ -396,9 +454,12 @@ const styles = StyleSheet.create({
   seats: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginTop: Spacing.two },
   questionCard: { padding: Spacing.three, gap: Spacing.two },
   input: { minHeight: 104, borderWidth: 1, borderRadius: 12, padding: Spacing.three, fontSize: 16, textAlignVertical: 'top' }, count: { textAlign: 'right' },
-  consent: { flexDirection: 'row', gap: Spacing.three, alignItems: 'flex-start', padding: Spacing.three },
-  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
-  who: { gap: Spacing.half, marginTop: Spacing.two },
+  // Name and area sit side by side and stack on narrow screens or large text.
+  pair: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, pairItem: { flexGrow: 1, flexBasis: 140, minWidth: 0, gap: Spacing.one },
+  field: { borderWidth: 1, paddingHorizontal: Spacing.three, fontSize: 16 },
+  city: { borderWidth: 1, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  examples: { gap: Spacing.one, paddingHorizontal: Spacing.three }, examplesRow: { marginHorizontal: -Spacing.three },
+  who: { gap: Spacing.half },
   steps: { marginTop: Spacing.two },
   step: { flexDirection: 'row', gap: Spacing.two + Spacing.half }, stepRail: { width: 22, alignItems: 'center' },
   stepDot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' }, stepLine: { width: 2, flex: 1, minHeight: 14 },

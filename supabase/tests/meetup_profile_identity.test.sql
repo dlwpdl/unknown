@@ -76,6 +76,9 @@ select is(public.get_chilling_host_profile(current_setting('test.profile_post'):
 select ok(not (public.get_chilling_host_profile(current_setting('test.profile_post')::uuid) ?| array['preferences','promptOne','promptTwo']),'v2 public host omits prompts and preferences');
 select set_config('storage.operation','storage.object.get_authenticated',true);
 select is((select count(*)::integer from storage.objects where bucket_id='meetup-profiles'),2,'applicant reads own photo and explicitly public host photo only');
+select set_config('storage.operation','object.get_authenticated_info',true);
+select is((select count(*)::integer from storage.objects where bucket_id='meetup-profiles'),2,'hosted download lookup sees the same photos as the download');
+select set_config('storage.operation','storage.object.get_authenticated',true);
 reset role;
 select set_config('request.jwt.claims','{"sub":"51900000-0000-4000-8000-000000000004","role":"authenticated"}',true);
 set local role authenticated;
@@ -83,6 +86,10 @@ select is(public.get_chilling_application(current_setting('test.profile_request'
 select is(public.get_chilling_member_profile(current_setting('test.profile_post')::uuid,'51900000-0000-4000-8000-000000000002'),null::jsonb,'stranger denied member identity');
 select is(public.get_chilling_roster(current_setting('test.profile_post')::uuid),'[]'::jsonb,'stranger denied roster');
 select is((select count(*)::integer from storage.objects where bucket_id='meetup-profiles'),1,'guessed private applicant photo denied');
+select set_config('storage.operation','object.get_authenticated_info',true);
+select is((select count(*)::integer from storage.objects where bucket_id='meetup-profiles'),1,'download lookup does not widen who sees a private photo');
+select set_config('storage.operation','storage.object.list',true);
+select is((select count(*)::integer from storage.objects where bucket_id='meetup-profiles'),0,'listing stays denied');
 select set_config('storage.operation','storage.object.create_signed_url',true);
 select is((select count(*)::integer from storage.objects where bucket_id='meetup-profiles'),0,'signed URL operation denied including public host photo');
 select set_config('storage.operation','storage.object.get_authenticated',true);

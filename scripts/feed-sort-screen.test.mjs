@@ -30,6 +30,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', SafeAreaProvider: 'SafeAreaProvider', useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
     '@/hooks/use-theme': { useTheme: () => theme }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
     '@/components/daily-chip': { todayLabel: () => '10월 12일 월요일' },
+    '@/components/chilling-host-profile': { useMyOpenMeetupRequests: () => ({}) },
     '@/lib/image-upload': { canAddPostImage: () => true, MAX_POST_IMAGES: 10 },
     '@/constants/theme': { Colors: { light: {} }, Depth: { control: {}, card: {} }, Spacing: { one: 4, two: 8, three: 16, four: 24, five: 32 }, TabBarHeight: 64 },
     '@/i18n/ko': { t }, '@/lib/mock': { TAGS }, '@/lib/auth': { useAuth: () => ({ isAuthed: viewer !== null, isAuthLoading: authLoading, me: { id: viewer ?? 'guest' }, promptLogin() {} }) },

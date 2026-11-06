@@ -59,8 +59,8 @@ export function SeatBar({ room, flush = false }: { room: Pick<RoomPreview, 'memb
   </View>;
 }
 
-export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, onAuthor }: {
-  post: Post; city: string; onOpen: () => void; onAuthor: () => void;
+export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, onAuthor, requestStatus }: {
+  post: Post; city: string; onOpen: () => void; onAuthor: () => void; requestStatus?: 'pending' | 'approved';
 }) {
   const { tr, locale: appLocale } = useLanguage();
   const theme = useTheme();
@@ -93,6 +93,7 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
         {countdown && <View style={[styles.countdown, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={[styles.support, { color: theme.accentInk }]}>{countdown}</ThemedText></View>}
         <ThemedText type="smallBold" style={styles.support} themeColor="accent">{categoryLabel ? `${categoryLabel} · ` : ''}{group ? tr('정기모임') : tr('칠링')}</ThemedText>
         {exchange && <View style={[styles.countdown, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" style={styles.support}>{languagePairLabel(exchange)}</ThemedText></View>}
+        {requestStatus && <View style={[styles.countdown, { backgroundColor: theme.backgroundSelected }]}><ThemedText type="smallBold" style={styles.support}>{requestStatus === 'pending' ? tr('승인 대기') : tr('참여 승인')}</ThemedText></View>}
         {room?.recruitingClosed && <View style={[styles.countdown, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" style={styles.support} themeColor="textSecondary">{tr('모집 마감')}</ThemedText></View>}
       </View>
       <ThemedText accessibilityRole="header" style={styles.title}>{post.title}</ThemedText>
