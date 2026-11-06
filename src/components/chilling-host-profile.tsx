@@ -6,6 +6,7 @@ import { DeviceEventEmitter, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CHILLING_CATEGORY_LABELS } from '@/components/chilling-event';
 import { languagePairLabel, meetupCategoryOf, parseLanguageExchange } from '@/lib/meetup-language';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -56,16 +57,16 @@ export function useMeetupParticipation(post: Post) {
 // hideOpen: logged-out readers can't see a host's pause, so '모집 중' could be wrong there.
 export function MeetupChips({ post, hideOpen = false }: { post: Post; hideOpen?: boolean }) {
   const { tr } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clay = useClay();
   if (!post.room) return null;
   const availability = chillingAvailability(post.room);
   const category = meetupCategoryOf(post.room), exchange = parseLanguageExchange(post.room);
-  const chip = [styles.badge, { backgroundColor: theme.backgroundElement }];
+  const chip = [styles.badge, clay ? styles.clayBadge : { backgroundColor: theme.backgroundElement }], fill = clay && <ClayPillFill kind="white" />;
   return <View style={styles.badges}>
-    <View style={chip}><ThemedText type="smallBold" themeColor="accent">{chillingKind(post.room) === 'once' ? tr('칠링') : tr('정기모임')}</ThemedText></View>
-    {!!category && <View style={chip}><ThemedText type="smallBold">{tr(CHILLING_CATEGORY_LABELS[category])}</ThemedText></View>}
-    {exchange && <View style={chip}><ThemedText type="smallBold">{languagePairLabel(exchange)}</ThemedText></View>}
-    {!(hideOpen && availability === 'open') && <View style={chip}><ThemedText type="smallBold">{{ open: tr('모집 중'), full: tr('정원 마감'), closed: tr('모집 마감'), ended: tr('종료된 모임') }[availability]}</ThemedText></View>}
+    <View style={chip}>{fill}<ThemedText type="smallBold" themeColor="accent">{chillingKind(post.room) === 'once' ? tr('칠링') : tr('정기모임')}</ThemedText></View>
+    {!!category && <View style={chip}>{fill}<ThemedText type="smallBold">{tr(CHILLING_CATEGORY_LABELS[category])}</ThemedText></View>}
+    {exchange && <View style={chip}>{fill}<ThemedText type="smallBold">{languagePairLabel(exchange)}</ThemedText></View>}
+    {!(hideOpen && availability === 'open') && <View style={chip}>{fill}<ThemedText type="smallBold">{{ open: tr('모집 중'), full: tr('정원 마감'), closed: tr('모집 마감'), ended: tr('종료된 모임') }[availability]}</ThemedText></View>}
   </View>;
 }
 
@@ -133,7 +134,7 @@ export function MeetupActionBar({ post, status, onJoin, onBeforeNavigate }: { po
 }
 
 const styles = StyleSheet.create({
-  summary: { gap: Spacing.three, marginTop: Spacing.three }, badges: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginBottom: Spacing.two }, badge: { borderRadius: 999, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
+  summary: { gap: Spacing.three, marginTop: Spacing.three }, badges: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginBottom: Spacing.two }, clayBadge: { overflow: 'visible', paddingHorizontal: 14 }, badge: { borderRadius: 999, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
   host: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44 }, avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   hostName: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.one }, flexText: { flexShrink: 1 }, link: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.one },
   facts: { flexDirection: 'row', flexWrap: 'wrap', borderRadius: 18, borderWidth: 1, overflow: 'hidden' }, fact: { padding: Spacing.three, gap: 2 }, factTop: { borderTopWidth: 1 }, factLeft: { borderLeftWidth: 1 },

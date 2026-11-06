@@ -47,6 +47,7 @@ test('membership keeps stories and direct chat free while preserving meetup and 
     if (name === '@/components/themed-view') return { ThemedView: 'View' };
     if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, five: 32 }, MaxContentWidth: 800, Depth: { card: {}, control: {} } };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
+    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
     if (name === '@/i18n/ko') return { t };
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true, me:{id:'member'} }) };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() { feedback++; } }) };

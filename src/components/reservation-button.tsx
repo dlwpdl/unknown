@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Alert, Linking, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { useLanguage } from '@/hooks/use-language';
@@ -17,7 +18,7 @@ type Contact = { merchantId: string; links: string[]; phone: string; canMessage:
 
 /** 예약하기: hands off to the booking site, phone or Gling message the place already has; renders nothing when it has none. */
 export function ReservationButton({ merchantId, website, style }: { merchantId?: string; website?: string | null; style?: StyleProp<ViewStyle> }) {
-  const theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback(), { tr } = useLanguage();
+  const theme = useTheme(), clay = useClay(), router = useRouter(), { play } = useInteractionFeedback(), { tr } = useLanguage();
   const { isAuthed, promptLogin } = useAuth(), business = useChatIdentity();
   const [contact, setContact] = useState<Contact | null>(null), busy = useRef(false);
   useEffect(() => {
@@ -47,9 +48,10 @@ export function ReservationButton({ merchantId, website, style }: { merchantId?:
   };
   return <Pressable analyticsId={`place.reserve.${action.kind}`} accessibilityRole={action.kind === 'message' ? 'button' : 'link'}
     accessibilityLabel={action.kind === 'link' ? tr('예약하기, 예약 사이트 열기') : action.kind === 'phone' ? tr('예약하기, 전화 걸기') : tr('예약하기, 글링 메시지로 문의')}
-    onPress={() => void press()} style={({ pressed }) => [styles.button, { backgroundColor: theme.accent, opacity: pressed ? 0.82 : 1 }, style]}>
+    onPress={() => void press()} style={({ pressed }) => [styles.button, clay && styles.clayButton, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: pressed ? 0.82 : 1 }, style]}>
+    {clay && <ClayPillFill kind="cta" />}
     <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr('예약하기')}{action.kind === 'link' ? ' ↗' : ''}</ThemedText>
   </Pressable>;
 }
 
-const styles = StyleSheet.create({ button: { minHeight: 44, minWidth: 44, paddingHorizontal: 14, borderRadius: 12, alignItems: 'center', justifyContent: 'center' } });
+const styles = StyleSheet.create({ clayButton: { overflow: 'visible', paddingHorizontal: 18 }, button: { minHeight: 44, minWidth: 44, paddingHorizontal: 14, borderRadius: 12, alignItems: 'center', justifyContent: 'center' } });

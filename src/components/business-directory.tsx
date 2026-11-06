@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PageHeader } from '@/components/page-header';
 import { FlatList, Pressable, ScrollView } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
+import { ClayControlFill, ClayPillFill, useClay } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
@@ -119,7 +120,7 @@ export function BusinessDirectoryView({ cityName, query, industry, page, loading
   onQuery: (value: string) => void; onIndustry: (value: string | null) => void; onSave: (item: BusinessDirectoryItem) => void;
   onMore: () => void; onRetry: () => void; onBack: () => void; onOpen: (item: BusinessDirectoryItem) => void;
 }) {
-  const theme = useTheme(), { tr } = useLanguage(), { play } = useInteractionFeedback();
+  const theme = useTheme(), { tr } = useLanguage(), { play } = useInteractionFeedback(), clay = useClay();
   const items = page?.items ?? [];
   return <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.screen, { backgroundColor: theme.background }]}>
     <PageHeader title={tr('비즈니스 찾기')} analyticsId="business.directory.back" onBack={onBack} />
@@ -138,8 +139,9 @@ export function BusinessDirectoryView({ cityName, query, industry, page, loading
         {[null, ...new Set([...(page?.industries ?? []), ...(industry ? [industry] : [])])].map(value => <SelectionChip key={value ?? 'all'}
           analyticsId="business.directory.industry" accessibilityRole="button" accessibilityState={{ selected: industry === value }}
           selected={industry === value} onPress={() => { play('selection'); onIndustry(value); }}
-          style={[ControlStyles.pill, { borderWidth: 1, borderColor: theme.line }]}>
-          <ThemedText type="smallBold" style={{ color: industry === value ? theme.accentInk : theme.textSecondary }}>{value === null ? tr('전체') : tr(value)}</ThemedText>
+          style={[ControlStyles.pill, { borderWidth: 1, borderColor: clay ? 'transparent' : theme.line }]}>
+          {clay && industry !== value && <ClayPillFill kind="white" />}
+          <ThemedText type="smallBold" style={{ color: industry === value ? theme.accentInk : clay ? theme.text : theme.textSecondary }}>{value === null ? tr('전체') : tr(value)}</ThemedText>
         </SelectionChip>)}
       </ScrollView>
     </View>
@@ -156,7 +158,8 @@ export function BusinessDirectoryView({ cityName, query, industry, page, loading
         {!!page?.hasMore && <Pressable analyticsId={appendFailed ? 'business.directory.retry' : 'business.directory.more'} accessibilityRole="button"
           disabled={loadingMore} accessibilityState={{ disabled: loadingMore, busy: loadingMore }}
           onPress={() => { play('selection'); if (appendFailed) onRetry(); else onMore(); }}
-          style={({ pressed }) => [ControlStyles.action, { borderWidth: 1 }, controlPresentation(theme, { pressed, busy: loadingMore }).container]}>
+          style={({ pressed }) => [ControlStyles.action, { borderWidth: 1 }, clay && { overflow: 'visible', paddingHorizontal: 18 }, controlPresentation(theme, { pressed, busy: loadingMore, clay }).container]}>
+          <ClayControlFill />
           <ThemedText type="smallBold">{tr(loadingMore ? '불러오는 중…' : appendFailed ? '다시 시도' : '더 보기')}</ThemedText>
         </Pressable>}
       </View>}

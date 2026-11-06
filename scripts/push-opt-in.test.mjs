@@ -46,7 +46,7 @@ function invite({ denied = false, failure = null } = {}) {
       'react-native-safe-area-context': { useSafeAreaInsets: () => ({ bottom: 0 }) },
       'react-native-reanimated': { useReducedMotion: () => false }, 'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
       '@/components/themed-text': { ThemedText: 'ThemedText' }, '@/components/drag-sheet': { DragSheet: 'DragSheet' }, '@/constants/theme': { Spacing: {} },
-      '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+      '@/hooks/use-theme': { useTheme: () => ({}) }, '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
       '@/lib/auth': { useAuth: () => ({ isAuthed: true, isAdmin: false, me: { id: 'member' } }) },
       '@/lib/notification-preferences': preferences, '@/lib/push-notifications': push, '@/lib/supabase': { supabase },
       '@/lib/community-data': {}, 'expo-router': { useRootNavigationState: () => ({ key: 'root' }), useRouter: () => ({}) },

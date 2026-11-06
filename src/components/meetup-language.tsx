@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useClay } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles } from '@/constants/design-system';
@@ -20,10 +21,10 @@ const english = (language: MeetupLanguage) => MEETUP_LANGUAGE_ENGLISH_NAMES[lang
 function Chip({ label, selected, onPress, disabled, analyticsId, accessibilityLabel }: {
   label: string; selected: boolean; onPress: () => void; disabled?: boolean; analyticsId: string; accessibilityLabel?: string;
 }) {
-  const theme = useTheme(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clay = useClay(), { play } = useInteractionFeedback();
   return <SelectionChip analyticsId={analyticsId} selected={selected} disabled={disabled} baseColor={theme.backgroundElement}
     accessibilityRole="radio" accessibilityLabel={accessibilityLabel ?? label} accessibilityState={{ selected, checked: selected, disabled }}
-    onPress={() => { play('selection'); onPress(); }} style={[ControlStyles.pill, styles.chip, { borderColor: selected ? theme.accent : theme.line }]}>
+    onPress={() => { play('selection'); onPress(); }} style={[ControlStyles.pill, !clay && styles.chip, !clay && { borderColor: selected ? theme.accent : theme.line }]}>
     <ThemedText type="label" style={{ color: selected ? theme.accentInk : theme.text }}>{label}</ThemedText>
   </SelectionChip>;
 }

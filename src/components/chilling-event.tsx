@@ -4,6 +4,7 @@ import { memo, useState } from 'react';
 import { Image } from 'expo-image';
 import { ControlMotion } from '@/constants/design-system';
 import { StyleSheet, View } from 'react-native';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ReportSheet } from '@/components/report-sheet';
 import { TrustBadge } from '@/components/trust-badge';
@@ -37,9 +38,10 @@ export function MeetupFeeLine({ fee, paid }: { fee: NonNullable<RoomPreview['fee
 
 export function ChillingEventSchedule({ room }: { room: ChillingSchedule & Pick<RoomPreview, 'fee'> }) {
   const { tr, locale: appLocale } = useLanguage();
-  const once = chillingKind(room) === 'once';
+  const once = chillingKind(room) === 'once', clay = useClay();
   return <View style={{ gap: 4 }}>
-    <ThemedText type="smallBold" style={styles.support} themeColor="accent">{once ? tr('칠링') : tr('정기모임')}</ThemedText>
+    {clay ? <View style={[styles.clayLabel, { alignSelf: 'flex-start' }]}><ClayPillFill kind="white" /><ThemedText type="smallBold" style={styles.support} themeColor="accent">{once ? tr('칠링') : tr('정기모임')}</ThemedText></View>
+      : <ThemedText type="smallBold" style={styles.support} themeColor="accent">{once ? tr('칠링') : tr('정기모임')}</ThemedText>}
     <ThemedText style={styles.schedule}>{chillingSchedule(room, appLocale)}</ThemedText>
     <ThemedText type="small" style={styles.support} themeColor="textSecondary">{recommendedAgeLabel(room, appLocale)}{room.recommendedAgeMin != null ? ` · ${tr('범위 밖이어도 신청할 수 있어요')}` : ''}</ThemedText>
     {once && room.timezone ? <ThemedText type="small" style={styles.support} themeColor="textSecondary">{tr("{0} 기준", chillingTimezoneLabel(room, appLocale))}</ThemedText> : null}
@@ -63,7 +65,7 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
   post: Post; city: string; onOpen: () => void; onAuthor: () => void;
 }) {
   const { tr, locale: appLocale } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clay = useClay();
   const { me, isAuthed, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
   const [report, setReport] = useState(false);
@@ -90,10 +92,11 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
       <MeetupLabelBadges labels={labels} />
       <View style={styles.copy}>
       <View style={styles.meta}>
-        {countdown && <View style={[styles.countdown, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={[styles.support, { color: theme.accentInk }]}>{countdown}</ThemedText></View>}
-        <ThemedText type="smallBold" style={styles.support} themeColor="accent">{categoryLabel ? `${categoryLabel} · ` : ''}{group ? tr('정기모임') : tr('칠링')}</ThemedText>
-        {exchange && <View style={[styles.countdown, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" style={styles.support}>{languagePairLabel(exchange)}</ThemedText></View>}
-        {room?.recruitingClosed && <View style={[styles.countdown, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold" style={styles.support} themeColor="textSecondary">{tr('모집 마감')}</ThemedText></View>}
+        {countdown && <View style={[styles.countdown, clay ? styles.clayLabel : { backgroundColor: theme.accent }]}>{clay && <ClayPillFill kind="on" />}<ThemedText type="smallBold" style={[styles.support, { color: theme.accentInk }]}>{countdown}</ThemedText></View>}
+        {clay ? <View style={styles.clayLabel}><ClayPillFill kind="white" /><ThemedText type="smallBold" style={styles.support} themeColor="accent">{categoryLabel ? `${categoryLabel} · ` : ''}{group ? tr('정기모임') : tr('칠링')}</ThemedText></View>
+          : <ThemedText type="smallBold" style={styles.support} themeColor="accent">{categoryLabel ? `${categoryLabel} · ` : ''}{group ? tr('정기모임') : tr('칠링')}</ThemedText>}
+        {exchange && <View style={[styles.countdown, clay ? styles.clayLabel : { backgroundColor: theme.backgroundElement }]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold" style={styles.support}>{languagePairLabel(exchange)}</ThemedText></View>}
+        {room?.recruitingClosed && <View style={[styles.countdown, clay ? styles.clayLabel : { backgroundColor: theme.backgroundElement }]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold" style={styles.support} themeColor="textSecondary">{tr('모집 마감')}</ThemedText></View>}
       </View>
       <ThemedText accessibilityRole="header" style={styles.title}>{post.title}</ThemedText>
       <ThemedText style={styles.schedule}>{schedule}</ThemedText>
@@ -109,8 +112,8 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
     </Pressable>
     <View style={[styles.footer, styles.cardActions, { borderTopColor: theme.line }]}>
       <Pressable analyticsId="components_chilling-event.pressable.3" onPress={() => { play('selection'); onAuthor(); }} accessibilityRole="button" accessibilityLabel={tr("{0} 프로필", (post.author.nickname))} style={styles.author}><TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} /><ThemedText type="small" style={[styles.support, styles.flex]} themeColor="textSecondary" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{tr("{0}님이 열었어요 ›", post.author.nickname)}</ThemedText></Pressable>
-      <Pressable analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={post.author.id === me.id ? tr("내 모임에 초대하기") : tr("모임 공유하기")} style={styles.action}
-        onPress={() => { play('selection'); if (isAuthed) setSharing(true); else promptLogin('모임을 공유하려면 로그인해주세요.'); }}><ThemedText style={styles.schedule} themeColor="accent">{post.author.id === me.id ? tr("초대") : tr("공유")}</ThemedText></Pressable>
+      <Pressable analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={post.author.id === me.id ? tr("내 모임에 초대하기") : tr("모임 공유하기")} style={[styles.action, clay && styles.clayAction]}
+        onPress={() => { play('selection'); if (isAuthed) setSharing(true); else promptLogin('모임을 공유하려면 로그인해주세요.'); }}>{clay && <ClayPillFill kind="white" />}<ThemedText style={styles.schedule} themeColor="accent">{post.author.id === me.id ? tr("초대") : tr("공유")}</ThemedText></Pressable>
       {post.author.id !== me.id && <Pressable analyticsId="components_chilling-event.pressable.4" accessibilityRole="button" accessibilityLabel={tr("신고 및 차단")} style={styles.action} onPress={() => { play('selection'); if (isAuthed) setReport(true); else promptLogin('신고하려면 로그인해 주세요.'); }}><ThemedText style={{ color: theme.textSecondary }}>···</ThemedText></Pressable>}
     </View>
     <ReportSheet visible={report} targetType="post" targetId={post.id} reportedUserId={post.business ? undefined : post.author.id} reportedBusinessId={post.business?.id} reportedNickname={post.business?.name ?? post.author.nickname} onClose={() => setReport(false)} />
@@ -132,5 +135,5 @@ const styles = StyleSheet.create({
   schedule: { fontSize: 16, lineHeight: 24 }, support: { fontSize: 14, lineHeight: 20 },
   footer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   seat: { height: 6, borderRadius: 999, overflow: 'hidden', marginTop: 8 }, seatFlush: { marginTop: 0 }, seatFill: { height: '100%', borderRadius: 999 },
-  flex: { flex: 1, minWidth: 0 }, author: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }, action: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  flex: { flex: 1, minWidth: 0 }, author: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }, clayLabel: { overflow: 'visible', paddingHorizontal: 13, paddingVertical: 2 }, clayAction: { overflow: 'visible', paddingHorizontal: 18 }, action: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });

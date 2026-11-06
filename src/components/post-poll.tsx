@@ -2,6 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { GlingLoader } from '@/components/gling-loader';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
@@ -13,7 +14,7 @@ import { supabase } from '@/lib/supabase';
 
 export function PostPoll({ postId }: { postId: string }) {
   const { tr, locale: appLocale } = useLanguage();
-  const theme = useTheme(), { play } = useInteractionFeedback(), { isAuthed, me, promptLogin } = useAuth();
+  const theme = useTheme(), clay = useClay(), { play } = useInteractionFeedback(), { isAuthed, me, promptLogin } = useAuth();
   const key = `${postId}:${me.id}`;
   const [loaded, setLoaded] = useState<{ key: string; poll: Poll | null; error: boolean } | null>(null);
   const poll = loaded?.key === key ? loaded.poll : null, loadError = loaded?.key === key && loaded.error;
@@ -71,7 +72,8 @@ export function PostPoll({ postId }: { postId: string }) {
     {error && <ThemedText type="small" accessibilityLiveRegion="polite">{tr("투표를 저장하지 못했어요. 다시 시도해 주세요.")}</ThemedText>}
     <Pressable analyticsId="post.poll.vote" accessibilityRole="button" accessibilityLabel={voted ? tr("투표 완료") : tr("투표하기")}
       accessibilityState={{ disabled: voted || pending || selected === null, busy: pending }} disabled={voted || pending || selected === null}
-      onPress={() => void submit()} style={[styles.submit, { backgroundColor: theme.accent, opacity: voted || pending || selected === null ? .55 : 1 }]}>
+      onPress={() => void submit()} style={[styles.submit, clay && { overflow: 'visible', paddingHorizontal: 24 }, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: voted || pending || selected === null ? .55 : 1 }]}>
+      {clay && <ClayPillFill kind="cta" />}
       {pending ? <GlingLoader accessibilityLabel={tr("투표 저장 중")} size={16} /> : <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{voted ? tr("투표 완료") : tr("투표하기")}</ThemedText>}
     </Pressable>
     {!voted && <Pressable analyticsId="post.poll.preview" accessibilityRole="button" accessibilityLabel={preview ? tr("결과 미리 보기 닫기") : tr("투표 결과 미리 보기")}

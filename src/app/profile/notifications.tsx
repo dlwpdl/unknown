@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, AppState, DeviceEventEmitter, Linking, Platform, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ControlMotion } from '@/constants/design-system';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -28,6 +29,7 @@ export default function NotificationSettingsScreen() {
 
 function NotificationSettings({ userId, cityName }: { userId: string; cityName: string }) {
   const { tr } = useLanguage();
+  const clay = useClay();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const { fontScale } = useWindowDimensions();
@@ -132,8 +134,9 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
       <View style={styles.tags}>{TAGS.map(tag => <Pressable analyticsId="app_profile_notifications.pressable.3" key={tag.id} accessibilityRole="checkbox" accessibilityState={{ checked: tagIds.includes(tag.id), disabled: busy }}
         aria-checked={tagIds.includes(tag.id)}
         disabled={busy} onPress={() => { play('selection'); setTagIds(current => current.includes(tag.id) ? current.filter(id => id !== tag.id) : [...current, tag.id].sort((a, b) => a - b)); }}
-        style={({ pressed }) => [styles.tag, Depth.control, { backgroundColor: tagIds.includes(tag.id) ? theme.accent : theme.backgroundElement, borderBottomColor: tagIds.includes(tag.id) ? theme.accentDepth : theme.line, borderBottomWidth: 3, }]}>
-        <ThemedText type="smallBold" style={{ color: tagIds.includes(tag.id) ? theme.accentInk : theme.textSecondary }}>{tr(tag.label)}</ThemedText>
+        style={({ pressed }) => [styles.tag, clay ? styles.clayPad : Depth.control, clay ? { backgroundColor: 'transparent' } : { backgroundColor: tagIds.includes(tag.id) ? theme.accent : theme.backgroundElement, borderBottomColor: tagIds.includes(tag.id) ? theme.accentDepth : theme.line, borderBottomWidth: 3, }]}>
+        {clay && <ClayPillFill kind={tagIds.includes(tag.id) ? 'on' : 'white'} />}
+        <ThemedText type="smallBold" style={{ color: tagIds.includes(tag.id) ? theme.accentInk : clay ? theme.text : theme.textSecondary }}>{tr(tag.label)}</ThemedText>
       </Pressable>)}</View>
       <TextInput accessibilityLabel={tr("관심 해시태그")} value={hashtags} onChangeText={setHashtags} editable={!busy}
         placeholder={tr("#러닝 #맛집 #워홀")} placeholderTextColor={theme.textSecondary} maxLength={1000} autoCapitalize="none" autoCorrect={false}
@@ -142,8 +145,9 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
       {invalidHashtags && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">{tr("해시태그는 20개까지, 각각 50자 이내로 적어주세요.")}</ThemedText>}
       <Pressable analyticsId="app_profile_notifications.pressable.4" accessibilityRole="button" disabled={busy || !interestsChanged || invalidHashtags} accessibilityState={{ disabled: busy || !interestsChanged || invalidHashtags, busy }}
         aria-busy={busy}
-        style={({ pressed }) => [styles.save, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: busy || !interestsChanged || invalidHashtags ? 0.45 : 1, }]}
+        style={({ pressed }) => [styles.save, clay ? styles.clayWide : Depth.control, { backgroundColor: clay ? 'transparent' : theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: clay ? 0 : 3, opacity: busy || !interestsChanged || invalidHashtags ? 0.45 : 1, }]}
         onPress={() => { play('selection'); void save({ interest_tag_ids: tagIds, interest_hashtags: parsedHashtags }); }}>
+        {clay && <ClayPillFill kind="cta" />}
         <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr("관심 태그 저장")}</ThemedText>
       </Pressable>
       <ThemedText type="small" themeColor="textSecondary">{tr("안전·계정 이용에 꼭 필요한 안내는 앱의 알림 목록에 남습니다.")}</ThemedText>
@@ -166,12 +170,14 @@ function CategoryRow({ label, description, app, push, pushDisabled, locked, disa
 
 function Pill({ text, label, value, disabled, locked, onChange }: { text: string; label: string; value: boolean; disabled: boolean; locked: boolean; onChange: (next: boolean) => void }) {
   const theme = useTheme();
+  const clay = useClay();
   const { play } = useInteractionFeedback();
   return <Pressable analyticsId="app_profile_notifications.pressable.5" accessibilityRole="switch" accessibilityLabel={label} accessibilityState={{ checked: value, disabled }} aria-checked={value}
     disabled={disabled} hitSlop={{ top: 8, bottom: 8 }} onPress={() => { play('selection'); onChange(!value); }}
-    style={({ pressed }) => [styles.pill, { backgroundColor: value ? theme.accent : theme.backgroundSelected,
+    style={({ pressed }) => [styles.pill, clay && { overflow: 'visible' }, { backgroundColor: clay ? 'transparent' : value ? theme.accent : theme.backgroundSelected,
       opacity: locked ? 0.55 : disabled ? ControlMotion.disabledOpacity : pressed ? ControlMotion.pressedOpacity : 1 }]}>
-    <ThemedText type="smallBold" style={{ color: value ? theme.accentInk : theme.textSecondary }}>{text}</ThemedText>
+    {clay && <ClayPillFill kind={value ? 'on' : 'white'} />}
+    <ThemedText type="smallBold" style={{ color: value ? theme.accentInk : clay ? theme.text : theme.textSecondary }}>{text}</ThemedText>
   </Pressable>;
 }
 
@@ -199,6 +205,8 @@ const styles = StyleSheet.create({
   group: { gap: Spacing.two }, groupHead: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.two, paddingHorizontal: Spacing.three },
   pill: { width: 44, minHeight: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, tag: { minHeight: 44, borderRadius: 22, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, justifyContent: 'center' },
+  clayPad: { overflow: 'visible', paddingHorizontal: 18 },
+  clayWide: { overflow: 'visible', paddingHorizontal: 24 },
   input: { minHeight: 48, borderWidth: 1, borderRadius: 10, padding: Spacing.three, fontSize: 16 },
   save: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, padding: Spacing.two },
 });

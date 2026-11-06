@@ -8,6 +8,7 @@ import { ChillingDateInput } from '@/components/chilling-date-input';
 import { DragSheet } from '@/components/drag-sheet';
 import { InitialAvatar, ListCard, ListLoading, ListRow, SectionLabel, Tag } from '@/components/list-card';
 import { RaisedActionButton } from '@/components/raised-action-button';
+import { ClayControlFill, ClayPillFill, useClay } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -76,11 +77,12 @@ export function MeetupBadgeChips({ levels }: { levels: Partial<BadgeLevels> | un
 function ToggleChip({ analyticsId, label, selected, busy, disabled, onPress, hint }: {
   analyticsId: string; label: string; selected: boolean; busy?: boolean; disabled?: boolean; onPress: () => void; hint?: string;
 }) {
-  const theme = useTheme();
+  const theme = useTheme(), clay = useClay();
   const blocked = !!busy || !!disabled;
   return <Pressable analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={label} accessibilityHint={hint}
     accessibilityState={{ selected, disabled: blocked, busy: !!busy }} disabled={blocked} onPress={onPress}
-    style={({ pressed }) => [ControlStyles.pill, controlPresentation(theme, { selected, pressed, disabled, busy }).container]}>
+    style={({ pressed }) => [ControlStyles.pill, clay && styles.clayPill, controlPresentation(theme, { selected, pressed, disabled, busy, clay }).container]}>
+    {clay && <ClayControlFill selected={selected} />}
     <ThemedText type="smallBold" style={controlPresentation(theme, { selected }).text}>{label}</ThemedText>
   </Pressable>;
 }
@@ -266,7 +268,7 @@ function NoticeBoard({ postId, state, notices, onChanged }: { postId: string; st
 
 function NoticeItem({ notice, label, day, children }: { notice: PinnedNotice; label: string; day: string; children?: React.ReactNode }) {
   const { tr } = useLanguage();
-  const { play } = useInteractionFeedback();
+  const { play } = useInteractionFeedback(), clay = useClay();
   const [full, setFull] = useState(false);
   const long = [...notice.body].length > 140;
   return <View style={styles.noticeItem}>
@@ -275,7 +277,8 @@ function NoticeItem({ notice, label, day, children }: { notice: PinnedNotice; la
       <ThemedText themeColor="textSecondary" style={Typography.caption}>{day}</ThemedText>
     </View>
     <ThemedText selectable numberOfLines={long && !full ? 5 : undefined} style={Typography.body}>{notice.body}</ThemedText>
-    {long && <Pressable analyticsId="meetup.notice.more" accessibilityRole="button" accessibilityState={{ expanded: full }} onPress={() => { play('selection'); setFull(value => !value); }} style={styles.more}>
+    {long && <Pressable analyticsId="meetup.notice.more" accessibilityRole="button" accessibilityState={{ expanded: full }} onPress={() => { play('selection'); setFull(value => !value); }} style={[styles.more, clay && styles.clayMore]}>
+      {clay && <ClayPillFill kind="white" />}
       <ThemedText type="smallBold" themeColor="accent">{full ? tr('접기') : tr('더 보기')}</ThemedText>
     </Pressable>}
     {children}
@@ -476,6 +479,7 @@ const styles = StyleSheet.create({
   sheetList: { gap: Spacing.three, paddingBottom: Spacing.three },
   noticeItem: { gap: Spacing.one },
   noticeRow: { padding: Spacing.three, gap: Spacing.one },
+  clayPill: { overflow: 'visible', paddingHorizontal: 18 }, clayMore: { overflow: 'visible', paddingHorizontal: 18, alignSelf: 'flex-start' },
   more: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   send: { marginTop: Spacing.three },
   note: { marginTop: Spacing.two },

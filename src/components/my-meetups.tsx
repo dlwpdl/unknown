@@ -1,6 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable } from '@/components/analytics-controls';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert, DeviceEventEmitter, Platform, StyleSheet, View } from 'react-native';
@@ -39,7 +40,7 @@ export function MyMeetups(props: MyMeetupsProps) {
 }
 function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = false, summaryRows = [] }: MyMeetupsProps) {
   const { tr, t, language, locale: appLocale } = useLanguage();
-  const theme = useTheme(), reduced = useReducedMotion();
+  const theme = useTheme(), clay = useClay(), reduced = useReducedMotion();
   const hidden = useContentVisibility();
   const router = useRouter();
   const { isAuthed, isAdmin, me, promptLogin } = useAuth();
@@ -153,7 +154,8 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = fal
         {isAdmin ? tr('관리자 계정 · 제한 없음') : <>{tr("모임 자리") + " "}<ThemedText type="smallBold" style={styles.support}>{slots.active}/{slots.limit}</ThemedText></>}
       </ThemedText>}
     </View>}
-    {!isAuthed ? <Pressable analyticsId="components_my-meetups.pressable.1" onPress={() => { play('selection'); promptLogin(t.auth.reasonJoinLogin); }} accessibilityRole="button" style={[styles.empty, { borderColor: theme.line }]}>
+    {!isAuthed ? <Pressable analyticsId="components_my-meetups.pressable.1" onPress={() => { play('selection'); promptLogin(t.auth.reasonJoinLogin); }} accessibilityRole="button" style={[styles.empty, clay ? styles.clayEmpty : { borderColor: theme.line }]}>
+      {clay && <ClayPillFill kind="white" />}
       <ThemedText type="small" style={styles.body} themeColor="accent">{tr("로그인하고 내 모임 보기")}</ThemedText>
     </Pressable> : <>
       {loading && items.length === 0 && showLoadingIndicator && <GlingLoader color={theme.accent} accessibilityLabel={tr("내 모임 불러오는 중")} />}
@@ -178,19 +180,22 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = fal
                 </Pressable>
                 {canChange && <Pressable analyticsId="components_my-meetups.pressable.4" accessibilityRole="button" accessibilityLabel={tr("{0} 더보기", meetup.title)} disabled={!!busy} accessibilityState={{ disabled: !!busy }}
                   onPress={() => { play('selection'); setMenuFor(meetup); }}
-                  style={({ pressed }) => [styles.more, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
+                  style={({ pressed }) => [styles.more, clay && styles.clayVisible, { backgroundColor: clay ? 'transparent' : pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
+                  {clay && <ClayPillFill kind="white" />}
                   <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={18} tintColor={theme.text} />
                 </Pressable>}
               </View>
               {(member || !!meetup.conversationId) && <View style={styles.actions}>
                 {meetup.conversationId && <Pressable analyticsId="components_my-meetups.pressable.3"
                   onPress={() => { play('selection'); router.push({ pathname: '/chat', params: { conversationId: meetup.conversationId! } }); }}
-                  accessibilityRole="button" style={({ pressed }) => [styles.action, styles.grow, { borderRadius: 12, backgroundColor: theme.accent, opacity: pressed ? 0.85 : 1 }]}>
+                  accessibilityRole="button" style={({ pressed }) => [styles.action, styles.grow, clay && styles.clayVisible, { borderRadius: 12, backgroundColor: clay ? 'transparent' : theme.accent, opacity: pressed ? 0.85 : 1 }]}>
+                  {clay && <ClayPillFill kind="cta" />}
                   <ThemedText type="smallBold" style={[styles.body, { color: theme.accentInk }]}>{member ? t.meetup.openChat : tr('지난 대화 보기')}</ThemedText>
                 </Pressable>}
                 {member && <Pressable analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={tr("{0} 초대 링크 공유", (meetup.title))}
                   disabled={!!busy} accessibilityState={{ disabled: !!busy, busy: busy === meetup.id }} onPress={() => void invite(meetup)}
-                  style={({ pressed }) => [styles.action, styles.grow, { borderRadius: 12, backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
+                  style={({ pressed }) => [styles.action, styles.grow, clay && styles.clayVisible, { borderRadius: 12, backgroundColor: clay ? 'transparent' : pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
+                  {clay && <ClayPillFill kind="white" />}
                   <ThemedText style={styles.body} themeColor="accent">{meetup.role === 'host' ? tr("초대 링크") : tr("친구 초대")}</ThemedText>
                 </Pressable>}
               </View>}
@@ -227,5 +232,6 @@ const styles = StyleSheet.create({
   policy: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
   summary: { marginTop: Spacing.two },
   action: { minHeight: 44, minWidth: 44, padding: Spacing.two, alignItems: 'center', justifyContent: 'center' },
+  clayVisible: { overflow: 'visible' }, clayEmpty: { overflow: 'visible', borderWidth: 0, paddingHorizontal: 24, justifyContent: 'center', alignSelf: 'flex-start' },
   empty: { minHeight: 44, borderWidth: 1, borderRadius: 12, padding: Spacing.three },
 });

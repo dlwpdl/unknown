@@ -323,7 +323,7 @@ test('the meetup card, schedule and fee line render the compact CAD fee in both 
       '@/hooks/use-language': { useLanguage: () => ({ language, locale: language === 'en' ? 'en-CA' : 'ko-KR', tr: (value, ...args) => translateUi(language, value, ...args) }) },
       '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/auth': { useAuth: () => ({ me: { id: 'viewer' }, isAuthed: true }) }, '@/lib/chilling': chilling, '@/lib/meetup-language': meetupLanguage, '@/lib/meetup-host-tools': hostTools,
       '@/lib/feed-data': { getPostImageSource: () => null }, '@/lib/community-data': {}, '@/lib/supabase': {}, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
-      '@/components/newcomer': { MeetupLabelBadges: 'MeetupLabelBadges', useMeetupLabelPrefix: () => '' },
+      '@/components/newcomer': { MeetupLabelBadges: 'MeetupLabelBadges', useMeetupLabelPrefix: () => '' }, '@/components/clay': { useClay: () => false, ClayPillFill: () => null },
     };
     vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, { exports, require: name => {
       if (name in imports) return imports[name];

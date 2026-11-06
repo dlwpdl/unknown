@@ -424,7 +424,7 @@ function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = da
     '@/lib/community-city': { useCommunityCity: () => ({ city: cities[0] }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'anonymous' } }) },
     '@/lib/product-analytics': product,
-    '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
     '@/components/place-saves': { PlaceSavedBy: 'PlaceSavedBy', PlaceRelated: 'PlaceRelated', usePlaceSaves: () => null }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) }, '@/components/page-header': { PageHeader: 'PageHeader' },
     '@/hooks/use-current-location': { useCurrentLocation: () => currentLocation }, '@/lib/discovery-sort': distance, '@/constants/design-system': { ControlStyles: { pill: {} } }, '@/components/city-popular-places': { NearbyPlacesLocation: 'NearbyPlacesLocation' },
@@ -721,7 +721,7 @@ function photoModule(imports = {}) {
     'react-native': { useWindowDimensions: () => ({ width: 390, fontScale: 1 }), StyleSheet: { create: v => v, absoluteFill: {} }, View: 'View' },
     'expo-image': { Image: 'Image' },
     'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
-    '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
     ...imports,
   });
 }
@@ -1180,7 +1180,7 @@ test('G2 place saves: friends by name, similar places named from the catalog, li
     'react-native': { StyleSheet: { create: v => v }, View: 'View', Linking: { openURL: async url => { opened.push(url); } } },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'ThemedText' },
     '@/constants/design-system': { ControlStyles: { pill: {} }, controlPresentation: () => ({ container: {} }) },
-    '@/hooks/use-language': { useLanguage: () => ({ tr, language: 'ko', locale: 'ko-KR' }) }, '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/hooks/use-language': { useLanguage: () => ({ tr, language: 'ko', locale: 'ko-KR' }) }, '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/city-places': { getCityPlaces: () => catalogPlaces }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: v => feedback.push(v) }) },
     '@/lib/profile-friends': { loadPlaceSaves: async () => null }, '@/lib/supabase': { supabase: {} },
   });

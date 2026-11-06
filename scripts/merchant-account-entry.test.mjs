@@ -40,6 +40,7 @@ function app(component = 'MerchantAccountEntry') {
     if (name === '@/components/themed-text') return { ThemedText: 'ThemedText' };
     if (name === '@/components/merchant-ui') return { MerchantHelp: 'MerchantHelp', MerchantBadge: 'MerchantBadge' };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ accent: '#CBB9FF' }) };
+    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
     if (name === '@/lib/auth') return { useAuth: () => auth };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) };
     if (name === '@/lib/merchant-connections') return connections;

@@ -6,6 +6,7 @@ import { SymbolView } from '@/components/symbol-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
 
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { animateLayout } from '@/components/disclosure';
 import { ThemedText } from '@/components/themed-text';
 import { ChatMemberAvatar } from '@/components/chat-member-avatar';
@@ -21,7 +22,7 @@ import { supabase } from '@/lib/supabase';
 
 export function ChatMembers({ conversationId, groupPostId, currentUserId, onMembersChange, onOpenProfile }: { conversationId: string; groupPostId: string; currentUserId: string; onMembersChange?: (members: ChatMember[] | null) => void; onOpenProfile?: (id: string) => void }) {
   const { tr } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clay = useClay(), clayBox = useClayBox();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
   const { play } = useInteractionFeedback();
@@ -92,7 +93,8 @@ export function ChatMembers({ conversationId, groupPostId, currentUserId, onMemb
     Alert.alert(title, message, [{ text: tr("돌아가기"), style: 'cancel', onPress: () => play('selection') }, { text: tr("내보내기"), style: 'destructive', onPress: () => void remove(member) }]);
   };
   return <>
-    <Pressable analyticsId="components_chat-members.pressable.1" accessibilityRole="button" accessibilityLabel={tr("대화 멤버 목록")} onPress={() => { play('selection'); setManaging(null); setActionError(null); setOpen(true); void refresh(); }} style={[styles.button, styles.roster]}>
+    <Pressable analyticsId="components_chat-members.pressable.1" accessibilityRole="button" accessibilityLabel={tr("대화 멤버 목록")} onPress={() => { play('selection'); setManaging(null); setActionError(null); setOpen(true); void refresh(); }} style={[styles.button, styles.roster, clay && styles.buttonClay]}>
+      {clay && <ClayPillFill kind="white" />}
       <View style={styles.portraits}>
         {visible?.slice(0, 4).map((member, index) => <ChatMemberAvatar key={member.id} viewerId={currentUserId} roomId={conversationId}
           path={member.avatar_path} active={!open} style={[styles.portrait, { marginLeft: index ? -7 : 0, borderColor: theme.card }]}
@@ -106,9 +108,10 @@ export function ChatMembers({ conversationId, groupPostId, currentUserId, onMemb
         <Pressable analyticsId="components_chat-members.pressable.2" accessibilityRole="button" accessibilityLabel={tr("멤버 목록 닫기")} style={StyleSheet.absoluteFill} onPress={() => { play('selection'); setOpen(false); }} />
         <View accessibilityViewIsModal style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.three) }]}>
           {managed ? <>
-            <View style={styles.header}><ThemedText type="subtitle" numberOfLines={2} style={styles.name}>{managed.nickname}</ThemedText><Pressable analyticsId="components_chat-members.pressable.3" accessibilityRole="button" accessibilityLabel={tr("멤버 목록")} onPress={() => { play('selection'); animateLayout(reducedMotion); setManaging(null); setActionError(null); }} style={styles.button}><ThemedText type="smallBold">{tr("뒤로")}</ThemedText></Pressable></View>
+            <View style={styles.header}><ThemedText type="subtitle" numberOfLines={2} style={styles.name}>{managed.nickname}</ThemedText><Pressable analyticsId="components_chat-members.pressable.3" accessibilityRole="button" accessibilityLabel={tr("멤버 목록")} onPress={() => { play('selection'); animateLayout(reducedMotion); setManaging(null); setActionError(null); }} style={[styles.button, clay && styles.buttonClay]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold">{tr("뒤로")}</ThemedText></Pressable></View>
             {shared !== undefined && <Pressable analyticsId="meetup.member.history" accessibilityRole="switch" accessibilityLabel={tr("이전 대화 보여주기")} accessibilityState={{ checked: shared, disabled: saving, busy: saving }}
-              disabled={saving} onPress={() => void toggleHistory(managed, !shared)} style={styles.action}>
+              disabled={saving} onPress={() => void toggleHistory(managed, !shared)} style={[styles.action, clayBox && styles.actionClay]}>
+              {clayBox && <ClayBoxFill kind="tile" />}
               <View style={[styles.actionIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'clock.arrow.circlepath', android: 'history', web: 'history' }} size={IconSize.inline} tintColor={theme.accent} /></View>
               <View style={styles.name}><ThemedText type="default">{tr("이전 대화 보여주기")}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">{shared ? tr("참여하기 전의 대화도 볼 수 있어요.") : tr("참여한 뒤의 대화만 볼 수 있어요.")}</ThemedText></View>
@@ -116,15 +119,16 @@ export function ChatMembers({ conversationId, groupPostId, currentUserId, onMemb
             </Pressable>}
             <View style={[styles.divider, { backgroundColor: theme.line }]} />
             <Pressable analyticsId="meetup.member.remove" accessibilityRole="button" accessibilityLabel={tr("모임에서 내보내기")} accessibilityState={{ disabled: saving, busy: saving }}
-              disabled={saving} onPress={() => confirmRemove(managed)} style={styles.action}>
+              disabled={saving} onPress={() => confirmRemove(managed)} style={[styles.action, clayBox && styles.actionClay]}>
+              {clayBox && <ClayBoxFill kind="tile" />}
               <View style={[styles.actionIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'person.badge.minus', android: 'person_remove', web: 'person_remove' }} size={IconSize.inline} tintColor={theme.danger} /></View>
               <View style={styles.name}><ThemedText type="default" themeColor="danger">{tr("모임에서 내보내기")}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">{tr("대화방에서 나가게 되고 24시간 뒤에 다시 신청할 수 있어요.")}</ThemedText></View>
             </Pressable>
             {!!actionError && <ThemedText type="small" themeColor="danger" accessibilityRole="alert">{actionError}</ThemedText>}
           </> : <>
-          <View style={styles.header}><ThemedText type="subtitle">{visible ? tr("멤버 {0}명", (visible.length)) : tr("대화 멤버")}</ThemedText><Pressable analyticsId="components_chat-members.pressable.3" accessibilityRole="button" onPress={() => { play('selection'); setOpen(false); }} style={styles.button}><ThemedText type="smallBold">{tr("닫기")}</ThemedText></Pressable></View>
-          {failed ? <View style={styles.error}><ThemedText type="small" accessibilityRole="alert">{tr("멤버를 불러오지 못했어요.")}</ThemedText><Pressable analyticsId="components_chat-members.pressable.4" accessibilityRole="button" style={styles.button} onPress={() => { play('selection'); void refresh(); }}><ThemedText type="smallBold" themeColor="accent">{tr("다시 시도")}</ThemedText></Pressable></View>
+          <View style={styles.header}><ThemedText type="subtitle">{visible ? tr("멤버 {0}명", (visible.length)) : tr("대화 멤버")}</ThemedText><Pressable analyticsId="components_chat-members.pressable.3" accessibilityRole="button" onPress={() => { play('selection'); setOpen(false); }} style={[styles.button, clay && styles.buttonClay]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold">{tr("닫기")}</ThemedText></Pressable></View>
+          {failed ? <View style={styles.error}><ThemedText type="small" accessibilityRole="alert">{tr("멤버를 불러오지 못했어요.")}</ThemedText><Pressable analyticsId="components_chat-members.pressable.4" accessibilityRole="button" style={[styles.button, clay && styles.buttonClay]} onPress={() => { play('selection'); void refresh(); }}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold" themeColor="accent">{tr("다시 시도")}</ThemedText></Pressable></View>
             : <FlatList key={scope} analyticsId="components_chat-members.flatlist.1" data={visible ?? []} keyExtractor={(member) => member.id}
               initialNumToRender={10} maxToRenderPerBatch={10} windowSize={5} onViewableItemsChanged={trackVisibleMembers} viewabilityConfig={viewability}
               ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary">{members ? tr("표시할 멤버가 없어요.") : tr("멤버를 불러오는 중이에요.")}</ThemedText>} renderItem={({ item }) => { const manageable = isHost && !item.is_host; const row = <Pressable analyticsId="meetup.member-profile" accessibilityRole="button" accessibilityLabel={tr("{0} 모임 프로필", item.nickname)} disabled={!onOpenProfile} onPress={() => { play('selection'); setOpen(false); onOpenProfile?.(item.id); }} style={[styles.member, manageable && styles.name]}>
@@ -147,6 +151,8 @@ export function ChatMembers({ conversationId, groupPostId, currentUserId, onMemb
 
 const styles = StyleSheet.create({
   button: { minHeight: 44, minWidth: 44, justifyContent: 'center', paddingHorizontal: Spacing.two },
+  buttonClay: { overflow: 'visible', paddingHorizontal: 18 },
+  actionClay: { overflow: 'visible', marginBottom: Spacing.two },
   roster: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   portraits: { flexDirection: 'row', alignItems: 'center' },
   portrait: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },

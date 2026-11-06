@@ -1,10 +1,9 @@
 import { useLanguage } from '@/hooks/use-language';
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayCoinFill, ClayIcon, ClayPhoto, ClayPillFill, useClay } from '@/components/clay';
 import { ChatIdentitySwitcher } from '@/components/chat-identity-switcher';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import * as ImagePicker from 'expo-image-picker';
-import { Image } from 'expo-image';
 import { SymbolView } from '@/components/symbol-view';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -153,17 +152,16 @@ export default function ProfileScreen() {
             accessibilityRole="button"
             accessibilityLabel={t.profile.changePhoto}
             style={styles.photoButton}>
-            <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}>
-              {me.photoUri ? (
-                <Image source={{ uri: me.photoUri }} style={styles.avatarImage} contentFit="cover" transition={120} />
-              ) : (
-                <ThemedText type="subtitle" style={{ color: theme.navy }}>
+            <View style={[styles.avatar, clay ? styles.avatarClay : { backgroundColor: theme.backgroundElement }]}>
+              {me.photoUri ? <ClayPhoto uri={me.photoUri} size={72} /> : <>
+                {clay && <ClayCoinFill me />}
+                <ThemedText type="subtitle" style={{ color: clay ? theme.accentInk : theme.navy }}>
                   {me.nickname[0]}
                 </ThemedText>
-              )}
+              </>}
             </View>
-            <View pointerEvents="none" style={[styles.photoBadge, { backgroundColor: theme.accent, borderColor: theme.background }]}>
-              <SymbolView name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' }} size={14} tintColor={theme.accentInk} />
+            <View pointerEvents="none" style={[styles.photoBadge, clay ? styles.photoBadgeClay : { backgroundColor: theme.accent, borderColor: theme.background }]}>
+              <ClayIcon clay="camera" name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' }} size={clay ? 22 : 14} tintColor={theme.accentInk} />
             </View>
           </Pressable>
           <View style={styles.nickRow}>
@@ -254,7 +252,8 @@ const styles = StyleSheet.create({
   photoButton: { width: 72, height: 72, marginBottom: Spacing.two },
   photoBadge: { position: 'absolute', bottom: -2, right: -2, width: 28, height: 28, borderRadius: 14, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
   avatar: { width: 72, height: 72, borderRadius: 36, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  avatarImage: { width: '100%', height: '100%' },
+  avatarClay: { overflow: 'visible' },
+  photoBadgeClay: { backgroundColor: 'transparent', borderWidth: 0 },
   nickRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.two },
   nick: { flexShrink: 1, textAlign: 'center', fontSize: 24, lineHeight: 32, fontWeight: 700 },
   top: { paddingTop: Spacing.three },

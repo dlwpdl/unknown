@@ -3,7 +3,7 @@ import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Image } from 'expo-image';
 import { SymbolView } from '@/components/symbol-view';
-import { ClayBoxFill, ClayCoinFill, ClayIcon, useClay, useClayBox } from '@/components/clay';
+import { ClayBoxFill, ClayCoinFill, ClayIcon, ClayPhoto, useClay, useClayBox } from '@/components/clay';
 import { Alert, Animated, DeviceEventEmitter, Easing, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -103,6 +103,7 @@ export function PostCard({
   const [reportOpen, setReportOpen] = useState(false);
   const [failedBusinessLogo, setFailedBusinessLogo] = useState<string | null>(null);
   const cardLogo = !!post.business?.avatarUri && failedBusinessLogo !== post.business.avatarUri;
+  const authorPhoto = !post.business && post.author.avatarUrl !== failedBusinessLogo ? post.author.avatarUrl : undefined;
   const [shareOpen, setShareOpen] = useState(false);
   const [failedPhoto, setFailedPhoto] = useState<{ postId: string; uri: string } | null>(null);
   const [loadedPhoto, setLoadedPhoto] = useState<{ key: string; aspectRatio: number } | null>(null);
@@ -311,8 +312,9 @@ export function PostCard({
           <Pressable analyticsId="components_post-card.pressable.4" onPress={openAuthor} disabled={!onAuthor} hitSlop={2}
             accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
             style={[styles.feedAvatar, { backgroundColor: clay && !logo ? 'transparent' : theme.backgroundSelected }, clay && !logo && styles.clayAvatar]}>
-            {clay && !logo && <ClayCoinFill />}
+            {clay && !logo && !authorPhoto && <ClayCoinFill />}
             {logo ? <Image source={{ uri: logo }} style={StyleSheet.absoluteFill} contentFit="cover" accessibilityIgnoresInvertColors onError={() => setFailedBusinessLogo(logo)} />
+              : authorPhoto ? <ClayPhoto uri={authorPhoto} size={FEED_AVATAR} onError={() => setFailedBusinessLogo(authorPhoto)} />
               : <ThemedText type="menu" style={{ color: theme.accent }}>{[...name][0]}</ThemedText>}
           </Pressable>
           <View style={styles.feedMain}>
@@ -432,9 +434,9 @@ export function PostCard({
             disabled={!onAuthor}
             accessibilityRole={onAuthor ? 'button' : undefined}
             style={({ pressed }) => [styles.author, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent', transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
-            <View style={[styles.avatar, clay && !cardLogo && styles.clayCardAvatar, { backgroundColor: clay && !cardLogo ? 'transparent' : mine ? theme.accent : theme.backgroundElement }]}>
-              {clay && !cardLogo && <ClayCoinFill me={mine} />}
-              {post.business?.avatarUri && failedBusinessLogo !== post.business.avatarUri ? <Image
+            <View style={[styles.avatar, (clay || authorPhoto) && !cardLogo && styles.clayCardAvatar, { backgroundColor: clay && !cardLogo ? 'transparent' : mine ? theme.accent : theme.backgroundElement }]}>
+              {clay && !cardLogo && !authorPhoto && <ClayCoinFill me={mine} />}
+              {authorPhoto ? <ClayPhoto uri={authorPhoto} size={32} onError={() => setFailedBusinessLogo(authorPhoto)} /> : post.business?.avatarUri && failedBusinessLogo !== post.business.avatarUri ? <Image
                 source={{ uri: post.business.avatarUri }} style={{ width: 32, height: 32, borderRadius: 16 }} contentFit="cover"
                 accessibilityIgnoresInvertColors onError={() => setFailedBusinessLogo(post.business!.avatarUri!)} /> :
               <ThemedText type="smallBold" style={{ color: mine ? theme.accentInk : theme.navy }}>

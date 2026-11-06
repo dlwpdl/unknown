@@ -24,6 +24,7 @@ function panel(opened = []) {
     if (name === '@/components/raised-action-button') return { RaisedActionButton: 'RaisedActionButton' };
     if (name === 'expo-apple-authentication') return { AppleAuthenticationButton: 'AppleButton', AppleAuthenticationButtonType: { SIGN_IN: 0 }, AppleAuthenticationButtonStyle: { WHITE: 0, BLACK: 1 } };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
+    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
 if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
     if (name === '@/constants/theme') return { Colors: { dark: {} }, Spacing: {}, Depth: { card: {}, control: {} } };
     if (name === '@/i18n/ko') return { t };

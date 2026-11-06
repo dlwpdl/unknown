@@ -50,7 +50,7 @@ import { ProfileAvatarButton } from '@/components/profile-avatar-button';
 import { BusinessWriter } from '@/components/business-writer';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { RaisedActionButton } from '@/components/raised-action-button';
-import { ClayIcon, ClayPillFill, useClay, type ClayName } from '@/components/clay';
+import { ClayBoxFill, ClayIcon, ClayPillFill, useClay, useClayBox, type ClayName } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
 import { StartGuide } from '@/components/start-guide';
@@ -129,7 +129,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const insets = useSafeAreaInsets();
   const bottomClear = insets.bottom + TabBarHeight; // 탭바 + 홈 인디케이터 실측 높이
   // 글쓰기 탭 대신 떠 있는 버튼 (owner 2026-11-01 A안). 웹은 아래 탭에 글쓰기가 그대로 있다.
-  const clay = useClay();
+  const clay = useClay(), clayBox = useClayBox();
   const writeFab = Platform.OS !== 'web' && !meetupsOnly;
   const writeFabCompact = viewportWidth < 380; // 폴드 바깥 화면 같은 좁은 폭에서는 + 하나만
   // 실측: iOS 탭 화면의 insets.bottom은 이미 탭바까지 포함(탭마다 SafeAreaProvider), 안드로이드 탭 내용은 탭바 위에서 끝난다.
@@ -814,7 +814,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       ) : feedData.length > 0 && listingPosts.length === 0 ? (
         <View style={styles.soon}>
           <ThemedText accessibilityRole="header" style={styles.soonTitle}>{tr('조건에 맞는 글이 없어요')}</ThemedText>
-          <Pressable analyticsId="listing.filters.reset" onPress={() => { play('selection'); setListingFilters(NO_LISTING_FILTERS); }} accessibilityRole="button" style={({ pressed }) => [styles.soonCta, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, opacity: pressed ? 0.82 : 1 }]}>
+          <Pressable analyticsId="listing.filters.reset" onPress={() => { play('selection'); setListingFilters(NO_LISTING_FILTERS); }} accessibilityRole="button" style={({ pressed }) => [styles.soonCta, !clay && Depth.control, clay && styles.clayCta, { backgroundColor: clay ? 'transparent' : theme.accent, borderBottomColor: theme.accentDepth, opacity: pressed ? 0.82 : 1 }]}>
+            {clay && <ClayPillFill kind="cta" />}
             <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr('조건 모두 지우기')}</ThemedText>
           </Pressable>
         </View>
@@ -822,7 +823,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         <View style={styles.soon}>
           <ThemedText accessibilityRole="header" style={styles.soonTitle}>{meetupsOnly ? t.feed.meetupEmptyTitle : activeSort === 'popular' ? tr("최근 7일 글이 아직 없어요") : t.feed.emptyTitle}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary" style={styles.soonBody}>{meetupsOnly ? t.feed.meetupEmptyBody : activeSort === 'popular' ? tr("최신순에서 다른 이야기도 둘러보세요.") : t.feed.emptyBody}</ThemedText>
-          <Pressable analyticsId="components_feed-screen.pressable.6" onPress={openWriter} accessibilityRole="button" style={({ pressed }) => [styles.soonCta, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, }]}>
+          <Pressable analyticsId="components_feed-screen.pressable.6" onPress={openWriter} accessibilityRole="button" style={({ pressed }) => [styles.soonCta, !clay && Depth.control, clay && styles.clayCta, { backgroundColor: clay ? 'transparent' : theme.accent, borderBottomColor: theme.accentDepth, }]}>
+            {clay && <ClayPillFill kind="cta" />}
             <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{t.feed.write}</ThemedText>
           </Pressable>
         </View>
@@ -838,7 +840,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         <Pressable analyticsId="components_feed-screen.pressable.7"
           onPress={() => { play('selection'); setCityPicker(true); }}
           accessibilityRole="button"
-          style={({ pressed }) => [styles.soonCta, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, }]}>
+          style={({ pressed }) => [styles.soonCta, !clay && Depth.control, clay && styles.clayCta, { backgroundColor: clay ? 'transparent' : theme.accent, borderBottomColor: theme.accentDepth, }]}>
+          {clay && <ClayPillFill kind="cta" />}
           <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
             {t.feed.soonCta}
           </ThemedText>
@@ -936,7 +939,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               style={[styles.sortBar, glowOn && (sortStuck ? { backgroundImage: listGlow } : { backgroundColor: 'transparent' })]}
               action={businessCategory ? <Pressable analyticsId="business.directory.open" accessibilityRole="button" accessibilityLabel={tr('비즈니스 찾기')}
                 onPress={() => { play('selection'); router.push('/businesses'); }}
-                style={({ pressed }) => [ControlStyles.pill, { flexDirection: 'row', gap: Spacing.two }, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
+                style={({ pressed }) => [ControlStyles.pill, { flexDirection: 'row', gap: Spacing.two }, clay && styles.clayPad, controlPresentation(theme, { tone: 'ghost', pressed, clay }).container]}>
+                {clay && <ClayPillFill kind="white" />}
                 <SymbolView name={{ ios: 'storefront', android: 'storefront', web: 'storefront' }} size={IconSize.inline} tintColor={theme.accent} />
                 <ThemedText type="smallBold" themeColor="accent">{tr('비즈니스 찾기')}</ThemedText>
                 <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={IconSize.chevron} tintColor={theme.accent} />
@@ -1016,8 +1020,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               <ThemedText type="small" themeColor="textSecondary">{tr('무엇을 올리는 곳인지 보고 골라 보세요. 자주 쓰는 6개는 위 줄에 늘 있어요.')}</ThemedText>
             </View>
             <Pressable analyticsId="feed.categories.close" accessibilityRole="button" onPress={() => { play('selection'); setCategorySheet(false); }}
-              style={({ pressed }) => [ControlStyles.pill, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
-              <ThemedText type="smallBold" themeColor="textSecondary">{tr('닫기')}</ThemedText>
+              style={({ pressed }) => [ControlStyles.pill, clay && styles.clayPad, controlPresentation(theme, { tone: 'ghost', pressed, clay }).container]}>
+              {clay && <ClayPillFill kind="white" />}
+              <ThemedText type="smallBold" themeColor={clay ? undefined : 'textSecondary'}>{tr('닫기')}</ThemedText>
             </Pressable>
           </View>
           <ScrollView analyticsId="feed.categories.sheet" contentContainerStyle={styles.categoryGrid}>
@@ -1026,7 +1031,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               return (
                 <Pressable key={tg.id} analyticsId="feed.categories.pick" accessibilityRole="button" accessibilityState={{ selected: active }}
                   onPress={() => { setCategorySheet(false); changeTagFilter(tg.id); }}
-                  style={({ pressed }) => [styles.categoryCell, { backgroundColor: active ? theme.backgroundSelected : theme.card, borderColor: active ? theme.accent : theme.line }, pressed && { opacity: 0.82 }]}>
+                  style={({ pressed }) => [styles.categoryCell, clayBox && { overflow: 'visible' }, { backgroundColor: clayBox ? 'transparent' : active ? theme.backgroundSelected : theme.card, borderColor: clayBox ? 'transparent' : active ? theme.accent : theme.line }, pressed && { opacity: 0.82 }]}>
+                  {clayBox && <ClayBoxFill kind="tile" />}
                   <ThemedText type="smallBold" style={active && { color: theme.accent }}>{tr(tg.label)}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">{tr(TAG_HINTS[tg.slug] ?? '')}</ThemedText>
                 </Pressable>
@@ -1093,9 +1099,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                       accessibilityRole="button"
                       style={({ pressed }) => [
                         styles.filterChip,
-                        Depth.control,
-                        { backgroundColor: theme.backgroundElement, borderBottomColor: theme.line, },
+                        !clay && Depth.control,
+                        clay && styles.clayPad,
+                        { backgroundColor: clay ? 'transparent' : theme.backgroundElement, borderBottomColor: clay ? 'transparent' : theme.line, },
                       ]}>
+                      {clay && <ClayPillFill kind="white" />}
                       <ThemedText type="smallBold" style={{ fontSize: 13, color: theme.navy }}>
                         {'#' + h}
                       </ThemedText>
@@ -1153,7 +1161,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               style={[styles.joinInput, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]}
             />
             <View style={styles.joinActions}>
-              <Pressable analyticsId="components_feed-screen.pressable.11" onPress={() => { play('selection'); setJoinPost(null); }} accessibilityRole="button" style={({ pressed }) => [styles.secondaryButton, { borderColor: theme.line, opacity: pressed ? 0.65 : 1 }]}>
+              <Pressable analyticsId="components_feed-screen.pressable.11" onPress={() => { play('selection'); setJoinPost(null); }} accessibilityRole="button" style={({ pressed }) => [styles.secondaryButton, clay && styles.clayPad, { borderColor: clay ? 'transparent' : theme.line, opacity: pressed ? 0.65 : 1 }]}>
+                {clay && <ClayPillFill kind="white" />}
                 <ThemedText type="smallBold">{t.write.cancel}</ThemedText>
               </Pressable>
               <Pressable analyticsId="components_feed-screen.pressable.12"
@@ -1161,7 +1170,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 disabled={joining}
                 accessibilityRole="button"
                 accessibilityState={{ disabled: joining, busy: joining }}
-                style={({ pressed }) => [styles.aiButton, { backgroundColor: theme.accent, opacity: joining ? 0.6 : pressed ? 0.7 : 1 }]}>
+                style={({ pressed }) => [styles.aiButton, clay && styles.clayCta, { backgroundColor: clay ? 'transparent' : theme.accent, borderColor: clay ? 'transparent' : theme.accent, opacity: joining ? 0.6 : pressed ? 0.7 : 1 }]}>
+                {clay && <ClayPillFill kind="cta" />}
                 <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{joining ? t.chat.joinSending : t.chat.joinSubmit}</ThemedText>
               </Pressable>
             </View>
@@ -1221,7 +1231,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 renderLayout={({ input, actions, attachments }) => <View style={styles.writer}>
               <ScrollView analyticsId="components_feed-screen.scrollview.2" keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.writerScroll}>
                 <View style={styles.writerContext}>
-                  <Pressable analyticsId="components_feed-screen.writer-options" accessibilityRole="button" accessibilityLabel={tr("게시 설정 변경, {0}, {1}, {2}", (tr(draftCity.name)), (tr(tag.label)), (postKind === 'listing' ? t.write.kindListing : t.write.kindStory))} accessibilityState={{ expanded: writerOptionsOpen }} onPress={() => { play('reaction'); Keyboard.dismiss(); animateLayout(); setWriterOptionsOpen(open => !open); setWriterPanel(null); }} style={({ pressed }) => [styles.writerContextSummary, Depth.control, { backgroundColor: theme.card, }]}>
+                  <Pressable analyticsId="components_feed-screen.writer-options" accessibilityRole="button" accessibilityLabel={tr("게시 설정 변경, {0}, {1}, {2}", (tr(draftCity.name)), (tr(tag.label)), (postKind === 'listing' ? t.write.kindListing : t.write.kindStory))} accessibilityState={{ expanded: writerOptionsOpen }} onPress={() => { play('reaction'); Keyboard.dismiss(); animateLayout(); setWriterOptionsOpen(open => !open); setWriterPanel(null); }} style={({ pressed }) => [styles.writerContextSummary, !clay && Depth.control, clay && styles.clayPad, { backgroundColor: clay ? 'transparent' : theme.card, }]}>
+                    {clay && <ClayPillFill kind="white" />}
                     <ThemedText type="smallBold" numberOfLines={1} style={styles.writerContextValue}>{tr(draftCity.name)} · {tr(tag.label)}{tag.kind !== 'meetup' ? ` · ${postKind === 'listing' ? t.write.kindListing : t.write.kindStory}` : ''}</ThemedText>
                     <ThemedText type="smallBold" themeColor="accent">{tr("변경")}</ThemedText>
                     <SymbolView name={{ ios: writerOptionsOpen ? 'chevron.up' : 'chevron.right', android: writerOptionsOpen ? 'expand_less' : 'chevron_right', web: writerOptionsOpen ? 'expand_less' : 'chevron_right' }} size={14} tintColor={theme.accent} />
@@ -1229,20 +1240,23 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   {writerOptionsOpen && <View style={styles.writerOptionButtons}>
                   <Pressable analyticsId="components_feed-screen.pressable.16" accessibilityRole="button" accessibilityLabel={`${t.write.postCity}, ${tr(draftCity.name)}, ${draftCity.province}`}
                     onPress={() => { play('reaction'); Keyboard.dismiss(); changeWriterPanel('city'); }}
-                    style={({ pressed }) => [styles.contextButton, Depth.control, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement, }]}>
+                    style={({ pressed }) => [styles.contextButton, !clay && Depth.control, clay && styles.clayPad, { backgroundColor: clay ? 'transparent' : pressed ? theme.backgroundSelected : theme.backgroundElement, opacity: clay && pressed ? 0.82 : 1 }]}>
+                    {clay && <ClayPillFill kind="white" />}
                     <SymbolView name={{ ios: 'mappin', android: 'location_on', web: 'location_on' }} size={16} tintColor={theme.textSecondary} />
                     <ThemedText type="smallBold" style={styles.contextText}>{tr(draftCity.name)} · {draftCity.province}</ThemedText>
                     <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={12} tintColor={theme.textSecondary} />
                   </Pressable>
                   <Pressable analyticsId="components_feed-screen.pressable.17" accessibilityRole="button" accessibilityLabel={`${t.write.category}, ${tr(tag.label)}`} accessibilityState={{ expanded: writerPanel === 'category' }}
                     onPress={() => { play('reaction'); Keyboard.dismiss(); changeWriterPanel(writerPanel === 'category' ? null : 'category'); }}
-                    style={({ pressed }) => [styles.contextButton, Depth.control, { backgroundColor: pressed || writerPanel === 'category' ? theme.backgroundSelected : theme.backgroundElement, }]}>
+                    style={({ pressed }) => [styles.contextButton, !clay && Depth.control, clay && styles.clayPad, { backgroundColor: clay ? 'transparent' : pressed || writerPanel === 'category' ? theme.backgroundSelected : theme.backgroundElement, opacity: clay && pressed ? 0.82 : 1 }]}>
+                    {clay && <ClayPillFill kind={writerPanel === 'category' ? 'on' : 'white'} />}
                     <ThemedText type="smallBold" style={styles.contextText}>{tr(tag.label)}</ThemedText>
                     <SymbolView name={{ ios: writerPanel === 'category' ? 'chevron.up' : 'chevron.down', android: writerPanel === 'category' ? 'expand_less' : 'expand_more', web: writerPanel === 'category' ? 'expand_less' : 'expand_more' }} size={12} tintColor={theme.textSecondary} />
                   </Pressable>
                   {tag.kind !== 'meetup' && <Pressable analyticsId="components_feed-screen.pressable.18" accessibilityRole="button" accessibilityLabel={`${t.write.pickKind}, ${postKind === 'listing' ? t.write.kindListing : t.write.kindStory}`} accessibilityState={{ expanded: writerPanel === 'kind' }}
                     onPress={() => { play('reaction'); Keyboard.dismiss(); changeWriterPanel(writerPanel === 'kind' ? null : 'kind'); }}
-                    style={({ pressed }) => [styles.contextButton, Depth.control, { backgroundColor: pressed || writerPanel === 'kind' ? theme.backgroundSelected : theme.backgroundElement, }]}>
+                    style={({ pressed }) => [styles.contextButton, !clay && Depth.control, clay && styles.clayPad, { backgroundColor: clay ? 'transparent' : pressed || writerPanel === 'kind' ? theme.backgroundSelected : theme.backgroundElement, opacity: clay && pressed ? 0.82 : 1 }]}>
+                    {clay && <ClayPillFill kind={writerPanel === 'kind' ? 'on' : 'white'} />}
                     <ThemedText type="smallBold" style={styles.contextText}>{postKind === 'listing' ? t.write.kindListing : t.write.kindStory}</ThemedText>
                     <SymbolView name={{ ios: writerPanel === 'kind' ? 'chevron.up' : 'chevron.down', android: writerPanel === 'kind' ? 'expand_less' : 'expand_more', web: writerPanel === 'kind' ? 'expand_less' : 'expand_more' }} size={12} tintColor={theme.textSecondary} />
                   </Pressable>}
@@ -1255,7 +1269,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                       const selected = postKind === kind;
                       return <Pressable analyticsId="components_feed-screen.pressable.19" key={kind} onPress={() => { play('selection'); animateLayout(); setPostKind(kind); setWriterPanel(null); setWriterOptionsOpen(false); }} accessibilityRole="radio"
                         accessibilityLabel={`${label}, ${hint}`} accessibilityState={{ selected, checked: selected }}
-                        style={({ pressed }) => [styles.tagChip, Depth.control, { backgroundColor: selected ? theme.accent : theme.backgroundElement, borderBottomColor: selected ? theme.accentDepth : theme.line, }]}>
+                        style={({ pressed }) => [styles.tagChip, !clay && Depth.control, clay && styles.clayPad, { backgroundColor: clay ? 'transparent' : selected ? theme.accent : theme.backgroundElement, borderBottomColor: clay ? 'transparent' : selected ? theme.accentDepth : theme.line, }]}>
+                        {clay && <ClayPillFill kind={selected ? 'on' : 'white'} />}
                         <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : theme.textSecondary }}>{label}</ThemedText>
                       </Pressable>;
                     })}
@@ -1289,9 +1304,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                           accessibilityState={{ selected }}
                           style={({ pressed }) => [
                             styles.tagChip,
-                            Depth.control,
-                            { backgroundColor: selected ? theme.accent : theme.backgroundElement, borderBottomColor: selected ? theme.accentDepth : theme.line, },
+                            !clay && Depth.control,
+                            clay && styles.clayPad,
+                            { backgroundColor: clay ? 'transparent' : selected ? theme.accent : theme.backgroundElement, borderBottomColor: clay ? 'transparent' : selected ? theme.accentDepth : theme.line, },
                           ]}>
+                          {clay && <ClayPillFill kind={selected ? 'on' : 'white'} />}
                           <ThemedText
                             type="smallBold"
                             style={{ color: selected ? theme.accentInk : theme.textSecondary }}>
@@ -1368,7 +1385,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   {selectedHashtags.length > 0 && <View style={styles.selectedHashtags}>
                     {selectedHashtags.map((hashtag) => <Pressable analyticsId="components_feed-screen.pressable.27" key={hashtag} accessibilityRole="button" accessibilityLabel={tr("#{0} 삭제", (hashtag))}
                       onPress={() => { play('reaction'); animateLayout(); setHashtagInput(current => parseHashtags(current).filter(value => value !== hashtag).join(' ')); }}
-                      style={({ pressed }) => [styles.selectedHashtag, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, }]}>
+                      style={({ pressed }) => [styles.selectedHashtag, !clay && Depth.control, clay && styles.clayPad, { backgroundColor: clay ? 'transparent' : theme.accent, borderBottomColor: theme.accentDepth, }]}>
+                      {clay && <ClayPillFill kind="on" />}
                       <ThemedText type="smallBold" style={{ color: theme.accentInk }}>#{hashtag} ×</ThemedText>
                     </Pressable>)}
                   </View>}
@@ -1382,9 +1400,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   accessibilityRole="button"
                   accessibilityState={{ disabled: submitting || creatingDraft || (draftImages.length === 0 && !hasDraftText), busy: creatingDraft }}
                   accessibilityHint={writesNew ? tr("메모로 글 한 편 써 드려요") : tr("적어둔 내용으로 글을 다듬어요")}
-                  style={[styles.aiButton, { borderColor: theme.accent, opacity: submitting || creatingDraft || (draftImages.length === 0 && !hasDraftText) ? 0.6 : 1 }]}>
+                  style={[styles.aiButton, clay && styles.clayPad, { borderColor: clay ? 'transparent' : theme.accent, opacity: submitting || creatingDraft || (draftImages.length === 0 && !hasDraftText) ? 0.6 : 1 }]}>
+                  {clay && <ClayPillFill kind="white" />}
                   <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} size={16} tintColor={theme.accent} />
-                  <ThemedText type="smallBold" style={{ color: theme.accent, flexShrink: 1 }}>
+                  <ThemedText type="smallBold" style={{ color: clay ? theme.text : theme.accent, flexShrink: 1 }}>
                     {creatingDraft ? t.write.creatingDraft : writesNew ? tr("AI로 글쓰기") : t.write.polishDraft}
                   </ThemedText>
                 </Pressable>
@@ -1403,13 +1422,15 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                       accessibilityRole="button"
                       accessibilityLabel={draftImages.length === 0 ? t.write.choosePhoto : t.write.addPhoto}
                       accessibilityState={{ disabled: submitting || creatingDraft || !canAddPostImage(draftImages.length) }}
-                      style={[styles.writerTool, { opacity: canAddPostImage(draftImages.length) ? 1 : 0.5 }]}>
+                      style={[styles.writerTool, clay && styles.clayPad, { opacity: canAddPostImage(draftImages.length) ? 1 : 0.5 }]}>
+                      {clay && <ClayPillFill kind="white" />}
                       <SymbolView name={{ ios: 'photo', android: 'photo_library', web: 'photo_library' }} size={20} tintColor={theme.textSecondary} />
                       <ThemedText type="smallBold" style={styles.writerToolLabel}>{tr("사진")}</ThemedText>
                     </Pressable>
                   {actions}
                   <Pressable analyticsId="components_feed-screen.pressable.26" accessibilityRole="button" accessibilityLabel={tr("더보기")} accessibilityState={{ expanded: writerPanel === 'more', disabled: submitting || creatingDraft }} disabled={submitting || creatingDraft}
-                    onPress={() => { play('selection'); Keyboard.dismiss(); changeWriterPanel('more'); }} style={styles.writerTool}>
+                    onPress={() => { play('selection'); Keyboard.dismiss(); changeWriterPanel('more'); }} style={[styles.writerTool, clay && styles.clayPad]}>
+                    {clay && <ClayPillFill kind="white" />}
                     <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={20} tintColor={theme.textSecondary} />
                     <ThemedText type="smallBold" style={styles.writerToolLabel} themeColor="textSecondary">{tr("더보기")}</ThemedText>
                   </Pressable>
@@ -1432,11 +1453,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   accessibilityState={{ checked: hasAdLabel(selectedHashtags), disabled: submitting || creatingDraft || (!hasAdLabel(selectedHashtags) && selectedHashtags.length >= MAX_HASHTAGS) }}
                   disabled={submitting || creatingDraft || (!hasAdLabel(selectedHashtags) && selectedHashtags.length >= MAX_HASHTAGS)}
                   onPress={() => { play('selection'); setHashtagInput(toggleAdLabel); }}
-                  style={[styles.aiButton, styles.writerAttachments, { backgroundColor: hasAdLabel(selectedHashtags) ? theme.backgroundSelected : theme.backgroundElement }]}>
-                  <ThemedText type="smallBold">{hasAdLabel(selectedHashtags) ? '☑ AD' : '□ AD'}</ThemedText>
+                  style={[styles.aiButton, styles.writerAttachments, clay && styles.clayPad, { backgroundColor: clay ? 'transparent' : hasAdLabel(selectedHashtags) ? theme.backgroundSelected : theme.backgroundElement }]}>
+                  {clay && <ClayPillFill kind={hasAdLabel(selectedHashtags) ? 'on' : 'white'} />}
+                  <ThemedText type="smallBold" style={clay && hasAdLabel(selectedHashtags) ? { color: theme.accentInk } : undefined}>{hasAdLabel(selectedHashtags) ? '☑ AD' : '□ AD'}</ThemedText>
                 </Pressable>}
                         {Platform.OS !== 'web' && <Pressable analyticsId="components_feed-screen.pressable.24" accessibilityRole="button" accessibilityLabel={t.write.takePhoto} disabled={submitting || creatingDraft || !canAddPostImage(draftImages.length)}
-                          onPress={() => { play('selection'); void pickDraftImage('camera'); }} style={styles.writerMoreCamera}>
+                          onPress={() => { play('selection'); void pickDraftImage('camera'); }} style={[styles.writerMoreCamera, clay && styles.clayPad]}>
+                          {clay && <ClayPillFill kind="white" />}
                           <SymbolView name={{ ios: 'camera', android: 'photo_camera', web: 'photo_camera' }} size={20} tintColor={theme.textSecondary} />
                           <ThemedText type="smallBold">{t.write.takePhoto}</ThemedText>
                         </Pressable>}
@@ -1462,9 +1485,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                           accessibilityLabel={t.write.addHashtag(hashtag)}
                           style={({ pressed }) => [
                             styles.suggestionChip,
-                            Depth.control,
-                            { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement, borderBottomColor: theme.line, },
+                            !clay && Depth.control,
+                            clay && styles.clayPad,
+                            { backgroundColor: clay ? 'transparent' : pressed ? theme.backgroundSelected : theme.backgroundElement, borderBottomColor: clay ? 'transparent' : theme.line, },
                           ]}>
+                          {clay && <ClayPillFill kind="white" />}
                           <ThemedText type="smallBold" style={{ fontSize: 12, color: theme.navy }}>
                             {'#' + hashtag}
                           </ThemedText>
@@ -1529,6 +1554,7 @@ const styles = StyleSheet.create({
   todayHeader: { paddingBottom: Spacing.one },
   journalStatusRow: { minHeight: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
   writeFab: { position: 'absolute', right: Spacing.three, minHeight: ControlMetrics.action, flexDirection: 'row', gap: Spacing.one, borderWidth: 1 },
+  clayPad: { overflow: 'visible', paddingHorizontal: 18 }, clayCta: { overflow: 'visible', paddingHorizontal: 24, borderBottomWidth: 0, borderWidth: 0 },
   clayChip: { flexDirection: 'row', gap: 4, paddingLeft: 8, paddingRight: 12 },
   writeFabCompact: { width: ControlMetrics.action, paddingHorizontal: 0 },
   journalDate: { fontSize: 12, lineHeight: 18, letterSpacing: 0.8 },

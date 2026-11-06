@@ -24,13 +24,14 @@ const ART: Record<string, { clay: ClayName }> = {
   'fork.knife': { clay: 'chip_dining' }, house: { clay: 'home' }, tray: { clay: 'empty' },
 };
 
+const ON_FILL: Partial<Record<ClayName, ClayName>> = { plus_ink: 'plus', check: 'check_on' };
+
 export function SymbolView(props: SymbolViewProps) {
   const clay = useClay(), theme = useTheme();
   const key = typeof props.name === 'string' ? props.name : props.name?.ios;
   const art = clay && key ? ART[key] : undefined;
   if (!art) return <NativeSymbol {...props} />;
-  // accentInk means the symbol sits on a filled purple surface, where most drawings would vanish: only the plus has an ink drawing, the rest keep the system symbol there.
-  const onFill = props.tintColor === theme.accentInk;
-  if (onFill && art.clay !== 'plus_ink') return <NativeSymbol {...props} />;
-  return <ClayIcon clay={onFill ? 'plus' : art.clay} size={props.size ?? 24} />;
+  // accentInk means the symbol sits on a filled purple surface, where most drawings would vanish: the plus and the check have ink drawings, the rest keep the system symbol there.
+  const ink = props.tintColor === theme.accentInk ? ON_FILL[art.clay] : art.clay;
+  return ink ? <ClayIcon clay={ink} size={props.size ?? 24} /> : <NativeSymbol {...props} />;
 }

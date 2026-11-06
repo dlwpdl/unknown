@@ -27,7 +27,7 @@ function mount(options = {}) {
     'react-native': { StyleSheet: { create: value => value }, View: 'View', Platform: { OS: 'ios' }, useWindowDimensions: () => ({ height: 800 }), DeviceEventEmitter: { emit() {} }, LayoutAnimation: { configureNext() {}, Types: {}, Properties: {} }, UIManager: {}, Alert: { alert() {} } },
     'react-native-reanimated': { useReducedMotion: () => true },
     'expo-router': { useFocusEffect: fn => effect(fn, [options.requestId ?? 'request']), useLocalSearchParams: () => ({}), useRouter: () => ({ replace: route => calls.push(['replace', JSON.parse(JSON.stringify(route))]), canGoBack: () => true, back() {} }) },
-    '@/hooks/use-language': { useLanguage: () => ({ tr: value => value }) }, '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/hooks/use-language': { useLanguage: () => ({ tr: value => value }) }, '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/hooks/use-content-visibility': { useContentVisibility: () => (_type, _id, authorId) => authorId === options.hiddenRequester },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => calls.push(['feedback', kind]) }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: 'host' } }) }, '@/lib/membership-provider': { useMembership: () => ({ refresh() {} }) },

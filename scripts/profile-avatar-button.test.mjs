@@ -17,7 +17,7 @@ function avatar({ os = 'ios', authenticated = true } = {}) {
     '@/components/analytics-controls': { Pressable: 'Pressable' },
     '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/chat-identity-switcher': { ChatIdentitySwitcher: 'ChatIdentitySwitcher' },
-    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: 'Symbol', ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: 'Symbol', ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: 'ClayPhoto' },
     '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: authenticated, me: { nickname: '개인', photoUri: 'own-photo' } }) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) },
@@ -44,7 +44,7 @@ test('every native own-avatar entry offers the existing business switcher by def
   button.props.onPress();
   assert.deepEqual(app.routes, ['/profile']);
   assert.deepEqual(app.feedback, ['selection']);
-  assert.equal(nodes(button).find(n => n.type === 'Image').props.source.uri, 'own-photo');
+  assert.equal(nodes(button).find(n => n.type === 'ClayPhoto').props.uri, 'own-photo');
 });
 
 test('an explicit optout preserves the avatar and its personal destination', () => {

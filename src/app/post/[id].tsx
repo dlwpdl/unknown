@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PostDetail } from '@/components/post-detail';
 import { SharedPreviewContent } from '@/components/shared-link-card';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
@@ -43,7 +44,7 @@ export default function SharedPostRoute() {
   const router = useRouter();
   const focused = useIsFocused();
   const { play } = useInteractionFeedback();
-  const theme = useTheme();
+  const theme = useTheme(), clay = useClay();
   // A list card hands over the post it showed, so the zoom lands on the post instead of a loader (owner 2026-11-02).
   const [result, setResult] = useState<{ id: string; post: Post | null; failed: boolean } | null>(() => {
     const post = isAuthed ? handedOffPost(viewer, postId) : undefined;
@@ -147,7 +148,8 @@ export default function SharedPostRoute() {
                 <ThemedText type="small" themeColor="textSecondary">{tr("로그인 후 전체 내용을 확인해요. 모임 초대는 기존 참여 신청과 호스트 승인을 거쳐요.")}</ThemedText>
                 <Pressable analyticsId="shared.post.login" accessibilityRole="button" accessibilityLabel={tr("로그인하고 공유 내용 보기")}
                   disabled={savingReturn || isAuthLoading} accessibilityState={{ disabled: savingReturn || isAuthLoading, busy: savingReturn }}
-                  onPress={() => void beginLogin()} style={[styles.login, { backgroundColor: theme.accent, opacity: savingReturn || isAuthLoading ? 0.45 : 1 }]}>
+                  onPress={() => void beginLogin()} style={[styles.login, clay && styles.clayLogin, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: savingReturn || isAuthLoading ? 0.45 : 1 }]}>
+                  {clay && <ClayPillFill kind="cta" />}
                   <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{savingReturn ? language === 'ko' ? '로그인 준비 중…' : 'Preparing sign-in…' : tr("로그인하고 내용 보기")}</ThemedText>
                 </Pressable>
                 {returnError === requestKey && <ThemedText type="small" accessibilityRole="alert">{language === 'ko' ? '로그인을 준비하지 못했어요. 다시 시도해 주세요.' : 'Couldn’t get sign-in ready. Try again.'}</ThemedText>}
@@ -178,6 +180,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   message: { alignItems: 'center', gap: 8, padding: 24 },
   gate: { width: '100%', maxWidth: 540, padding: 16, gap: 16 },
+  clayLogin: { overflow: 'visible', paddingHorizontal: 24 },
   login: { minHeight: 44, borderRadius: 12, padding: 12, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 22, lineHeight: 30 },
 });

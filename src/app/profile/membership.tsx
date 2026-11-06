@@ -14,6 +14,7 @@ import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
 import { InfoNote, WhoSees } from '@/components/notice-blocks';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
@@ -34,6 +35,7 @@ const tierNames = { free: '베이직', plus: '플러스', pro: '프로', premium
 
 export default function MembershipScreen() {
   const { tr, locale: appLocale } = useLanguage();
+  const clay = useClay(), clayBox = useClayBox();
   const periodNames = { get month() { return tr("월"); }, get year() { return tr("년"); } };
   const theme = useTheme();
   const auth = useAuth();
@@ -220,7 +222,8 @@ export default function MembershipScreen() {
             const selected = selection.tier === plan.tier;
             return <Pressable analyticsId="app_profile_membership.pressable.4" key={plan.tier} accessibilityRole="radio" aria-checked={selected} accessibilityState={{ selected, checked: selected, disabled: busy }} disabled={busy}
               onPress={() => selectPlan({ tier: plan.tier, period: offer?.period ?? period })}
-              style={({ pressed }) => [styles.plan, { backgroundColor: theme.card, borderColor: selected ? theme.accent : theme.line, opacity: pressed ? 0.88 : 1 }]}>
+              style={({ pressed }) => [styles.plan, { backgroundColor: clayBox ? 'transparent' : theme.card, borderColor: selected ? theme.accent : clayBox ? 'transparent' : theme.line, opacity: pressed ? 0.88 : 1 }]}>
+              {clayBox && <ClayBoxFill kind="tile" />}
               <View style={styles.planHeading}>
                 <ThemedText style={styles.planName}>{tr(plan.name)}</ThemedText>
                 <View style={[styles.radio, { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.accent : 'transparent' }]}>
@@ -246,7 +249,8 @@ export default function MembershipScreen() {
           {kind === 'business' && <>
             <InfoNote>{tr("끌올은 올린 글 중 하나를 골라 정해진 간격마다 한 번 할 수 있어요. 같은 내용을 새 글로 다시 올릴 수는 없어요.")}</InfoNote>
             <Pressable analyticsId="membership.business.managed" accessibilityRole="button" accessibilityHint={tr("메일로 문의해요")} onPress={askManaged}
-              style={({ pressed }) => [styles.managed, { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 }]}>
+              style={({ pressed }) => [styles.managed, { backgroundColor: clayBox ? 'transparent' : theme.backgroundElement, opacity: pressed ? 0.7 : 1 }]}>
+              {clayBox && <ClayBoxFill kind="tile" />}
               <View style={styles.planHeading}>
                 <ThemedText type="smallBold">{tr("글링 관리")}</ThemedText>
                 <ThemedText type="smallBold" themeColor="accent">{tr("문의하기 ›")}</ThemedText>
@@ -315,7 +319,8 @@ export default function MembershipScreen() {
           {purchaseUnavailableReason && <ThemedText type="small" themeColor="textSecondary" style={styles.center} accessibilityLiveRegion="polite">{purchaseUnavailableReason}</ThemedText>}
           <Pressable analyticsId="app_profile_membership.pressable.6" accessibilityRole="button" disabled={purchaseDisabled} accessibilityState={{ disabled: purchaseDisabled, busy }}
             onPress={() => { play('selection'); if (businessBlockedReason) Alert.alert(tr(businessBlockedReason)); else if (selectedOffer) void purchase(selectedOffer, kind === 'business' && merchantId ? merchantId : undefined); }}
-            style={({ pressed }) => [styles.purchase, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: purchaseDisabled ? 0.5 : pressed ? 0.85 : 1 }]}>
+            style={({ pressed }) => [styles.purchase, clay ? styles.clayWide : Depth.control, { backgroundColor: clay ? 'transparent' : theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: clay ? 0 : 3, opacity: purchaseDisabled ? 0.5 : pressed ? 0.85 : 1 }]}>
+            {clay && <ClayPillFill kind="cta" />}
             {busy ? <GlingLoader color={theme.accentInk} accessibilityLabel={tr("구독 처리 중")} /> : <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
               {currentProduct ? tr("현재 이용 중인 구독") : selectedOffer ? tr("{0} {1} 구독하기", tr(tierNames[selectedOffer.tier]), selectedOffer.period === 'year' ? tr("연간") : tr("월간")) : tr("구독 준비 중")}
             </ThemedText>}
@@ -382,6 +387,7 @@ const styles = StyleSheet.create({
   save: { borderRadius: 999, paddingHorizontal: 6, paddingVertical: 1 },
   saveText: { fontSize: 11, lineHeight: 15 },
   checkout: { gap: Spacing.one, paddingHorizontal: Spacing.three, paddingTop: Spacing.two, paddingBottom: Spacing.two, borderTopWidth: StyleSheet.hairlineWidth },
+  clayWide: { overflow: 'visible', paddingHorizontal: 24 },
   purchase: { minHeight: 52, borderRadius: 14, padding: Spacing.three, alignItems: 'center', justifyContent: 'center' },
   textButton: { minHeight: 44, paddingHorizontal: Spacing.two, paddingVertical: Spacing.two, alignItems: 'center', justifyContent: 'center' },
   links: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: Spacing.two },

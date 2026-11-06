@@ -8,6 +8,7 @@ import { Pressable } from '@/components/analytics-controls';
 import { MerchantBadge } from '@/components/merchant-ui';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import {
@@ -20,11 +21,12 @@ import { selectChatBusiness } from '@/lib/chat-identity';
 
 function AccountAction({ label, onPress, disabled, primary = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
 
-  const theme = useTheme(), { play } = useInteractionFeedback();
+  const theme = useTheme(), { play } = useInteractionFeedback(), clay = useClay();
   return <Pressable lens analyticsId="merchant.connection.action" accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!disabled }}
     disabled={disabled} onPress={() => { play('selection'); onPress(); }}
-    style={({ pressed }) => [styles.action, { borderColor: theme.line, backgroundColor: primary ? theme.accent : theme.backgroundElement, opacity: disabled ? 0.45 : pressed ? 0.7 : 1 }]}>
-    <ThemedText type="smallBold" style={primary ? { color: theme.background } : undefined}>{label}</ThemedText>
+    style={({ pressed }) => [styles.action, clay && { overflow: 'visible', paddingHorizontal: 18 }, clay ? { borderColor: 'transparent', backgroundColor: 'transparent', opacity: disabled ? 0.45 : pressed ? 0.7 : 1 } : { borderColor: theme.line, backgroundColor: primary ? theme.accent : theme.backgroundElement, opacity: disabled ? 0.45 : pressed ? 0.7 : 1 }]}>
+    {clay && <ClayPillFill kind={primary ? 'cta' : 'white'} />}
+    <ThemedText type="smallBold" style={primary ? { color: clay ? theme.accentInk : theme.background } : undefined}>{label}</ThemedText>
   </Pressable>;
 }
 async function confirmConnection(message: string) {

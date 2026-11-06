@@ -5,6 +5,7 @@ import { Modal, Platform, Share, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { ClayBoxFill, ClayIcon, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles } from '@/constants/design-system';
 import { Colors } from '@/constants/theme';
@@ -35,11 +36,12 @@ export function UberOrderNotice() {
 }
 
 export function WebshopBanner({ shop, onPress }: { shop: Webshop; onPress: () => void }) {
-  const { language } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback();
+  const { language } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), clayBox = useClayBox();
   const { maximumPercent } = compareWebshopPrices(shop);
   return <View style={styles.offer}>
     <Pressable analyticsId="webshop.offer" accessibilityRole="button" onPress={() => { play('selection'); onPress(); }}
-      style={({ pressed }) => [styles.banner, { backgroundColor: theme.card, borderColor: theme.line, opacity: pressed ? 0.82 : 1 }]}>
+      style={({ pressed }) => [styles.banner, { backgroundColor: clayBox ? 'transparent' : theme.card, borderColor: clayBox ? 'transparent' : theme.line, opacity: pressed ? 0.82 : 1 }]}>
+      {clayBox && <ClayBoxFill kind="tile" />}
       <View style={styles.grow}>
         <ThemedText type="section" style={{ color: theme === Colors.dark ? '#8FD9C4' : '#276B57' }}>{maximumPercent > 0
           ? language === 'ko' ? `최대 ${maximumPercent}% 할인` : `Save up to ${maximumPercent}%`
@@ -52,17 +54,17 @@ export function WebshopBanner({ shop, onPress }: { shop: Webshop; onPress: () =>
 }
 
 export function WebshopOrderButton({ onPress }: { onPress: () => void }) {
-  const theme = useTheme(), { language } = useLanguage(), { play } = useInteractionFeedback();
+  const theme = useTheme(), { language } = useLanguage(), { play } = useInteractionFeedback(), clay = useClay();
   return <View style={styles.offer}><Pressable analyticsId="webshop.order-preview" accessibilityRole="button"
-    style={({ pressed }) => [ControlStyles.action, { backgroundColor: theme.accent, opacity: pressed ? 0.82 : 1 }]}
-    onPress={() => { play('selection'); onPress(); }}><ThemedText type="menu" style={{ color: theme.accentInk }}>{language === 'ko' ? '웹샵 주문' : 'Order from webshop'} ↗</ThemedText></Pressable>
+    style={({ pressed }) => [ControlStyles.action, clay && styles.ctaClay, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: pressed ? 0.82 : 1 }]}
+    onPress={() => { play('selection'); onPress(); }}>{clay && <ClayPillFill kind="cta" />}<ThemedText type="menu" style={{ color: theme.accentInk }}>{language === 'ko' ? '웹샵 주문' : 'Order from webshop'} ↗</ThemedText></Pressable>
     <UberOrderNotice /></View>;
 }
 
 export function WebshopComparisonSheet({ client, shop, name, visible, onClose }: {
   client: SupabaseClient; shop: Webshop; name: string; visible: boolean; onClose: () => void;
 }) {
-  const theme = useTheme(), { language, locale } = useLanguage(), { play } = useInteractionFeedback(), reduced = useReducedMotion();
+  const theme = useTheme(), { language, locale } = useLanguage(), { play } = useInteractionFeedback(), reduced = useReducedMotion(), clay = useClay();
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false);
   const active = useRef(true), pending = useRef<string | null>(null), started = useRef(false);
   const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
@@ -112,7 +114,7 @@ export function WebshopComparisonSheet({ client, shop, name, visible, onClose }:
           <View style={styles.handle} accessible={false} />
           <View style={styles.heading}><View style={styles.grow}><ThemedText type="small" themeColor="textSecondary">{name}</ThemedText>
             <ThemedText type="sheetTitle" accessibilityRole="header">{summary.savingCents > 0 ? ko ? `${money(summary.savingCents)} 아낄 수 있어요` : `Save ${money(summary.savingCents)}` : ko ? '웹샵 가격을 확인해보세요' : 'Check webshop prices'}</ThemedText></View>
-            <Pressable analyticsId="webshop.close" accessibilityRole="button" accessibilityLabel={ko ? '닫기' : 'Close'} onPress={close} style={ControlStyles.icon}><ThemedText>×</ThemedText></Pressable></View>
+            <Pressable analyticsId="webshop.close" accessibilityRole="button" accessibilityLabel={ko ? '닫기' : 'Close'} onPress={close} style={ControlStyles.icon}>{clay ? <ClayIcon clay="close" size={20} /> : <ThemedText>×</ThemedText>}</Pressable></View>
           <ScrollView analyticsId="webshop.comparison" contentContainerStyle={styles.details}>
             <ThemedText type="small" themeColor="textSecondary">{summary.kind === 'checkout'
               ? `${quote!.basketLabel} · ${ko ? quote!.fulfillment === 'delivery' ? '배달 견적' : '픽업 견적' : quote!.fulfillment === 'delivery' ? 'Delivery quote' : 'Pickup quote'}`
@@ -128,15 +130,15 @@ export function WebshopComparisonSheet({ client, shop, name, visible, onClose }:
               <ThemedText type="caption" themeColor="textSecondary">{summary.kind === 'menu' ? ko ? '메뉴 합계 기준 · 배달비·수수료·세금·팁 제외' : 'Menu subtotal only · excludes delivery, fees, tax and tip' : ko ? '동일 조건에서 확인한 결제 견적 기준' : 'Based on checkout quotes taken under the same conditions'}</ThemedText></View>}
             {maximumPercent > 0 && <ThemedText type="small" themeColor="textSecondary">{ko ? `최대 ${maximumPercent}%는 위 대표 메뉴 중 가장 큰 할인율이에요. 주문 전체에 일괄 적용되는 할인율은 아니에요.` : `Up to ${maximumPercent}% is the biggest saving among the items above. It doesn’t apply to your whole order.`}</ThemedText>}
             <ThemedText type="caption" themeColor="textSecondary">{ko ? '메뉴·옵션·주소·프로모션에 따라 가격이 달라질 수 있어요. 최종 금액은 Uber 웹샵에서 확인해주세요.' : 'Prices vary with items, options, address and promotions. Confirm the final amount on the Uber webshop.'}{shop.verifiedAt ? `\n${ko ? '메뉴 가격 확인' : 'Menu prices checked'} ${new Date(shop.verifiedAt).toLocaleDateString(locale)}` : ''}{quote ? `\n${ko ? '결제 견적 확인' : 'Checkout quotes checked'} ${new Date(quote.verifiedAt).toLocaleDateString(locale)}` : ''}</ThemedText>
-            {shop.promoCode && <Pressable analyticsId="webshop.copy-code" accessibilityRole="button" style={[ControlStyles.action, { borderWidth: 1, borderColor: theme.line }]} onPress={() => {
+            {shop.promoCode && <Pressable analyticsId="webshop.copy-code" accessibilityRole="button" style={[ControlStyles.action, clay && styles.ctaClay, { borderWidth: 1, borderColor: clay ? 'transparent' : theme.line }]} onPress={() => {
               play('selection');
               const operation = platform === 'web' ? navigator.clipboard.writeText(shop.promoCode!) : Share.share({ message: shop.promoCode! });
               void operation.then(() => { if (active.current && platform === 'web') { setCopied(true); play('success'); } }).catch(() => { if (active.current) { setError(ko ? '코드를 복사하지 못했어요. 코드를 길게 눌러 복사해주세요.' : 'Couldn’t copy. Press and hold the code to copy it.'); play('warning'); } });
-            }}><ThemedText type="smallBold" selectable>{copied ? ko ? '코드 복사됨 · 결제할 때 붙여넣기' : 'Code copied · paste at checkout' : `${shop.promoCode} · ${platform === 'web' ? ko ? '코드 복사' : 'Copy code' : ko ? '코드 공유·복사' : 'Share or copy code'}`}</ThemedText></Pressable>}
+            }}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold" selectable>{copied ? ko ? '코드 복사됨 · 결제할 때 붙여넣기' : 'Code copied · paste at checkout' : `${shop.promoCode} · ${platform === 'web' ? ko ? '코드 복사' : 'Copy code' : ko ? '코드 공유·복사' : 'Share or copy code'}`}</ThemedText></Pressable>}
           </ScrollView>
           {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
           <View style={styles.offer}><Pressable analyticsId="webshop.order" accessibilityRole="button" disabled={busy} accessibilityState={{ busy, disabled: busy }} onPress={order}
-            style={({ pressed }) => [ControlStyles.action, { backgroundColor: theme.accent, opacity: busy ? 0.45 : pressed ? 0.82 : 1 }]}><ThemedText type="menu" style={{ color: theme.accentInk }}>{busy ? ko ? '여는 중…' : 'Opening…' : ko ? maximumPercent > 0 ? '할인받고 주문하러 가기 ↗' : '웹샵에서 주문하러 가기 ↗' : 'Order from webshop ↗'}</ThemedText></Pressable><UberOrderNotice /></View>
+            style={({ pressed }) => [ControlStyles.action, clay && styles.ctaClay, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: busy ? 0.45 : pressed ? 0.82 : 1 }]}>{clay && <ClayPillFill kind="cta" />}<ThemedText type="menu" style={{ color: theme.accentInk }}>{busy ? ko ? '여는 중…' : 'Opening…' : ko ? maximumPercent > 0 ? '할인받고 주문하러 가기 ↗' : '웹샵에서 주문하러 가기 ↗' : 'Order from webshop ↗'}</ThemedText></Pressable><UberOrderNotice /></View>
         </SafeAreaView>
       </SafeAreaView></SafeAreaProvider>
     </Modal>
@@ -144,6 +146,7 @@ export function WebshopComparisonSheet({ client, shop, name, visible, onClose }:
 }
 
 const styles = StyleSheet.create({
+  ctaClay: { overflow: 'visible', paddingHorizontal: 24 },
   offer: { gap: 8 }, grow: { flex: 1, minWidth: 0, gap: 4 },
   banner: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 16, padding: 16, minHeight: 80 },
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#0008' },

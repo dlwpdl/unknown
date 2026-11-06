@@ -4,6 +4,7 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, FlatList } from '@/components/analytics-controls';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
+import { ClayPhoto } from '@/components/clay';
 import { SymbolView } from '@/components/symbol-view';
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, Animated, AppState, DeviceEventEmitter, Keyboard, LayoutAnimation, Modal, Platform, StyleSheet, UIManager, View } from 'react-native';
@@ -302,12 +303,12 @@ export default function ChatScreen() {
     {/* 홈·모임과 같게 제목 줄은 고정한다. 필터와 안내는 목록과 함께 스크롤된다. */}
     <View style={[styles.headRow, styles.headFixed]}>
       <ThemedText accessibilityRole="header" style={styles.heading}>{t.tabs.chat}</ThemedText>
-      <GlassSurface tone="control" interactive style={styles.refreshGlass}><Pressable analyticsId="chat.discovery.open" accessibilityRole="button" accessibilityLabel={tr('부동산·중고거래·장소·행사 통합 지도')}
+      <GlassSurface tone="control" clay="white" interactive style={styles.refreshGlass}><Pressable analyticsId="chat.discovery.open" accessibilityRole="button" accessibilityLabel={tr('부동산·중고거래·장소·행사 통합 지도')}
         onPress={() => { play('reaction'); router.push('/map'); }} style={({ pressed }) => [styles.refreshAction, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
         <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={21} tintColor={theme.text} />
       </Pressable></GlassSurface>
       <ProfileAvatarButton />
-      <GlassSurface tone="control" interactive style={styles.refreshGlass}><Pressable analyticsId="app_tabs_chat.pressable.1" onPress={() => { play('selection'); void changed(); }} accessibilityRole="button" accessibilityLabel={t.chat.refresh} disabled={loading} accessibilityState={{ disabled: loading }} style={({ pressed }) => [styles.refreshAction, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent', opacity: loading ? 0.45 : 1 }]}><SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={19} tintColor={theme.accent} /></Pressable></GlassSurface>
+      <GlassSurface tone="control" clay="white" interactive style={styles.refreshGlass}><Pressable analyticsId="app_tabs_chat.pressable.1" onPress={() => { play('selection'); void changed(); }} accessibilityRole="button" accessibilityLabel={t.chat.refresh} disabled={loading} accessibilityState={{ disabled: loading }} style={({ pressed }) => [styles.refreshAction, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent', opacity: loading ? 0.45 : 1 }]}><SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={19} tintColor={theme.accent} /></Pressable></GlassSurface>
     </View>
     <ChatIdentitySwitcher onChanged={() => { setSelection(null); setModalConversation(undefined); router.setParams({ conversationId: undefined, businessId: undefined }); setFilter('direct'); }} />
     <FlatList analyticsId="app_tabs_chat.flatlist.1" data={displayed} keyExtractor={(item) => item.id} contentContainerStyle={[styles.list, initialLoading && styles.loadingList]}
@@ -398,7 +399,7 @@ function ChatAvatar({ kind, title, meetupCategory, initial, avatarUri, active, d
       {icon === 'beer' && !reducedMotion && <Animated.View pointerEvents="none" style={[styles.iconOverlay, { opacity: pulse }]}><Image source={require('@/assets/brand/chat-3d/beer-full.png')} style={styles.partyIcon} contentFit="contain" accessible={false} /></Animated.View>}
       {icon === 'disco-ball' && !reducedMotion && <Animated.View pointerEvents="none" style={[styles.glint, { opacity: pulse.interpolate({ inputRange: [0, 0.3, 0.7, 1], outputRange: [0, 0, 1, 0] }), transform: [{ rotate: '45deg' }, { scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1.4] }) }] }]} />}
     </>
-      : avatarUri ? <Image source={{ uri: avatarUri }} style={[styles.partyIcon, { borderRadius: 26 }]} contentFit="cover" transition={ControlMotion.settleMs} accessible={false} /> : <ThemedText type="subtitle" themeColor="accent">{initial}</ThemedText>}
+      : avatarUri ? <ClayPhoto uri={avatarUri} size={52} transition={ControlMotion.settleMs} /> : <ThemedText type="subtitle" themeColor="accent">{initial}</ThemedText>}
   </Animated.View>;
 }
 

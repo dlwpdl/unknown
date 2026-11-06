@@ -5,14 +5,13 @@ import { useIsFocused, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { SymbolViewProps } from 'expo-symbols';
 import { SymbolView } from '@/components/symbol-view';
-import { Image } from 'expo-image';
 import { LayoutAnimation, Linking, Platform, StyleSheet, UIManager, View } from 'react-native';
 import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProfileAvatarButton } from '@/components/profile-avatar-button';
 import { GlassSurface } from '@/components/glass-surface';
-import { ClayCoinFill, ClayIcon, ClayPillFill, useClay, type ClayName } from '@/components/clay';
+import { ClayCoinFill, ClayPhoto, ClayIcon, ClayPillFill, useClay, type ClayName } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
@@ -325,8 +324,9 @@ export default function NotificationsScreen() {
             </SelectionChip>;
           })}
           {markable.length > 0 && <Pressable analyticsId="app_tabs_notifications.pressable.5" accessibilityRole="button" onPress={markAll}
-            style={({ pressed }) => [ControlStyles.pill, styles.markAll, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
-            <ThemedText type="smallBold" themeColor="accent">{tr("모두 읽음")}</ThemedText>
+            style={({ pressed }) => [ControlStyles.pill, styles.markAll, clay && { overflow: 'visible', paddingHorizontal: 18 }, controlPresentation(theme, { tone: 'ghost', pressed, clay }).container]}>
+            {clay && <ClayPillFill kind="white" />}
+            <ThemedText type="smallBold" themeColor={clay ? undefined : 'accent'}>{tr("모두 읽음")}</ThemedText>
           </Pressable>}
         </View>
         {error && rows.length > 0 && <Pressable analyticsId="app_tabs_notifications.pressable.6" accessibilityRole="alert" onPress={() => { play('selection'); void load(false, true); }}
@@ -364,11 +364,11 @@ export default function NotificationsScreen() {
 
 function Avatar({ actor, fallback, symbol, small, style }: { actor?: Person; fallback?: string; symbol?: SymbolViewProps['name']; small?: boolean; style?: object }) {
   const theme = useTheme();
-  const clay = useClay() && !actor?.avatarUrl;
+  const clay = useClay();
   return <View style={[small ? styles.avatarSmall : styles.avatar, { backgroundColor: clay ? 'transparent' : theme.backgroundElement, borderColor: clay ? 'transparent' : theme.background }, clay && styles.clayAvatar, style]}>
-    {clay && <ClayCoinFill />}
+    {clay && !actor?.avatarUrl && <ClayCoinFill />}
     {actor?.avatarUrl
-      ? <Image source={{ uri: actor.avatarUrl }} style={styles.avatarImage} contentFit="cover" transition={ControlMotion.settleMs} accessibilityIgnoresInvertColors />
+      ? <ClayPhoto uri={actor.avatarUrl} size={small ? 30 : 44} transition={ControlMotion.settleMs} />
       : fallback ? <ThemedText type="smallBold" themeColor="textSecondary">{fallback.trim().slice(0, 1)}</ThemedText>
       : <ClayIcon clay={KIND_CLAY.get(symbol ?? KIND_SYMBOLS.system) ?? 'bell'} claySize={26} name={symbol ?? KIND_SYMBOLS.system} size={IconSize.toolbar} tintColor={theme.accent} />}
   </View>;
@@ -403,7 +403,6 @@ const styles = StyleSheet.create({
   avatarWrap: { width: 44, height: 44 },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarSmall: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'absolute' },
-  avatarImage: { width: '100%', height: '100%' },
   stack: { width: 44, height: 44 },
   stackFirst: { left: 0, top: 0 },
   stackSecond: { right: 0, bottom: 0 },

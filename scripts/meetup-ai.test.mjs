@@ -73,7 +73,7 @@ export function form({ params = {}, sourceEvent, catalogReady = true, membership
     'expo-router': { useLocalSearchParams: () => params, useFocusEffect: callback => { focused = callback; }, usePreventRemove() {}, useRouter: () => ({ replace: path => routes.push(path), push: path => routes.push(path) }) },
     'react-native-reanimated': { useReducedMotion: () => true },
     '@/hooks/use-language': { useLanguage: () => ({ language, tr: (s, ...args) => translateUi(language, s, ...args), t }) },
-    '@/hooks/use-theme': { useTheme: () => theme },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => theme },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: 'host' }, isAdmin: false }) },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버' } }) },
     '@/lib/membership-provider': { useMembership: () => ({ membership, refresh() {} }) },
@@ -479,7 +479,7 @@ function previewControl(language, overrides = {}) {
   const exports = {};
   const imports = {
     'react/jsx-runtime': { jsx, jsxs: jsx }, 'react-native': { View: 'View', StyleSheet: { create: x => x, hairlineWidth: 1 } },
-    '@/hooks/use-theme': { useTheme: () => ({}) }, '@/hooks/use-language': { useLanguage: () => ({ language }) },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/hooks/use-language': { useLanguage: () => ({ language }) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/constants/theme': { Depth: { control: {} }, Spacing: { two: 8, three: 16 } }, '@/lib/ai-draft': aiDraft,
   };

@@ -3,7 +3,7 @@ import { SymbolView } from '@/components/symbol-view';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayControlFill, ClayPillFill, useClay } from '@/components/clay';
 import { Pressable } from '@/components/analytics-controls';
 import { UberOrderNotice } from '@/components/business-webshop';
 import { CityPlacePhoto } from '@/components/city-place-photo';
@@ -33,7 +33,7 @@ export function SavedLibraryButton({ analyticsId: id, testID, label, onPress, di
   return <Pressable analyticsId={id} testID={testID} accessibilityRole="button" accessibilityLabel={label}
     accessibilityState={{ disabled, selected }} disabled={disabled}
     onPress={() => { play('selection'); onPress(); }}
-    style={({ pressed }) => [ControlStyles.pill, styles.action, controlPresentation(theme, { tone: primary ? 'primary' : 'secondary', pressed, selected, disabled, clay }).container]}>
+    style={({ pressed }) => [ControlStyles.pill, styles.action, clay && styles.clayPad, controlPresentation(theme, { tone: primary ? 'primary' : 'secondary', pressed, selected, disabled, clay }).container]}>
     {clay && <ClayPillFill kind={primary || selected ? 'cta' : 'white'} />}
     <ThemedText type="label" style={controlPresentation(theme, { tone: primary ? 'primary' : 'secondary', selected }).text}>{label}</ThemedText>
   </Pressable>;
@@ -96,6 +96,7 @@ export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCrea
   onAssign: (ids: string[]) => void; onCreateForItem: (ids: string[]) => void; onRequestDelete: () => void;
 }) {
   const theme = useTheme(), { language } = useLanguage(), { play } = useInteractionFeedback(), ko = language === 'ko';
+  const clay = useClay();
   const [name, setName] = useState(editor.kind === 'rename' ? editor.folder.name : '');
   const [ids, setIds] = useState(editor.kind === 'item' ? editor.item.folderIds : []);
   // Closing slides the sheet down first; the parent unmounts it once DragSheet reports it is gone.
@@ -120,7 +121,8 @@ export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCrea
             {folders.map(folder => <Pressable key={folder.id} analyticsId="saved.editor.select" testID={`saved.editor.folder.${folder.id}`} accessibilityRole="checkbox" accessibilityLabel={folder.name}
               accessibilityState={{ checked: ids.includes(folder.id), disabled: busy }} disabled={busy}
               onPress={() => { play('selection'); setIds(previous => previous.includes(folder.id) ? previous.filter(id => id !== folder.id) : [...previous, folder.id]); }}
-              style={({ pressed }) => [styles.check, controlPresentation(theme, { pressed, selected: ids.includes(folder.id), disabled: busy }).container]}>
+              style={({ pressed }) => [styles.check, clay && styles.clayPad, controlPresentation(theme, { pressed, selected: ids.includes(folder.id), disabled: busy, clay }).container]}>
+              <ClayControlFill selected={ids.includes(folder.id)} />
               <ThemedText style={[styles.grow, controlPresentation(theme, { selected: ids.includes(folder.id) }).text]}>{folder.name}</ThemedText>
               <ThemedText accessible={false} style={controlPresentation(theme, { selected: ids.includes(folder.id) }).text}>{ids.includes(folder.id) ? '✓' : '○'}</ThemedText>
             </Pressable>)}
@@ -140,6 +142,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one },
   open: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 44 }, image: { width: 64, height: 64, borderRadius: 12 }, empty: { alignItems: 'center', justifyContent: 'center' },
   meta: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginBottom: Spacing.one },
+  clayPad: { overflow: 'visible', paddingHorizontal: 18 },
   action: { borderWidth: 1, maxWidth: '100%', paddingVertical: Spacing.two },
   offer: { borderTopWidth: 1, paddingTop: Spacing.two, gap: Spacing.two },
   sheetContent: { padding: Spacing.three, gap: Spacing.three }, heading: { flexDirection: 'row', alignItems: 'flex-start', flexWrap: 'wrap', gap: Spacing.two },

@@ -10,6 +10,7 @@ import type { PurchasesPackage } from 'react-native-purchases';
 
 import { LoginPanel } from '@/components/login-panel';
 import { InfoNote, StatusLine } from '@/components/notice-blocks';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -29,8 +30,9 @@ type WalletState = { userId: string; wallet: PromotionWallet; posts: { id: strin
 function ActionButton({ label, onPress, disabled = false, primary = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
 
   const theme = useTheme();
+  const clay = useClay();
   const { play } = useInteractionFeedback();
-  return <Pressable analyticsId="app_profile_promotions.pressable.1" accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.button, primary && { backgroundColor: theme.accent }, { opacity: disabled ? 0.5 : pressed ? 0.75 : 1 }]}><ThemedText type="smallBold" style={primary ? { color: theme.accentInk } : undefined}>{label}</ThemedText></Pressable>;
+  return <Pressable analyticsId="app_profile_promotions.pressable.1" accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.button, clay && { overflow: 'visible', paddingHorizontal: 18, backgroundColor: 'transparent', borderWidth: 0 }, !clay && primary && { backgroundColor: theme.accent }, { opacity: disabled ? 0.5 : pressed ? 0.75 : 1 }]}>{clay && <ClayPillFill kind={primary ? 'cta' : 'white'} />}<ThemedText type="smallBold" style={primary ? { color: theme.accentInk } : undefined}>{label}</ThemedText></Pressable>;
 }
 
 export default function PromotionsRoute() {

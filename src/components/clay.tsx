@@ -1,4 +1,4 @@
-import { Image } from 'expo-image';
+import { Image, type ImageProps } from 'expo-image';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { Image as NativeImage, Platform, StyleSheet, View, type ImageSourcePropType, type ViewStyle } from 'react-native';
 
@@ -24,6 +24,7 @@ const ICONS = {
   more: require('@/assets/images/ui-3d/more.png'), home: require('@/assets/images/ui-3d/tab_home_on.png'),
   close: require('@/assets/images/ui-3d/close.png'), check: require('@/assets/images/ui-3d/check.png'), pin: require('@/assets/images/ui-3d/pin.png'), store: require('@/assets/images/ui-3d/store.png'), photo: require('@/assets/images/ui-3d/photo.png'), camera: require('@/assets/images/ui-3d/camera.png'), trash: require('@/assets/images/ui-3d/trash.png'), sparkle: require('@/assets/images/ui-3d/sparkle.png'), info: require('@/assets/images/ui-3d/info.png'), calendar: require('@/assets/images/ui-3d/calendar.png'), clock: require('@/assets/images/ui-3d/clock.png'), box: require('@/assets/images/ui-3d/box.png'), send: require('@/assets/images/ui-3d/send.png'), person_add: require('@/assets/images/ui-3d/person_add.png'), gear: require('@/assets/images/ui-3d/gear.png'), flag: require('@/assets/images/ui-3d/flag.png'), warn: require('@/assets/images/ui-3d/warn.png'), doc: require('@/assets/images/ui-3d/doc.png'), seal: require('@/assets/images/ui-3d/seal.png'), lock: require('@/assets/images/ui-3d/lock.png'), link: require('@/assets/images/ui-3d/link.png'), phone: require('@/assets/images/ui-3d/phone.png'), globe: require('@/assets/images/ui-3d/globe.png'), gift: require('@/assets/images/ui-3d/gift.png'), envelope: require('@/assets/images/ui-3d/envelope.png'), megaphone: require('@/assets/images/ui-3d/megaphone.png'), flame: require('@/assets/images/ui-3d/flame.png'), open: require('@/assets/images/ui-3d/open.png'),
   chevron_right: require('@/assets/images/ui-3d/chevron_right.png'), chevron_left: require('@/assets/images/ui-3d/chevron_left.png'), chevron_up: require('@/assets/images/ui-3d/chevron_up.png'), target: require('@/assets/images/ui-3d/target.png'),
+  check_on: require('@/assets/images/ui-3d/check_on.png'),
   chip_all: require('@/assets/images/ui-3d/chip_all.png'), chip_life: require('@/assets/images/ui-3d/chip_life.png'),
   chip_dining: require('@/assets/images/ui-3d/chip_dining.png'), chip_business: require('@/assets/images/ui-3d/chip_business.png'),
   chip_festival: require('@/assets/images/ui-3d/chip_festival.png'), chip_housing: require('@/assets/images/ui-3d/chip_housing.png'),
@@ -37,6 +38,7 @@ const ICONS_DARK: Partial<Record<keyof typeof ICONS, number>> = {
   bell: require('@/assets/images/ui-3d/tab_bell_on_d.png'), meetups: require('@/assets/images/ui-3d/tab_meetups_on_d.png'), map: require('@/assets/images/ui-3d/tab_map_on_d.png'), home: require('@/assets/images/ui-3d/tab_home_on_d.png'),
   close: require('@/assets/images/ui-3d/close_d.png'), check: require('@/assets/images/ui-3d/check_d.png'), pin: require('@/assets/images/ui-3d/pin_d.png'), store: require('@/assets/images/ui-3d/store_d.png'), photo: require('@/assets/images/ui-3d/photo_d.png'), camera: require('@/assets/images/ui-3d/camera_d.png'), trash: require('@/assets/images/ui-3d/trash_d.png'), sparkle: require('@/assets/images/ui-3d/sparkle_d.png'), info: require('@/assets/images/ui-3d/info_d.png'), calendar: require('@/assets/images/ui-3d/calendar_d.png'), clock: require('@/assets/images/ui-3d/clock_d.png'), box: require('@/assets/images/ui-3d/box_d.png'), send: require('@/assets/images/ui-3d/send_d.png'), person_add: require('@/assets/images/ui-3d/person_add_d.png'), gear: require('@/assets/images/ui-3d/gear_d.png'), flag: require('@/assets/images/ui-3d/flag_d.png'), warn: require('@/assets/images/ui-3d/warn_d.png'), doc: require('@/assets/images/ui-3d/doc_d.png'), seal: require('@/assets/images/ui-3d/seal_d.png'), lock: require('@/assets/images/ui-3d/lock_d.png'), link: require('@/assets/images/ui-3d/link_d.png'), phone: require('@/assets/images/ui-3d/phone_d.png'), globe: require('@/assets/images/ui-3d/globe_d.png'), gift: require('@/assets/images/ui-3d/gift_d.png'), envelope: require('@/assets/images/ui-3d/envelope_d.png'), megaphone: require('@/assets/images/ui-3d/megaphone_d.png'), flame: require('@/assets/images/ui-3d/flame_d.png'), open: require('@/assets/images/ui-3d/open_d.png'), pencil: require('@/assets/images/ui-3d/pencil_d.png'), trophy: require('@/assets/images/ui-3d/trophy_d.png'), plus: require('@/assets/images/ui-3d/plus_d.png'), empty: require('@/assets/images/ui-3d/empty_d.png'),
   chevron_right: require('@/assets/images/ui-3d/chevron_right_d.png'), chevron_left: require('@/assets/images/ui-3d/chevron_left_d.png'), chevron_up: require('@/assets/images/ui-3d/chevron_up_d.png'), target: require('@/assets/images/ui-3d/target_d.png'),
+  check_on: require('@/assets/images/ui-3d/check_on_d.png'),
 };
 
 // Three slices stretch the same on iOS and Android. cap = end width ÷ art height; drop = the shadow hanging below the control.
@@ -125,9 +127,9 @@ export function ClayCoinFill({ me = false }: { me?: boolean }) {
 }
 
 /** A member's photo, domed: cut to a full circle under a highlight that overhangs it by 20% on each side, so its parent must not clip. */
-export function ClayPhoto({ uri, size }: { uri: string; size: number }) {
-  const pill = useClay(), dark = useDark(), round = { width: size, height: size, borderRadius: size / 2 };
-  const photo = <Image source={{ uri }} style={round} contentFit="cover" accessible={false} />;
+export function ClayPhoto({ uri, size, ...image }: { uri: string; size: number } & Omit<ImageProps, 'source' | 'style'>) {
+  const pill = useClay(), dark = useDark();
+  const photo = <Image accessible={!!image.accessibilityLabel} transition={120} contentFit="cover" accessibilityIgnoresInvertColors {...image} source={{ uri }} style={{ width: size, height: size, borderRadius: size / 2 }} />;
   if (!pill) return photo;
   return <View style={{ width: size, height: size }}>{photo}
     <Image source={dark ? DOME_DARK : DOME} style={{ position: 'absolute', top: -size * 0.2, left: -size * 0.2, width: size * 1.4, height: size * 1.4 }} contentFit="fill" accessible={false} />

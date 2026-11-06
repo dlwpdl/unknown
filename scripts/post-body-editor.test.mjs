@@ -18,7 +18,7 @@ function editor(initial = {}) {
     'react-native': { View: 'View', TextInput: 'TextInput', Modal: 'Modal', KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'ios' }, Keyboard: { dismiss() {} }, StyleSheet: { create: value => value } },
     'react-native-reanimated': { useReducedMotion: () => true },
     'react-native-safe-area-context': { useSafeAreaInsets: () => ({ bottom: 20 }) },
-    '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/hooks/use-theme': { useTheme: () => ({}) }, '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/post-maps': maps,
     '../../supabase/functions/_shared/post-links': links,

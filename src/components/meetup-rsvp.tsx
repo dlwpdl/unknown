@@ -4,6 +4,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { Pressable } from '@/components/analytics-controls';
 import { animateLayout } from '@/components/disclosure';
+import { ClayBoxFill, ClayControlFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles, Typography, controlPresentation } from '@/constants/design-system';
 import { Spacing } from '@/constants/theme';
@@ -22,7 +23,7 @@ export function MeetupRsvp({ postId, flush = false }: { postId: string; flush?: 
 
 function RsvpBlock({ postId, flush }: { postId: string; flush: boolean }) {
   const { tr, locale } = useLanguage();
-  const theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback(), reduced = useReducedMotion();
+  const theme = useTheme(), clay = useClay(), clayBox = useClayBox(), router = useRouter(), { play } = useInteractionFeedback(), reduced = useReducedMotion();
   const [rsvp, setRsvp] = useState<Rsvp | null>(null), [failed, setFailed] = useState(false), [saving, setSaving] = useState(false), [error, setError] = useState(false);
   const [reload, setReload] = useState(0);
   const active = useRef(true);
@@ -55,7 +56,8 @@ function RsvpBlock({ postId, flush }: { postId: string; flush: boolean }) {
     Alert.alert(title, message, [{ text: tr('그대로 두기'), style: 'cancel' }, { text: tr('자리 비우기'), style: 'destructive', onPress: () => void answer(false, true) }]);
   };
   const counts = rsvp.counts;
-  return <View style={[styles.card, !flush && styles.spaced, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.card, !flush && styles.spaced, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     <ThemedText accessibilityRole="header" style={Typography.section}>{rsvp.isHost ? tr('참석 현황') : tr('참석 알려 주기')}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">{tr('다음 만남 {0}', when)}</ThemedText>
     {rsvp.isHost ? rsvp.canSeeCounts && counts
@@ -69,7 +71,8 @@ function RsvpBlock({ postId, flush }: { postId: string; flush: boolean }) {
             const selected = rsvp.mine === (going ? 'going' : 'not_going');
             return <Pressable key={id} analyticsId={id} accessibilityRole="radio" accessibilityState={{ checked: selected, disabled: saving, busy: saving }} disabled={saving}
               onPress={() => { play('selection'); if (!selected) void answer(going); }}
-              style={({ pressed }) => [ControlStyles.action, styles.choice, { borderWidth: 1 }, controlPresentation(theme, { selected, pressed, busy: saving }).container]}>
+              style={({ pressed }) => [ControlStyles.action, styles.choice, clay && styles.clayChoice, { borderWidth: 1 }, controlPresentation(theme, { selected, pressed, busy: saving, clay }).container]}>
+              {clay && <ClayControlFill selected={selected} />}
               <ThemedText type="smallBold" style={controlPresentation(theme, { selected }).text}>{tr(label)}</ThemedText>
             </Pressable>;
           })}
@@ -85,6 +88,6 @@ function RsvpBlock({ postId, flush }: { postId: string; flush: boolean }) {
 
 const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: 16, padding: Spacing.three, gap: Spacing.two }, spaced: { marginVertical: Spacing.three },
-  row: { flexDirection: 'row', gap: Spacing.two }, choice: { flex: 1 },
+  row: { flexDirection: 'row', gap: Spacing.two }, choice: { flex: 1 }, clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' }, clayChoice: { overflow: 'visible', paddingHorizontal: 18 },
   retry: { minHeight: 44, justifyContent: 'center' },
 });

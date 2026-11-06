@@ -25,7 +25,7 @@ function screen() {
     '@/components/analytics-controls': { Pressable: 'Pressable', FlatList: 'FlatList', ScrollView: 'ScrollView' }, '@/components/page-header': { PageHeader: 'PageHeader' },
     '@/components/themed-text': { ThemedText: 'ThemedText' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' }, '@/components/selection-chip': { SelectionChip: 'SelectionChip' }, '@/components/state-card': { StateCard: 'StateCard' },
     '@/constants/design-system': { ControlMotion: { pressedOpacity: .82 }, ControlStyles: { action: {}, icon: {}, field: {}, pill: {} }, IconSize: {}, Typography: { sheetTitle: {}, body: {} }, controlPresentation: () => ({ container: {} }) },
-    '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16, four: 24, five: 32 } }, '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16, four: 24, five: 32 } }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/hooks/use-language': { useLanguage: () => ({ tr: (s, ...args) => args.reduce((v, a, i) => v.replace(`{${i}}`, String(a)), s) }) },
     '@/hooks/use-content-visibility': { useContentVisibility: () => visibility }, '@/lib/auth': { useAuth: () => ({ me: { id: viewer }, isAuthed: !!viewer, isAuthLoading: false, promptLogin: reason => routes.push(reason) }) },
     '@/lib/community-city': { useCommunityCity: () => ({ city }) }, '@/lib/supabase': { supabase: {} },

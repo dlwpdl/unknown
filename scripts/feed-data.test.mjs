@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   appendUniquePosts,
+  attachAuthorPhotos,
   attachSignedPostImages,
   getPostImageSource,
   groupJournalPosts,
@@ -268,4 +269,21 @@ test('방금 쓴 내 글은 정렬·새로고침과 상관없이 10분 동안 �
   assert.deepEqual(pinJustPosted(server, pin, 'me', 1_000_000 + JUST_POSTED_MS + 1), server, 'after ten minutes the server order returns');
   assert.deepEqual(pinJustPosted(server, pin, 'someone-else', 1_000_000), server, 'another account never sees the pin');
   assert.deepEqual(pinJustPosted(server, null, 'me'), server);
+});
+
+test('글 카드 회원 사진은 회원 글에만 붙고, 모임 글은 호스트의 별도 신원이라 빠지며, 비회원·읽기 실패면 첫 글자로 남는다', async () => {
+  const posts = [{ id: 'a', author: { id: 'u1' } }, { id: 'b', author: { id: 'u2' }, room: { id: 'r' } }, { id: 'c', author: { id: 'u3' } }];
+  const asked = [];
+  const client = {
+    from: table => { assert.equal(table, 'profiles'); return { select: () => ({ in: (_, ids) => { asked.push(ids); return Promise.resolve({ error: null, data: [{ id: 'u1', avatar_path: 'u1/avatar.jpg' }, { id: 'u3', avatar_path: null }] }); } }) }; },
+    storage: { from: bucket => { assert.equal(bucket, 'avatars'); return { createSignedUrls: async paths => ({ data: paths.map(path => ({ path, signedUrl: `signed:${path}` })) }) }; } },
+  };
+  const result = await attachAuthorPhotos(client, posts);
+  assert.deepEqual(asked, [['u1', 'u3']], 'the meetup host is never looked up');
+  assert.equal(result[0].author.avatarUrl, 'signed:u1/avatar.jpg');
+  assert.equal(result[1].author.avatarUrl, undefined);
+  assert.equal(result[2].author.avatarUrl, undefined);
+  const guest = { from: () => ({ select: () => ({ in: () => Promise.resolve({ data: null, error: { code: '42501' } }) }) }) };
+  assert.equal(await attachAuthorPhotos(guest, posts), posts);
+  assert.equal(await attachAuthorPhotos({ from: () => { throw new Error('offline'); } }, posts), posts);
 });

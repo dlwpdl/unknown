@@ -36,6 +36,7 @@ import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { GlingLoader } from '@/components/gling-loader';
 import { ListCard, ListRow } from '@/components/list-card';
 import { RaisedActionButton } from '@/components/raised-action-button';
+import { ClayBoxFill, ClayControlFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { PostCard, PostReactionToggle } from '@/components/post-card';
 import { TranslatedCommentBody } from '@/components/content-translation';
 import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
@@ -121,6 +122,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const { tr, t, language } = useLanguage();
   const business = useChatIdentity();
   const theme = useTheme();
+  const clay = useClay();
   const hidden = useContentVisibility();
   const [post, setPost] = useState(initialPost);
   const photoCredits = splitPostPhotoCredits(post.body);
@@ -494,7 +496,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     if (!page.error && !page.cursor) return null;
     return <View>
       {page.error && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr(parentId ? '답글을 불러오지 못했어요.' : '댓글을 불러오지 못했어요.')}</ThemedText>}
-      <Pressable analyticsId="components_post-detail.pressable.1" onPress={() => { play('selection'); void loadPage(parentId, page.cursor); }} accessibilityRole="button" style={({ pressed }) => [styles.loadMore, pressed && styles.pressed]}>
+      <Pressable analyticsId="components_post-detail.pressable.1" onPress={() => { play('selection'); void loadPage(parentId, page.cursor); }} accessibilityRole="button" style={({ pressed }) => [styles.loadMore, clay && styles.clayLoadMore, pressed && styles.pressed]}>
+        {clay && <ClayPillFill kind="white" />}
         <ThemedText type="smallBold" themeColor="accent">{tr(page.error ? tr("다시 시도") : parentId ? tr("답글 더 보기") : t.detail.loadMoreComments)}</ThemedText>
       </Pressable>
     </View>;
@@ -773,7 +776,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           : <ThemedText accessibilityRole="header" style={styles.headTitle}>{tr(postDraft ? tr(post.room ? "소개·사진 수정" : "글 수정") : commentId ? t.detail.commentsTitle(commentTotal) : tr("글 상세"))}</ThemedText>}
         {post.room && !postDraft && <PostReactionToggle post={post} kind="save" />}
         {!postDraft && <Pressable analyticsId="post.detail.share" accessibilityRole="button" accessibilityLabel={tr(post.room ? tr("모임 초대 링크 공유") : tr("게시물 링크 공유"))}
-          onPress={() => { play('selection'); setShareOpen(true); }} style={({ pressed }) => [styles.shareBtn, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
+          onPress={() => { play('selection'); setShareOpen(true); }} style={({ pressed }) => [styles.shareBtn, clay && styles.clayPad, { backgroundColor: pressed && !clay ? theme.backgroundSelected : 'transparent' }]}>
+          {clay && <ClayPillFill kind="white" />}
           <SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={20} tintColor={theme.accent} />
           <ThemedText type="smallBold" themeColor="accent">{tr(post.room ? tr("초대") : tr("공유"))}</ThemedText>
         </Pressable>}
@@ -820,7 +824,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                 <PostPhotoEditor images={postImages ?? []} disabled={savingPost || pickingPostImages} onChange={setPostImages} />
                 <View style={styles.postActions}>
                   <Pressable analyticsId="components_post-detail.replace-photos" onPress={() => void pickPostImages()} disabled={savingPost || pickingPostImages || (postImages?.length ?? 0) >= MAX_POST_IMAGES} accessibilityRole="button"
-                    accessibilityLabel={tr("사진 추가, 최대 {0}장", (MAX_POST_IMAGES))} style={[styles.postAction, { borderColor: theme.line, borderWidth: 1 }]}>
+                    accessibilityLabel={tr("사진 추가, 최대 {0}장", (MAX_POST_IMAGES))} style={[styles.postAction, clay ? styles.clayPad : { borderColor: theme.line, borderWidth: 1 }]}>
+                    {clay && <ClayPillFill kind="white" />}
                     <ThemedText type="smallBold" themeColor="accent">{tr(pickingPostImages ? tr("사진 준비 중…") : tr("+ 사진 추가"))}</ThemedText>
                   </Pressable>
                   <Pressable analyticsId="post.edit.replace-all" onPress={() => void pickPostImages(true)} disabled={savingPost || pickingPostImages} accessibilityRole="button" accessibilityLabel={tr("사진 전체 교체")} style={styles.postAction}>
@@ -829,11 +834,13 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                 </View>
                 <View style={styles.postActions}>
                   <Pressable analyticsId="components_post-detail.pressable.12" onPress={() => { play('selection'); setPostDraft(null); setPostImages(null); }} disabled={savingPost || pickingPostImages} accessibilityRole="button"
-                    accessibilityState={{ disabled: savingPost || pickingPostImages }} style={({ pressed }) => [styles.postAction, Depth.control, { backgroundColor: theme.backgroundElement, }]}>
+                    accessibilityState={{ disabled: savingPost || pickingPostImages }} style={({ pressed }) => [styles.postAction, clay && styles.clayPad, !clay && Depth.control, { backgroundColor: clay ? 'transparent' : theme.backgroundElement }]}>
+                    {clay && <ClayPillFill kind="white" />}
                     <ThemedText type="smallBold" themeColor="textSecondary">{t.write.cancel}</ThemedText>
                   </Pressable>
                   <Pressable analyticsId="components_post-detail.pressable.13" onPress={() => { play('selection'); void savePost(); }} disabled={savingPost || pickingPostImages} accessibilityRole="button"
-                    accessibilityState={{ disabled: savingPost || pickingPostImages, busy: savingPost }} style={({ pressed }) => [styles.postAction, { backgroundColor: theme.accent, opacity: pressed ? 0.65 : 1 }]}>
+                    accessibilityState={{ disabled: savingPost || pickingPostImages, busy: savingPost }} style={({ pressed }) => [styles.postAction, clay && styles.clayPad, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: pressed ? 0.65 : 1 }]}>
+                    {clay && <ClayPillFill kind="cta" />}
                     <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr(savingPost ? tr("저장 중") : tr("저장"))}</ThemedText>
                   </Pressable>
                 </View>
@@ -863,7 +870,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                   <ThemedText type="small" themeColor="textSecondary" selectable>{postPublicAddress(post.body) ?? tr("상세주소 미등록")}</ThemedText>
                 </View>}
                 <MerchantSourceLink postId={post.id} /><MerchantReviews postId={post.id} reviewKind={post.tag.slug === 'jobs' ? 'employment' : 'usage'} onOpenProfile={(id) => { onClose(); router.push({ pathname: '/company/[id]', params: { id, review: post.tag.slug === 'jobs' ? 'employment' : 'usage' } }); }} />{post.room && <TicketmasterSourceLink body={post.body} cityId={post.cityId} onNavigate={onClose} />}
-                {linkedPlace && <Pressable analyticsId="components_post-map-link.pressable.1" accessibilityRole="button" accessibilityLabel={placeSourceLabel} onPress={() => { play('selection'); onClose(); router.navigate(placeMapRoute(linkedPlace.place)); }} style={({ pressed }) => [ControlStyles.action, controlPresentation(theme, { pressed }).container, { borderWidth: 1 }]}><ThemedText type="smallBold" style={controlPresentation(theme).text}>{placeSourceLabel}</ThemedText></Pressable>}
+                {linkedPlace && <Pressable analyticsId="components_post-map-link.pressable.1" accessibilityRole="button" accessibilityLabel={placeSourceLabel} onPress={() => { play('selection'); onClose(); router.navigate(placeMapRoute(linkedPlace.place)); }} style={({ pressed }) => [ControlStyles.action, controlPresentation(theme, { pressed, clay }).container, { borderWidth: 1 }, clay && styles.clayPad]}>{clay && <ClayControlFill />}<ThemedText type="smallBold" style={controlPresentation(theme).text}>{placeSourceLabel}</ThemedText></Pressable>}
               </>}
               onJoin={onJoin ?? (() => isAuthed ? router.push({ pathname: '/meetup-join', params: { postId: post.id } }) : promptLogin('이 모임에 참여하려면 가입하거나 로그인해 주세요.'))}
               onAuthor={() => {
@@ -889,7 +896,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
             {!postDraft && post.room && Platform.OS !== 'web' && <View style={[styles.meetupSection, { borderTopColor: theme.line }]}><MeetupFollowEncore post={post} /></View>}
             {!postDraft && post.room && <View style={[styles.meetupSection, styles.meetupSectionRow, { borderTopColor: theme.line }]}>
               <ThemedText accessibilityRole="header" style={[Typography.section, styles.flexText]}>{tr("질문·댓글")} <ThemedText themeColor="textSecondary" style={Typography.section}>{commentTotal}</ThemedText></ThemedText>
-              <Pressable analyticsId="meetup.detail.ask" accessibilityRole="button" onPress={() => { play('selection'); setComposing(true); inputRef.current?.focus(); }} style={styles.askBtn}>
+              <Pressable analyticsId="meetup.detail.ask" accessibilityRole="button" onPress={() => { play('selection'); setComposing(true); inputRef.current?.focus(); }} style={[styles.askBtn, clay && styles.clayPad]}>
+                {clay && <ClayPillFill kind="white" />}
                 <ThemedText type="smallBold" themeColor="accent">{tr("질문 남기기")}</ThemedText>
               </Pressable>
             </View>}
@@ -943,7 +951,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               disabled={sendDisabled}
               accessibilityRole="button"
               accessibilityState={{ disabled: sendDisabled, busy: sending }}
-              style={({ pressed }) => [styles.send, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: sendDisabled ? 0.55 : 1, }]}>
+              style={({ pressed }) => [styles.send, clay ? styles.clayPad : [Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3 }], { opacity: sendDisabled ? 0.55 : 1, }]}>
+              {clay && <ClayPillFill kind="cta" />}
               <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
                 {t.detail.send}
               </ThemedText>
@@ -983,6 +992,9 @@ const styles = StyleSheet.create({
   hostAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   hostName: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   hostNameText: { flexShrink: 1 },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
+  clayPad: { overflow: 'visible', paddingHorizontal: 18 },
+  clayLoadMore: { alignSelf: 'center', overflow: 'visible', paddingHorizontal: 18, paddingVertical: 0, justifyContent: 'center' },
   hostLink: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.one },
   facts: { flexDirection: 'row', flexWrap: 'wrap', borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
   fact: { padding: Spacing.three, gap: 2 },
@@ -1082,7 +1094,7 @@ const styles = StyleSheet.create({
 // 언제·어디·인원·나이(회비) 네 칸. 로그인 전 참여 신청 화면(meetup-join)도 같은 칸을 쓴다.
 export function MeetupFacts({ post, canEnterChat, own }: { post: Post; canEnterChat: boolean; own: boolean }) {
   const { tr, locale: appLocale } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
   const stacked = useWindowDimensions().fontScale >= 1.3;
   const room = post.room;
   if (!room) return null;
@@ -1095,8 +1107,9 @@ export function MeetupFacts({ post, canEnterChat, own }: { post: Post; canEnterC
       : [tr('나이'), recommendedAgeLabel(room, appLocale)],
   ];
   return (
-    <View style={[styles.facts, { borderColor: theme.line }]}>
-      {facts.map(([label, value, note], index) => <View key={label} style={[styles.fact, { width: stacked ? '100%' : '50%', backgroundColor: theme.card, borderColor: theme.line },
+    <View style={[styles.facts, clayBox ? styles.clayCard : { borderColor: theme.line }]}>
+      {clayBox && <ClayBoxFill kind="tile" />}
+      {facts.map(([label, value, note], index) => <View key={label} style={[styles.fact, { width: stacked ? '100%' : '50%', backgroundColor: clayBox ? 'transparent' : theme.card, borderColor: theme.line },
         index >= (stacked ? 1 : 2) && styles.factTop, !stacked && index % 2 === 1 && styles.factLeft]}>
         <ThemedText type="small" themeColor="textSecondary">{label}</ThemedText>
         <ThemedText style={styles.factValue}>{value}</ThemedText>
@@ -1110,7 +1123,7 @@ export function MeetupFacts({ post, canEnterChat, own }: { post: Post; canEnterC
 // 모임 상세의 호스트 줄·사실 표와 그 바로 밑의 '내가 할 일'. 정원 찬 사람의 대기 명단은 맨 아래 버튼이 맡는다.
 function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavigate }: { post: Post; status: MeetupStatus; canEnterChat: boolean; onClose: () => void; onBeforeNavigate?: () => void }) {
   const { tr, t } = useLanguage();
-  const { isAuthed, promptLogin } = useAuth(), theme = useTheme(), router = useRouter();
+  const { isAuthed, promptLogin } = useAuth(), theme = useTheme(), router = useRouter(), clay = useClay(), clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const [profile, setProfile] = useState<ChillingProfile | null>(null), [loading, setLoading] = useState(false), [error, setError] = useState(''), [report, setReport] = useState(false);
   const room = post.room;
@@ -1134,13 +1147,14 @@ function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavi
       <View style={[styles.hostAvatar, { backgroundColor: theme.backgroundSelected }]}><ThemedText type="smallBold">{post.author.nickname[0]}</ThemedText></View>
       <View style={styles.hostName}><ThemedText type="smallBold" style={styles.hostNameText}>{post.author.nickname}</ThemedText><TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} /></View>
       <Pressable analyticsId="components_chilling-host-profile.pressable.1" accessibilityRole="button" accessibilityLabel={tr('{0} 모임 프로필', post.author.nickname)}
-        accessibilityState={room.eventKind ? { expanded: !!profile, busy: loading } : undefined} style={styles.hostLink}
+        accessibilityState={room.eventKind ? { expanded: !!profile, busy: loading } : undefined} style={[styles.hostLink, clay && styles.clayPad]}
         onPress={() => {
           play('selection');
           // Event meetups expand the host's shared profile in place; legacy rooms keep the profile route.
           if (!room.eventKind) { onClose(); router.push({ pathname: '/meetup-profile', params: { postId: post.id } }); }
           else if (profile) setProfile(null); else void load();
         }}>
+        {clay && <ClayPillFill kind="white" />}
         <ThemedText type="smallBold" themeColor="accent">{profile ? tr('접기') : tr('프로필')}</ThemedText>
       </Pressable>
       {!own && <Pressable analyticsId="meetup.detail.report" accessibilityRole="button" accessibilityLabel={t.report.title(post.author.nickname)} style={styles.hostLink}
@@ -1152,7 +1166,7 @@ function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavi
     {isAuthed && profile && <ChillingProfileCard profile={profile} />}
     {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
     <MeetupFacts post={post} canEnterChat={canEnterChat} own={own} />
-    {!!statusNote && <View style={[styles.statusNote, { backgroundColor: theme.backgroundSelected }]}><ThemedText type="small">{statusNote}</ThemedText></View>}
+    {!!statusNote && <View style={[styles.statusNote, clayBox ? styles.clayCard : { backgroundColor: theme.backgroundSelected }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="small">{statusNote}</ThemedText></View>}
     {!!statusError && <StateCard kind="error" title={tr('신청 상태를 불러오지 못했어요')} body={tr(statusError)} actionLabel={tr('다시 불러오기')} onAction={status.retry} />}
     <MeetupRsvp postId={post.id} flush />
     {(!!tools || canEnterChat) && <ListCard>

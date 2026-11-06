@@ -21,6 +21,7 @@ import { PlaceRelated, PlaceSavedBy, usePlaceSaves } from '@/components/place-sa
 import { PostMapLink } from '@/components/post-map-link';
 import { PostPhotoCredits } from '@/components/post-photo-credits';
 import { StateCard } from '@/components/state-card';
+import { ClayControlFill, ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { SavedEntryButton, useSavedEntry } from '@/components/saved-entry';
 import { ShareCardSheet } from '@/components/share-card';
@@ -60,7 +61,7 @@ export default function PlaceDetailScreen() {
   useLayoutEffect(() => { identity.current = userId; return () => { identity.current = null; }; }, [userId]);
   const { city: selected } = useCommunityCity();
   const city = CITIES.find(item => item.id === (cityId ?? selected.id));
-  const theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clay = useClay(), router = useRouter(), { play } = useInteractionFeedback();
   let found: CityPlace | undefined;
   try { if (city) found = getCityPlaces(city.id).find(item => item.id === id) ?? (typeof id === 'string' ? deliveryPartnerPlace(city.id, id) : undefined); } catch { /* Invalid/missing catalog stays an explicit missing-place state. */ }
   const place = found, website = place?.website ? safeMerchantSourceUrl(place.website) : null;
@@ -100,7 +101,7 @@ export default function PlaceDetailScreen() {
   const openMap = (url: string) => {
     void Linking.openURL(url).then(() => record('place_directions'), () => { play('warning'); Alert.alert(tr("길찾기를 열지 못했어요"), tr("인터넷 연결을 확인한 뒤 다시 시도해 주세요.")); });
   };
-  const pill = ({ pressed }: { pressed: boolean }) => [ControlStyles.pill, styles.pill, controlPresentation(theme, { pressed }).container];
+  const pill = ({ pressed }: { pressed: boolean }) => [ControlStyles.pill, styles.pill, clay && styles.clayPill, controlPresentation(theme, { pressed, clay }).container];
   return <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.screen, { backgroundColor: theme.background }]}>
     <PageHeader title={tr('장소')} analyticsId="places.detail.back" fallback={{ pathname: '/places', params: { cityId: city?.id ?? selected.id } }}
       right={place ? <View style={styles.headerActions}>
@@ -139,15 +140,18 @@ export default function PlaceDetailScreen() {
         {/* P3: 길찾기 always; 전화·인스타그램 only when the place has them. These reuse IDs already in the server allowlist. */}
         <View style={styles.actions}>
           <Pressable analyticsId="company.about.maps" accessibilityRole="button" accessibilityLabel={tr("길찾기")} onPress={() => { play('selection'); setCopied(false); setDirections(true); }} style={pill}>
+            {clay && <ClayControlFill />}
             <SymbolView name={{ ios: 'arrow.triangle.turn.up.right.diamond', android: 'directions', web: 'directions' }} size={IconSize.inline} tintColor={theme.accent} accessible={false} />
             <ThemedText type="smallBold">{tr("길찾기")}</ThemedText>
           </Pressable>
           {!!phoneUrl && <Pressable analyticsId="company.about.phone" accessibilityRole="link" accessibilityLabel={tr("공개 전화 {0}", (place.phone))} style={pill}
             onPress={() => { play('selection'); void Linking.openURL(phoneUrl).catch(() => { play('warning'); Alert.alert(tr("전화를 걸지 못했어요"), tr("잠시 후 다시 시도해 주세요.")); }); }}>
+            {clay && <ClayControlFill />}
             <SymbolView name={{ ios: 'phone', android: 'call', web: 'call' }} size={IconSize.inline} tintColor={theme.accent} accessible={false} />
             <ThemedText type="smallBold">{tr("전화하기")}</ThemedText>
           </Pressable>}
           {!!instagram && <Pressable analyticsId="post.attachment.open" accessibilityRole="link" accessibilityLabel={`${tr("인스타그램")} @${instagram.handle}`} onPress={() => openSource(instagram.url)} style={pill}>
+            {clay && <ClayControlFill />}
             <Image source={{ uri: `data:image/svg+xml,${encodeURIComponent(INSTAGRAM_LINK_SVG.replaceAll('currentColor', theme.accent))}` }} style={styles.pillIcon} accessible={false} />
             <ThemedText type="smallBold">{tr("인스타그램")}</ThemedText>
           </Pressable>}
@@ -157,7 +161,8 @@ export default function PlaceDetailScreen() {
         {place.id.startsWith('osm:') && <RaisedActionButton analyticsId="ticketmaster.meetup.find" label={language === 'en' ? 'Find a meetup here' : '이곳에 갈 모임 보기'} disabled={city.state !== 'open'} onPress={() => { play('selection'); router.push({ pathname: '/(tabs)/meetups', params: { placeId: place.id, placeCityId: city.id } }); }} />}
         {city.state !== 'open' && <ThemedText type="small" themeColor="textSecondary">{language === 'en' ? 'Meetups in this city are coming soon.' : '이 도시의 모임은 준비 중이에요.'}</ThemedText>}
         <Pressable analyticsId="places.open" accessibilityRole="button" accessibilityLabel={`${place.name} · ${tr('지도 보기')}`}
-          onPress={() => { play('selection'); router.navigate(placeMapRoute(place)); }} style={styles.link}>
+          onPress={() => { play('selection'); router.navigate(placeMapRoute(place)); }} style={[styles.link, clay && styles.clayLink]}>
+          {clay && <ClayPillFill kind="white" />}
           <ThemedText type="smallBold" themeColor="accent">{tr('지도 보기')}</ThemedText>
         </Pressable>
         {place.id.startsWith('osm:') && <View onLayout={event => { reviewsY.current = event.nativeEvent.layout.y; }}>
@@ -204,6 +209,7 @@ const styles = StyleSheet.create({
   facts: { padding: Spacing.three, borderRadius: 16, gap: Spacing.two },
   link: { minHeight: 44, justifyContent: 'center' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  clayPill: { overflow: 'visible', paddingHorizontal: 18 }, clayLink: { overflow: 'visible', paddingHorizontal: 18 },
   pill: { flexDirection: 'row', gap: Spacing.one, borderWidth: 1 },
   pillIcon: { width: IconSize.inline, height: IconSize.inline },
 });

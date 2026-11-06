@@ -10,6 +10,7 @@ import { Modal, Platform, StyleSheet, TextInput, View, type KeyDownEvent } from 
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
+import { ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { PersonalInfoFields, type PersonalInfoDraft } from '@/components/personal-info-fields';
 import { WelcomeMoment } from '@/components/welcome-moment';
@@ -54,6 +55,7 @@ export function ProfileOnboarding({
 }) {
   const { tr, t } = useLanguage();
   const theme = useTheme();
+  const clay = useClay();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
   const initialNickname = existingProfile?.nickname ?? normalizedNickname(socialNickname) ?? generateNickname('ko');
@@ -225,11 +227,13 @@ export function ProfileOnboarding({
                 )}
               </View>
               <View style={styles.photoActions}>
-                <Pressable analyticsId="components_profile-onboarding.pressable.1" onPress={() => void pickPhoto()} accessibilityRole="button" style={({ pressed }) => [styles.smallButton, Depth.control, { borderColor: theme.line, backgroundColor: theme.card, }]}>
+                <Pressable analyticsId="components_profile-onboarding.pressable.1" onPress={() => void pickPhoto()} accessibilityRole="button" style={({ pressed }) => [styles.smallButton, clay ? styles.clayPad : Depth.control, { borderColor: clay ? 'transparent' : theme.line, backgroundColor: clay ? 'transparent' : theme.card, }]}>
+                  {clay && <ClayPillFill kind="white" />}
                   <ThemedText type="smallBold">{t.onboarding.choosePhoto}</ThemedText>
                 </Pressable>
                 {(socialNickname || socialPhoto) && (
-                  <Pressable analyticsId="components_profile-onboarding.pressable.2" onPress={useSocialProfile} accessibilityRole="button" style={({ pressed }) => [styles.smallButton, Depth.control, { borderColor: theme.line, backgroundColor: theme.card, }]}>
+                  <Pressable analyticsId="components_profile-onboarding.pressable.2" onPress={useSocialProfile} accessibilityRole="button" style={({ pressed }) => [styles.smallButton, clay ? styles.clayPad : Depth.control, { borderColor: clay ? 'transparent' : theme.line, backgroundColor: clay ? 'transparent' : theme.card, }]}>
+                  {clay && <ClayPillFill kind="white" />}
                     <ThemedText type="smallBold">{t.onboarding.useSocial}</ThemedText>
                   </Pressable>
                 )}
@@ -251,10 +255,12 @@ export function ProfileOnboarding({
                 style={[styles.nicknameInput, { color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]}
               />
               <View style={styles.randomActions}>
-                <Pressable analyticsId="components_profile-onboarding.pressable.4" onPress={() => { play('selection'); setNickname(generateNickname('ko')); }} accessibilityRole="button" style={({ pressed }) => [styles.pill, Depth.control, { backgroundColor: theme.backgroundElement, }]}>
+                <Pressable analyticsId="components_profile-onboarding.pressable.4" onPress={() => { play('selection'); setNickname(generateNickname('ko')); }} accessibilityRole="button" style={({ pressed }) => [styles.pill, clay ? styles.clayPad : Depth.control, { backgroundColor: clay ? 'transparent' : theme.backgroundElement, }]}>
+                  {clay && <ClayPillFill kind="white" />}
                   <ThemedText type="smallBold">{t.onboarding.koreanRandom}</ThemedText>
                 </Pressable>
-                <Pressable analyticsId="components_profile-onboarding.pressable.5" onPress={() => { play('selection'); setNickname(generateNickname('en')); }} accessibilityRole="button" style={({ pressed }) => [styles.pill, Depth.control, { backgroundColor: theme.backgroundElement, }]}>
+                <Pressable analyticsId="components_profile-onboarding.pressable.5" onPress={() => { play('selection'); setNickname(generateNickname('en')); }} accessibilityRole="button" style={({ pressed }) => [styles.pill, clay ? styles.clayPad : Depth.control, { backgroundColor: clay ? 'transparent' : theme.backgroundElement, }]}>
+                  {clay && <ClayPillFill kind="white" />}
                   <ThemedText type="smallBold">{t.onboarding.englishRandom}</ThemedText>
                 </Pressable>
               </View>
@@ -271,7 +277,8 @@ export function ProfileOnboarding({
                       onPress={() => { play('selection'); setCityId(city.id); }}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
-                      style={({ pressed }) => [styles.cityButton, Depth.control, { backgroundColor: selected ? theme.accent : theme.backgroundElement, borderBottomColor: selected ? theme.accentDepth : theme.line, borderBottomWidth: 3, }]}>
+                      style={({ pressed }) => [styles.cityButton, clay ? styles.clayPad : Depth.control, clay ? { backgroundColor: 'transparent', borderBottomWidth: 0 } : { backgroundColor: selected ? theme.accent : theme.backgroundElement, borderBottomColor: selected ? theme.accentDepth : theme.line, borderBottomWidth: 3, }]}>
+                      {clay && <ClayPillFill kind={selected ? 'on' : 'white'} />}
                       <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : theme.text }}>{tr(city.name)}</ThemedText>
                     </Pressable>
                   );
@@ -330,7 +337,8 @@ export function ProfileOnboarding({
               disabled={saving || !requiredAccepted}
               accessibilityRole="button"
               accessibilityState={{ disabled: saving || !requiredAccepted, busy: saving }}
-              style={({ pressed }) => [styles.submit, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: saving || !requiredAccepted ? 0.5 : 1, }]}>
+              style={({ pressed }) => [styles.submit, clay ? styles.clayWide : Depth.control, { backgroundColor: clay ? 'transparent' : theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: clay ? 0 : 3, opacity: saving || !requiredAccepted ? 0.5 : 1, }]}>
+              {clay && <ClayPillFill kind="cta" />}
               {saving && <GlingLoader color={theme.accentInk} />}
               <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
                 {saving ? t.onboarding.saving : consentOnly ? t.onboarding.consentSubmit : t.onboarding.submit}
@@ -365,6 +373,8 @@ const styles = StyleSheet.create({
   avatarImage: { width: '100%', height: '100%' },
   photoActions: { flex: 1, alignItems: 'flex-start', gap: Spacing.two },
   smallButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three, borderWidth: 1, borderRadius: 8 },
+  clayPad: { overflow: 'visible', paddingHorizontal: 18 },
+  clayWide: { overflow: 'visible', paddingHorizontal: 24 },
   field: { gap: Spacing.two },
   nicknameInput: { minHeight: 60, paddingHorizontal: Spacing.three, borderWidth: 1, borderRadius: 10, fontSize: 22, fontWeight: 700 },
   randomActions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },

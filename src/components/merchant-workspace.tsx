@@ -23,6 +23,7 @@ import { MerchantProfileEditor } from '@/components/merchant-profile-editor';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { usePreventRemove, useRouter } from 'expo-router';
 import { selectChatBusiness } from '@/lib/chat-identity';
 import { loadMyMerchantConnections } from '@/lib/merchant-connections';
@@ -117,12 +118,13 @@ async function shareText(text: string) {
 
 function Action({ label, onPress, disabled, selected, primary = false, role = 'button' }: { label: string; onPress: () => void; disabled?: boolean; selected?: boolean; primary?: boolean; role?: 'button' | 'tab' }) {
 
-  const theme = useTheme(); const { play } = useInteractionFeedback();
+  const theme = useTheme(); const { play } = useInteractionFeedback(); const clay = useClay();
   const press = () => { play('selection'); onPress(); };
   if (primary) return <RaisedActionButton analyticsId="merchant.primary" label={label} onPress={press} disabled={disabled} />;
   return <Pressable lens analyticsId="merchant.action" accessibilityRole={role} accessibilityLabel={label} accessibilityState={{ disabled: !!disabled, selected: !!selected }} aria-selected={role === 'tab' ? !!selected : undefined} disabled={disabled} onPress={press}
-    style={[styles.action, { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.backgroundSelected : theme.backgroundElement, opacity: disabled ? 0.5 : 1 }]}>
-    <ThemedText type="smallBold">{label}</ThemedText>
+    style={[styles.action, clay && styles.clayPad, clay ? { borderColor: 'transparent', backgroundColor: 'transparent', opacity: disabled ? 0.5 : 1 } : { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.backgroundSelected : theme.backgroundElement, opacity: disabled ? 0.5 : 1 }]}>
+    {clay && <ClayPillFill kind={selected ? 'on' : 'white'} />}
+    <ThemedText type="smallBold" style={clay && { color: selected ? theme.accentInk : theme.text }}>{label}</ThemedText>
   </Pressable>;
 }
 function Field({ label, value, onChange, placeholder, numeric = false, signed = false, multiline = false, maxLength = 120, disabled = false }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; numeric?: boolean; signed?: boolean; multiline?: boolean; maxLength?: number; disabled?: boolean }) {
@@ -147,9 +149,10 @@ function ToolRow({ title, detail, onPress, disabled }: { title: string; detail: 
   </Pressable>;
 }
 function ToolTile({ title, detail, icon, badge, warn = false, onPress, disabled }: { title: string; detail: string; icon: SymbolViewProps['name']; badge?: string; warn?: boolean; onPress: () => void; disabled?: boolean }) {
-  const theme = useTheme(); const { play } = useInteractionFeedback();
+  const theme = useTheme(); const { play } = useInteractionFeedback(); const clayBox = useClayBox();
   return <Pressable analyticsId="merchant.home.tile" accessibilityRole="button" accessibilityLabel={badge ? `${title}, ${badge}` : title} accessibilityHint={detail} accessibilityState={{ disabled: !!disabled }} disabled={disabled}
-    onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.tile, { backgroundColor: pressed ? theme.backgroundSelected : theme.card, borderColor: theme.line, opacity: disabled ? 0.5 : 1 }]}>
+    onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.tile, { backgroundColor: clayBox ? 'transparent' : pressed ? theme.backgroundSelected : theme.card, borderColor: clayBox ? 'transparent' : theme.line, opacity: disabled ? 0.5 : 1 }]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     <View style={styles.tileTop}><SymbolView name={icon} size={22} tintColor={theme.accent} />{!!badge && <MerchantBadge label={badge} tone={warn ? 'warn' : 'accent'} />}</View>
     <View style={styles.toolText}><ThemedText type="smallBold">{title}</ThemedText><ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{detail}</ThemedText></View>
   </Pressable>;
@@ -182,6 +185,7 @@ export function MerchantWorkspace(props: WorkspaceProps) {
 }
 function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMerchantId, initialTab, assignedOnly = false, onBusinessesChanged, onCityChange, layout }: WorkspaceProps) {
   const { tr } = useLanguage();
+  const clay = useClay();
   const { me, isAuthed, isAdmin } = useAuth();
   const [response, setResponse] = useState<{ user: string; rows: BusinessMerchant[]; revision: number; refreshSignal: number } | null>(null);
   const [selected, setSelected] = useState<string | null>(merchantId ?? initialMerchantId ?? null);
@@ -262,6 +266,7 @@ function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMercha
 }
 
 function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onChoose, accessChecking = false, businessOnly = false, initialTab = 'overview', layout }: { layout?: 'sidebar'; id: string; refreshSignal: number; onDirty: (dirty: boolean) => void; onConnectionsChanged?: () => void; onChoose?: () => void; accessChecking?: boolean; businessOnly?: boolean; initialTab?: MerchantTab }) {
+  const clay = useClay();
   const { tr, language, locale: appLocale } = useLanguage();
   const theme = useTheme();
   const { me, isAdmin } = useAuth(); const { play } = useInteractionFeedback(), router = useRouter();
@@ -769,8 +774,9 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       <View style={styles.chips}>
         {costMenus.map(menu => { const on = sameCost(menu.values); return <Pressable key={menu.name} analyticsId="merchant.cost.menu" accessibilityRole="button" accessibilityLabel={tr("{0} 계산 불러오기", menu.name)} accessibilityHint={tr("길게 누르면 지울 수 있어요.")} accessibilityState={{ selected: on }}
           onPress={() => { play('selection'); setCost({ ...menu.values }); }} onLongPress={() => { play('selection'); void deleteCostMenu(menu); }}
-          style={({ pressed }) => [styles.chip, { backgroundColor: on ? theme.text : theme.card, borderColor: theme.line, opacity: pressed ? 0.7 : 1 }]}>
-          <ThemedText type="smallBold" style={{ color: on ? theme.background : theme.text }}>{menu.name}</ThemedText></Pressable>; })}
+          style={({ pressed }) => [styles.chip, clay && styles.clayPad, clay ? { backgroundColor: 'transparent', borderColor: 'transparent', opacity: pressed ? 0.7 : 1 } : { backgroundColor: on ? theme.text : theme.card, borderColor: theme.line, opacity: pressed ? 0.7 : 1 }]}>
+          {clay && <ClayPillFill kind={on ? 'on' : 'white'} />}
+          <ThemedText type="smallBold" style={{ color: clay ? on ? theme.accentInk : theme.text : on ? theme.background : theme.text }}>{menu.name}</ThemedText></Pressable>; })}
         <Action label={tr("메뉴로 저장")} disabled={busy || !calculated} onPress={askCostMenuName} />
         {costKeys.some(key => cost[key]) && <Action label={tr("새로 계산")} disabled={busy} onPress={() => setCost(emptyCost())} />}
       </View>
@@ -902,6 +908,7 @@ const styles = StyleSheet.create({
   workspace: { gap: 16, width: '100%', maxWidth: 760, alignSelf: 'center' },
   section: { gap: 14, padding: 18, borderWidth: 1, borderRadius: 20, borderCurve: 'continuous' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
+  clayPad: { overflow: 'visible', paddingHorizontal: 18 },
   action: { minHeight: 44, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, justifyContent: 'center', maxWidth: '100%' },
   field: { gap: 6 }, input: { minHeight: 48, minWidth: 0, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, fontSize: 15, lineHeight: 22 },
   multiline: { minHeight: 160, textAlignVertical: 'top' },

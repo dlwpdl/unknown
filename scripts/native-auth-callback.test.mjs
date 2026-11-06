@@ -49,6 +49,7 @@ function mount(options = {}) {
     if (name === '@react-native-async-storage/async-storage') return { __esModule: true, default: storage };
     if (name === '@/hooks/use-language') return { useLanguage: () => ({ language: env.language, tr: text => text }) };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ background: '#101018', accent: '#CBB9FF', accentInk: '#161020' }) };
+    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
     if (name === '@/lib/auth') return { useAuth: () => env.auth };
     if (name === '@/lib/kakao-auth') return oauth;
     if (name === '@/lib/sharing') return sharing;

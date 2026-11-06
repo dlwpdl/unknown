@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
+import { ClayControlFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles, controlPresentation } from '@/constants/design-system';
 import { useLanguage } from '@/hooks/use-language';
@@ -30,7 +31,7 @@ const week = (saverCount: number, weekCount: number, locale: string, tr: (text: 
   ? tr('저장 {0} · 이번 주 +{1}', saverCount.toLocaleString(locale), weekCount.toLocaleString(locale)) : tr('저장 {0}', saverCount.toLocaleString(locale));
 
 export function PlaceSavedBy({ place, saves }: { place: CityPlace; saves: PlaceSaves | null }) {
-  const { tr, language, locale } = useLanguage(), theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
+  const { tr, language, locale } = useLanguage(), theme = useTheme(), clay = useClay(), router = useRouter(), { play } = useInteractionFeedback();
   const en = language === 'en', intro = place.intro;
   const rows = intro ? ([[tr('분위기'), en ? intro.vibeEn ?? intro.vibe : intro.vibe], [place.category === 'places' ? tr('뭘 할까') : tr('뭘 시킬까'), en ? intro.orderEn ?? intro.order : intro.order],
     [tr('언제 갈까'), en ? intro.whenEn ?? intro.when : intro.when]] as const).filter(([, value]) => !!value) : [];
@@ -41,7 +42,8 @@ export function PlaceSavedBy({ place, saves }: { place: CityPlace; saves: PlaceS
       {saves.friends.length > 0 ? <View style={styles.chips}>
         {saves.friends.map(friend => <Pressable key={friend.id} analyticsId="places.saves.friend" accessibilityRole="link" accessibilityLabel={tr('{0} 프로필 보기', friend.nickname)}
           onPress={() => { play('selection'); router.push({ pathname: '/user/[id]', params: { id: friend.id, nickname: friend.nickname } }); }}
-          style={({ pressed }) => [ControlStyles.pill, styles.chip, controlPresentation(theme, { pressed }).container]}>
+          style={({ pressed }) => [ControlStyles.pill, styles.chip, clay && styles.clayChip, controlPresentation(theme, { pressed, clay }).container]}>
+          {clay && <ClayControlFill />}
           <ThemedText type="small">{friend.first ? tr('{0}님이 처음 저장', friend.nickname) : tr('{0}님이 저장', friend.nickname)}</ThemedText>
         </Pressable>)}
       </View> : <ThemedText type="small" themeColor="textSecondary">{tr('친구가 저장하면 여기에 이름이 보여요. 다른 사람은 숫자로만 보여요.')}</ThemedText>}
@@ -60,7 +62,7 @@ export function PlaceSavedBy({ place, saves }: { place: CityPlace; saves: PlaceS
 }
 
 export function PlaceRelated({ place, saves }: { place: CityPlace; saves: PlaceSaves | null }) {
-  const { tr, locale } = useLanguage(), theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
+  const { tr, locale } = useLanguage(), theme = useTheme(), clay = useClay(), router = useRouter(), { play } = useInteractionFeedback();
   let catalog: CityPlace[] = [];
   try { catalog = saves?.similar.length ? getCityPlaces(place.cityId) : []; } catch { /* A missing catalog only hides the similar list. */ }
   const similar = (saves?.similar ?? []).flatMap(item => { const found = catalog.find(other => other.id === item.placeKey); return found ? [{ ...item, place: found }] : []; }).slice(0, 3);
@@ -85,7 +87,8 @@ export function PlaceRelated({ place, saves }: { place: CityPlace; saves: PlaceS
       <View style={styles.chips}>
         {lists.map(([filter, label]) => <Pressable key={filter} analyticsId="places.list" accessibilityRole="link" accessibilityLabel={tr('{0} 목록을 지도에서 보기', label)}
           onPress={() => { play('selection'); router.navigate({ pathname: '/map', params: { cityId: place.cityId, category: filter } }); }}
-          style={({ pressed }) => [ControlStyles.pill, styles.chip, controlPresentation(theme, { pressed }).container]}>
+          style={({ pressed }) => [ControlStyles.pill, styles.chip, clay && styles.clayChip, controlPresentation(theme, { pressed, clay }).container]}>
+          {clay && <ClayControlFill />}
           <ThemedText type="small">{label} ›</ThemedText>
         </Pressable>)}
       </View>
@@ -96,7 +99,7 @@ export function PlaceRelated({ place, saves }: { place: CityPlace; saves: PlaceS
 const styles = StyleSheet.create({
   box: { borderRadius: 14, padding: 16, gap: 10 },
   chips: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  chip: { borderWidth: 1 },
+  chip: { borderWidth: 1 }, clayChip: { overflow: 'visible', paddingHorizontal: 18 },
   intro: { gap: 10 },
   row: { flexDirection: 'row', gap: 12 },
   label: { width: 72 },

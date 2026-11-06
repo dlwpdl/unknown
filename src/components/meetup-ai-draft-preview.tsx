@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { SymbolView } from '@/components/symbol-view';
 import { Pressable } from '@/components/analytics-controls';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { Depth, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
@@ -17,7 +18,7 @@ export function MeetupAiDraftPreview({ fields, selected, protectedFields, disabl
   onApply: () => void;
   onDismiss: () => void;
 }) {
-  const theme = useTheme(), { language } = useLanguage(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clay = useClay(), { language } = useLanguage(), { play } = useInteractionFeedback();
   const copy = (ko: string, en: string) => language === 'en' ? en : ko;
   const labels = { title: copy('모임 제목', 'Meetup title'), body: copy('모임 소개', 'Meetup introduction'), question: copy('신청 질문', 'Application question') };
   const canApply = !disabled && MEETUP_DRAFT_FIELDS.some(field => selected[field] && !protectedFields[field]);
@@ -38,8 +39,8 @@ export function MeetupAiDraftPreview({ fields, selected, protectedFields, disabl
     })}
     <ThemedText type="small" themeColor="textSecondary">{copy('날짜·장소·정원·비용은 직접 확인해 주세요.', 'Confirm the date, venue, capacity and costs yourself.')}</ThemedText>
     <View style={styles.actions}>
-      <Pressable analyticsId="meetup.ai-preview.apply" accessibilityRole="button" accessibilityState={{ disabled: !canApply }} disabled={!canApply} onPress={() => { play('selection'); onApply(); }} style={({ pressed }) => [styles.button, Depth.control, { backgroundColor: theme.accent, opacity: !canApply ? 0.5 : pressed ? 0.8 : 1 }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{copy('선택한 항목 적용', 'Apply selected fields')}</ThemedText></Pressable>
-      <Pressable analyticsId="meetup.ai-preview.dismiss" accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => { play('selection'); onDismiss(); }} style={({ pressed }) => [styles.button, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}><ThemedText type="smallBold">{copy('미리보기 닫기', 'Dismiss preview')}</ThemedText></Pressable>
+      <Pressable analyticsId="meetup.ai-preview.apply" accessibilityRole="button" accessibilityState={{ disabled: !canApply }} disabled={!canApply} onPress={() => { play('selection'); onApply(); }} style={({ pressed }) => [styles.button, clay ? styles.clayButton : Depth.control, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: !canApply ? 0.5 : pressed ? 0.8 : 1 }]}>{clay && <ClayPillFill kind="cta" />}<ThemedText type="smallBold" style={{ color: theme.accentInk }}>{copy('선택한 항목 적용', 'Apply selected fields')}</ThemedText></Pressable>
+      <Pressable analyticsId="meetup.ai-preview.dismiss" accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => { play('selection'); onDismiss(); }} style={({ pressed }) => [styles.button, clay && styles.clayButton, { backgroundColor: clay ? 'transparent' : pressed ? theme.backgroundSelected : theme.backgroundElement }]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold">{copy('미리보기 닫기', 'Dismiss preview')}</ThemedText></Pressable>
     </View>
   </View>;
 }
@@ -49,5 +50,6 @@ const styles = StyleSheet.create({
   section: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.two, gap: Spacing.two },
   select: { minHeight: 44, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two, borderRadius: 8 },
   label: { flexShrink: 1 }, actions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  clayButton: { overflow: 'visible', paddingHorizontal: 18 },
   button: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, borderRadius: 12 },
 });

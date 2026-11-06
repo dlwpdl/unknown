@@ -4,6 +4,7 @@ import { SymbolView } from '@/components/symbol-view';
 import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, StyleSheet, TextInput, View, type TextInputProps, type TextInputInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { ClayIcon, ClayPillFill, useClay } from '@/components/clay';
 import { PostAttachmentLink } from '@/components/post-attachment-link';
 import { PostMapLink } from '@/components/post-map-link';
 import { PostLocationPicker } from '@/components/post-location-picker';
@@ -15,7 +16,7 @@ import { instagramPostLink, postLinkChecks, safePostLink, splitPostAttachments, 
 
 export function PostBodyEditor({ value = '', onChangeText, editable = true, maxLength = 1000, onFocus, cityName = '', allowLocation = true, renderLayout, ...props }: TextInputProps & { cityName?: string; allowLocation?: boolean; renderLayout?: (parts: { input: ReactNode; actions: ReactNode; attachments: ReactNode }) => ReactNode }) {
   const { tr, t } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clay = useClay();
   const { play } = useInteractionFeedback();
   const insets = useSafeAreaInsets();
   const [stage, setStage] = useState<'choices' | 'sns' | 'instagram' | 'url' | 'location' | null>(null);
@@ -52,12 +53,14 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
       }} />;
   const actions = <View style={renderLayout ? styles.toolbarActions : styles.actions}>
       <Pressable analyticsId="post.attachment.add" accessibilityRole="button" accessibilityLabel={tr("링크 첨부")} disabled={!editable}
-        onPress={() => { Keyboard.dismiss(); choose('choices'); }} style={[renderLayout ? styles.toolbarButton : styles.attachButton, { borderColor: theme.line, opacity: editable ? 1 : 0.5 }]}>
+        onPress={() => { Keyboard.dismiss(); choose('choices'); }} style={[renderLayout ? styles.toolbarButton : styles.attachButton, clay && styles.pillClay, { borderColor: clay ? 'transparent' : theme.line, opacity: editable ? 1 : 0.5 }]}>
+        {clay && <ClayPillFill kind="white" />}
         <SymbolView name={{ ios: 'paperclip', android: 'attach_file', web: 'attach_file' }} size={18} tintColor={theme.text} />
         <ThemedText type="smallBold" style={renderLayout && styles.toolbarLabel}>{tr(renderLayout ? "링크" : "첨부")}</ThemedText>
       </Pressable>
       {allowLocation && <Pressable analyticsId="post.location.add" accessibilityRole="button" accessibilityLabel={mapped.url ? t.write.placeChange : t.write.placeAdd} disabled={!editable}
-        onPress={() => { Keyboard.dismiss(); choose('location'); }} style={[renderLayout ? styles.toolbarButton : styles.attachButton, { borderColor: theme.line, opacity: editable ? 1 : 0.5 }]}>
+        onPress={() => { Keyboard.dismiss(); choose('location'); }} style={[renderLayout ? styles.toolbarButton : styles.attachButton, clay && styles.pillClay, { borderColor: clay ? 'transparent' : theme.line, opacity: editable ? 1 : 0.5 }]}>
+        {clay && <ClayPillFill kind="white" />}
         <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={18} tintColor={theme.accent} />
         <ThemedText type="smallBold" style={renderLayout && styles.toolbarLabel}>{renderLayout ? tr("장소") : mapped.url ? t.write.placeChange : t.write.placeAdd}</ThemedText>
       </Pressable>}
@@ -67,14 +70,14 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
         <PostMapLink url={mapped.url} label={mapped.label} />
         {allowLocation && <Pressable analyticsId="post.location.remove" accessibilityRole="button" accessibilityLabel={t.write.placeRemove} disabled={!editable}
           onPress={() => { play('selection'); onChangeText?.(mapped.body); }} style={styles.iconButton}>
-          <ThemedText themeColor="textSecondary">×</ThemedText>
+          {clay ? <ClayIcon clay="close" size={18} /> : <ThemedText themeColor="textSecondary">×</ThemedText>}
         </Pressable>}
       </View>}
       {attached.urls.map((url, index) => <View key={`${url}-${index}`} style={styles.row}>
         <PostAttachmentLink url={url} />
         <Pressable analyticsId="post.attachment.remove" accessibilityRole="button" accessibilityLabel={tr("{0} 첨부 삭제", (instagramPostLink(url)?.handle ?? url))} disabled={!editable}
           onPress={() => { play('selection'); onChangeText?.(withPostAttachments(value, attached.urls.filter((_, position) => position !== index))); }} style={styles.iconButton}>
-          <ThemedText themeColor="textSecondary">×</ThemedText>
+          {clay ? <ClayIcon clay="close" size={18} /> : <ThemedText themeColor="textSecondary">×</ThemedText>}
         </Pressable>
       </View>)}
       {blocked > 0 && <ThemedText type="small" accessibilityRole="alert">{tr('활성화할 수 없는 본문 링크 {0}개가 있어요. 주소를 확인해 주세요.', blocked)}</ThemedText>}
@@ -96,16 +99,16 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
         <View accessibilityViewIsModal style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(16, insets.bottom) }]}>
           <View style={styles.header}>
             {stage === 'choices' ? <View style={styles.iconButton} /> : <Pressable analyticsId="post.attachment.back" accessibilityRole="button" accessibilityLabel={tr("이전 단계")}
-              onPress={() => choose(stage === 'instagram' ? 'sns' : 'choices')} style={styles.iconButton}><ThemedText>‹</ThemedText></Pressable>}
+              onPress={() => choose(stage === 'instagram' ? 'sns' : 'choices')} style={styles.iconButton}>{clay ? <ClayIcon clay="chevron_left" size={20} /> : <ThemedText>‹</ThemedText>}</Pressable>}
             <ThemedText type="smallBold">{stage === 'instagram' ? tr("Instagram 프로필") : stage === 'url' ? tr("URL 링크") : stage === 'sns' ? 'SNS' : tr("첨부")}</ThemedText>
-            <Pressable analyticsId="post.attachment.close" accessibilityRole="button" accessibilityLabel={tr("첨부 창 닫기")} onPress={close} style={styles.iconButton}><ThemedText>×</ThemedText></Pressable>
+            <Pressable analyticsId="post.attachment.close" accessibilityRole="button" accessibilityLabel={tr("첨부 창 닫기")} onPress={close} style={styles.iconButton}>{clay ? <ClayIcon clay="close" size={20} /> : <ThemedText>×</ThemedText>}</Pressable>
           </View>
           <ScrollView analyticsId="post.attachment.sheet" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
             {stage === 'choices' && <>
-              <Pressable analyticsId="post.attachment.url" accessibilityRole="button" accessibilityLabel={tr("URL 링크")} onPress={() => choose('url')} style={styles.choice}><ThemedText>{tr("URL 링크")}</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText></Pressable>
-              <Pressable analyticsId="post.attachment.sns" accessibilityRole="button" accessibilityLabel="SNS" onPress={() => choose('sns')} style={styles.choice}><ThemedText>SNS</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText></Pressable>
+              <Pressable analyticsId="post.attachment.url" accessibilityRole="button" accessibilityLabel={tr("URL 링크")} onPress={() => choose('url')} style={[styles.choice, clay && styles.choiceClay]}>{clay && <ClayPillFill kind="white" />}<ThemedText>{tr("URL 링크")}</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText></Pressable>
+              <Pressable analyticsId="post.attachment.sns" accessibilityRole="button" accessibilityLabel="SNS" onPress={() => choose('sns')} style={[styles.choice, clay && styles.choiceClay]}>{clay && <ClayPillFill kind="white" />}<ThemedText>SNS</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText></Pressable>
             </>}
-            {stage === 'sns' && <Pressable analyticsId="post.attachment.instagram" accessibilityRole="button" accessibilityLabel="Instagram" onPress={() => choose('instagram')} style={styles.choice}><ThemedText>Instagram</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText></Pressable>}
+            {stage === 'sns' && <Pressable analyticsId="post.attachment.instagram" accessibilityRole="button" accessibilityLabel="Instagram" onPress={() => choose('instagram')} style={[styles.choice, clay && styles.choiceClay]}>{clay && <ClayPillFill kind="white" />}<ThemedText>Instagram</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText></Pressable>}
             {(stage === 'url' || stage === 'instagram') && <>
               <ThemedText type="small" themeColor="textSecondary">{stage === 'instagram' ? tr("Instagram 프로필 주소를 넣어주세요.") : tr("첨부할 HTTPS 주소를 넣어주세요.")}</ThemedText>
               <TextInput ref={inputRef} value={input} onChangeText={setInput} onFocus={() => play('selection')}
@@ -117,7 +120,8 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
               {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
               <Pressable analyticsId="post.attachment.confirm" accessibilityRole="button" disabled={!next || !!error}
                 onPress={() => { if (!next || error) return; play('selection'); onChangeText?.(next); setStage(null); setInput(''); }}
-                style={[styles.confirm, { backgroundColor: theme.accent, opacity: !next || error ? 0.5 : 1 }]}>
+                style={[styles.confirm, clay && styles.confirmClay, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: !next || error ? 0.5 : 1 }]}>
+                {clay && <ClayPillFill kind="cta" />}
                 <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr("첨부하기")}</ThemedText>
               </Pressable>
             </>}
@@ -136,6 +140,7 @@ const styles = StyleSheet.create({
   toolbarLabel: { fontSize: 11, lineHeight: 16 },
   attachButton: { alignSelf: 'flex-start', minHeight: 44, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 12 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, maxWidth: '100%' },
+  pillClay: { overflow: 'visible', paddingHorizontal: 18 }, choiceClay: { overflow: 'visible', paddingHorizontal: 20 }, confirmClay: { overflow: 'visible', paddingHorizontal: 24 },
   iconButton: { minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#0009' },
   sheet: { width: '100%', maxWidth: 520, maxHeight: '85%', alignSelf: 'center', borderTopLeftRadius: 24, borderTopRightRadius: 24 },

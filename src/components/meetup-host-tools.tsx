@@ -7,7 +7,7 @@ import { ChillingDateInput } from '@/components/chilling-date-input';
 import { DragSheet } from '@/components/drag-sheet';
 import { GlingLoader } from '@/components/gling-loader';
 import { ListCard, SectionLabel } from '@/components/list-card';
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayControlFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
 import { useLanguage } from '@/hooks/use-language';
@@ -55,7 +55,7 @@ const feeErrors: Record<string, readonly [string, string]> = {
 
 function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, cta, fallback }: MeetupHostToolsProps & { waitlistOnly: boolean }) {
   const { language, tr, locale } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), { me, isAuthed } = useAuth();
-  const clay = useClay();
+  const clay = useClay(), clayBox = useClayBox();
   const viewer = isAuthed ? me.id : '', focused = useIsFocused();
   const say = (ko: string, en: string) => tr(language === 'ko' ? ko : en);
   const [state, setState] = useState<MeetupHostToolsState | null>(null), [roster, setRoster] = useState<MeetupHostIdentity[]>([]);
@@ -125,7 +125,7 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
     else Alert.alert(title, message, [{ text: say('취소', 'Cancel'), style: 'cancel' }, { text: title, style: 'destructive', onPress: run }]);
   };
   const locked = busy || loading;
-  const button = [styles.button, { borderColor: theme.line, opacity: locked ? 0.5 : 1 }], dangerButton = [...button, { borderColor: theme.danger }];
+  const button = [styles.button, clay ? styles.clayButton : { borderColor: theme.line }, { opacity: locked ? 0.5 : 1 }], dangerButton = [...button, !clay && { borderColor: theme.danger }], fill = clay && <ClayPillFill kind="white" />;
   const ownInvitation = state?.cohosts.find(member => member.userId === me.id && member.status === 'pending');
   const canInviteCohost = !!(state?.canInviteCohost ?? state?.canInvite);
   const showPanel = waitlistOnly ? !!state && !state.isHost && (!!state.waitlist || state.canJoinWaitlist) : !!state && (state.isHost || state.isCohost || !!ownInvitation);
@@ -161,13 +161,13 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
   const feeOpen = () => { play('selection'); setFeeSheet(true); };
   const cohostLabel = state?.cohostLimit == null ? say('공동 호스트 · 프로', 'Co-hosts · Pro') : state.cohostLimit === 0 ? say('공동 호스트 · 플러스부터', 'Co-hosts · Plus and up') : state.cohostLimit >= 100 ? say(`공동 호스트 ${(state.cohosts ?? []).length}명`, `Co-hosts: ${(state.cohosts ?? []).length}`) : say(`공동 호스트 ${(state.cohosts ?? []).length}/${state.cohostLimit}명`, `Co-hosts ${(state.cohosts ?? []).length}/${state.cohostLimit}`);
   const errorText = error === 'MEETUP_COHOST_LIMIT' ? say('공동 호스트 자리가 다 찼어요. 멤버십을 올리면 더 둘 수 있어요.', 'All co-host spots are taken. Upgrade your membership to add more.') : error === 'PLUS_REQUIRED' ? say('공동 호스트는 플러스 멤버십부터 둘 수 있어요.', 'Co-hosts are available from Plus.') : feeErrors[error] ? say(...feeErrors[error]) : say('상태를 확인하지 못했어요. 연결과 권한, 멤버십을 확인해 주세요.', 'Couldn’t check the status. Check your connection, access and membership.');
-  const refresh = (error || metricError) && <Pressable analyticsId="meetup_host_tools.control.11" accessibilityRole="button" disabled={locked} accessibilityState={{ disabled: locked }} style={button} onPress={() => { play('selection'); setLoading(true); setMetricError(false); setRetry(value => value + 1); }}><ThemedText type="small" style={styles.bodyText}>{say('다시 불러오기', 'Try again')}</ThemedText></Pressable>;
+  const refresh = (error || metricError) && <Pressable analyticsId="meetup_host_tools.control.11" accessibilityRole="button" disabled={locked} accessibilityState={{ disabled: locked }} style={button} onPress={() => { play('selection'); setLoading(true); setMetricError(false); setRetry(value => value + 1); }}>{fill}<ThemedText type="small" style={styles.bodyText}>{say('다시 불러오기', 'Try again')}</ThemedText></Pressable>;
   const status = <>
     {!!error && <ThemedText type="small" accessibilityRole="alert" themeColor="danger" style={styles.helper}>{errorText}</ThemedText>}
     {refresh}
     {notice && <ThemedText type="small" accessibilityLiveRegion="polite" themeColor="textSecondary" style={styles.helper}>{say(notices[notice][0], notices[notice][1])}</ThemedText>}
   </>;
-  if (waitlistOnly) return <View style={[styles.panel, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  if (waitlistOnly) return <View style={[styles.panel, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
     <ThemedText type="subtitle" accessibilityRole="header">{say('모임 대기 신청', 'Meetup waitlist')}</ThemedText>
     {loading && <GlingLoader color={theme.accent} accessibilityLabel={say('운영 상태 불러오는 중', 'Loading meetup status')} />}
     {state && <>
@@ -175,7 +175,7 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
       {state.waitlist && <ThemedText type="small" style={styles.bodyText}>{state.waitlist.invitedAt ? say('참여 제안이 도착했어요. 모임에서 신청을 확인해주세요.', 'You’ve been invited. Check your request on this meetup.') : say(`현재 대기 순서 ${state.waitlist.position}번`, `Your waitlist position: ${state.waitlist.position}`)}</ThemedText>}
       <Pressable analyticsId="meetup_host_tools.control.1" accessibilityRole="button" disabled={locked || (!state.waitlist && !state.canJoinWaitlist)} accessibilityState={{ disabled: locked || (!state.waitlist && !state.canJoinWaitlist) }} style={button}
         onPress={() => void act(() => !state.waitlist && side ? setLanguageExchangeWaitlist(supabase, postId, side) : setMeetupWaitlist(supabase, postId, !state.waitlist), state.waitlist ? 'cancelled' : 'joined', value => state.waitlist ? !!value.waitlist : value.canJoinWaitlist && !value.waitlist)}>
-        <ThemedText type="smallBold" style={styles.label}>{state.waitlist ? say('대기 신청 취소', 'Leave waitlist') : say('초대 알림 받기', 'Join waitlist')}</ThemedText>
+        {fill}<ThemedText type="smallBold" style={styles.label}>{state.waitlist ? say('대기 신청 취소', 'Leave waitlist') : say('초대 알림 받기', 'Join waitlist')}</ThemedText>
       </Pressable>
     </>}
     {status}
@@ -183,14 +183,14 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
   return <View style={styles.sections}>
     {loading && !state && <GlingLoader color={theme.accent} accessibilityLabel={say('운영 상태 불러오는 중', 'Loading meetup status')} />}
     {state && <>
-      {show('role') && ownInvitation && <View style={[styles.panel, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      {show('role') && ownInvitation && <View style={[styles.panel, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ThemedText type="small" style={styles.bodyText}>{say('공동 호스트로 초대받았어요. 수락하면 회차, 참석 확인, 대기자 초대를 함께 해요. 비공개 신청 답변과 계정 권한은 공유되지 않아요.', 'You were invited to co-host. Accept to help with sessions, attendance and waitlist invitations. Private application answers and account access stay private.')}</ThemedText>
         <View style={styles.row}>
           <HostPill analyticsId="meetup_host_tools.control.2" label={say('공동 호스트 수락', 'Accept co-host invitation')} onPress={() => void act(() => respondMeetupCohost(supabase, postId, true), 'role', value => value.available && value.cohosts.some(member => member.userId === viewer && member.status === 'pending'))} disabled={!state.available} selected locked={locked} />
           <HostPill analyticsId="meetup_host_tools.control.3" label={say('초대 거절', 'Decline invitation')} onPress={() => void act(() => respondMeetupCohost(supabase, postId, false), 'role', value => value.available && value.cohosts.some(member => member.userId === viewer && member.status === 'pending'))} locked={locked} />
         </View>
       </View>}
-      {show('role') && state.isCohost && <View style={[styles.panel, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      {show('role') && state.isCohost && <View style={[styles.panel, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{say('공동 호스트예요. 회차 등록, 참석 확인, 대기자 초대를 함께해요. 신청 승인과 비공개 답변은 호스트만 관리해요.', 'You’re a co-host. You help add sessions, check attendance and invite from the waitlist. Only the host handles requests and private answers.')}</ThemedText>
         <HostPill analyticsId="meetup_host_tools.control.4" label={say('공동 호스트 그만하기', 'Stop co-hosting')} onPress={() => confirmRemoval(say('공동 호스트 그만하기', 'Stop co-hosting'), say('공동 호스트를 그만할까요? 회차와 참석 확인을 더 이상 함께 관리하지 않아요.', 'Stop co-hosting? You will no longer help with sessions and attendance.'), () => void act(() => removeMeetupCohost(supabase, postId, me.id), 'role', value => value.isCohost))} danger locked={locked} />
       </View>}
@@ -208,8 +208,8 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
             <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.bar, { backgroundColor: theme.backgroundElement }]}><View style={[styles.barFill, { backgroundColor: theme.accent, width: `${feeMembers.length ? paidCount / feeMembers.length * 100 : 0}%` }]} /></View>
             {feeMembers.length ? <ListCard>{[...feeMembers].sort((a, b) => Number(paid.includes(a.userId)) - Number(paid.includes(b.userId))).map(member => { const done = paid.includes(member.userId); return person(member.displayName || say('모임 멤버', 'Meetup member'), null,
               <Pressable key={member.userId} analyticsId="meetup.fee.paid" accessibilityRole="checkbox" accessibilityLabel={say(`${member.displayName || '모임 멤버'} 회비 냈음`, `${member.displayName || 'Meetup member'} paid`)} disabled={locked} accessibilityState={{ checked: done, disabled: locked }}
-                style={({ pressed }) => [ControlStyles.pill, styles.pill, controlPresentation(theme, { selected: !done, pressed, disabled: locked }).container]}
-                onPress={() => void act(() => setMeetupFeePaid(supabase, postId, member.userId, !done), 'feePaid', value => value.isHost)}><ThemedText type="smallBold" style={controlPresentation(theme, { selected: !done }).text}>{done ? say('냈어요', 'Paid') : say('낸 걸로 표시', 'Mark paid')}</ThemedText></Pressable>); })}</ListCard>
+                style={({ pressed }) => [ControlStyles.pill, styles.pill, clay && styles.clayPill, controlPresentation(theme, { selected: !done, pressed, disabled: locked, clay }).container]}
+                onPress={() => void act(() => setMeetupFeePaid(supabase, postId, member.userId, !done), 'feePaid', value => value.isHost)}>{clay && <ClayControlFill selected={!done} />}<ThemedText type="smallBold" style={controlPresentation(theme, { selected: !done }).text}>{done ? say('냈어요', 'Paid') : say('낸 걸로 표시', 'Mark paid')}</ThemedText></Pressable>); })}</ListCard>
               : <ThemedText type="small" themeColor="textSecondary" style={styles.helperGap}>{say('승인된 멤버가 생기면 여기서 낸 사람을 표시할 수 있어요.', 'Once you approve members, you can mark who paid here.')}</ThemedText>}
             <View style={styles.gapTop}><HostWide analyticsId="meetup.fee.edit" label={say('금액·메모·기한 바꾸기', 'Change amount, note or due date')} onPress={feeOpen} locked={locked} /></View>
           </> : <>
@@ -220,7 +220,7 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
             <View style={styles.sheetBody}>
               <TextInput testID="meetup-fee-amount" accessibilityLabel={say('회비 금액 (캐나다 달러)', 'Fee amount (CAD)')} placeholder={say('금액 (캐나다 달러) · 예: 15', 'Amount (CAD) · e.g. 15')} placeholderTextColor={theme.textSecondary} keyboardType="decimal-pad" inputMode="decimal" editable={!locked} value={feeAmount} onChangeText={setFeeAmount} style={field} />
               <TextInput testID="meetup-fee-note" accessibilityLabel={say('회비 메모 (선택)', 'Fee note (optional)')} placeholder={say('메모 (선택) · 예: e-Transfer로 보내주세요', 'Note (optional) · e.g. Send by e-Transfer')} placeholderTextColor={theme.textSecondary} maxLength={200} editable={!locked} value={feeNote} onChangeText={setFeeNote} style={field} />
-              <Pressable analyticsId="meetup.fee.due" accessibilityRole="button" disabled={locked} accessibilityState={{ disabled: locked }} style={button} onPress={() => { play('selection'); setFeeDue(feeDue ? '' : meetupFeeDueOn(new Date(Date.now() + 7 * 86400000).toISOString())); }}><ThemedText type="small" style={styles.bodyText}>{feeDue ? say('기한 빼기', 'Remove due date') : say('기한 정하기 (선택)', 'Add a due date (optional)')}</ThemedText></Pressable>
+              <Pressable analyticsId="meetup.fee.due" accessibilityRole="button" disabled={locked} accessibilityState={{ disabled: locked }} style={button} onPress={() => { play('selection'); setFeeDue(feeDue ? '' : meetupFeeDueOn(new Date(Date.now() + 7 * 86400000).toISOString())); }}>{fill}<ThemedText type="small" style={styles.bodyText}>{feeDue ? say('기한 빼기', 'Remove due date') : say('기한 정하기 (선택)', 'Add a due date (optional)')}</ThemedText></Pressable>
               {!!feeDue && <ChillingDateInput label={say('이 날까지 내주세요', 'Pay by')} value={meetupFeeDueIso(feeDue)} disabled={locked} onChange={value => { play('selection'); setFeeDue(meetupFeeDueOn(value)); }} />}
               {!!feeIssue && <ThemedText type="small" themeColor="danger" accessibilityLiveRegion="polite" style={styles.helper}>{say(...(feeErrors[feeIssue] ?? feeErrors.INVALID_MEETUP_FEE))}</ThemedText>}
               <Pressable analyticsId="meetup.fee.save" accessibilityRole="button" disabled={locked || !feeAmount.trim() || !!feeIssue} accessibilityState={{ disabled: locked || !feeAmount.trim() || !!feeIssue }} style={({ pressed }) => [ControlStyles.action, controlPresentation(theme, { tone: 'primary', pressed, disabled: locked || !feeAmount.trim() || !!feeIssue, clay }).container]} onPress={() => void act(() => setMeetupFee(supabase, postId, meetupFeeInput(feeAmount, feeNote, feeDue)), 'feeSaved', value => value.isHost && value.available)}>{clay && <ClayPillFill kind="cta" />}<ThemedText type="smallBold" style={{ color: theme.accentInk }}>{fee ? say('회비 바꾸기', 'Update fee') : say('회비 저장', 'Save fee')}</ThemedText></Pressable>
@@ -241,12 +241,12 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
           <DragSheet visible={inviteSheet} onClose={() => setInviteSheet(false)} dismissible={!busy} title={say('멤버 중에서 초대', 'Invite a member')}>
             <View style={styles.sheetBody}>
               <TextInput testID="meetup-host-candidate-search" accessibilityLabel={say('참가자 이름 검색', 'Search members by name')} placeholder={say('이름으로 찾기', 'Find a member by name')} placeholderTextColor={theme.textSecondary} value={candidateQuery} onChangeText={value => { setCandidateQuery(value); setCandidatePage(0); }} style={field} />
-              {visibleCandidates.map(identity => <Pressable analyticsId="meetup_host_tools.control.10" key={identity.userId} accessibilityRole="button" disabled={locked || !canInviteCohost} accessibilityState={{ disabled: locked || !canInviteCohost }} style={[button, !canInviteCohost && styles.disabled]} onPress={() => void act(() => inviteMeetupCohost(supabase, postId, identity.userId), 'role', value => value.isHost && (value.canInviteCohost ?? value.canInvite) && value.candidates.includes(identity.userId))}><ThemedText style={styles.label}>{say(`${identity.displayName} 초대`, `Invite ${identity.displayName}`)}</ThemedText></Pressable>)}
+              {visibleCandidates.map(identity => <Pressable analyticsId="meetup_host_tools.control.10" key={identity.userId} accessibilityRole="button" disabled={locked || !canInviteCohost} accessibilityState={{ disabled: locked || !canInviteCohost }} style={[button, !canInviteCohost && styles.disabled]} onPress={() => void act(() => inviteMeetupCohost(supabase, postId, identity.userId), 'role', value => value.isHost && (value.canInviteCohost ?? value.canInvite) && value.candidates.includes(identity.userId))}>{fill}<ThemedText style={styles.label}>{say(`${identity.displayName} 초대`, `Invite ${identity.displayName}`)}</ThemedText></Pressable>)}
               {!candidates.length && <ThemedText style={styles.helper} themeColor="textSecondary">{say('일치하는 이름이 없어요.', 'No matching names.')}</ThemedText>}
               {candidatePages > 1 && <View style={styles.row}>
-                <Pressable analyticsId="meetup_host_tools.candidates.previous" accessibilityRole="button" accessibilityState={{ disabled: locked || page === 0 }} disabled={locked || page === 0} style={button} onPress={() => { play('selection'); setCandidatePage(page - 1); }}><ThemedText style={styles.label}>{say('이전', 'Previous')}</ThemedText></Pressable>
+                <Pressable analyticsId="meetup_host_tools.candidates.previous" accessibilityRole="button" accessibilityState={{ disabled: locked || page === 0 }} disabled={locked || page === 0} style={button} onPress={() => { play('selection'); setCandidatePage(page - 1); }}>{fill}<ThemedText style={styles.label}>{say('이전', 'Previous')}</ThemedText></Pressable>
                 <ThemedText style={styles.helper}>{say(`${page + 1}/${candidatePages} 페이지`, `Page ${page + 1} of ${candidatePages}`)}</ThemedText>
-                <Pressable analyticsId="meetup_host_tools.candidates.next" accessibilityRole="button" accessibilityState={{ disabled: locked || page + 1 >= candidatePages }} disabled={locked || page + 1 >= candidatePages} style={button} onPress={() => { play('selection'); setCandidatePage(page + 1); }}><ThemedText style={styles.label}>{say('다음', 'Next')}</ThemedText></Pressable>
+                <Pressable analyticsId="meetup_host_tools.candidates.next" accessibilityRole="button" accessibilityState={{ disabled: locked || page + 1 >= candidatePages }} disabled={locked || page + 1 >= candidatePages} style={button} onPress={() => { play('selection'); setCandidatePage(page + 1); }}>{fill}<ThemedText style={styles.label}>{say('다음', 'Next')}</ThemedText></Pressable>
               </View>}
             </View>
           </DragSheet>
@@ -269,16 +269,18 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
 type HostButton = { analyticsId: string; label: string; onPress: () => void; locked: boolean; disabled?: boolean; danger?: boolean };
 /** Host-tools pill. `locked` turns every control off while something is saving or loading. */
 function HostPill({ analyticsId, label, onPress, locked, disabled = false, danger = false, selected = false, a11y }: HostButton & { selected?: boolean; a11y?: string }) {
-  const theme = useTheme(), off = locked || disabled;
+  const theme = useTheme(), clay = useClay(), off = locked || disabled;
   return <Pressable analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={a11y ?? label} disabled={off} accessibilityState={{ disabled: off, selected }} onPress={onPress}
-    style={({ pressed }) => [ControlStyles.pill, styles.pill, controlPresentation(theme, { selected, pressed, disabled: off }).container, danger ? { borderColor: theme.danger } : undefined]}>
+    style={({ pressed }) => [ControlStyles.pill, styles.pill, clay && styles.clayPill, controlPresentation(theme, { selected, pressed, disabled: off, clay }).container, danger && !clay ? { borderColor: theme.danger } : undefined]}>
+    {clay && <ClayControlFill selected={selected} />}
     <ThemedText type="smallBold" themeColor={danger ? 'danger' : undefined} style={danger ? undefined : controlPresentation(theme, { selected }).text}>{label}</ThemedText>
   </Pressable>;
 }
 function HostWide({ analyticsId, label, onPress, locked, disabled = false, danger = false }: HostButton) {
-  const theme = useTheme(), off = locked || disabled;
+  const theme = useTheme(), clay = useClay(), off = locked || disabled;
   return <Pressable analyticsId={analyticsId} accessibilityRole="button" disabled={off} accessibilityState={{ disabled: off }} onPress={onPress}
-    style={({ pressed }) => [ControlStyles.action, styles.wide, controlPresentation(theme, { pressed, disabled: off }).container, { backgroundColor: 'transparent', borderColor: danger ? theme.danger : theme.line }]}>
+    style={({ pressed }) => [ControlStyles.action, styles.wide, clay && styles.clayPill, controlPresentation(theme, { pressed, disabled: off, clay }).container, { backgroundColor: 'transparent', borderColor: clay ? 'transparent' : danger ? theme.danger : theme.line }]}>
+    {clay && <ClayPillFill kind="white" />}
     <ThemedText type="smallBold" themeColor={danger ? 'danger' : undefined}>{label}</ThemedText>
   </Pressable>;
 }
@@ -291,6 +293,8 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   personRow: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 56, paddingHorizontal: 16, paddingVertical: 8 },
   avatar: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
+  clayPill: { overflow: 'visible', paddingHorizontal: 18 }, clayButton: { overflow: 'visible', borderWidth: 0, alignItems: 'center', paddingHorizontal: 18 },
   pill: { borderWidth: 1 }, wide: { borderWidth: 1 },
   bar: { height: 6, borderRadius: 3, overflow: 'hidden', marginVertical: 8 }, barFill: { height: 6, borderRadius: 3 },
   button: { minHeight: 48, borderWidth: 1, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16, justifyContent: 'center' },

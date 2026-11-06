@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable } from '@/components/analytics-controls';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { GlingLoader } from '@/components/gling-loader';
 import { MeetupReviews } from '@/components/meetup-reviews';
 import { PostBody } from '@/components/post-body';
@@ -30,7 +31,7 @@ const pinUrl = (pin: PostPin) => { try { return googlePinUrl(pin); } catch { ret
 
 /** Existing participants inspect schedules without leaving their conversation. */
 export function MeetupChatOverview({ postId, currentUserId, onClose }: { postId: string; currentUserId: string; onClose: () => void }) {
-  const { language, locale } = useLanguage(), theme = useTheme(), auth = useAuth(), hidden = useContentVisibility();
+  const { language, locale } = useLanguage(), theme = useTheme(), clay = useClay(), clayBox = useClayBox(), auth = useAuth(), hidden = useContentVisibility();
   const { play } = useInteractionFeedback(), insets = useSafeAreaInsets(), reducedMotion = useReducedMotion();
   const say = (ko: string, en: string) => language === 'en' ? en : ko;
   const [page, setPage] = useState<{ scope: string; post: PublicMeetupContext | null; participation: MeetupSessions | null; scheduleError: boolean } | null>(null);
@@ -106,7 +107,7 @@ export function MeetupChatOverview({ postId, currentUserId, onClose }: { postId:
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
         {!scope || (page?.scope === scope && !ready) ? <ThemedText style={styles.bodyText}>{say('이 모임에 접근할 수 없어요. 참여 상태를 다시 확인해 주세요.', 'You can’t open this meetup. Check that you’ve joined it.')}</ThemedText>
           : errorScope === scope ? <><ThemedText accessibilityRole="alert" style={styles.bodyText}>{say('모임 현황을 불러오지 못했어요.', 'Couldn’t load the meetup overview.')}</ThemedText>
-            <Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" onPress={retryRead} style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: pressed ? 0.82 : 1 }]}><ThemedText style={styles.bodyText}>{say('다시 불러오기', 'Try again')}</ThemedText></Pressable></>
+            <Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" onPress={retryRead} style={({ pressed }) => [styles.action, clay ? styles.clayAction : { borderColor: theme.line }, { opacity: pressed ? 0.82 : 1 }]}>{clay && <ClayPillFill kind="white" />}<ThemedText style={styles.bodyText}>{say('다시 불러오기', 'Try again')}</ThemedText></Pressable></>
           : !ready ? <GlingLoader accessibilityLabel={say('모임 현황 불러오는 중', 'Loading meetup overview')} />
           : view === 'intro' ? <><ThemedText type="subtitle">{post!.title}</ThemedText><PostBody body={visibleMeetupBody(post!.body)} /></>
           : view === 'attendance' ? <MeetupReviews key={`${currentUserId}:${postId}`} postId={postId} kind={participation!.kind} attendanceOnly onBeforeNavigate={dismiss} />
@@ -115,21 +116,21 @@ export function MeetupChatOverview({ postId, currentUserId, onClose }: { postId:
             <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{say('등록된 모임 멤버', 'Meetup members')} · {post!.room!.memberCount}</ThemedText>
             <ThemedText type="subtitle" accessibilityRole="header">{say('예정 일정', 'Upcoming sessions')}</ThemedText>
             {ready.scheduleError ? <><ThemedText accessibilityRole="alert" style={styles.bodyText}>{say('일정을 불러오지 못했어요.', 'Couldn’t load upcoming sessions.')}</ThemedText>
-              <Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" onPress={retryRead} style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: pressed ? 0.82 : 1 }]}><ThemedText style={styles.bodyText}>{say('다시 불러오기', 'Try again')}</ThemedText></Pressable></>
-              : upcoming.length ? upcoming.map((session, index) => <View key={session.id} testID="meetup-upcoming-session" style={[styles.session, { backgroundColor: theme.card, borderColor: theme.line }]}>
+              <Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" onPress={retryRead} style={({ pressed }) => [styles.action, clay ? styles.clayAction : { borderColor: theme.line }, { opacity: pressed ? 0.82 : 1 }]}>{clay && <ClayPillFill kind="white" />}<ThemedText style={styles.bodyText}>{say('다시 불러오기', 'Try again')}</ThemedText></Pressable></>
+              : upcoming.length ? upcoming.map((session, index) => <View key={session.id} testID="meetup-upcoming-session" style={[styles.session, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
               <ThemedText type="smallBold" themeColor={index === 0 ? 'accent' : undefined} style={styles.label}>{Date.parse(session.startsAt) <= now ? say('진행 중', 'In progress') : index === 0 ? say('다음 일정', 'Next session') : say('예정 일정', 'Upcoming session')}</ThemedText>
               {schedule(session.startsAt, session.endsAt, index === 0 ? styles.nextDate : styles.bodyText)}
               {session.members.some(member => member.verified) && <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{say('실제 참석 확인', 'Verified attendance')} · {session.members.filter(member => member.verified).length}</ThemedText>}
-            </View>) : once ? <View testID="meetup-once-schedule" style={[styles.session, { backgroundColor: theme.card, borderColor: theme.line }]}>
+            </View>) : once ? <View testID="meetup-once-schedule" style={[styles.session, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
               {schedule(once.startsAt!, once.endsAt!, styles.nextDate)}
             </View> : <ThemedText themeColor="textSecondary" style={styles.bodyText}>{say('등록된 예정 일정이 없어요.', 'No upcoming sessions yet.')}</ThemedText>}
-            <View style={[styles.session, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="smallBold" style={styles.label}>{say('모임 공통 장소', 'Meetup location')}</ThemedText>
+            <View style={[styles.session, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="smallBold" style={styles.label}>{say('모임 공통 장소', 'Meetup location')}</ThemedText>
               {mapUrl ? <PostMapLink url={mapUrl} label={address ?? undefined} /> : <ThemedText style={styles.bodyText}>{address ?? say('장소가 아직 등록되지 않았어요.', 'No location added yet.')}</ThemedText>}</View>
             {participation && <Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" accessibilityLabel={participation.isHost ? say('일정·참석 관리', 'Manage sessions and attendance') : say('참석 확인', 'Attendance')}
-              onPress={() => changeView('attendance')} style={({ pressed }) => [styles.action, { borderColor: theme.line, backgroundColor: theme.card, opacity: pressed ? 0.82 : 1 }]}><ThemedText type="smallBold" themeColor="accent" style={styles.label}>{participation!.isHost ? say('일정·참석 관리', 'Manage sessions and attendance') : say('참석 확인', 'Attendance')}</ThemedText></Pressable>
+              onPress={() => changeView('attendance')} style={({ pressed }) => [styles.action, clay ? styles.clayAction : { borderColor: theme.line, backgroundColor: theme.card }, { opacity: pressed ? 0.82 : 1 }]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold" themeColor="accent" style={styles.label}>{participation!.isHost ? say('일정·참석 관리', 'Manage sessions and attendance') : say('참석 확인', 'Attendance')}</ThemedText></Pressable>
             }
             <Pressable analyticsId="chat.meetup-summary" accessibilityRole="button" accessibilityLabel={say('모임 소개', 'About the meetup')}
-              onPress={() => changeView('intro')} style={({ pressed }) => [styles.action, { borderColor: theme.line, opacity: pressed ? 0.82 : 1 }]}><ThemedText style={styles.bodyText}>{say('모임 소개', 'About the meetup')}</ThemedText></Pressable>
+              onPress={() => changeView('intro')} style={({ pressed }) => [styles.action, clay ? styles.clayAction : { borderColor: theme.line }, { opacity: pressed ? 0.82 : 1 }]}>{clay && <ClayPillFill kind="white" />}<ThemedText style={styles.bodyText}>{say('모임 소개', 'About the meetup')}</ThemedText></Pressable>
           </>}
       </ScrollView>
     </View>
@@ -145,5 +146,7 @@ const styles = StyleSheet.create({
   icon: { width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   content: { padding: Spacing.four, gap: Spacing.five },
   session: { padding: Spacing.four, borderWidth: 1, borderRadius: 16, gap: Spacing.two },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
+  clayAction: { overflow: 'visible', borderWidth: 0, alignItems: 'center', paddingHorizontal: 18 },
   action: { minHeight: 48, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, borderWidth: 1, borderRadius: 14, justifyContent: 'center' },
 });

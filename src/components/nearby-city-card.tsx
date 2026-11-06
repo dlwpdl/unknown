@@ -3,6 +3,7 @@ import { Pressable } from '@/components/analytics-controls';
 import { StyleSheet, View } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { SymbolView } from '@/components/symbol-view';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -20,7 +21,7 @@ export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false
   settings?: boolean;
 }) {
   const { tr } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clay = useClay();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
   const location = useCommunityLocation();
@@ -47,8 +48,9 @@ export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false
       <ThemedText type="small" themeColor="textSecondary">{tr("좌표·정확도·측정 시각은 안전 운영을 위해 30일 보관하며 권한 있는 관리자만 조회해요. 설정에서 공유를 끄고 기록을 삭제할 수 있어요.")}</ThemedText>
     </View>}
     {!!location.message && <ThemedText type="small" accessibilityLiveRegion="polite">{tr(location.message)}</ThemedText>}
-    {recommended && onSelect && <Pressable analyticsId="components_nearby-city-card.pressable.2" accessibilityRole="button" onPress={() => { play('selection'); onSelect(recommended.id); }} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
-      <ThemedText type="smallBold" style={{ color: theme.accent }}>{tr('{0} 소식 보기', tr(recommended.name))}</ThemedText>
+    {recommended && onSelect && <Pressable analyticsId="components_nearby-city-card.pressable.2" accessibilityRole="button" onPress={() => { play('selection'); onSelect(recommended.id); }} style={({ pressed }) => [styles.button, clay && styles.clayButton, pressed && styles.pressed]}>
+      {clay && <ClayPillFill kind="white" />}
+      <ThemedText type="smallBold" style={{ color: clay ? theme.text : theme.accent }}>{tr('{0} 소식 보기', tr(recommended.name))}</ThemedText>
     </Pressable>}
     <View style={styles.actions}>
       <Pressable analyticsId="components_nearby-city-card.pressable.3" accessibilityRole="button" disabled={disabled} accessibilityState={{ disabled, busy: location.busy }}
@@ -57,14 +59,17 @@ export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false
           if (!location.enabled && !detailsOpen) { animateLayout(reducedMotion); setDetailsOpen(true); return; }
           void location.capture(true).then((fix) => { if (active.current) onFix?.(fix); });
         }}
-        style={({ pressed }) => [styles.primary, { backgroundColor: theme.backgroundElement, opacity: disabled ? 0.5 : 1 }, pressed && styles.pressed]}>
-        <ThemedText type="smallBold" style={{ color: theme.accent }}>{location.busy ? tr("위치 확인 중…") : location.enabled ? tr("위치 다시 확인") : detailsOpen ? tr("동의하고 찾기") : tr("내 위치로 찾기")}</ThemedText>
+        style={({ pressed }) => [styles.primary, clay && styles.clayButton, { backgroundColor: clay ? 'transparent' : theme.backgroundElement, opacity: disabled ? 0.5 : 1 }, pressed && styles.pressed]}>
+        {clay && <ClayPillFill kind="cta" />}
+        <ThemedText type="smallBold" style={{ color: clay ? theme.accentInk : theme.accent }}>{location.busy ? tr("위치 확인 중…") : location.enabled ? tr("위치 다시 확인") : detailsOpen ? tr("동의하고 찾기") : tr("내 위치로 찾기")}</ThemedText>
       </Pressable>
-      {onChooseCity && <Pressable analyticsId="components_nearby-city-card.pressable.4" accessibilityRole="button" onPress={() => { play('selection'); onChooseCity(); }} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
-        <ThemedText type="smallBold" themeColor="textSecondary">{tr("직접 선택")}</ThemedText>
+      {onChooseCity && <Pressable analyticsId="components_nearby-city-card.pressable.4" accessibilityRole="button" onPress={() => { play('selection'); onChooseCity(); }} style={({ pressed }) => [styles.button, clay && styles.clayButton, pressed && styles.pressed]}>
+        {clay && <ClayPillFill kind="white" />}
+        <ThemedText type="smallBold" themeColor={clay ? undefined : 'textSecondary'}>{tr("직접 선택")}</ThemedText>
       </Pressable>}
     </View>
-    {settings && location.enabled && <Pressable analyticsId="components_nearby-city-card.pressable.5" accessibilityRole="button" disabled={location.busy} onPress={() => { play('selection'); void location.disable(); }} style={styles.button}>
+    {settings && location.enabled && <Pressable analyticsId="components_nearby-city-card.pressable.5" accessibilityRole="button" disabled={location.busy} onPress={() => { play('selection'); void location.disable(); }} style={[styles.button, clay && styles.clayButton]}>
+      {clay && <ClayPillFill kind="white" />}
       <ThemedText type="smallBold">{tr("위치 공유 끄고 기록 삭제")}</ThemedText>
     </Pressable>}
   </View>;
@@ -77,5 +82,5 @@ const styles = StyleSheet.create({
   details: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.two, gap: Spacing.two },
   actions: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: Spacing.three },
   primary: { minHeight: 44, borderRadius: 8, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, justifyContent: 'center' },
-  button: { minHeight: 44, justifyContent: 'center' }, pressed: { opacity: 0.65 },
+  clayButton: { overflow: 'visible', paddingHorizontal: 18 }, button: { minHeight: 44, justifyContent: 'center' }, pressed: { opacity: 0.65 },
 });

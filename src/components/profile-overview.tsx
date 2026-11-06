@@ -76,8 +76,9 @@ export function ProfileSavedMap({ overview, homeCityId }: { overview: ProfileOve
         return <Pressable key={item.cityId} analyticsId="profile.map.city" accessibilityRole="button" accessibilityState={{ selected }}
           accessibilityLabel={tr('{0} 저장한 곳 {1}곳', tr(name), count(item.count))}
           onPress={() => { play('selection'); setPicked(item.cityId); }}
-          style={({ pressed }) => [ControlStyles.pill, styles.border, controlPresentation(theme, { selected, pressed }).container]}>
-          <ThemedText type="smallBold" style={controlPresentation(theme, { selected }).text}>{tr(name)} {count(item.count)}</ThemedText>
+          style={({ pressed }) => [ControlStyles.pill, styles.border, clay && { overflow: 'visible', paddingHorizontal: 18 }, controlPresentation(theme, { selected, pressed, clay }).container]}>
+          {clay && <ClayPillFill kind={selected ? 'on' : 'white'} />}
+          <ThemedText type="smallBold" style={clay ? { color: selected ? theme.accentInk : theme.text } : controlPresentation(theme, { selected }).text}>{tr(name)} {count(item.count)}</ThemedText>
         </Pressable>;
       })}
     </ScrollView>}

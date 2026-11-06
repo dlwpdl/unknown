@@ -5,6 +5,7 @@ import { SymbolView } from '@/components/symbol-view';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { ChillingDateInput } from '@/components/chilling-date-input';
 import { DiscoveryMap } from '@/components/discovery-map';
 import { RaisedActionButton } from '@/components/raised-action-button';
@@ -32,12 +33,13 @@ const nextMonthFirst = () => { const now = new Date(); return localDay(new Date(
 function Chip({ label, selected, onPress, disabled, multi, action, removeLabel }: {
   label: string; selected: boolean; onPress: () => void; disabled?: boolean; multi?: boolean; action?: boolean; removeLabel?: string;
 }) {
-  const theme = useTheme(), { play } = useInteractionFeedback();
+  const theme = useTheme(), { play } = useInteractionFeedback(), clay = useClay();
   const button = action || !!removeLabel;
-  return <SelectionChip analyticsId="listing.fields.chip" selected={selected} disabled={disabled} baseColor={theme.backgroundElement}
+  return <SelectionChip analyticsId="listing.fields.chip" selected={selected} disabled={disabled} baseColor={clay ? 'transparent' : theme.backgroundElement}
     accessibilityRole={button ? 'button' : multi ? 'checkbox' : 'radio'} accessibilityLabel={removeLabel ?? label}
     accessibilityState={button ? { disabled } : { selected, checked: selected, disabled }}
-    onPress={() => { play('selection'); onPress(); }} style={[ControlStyles.pill, styles.chip, { borderColor: selected ? theme.accent : theme.line }]}>
+    onPress={() => { play('selection'); onPress(); }} style={[ControlStyles.pill, styles.chip, { borderColor: clay ? 'transparent' : selected ? theme.accent : theme.line }]}>
+    {clay && !selected && <ClayPillFill kind="white" />}
     <ThemedText type="label" style={{ color: selected ? theme.accentInk : theme.text }}>{label}</ThemedText>
     {removeLabel && <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={IconSize.chevron} tintColor={theme.accentInk} />}
   </SelectionChip>;
@@ -74,7 +76,7 @@ export function ListingFields({ category, cityId, value, onChange, missing = [],
   category: ListingCategory; cityId: string; value: ListingDraft; onChange: (next: ListingDraft) => void; missing?: ListingMissing[];
   disabled?: boolean; lead?: string; fixedDeal?: boolean;
 }) {
-  const theme = useTheme(), { tr, language } = useLanguage(), { play } = useInteractionFeedback();
+  const theme = useTheme(), { tr, language } = useLanguage(), { play } = useInteractionFeedback(), clay = useClay();
   const [picking, setPicking] = useState(false);
   const [extra, setExtra] = useState<string | null>(null); // null: the 직접 추가 field is closed
   const extraNext = extra == null ? value.extras : listingExtras([...value.extras, extra]);
@@ -90,7 +92,8 @@ export function ListingFields({ category, cityId, value, onChange, missing = [],
 
   const areaButton = (label: string, note: string) => <Section label={tr(label)} missing={show('area')}>
     <Pressable analyticsId="listing.fields.area" accessibilityRole="button" accessibilityLabel={`${tr(label)}, ${area ? neighborhoodName(area, language) : tr('동네 고르기')}`} disabled={disabled}
-      onPress={() => { play('selection'); setPicking(true); }} style={({ pressed }) => [ControlStyles.field, styles.field, { borderColor: theme.line, backgroundColor: theme.card, opacity: pressed ? 0.82 : disabled ? 0.45 : 1 }]}>
+      onPress={() => { play('selection'); setPicking(true); }} style={({ pressed }) => [ControlStyles.field, styles.field, clay && { overflow: 'visible', paddingHorizontal: 18 }, { borderColor: clay ? 'transparent' : theme.line, backgroundColor: clay ? 'transparent' : theme.card, opacity: pressed ? 0.82 : disabled ? 0.45 : 1 }]}>
+      {clay && <ClayPillFill kind="white" />}
       <SymbolView name={{ ios: 'mappin', android: 'location_on', web: 'location_on' }} size={IconSize.inline} tintColor={theme.textSecondary} />
       <ThemedText style={[Typography.menu, styles.flex]} themeColor={area ? undefined : 'textSecondary'}>{area ? neighborhoodName(area, language) : tr('동네 고르기')}</ThemedText>
       <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={IconSize.chevron} tintColor={theme.textSecondary} />

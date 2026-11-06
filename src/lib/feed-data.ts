@@ -281,13 +281,34 @@ export function mapPublicFeed(
   }));
 }
 
+// Members' photos on post cards (owner 2026-11-06 "사진 넣기"). The profiles and avatars rules already keep blocked members and guests out; those keep the first letter, as does any failed read.
+// A meetup post shows the host's separate meetup identity, so it never gets their account photo. A business post replaces the author in hydratePublicPosts, which drops this.
+const signedAvatars = new Map<string, SignedImage>();
+export async function attachAuthorPhotos(client: SupabaseClient, posts: Post[]): Promise<Post[]> {
+  try {
+    const ids = [...new Set(posts.filter(post => !post.room).map(post => post.author.id))];
+    if (!ids.length) return posts;
+    const profiles = await client.from('profiles').select('id,avatar_path').in('id', ids);
+    if (profiles.error || !profiles.data) return posts;
+    const rows = profiles.data as { id: string; avatar_path: string | null }[], now = Date.now();
+    const missing = [...new Set(rows.flatMap(row => row.avatar_path ? [row.avatar_path] : []))].filter(path => (signedAvatars.get(path)?.expiresAt ?? 0) <= now);
+    if (missing.length) {
+      const signed = await client.storage.from('avatars').createSignedUrls(missing, 3600);
+      for (const { path, signedUrl } of signed.data ?? []) if (path && signedUrl) signedAvatars.set(path, { url: signedUrl, expiresAt: now + 55 * 60_000 });
+    }
+    const photos = new Map(rows.map(row => [row.id, row.avatar_path ? signedAvatars.get(row.avatar_path)?.url : undefined]));
+    return posts.map(post => !post.room && photos.get(post.author.id) ? { ...post, author: { ...post.author, avatarUrl: photos.get(post.author.id) } } : post);
+  } catch { return posts; }
+}
+
 export async function hydratePublicPosts(client: SupabaseClient, posts: Post[], viewerScope?: string): Promise<Post[]> {
   if (!posts.length) return [];
   if (posts.length > 50) throw new Error('BUSINESS_IDENTITY_READ_FAILED');
   const ids = [...new Set(posts.map(post => post.id))];
   const [images, response] = await Promise.all([
     Promise.all([attachSignedPostImages(client, posts, viewerScope), loadListingDetails(client, posts)])
-      .then(([signed, details]) => details.size ? signed.map(post => details.has(post.id) ? { ...post, listingDetails: details.get(post.id) } : post) : signed),
+      .then(([signed, details]) => details.size ? signed.map(post => details.has(post.id) ? { ...post, listingDetails: details.get(post.id) } : post) : signed)
+      .then(hydrated => attachAuthorPhotos(client, hydrated)),
     client.rpc('get_public_post_businesses', { p_post_ids: ids }),
   ]);
   // Before this additive migration there are no explicitly attributed business posts.

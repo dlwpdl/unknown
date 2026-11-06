@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable } from '@/components/analytics-controls';
+import { ClayBoxFill, ClayCoinFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { GlingLoader } from '@/components/gling-loader';
 import { ThemedText } from '@/components/themed-text';
 import { IconSize, Typography } from '@/constants/design-system';
@@ -16,22 +17,24 @@ export function SectionLabel({ children }: { children: string }) {
 
 /** Rows grouped in one card, split by hairlines, instead of a separate box for each. */
 export function ListCard({ children }: { children: ReactNode }) {
-  const theme = useTheme();
-  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-    {Children.toArray(children).map((child, index) => <View key={index} style={index ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.line } : undefined}>{child}</View>)}
-  </View>;
+  const theme = useTheme(), clay = useClayBox();
+  const rows = Children.toArray(children).map((child, index) => <View key={index} style={index ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.line } : undefined}>{child}</View>);
+  // The clay tile overhangs the card, so only the rows inside are clipped to its corners.
+  if (clay) return <View><ClayBoxFill kind="tile" /><View style={styles.clayRows}>{rows}</View></View>;
+  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>{rows}</View>;
 }
 
 export function Tag({ label, tone = 'accent' }: { label: string; tone?: 'accent' | 'quiet' | 'danger' }) {
-  const theme = useTheme();
-  return <View style={[styles.tag, { backgroundColor: tone === 'accent' ? theme.backgroundSelected : theme.backgroundElement }]}>
+  const theme = useTheme(), clay = useClay();
+  return <View style={[styles.tag, clay ? styles.clayTag : { backgroundColor: tone === 'accent' ? theme.backgroundSelected : theme.backgroundElement }]}>
+    {clay && <ClayPillFill kind="white" />}
     <ThemedText style={[Typography.caption, { color: tone === 'accent' ? theme.accent : tone === 'danger' ? theme.danger : theme.textSecondary }]}>{label}</ThemedText>
   </View>;
 }
 
 export function InitialAvatar({ name }: { name: string }) {
-  const theme = useTheme();
-  return <View accessible={false} style={[styles.avatar, { backgroundColor: theme.backgroundSelected }]}><ThemedText style={Typography.label}>{[...name][0] ?? ''}</ThemedText></View>;
+  const theme = useTheme(), clay = useClay();
+  return <View accessible={false} style={[styles.avatar, !clay && { backgroundColor: theme.backgroundSelected }]}>{clay && <ClayCoinFill />}<ThemedText style={Typography.label}>{[...name][0] ?? ''}</ThemedText></View>;
 }
 
 /** What a screen shows until its first load finishes, so it never sits blank. */
@@ -63,6 +66,8 @@ const styles = StyleSheet.create({
   loading: { minHeight: 160, alignItems: 'center', justifyContent: 'center' },
   section: { marginTop: Spacing.four, marginBottom: Spacing.two },
   card: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, overflow: 'hidden' },
+  clayRows: { borderRadius: 16, overflow: 'hidden' },
+  clayTag: { paddingHorizontal: 12, paddingVertical: 4 },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 56, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
   text: { flex: 1, minWidth: 0 },
   tag: { borderRadius: 999, paddingHorizontal: Spacing.two, paddingVertical: 2 },

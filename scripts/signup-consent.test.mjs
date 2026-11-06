@@ -27,6 +27,7 @@ function onboarding(existingProfile = null, appleSignIn = false) {
     if ((name === 'react-native' || name === '@/components/analytics-controls')) return { Platform: { OS: 'web' }, StyleSheet: { create: x => x }, ...Object.fromEntries(['View','Pressable','TextInput','Modal','ScrollView'].map(x => [x,x])) };
     if (name === 'expo-linking') return { openURL: async url => { opened.push(url); } };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
+    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
 if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
     if (name === '@/constants/theme') return { Spacing: {} };
     if (name === '@/i18n/ko') return { t };

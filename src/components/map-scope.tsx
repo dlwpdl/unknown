@@ -1,8 +1,8 @@
-import { Image } from 'expo-image';
 import { SymbolView } from '@/components/symbol-view';
 import { StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
+import { ClayPhoto, ClayPillFill, useClay } from '@/components/clay';
 import { DragSheet } from '@/components/drag-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { IconSize, Typography } from '@/constants/design-system';
@@ -21,17 +21,18 @@ export const MAP_SCOPES = [
 
 // One choice applies at once and closes the sheet, like an iOS menu; the category, open-now and price filters keep working inside it.
 export function MapScopeSheet({ visible, scope, onClose, onPick }: { visible: boolean; scope: MapScope; onClose: () => void; onPick: (scope: MapScope) => void }) {
-  const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback();
+  const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), clay = useClay();
   return <DragSheet visible={visible} onClose={onClose} title={tr('보여 줄 곳')}>
     <View accessibilityRole="radiogroup" style={styles.options}>
       {MAP_SCOPES.map(option => {
         const selected = option.id === scope;
         return <Pressable key={option.id} analyticsId={`discovery.scope.${option.id}`} accessibilityRole="radio" accessibilityState={{ checked: selected, selected }}
           accessibilityLabel={tr(option.label)} onPress={() => { play('selection'); onPick(option.id); }}
-          style={({ pressed }) => [styles.option, { borderBottomColor: theme.line }, pressed && { backgroundColor: theme.backgroundSelected }]}>
-          <SymbolView name={option.icon} size={IconSize.toolbar} tintColor={selected ? theme.accent : theme.textSecondary} />
-          <ThemedText type="smallBold" style={[styles.flex, selected && { color: theme.accent }]}>{tr(option.label)}</ThemedText>
-          {selected && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={IconSize.inline} tintColor={theme.accent} />}
+          style={({ pressed }) => [styles.option, clay ? styles.optionClay : { borderBottomColor: theme.line }, pressed && (clay ? { opacity: 0.82 } : { backgroundColor: theme.backgroundSelected })]}>
+          {clay && <ClayPillFill kind={selected ? 'on' : 'white'} />}
+          <SymbolView name={option.icon} size={IconSize.toolbar} tintColor={selected ? clay ? theme.accentInk : theme.accent : theme.textSecondary} />
+          <ThemedText type="smallBold" style={[styles.flex, selected && { color: clay ? theme.accentInk : theme.accent }]}>{tr(option.label)}</ThemedText>
+          {selected && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={IconSize.inline} tintColor={clay ? theme.accentInk : theme.accent} />}
         </Pressable>;
       })}
     </View>
@@ -40,14 +41,14 @@ export function MapScopeSheet({ visible, scope, onClose, onPick }: { visible: bo
 
 // "하늘님이 저장" / "하늘님 외 2명이 저장", with up to three faces (photo, or the first letter when there is none).
 export function FriendSavedLine({ entry }: { entry: FriendSavedPlace }) {
-  const { tr } = useLanguage(), theme = useTheme();
+  const { tr } = useLanguage(), theme = useTheme(), clay = useClay();
   const first = entry.friends[0];
   if (!first) return null;
   const label = entry.friendCount > 1 ? tr('{0}님 외 {1}명이 저장', first.nickname, entry.friendCount - 1) : tr('{0}님이 저장', first.nickname);
   return <View accessible accessibilityLabel={label} style={styles.saved}>
     <View style={styles.faces}>{entry.friends.map((friend, index) =>
-      <View key={friend.id} style={[styles.face, { marginLeft: index ? -6 : 0, borderColor: theme.card, backgroundColor: theme.backgroundSelected }]}>
-        {friend.avatarUrl ? <Image source={{ uri: friend.avatarUrl }} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} />
+      <View key={friend.id} style={[styles.face, { marginLeft: index ? -6 : 0, borderColor: theme.card, backgroundColor: theme.backgroundSelected }, clay && !!friend.avatarUrl && styles.clayFace]}>
+        {friend.avatarUrl ? <ClayPhoto uri={friend.avatarUrl} size={clay ? 22 : 19} />
           : <ThemedText style={[Typography.micro, { color: theme.accent }]}>{[...friend.nickname][0] ?? ''}</ThemedText>}
       </View>)}</View>
     <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.flex}>{label}</ThemedText>
@@ -57,8 +58,10 @@ export function FriendSavedLine({ entry }: { entry: FriendSavedPlace }) {
 const styles = StyleSheet.create({
   options: { paddingBottom: Spacing.two },
   option: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 8, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  optionClay: { overflow: 'visible', paddingHorizontal: 18, marginBottom: 8, borderBottomWidth: 0 },
   flex: { flex: 1, minWidth: 0 },
   saved: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 28 },
   faces: { flexDirection: 'row' },
+  clayFace: { overflow: 'visible', borderWidth: 0, backgroundColor: 'transparent' },
   face: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
 });

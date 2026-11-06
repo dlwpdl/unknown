@@ -46,7 +46,7 @@ function screen({ business = null, webshop = null, merchantSaves = async () => n
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },
     '@/components/merchant-profile-header': { MerchantProfileHeader: 'ProfileHeader' }, '@/components/merchant-reviews': { MerchantReviews: 'Reviews' },
     '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
-    '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/hooks/use-chat-identity': { useChatIdentity: () => business },
     '@/lib/chat-identity': { chatBusinessIdentity: () => business },
     '@/lib/auth': { useAuth: () => ({ isAuthed: !!account, isAuthLoading: false, me: { id: account ?? 'guest' }, promptLogin: reason => login.push(reason) }) },

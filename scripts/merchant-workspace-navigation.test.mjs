@@ -34,7 +34,7 @@ function mount(name = 'MerchantTools', options = {}) {
     'react-native': { View: 'View', TextInput: 'TextInput', Platform: { OS: 'web' }, StyleSheet: { create: v => v }, Alert: {} },
     '@react-native-async-storage/async-storage': { default: { getItem: async () => null } },
     '@/hooks/use-language': { useLanguage: () => ({ tr: v => v, locale: 'ko' }) }, '@/i18n': { tr: v => v },
-    '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/auth': { useAuth: () => auth },
+    '@/hooks/use-theme': { useTheme: () => ({}) }, '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/lib/auth': { useAuth: () => auth },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/merchant-source': { merchantEventId: () => `draft-${++serial}` },
     '@/lib/merchant-workspace': { calculateMerchantCost, MERCHANT_CHANNELS, loadMerchantWorkspace: (...args) => api.workspace(...args), loadMyMerchants: (...args) => api.merchants(...args), getMyBusinessWorkspaceAccess: async () => ({ enabled: true, merchants: await (api.businessMerchants ?? api.merchants)() }) },

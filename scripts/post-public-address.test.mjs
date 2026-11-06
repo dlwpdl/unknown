@@ -62,7 +62,7 @@ function renderDetail(post, { isAuthed = true, hidden = false, status = {}, busi
     'expo-router': { useRouter: () => ({ push() {} }) },
     'react-native-safe-area-context': { useSafeAreaInsets: () => ({ bottom: 0 }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed, me: { id: 'viewer' }, promptLogin() {} }) },
-    '@/hooks/use-chat-identity': { useChatIdentity: () => business }, '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/hooks/use-chat-identity': { useChatIdentity: () => business }, '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/hooks/use-content-visibility': { useContentVisibility: () => () => hidden },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16 }, Depth: {} },
