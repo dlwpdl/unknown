@@ -714,7 +714,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   return (
     <ThemedView style={{ flex: 1, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' }}
       onLayout={event => {
-        if (Platform.OS === 'ios') {
+        if (Platform.OS !== 'web') {
           const target = event.currentTarget;
           if (typeof target === 'number') UIManager.measureInWindow(target, (_x, y) => setKeyboardOffset(y));
           else target.measureInWindow((_x, y) => setKeyboardOffset(y));
@@ -782,7 +782,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
       {shareOpen && <PostShareSheet post={post} visible onClose={() => setShareOpen(false)}
         onShared={() => { void recordPostShare(supabase, post.id).catch(() => {}); }} />}
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={keyboardOffset}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={keyboardOffset}>
         <FlatList analyticsId="components_post-detail.flatlist.1"
           ref={scrollRef}
           data={postDraft ? [] : listRows}

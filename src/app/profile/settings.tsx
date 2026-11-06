@@ -1,5 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
+import { KeyboardScreen } from '@/components/keyboard-screen';
 import { LanguageCard } from '@/components/language-card';
 import { Pressable, ScrollView, Switch } from '@/components/analytics-controls';
 import Constants from 'expo-constants';
@@ -97,7 +98,7 @@ export default function SettingsScreen() {
     ]);
 
   return (
-    <ThemedView style={styles.container}>
+    <KeyboardScreen><ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['bottom']}>
         <ScrollView analyticsId="app_profile_settings.scrollview.1" contentContainerStyle={styles.content}>
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{t.profile.account}</ThemedText>
@@ -236,7 +237,7 @@ export default function SettingsScreen() {
           </ThemedText>
         </ScrollView>
       </SafeAreaView>
-    </ThemedView>
+    </ThemedView></KeyboardScreen>
   );
 }
 

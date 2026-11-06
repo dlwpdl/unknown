@@ -394,7 +394,7 @@ function MeetupCreateForm() {
   };
   return <SafeAreaView style={[styles.root, { backgroundColor: theme.background }]}>
     <View style={[styles.head, { backgroundColor: theme.background }]}><Pressable analyticsId="meetup.create.back" accessibilityRole="button" accessibilityLabel={tr("뒤로가기")} disabled={saving} accessibilityState={{ disabled: saving }} onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace(Platform.OS === 'web' ? '/?tag=meetup' : '/(tabs)/meetups'); }} style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable><ThemedText accessibilityRole="header" style={styles.headTitle}>{tr("모임 열기")}</ThemedText></View>
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView ref={scroll} analyticsId="meetup.create.scroll" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+    <KeyboardAvoidingView style={styles.root} behavior="padding"><ScrollView ref={scroll} analyticsId="meetup.create.scroll" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       {invalidDestination && <StateCard kind="error" title={aiCopy('장소·행사 정보를 확인하지 못했어요', 'Couldn’t verify this place or event')} body={aiCopy('원래 상세에서 다시 열어주세요. 작성한 내용은 그대로예요.', 'Open it again from its details. Your writing is unchanged.')} />}
       {slotsFull && <>
         <RelationshipSlotCard kind="meetup" membership={membership} onMembershipPress={() => { play('selection'); router.push('/profile/membership'); }} />

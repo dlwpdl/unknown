@@ -1,5 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
+import { KeyboardScreen } from '@/components/keyboard-screen';
 import { Pressable, ScrollView, Switch } from '@/components/analytics-controls';
 import { Redirect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -96,7 +97,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
     <ThemedText>{tr("알림 설정을 불러오지 못했어요.")}</ThemedText>
     <Pressable analyticsId="app_profile_notifications.pressable.1" accessibilityRole="button" style={styles.button} onPress={() => { play('selection'); void load(); }}><ThemedText themeColor="accent">{tr("다시 시도")}</ThemedText></Pressable>
   </> : <GlingLoader color={theme.accent} />}</View>;
-  return <SafeAreaView key={fontScale} style={styles.container} edges={['bottom']}>
+  return <KeyboardScreen><SafeAreaView key={fontScale} style={styles.container} edges={['bottom']}>
     <ScrollView analyticsId="app_profile_notifications.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       <ThemedText type="small" themeColor="textSecondary">{tr("종류마다 앱 알림 목록과 휴대폰 푸시를 따로 켜고 끌 수 있어요.")}</ThemedText>
       {saveError && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">{tr("설정을 저장하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.")}</ThemedText>}
@@ -148,7 +149,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
       </Pressable>
       <ThemedText type="small" themeColor="textSecondary">{tr("안전·계정 이용에 꼭 필요한 안내는 앱의 알림 목록에 남습니다.")}</ThemedText>
     </ScrollView>
-  </SafeAreaView>;
+  </SafeAreaView></KeyboardScreen>;
 }
 
 // One category row: 앱 controls the in-app list (and push), 푸시 only the phone alert. Locked rows stay on.

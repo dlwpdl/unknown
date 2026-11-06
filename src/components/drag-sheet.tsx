@@ -82,7 +82,7 @@ export function DragSheet({ visible, onClose, onDismissed, dismissible = true, t
   });
   const close = () => { play('selection'); onClose(); };
   return <Modal visible={mounted} transparent animationType="none" statusBarTranslucent onRequestClose={() => { if (dismissible) close(); }} onDismiss={() => live.props.onDismissed?.()}>
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.root}>
+    <KeyboardAvoidingView behavior="padding" style={styles.root}>
       <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: fade }]} />
       <Pressable analyticsId="sheet.dismiss" accessibilityRole="button" accessibilityLabel={tr('닫기')} disabled={!dismissible} style={StyleSheet.absoluteFill} onPress={close} />
       <Animated.View accessibilityViewIsModal onAccessibilityEscape={() => { if (dismissible) onClose(); }}

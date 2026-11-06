@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
+import { KeyboardScreen } from '@/components/keyboard-screen';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { PlaceReviews } from '@/components/place-reviews';
 import { PlaceExternalRatings } from '@/components/place-external-ratings';
@@ -77,7 +78,7 @@ export default function PlaceDetailScreen() {
     play('selection');
     void Linking.openURL(url).then(() => { if (kind) record(kind); }).catch(() => { play('warning'); Alert.alert(tr("페이지를 열지 못했어요"), tr("잠시 후 다시 시도해 주세요.")); });
   };
-  return <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
+  return <KeyboardScreen><SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
     <View style={[styles.header, { borderBottomColor: theme.line }]}>
       <Pressable analyticsId="places.detail.back" accessibilityRole="button" accessibilityLabel={tr("이전 화면으로 돌아가기")}
         onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace({ pathname: '/places', params: { cityId: city?.id ?? selected.id } }); }} style={styles.back}>
@@ -135,7 +136,7 @@ export default function PlaceDetailScreen() {
         </Pressable>
       </>}
     </ScrollView>
-  </SafeAreaView>;
+  </SafeAreaView></KeyboardScreen>;
 }
 
 const styles = StyleSheet.create({

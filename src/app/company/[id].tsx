@@ -12,6 +12,7 @@ import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { usePublicWebshop, WebshopBanner, WebshopComparisonSheet, WebshopOrderButton } from '@/components/business-webshop';
 import { GlingLoader } from '@/components/gling-loader';
 import { MerchantProfileHeader } from '@/components/merchant-profile-header';
+import { KeyboardScreen } from '@/components/keyboard-screen';
 import { MerchantReviews } from '@/components/merchant-reviews';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -207,7 +208,7 @@ export default function CompanyProfileRoute() {
       if (operation.active) { setPostResult(previous => previous?.key === listKey ? { ...previous, failed: true } : previous); play('warning'); }
     } finally { operation.reading = false; if (operation.active) setPostBusy(false); }
   }
-  return <ThemedView style={styles.page}><SafeAreaView style={styles.page} edges={['top', 'left', 'right']}>
+  return <KeyboardScreen><ThemedView style={styles.page}><SafeAreaView style={styles.page} edges={['top', 'left', 'right']}>
     <View style={[styles.header, { borderBottomColor: theme.line }]}>
       <Pressable analyticsId="company.back" accessibilityRole="button" accessibilityLabel={tr("뒤로 가기")} style={styles.button}
         onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/'); }}><ThemedText type="subtitle">‹</ThemedText></Pressable>
@@ -335,7 +336,7 @@ export default function CompanyProfileRoute() {
       </View>
     </SafeAreaView>}
     {profile && webshop.shop && <WebshopComparisonSheet key={merchantId} client={supabase} shop={webshop.shop} name={profile.name} visible={orderOpen} onClose={() => setOrderMerchant(null)} />}
-  </SafeAreaView></ThemedView>;
+  </SafeAreaView></ThemedView></KeyboardScreen>;
 }
 const styles = StyleSheet.create({
   page: { flex: 1 },

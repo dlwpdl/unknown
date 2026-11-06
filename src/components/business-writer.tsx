@@ -1,7 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
@@ -140,7 +140,7 @@ export function BusinessWriter({ business, visible, onClose, onPublished }: { bu
         <ThemedText accessibilityRole="header" numberOfLines={1} style={[Typography.menu, styles.title]}>{tr('{0} 글쓰기', business.name)}</ThemedText>
         <View style={styles.circle} />
       </View>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.root}>
+      <KeyboardAvoidingView behavior="padding" style={styles.root}>
         <ScrollView analyticsId="business.writer.scroll" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
           <View accessibilityRole="radiogroup" style={styles.kinds}>{KINDS.map(item => {
             const selected = kind === item.key;
