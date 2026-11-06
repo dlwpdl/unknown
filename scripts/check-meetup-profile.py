@@ -196,6 +196,7 @@ def main():
             sql(database, 'begin;\n' + MIGRATION.read_text() + '\ncommit;')
             request_after = sql(database, "select pg_get_functiondef('private.request_meetup_join(uuid,text)'::regprocedure);").stdout
             assert request_after == request_before.replace(identity, "'" + notice + "'"), 'request checks, routing or Patina copy changed beyond identity removal'
+            sql(database, (ROOT / 'supabase/migrations/20261105220000_storage_read_preflight.sql').read_text())
         if '--host-tools' in sys.argv:
             sql(database, (ROOT / 'supabase/migrations/20261019050100_meetup_host_tools.sql').read_text())
         assert policies == sql(database, POLICY_STATE).stdout, 'membership, approval or relationship lock policy changed'

@@ -108,7 +108,9 @@ function MeetupEditForm({ postId }: { postId: string }) {
   const eventDirty = !!base && !!event && (capacity !== base.capacity || event.startsAt !== base.event.startsAt || event.endsAt !== base.event.endsAt || event.cadence !== base.event.cadence);
   const newcomerDirty = !!base && (newcomer.welcome !== base.newcomer.welcome || newcomer.only !== base.newcomer.only);
   const dirty = textDirty || eventDirty || newcomerDirty || photosEdited;
-  usePreventRemove(dirty && !saving, ({ repeat }) => {
+  // router.back()/replace() are queued and run after finally clears saving, so a finished save must drop this guard itself.
+  const [leaving, setLeaving] = useState(false);
+  usePreventRemove(!leaving && dirty && !saving, ({ repeat }) => {
     const heading = tr('수정 중인 내용을 버리고 나갈까요?'), message = tr('저장하지 않은 수정 내용은 사라져요.');
     if (Platform.OS === 'web') { if (globalThis.confirm(`${heading}\n${message}`)) repeat(); return; }
     Alert.alert(heading, message, [{ text: tr('계속 수정'), style: 'cancel' }, { text: tr('나가기'), style: 'destructive', onPress: repeat }]);
@@ -155,6 +157,7 @@ function MeetupEditForm({ postId }: { postId: string }) {
       DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       if (!mounted.current) return;
       play('success');
+      setLeaving(true);
       back();
     } catch (cause) {
       if (eventSaved) {

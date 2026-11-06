@@ -58,7 +58,8 @@ export function mountParticipant(screen, options = {}) {
     '@/lib/city-places': { subscribeCityPlaces() {}, cityPlacesRevision() {} }, '@/lib/meetup-destination': { matchesMeetupDestination: () => true, meetupDestinationQuery: () => 'source' }, '@/lib/ticketmaster': { meetupAllowed: () => true, loadTicketmasterEvent: async () => ({ event: { id: ctx.destination?.eventId, name: '실제 행사' } }) },
     '@/lib/feed-data': { loadPublicFeed: async () => ctx.posts ?? [ctx.post], appendUniquePosts: (a, b) => [...a, ...b], loadPublicPost: async () => ctx.post },
     '@/lib/community-data': { loadMyMeetups: async () => ctx.myItems ?? [{ ...ctx.post, authorId: ctx.post.author.id, role: 'approved', conversationId: 'conversation' }], recordPostShare: async () => {}, loadPendingMeetupRequests: async () => [], MEETUPS_CHANGED_EVENT: 'changed', leaveMeetup: async () => calls.push(['leave']), requestMeetupJoin: async () => calls.push(['legacy-join']) },
-    '@/lib/chilling-data': { chillingProfilePreview: value => value, getChillingError: value => value.message, getChillingErrorCode: value => value.message, loadChillingProfile: async () => { if (ctx.profileError) throw new Error(ctx.profileError); return ctx.profile; }, loadMeetupParticipation: async () => { calls.push(['status-read']); return ctx.loadParticipation ? ctx.loadParticipation() : ctx.request; }, requestChillingJoin: async (...args) => { calls.push(['join', ...args.slice(1)]); if (ctx.submit) return ctx.submit(); } },
+    '@/lib/chilling-data': { chillingProfilePreview: value => value, getChillingError: value => value.message, getChillingErrorCode: value => value.message, loadChillingProfile: async () => { if (ctx.profileError) throw new Error(ctx.profileError); return ctx.profile; }, loadMeetupParticipation: async () => { calls.push(['status-read']); return ctx.loadParticipation ? ctx.loadParticipation() : ctx.request; }, requestChillingJoin: async (...args) => { calls.push(['join', ...args.slice(1)]); if (ctx.submit) return ctx.submit(); }, saveChillingProfile: async (_, input) => { calls.push(['save-profile', input]); if (ctx.saveError) throw new Error(ctx.saveError); ctx.profile = { ...input, revision: 'made-r1' }; } },
+    '@/components/chilling-host-profile': { MeetupChips: 'MeetupChips', useMyOpenMeetupRequests: () => ctx.myRequests ?? {} },
   };
   const filename = screen === 'discovery' ? 'app/(tabs)/meetups' : screen === 'mine' ? 'components/my-meetups' : 'app/meetup-join';
   const exportName = screen === 'discovery' ? 'MeetupDiscovery' : screen === 'mine' ? 'MyMeetupsContent' : 'JoinForm';
@@ -127,14 +128,15 @@ test('place context stays browse despite saved My and preserves exact source whe
   assert.ok(nodes(ui.tree).some(node => node.type === 'FlatList')); ui.control('app_tabs_meetups.pressable.3').props.onPress();
   assert.deepEqual(ui.calls.at(-1)[1].params, { placeCityId: 'vancouver', placeId: 'exact-place' }); ui.unmount();
 });
-test('application shows the same global profile one tap away and requires fresh per-post consent', async () => {
+test('application shows the same global profile one tap away; the send button is the per-post consent', async () => {
   const ui = mountParticipant('join'); await ui.flush();
   const sheet = () => nodes(ui.tree).find(node => node.type === 'DragSheet');
   assert.equal(sheet().props.visible, false);
   ui.control('app_meetup-join.pressable.13').props.onPress(); await ui.flush();
   assert.equal(sheet().props.visible, true); assert.equal(nodes(sheet()).find(node => node.type === 'ChillingProfileCard').props.profile, participantProfile);
-  nodes(ui.tree).find(node => node.type === 'TextInput').props.onChangeText('함께 걷고 싶어요.'); await ui.flush(); assert.equal(ui.control('app_meetup-join.pressable.8').props.disabled, true);
-  ui.control('app_meetup-join.pressable.7').props.onPress(); await ui.flush(); assert.equal(ui.control('app_meetup-join.pressable.8').props.disabled, false);
+  nodes(ui.tree).find(node => node.type === 'TextInput').props.onChangeText('함께 걷고 싶어요.'); await ui.flush();
+  assert.equal(ui.control('app_meetup-join.pressable.8').props.disabled, false); assert.equal(ui.control('app_meetup-join.pressable.8').props.label, '동의하고 신청 보내기');
+  assert.equal(ui.control('app_meetup-join.pressable.7'), undefined, 'no separate consent box');
   // The edit screen opens only once the sheet has really gone.
   ui.control('app_meetup-join.pressable.6').props.onPress(); await ui.flush(); assert.equal(sheet().props.visible, false); assert.equal(ui.calls.some(([name]) => name === 'push'), false);
   sheet().props.onDismissed(); assert.deepEqual(ui.calls.at(-1), ['push', { pathname: '/meetup-profile', params: { returnPostId: participantPost.id } }]);
@@ -145,14 +147,13 @@ test('application shows the same global profile one tap away and requires fresh 
 test('the footer says what is left, and leaving asks first only while an unsent answer exists', async () => {
   const ui = mountParticipant('join'); await ui.flush();
   const hint = () => nodes(ui.tree).find(node => node.props?.accessibilityLiveRegion === 'polite' && node.type === 'ThemedText');
-  assert.equal(text(hint()), '답변을 쓰고 동의하면 보낼 수 있어요'); assert.equal(ui.ctx.preventRemove, null);
+  assert.equal(text(hint()), '답변을 쓰면 보낼 수 있어요'); assert.equal(ui.ctx.preventRemove, null);
   nodes(ui.tree).find(node => node.type === 'TextInput').props.onChangeText('답변'); await ui.flush();
-  assert.equal(text(hint()), '동의에 체크하면 보낼 수 있어요');
+  assert.equal(text(hint()), '호스트에게만 보내요');
   let left = 0; ui.ctx.preventRemove({ repeat: () => { left++; } });
   const [heading, , buttons] = ui.alerts.at(-1); assert.equal(heading, '쓰던 답변이 사라져요');
   assert.equal(buttons.find(button => button.style === 'cancel').text, '계속 쓰기'); assert.equal(left, 0);
   buttons.find(button => button.style === 'destructive').onPress(); assert.equal(left, 1);
-  ui.control('app_meetup-join.pressable.7').props.onPress(); await ui.flush(); assert.equal(text(hint()), '호스트에게만 보내요');
   ui.control('app_meetup-join.pressable.8').props.onPress(); await ui.flush();
   assert.equal(ui.ctx.preventRemove, null, 'a sent answer never asks'); ui.unmount();
 });
@@ -172,7 +173,7 @@ test('pending and approved remain distinct, and retained cancellation cannot run
 });
 test('late application success does not fetch or write status after account/screen teardown; back keeps native fallback', async () => {
   let resolve; const ui = mountParticipant('join', { submit: () => new Promise(yes => { resolve = yes; }) }); await ui.flush();
-  nodes(ui.tree).find(node => node.type === 'TextInput').props.onChangeText('답변'); ui.control('app_meetup-join.pressable.7').props.onPress(); await ui.flush();
+  nodes(ui.tree).find(node => node.type === 'TextInput').props.onChangeText('답변'); await ui.flush();
   ui.control('app_meetup-join.pressable.8').props.onPress(); const reads = ui.calls.filter(([name]) => name === 'status-read').length; ui.unmount(); resolve(); await ui.flush(); assert.equal(ui.calls.filter(([name]) => name === 'status-read').length, reads);
   const back = mountParticipant('join'); await back.flush(); back.control('app_meetup-join.pressable.1').props.onPress(); assert.deepEqual(back.calls.at(-1), ['replace', '/(tabs)/meetups']); back.unmount();
 });
@@ -194,7 +195,7 @@ test('an explicit ALL tap wins over a delayed saved type and My view', async () 
   assert.deepEqual(ui.calls.find(([name]) => name === 'write-pref')[2], { kind: 'all', view: 'browse' }); ui.unmount();
 });
 
-const fill = async ui => { nodes(ui.tree).find(node => node.type === 'TextInput').props.onChangeText('답변'); ui.control('app_meetup-join.pressable.7').props.onPress(); await ui.flush(); };
+const fill = async ui => { nodes(ui.tree).find(node => node.type === 'TextInput').props.onChangeText('답변'); await ui.flush(); };
 test('pending applicant goes to the meetups tab, never the host request inbox; host gets the review action', async () => {
   const ui = mountParticipant('join', { request: { id: 'request', status: 'pending' } }); await ui.flush();
   const cta = ui.control('app_meetup-join.pressable.3'); assert.equal(cta.props.label, '내 모임에서 보기');
@@ -211,12 +212,57 @@ test('an unavailable profile photo keeps the meetup and status visible, blocks s
   const pending = mountParticipant('join', { profileError: 'CHILLING_PROFILE_PHOTOS_UNAVAILABLE', request: { id: 'request', status: 'pending' } }); await pending.flush();
   assert.ok(nodes(pending.tree).some(node => node.type === 'StateCard' && node.props.kind === 'pending')); pending.unmount();
 });
-test('without a profile the big button makes one and the answer stays', async () => {
+const inputs = ui => nodes(ui.tree).filter(node => node.type === 'TextInput');
+const firstApplication = async (options = {}) => {
+  const ui = mountParticipant('join', { profile: null, ...options }); await ui.flush();
+  const [, intro, answer] = inputs(ui);
+  intro.props.onChangeText('주말에 걸어요'); answer.props.onChangeText('쓰던 답변'); await ui.flush();
+  return ui;
+};
+test('the one-screen notice names everything the host will see, including what an older profile keeps', async () => {
+  const fresh = mountParticipant('join', { profile: null }); await fresh.flush();
+  assert.match(text(fresh.tree), /내 이름, 지역, 소개, 답변을 봐요/); fresh.unmount();
+  const older = mountParticipant('join', { profile: { ...participantProfile, version: 1 } }); await older.flush();
+  assert.equal(inputs(older).length > 1, true, 'an older profile still gets the one-screen form');
+  assert.match(text(older.tree), /내 모임 프로필과 답변을 봐요/); assert.doesNotMatch(text(older.tree), /내 이름, 지역, 소개, 답변을 봐요/); older.unmount();
+});
+test('without a profile one screen saves it and sends the request, in that order, with the saved revision', async () => {
   const ui = mountParticipant('join', { profile: null }); await ui.flush();
-  nodes(ui.tree).find(node => node.type === 'TextInput').props.onChangeText('쓰던 답변'); await ui.flush();
-  assert.equal(ui.control('app_meetup-join.pressable.5').props.label, '모임 프로필 만들기');
-  ui.control('app_meetup-join.pressable.5').props.onPress(); await ui.flush();
-  assert.equal(nodes(ui.tree).find(node => node.type === 'TextInput').props.value, '쓰던 답변'); ui.unmount();
+  assert.equal(inputs(ui)[0].props.value, '하늘', 'the app nickname is already filled in');
+  const cta = () => ui.control('app_meetup-join.pressable.8');
+  assert.equal(cta().props.disabled, true); assert.equal(ui.control('app_meetup-join.pressable.5'), undefined, 'no detour to the profile screen');
+  ui.unmount();
+  const filled = await firstApplication();
+  const send = filled.control('app_meetup-join.pressable.8'); assert.equal(send.props.disabled, false); assert.equal(send.props.label, '동의하고 신청 보내기');
+  send.props.onPress(); await filled.flush();
+  const order = filled.calls.filter(([name]) => name === 'save-profile' || name === 'join');
+  assert.deepEqual(order.map(([name]) => name), ['save-profile', 'join']);
+  const saved = order[0][1]; assert.equal(saved.displayName, '하늘'); assert.equal(saved.intro, '주말에 걸어요'); assert.equal(saved.shareWithMembers, false, 'a first application never widens who sees the profile');
+  assert.equal(order[1][4], 'made-r1');
+  assert.ok(nodes(filled.tree).some(node => node.type === 'StateCard' && node.props.kind === 'pending')); assert.equal(filled.ctx.preventRemove, null); filled.unmount();
+});
+test('a saved profile whose request failed says so, keeps the answer, and retries without saving again', async () => {
+  let fail = true;
+  const ui = await firstApplication({ submit: () => { if (fail) throw new Error('offline'); } });
+  ui.control('app_meetup-join.pressable.8').props.onPress(); await ui.flush();
+  assert.ok(nodes(ui.tree).some(node => node.type === 'StateCard' && node.props.title === '프로필은 저장했어요'));
+  assert.equal(inputs(ui)[0].props.value, '쓰던 답변');
+  fail = false; ui.control('app_meetup-join.pressable.8').props.onPress(); await ui.flush();
+  assert.equal(ui.calls.filter(([name]) => name === 'save-profile').length, 1); assert.equal(ui.calls.filter(([name]) => name === 'join').length, 2);
+  assert.ok(nodes(ui.tree).some(node => node.type === 'StateCard' && node.props.kind === 'pending')); ui.unmount();
+});
+test('a profile that could not be saved sends nothing and keeps everything written', async () => {
+  const ui = await firstApplication({ saveError: 'offline' });
+  ui.control('app_meetup-join.pressable.8').props.onPress(); await ui.flush();
+  assert.equal(ui.calls.some(([name]) => name === 'join'), false);
+  assert.equal(inputs(ui)[1].props.value, '주말에 걸어요'); assert.equal(inputs(ui)[2].props.value, '쓰던 답변');
+  assert.equal(nodes(ui.tree).some(node => node.props?.title === '프로필은 저장했어요'), false); ui.unmount();
+});
+test('list cards know which meetups already have my request', async () => {
+  const ui = mountParticipant('discovery', { myRequests: { [participantPost.id]: 'pending' } }); await ui.flush();
+  const list = nodes(ui.tree).find(node => node.type === 'FlatList');
+  const card = list.props.renderItem({ item: participantPost, index: 0 });
+  assert.equal(nodes(card).find(node => node.type === 'ChillingEvent').props.requestStatus, 'pending'); ui.unmount();
 });
 test('a language exchange asks which side you speak, sends it, and moves only a full side to the waitlist', async () => {
   const exchange = { ...participantPost, room: { ...participantPost.room, capacity: 5, category: 'casual', languageExchange: { languages: ['ko', 'en'], share: 50 } } };

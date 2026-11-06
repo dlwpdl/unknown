@@ -39,6 +39,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/hooks/use-theme': { useTheme: () => theme }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
     '@/components/daily-chip': { todayLabel: () => '10월 12일 월요일' },
+    '@/components/chilling-host-profile': { useMyOpenMeetupRequests: () => ({}) },
     '@/lib/image-upload': { canAddPostImage: () => true, MAX_POST_IMAGES: 10 },
     '@/constants/theme': { Colors: { light: {} }, Depth: { control: {}, card: {} }, Spacing: { one: 4, two: 8, three: 16, four: 24, five: 32 }, TabBarHeight: 64 },
     '@/i18n/ko': { t }, '@/lib/mock': { TAGS }, '@/lib/auth': { useAuth: () => ({ isAuthed: viewer !== null, isAuthLoading: authLoading, me: { id: viewer ?? 'guest' }, promptLogin() {} }) },

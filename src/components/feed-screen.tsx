@@ -31,6 +31,7 @@ import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-
 
 import { todayLabel } from '@/components/daily-chip';
 import { CityPicker } from '@/components/city-picker';
+import { useMyOpenMeetupRequests } from '@/components/chilling-host-profile';
 import { FeedAd } from '@/components/feed-ad';
 import { FeedSortControl } from '@/components/feed-sort-control';
 import { GlassSurface } from '@/components/glass-surface';
@@ -116,6 +117,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const { tr, t, language, locale: appLocale } = useLanguage();
   const theme = useTheme();
   const hidden = useContentVisibility();
+  const myRequests = useMyOpenMeetupRequests();
   const reducedMotion = useReducedMotion();
   const { fontScale, width: viewportWidth } = useWindowDimensions();
   const [hasBusinessSwitch, setHasBusinessSwitch] = useState(false);
@@ -473,7 +475,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     if (!isAuthed) return promptLogin(t.auth.reasonJoinLogin);
     if (post.room?.closed) return showActionError('MEETUP_CLOSED');
     if (post.author.id === me.id) return Alert.alert(t.chat.ownMeetupTitle, t.chat.ownMeetupBody);
-    if (post.room?.eventKind) {
+    if (post.room?.eventKind || myRequests[post.id]) {
       router.push({ pathname: '/meetup-join', params: { postId: post.id } });
       return;
     }
@@ -979,7 +981,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               {item.map(post => businessGrid ? zoomCard(post, <BusinessNewsCard key={post.id} variant="tile" post={post} onPress={() => pressCard(post)} onAuthor={() => openAuthor(post)}
                 translationVisible={visibleFeedIds.has(post.id) && !searching && !writing} />)
                 : post.listingDetails ? zoomCard(post, <ListingCard key={post.id} variant="tile" post={post as DetailedPost} onPress={() => pressCard(post)} />)
-                : <View key={post.id} style={styles.flexText}>{zoomCard(post, <PostCard flat post={post} onPress={() => pressCard(post)} onJoin={() => void onJoin(post)} onHashtag={openSearch} onAuthor={() => openAuthor(post)} />)}</View>)}
+                : <View key={post.id} style={styles.flexText}>{zoomCard(post, <PostCard flat post={post} onPress={() => pressCard(post)} onJoin={() => void onJoin(post)} joinStatus={myRequests[post.id]} onHashtag={openSearch} onAuthor={() => openAuthor(post)} />)}</View>)}
               {item.length === 1 && <View style={styles.flexText} />}
             </Animated.View> :
             <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: feedOpacity }}>{zoomCard(item, listingCategory && item.listingDetails ? <ListingCard
@@ -992,6 +994,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               translationVisible={visibleFeedIds.has(item.id) && !searching && !writing}
               onPress={() => pressCard(item)}
               onJoin={() => void onJoin(item)}
+              joinStatus={myRequests[item.id]}
               onHashtag={openSearch}
               onAuthor={() => openAuthor(item)}
             />)}{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !writing && !searching)) && feedAdPosition(index - (showFeedSort ? 2 : 1), feedRows.length) && <FeedAd key={`ad-after-${item.id}`} />}
@@ -1135,6 +1138,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                       if (Platform.OS !== 'ios') openDetail(item);
                     }}
                     onJoin={() => void onJoin(item)}
+                    joinStatus={myRequests[item.id]}
                     onHashtag={(value) => { setQuery(value); setSearchResults([]); }}
                     onAuthor={() => openAuthor(item)}
                   />

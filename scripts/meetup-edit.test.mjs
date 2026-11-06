@@ -89,6 +89,7 @@ test('title/body save edits only the intro and preserves place and event machine
   assert.equal(app.configured.length, 0, 'unchanged schedule is not resent');
   assert.deepEqual(JSON.parse(JSON.stringify(app.edited)), [{ postId: 'p1', patch: { title: '새 제목', body: `새 소개예요.${placeTail}` } }]);
   assert.deepEqual(app.feedback.slice(-1), ['success']); assert.deepEqual(app.events, ['meetups.changed']); assert.deepEqual(app.routes, ['back']);
+  app.render(); assert.equal(app.guard().enabled, false, 'A saved edit must not stop its own return.');
 
   const eventTail = '\n\n행사 ID: G5vYZabc';
   const event = screen({ meetup: { id: 'p1', cityId: 'vancouver', title: '공연', body: `공연 같이 가요.${eventTail}`, room: onceRoom, authorId: 'host' } });

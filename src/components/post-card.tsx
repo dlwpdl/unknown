@@ -51,6 +51,7 @@ const FEED_AVATAR = 40, FEED_TEXT_INSET = FEED_AVATAR + 10, FEED_PHOTO_INSET = S
 export function PostCard({
   post,
   onJoin,
+  joinStatus,
   onHashtag,
   onAuthor,
   onPress,
@@ -66,6 +67,7 @@ export function PostCard({
 }: {
   post: Post;
   onJoin?: () => void;
+  joinStatus?: 'pending' | 'approved';
   onHashtag?: (h: string) => void; // 해시태그 탭 → 검색/필터
   onAuthor?: () => void; // 작성자 탭 → 미니 프로필
   onPress?: () => void;
@@ -80,6 +82,7 @@ export function PostCard({
   feed?: boolean; // 오늘 탭 목록 (owner 2026-11-03): 프로필 줄 → 짧은 글 → 장소 카드 → 넘기는 사진 → 공감·댓글·공유·저장(오른쪽 끝). ··· 은 남의 글 숨기기·신고, 내 글 고치기·삭제 (owner 2026-11-04)
 }) {
   const { tr, t, locale: appLocale } = useLanguage();
+  const joinLabel = joinStatus === 'pending' ? tr('승인 대기') : joinStatus === 'approved' ? tr('참여 승인') : t.feed.joinRoom;
   const theme = useTheme(), router = useRouter();
   const clay = useClay(), clayBox = useClayBox();
   const { isAuthed, me, promptLogin } = useAuth();
@@ -256,11 +259,12 @@ export function PostCard({
       {onJoin && !post.room.closed && (
         <Pressable lens analyticsId="components_post-card.pressable.6"
           onPress={() => { play('selection'); onJoin(); }}
-          style={({ pressed }) => [styles.join, { backgroundColor: theme.accent }, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.join, clay && { overflow: 'visible' }, { backgroundColor: clay ? 'transparent' : joinStatus ? theme.backgroundSelected : theme.accent }, pressed && styles.pressed]}
           accessibilityRole="button"
-          accessibilityLabel={t.feed.joinRoom}>
-          <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
-            {t.feed.joinRoom}
+          accessibilityLabel={joinLabel}>
+          {clay && <ClayPillFill kind={joinStatus ? 'white' : 'cta'} />}
+          <ThemedText type="smallBold" style={{ color: joinStatus ? theme.text : theme.accentInk }}>
+            {joinLabel}
           </ThemedText>
         </Pressable>
       )}

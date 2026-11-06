@@ -145,7 +145,9 @@ function MeetupCreateForm() {
   const dirty = draftEdited || touched || !!cover || !!topic.trim() || capacity !== '6' || !!ageMin || !!ageMax || newcomer.welcome;
   const dirtyRef = useRef(dirty);
   useLayoutEffect(() => { authed.current = isAuthed; dirtyRef.current = dirty; });
-  usePreventRemove(dirty && !saving, ({ repeat }) => {
+  // router.back()/replace() are queued and run after finally clears saving, so a finished save must drop this guard itself. Here it would also invite creating the same meetup twice.
+  const [leaving, setLeaving] = useState(false);
+  usePreventRemove(!leaving && dirty && !saving, ({ repeat }) => {
     const title = tr('작성 중인 모임에서 나갈까요?'), message = tr('작성한 내용은 저장되지 않아요.');
     const leave = () => { void clearMeetupCreateDraft(AsyncStorage).catch(() => {}); repeat(); };
     if (Platform.OS === 'web') { if (globalThis.confirm(`${title}\n${message}`)) leave(); return; }
@@ -364,6 +366,7 @@ function MeetupCreateForm() {
       if (!mounted.current || !focused.current || request !== profileRead.current) return;
       if (ticketmasterEventId) behavior('success', 'ticketmaster.meetup.created');
       play('meetupCreated');
+      setLeaving(true);
       router.replace({ pathname: '/post/[id]', params: { id } });
       requestPushPrompt('meetup_create');
       if (!newcomerSaved) Alert.alert(tr('처음 오는 분 설정은 저장하지 못했어요'), tr('모임은 열렸어요. 모임 정보 수정에서 다시 켜 주세요.'));

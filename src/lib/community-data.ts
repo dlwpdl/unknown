@@ -744,6 +744,13 @@ export async function requestMeetupJoin(client: SupabaseClient, postId: string, 
   return result.data as string;
 }
 
+/** Meetups the viewer has an open request in, so list cards can say so instead of offering to join again. */
+export async function loadMyOpenMeetupRequests(client: SupabaseClient, userId: string): Promise<Record<string, 'pending' | 'approved'>> {
+  const { data, error } = await client.from('meetup_requests').select('post_id,status').eq('requester_id', userId).in('status', ['pending', 'approved']);
+  if (error) throw error;
+  return Object.fromEntries((data ?? []).map(row => [row.post_id as string, row.status as 'pending' | 'approved']));
+}
+
 export async function loadMyMeetups(client: SupabaseClient, userId: string): Promise<MyMeetup[]> {
   const fields = 'id,author_id,title,city_id,status,room_preview';
   const [owned, requested, rooms] = await Promise.all([
