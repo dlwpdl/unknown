@@ -31,6 +31,7 @@ export function profile(value, { upload, failSave = true, language = 'ko', theme
     'react-native-reanimated': { useReducedMotion: () => true },
     '@/hooks/use-language': { useLanguage: () => ({ language, tr: (s, ...args) => translateUi(language, s, ...args) }) },
     '@/hooks/use-theme': { useTheme: () => theme },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayPillFill: () => null, ClayBoxFill: () => null },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: actor, cityId: 'vancouver', nickname } }) },
     '@/lib/chilling-data': { ...data, loadChillingProfile: async () => value, getChillingError: () => '저장하지 못했어요. 다시 시도해 주세요.' },
     '@/lib/supabase': { supabase: { rpc: async (name, args) => { assert.equal(name, 'save_chilling_profile'); writes.push(args.p_profile); return { data: null, error: failSave ? Error('save failed') : null }; } } },
