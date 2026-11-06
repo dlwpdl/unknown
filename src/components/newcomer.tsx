@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { DeviceEventEmitter, StyleSheet, View } from 'react-native';
 
 import { Pressable, Switch } from '@/components/analytics-controls';
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles, IconSize, Typography } from '@/constants/design-system';
@@ -77,13 +77,13 @@ export function MeetupNewcomerOption({ welcome, only, onChange, disabled }: {
   welcome: boolean; only: boolean; onChange: (next: { welcome: boolean; only: boolean }) => void; disabled?: boolean;
 }) {
   const { tr } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const { status } = useNewcomerStatus();
   const days = status?.periodDays ?? 60;
   return <View style={styles.option}>
     <ThemedText type="smallBold" style={Typography.menu}>{tr('처음 오는 분')}</ThemedText>
-    <View style={[styles.optionCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
+    <View style={[styles.optionCard, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
       <View style={styles.switchRow}>
         <View style={styles.flex}>
           <ThemedText style={Typography.menu}>{tr('처음 오는 분 환영')}</ThemedText>
@@ -118,7 +118,7 @@ const celebratedKey = (userId: string) => `gling.newcomer-card.celebrated:${user
 /** Today tab: progress toward the first meetup, only for my own newcomer period. */
 export function NewcomerProgressCard() {
   const { tr } = useLanguage();
-  const theme = useTheme(), router = useRouter();
+  const theme = useTheme(), clayBox = useClayBox(), router = useRouter();
   const { me, isAuthed } = useAuth();
   const { play } = useInteractionFeedback();
   const { status, refresh } = useNewcomerStatus(isAuthed);
@@ -142,14 +142,14 @@ export function NewcomerProgressCard() {
   const link = (label: string) => <Pressable analyticsId="today.newcomer.meetups" accessibilityRole="link" onPress={openMeetups} style={styles.link}>
     <ThemedText type="smallBold" themeColor="accent">{label}</ThemedText>
   </Pressable>;
-  if (celebrate) return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  if (celebrate) return <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
     <ThemedText accessibilityRole="header" style={Typography.section}>{tr('첫 모임 다녀오셨네요!')}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">{tr('다음 모임도 마음 가는 대로 골라 보세요.')}</ThemedText>
     {link(tr('모임 보기 ›'))}
   </View>;
   const steps = [['가입', true], ['프로필', true], ['첫 참여 신청', status.requested], ['첫 모임 참석', false]] as const;
   const remaining = steps.filter(([, done]) => !done).length;
-  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
     <View style={styles.cardHead}>
       <ThemedText accessibilityRole="header" type="smallBold" themeColor="accent" style={styles.flex}>{newcomerDaysLeft(status) === 1 ? tr('새로 온 멤버 · 하루 남음') : tr('새로 온 멤버 · {0}일 남음', newcomerDaysLeft(status))}</ThemedText>
       <Pressable analyticsId="today.newcomer.hide" accessibilityRole="button" accessibilityLabel={tr('새로 온 멤버 카드 숨기기')} style={styles.link}
@@ -174,6 +174,7 @@ export function NewcomerProgressCard() {
 }
 
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   overlay: { position: 'absolute', top: 12, left: 12, right: 12 },
   badge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },

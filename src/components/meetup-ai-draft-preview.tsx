@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { SymbolView } from '@/components/symbol-view';
 import { Pressable } from '@/components/analytics-controls';
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { Depth, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
@@ -18,11 +18,11 @@ export function MeetupAiDraftPreview({ fields, selected, protectedFields, disabl
   onApply: () => void;
   onDismiss: () => void;
 }) {
-  const theme = useTheme(), clay = useClay(), { language } = useLanguage(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clayBox = useClayBox(), clay = useClay(), { language } = useLanguage(), { play } = useInteractionFeedback();
   const copy = (ko: string, en: string) => language === 'en' ? en : ko;
   const labels = { title: copy('모임 제목', 'Meetup title'), body: copy('모임 소개', 'Meetup introduction'), question: copy('신청 질문', 'Application question') };
   const canApply = !disabled && MEETUP_DRAFT_FIELDS.some(field => selected[field] && !protectedFields[field]);
-  return <View style={[styles.preview, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.preview, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
     <ThemedText accessibilityRole="header" type="smallBold">{copy('AI 초안 미리보기', 'AI draft preview')}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">{copy('적용할 항목을 선택해 주세요. 생성 중이거나 미리보기 뒤에 수정한 항목은 그대로 남겨요.', 'Choose what to apply. Fields you edited during generation or after this preview stay as you wrote them.')}</ThemedText>
     {MEETUP_DRAFT_FIELDS.map(field => {
@@ -46,6 +46,7 @@ export function MeetupAiDraftPreview({ fields, selected, protectedFields, disabl
 }
 
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   preview: { borderWidth: 1, borderRadius: 16, padding: Spacing.three, gap: Spacing.three },
   section: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.two, gap: Spacing.two },
   select: { minHeight: 44, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two, borderRadius: 8 },

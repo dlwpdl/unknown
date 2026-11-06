@@ -4,7 +4,7 @@ import { Linking, StyleSheet, View } from 'react-native';
 
 import { SymbolView } from '@/components/symbol-view';
 import { Pressable } from '@/components/analytics-controls';
-import { ClayControlFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayControlFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles, controlPresentation } from '@/constants/design-system';
 import { useLanguage } from '@/hooks/use-language';
@@ -32,12 +32,13 @@ const week = (saverCount: number, weekCount: number, locale: string, tr: (text: 
   ? tr('저장 {0} · 이번 주 +{1}', saverCount.toLocaleString(locale), weekCount.toLocaleString(locale)) : tr('저장 {0}', saverCount.toLocaleString(locale));
 
 export function PlaceSavedBy({ place, saves }: { place: CityPlace; saves: PlaceSaves | null }) {
-  const { tr, language, locale } = useLanguage(), theme = useTheme(), clay = useClay(), router = useRouter(), { play } = useInteractionFeedback();
+  const { tr, language, locale } = useLanguage(), theme = useTheme(), clay = useClay(), clayBox = useClayBox(), router = useRouter(), { play } = useInteractionFeedback();
   const en = language === 'en', intro = place.intro;
   const rows = intro ? ([[tr('분위기'), en ? intro.vibeEn ?? intro.vibe : intro.vibe], [place.category === 'places' ? tr('뭘 할까') : tr('뭘 시킬까'), en ? intro.orderEn ?? intro.order : intro.order],
     [tr('언제 갈까'), en ? intro.whenEn ?? intro.when : intro.when]] as const).filter(([, value]) => !!value) : [];
   return <>
-    {!!saves && (saves.saverCount > 0 || saves.friends.length > 0) && <View style={[styles.box, { backgroundColor: theme.backgroundElement }]}>
+    {!!saves && (saves.saverCount > 0 || saves.friends.length > 0) && <View style={[styles.box, clayBox ? styles.clayCard : { backgroundColor: theme.backgroundElement }]}>
+      {clayBox && <ClayBoxFill kind="tile" />}
       <ThemedText type="smallBold">{tr('저장한 사람 {0}명', saves.saverCount.toLocaleString(locale))}{saves.weekCount > 0 ? ` · ${tr('이번 주 +{0}', saves.weekCount.toLocaleString(locale))}` : ''}</ThemedText>
       {saves.firstIsMe && <ThemedText type="smallBold" themeColor="accent">{tr('내가 처음 저장했어요')}</ThemedText>}
       {saves.friends.length > 0 ? <View style={styles.chips}>
@@ -98,6 +99,7 @@ export function PlaceRelated({ place, saves }: { place: CityPlace; saves: PlaceS
 }
 
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', overflow: 'visible' },
   box: { borderRadius: 14, padding: 16, gap: 10 },
   chips: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   chip: { borderWidth: 1 }, clayChip: { overflow: 'visible', paddingHorizontal: 18 },

@@ -1,12 +1,12 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { Animated, LayoutAnimation, Platform, StyleSheet, UIManager, View } from 'react-native';
 import Reanimated, { FadeInDown, useReducedMotion } from 'react-native-reanimated';
 
 import { PostZoomLink } from '@/components/post-zoom-link';
-import { ClayIcon, ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayIcon, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { GlingLoader } from '@/components/gling-loader';
 import { Spacing } from '@/constants/theme';
@@ -32,7 +32,7 @@ const ROTATE_MIN = 4;
 // linked: signed in, so a row grows the post straight out of itself (owner 2026-11-02); guests keep onOpen and its login gate.
 export function WeeklyRanking({ cityId, refreshKey, linked = false, onOpen }: { cityId: string; refreshKey?: number; linked?: boolean; onOpen: (postId: string) => Promise<void> }) {
   const { tr } = useLanguage();
-  const clay = useClay();
+  const clay = useClay(), clayBox = useClayBox();
   const theme = useTheme();
   const hidden = useContentVisibility();
   const reducedMotion = useReducedMotion();
@@ -110,8 +110,7 @@ export function WeeklyRanking({ cityId, refreshKey, linked = false, onOpen }: { 
 
   // 몇 편뿐이면 제목 한 줄과 함께 그냥 펼쳐 둔다.
   if (alwaysOpen) {
-    return (
-      <View style={[styles.card, { borderColor: theme.line, backgroundColor: theme.card }]}>
+    return rankCard(theme, clayBox, <>
         <View style={styles.headRow}>
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.heading}>{tr("이번 주 많이 읽은 글")}</ThemedText>
         </View>
@@ -119,8 +118,7 @@ export function WeeklyRanking({ cityId, refreshKey, linked = false, onOpen }: { 
           <Row key={entry.postId} entry={entry} last={index === total - 1} linked={linked}
             onPress={async () => { play('selection'); if (!linked) await onOpen(entry.postId); }} />
         ))}
-      </View>
-    );
+    </>);
   }
 
   // 접힌 줄은 겹친 카드 없이 얇은 알약 한 줄 (owner 2026-11-03 "공간낭비"). 펼치면 테두리 카드로 1~10위.
@@ -147,8 +145,7 @@ export function WeeklyRanking({ cityId, refreshKey, linked = false, onOpen }: { 
     );
   }
 
-  return (
-    <View style={[styles.card, { borderColor: theme.line, backgroundColor: theme.card }]}>
+  return rankCard(theme, clayBox, <>
       <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.duration(250)}>
         <Pressable analyticsId="components_weekly-ranking.pressable.1" onPress={toggle} accessibilityRole="button"
           accessibilityState={{ expanded }} accessibilityLabel={tr("주간 순위 접기")}
@@ -168,20 +165,25 @@ export function WeeklyRanking({ cityId, refreshKey, linked = false, onOpen }: { 
             onPress={async () => { play('selection'); if (!linked) await onOpen(entry.postId); }} />
         </Reanimated.View>
       ))}
-    </View>
-  );
+    </>);
+}
+
+// The clay tile overhangs the card, so only the rows inside are clipped to its corners.
+function rankCard(theme: ReturnType<typeof useTheme>, clayBox: boolean, children: ReactNode) {
+  if (clayBox) return <View><ClayBoxFill kind="tile" /><View style={styles.clayRows}>{children}</View></View>;
+  return <View style={[styles.card, { borderColor: theme.line, backgroundColor: theme.card }]}>{children}</View>;
 }
 
 function Row({ entry, last, linked, onPress }: { entry: WeeklyRankingEntry; last: boolean; linked: boolean; onPress: () => Promise<void> }) {
   const { tr } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
   const [busy, setBusy] = useState(false);
   const row = (
     <Pressable analyticsId="components_weekly-ranking.pressable.2" onPress={linked ? () => void onPress() : async () => { if (busy) return; setBusy(true); try { await onPress(); } finally { setBusy(false); } }} accessibilityRole="button"
       accessibilityState={{ busy }}
       accessibilityLabel={tr("{0}위 {1}, {2}", (entry.rank), (entry.title), (entry.nickname))}
       // An object style: the zoom link's Slot drops function styles. FlatPressable gives the pressed fade and shrink.
-      style={StyleSheet.flatten([styles.row, !last && { borderBottomWidth: 1, borderBottomColor: theme.line }])}>
+      style={StyleSheet.flatten([styles.row, clayBox && styles.clayRow, !last && { borderBottomWidth: 1, borderBottomColor: theme.line }])}>
       <ThemedText type="smallBold" style={[styles.rank, { color: entry.rank <= 3 ? theme.accent : theme.textSecondary }]}>
         {entry.rank}
       </ThemedText>
@@ -197,6 +199,8 @@ const styles = StyleSheet.create({
   heading: { flexShrink: 1 },
   hintGroup: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   hint: { fontSize: 12 },
+  clayRows: { borderRadius: 16, overflow: 'hidden' },
+  clayRow: { marginHorizontal: Spacing.three, paddingHorizontal: 0 },
   card: { borderWidth: 1, borderRadius: 12, borderCurve: 'continuous', overflow: 'hidden' },
   // The pill shows 36pt; its touch area reaches 4pt above and below it, 44pt in all, without taking layout space.
   foldTouch: { marginVertical: -4, paddingVertical: 4 },

@@ -2,6 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import type { MannerSummary as Summary } from '@/lib/user-profile';
@@ -9,7 +10,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 export function MannerSummary({ summary }: { summary: Summary }) {
   const { tr, locale: appLocale } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const [criteriaOpen, setCriteriaOpen] = useState(false);
   return <View style={{ alignSelf: 'stretch', gap: 8 }}>
@@ -17,7 +18,8 @@ export function MannerSummary({ summary }: { summary: Summary }) {
       <ThemedText type="smallBold" style={{ flexShrink: 1 }}>{tr('이웃이 남긴 리뷰')}</ThemedText>
       <Pressable analyticsId="user.manner.criteria" accessibilityRole="button" accessibilityState={{ expanded: criteriaOpen }} onPress={() => { play('selection'); setCriteriaOpen(value => !value); }} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText type="small" themeColor="textSecondary">{tr('평점 기준')} ⓘ</ThemedText></Pressable>
     </View>
-    <View style={{ flexDirection: 'row', padding: 16, borderRadius: 16, backgroundColor: theme.backgroundElement }}>
+    <View style={{ flexDirection: 'row', padding: 16, borderRadius: 16, backgroundColor: clayBox ? 'transparent' : theme.backgroundElement }}>
+      {clayBox && <ClayBoxFill kind="tile" />}
       {([['meeting', tr('만남')], ['chat', tr('대화')]] as const).map(([key, label], index) => {
         const rating = summary[key].rating ?? { participants: 0, score: null };
         const score = rating.participants >= 5 ? rating.score : null;

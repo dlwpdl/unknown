@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { GlingLoader } from '@/components/gling-loader';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
@@ -14,7 +14,7 @@ import { supabase } from '@/lib/supabase';
 
 export function PostPoll({ postId }: { postId: string }) {
   const { tr, locale: appLocale } = useLanguage();
-  const theme = useTheme(), clay = useClay(), { play } = useInteractionFeedback(), { isAuthed, me, promptLogin } = useAuth();
+  const theme = useTheme(), clay = useClay(), clayBox = useClayBox(), { play } = useInteractionFeedback(), { isAuthed, me, promptLogin } = useAuth();
   const key = `${postId}:${me.id}`;
   const [loaded, setLoaded] = useState<{ key: string; poll: Poll | null; error: boolean } | null>(null);
   const poll = loaded?.key === key ? loaded.poll : null, loadError = loaded?.key === key && loaded.error;
@@ -52,7 +52,8 @@ export function PostPoll({ postId }: { postId: string }) {
     } catch { if (request.active) { setError(true); play('warning'); } }
     finally { if (request.active) setPending(false); }
   };
-  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     <ThemedText type="smallBold">{poll.question}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr('투표 참여 {0}명 · 한 개만 고를 수 있어요', total.toLocaleString(appLocale))}</ThemedText>
     <View style={styles.options} accessibilityRole="radiogroup">
@@ -85,6 +86,7 @@ export function PostPoll({ postId }: { postId: string }) {
 }
 
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   card: { borderWidth: 1, borderRadius: 16, padding: 16, gap: 10, marginVertical: 16 },
   options: { gap: 8 }, option: { minHeight: 48, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 8, overflow: 'hidden' },
   bar: { position: 'absolute', top: 0, bottom: 0, left: 0 },

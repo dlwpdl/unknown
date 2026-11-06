@@ -65,7 +65,7 @@ export function WebshopOrderButton({ onPress }: { onPress: () => void }) {
 export function WebshopComparisonSheet({ client, shop, name, visible, onClose }: {
   client: SupabaseClient; shop: Webshop; name: string; visible: boolean; onClose: () => void;
 }) {
-  const theme = useTheme(), { language, locale } = useLanguage(), { play } = useInteractionFeedback(), reduced = useReducedMotion(), clay = useClay();
+  const theme = useTheme(), { language, locale } = useLanguage(), { play } = useInteractionFeedback(), reduced = useReducedMotion(), clay = useClay(), clayBox = useClayBox();
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false);
   const active = useRef(true), pending = useRef<string | null>(null), started = useRef(false);
   const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
@@ -120,13 +120,14 @@ export function WebshopComparisonSheet({ client, shop, name, visible, onClose }:
             <ThemedText type="small" themeColor="textSecondary">{summary.kind === 'checkout'
               ? `${quote!.basketLabel} · ${ko ? quote!.fulfillment === 'delivery' ? '배달 견적' : '픽업 견적' : quote!.fulfillment === 'delivery' ? 'Delivery quote' : 'Pickup quote'}`
               : items.length ? ko ? `대표 메뉴 ${items.length}개를 함께 주문할 때의 메뉴 금액이에요.` : `Menu subtotal for these ${items.length} selected items.` : ko ? '가게의 Uber 웹샵에서 메뉴와 가격을 확인해주세요.' : 'Check menus and prices on the store’s Uber webshop.'}</ThemedText>
-            {!!items.length && <View style={[styles.table, { borderColor: theme.line, backgroundColor: theme.card }]}>
+            {!!items.length && <View style={[styles.table, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.card }]}>
+              {clayBox && <ClayBoxFill kind="tile" />}
               <View style={styles.row}><ThemedText type="caption" themeColor="textSecondary" style={styles.grow}>{ko ? '대표 메뉴' : 'Selected items'}</ThemedText><ThemedText type="caption" themeColor="textSecondary" style={styles.amount}>Uber Eats</ThemedText><ThemedText type="caption" themeColor="accent" style={styles.amount}>{ko ? '글링 웹샵' : 'Via Gling'}</ThemedText></View>
               {items.map(item => <View key={item.id} style={[styles.row, { borderTopWidth: 1, borderTopColor: theme.line }]}><View style={styles.grow}><ThemedText type="smallBold">{item.name}</ThemedText>{item.savingCents > 0 && <ThemedText type="caption" themeColor="accent">{item.percent}% · {money(item.savingCents)} {ko ? '절약' : 'less'}</ThemedText>}</View>
                 <ThemedText type="small" style={styles.amount}>{money(item.uberCents)}</ThemedText><ThemedText type="smallBold" themeColor="accent" style={styles.amount}>{money(item.webCents)}</ThemedText></View>)}
             </View>}
-            {quote && <View style={[styles.table, { borderColor: theme.line, backgroundColor: theme.card }]}>{feeRows.map(([korean, english, field]) => <View style={styles.row} key={field}><ThemedText type="small" style={styles.grow}>{ko ? korean : english}</ThemedText><ThemedText type="small" style={styles.amount}>{field === 'discountCents' ? '−' : ''}{money(quote.uber[field])}</ThemedText><ThemedText type="small" style={styles.amount}>{field === 'discountCents' ? '−' : ''}{money(quote.webshop[field])}</ThemedText></View>)}</View>}
-            {(items.length > 0 || quote) && <View style={[styles.totals, { backgroundColor: theme.card, borderColor: theme.line }]}><View style={styles.row}><ThemedText type="small" style={styles.grow}>{ko ? 'Uber Eats 주문 시' : 'On Uber Eats'}</ThemedText><ThemedText>{money(summary.uberCents)}</ThemedText></View>
+            {quote && <View style={[styles.table, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}{feeRows.map(([korean, english, field]) => <View style={styles.row} key={field}><ThemedText type="small" style={styles.grow}>{ko ? korean : english}</ThemedText><ThemedText type="small" style={styles.amount}>{field === 'discountCents' ? '−' : ''}{money(quote.uber[field])}</ThemedText><ThemedText type="small" style={styles.amount}>{field === 'discountCents' ? '−' : ''}{money(quote.webshop[field])}</ThemedText></View>)}</View>}
+            {(items.length > 0 || quote) && <View style={[styles.totals, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}<View style={styles.row}><ThemedText type="small" style={styles.grow}>{ko ? 'Uber Eats 주문 시' : 'On Uber Eats'}</ThemedText><ThemedText>{money(summary.uberCents)}</ThemedText></View>
               <View style={styles.row}><ThemedText type="menu" themeColor="accent" style={styles.grow}>{ko ? '글링에서 웹샵 주문 시' : 'Webshop via Gling'}</ThemedText><ThemedText type="section" themeColor="accent">{money(summary.webCents)}</ThemedText></View>
               <ThemedText type="caption" themeColor="textSecondary">{summary.kind === 'menu' ? ko ? '메뉴 합계 기준 · 배달비·수수료·세금·팁 제외' : 'Menu subtotal only · excludes delivery, fees, tax and tip' : ko ? '동일 조건에서 확인한 결제 견적 기준' : 'Based on checkout quotes taken under the same conditions'}</ThemedText></View>}
             {maximumPercent > 0 && <ThemedText type="small" themeColor="textSecondary">{ko ? `최대 ${maximumPercent}%는 위 대표 메뉴 중 가장 큰 할인율이에요. 주문 전체에 일괄 적용되는 할인율은 아니에요.` : `Up to ${maximumPercent}% is the biggest saving among the items above. It doesn’t apply to your whole order.`}</ThemedText>}
@@ -154,6 +155,7 @@ const styles = StyleSheet.create({
   sheet: { width: '100%', maxWidth: 600, alignSelf: 'center', maxHeight: '92%', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, gap: 16 },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#8888', alignSelf: 'center' },
   heading: { flexDirection: 'row', alignItems: 'center', gap: 4 }, details: { gap: 16, paddingBottom: 8 },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   table: { borderWidth: 1, borderRadius: 16, paddingHorizontal: 12 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 12 }, amount: { width: 76, textAlign: 'right', fontVariant: ['tabular-nums'] },
   totals: { borderWidth: 1, borderRadius: 16, padding: 16 },

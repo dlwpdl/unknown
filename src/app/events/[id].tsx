@@ -11,7 +11,7 @@ import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { FestivalVideo } from '@/components/festival-video';
 import { GlassSurface } from '@/components/glass-surface';
 import { RaisedActionButton } from '@/components/raised-action-button';
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { StateCard } from '@/components/state-card';
 import { ControlMotion } from '@/constants/design-system';
@@ -28,7 +28,7 @@ import { eventNotice, eventPriceLabel, eventTime, loadTicketmasterEvent, meetupA
 export default function EventDetailScreen() {
   const { tr, locale: appLocale } = useLanguage();
   const { id, cityId } = useLocalSearchParams<{ id: string; cityId: string }>();
-  const theme = useTheme(), clay = useClay(), router = useRouter();
+  const theme = useTheme(), clay = useClay(), clayBox = useClayBox(), router = useRouter();
   const { isAuthed, me, promptLogin } = useAuth();
   const userId = isAuthed ? me.id : null;
   const identity = useRef(userId);
@@ -98,7 +98,7 @@ export default function EventDetailScreen() {
         {promo && <ThemedText type="small" themeColor="textSecondary">{promo.label} · YouTube{videoOpen ? tr(" · 음소거 자동 재생") : ''}</ThemedText>}
         {!!videoError && <ThemedText accessibilityRole="alert" themeColor="accent">{tr(videoError)}</ThemedText>}
         <ThemedText type="subtitle" accessibilityRole="header">{event.name}</ThemedText>
-        <View style={[styles.facts, { backgroundColor: theme.card }]}><ThemedText type="smallBold" themeColor="accent">{eventTime(event, appLocale)}</ThemedText><ThemedText>{event.venue || tr("장소 확인 필요")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{event.city}</ThemedText><ThemedText type="smallBold" themeColor={event.price ? 'accent' : 'textSecondary'}>{eventPriceLabel(event, appLocale)}</ThemedText></View>
+        <View style={[styles.facts, clayBox ? styles.clayCard : { backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="smallBold" themeColor="accent">{eventTime(event, appLocale)}</ThemedText><ThemedText>{event.venue || tr("장소 확인 필요")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{event.city}</ThemedText><ThemedText type="smallBold" themeColor={event.price ? 'accent' : 'textSecondary'}>{eventPriceLabel(event, appLocale)}</ThemedText></View>
         {!!eventNotice(event, appLocale) && <ThemedText accessibilityRole="alert" themeColor="accent">{eventNotice(event, appLocale)}</ThemedText>}
         <View style={styles.description}><ThemedText type="smallBold" accessibilityRole="header">{tr("행사 소개")}</ThemedText><ThemedText type="small" themeColor="textSecondary" numberOfLines={3}>{event.description || tr("자세한 소개는 티켓에서 확인해 주세요.")}</ThemedText></View>
         <Pressable analyticsId="ticketmaster.meetup.find" accessibilityRole="button" accessibilityState={{ disabled: !meetupAllowed(event) }} disabled={!meetupAllowed(event)} onPress={findMeetups} style={({ pressed }) => [styles.button, clay ? styles.clayButton : [Depth.control, { borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card }], { opacity: !meetupAllowed(event) ? 0.4 : 1, }]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold">{tr("함께 갈 모임 찾기")}</ThemedText></Pressable>
@@ -109,4 +109,4 @@ export default function EventDetailScreen() {
     </ScrollView>
   </SafeAreaView></Link.AppleZoomTarget>;
 }
-const styles = StyleSheet.create({ root: { flex: 1 }, header: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 }, back: { width: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }, headerTitle: { flex: 1, textAlign: 'center', fontSize: 17, lineHeight: 22, fontWeight: '600' }, scroll: { flex: 1 }, content: { padding: 22, gap: 20 }, loadingContent: { flexGrow: 1, justifyContent: 'center' }, hero: { width: '100%', aspectRatio: 16 / 9, borderRadius: 20, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, heroImage: { ...StyleSheet.absoluteFill }, playVideo: { minHeight: 48, borderRadius: 24 }, videoTouch: { minHeight: 48, minWidth: 48, flexDirection: 'row', gap: 8, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' }, closeVideo: { position: 'absolute', zIndex: 2, top: 8, right: 8, width: 48, height: 48, borderRadius: 24 }, closeTouch: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }, playVideoText: { color: '#F6F3F0', fontSize: 15, fontWeight: '700' }, facts: { padding: 18, borderRadius: 16, gap: 8 }, description: { gap: 8 }, clayButton: { overflow: 'visible', paddingHorizontal: 24 }, button: { minHeight: 52, borderRadius: 16, padding: 14, alignItems: 'center', justifyContent: 'center' } });
+const styles = StyleSheet.create({ clayCard: { backgroundColor: 'transparent', overflow: 'visible' }, root: { flex: 1 }, header: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 }, back: { width: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }, headerTitle: { flex: 1, textAlign: 'center', fontSize: 17, lineHeight: 22, fontWeight: '600' }, scroll: { flex: 1 }, content: { padding: 22, gap: 20 }, loadingContent: { flexGrow: 1, justifyContent: 'center' }, hero: { width: '100%', aspectRatio: 16 / 9, borderRadius: 20, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, heroImage: { ...StyleSheet.absoluteFill }, playVideo: { minHeight: 48, borderRadius: 24 }, videoTouch: { minHeight: 48, minWidth: 48, flexDirection: 'row', gap: 8, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'center' }, closeVideo: { position: 'absolute', zIndex: 2, top: 8, right: 8, width: 48, height: 48, borderRadius: 24 }, closeTouch: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }, playVideoText: { color: '#F6F3F0', fontSize: 15, fontWeight: '700' }, facts: { padding: 18, borderRadius: 16, gap: 8 }, description: { gap: 8 }, clayButton: { overflow: 'visible', paddingHorizontal: 24 }, button: { minHeight: 52, borderRadius: 16, padding: 14, alignItems: 'center', justifyContent: 'center' } });

@@ -31,7 +31,8 @@ function mount(file, name, data, props = {}, params = {}) {
   const jsx = (type, props, key) => ({ type, props, key });
   const imports = {
     react, 'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': { FlatList: 'FlatList', View: 'View', Modal: 'Modal', DeviceEventEmitter: { addListener: (name, listener) => { calls.push(['listen', name, listener]); return { remove() {} }; } }, Platform: { OS: data.os ?? 'ios' }, StyleSheet: { create: x => x }, Alert: { alert: (...args) => calls.push(['alert', ...args]) } },
+    'react-native': { Animated: { View: 'View', Value: class { setValue() {} interpolate() { return 0; } }, timing: () => ({ start() {}, stop() {} }) }, Easing: { out: fn => fn, cubic: 0 }, FlatList: 'FlatList', View: 'View', Modal: 'Modal', DeviceEventEmitter: { addListener: (name, listener) => { calls.push(['listen', name, listener]); return { remove() {} }; } }, Platform: { OS: data.os ?? 'ios' }, StyleSheet: { create: x => x }, Alert: { alert: (...args) => calls.push(['alert', ...args]) } },
+    'react-native-reanimated': { useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) },
     'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
     'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ canGoBack: () => true, back() {}, replace() {}, push: path => calls.push(['navigate', path]) }) },

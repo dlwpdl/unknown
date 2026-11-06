@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable } from '@/components/analytics-controls';
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert, DeviceEventEmitter, Platform, StyleSheet, View } from 'react-native';
@@ -40,7 +40,7 @@ export function MyMeetups(props: MyMeetupsProps) {
 }
 function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = false, summaryRows = [] }: MyMeetupsProps) {
   const { tr, t, language, locale: appLocale } = useLanguage();
-  const theme = useTheme(), clay = useClay(), reduced = useReducedMotion();
+  const theme = useTheme(), clayBox = useClayBox(), clay = useClay(), reduced = useReducedMotion();
   const hidden = useContentVisibility();
   const router = useRouter();
   const { isAuthed, isAdmin, me, promptLogin } = useAuth();
@@ -169,7 +169,7 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = fal
           {list.map(meetup => {
             const member = meetup.role === 'host' || meetup.role === 'approved';
             const canChange = meetup.role === 'host' || meetup.role === 'approved' || meetup.role === 'pending';
-            return <View key={meetup.id} style={[styles.meetup, { backgroundColor: theme.card, borderColor: theme.line }]}>
+            return <View key={meetup.id} style={[styles.meetup, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
               <View style={styles.cardHead}>
                 <Pressable analyticsId="components_my-meetups.pressable.2" onPress={() => void open(meetup)} accessibilityRole="button" disabled={!!busy} accessibilityState={{ disabled: !!busy, busy: busy === meetup.id }} style={({ pressed }) => [styles.copy, { opacity: pressed ? 0.7 : 1 }]}>
                   <ThemedText type="smallBold" style={styles.support} themeColor="accent">{member ? chillingKind(meetup.room) === 'group' ? tr('정기모임') : tr('칠링') : t.meetup[meetup.role]}</ThemedText>
@@ -217,6 +217,7 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = fal
 }
 
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   section: { gap: Spacing.two, marginBottom: Spacing.four },
   heading: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
   title: { ...Typography.subtitle },

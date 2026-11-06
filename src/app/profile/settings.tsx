@@ -5,8 +5,9 @@ import { Pressable, ScrollView, Switch } from '@/components/analytics-controls';
 import Constants from 'expo-constants';
 import { Redirect, useRouter } from 'expo-router';
 import { SymbolView } from '@/components/symbol-view';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, Linking, Platform, StyleSheet, View } from 'react-native';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -26,6 +27,13 @@ import { useMembership } from '@/lib/membership-provider';
 import { loadPhotoConsentSettings, setPhotoConsentDefault, type PhotoConsentSettings } from '@/lib/post-photo-consent';
 import { supabase } from '@/lib/supabase';
 import { adsSupported, showAdPrivacyOptions, testAds } from '@/lib/ads';
+
+function Card({ children, accent, style }: { children: ReactNode; accent?: boolean; style?: object }) {
+  const theme = useTheme(), clayBox = useClayBox();
+  // The clay tile overhangs the card, so only the rows inside are clipped to its corners.
+  if (clayBox) return <View><ClayBoxFill kind="tile" /><View style={[styles.clayRows, style]}>{children}</View></View>;
+  return <View style={[styles.card, style, { backgroundColor: theme.card, borderColor: accent ? theme.accent : theme.line }]}>{children}</View>;
+}
 
 export default function SettingsScreen() {
   const { tr, t } = useLanguage();
@@ -108,7 +116,7 @@ export default function SettingsScreen() {
           <ContentTranslationSettings />
 
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{t.profile.appearance}</ThemedText>
-          <View style={[styles.card, styles.appearanceCard, { backgroundColor: theme.card, borderColor: theme.accent }]}>
+          <Card accent style={styles.appearanceCard}>
             <View style={[styles.appearancePreview, { backgroundColor: theme.backgroundElement }]}>
               <View style={styles.previewPair} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
                 {[Colors.light, Colors.dark].map((palette, index) => <View key={index} style={[styles.previewPage, { backgroundColor: palette.background, borderColor: palette.line }]}>
@@ -144,15 +152,15 @@ export default function SettingsScreen() {
                 }}
               />
             </View>
-          </View>
+          </Card>
 
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{tr("알림")}</ThemedText>
-          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+          <Card>
             <Pressable analyticsId="app_profile_settings.pressable.1" accessibilityRole="button" style={({ pressed }) => [styles.navRow, pressed && { backgroundColor: theme.backgroundSelected }]} onPress={() => { play('selection'); router.push('/profile/notifications'); }}>
               <View style={styles.navCopy}><ThemedText type="smallBold">{tr("알림 설정")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("댓글·메시지·모임 소식 선택")}</ThemedText></View>
               <ThemedText themeColor="textSecondary">›</ThemedText>
             </Pressable>
-          </View>
+          </Card>
 
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{tr("친구 공개")}</ThemedText>
           <ProfileSharingCard />
@@ -162,7 +170,7 @@ export default function SettingsScreen() {
           <NearbyCityCard settings />
 
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{t.profile.feedback}</ThemedText>
-          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+          <Card>
             <View style={styles.row}>
               <ThemedText type="small">{t.profile.soundEffects}</ThemedText>
               <Switch analyticsId="app_profile_settings.switch.1"
@@ -187,13 +195,13 @@ export default function SettingsScreen() {
                 ios_backgroundColor={theme.line}
               />
             </View>
-          </View>
+          </Card>
           <ThemedText type="small" themeColor="textSecondary">
             {t.profile.feedbackNote}
           </ThemedText>
 
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{tr("도움말 및 정책")}</ThemedText>
-          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+          <Card>
             <Pressable analyticsId="settings.start-guide.reset" accessibilityRole="button"
               onPress={() => { play('selection'); void resetStartGuide().then(() => router.navigate('/')); }}
               style={({ pressed }) => [styles.navRow, pressed && { backgroundColor: theme.backgroundSelected }]}>
@@ -221,10 +229,10 @@ export default function SettingsScreen() {
                 }).catch(() => Alert.alert(tr("광고 설정을 열지 못했어요"), tr("잠시 후 다시 시도해 주세요.")));
               }}><ThemedText type="smallBold" style={styles.navCopy}>{tr("광고 개인정보 설정")}</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText></Pressable>
             </>}
-          </View>
+          </Card>
 
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{tr("계정 관리")}</ThemedText>
-          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+          <Card>
             {me.photoUri && <><Pressable analyticsId="app_profile_settings.pressable.6" onPress={() => { play('selection'); removePhoto(); }} accessibilityRole="button" style={({ pressed }) => [styles.navRow, pressed && { backgroundColor: theme.backgroundSelected }]}>
               <ThemedText type="smallBold" style={styles.navCopy}>{t.profile.removePhoto}</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText>
             </Pressable><View style={[styles.divider, { backgroundColor: theme.line }]} /></>}
@@ -235,7 +243,7 @@ export default function SettingsScreen() {
             <Pressable analyticsId="app_profile_settings.pressable.8" onPress={() => { play('selection'); confirmDelete(); }} disabled={deleting} accessibilityRole="button" accessibilityState={{ disabled: deleting, busy: deleting }} style={({ pressed }) => [styles.navRow, { opacity: deleting ? 0.55 : 1 }, pressed && { backgroundColor: theme.backgroundSelected }]}>
               <ThemedText type="smallBold" style={[styles.navCopy, { color: theme.accent }]}>{deleting ? t.profile.deleting : t.profile.deleteAccount}</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText>
             </Pressable>
-          </View>
+          </Card>
 
           <ThemedText type="small" themeColor="textSecondary" style={styles.version}>
             {tr("글링") + " "}{Constants.expoConfig?.version ?? '1.0.0'}
@@ -270,7 +278,7 @@ function PhotoConsentCard() {
   };
   return <>
     <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{tr('글링 공식 SNS')}</ThemedText>
-    <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+    <Card>
       <View style={styles.row}>
         <View style={styles.navCopy}>
           <ThemedText type="smallBold">{label}</ThemedText>
@@ -287,7 +295,7 @@ function PhotoConsentCard() {
           <ThemedText type="smallBold" style={[styles.navCopy, { color: theme.accent }]}>{tr('SNS 소개를 허락한 글 {0}개 모두 취소하기', value.consentedPosts)}</ThemedText>
         </Pressable>
       </>}
-    </View>
+    </Card>
     {!!current?.error && <ThemedText type="small" accessibilityRole="alert">{current.error}</ThemedText>}
   </>;
 }
@@ -298,6 +306,7 @@ const styles = StyleSheet.create({
   content: { padding: Spacing.three, paddingBottom: TabBarHeight + Spacing.four, gap: Spacing.two },
   sectionTitle: { marginTop: Spacing.three, marginLeft: Spacing.one },
   card: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, overflow: 'hidden' },
+  clayRows: { borderRadius: 16, overflow: 'hidden' },
   appearanceCard: { padding: 14, borderRadius: 16, gap: Spacing.two },
   appearancePreview: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 10, borderRadius: 12 },
   previewPair: { flexDirection: 'row', gap: 3 },

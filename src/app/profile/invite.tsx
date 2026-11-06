@@ -1,4 +1,5 @@
 import { useFocusEffect } from 'expo-router';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,7 +32,7 @@ const claimMessages: Record<string, string> = {
 
 export default function InviteScreen() {
   const { tr, locale } = useLanguage();
-  const theme = useTheme(), auth = useAuth(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clayBox = useClayBox(), auth = useAuth(), { play } = useInteractionFeedback();
   const { refresh: refreshMembership } = useMembership();
   const share = useInviteShare();
   const [state, setState] = useState<{ userId: string; value: InviteSummary } | null>(null);
@@ -61,13 +62,13 @@ export default function InviteScreen() {
   return <ThemedView style={styles.container}>
     <SafeAreaView edges={['bottom']} style={styles.safeArea}>
       <ScrollView analyticsId="invite.scroll" contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={[styles.card, { backgroundColor: theme.card }]}>
+        <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}
           <ThemedText accessibilityRole="header" style={Typography.section}>{tr('친구가 첫 모임에 오면\n플러스 2주 이용권을 드려요')}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{tr('모임을 열어 본 호스트가 친구를 데려오면 프로 2주 이용권이에요. 친구는 가입하는 날부터 새 멤버 혜택을 받아요.')}</ThemedText>
           {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
           {summary && (summary.code
             ? <>
-              <View style={[styles.codeBox, { backgroundColor: theme.backgroundElement }]}>
+              <View style={[styles.codeBox, { backgroundColor: clayBox ? theme.background : theme.backgroundElement }]}>
                 <ThemedText type="small" themeColor="textSecondary">{tr('내 초대 코드')}</ThemedText>
                 <ThemedText selectable style={styles.code}>{summary.code}</ThemedText>
               </View>
@@ -84,7 +85,7 @@ export default function InviteScreen() {
 
         {summary && <>
           <InviteStats items={[[tr('가입한 친구'), summary.joined], [tr('첫 모임 다녀옴'), summary.rewarded], [tr('기다리는 중'), summary.waiting]]} />
-          <View style={[styles.card, { backgroundColor: theme.card }]}>
+          <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}
             <ThemedText type="smallBold" accessibilityRole="header">{tr('받은 이용권')}</ThemedText>
             {summary.rewards.length === 0
               ? <ThemedText type="small" themeColor="textSecondary">{tr('아직 받은 이용권이 없어요.')}</ThemedText>
@@ -96,7 +97,7 @@ export default function InviteScreen() {
             <ThemedText type="small" themeColor="textSecondary">{tr('이용권은 합쳐서 8주까지 받을 수 있어요. 지금 {0}주 받았어요.', rewardWeeks(summary.grantedDays))}</ThemedText>
           </View>
 
-          {summary.canEnterCode && <View style={[styles.card, { backgroundColor: theme.card }]}>
+          {summary.canEnterCode && <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}
             <ThemedText type="smallBold" accessibilityRole="header">{tr('초대 코드 넣기')}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{tr('초대받아 가입했다면 7일 안에 코드를 넣어 주세요.')}</ThemedText>
             <View style={styles.row}>
@@ -137,6 +138,7 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, width: '100%', maxWidth: MaxContentWidth },
   content: { padding: Spacing.three, paddingBottom: Spacing.five, gap: Spacing.three },
   card: { borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
+  clayCard: { backgroundColor: 'transparent', overflow: 'visible' },
   codeBox: { borderRadius: 12, padding: Spacing.three, gap: 2, alignItems: 'center' },
   code: { fontSize: 24, lineHeight: 32, fontWeight: '700', letterSpacing: 3 },
   reward: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.two },

@@ -18,6 +18,8 @@ vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
   if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
   if ((name === 'react-native' || name === '@/components/analytics-controls')) return { View: 'View', Pressable: 'Pressable', StyleSheet: { create: value => value } };
   if (name === 'expo-symbols' || name === '@/components/symbol-view') return { SymbolView: 'SymbolView' };
+  if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
+  if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
   if (name === '@/components/themed-text') return { ThemedText: 'Text' };
   if (name === '@/constants/theme') return { Spacing: { half: 2, one: 4, two: 8, three: 16 }, Depth: { card: {}, control: {} } };
   if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };

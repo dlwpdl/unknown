@@ -3,7 +3,7 @@ import { SymbolView } from '@/components/symbol-view';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
-import { ClayControlFill, ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayControlFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { Pressable } from '@/components/analytics-controls';
 import { UberOrderNotice } from '@/components/business-webshop';
 import { CityPlacePhoto } from '@/components/city-place-photo';
@@ -43,7 +43,7 @@ export function SavedItemCard({ item, folders, disabled = false, compareBusy = f
   item: SavedItem; folders: SavedFolder[]; disabled?: boolean; compareBusy?: boolean;
   onOpen: () => void; onRemove: () => void; onOrganize: () => void; onCompare?: () => void;
 }) {
-  const theme = useTheme(), { language } = useLanguage(), { play } = useInteractionFeedback(), ko = language === 'ko';
+  const theme = useTheme(), clayBox = useClayBox(), { language } = useLanguage(), { play } = useInteractionFeedback(), ko = language === 'ko';
   const kind = item.target.kind === 'merchant' ? ko ? '비즈니스' : 'Business'
     : item.target.kind === 'place' ? ko ? '장소' : 'Place' : item.target.kind === 'user' ? ko ? '사람' : 'Person'
       : item.postType === 'job' ? ko ? '채용' : 'Job' : item.postType === 'meetup' ? ko ? '모임' : 'Meetup' : ko ? '글' : 'Post';
@@ -66,7 +66,8 @@ export function SavedItemCard({ item, folders, disabled = false, compareBusy = f
         {!!names.length && <ThemedText type="supporting" themeColor="textSecondary" numberOfLines={1}>{names.join(' · ')}</ThemedText>}
       </View>
     </Pressable>;
-  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     <View style={styles.row}>
       <View style={styles.grow}>{item.target.kind === 'post' ? <PostZoomLink id={item.target.id}>{open}</PostZoomLink> : open}</View>
       <Pressable analyticsId="saved.menu" testID={`saved.menu.${item.key}`} accessibilityRole="button" accessibilityLabel={`${item.title} · ${ko ? '메뉴' : 'Menu'}`}
@@ -139,6 +140,7 @@ export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCrea
 
 const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 }, card: { borderWidth: 1, borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one },
   open: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 44 }, image: { width: 64, height: 64, borderRadius: 12 }, empty: { alignItems: 'center', justifyContent: 'center' },
   meta: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, marginBottom: Spacing.one },

@@ -6,7 +6,7 @@ import { SymbolView } from '@/components/symbol-view';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ChillingDateInput } from '@/components/chilling-date-input';
 import { DiscoveryMap } from '@/components/discovery-map';
 import { ListingCard, type DetailedPost } from '@/components/listing-card';
@@ -69,7 +69,7 @@ export function ListingViewSwitch({ view, onView }: { view: ListingView; onView:
 export function ListingFilterBar({ category, cityId, filters, onChange, view, onView }: {
   category: ListingCategory; cityId: string; filters: ListingFilters; onChange: (next: ListingFilters) => void; view?: ListingView; onView?: (view: ListingView) => void;
 }) {
-  const theme = useTheme(), { tr, language } = useLanguage(), { play } = useInteractionFeedback(), clay = useClay();
+  const theme = useTheme(), { tr, language } = useLanguage(), { play } = useInteractionFeedback(), clay = useClay(), clayBox = useClayBox();
   const [open, setOpen] = useState<FilterKey | null>(null), [openGroups, setOpenGroups] = useState<string[]>([]);
   const [now] = useState(() => new Date());
   const areas = neighborhoodsFor(cityId), groups = neighborhoodGroups(cityId);
@@ -125,7 +125,8 @@ export function ListingFilterBar({ category, cityId, filters, onChange, view, on
       </ScrollView>
       {category === 'used' && view && onView && <ListingViewSwitch view={view} onView={onView} />}
     </View>
-    {open && <View style={[styles.panel, { borderColor: theme.line, backgroundColor: theme.backgroundElement }]}>
+    {open && <View style={[styles.panel, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.backgroundElement }]}>
+      {clayBox && <ClayBoxFill kind="tile" />}
       {open !== 'moveIn' && open !== 'wage' && !(open === 'area' && groups) && <View style={styles.options}>
         {open === 'market' && (['rent', 'sale'] as const).map(market => option(market, tr(MARKETS[market]), filters.market === market,
           // Switching market resets the price step (different scale); 매매 has no move-in date.
@@ -289,6 +290,7 @@ const styles = StyleSheet.create({
   filterRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   filterChips: { flexDirection: 'row', gap: Spacing.two },
   filterChip: { flexDirection: 'row', gap: 4, borderWidth: 1, paddingHorizontal: 12, maxWidth: 220 },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   panel: { borderWidth: 1, borderRadius: 16, padding: 12, gap: Spacing.two },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   optionChip: { borderWidth: 1 },

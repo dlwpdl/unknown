@@ -16,6 +16,7 @@ import { ThemedView } from '@/components/themed-view';
 import { ControlStyles } from '@/constants/design-system';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { getCityPlaces, type CityPlace } from '@/lib/city-places';
@@ -42,7 +43,7 @@ const placeKey = (place: CityPlace) => `${place.cityId}:${place.id}`;
 // Owner 2026-11-04 "유저가 뭐 넣게하고싶지않아 개불편하니까": whatever is found is saved straight away and the rest goes to the team,
 // so a share needs no ticking, picking or naming. Only a video with no readable place asks the member for a name.
 export default function ImportScreen() {
-  const auth = useAuth(), theme = useTheme(), router = useRouter(), { city } = useCommunityCity();
+  const auth = useAuth(), theme = useTheme(), clayBox = useClayBox(), router = useRouter(), { city } = useCommunityCity();
   const { language } = useLanguage(), { play } = useInteractionFeedback(), ko = language === 'ko';
   const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntentContext();
   const [text, setText] = useState(''), [step, setStep] = useState<Step>({ kind: 'input' });
@@ -224,7 +225,8 @@ export default function ImportScreen() {
         <TextInput value={query} onChangeText={setQuery} autoFocus maxLength={80} accessibilityLabel={ko ? '가게 이름 검색' : 'Search a place'} placeholder={ko ? '가게 이름' : 'Place name'} placeholderTextColor={theme.textSecondary} style={field} />
         {pickResults.map(place => <Pressable key={placeKey(place)} analyticsId="import.pick" accessibilityRole="button" accessibilityLabel={place.name}
           onPress={() => { play('selection'); const ticket = ++run.current; setStep({ kind: 'working' }); void saveAll([place], [], pickFrom, '', ticket); }}
-          style={({ pressed }) => [styles.row, { borderColor: theme.line, backgroundColor: theme.card, opacity: pressed ? 0.82 : 1 }]}>
+          style={({ pressed }) => [styles.row, clayBox ? { borderColor: 'transparent', overflow: 'visible', opacity: pressed ? 0.82 : 1 } : { borderColor: theme.line, backgroundColor: theme.card, opacity: pressed ? 0.82 : 1 }]}>
+          {clayBox && <ClayBoxFill kind="tile" />}
           <ThemedText type="smallBold">{place.name}</ThemedText><ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>{place.address}</ThemedText></Pressable>)}
         {!!askText && !pickResults.length && <ThemedText type="supporting" themeColor="textSecondary">{ko ? '글링 지도에는 아직 없어요. 이름이 맞으면 아래에서 추가 요청해 주세요.' : 'Not on the gling map yet. If the name is right, ask us to add it below.'}</ThemedText>}
         {askText.length > 1 && <SavedLibraryButton analyticsId="import.ask" label={ko ? `‘${askText}’ 추가 요청하기` : `Ask us to add “${askText}”`}

@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { Pressable } from '@/components/analytics-controls';
 import { MerchantProfileHeader } from '@/components/merchant-profile-header';
 import { MerchantHelp } from '@/components/merchant-ui';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -45,7 +46,7 @@ export function MerchantProfileEditor({ merchantId, onDirty, bare = false }: { m
 
 function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId: string; onDirty: (dirty: boolean) => void; bare?: boolean }) {
   const { tr } = useLanguage();
-  const theme = useTheme(), router = useRouter(), { me } = useAuth(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clayBox = useClayBox(), router = useRouter(), { me } = useAuth(), { play } = useInteractionFeedback();
   const [profile, setProfile] = useState<MyMerchantProfile | null>(null), [photos, setPhotos] = useState<Photos | null>(null);
   const [contact, setContact] = useState<{ phone: string; hours: string } | null>(null);
   const contactDraft = useRef<{ phone: string; hours: string } | null>(null);
@@ -180,7 +181,7 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
   };
   const name = (kind: keyof Photos) => kind === 'banner' ? tr("채널 배너") : kind === 'avatar' ? tr("가게 로고") : tr("지도 대표 사진");
   const short = (kind: keyof Photos) => kind === 'banner' ? tr('배너') : kind === 'avatar' ? tr('로고') : tr('지도 사진');
-  const card = [styles.card, { borderColor: theme.line, backgroundColor: theme.card }];
+  const card = [styles.card, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.card }];
   // Public profile fields guests see; [label, fillable on this screen].
   const missing = !profile ? [] : ([[tr("배너"), !profile.banner_path], [tr("로고"), !profile.avatar_path], [tr("주소"), !profile.address?.trim(), false],
     [tr("영업시간"), !profile.business_hours?.trim()], [tr("전화번호"), !profile.public_phone?.trim()], [tr("소개"), !profile.services?.trim(), false]] as [string, boolean, boolean?][])
@@ -195,12 +196,12 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
     </View>}
     {loading ? <GlingLoader color={theme.accent} accessibilityLabel={tr("프로필을 불러오는 중…")} style={{ alignSelf: 'center', marginVertical: Spacing.four }} />
       : profile && photos && <>
-        {profile.can_edit && missing.length > 0 && <View style={card} accessibilityRole="summary">
+        {profile.can_edit && missing.length > 0 && <View style={card} accessibilityRole="summary">{clayBox && <ClayBoxFill kind="tile" />}
           <ThemedText type="smallBold">{tr("배너·주소·영업시간을 채우면 더 잘 보여요")}</ThemedText>
           <ThemedText type="small">{tr("아직 비어 있어요: {0}", missing.map(([label]) => label).join(', '))}</ThemedText>
           {missing.some(([, here]) => !here) && <ThemedText type="small" themeColor="textSecondary">{tr("주소와 소개는 {0}로 보내 주시면 넣어 드려요.", CONTACT_EMAIL)}</ThemedText>}
         </View>}
-        <View style={card}>
+        <View style={card}>{clayBox && <ClayBoxFill kind="tile" />}
           <ThemedText type="smallBold">{tr("사진")}</ThemedText>
           <MerchantProfileHeader profile={{ ...profile, avatarUri: photos.avatar.uri, bannerUri: photos.banner.uri }} />
           {!profile.can_edit && <ThemedText type="small" themeColor="textSecondary">{tr("비즈니스 계정과 소유 확인이 완료되면 사진을 바꿀 수 있어요.")}</ThemedText>}
@@ -232,7 +233,7 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
           </>}
           {profile.imageLoadFailed && !dirty && <View style={styles.row}><ThemedText type="small" themeColor="textSecondary">{tr("사진 일부를 불러오지 못했어요. 저장된 사진은 유지돼요.")}</ThemedText><ProfileAction label={tr("사진 다시 확인")} onPress={() => { change(null); reload(); }} disabled={busy} /></View>}
         </View>
-        {profile.can_edit && contact && <View style={card}>
+        {profile.can_edit && contact && <View style={card}>{clayBox && <ClayBoxFill kind="tile" />}
           <View style={styles.title}>
             <ThemedText type="smallBold">{tr("공개 연락 정보")}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{tr("비워 두면 공개하지 않아요.")}</ThemedText>
@@ -256,7 +257,7 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
             <ProfileAction label={busy ? tr("연락 정보 처리 중…") : tr("연락 정보 저장")} onPress={() => { void saveContact(); }} disabled={busy || !contactDirty} primary={!photoDirty && contactDirty} />
           </View>
         </View>}
-        {profile.can_edit && intro && <View style={card}>
+        {profile.can_edit && intro && <View style={card}>{clayBox && <ClayBoxFill kind="tile" />}
           <View style={styles.title}>
             <ThemedText type="smallBold">{tr("가게 소개 세 줄")}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{tr("직접 쓴 그대로 프로필에 나와요. 비워 둔 칸은 안 보여요.")}</ThemedText>
@@ -285,6 +286,7 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
 }
 
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   page: { gap: 16 },
   card: { borderWidth: 1, borderRadius: 14, padding: 16, gap: 12 },
   row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 },

@@ -40,7 +40,7 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
     'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) },
     'expo-router': { Link: Object.assign(() => {}, { AppleZoom: 'Zoom' }), useIsFocused: () => focus, useRouter: () => ({}), useFocusEffect: callback => effect(() => focus ? callback() : undefined, [callback, focus]) },
     'react-native': { AccessibilityInfo: { isScreenReaderEnabled: async () => screenReader, addEventListener: () => ({ remove() {} }) }, AppState: appState, View: 'View', StyleSheet: { create: value => value, flatten: value => value, absoluteFill: {} }, useWindowDimensions: () => windowDimensions, Easing: { inOut: value => value, sin: () => {} }, Animated: { View: 'AnimatedView', Value: class { interpolate() { return this; } setValue() {} }, timing() {}, sequence() {}, loop: () => ({ start: () => motion.push('start'), stop: () => motion.push('stop') }) } },
-    'react-native-reanimated': { useReducedMotion: () => reducedMotion }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'Symbol' }, '@/components/symbol-view': { SymbolView: 'Symbol' },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, 'react-native-reanimated': { useReducedMotion: () => reducedMotion }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'Symbol' }, '@/components/symbol-view': { SymbolView: 'Symbol' },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16, four: 24 } },
@@ -178,7 +178,7 @@ test('native home lists every festival as a small card in one row, without rotat
 for (const web of [false, true]) test(`${web ? 'public' : 'native'} daily refresh retries a transient error after fifteen minutes without user input`, async () => {
   const ui = carousel({ web, failRequest: 2 }); await ui.render();
   await ui.tick(60000, 120000); assert.equal(ui.requests.length, 2);
-  if (!web) assert.match(elements(ui.tree()).find(node => node.props?.analyticsId === 'today.events.retry').props.children.props.children[0], /행사 정보를 불러오지 못했어요/);
+  if (!web) assert.match(elements(ui.tree()).find(node => node.props?.analyticsId === 'today.events.retry').props.children.filter(Boolean)[0].props.children[0], /행사 정보를 불러오지 못했어요/);
   for (let minute = 1; minute < 15; minute++) { await ui.tick(60000, 60000); assert.equal(ui.requests.length, 2); }
   await ui.tick(60000, 60000); assert.equal(ui.requests.length, 3);
   assert.ok(web ? elements(ui.tree()).some(node => node.type === 'article') : cards(ui.tree()).length === 7);

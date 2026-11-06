@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import type { SymbolViewProps } from 'expo-symbols';
 import { SymbolView } from '@/components/symbol-view';
 import { Pressable } from '@/components/analytics-controls';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -12,10 +13,13 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 export type WhoSeesRow = { icon: SymbolViewProps['name']; label: string; detail: string; hidden?: boolean; accessory?: ReactNode };
 
 export function WhoSees({ title, rows }: { title: string; rows: WhoSeesRow[] }) {
-  const theme = useTheme();
-  return <View style={[styles.card, { backgroundColor: theme.card }]}>
+  const theme = useTheme(), clayBox = useClayBox();
+  return <View style={clayBox ? undefined : [styles.card, { backgroundColor: theme.card }]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
+    <View style={clayBox ? styles.card : undefined}>
     <ThemedText type="smallBold" accessibilityRole="header" style={styles.cardTitle}>{title}</ThemedText>
-    {rows.map((row, index) => <View key={row.label} style={[styles.row, index > 0 && { borderTopWidth: 1, borderTopColor: theme.line }]}>
+    {rows.map((row, index) => <View key={row.label} style={[styles.row, index > 0 && !clayBox && { borderTopWidth: 1, borderTopColor: theme.line }]}>
+      {index > 0 && clayBox && <View style={[styles.clayLine, { backgroundColor: theme.line }]} />}
       <View style={[styles.icon, { backgroundColor: theme.backgroundSelected }]}><SymbolView name={row.icon} size={14} tintColor={row.hidden ? theme.textSecondary : theme.accent} /></View>
       <View style={styles.flex}>
         <ThemedText type="smallBold" themeColor={row.hidden ? 'textSecondary' : undefined}>{row.label}</ThemedText>
@@ -23,6 +27,7 @@ export function WhoSees({ title, rows }: { title: string; rows: WhoSeesRow[] }) 
       </View>
       {row.accessory}
     </View>)}
+    </View>
   </View>;
 }
 
@@ -67,6 +72,7 @@ const styles = StyleSheet.create({
   cardTitle: { paddingHorizontal: Spacing.three, paddingTop: Spacing.three, paddingBottom: Spacing.one },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: 10 },
   icon: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  clayLine: { position: 'absolute', top: 0, left: Spacing.three, right: Spacing.three, height: StyleSheet.hairlineWidth },
   note: { flexDirection: 'row', gap: Spacing.two, alignItems: 'flex-start' },
   noteIcon: { paddingTop: 3 },
   more: { borderTopWidth: 1, paddingTop: Spacing.one, gap: Spacing.one },

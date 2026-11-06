@@ -5,7 +5,8 @@ import { Pressable } from '@/components/analytics-controls';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SymbolView } from '@/components/symbol-view';
-import { Alert, DeviceEventEmitter, FlatList, StyleSheet, View } from 'react-native';
+import { Alert, Animated, DeviceEventEmitter, Easing, FlatList, StyleSheet, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PostCard } from '@/components/post-card';
@@ -21,6 +22,7 @@ import { ThemedView } from '@/components/themed-view';
 import { SavedEntryButton, useSavedEntry } from '@/components/saved-entry';
 import { ControlStyles, IconSize, controlPresentation } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
+import { Depth } from '@/constants/theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { count } from '@/i18n';
 import { useAuth } from '@/lib/auth';
@@ -49,6 +51,14 @@ export default function AuthorPostsRoute() {
   const [state, setState] = useState<{ key: string; posts: Post[]; hasMore: boolean } | null>(null);
   const [profile, setProfile] = useState<{ key: string; value: PublicUserProfile | null } | null>(null);
   const [kind, setKind] = useState<'story' | 'listing'>('story'), [retry, setRetry] = useState(0);
+  const reducedMotion = useReducedMotion(), [segmentWidth, setSegmentWidth] = useState(0), [segmentPosition] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    const toValue = kind === 'story' ? 0 : 1;
+    if (reducedMotion) { segmentPosition.setValue(toValue); return; }
+    const animation = Animated.timing(segmentPosition, { toValue, duration: 250, easing: Easing.out(Easing.cubic), useNativeDriver: true });
+    animation.start();
+    return () => animation.stop();
+  }, [kind, reducedMotion, segmentPosition]);
   const [more, setMore] = useState(false), pending = useRef(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [detail, setDetail] = useState<{ key: string; post: Post } | null>(null);
@@ -157,10 +167,11 @@ export default function AuthorPostsRoute() {
               {publicProfile.completedCount > 0 && <ThemedText type="small" themeColor="textSecondary">{tr('거래 완료 {0}건', count(publicProfile.completedCount))}</ThemedText>}
               {shownOverview && <ProfileRecordTiles overview={shownOverview} />}
               <ThemedText type="small" themeColor="textSecondary">{tr("공개한 글 이력이에요. 거래 완료는 작성자가 표시한 상태이며 실제 거래·신원 인증을 보장하지 않아요.")}</ThemedText>
-        <View style={[styles.segments, { borderBottomColor: theme.line }]} accessibilityRole="tablist">
+        <View style={[styles.segments, { borderBottomColor: theme.line }]} accessibilityRole="tablist" onLayout={event => setSegmentWidth(event.nativeEvent.layout.width)}>
+          {segmentWidth > 0 && <Animated.View pointerEvents="none" style={[styles.segmentIndicator, Depth.control, { width: segmentWidth / 2, backgroundColor: theme.backgroundElement, borderBottomColor: theme.accent, transform: [{ translateX: segmentPosition.interpolate({ inputRange: [0, 1], outputRange: [0, segmentWidth / 2] }) }] }]} />}
           {(['story', 'listing'] as const).map(value => <Pressable analyticsId={`user.activity.${value}`} key={value} accessibilityRole="tab" accessibilityState={{ selected: kind === value }}
-            onPress={() => { play('selection'); setKind(value); setDetail(null); }} style={[styles.segment, kind === value && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}>
-            <ThemedText type="smallBold">{value === 'story' ? tr("오늘") : tr("구해요·팔아요")}</ThemedText>
+            onPress={() => { play('selection'); setKind(value); setDetail(null); }} style={styles.segment}>
+            <ThemedText type={kind === value ? 'smallBold' : 'small'} themeColor={kind === value ? undefined : 'textSecondary'}>{value === 'story' ? tr("오늘") : tr("구해요·팔아요")}</ThemedText>
           </Pressable>)}
         </View>
             </View> : undefined}
@@ -221,8 +232,9 @@ const styles = StyleSheet.create({
   avatar: { width: 64, height: 64, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   stats: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 16 },
   stat: { flex: 1, minWidth: 0, alignItems: 'center', gap: 4 },
-  segments: { flexDirection: 'row', borderBottomWidth: 1, marginBottom: 0 },
-  segment: { minHeight: 44, flexGrow: 1, alignItems: 'center', paddingHorizontal: 16, justifyContent: 'center' },
+  segments: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
+  segmentIndicator: { position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: 10, borderBottomWidth: 2 },
+  segment: { flex: 1, minHeight: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   center: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   message: { gap: 6, alignItems: 'center' },
   menu: { paddingBottom: 8 },

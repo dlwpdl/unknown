@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable } from '@/components/analytics-controls';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { WebshopComparisonSheet } from '@/components/business-webshop';
 import { GlingLoader } from '@/components/gling-loader';
 import { LoginPanel } from '@/components/login-panel';
@@ -32,7 +33,7 @@ import { loadPublicWebshop } from '@/lib/webshops';
 type SavedReadOperation = { active: boolean; reading: boolean; accountId: string; key: string; visibility: ReturnType<typeof useContentVisibility> };
 
 export default function SavedScreen() {
-  const auth = useAuth(), theme = useTheme(), router = useRouter(), hidden = useContentVisibility(), focused = useIsFocused();
+  const auth = useAuth(), theme = useTheme(), clayBox = useClayBox(), router = useRouter(), hidden = useContentVisibility(), focused = useIsFocused();
   const { language } = useLanguage(), { play } = useInteractionFeedback(), ko = language === 'ko';
   // The profile's '저장한 곳' count and tile open this list already narrowed to places.
   const { filter: initialFilter } = useLocalSearchParams<{ filter?: string }>();
@@ -197,7 +198,8 @@ export default function SavedScreen() {
         {/* Owner 2026-11-04 "가져오기: 검색창 위 한 줄로": its own row, so it never reads as a folder. */}
         <Pressable analyticsId="saved.import" accessibilityRole="button" accessibilityLabel={ko ? '다른 앱에서 가져오기' : 'Import from other apps'} disabled={busy}
           onPress={() => { play('selection'); closeTransient(); router.push('/profile/import'); }}
-          style={({ pressed }) => [styles.import, { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.card, opacity: busy ? 0.6 : 1 }]}>
+          style={({ pressed }) => [styles.import, clayBox ? { borderColor: 'transparent', backgroundColor: 'transparent', overflow: 'visible', opacity: busy ? 0.6 : pressed ? 0.8 : 1 } : { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.card, opacity: busy ? 0.6 : 1 }]}>
+          {clayBox && <ClayBoxFill kind="tile" />}
           <SymbolView name={{ ios: 'square.and.arrow.down', android: 'download', web: 'download' }} size={IconSize.toolbar} tintColor={theme.accent} accessible={false} />
           <View style={styles.importText}><ThemedText type="menu">{ko ? '다른 앱에서 가져오기' : 'Import from other apps'}</ThemedText>
             <ThemedText type="supporting" themeColor="textSecondary" numberOfLines={1}>{ko ? '구글맵 목록 · 인스타 릴스 · 메모' : 'Google Maps lists · Instagram reels · notes'}</ThemedText></View>

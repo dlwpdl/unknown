@@ -1,6 +1,6 @@
 import { useEffect, useState, type ComponentProps, type ReactNode } from 'react';
 import { SymbolView } from '@/components/symbol-view';
-import { ClayIcon, ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayIcon, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { Animated, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
@@ -42,16 +42,18 @@ export function StateCard({ kind = 'empty', title, body, actionLabel, onAction, 
   kind?: StateKind; title: string; body: string; actionLabel?: string; onAction?: () => void; layout?: 'center' | 'start'; mark?: keyof typeof marks; children?: ReactNode; analyticsId?: string;
 }) {
   const theme = useTheme();
-  const clay = useClay();
+  const clay = useClay(), clayBox = useClayBox();
   const { play } = useInteractionFeedback();
-  if (layout === 'start') return <View accessibilityLiveRegion="polite" style={[styles.startCard, { borderColor: theme.line, backgroundColor: theme.card }]}>
+  if (layout === 'start') return <View accessibilityLiveRegion="polite" style={[styles.startCard, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.card }]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     {mark === 'check' ? <PopIn style={[styles.mark, { backgroundColor: theme.accent }]}><SymbolView name={marks.check} size={20} tintColor={theme.accentInk} /></PopIn>
       : mark ? <View style={[styles.mark, { backgroundColor: theme.backgroundSelected }]}><SymbolView name={marks[mark]} size={20} tintColor={theme.accent} /></View> : null}
     <ThemedText accessibilityRole="header" style={Typography.section}>{title}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary" style={styles.startBody}>{body}</ThemedText>
     {children}
   </View>;
-  return <View style={[styles.card, Depth.card, { borderColor: theme.line, backgroundColor: theme.card }]}>
+  return <View style={[styles.card, clayBox ? styles.clayCard : [Depth.card, { borderColor: theme.line, backgroundColor: theme.card }]]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     {clay && kind === 'empty' ? <ClayIcon clay="empty" claySize={60} size={60} /> : <View style={[styles.glyph, { backgroundColor: theme.backgroundElement }]}>
       <SymbolView name={glyphs[kind]} size={22} tintColor={kind === 'error' ? theme.accent : theme.textSecondary} />
     </View>}
@@ -67,6 +69,7 @@ export function StateCard({ kind = 'empty', title, body, actionLabel, onAction, 
 }
 
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   card: { borderWidth: 1, borderRadius: 16, padding: Spacing.four, gap: Spacing.two, alignItems: 'center' },
   startCard: { borderWidth: 1, borderRadius: 16, padding: Spacing.three, gap: Spacing.one + Spacing.half },
   startBody: { fontSize: 14, lineHeight: 20 },

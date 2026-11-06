@@ -8,7 +8,7 @@ import { Pressable } from '@/components/analytics-controls';
 import { MerchantBadge } from '@/components/merchant-ui';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import {
@@ -85,7 +85,7 @@ export function MerchantAccountEntry() {
 
 export function MerchantAccountInvitations({ refreshSignal = 0, onChanged }: { refreshSignal?: number; onChanged: () => void }) {
   const { tr, locale: appLocale } = useLanguage();
-  const { me, isAuthed } = useAuth(), theme = useTheme(), { play } = useInteractionFeedback();
+  const { me, isAuthed } = useAuth(), theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback();
   const [response, setResponse] = useState<MyMerchantConnections | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const current = useRef(me.id), pending = useRef(false);
   useLayoutEffect(() => { current.current = me.id; return () => { current.current = ''; }; }, [me.id]);
@@ -117,7 +117,7 @@ export function MerchantAccountInvitations({ refreshSignal = 0, onChanged }: { r
     finally { pending.current = false; if (current.current === me.id) setBusy(false); }
   }
   if (!isAuthed || (!invitations.length && !error)) return null;
-  return <View style={styles.list}>{error && <ThemedText accessibilityRole="alert">{tr(error)}</ThemedText>}{invitations.map(invitation => <View key={invitation.id} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={styles.list}>{error && <ThemedText accessibilityRole="alert">{tr(error)}</ThemedText>}{invitations.map(invitation => <View key={invitation.id} style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
     <ThemedText type="smallBold">{tr("비즈니스 계정 초대")}</ThemedText><ThemedText type="subtitle">{invitation.merchant_name}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">{invitation.address} · {invitation.city_name}</ThemedText>
     <ThemedText type="small">{MERCHANT_ACCOUNT_ROLES[invitation.role]} · {new Date(invitation.expires_at).toLocaleDateString(appLocale)}{tr("까지")}</ThemedText>
@@ -129,7 +129,7 @@ export function MerchantAccountInvitations({ refreshSignal = 0, onChanged }: { r
 
 export function MerchantAccountManagement({ merchantId, merchantName, refreshSignal, onChanged, bare = false }: { merchantId: string; merchantName: string; refreshSignal: number; onChanged: () => void; bare?: boolean }) {
   const { tr } = useLanguage();
-  const { me, isAdmin } = useAuth(), theme = useTheme(), { play } = useInteractionFeedback();
+  const { me, isAdmin } = useAuth(), theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback();
   const scope = me.id + ':' + merchantId;
   const current = useRef(scope), pending = useRef(false);
   useLayoutEffect(() => { current.current = scope; return () => { current.current = ''; }; }, [scope]);
@@ -152,7 +152,7 @@ export function MerchantAccountManagement({ merchantId, merchantName, refreshSig
     finally { pending.current = false; if (current.current === scope) setBusy(false); }
   }
   const avatar = (nickname: string) => <View aria-hidden style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold">{Array.from(nickname.trim())[0]?.toUpperCase() ?? '?'}</ThemedText></View>;
-  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
     {!bare && <ThemedText type="subtitle" accessibilityRole="header">{tr("계정 관리")}</ThemedText>}
     {error && <ThemedText accessibilityRole="alert">{tr(error)}</ThemedText>}
     {!data ? <AccountAction label={tr("연결 다시 확인")} disabled={busy} onPress={() => setRetry(v => v + 1)} /> : <>
@@ -176,6 +176,7 @@ export function MerchantAccountManagement({ merchantId, merchantName, refreshSig
   </View>;
 }
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   entry: { minHeight: 72, borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
   entryIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   list: { gap: 12, marginBottom: 16 }, card: { borderWidth: 1, borderRadius: 16, padding: 16, gap: 12 },

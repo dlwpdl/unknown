@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useClay } from '@/components/clay';
+import { ClayBoxFill, useClay, useClayBox } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles } from '@/constants/design-system';
@@ -84,7 +84,7 @@ export function MeetupLanguagePicker({ exchange, state, value, onChange, disable
 
 /** Host view: the applicant's side and approvals per language. Renders nothing for ordinary meetups. */
 export function MeetupLanguageCounts({ postId, requestId }: { postId: string; requestId?: string }) {
-  const { language } = useLanguage(), theme = useTheme();
+  const { language } = useLanguage(), theme = useTheme(), clayBox = useClayBox();
   const say = (ko: string, en: string) => language === 'en' ? en : ko;
   // Counts are kept with the meetup they belong to, so another meetup shows nothing until its own counts arrive.
   const [loaded, setLoaded] = useState<{ postId: string; value: MeetupLanguages | null } | null>(null);
@@ -98,7 +98,8 @@ export function MeetupLanguageCounts({ postId, requestId }: { postId: string; re
   if (!state) return null;
   const choice = requestId ? state.requests?.[requestId] : undefined;
   const unknown = state.unknown && state.unknown.approved + state.unknown.pending > 0 ? state.unknown : null;
-  return <View style={[styles.counts, { backgroundColor: theme.backgroundElement }]}>
+  return <View style={[styles.counts, clayBox ? styles.clayCard : { backgroundColor: theme.backgroundElement }]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     <ThemedText type="label">{say('언어별 인원', 'By language')}</ThemedText>
     {requestId && <ThemedText type="supporting">{choice
       ? say(`할 줄 아는 말 ${name(choice.speaks)} · 배우는 말 ${name(choice.learns)}`, `Speaks ${english(choice.speaks)} · Learning ${english(choice.learns)}`)
@@ -116,5 +117,6 @@ const styles = StyleSheet.create({
   group: { gap: Spacing.two },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   chip: { borderWidth: 1 },
+  clayCard: { backgroundColor: 'transparent', overflow: 'visible' },
   counts: { borderRadius: 16, padding: Spacing.three, gap: Spacing.one },
 });

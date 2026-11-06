@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, AppState, DeviceEventEmitter, Linking, Platform, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ControlMotion } from '@/constants/design-system';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
@@ -29,7 +29,7 @@ export default function NotificationSettingsScreen() {
 
 function NotificationSettings({ userId, cityName }: { userId: string; cityName: string }) {
   const { tr } = useLanguage();
-  const clay = useClay();
+  const clay = useClay(), clayBox = useClayBox();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const { fontScale } = useWindowDimensions();
@@ -102,7 +102,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
     <ScrollView analyticsId="app_profile_notifications.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       <ThemedText type="small" themeColor="textSecondary">{tr("종류마다 앱 알림 목록과 휴대폰 푸시를 따로 켜고 끌 수 있어요.")}</ThemedText>
       {saveError && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">{tr("설정을 저장하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.")}</ThemedText>}
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ToggleRow label={tr("휴대폰 푸시 알림")} value={preferences.push_enabled} onChange={value => void save({ push_enabled: value })} disabled={busy || (!pushConfigured && !preferences.push_enabled)} />
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{!pushSupported ? tr("휴대폰 앱에서 푸시 알림을 켤 수 있어요.")
           : !pushConfigured ? tr("휴대폰 알림 연결을 준비하고 있어요.")
@@ -113,7 +113,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
         <View style={styles.groupHead}>
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.label}>{group.id === 'mine' ? tr("나한테 온 것") : group.id === 'city' ? tr("{0} 소식", tr(cityName)) : tr("계정")}</ThemedText>
         </View>
-        <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+        <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
           {group.rows.map(row => {
             const state = settingState(preferences, row);
             const description = row.id === 'interests' && preferences.interest_hashtags.length ? preferences.interest_hashtags.map(tag => `#${tag}`).join(' ') : row.description && tr(row.description);
@@ -123,7 +123,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
         </View>
       </View>)}
       <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{tr("미리보기")}</ThemedText>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ToggleRow label={tr("잠금화면에 메시지 내용 보이기")} value={preferences.message_preview ?? false} onChange={value => void save({ message_preview: value })} disabled={busy} />
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{preferences.message_preview
           ? tr("잠금 화면에 보낸 사람과 짧은 메시지가 표시돼요. 사진은 사진 안내만 보여요.")
@@ -205,6 +205,7 @@ const styles = StyleSheet.create({
   group: { gap: Spacing.two }, groupHead: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.two, paddingHorizontal: Spacing.three },
   pill: { width: 44, minHeight: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, tag: { minHeight: 44, borderRadius: 22, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, justifyContent: 'center' },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   clayPad: { overflow: 'visible', paddingHorizontal: 18 },
   clayWide: { overflow: 'visible', paddingHorizontal: 24 },
   input: { minHeight: 48, borderWidth: 1, borderRadius: 10, padding: Spacing.three, fontSize: 16 },

@@ -5,6 +5,7 @@ import type { SymbolViewProps } from 'expo-symbols';
 import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable } from '@/components/analytics-controls';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { PostPinMap } from '@/components/post-pin-map';
 import { ThemedText } from '@/components/themed-text';
 import { ControlMotion, IconSize, Typography } from '@/constants/design-system';
@@ -113,8 +114,8 @@ export function ListingCard({ post, onPress, variant = 'row' }: { post: Detailed
 }
 
 function Row({ icon, label, value }: { icon: SymbolViewProps['name']; label: string; value: string }) {
-  const theme = useTheme();
-  return <View style={[styles.infoRow, { borderTopColor: theme.line }]} accessible accessibilityLabel={`${label}, ${value}`}>
+  const theme = useTheme(), clayBox = useClayBox();
+  return <View style={[styles.infoRow, clayBox && styles.clayInfoRow, { borderTopColor: theme.line }]} accessible accessibilityLabel={`${label}, ${value}`}>
     <SymbolView name={icon} size={IconSize.inline} tintColor={theme.textSecondary} />
     <ThemedText type="small" themeColor="textSecondary" style={styles.infoLabel}>{label}</ThemedText>
     <ThemedText type="small" style={styles.flex}>{value}</ThemedText>
@@ -123,7 +124,7 @@ function Row({ icon, label, value }: { icon: SymbolViewProps['name']; label: str
 
 // Detail, direction A: one info card under the title, then the neighborhood circle map.
 export function ListingInfo({ post }: { post: DetailedPost }) {
-  const theme = useTheme(), { tr, language } = useLanguage();
+  const theme = useTheme(), clayBox = useClayBox(), { tr, language } = useLanguage();
   const text = useListingText(post), { details } = text;
   const rows: { icon: SymbolViewProps['name']; label: string; value: string | null }[] = details.type === 'housing' ? [
     { icon: { ios: 'house', android: 'home', web: 'home' }, label: tr('방 구성'), value: text.rooms },
@@ -145,8 +146,11 @@ export function ListingInfo({ post }: { post: DetailedPost }) {
       <Badge label={text.status} tone={text.closed ? 'done' : 'accent'} />
     </View>
     {text.price && <ThemedText style={styles.detailPrice}>{text.price}</ThemedText>}
-    {rows.some(row => row.value) && <View style={[styles.infoCard, { borderColor: theme.line, backgroundColor: theme.card }]}>
-      {rows.filter((row): row is typeof row & { value: string } => !!row.value).map((row, index) => <View key={row.label} style={index === 0 && styles.firstRow}><Row icon={row.icon} label={row.label} value={row.value} /></View>)}
+    {rows.some(row => row.value) && <View style={clayBox ? undefined : [styles.infoCard, { borderColor: theme.line, backgroundColor: theme.card }]}>
+      {clayBox && <ClayBoxFill kind="tile" />}
+      <View style={clayBox && styles.clayRows}>
+        {rows.filter((row): row is typeof row & { value: string } => !!row.value).map((row, index) => <View key={row.label} style={index === 0 && styles.firstRow}><Row icon={row.icon} label={row.label} value={row.value} /></View>)}
+      </View>
     </View>}
     <Tags items={chips} />
     {details.type !== 'jobs' && <ListingAreaMap post={post} />}
@@ -200,6 +204,8 @@ const styles = StyleSheet.create({
   tilePrice: { ...Typography.body, fontWeight: '700' },
   info: { gap: Spacing.two, marginTop: Spacing.two },
   infoCard: { borderWidth: 1, borderRadius: 16, overflow: 'hidden' },
+  clayRows: { borderRadius: 16, overflow: 'hidden' },
+  clayInfoRow: { marginHorizontal: Spacing.three, paddingHorizontal: 0 },
   firstRow: { marginTop: -StyleSheet.hairlineWidth },
   infoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two, paddingHorizontal: 14, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth },
   infoLabel: { width: 84 },

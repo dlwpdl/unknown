@@ -3,7 +3,7 @@ import { Pressable } from '@/components/analytics-controls';
 import { StyleSheet, View } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { SymbolView } from '@/components/symbol-view';
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -21,7 +21,7 @@ export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false
   settings?: boolean;
 }) {
   const { tr } = useLanguage();
-  const theme = useTheme(), clay = useClay();
+  const theme = useTheme(), clay = useClay(), clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
   const location = useCommunityLocation();
@@ -30,7 +30,8 @@ export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const recommended = CITIES.find((city) => city.id === location.cityId);
   const disabled = location.busy || !location.ready;
-  return <View style={[styles.card, Depth.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.card, clayBox ? styles.clayCard : [Depth.card, { backgroundColor: theme.card, borderColor: theme.line }]]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     <View style={styles.heading}>
       <SymbolView name={{ ios: 'location', android: 'near_me', web: 'near_me' }} size={24} tintColor={theme.accent} />
       <View style={styles.copy}>
@@ -75,6 +76,7 @@ export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false
   </View>;
 }
 const styles = StyleSheet.create({
+  clayCard: { borderColor: 'transparent', overflow: 'visible' },
   card: { padding: Spacing.three, gap: Spacing.two, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12 },
   heading: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   copy: { flex: 1, gap: Spacing.one }, title: { fontSize: 15, lineHeight: 22, fontWeight: '700' },

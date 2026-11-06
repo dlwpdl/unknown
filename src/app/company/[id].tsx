@@ -17,7 +17,7 @@ import { MerchantProfileHeader } from '@/components/merchant-profile-header';
 import { MerchantReviews } from '@/components/merchant-reviews';
 import { ReportSheet } from '@/components/report-sheet';
 import { SavedEntryButton, useSavedEntry } from '@/components/saved-entry';
-import { ClayControlFill, ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayControlFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
@@ -45,7 +45,7 @@ type ProfileTab = typeof tabs[number]['id'];
 
 export default function CompanyProfileRoute() {
   const { tr, locale: appLocale } = useLanguage();
-  const { id, review } = useLocalSearchParams<{ id: string; review?: string }>(), router = useRouter(), theme = useTheme(), clay = useClay(), { play } = useInteractionFeedback();
+  const { id, review } = useLocalSearchParams<{ id: string; review?: string }>(), router = useRouter(), theme = useTheme(), clay = useClay(), clayBox = useClayBox(), { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion(), scroll = useRef<ScrollViewInstance>(null), tabsTop = useRef(0);
   const { me, isAuthed, isAuthLoading, promptLogin } = useAuth(), hidden = useContentVisibility();
   const business = useChatIdentity();
@@ -279,7 +279,8 @@ export default function CompanyProfileRoute() {
           <Pressable analyticsId="company.photo.retry" accessibilityRole="button" style={[styles.button, clay && styles.clayPad]}
             onPress={() => { play('selection'); setRevision((value) => value + 1); }}>{clay && <ClayPillFill kind="white" />}<ThemedText themeColor="accent">{tr("사진 다시 확인")}</ThemedText></Pressable>
         </View>}
-        {!!shownSaves && (shownSaves.saverCount > 0 || shownSaves.friends.length > 0) && <View style={[styles.box, { backgroundColor: theme.backgroundElement }]}>
+        {!!shownSaves && (shownSaves.saverCount > 0 || shownSaves.friends.length > 0) && <View style={[styles.box, clayBox ? styles.clayCard : { backgroundColor: theme.backgroundElement }]}>
+          {clayBox && <ClayBoxFill kind="tile" />}
           <ThemedText type="smallBold">{tr('저장한 사람 {0}명', shownSaves.saverCount.toLocaleString(appLocale))}{shownSaves.weekCount > 0 ? ` · ${tr('이번 주 +{0}', shownSaves.weekCount.toLocaleString(appLocale))}` : ''}</ThemedText>
           {shownSaves.firstIsMe && <ThemedText type="smallBold" themeColor="accent">{tr('내가 처음 저장했어요')}</ThemedText>}
           {shownSaves.friends.length > 0 ? <View style={styles.actions}>
@@ -438,6 +439,7 @@ const styles = StyleSheet.create({
   aboutLabel: { width: 60 },
   aboutValue: { flex: 1 },
   reviewTabs: { flexDirection: 'row', gap: 8 },
+  clayCard: { backgroundColor: 'transparent', overflow: 'visible' },
   box: { borderRadius: 14, padding: 16, gap: 10 },
   chip: { borderWidth: 1 },
   introBlock: { gap: 10 },

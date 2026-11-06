@@ -21,7 +21,7 @@ import { PlaceRelated, PlaceSavedBy, usePlaceSaves } from '@/components/place-sa
 import { PostMapLink } from '@/components/post-map-link';
 import { PostPhotoCredits } from '@/components/post-photo-credits';
 import { StateCard } from '@/components/state-card';
-import { ClayControlFill, ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayControlFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { SavedEntryButton, useSavedEntry } from '@/components/saved-entry';
 import { ShareCardSheet } from '@/components/share-card';
@@ -61,7 +61,7 @@ export default function PlaceDetailScreen() {
   useLayoutEffect(() => { identity.current = userId; return () => { identity.current = null; }; }, [userId]);
   const { city: selected } = useCommunityCity();
   const city = CITIES.find(item => item.id === (cityId ?? selected.id));
-  const theme = useTheme(), clay = useClay(), router = useRouter(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clay = useClay(), clayBox = useClayBox(), router = useRouter(), { play } = useInteractionFeedback();
   let found: CityPlace | undefined;
   try { if (city) found = getCityPlaces(city.id).find(item => item.id === id) ?? (typeof id === 'string' ? deliveryPartnerPlace(city.id, id) : undefined); } catch { /* Invalid/missing catalog stays an explicit missing-place state. */ }
   const place = found, website = place?.website ? safeMerchantSourceUrl(place.website) : null;
@@ -131,7 +131,8 @@ export default function PlaceDetailScreen() {
           <ThemedText>{language === 'en' ? place.recommendation.reasonEn ?? place.recommendation.reason : place.recommendation.reason}</ThemedText>
         </>}
         <PlaceSavedBy place={place} saves={saves} />
-        <View style={[styles.facts, { backgroundColor: theme.card }]}>
+        <View style={[styles.facts, clayBox ? styles.clayCard : { backgroundColor: theme.card }]}>
+          {clayBox && <ClayBoxFill kind="tile" />}
           <ThemedText type="smallBold" themeColor="accent">{place.category === 'food' ? tr("맛집") : place.category === 'cafe' ? tr("카페") : tr("가볼 만한 곳")}</ThemedText>
           <ThemedText>{place.address || tr("등록된 주소 정보가 없어요. 지도에서 위치를 확인해 주세요.")}</ThemedText>
           {!!place.openingHours && <PlaceHours openingHours={place.openingHours} cityId={city.id}
@@ -206,6 +207,7 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   photo: { width: '100%', aspectRatio: 4 / 3, borderRadius: 16 },
   title: { fontSize: 26, lineHeight: 36, fontWeight: '700' },
+  clayCard: { backgroundColor: 'transparent', overflow: 'visible' },
   facts: { padding: Spacing.three, borderRadius: 16, gap: Spacing.two },
   link: { minHeight: 44, justifyContent: 'center' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },

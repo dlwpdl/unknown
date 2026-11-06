@@ -5,6 +5,7 @@ import { LayoutAnimation, Platform, ScrollView, StyleSheet, UIManager, View } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
 
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { FlatPressable } from '@/components/flat-pressable';
 import { LoginPanel } from '@/components/login-panel';
 import { ThemedText } from '@/components/themed-text';
@@ -19,7 +20,7 @@ import { loadMyTrustProgress, trustedHostSteps, type TrustedHostStep, type Trust
 
 export default function TrustScreen() {
   const { tr } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
   const auth = useAuth();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
@@ -64,7 +65,8 @@ export default function TrustScreen() {
   return <ThemedView style={styles.root}><SafeAreaView edges={['bottom']} style={styles.safeArea}>
     <ScrollView contentContainerStyle={styles.content}>
       <ThemedText type="smallBold" themeColor="textSecondary" style={styles.eyebrow}>{tr("내 계정의 인증 상태")}</ThemedText>
-      <View style={[styles.hero, Depth.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      <View style={[styles.hero, clayBox ? styles.clayCard : [Depth.card, { backgroundColor: theme.card, borderColor: theme.line }]]}>
+        {clayBox && <ClayBoxFill kind="tile" />}
         <View style={styles.heroHead}>
           <View style={styles.flex}>
             <ThemedText type="small" themeColor="textSecondary">{tr("현재 단계")}</ThemedText>
@@ -87,10 +89,13 @@ export default function TrustScreen() {
       </View>
 
       <View style={styles.sectionHead}><ThemedText type="subtitle" style={styles.sectionTitle}>{tr("단계별 인증 기준")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("눌러서 자세히 보기")}</ThemedText></View>
-      <View style={[styles.levels, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      <View style={clayBox ? undefined : [styles.levels, { backgroundColor: theme.card, borderColor: theme.line }]}>
+        {clayBox && <ClayBoxFill kind="tile" />}
+        <View style={clayBox ? styles.clayRows : undefined}>
         {levels.map((item, index) => {
           const open = expanded === item.level;
-          return <View key={item.level} style={[styles.level, index > 0 && { borderTopColor: theme.line, borderTopWidth: StyleSheet.hairlineWidth }]}>
+          return <View key={item.level} style={[styles.level, index > 0 && !clayBox && { borderTopColor: theme.line, borderTopWidth: StyleSheet.hairlineWidth }]}>
+            {index > 0 && clayBox && <View style={[styles.levelLine, { backgroundColor: theme.line }]} />}
             <FlatPressable accessibilityRole="button" accessibilityLabel={tr("Lv{0} {1}, {2}", item.level, item.title, levelState(item.level))} accessibilityState={{ expanded: open }}
               onPress={() => { play('selection'); if (!reducedMotion) { if (Platform.OS === 'android') UIManager.setLayoutAnimationEnabledExperimental?.(true); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); } setExpanded(open ? null : item.level); }}
               style={({ pressed }) => [styles.levelButton, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
@@ -115,9 +120,11 @@ export default function TrustScreen() {
             </View>}
           </View>;
         })}
+        </View>
       </View>
 
-      <View style={[styles.note, { backgroundColor: theme.backgroundElement }]}>
+      <View style={[styles.note, clayBox ? styles.clayCard : { backgroundColor: theme.backgroundElement }]}>
+        {clayBox && <ClayBoxFill kind="tile" />}
         <View style={styles.noteTitle}><SymbolView name={{ ios: 'info.circle', android: 'info_outline', web: 'info' }} size={17} tintColor={theme.textSecondary} /><ThemedText type="smallBold">{tr("인증 단계가 의미하는 것")}</ThemedText></View>
         <ThemedText type="small" themeColor="textSecondary" style={styles.noteBody}>{tr("확인된 항목만 표시해요. 인증 단계는 만남의 안전이나 상대방의 행동을 보증하지 않아요. 이름·생년월일을 직접 입력해도 인증 단계는 올라가지 않아요.")}</ThemedText>
       </View>
@@ -127,6 +134,7 @@ export default function TrustScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, alignItems: 'center' }, safeArea: { flex: 1, width: '100%', maxWidth: MaxContentWidth }, content: { paddingHorizontal: Spacing.three, paddingTop: Spacing.two, paddingBottom: Spacing.five },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' }, clayRows: { borderRadius: 17, overflow: 'hidden' }, levelLine: { height: StyleSheet.hairlineWidth, marginHorizontal: Spacing.three },
   eyebrow: { marginBottom: Spacing.two }, hero: { borderWidth: 1, borderRadius: 20, padding: Spacing.four }, heroHead: { flexDirection: 'row', gap: Spacing.two, alignItems: 'flex-start' }, flex: { flex: 1, minWidth: 0 }, heroTitle: { fontSize: 25, lineHeight: 32, fontWeight: '700', marginTop: Spacing.one }, heroIcon: { width: 50, height: 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }, heroBody: { lineHeight: 21, marginTop: Spacing.two, marginBottom: Spacing.four }, account: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: Spacing.three, flexDirection: 'row', alignItems: 'center', gap: Spacing.two }, avatar: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   sectionHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Spacing.two, marginTop: Spacing.five, marginBottom: Spacing.two }, sectionTitle: { fontSize: 17 }, levels: { borderWidth: 1, borderRadius: 17, overflow: 'hidden' }, level: {}, levelButton: { minHeight: 77, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two }, number: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' }, summary: { marginTop: Spacing.one }, detail: { paddingLeft: 64, paddingRight: Spacing.three, paddingBottom: Spacing.three }, detailText: { lineHeight: 20, marginTop: Spacing.half }, factLabel: { marginTop: Spacing.two }, availability: { marginTop: Spacing.two }, record: { borderRadius: 12, padding: Spacing.three, marginTop: Spacing.three, gap: Spacing.two }, step: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two }, note: { borderRadius: 16, padding: Spacing.three, marginTop: Spacing.four }, noteTitle: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two }, noteBody: { lineHeight: 19, marginTop: Spacing.two },
 });

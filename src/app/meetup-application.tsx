@@ -16,7 +16,7 @@ import { MeetupHistoryChoice } from '@/components/meetup-room-summary';
 import { MeetupLanguageCounts } from '@/components/meetup-language';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { StateCard } from '@/components/state-card';
-import { ClayPhoto, ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayPhoto, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -44,7 +44,7 @@ export default function MeetupApplicationRoute() {
 }
 function Application({ requestId }: { requestId: string }) {
   const { tr } = useLanguage();
-  const router = useRouter(), theme = useTheme(), clay = useClay(), hidden = useContentVisibility();
+  const router = useRouter(), theme = useTheme(), clay = useClay(), clayBox = useClayBox(), hidden = useContentVisibility();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion(), { height } = useWindowDimensions();
   const { isAuthed, me, promptLogin } = useAuth();
@@ -142,7 +142,7 @@ function Application({ requestId }: { requestId: string }) {
         </View>
       </View>
       {application.request?.host_id === me.id && <MeetupLanguageCounts postId={application.postId} requestId={requestId} />}
-      <View style={[styles.answerCard, { backgroundColor: theme.card }]}><ThemedText type="smallBold" themeColor="accent">{tr("호스트 질문에 대한 답변")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{application.question}</ThemedText><ThemedText style={styles.answer}>{application.answer}</ThemedText></View>
+      <View style={[styles.answerCard, clayBox ? { overflow: 'visible' } : { backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="smallBold" themeColor="accent">{tr("호스트 질문에 대한 답변")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{application.question}</ThemedText><ThemedText style={styles.answer}>{application.answer}</ThemedText></View>
       <View style={styles.headingRow}><ThemedText type="smallBold">{tr("함께할 사람의 모임 프로필")}</ThemedText>
         <Tag label={tr("신청 당시")} /></View>
       <ChillingProfileCard profile={application.profile} />

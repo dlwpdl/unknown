@@ -7,6 +7,7 @@ import { SymbolView } from '@/components/symbol-view';
 import { AppState, StyleSheet, View } from 'react-native';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ControlMotion, MiniCard } from '@/constants/design-system';
 import { Spacing } from '@/constants/theme';
@@ -19,7 +20,7 @@ import { EVENT_CITIES, eventPriceLabel, eventTime, festivalLocalDay, type EventC
 // 큰 회전 카드 대신 작은 가로 줄 (owner 2026-10-30). 불러오기·하루 바뀜·앱 복귀 때 다시 읽는 동작은 그대로다.
 export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, page = 0 }: { cityId: string; refreshKey: number; cityLoading: boolean; page?: number }) {
   const { tr } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
   const router = useRouter();
   const { play } = useInteractionFeedback();
   const isFocused = useIsFocused();
@@ -70,7 +71,7 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, page = 0 
       </Pressable>
     </View>
     {!current ? <View style={[styles.loading, { backgroundColor: cityLoading ? theme.backgroundElement : 'transparent' }]}>{!cityLoading && <GlingLoader color={theme.accent} accessibilityLabel={tr("행사 불러오는 중")} />}</View>
-        : current.error ? <Pressable analyticsId="today.events.retry" accessibilityRole="button" onPress={() => { play('selection'); setAttempt(value => value + 1); }} style={[styles.message, { borderColor: theme.line, backgroundColor: theme.card }]}><ThemedText type="small" themeColor="textSecondary">{current.error}{" " + tr("눌러서 다시 시도해 주세요.")}</ThemedText></Pressable>
+        : current.error ? <Pressable analyticsId="today.events.retry" accessibilityRole="button" onPress={() => { play('selection'); setAttempt(value => value + 1); }} style={[styles.message, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="small" themeColor="textSecondary">{current.error}{" " + tr("눌러서 다시 시도해 주세요.")}</ThemedText></Pressable>
           : <ScrollView analyticsId="today.events.carousel" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
               {current.events.map(event => <EventRowCard key={event.id} event={event} cityId={cityId} />)}
             </ScrollView>}
@@ -106,5 +107,6 @@ const styles = StyleSheet.create({
   photo: { width: '100%', height: MiniCard.photoHeight, borderRadius: MiniCard.radius, marginBottom: Spacing.one },
   fallback: { alignItems: 'center', justifyContent: 'center' },
   loading: { minHeight: MiniCard.photoHeight + 72, borderRadius: MiniCard.radius, justifyContent: 'center' },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   message: { minHeight: 88, borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, padding: 16, justifyContent: 'center' },
 });

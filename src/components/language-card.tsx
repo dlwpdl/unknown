@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Modal, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { FlatPressable } from '@/components/flat-pressable';
 import { SymbolView } from '@/components/symbol-view';
 import { ThemedText } from '@/components/themed-text';
@@ -14,7 +14,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 export function LanguageCard({ compact = false }: { compact?: boolean } = {}) {
   const { language, preference, isSaving, setPreference, t } = useLanguage();
-  const theme = useTheme(), clay = useClay();
+  const theme = useTheme(), clay = useClay(), clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const [failed, setFailed] = useState(false);
   const [open, setOpen] = useState(false);
@@ -25,18 +25,21 @@ export function LanguageCard({ compact = false }: { compact?: boolean } = {}) {
   const close = () => { play('selection'); setOpen(false); };
   const panel = <View style={styles.section}>
     <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{t.language.title}</ThemedText>
-    <View accessibilityRole="radiogroup" accessibilityLabel={t.language.title} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
-      {options.map(({ value, label }, index) => <Pressable key={value} analyticsId={`app_language.${value}`} accessibilityRole="radio"
+    <View accessibilityRole="radiogroup" accessibilityLabel={t.language.title} style={clayBox ? undefined : [styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      {clayBox && <ClayBoxFill kind="tile" />}
+      <View style={clayBox ? styles.clayRows : undefined}>
+      {options.map(({ value, label }, index) => <View key={value}>{index > 0 && clayBox && <View style={[styles.clayLine, { backgroundColor: theme.line }]} />}<Pressable analyticsId={`app_language.${value}`} accessibilityRole="radio"
         aria-checked={preference === value} aria-disabled={!!isSaving} aria-busy={!!isSaving}
         accessibilityLabel={label} accessibilityState={{ checked: preference === value, disabled: !!isSaving, busy: !!isSaving }}
         disabled={isSaving} onPress={() => {
           if (isSaving) return;
           play('selection'); setFailed(false);
           void setPreference(value).then((saved) => { if (saved) setOpen(false); else { play('warning'); setFailed(true); } });
-        }} style={({ pressed }) => [styles.row, index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.line }, pressed && { backgroundColor: theme.backgroundSelected }]}>
+        }} style={({ pressed }) => [styles.row, index > 0 && !clayBox && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.line }, pressed && { backgroundColor: theme.backgroundSelected }]}>
         <ThemedText type="small" style={styles.label}>{label}</ThemedText>
         {preference === value && clay ? <SymbolView name="checkmark" size={18} tintColor={theme.accent} /> : <ThemedText style={{ color: theme.accent }} accessible={false} accessibilityElementsHidden aria-hidden>{preference === value ? '✓' : '○'}</ThemedText>}
-      </Pressable>)}
+      </Pressable></View>)}
+      </View>
     </View>
     <ThemedText type="small" themeColor="textSecondary">{t.language.note}</ThemedText>
     {isSaving && <ThemedText type="small" accessibilityLiveRegion="polite">{t.language.saving}</ThemedText>}
@@ -69,6 +72,8 @@ export function LanguageCard({ compact = false }: { compact?: boolean } = {}) {
 }
 
 const styles = StyleSheet.create({
+  clayRows: { borderRadius: 16, overflow: 'hidden' },
+  clayLine: { height: StyleSheet.hairlineWidth, marginHorizontal: Spacing.three },
   section: { gap: Spacing.two }, card: { borderWidth: 1, borderRadius: 16, overflow: 'hidden' },
   row: { minHeight: 48, paddingVertical: 12, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   label: { flex: 1, flexShrink: 1 },

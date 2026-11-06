@@ -90,7 +90,7 @@ function view({ language = 'ko', failOpen = false } = {}) {
     'react-native': { View: 'View', StyleSheet: { create: value => value, hairlineWidth: 1 },
       Linking: { openURL: async url => { calls.links.push(url); if (failOpen) throw Error('offline'); } },
       Alert: { alert: (...args) => calls.alerts.push(args) } },
-    'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, 'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/merchant-rating-bar': { GlingRatingIcon: 'GlingRatingIcon' },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16 } },

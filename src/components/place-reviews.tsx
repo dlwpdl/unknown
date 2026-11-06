@@ -1,3 +1,4 @@
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { StyleSheet, TextInput, View } from 'react-native';
@@ -36,7 +37,7 @@ export function PlaceReviews(props: Props) {
 
 function ScopedPlaceReviews({ cityId, placeId, userId, viewport, writeRequest = 0 }: Props & { userId: string }) {
   const { tr } = useLanguage();
-  const theme = useTheme(), router = useRouter(), hidden = useContentVisibility();
+  const theme = useTheme(), clayBox = useClayBox(), router = useRouter(), hidden = useContentVisibility();
   const { play } = useInteractionFeedback();
   const [page, setPage] = useState<PlaceReviewPage | null>(null);
   const [rating, setRating] = useState<PlaceRatingState | null>(null), [ratingError, setRatingError] = useState(false);
@@ -146,7 +147,8 @@ function ScopedPlaceReviews({ cityId, placeId, userId, viewport, writeRequest = 
       disabled={writeDisabled} accessibilityState={{ disabled: writeDisabled }}
       onPress={() => { play('selection'); startWriting(); }} style={[styles.action, styles.write, { borderColor: theme.line, opacity: writeDisabled ? 0.5 : 1 }]}>
       <ThemedText type="smallBold" themeColor="accent">{tr(rating?.myReview ? '내 리뷰 수정' : '후기 남기기')}</ThemedText>
-    </Pressable> : <View style={[styles.editor, { backgroundColor: theme.card, borderColor: theme.line }]}>
+    </Pressable> : <View style={[styles.editor, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>
+      {clayBox && <ClayBoxFill kind="tile" />}
       <ThemedText type="small">{tr('게시하면 이 장소의 후기와 도시 커뮤니티에 일반 글로 표시돼요. 장소 링크와 지도는 자동으로 붙어요.')}</ThemedText>
       <ThemedText type="smallBold">{score == null ? tr('점수를 선택해 주세요') : tr('{0}점 / 10점', score.toFixed(1))}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{tr('최저 1점 · 최고 10점 · 0.5점 단위')}</ThemedText>
@@ -208,6 +210,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
   action: { minHeight: 44, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, alignItems: 'center', justifyContent: 'center' },
   write: { borderWidth: 1, borderRadius: 14, alignSelf: 'flex-start' },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   editor: { borderWidth: 1, borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
   rating: { gap: Spacing.one },
   scores: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },

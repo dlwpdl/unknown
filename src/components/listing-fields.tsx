@@ -5,7 +5,7 @@ import { SymbolView } from '@/components/symbol-view';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ChillingDateInput } from '@/components/chilling-date-input';
 import { DiscoveryMap } from '@/components/discovery-map';
 import { RaisedActionButton } from '@/components/raised-action-button';
@@ -76,7 +76,7 @@ export function ListingFields({ category, cityId, value, onChange, missing = [],
   category: ListingCategory; cityId: string; value: ListingDraft; onChange: (next: ListingDraft) => void; missing?: ListingMissing[];
   disabled?: boolean; lead?: string; fixedDeal?: boolean;
 }) {
-  const theme = useTheme(), { tr, language } = useLanguage(), { play } = useInteractionFeedback(), clay = useClay();
+  const theme = useTheme(), { tr, language } = useLanguage(), { play } = useInteractionFeedback(), clay = useClay(), clayBox = useClayBox();
   const [picking, setPicking] = useState(false);
   const [extra, setExtra] = useState<string | null>(null); // null: the 직접 추가 field is closed
   const extraNext = extra == null ? value.extras : listingExtras([...value.extras, extra]);
@@ -174,7 +174,8 @@ export function ListingFields({ category, cityId, value, onChange, missing = [],
       {areaButton('만날 곳', '동네까지만 보여요. 집 주소는 적지 않아요.')}
     </>}
 
-    {!!lead && <View style={[styles.preview, { backgroundColor: theme.backgroundElement }]} accessible accessibilityLabel={`${tr('본문 첫 줄 미리보기')}, ${lead}`}>
+    {!!lead && <View style={[styles.preview, clayBox ? styles.clayCard : { backgroundColor: theme.backgroundElement }]} accessible accessibilityLabel={`${tr('본문 첫 줄 미리보기')}, ${lead}`}>
+      {clayBox && <ClayBoxFill kind="tile" />}
       <ThemedText type="caption" themeColor="textSecondary">{tr('본문 첫 줄 미리보기 (구버전 앱에도 이렇게 보여요)')}</ThemedText>
       <ThemedText type="supporting">{lead}</ThemedText>
     </View>}
@@ -238,6 +239,7 @@ const styles = StyleSheet.create({
   multiline: { alignItems: 'flex-start', paddingVertical: Spacing.two },
   input: { flex: 1, minHeight: 44, paddingVertical: 0 },
   multilineInput: { minHeight: 72, textAlignVertical: 'top' },
+  clayCard: { overflow: 'visible' },
   preview: { borderRadius: 12, padding: 12, gap: 4 },
   flex: { flex: 1 },
   center: { textAlign: 'center' },

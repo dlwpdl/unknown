@@ -5,7 +5,7 @@ import { Alert, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SymbolView } from '@/components/symbol-view';
 import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { Pressable, ScrollView, Switch } from '@/components/analytics-controls';
 import { DiscoveryMap, type DiscoveryMarker } from '@/components/discovery-map';
 import { DragSheet } from '@/components/drag-sheet';
@@ -30,7 +30,7 @@ const cityOf = (cityId: string | null | undefined) => CITIES.find(city => city.i
 // so a saved listing or person can never become a pin.
 export function ProfileSavedMap({ overview, homeCityId }: { overview: ProfileOverview; homeCityId: string | null }) {
   const { tr } = useLanguage(), theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
-  const clay = useClay();
+  const clay = useClay(), clayBox = useClayBox();
   const pins = overview.savedPlaces;
   const cities = useMemo(() => savedPlaceCities(pins ?? []), [pins]);
   const markers = useMemo(() => {
@@ -51,7 +51,8 @@ export function ProfileSavedMap({ overview, homeCityId }: { overview: ProfileOve
     const title = own ? tr('첫 장소 저장하기') : locked ? tr('친구가 되면 저장한 곳이 보여요')
       : overview.mapHiddenReason === 'not_shared' ? tr('저장한 곳을 아직 친구에게 보여 주지 않았어요') : tr('아직 지도에 보여 줄 장소가 없어요');
     const body = own ? tr('지도에서 마음에 드는 곳을 저장하면 여기에 모여요.') : locked && cityOf(homeCityId) ? tr('지금은 활동 지역만 보여요 · {0}', tr(cityOf(homeCityId)!.name)) : null;
-    return <Reanimated.View entering={FadeIn.duration(200)} style={[styles.mapEmpty, { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}>
+    return <Reanimated.View entering={FadeIn.duration(200)} style={[styles.mapEmpty, clayBox ? styles.clayCard : { backgroundColor: theme.backgroundElement, borderColor: theme.line }]}>
+      {clayBox && <ClayBoxFill kind="tile" />}
       <SymbolView name={{ ios: own ? 'mappin.and.ellipse' : 'lock', android: own ? 'add_location' : 'lock', web: own ? 'add_location' : 'lock' }} size={24} tintColor={theme.navy} />
       <ThemedText type="smallBold" style={styles.center}>{title}</ThemedText>
       {!!body && <ThemedText type="small" themeColor="textSecondary" style={styles.center}>{body}</ThemedText>}
@@ -87,7 +88,7 @@ export function ProfileSavedMap({ overview, homeCityId }: { overview: ProfileOve
 
 // P2: record tiles. Only counts the server can actually make today; there are no save types such as 가 볼 곳 yet.
 export function ProfileRecordTiles({ overview }: { overview: ProfileOverview }) {
-  const { tr } = useLanguage(), theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback(), reduced = useReducedMotion();
+  const { tr } = useLanguage(), theme = useTheme(), clayBox = useClayBox(), router = useRouter(), { play } = useInteractionFeedback(), reduced = useReducedMotion();
   const tiles: { id: string; value: string; label: string; open?: () => void }[] = [
     { id: 'streak', value: tr('{0}주', count(overview.savedWeekStreak)), label: tr('연속 저장') },
     { id: 'saved', value: count(overview.savedCount), label: tr('저장한 곳'),
@@ -98,7 +99,8 @@ export function ProfileRecordTiles({ overview }: { overview: ProfileOverview }) 
     {tiles.map((tile, index) => <Reanimated.View key={tile.id} entering={reduced ? FadeIn.duration(150) : FadeInDown.delay(index * 60).duration(250)}>
       <Pressable analyticsId={`profile.record.${tile.id}`} accessibilityRole={tile.open ? 'button' : 'text'} disabled={!tile.open}
         accessibilityLabel={`${tile.label} ${tile.value}`} onPress={() => { if (!tile.open) return; play('selection'); tile.open(); }}
-        style={({ pressed }) => [styles.tile, { backgroundColor: pressed && tile.open ? theme.backgroundSelected : theme.backgroundElement }]}>
+        style={({ pressed }) => [styles.tile, clayBox ? [styles.clayCard, { opacity: pressed && tile.open ? 0.8 : 1 }] : { backgroundColor: pressed && tile.open ? theme.backgroundSelected : theme.backgroundElement }]}>
+        {clayBox && <ClayBoxFill kind="tile" />}
         <ThemedText type="subtitle" style={styles.tileValue}>{tile.value}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">{tile.label}{tile.open ? ' ›' : ''}</ThemedText>
       </Pressable>
@@ -197,7 +199,7 @@ export function FriendButton({ overview, nickname, onChanged }: { overview: Prof
 
 // On by default (owner 2026-11-04): with no saved choice the server shares with friends, so the switch starts on too.
 export function ProfileSharingCard() {
-  const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), { me, isAuthed } = useAuth();
+  const { tr } = useLanguage(), theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback(), { me, isAuthed } = useAuth();
   const [state, setState] = useState<{ user: string; on: boolean | null; busy: boolean; error: string } | null>(null);
   const current = state?.user === me.id ? state : null;
   useEffect(() => {
@@ -213,7 +215,8 @@ export function ProfileSharingCard() {
     try { await setProfileSharing(supabase, on); setState({ user: me.id, on, busy: false, error: '' }); play('success'); }
     catch { setState({ user: me.id, on: !on, busy: false, error: tr('바꾸지 못했어요. 다시 시도해 주세요.') }); play('warning'); }
   };
-  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     <View style={styles.cardRow}>
       <View style={styles.grow}>
         <ThemedText type="small">{tr('친구에게 저장한 곳 보여 주기')}</ThemedText>
@@ -228,6 +231,7 @@ export function ProfileSharingCard() {
 }
 
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   card: { borderWidth: 1, borderRadius: 12, padding: Spacing.three, gap: Spacing.two },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 44 },
   mapBlock: { gap: Spacing.two },

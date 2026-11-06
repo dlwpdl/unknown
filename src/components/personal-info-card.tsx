@@ -1,6 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { SymbolView } from '@/components/symbol-view';
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { Pressable } from '@/components/analytics-controls';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -28,7 +28,7 @@ function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nic
   const { setProfileNickname } = useAuth();
   const { tr } = useLanguage();
   const theme = useTheme();
-  const clay = useClay();
+  const clay = useClay(), clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
   const active = useRef(true);
@@ -88,7 +88,8 @@ function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nic
     finally { saving.current = false; if (active.current) setBusy(false); }
   };
 
-  return <View style={[styles.card, { borderColor: theme.line, backgroundColor: theme.card }]}>
+  return <View style={[styles.card, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.card }]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     <NicknameEditor nickname={nickname} onSave={setProfileNickname} />
     <View style={[styles.divider, { backgroundColor: theme.line }]} />
     {!data ? <>
@@ -135,6 +136,7 @@ const styles = StyleSheet.create({
   editRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   editor: { gap: Spacing.three },
   button: { minHeight: 44, paddingHorizontal: Spacing.three, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   clay: { overflow: 'visible', paddingHorizontal: 18 },
   confirm: { gap: Spacing.two }, actions: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: Spacing.two },
 });

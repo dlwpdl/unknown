@@ -4,6 +4,7 @@ import { Platform, Share, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
 import { MerchantBadge } from '@/components/merchant-ui';
 import { RaisedActionButton } from '@/components/raised-action-button';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
@@ -20,7 +21,7 @@ const errors: Record<string, string> = {
 // Owner-only card under 계정 관리: seats come from the server, the token is shown once at creation.
 export function MerchantOperatorInvites({ merchantId, refreshSignal, onChanged }: { merchantId: string; refreshSignal: number; onChanged?: () => void }) {
   const { tr } = useLanguage();
-  const theme = useTheme(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback();
   const [state, setState] = useState<{ key: string; value: MerchantOperatorLinks } | null>(null);
   const [fresh, setFresh] = useState<{ url: string; copied: boolean } | null>(null);
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [revision, setRevision] = useState(0);
@@ -45,7 +46,7 @@ export function MerchantOperatorInvites({ merchantId, refreshSignal, onChanged }
   }
   const value = state?.key === key ? state.value : null;
   const used = value ? value.operators + value.links.length : 0;
-  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
     <View style={styles.row}>
       <ThemedText type="subtitle" accessibilityRole="header" style={styles.grow}>{tr('공동 관리자 초대')}</ThemedText>
       {value && value.limit > 0 && <MerchantBadge label={tr('{0} / {1}명', used, value.limit)} tone={used >= value.limit ? 'warn' : 'accent'} />}
@@ -75,6 +76,7 @@ function SmallButton({ label, onPress, disabled }: { label: string; onPress: () 
 }
 
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   card: { gap: 12, padding: 18, borderWidth: 1, borderRadius: 20 },
   row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
   grow: { flex: 1, minWidth: 0 },

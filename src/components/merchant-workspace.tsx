@@ -138,8 +138,8 @@ function Field({ label, value, onChange, placeholder, numeric = false, signed = 
 }
 function Section({ title, children }: { title: string; children: ReactNode }) {
 
-  const theme = useTheme();
-  return <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="subtitle">{title}</ThemedText>{children}</View>;
+  const theme = useTheme(), clayBox = useClayBox();
+  return <View style={[styles.section, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="subtitle">{title}</ThemedText>{children}</View>;
 }
 function ToolRow({ title, detail, onPress, disabled }: { title: string; detail: string; onPress: () => void; disabled?: boolean }) {
   const theme = useTheme(); const { play } = useInteractionFeedback();
@@ -269,7 +269,7 @@ function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMercha
 function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onChoose, accessChecking = false, businessOnly = false, initialTab = 'overview', layout }: { layout?: 'sidebar'; id: string; refreshSignal: number; onDirty: (dirty: boolean) => void; onConnectionsChanged?: () => void; onChoose?: () => void; accessChecking?: boolean; businessOnly?: boolean; initialTab?: MerchantTab }) {
   const clay = useClay();
   const { tr, language, locale: appLocale } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
   const { me, isAdmin } = useAuth(); const { play } = useInteractionFeedback(), router = useRouter();
   const [revision, setRevision] = useState(0), [tab, setTab] = useState<MerchantTab>(initialTab);
   const [response, setResponse] = useState<{ user: string; revision: number; refreshSignal: number; data: Workspace } | null>(null);
@@ -637,7 +637,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       onGenerate={() => { void startHomeDraft(true); }} onWrite={() => { void openDraft(undefined, true); }} resume={dirty ? () => { setDraftView('composer'); setTab('drafts'); } : undefined}
       recent={recent} onAllPosts={() => selectNav('posts')} aiEnabled={aiAllowed} aiOwner={aiOwner} onOpenAi={() => selectNav('ai')} onOpenReviews={fullAccess ? () => selectNav('reviews') : undefined} busy={busy} />}
     {activeTab === 'overview' && !sidebar && <>
-      <View style={[styles.storeCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      <View style={[styles.storeCard, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <View style={styles.businessHeader}>
           <View style={[styles.storeLogo, { backgroundColor: theme.backgroundSelected }]}><SymbolView name={tileIcon('storefront', 'storefront')} size={26} tintColor={theme.accent} /></View>
           <View style={styles.toolText}><ThemedText type="subtitle">{data.merchant.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr(data.merchant.city_name)} · {data.merchant.owner_verified_at ? tr("비즈니스 소유 확인됨") : tr("비즈니스 소유 확인 대기")}</ThemedText></View>
@@ -783,7 +783,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       </View>
       {menuName !== null && <View style={styles.row2}><View style={styles.half}><Field label={tr("메뉴 이름")} value={menuName} maxLength={30} placeholder={tr("예: 단호박 라떼")} onChange={setMenuName} /></View>
         <Action label={tr("저장")} disabled={!menuName.trim()} onPress={() => saveCostMenu(menuName)} /><Action label={tr("취소")} onPress={() => setMenuName(null)} /></View>}
-      <View style={[styles.storeCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      <View style={[styles.storeCard, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         {calculated ? <>
           <ThemedText type="small" themeColor="textSecondary">{tr("하나 팔면 남는 돈")}</ThemedText>
           <View style={styles.bigRow}><ThemedText type="title" style={calculated.contribution < 0 ? { color: theme.danger } : undefined}>{money(calculated.contribution)}</ThemedText>
@@ -823,7 +823,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
         <View style={styles.row2}><View style={styles.half}><Field label={tr("개당 원가 (CAD)")} value={item.unit_cost} numeric disabled={stockLocked} onChange={(unit_cost) => setItem({ ...item, unit_cost })} /></View><View style={styles.half}><Field label={tr("재고 부족 기준")} value={item.low_stock} numeric disabled={stockLocked} onChange={(low_stock) => setItem({ ...item, low_stock })} /></View></View>
         <Action primary label={tr("품목 저장")} disabled={stockLocked || !item.name.trim() || !item.unit.trim() || !Number.isFinite(amount(item.unit_cost)) || amount(item.unit_cost) < 0 || !Number.isFinite(amount(item.low_stock)) || amount(item.low_stock) < 0} onPress={() => { void run(async () => { await saveMerchantItem(supabase, id, { ...item, unit_cost: amount(item.unit_cost), low_stock: amount(item.low_stock) }); setItem({ id: merchantEventId(), name: '', unit: '개', unit_cost: '0', low_stock: '0' }); setItemOpen(false); }, '품목을 저장했어요. 수량은 아래에서 ±로 바꿔 주세요.'); }} />
       </Section>}
-      {data.items.length > 0 && <View style={[styles.storeCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      {data.items.length > 0 && <View style={[styles.storeCard, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         {shownItems.map((i) => { const delta = (changes[i.id] ?? '').trim(); return <View key={i.id} style={[styles.stockItem, { borderColor: theme.line }]}>
           <View style={styles.toolText}>
             <View style={styles.actions}><ThemedText type="smallBold">{i.name}</ThemedText>{Number(i.quantity) <= Number(i.low_stock) && <MerchantBadge label={tr("부족")} tone="warn" />}
@@ -840,7 +840,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
         </View>; })}
         {!shownItems.length && <ThemedText type="small" themeColor="textSecondary">{tr("부족한 품목이 없어요.")}</ThemedText>}
       </View>}
-      {data.items.length > 0 && <View style={[styles.storeCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      {data.items.length > 0 && <View style={[styles.storeCard, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ThemedText type="smallBold">{stockChanges.length ? stockChanges.map((c) => `${data.items.find((i) => i.id === c.item_id)?.name} ${c.delta > 0 ? '+' : ''}${Number.isFinite(c.delta) ? c.delta : '?'}`).join(' · ') : tr("±로 바꿀 수량을 정해 주세요.")}</ThemedText>
         {stockChanges.length > 0 && <ThemedText type="small" themeColor="textSecondary">{tr("바꾼 품목 {0}개", stockChanges.length)}</ThemedText>}
         <Field label={tr("입출고 사유")} value={stockNote} maxLength={300} placeholder={tr("예: 오전 입고, 주말 행사에 씀")} disabled={stockLocked} onChange={setStockNote} />
@@ -906,6 +906,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
 }
 
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   workspace: { gap: 16, width: '100%', maxWidth: 760, alignSelf: 'center' },
   section: { gap: 14, padding: 18, borderWidth: 1, borderRadius: 20, borderCurve: 'continuous' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
