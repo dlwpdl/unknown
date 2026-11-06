@@ -233,3 +233,13 @@ test('a notice goes after its few seconds, never comes back, and sits above the 
   assert.equal(noticeBottom(usual, screen, [900]), usual, 'never lower than usual');
   assert.equal(noticeBottom(usual, screen, [0, 1200]), usual, 'views off screen or not laid out are ignored');
 });
+
+test('the request sheet shows the sender photo, nickname, level, line and a way to their profile', () => {
+  const source = readFileSync(new URL('../src/components/live-bubbles.tsx', import.meta.url), 'utf8');
+  const sheet = source.slice(source.indexOf('export function LiveReceivedSheet'), source.indexOf('export type LiveOpen'));
+  assert.match(sheet, /loadNotificationActors\(supabase, \[senderId\]\)/, 'read the way notifications read it, so no new server function');
+  assert.match(sheet, /<Person person=\{request\.sender\} photo=\{photo\} demo=\{request\.demo\} onProfile=\{profile\} \/>/);
+  assert.match(source, /photo \? <ClayPhoto uri=\{photo\} size=\{48\} \/> : <InitialAvatar name=\{person\.nickname\} \/>/, 'no photo stays the first letter');
+  assert.match(sheet, /GREETINGS\[request\.greeting\]/);
+  assert.match(source.slice(source.indexOf('function Person'), source.indexOf('const locationProblem')), /TrustBadge/);
+});

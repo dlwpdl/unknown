@@ -6,7 +6,7 @@ import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { CategoryIcon } from '@/components/category-icon';
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayPhoto, ClayPillFill, useClay } from '@/components/clay';
 import { DiscoveryMap, type DiscoveryMarker } from '@/components/discovery-map';
 import { DragSheet } from '@/components/drag-sheet';
 import { InitialAvatar, Tag } from '@/components/list-card';
@@ -22,7 +22,7 @@ import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
-import { blockUser } from '@/lib/community-data';
+import { blockUser, loadNotificationActors } from '@/lib/community-data';
 import { hideContent } from '@/lib/content-visibility';
 import { DISCOVERY_CATEGORIES } from '@/lib/discovery';
 import { loadPublicFeed, relativeTime } from '@/lib/feed-data';
@@ -183,10 +183,10 @@ function Secondary({ label, onPress, analyticsId, disabled }: { label: string; o
   </Pressable>;
 }
 // No onProfile for a 글링 pin: it names no account.
-function Person({ person, demo, onProfile }: { person: LivePerson; demo?: boolean; onProfile?: () => void }) {
+function Person({ person, photo, demo, onProfile }: { person: LivePerson; photo?: string; demo?: boolean; onProfile?: () => void }) {
   const { tr } = useLanguage(), { play } = useInteractionFeedback();
   return <View style={styles.person}>
-    <InitialAvatar name={person.nickname} />
+    {photo ? <ClayPhoto uri={photo} size={48} /> : <InitialAvatar name={person.nickname} />}
     <View style={styles.flex}>
       <View style={styles.nameRow}><ThemedText type="smallBold" numberOfLines={1} style={styles.shrink}>{person.nickname}</ThemedText>
         <TrustBadge trustLevel={person.trustLevel === 1 ? undefined : person.trustLevel} />{demo && <Tag label={tr('개발용 예시')} tone="quiet" />}</View>
@@ -480,7 +480,15 @@ export function LiveRequestSheet({ visible, bubble, map, now, onClose, onDismiss
 /** What the bubble's owner sees: who asked, with which line, and accept or decline. */
 export function LiveReceivedSheet({ visible, request, onClose }: { visible: boolean; request: LiveRequest | null; onClose: () => void }) {
   const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), router = useRouter();
-  const [busy, setBusy] = useState(false), [problem, setProblem] = useState(''), clear = useKeepClearOfNotice();
+  const [busy, setBusy] = useState(false), [problem, setProblem] = useState(''), [photo, setPhoto] = useState<string>(), clear = useKeepClearOfNotice();
+  // The sender's photo (owner 2026-11-06), read the way notifications read it; no photo or a failed read stays the first letter. The sheet remounts per request.
+  const senderId = request && !request.demo ? request.sender.id : null;
+  useEffect(() => {
+    if (!senderId) return;
+    let active = true;
+    void loadNotificationActors(supabase, [senderId]).then(actors => { if (active) setPhoto(actors.get(senderId)?.avatarUrl); }).catch(() => undefined);
+    return () => { active = false; };
+  }, [senderId]);
   if (!request) return <DragSheet visible={false} onClose={onClose}><View /></DragSheet>;
   const name = request.sender.nickname;
   const respond = async (response: 'accepted' | 'declined') => {
@@ -498,7 +506,7 @@ export function LiveReceivedSheet({ visible, request, onClose }: { visible: bool
   const profile = () => { if (request.demo) liveNotice(tr('개발용 예시라 프로필이 없어요')); else { onClose(); router.push({ pathname: '/user/[id]', params: { id: request.sender.id, nickname: name } }); } };
   return <DragSheet visible={visible} onClose={onClose} dismissible={!busy} title={tr('대화 신청')}>
     <ScrollView analyticsId="livemap.received" style={styles.scroll} contentContainerStyle={styles.body}>
-      <Person person={request.sender} demo={request.demo} onProfile={profile} />
+      <Person person={request.sender} photo={photo} demo={request.demo} onProfile={profile} />
       <View style={[styles.quote, { backgroundColor: theme.backgroundElement }]}>
         {request.waveReply ? <>
           <ThemedText type="section">{tr('내 손 흔들기에 답했어요')}</ThemedText>
