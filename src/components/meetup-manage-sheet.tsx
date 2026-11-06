@@ -24,7 +24,8 @@ export function MeetupManageSheet({ visible, onClose, actions, title }: { visibl
   const [open, setOpen] = useState(true), [shown, setShown] = useState(visible);
   if (visible !== shown) { setShown(visible); if (visible) setOpen(true); }
   const choose = (action: () => void) => { pending.current = action; setOpen(false); };
-  const rows = (list: Action[]) => <ListCard>{list.map(action => <Pressable key={action.key} analyticsId={action.analyticsId ?? `chat.manage.${action.key}`} accessibilityRole="button" accessibilityLabel={action.hint ? `${action.label}, ${action.hint}` : action.label}
+  return <DragSheet visible={visible && open} onClose={() => setOpen(false)} title={title ?? tr('모임 관리')} onDismissed={() => { const action = pending.current; pending.current = null; onClose(); action?.(); }}>
+    {[false, true].map(danger => { const list = actions.filter(action => !!action.danger === danger); return list.length > 0 && <View key={String(danger)} style={danger && styles.dangerGap}><ListCard>{list.map(action => <Pressable key={action.key} analyticsId={action.analyticsId ?? `chat.manage.${action.key}`} accessibilityRole="button" accessibilityLabel={action.hint ? `${action.label}, ${action.hint}` : action.label}
       onPress={() => { play('selection'); choose(action.onPress); }}
       style={({ pressed }) => [styles.row, pressed && { backgroundColor: theme.backgroundSelected }]}>
       <View style={[styles.icon, { backgroundColor: theme.background }]}>
@@ -34,10 +35,7 @@ export function MeetupManageSheet({ visible, onClose, actions, title }: { visibl
         <ThemedText type="default" style={[styles.bodyText, action.danger ? { color: theme.danger } : undefined]}>{action.label}</ThemedText>
         {!!action.hint && <ThemedText type="small" themeColor="textSecondary" style={[styles.helper, styles.hint]}>{action.hint}</ThemedText>}
       </View>
-    </Pressable>)}</ListCard>;
-  return <DragSheet visible={visible && open} onClose={() => setOpen(false)} title={title ?? tr('모임 관리')} onDismissed={() => { const action = pending.current; pending.current = null; onClose(); action?.(); }}>
-    {actions.some(action => !action.danger) && rows(actions.filter(action => !action.danger))}
-    {actions.some(action => action.danger) && <View style={styles.dangerGap}>{rows(actions.filter(action => action.danger))}</View>}
+    </Pressable>)}</ListCard></View>; })}
   </DragSheet>;
 }
 

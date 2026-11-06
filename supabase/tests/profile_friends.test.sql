@@ -195,5 +195,30 @@ set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select is(jsonb_array_length(public.get_my_friends()->'friends'),0,'an operated character never shows in the friend list');
 select is(public.get_profile_overview('e5100000-0000-4000-8000-000000000001')->>'friendCount','0','an operated character is not counted as a friend');
+-- Similar businesses must not reveal one person's list through a few new accounts (PR #102 security review).
+reset role;
+insert into private.merchants(id,name,city_id,status,consent,consent_note,record_kind,owner_id,owner_verified_at) values
+ ('e5110000-0000-4000-8000-000000000003','Friend bakery','friend-test','trial','granted','Synthetic rollback fixture','business','e5100000-0000-4000-8000-000000000006',now()),
+ ('e5110000-0000-4000-8000-000000000004','Friend diner','friend-test','trial','granted','Synthetic rollback fixture','business','e5100000-0000-4000-8000-000000000006',now());
+insert into auth.users(id,email,created_at) select ('e5100000-0000-4000-8000-0000000001'||lpad(i::text,2,'0'))::uuid,'friend-old'||i||'@example.test',now()-interval '8 days' from generate_series(1,10) i;
+insert into public.profiles(id,nickname,city_id) select ('e5100000-0000-4000-8000-0000000001'||lpad(i::text,2,'0'))::uuid,'Old'||i,'friend-test' from generate_series(1,10) i;
+create temp table friend_old on commit drop as select i,('e5100000-0000-4000-8000-0000000001'||lpad(i::text,2,'0'))::uuid id from generate_series(1,10) i;
+insert into private.saved_merchants(user_id,merchant_id) select id,'e5110000-0000-4000-8000-000000000001' from friend_old where i<=9;
+insert into private.saved_merchants(user_id,merchant_id) select id,'e5110000-0000-4000-8000-000000000003' from friend_old where i<=5;
+-- The diner has four week-old members and one new account.
+insert into private.saved_merchants(user_id,merchant_id) select id,'e5110000-0000-4000-8000-000000000004' from friend_old where i<=4;
+insert into private.saved_merchants(user_id,merchant_id) values('e5100000-0000-4000-8000-000000000003','e5110000-0000-4000-8000-000000000004');
+insert into private.saved_merchants(user_id,merchant_id) values('e5100000-0000-4000-8000-000000000003','e5110000-0000-4000-8000-000000000001') on conflict do nothing;
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5100000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select is(public.get_merchant_saves('e5110000-0000-4000-8000-000000000001')->'similar','[]'::jsonb,'nine week-old savers are not enough to show similar businesses');
+reset role;
+insert into private.saved_merchants(user_id,merchant_id) select id,'e5110000-0000-4000-8000-000000000001' from friend_old where i=10;
+set local role authenticated;
+select is((select jsonb_agg(x->>'name') from jsonb_array_elements(public.get_merchant_saves('e5110000-0000-4000-8000-000000000001')->'similar') x),'["Friend bakery"]'::jsonb,'only a business five week-old members saved shows; a new account does not count');
+set local role anon;
+select set_config('request.jwt.claims','{"role":"anon"}',true);
+select is(public.get_merchant_saves('e5110000-0000-4000-8000-000000000001')->'similar','[]'::jsonb,'visitors who are not signed in see no similar businesses');
+reset role;
 select * from finish();
 rollback;

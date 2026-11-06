@@ -26,12 +26,31 @@ insert into private.saved_places(user_id,city_id,place_key)
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select is((public.get_place_saves('ps-test','osm:node:830001')->>'saverCount')::integer,4,'everyone counts toward the saver number');
-select is(public.get_place_saves('ps-test','osm:node:830001')->'similar','[]'::jsonb,'the viewer and a hidden saver do not make up the 3 needed');
+select is(public.get_place_saves('ps-test','osm:node:830001')->'similar','[]'::jsonb,'a place few people saved shows no similar places');
 reset role;
-insert into private.saved_places(user_id,city_id,place_key) values
- ('e5170000-0000-4000-8000-000000000005','ps-test','osm:node:830001'),('e5170000-0000-4000-8000-000000000005','ps-test','osm:node:830002');
+-- Similar places must not reveal one person's list through a few new accounts (PR #102 security review).
+insert into auth.users(id,email,created_at) select ('e5170000-0000-4000-8000-0000000001'||lpad(i::text,2,'0'))::uuid,'ps-old'||i||'@example.test',now()-interval '8 days' from generate_series(1,10) i;
+insert into public.profiles(id,nickname,city_id) select ('e5170000-0000-4000-8000-0000000001'||lpad(i::text,2,'0'))::uuid,'Old'||i,'ps-test' from generate_series(1,10) i;
+create temp table ps_old on commit drop as select i,('e5170000-0000-4000-8000-0000000001'||lpad(i::text,2,'0'))::uuid id from generate_series(1,10) i;
+insert into private.saved_places(user_id,city_id,place_key) select id,'ps-test',k from ps_old,unnest(array['osm:node:830001','osm:node:830002']) k where i<=9;
 set local role authenticated;
-select is(public.get_place_saves('ps-test','osm:node:830001')->'similar'->0->>'placeKey','osm:node:830002','three other sharing members show the similar place');
+select is(public.get_place_saves('ps-test','osm:node:830001')->'similar','[]'::jsonb,'nine week-old savers are not enough to show similar places');
+reset role;
+insert into private.saved_places(user_id,city_id,place_key) select id,'ps-test','osm:node:830001' from ps_old where i=10;
+-- 830003: four old members and three new accounts. 830004: five old members. 830005: four old members and one old member who hid their saves.
+insert into private.saved_places(user_id,city_id,place_key) select id,'ps-test','osm:node:830003' from ps_old where i<=4;
+insert into private.saved_places(user_id,city_id,place_key) values
+ ('e5170000-0000-4000-8000-000000000002','ps-test','osm:node:830003'),('e5170000-0000-4000-8000-000000000003','ps-test','osm:node:830003'),('e5170000-0000-4000-8000-000000000005','ps-test','osm:node:830003'),('e5170000-0000-4000-8000-000000000005','ps-test','osm:node:830001');
+insert into private.saved_places(user_id,city_id,place_key) select id,'ps-test','osm:node:830004' from ps_old where i<=5;
+update auth.users set created_at=now()-interval '8 days' where id='e5170000-0000-4000-8000-000000000004';
+insert into private.saved_places(user_id,city_id,place_key) select id,'ps-test','osm:node:830005' from ps_old where i<=4;
+insert into private.saved_places(user_id,city_id,place_key) values('e5170000-0000-4000-8000-000000000004','ps-test','osm:node:830005');
+set local role authenticated;
+select is((select jsonb_agg(x->>'placeKey' order by x->>'placeKey') from jsonb_array_elements(public.get_place_saves('ps-test','osm:node:830001')->'similar') x),'["osm:node:830002","osm:node:830004"]'::jsonb,'only places five week-old sharing members saved show; new accounts and hidden savers do not count');
+set local role anon;
+select set_config('request.jwt.claims','{"role":"anon"}',true);
+select is(public.get_place_saves('ps-test','osm:node:830001')->'similar','[]'::jsonb,'visitors who are not signed in see no similar places');
+set local role authenticated;
 select is(public.get_place_saves('nope','osm:node:830001'),null::jsonb,'an unknown city returns nothing');
 
 -- G1 저장 종류: 가 봤어요 stays on the saved key, 가 보고 싶어요 clears it, null unsaves.

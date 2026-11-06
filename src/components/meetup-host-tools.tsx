@@ -125,7 +125,7 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
     else Alert.alert(title, message, [{ text: say('취소', 'Cancel'), style: 'cancel' }, { text: title, style: 'destructive', onPress: run }]);
   };
   const locked = busy || loading;
-  const button = [styles.button, clay ? styles.clayButton : { borderColor: theme.line }, { opacity: locked ? 0.5 : 1 }], dangerButton = [...button, !clay && { borderColor: theme.danger }], fill = clay && <ClayPillFill kind="white" />;
+  const button = [styles.button, clay ? styles.clayButton : { borderColor: theme.line }, { opacity: locked ? 0.5 : 1 }], fill = clay && <ClayPillFill kind="white" />;
   const ownInvitation = state?.cohosts.find(member => member.userId === me.id && member.status === 'pending');
   const canInviteCohost = !!(state?.canInviteCohost ?? state?.canInvite);
   const showPanel = waitlistOnly ? !!state && !state.isHost && (!!state.waitlist || state.canJoinWaitlist) : !!state && (state.isHost || state.isCohost || !!ownInvitation);

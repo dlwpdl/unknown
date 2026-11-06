@@ -186,7 +186,6 @@ export function MerchantWorkspace(props: WorkspaceProps) {
 }
 function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMerchantId, initialTab, assignedOnly = false, onBusinessesChanged, onCityChange, layout }: WorkspaceProps) {
   const { tr } = useLanguage();
-  const clay = useClay();
   const { me, isAuthed, isAdmin } = useAuth();
   const [response, setResponse] = useState<{ user: string; rows: BusinessMerchant[]; revision: number; refreshSignal: number } | null>(null);
   const [selected, setSelected] = useState<string | null>(merchantId ?? initialMerchantId ?? null);

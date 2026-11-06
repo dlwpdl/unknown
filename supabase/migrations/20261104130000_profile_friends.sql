@@ -226,7 +226,7 @@ language sql stable security definer set search_path='' as $$
 $$;
 
 -- Who saved a business: a member count, plus the viewer's friends who share their saved places. A similar place needs
--- at least 3 members who saved both, so one person's saves never show through.
+-- at least 5 week-old members who saved both, from a business at least 10 such members saved, and only members see it, so one person's saves never show through.
 create function public.get_merchant_saves(p_merchant_id uuid) returns jsonb
 language plpgsql stable security definer set search_path='' as $$
 declare uid uuid:=auth.uid(); v_city text; week_start timestamptz; first_id uuid;
@@ -252,7 +252,7 @@ begin
         left join private.profile_sharing ps on ps.user_id=s.user_id
         where coalesce(ps.saved_places_to_friends,true) and uid is not null and s.user_id<>uid and private.are_friends(uid,s.user_id) and private.friend_pair_ok(uid,s.user_id)
         order by s.saved_at desc limit 20) f),
-    'similar',(select coalesce(jsonb_agg(jsonb_build_object('merchantId',o.merchant_id,'name',o.name,'saverCount',o.savers,'weekCount',o.week_count)
+    'similar',case when uid is null or (select count(*) from private.merchant_savers(p_merchant_id) s join auth.users u on u.id=s.user_id where u.created_at<=now()-interval '7 days')<10 then '[]'::jsonb else (select coalesce(jsonb_agg(jsonb_build_object('merchantId',o.merchant_id,'name',o.name,'saverCount',o.savers,'weekCount',o.week_count)
         order by o.together desc,o.savers desc,o.merchant_id),'[]'::jsonb)
       from (select co.merchant_id,m.name,co.together,
           (select count(*)::integer from private.merchant_savers(co.merchant_id)) savers,
@@ -262,11 +262,12 @@ begin
             union all
             select s.user_id,l.merchant_id from private.merchant_savers(p_merchant_id) s join private.saved_places sp on sp.user_id=s.user_id
               join private.webshop_place_links l on l.place_key=sp.place_key and l.city_id=sp.city_id
-          ) x left join private.profile_sharing ps on ps.user_id=x.user_id
-          where x.merchant_id<>p_merchant_id and x.user_id is distinct from uid and coalesce(ps.saved_places_to_friends,true) group by x.merchant_id having count(distinct x.user_id)>=3) co
+          ) x join auth.users u on u.id=x.user_id and u.created_at<=now()-interval '7 days'
+          left join private.profile_sharing ps on ps.user_id=x.user_id
+          where x.merchant_id<>p_merchant_id and x.user_id is distinct from uid and coalesce(ps.saved_places_to_friends,true) group by x.merchant_id having count(distinct x.user_id)>=5) co
         join private.merchants m on m.id=co.merchant_id and m.city_id=v_city and m.consent='granted'
         where public.get_merchant_profile(co.merchant_id) is not null
-        order by co.together desc,savers desc,co.merchant_id limit 3) o));
+        order by co.together desc,savers desc,co.merchant_id limit 3) o) end);
 end $$;
 
 -- Blocking someone, or reporting them or anything they wrote, ends the friendship or the pending request.

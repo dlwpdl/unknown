@@ -12,7 +12,7 @@ language sql stable security definer set search_path='' as $$
   group by x.user_id
 $$;
 
--- A similar place needs at least 3 members who saved both, so one person's saves never show through. Only place keys
+-- A similar place needs at least 5 week-old members who saved both, from a place at least 10 such members saved, and only members see it, so one person's saves never show through (PR #102 review). Only place keys
 -- leave the database; the app names them from its own catalog and drops keys it does not know, so up to 5 come back.
 create function public.get_place_saves(p_city_id text,p_place_key text) returns jsonb
 language plpgsql stable security definer set search_path='' as $$
@@ -37,18 +37,19 @@ begin
         left join private.profile_sharing ps on ps.user_id=s.user_id
         where coalesce(ps.saved_places_to_friends,true) and uid is not null and s.user_id<>uid and private.are_friends(uid,s.user_id) and private.friend_pair_ok(uid,s.user_id)
         order by s.saved_at desc limit 20) f),
-    'similar',(select coalesce(jsonb_agg(jsonb_build_object('placeKey',o.place_key,'saverCount',o.savers,'weekCount',o.week_count)
+    'similar',case when uid is null or (select count(*) from private.place_savers(p_city_id,p_place_key) s join auth.users u on u.id=s.user_id where u.created_at<=now()-interval '7 days')<10 then '[]'::jsonb else (select coalesce(jsonb_agg(jsonb_build_object('placeKey',o.place_key,'saverCount',o.savers,'weekCount',o.week_count)
         order by o.together desc,o.savers desc,o.place_key),'[]'::jsonb)
       from (select co.place_key,co.together,
           (select count(*)::integer from private.place_savers(p_city_id,co.place_key)) savers,
           (select count(*)::integer from private.place_savers(p_city_id,co.place_key) w where w.saved_at>=week_start) week_count
         from (select sp.place_key,count(distinct sp.user_id) together
             from private.place_savers(p_city_id,p_place_key) s join private.saved_places sp on sp.user_id=s.user_id and sp.city_id=p_city_id
+            join auth.users u on u.id=s.user_id and u.created_at<=now()-interval '7 days'
             left join private.profile_sharing ps on ps.user_id=s.user_id
-            -- The viewer and anyone who hid their saves do not count, so a few sock accounts cannot reveal one person's list.
+            -- The viewer, new accounts and anyone who hid their saves do not count, so a few sock accounts cannot reveal one person's list.
             where sp.place_key<>p_place_key and s.user_id is distinct from uid and coalesce(ps.saved_places_to_friends,true)
-            group by sp.place_key having count(distinct sp.user_id)>=3) co
-        order by co.together desc,savers desc,co.place_key limit 5) o));
+            group by sp.place_key having count(distinct sp.user_id)>=5) co
+        order by co.together desc,savers desc,co.place_key limit 5) o) end);
 end $$;
 
 do $$ declare signature text; begin
