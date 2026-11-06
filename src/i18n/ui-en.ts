@@ -3344,7 +3344,7 @@ export const uiEnglish: Record<string, string> = {
   "{0} 참석 후기": "Attendance review · {0}",
   "이 회차 후기는 반영되었어요.": "Your review for this session is live.",
   "이 회차 후기는 제출했어요. 검토 상태에 따라 공개돼요.": "Your review for this session is in. It’ll be shown once it passes moderation.",
-  "{0} 기준": "{0} time",
+  "{0} 기준": "{0}",
   "일정은 {0} 기준이에요.": "Times are in {0}.",
   "{0}님이 궁금해요": "{0} wants to get to know you",
   "{0}님의 모임 프로필": "{0}’s meetup profile",
