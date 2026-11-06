@@ -6,6 +6,7 @@ import { Modal, Platform, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ClayPillFill, useClay } from '@/components/clay';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { animateLayout } from '@/components/disclosure';
 import { PopIn } from '@/components/state-card';
@@ -44,6 +45,7 @@ const TOUR: { icon: Icon; title: string; body: string }[] = [
 export function StartGuide({ cityName, onPickCity, onOpenMeetups }: { cityName: string; onPickCity: () => void; onOpenMeetups: () => void }) {
   const { tr } = useLanguage();
   const theme = useTheme();
+  const clay = useClay();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
   const [state, setState] = useState<GuideState | null>(null);
@@ -126,7 +128,8 @@ export function StartGuide({ cityName, onPickCity, onOpenMeetups }: { cityName: 
             ))}
             <Pressable analyticsId="start-guide.tour.done" accessibilityRole="button"
               onPress={() => { play('selection'); setTouring(false); complete('tour'); }}
-              style={({ pressed }) => [ControlStyles.action, styles.tourDone, controlPresentation(theme, { tone: 'primary', pressed }).container]}>
+              style={({ pressed }) => [ControlStyles.action, styles.tourDone, controlPresentation(theme, { tone: 'primary', pressed, clay }).container]}>
+              {clay && <ClayPillFill kind="cta" />}
               <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr('알겠어요')}</ThemedText>
             </Pressable>
           </ScrollView>

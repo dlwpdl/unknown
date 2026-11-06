@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 
+import { ClayPillFill, useClay } from '@/components/clay';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
 import { useFriendShareNotice } from '@/components/profile-overview';
@@ -23,6 +24,7 @@ import { supabase } from '@/lib/supabase';
 // Friend requests and friends of the signed-in member. Nobody else's requests are ever readable (get_my_friends).
 export default function FriendsScreen() {
   const { tr } = useLanguage(), theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback(), reduced = useReducedMotion();
+  const clay = useClay();
   const { me, isAuthed } = useAuth();
   const [result, setResult] = useState<{ user: string; friends: MyFriends | null; failed: boolean } | null>(null);
   const [busy, setBusy] = useState<string | null>(null), [error, setError] = useState(''), [revision, setRevision] = useState(0);
@@ -49,7 +51,8 @@ export default function FriendsScreen() {
     <Pressable analyticsId={`profile.friends.${action}`} accessibilityRole="button" accessibilityLabel={`${person.nickname}, ${label}`}
       accessibilityState={{ disabled: !!busy, busy: busy === person.id }} disabled={!!busy}
       onPress={() => { play('selection'); if (action === 'accept') void notice.confirm(() => void act(person, action)); else void act(person, action); }}
-      style={({ pressed }) => [ControlStyles.pill, styles.border, controlPresentation(theme, { tone: primary ? 'primary' : 'secondary', pressed, busy: busy === person.id }).container]}>
+      style={({ pressed }) => [ControlStyles.pill, styles.border, controlPresentation(theme, { tone: primary ? 'primary' : 'secondary', pressed, busy: busy === person.id, clay }).container]}>
+      {clay && <ClayPillFill kind={primary ? 'cta' : 'white'} />}
       <ThemedText type="smallBold" style={controlPresentation(theme, { tone: primary ? 'primary' : 'secondary' }).text}>{label}</ThemedText>
     </Pressable>;
   const section = (id: string, title: string, people: FriendPerson[], actions: (person: FriendPerson) => ReactNode) => !!people.length &&

@@ -5,6 +5,7 @@ import { Alert, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { Pressable, ScrollView, Switch } from '@/components/analytics-controls';
 import { DiscoveryMap, type DiscoveryMarker } from '@/components/discovery-map';
 import { DragSheet } from '@/components/drag-sheet';
@@ -29,6 +30,7 @@ const cityOf = (cityId: string | null | undefined) => CITIES.find(city => city.i
 // so a saved listing or person can never become a pin.
 export function ProfileSavedMap({ overview, homeCityId }: { overview: ProfileOverview; homeCityId: string | null }) {
   const { tr } = useLanguage(), theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
+  const clay = useClay();
   const pins = overview.savedPlaces;
   const cities = useMemo(() => savedPlaceCities(pins ?? []), [pins]);
   const markers = useMemo(() => {
@@ -55,7 +57,8 @@ export function ProfileSavedMap({ overview, homeCityId }: { overview: ProfileOve
       {!!body && <ThemedText type="small" themeColor="textSecondary" style={styles.center}>{body}</ThemedText>}
       {own && <Pressable analyticsId="profile.map.first-save" accessibilityRole="button" accessibilityLabel={tr('지도에서 장소 찾기')}
         onPress={() => { play('selection'); router.push('/map'); }}
-        style={({ pressed }) => [ControlStyles.pill, styles.border, controlPresentation(theme, { tone: 'primary', pressed }).container]}>
+        style={({ pressed }) => [ControlStyles.pill, styles.border, controlPresentation(theme, { tone: 'primary', pressed, clay }).container]}>
+        {clay && <ClayPillFill kind="cta" />}
         <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr('지도에서 장소 찾기')}</ThemedText>
       </Pressable>}
     </Reanimated.View>;
@@ -107,6 +110,7 @@ const NOTICE_KEY = 'gling.friend-share-notice.v1:';
 // Seen is kept on this device per member; a member who already turned sharing off gets no notice.
 export function useFriendShareNotice() {
   const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), { me } = useAuth();
+  const clay = useClay();
   const [pending, setPending] = useState<(() => void) | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const checking = useRef(false);
   const confirm = async (run: () => void) => {
@@ -135,7 +139,8 @@ export function useFriendShareNotice() {
   const action = (id: string, label: string, hide: boolean) =>
     <Pressable analyticsId={`friend.notice.${id}`} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: busy, busy: busy && hide }}
       disabled={busy} onPress={() => void finish(hide)}
-      style={({ pressed }) => [ControlStyles.action, styles.border, controlPresentation(theme, { tone: hide ? 'secondary' : 'primary', pressed, busy: busy && hide }).container]}>
+      style={({ pressed }) => [ControlStyles.action, styles.border, controlPresentation(theme, { tone: hide ? 'secondary' : 'primary', pressed, busy: busy && hide, clay }).container]}>
+      {clay && <ClayPillFill kind={hide ? 'white' : 'cta'} />}
       <ThemedText type="smallBold" style={controlPresentation(theme, { tone: hide ? 'secondary' : 'primary' }).text}>{label}</ThemedText>
     </Pressable>;
   const sheet = <DragSheet visible={!!pending} dismissible={!busy} onClose={() => setPending(null)} title={tr('저장한 곳은 친구에게 보여요')}>
@@ -153,6 +158,7 @@ export function useFriendShareNotice() {
 // the server refuses those with FRIEND_UNAVAILABLE, so the screen never gives an operated account away.
 export function FriendButton({ overview, nickname, onChanged }: { overview: ProfileOverview; nickname: string; onChanged: (next: FriendshipResult) => void }) {
   const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), { isAuthed, promptLogin } = useAuth();
+  const clay = useClay();
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const notice = useFriendShareNotice();
   const state = overview.friendship;
@@ -166,7 +172,8 @@ export function FriendButton({ overview, nickname, onChanged }: { overview: Prof
   const button = (id: string, label: string, onPress: () => void, primary: boolean, hint?: string) =>
     <Pressable key={id} analyticsId={`user.friend.${id}`} accessibilityRole="button" accessibilityLabel={label} accessibilityHint={hint}
       accessibilityState={{ disabled: busy, busy }} disabled={busy} onPress={() => { play('selection'); onPress(); }}
-      style={({ pressed }) => [ControlStyles.action, styles.border, styles.grow, controlPresentation(theme, { tone: primary ? 'primary' : 'secondary', pressed, busy }).container]}>
+      style={({ pressed }) => [ControlStyles.action, styles.border, styles.grow, controlPresentation(theme, { tone: primary ? 'primary' : 'secondary', pressed, busy, clay }).container]}>
+      {clay && <ClayPillFill kind={primary ? 'cta' : 'white'} />}
       <ThemedText type="smallBold" style={controlPresentation(theme, { tone: primary ? 'primary' : 'secondary' }).text}>{label}</ThemedText>
     </Pressable>;
   if (!isAuthed) return <View style={styles.row}>{button('request', tr('친구 추가'), () => promptLogin(tr('친구를 추가하려면 로그인해 주세요.')), true)}</View>;

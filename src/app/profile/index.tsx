@@ -1,4 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { ChatIdentitySwitcher } from '@/components/chat-identity-switcher';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
@@ -34,6 +35,7 @@ import { supabase } from '@/lib/supabase';
 export default function ProfileScreen() {
   const { tr, t, locale: appLocale } = useLanguage();
   const theme = useTheme();
+  const clay = useClay();
   const hidden = useContentVisibility();
   const router = useRouter();
   const reducedMotion = useReducedMotion();
@@ -186,12 +188,14 @@ export default function ProfileScreen() {
         <View style={styles.heroActions}>
           <Pressable analyticsId="app_profile_index.invite" accessibilityRole="button" accessibilityLabel={tr('친구 초대')} accessibilityHint={tr('초대 링크와 받은 이용권을 봐요')}
             onPress={() => { play('selection'); router.push('/profile/invite'); }}
-            style={({ pressed }) => [ControlStyles.action, styles.heroAction, controlPresentation(theme, { tone: 'primary', pressed }).container]}>
+            style={({ pressed }) => [ControlStyles.action, styles.heroAction, controlPresentation(theme, { tone: 'primary', pressed, clay }).container]}>
+            {clay && <ClayPillFill kind="cta" />}
             <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr('친구 초대')}</ThemedText>
           </Pressable>
           <Pressable analyticsId="profile.edit" accessibilityRole="button" accessibilityLabel={tr('프로필 수정')} accessibilityHint={tr('닉네임, 활동 지역, 화면 모드를 바꿔요')}
             onPress={() => { play('selection'); router.push('/profile/settings'); }}
-            style={({ pressed }) => [ControlStyles.action, styles.heroAction, controlPresentation(theme, { pressed }).container]}>
+            style={({ pressed }) => [ControlStyles.action, styles.heroAction, controlPresentation(theme, { pressed, clay }).container]}>
+            {clay && <ClayPillFill kind="white" />}
             <ThemedText type="smallBold">{tr('프로필 수정')}</ThemedText>
           </Pressable>
         </View>

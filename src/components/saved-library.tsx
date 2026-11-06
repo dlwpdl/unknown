@@ -3,6 +3,7 @@ import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
+import { ClayPillFill, useClay } from '@/components/clay';
 import { Pressable } from '@/components/analytics-controls';
 import { UberOrderNotice } from '@/components/business-webshop';
 import { CityPlacePhoto } from '@/components/city-place-photo';
@@ -28,10 +29,12 @@ export function SavedLibraryButton({ analyticsId: id, testID, label, onPress, di
   analyticsId: string; testID?: string; label: string; onPress: () => void; disabled?: boolean; selected?: boolean; primary?: boolean;
 }) {
   const theme = useTheme(), { play } = useInteractionFeedback();
+  const clay = useClay();
   return <Pressable analyticsId={id} testID={testID} accessibilityRole="button" accessibilityLabel={label}
     accessibilityState={{ disabled, selected }} disabled={disabled}
     onPress={() => { play('selection'); onPress(); }}
-    style={({ pressed }) => [ControlStyles.pill, styles.action, controlPresentation(theme, { tone: primary ? 'primary' : 'secondary', pressed, selected, disabled }).container]}>
+    style={({ pressed }) => [ControlStyles.pill, styles.action, controlPresentation(theme, { tone: primary ? 'primary' : 'secondary', pressed, selected, disabled, clay }).container]}>
+    {clay && <ClayPillFill kind={primary || selected ? 'cta' : 'white'} />}
     <ThemedText type="label" style={controlPresentation(theme, { tone: primary ? 'primary' : 'secondary', selected }).text}>{label}</ThemedText>
   </Pressable>;
 }
