@@ -237,6 +237,8 @@ export const uiEnglish: Record<string, string> = {
   "공유할 사진을 불러오지 못했어요. 다시 불러오거나 모임 프로필에서 사진을 바꿔 주세요.": "Couldn’t load a photo selected for sharing. Retry, or replace it in your meetup profile.",
   "미리보기 불가": "Preview unavailable",
   "모임 정보를 불러오지 못했어요": "Couldn’t load meetup details",
+  "공지를 불러오지 못했어요": "Couldn’t load notices",
+  "멤버를 불러오지 못했어요": "Couldn’t load members",
   "모임에서 쓸 이름과 공개 범위를 확인해 주세요. 기존 소개는 남아 있어요.": "Check your meetup name and sharing settings. Your introduction is still here.",
   "모임 프로필 확인하기": "Review meetup profile",
   "모임 참여 요청이 도착했어요.": "Someone wants to join your meetup.",
