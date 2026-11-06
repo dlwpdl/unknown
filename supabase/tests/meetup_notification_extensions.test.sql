@@ -19,7 +19,8 @@ insert into public.profiles(id,nickname,city_id) select id,'일정검사102-'||r
 insert into auth.sessions(id,user_id,created_at) values ('a1020000-0000-0000-0000-000000000020','a1020000-0000-0000-0000-000000000001',now());
 insert into private.push_devices(user_id,session_id,token) values ('a1020000-0000-0000-0000-000000000001','a1020000-0000-0000-0000-000000000020','ExpoPushToken[reminder102testdevice]');
 insert into public.notification_preferences(user_id,push_enabled) values ('a1020000-0000-0000-0000-000000000001',true);
-create temp table reminder_clock as select (((now() at time zone 'America/Vancouver')::date+3)+time '15:00') at time zone 'America/Vancouver' as start;
+-- B.C. is on UTC-7 from now on, whatever zone data this database has.
+create temp table reminder_clock as select (((now() at time zone 'America/Phoenix')::date+3)+time '15:00') at time zone 'America/Phoenix' as start;
 insert into public.posts(id,author_id,city_id,tag_id,title,body,room_preview)
 select 'a1020000-0000-0000-0000-000000000010','a1020000-0000-0000-0000-000000000001','vancouver',1,'일정 알림 테스트','본문',
 jsonb_build_object('eventKind','once','startsAt',start,'endsAt',start+interval '2 hours','timezone','America/Vancouver','capacity',8)
