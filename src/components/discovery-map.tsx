@@ -6,34 +6,43 @@ import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers, type DiscoveryBounds, type DiscoveryMarker } from '@/lib/discovery-map-html';
+import { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers, type DiscoveryBounds, type DiscoveryCity, type DiscoveryMarker } from '@/lib/discovery-map-html';
 
-export type { DiscoveryMarker } from '@/lib/discovery-map-html';
+export type { DiscoveryCity, DiscoveryMarker } from '@/lib/discovery-map-html';
 type Props = {
   markers: DiscoveryMarker[]; cityName: string; selectedId?: string | null;
-  center?: { latitude: number; longitude: number; requestId?: number } | null; onSelect: (id: string) => void; onMoved?: (bounds: DiscoveryBounds) => void;
+  center?: { latitude: number; longitude: number; requestId?: number } | null; onSelect: (id: string) => void; onMoved?: (bounds: DiscoveryBounds, zoom?: number) => void;
+  /** City pills for the far zoom stage; tapping another open city calls onCity. */
+  cities?: DiscoveryCity[]; onCity?: (id: string) => void;
   userLocation?: { latitude: number; longitude: number } | null;
+  /** Degrees from north the phone faces; draws the cone on the location dot. */
+  heading?: number | null;
   topInset?: number; bottomInset?: number;
+  /** Starting zoom (default 11, the whole city). */
+  zoom?: number;
 };
 
 export function DiscoveryMap(props: Props) {
   return <Canvas key={props.cityName} {...props} />;
 }
 
-function Canvas({ markers, cityName, selectedId = null, center = null, userLocation = null, topInset = 0, bottomInset = 0, onSelect, onMoved }: Props) {
+const NO_CITIES: DiscoveryCity[] = [];
+function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, center = null, userLocation = null, heading = null, topInset = 0, bottomInset = 0, zoom, onSelect, onMoved, onCity }: Props) {
   const { language, tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const native = useRef<WebView<unknown>>(null), web = useRef<HTMLIFrameElement>(null), id = useId();
   const sentMarkers = useRef<{ sessionId: string; key: string } | null>(null);
-  const [seed] = useState({ markers, cityName, selectedId, center, userLocation, topInset, bottomInset });
+  const [seed] = useState({ markers, cityName, selectedId, center, userLocation, topInset, bottomInset, zoom });
   const [failed, setFailed] = useState(false), [retry, setRetry] = useState(0);
   const [readySession, setReadySession] = useState<string | null>(null);
   const sessionId = `${id}.${retry}`;
   const parentOrigin = Platform.OS === 'web' && typeof window !== 'undefined' && window.location.protocol !== 'file:' ? window.location.origin : 'null';
+  // Pill names follow the language, so they rebuild the page like the language itself does; a new array with the same cities does not.
+  const citiesKey = JSON.stringify(cities);
   const html = useMemo(() => {
-    try { return discoveryMapHtml({ ...seed, language, sessionId, parentOrigin }); }
+    try { return discoveryMapHtml({ ...seed, cities: JSON.parse(citiesKey), language, sessionId, parentOrigin }); }
     catch { return null; }
-  }, [seed, language, sessionId, parentOrigin]);
+  }, [seed, citiesKey, language, sessionId, parentOrigin]);
   const source = useMemo(() => ({ html: html ?? '' }), [html]);
   const markerData = useMemo(() => {
     try { const safe = discoveryMarkers(markers); return { markers: safe, key: JSON.stringify(safe) }; }
@@ -42,10 +51,10 @@ function Canvas({ markers, cityName, selectedId = null, center = null, userLocat
   const update = useMemo(() => {
     try {
       const state = { selectedId, center: center && { latitude: center.latitude, longitude: center.longitude, ...(center.requestId !== undefined ? { requestId: center.requestId } : {}) },
-        userLocation: userLocation && { latitude: userLocation.latitude, longitude: userLocation.longitude }, topInset, bottomInset };
+        userLocation: userLocation && { latitude: userLocation.latitude, longitude: userLocation.longitude }, heading, topInset, bottomInset };
       return { state, script: discoveryMapScript(state, sessionId) };
     } catch { return null; }
-  }, [selectedId, center, userLocation, topInset, bottomInset, sessionId]);
+  }, [selectedId, center, userLocation, heading, topInset, bottomInset, sessionId]);
   const sync = useCallback((forceMarkers = false) => {
     if (!update || !markerData) return;
     const includeMarkers = forceMarkers || sentMarkers.current?.sessionId !== sessionId || sentMarkers.current.key !== markerData.key;
@@ -62,15 +71,16 @@ function Canvas({ markers, cityName, selectedId = null, center = null, userLocat
   }, [update, markerData, sessionId, parentOrigin]);
   const receive = useCallback((raw: string) => {
     if (!update || !markerData) return;
-    const message = discoveryMapMessage(raw, sessionId, markerData.markers);
+    const message = discoveryMapMessage(raw, sessionId, markerData.markers, (JSON.parse(citiesKey) as DiscoveryCity[]).filter(city => city.open).map(city => city.id));
     if (!message) return;
     if (message.type === 'ready') { setReadySession(sessionId); setFailed(false); sync(true); }
     else if (message.type === 'error') setFailed(true);
     else if (message.type === 'select') onSelect(message.id);
     else if (message.type === 'feedback') play('selection');
     else if (message.type === 'credits') void Linking.openURL(message.url).catch(() => play('warning'));
-    else if (message.type === 'moved') onMoved?.(message.bounds);
-  }, [sessionId, update, markerData, sync, onSelect, onMoved, play]);
+    else if (message.type === 'moved') onMoved?.(message.bounds, message.zoom);
+    else if (message.type === 'city') onCity?.(message.id);
+  }, [sessionId, update, markerData, sync, onSelect, onMoved, onCity, play, citiesKey]);
   useEffect(() => { sync(); }, [sync]);
   useEffect(() => {
     if (!html || readySession === sessionId) return;

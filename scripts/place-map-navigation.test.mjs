@@ -25,6 +25,7 @@ test('Home, full list and detail map controls preserve the canonical city/place 
   assert.equal(typeof discovery.placeMapRoute, 'function');
   for (const [path, analyticsId] of [
     ['src/components/city-popular-places.tsx', 'today.places.place-open'],
+    ['src/components/post-place-card.tsx', 'today.places.place-open'],
     ['src/app/places/index.tsx', 'places.open'],
     ['src/app/places/[id].tsx', 'places.open'],
   ]) {
@@ -68,7 +69,7 @@ test('a consumed map target preserves later filters and pan on Back; a fresh sam
   const calls = {}, context = { isFocused: true, targetId: undefined, targetLatitude: undefined, targetLongitude: undefined,
     targetRecommended: true, targetVisited: false, placeRequest: 'first-entry', targetFocusRef: { current: null }, locationRevision: { current: 7 }, Date,
   };
-  for (const name of ['setLocating', 'setLocationError', 'setSelectedFilters', 'setQuery', 'setSearch', 'setMode', 'setSelectedId', 'setCenter', 'setDateFilter', 'setDate']) {
+  for (const name of ['setLocating', 'setLocationError', 'setSelectedFilters', 'setQuery', 'setSearch', 'setSheet', 'setSelectedId', 'setCenter', 'setDateFilter', 'setDate']) {
     context[name] = value => { calls[name] = value; };
   }
   const focus = () => evaluate(effect.arguments[0].getText(map), context)();
@@ -79,7 +80,7 @@ test('a consumed map target preserves later filters and pan on Back; a fresh sam
   assert.deepEqual(Array.from(calls.setSelectedFilters), ['top25']);
   assert.equal(calls.setCenter.latitude, 49.28);
   assert.equal(calls.setCenter.longitude, -123.12);
-  assert.equal(calls.setMode, 'map');
+  assert.equal(calls.setSheet, 'closed', 'the list sheet steps aside for the place');
   assert.equal(calls.setQuery, ''); assert.equal(calls.setSearch, '');
   assert.equal(context.locationRevision.current, 8, 'old in-flight GPS result cannot override explicit target');
   Object.assign(calls, { setCenter: 'later-user-pan-or-GPS', setSelectedFilters: ['festival'], setDateFilter: 'weekend',

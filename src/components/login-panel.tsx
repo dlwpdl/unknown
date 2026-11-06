@@ -8,6 +8,7 @@ import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View, type TextInputInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { GlassSurface } from '@/components/glass-surface';
@@ -43,6 +44,7 @@ export function LoginPanel({
   const { tr, t } = useLanguage();
   const theme = useTheme();
   const dark = theme === Colors.dark;
+  const clay = useClay();
   const { play } = useInteractionFeedback();
   const [googleFontLoaded] = useFonts({ GoogleSansMedium: require('@/assets/fonts/GoogleSans-Medium.ttf') });
   const [email, setEmail] = useState('');
@@ -182,7 +184,8 @@ export function LoginPanel({
                   disabled={disabled || !email.trim() || !password}
                   accessibilityRole="button"
                   accessibilityState={{ disabled: disabled || !email.trim() || !password, busy: loading }}
-                  style={({ pressed }) => [styles.devButton, { backgroundColor: theme.accent, opacity: disabled || !email.trim() || !password ? 0.5 : pressed ? 0.8 : 1 }]}>
+                  style={({ pressed }) => [styles.devButton, clay && styles.devClay, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: disabled || !email.trim() || !password ? 0.5 : pressed ? 0.8 : 1 }]}>
+                  {clay && <ClayPillFill kind="cta" />}
                   <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{onAdminLogin ? tr("관리자 로그인") : onReviewLogin ? t.auth.reviewLoginCta : t.auth.devLoginCta}</ThemedText>
                 </Pressable>
               </View>
@@ -238,5 +241,6 @@ const styles = StyleSheet.create({
   devGlass: { marginTop: Spacing.two, alignSelf: 'stretch', borderRadius: 18 },
   devBox: { padding: Spacing.three, gap: Spacing.two },
   devInput: { minHeight: 44, paddingHorizontal: Spacing.three, borderWidth: 1, borderRadius: 8, backgroundColor: 'rgba(11,11,18,0.46)' },
+  devClay: { overflow: 'visible', paddingHorizontal: 18 },
   devButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
 });

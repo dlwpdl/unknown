@@ -29,7 +29,7 @@ function mount(file, exported, props, extra = {}) {
     'react-native': { View: 'View', TextInput: 'TextInput', StyleSheet: { create: value => value } },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'Text' },
     '@/constants/theme': { Colors: { admin: theme }, Spacing: { one: 4, two: 8, three: 12 } },
-    '@/hooks/use-language': { useLanguage: () => ({ tr: value => value }) }, '@/hooks/use-theme': { useTheme: () => theme },
+    '@/hooks/use-language': { useLanguage: () => ({ tr: value => value }) }, '@/hooks/use-theme': { useTheme: () => theme }, '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) },
     '@/lib/nickname': { nicknameError, normalizeNickname },
     '@/components/disclosure': { animateLayout() {} }, 'react-native-reanimated': { useReducedMotion: () => true }, ...extra,

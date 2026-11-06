@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { StyleSheet, View } from 'react-native';
 
 import { Pressable, Switch } from '@/components/analytics-controls';
@@ -43,9 +44,10 @@ export function ContentTranslationSettings() {
   const preference = useTranslationPreference();
   const { language } = useLanguage();
   const { play } = useInteractionFeedback();
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
   const english = language === 'en';
-  return <View style={[styles.settings, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.settings, clayBox ? { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' } : { backgroundColor: theme.card, borderColor: theme.line }]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     <View style={styles.row}>
       <ThemedText type="smallBold" style={{ flex: 1 }}>{english ? 'Translate posts automatically' : '글·댓글 자동 번역'}</ThemedText>
       <Switch analyticsId="content_translation.auto" value={preference.mode === 'auto'}

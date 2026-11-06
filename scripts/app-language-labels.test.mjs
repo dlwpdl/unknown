@@ -109,7 +109,9 @@ test('meetup city, capacity and slot copy preserves word spacing and uses slot u
 
 
 test('profile and business counters use contextual units rather than a shared reviews suffix', () => {
-  assert.equal(renderedText('src/app/user/[id].tsx', ['styles.stats', 'publicProfile.storyCount'], { publicProfile: { storyCount: 3, listingCount: 2, completedCount: 1 }, count: String, theme: {} }, 'View'), '3Today2Listings1Marked complete');
+  assert.equal(renderedText('src/app/user/[id].tsx', ['styles.stats', 'publicProfile.storyCount'], { publicProfile: { storyCount: 3, listingCount: 2, completedCount: 1 }, shownOverview: { savedCount: 4, friendCount: 2 }, count: String, theme: {} }, 'View'), '4Saved places2Friends5Posts');
+  assert.equal(renderedText('src/app/user/[id].tsx', ['styles.stats', 'publicProfile.storyCount'], { publicProfile: { storyCount: 3, listingCount: 2, completedCount: 1 }, shownOverview: null, count: String, theme: {} }, 'View'), '–Saved places–Friends5Posts', 'counts still loading show a dash, not zero');
+  assert.equal(renderedText('src/app/user/[id].tsx', ['styles.stats', 'publicProfile.storyCount'], { publicProfile: { storyCount: 3, listingCount: 2, completedCount: 1 }, shownOverview: { savedCount: null, friendCount: 2 }, count: String, theme: {} }, 'View'), '2Friends5Posts', 'a saved count this viewer may not see leaves no empty stat');
   // The business metric now lives in the membership page's help list as one whole-sentence key.
   assert.equal(translateUi('en', '로그인 클릭 회원 {0}명 · 익명 클릭 세션 {1}개', 2, 4), 'Members who clicked: 2 · Anonymous sessions that clicked: 4');
 });

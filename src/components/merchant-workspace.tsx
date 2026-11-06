@@ -2,10 +2,11 @@ import { useLanguage } from '@/hooks/use-language';
 import { tr } from '@/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import type { SymbolViewProps } from 'expo-symbols';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert, Linking, Platform, Share, StyleSheet, TextInput, View, type KeyDownEvent } from 'react-native';
 
+import { SymbolView } from '@/components/symbol-view';
 import { Pressable, Switch } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
 import { MerchantAccountInvitations, MerchantAccountManagement } from '@/components/merchant-account-connections';
@@ -23,6 +24,7 @@ import { MerchantProfileEditor } from '@/components/merchant-profile-editor';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { usePreventRemove, useRouter } from 'expo-router';
 import { selectChatBusiness } from '@/lib/chat-identity';
 import { loadMyMerchantConnections } from '@/lib/merchant-connections';
@@ -117,12 +119,13 @@ async function shareText(text: string) {
 
 function Action({ label, onPress, disabled, selected, primary = false, role = 'button' }: { label: string; onPress: () => void; disabled?: boolean; selected?: boolean; primary?: boolean; role?: 'button' | 'tab' }) {
 
-  const theme = useTheme(); const { play } = useInteractionFeedback();
+  const theme = useTheme(); const { play } = useInteractionFeedback(); const clay = useClay();
   const press = () => { play('selection'); onPress(); };
   if (primary) return <RaisedActionButton analyticsId="merchant.primary" label={label} onPress={press} disabled={disabled} />;
   return <Pressable lens analyticsId="merchant.action" accessibilityRole={role} accessibilityLabel={label} accessibilityState={{ disabled: !!disabled, selected: !!selected }} aria-selected={role === 'tab' ? !!selected : undefined} disabled={disabled} onPress={press}
-    style={[styles.action, { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.backgroundSelected : theme.backgroundElement, opacity: disabled ? 0.5 : 1 }]}>
-    <ThemedText type="smallBold">{label}</ThemedText>
+    style={[styles.action, clay && styles.clayPad, clay ? { borderColor: 'transparent', backgroundColor: 'transparent', opacity: disabled ? 0.5 : 1 } : { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.backgroundSelected : theme.backgroundElement, opacity: disabled ? 0.5 : 1 }]}>
+    {clay && <ClayPillFill kind={selected ? 'on' : 'white'} />}
+    <ThemedText type="smallBold" style={clay && { color: selected ? theme.accentInk : theme.text }}>{label}</ThemedText>
   </Pressable>;
 }
 function Field({ label, value, onChange, placeholder, numeric = false, signed = false, multiline = false, maxLength = 120, disabled = false }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; numeric?: boolean; signed?: boolean; multiline?: boolean; maxLength?: number; disabled?: boolean }) {
@@ -135,21 +138,22 @@ function Field({ label, value, onChange, placeholder, numeric = false, signed = 
 }
 function Section({ title, children }: { title: string; children: ReactNode }) {
 
-  const theme = useTheme();
-  return <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="subtitle">{title}</ThemedText>{children}</View>;
+  const theme = useTheme(), clayBox = useClayBox();
+  return <View style={[styles.section, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="subtitle">{title}</ThemedText>{children}</View>;
 }
 function ToolRow({ title, detail, onPress, disabled }: { title: string; detail: string; onPress: () => void; disabled?: boolean }) {
   const theme = useTheme(); const { play } = useInteractionFeedback();
   return <Pressable analyticsId="merchant.action" accessibilityRole="button" accessibilityLabel={title} accessibilityHint={detail} accessibilityState={{ disabled: !!disabled }} disabled={disabled}
     onPress={() => { play('selection'); onPress(); }} style={[styles.toolRow, { borderColor: theme.line }]}>
     <View style={styles.toolText}><ThemedText type="smallBold">{title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{detail}</ThemedText></View>
-    <ThemedText themeColor="textSecondary" accessible={false}>›</ThemedText>
+    <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
   </Pressable>;
 }
 function ToolTile({ title, detail, icon, badge, warn = false, onPress, disabled }: { title: string; detail: string; icon: SymbolViewProps['name']; badge?: string; warn?: boolean; onPress: () => void; disabled?: boolean }) {
-  const theme = useTheme(); const { play } = useInteractionFeedback();
+  const theme = useTheme(); const { play } = useInteractionFeedback(); const clayBox = useClayBox();
   return <Pressable analyticsId="merchant.home.tile" accessibilityRole="button" accessibilityLabel={badge ? `${title}, ${badge}` : title} accessibilityHint={detail} accessibilityState={{ disabled: !!disabled }} disabled={disabled}
-    onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.tile, { backgroundColor: pressed ? theme.backgroundSelected : theme.card, borderColor: theme.line, opacity: disabled ? 0.5 : 1 }]}>
+    onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.tile, { backgroundColor: clayBox ? 'transparent' : pressed ? theme.backgroundSelected : theme.card, borderColor: clayBox ? 'transparent' : theme.line, opacity: disabled ? 0.5 : 1 }]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     <View style={styles.tileTop}><SymbolView name={icon} size={22} tintColor={theme.accent} />{!!badge && <MerchantBadge label={badge} tone={warn ? 'warn' : 'accent'} />}</View>
     <View style={styles.toolText}><ThemedText type="smallBold">{title}</ThemedText><ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{detail}</ThemedText></View>
   </Pressable>;
@@ -262,8 +266,9 @@ function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMercha
 }
 
 function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onChoose, accessChecking = false, businessOnly = false, initialTab = 'overview', layout }: { layout?: 'sidebar'; id: string; refreshSignal: number; onDirty: (dirty: boolean) => void; onConnectionsChanged?: () => void; onChoose?: () => void; accessChecking?: boolean; businessOnly?: boolean; initialTab?: MerchantTab }) {
+  const clay = useClay();
   const { tr, language, locale: appLocale } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
   const { me, isAdmin } = useAuth(); const { play } = useInteractionFeedback(), router = useRouter();
   const [revision, setRevision] = useState(0), [tab, setTab] = useState<MerchantTab>(initialTab);
   const [response, setResponse] = useState<{ user: string; revision: number; refreshSignal: number; data: Workspace } | null>(null);
@@ -631,7 +636,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       onGenerate={() => { void startHomeDraft(true); }} onWrite={() => { void openDraft(undefined, true); }} resume={dirty ? () => { setDraftView('composer'); setTab('drafts'); } : undefined}
       recent={recent} onAllPosts={() => selectNav('posts')} aiEnabled={aiAllowed} aiOwner={aiOwner} onOpenAi={() => selectNav('ai')} onOpenReviews={fullAccess ? () => selectNav('reviews') : undefined} busy={busy} />}
     {activeTab === 'overview' && !sidebar && <>
-      <View style={[styles.storeCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      <View style={[styles.storeCard, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <View style={styles.businessHeader}>
           <View style={[styles.storeLogo, { backgroundColor: theme.backgroundSelected }]}><SymbolView name={tileIcon('storefront', 'storefront')} size={26} tintColor={theme.accent} /></View>
           <View style={styles.toolText}><ThemedText type="subtitle">{data.merchant.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr(data.merchant.city_name)} · {data.merchant.owner_verified_at ? tr("비즈니스 소유 확인됨") : tr("비즈니스 소유 확인 대기")}</ThemedText></View>
@@ -769,14 +774,15 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       <View style={styles.chips}>
         {costMenus.map(menu => { const on = sameCost(menu.values); return <Pressable key={menu.name} analyticsId="merchant.cost.menu" accessibilityRole="button" accessibilityLabel={tr("{0} 계산 불러오기", menu.name)} accessibilityHint={tr("길게 누르면 지울 수 있어요.")} accessibilityState={{ selected: on }}
           onPress={() => { play('selection'); setCost({ ...menu.values }); }} onLongPress={() => { play('selection'); void deleteCostMenu(menu); }}
-          style={({ pressed }) => [styles.chip, { backgroundColor: on ? theme.text : theme.card, borderColor: theme.line, opacity: pressed ? 0.7 : 1 }]}>
-          <ThemedText type="smallBold" style={{ color: on ? theme.background : theme.text }}>{menu.name}</ThemedText></Pressable>; })}
+          style={({ pressed }) => [styles.chip, clay && styles.clayPad, clay ? { backgroundColor: 'transparent', borderColor: 'transparent', opacity: pressed ? 0.7 : 1 } : { backgroundColor: on ? theme.text : theme.card, borderColor: theme.line, opacity: pressed ? 0.7 : 1 }]}>
+          {clay && <ClayPillFill kind={on ? 'on' : 'white'} />}
+          <ThemedText type="smallBold" style={{ color: clay ? on ? theme.accentInk : theme.text : on ? theme.background : theme.text }}>{menu.name}</ThemedText></Pressable>; })}
         <Action label={tr("메뉴로 저장")} disabled={busy || !calculated} onPress={askCostMenuName} />
         {costKeys.some(key => cost[key]) && <Action label={tr("새로 계산")} disabled={busy} onPress={() => setCost(emptyCost())} />}
       </View>
       {menuName !== null && <View style={styles.row2}><View style={styles.half}><Field label={tr("메뉴 이름")} value={menuName} maxLength={30} placeholder={tr("예: 단호박 라떼")} onChange={setMenuName} /></View>
         <Action label={tr("저장")} disabled={!menuName.trim()} onPress={() => saveCostMenu(menuName)} /><Action label={tr("취소")} onPress={() => setMenuName(null)} /></View>}
-      <View style={[styles.storeCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      <View style={[styles.storeCard, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         {calculated ? <>
           <ThemedText type="small" themeColor="textSecondary">{tr("하나 팔면 남는 돈")}</ThemedText>
           <View style={styles.bigRow}><ThemedText type="title" style={calculated.contribution < 0 ? { color: theme.danger } : undefined}>{money(calculated.contribution)}</ThemedText>
@@ -816,7 +822,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
         <View style={styles.row2}><View style={styles.half}><Field label={tr("개당 원가 (CAD)")} value={item.unit_cost} numeric disabled={stockLocked} onChange={(unit_cost) => setItem({ ...item, unit_cost })} /></View><View style={styles.half}><Field label={tr("재고 부족 기준")} value={item.low_stock} numeric disabled={stockLocked} onChange={(low_stock) => setItem({ ...item, low_stock })} /></View></View>
         <Action primary label={tr("품목 저장")} disabled={stockLocked || !item.name.trim() || !item.unit.trim() || !Number.isFinite(amount(item.unit_cost)) || amount(item.unit_cost) < 0 || !Number.isFinite(amount(item.low_stock)) || amount(item.low_stock) < 0} onPress={() => { void run(async () => { await saveMerchantItem(supabase, id, { ...item, unit_cost: amount(item.unit_cost), low_stock: amount(item.low_stock) }); setItem({ id: merchantEventId(), name: '', unit: '개', unit_cost: '0', low_stock: '0' }); setItemOpen(false); }, '품목을 저장했어요. 수량은 아래에서 ±로 바꿔 주세요.'); }} />
       </Section>}
-      {data.items.length > 0 && <View style={[styles.storeCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      {data.items.length > 0 && <View style={[styles.storeCard, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         {shownItems.map((i) => { const delta = (changes[i.id] ?? '').trim(); return <View key={i.id} style={[styles.stockItem, { borderColor: theme.line }]}>
           <View style={styles.toolText}>
             <View style={styles.actions}><ThemedText type="smallBold">{i.name}</ThemedText>{Number(i.quantity) <= Number(i.low_stock) && <MerchantBadge label={tr("부족")} tone="warn" />}
@@ -833,7 +839,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
         </View>; })}
         {!shownItems.length && <ThemedText type="small" themeColor="textSecondary">{tr("부족한 품목이 없어요.")}</ThemedText>}
       </View>}
-      {data.items.length > 0 && <View style={[styles.storeCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      {data.items.length > 0 && <View style={[styles.storeCard, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ThemedText type="smallBold">{stockChanges.length ? stockChanges.map((c) => `${data.items.find((i) => i.id === c.item_id)?.name} ${c.delta > 0 ? '+' : ''}${Number.isFinite(c.delta) ? c.delta : '?'}`).join(' · ') : tr("±로 바꿀 수량을 정해 주세요.")}</ThemedText>
         {stockChanges.length > 0 && <ThemedText type="small" themeColor="textSecondary">{tr("바꾼 품목 {0}개", stockChanges.length)}</ThemedText>}
         <Field label={tr("입출고 사유")} value={stockNote} maxLength={300} placeholder={tr("예: 오전 입고, 주말 행사에 씀")} disabled={stockLocked} onChange={setStockNote} />
@@ -899,9 +905,11 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
 }
 
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   workspace: { gap: 16, width: '100%', maxWidth: 760, alignSelf: 'center' },
   section: { gap: 14, padding: 18, borderWidth: 1, borderRadius: 20, borderCurve: 'continuous' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
+  clayPad: { overflow: 'visible', paddingHorizontal: 18 },
   action: { minHeight: 44, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, justifyContent: 'center', maxWidth: '100%' },
   field: { gap: 6 }, input: { minHeight: 48, minWidth: 0, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, fontSize: 15, lineHeight: 22 },
   multiline: { minHeight: 160, textAlignVertical: 'top' },

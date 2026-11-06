@@ -7,26 +7,64 @@ import { CITY_TOP25, type CityTop25Place } from './city-top25.ts';
 import type { CityPlace } from './city-places.ts';
 
 export const TOP25_GOLD = '#F4CA78';
+// M1 (owner 2026-11-05): a place's state, decided on the server from our own save numbers. The dot always comes with the word, so colour is never the only signal.
+export const PLACE_STATUS = { trending: { label: '뜨는 중', empty: '지금 뜨는 곳이 없어요', color: '#E8743B' }, popular: { label: '인기', empty: '인기 있는 곳이 없어요', color: '#E0559A' } } as const;
 
+// `art` is the 3D picture drawn in the category's map pin (src/lib/map-pin-art.ts); categories without their own share the nearest one.
 export const DISCOVERY_CATEGORIES = [
-  { id: 'housing', label: '부동산', short: '집', color: '#70BFAF' },
-  { id: 'used', label: '중고거래', short: '중고', color: '#E9B86C' },
-  { id: 'festival', label: '페스티벌', short: '축제', color: '#CBB9FF' },
-  { id: 'exhibition', label: '전시', short: '전시', color: '#E7A5C0' },
-  { id: 'event', label: '이벤트', short: '행사', color: '#5F7CF3' },
-  { id: 'nature', label: '자연', short: '자연', color: '#A8C39B' },
-  { id: 'cafe', label: '카페', short: '카페', color: '#D7BD92' },
-  { id: 'dining', label: '다이닝', short: '맛집', color: '#D79681' },
-  { id: 'shopping', label: '쇼핑', short: '쇼핑', color: '#92C4C7' },
-  { id: 'trip', label: '근교 여행', short: '여행', color: '#9BAED1' },
-  { id: 'activity', label: '액티비티', short: '활동', color: '#82ADF0' },
-  { id: 'nightlife', label: '나이트라이프', short: '밤', color: '#DD737F' },
-  { id: 'library', label: '도서관', short: '책', color: '#B8A270' },
-  { id: 'place', label: '장소', short: '장소', color: '#B6B9CC' },
+  { id: 'housing', label: '부동산', short: '집', color: '#70BFAF', art: 'housing' },
+  { id: 'used', label: '중고거래', short: '중고', color: '#E9B86C', art: 'used' },
+  { id: 'festival', label: '페스티벌', short: '축제', color: '#CBB9FF', art: 'festival' },
+  { id: 'exhibition', label: '전시', short: '전시', color: '#E7A5C0', art: 'events' },
+  { id: 'event', label: '이벤트', short: '행사', color: '#5F7CF3', art: 'events' },
+  { id: 'nature', label: '자연', short: '자연', color: '#A8C39B', art: 'places' },
+  { id: 'cafe', label: '카페', short: '카페', color: '#D7BD92', art: 'cafe' },
+  { id: 'dining', label: '다이닝', short: '맛집', color: '#D79681', art: 'dining' },
+  { id: 'shopping', label: '쇼핑', short: '쇼핑', color: '#92C4C7', art: 'shopping' },
+  { id: 'trip', label: '근교 여행', short: '여행', color: '#9BAED1', art: 'travel' },
+  { id: 'activity', label: '액티비티', short: '활동', color: '#82ADF0', art: 'events' },
+  { id: 'nightlife', label: '나이트라이프', short: '밤', color: '#DD737F', art: 'nightlife' },
+  { id: 'library', label: '도서관', short: '책', color: '#B8A270', art: 'places' },
+  { id: 'place', label: '장소', short: '장소', color: '#B6B9CC', art: 'places' },
 ] as const;
 export type DiscoveryCategory = typeof DISCOVERY_CATEGORIES[number]['id'];
 export type DiscoveryFilter = 'all' | 'top25' | 'visited' | 'delivery' | 'nightlife' | 'festival' | 'cafe' | 'dining' | 'places' | 'events' | 'housing' | 'used';
 export type DiscoveryDate = 'all' | 'today' | 'week' | 'weekend' | 'date';
+// Owner 2026-11-04: sub-filters differ per map category. These ids are the catalog values in CityPlace.subcategories.
+// Owner 2026-11-05 added the rest; scripts/map-subcategories.py fills them from each place's OSM tags. A place's pin names
+// its first sub-filter in this order, so the specific ones come before the general ones (칵테일 바 before 바).
+export const PLACE_SUBCATEGORIES = [
+  { id: 'lunch', filter: 'dining', label: '점심' }, { id: 'dinner', filter: 'dining', label: '저녁' }, { id: 'late_night', filter: 'dining', label: '늦은 밤' },
+  { id: 'solo', filter: 'dining', label: '혼밥' }, { id: 'date', filter: 'dining', label: '데이트' },
+  { id: 'korean', filter: 'dining', label: '한식' }, { id: 'japanese', filter: 'dining', label: '일식' }, { id: 'chinese', filter: 'dining', label: '중식' },
+  { id: 'vietnamese', filter: 'dining', label: '베트남' }, { id: 'thai', filter: 'dining', label: '태국' }, { id: 'indian', filter: 'dining', label: '인도 음식' },
+  { id: 'italian', filter: 'dining', label: '이탈리안' }, { id: 'mexican', filter: 'dining', label: '멕시칸' }, { id: 'burger', filter: 'dining', label: '버거' },
+  { id: 'pizza', filter: 'dining', label: '피자' }, { id: 'seafood', filter: 'dining', label: '해산물' }, { id: 'vegan', filter: 'dining', label: '비건' },
+  { id: 'izakaya', filter: 'nightlife', label: '이자카야' }, { id: 'pocha', filter: 'nightlife', label: '포차' }, { id: 'cocktail_bar', filter: 'nightlife', label: '칵테일 바' },
+  { id: 'wine_bar', filter: 'nightlife', label: '와인 바' }, { id: 'pub', filter: 'nightlife', label: '펍·술집' }, { id: 'club', filter: 'nightlife', label: '클럽' },
+  { id: 'bar', filter: 'nightlife', label: '바' }, { id: 'brewery', filter: 'nightlife', label: '브루어리' }, { id: 'live_music', filter: 'nightlife', label: '라이브 음악' },
+  { id: 'dessert', filter: 'cafe', label: '디저트' }, { id: 'brunch', filter: 'cafe', label: '브런치' }, { id: 'work_friendly', filter: 'cafe', label: '작업하기 좋은 곳' },
+  { id: 'bakery', filter: 'cafe', label: '베이커리' }, { id: 'bubble_tea', filter: 'cafe', label: '버블티' }, { id: 'roastery', filter: 'cafe', label: '로스터리' },
+  { id: 'park', filter: 'places', label: '공원' }, { id: 'beach', filter: 'places', label: '해변' }, { id: 'garden', filter: 'places', label: '정원' },
+  { id: 'viewpoint', filter: 'places', label: '전망대' }, { id: 'trail', filter: 'places', label: '산책·하이킹' }, { id: 'museum', filter: 'places', label: '박물관' },
+  { id: 'gallery', filter: 'places', label: '미술관·갤러리' }, { id: 'library', filter: 'places', label: '도서관' }, { id: 'zoo_aquarium', filter: 'places', label: '동물원·아쿠아리움' },
+  { id: 'historic', filter: 'places', label: '역사 명소' }, { id: 'market', filter: 'places', label: '시장' }, { id: 'theatre', filter: 'places', label: '공연장' },
+] as const;
+export type PlaceSubcategory = typeof PLACE_SUBCATEGORIES[number]['id'];
+export const PRICE_FILTERS: readonly DiscoveryFilter[] = ['dining', 'cafe', 'nightlife'];
+export const PRICE_LEVELS = [1, 2, 3, 4] as const;
+export const priceSymbol = (level: number) => '$'.repeat(level);
+/** '$–$$' for a run, '$ · $$$' for a gap, '' for none. */
+export function priceLabel(levels: readonly number[]) {
+  const sorted = [...new Set(levels)].filter(level => (PRICE_LEVELS as readonly number[]).includes(level)).sort((a, b) => a - b);
+  if (sorted.length > 1 && sorted.at(-1)! - sorted[0] === sorted.length - 1) return `${priceSymbol(sorted[0])}–${priceSymbol(sorted.at(-1)!)}`;
+  return sorted.map(priceSymbol).join(' · ');
+}
+/** Price and sub-filter choices: an item without the value is left out, never assumed to match. */
+export function discoveryRefines(item: Pick<DiscoveryItem, 'place'>, priceLevels: readonly number[], subcategories: readonly string[]) {
+  return (!priceLevels.length || priceLevels.includes(item.place?.priceLevel ?? 0))
+    && (!subcategories.length || subcategories.some(id => item.place?.subcategories?.includes(id)));
+}
 export type DiscoveryItem = {
   id: string; source: 'post' | 'event' | 'place'; sourceId: string; cityId: string; title: string;
   category: DiscoveryCategory; label: string; latitude: number | null; longitude: number | null;

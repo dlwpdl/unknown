@@ -1,7 +1,9 @@
 import { useLanguage } from '@/hooks/use-language';
+import { SymbolView } from '@/components/symbol-view';
 import { Pressable } from '@/components/analytics-controls';
 import { useState } from 'react';
 import { Platform, StyleSheet, TextInput, View, type KeyDownEvent } from 'react-native';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -16,7 +18,7 @@ export function PersonalInfoFields({ value, onChange, disabled = false, showCons
 }) {
   const { tr } = useLanguage();
   const GENDER_OPTIONS = [...Object.entries(PERSONAL_INFO_GENDERS).map(([value, label]) => ({ value, label })), { value: '', get label() { return tr("선택 안 함"); } }];
-  const theme = useTheme();
+  const theme = useTheme(), clay = useClay();
   const { play } = useInteractionFeedback();
   const [touched, setTouched] = useState(false);
   const error = validatePersonalInfo(value.fullName, value.dateOfBirth, value.gender);
@@ -49,8 +51,9 @@ export function PersonalInfoFields({ value, onChange, disabled = false, showCons
           return <Pressable lens key={option.value || 'none'} analyticsId={`components_personal-info-fields.pressable.gender-${option.value || 'none'}`}
             disabled={disabled} onPress={() => { play('selection'); onChange({ ...value, gender: option.value }); }} accessibilityRole="radio" aria-checked={selected}
             accessibilityState={{ checked: selected, disabled }}
-            style={({ pressed }) => [styles.genderOption, { borderColor: selected ? theme.accent : theme.line, backgroundColor: theme.card, opacity: disabled ? 0.55 : pressed ? 0.7 : 1 }]}>
-            <ThemedText type="small" style={selected ? { color: theme.accent } : undefined}>{tr(option.label)}</ThemedText>
+            style={({ pressed }) => [styles.genderOption, clay ? styles.genderClay : { borderColor: selected ? theme.accent : theme.line, backgroundColor: theme.card }, { opacity: disabled ? 0.55 : pressed ? 0.7 : 1 }]}>
+            {clay && <ClayPillFill kind={selected ? 'on' : 'white'} />}
+            <ThemedText type="small" style={selected ? { color: clay ? theme.accentInk : theme.accent } : undefined}>{tr(option.label)}</ThemedText>
           </Pressable>;
         })}
       </View>
@@ -59,9 +62,9 @@ export function PersonalInfoFields({ value, onChange, disabled = false, showCons
     <ThemedText type="small" themeColor="textSecondary">{tr(PERSONAL_INFO_NOTICE)}</ThemedText>
     <Pressable analyticsId="components_personal-info-fields.pressable.1" disabled={disabled} onPress={toggleConsent} accessibilityRole="checkbox" aria-checked={value.accepted} accessibilityState={{ checked: value.accepted, disabled }}
       {...(Platform.OS === 'web' ? { onKeyDown: (event: KeyDownEvent) => { if (event.nativeEvent.key === ' ') { event.preventDefault(); toggleConsent(); } } } : {})}
-      style={({ pressed }) => [styles.consent, { borderColor: value.accepted ? theme.accent : theme.line, backgroundColor: theme.card, opacity: disabled ? 0.55 : pressed ? 0.7 : 1 }]}>
+      style={({ pressed }) => [styles.consent, { borderColor: value.accepted ? theme.accent : theme.textSecondary, backgroundColor: theme.card, opacity: disabled ? 0.55 : pressed ? 0.7 : 1 }]}>
       <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { borderColor: value.accepted ? theme.accent : theme.line, backgroundColor: value.accepted ? theme.accent : theme.card }]}>
-        {value.accepted && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText>}
+        {value.accepted && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={14} tintColor={theme.accentInk} />}
       </View>
       <ThemedText type="small" style={styles.consentText}>{tr("[선택] 이름·생년월일·성별 수집·이용에 동의합니다.")}</ThemedText>
     </Pressable>
@@ -72,6 +75,7 @@ export function PersonalInfoFields({ value, onChange, disabled = false, showCons
 const styles = StyleSheet.create({
   section: { gap: Spacing.three }, field: { gap: Spacing.two },
   genderRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  genderClay: { borderWidth: 0, overflow: 'visible' },
   genderOption: { minHeight: 44, minWidth: 84, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10 },
   input: { minHeight: 48, paddingHorizontal: Spacing.three, borderWidth: 1, borderRadius: 8, fontSize: 16 },
   consent: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, padding: Spacing.three, borderWidth: 1, borderRadius: 10 },

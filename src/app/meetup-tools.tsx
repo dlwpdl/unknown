@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MeetupEditLink, MeetupHostHome } from '@/components/meetup-host-home';
 import { MeetupHostTools } from '@/components/meetup-host-tools';

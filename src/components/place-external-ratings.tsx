@@ -1,9 +1,10 @@
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useState } from 'react';
 import { Alert, Linking, StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
 import { GlingRatingIcon } from '@/components/merchant-rating-bar';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
@@ -14,7 +15,7 @@ import { getPlaceExternalRatings } from '@/lib/place-external-ratings';
 type PlaceScope = { cityId: string; placeId: string };
 
 export function PlaceExternalRatings({ cityId, placeId }: PlaceScope) {
-  const { tr, locale } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback();
+  const { tr, locale } = useLanguage(), theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback();
   const [expanded, setExpanded] = useState(false);
   const ratings = getPlaceExternalRatings(cityId, placeId);
   if (!ratings.length) return null;
@@ -35,7 +36,8 @@ export function PlaceExternalRatings({ cityId, placeId }: PlaceScope) {
     {ratings.map(rating => <Pressable key={rating.provider} analyticsId="places.detail.source" accessibilityRole="link"
       accessibilityLabel={tr('{0} 평점 {1}/5 · {2}개 평가 · 출처 보기', rating.provider, rating.score.toFixed(1), rating.count.toLocaleString(locale))}
       onPress={() => open(rating.sourceUrl)}
-      style={({ pressed }) => [styles.card, { backgroundColor: theme.card, borderColor: theme.line, opacity: pressed ? 0.65 : 1 }]}>
+      style={({ pressed }) => [styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }, { opacity: pressed ? 0.65 : 1 }]}>
+      {clayBox && <ClayBoxFill kind="tile" />}
       <View style={styles.source}>
         <ThemedText type="smallBold">{rating.provider}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">{tr('{0}에서 확인', rating.via)}</ThemedText>
@@ -55,6 +57,7 @@ export function PlaceExternalRatings({ cityId, placeId }: PlaceScope) {
 const styles = StyleSheet.create({
   section: { gap: Spacing.two },
   toggle: { minHeight: 48, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   card: { minHeight: 96, borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, padding: Spacing.three,
     flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   source: { flex: 1, gap: Spacing.one },

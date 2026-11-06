@@ -30,13 +30,15 @@ function screen(overrides = {}) {
   const modules = {
     react: hooks, 'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) },
     'react-native': { FlatList: 'FlatList', View: 'View', TextInput: 'TextInput', ScrollView: 'ScrollView', Pressable: 'Pressable', Platform: { OS: 'web' }, StyleSheet: { create: value => value } },
-    'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' }, 'expo-symbols': { SymbolView: 'Symbol' },
-    'expo-router': { useRouter: () => ({ push: route => routes.push(JSON.parse(JSON.stringify(route))) }), useIsFocused: () => focused, useFocusEffect: fn => hooks.useEffect(() => focused ? fn() : undefined, [fn, focused]) },
+    'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' }, 'expo-symbols': { SymbolView: 'Symbol' }, '@/components/symbol-view': { SymbolView: 'Symbol' },
+    'expo-router': { useRouter: () => ({ push: route => routes.push(JSON.parse(JSON.stringify(route))) }), useLocalSearchParams: () => ({}), useIsFocused: () => focused, useFocusEffect: fn => hooks.useEffect(() => focused ? fn() : undefined, [fn, focused]) },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/login-panel': { LoginPanel: 'Login' }, '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/state-card': { StateCard: 'StateCard' }, '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },
     '@/components/saved-library': { SavedItemCard: 'SavedItemCard', SavedFolderSheet: 'SavedFolderSheet', SavedLibraryButton: 'SavedLibraryButton' },
     '@/components/business-webshop': { WebshopComparisonSheet: 'WebshopComparisonSheet' },
-    '@/constants/theme': { Depth: {}, Spacing: { one: 4, two: 8, three: 16, four: 24, five: 32 }, MaxContentWidth: 800 }, '@/constants/design-system': { ControlStyles: { icon: {}, pill: {}, field: {} }, controlPresentation: () => ({ container: {}, text: {} }) },
-    '@/hooks/use-theme': { useTheme: () => ({}) }, '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', locale: 'ko-KR', tr: x => x, t: { profile: { savedLoading: '불러오는 중' } } }) }, '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
+    '@/components/share-card': { ShareCardSheet: 'ShareCardSheet' }, '@/lib/city-places': { getCityPlaces: () => [] },
+    '@/lib/share-card': { savedListPlaces: rows => rows.filter(row => row.target.kind === 'place') },
+    '@/constants/theme': { Depth: {}, Spacing: { one: 4, two: 8, three: 16, four: 24, five: 32 }, MaxContentWidth: 800 }, '@/constants/design-system': { ControlStyles: { icon: {}, pill: {}, field: {} }, IconSize: { toolbar: 21, chevron: 14 }, controlPresentation: () => ({ container: {}, text: {} }) },
+    '@/hooks/use-theme': { useTheme: () => ({}) }, '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', locale: 'ko-KR', tr: x => x, t: { profile: { savedLoading: '불러오는 중' } } }) }, '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
     '@/lib/auth': { useAuth: () => ({ isAuthed: !!account, isAuthLoading: false, me: { id: account ?? 'guest' } }) }, '@/lib/saved-items': api,
     '@/lib/webshops': { loadPublicWebshop: async (...args) => { calls.push({ name: 'loadPublicWebshop', args: args.slice(1) }); return overrides.offer ? overrides.offer(...args) : { merchantId: id }; } },
     '@/lib/supabase': { supabase: {} }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
@@ -61,6 +63,19 @@ test('filter, folder, account and lost-focus boundaries reject stale saved respo
   pending[1].resolve(page([post]));await settle();assert.equal(list(view.render()).props.data[0].key,post.key);
   view.account('other');view.render();assert.equal(list(view.render()).props.data.length,0);pending[2].resolve(page([]));await settle();view.render();
   control(view.render(),`saved.folder.${folder.id}`).props.onPress();view.render();view.focus(false);view.render();pending[3].resolve(page([item]));await settle();assert.equal(list(view.render()).props.data.length,0);view.unmount();
+});
+
+test('a chosen folder offers a list share card only while the whole folder shows', async () => {
+  const view=screen();view.render();await settle();
+  assert.equal(control(view.render(),'saved.folder.share'),undefined,'no list to share without a folder');
+  control(view.render(),`saved.folder.${folder.id}`).props.onPress();view.render();await settle();
+  control(view.render(),'saved.folder.share').props.onPress();
+  const sheet=nodes(view.render()).find(node=>node.type==='ShareCardSheet');
+  assert.deepEqual({kind:sheet.props.target.kind,name:sheet.props.target.name,count:sheet.props.target.count},{kind:'list',name:folder.name,count:0});
+  sheet.props.onClose();assert.equal(nodes(view.render()).some(node=>node.type==='ShareCardSheet'),false);
+  control(view.render(),'saved.filter.jobs').props.onPress();view.render();await settle();
+  assert.equal(control(view.render(),'saved.folder.share'),undefined,'a filter that drops places hides it');
+  view.unmount();
 });
 
 test('query submit uses the current search and late old-query data remains hidden', async () => {
@@ -114,12 +129,21 @@ function library(component, initialProps) {
     'react-native':{View:'View',TextInput:'TextInput',ScrollView:'ScrollView',Modal:'Modal',KeyboardAvoidingView:'KeyboardAvoidingView',Platform:{OS:'web'},StyleSheet:{create:value=>value}},
     'expo-image':{Image:'Image'},'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},
     '@/components/analytics-controls':{Pressable:'Pressable'},'@/components/business-webshop':{UberOrderNotice:'UberOrderNotice'},'@/components/post-zoom-link':{PostZoomLink:'PostZoomLink'},'@/components/themed-text':{ThemedText:'Text'},
-    '@/constants/design-system':{ControlMotion:{settleMs:180},ControlStyles:{pill:{},field:{}},controlPresentation:()=>({container:{},text:{}})},'@/constants/theme':{Spacing:{one:4,two:8,three:16}},
-    '@/hooks/use-language':{useLanguage:()=>({language:'ko'})},'@/hooks/use-theme':{useTheme:()=>({})},'@/lib/interaction-feedback':{useInteractionFeedback:()=>({play:value=>feedback.push(value)})}};
+    '@/constants/design-system':{ControlMotion:{settleMs:180},ControlStyles:{pill:{},field:{},icon:{}},IconSize:{toolbar:21},controlPresentation:()=>({container:{},text:{}})},'@/constants/theme':{Spacing:{one:4,two:8,three:16}},
+    '@/hooks/use-language':{useLanguage:()=>({language:'ko'})},'@/hooks/use-theme':{useTheme:()=>({})},'@/components/clay':{ useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },'@/lib/interaction-feedback':{useInteractionFeedback:()=>({play:value=>feedback.push(value)})}};
   const exported={},code=ts.transpileModule(readFileSync(new URL('../src/components/saved-library.tsx',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
   vm.runInNewContext(code,{exports:exported,require:name=>modules[name]??{}});
   return{feedback,render(next){if(next)props={...props,...next};index=0;return exported[component](props);}};
 }
+test('folder and unsave sit behind the card menu and still reach the screen handlers',()=>{
+  const calls=[],view=library('SavedItemCard',{item,folders:[folder],onOpen(){},onRemove(){calls.push('remove')},onOrganize(){calls.push('organize')}});
+  assert.equal(nodes(view.render()).some(node=>Array.isArray(node.props?.actions)),false,'the menu stays closed until ··· is pressed');
+  control(view.render(),`saved.menu.${item.key}`).props.onPress();
+  const sheet=nodes(view.render()).find(node=>Array.isArray(node.props?.actions));
+  assert.deepEqual(Array.from(sheet.props.actions,action=>action.analyticsId),['saved.organize','saved.remove']);
+  sheet.props.actions.forEach(action=>action.onPress());assert.deepEqual(calls,['organize','remove']);
+  sheet.props.onClose();assert.equal(nodes(view.render()).some(node=>Array.isArray(node.props?.actions)),false);
+});
 const editorProps=()=>({folders:[folder],busy:false,error:null,onClose(){},onCreate(){},onRename(){},onDelete(){},onAssign(){},onCreateForItem(){},onRequestDelete(){}});
 
 test('folder form validates names and retains the draft after a rejected save',()=>{
@@ -162,7 +186,7 @@ test('a saved post grows out of its open row; other saved kinds keep their plain
 
 test('saved telemetry carries fixed action identifiers without target or folder identities',()=>{
   const root=library('SavedItemCard',{item,folders:[folder],onOpen(){},onRemove(){},onOrganize(){},onCompare(){}}).render();
-  const ids=nodes(root).map(node=>node.props?.analyticsId).filter(Boolean);assert.deepEqual(ids,['saved.open.merchant','saved.organize','saved.remove','saved.compare']);assert.equal(ids.some(value=>value.includes(item.target.id)),false);
+  const ids=nodes(root).map(node=>node.props?.analyticsId).filter(Boolean);assert.deepEqual(ids,['saved.open.merchant','saved.menu','saved.compare']);assert.equal(ids.some(value=>value.includes(item.target.id)),false);
   const sheet=library('SavedFolderSheet',{...editorProps(),editor:{kind:'item',item}}).render();assert.equal(control(sheet,`saved.editor.folder.${folder.id}`).props.analyticsId,'saved.editor.select');
 });
 

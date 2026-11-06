@@ -11,6 +11,7 @@ import { GlingLoader } from '@/components/gling-loader';
 import { MannerSummary } from '@/components/manner-summary';
 import { useReducedMotion } from 'react-native-reanimated';
 import { MeetupReviews } from '@/components/meetup-reviews';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
@@ -26,7 +27,7 @@ export default function MeetupReviewInbox() {
 }
 function Inbox() {
   const { tr } = useLanguage();
-  const { isAuthed, me, promptLogin } = useAuth(), theme = useTheme(), { play } = useInteractionFeedback(), router = useRouter();
+  const { isAuthed, me, promptLogin } = useAuth(), theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback(), router = useRouter();
   const reducedMotion = useReducedMotion();
   const [items, setItems] = useState<{ postId: string; title: string; kind: 'once' | 'group' }[] | null>(null);
   const [feedback, setFeedback] = useState<MyMannerFeedback[]>([]), [summary, setSummary] = useState<Summary | null>(null);
@@ -50,7 +51,7 @@ function Inbox() {
       {!items && !error && <GlingLoader accessibilityLabel={tr("불러오는 중…")} />}
       {items?.length === 0 && <ThemedText type="small">{tr("아직 등록된 참여 회차가 없어요. 모임 화면에서 회차를 열고 실제 현장에 체크인해주세요.")}</ThemedText>}
       {items?.map(item => <View key={item.postId} style={{ gap: 12 }}>
-        <Pressable accessibilityRole="button" accessibilityState={{ expanded: selected === item.postId }} onPress={() => { play('selection'); animateLayout(reducedMotion); setSelected(old => old === item.postId ? null : item.postId); }} style={button}><ThemedText type="smallBold">{item.title} · {item.kind === 'once' ? tr("참석·개인 평가") : tr("후기·참석 확인")}</ThemedText></Pressable>
+        <Pressable accessibilityRole="button" accessibilityState={{ expanded: selected === item.postId }} onPress={() => { play('selection'); animateLayout(reducedMotion); setSelected(old => old === item.postId ? null : item.postId); }} style={[button, clayBox && styles.clayCard]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="smallBold">{item.title} · {item.kind === 'once' ? tr("참석·개인 평가") : tr("후기·참석 확인")}</ThemedText></Pressable>
         {selected === item.postId && <MeetupReviews postId={item.postId} kind={item.kind} attendanceOnly />}
       </View>)}
       <ThemedText type="subtitle">{tr("받은 글링 리뷰")}</ThemedText>
@@ -64,7 +65,7 @@ function Inbox() {
 }
 function Feedback({ item, onChanged }: { item: MyMannerFeedback; onChanged: () => void }) {
   const { tr } = useLanguage();
-  const theme = useTheme(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback();
   const [open, setOpen] = useState(false), [body, setBody] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState(''), pending = useRef(false);
   const button = [styles.button, { borderColor: theme.line, backgroundColor: theme.backgroundElement }];
   async function submit() {
@@ -74,7 +75,8 @@ function Feedback({ item, onChanged }: { item: MyMannerFeedback; onChanged: () =
     catch { setError("접수 결과를 확인하지 못했어요. 입력은 유지했어요. 최신 상태를 확인해주세요."); play('warning'); }
     finally { pending.current = false; setBusy(false); }
   }
-  return <View style={[styles.card, { borderColor: theme.line }]}>
+  return <View style={[styles.card, clayBox ? styles.clayCard : { borderColor: theme.line }]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     <ThemedText type="smallBold">{item.context === 'meeting' ? tr("실제 만남") : tr("대화")} · {item.status === 'held' ? tr("검토 중 · 집계 제외") : tr("반영된 리뷰")}</ThemedText>
     {item.score != null && <ThemedText type="subtitle">{item.score.toFixed(1)} / 10</ThemedText>}
     {MANNER_QUESTIONS.filter(({ key }) => item.context !== 'chat' || key !== 'punctual').map(({ key, label }) => <ThemedText key={key} type="small">{tr(label)} · {item.signals[key] === null ? tr("확인 못함") : item.signals[key] ? tr("그랬어요") : tr("아쉬웠어요")}</ThemedText>)}
@@ -86,6 +88,6 @@ function Feedback({ item, onChanged }: { item: MyMannerFeedback; onChanged: () =
     {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
   </View>;
 }
-const styles = StyleSheet.create({ page: { padding: 16, gap: 16 }, card: { padding: 12, gap: 8, borderWidth: 1, borderRadius: 12 },
+const styles = StyleSheet.create({ clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' }, page: { padding: 16, gap: 16 }, card: { padding: 12, gap: 8, borderWidth: 1, borderRadius: 12 },
   button: { minHeight: 44, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, justifyContent: 'center' },
   input: { minHeight: 80, padding: 12, borderWidth: 1, borderRadius: 12, textAlignVertical: 'top' } });

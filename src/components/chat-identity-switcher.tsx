@@ -2,8 +2,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { AppState, StyleSheet, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { DragSheet } from '@/components/drag-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
@@ -19,7 +20,7 @@ import { ControlMotion, ControlStyles, Typography, controlPresentation } from '@
 
 export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilityChange }: { onChanged?: () => void; target?: 'chat' | 'business'; onAvailabilityChange?: (available: boolean) => void }) {
   const { me, isAuthed } = useAuth(), business = useChatIdentity(), router = useRouter();
-  const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback();
+  const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), clayBox = useClayBox();
   const [openedFor, setOpenedFor] = useState<string | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [result, setResult] = useState<MyMerchantConnections | null>(null);
   const user = useRef(me.id), serial = useRef(0), pending = useRef(false);
@@ -90,7 +91,7 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
       if (user.current === me.id && request === serial.current) { pending.current = false; setBusy(false); }
     }
   }
-  const optionStyle = (selected: boolean) => [styles.option, { backgroundColor: selected ? theme.backgroundSelected : theme.card, opacity: busy ? 0.5 : 1 }];
+  const optionStyle = (selected: boolean) => [styles.option, { backgroundColor: clayBox ? 'transparent' : selected ? theme.backgroundSelected : theme.card, opacity: busy ? 0.5 : 1 }];
   const photo = (uri: string | null | undefined, personal = false) => <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}>
     <SymbolView name={personal ? { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' } : { ios: 'storefront', android: 'storefront', web: 'storefront' }} size={22} tintColor={theme.accent} />
     {!!uri && <Image source={{ uri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={ControlMotion.settleMs} accessible={false} />}
@@ -103,7 +104,8 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
     </Pressable> :
     <Pressable analyticsId="chat.identity.open" accessibilityRole="button" accessibilityLabel={tr('대화 프로필 선택: {0}', name)}
       accessibilityState={{ expanded: openedFor === me.id }}
-      onPress={() => { void open(); }} style={({ pressed }) => [styles.current, { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : theme.card }]}>
+      onPress={() => { void open(); }} style={({ pressed }) => [styles.current, { borderColor: clayBox ? 'transparent' : theme.line, backgroundColor: clayBox ? 'transparent' : pressed ? theme.backgroundSelected : theme.card, opacity: clayBox && pressed ? 0.82 : 1 }]}>
+      {clayBox && <ClayBoxFill kind="tile" />}
       <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><SymbolView name={business ? { ios: 'storefront', android: 'storefront', web: 'storefront' } : { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} size={22} tintColor={theme.accent} /></View>
       <View style={styles.identity}><ThemedText style={styles.name} numberOfLines={1}>{name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr(business ? '비즈니스 대화함' : '개인 대화함')}</ThemedText></View>
       <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={14} tintColor={theme.textSecondary} />
@@ -113,10 +115,12 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
         <View style={styles.heading}><ThemedText style={Typography.sheetTitle}>{tr(target === 'business' ? '누구로 쓸까요?' : '대화 프로필')}</ThemedText><Pressable analyticsId="chat.identity.close" accessibilityRole="button" accessibilityLabel={tr('프로필 선택 닫기')} onPress={close} style={styles.close}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} /></Pressable></View>
         <ScrollView analyticsId="chat.identity.options" contentContainerStyle={{ gap: 10 }}>
           <Pressable analyticsId="chat.identity.personal" accessibilityRole="radio" accessibilityState={{ selected: !business, disabled: busy }} disabled={busy} onPress={() => { void choose(null); }} style={optionStyle(!business)}>
+            {clayBox && <ClayBoxFill kind="tile" />}
             {photo(me.photoUri, true)}
             <View style={styles.identity}><ThemedText style={styles.name}>{me.nickname}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('개인 프로필')}</ThemedText></View>{!business && <SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} size={22} tintColor={theme.accent} />}
           </Pressable>
           {rows.map(row => <Pressable key={row.id} analyticsId="chat.identity.business" accessibilityRole="radio" accessibilityState={{ selected: row.id === business?.id, disabled: busy }} disabled={busy} onPress={() => { void choose(row.id); }} style={optionStyle(row.id === business?.id)}>
+            {clayBox && <ClayBoxFill kind="tile" />}
             {photo(typeof row.avatar_path === 'string' && row.avatar_path.startsWith(`business-profile/${row.id}/avatar/`) ? businessMediaUrl(row.avatar_path) : null)}
             <View style={styles.identity}><ThemedText style={styles.name}>{row.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('비즈니스')}{target === 'business' ? ` · ${tr(row.role === 'owner' ? '소유자' : '운영 담당자')}` : ''}</ThemedText></View>{row.id === business?.id && <SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} size={22} tintColor={theme.accent} />}
           </Pressable>)}

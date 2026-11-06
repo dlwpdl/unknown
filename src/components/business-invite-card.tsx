@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { StyleSheet, View } from 'react-native';
 
 import { InviteQr, InviteStats, rewardName, useInviteShare } from '@/components/invite-parts';
@@ -14,7 +15,7 @@ import { supabase } from '@/lib/supabase';
 // The business's referral link under 계정 관리. One link per business, so the same link doubles as the shop's QR.
 export function BusinessInviteCard({ merchantId }: { merchantId: string }) {
   const { tr, locale } = useLanguage();
-  const theme = useTheme(), { play } = useInteractionFeedback(), share = useInviteShare();
+  const theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback(), share = useInviteShare();
   const [state, setState] = useState<{ id: string; value: InviteSummary } | null>(null);
   const [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const working = useRef(false);
@@ -28,7 +29,8 @@ export function BusinessInviteCard({ merchantId }: { merchantId: string }) {
   const sendLink = (code: string) => share(tr('글링에 우리 비즈니스도 같이 올려요. 이 링크로 가입하고 첫 글을 올리면 두 비즈니스 모두 비즈니스 2주 이용권을 받아요.'), inviteUrl(code));
   const date = (value: string) => new Date(value).toLocaleDateString(locale, { month: 'long', day: 'numeric' });
 
-  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.card, clayBox ? { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' } : { backgroundColor: theme.card, borderColor: theme.line }]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     <View style={styles.row}>
       <ThemedText type="subtitle" accessibilityRole="header" style={styles.grow}>{tr('비즈니스 초대')}</ThemedText>
       {summary && <MerchantBadge label={tr('{0} / 8주', rewardWeeks(summary.grantedDays))} tone="accent" />}
@@ -40,7 +42,7 @@ export function BusinessInviteCard({ merchantId }: { merchantId: string }) {
       <InviteQr url={inviteUrl(summary.code)} />
       <ThemedText selectable type="small" style={styles.center}>{inviteUrl(summary.code)}</ThemedText>
       <View style={styles.row}><RaisedActionButton compact analyticsId="business.invite.share" label={tr('링크 보내기')} onPress={() => { play('selection'); void sendLink(summary.code!); }} /></View>
-      <InviteStats items={[[tr('가입한 사람'), summary.joined], [tr('이용권 받은 초대'), summary.rewarded]]} />
+      <InviteStats nested items={[[tr('가입한 사람'), summary.joined], [tr('이용권 받은 초대'), summary.rewarded]]} />
       {summary.rewards.map(reward => <ThemedText key={reward.startsAt} type="small" themeColor="textSecondary">{rewardName(reward, true, tr)} · {tr('{0} ~ {1}', date(reward.startsAt), date(reward.endsAt))}</ThemedText>)}
       {summary.activeUntil && <ThemedText type="small" themeColor="accent">{tr('{0}까지 비즈니스 이용권을 쓰고 있어요.', date(summary.activeUntil))}</ThemedText>}
     </> : <View style={styles.row}><RaisedActionButton compact analyticsId="business.invite.create" label={tr('초대 링크 만들기')} busy={busy}

@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
 import { Alert, DeviceEventEmitter, KeyboardAvoidingView, LayoutAnimation, Platform, StyleSheet, TextInput, UIManager, View, type ScrollViewInstance, type TextInputInstance } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from '@/components/themed-text';
 import { StateCard } from '@/components/state-card';

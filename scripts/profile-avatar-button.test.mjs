@@ -13,10 +13,11 @@ function avatar({ os = 'ios', authenticated = true } = {}) {
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { Platform: { OS: os }, View: 'View', StyleSheet: { create: value => value } },
     'expo-router': { useRouter: () => ({ push: value => routes.push(value) }) },
-    'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'Symbol' },
+    'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'Symbol' }, '@/components/symbol-view': { SymbolView: 'Symbol' },
     '@/components/analytics-controls': { Pressable: 'Pressable' },
     '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/chat-identity-switcher': { ChatIdentitySwitcher: 'ChatIdentitySwitcher' },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: 'Symbol', ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: 'ClayPhoto' },
     '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: authenticated, me: { nickname: '개인', photoUri: 'own-photo' } }) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) },
@@ -43,7 +44,7 @@ test('every native own-avatar entry offers the existing business switcher by def
   button.props.onPress();
   assert.deepEqual(app.routes, ['/profile']);
   assert.deepEqual(app.feedback, ['selection']);
-  assert.equal(nodes(button).find(n => n.type === 'Image').props.source.uri, 'own-photo');
+  assert.equal(nodes(button).find(n => n.type === 'ClayPhoto').props.uri, 'own-photo');
 });
 
 test('an explicit optout preserves the avatar and its personal destination', () => {
@@ -80,7 +81,7 @@ test('actual Meetups uses the common account avatar and keeps a separate guarded
       compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
     }).outputText, {
       exports, require: () => ({ jsx, jsxs: jsx }),
-      View: 'View', GlassSurface: 'GlassSurface', Pressable: 'Pressable', ListRow: 'ListRow', ThemedText: 'Text', SymbolView: 'Symbol', ProfileAvatarButton: 'ProfileAvatarButton',
+      View: 'View', GlassSurface: 'GlassSurface', Pressable: 'Pressable', ListRow: 'ListRow', ThemedText: 'Text', SymbolView: 'Symbol', ClayIcon: 'Symbol', clay: false, ProfileAvatarButton: 'ProfileAvatarButton',
       styles: {}, Typography: { menu: {} }, theme: {}, compactHeader: true, city: { name: '밴쿠버' }, IconSize: { chevron: 14 },
       preferenceScope: { current: 'viewer' }, scope: 'viewer', destination: null, createDisabled: false, copy: value => value, sourceInvalid: false, sourceLabel: '', isAuthed, tr: value => value, t: { tabs: { meetups: '모임' } },
       router: { push: value => routes.push(value) }, play: value => feedback.push(value), promptLogin: value => login.push(value), setCityPicker() {},

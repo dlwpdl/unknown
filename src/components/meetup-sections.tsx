@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { Pressable } from '@/components/analytics-controls';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { Typography } from '@/constants/design-system';
@@ -15,10 +16,11 @@ const MAX_ROWS = 8;
 // Purpose card → numbered activities → who it suits → preparation checklist; the intro is rendered by the caller.
 export function MeetupSectionsView({ sections }: { sections: MeetupSections }) {
   const { tr } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
+  const tile = clayBox && <ClayBoxFill kind="tile" />, bare = clayBox ? styles.clayCard : null;
   const head = (title: string) => <ThemedText accessibilityRole="header" style={styles.head}>{tr(title)}</ThemedText>;
   return <View style={styles.view}>
-    {!!sections.purpose && <View style={[styles.purpose, { backgroundColor: theme.card }]}>
+    {!!sections.purpose && <View style={[styles.purpose, { backgroundColor: theme.card }, bare]}>{tile}
       <SymbolView name={{ ios: 'scope', android: 'flag', web: 'flag' }} size={18} tintColor={theme.accent} />
       <View style={styles.flex}><ThemedText themeColor="textSecondary" style={Typography.label}>{tr('모임 목적')}</ThemedText><ThemedText style={styles.text}>{sections.purpose}</ThemedText></View>
     </View>}
@@ -28,9 +30,9 @@ export function MeetupSectionsView({ sections }: { sections: MeetupSections }) {
         <ThemedText style={[styles.text, styles.flex]}>{step}</ThemedText>
       </View>)}
     </View>}
-    {!!sections.fit && <View style={styles.block}>{head('이런 분과 맞아요')}<View style={[styles.box, { backgroundColor: theme.card }]}><ThemedText style={styles.text}>{sections.fit}</ThemedText></View></View>}
+    {!!sections.fit && <View style={styles.block}>{head('이런 분과 맞아요')}<View style={[styles.box, { backgroundColor: theme.card }, bare]}>{tile}<ThemedText style={styles.text}>{sections.fit}</ThemedText></View></View>}
     {sections.preparation.length > 0 && <View style={styles.block}>{head('준비할 것')}
-      {sections.preparation.map((item, index) => <View key={index} style={[styles.row, styles.box, { backgroundColor: theme.card }]}>
+      {sections.preparation.map((item, index) => <View key={index} style={[styles.row, styles.box, { backgroundColor: theme.card }, bare]}>{tile}
         <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={15} tintColor={theme.accent} />
         <ThemedText style={[styles.text, styles.flex]}>{item}</ThemedText>
       </View>)}
@@ -42,6 +44,7 @@ export function MeetupSectionsView({ sections }: { sections: MeetupSections }) {
 // Rows live in local state so an empty "add" row survives until it's typed into; outside replacements (AI, templates) re-split.
 export function MeetupSectionsEditor({ value, onChange, disabled, children, maxLength, heading = true }: { value: string; onChange: (body: string) => void; disabled?: boolean; children: ReactNode; maxLength: number; heading?: boolean }) {
   const { tr } = useLanguage();
+  const clay = useClay();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const [sections, setSections] = useState(() => parseMeetupSections(value));
@@ -78,7 +81,8 @@ export function MeetupSectionsEditor({ value, onChange, disabled, children, maxL
       </View>)}
       {rows.length < MAX_ROWS && <Pressable analyticsId={`meetup.sections.${key}.add`} accessibilityRole="button" disabled={disabled}
         onPress={() => { play('selection'); setSections({ ...sections, [key]: [...rows, ''] }); }}
-        style={({ pressed }) => [styles.add, { opacity: pressed ? 0.6 : 1 }]}>
+        style={({ pressed }) => [styles.add, clay && styles.clayAdd, { opacity: pressed ? 0.6 : 1 }]}>
+        {clay && <ClayPillFill kind="white" />}
         <SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} size={15} tintColor={theme.accent} />
         <ThemedText type="smallBold" themeColor="accent">{tr(addLabel)}</ThemedText>
       </Pressable>}
@@ -95,6 +99,7 @@ export function MeetupSectionsEditor({ value, onChange, disabled, children, maxL
 }
 
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', overflow: 'visible' },
   view: { gap: Spacing.three, marginTop: Spacing.two },
   block: { gap: Spacing.two },
   head: Typography.section,
@@ -110,5 +115,6 @@ const styles = StyleSheet.create({
   wrap: { textAlignVertical: 'top' },
   multiline: { minHeight: 96 },
   remove: { width: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  clayAdd: { overflow: 'visible', paddingHorizontal: 18, justifyContent: 'center' },
   add: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, alignSelf: 'flex-start' },
 });

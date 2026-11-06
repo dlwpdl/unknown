@@ -7,7 +7,7 @@ import ts from 'typescript';
 import { translateUi, translationsFor } from '../src/i18n/index.ts';
 import * as ticketmaster from '../supabase/functions/_shared/ticketmaster.ts';
 
-function carousel({ web = false, focused = true, activeCard = true, reducedMotion = false, screenReader = false, eventCount = 8, now = '2026-10-12T06:59:00Z', nextRefreshAt, failRequest } = {}) {
+function carousel({ web = false, focused = true, activeCard = true, reducedMotion = false, screenReader = false, eventCount = 8, now = '2026-10-12T06:59:00Z', nextRefreshAt, failRequest, page = 0 } = {}) {
   let hook = 0, dirty = false, time = Date.parse(now), focus = focused, cityId = 'vancouver', tree, language = 'ko';
   let windowDimensions = { width: 390, height: 844 };
   const formats = [];
@@ -40,7 +40,7 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
     'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) },
     'expo-router': { Link: Object.assign(() => {}, { AppleZoom: 'Zoom' }), useIsFocused: () => focus, useRouter: () => ({}), useFocusEffect: callback => effect(() => focus ? callback() : undefined, [callback, focus]) },
     'react-native': { AccessibilityInfo: { isScreenReaderEnabled: async () => screenReader, addEventListener: () => ({ remove() {} }) }, AppState: appState, View: 'View', StyleSheet: { create: value => value, flatten: value => value, absoluteFill: {} }, useWindowDimensions: () => windowDimensions, Easing: { inOut: value => value, sin: () => {} }, Animated: { View: 'AnimatedView', Value: class { interpolate() { return this; } setValue() {} }, timing() {}, sequence() {}, loop: () => ({ start: () => motion.push('start'), stop: () => motion.push('stop') }) } },
-    'react-native-reanimated': { useReducedMotion: () => reducedMotion }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'Symbol' },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, 'react-native-reanimated': { useReducedMotion: () => reducedMotion }, 'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'Symbol' }, '@/components/symbol-view': { SymbolView: 'Symbol' },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16, four: 24 } },
@@ -59,7 +59,7 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
     do {
       hook = 0; dirty = false;
       tree = card ? exports.card({ event: events[0], cityId: 'vancouver', index: 0, active: activeCard, reducedMotion, onOpen() {} })
-        : web ? exports.PublicFestivals({ cityId, cityName: ticketmaster.EVENT_CITIES[cityId] }) : exports.LocalEventsCarousel({ cityId, refreshKey: 0, cityLoading: false, onCityReady: ready });
+        : web ? exports.PublicFestivals({ cityId, cityName: ticketmaster.EVENT_CITIES[cityId] }) : exports.LocalEventsCarousel({ cityId, refreshKey: 0, cityLoading: false, page });
       const scroll = elements(tree).find(node => node.props?.analyticsId === 'today.events.carousel');
       if (scroll?.props.ref) scroll.props.ref.current = { scrollTo: position => scrolls.push(position) };
       for (const callback of pending.splice(0)) callback();
@@ -68,7 +68,6 @@ function carousel({ web = false, focused = true, activeCard = true, reducedMotio
     assert.ok(count < 12, 'render must settle');
     return tree;
   };
-  const ready = () => {};
   return { requests, motion, scrolls, feedback, formats, language(value) { language = value; }, setWindowDimensions(value) { windowDimensions = value; }, render, tree: () => tree, remove(id) { events.splice(events.findIndex(event => event.id === id), 1); }, async city(value) { cityId = value; await render(); }, async focus(value) { focus = value; await render(); }, async emit(name, value) { if (name === 'appState') appState.currentState = value; if (name === 'visibilitychange') document.visibilityState = value; for (const callback of [...(listeners.get(name) ?? [])]) callback(value); await render(); }, async tick(delay, advance = 0) { time += advance; for (const timer of [...timers.values()]) if (timer.delay === delay) timer.callback(); await render(); } };
 }
 
@@ -179,7 +178,7 @@ test('native home lists every festival as a small card in one row, without rotat
 for (const web of [false, true]) test(`${web ? 'public' : 'native'} daily refresh retries a transient error after fifteen minutes without user input`, async () => {
   const ui = carousel({ web, failRequest: 2 }); await ui.render();
   await ui.tick(60000, 120000); assert.equal(ui.requests.length, 2);
-  if (!web) assert.match(elements(ui.tree()).find(node => node.props?.analyticsId === 'today.events.retry').props.children.props.children[0], /행사 정보를 불러오지 못했어요/);
+  if (!web) assert.match(elements(ui.tree()).find(node => node.props?.analyticsId === 'today.events.retry').props.children.filter(Boolean)[0].props.children[0], /행사 정보를 불러오지 못했어요/);
   for (let minute = 1; minute < 15; minute++) { await ui.tick(60000, 60000); assert.equal(ui.requests.length, 2); }
   await ui.tick(60000, 60000); assert.equal(ui.requests.length, 3);
   assert.ok(web ? elements(ui.tree()).some(node => node.type === 'article') : cards(ui.tree()).length === 7);
@@ -198,4 +197,20 @@ test('a loaded carousel rereads when a manual exposure ends before its festival 
     await ui.render(); assert.equal(ui.requests.length, 1);
     await ui.tick(60000, 360000); assert.equal(ui.requests.length, 2);
   }
+});
+
+test('a later festival turn between Today posts repeats the whole row, and any turn with no events is skipped (owner 2026-11-04)', async () => {
+  const later = carousel({ page: 1, failRequest: 1 }); await later.render();
+  assert.equal(later.tree(), null, 'a later turn shows no error box');
+  const loading = carousel({ page: 1, focused: false }); await loading.render();
+  assert.equal(loading.tree(), null, 'nor a second loader');
+  const repeat = carousel({ page: 1 }); await repeat.render();
+  assert.deepEqual(cards(repeat.tree()), ['f0', 'f7', 'f1', 'f2', 'f3', 'f4', 'f5']);
+  for (const page of [0, 1]) {
+    const none = carousel({ page, eventCount: 0 }); await none.render();
+    assert.equal(none.requests.length, 1);
+    assert.equal(none.tree(), null, `turn ${page} with no festivals is skipped`);
+  }
+  const first = carousel({ focused: false }); await first.render();
+  assert.ok(elements(first.tree()).some(node => node.props?.accessibilityLabel === '행사 불러오는 중'), 'the first turn keeps its loader');
 });

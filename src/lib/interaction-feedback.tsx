@@ -14,7 +14,8 @@ import {
 } from './interaction-feedback-preferences';
 
 // meetup: a host handled a join request; meetupRequested: the member just sent one and still waits for the host.
-type FeedbackKind = 'selection' | 'reaction' | 'message' | 'success' | 'meetup' | 'meetupRequested' | 'meetupCreated' | 'postPublished' | 'verification2' | 'verification3' | 'warning';
+// postUploaded: postPublished's sound and buzz without the full-screen celebration; the upload card at the top already says it.
+type FeedbackKind = 'selection' | 'reaction' | 'message' | 'success' | 'meetup' | 'meetupRequested' | 'meetupCreated' | 'postPublished' | 'postUploaded' | 'verification2' | 'verification3' | 'warning';
 
 type InteractionFeedbackValue = InteractionPreferences & {
   play: (kind: FeedbackKind) => void;
@@ -125,7 +126,7 @@ function InteractiveFeedbackProvider({ children }: { children: ReactNode }) {
         ? reactionPlayer
         : kind === 'message'
           ? messagePlayer
-          : kind === 'success' || kind === 'postPublished' || kind === 'verification2' || kind === 'verification3'
+          : kind === 'success' || kind === 'postPublished' || kind === 'postUploaded' || kind === 'verification2' || kind === 'verification3'
             ? successPlayer
             : kind === 'meetup' || kind === 'meetupRequested' || kind === 'meetupCreated'
               ? meetupPlayer

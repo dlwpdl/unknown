@@ -3,18 +3,20 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, FlatList } from '@/components/analytics-controls';
 import { useIsFocused, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
-import { Image } from 'expo-image';
+import type { SymbolViewProps } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { LayoutAnimation, Linking, Platform, StyleSheet, UIManager, View } from 'react-native';
 import Reanimated, { FadeIn, FadeInDown, useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProfileAvatarButton } from '@/components/profile-avatar-button';
 import { GlassSurface } from '@/components/glass-surface';
+import { ClayCoinFill, ClayPhoto, ClayIcon, ClayPillFill, useClay, type ClayName } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { LoginPanel } from '@/components/login-panel';
+import { useScreenGlow } from '@/components/screen-glow';
 import { TabContent } from '@/components/tab-content';
 import { ControlMotion, ControlStyles, IconSize, controlPresentation } from '@/constants/design-system';
 import { MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
@@ -50,6 +52,9 @@ const KIND_SYMBOLS: Record<string, SymbolViewProps['name']> = {
   weekly_ranking: { ios: 'trophy.fill', android: 'emoji_events', web: 'emoji_events' },
   system: { ios: 'bell.fill', android: 'notifications', web: 'notifications' },
 };
+// 종류별 3D 그림 (app-3d-ui 시안). 답글·태그·관리자·불꽃은 아직 빚지 않아서 종을 쓴다.
+const KIND_CLAY = new Map<SymbolViewProps['name'], ClayName>([[KIND_SYMBOLS.likes, 'heart_on'], [KIND_SYMBOLS.comment, 'bubble'], [KIND_SYMBOLS.meetups, 'chip_meetup'],
+  [KIND_SYMBOLS.city_food, 'chip_dining'], [KIND_SYMBOLS.city_places, 'chip_places'], [KIND_SYMBOLS.weekly_ranking, 'trophy']]);
 const CITY_LABELS: Record<string, string> = { city_food: '맛집', city_places: '가볼 만한 곳·행사', trending: '지금 뜨는 글', interests: '관심 태그', nearby: '근처 새 모임', weekly_ranking: '이번 주 인기 글' };
 function symbolFor(item: InboxItem<AppNotification>, admin: boolean) {
   const row = item.lead;
@@ -62,8 +67,11 @@ function symbolFor(item: InboxItem<AppNotification>, admin: boolean) {
 }
 
 export default function NotificationsScreen() {
+  // 오늘 탭과 같은 배경 빛(사장님 2026-11-04 '빛 넣을 탭: 지도 빼고 다'). 제목 줄은 투명이라 빛이 비친다.
+  const glow = useScreenGlow(), screenGlow = glow.image();
   const { tr, t, locale: appLocale, language } = useLanguage();
   const theme = useTheme();
+  const clay = useClay();
   const router = useRouter();
   const { isAuthed, isAdmin, isAuthLoading, me, signInApple, signInKakao, signInGoogle, signInDev, authError } = useAuth();
   const userId = isAuthed && !isAuthLoading ? me.id : null;
@@ -283,7 +291,8 @@ export default function NotificationsScreen() {
         {snippet && snippet !== title && snippet !== body && <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{snippet}</ThemedText>}
         <ThemedText type="small" themeColor="textSecondary">{time}</ThemedText>
         {chip && <Pressable analyticsId={rsvp ? 'notifications.meetup-rsvp' : 'app_tabs_notifications.pressable.4'} accessibilityRole="button" accessibilityLabel={chip} onPress={() => open(item)}
-          style={({ pressed }) => [ControlStyles.pill, styles.chip, controlPresentation(theme, { tone: row.kind === 'meetup_request' ? 'primary' : 'secondary', pressed }).container]}>
+          style={({ pressed }) => [ControlStyles.pill, styles.chip, controlPresentation(theme, { tone: row.kind === 'meetup_request' ? 'primary' : 'secondary', pressed, clay }).container]}>
+          {clay && <ClayPillFill kind={row.kind === 'meetup_request' ? 'cta' : 'white'} />}
           <ThemedText type="smallBold" style={controlPresentation(theme, { tone: row.kind === 'meetup_request' ? 'primary' : 'secondary' }).text}>{chip}</ThemedText>
         </Pressable>}
       </View>
@@ -291,13 +300,13 @@ export default function NotificationsScreen() {
   };
 
   return (
-    <TabContent style={styles.screen}>
+    <TabContent style={[styles.screen, screenGlow != null && { backgroundImage: screenGlow }]} onLayout={glow.onLayout}>
       <SafeAreaView style={{ flex: 1, width: '100%' }}><View style={styles.safeArea}>
-        <View style={[styles.header, { backgroundColor: theme.background }]}>
+        <View style={styles.header}>
           <ThemedText accessibilityRole="header" style={styles.headerTitle}>{t.notifications.title}</ThemedText>
           <ProfileAvatarButton />
-          <GlassSurface tone="control" interactive style={styles.settingsGlass}><Pressable analyticsId="app_tabs_notifications.pressable.1" accessibilityRole="button" accessibilityLabel={tr("알림 설정")} onPress={() => { play('selection'); router.push('/profile/notifications'); }} style={({ pressed }) => [styles.settings, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
-            <SymbolView name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }} size={22} tintColor={theme.text} />
+          <GlassSurface tone="control" clay="white" interactive style={styles.settingsGlass}><Pressable analyticsId="app_tabs_notifications.pressable.1" accessibilityRole="button" accessibilityLabel={tr("알림 설정")} onPress={() => { play('selection'); router.push('/profile/notifications'); }} style={({ pressed }) => [styles.settings, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
+            <ClayIcon clay="sliders" claySize={26} name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }} size={22} tintColor={theme.text} />
           </Pressable></GlassSurface>
         </View>
         <View style={styles.tabs} accessibilityRole="tablist">
@@ -306,7 +315,8 @@ export default function NotificationsScreen() {
             // SelectionChip fades the accent fill in and out instead of hard-switching the selected tab.
             return <SelectionChip analyticsId="app_tabs_notifications.pressable.3" key={key} selected={selected} accessibilityRole="tab" accessibilityState={{ selected }}
               accessibilityLabel={unread ? tr("{0}, 안 읽은 알림 {1}개", label, unread) : label} onPress={() => selectTab(key)}
-              baseColor={theme.card} style={[ControlStyles.pill, styles.tab, { borderColor: selected ? theme.accent : theme.line }]}>
+              baseColor={clay ? 'transparent' : theme.card} style={[ControlStyles.pill, styles.tab, { borderColor: clay ? 'transparent' : selected ? theme.accent : theme.line }]}>
+              {clay && !selected && <ClayPillFill kind="white" />}
               <ThemedText type="smallBold" style={look.text} numberOfLines={1}>{label}</ThemedText>
               {unread > 0 && <View style={[styles.count, { backgroundColor: selected ? theme.accentInk : theme.accent }]}>
                 <ThemedText type="caption" style={{ color: selected ? theme.accent : theme.accentInk, fontWeight: '700' }}>{unread > 99 ? '99+' : unread}</ThemedText>
@@ -314,8 +324,9 @@ export default function NotificationsScreen() {
             </SelectionChip>;
           })}
           {markable.length > 0 && <Pressable analyticsId="app_tabs_notifications.pressable.5" accessibilityRole="button" onPress={markAll}
-            style={({ pressed }) => [ControlStyles.pill, styles.markAll, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
-            <ThemedText type="smallBold" themeColor="accent">{tr("모두 읽음")}</ThemedText>
+            style={({ pressed }) => [ControlStyles.pill, styles.markAll, clay && { overflow: 'visible', paddingHorizontal: 18 }, controlPresentation(theme, { tone: 'ghost', pressed, clay }).container]}>
+            {clay && <ClayPillFill kind="white" />}
+            <ThemedText type="smallBold" themeColor={clay ? undefined : 'accent'}>{tr("모두 읽음")}</ThemedText>
           </Pressable>}
         </View>
         {error && rows.length > 0 && <Pressable analyticsId="app_tabs_notifications.pressable.6" accessibilityRole="alert" onPress={() => { play('selection'); void load(false, true); }}
@@ -353,11 +364,13 @@ export default function NotificationsScreen() {
 
 function Avatar({ actor, fallback, symbol, small, style }: { actor?: Person; fallback?: string; symbol?: SymbolViewProps['name']; small?: boolean; style?: object }) {
   const theme = useTheme();
-  return <View style={[small ? styles.avatarSmall : styles.avatar, { backgroundColor: theme.backgroundElement, borderColor: theme.background }, style]}>
+  const clay = useClay();
+  return <View style={[small ? styles.avatarSmall : styles.avatar, { backgroundColor: clay ? 'transparent' : theme.backgroundElement, borderColor: clay ? 'transparent' : theme.background }, clay && styles.clayAvatar, style]}>
+    {clay && !actor?.avatarUrl && <ClayCoinFill />}
     {actor?.avatarUrl
-      ? <Image source={{ uri: actor.avatarUrl }} style={styles.avatarImage} contentFit="cover" transition={ControlMotion.settleMs} accessibilityIgnoresInvertColors />
+      ? <ClayPhoto uri={actor.avatarUrl} size={small ? 30 : 44} transition={ControlMotion.settleMs} />
       : fallback ? <ThemedText type="smallBold" themeColor="textSecondary">{fallback.trim().slice(0, 1)}</ThemedText>
-      : <SymbolView name={symbol ?? KIND_SYMBOLS.system} size={IconSize.toolbar} tintColor={theme.accent} />}
+      : <ClayIcon clay={KIND_CLAY.get(symbol ?? KIND_SYMBOLS.system) ?? 'bell'} claySize={26} name={symbol ?? KIND_SYMBOLS.system} size={IconSize.toolbar} tintColor={theme.accent} />}
   </View>;
 }
 
@@ -369,6 +382,7 @@ function KindBadge({ symbol }: { symbol: SymbolViewProps['name'] }) {
 }
 
 const styles = StyleSheet.create({
+  clayAvatar: { overflow: 'visible' },
   fill: { flex: 1 },
   screen: { flex: 1, alignItems: 'center' },
   safeArea: { flex: 1, width: '100%', alignSelf: 'center', maxWidth: MaxContentWidth },
@@ -389,7 +403,6 @@ const styles = StyleSheet.create({
   avatarWrap: { width: 44, height: 44 },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarSmall: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'absolute' },
-  avatarImage: { width: '100%', height: '100%' },
   stack: { width: 44, height: 44 },
   stackFirst: { left: 0, top: 0 },
   stackSecond: { right: 0, bottom: 0 },

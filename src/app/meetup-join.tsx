@@ -6,7 +6,8 @@ import { useFocusEffect, useLocalSearchParams, usePreventRemove, useRouter } fro
 import { Alert, Animated, AppState, DeviceEventEmitter, Easing, KeyboardAvoidingView, Modal, Platform, RefreshControl, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { requestPushPrompt } from '@/lib/push-prompt';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
+import { ClayCoinFill, ClayPillFill, useClay } from '@/components/clay';
 import { Image } from 'expo-image';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
@@ -79,7 +80,7 @@ export default function MeetupJoinRoute() {
 function JoinForm({ postId }: { postId: string }) {
   const { fontScale } = useWindowDimensions();
   const { tr, t, language, locale: appLocale } = useLanguage();
-  const theme = useTheme(), router = useRouter(), hidden = useContentVisibility();
+  const theme = useTheme(), router = useRouter(), hidden = useContentVisibility(), clay = useClay();
   const copy = (ko: string, en: string) => language === 'en' ? en : ko;
   const { isAuthed, promptLogin, me } = useAuth();
   const { play } = useInteractionFeedback();
@@ -260,7 +261,8 @@ function JoinForm({ postId }: { postId: string }) {
       </View>
       <View style={[styles.pairItem, { flexBasis: 140 * fontScale }]}>
         <ThemedText style={Typography.label}>{tr("활동 지역")}</ThemedText>
-        <Pressable analyticsId="meetup.join.city" accessibilityRole="button" accessibilityLabel={`${tr("활동 지역")}, ${language === 'en' ? draftCity.englishName : draftCity.name}`} disabled={sending} onPress={() => { play('selection'); setCityOpen(true); }} style={({ pressed }) => [ControlStyles.field, styles.city, { borderColor: theme.line, backgroundColor: theme.background, opacity: pressed ? 0.7 : 1 }]}>
+        <Pressable analyticsId="meetup.join.city" accessibilityRole="button" accessibilityLabel={`${tr("활동 지역")}, ${language === 'en' ? draftCity.englishName : draftCity.name}`} disabled={sending} onPress={() => { play('selection'); setCityOpen(true); }} style={({ pressed }) => [ControlStyles.field, styles.city, clay ? styles.clayCity : { borderColor: theme.line, backgroundColor: theme.background }, { opacity: pressed ? 0.7 : 1 }]}>
+          {clay && <ClayPillFill kind="white" />}
           <ThemedText numberOfLines={1} style={styles.flex}>{language === 'en' ? draftCity.englishName : draftCity.name}</ThemedText>
           <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={14} tintColor={theme.textSecondary} />
         </Pressable>
@@ -304,7 +306,7 @@ function JoinForm({ postId }: { postId: string }) {
       <MeetupChips post={post!} hideOpen />
       <ThemedText accessibilityRole="header" style={Typography.sheetTitle}>{post!.title}</ThemedText>
       <View style={styles.host}>
-        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.hostAvatar, { backgroundColor: theme.backgroundSelected }]}><ThemedText type="smallBold">{[...host][0]}</ThemedText></View>
+        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.hostAvatar, !clay && { backgroundColor: theme.backgroundSelected }]}>{clay && <ClayCoinFill />}<ThemedText type="smallBold">{[...host][0]}</ThemedText></View>
         <ThemedText type="smallBold" style={styles.flexShrink}>{host}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">{tr('호스트')}</ThemedText>
       </View>
@@ -462,6 +464,7 @@ const styles = StyleSheet.create({
   pair: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, pairItem: { flexGrow: 1, minWidth: 0, gap: Spacing.one },
   field: { borderWidth: 1, paddingHorizontal: Spacing.three, fontSize: 16 },
   city: { borderWidth: 1, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  clayCity: { overflow: 'visible', borderWidth: 0, backgroundColor: 'transparent' },
   examples: { gap: Spacing.one, paddingHorizontal: Spacing.three }, examplesRow: { marginHorizontal: -Spacing.three },
   who: { gap: Spacing.half },
   steps: { marginTop: Spacing.two },

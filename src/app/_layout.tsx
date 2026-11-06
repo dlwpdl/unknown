@@ -2,16 +2,21 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
+import { ShareIntentProvider } from 'expo-share-intent';
 import { useEffect } from 'react';
-import { Appearance } from 'react-native';
+import { Appearance, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { AppUpdateGate } from '@/components/app-update-gate';
 import { AppActivity } from '@/components/app-activity';
 import { AppBadgeSync } from '@/components/app-badge-sync';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { LIVE_ACCESSORY, LiveBubbleBar, LiveNotice } from '@/components/live-bubble-bar';
 import { NotificationObserver } from '@/components/notification-observer';
 import { PushInvite } from '@/components/push-invite';
+import { PostUploadCard } from '@/components/post-upload-card';
+import { SharedImport } from '@/components/shared-import';
 import { AuthProvider } from '@/lib/auth';
 import { CommunityCityProvider } from '@/lib/community-city';
 import { installErrorReporting } from '@/lib/error-reporting';
@@ -27,7 +32,8 @@ SplashScreen.setOptions({ fade: false });
 installErrorReporting();
 
 export default function TabLayout() {
-  return <LanguagePreferenceProvider><ThemePreferenceProvider><AppLayout /></ThemePreferenceProvider></LanguagePreferenceProvider>;
+  // The share-intent provider sits outside the others, as the package asks; the web layout has no share sheet.
+  return <ShareIntentProvider><LanguagePreferenceProvider><ThemePreferenceProvider><AppLayout /></ThemePreferenceProvider></LanguagePreferenceProvider></ShareIntentProvider>;
 }
 
 function AppLayout() {
@@ -39,6 +45,9 @@ function AppLayout() {
     Appearance.setColorScheme(scheme);
     void SystemUI.setBackgroundColorAsync(theme.background).catch(() => {});
   }, [scheme, theme.background]);
+  const screens = <Stack screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="meetup-create" options={{ animation: reducedMotion ? 'none' : 'slide_from_bottom' }} />
+  </Stack>;
   return (
     <ThemeProvider value={{ ...navigationTheme, colors: { ...navigationTheme.colors, primary: theme.accent, background: theme.background, card: theme.card, text: theme.text, border: theme.line, notification: theme.accent } }}>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
@@ -52,12 +61,19 @@ function AppLayout() {
         <AppActivity />
         <NotificationObserver />
         <AppBadgeSync />
+        <SharedImport />
         <MembershipProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="meetup-create" options={{ animation: reducedMotion ? 'none' : 'slide_from_bottom' }} />
-          </Stack>
+          {/* 내 말풍선이 떠 있으면 늘 보인다 (동네 말풍선 지도, owner 2026-11-05). iOS 26+는 탭 바 바로 위 칸(owner 9148628c)이라 여기선 알림·거리 확인만 돈다.
+            Elsewhere the bar sits on top of every screen; screens get their own safe-area provider so they start below it, with the same insets when it is down. */}
+          {LIVE_ACCESSORY ? <><LiveBubbleBar />{screens}</> : <View style={{ flex: 1 }}>
+            <LiveBubbleBar />
+            <SafeAreaProvider>{screens}</SafeAreaProvider>
+          </View>}
           {/* Opens only right after a first comment, post, meetup request or meetup creation. */}
           <PushInvite />
+          {/* 글쓰기 창을 닫은 뒤에도 올리기를 앱 맨 위에서 보여 준다 (owner 2026-11-04 ③). */}
+          <PostUploadCard />
+          <LiveNotice />
         </MembershipProvider>
         </CommunityCityProvider>
         </ContentTranslationProvider>

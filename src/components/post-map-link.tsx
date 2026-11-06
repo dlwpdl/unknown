@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import { useLayoutEffect, useRef } from 'react';
 import { Alert, Linking, Platform, StyleSheet, View } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';

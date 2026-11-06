@@ -21,6 +21,7 @@ test('iOS and Android public login omit review access while the explicit review 
       if (name === 'expo-font') return { useFonts: () => [true] };
       if (name === '@/i18n/ko') return { t };
       if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
+    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
 if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
       if (name === '@/constants/theme') return { Colors: { dark: {} }, Spacing: {}, Depth: { card: {}, control: {} } };
       if (name === 'react-native') return { Platform: { OS }, StyleSheet: { create: value => value }, Animated: { Value: class { interpolate() { return 1; } }, View: 'AnimatedView' }, View: 'View', TextInput: 'TextInput', KeyboardAvoidingView: 'KeyboardAvoidingView' };

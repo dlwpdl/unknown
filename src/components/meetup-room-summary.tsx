@@ -2,9 +2,10 @@ import { useLanguage } from '@/hooks/use-language';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, DeviceEventEmitter, Platform, StyleSheet, View } from 'react-native';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable } from '@/components/analytics-controls';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import type { MeetupManageSheet } from '@/components/meetup-manage-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { IconSize, ControlStyles } from '@/constants/design-system';
@@ -60,7 +61,7 @@ export function MeetupHistoryChoice({ value, onChange, disabled }: { value: bool
   const { play } = useInteractionFeedback();
   return <Pressable analyticsId="meetup.request.history" accessibilityRole="checkbox" accessibilityState={{ checked: value, disabled: !!disabled }} aria-checked={value} disabled={disabled}
     onPress={() => { play('selection'); onChange(!value); }} style={({ pressed }) => [styles.choice, { opacity: disabled ? 0.45 : pressed ? 0.82 : 1 }]}>
-    <View aria-hidden accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.checkbox, { borderColor: value ? theme.accent : theme.line, backgroundColor: value ? theme.accent : theme.card }]}>
+    <View aria-hidden accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.checkbox, { borderColor: value ? theme.accent : theme.textSecondary, backgroundColor: value ? theme.accent : theme.card }]}>
       {value && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={IconSize.chevron} tintColor={theme.accentInk} />}
     </View>
     <View style={styles.body}>
@@ -74,7 +75,7 @@ export function MeetupHistoryChoice({ value, onChange, disabled }: { value: bool
 /** onManage receives the host recruiting/edit actions built from the loaded room so the caller's 모임 관리 sheet can list them. */
 export function MeetupRoomSummary({ postId, onOpen, onManage }: { postId: string; onOpen: () => void; onManage?: (hostActions: ManageAction[]) => void }) {
   const { tr, language, locale: appLocale } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const router = useRouter();
   const [post, setPost] = useState<PublicMeetupContext | null>(null), [version, setVersion] = useState(0);
@@ -86,7 +87,8 @@ export function MeetupRoomSummary({ postId, onOpen, onManage }: { postId: string
   const room = post?.room;
   const schedule = room ? chillingSchedule(room, appLocale) : null;
   const count = room ? (room.capacity != null ? tr('{0}/{1}명', room.memberCount, room.capacity) : tr('{0}명', room.memberCount)) + (room.recruitingClosed ? tr(' · 모집 마감') : '') : null;
-  return <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>
+    {clayBox && <ClayBoxFill kind="tile" />}
     <Pressable analyticsId="chat.meetup-summary" accessibilityRole="button" accessibilityLabel={language === 'en' ? 'Open meetup overview' : '모임 현황 열기'}
     onPress={() => { play('selection'); onOpen(); }}
     style={({ pressed }) => [styles.open, { opacity: pressed ? 0.82 : 1 }]}>
@@ -112,6 +114,7 @@ export function MeetupRoomSummary({ postId, onOpen, onManage }: { postId: string
 
 const styles = StyleSheet.create({
   card: { marginHorizontal: Spacing.three, marginTop: Spacing.three, borderWidth: 1, borderRadius: 16, overflow: 'hidden' },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   open: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, padding: Spacing.two, paddingLeft: Spacing.three },
   manage: { minHeight: 44, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: Spacing.two },
   badge: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

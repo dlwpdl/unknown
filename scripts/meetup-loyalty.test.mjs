@@ -54,12 +54,13 @@ test('pinned notices: the server list wins, an older server still shows its one 
   for (const [, key] of source.slice(source.indexOf('export function MeetupRoomTop'), source.indexOf('const AUDIENCES')).matchAll(/tr\('([^']+)'/g)) assert.ok(uiEnglish[key], key);
 });
 
-test('today feed: this week\'s most-read list comes right after the date line, before the start guide', () => {
+test('today feed: this week\'s most-read list sits right under the categories, before the start guide; festivals and places moved into the list', () => {
   const source = readFileSync(new URL('../src/components/feed-screen.tsx', import.meta.url), 'utf8');
-  const header = source.slice(source.indexOf('styles.journalIntro'));
+  const start = source.indexOf('styles.todayHeader'), header = source.slice(start, source.indexOf('Array.isArray(item) ?', start));
   const ranking = header.indexOf('{!feedLoading && weeklyRanking}');
   assert.ok(ranking > 0 && header.indexOf('weeklyRanking}', ranking + 40) === -1);
-  for (const later of ['<StartGuide', '<NewcomerProgressCard', '<LocalEventsCarousel', '<CityPopularPlaces']) assert.ok(ranking < header.indexOf(later), later);
+  for (const later of ['<StartGuide', '<NewcomerProgressCard']) assert.ok(ranking < header.indexOf(later), later);
+  for (const moved of ['<LocalEventsCarousel', '<CityPopularPlaces']) assert.equal(header.indexOf(moved), -1, moved);
 });
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];

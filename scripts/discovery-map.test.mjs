@@ -4,6 +4,8 @@ import vm from 'node:vm';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers } from '../src/lib/discovery-map-html.ts';
+import { MAP_PIN_ART } from '../src/lib/map-pin-art.ts';
+
 
 const marker = { id: 'place:1', latitude: 49.28, longitude: -123.12, color: '#d86632', label: '카페' };
 const sessionId = 'canvas-1';
@@ -108,15 +110,16 @@ test('only accepts current session messages, known selection IDs and exact credi
   for (const raw of ['oops', 'null', '[]', '{}', 'x'.repeat(2049)]) assert.equal(discoveryMapMessage(raw, sessionId, [marker]), null);
 });
 
-function canvas(markers = [marker], providedHtml) {
-  const messages = [], listeners = {}, cameras = [], sources = {}, layers = [], images = {}, paddingCalls = [], userMarkers = [], labels = [];
+function canvas(markers = [marker], providedHtml, extra = {}, globals = {}) {
+  const messages = [], listeners = {}, cameras = [], sources = {}, layers = [], images = {}, paddingCalls = [], userMarkers = [], cityMarkers = [], labels = [];
+  const rootVars = {}, credits = { 'credits-links': { hidden: true }, 'credits-toggle': { setAttribute(name, value) { this[name] = value; } } };
   const container = { clientHeight: 400, style: { setProperty(name, value) { this[name] = value; }, getPropertyValue(name) { return this[name] ?? ''; } } };
   let map;
   class Map {
     constructor(config) { this.config = config; this.zoom = 11; map = this; }
     on(type, callback) { listeners[type] = callback; }
     addControl() {}
-    addSource(id, source) { sources[id] = { ...source, setData(data) { this.data = data; }, getClusterExpansionZoom: async () => 14 }; }
+    addSource(id, source) { sources[id] = { ...source, setData(data) { this.data = data; } }; }
     addLayer(layer) { layers.push(layer); }
     hasImage(id) { return Boolean(images[id]); }
     addImage(id, image, options) { images[id] = { image, options }; }
@@ -131,20 +134,35 @@ function canvas(markers = [marker], providedHtml) {
     setPadding(padding) { this.padding = padding; paddingCalls.push(padding); }
   }
   const window = { parent: { postMessage: message => messages.push(JSON.parse(message)) }, addEventListener: (type, callback) => { listeners['window:' + type] = callback; }, matchMedia: () => ({ matches: true }) };
-  const drawing = { scale() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, arcTo() {}, closePath() {}, fill() {}, stroke() {}, measureText: text => ({ width: text.length * 6 }), fillText(text) { labels.push(text); }, getImageData: (_x, _y, width, height) => ({ width, height, data: new Uint8Array(width * height * 4) }) };
+  const drawing = { scale() {}, arc() {}, drawImage() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, arcTo() {}, closePath() {}, fill() {}, stroke() {}, measureText: text => ({ width: text.length * 6 }), fillText(text) { labels.push(text); }, getImageData: (_x, _y, width, height) => ({ width, height, data: new Uint8Array(width * height * 4) }) };
   class Marker {
-    constructor({ element }) { this.element = element; userMarkers.push(this); }
+    constructor({ element }) { this.element = element; (element.className === 'city-pill' ? cityMarkers : userMarkers).push(this); }
     setLngLat(point) { this.point = Array.from(point); return this; }
     addTo() { return this; }
     remove() { this.removed = true; }
+    getElement() { return this.element; }
+    setRotation(degrees) { this.rotation = degrees; return this; }
   }
-  const context = { window, document: { createElement: () => ({ getContext: () => drawing, setAttribute(name, value) { this[name] = value; } }), addEventListener: (type, callback) => { listeners['document:' + type] = callback; } }, maplibregl: { Map, Marker, NavigationControl: class {} }, setTimeout: () => 1, clearTimeout() {}, console };
-  const html = providedHtml ?? discoveryMapHtml({ ...options, markers });
+  const context = { window, document: { createElement: () => ({ getContext: () => drawing, setAttribute(name, value) { this[name] = value; } }), addEventListener: (type, callback) => { listeners['document:' + type] = callback; }, documentElement: { style: { setProperty(name, value) { rootVars[name] = value; } } }, getElementById: id => credits[id] ?? null }, maplibregl: { Map, Marker, NavigationControl: class {} }, setTimeout: () => 1, clearTimeout() {}, console, ...globals };
+  const html = providedHtml ?? discoveryMapHtml({ ...options, markers, ...extra });
   const script = [...html.matchAll(/<script nonce="gling-map">([\s\S]*?)<\/script>/g)].at(-1)[1];
   vm.runInNewContext(script, context);
-  listeners.load();
-  return { window, listeners, cameras, sources, layers, images, paddingCalls, messages, map, html, userMarkers, labels };
+  if (!globals.deferLoad) listeners.load();
+  return { window, listeners, cameras, sources, layers, images, paddingCalls, messages, map, html, userMarkers, cityMarkers, labels, rootVars, credits };
 }
+
+test('a passing map error while loading never shows the failure; one that outlasts 5s does (owner b09e6df1)', () => {
+  const run = () => { const timers = []; const c = canvas([marker], undefined, {}, { deferLoad: true, setTimeout: (fn, ms) => timers.push({ fn, ms }) }); return { c, timers, errors: () => c.messages.filter(m => m.type === 'error').length, grace: () => timers.filter(t => t.ms === 5000) }; };
+  const passing = run();
+  passing.c.listeners.error({}); passing.c.listeners.error({});
+  assert.equal(passing.errors(), 0, 'no failure card while still loading');
+  assert.equal(passing.grace().length, 1, 'one grace timer for many errors');
+  passing.c.listeners.load(); passing.grace()[0].fn();
+  assert.equal(passing.errors(), 0); assert.ok(passing.c.messages.some(m => m.type === 'ready'));
+  const stuck = run();
+  stuck.c.listeners.error({}); stuck.grace()[0].fn();
+  assert.equal(stuck.errors(), 1, 'still not loaded after the grace: show the failure');
+});
 
 test('own GPS marker stays separate from camera and place selection, updates and clears explicitly', () => {
   const c = canvas();
@@ -168,6 +186,57 @@ test('own GPS marker stays separate from camera and place selection, updates and
   assert.deepEqual(ownMarker.point, [-123.15, 49.3]);
   c.window.glingDiscoveryUpdate(sessionId, { ...state, userLocation: null });
   assert.equal(ownMarker.removed, true);
+});
+
+test('M7: the location dot grows a facing cone only while a heading arrives, turned to it and dropped without one', () => {
+  const c = canvas();
+  const state = { markers: [marker], userLocation: { latitude: 49.29, longitude: -123.14 } };
+  c.window.glingDiscoveryUpdate(sessionId, state);
+  const dot = c.userMarkers[0];
+  assert.equal(dot.element['data-facing'], undefined, 'no heading keeps the plain dot');
+  c.window.glingDiscoveryUpdate(sessionId, { ...state, heading: 90 });
+  assert.equal(dot.element['data-facing'], '1');
+  assert.equal(dot.rotation, 90);
+  c.window.glingDiscoveryUpdate(sessionId, { ...state, heading: null });
+  assert.equal(dot.element['data-facing'], '0');
+  assert.equal(c.userMarkers.length, 1, 'the same dot is reused');
+  for (const heading of [-5, 360, NaN, '90']) {
+    assert.throws(() => discoveryMapScript({ ...state, heading }, sessionId));
+    c.window.glingDiscoveryUpdate(sessionId, { ...state, heading });
+    assert.equal(dot.element['data-facing'], '0', 'an invalid embedded heading never turns the cone on');
+  }
+  assert.ok(c.html.includes('.user-location-marker[data-facing="1"]::before'));
+});
+
+test('M1: a state colour crosses the map boundary only as a hex value and draws its dot above the pins', () => {
+  assert.deepEqual(discoveryMarkers([{ ...marker, statusColor: '#E8743B' }]), [{ ...marker, statusColor: '#E8743B' }]);
+  assert.deepEqual(discoveryMarkers([marker]), [marker], 'a place without a state stays as it was');
+  for (const bad of ['orange', 7, '#fff', '#E8743B;background:url(x)']) assert.throws(() => discoveryMarkers([{ ...marker, statusColor: bad }]), /INVALID_DISCOVERY_MARKER/);
+  const c = canvas([{ ...marker, statusColor: '#E8743B' }, { ...marker, id: 'place:2' }]);
+  assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.statusColor), ['#E8743B', '']);
+  const layer = c.layers.find(layer => layer.id === 'discovery-status');
+  assert.equal(JSON.stringify(layer.filter), '["!=",["get","statusColor"],""]');
+  assert.equal(JSON.stringify(layer.paint['circle-color']), '["get","statusColor"]');
+  assert.ok(c.layers.indexOf(layer) > c.layers.findIndex(value => value.id === 'discovery-selected'), 'a chosen pin keeps its dot');
+  c.window.glingDiscoveryUpdate(sessionId, { markers: [marker, { ...marker, id: 'place:2', statusColor: '#E0559A' }] });
+  assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.statusColor), ['', '#E0559A'], 'a new read moves the dot without a reload');
+  c.window.glingDiscoveryUpdate(sessionId, { markers: [marker, { ...marker, id: 'place:2', statusColor: 'url(x)' }] });
+  assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.statusColor), ['', '#E0559A'], 'the page refuses a bad colour too');
+  assert.ok(c.html.includes('주황색 점은 요즘 뜨는 곳, 분홍색 점은 인기 있는 곳이에요.'), 'the map label says what the colours mean');
+});
+
+test('M5: a saved flag crosses the map boundary only as a boolean and draws the bookmark mark above the pins', () => {
+  assert.deepEqual(discoveryMarkers([{ ...marker, saved: true }]), [{ ...marker, saved: true }]);
+  assert.deepEqual(discoveryMarkers([{ ...marker, saved: false }]), [marker]);
+  assert.throws(() => discoveryMarkers([{ ...marker, saved: 'yes' }]), /INVALID_DISCOVERY_MARKER/);
+  const c = canvas([{ ...marker, saved: true }, { ...marker, id: 'place:2' }]);
+  assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.saved), [true, false]);
+  assert.ok(c.images['saved-mark']);
+  const layer = c.layers.find(layer => layer.id === 'discovery-saved');
+  assert.equal(JSON.stringify(layer.filter), '["==",["get","saved"],true]');
+  assert.ok(c.layers.indexOf(layer) > c.layers.findIndex(value => value.id === 'discovery-selected'), 'a chosen saved pin keeps its mark');
+  c.window.glingDiscoveryUpdate(sessionId, { markers: [marker, { ...marker, id: 'place:2', saved: true }] });
+  assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.saved), [false, true], 'saving from the card moves the mark without a reload');
 });
 
 test('own location validates both update boundaries and only forwards coordinates', () => {
@@ -217,28 +286,27 @@ test('only a typed Top 25 flag crosses the embedded map boundary', () => {
   assert.throws(() => discoveryMarkers([{ ...marker, top25: 'true' }]));
 });
 
-test('Top 50 uses a circular outline and a selected-only label while preserving category colors and cluster counts', () => {
+test('Top 50 uses a circular outline and a selected-only label while preserving category colors', () => {
   const c = canvas([{ ...marker, top25: true }]);
   assert.deepEqual(c.labels, ['TOP 50']);
   assert.equal(c.sources.discovery.data.features[0].properties.top25, true);
   assert.equal(c.sources.discovery.data.features[0].properties.color, marker.color);
-  assert.ok(c.sources.discovery.clusterProperties.top25Count);
   assert.equal(c.images['top25-small'], undefined, 'ordinary map points do not carry a floating flag icon');
   assert.ok(c.images['top25-full']);
   assert.equal(c.images['top25-full'].options.pixelRatio, 2);
   assert.equal(c.layers.find(layer => layer.id === 'discovery-top25').type, 'circle');
-  assert.ok(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-clusters').paint).includes('top25Count'));
   assert.ok(c.layers.some(layer => layer.id === 'discovery-selected-top25' && layer.source === 'discovery-selection'));
   c.window.glingDiscoveryUpdate(sessionId, { markers: [{ ...marker, top25: 'true' }], selectedId: null });
   assert.equal(c.sources.discovery.data.features[0].properties.top25, true);
 });
 
-test('clusters GeoJSON with counts and 44px targets; preserves camera for result updates', async () => {
+test('pins are never grouped into counts, keep 44px targets and preserve the camera for result updates', async () => {
   const c = canvas();
   assert.equal(c.map.config.zoom, 11);
   assert.deepEqual(Array.from(c.map.config.center), [-123.12, 49.28]);
-  assert.equal(c.sources.discovery.cluster, true);
-  assert.ok(c.layers.some(layer => layer.type === 'symbol' && layer.layout['text-field'].includes('point_count')));
+  assert.equal(c.sources.discovery.cluster, undefined, 'owner 2026-11-04: no cluster counts');
+  assert.ok(!JSON.stringify(c.layers).includes('point_count'));
+  assert.ok(!c.layers.some(layer => /cluster|counts/.test(layer.id)));
   assert.ok(c.layers.some(layer => layer.paint?.['circle-radius'] === 22));
   c.window.glingDiscoveryUpdate(sessionId, { markers: [{ ...marker, longitude: -123 }], selectedId: null, center: null });
   assert.equal(c.cameras.length, 0);
@@ -254,13 +322,10 @@ test('clusters GeoJSON with counts and 44px targets; preserves camera for result
   assert.equal(c.cameras.length, cameraCount);
   c.window.glingDiscoveryUpdate(sessionId, { markers: [marker], selectedId: marker.id, center: { latitude: 43.65, longitude: -79.38 } });
   assert.deepEqual(Array.from(c.cameras.at(-1).center), [-79.38, 43.65]);
-  c.map.hits = [{ properties: { cluster_id: 4, point_count: 2 }, geometry: { type: 'Point', coordinates: [-123.1, 49.3] } }];
-  await c.listeners.click({ point: { x: 10, y: 10 } });
-  assert.equal(c.cameras.at(-1).zoom, 14);
   c.map.hits = [{ properties: { id: marker.id }, geometry: { type: 'Point', coordinates: [-123.12, 49.28] } }];
   await c.listeners.click({ point: { x: 10, y: 10 } });
   assert.ok(c.messages.some(message => message.type === 'select' && message.id === marker.id));
-  assert.ok(c.messages.filter(message => message.type === 'feedback').length >= 2);
+  assert.equal(c.messages.filter(message => message.type === 'feedback').length, 1);
 });
 
 test('embedded updates require the parent source, exact origin, type and session', () => {
@@ -293,6 +358,20 @@ test('credits and zoom controls send feedback but never open arbitrary links thr
   assert.equal(c.messages.at(-1).type, 'feedback');
 });
 
+test('credits fold into an ⓘ on the floating row and close when the map moves (owner 691cf630)', () => {
+  const c = canvas([marker], undefined, { bottomInset: 120 });
+  assert.equal(c.rootVars['--map-bottom-inset'], '120px', 'the ⓘ sits on the same row as the list pill');
+  assert.ok(c.html.includes('<span id="credits-links" hidden>') && c.html.includes('© OpenStreetMap'), 'attribution stays one tap away');
+  const toggle = () => c.listeners['document:click']({ target: { closest: selector => selector === '#credits-toggle' ? {} : null } });
+  toggle();
+  assert.equal(c.credits['credits-links'].hidden, false);
+  assert.equal(c.credits['credits-toggle']['aria-expanded'], 'true');
+  assert.equal(c.messages.at(-1).type, 'feedback');
+  c.listeners.movestart();
+  assert.equal(c.credits['credits-links'].hidden, true);
+  assert.equal(c.credits['credits-toggle']['aria-expanded'], 'false');
+});
+
 test('keeps bundled CSP and attribution, and rejects invalid explicit centers', () => {
   const { html } = canvas();
   assert.ok(html.includes("script-src 'nonce-gling-map' blob:"));
@@ -307,16 +386,24 @@ test('keeps bundled CSP and attribution, and rejects invalid explicit centers', 
   assert.throws(() => discoveryMapHtml({ ...options, accent: '</style>' }));
 });
 
-test('unclustered and selected pins show tappable labels with the live style glyph font', async () => {
+test('pins and selected pins show tappable labels with the live style glyph font', async () => {
   const c = canvas();
   const labels = c.layers.find(layer => layer.id === 'discovery-labels');
   assert.equal(labels.type, 'symbol');
-  assert.deepEqual(Array.from(labels.layout['text-field']), ['get', 'label']);
+  assert.ok(JSON.stringify(labels.layout['text-field']).includes('["get","label"]'));
   assert.deepEqual(Array.from(labels.layout['text-font']), ['Noto Sans Regular']);
   assert.ok(labels.filter);
   const selectedLabel = c.layers.find(layer => layer.id === 'discovery-selected-label');
   assert.equal(selectedLabel.source, 'discovery-selection');
   assert.deepEqual(Array.from(selectedLabel.layout['text-field']), ['get', 'label']);
+  for (const id of ['discovery-labels', 'discovery-featured-labels', 'discovery-art-featured-labels', 'discovery-selected-label']) {
+    const { layout, paint } = c.layers.find(layer => layer.id === id);
+    assert.equal(layout['icon-image'], 'name-tag', `${id} names sit on a white tag`);
+    assert.equal(layout['icon-text-fit'], 'both');
+    assert.equal(paint['text-halo-width'], undefined);
+  }
+  assert.ok(c.images['name-tag'].options.stretchX, 'the tag stretches around the name');
+  assert.equal(c.layers.find(layer => layer.id === 'discovery-art-featured').layout['text-field'], undefined, 'the picture pin keeps its own image');
   await c.listeners.click({ point: { x: 0, y: 0 } });
   assert.ok(c.map.queryOptions.layers.includes('discovery-labels'));
   assert.ok(c.map.queryOptions.layers.includes('discovery-selected-label'));
@@ -395,9 +482,9 @@ test('discount dots stay compact below neighborhood zoom and percentages reuse l
     assert.equal(dot.type, 'circle'); assert.equal(dot.source, source);
     assert.equal(dot.paint['circle-radius'], 4); assert.equal(dot.paint['circle-color'], '#8FD9C4');
     assert.equal(dot.paint['circle-translate-anchor'], 'viewport', 'dot stays next to the upright number when the map rotates');
-    assert.deepEqual(Array.from(dot.paint['circle-translate']), [-12, 10]);
-    assert.equal(dot.minzoom, undefined, 'mint signal stays available at the initial city zoom');
-    assert.equal(number.minzoom, 14, 'number starts at the existing cluster-expansion neighborhood zoom');
+    assert.ok(JSON.stringify(dot.paint['circle-translate']).includes('[-12,10]'), 'close-up dot sits beside the full-size pin');
+    assert.ok(dot.minzoom <= c.map.config.zoom, 'mint signal stays available at the initial city zoom');
+    assert.equal(number.minzoom, 14, 'number starts at neighborhood zoom');
     assert.equal(number.layout['icon-allow-overlap'], selected);
     assert.equal(number.layout['icon-ignore-placement'], selected);
     assert.equal(number.layout['icon-anchor'], 'right');
@@ -411,7 +498,6 @@ test('discount dots stay compact below neighborhood zoom and percentages reuse l
   assert.equal(c.sources['discovery-selection'].data.features.length, 1);
   assert.equal(c.layers.find(layer => layer.id === 'discovery-pins').paint['circle-color'][1], 'color');
   assert.equal(c.layers.find(layer => layer.id === 'discovery-selected-pin').paint['circle-color'][1], 'color');
-  assert.equal(c.sources.discovery.clusterMaxZoom, 16); assert.equal(c.sources.discovery.clusterRadius, 44);
   c.map.hits = [{ properties: { id: marker.id } }];
   c.listeners.click({ point: { x: 1, y: 2 } });
   assert.ok(c.map.queryOptions.layers.includes('discovery-discount-dot'));
@@ -430,7 +516,7 @@ function trackSourceWrites(c) {
   return writes;
 }
 
-test('500 markers are not reclustered for ten selection/padding changes, including equivalent full updates', t => {
+test('500 markers are not rewritten for ten selection/padding changes, including equivalent full updates', t => {
   const markers = Array.from({ length: 500 }, (_, i) => ({ ...marker, id: `place:${i}`, longitude: marker.longitude + i / 10000 }));
   const c = canvas(markers), writes = trackSourceWrites(c);
   for (let i = 0; i < 10; i++) {
@@ -440,7 +526,7 @@ test('500 markers are not reclustered for ten selection/padding changes, includi
   }
   const clusterWrites = writes.filter(row => row.source === 'discovery');
   t.diagnostic(JSON.stringify({ markers: 500, updates: 10, fullClusterSourceWrites: clusterWrites.length, fullSourceFeaturesResubmitted: clusterWrites.reduce((n, row) => n + row.features, 0), selectionSourceWrites: writes.filter(row => row.source === 'discovery-selection').length }));
-  assert.equal(clusterWrites.length, 0, 'selection and padding do not change cluster input');
+  assert.equal(clusterWrites.length, 0, 'selection and padding do not change the place source');
   assert.equal(writes.filter(row => row.source === 'discovery-selection').length, 10);
   const selectedWrites = writes.length;
   vm.runInNewContext(discoveryMapScript({ selectedId: markers[9].id, bottomInset: 120, topInset: 40, userLocation: { latitude: 49.3, longitude: -123.1 } }, sessionId), { window: c.window });
@@ -449,7 +535,7 @@ test('500 markers are not reclustered for ten selection/padding changes, includi
   assert.equal(c.map.padding.top, 40);
 });
 
-test('marker changes refresh clusters and selected details while transient updates retain current data and boundary guards', () => {
+test('marker changes refresh places and selected details while transient updates retain current data and boundary guards', () => {
   const c = canvas(), writes = trackSourceWrites(c);
   const update = state => vm.runInNewContext(discoveryMapScript(state, sessionId), { window: c.window });
   update({ selectedId: marker.id });
@@ -477,10 +563,10 @@ test('marker changes refresh clusters and selected details while transient updat
   assert.throws(() => discoveryMapHtml({ ...options, markers: undefined }));
 });
 
-test('each rendered marker field changes cluster input, while optional false and unrelated fields do not', () => {
+test('each rendered marker field changes the place source, while optional false and unrelated fields do not', () => {
   const c = canvas(), writes = trackSourceWrites(c);
   let pin = { ...marker };
-  for (const patch of [{ color: '#123456' }, { label: 'New name' }, { latitude: 49.3 }, { longitude: -123.1 }, { top25: true }, { discount: 10 }, { discount: 20.8 }, { top25: false }]) {
+  for (const patch of [{ color: '#123456' }, { label: 'New name' }, { sublabel: '데이트' }, { featured: true }, { icon: 'dining' }, { latitude: 49.3 }, { longitude: -123.1 }, { top25: true }, { discount: 10 }, { discount: 20.8 }, { top25: false }]) {
     const before = writes.filter(row => row.source === 'discovery').length;
     pin = { ...pin, ...patch };
     c.window.glingDiscoveryUpdate(sessionId, { markers: [pin], selectedId: pin.id });
@@ -488,7 +574,7 @@ test('each rendered marker field changes cluster input, while optional false and
     assert.equal(c.sources['discovery-selection'].data.features[0].properties.color, pin.color);
   }
   const before = writes.length;
-  const { top25, ...samePin } = pin;
+  const { top25, ...samePin } = pin; // top25 is false here, so dropping it renders the same pin.
   c.window.glingDiscoveryUpdate(sessionId, { markers: [{ ...samePin, ignored: 'not rendered' }], selectedId: pin.id });
   assert.equal(writes.length, before, 'semantic equality is limited to validated rendered marker fields');
 });
@@ -576,4 +662,68 @@ for (const platform of ['ios', 'web']) test(`${platform} bridge sends marker dat
   assert.equal(app.embedded.sources.discovery.data.features.length, 0, 'retry under a new session restores current data');
   app.notify(rendered, 'select', { id: pins[0].id, sessionId: 'mounted-canvas.0' });
   assert.deepEqual(selections, []);
+});
+
+test('three zoom stages: close-up names with a second line, mid dots with featured names only, far city pills', () => {
+  const pins = [{ ...marker, sublabel: '디저트', icon: 'cafe' }, { ...marker, id: 'place:2', label: 'TOP place', featured: true, top25: true }];
+  const cities = [{ id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver', open: true }, { id: 'toronto', name: '토론토', englishName: 'Toronto', open: true },
+    { id: 'calgary', name: '캘거리', englishName: 'Calgary', open: false }];
+  const c = canvas(pins, undefined, { cities });
+  const layer = id => c.layers.find(value => value.id === id);
+  for (const value of c.layers) assert.equal(value.minzoom >= 8, true, `${value.id} hides at the far stage`);
+  assert.deepEqual(JSON.parse(JSON.stringify(layer('discovery-pins').paint['circle-radius'])), ['step', ['zoom'], 4, 13, 11], 'mid dots, close-up pins');
+  assert.equal(layer('discovery-labels').minzoom, 13);
+  assert.ok(JSON.stringify(layer('discovery-labels').layout['text-field']).includes('sublabel'));
+  assert.equal(layer('discovery-featured-labels').maxzoom, 13);
+  assert.ok(JSON.stringify(layer('discovery-featured-labels').filter).includes('featured'));
+  const features = c.sources.discovery.data.features.map(feature => feature.properties);
+  assert.deepEqual(JSON.parse(JSON.stringify(features.map(value => [value.sublabel, value.featured, value.icon]))), [['디저트', false, 'cafe'], ['', true, '']]);
+  assert.deepEqual(c.cityMarkers.map(pill => pill.element.textContent), ['밴쿠버', '토론토', '캘거리 · 준비 중']);
+  assert.deepEqual(c.cityMarkers.map(pill => pill.point), [[-123.12, 49.28], [-79.38, 43.65], [-114.07, 51.05]]);
+  assert.equal(c.cityMarkers[2].element.disabled, true, 'a coming-soon city cannot be opened');
+  assert.equal(c.cityMarkers[1].element['aria-label'], '토론토 지도로 가기');
+  assert.ok(c.cityMarkers.every(pill => pill.element.hidden), 'city view starts at the mid stage');
+  c.map.zoom = 5; c.listeners.zoom();
+  assert.ok(c.cityMarkers.every(pill => !pill.element.hidden));
+  assert.equal(c.userMarkers.length, 0, 'city pills are not the GPS marker');
+  const tap = id => c.listeners['document:click']({ target: { closest: selector => selector === '.city-pill' ? { getAttribute: () => id } : null } });
+  tap('vancouver');
+  assert.deepEqual([Array.from(c.cameras.at(-1).center), c.cameras.at(-1).zoom], [[-123.12, 49.28], 11], 'the current city zooms back in');
+  tap('toronto');
+  assert.deepEqual(c.messages.at(-1), { type: 'city', id: 'toronto', sessionId });
+  const sent = c.messages.length; tap('calgary'); tap('nowhere');
+  assert.equal(c.messages.length, sent);
+  c.map.zoom = 12; c.listeners.zoom();
+  assert.ok(c.cityMarkers.every(pill => pill.element.hidden));
+});
+
+test('city taps, zoom and new marker fields are validated at the bridge', () => {
+  const parse = (message, ids) => discoveryMapMessage(JSON.stringify({ sessionId, ...message }), sessionId, [marker], ids);
+  assert.deepEqual(parse({ type: 'city', id: 'toronto' }, ['toronto']), { type: 'city', id: 'toronto' });
+  for (const [message, ids] of [[{ type: 'city', id: 'calgary' }, ['toronto']], [{ type: 'city', id: 'toronto' }, undefined], [{ type: 'city', id: 7 }, ['toronto']]]) assert.equal(parse(message, ids), null);
+  assert.deepEqual(parse({ type: 'moved', bounds: [-124, 49, -122, 50], zoom: 9.5 }), { type: 'moved', bounds: { west: -124, south: 49, east: -122, north: 50 }, zoom: 9.5 });
+  assert.equal(parse({ type: 'moved', bounds: [-124, 49, -122, 50], zoom: 'far' }).zoom, undefined);
+  assert.deepEqual(discoveryMarkers([{ ...marker, sublabel: ' 혼밥\n', featured: false, icon: 'dining' }]), [{ ...marker, sublabel: '혼밥', icon: 'dining' }]);
+  for (const bad of [{ sublabel: 'x'.repeat(41) }, { sublabel: 3 }, { featured: 'true' }, { icon: 'Bad Icon' }, { icon: '../x' }]) assert.throws(() => discoveryMarkers([{ ...marker, ...bad }]), /INVALID_DISCOVERY_MARKER/);
+  for (const cities of [[{ id: 'Toronto', name: '토론토', englishName: 'Toronto', open: true }], [{ id: 'toronto', name: '', englishName: 'Toronto', open: true }], [{ id: 'toronto', name: '토론토', englishName: 'Toronto', open: 'yes' }], 'toronto'])
+    assert.throws(() => discoveryMapHtml({ ...options, cities }), /INVALID_DISCOVERY_CIT/);
+  const html = discoveryMapHtml({ ...options, language: 'en', cities: [{ id: 'calgary', name: 'Calgary', englishName: 'Calgary', open: false }, { id: 'x', name: '</script><b>', englishName: 'Halifax', open: true }] });
+  assert.ok(!html.includes('</script><b>'));
+  assert.ok(html.includes("'Open the '+c.name+' map'") && html.includes('Coming soon'));
+});
+
+test('up close a place with 3D art is drawn as a white picture pin once the art loads, otherwise it keeps its dot', async () => {
+  const sources = [];
+  class Image { set src(value) { sources.push(value); if (value === MAP_PIN_ART.dining) this.onerror(); else this.onload(); } }
+  const art = { ...marker, id: 'art', icon: 'cafe' }, broken = { ...marker, id: 'broken', icon: 'dining', latitude: marker.latitude + 0.01 };
+  const c = canvas([art, broken], undefined, {}, { Image });
+  const features = () => Object.fromEntries(c.sources.discovery.data.features.map(f => [f.properties.id, f.properties.art]));
+  assert.equal(JSON.stringify(features()), JSON.stringify({ art: false, broken: false }), 'dots until the pictures load');
+  await new Promise(resolve => setTimeout(resolve, 0));
+  assert.ok(sources.every(src => src.startsWith('data:image/png;base64,')) && sources.length >= 10);
+  assert.ok(c.images['pin-cafe'] && !c.images['pin-dining'], 'a picture that fails to load adds no pin image');
+  assert.equal(c.images['pin-cafe'].options.pixelRatio, 3);
+  assert.equal(JSON.stringify(features()), JSON.stringify({ art: true, broken: false }), 'the failed picture keeps its coloured dot');
+  for (const id of ['discovery-art', 'discovery-selected-art']) assert.equal(JSON.stringify(c.layers.find(layer => layer.id === id).layout['icon-image']), JSON.stringify(['concat', 'pin-', ['get', 'icon']]));
+  assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-pins').paint['circle-opacity'].at(-1)), JSON.stringify(['case', ['==', ['get', 'art'], true], 0, 1]));
 });

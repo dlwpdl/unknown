@@ -72,6 +72,9 @@ verify_jwt = true
 [functions.translate-content]
 verify_jwt = true
 
+[functions.extract-place-names]
+verify_jwt = true
+
 [functions.public-post]
 verify_jwt = false
 

@@ -27,6 +27,16 @@ test('discount order uses the verified numeric field, then distance, and keeps u
   assert.equal(items[0].webshopDiscount, undefined);
 });
 
+test('saves order uses the given total, then distance, and leaves input and other orders alone', () => {
+  const items = [place('none', 49.251), place('some-far', 49.5), place('some-near', 49.26), place('most', 49.9)];
+  const totals = { 'some-far': 3, 'some-near': 3, most: 9 }, count = item => totals[item.id] ?? 0;
+  assert.deepEqual(sortDiscoveryItems(items, origin, 'saves', count).map(x => x.id), ['most', 'some-near', 'some-far', 'none']);
+  assert.deepEqual(sortDiscoveryItems(items, null, 'saves', count).map(x => x.id), ['most', 'some-far', 'some-near', 'none'], 'no location keeps the given order among ties');
+  assert.deepEqual(sortDiscoveryItems(items, origin, 'near', count).map(x => x.id), ['none', 'some-near', 'some-far', 'most'], 'nearest ignores totals');
+  assert.deepEqual(sortDiscoveryItems(items, origin, 'saves').map(x => x.id), ['none', 'some-near', 'some-far', 'most'], 'no totals is nearest');
+  assert.deepEqual(items.map(x => x.id), ['none', 'some-far', 'some-near', 'most']);
+});
+
 test('nearby place ordering uses the full input, stable ties and real user coordinates without mutating catalog order',async()=>{
   const {rankPlacesByDistance,formatNearbyDistance}=await import('../src/lib/discovery-sort.ts');assert.equal(typeof rankPlacesByDistance,'function');
   const now=Date.now(),fix={...origin,accuracy:20,measuredAt:now,mocked:false};

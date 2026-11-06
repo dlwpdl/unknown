@@ -45,7 +45,7 @@ test('the real writer AD control updates the existing hashtag input and plays fe
   let input = '카페', feedback = [];
   const exports = {};
   vm.runInNewContext(ts.transpileModule(`exports.button = (${button.getText(ast)});`, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
-    exports, Pressable: 'Pressable', ThemedText: 'Text', styles: {}, theme: {}, submitting: false, creatingDraft: false,
+    exports, Pressable: 'Pressable', ThemedText: 'Text', styles: {}, theme: {}, clay: false, ClayPillFill: 'ClayPillFill', submitting: false, creatingDraft: false,
     selectedHashtags: ['카페'], MAX_HASHTAGS: 5, hasAdLabel: hashtags.hasAdLabel, toggleAdLabel: hashtags.toggleAdLabel,
     play: kind => feedback.push(kind), setHashtagInput: update => { input = update(input); }, tr: text => text,
     require: () => ({ jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) }),

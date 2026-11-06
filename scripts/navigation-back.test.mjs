@@ -28,12 +28,56 @@ function backHandler(path, analyticsId, context) {
   return vm.runInNewContext(`(${handler.getText(source)})`, context);
 }
 
+// Pushed screens share PageHeader (owner 2026-11-04 "위쪽: 동그란 뒤로 + 가운데 제목"); each screen only names its id and fallback.
+function pageHeaderBack(context) {
+  const path = '../src/components/page-header.tsx';
+  const source = ts.createSourceFile(path, fs.readFileSync(new URL(path, import.meta.url), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let handler;
+  (function visit(node) {
+    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && node.attributes.properties.some(a => ts.isJsxAttribute(a) && a.name.text === 'analyticsId' && a.initializer?.expression?.getText(source) === 'analyticsId'))
+      handler = node.attributes.properties.find(a => ts.isJsxAttribute(a) && a.name.text === 'onPress').initializer.expression;
+    ts.forEachChild(node, visit);
+  })(source);
+  assert.ok(handler, 'PageHeader must expose its back action');
+  return vm.runInNewContext(`(${handler.getText(source)})`, context);
+}
+function pageHeaderProps(path, context) {
+  const source = ts.createSourceFile(path, fs.readFileSync(new URL(path, import.meta.url), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let props;
+  (function visit(node) {
+    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && node.tagName.getText(source) === 'PageHeader')
+      props = Object.fromEntries(node.attributes.properties.filter(ts.isJsxAttribute).map(a => [a.name.text, !a.initializer ? true : ts.isStringLiteral(a.initializer) ? a.initializer.text : a.initializer.expression]));
+    ts.forEachChild(node, visit);
+  })(source);
+  assert.ok(props, `${path} must use PageHeader`);
+  return { analyticsId: props.analyticsId, fallback: props.fallback ? JSON.parse(JSON.stringify(vm.runInNewContext(`(${props.fallback.getText(source)})`, context))) : '/' };
+}
+
+test('PageHeader back leaves a direct entry for its fallback, follows history, or hands off to onBack, with feedback', () => {
+  for (const [onBack, fallback] of [[undefined, '/'], [undefined, { pathname: '/places', params: { cityId: 'toronto' } }], [true, '/']]) {
+    let hasHistory = false;
+    const actions = [];
+    const onPress = pageHeaderBack({ play: kind => actions.push(kind), fallback, onBack: onBack && (() => actions.push('onBack')),
+      router: { canGoBack: () => hasHistory, back: () => actions.push(hasHistory ? 'back' : 'UNHANDLED_GO_BACK'), replace: href => actions.push(JSON.parse(JSON.stringify(href))) } });
+    onPress();
+    assert.deepEqual(actions, ['selection', onBack ? 'onBack' : JSON.parse(JSON.stringify(fallback))]);
+    actions.length = 0; hasHistory = true; onPress();
+    assert.deepEqual(actions, ['selection', onBack ? 'onBack' : 'back']);
+  }
+});
+
+for (const [path, analyticsId, fallback] of [
+  ['places/index.tsx', 'places.back', '/'],
+  ['places/[id].tsx', 'places.detail.back', { pathname: '/places', params: { cityId: 'toronto' } }],
+]) test(`${path} names its PageHeader back and fallback`, () => {
+  const city = { id: 'toronto' };
+  assert.deepEqual(pageHeaderProps(`../src/app/${path}`, { city, selected: city }), { analyticsId, fallback });
+});
+
 for (const [path, analyticsId, fallback] of [
   ['meetup-create.tsx', 'meetup.create.back', '/(tabs)/meetups'],
   ['events/index.tsx', 'ticketmaster.back', '/'],
   ['events/[id].tsx', 'ticketmaster.detail.back', '/events'],
-  ['places/index.tsx', 'places.back', '/'],
-  ['places/[id].tsx', 'places.detail.back', { pathname: '/places', params: { cityId: 'toronto' } }],
 ]) {
   test(`${path} back action leaves a direct entry and preserves normal history and feedback`, () => {
     for (const OS of ['ios', 'android', 'web']) {
@@ -83,7 +127,7 @@ test('every profile header can go back or leave a direct entry, with accessible 
     'expo-router': { Stack: Object.assign(() => {}, { Screen: 'Screen' }), useRouter: () => ({
       canGoBack: () => hasHistory, back: () => actions.push('back'), replace: path => actions.push(path),
     }) },
-    'expo-symbols': { SymbolView: 'SymbolView' },
+    'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
     'react-native-reanimated': { useReducedMotion: () => reducedMotion },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => actions.push(kind) }) },
     '@/i18n/ko': { t: { tabs: { profile: '나' }, profile: { guidelines: '이용 수칙', settings: '설정' }, notifications: { title: '알림' } } },
@@ -137,13 +181,13 @@ test('shared posts remain escapable during loading, failure and absence, and nev
     '@react-native-async-storage/async-storage': { __esModule: true, default: {} },
     '@/lib/shared-post-return': { clearSharedPostReturn: async () => {}, rememberSharedPostReturn: async () => {} },
     '@/lib/post-open': postOpen,
-    'expo-symbols': { SymbolView: 'SymbolView' },
+    'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
     '@/components/post-detail': { PostDetail: 'PostDetail' },
     '@/components/shared-link-card': { SharedPreviewContent: 'SharedPreviewContent' },
     '@/lib/shared-link-preview': { loadSharedLinkPreview: () => { throw new Error('Authenticated navigation must not load a guest preview'); } },
     '@/lib/sharing': { SHARED_POST_RETURN_KEY: 'return', buildSharedPostUrl: postId => `/post?id=${postId}` },
     '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
-    '@/components/themed-text': { ThemedText: 'Text' },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/themed-view': { ThemedView: 'View' },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, isAuthLoading: false, me: { id: accountId } }) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => actions.push(kind) }) },

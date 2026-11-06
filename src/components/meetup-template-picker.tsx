@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
@@ -22,7 +23,7 @@ export function MeetupTemplatePicker(props: MeetupTemplatePickerProps) {
 }
 
 function TemplatePicker({ draft, onApply, disabled = false }: MeetupTemplatePickerProps) {
-  const theme = useTheme(), { language, tr } = useLanguage(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clayBox = useClayBox(), { language, tr } = useLanguage(), { play } = useInteractionFeedback();
   const say = (ko: string, en: string) => tr(language === 'ko' ? ko : en);
   const [templates, setTemplates] = useState<MeetupTemplate[]>([]), [canUse, setCanUse] = useState(false);
   const [selected, setSelected] = useState<string | null>(null), [name, setName] = useState('');
@@ -76,7 +77,7 @@ function TemplatePicker({ draft, onApply, disabled = false }: MeetupTemplatePick
   const locked = disabled || busy || loading;
   const button = [styles.button, { borderColor: theme.line, opacity: locked ? 0.5 : 1 }];
   const preview = templates.find(template => template.id === selected);
-  return <View style={[styles.panel, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  return <View style={[styles.panel, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
     <ThemedText type="smallBold">{say('내 모임 템플릿 · Plus', 'My meetup templates · Plus')}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">{say('제목과 소개, 신청 질문을 저장해두고 다시 쓸 수 있어요. 날짜·장소·정원·결제 정보는 직접 확인해주세요.', 'Save a title, description and application question to reuse. Confirm dates, venue, capacity and payment separately.')}</ThemedText>
     {loading && <GlingLoader color={theme.accent} accessibilityLabel={say('템플릿 불러오는 중', 'Loading templates')} />}
@@ -122,6 +123,7 @@ function TemplatePicker({ draft, onApply, disabled = false }: MeetupTemplatePick
 }
 
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   panel: { gap: 12, padding: 16, borderWidth: 1, borderRadius: 16 },
   preview: { gap: 12, borderTopWidth: 1, paddingTop: 12 },
   button: { minHeight: 48, paddingHorizontal: 12, paddingVertical: 12, borderWidth: 1, borderRadius: 8, justifyContent: 'center' },

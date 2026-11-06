@@ -11,12 +11,13 @@ import { googleMapsPin, googleMapsUrl, postLocationUrl, postMapBody } from '../s
 import { postInfoParts } from '../src/lib/post-info.ts';
 import { parseMeetupSections } from '../src/lib/meetup-sections.ts';
 import { translationSource } from './test-meetup-source-imports.mjs';
-import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
+import { photoCreditNames, splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 import * as postLinks from '../supabase/functions/_shared/post-links.ts';
 import * as product from '../src/lib/product-analytics.ts';
 
 // Native image events and React state are supplied here; sizing/rendering runs the real components.
 let sharedReactions;
+let feedPlace = null; // the catalog place a Today fixture post is tied to
 function reactionModule() {
   if (!sharedReactions) {
     const exports = {};
@@ -33,8 +34,8 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
   let viewer = 'viewer-a';
   const feedback = [];
   const openedMaps = [];
-  const alerts = [];
-  let mapFailure = false, translatedBody = null;
+  const alerts = [], pushed = [], handed = [], emitted = [], deleted = [], hiddenCalls = [], logins = [];
+  let mapFailure = false, translatedBody = null, deleteFailure = false, hideFailure = false, authed = true;
   const react = {
     useCallback: (callback) => callback,
     useMemo: (callback) => callback(),
@@ -52,10 +53,12 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     react,
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'expo-image': { Image: 'Image' },
-    'expo-symbols': { SymbolView: 'SymbolView' },
+    'expo-symbols': { SymbolView: 'SymbolView' }, '@/components/symbol-view': { SymbolView: 'SymbolView' },
     'react-native': { View: 'View', Modal: 'Modal', Platform: { OS: 'ios' }, useWindowDimensions: () => ({ width: 390, height: 844 }), StyleSheet: { create: (value) => value, hairlineWidth: 1 }, Animated: { Value: class {}, View: 'Animated.View' },
       Linking: { openURL: (url) => { openedMaps.push(url); return mapFailure ? Promise.reject(new Error('offline')) : Promise.resolve(); } },
-      Alert: { alert: (...args) => alerts.push(args) } },
+      Alert: { alert: (...args) => alerts.push(args) }, DeviceEventEmitter: { emit: (...args) => emitted.push(args) } },
+    'expo-router': { useRouter: () => ({ push: route => pushed.push(route) }) },
+    '@/lib/post-open': { handOffPost: (viewerId, post) => handed.push([viewerId, post.id]), POST_CHANGED_EVENT: 'postChanged' },
     'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, useReducedMotion: () => true,
       useSharedValue: (initial) => ({ value: initial, get() { return this.value; }, set(value) { this.value = value; } }), useAnimatedStyle: (fn) => fn(), runOnJS: (fn) => fn },
     'react-native-gesture-handler': { GestureHandlerRootView: 'GestureRoot', GestureDetector: 'GestureDetector', Gesture: {
@@ -70,7 +73,7 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     '@/components/content-translation': { TranslationControl: 'TranslationControl', TranslatedCommentBody: 'TranslatedCommentBody' },
     '@/hooks/use-content-translation': { useContentTranslation: (_kind, _id, source) => ({ display: translatedBody == null ? source : { ...source, body: translatedBody }, translated: translatedBody != null, original: translatedBody == null }) },
     '@/lib/translation-source': translationSource,
-    '@/lib/post-photo-credits': { splitPostPhotoCredits },
+    '@/lib/post-photo-credits': { photoCreditNames, splitPostPhotoCredits },
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
     '../../supabase/functions/_shared/post-links': postLinks,
     '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
@@ -81,11 +84,18 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' },
     '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
-    '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16 } },
+    '@/constants/theme': { MaxContentWidth: 800, Spacing: { one: 4, two: 8, three: 16, four: 24 } },
+    '@/components/meetup-manage-sheet': { MeetupManageSheet: 'MeetupManageSheet' },
+    '@/components/post-place-card': { PostPlaceCard: 'PostPlaceCard' },
+    '@/lib/meetup-destination': { splitPlaceMeetupBody: () => null },
+    '@/lib/place-reviews': { placeReviewPlace: () => feedPlace, placeReviewText: body => body },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: 'SymbolView', ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/hooks/use-theme': { useTheme: () => ({ backgroundElement: '#222231' }) },
     '@/i18n/ko': { count, t },
-    '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: viewer } }) },
-    '@/lib/community-data': { togglePostReaction: (_client, postId, viewerId, kind, isOn) => persistReaction({ postId, viewerId, kind, isOn }) },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: authed, me: { id: viewer }, promptLogin: reason => logins.push(reason) }) },
+    '@/lib/community-data': { togglePostReaction: (_client, postId, viewerId, kind, isOn) => persistReaction({ postId, viewerId, kind, isOn }),
+      deletePost: async (_client, postId) => { if (deleteFailure) throw new Error('offline'); deleted.push(postId); },
+      setPostHidden: async (_client, viewerId, postId, isHidden) => { hiddenCalls.push([viewerId, postId, isHidden]); if (hideFailure) throw new Error('offline'); } },
     '@/lib/feed-data': { getPostImageSource },
     '@/lib/meetup-ai': {},
     '@/lib/hashtags': { uniqueHashtags },
@@ -107,7 +117,8 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     assert.ok(name in modules, `Unexpected import: ${name}`);
     return modules[name];
   }) });
-  return { render(props) { cursor = 0; return exports[component](props); }, feedback, openedMaps, alerts,
+  return { render(props) { cursor = 0; return exports[component](props); }, feedback, openedMaps, alerts, pushed, handed, emitted, deleted, failDelete: () => { deleteFailure = true; },
+    hiddenCalls, logins, failHide: (value = true) => { hideFailure = value; }, setAuthed: (value) => { authed = value; },
     translate: body => { translatedBody = body; }, failMap: () => { mapFailure = true; }, setViewer: (id) => { viewer = id; } };
 }
 
@@ -190,6 +201,178 @@ test('피드 사진 전체를 원본 비율로 표시하고 글·사진·뷰어 
   props = { ...props, post: { ...props.post, imageUris: ['signed:recovered'] } };
   assert.ok(image(card.render(props)));
   assert.equal(image(card.render({ ...props, hidePhoto: true })), undefined);
+});
+
+test('Today card: author row, short text, place card, swipeable photos, then like/comment/share with save at the right end; ··· holds hide then report on others\' posts', async () => {
+  const card = cardRenderer();
+  let opened = 0;
+  const credits = '\n\n사진 출처·이용 조건\n1. Kim Lee · CC BY 2.0 · https://commons.wikimedia.org/wiki/File:A.jpg\n2. Park · CC BY 2.0 · https://commons.wikimedia.org/wiki/File:B.jpg';
+  const post = { id: 'feed-1', cityId: 'vancouver', title: '토요일 브런치', body: `창가 자리가 좋았어요.${credits}`, author: { id: 'author', nickname: '하늘' }, tag: { kind: 'post', label: '맛집' },
+    imagePaths: ['a/1.webp', 'a/2.webp', 'a/3.webp'], imageUris: ['signed:1', 'signed:2', 'signed:3'], likes: 2, saves: 0, comments: 1, views: 9, createdAtLabel: '방금' };
+  const props = { post, feed: true, flat: true, onPress: () => { opened++; } };
+  feedPlace = { id: 'osm:node:1', name: '창가 카페' };
+  try {
+    let tree = nodes(card.render(props));
+    const textOf = node => [node?.props?.children].flat(Infinity).filter(child => typeof child === 'string').join('');
+    const avatar = tree.find(node => node.props?.analyticsId === 'components_post-card.pressable.4' && node.props.accessibilityElementsHidden);
+    assert.equal(textOf(nodes(avatar).find(node => node.type === 'ThemedText')), '하', 'first-letter avatar until feeds carry profile photos');
+    assert.ok(tree.some(node => node.type === 'ThemedText' && textOf(node) === '· 맛집 · 방금'));
+    const types = tree.map(node => node.type);
+    const order = ['PostBody', 'PostPlaceCard', 'ScrollView', 'SymbolView'].map(type => types.indexOf(type, types.indexOf('PostBody')));
+    assert.ok(order.every((at, i) => at >= 0 && (i === 0 || at > order[i - 1])), 'text → place card → photos → reactions');
+    const body = tree.find(node => node.type === 'PostBody');
+    assert.equal(body.props.lead, '토요일 브런치');
+    assert.equal(body.props.body, '창가 자리가 좋았어요.', 'credits move from the text to the photos');
+    assert.equal(body.props.numberOfLines, 3);
+    assert.equal(tree.find(node => node.type === 'PostPlaceCard').props.place, feedPlace);
+
+    const row = tree.find(node => node.type === 'ScrollView');
+    assert.equal(row.props.analyticsId, 'components_post-photo-gallery.scrollview.1');
+    assert.equal(row.props.horizontal, true);
+    const slides = () => nodes(card.render(props)).filter(node => node.props?.analyticsId === 'components_post-card.pressable.2' && nodes(node).some(child => child.type === 'Image'));
+    assert.equal(slides().length, 3, 'every photo is in the row');
+    const width = style(slides()[0]).width;
+    assert.equal(width, 390 - 66 - 16 - 20, 'the next photo peeks in on the right');
+    assert.equal(row.props.snapToInterval, width + 8);
+    assert.deepEqual(slides().map(slide => nodes(slide).filter(node => node.type === 'ThemedText').map(textOf)),
+      [1, 2, 3].map(at => [`${at}/3`, '사진: Kim Lee 외 1명']));
+    for (const slide of slides()) {
+      assert.equal(image(slide).props.contentFit, 'cover', 'photos fill the shared tile, edges cropped (owner 2026-11-03 꽉 채우기)');
+      const order = nodes(slide).map(node => node.type);
+      assert.ok(order.indexOf('Image') < order.indexOf('ThemedText'), 'the number and credit draw over the filled photo');
+    }
+    assert.deepEqual(slides().map(slide => !!image(slide).props.source), [true, true, false], 'only photos next to the one in view load');
+    row.props.onScroll({ nativeEvent: { contentOffset: { x: width + 8 } } });
+    assert.deepEqual(slides().map(slide => !!image(slide).props.source), [true, true, true]);
+    slides()[1].props.onPress();
+    assert.equal(opened, 1, 'a photo opens the post');
+
+    tree = nodes(card.render(props));
+    const ids = tree.map(node => node.props?.analyticsId).filter(Boolean);
+    const acts = ['components_post-card.pressable.7', 'components_post-card.pressable.8', 'components_post-card.pressable.10', 'components_post-card.pressable.9'].map(id => ids.indexOf(id));
+    assert.ok(acts.every((at, i) => at >= 0 && (i === 0 || at > acts[i - 1])), 'like → comment → share → save (owner 2026-11-04 저장은 카드에 바로)');
+    const save = () => nodes(card.render(props)).find(node => node.props?.analyticsId === 'components_post-card.pressable.9');
+    assert.equal(style(save()).marginLeft, 'auto', 'save sits at the right end of the row');
+    assert.ok(style(save()).minWidth >= 44 && style(save()).minHeight >= 44);
+    assert.equal(save().props.accessibilityLabel, '저장');
+    assert.equal(save().props.accessibilityState.selected, false);
+    assert.equal(nodes(save()).find(node => node.type === 'SymbolView').props.name.ios, 'bookmark');
+    save().props.onPress();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(card.feedback.at(-1), 'reaction');
+    assert.equal(save().props.accessibilityLabel, '저장 취소', 'the name follows the saved state');
+    assert.equal(save().props.accessibilityState.selected, true);
+    assert.equal(nodes(save()).find(node => node.type === 'SymbolView').props.name.ios, 'bookmark.fill');
+    tree = nodes(card.render(props));
+    assert.ok(!tree.some(node => node.type === 'SymbolView' && node.props.name?.ios === 'eye'), 'no view count on Today');
+    assert.ok(!tree.some(node => node.type === 'MeetupManageSheet'));
+    tree.find(node => node.props?.analyticsId === 'post.manage.open').props.onPress();
+    const menu = nodes(card.render(props)).find(node => node.type === 'MeetupManageSheet');
+    assert.equal(menu.props.title, '글 메뉴');
+    assert.deepEqual(Array.from(menu.props.actions, action => `${action.analyticsId} ${action.label}`),
+      ['post.manage.hide 이 글 숨기기', `components_post-card.pressable.5 ${t.report.title('하늘')}`], 'hide sits above report on someone else\'s post');
+    assert.ok(card.feedback.includes('selection'));
+  } finally { feedPlace = null; }
+});
+
+test('Today card ··· on my own post offers edit and delete only; edit opens the post in edit mode, delete asks first and removes it from lists', async () => {
+  const card = cardRenderer();
+  const props = { post: { id: 'mine-1', cityId: 'vancouver', title: '내 글', body: '오늘 날씨 좋네요.', author: { id: 'viewer-a', nickname: '나' }, tag: { kind: 'post', label: '일상' },
+    likes: 0, saves: 0, comments: 0, views: 0, createdAtLabel: '방금' }, feed: true, flat: true, onPress() {} };
+  const sheet = title => nodes(card.render(props)).find(node => node.type === 'MeetupManageSheet' && node.props.title === title);
+  const action = (title, key) => sheet(title).props.actions.find(item => item.key === key);
+  nodes(card.render(props)).find(node => node.props?.analyticsId === 'post.manage.open').props.onPress();
+  assert.deepEqual(Array.from(sheet('글 메뉴').props.actions, item => `${item.analyticsId} ${item.label}`),
+    ['components_post-detail.pressable.14 글·사진 수정', 'post.manage.delete 글 삭제'], 'no save, no report on my own post');
+
+  action('글 메뉴', 'edit').onPress();
+  assert.deepEqual(card.handed, [['viewer-a', 'mine-1']], 'the detail opens on the card it came from');
+  assert.deepEqual(JSON.parse(JSON.stringify(card.pushed)), [{ pathname: '/post/[id]', params: { id: 'mine-1', edit: '1' } }]);
+
+  assert.equal(sheet('이 글을 삭제할까요?'), undefined);
+  action('글 메뉴', 'delete').onPress();
+  const confirm = action('이 글을 삭제할까요?', 'delete-confirm');
+  assert.equal(confirm.label, '글 삭제');
+  assert.equal(confirm.hint, '삭제한 글은 되돌릴 수 없어요. 달린 댓글도 함께 보이지 않게 됩니다.');
+  assert.equal(confirm.danger, true);
+  assert.deepEqual(card.deleted, [], 'nothing is deleted before the confirm');
+  confirm.onPress();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(card.deleted, ['mine-1']);
+  assert.deepEqual(JSON.parse(JSON.stringify(card.emitted)), [['postChanged', { id: 'mine-1', removed: true }]], 'lists drop the post the way the detail delete does');
+  assert.equal(card.feedback.at(-1), 'warning');
+
+  card.failDelete();
+  confirm.onPress();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(card.emitted.length, 1, 'a failed delete keeps the post');
+  assert.equal(card.alerts.at(-1)[0], '글을 삭제하지 못했어요.');
+});
+
+test('Today card ··· 이 글 숨기기 on someone else\'s post: saves the hide, then the alert offers 되돌리기; failures say so (owner 2026-11-04)', async () => {
+  const card = cardRenderer();
+  const props = { post: { id: 'theirs-1', cityId: 'vancouver', title: '남의 글', body: '오늘 날씨 좋네요.', author: { id: 'author-b', nickname: '하늘' }, tag: { kind: 'post', label: '일상' },
+    likes: 0, saves: 0, comments: 0, views: 0, createdAtLabel: '방금' }, feed: true, flat: true, onPress() {} };
+  const hide = () => {
+    nodes(card.render(props)).find(node => node.props?.analyticsId === 'post.manage.open').props.onPress();
+    return nodes(card.render(props)).find(node => node.type === 'MeetupManageSheet').props.actions.find(item => item.key === 'hide');
+  };
+  const settle = () => new Promise(resolve => setImmediate(resolve));
+  const action = hide();
+  assert.equal(action.label, '이 글 숨기기');
+  assert.equal(action.hint, '내 화면에서만 사라지고, 신고는 가지 않아요.');
+  assert.equal(action.danger, undefined, 'hiding is not a danger action; report stays the red one below');
+  assert.deepEqual({ ...action.icon }, { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' });
+
+  action.onPress(); await settle();
+  assert.deepEqual(card.hiddenCalls, [['viewer-a', 'theirs-1', true]]);
+  const [title, body, buttons] = card.alerts.at(-1);
+  assert.equal(title, '글을 숨겼어요');
+  assert.equal(body, undefined);
+  assert.deepEqual(Array.from(buttons, button => button.text), ['되돌리기', '확인']);
+  buttons[0].onPress(); await settle();
+  assert.deepEqual(card.hiddenCalls.at(-1), ['viewer-a', 'theirs-1', false], '되돌리기 un-hides the same post');
+  assert.equal(card.feedback.at(-1), 'selection');
+  assert.equal(card.alerts.length, 1, 'a successful undo needs no second alert');
+  buttons[1].onPress();
+  assert.equal(card.feedback.at(-1), 'selection');
+
+  card.failHide();
+  hide().onPress(); await settle();
+  assert.deepEqual(card.alerts.at(-1), ['글을 숨기지 못했어요.', t.detail.sendErrorBody]);
+  assert.equal(card.feedback.at(-1), 'warning');
+  card.failHide(false);
+  hide().onPress(); await settle();
+  card.failHide();
+  card.alerts.at(-1)[2][0].onPress(); await settle();
+  assert.deepEqual(card.alerts.at(-1), ['되돌리지 못했어요.', t.detail.sendErrorBody]);
+
+  card.setAuthed(false);
+  const calls = card.hiddenCalls.length;
+  hide().onPress(); await settle();
+  assert.deepEqual(card.logins, ['글을 숨기려면 로그인이 필요해요']);
+  assert.equal(card.hiddenCalls.length, calls, 'a guest is asked to sign in first');
+});
+
+test('Today card: a post without photos stays a small text card, and 더 보기 shows only when the text is cut', () => {
+  const card = cardRenderer();
+  const props = { post: { id: 'feed-text', cityId: 'vancouver', title: '오늘 비 와요', body: '우산 챙기세요.', author: { id: 'author', nickname: '비' }, tag: { kind: 'post', label: '일상' },
+    likes: 0, saves: 0, comments: 0, views: 0, createdAtLabel: '1분 전' }, feed: true, flat: true, onPress() {} };
+  let tree = nodes(card.render(props));
+  assert.ok(!tree.some(node => node.type === 'ScrollView'), 'no photo row');
+  const box = tree.find(node => node.props?.analyticsId === 'components_post-card.pressable.2');
+  assert.equal(style(box).borderRadius, 20);
+  assert.ok(nodes(box).some(node => node.type === 'ThemedText' && node.props.type === 'menu'), 'title on its own line');
+  const more = () => nodes(card.render(props)).find(node => node.props?.analyticsId === 'components_post-card.pressable.1');
+  const measure = () => nodes(card.render(props)).find(node => node.type === 'PostBody' && node.props.onTextLayout);
+  assert.equal(more(), undefined);
+  measure().props.onTextLayout({ nativeEvent: { lines: [1, 2, 3] } });
+  assert.equal(more(), undefined, 'three lines fit');
+  measure().props.onTextLayout({ nativeEvent: { lines: [1, 2, 3, 4] } });
+  more().props.onPress();
+  tree = nodes(card.render(props));
+  assert.equal(tree.find(node => node.type === 'PostBody').props.numberOfLines, undefined, 'the whole text opens in place');
+  assert.equal(more(), undefined);
 });
 
 test('상세 갤러리는 사진을 자르지 않고 고정 비율과 좌우 페이지를 유지한다', () => {

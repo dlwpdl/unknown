@@ -35,6 +35,7 @@ function mount(data = {}) {
       if (name === 'react-native') return native;
       if (name === 'expo-router') return { useRouter: () => ({ push: route => calls.push(['push', JSON.parse(JSON.stringify(route))]) }), useFocusEffect: fn => effect(fn, [fn]) };
       if (name === '@/lib/auth') return { useAuth: () => auth };
+      if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
       if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
       if (name === '@/hooks/use-content-visibility') return { useContentVisibility: () => (_kind, id) => Boolean(data.hidden?.(id)) };
       if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: value => calls.push(['feedback', value]) }) };

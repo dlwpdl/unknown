@@ -9,6 +9,7 @@ import { MannerReviewButton } from '@/components/manner-review';
 import { MeetupHostTools } from '@/components/meetup-host-tools';
 import { MeetupRsvp } from '@/components/meetup-rsvp';
 import { RaisedActionButton } from '@/components/raised-action-button';
+import { ClayBoxFill, ClayControlFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ReportSheet } from '@/components/report-sheet';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles, Typography, controlPresentation } from '@/constants/design-system';
@@ -31,7 +32,7 @@ export function MeetupReviews(props: { postId: string; kind: 'once' | 'group'; a
 }
 function Reviews({ postId, kind, attendanceOnly = false, reviewsOnly = false, onBeforeNavigate, sessionId }: { postId: string; kind: 'once' | 'group'; attendanceOnly?: boolean; reviewsOnly?: boolean; onBeforeNavigate?: () => void; sessionId?: string }) {
   const { tr, locale: appLocale } = useLanguage();
-  const theme = useTheme(), { isAuthed, me } = useAuth(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clay = useClay(), clayBox = useClayBox(), { isAuthed, me } = useAuth(), { play } = useInteractionFeedback();
   const router = useRouter();
   const hidden = useContentVisibility();
   const [page, setPage] = useState<MeetupReviewPage | null>(null), [sessions, setSessions] = useState<MeetupSessions | null>(null);
@@ -72,22 +73,23 @@ function Reviews({ postId, kind, attendanceOnly = false, reviewsOnly = false, on
     catch { setError("이전 후기를 불러오지 못했어요."); play('warning'); }
     finally { pending.current = false; setBusy(false); }
   }
-  const button = [styles.button, { borderColor: theme.line, backgroundColor: theme.backgroundElement }];
+  const button = [styles.button, clay ? styles.clayButton : { borderColor: theme.line, backgroundColor: theme.backgroundElement }];
+  const fill = clay && <ClayPillFill kind="white" />;
   return <View style={styles.container}>
     {isAuthed && !reviewsOnly && !sessionId && <MeetupHostTools postId={postId} sections={['role', 'waitlist']} onChanged={() => setRetry(value => value + 1)} />}
     {!loaded && <ListLoading label={tr('불러오는 중이에요')} />}
     {kind === 'group' && !attendanceOnly && <>
       {page && <ThemedText type="small" themeColor={page.participants ? undefined : 'textSecondary'}>{page.participants ? tr("{0}/10 · 서로 다른 {1}명", (page.score), (page.participants)) : tr("아직 후기가 없어요.")}</ThemedText>}
-      {page?.reviews.filter(review => !hidden('meetup_review', review.id, review.authorId)).map(review => <View key={review.id} style={[styles.review, { borderColor: theme.line }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel={tr("{0} 모임 프로필", review.nickname)} disabled={!isAuthed} style={button} onPress={() => { play('selection'); onBeforeNavigate?.(); router.push({ pathname: '/meetup-profile', params: { postId, userId: review.authorId } }); }}><ThemedText type="smallBold">{review.nickname} · {review.score}/10</ThemedText></Pressable>
+      {page?.reviews.filter(review => !hidden('meetup_review', review.id, review.authorId)).map(review => <View key={review.id} style={[styles.review, clayBox ? styles.clayCard : { borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
+        <Pressable accessibilityRole="button" accessibilityLabel={tr("{0} 모임 프로필", review.nickname)} disabled={!isAuthed} style={button} onPress={() => { play('selection'); onBeforeNavigate?.(); router.push({ pathname: '/meetup-profile', params: { postId, userId: review.authorId } }); }}>{fill}<ThemedText type="smallBold">{review.nickname} · {review.score}/10</ThemedText></Pressable>
         <ThemedText type="small" themeColor="textSecondary">{tr('{0} 참석 후기', new Date(review.sessionDate).toLocaleDateString(appLocale))}</ThemedText>
         {!!review.body && <ThemedText type="small">{review.body}</ThemedText>}
-        {isAuthed && review.authorId !== me.id && <Pressable accessibilityRole="button" onPress={() => { play('selection'); setReport(review); }} style={button}><ThemedText type="small">{tr("후기 신고")}</ThemedText></Pressable>}
+        {isAuthed && review.authorId !== me.id && <Pressable accessibilityRole="button" onPress={() => { play('selection'); setReport(review); }} style={button}>{fill}<ThemedText type="small">{tr("후기 신고")}</ThemedText></Pressable>}
       </View>)}
-      {!!page && page.reviews.length > 0 && page.reviews.length % 20 === 0 && <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => void more()} style={button}><ThemedText type="small">{tr("이전 후기 더 보기")}</ThemedText></Pressable>}
+      {!!page && page.reviews.length > 0 && page.reviews.length % 20 === 0 && <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} onPress={() => void more()} style={button}>{fill}<ThemedText type="small">{tr("이전 후기 더 보기")}</ThemedText></Pressable>}
     </>}
     {sessions?.member && <Attendance sessions={sessions} kind={kind} postId={postId} meId={me.id} now={now} sessionId={sessionId} canStaffCheckIn={canStaffCheckIn} busy={busy} onCreate={() => void create()} onChanged={() => setRetry(n => n + 1)} />}
-    {!!error && <><ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText><Pressable accessibilityRole="button" onPress={() => { play('selection'); setRetry(n => n + 1); }} style={button}><ThemedText type="small">{tr("다시 불러오기")}</ThemedText></Pressable></>}
+    {!!error && <><ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText><Pressable accessibilityRole="button" onPress={() => { play('selection'); setRetry(n => n + 1); }} style={button}>{fill}<ThemedText type="small">{tr("다시 불러오기")}</ThemedText></Pressable></>}
     {report && <ReportSheet visible targetType="meetup_review" targetId={report.id} reportedUserId={report.authorId} reportedNickname={report.nickname} onClose={() => { setReport(null); setRetry(n => n + 1); }} />}
   </View>;
 }
@@ -126,9 +128,10 @@ function Steps({ current, last }: { current: number; last: string }) {
 
 function ScoreStepper({ score, disabled, onChange }: { score: number; disabled: boolean; onChange: (value: number) => void }) {
   const { tr } = useLanguage();
-  const theme = useTheme(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clay = useClay(), { play } = useInteractionFeedback();
   const step = (label: string, glyph: string, next: number) => <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={disabled || next < 1 || next > 10} accessibilityState={{ disabled: disabled || next < 1 || next > 10 }}
-    onPress={() => { play('selection'); onChange(next); }} style={({ pressed }) => [ControlStyles.icon, styles.stepButton, controlPresentation(theme, { pressed, disabled: disabled || next < 1 || next > 10 }).container]}>
+    onPress={() => { play('selection'); onChange(next); }} style={({ pressed }) => [ControlStyles.icon, styles.stepButton, controlPresentation(theme, { pressed, disabled: disabled || next < 1 || next > 10, clay }).container, clay && styles.clayVisible]}>
+    {clay && <ClayControlFill />}
     <ThemedText style={Typography.menu}>{glyph}</ThemedText>
   </Pressable>;
   return <View accessible={false} style={styles.rate}>
@@ -146,7 +149,7 @@ function ScoreStepper({ score, disabled, onChange }: { score: number; disabled: 
 
 function Session({ session, meId, kind, isHost, canStaffCheckIn, onChanged, now }: { session: MeetupSession; meId: string; kind: 'once' | 'group'; isHost: boolean; canStaffCheckIn: boolean; onChanged: () => void; now: number }) {
   const { tr, locale: appLocale } = useLanguage();
-  const theme = useTheme(), { play } = useInteractionFeedback(), router = useRouter();
+  const theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback(), router = useRouter();
   const [busy, setBusy] = useState(false), pending = useRef(false), [notice, setNotice] = useState('');
   const [claim, setClaim] = useState(''), [body, setBody] = useState('');
   const [score, setScore] = useState(8), [submitted, setSubmitted] = useState(false), [staffBusy, setStaffBusy] = useState('');
@@ -177,7 +180,7 @@ function Session({ session, meId, kind, isHost, canStaffCheckIn, onChanged, now 
   };
   const reasonMissing = score <= 5 && body.trim().length < 10;
   const stage = !ended ? 0 : !session.verified ? 1 : session.reviewStatus || submitted ? 3 : 2;
-  const card = (title: string, detail?: string) => <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText style={Typography.menu}>{title}</ThemedText>{!!detail && <ThemedText themeColor="textSecondary" style={Typography.supporting}>{detail}</ThemedText>}</View>;
+  const card = (title: string, detail?: string) => <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText style={Typography.menu}>{title}</ThemedText>{!!detail && <ThemedText themeColor="textSecondary" style={Typography.supporting}>{detail}</ThemedText>}</View>;
   return <View style={styles.session}>
     <View>
       <ThemedText accessibilityRole="header" style={Typography.sheetTitle}>{new Intl.DateTimeFormat(appLocale, { month: 'long', day: 'numeric', weekday: 'long' }).format(new Date(session.startsAt))}</ThemedText>
@@ -203,7 +206,7 @@ function Session({ session, meId, kind, isHost, canStaffCheckIn, onChanged, now 
         {session.verified && member.verified && <View style={styles.manner}><MannerReviewButton subjectId={member.id} nickname={member.nickname} context={{ sessionId: session.id }} /></View>}
       </View>)}</ListCard>
     </View>}
-    {session.canReview && !session.reviewStatus && !submitted && <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+    {session.canReview && !session.reviewStatus && !submitted && <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
       <ThemedText accessibilityRole="header" style={Typography.menu}>{tr("이 회차 후기")}</ThemedText>
       <ScoreStepper score={score} disabled={busy} onChange={setScore} />
       <TextInput accessibilityLabel={tr("공개 모임 후기")} value={body} editable={!busy} onChangeText={setBody} onFocus={() => play('selection')} multiline maxLength={300} placeholder={tr("운영·분위기·설명과 같았는지 알려주세요. 개인을 비난하거나 개인정보를 적지 마세요.")} placeholderTextColor={theme.textSecondary} style={[styles.input, { color: theme.text, borderColor: theme.line }]} />
@@ -224,9 +227,9 @@ function Session({ session, meId, kind, isHost, canStaffCheckIn, onChanged, now 
   </View>;
 }
 function ReviewPill({ label, onPress, accessibilityLabel, selected = false, blocked = false }: { label: string; onPress: () => void; accessibilityLabel: string; selected?: boolean; blocked?: boolean }) {
-  const theme = useTheme();
+  const theme = useTheme(), clay = useClay();
   return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} disabled={blocked} accessibilityState={{ disabled: blocked }} onPress={onPress}
-    style={({ pressed }) => [ControlStyles.pill, styles.pillBorder, controlPresentation(theme, { selected, pressed, disabled: blocked }).container]}><ThemedText type="smallBold" style={controlPresentation(theme, { selected }).text}>{label}</ThemedText></Pressable>;
+    style={({ pressed }) => [ControlStyles.pill, styles.pillBorder, controlPresentation(theme, { selected, pressed, disabled: blocked, clay }).container, clay && styles.clayPill]}>{clay && <ClayControlFill selected={selected} />}<ThemedText type="smallBold" style={controlPresentation(theme, { selected }).text}>{label}</ThemedText></Pressable>;
 }
 
 const styles = StyleSheet.create({ container: { gap: 12, marginVertical: 8 }, review: { gap: 8, padding: 12, borderWidth: 1, borderRadius: 12 },
@@ -235,6 +238,7 @@ const styles = StyleSheet.create({ container: { gap: 12, marginVertical: 8 }, re
   session: { gap: Spacing.three }, card: { gap: Spacing.one, padding: Spacing.three, borderWidth: StyleSheet.hairlineWidth, borderRadius: 16 },
   steps: { flexDirection: 'row', gap: Spacing.one }, step: { flex: 1, gap: Spacing.one }, stepBar: { height: 4, borderRadius: 2 },
   bar: { height: 6, borderRadius: 3, overflow: 'hidden', marginVertical: Spacing.two }, barFill: { height: 6, borderRadius: 3 },
+  clayCard: { borderColor: 'transparent', overflow: 'visible' }, clayButton: { overflow: 'visible', paddingHorizontal: 18, borderWidth: 0 }, clayVisible: { overflow: 'visible' }, clayPill: { overflow: 'visible', paddingHorizontal: 18 },
   pillBorder: { borderWidth: 1 }, gapTop: { marginTop: Spacing.two }, manner: { paddingHorizontal: Spacing.three, paddingBottom: Spacing.two },
   rate: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginVertical: Spacing.two }, stepButton: { borderWidth: 1 },
   stars: { flexDirection: 'row', flex: 1, justifyContent: 'center', gap: 2 }, star: { width: 24, height: 28 }, starGlyph: { fontSize: 22, lineHeight: 28, width: 24, textAlign: 'center' },

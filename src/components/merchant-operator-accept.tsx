@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
 import { RaisedActionButton } from '@/components/raised-action-button';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
@@ -36,7 +37,7 @@ function clearInviteToken() { try { window.sessionStorage.removeItem(storageKey)
 
 export function MerchantOperatorAccept({ userId, isAuthed, onJoined }: { userId: string; isAuthed: boolean; onJoined: () => void }) {
   const { tr } = useLanguage();
-  const theme = useTheme(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback();
   const [token, setToken] = useState<string | null>(takeInviteToken);
   const [preview, setPreview] = useState<{ user: string; value: MerchantOperatorPreview } | null>(null);
   const [error, setError] = useState(''), [busy, setBusy] = useState(false), [joined, setJoined] = useState('');
@@ -48,9 +49,9 @@ export function MerchantOperatorAccept({ userId, isAuthed, onJoined }: { userId:
     return () => { active = false; };
   }, [token, isAuthed, userId]);
   if (!token && !joined) return null;
-  const card = [styles.card, { backgroundColor: theme.card, borderColor: theme.accent }];
-  if (joined) return <View style={card} accessibilityLiveRegion="polite"><ThemedText type="smallBold">{tr('{0}의 공동 관리자가 됐어요.', joined)}</ThemedText></View>;
-  if (!isAuthed) return <View style={card}><ThemedText type="smallBold">{tr('공동 관리자 초대를 받았어요.')}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('아래에서 글링에 로그인하면 참여할 수 있어요.')}</ThemedText></View>;
+  const card = [styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.accent }];
+  if (joined) return <View style={card} accessibilityLiveRegion="polite">{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="smallBold">{tr('{0}의 공동 관리자가 됐어요.', joined)}</ThemedText></View>;
+  if (!isAuthed) return <View style={card}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="smallBold">{tr('공동 관리자 초대를 받았어요.')}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('아래에서 글링에 로그인하면 참여할 수 있어요.')}</ThemedText></View>;
   const current = preview?.user === userId ? preview.value : null;
   function dismiss() { play('selection'); clearInviteToken(); setToken(null); }
   async function accept() {
@@ -62,7 +63,7 @@ export function MerchantOperatorAccept({ userId, isAuthed, onJoined }: { userId:
     } catch (failure) { play('warning'); setError(errors[failure instanceof Error ? failure.message : ''] ?? '참여하지 못했어요. 잠시 후 다시 시도해 주세요.'); }
     finally { setBusy(false); }
   }
-  return <View style={card}>
+  return <View style={card}>{clayBox && <ClayBoxFill kind="tile" />}
     {current ? <>
       <ThemedText type="subtitle" accessibilityRole="header">{tr('{0}의 공동 관리자로 참여할까요?', current.merchant_name)}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{tr('{0} · 참여하면 이 비즈니스의 글과 사진을 함께 관리해요.', tr(current.city_name))}</ThemedText>
@@ -77,6 +78,7 @@ export function MerchantOperatorAccept({ userId, isAuthed, onJoined }: { userId:
 }
 
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   card: { gap: 10, padding: 18, borderWidth: 1, borderRadius: 20, width: '100%', maxWidth: 760, alignSelf: 'center' },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   button: { minHeight: 44, minWidth: 44, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center' },

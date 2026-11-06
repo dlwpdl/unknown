@@ -3,8 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Image } from 'expo-image';
 import { AppState, Linking, Platform, StyleSheet, View, type KeyDownEvent } from 'react-native';
 
+import { SymbolView } from '@/components/symbol-view';
 import { Pressable } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -49,9 +51,9 @@ function Choice({ title, detail, checked, onPress, disabled = false }: { title: 
     if (event.nativeEvent.key === ' ') { event.preventDefault(); if (!disabled && !event.nativeEvent.repeat) { play('selection'); onPress(); } }
   } } : {};
   return <Pressable lens {...keyboard} analyticsId="merchant.ai.permission" accessibilityRole="checkbox" accessibilityLabel={`${title}. ${detail}`} accessibilityState={{ checked, disabled }} aria-checked={checked} aria-disabled={disabled} disabled={disabled}
-    onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.choice, { borderColor: checked ? theme.accent : theme.line, opacity: disabled || pressed ? 0.65 : 1 }]}>
+    onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.choice, { borderColor: checked ? theme.accent : theme.textSecondary, opacity: disabled || pressed ? 0.65 : 1 }]}>
     <View style={[styles.check, { borderColor: checked ? theme.accent : theme.line, backgroundColor: checked ? theme.accent : 'transparent' }]}>
-      {checked && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText>}
+      {checked && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={14} tintColor={theme.accentInk} />}
     </View><View style={styles.grow}><ThemedText type="smallBold">{title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{detail}</ThemedText></View>
   </Pressable>;
 }
@@ -96,7 +98,7 @@ function ChangeReview({ change, busy, expired, confirming, onApply, onReject }: 
 export function MerchantMcpConnections({ userId, authorizationId }: { userId: string; authorizationId?: string }) {
   const { tr, locale: appLocale } = useLanguage();
   const dateText = (value: string) => new Date(value).toLocaleDateString(appLocale, { year: 'numeric', month: 'long', day: 'numeric' });
-  const theme = useTheme(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback();
   const [merchants, setMerchants] = useState<BusinessMerchant[]>([]), [connections, setConnections] = useState<MerchantMcpConnection[]>([]);
   const [authorization, setAuthorization] = useState<MerchantMcpAuthorization | null>(null), [selected, setSelected] = useState<string[]>([]);
   const [drafts, setDrafts] = useState(false), [publish, setPublish] = useState(false);
@@ -162,7 +164,7 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
     {error && <View style={[styles.card, { borderColor: theme.line }]}><ThemedText accessibilityRole="alert">{tr(error)}</ThemedText><Action label={tr("다시 확인")} onPress={refresh} disabled={busy} /></View>}
     {notice && <ThemedText accessibilityLiveRegion="polite" aria-live="polite" themeColor="accent">{tr(notice)}</ThemedText>}
     {loading ? <GlingLoader accessibilityLabel={tr("AI 연결과 비즈니스 권한을 확인하는 중")} /> : <>
-      {authorization && <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      {authorization && <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ThemedText type="subtitle" accessibilityRole="header">{tr('{0} 연결하기', authorization.client_name)}</ThemedText>
         <ThemedText themeColor="textSecondary">{tr("이 도구에 허용할 비즈니스와 작업을 골라 주세요. 연결은 30일 동안 유지돼요.")}</ThemedText>
         <View style={[styles.included, { borderColor: theme.line }]} accessibilityRole={canPublish ? undefined : 'alert'}>
@@ -182,17 +184,17 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
         <View style={styles.row}><Action label={busy ? tr("처리 중…") : tr("선택한 권한으로 연결")} primary disabled={busy || !selected.length} onPress={() => { void run(async () => redirect(await connectMerchantMcp(supabase, userId, authorization, { merchantIds: selected, allowDrafts: drafts, allowPublish: publish && canPublish }))); }} />
           <Action label={tr("취소")} disabled={busy} onPress={() => { void run(async () => redirect(await denyMerchantMcp(supabase, userId, authorization))); }} /></View>
       </View>}
-      {!merchants.length && <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      {!merchants.length && <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ThemedText type="subtitle" accessibilityRole="header">{tr("AI 신규 연결은 비즈니스 오너만 이용할 수 있어요.")}</ThemedText>
         <ThemedText themeColor="textSecondary">{tr("소유권이 확인된 내 비즈니스가 필요해요. 운영 담당자는 웹에서 배정된 비즈니스를 관리할 수 있어요. 이전에 연결한 AI는 아래에서 해제할 수 있어요.")}</ThemedText>
       </View>}
       {!authorizationId && merchants.some(m => m.plan !== 'basic') && <MerchantMcpGuide endpoint={endpoint} />}
-      {merchants.length > 0 && !merchants.some(m => m.plan !== 'basic') && <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      {merchants.length > 0 && !merchants.some(m => m.plan !== 'basic') && <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ThemedText type="subtitle" accessibilityRole="header">{tr("AI 연결은 유료 비즈니스 멤버십에서 쓸 수 있어요.")}</ThemedText>
         <ThemedText themeColor="textSecondary">{tr("플러스 이상으로 바꾸면 Claude·ChatGPT에서 바로 글링 초안을 만들 수 있어요. 무료에서는 직접 쓰기를 계속 이용할 수 있어요.")}</ThemedText>
         <View style={styles.row}><Action label={tr("요금제 보기")} onPress={() => { void Linking.openURL(PUBLIC_BUSINESS_PRICING).catch(() => {}); }} /></View>
       </View>}
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ThemedText type="subtitle" accessibilityRole="header">{tr("연결된 AI 도구")}</ThemedText>
         {!connected.length && <ThemedText themeColor="textSecondary">{tr("아직 연결된 도구가 없어요.")}</ThemedText>}
         {connected.map(c => <View key={c.id} style={[styles.connection, { borderColor: theme.line }]}>
@@ -204,7 +206,7 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
             : <Action label={tr("연결 해제")} disabled={busy} onPress={() => setRevokeId(c.id)} />}
         </View>)}
       </View>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+      <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ThemedText type="subtitle" accessibilityRole="header">{tr("공개 변경 제안 검토")}</ThemedText>
         <ThemedText themeColor="textSecondary">{tr("AI가 제안한 프로필·게시글 수정과 삭제를 여기서 확인해요. 새 원고 승인은 비즈니스 관리의 초안에서 진행해요.")}</ThemedText>
         <View style={styles.row}>{merchants.map(m => <Action key={m.id} label={m.name} primary={reviewMerchant === m.id} disabled={busy} onPress={() => { setApplyId(null); setReviewMerchant(m.id); }} />)}</View>
@@ -217,6 +219,7 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
   </View>;
 }
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   sections: { gap: 24 }, hero: { gap: 12, paddingVertical: 12 }, ai: { width: 52, height: 52, borderRadius: 17, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   card: { gap: 16, padding: 24, borderRadius: 20, borderWidth: 1 }, row: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center' },
   button: { minHeight: 44, minWidth: 44, borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },

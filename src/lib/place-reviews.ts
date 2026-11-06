@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { getCityPlaces } from './city-places.ts';
+import { getCityPlaces, type CityPlace } from './city-places.ts';
 import { createCommunityPost } from './community-data.ts';
 import { loadPublicFeed, type FeedCursor } from './feed-data.ts';
 import { TAGS } from './mock.ts';
@@ -35,6 +35,13 @@ export function placeReviewReference(body: string): string | null {
   const lines = postMapBody(body).body.trim().split(/\r?\n/);
   const references = lines.filter(line => referenceLine.test(line));
   return references.length === 1 && references[0] === lines.at(-1) ? referenceLine.exec(references[0])![1] : null;
+}
+
+// The catalog place a review points at, so a feed card can show it; null for any other post.
+export function placeReviewPlace(post: Pick<Post, 'body' | 'cityId'>): CityPlace | null {
+  const match = /\/(node|way|relation)\/(\d+)$/.exec(placeReviewReference(post.body) ?? '');
+  if (!match) return null;
+  try { return catalogPlace(post.cityId, `osm:${match[1]}:${match[2]}`); } catch { return null; }
 }
 
 export function placeReviewBody(cityId: string, placeId: string, input: string): string {

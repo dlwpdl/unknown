@@ -1,5 +1,5 @@
 import { deliveryPartnerPlace } from '../src/lib/delivery-partners.ts';
-import { placeMapRoute } from '../src/lib/discovery.ts';
+import { directionsUrl, placeMapRoute } from '../src/lib/discovery.ts';
 import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -10,7 +10,8 @@ import * as product from '../src/lib/product-analytics.ts';
 import * as preferences from '../src/lib/notification-preferences.ts';
 import * as maps from '../src/lib/post-maps.ts';
 import { mapMessage } from '../src/lib/post-map-html.ts';
-import { merchantMapsUrl, safeMerchantSourceUrl } from '../src/lib/merchant-source.ts';
+import { merchantMapsUrl, merchantPhoneUrl, safeMerchantSourceUrl } from '../src/lib/merchant-source.ts';
+import * as postLinks from '../supabase/functions/_shared/post-links.ts';
 import { analyticsScreen } from '../src/lib/analytics.ts';
 import * as realBehavior from '../src/lib/behavior-analytics.ts';
 import { getOAuthCallbackPath } from '../src/lib/kakao-auth.ts';
@@ -29,7 +30,7 @@ const nodes = value => !value || typeof value !== 'object' ? [] : [...(value.typ
 
 // Native/network boundaries are replaced; the real components, hooks and collector run.
 function mount(file, exportName = 'default', props = {}, options = {}) {
-  const hooks = [], effects = [], calls = [], order = [], alerts = [], opened = [], read = [], navigated = [], listeners = new Map(), windows = new Map();
+  const hooks = [], effects = [], calls = [], order = [], alerts = [], opened = [], browsed = [], copied = [], read = [], navigated = [], listeners = new Map(), windows = new Map();
   const hidden = () => false;
   let cursor = 0, dirty = true, tree, transport;
   const ctx = { auth: { isAuthed: true, isAdmin: false, isAuthLoading: false, me: { id: 'member', cityId: 'vancouver' } },
@@ -58,18 +59,19 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
   const router = { navigate: route => { order.push(`navigate:${route}`); navigated.push(plain(route)); }, push: route => order.push(`push:${route}`), back() {} };
   const Linking = { openURL: url => { opened.push(url); return ctx.openURL?.(url) ?? Promise.resolve(); },
     getInitialURL: () => ctx.getInitialURL?.() ?? Promise.resolve(ctx.entryUrl), addEventListener: (_name, listener) => subscription('url', listener) };
-  const native = new Proxy({ StyleSheet: { create: value => value, hairlineWidth: 1 }, Platform: { OS: ctx.platform }, Linking,
+  const native = new Proxy({ StyleSheet: { create: value => value, hairlineWidth: 1 }, Platform: { OS: ctx.platform }, Linking, Clipboard: { setString: value => copied.push(value) },
     Alert: { alert: (...args) => alerts.push(args) }, LayoutAnimation: { configureNext() {}, Types: { easeOut: 'easeOut' }, Properties: { opacity: 'opacity' } },
     AppState: { currentState: 'active', addEventListener: (_name, listener) => subscription('app-state', listener) },
     DeviceEventEmitter: { addListener: (name, listener) => subscription(name, listener) },
   }, { get: (target, key) => target[key] ?? key });
   const imports = {
+    '@/components/screen-glow': { useScreenGlow: () => ({ onLayout() {}, image: () => undefined }) },
     react, 'react-native': native, 'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'expo-router': { useRootNavigationState: () => ({ key: 'root' }), useRouter: () => router, useLocalSearchParams: () => ctx.params,
       useIsFocused: () => ctx.focused, useFocusEffect: fn => effect(() => ctx.focused ? fn() : undefined, [fn, ctx.focused]), usePathname: () => ctx.pathname, Link: { AppleZoomTarget: 'ZoomTarget' } },
     'expo-notifications': { DEFAULT_ACTION_IDENTIFIER: DEFAULT_ACTION, setNotificationHandler() {}, getLastNotificationResponse: () => ctx.initialResponse ?? null,
       clearLastNotificationResponseAsync: async () => {}, addNotificationResponseReceivedListener: listener => subscription('response', listener), addPushTokenListener: listener => subscription('token', listener) },
-    'expo-linking': Linking, 'expo-application': { nativeApplicationVersion: '1.2.2', nativeBuildVersion: '64' },
+    'expo-linking': Linking, 'expo-web-browser': { openBrowserAsync: url => { browsed.push(url); return Linking.openURL(url); } }, 'expo-application': { nativeApplicationVersion: '1.2.2', nativeBuildVersion: '64' },
     'expo-constants': { __esModule: true, default: { expoConfig: { version: '9.9.9', ios: { buildNumber: '999' } } } },
     'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, FadeIn: { duration: () => 'fade' }, FadeInDown: { duration: () => 'fade' }, useReducedMotion: () => true }, 'react-native-webview': { __esModule: true, default: 'WebView' },
     '@/lib/auth': { useAuth: () => ctx.auth }, '@/lib/product-analytics': product, '@/lib/notification-preferences': preferences,
@@ -82,14 +84,16 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
       recordTicketmasterEventClick: async (cityId, id) => order.push(`recommendation:${cityId}:${id}`), eventNotice: () => '', eventTime: () => '', eventPriceLabel: () => '', meetupAllowed: () => true },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
     '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
-    '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
-    '@/lib/city-places': { getCityRecommendations: id => catalog.cities[id]?.places ?? [], CITY_PLACES_COLLECTED_AT: catalog.collectedAt, getCityPlaces: id => { if (ctx.catalogError) throw new Error('missing'); return catalog.cities[id]?.places ?? []; } },
+    '@/components/place-saves': { PlaceSavedBy: 'PlaceSavedBy', PlaceRelated: 'PlaceRelated', usePlaceSaves: () => null }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
+    '@/lib/city-places': { getCityRecommendations: id => catalog.cities[id]?.places ?? [], CITY_PLACES_COLLECTED_AT: catalog.collectedAt, getCityPlaces: id => { if (ctx.catalogError) throw new Error('missing'); return ctx.places ?? catalog.cities[id]?.places ?? []; } },
     '@/lib/community-city': { useCommunityCity: () => ({ city, setCity() {} }) }, '@/lib/mock': { CITIES: [city] },
-    '@/lib/discovery': { placeMapRoute },
+    '@/lib/discovery': { directionsUrl, placeMapRoute },
     '@/lib/delivery-partners': { deliveryPartnerPlace },
     '@/lib/webshops': { loadCityBusinessLinks: async () => ({}) },
-    '@/lib/merchant-source': { merchantMapsUrl, safeMerchantSourceUrl }, '@/lib/post-maps': maps,
+    '@/lib/merchant-source': { merchantMapsUrl, merchantPhoneUrl, safeMerchantSourceUrl }, '@/lib/post-maps': maps,
+    '../../../supabase/functions/_shared/post-links': postLinks,
     '@/lib/post-map-html': { mapMessage, mapHtml: () => '<html/>', mapPinScript: () => '', mapPreviews: new Map(), rememberMapPreview() {} },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/constants/theme': { Depth: {}, Spacing: {} }, '@/lib/event-videos': { eventVideo: () => null }, '@/lib/feed-data': { relativeTime: () => '' },
     '@/lib/behavior-analytics': ctx.realBehavior ? realBehavior : { configureBehavior: value => { transport = value; }, behavior() {}, behaviorScreen() {}, flushBehavior: async () => {} },
@@ -115,7 +119,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
       tree = exports[exportName](props); for (const run of effects) run(); }
     return tree;
   };
-  const ui = { ctx, calls, order, alerts, opened, read, navigated, listeners, windows, render,
+  const ui = { ctx, calls, order, alerts, opened, browsed, copied, read, navigated, listeners, windows, render,
     nodes: () => nodes(tree), product: () => calls.filter(([name]) => name === 'record_product_event').map(([, args]) => args),
     async settle() { for (let i = 0; i < 5; i++) { await new Promise(resolve => setImmediate(resolve)); render(); } },
     behavior: () => transport({ session: 'fixed-session', events: [{ seq: 1, screen: 'events', kind: 'view', target: 'screen', value: 1 }] }),
@@ -193,6 +197,47 @@ test('catalog place view needs focus, and website/source launches are distinguis
   for (const options of [{ params: { id: 'osm:node:0' } }, { catalogError: true }]) {
     const missing = mount('app/places/[id].tsx', 'default', {}, options); t.after(missing.cleanup); assert.deepEqual(missing.product(), []);
   }
+});
+
+test('P3/P4: 길찾기 offers address copy, Apple and Google maps; 전화·인스타 need data; the website opens in the app', async t => {
+  const id = 'osm:node:652955238', place = catalog.cities.vancouver.places.find(item => item.id === id);
+  const ui = mount('app/places/[id].tsx', 'default', {}, { params: { id, cityId: 'vancouver' } });
+  t.after(ui.cleanup);
+  const control = target => ui.nodes().find(node => node.props?.analyticsId === target);
+  assert.ok(!control('company.about.phone') && !control('post.attachment.open'), 'the catalog has no phone or Instagram, so neither button shows');
+  control('places.detail.website').props.onPress(); await ui.settle();
+  assert.deepEqual(ui.browsed, [place.website], 'the place website opens in the in-app browser');
+  control('places.detail.source').props.onPress(); await ui.settle();
+  assert.equal(ui.browsed.length, 1, 'source pages keep the system browser');
+  control('company.about.maps').props.onPress(); ui.render();
+  const sheet = ui.nodes().find(node => node.type === 'MeetupManageSheet');
+  assert.equal(sheet.props.title, place.name);
+  assert.deepEqual(plain(sheet.props.actions.map(action => [action.key, action.label, action.analyticsId])),
+    [['copy', '주소 복사', 'post.share.copy'], ['apple', 'Apple 지도', 'company.location'], ['google', 'Google 지도', 'discovery.google']]);
+  assert.equal(sheet.props.actions[0].hint, place.address);
+  sheet.props.actions[0].onPress(); ui.render();
+  assert.deepEqual(ui.copied, [place.address]);
+  assert.ok(ui.nodes().some(node => node.props?.children === '주소를 복사했어요.'));
+  sheet.props.actions[1].onPress(); await ui.settle();
+  assert.equal(ui.opened.at(-1), `https://maps.apple.com/?daddr=${place.latitude},${place.longitude}`);
+  sheet.props.actions[2].onPress(); await ui.settle();
+  assert.equal(ui.opened.at(-1), directionsUrl(place, 'google'));
+  assert.deepEqual(ui.product().at(-1), payload('place_directions', id, 'vancouver'));
+  sheet.props.onClose(); ui.render(); assert.ok(!ui.nodes().some(node => node.type === 'MeetupManageSheet'));
+  const android = mount('app/places/[id].tsx', 'default', {}, { params: { id, cityId: 'vancouver' }, platform: 'android' });
+  t.after(android.cleanup);
+  android.nodes().find(node => node.props?.analyticsId === 'company.about.maps').props.onPress(); android.render();
+  assert.deepEqual(plain(android.nodes().find(node => node.type === 'MeetupManageSheet').props.actions.map(action => action.key)), ['copy', 'google'], 'Apple Maps is offered on iPhone only');
+  const rich = mount('app/places/[id].tsx', 'default', {}, { params: { id, cityId: 'vancouver' },
+    places: [{ ...place, phone: '+1 (604) 555-0100', instagram: 'https://instagram.com/Gling.App' }] });
+  t.after(rich.cleanup);
+  rich.nodes().find(node => node.props?.analyticsId === 'company.about.phone').props.onPress();
+  rich.nodes().find(node => node.props?.analyticsId === 'post.attachment.open').props.onPress(); await rich.settle();
+  assert.deepEqual(rich.opened, ['tel:+16045550100', 'https://www.instagram.com/gling.app/']);
+  const unsafe = mount('app/places/[id].tsx', 'default', {}, { params: { id, cityId: 'vancouver' },
+    places: [{ ...place, phone: 'javascript:alert(1)', instagram: 'https://evil.example/gling' }] });
+  t.after(unsafe.cleanup);
+  assert.ok(!unsafe.nodes().some(node => ['company.about.phone', 'post.attachment.open'].includes(node.props?.analyticsId)), 'unusable values hide the buttons');
 });
 
 test('place launches that fail or outlive the account never claim success', async t => {

@@ -109,6 +109,18 @@ class DailyPlaces(unittest.TestCase):
         self.assertEqual(removed['regionalPlaces'], [])
         self.assertEqual(removed['regionalPhotos'], [])
 
+    def test_price_level_and_sub_filters_pass_through_with_the_app_checks(self):
+        m = implementation(); seed, osm, now = self.fixture()
+        seed['cities']['vancouver']['places'][0].update(priceLevel=2, subcategories=['lunch', 'date'])
+        place = m.build_catalog(seed, osm, now)['cities']['vancouver']['places'][0]
+        self.assertEqual((place['priceLevel'], place['subcategories']), (2, ['lunch', 'date']))
+        plain = json.loads(json.dumps(seed)); plain['cities']['vancouver']['places'][0].pop('priceLevel'); plain['cities']['vancouver']['places'][0].pop('subcategories')
+        self.assertNotIn('priceLevel', m.build_catalog(plain, osm, now)['cities']['vancouver']['places'][0], 'absent stays absent, never guessed')
+        for patch_value in [dict(priceLevel=0), dict(priceLevel=5), dict(priceLevel=True), dict(priceLevel='2'), dict(priceLevel=2.5),
+                            dict(subcategories='lunch'), dict(subcategories=['x'] * 2), dict(subcategories=[str(i) for i in range(13)]), dict(subcategories=['x' * 41]), dict(subcategories=['']), dict(subcategories=['a\nb']), dict(subcategories=[3])]:
+            bad = json.loads(json.dumps(seed)); bad['cities']['vancouver']['places'][0].update(patch_value)
+            with self.assertRaises(ValueError, msg=str(patch_value)): m.build_catalog(bad, osm, now)
+
     def test_extra_places_carry_picks_and_photos_past_the_legacy_200_without_touching_base_arrays(self):
         m = implementation(); seed, osm, now = self.fixture()
         city = seed['cities']['vancouver']

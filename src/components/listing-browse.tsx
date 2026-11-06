@@ -1,10 +1,12 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
 import { Modal, PanResponder, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import type { SymbolViewProps } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ChillingDateInput } from '@/components/chilling-date-input';
 import { DiscoveryMap } from '@/components/discovery-map';
 import { ListingCard, type DetailedPost } from '@/components/listing-card';
@@ -33,15 +35,16 @@ const PRICES = { housing: [1500, 2000, 2500, 3000, 4000], sale: [500000, 800000,
 const MARKETS = { rent: '렌트', sale: '매매' } as const;
 
 function Segment({ options, value, onChange, label }: { options: { key: string; label: string; icon?: SymbolViewProps['name'] }[]; value: string; onChange: (key: string) => void; label: string }) {
-  const theme = useTheme(), { play } = useInteractionFeedback();
+  const theme = useTheme(), { play } = useInteractionFeedback(), clay = useClay();
   return <View accessibilityRole="tablist" accessibilityLabel={label} style={[styles.segment, { backgroundColor: theme.backgroundElement }]}>
     {options.map(option => {
       const selected = option.key === value;
       return <Pressable key={option.key} analyticsId={`listing.segment.${option.key}`} accessibilityRole="tab" accessibilityLabel={option.label} accessibilityState={{ selected }}
         onPress={() => { play('selection'); if (!selected) onChange(option.key); }}
-        style={({ pressed }) => [styles.segmentItem, { backgroundColor: selected ? theme.card : 'transparent', opacity: pressed ? 0.82 : 1 }]}>
-        {option.icon ? <SymbolView name={option.icon} size={IconSize.inline + 2} tintColor={selected ? theme.accent : theme.textSecondary} />
-          : <ThemedText type="label" style={{ color: selected ? theme.accent : theme.textSecondary }}>{option.label}</ThemedText>}
+        style={({ pressed }) => [styles.segmentItem, clay && { overflow: 'visible' }, { backgroundColor: selected && !clay ? theme.card : 'transparent', opacity: pressed ? 0.82 : 1 }]}>
+        {clay && selected && <ClayPillFill kind="on" />}
+        {option.icon ? <SymbolView name={option.icon} size={IconSize.inline + 2} tintColor={selected ? clay ? theme.accentInk : theme.accent : theme.textSecondary} />
+          : <ThemedText type="label" style={{ color: selected ? clay ? theme.accentInk : theme.accent : theme.textSecondary }}>{option.label}</ThemedText>}
       </Pressable>;
     })}
   </View>;
@@ -66,7 +69,7 @@ export function ListingViewSwitch({ view, onView }: { view: ListingView; onView:
 export function ListingFilterBar({ category, cityId, filters, onChange, view, onView }: {
   category: ListingCategory; cityId: string; filters: ListingFilters; onChange: (next: ListingFilters) => void; view?: ListingView; onView?: (view: ListingView) => void;
 }) {
-  const theme = useTheme(), { tr, language } = useLanguage(), { play } = useInteractionFeedback();
+  const theme = useTheme(), { tr, language } = useLanguage(), { play } = useInteractionFeedback(), clay = useClay(), clayBox = useClayBox();
   const [open, setOpen] = useState<FilterKey | null>(null), [openGroups, setOpenGroups] = useState<string[]>([]);
   const [now] = useState(() => new Date());
   const areas = neighborhoodsFor(cityId), groups = neighborhoodGroups(cityId);
@@ -93,9 +96,10 @@ export function ListingFilterBar({ category, cityId, filters, onChange, view, on
   };
   const names: Record<FilterKey, string> = { market: tr('렌트·매매'), rooms: tr('방 구성'), price: tr('가격'), moveIn: tr('입주일'), deal: tr('팝니다·삽니다'), condition: tr('상태'),
     jobDeal: tr('구인·구직'), jobTypes: tr('근무 형태'), wage: tr('시급'), area: tr('근무 동네') };
-  const option = (key: string, label: string, selected: boolean, onPress: () => void, multi = false, spoken = label) => <SelectionChip key={key} analyticsId="listing.filter.option" selected={selected} baseColor={theme.card}
+  const option = (key: string, label: string, selected: boolean, onPress: () => void, multi = false, spoken = label) => <SelectionChip key={key} analyticsId="listing.filter.option" selected={selected} baseColor={clay ? 'transparent' : theme.card}
     accessibilityRole={multi ? 'checkbox' : 'radio'} accessibilityLabel={spoken} accessibilityState={{ selected, checked: selected }}
-    onPress={() => { play('selection'); onPress(); }} style={[ControlStyles.pill, styles.optionChip, { borderColor: selected ? theme.accent : theme.line }]}>
+    onPress={() => { play('selection'); onPress(); }} style={[ControlStyles.pill, styles.optionChip, { borderColor: clay ? 'transparent' : selected ? theme.accent : theme.line }]}>
+    {clay && !selected && <ClayPillFill kind="white" />}
     <ThemedText type="label" style={{ color: selected ? theme.accentInk : theme.text }}>{label}</ThemedText>
   </SelectionChip>;
   const toggle = <T extends string>(list: T[], item: T) => list.includes(item) ? list.filter(entry => entry !== item) : [...list, item];
@@ -112,15 +116,17 @@ export function ListingFilterBar({ category, cityId, filters, onChange, view, on
               play('selection'); setOpen(expanded ? null : key);
               if (key === 'area') setOpenGroups(groups?.filter(group => group.items.some(item => filters.areas.includes(item.id))).map(group => group.key) ?? []);
             }}
-            style={({ pressed }) => [ControlStyles.pill, styles.filterChip, { borderColor: active || expanded ? theme.accent : theme.line, backgroundColor: active ? theme.backgroundSelected : theme.card, opacity: pressed ? 0.82 : 1 }]}>
-            <ThemedText type="label" numberOfLines={1} style={{ color: active ? theme.accent : theme.text }}>{summary[key] ?? names[key]}</ThemedText>
-            <SymbolView name={{ ios: expanded ? 'chevron.up' : 'chevron.down', android: expanded ? 'expand_less' : 'expand_more', web: expanded ? 'expand_less' : 'expand_more' }} size={IconSize.chevron} tintColor={active ? theme.accent : theme.textSecondary} />
+            style={({ pressed }) => [ControlStyles.pill, styles.filterChip, clay && styles.chipClay, { borderColor: clay ? 'transparent' : active || expanded ? theme.accent : theme.line, backgroundColor: clay ? 'transparent' : active ? theme.backgroundSelected : theme.card, opacity: pressed ? 0.82 : 1 }]}>
+            {clay && <ClayPillFill kind={active ? 'on' : 'white'} />}
+            <ThemedText type="label" numberOfLines={1} style={{ color: active ? clay ? theme.accentInk : theme.accent : theme.text }}>{summary[key] ?? names[key]}</ThemedText>
+            <SymbolView name={{ ios: expanded ? 'chevron.up' : 'chevron.down', android: expanded ? 'expand_less' : 'expand_more', web: expanded ? 'expand_less' : 'expand_more' }} size={IconSize.chevron} tintColor={active ? clay ? theme.accentInk : theme.accent : theme.textSecondary} />
           </Pressable>;
         })}
       </ScrollView>
       {category === 'used' && view && onView && <ListingViewSwitch view={view} onView={onView} />}
     </View>
-    {open && <View style={[styles.panel, { borderColor: theme.line, backgroundColor: theme.backgroundElement }]}>
+    {open && <View style={[styles.panel, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.backgroundElement }]}>
+      {clayBox && <ClayBoxFill kind="tile" />}
       {open !== 'moveIn' && open !== 'wage' && !(open === 'area' && groups) && <View style={styles.options}>
         {open === 'market' && (['rent', 'sale'] as const).map(market => option(market, tr(MARKETS[market]), filters.market === market,
           // Switching market resets the price step (different scale); 매매 has no move-in date.
@@ -156,7 +162,8 @@ export function ListingFilterBar({ category, cityId, filters, onChange, view, on
       {open === 'wage' && <WageRange key={`${filters.minWage}-${filters.maxWage}`} min={filters.minWage} max={filters.maxWage} onChange={(minWage, maxWage) => onChange({ ...filters, minWage, maxWage })} />}
       {open === 'moveIn' && <ChillingDateInput dateOnly label={tr('이 날짜까지 들어갈 수 있는 집')} value={parseLocalDay(moveInShown)} minimumDate={now}
         onChange={iso => { const day = localDay(iso); if (day) { play('selection'); onChange({ ...filters, moveInBy: day }); } }} />}
-      {summary[open] != null && <Pressable analyticsId="listing.filter.clear" accessibilityRole="button" onPress={() => { play('selection'); clear(open); }} style={styles.clear}>
+      {summary[open] != null && <Pressable analyticsId="listing.filter.clear" accessibilityRole="button" onPress={() => { play('selection'); clear(open); }} style={[styles.clear, clay && styles.chipClay]}>
+        {clay && <ClayPillFill kind="white" />}
         <ThemedText type="label" themeColor="accent">{tr('이 조건 지우기')}</ThemedText>
       </Pressable>}
     </View>}
@@ -211,7 +218,7 @@ export function ListingMapScreen({ visible, category, city, posts, filters, onFi
   visible: boolean; category: 'housing' | 'used'; city: City; posts: Post[]; filters: ListingFilters; onFilters: (next: ListingFilters) => void;
   onClose: () => void; onOpenPost: (post: Post) => void;
 }) {
-  const theme = useTheme(), { tr, language } = useLanguage(), { play } = useInteractionFeedback(), reduced = useReducedMotion();
+  const theme = useTheme(), { tr, language } = useLanguage(), { play } = useInteractionFeedback(), reduced = useReducedMotion(), clay = useClay();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [moved, setMoved] = useState<MapBounds | null>(null), [region, setRegion] = useState<MapBounds | null>(null);
   const [free, setFree] = useState(false); // after the first pan or tap the camera is the person's
@@ -240,7 +247,8 @@ export function ListingMapScreen({ visible, category, city, posts, filters, onFi
         {visible && <DiscoveryMap markers={markers} cityName={city.englishName} selectedId={selected?.id ?? null}
           center={focus} onSelect={id => { setFree(true); setSelectedId(id); }} onMoved={bounds => { setFree(true); setMoved(bounds); }} bottomInset={selected ? 300 : 72} />}
         {moved && moved !== region && <Pressable analyticsId="listing.map.search-here" accessibilityRole="button" onPress={() => { play('selection'); setRegion(moved); setSelectedId(null); }}
-          style={({ pressed }) => [styles.searchHere, { backgroundColor: theme.card, borderColor: theme.line, opacity: pressed ? 0.82 : 1 }]}>
+          style={({ pressed }) => [styles.searchHere, clay && styles.mapPillClay, { backgroundColor: clay ? 'transparent' : theme.card, borderColor: clay ? 'transparent' : theme.line, opacity: pressed ? 0.82 : 1 }]}>
+          {clay && <ClayPillFill kind="white" />}
           <SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={IconSize.inline} tintColor={theme.accent} />
           <ThemedText type="label" themeColor="accent">{tr('이 지역에서 다시 찾기')}</ThemedText>
         </Pressable>}
@@ -259,7 +267,8 @@ export function ListingMapScreen({ visible, category, city, posts, filters, onFi
               </Pressable>)}
           </ScrollView>
         </View> : <Pressable analyticsId="listing.map.to-list" accessibilityRole="button" onPress={close}
-          style={({ pressed }) => [styles.listLink, { backgroundColor: theme.card, borderColor: theme.line, opacity: pressed ? 0.82 : 1 }]}>
+          style={({ pressed }) => [styles.listLink, clay && styles.mapPillClay, { backgroundColor: clay ? 'transparent' : theme.card, borderColor: clay ? 'transparent' : theme.line, opacity: pressed ? 0.82 : 1 }]}>
+          {clay && <ClayPillFill kind="white" />}
           <ThemedText type="label" accessibilityLiveRegion="polite">{tr('이 지도 안에 글 {0}개', count)}</ThemedText>
           <ThemedText type="label" themeColor="accent">{tr('목록으로 보기')} ›</ThemedText>
         </Pressable>}
@@ -281,9 +290,12 @@ const styles = StyleSheet.create({
   filterRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   filterChips: { flexDirection: 'row', gap: Spacing.two },
   filterChip: { flexDirection: 'row', gap: 4, borderWidth: 1, paddingHorizontal: 12, maxWidth: 220 },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   panel: { borderWidth: 1, borderRadius: 16, padding: 12, gap: Spacing.two },
   options: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   optionChip: { borderWidth: 1 },
+  chipClay: { overflow: 'visible', paddingHorizontal: 18 },
+  mapPillClay: { overflow: 'visible', shadowOpacity: 0, elevation: 0, paddingHorizontal: 20 },
   clear: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   areaHead: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.one },
   areaOptions: { paddingBottom: Spacing.three },

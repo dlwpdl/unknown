@@ -1,13 +1,18 @@
 import { useLanguage } from '@/hooks/use-language';
+import { PageHeader } from '@/components/page-header';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable } from '@/components/analytics-controls';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { SymbolView } from 'expo-symbols';
-import { DeviceEventEmitter, FlatList, StyleSheet, View } from 'react-native';
+import { SymbolView } from '@/components/symbol-view';
+import { Alert, Animated, DeviceEventEmitter, Easing, FlatList, StyleSheet, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PostCard } from '@/components/post-card';
+import { DragSheet } from '@/components/drag-sheet';
+import { FriendButton, ProfileRecordTiles, ProfileSavedMap } from '@/components/profile-overview';
+import { ReportSheet } from '@/components/report-sheet';
 import { MannerSummary } from '@/components/manner-summary';
 import { TrustBadge } from '@/components/trust-badge';
 import { PostDetail } from '@/components/post-detail';
@@ -15,7 +20,9 @@ import { PostZoomLink } from '@/components/post-zoom-link';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { SavedEntryButton, useSavedEntry } from '@/components/saved-entry';
+import { ControlStyles, IconSize, controlPresentation } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
+import { Depth } from '@/constants/theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { count } from '@/i18n';
 import { useAuth } from '@/lib/auth';
@@ -25,6 +32,8 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { appendUniquePosts } from '@/lib/feed-data';
 import { applyPostChange, POST_CHANGED_EVENT, type PostChange } from '@/lib/post-open';
 import { loadPublicUserActivity, loadPublicUserProfile, type PublicUserProfile } from '@/lib/user-profile';
+import { blockUser } from '@/lib/community-data';
+import { loadProfileOverview, type ProfileOverview } from '@/lib/profile-friends';
 import { supabase } from '@/lib/supabase';
 import { CITIES } from '@/lib/mock';
 import type { Post } from '@/lib/types';
@@ -42,9 +51,19 @@ export default function AuthorPostsRoute() {
   const [state, setState] = useState<{ key: string; posts: Post[]; hasMore: boolean } | null>(null);
   const [profile, setProfile] = useState<{ key: string; value: PublicUserProfile | null } | null>(null);
   const [kind, setKind] = useState<'story' | 'listing'>('story'), [retry, setRetry] = useState(0);
+  const reducedMotion = useReducedMotion(), [segmentWidth, setSegmentWidth] = useState(0), [segmentPosition] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    const toValue = kind === 'story' ? 0 : 1;
+    if (reducedMotion) { segmentPosition.setValue(toValue); return; }
+    const animation = Animated.timing(segmentPosition, { toValue, duration: 250, easing: Easing.out(Easing.cubic), useNativeDriver: true });
+    animation.start();
+    return () => animation.stop();
+  }, [kind, reducedMotion, segmentPosition]);
   const [more, setMore] = useState(false), pending = useRef(false);
   const [failed, setFailed] = useState<string | null>(null);
   const [detail, setDetail] = useState<{ key: string; post: Post } | null>(null);
+  const [overview, setOverview] = useState<{ key: string; value: ProfileOverview | null } | null>(null), [overviewRevision, setOverviewRevision] = useState(0);
+  const [menu, setMenu] = useState<'open' | 'report' | null>(null), afterMenu = useRef<(() => void) | null>(null);
   const [visiblePostIds, setVisiblePostIds] = useTranslationVisibleIds();
   const trackTranslationPosts = useCallback(({ viewableItems }: { viewableItems: { item: Post }[] }) =>
     setVisiblePostIds(viewableItems.map(({ item }) => item.id)), [setVisiblePostIds]);
@@ -64,6 +83,16 @@ export default function AuthorPostsRoute() {
       .catch(() => { if (active) setFailed(requestKey); });
     return () => { active = false; };
   }, [authorId, kind, requestKey, viewerScope, hidden]);
+
+  // Map, counts and the friend button. A failed read leaves them out without hiding the posts.
+  const overviewKey = `${authorId}:${viewerScope}:${overviewRevision}`;
+  useEffect(() => {
+    if (!authorId) return;
+    let active = true;
+    void loadProfileOverview(supabase, authorId).then(value => { if (active) setOverview({ key: overviewKey, value }); })
+      .catch(() => { if (active) setOverview({ key: overviewKey, value: null }); });
+    return () => { active = false; };
+  }, [authorId, overviewKey, hidden]);
 
   async function loadMore() {
     const last = current?.posts.at(-1);
@@ -86,29 +115,29 @@ export default function AuthorPostsRoute() {
   const posts = (current?.posts ?? []).filter(post => !hidden('post', post.id, post.author.id));
   const publicProfile = profile?.key === requestKey && !hidden('user', authorId) ? profile.value : null;
   const saved = useSavedEntry({ kind: 'user', id: authorId }, !!publicProfile);
+  const shownOverview = publicProfile && overview?.key === overviewKey ? overview.value : null;
+  const closeMenu = (then?: () => void) => { afterMenu.current = then ?? null; setMenu(null); };
+  const confirmBlock = () => {
+    if (!publicProfile || !isAuthed) return;
+    Alert.alert(t.report.block(publicProfile.nickname), t.report.blockBody, [
+      { text: t.profile.cancel, style: 'cancel', onPress: () => play('selection') },
+      { text: t.chat.block, style: 'destructive', onPress: () => {
+        void blockUser(supabase, me.id, authorId).then(() => { play('warning'); Alert.alert(t.chat.blockDone); goBack(); })
+          .catch(() => { play('warning'); Alert.alert(t.chat.blockError); });
+      } },
+    ]);
+  };
   const shownDetail = detail?.key === requestKey && !hidden('post', detail.post.id, detail.post.author.id) ? detail.post : null;
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <View style={styles.header}>
-          <Pressable analyticsId="app_user_[id].pressable.1"
-            onPress={goBack}
-            accessibilityRole="button"
-            accessibilityLabel={t.authorPosts.back}
-            style={({ pressed }) => [styles.backButton, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
-            <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} />
-          </Pressable>
-          <View style={styles.heading}>
-            <ThemedText type="smallBold" style={{ fontSize: 16 }}>{tr("사용자 프로필")}</ThemedText>
-            {current && (
-              <ThemedText type="small" themeColor="textSecondary">
-                {t.authorPosts.count(count(posts.length))}
-              </ThemedText>
-            )}
-          </View>
-          {publicProfile && <SavedEntryButton entry={saved} kind="user" analyticsId="save.user" />}
-        </View>
+      <SafeAreaView style={styles.container} edges={['left', 'right']}>
+        <PageHeader title={tr("사용자 프로필")} analyticsId="app_user_[id].pressable.1" right={publicProfile ? <Pressable analyticsId="user.more" accessibilityRole="button" accessibilityLabel={tr('더보기')} accessibilityHint={tr('프로필 저장, 신고, 차단')}
+          onPress={() => { play('selection'); setMenu('open'); }}
+          style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
+          <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={IconSize.toolbar} tintColor={theme.text} />
+        </Pressable> : undefined} />
+        {current && <ThemedText type="small" themeColor="textSecondary" style={styles.count}>{t.authorPosts.count(count(posts.length))}</ThemedText>}
         {!!saved.error && <ThemedText type="small" accessibilityRole="alert" style={styles.saveError}>{saved.error}</ThemedText>}
 
 
@@ -124,19 +153,25 @@ export default function AuthorPostsRoute() {
             keyExtractor={(post) => post.id}
             contentContainerStyle={styles.list}
             ListHeaderComponent={publicProfile ? <View style={styles.profile}>
+              {shownOverview && <ProfileSavedMap overview={shownOverview} homeCityId={publicProfile.cityId} />}
               <View style={styles.identity}>
                 <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle" style={{ color: theme.accent }}>{publicProfile.nickname[0]}</ThemedText></View>
                 <View style={{ flex: 1, minWidth: 0, gap: 4 }}><View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}><ThemedText type="subtitle" style={{ flexShrink: 1 }}>{publicProfile.nickname}</ThemedText><TrustBadge verified={publicProfile.verificationLevel >= 2} trustLevel={publicProfile.verificationLevel === 3 ? 3 : publicProfile.verificationLevel === 2 ? 2 : undefined} /></View><ThemedText type="small" themeColor="textSecondary">{publicProfile.neighborhood ?? tr(CITIES.find(city => city.id === publicProfile.cityId)?.name ?? publicProfile.cityId)}{" " + tr("· 가입") + " "}{new Date(publicProfile.memberSince).toLocaleDateString(appLocale)}</ThemedText></View>
               </View>
               <View style={[styles.stats, { borderColor: theme.line }]}>
-                {([[publicProfile.storyCount, tr('오늘')], [publicProfile.listingCount, tr('구해요·팔아요')], [publicProfile.completedCount, tr('거래 완료')]] as const).map(([value, label]) => <View key={label} style={styles.stat}><ThemedText type="subtitle">{count(value)}</ThemedText><ThemedText type="small" themeColor="textSecondary">{label}</ThemedText></View>)}
+                {([...(shownOverview?.savedCount === null ? [] : [[shownOverview?.savedCount, tr('저장한 곳')] as const]), [shownOverview?.friendCount, tr('친구')], [publicProfile.storyCount + publicProfile.listingCount, tr('쓴 글')]] as const).map(([value, label]) => <View key={label} style={styles.stat}><ThemedText type="subtitle">{value == null ? '–' : count(value)}</ThemedText><ThemedText type="small" themeColor="textSecondary">{label}</ThemedText></View>)}
               </View>
+              {shownOverview && <FriendButton overview={shownOverview} nickname={publicProfile.nickname}
+                onChanged={next => setOverview(previous => previous?.key === overviewKey && previous.value ? { ...previous, value: { ...previous.value, ...next } } : previous)} />}
               <MannerSummary summary={publicProfile.manner} />
+              {publicProfile.completedCount > 0 && <ThemedText type="small" themeColor="textSecondary">{tr('거래 완료 {0}건', count(publicProfile.completedCount))}</ThemedText>}
+              {shownOverview && <ProfileRecordTiles overview={shownOverview} />}
               <ThemedText type="small" themeColor="textSecondary">{tr("공개한 글 이력이에요. 거래 완료는 작성자가 표시한 상태이며 실제 거래·신원 인증을 보장하지 않아요.")}</ThemedText>
-        <View style={[styles.segments, { borderBottomColor: theme.line }]} accessibilityRole="tablist">
+        <View style={[styles.segments, { borderBottomColor: theme.line }]} accessibilityRole="tablist" onLayout={event => setSegmentWidth(event.nativeEvent.layout.width)}>
+          {segmentWidth > 0 && <Animated.View pointerEvents="none" style={[styles.segmentIndicator, Depth.control, { width: segmentWidth / 2, backgroundColor: theme.backgroundElement, borderBottomColor: theme.accent, transform: [{ translateX: segmentPosition.interpolate({ inputRange: [0, 1], outputRange: [0, segmentWidth / 2] }) }] }]} />}
           {(['story', 'listing'] as const).map(value => <Pressable analyticsId={`user.activity.${value}`} key={value} accessibilityRole="tab" accessibilityState={{ selected: kind === value }}
-            onPress={() => { play('selection'); setKind(value); setDetail(null); }} style={[styles.segment, kind === value && { borderBottomColor: theme.accent, borderBottomWidth: 2 }]}>
-            <ThemedText type="smallBold">{value === 'story' ? tr("오늘") : tr("구해요·팔아요")}</ThemedText>
+            onPress={() => { play('selection'); setKind(value); setDetail(null); }} style={styles.segment}>
+            <ThemedText type={kind === value ? 'smallBold' : 'small'} themeColor={kind === value ? undefined : 'textSecondary'}>{value === 'story' ? tr("오늘") : tr("구해요·팔아요")}</ThemedText>
           </Pressable>)}
         </View>
             </View> : undefined}
@@ -160,6 +195,27 @@ export default function AuthorPostsRoute() {
         )}
       </SafeAreaView>
 
+      <DragSheet visible={!!publicProfile && menu === 'open'} onClose={() => closeMenu()} onDismissed={() => { const then = afterMenu.current; afterMenu.current = null; then?.(); }}>
+        {publicProfile && <View style={styles.menu}>
+          <View style={[styles.menuRow, { borderBottomColor: theme.line }]}>
+            <View style={styles.menuText}><ThemedText type="smallBold">{tr('프로필 저장')}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('나만 보는 저장 목록에 넣어요')}</ThemedText></View>
+            <SavedEntryButton entry={saved} kind="user" analyticsId="save.user" />
+          </View>
+          {isAuthed && me.id !== authorId && <>
+            <Pressable analyticsId="user.menu.report" accessibilityRole="button" onPress={() => { play('selection'); closeMenu(() => setMenu('report')); }}
+              style={({ pressed }) => [styles.menuRow, { borderBottomColor: theme.line }, pressed && { backgroundColor: theme.backgroundSelected }]}>
+              <ThemedText type="smallBold">{t.report.title(publicProfile.nickname)}</ThemedText>
+            </Pressable>
+            <Pressable analyticsId="user.menu.block" accessibilityRole="button" onPress={() => { play('selection'); closeMenu(confirmBlock); }}
+              style={({ pressed }) => [styles.menuRow, { borderBottomColor: theme.line }, pressed && { backgroundColor: theme.backgroundSelected }]}>
+              <ThemedText type="smallBold" style={{ color: theme.danger }}>{t.report.block(publicProfile.nickname)}</ThemedText>
+            </Pressable>
+          </>}
+        </View>}
+      </DragSheet>
+      {publicProfile && menu === 'report' && <ReportSheet visible targetType="user" targetId={authorId} reportedUserId={authorId} reportedNickname={publicProfile.nickname}
+        onClose={() => { setMenu(null); setOverviewRevision(value => value + 1); }} />}
+
       {/* Guests only: signing in changes the viewer scope and closes this gate. */}
       {shownDetail && <PostDetail key={`${viewerScope}:${shownDetail.id}`} post={shownDetail} onClose={() => setDetail(null)} />}
     </ThemedView>
@@ -168,9 +224,7 @@ export default function AuthorPostsRoute() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingBottom: 8, gap: 8, flexDirection: 'row', alignItems: 'center' },
-  backButton: { alignSelf: 'flex-start', minWidth: 44, minHeight: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  heading: { flex: 1, minWidth: 0, gap: 2, paddingBottom: 4 },
+  count: { paddingHorizontal: 16, paddingBottom: 8, textAlign: 'center' },
   saveError: { paddingHorizontal: 16, paddingBottom: 8 },
   list: { paddingHorizontal: 16, paddingBottom: 32, gap: 12 },
   profile: { gap: 16, marginBottom: 16 },
@@ -178,8 +232,12 @@ const styles = StyleSheet.create({
   avatar: { width: 64, height: 64, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   stats: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 16 },
   stat: { flex: 1, minWidth: 0, alignItems: 'center', gap: 4 },
-  segments: { flexDirection: 'row', borderBottomWidth: 1, marginBottom: 0 },
-  segment: { minHeight: 44, flexGrow: 1, alignItems: 'center', paddingHorizontal: 16, justifyContent: 'center' },
+  segments: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
+  segmentIndicator: { position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: 10, borderBottomWidth: 2 },
+  segment: { flex: 1, minHeight: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   center: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   message: { gap: 6, alignItems: 'center' },
+  menu: { paddingBottom: 8 },
+  menuRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 8, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  menuText: { flex: 1, minWidth: 0, gap: 2 },
 });

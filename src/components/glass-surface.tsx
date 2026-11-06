@@ -1,6 +1,7 @@
 import { GlassView, isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-effect';
 import type { PropsWithChildren } from 'react';
 import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox, type ClayPillKind } from '@/components/clay';
 import { Colors } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -10,8 +11,10 @@ const available = (() => {
   catch { return false; }
 })();
 
-export function GlassSurface({ children, style, interactive = false, tone = 'overlay', colorScheme }: PropsWithChildren<{ style?: StyleProp<ViewStyle>; interactive?: boolean; tone?: 'overlay' | 'control'; colorScheme?: 'light' | 'dark' }>) {
+export function GlassSurface({ children, style, interactive = false, tone = 'overlay', colorScheme, clay }: PropsWithChildren<{ style?: StyleProp<ViewStyle>; interactive?: boolean; tone?: 'overlay' | 'control'; colorScheme?: 'light' | 'dark'; clay?: ClayPillKind | 'tile' }>) {
   const theme = useTheme();
+  const pill = useClay(), box = useClayBox();
+  if (clay === 'tile' ? box : clay && pill) return <View style={style}>{clay === 'tile' ? <ClayBoxFill kind="tile" /> : <ClayPillFill kind={clay!} />}{children}</View>;
   const scheme = colorScheme ?? (theme === Colors.dark ? 'dark' : 'light');
   const colors = colorScheme ? Colors[colorScheme] : theme;
   const lightBorder = scheme === 'light' && { borderColor: colors.line };

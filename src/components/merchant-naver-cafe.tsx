@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, Linking, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
 import { MerchantBadge, MerchantHelp, type MerchantBadgeTone } from '@/components/merchant-ui';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
@@ -97,7 +98,7 @@ export function MerchantNaverCafe(props: Props) {
 function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { userId: string }) {
   const { tr } = useLanguage();
   const labels = { get prepared() { return tr("발행 준비"); }, get in_flight() { return tr("결과 확인 중"); }, get succeeded() { return tr("게시 완료"); }, get failed() { return tr("게시 거절"); }, get uncertain() { return tr("결과 불확실"); } } as const;
-  const theme = useTheme(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback();
   const context = `${userId}:${merchantId}`, contextRef = useRef(context);
   useLayoutEffect(() => { contextRef.current = context; return () => { contextRef.current = ''; }; }, [context]);
   const storageKey = `gling:merchant-naver:${context}`;
@@ -168,7 +169,7 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
     }
   }
 
-  return <View style={[styles.section, { borderColor: theme.line, backgroundColor: theme.card }]}>
+  return <View style={[styles.section, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
     <View style={styles.titleRow}>
       <ThemedText type="subtitle">{tr("네이버 카페")}</ThemedText>
       {status ? <MerchantBadge label={!status.configured ? tr("설정 필요") : status.connection ? tr("연결됨") : tr("연결 안 됨")} tone={!status.configured ? 'warn' : status.connection ? 'ok' : 'neutral'} />
@@ -272,6 +273,7 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
   </View>;
 }
 const styles = StyleSheet.create({
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   section: { padding: 20, gap: 14, borderWidth: StyleSheet.hairlineWidth, borderRadius: 20 }, actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   button: { minHeight: 44, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, justifyContent: 'center', paddingHorizontal: 14 },
   input: { minHeight: 44, padding: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: 12 }, review: { gap: 12 }, photo: { width: '100%', height: 240 },

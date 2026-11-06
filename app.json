@@ -10,7 +10,7 @@
     },
     "version": "1.4.8",
     "orientation": "portrait",
-    "icon": "./assets/brand/gling-night-app-icon.png",
+    "icon": "./assets/brand/gling-3d-app-icon.png",
     "scheme": "gling",
     "userInterfaceStyle": "automatic",
     "locales": {
@@ -18,7 +18,11 @@
       "ko": "./locales/ko.json"
     },
     "ios": {
-      "icon": "./assets/brand/gling-night-app-icon.png",
+      "icon": {
+        "light": "./assets/brand/gling-3d-app-icon.png",
+        "dark": "./assets/brand/gling-3d-app-icon-dark.png",
+        "tinted": "./assets/brand/gling-3d-app-icon-tinted.png"
+      },
       "bundleIdentifier": "com.dlwpdl.gling",
       "appleTeamId": "P3X3452TDZ",
       "associatedDomains": [
@@ -30,7 +34,8 @@
         "aps-environment": "production"
       },
       "infoPlist": {
-        "CFBundleName": "글링"
+        "CFBundleName": "글링",
+        "NSPhotoLibraryAddUsageDescription": "Gling adds an image to your photo library only when you save a share card."
       },
       "config": {
         "usesNonExemptEncryption": false
@@ -210,8 +215,9 @@
       ],
       "adaptiveIcon": {
         "backgroundColor": "#0B0B12",
-        "foregroundImage": "./assets/brand/gling-night-wordmark-adaptive.png",
-        "monochromeImage": "./assets/brand/gling-night-wordmark-adaptive.png"
+        "foregroundImage": "./assets/brand/gling-3d-adaptive-foreground.png",
+        "backgroundImage": "./assets/brand/gling-3d-adaptive-background.png",
+        "monochromeImage": "./assets/brand/gling-3d-adaptive-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -285,6 +291,19 @@
           "isIosBackgroundLocationEnabled": false,
           "isAndroidBackgroundLocationEnabled": false,
           "isAndroidForegroundServiceEnabled": false
+        }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+            "NSExtensionActivationSupportsWebPageWithMaxCount": 1,
+            "NSExtensionActivationSupportsText": true
+          },
+          "androidIntentFilters": [
+            "text/*"
+          ]
         }
       ]
     ],

@@ -151,7 +151,8 @@ test('답글 UI는 좋아요·신고·초안·페이지를 보존하고 계정 �
     if (name === 'react-native-safe-area-context') return { useSafeAreaInsets: () => ({ bottom: 0 }) };
     if (name === '@/lib/auth') return { useAuth: () => ({ ...auth, promptLogin() {} }) };
     if (name === '@/hooks/use-chat-identity') return { useChatIdentity: () => null };
-    if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
+    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
+      if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16 } };
     if (name === '@/i18n/ko') return { t, count };
     if (name === '@/components/content-translation') return { TranslatedCommentBody: 'TranslatedCommentBody' };

@@ -1,10 +1,12 @@
 import { useLanguage } from '@/hooks/use-language';
+import { SymbolView } from '@/components/symbol-view';
 import { Pressable } from '@/components/analytics-controls';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Alert, Animated, Easing, KeyboardAvoidingView, Modal, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
 
+import { ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ControlMotion } from '@/constants/design-system';
 import { Depth, Spacing } from '@/constants/theme';
@@ -40,6 +42,7 @@ export function ReportSheet({
 }) {
   const { tr, t } = useLanguage();
   const theme = useTheme();
+  const clay = useClay();
   const insets = useSafeAreaInsets();
   const { me } = useAuth();
   const asBusinessId = useChatIdentity()?.id ?? null;
@@ -156,10 +159,11 @@ export function ReportSheet({
                   accessibilityState={{ selected }}
                   style={({ pressed }) => [
                     styles.reason,
-                    Depth.control,
-                    { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.backgroundElement : theme.card, },
+                    clay ? styles.clayPad : Depth.control,
+                    clay ? { borderColor: 'transparent', backgroundColor: 'transparent' } : { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.backgroundElement : theme.card, },
                   ]}>
-                  <ThemedText type={selected ? 'smallBold' : 'small'}>{t.report.reasons[item]}</ThemedText>
+                  {clay && <ClayPillFill kind={selected ? 'on' : 'white'} />}
+                  <ThemedText type={selected ? 'smallBold' : 'small'} style={clay && { color: selected ? theme.accentInk : theme.text }}>{t.report.reasons[item]}</ThemedText>
                 </Pressable>
               );
             })}
@@ -183,8 +187,8 @@ export function ReportSheet({
               accessibilityRole="checkbox"
               accessibilityState={{ checked: blockAfter }}
                   style={({ pressed }) => [styles.blockRow, { opacity: pressed ? 0.65 : 1 }]}>
-              <View style={[styles.checkbox, { borderColor: blockAfter ? theme.accent : theme.line, backgroundColor: blockAfter ? theme.accent : theme.card }]}>
-                {blockAfter && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText>}
+              <View style={[styles.checkbox, { borderColor: blockAfter ? theme.accent : theme.textSecondary, backgroundColor: blockAfter ? theme.accent : theme.card }]}>
+                {blockAfter && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={14} tintColor={theme.accentInk} />}
               </View>
               <View style={styles.copy}>
                 <ThemedText type="smallBold">{t.report.block(reportedNickname)}</ThemedText>
@@ -199,7 +203,8 @@ export function ReportSheet({
             disabled={!reason || submitting}
             accessibilityRole="button"
             accessibilityState={{ disabled: !reason || submitting, busy: submitting }}
-            style={({ pressed }) => [styles.submit, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: !reason || submitting ? 0.55 : 1, }]}>
+            style={({ pressed }) => [styles.submit, clay ? styles.clayWide : Depth.control, { backgroundColor: clay ? 'transparent' : theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: clay ? 0 : 3, opacity: !reason || submitting ? 0.55 : 1, }]}>
+            {clay && <ClayPillFill kind="cta" />}
             <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
               {submitting ? t.report.submitting : t.report.submit}
             </ThemedText>
@@ -221,6 +226,8 @@ const styles = StyleSheet.create({
   copy: { flex: 1, gap: Spacing.one },
   reasons: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   reason: { minHeight: 42, justifyContent: 'center', paddingHorizontal: Spacing.three, borderWidth: 1, borderRadius: 8 },
+  clayPad: { overflow: 'visible', paddingHorizontal: 18 },
+  clayWide: { overflow: 'visible', paddingHorizontal: 24 },
   details: { minHeight: 88, maxHeight: 160, padding: Spacing.three, textAlignVertical: 'top', borderWidth: 1, borderRadius: 8 },
   blockRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
   checkbox: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 6 },

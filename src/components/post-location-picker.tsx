@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
 import { Pressable } from '@/components/analytics-controls';
+import { ClayIcon, ClayPillFill, useClay } from '@/components/clay';
 import { PostPinMap } from '@/components/post-pin-map';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
@@ -16,7 +17,7 @@ export function PostLocationPicker({ visible, initialPin, initialLabel = '', cit
   visible: boolean; initialPin: PostPin | null; initialLabel?: string; cityName?: string; onClose: () => void; onConfirm: (pin: PostPin, label: string) => void;
 }) {
   const { tr } = useLanguage();
-  const theme = useTheme(), { play } = useInteractionFeedback(), insets = useSafeAreaInsets(), reduced = useReducedMotion();
+  const theme = useTheme(), clay = useClay(), { play } = useInteractionFeedback(), insets = useSafeAreaInsets(), reduced = useReducedMotion();
   const [pin, setPin] = useState<PostPin | null>(initialPin), [label, setLabel] = useState(initialLabel);
   const [query, setQuery] = useState(''), [busy, setBusy] = useState(false), [message, setMessage] = useState('');
   const revision = useRef(0);
@@ -62,15 +63,15 @@ export function PostLocationPicker({ visible, initialPin, initialLabel = '', cit
   return <Modal visible={visible} animationType={reduced ? 'fade' : 'slide'} onRequestClose={close}>
     <SafeAreaProvider style={[styles.backdrop, { backgroundColor: theme.background }]}>
     <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: theme.background, paddingBottom: Math.max(insets.bottom, 12) }]}>
-      <View style={styles.header}><Pressable analyticsId="post.location.cancel" accessibilityRole="button" accessibilityLabel={tr("위치 선택 취소")} onPress={close} style={styles.control}><ThemedText>‹</ThemedText></Pressable><ThemedText type="smallBold">{tr("위치 공유")}</ThemedText><View style={styles.control} /></View>
+      <View style={styles.header}><Pressable analyticsId="post.location.cancel" accessibilityRole="button" accessibilityLabel={tr("위치 선택 취소")} onPress={close} style={styles.control}>{clay ? <ClayIcon clay="chevron_left" size={22} /> : <ThemedText>‹</ThemedText>}</Pressable><ThemedText type="smallBold">{tr("위치 공유")}</ThemedText><View style={styles.control} /></View>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.canvas}>
         {visible && <PostPinMap pin={pin} label={label} cityName={cityName} onSelect={select} onReadyChange={setReady} bottomInset={cardHeight + 24} />}
         <View style={[styles.search, { backgroundColor: theme.card, borderColor: theme.line }]}>
           <TextInput value={query} onChangeText={value => { revision.current++; setBusy(false); setQuery(value); }} accessibilityLabel={tr("장소·주소 검색")} placeholder={tr("장소나 주소 찾기")} placeholderTextColor={theme.textSecondary}
             onFocus={() => play('selection')} onSubmitEditing={() => void locate(true)} returnKeyType="search" maxLength={150} style={[styles.input, { color: theme.text }]} />
-          <Pressable analyticsId="post.location.search" accessibilityRole="button" accessibilityLabel={tr("주소 찾기")} disabled={!ready || busy || !query.trim()} onPress={() => void locate(true)} style={styles.control}><ThemedText themeColor="accent">{tr("검색")}</ThemedText></Pressable>
+          <Pressable analyticsId="post.location.search" accessibilityRole="button" accessibilityLabel={tr("주소 찾기")} disabled={!ready || busy || !query.trim()} onPress={() => void locate(true)} style={[styles.control, clay && { overflow: 'visible', paddingHorizontal: 18 }]}>{clay && <ClayPillFill kind="white" />}<ThemedText themeColor={clay ? undefined : 'accent'}>{tr("검색")}</ThemedText></Pressable>
         </View>
-        <Pressable analyticsId="post.location.current" accessibilityRole="button" accessibilityLabel={tr("내 위치 선택")} disabled={!ready || busy} onPress={() => void locate(false)} style={[styles.current, { bottom: cardHeight + 36, backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="smallBold">{busy ? tr("찾는 중…") : tr("내 위치")}</ThemedText></Pressable>
+        <Pressable analyticsId="post.location.current" accessibilityRole="button" accessibilityLabel={tr("내 위치 선택")} disabled={!ready || busy} onPress={() => void locate(false)} style={[styles.current, clay && { overflow: 'visible', paddingHorizontal: 18 }, { bottom: cardHeight + 36, backgroundColor: clay ? 'transparent' : theme.card, borderColor: clay ? 'transparent' : theme.line }]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold">{busy ? tr("찾는 중…") : tr("내 위치")}</ThemedText></Pressable>
         <View onLayout={event => setCardHeight(Math.min(900, Math.ceil(event.nativeEvent.layout.height)))} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
           {pin ? <TextInput value={label} onChangeText={value => { revision.current++; setBusy(false); setLabel(value.replace(/[\u0000-\u001f\u007f]/g, ' ')); }} maxLength={100} accessibilityLabel={tr("첨부할 위치 이름")} placeholder={tr("선택한 위치")} placeholderTextColor={theme.textSecondary}
             onFocus={() => play('selection')} style={[styles.name, { color: theme.text, borderColor: theme.line }]} /> : <ThemedText type="smallBold">{tr("지도에서 위치를 선택해 주세요.")}</ThemedText>}
@@ -78,7 +79,7 @@ export function PostLocationPicker({ visible, initialPin, initialLabel = '', cit
           {pin && <ThemedText type="small" themeColor="textSecondary">{tr("글을 게시하면 글과 통합 지도에 이 위치가 공개돼요.")}</ThemedText>}
           {!!message && <ThemedText type="small" accessibilityRole="alert">{tr(message)}</ThemedText>}
           <Pressable analyticsId="post.location.confirm" accessibilityRole="button" disabled={!ready || !pin || busy} onPress={() => { if (!ready || !pin || busy) return; revision.current++; play('selection'); onConfirm(pin, label.trim() || '선택한 위치'); }}
-            style={[styles.confirm, { backgroundColor: theme.accent, opacity: !ready || !pin || busy ? 0.5 : 1 }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr("이 위치 첨부")}</ThemedText></Pressable>
+            style={[styles.confirm, clay && { overflow: 'visible', paddingHorizontal: 24 }, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: !ready || !pin || busy ? 0.5 : 1 }]}>{clay && <ClayPillFill kind="cta" />}<ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr("이 위치 첨부")}</ThemedText></Pressable>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

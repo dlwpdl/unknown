@@ -34,6 +34,7 @@ function loadRoom(userId = 'recipient', messagesLoaded = false) {
     if (name === '@/lib/chat-identity') return { chatBusinessIdentity: () => null };
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true, me: { id: userId, nickname: '나' } }) };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
+    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
     if (name === '@/hooks/use-content-visibility') return { useContentVisibility: () => () => false };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
     if (name === '@/lib/supabase') return { supabase: { channel: () => channel, removeChannel() {} } };

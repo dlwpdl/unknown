@@ -8,7 +8,8 @@ import { localizeBusinessDisclosure } from '@/lib/translation-source';
 import { instagramPostLink, splitPostAttachments, splitPostLinks } from '../../supabase/functions/_shared/post-links';
 
 // `paragraphs` renders pre-split lines with breathing room; the caller then shows attachments itself.
-export function PostBody({ body, paragraphs, linksEnabled = true, ...props }: Omit<ThemedTextProps, 'children'> & { body: string; paragraphs?: string[]; linksEnabled?: boolean }) {
+// `lead` starts the same text run in bold (the Today feed's title), so a line limit covers both.
+export function PostBody({ body, paragraphs, lead, linksEnabled = true, ...props }: Omit<ThemedTextProps, 'children'> & { body: string; paragraphs?: string[]; lead?: string; linksEnabled?: boolean }) {
   const { tr } = useLanguage();
   const { play } = useInteractionFeedback();
   const attached = splitPostAttachments(body);
@@ -31,8 +32,8 @@ export function PostBody({ body, paragraphs, linksEnabled = true, ...props }: Om
             ]);
           }}>{part.text}</ThemedText>);
   if (paragraphs) return <View style={styles.paragraphs}>{paragraphs.map((text, index) => <ThemedText key={index} {...props}>{linked(text)}</ThemedText>)}</View>;
-  return <View><ThemedText {...props}>{linked(localizeBusinessDisclosure(attached.body, tr))}</ThemedText>
+  return <View><ThemedText {...props}>{!!lead && <ThemedText style={styles.lead}>{`${lead} `}</ThemedText>}{linked(localizeBusinessDisclosure(attached.body, tr))}</ThemedText>
     {attached.urls.map((url, index) => <PostAttachmentLink key={`${url}-${index}`} url={url} enabled={linksEnabled} />)}
   </View>;
 }
-const styles = StyleSheet.create({ link: { textDecorationLine: 'underline' }, paragraphs: { gap: 12 } });
+const styles = StyleSheet.create({ link: { textDecorationLine: 'underline' }, lead: { fontWeight: '700' }, paragraphs: { gap: 12 } });

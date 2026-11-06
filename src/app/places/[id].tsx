@@ -1,21 +1,32 @@
 import { useLanguage } from '@/hooks/use-language';
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { SymbolView } from 'expo-symbols';
-import { Alert, Linking, Platform, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
+import { SymbolView } from '@/components/symbol-view';
+import { openBrowserAsync } from 'expo-web-browser';
+// shortcut: React Native's own Clipboard is deprecated (a dev-only warning); move to expo-clipboard with the next native build.
+import { Alert, Clipboard, Linking, Platform, StyleSheet, View, type ScrollViewInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
+import { MeetupManageSheet } from '@/components/meetup-manage-sheet';
 import { KeyboardScreen } from '@/components/keyboard-screen';
 import { RaisedActionButton } from '@/components/raised-action-button';
+import { ReservationButton } from '@/components/reservation-button';
 import { PlaceReviews } from '@/components/place-reviews';
 import { PlaceExternalRatings } from '@/components/place-external-ratings';
+import { PlaceHours } from '@/components/place-hours';
+import { PageHeader } from '@/components/page-header';
+import { PlaceRelated, PlaceSavedBy, usePlaceSaves } from '@/components/place-saves';
 import { PostMapLink } from '@/components/post-map-link';
 import { PostPhotoCredits } from '@/components/post-photo-credits';
 import { StateCard } from '@/components/state-card';
+import { ClayBoxFill, ClayControlFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { SavedEntryButton, useSavedEntry } from '@/components/saved-entry';
+import { ShareCardSheet } from '@/components/share-card';
+import { ControlStyles, IconSize, controlPresentation } from '@/constants/design-system';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
@@ -27,16 +38,20 @@ import { loadCityBusinessLinks } from '@/lib/webshops';
 import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
-import { merchantMapsUrl, safeMerchantSourceUrl } from '@/lib/merchant-source';
+import { merchantMapsUrl, merchantPhoneUrl, safeMerchantSourceUrl } from '@/lib/merchant-source';
 import { useAuth } from '@/lib/auth';
 import { recordProductEvent } from '@/lib/product-analytics';
-import { placeMapRoute } from '@/lib/discovery';
+import { directionsUrl, placeMapRoute } from '@/lib/discovery';
 import { supabase } from '@/lib/supabase';
+import { INSTAGRAM_LINK_SVG, instagramPostLink } from '../../../supabase/functions/_shared/post-links';
 
 export default function PlaceDetailScreen() {
   useCityPlacesRevision();
   const { tr, language, locale: appLocale } = useLanguage();
   const [viewport, setViewport] = useState({ y: 0, height: 0 });
+  const [sharing, setSharing] = useState(false), [reviewRequest, setReviewRequest] = useState(0);
+  const [directions, setDirections] = useState(false), [copied, setCopied] = useState(false);
+  const scroll = useRef<ScrollViewInstance>(null), reviewsY = useRef(0);
   // The scroll position only decides which reviews auto-translate; other modes skip a re-render per scroll event.
   const trackViewport = useTranslationPreference().mode === 'auto';
   const { cityId, id } = useLocalSearchParams<{ cityId?: string; id?: string }>();
@@ -47,11 +62,13 @@ export default function PlaceDetailScreen() {
   useLayoutEffect(() => { identity.current = userId; return () => { identity.current = null; }; }, [userId]);
   const { city: selected } = useCommunityCity();
   const city = CITIES.find(item => item.id === (cityId ?? selected.id));
-  const theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clay = useClay(), clayBox = useClayBox(), router = useRouter(), { play } = useInteractionFeedback();
   let found: CityPlace | undefined;
   try { if (city) found = getCityPlaces(city.id).find(item => item.id === id) ?? (typeof id === 'string' ? deliveryPartnerPlace(city.id, id) : undefined); } catch { /* Invalid/missing catalog stays an explicit missing-place state. */ }
   const place = found, website = place?.website ? safeMerchantSourceUrl(place.website) : null;
+  const phoneUrl = place?.phone ? merchantPhoneUrl(place.phone) : null, instagram = place?.instagram ? instagramPostLink(place.instagram) : null;
   const targetId = place?.id, loadedCityId = place?.cityId;
+  const saves = usePlaceSaves(loadedCityId, targetId, isFocused && !isAuthLoading, userId);
   const saved = useSavedEntry(place ? { kind: 'place', id: place.id, cityId: place.cityId } : null, !!place && !!city);
   const linkScope = useRef<object | null>(null);
   useLayoutEffect(() => {
@@ -73,22 +90,30 @@ export default function PlaceDetailScreen() {
     }
   }, [userId, targetId, loadedCityId]);
   useEffect(() => { if (isFocused) record('place_view'); }, [isFocused, record]);
+  // G1: after saving as 가 봤음, open the review editor and bring it into view.
+  const reviewable = !!targetId?.startsWith('osm:');
+  const openReview = () => { setReviewRequest(value => value + 1); scroll.current?.scrollTo({ y: Math.max(0, reviewsY.current - 16), animated: true }); };
   const mapsUrl = place && city ? merchantMapsUrl([place.name, place.address, city.englishName, city.province, 'Canada'].filter(Boolean).join(', ')) : null;
   const openSource = (url: string, kind?: 'place_website') => {
     play('selection');
-    void Linking.openURL(url).then(() => { if (kind) record(kind); }).catch(() => { play('warning'); Alert.alert(tr("페이지를 열지 못했어요"), tr("잠시 후 다시 시도해 주세요.")); });
+    // P4: the place's own website opens in the in-app browser like the map screen; sources keep the system browser.
+    void (kind ? openBrowserAsync(url) : Linking.openURL(url)).then(() => { if (kind) record(kind); }).catch(() => { play('warning'); Alert.alert(tr("페이지를 열지 못했어요"), tr("잠시 후 다시 시도해 주세요.")); });
   };
-  return <KeyboardScreen><SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
-    <View style={[styles.header, { borderBottomColor: theme.line }]}>
-      <Pressable analyticsId="places.detail.back" accessibilityRole="button" accessibilityLabel={tr("이전 화면으로 돌아가기")}
-        onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace({ pathname: '/places', params: { cityId: city?.id ?? selected.id } }); }} style={styles.back}>
-        <SymbolView name={{ ios: 'chevron.left', android: 'chevron_left', web: 'chevron_left' }} size={19} tintColor={theme.text} />
-        <ThemedText type="smallBold">{tr("돌아가기")}</ThemedText>
-      </Pressable>
-      {place && <SavedEntryButton entry={saved} kind="place" analyticsId="save.place" />}
-    </View>
+  const openMap = (url: string) => {
+    void Linking.openURL(url).then(() => record('place_directions'), () => { play('warning'); Alert.alert(tr("길찾기를 열지 못했어요"), tr("인터넷 연결을 확인한 뒤 다시 시도해 주세요.")); });
+  };
+  const pill = ({ pressed }: { pressed: boolean }) => [ControlStyles.pill, styles.pill, clay && styles.clayPill, controlPresentation(theme, { pressed, clay }).container];
+  return <KeyboardScreen><SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.screen, { backgroundColor: theme.background }]}>
+    <PageHeader title={tr('장소')} analyticsId="places.detail.back" fallback={{ pathname: '/places', params: { cityId: city?.id ?? selected.id } }}
+      right={place ? <View style={styles.headerActions}>
+        {city && <Pressable analyticsId="places.detail.share" accessibilityRole="button" accessibilityLabel={tr('장소 공유')} onPress={() => { play('selection'); setSharing(true); }} style={ControlStyles.icon}>
+          <SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={IconSize.toolbar} tintColor={theme.text} accessible={false} />
+        </Pressable>}
+        <SavedEntryButton entry={saved} kind="place" analyticsId="save.place"
+          onBeen={reviewable ? openReview : undefined} />
+      </View> : undefined} />
     {!!saved.error && <ThemedText type="small" accessibilityRole="alert" style={styles.saveError}>{saved.error}</ThemedText>}
-    <ScrollView analyticsId="places.detail.scroll" contentContainerStyle={styles.content} scrollEventThrottle={100}
+    <ScrollView ref={scroll} analyticsId="places.detail.scroll" contentContainerStyle={styles.content} scrollEventThrottle={100}
       onLayout={({ nativeEvent: { layout: { height } } }) => setViewport(previous => previous.height === height ? previous : { ...previous, height })}
       onScroll={trackViewport ? ({ nativeEvent }) => setViewport({ y: nativeEvent.contentOffset.y, height: nativeEvent.layoutMeasurement.height }) : undefined}>
       {!place || !city ? <StateCard kind="error" title={tr("장소를 찾지 못했어요")} body={tr("선택한 도시의 장소 목록에서 다시 열어 주세요.")} /> : <>
@@ -96,7 +121,7 @@ export default function PlaceDetailScreen() {
         {!!place.photo && <PostPhotoCredits credits={[
           place.photo.title && tr(place.photo.title), `${language === 'en' ? 'Photo' : '사진'}: ${place.photo.artist && tr(place.photo.artist)}`, place.photo.sourceUrl,
           place.photo.license, place.photo.licenseUrl,
-          language === 'en' ? 'Photos show the place when they were taken. It may look different now.' : '사진은 촬영 시점의 모습이며 현재와 다를 수 있어요.',
+          language === 'en' ? 'Photos show the place when they were taken. It may look different now.' : '사진은 찍은 때의 모습이라 지금과 다를 수 있어요.',
         ].filter(Boolean).join('\n')} />}
         {place.photo?.discoveredVia === 'Openverse' && <ThemedText type="small" themeColor="textSecondary">{language === 'en'
           ? 'Photos found with Openverse. This service isn’t endorsed or certified by Openverse.'
@@ -106,20 +131,49 @@ export default function PlaceDetailScreen() {
         {!!place.recommendation && <>
           <ThemedText>{language === 'en' ? place.recommendation.reasonEn ?? place.recommendation.reason : place.recommendation.reason}</ThemedText>
         </>}
-        <View style={[styles.facts, { backgroundColor: theme.card }]}>
+        <PlaceSavedBy place={place} saves={saves} />
+        <View style={[styles.facts, clayBox ? styles.clayCard : { backgroundColor: theme.card }]}>
+          {clayBox && <ClayBoxFill kind="tile" />}
           <ThemedText type="smallBold" themeColor="accent">{place.category === 'food' ? tr("맛집") : place.category === 'cafe' ? tr("카페") : tr("가볼 만한 곳")}</ThemedText>
           <ThemedText>{place.address || tr("등록된 주소 정보가 없어요. 지도에서 위치를 확인해 주세요.")}</ThemedText>
-          {!!place.openingHours && <ThemedText type="small" themeColor="textSecondary">{tr("등록된 운영 시간: {0}", (place.openingHours))}</ThemedText>}
+          {!!place.openingHours && <PlaceHours openingHours={place.openingHours} cityId={city.id}
+            fallback={<ThemedText type="small" themeColor="textSecondary">{tr("등록된 운영 시간: {0}", (place.openingHours))}</ThemedText>} />}
         </View>
+        {/* P3: 길찾기 always; 전화·인스타그램 only when the place has them. These reuse IDs already in the server allowlist. */}
+        <View style={styles.actions}>
+          <Pressable analyticsId="company.about.maps" accessibilityRole="button" accessibilityLabel={tr("길찾기")} onPress={() => { play('selection'); setCopied(false); setDirections(true); }} style={pill}>
+            {clay && <ClayControlFill />}
+            <SymbolView name={{ ios: 'arrow.triangle.turn.up.right.diamond', android: 'directions', web: 'directions' }} size={IconSize.inline} tintColor={theme.accent} accessible={false} />
+            <ThemedText type="smallBold">{tr("길찾기")}</ThemedText>
+          </Pressable>
+          {!!phoneUrl && <Pressable analyticsId="company.about.phone" accessibilityRole="link" accessibilityLabel={tr("공개 전화 {0}", (place.phone))} style={pill}
+            onPress={() => { play('selection'); void Linking.openURL(phoneUrl).catch(() => { play('warning'); Alert.alert(tr("전화를 걸지 못했어요"), tr("잠시 후 다시 시도해 주세요.")); }); }}>
+            {clay && <ClayControlFill />}
+            <SymbolView name={{ ios: 'phone', android: 'call', web: 'call' }} size={IconSize.inline} tintColor={theme.accent} accessible={false} />
+            <ThemedText type="smallBold">{tr("전화하기")}</ThemedText>
+          </Pressable>}
+          {!!instagram && <Pressable analyticsId="post.attachment.open" accessibilityRole="link" accessibilityLabel={`${tr("인스타그램")} @${instagram.handle}`} onPress={() => openSource(instagram.url)} style={pill}>
+            {clay && <ClayControlFill />}
+            <Image source={{ uri: `data:image/svg+xml,${encodeURIComponent(INSTAGRAM_LINK_SVG.replaceAll('currentColor', theme.accent))}` }} style={styles.pillIcon} accessible={false} />
+            <ThemedText type="smallBold">{tr("인스타그램")}</ThemedText>
+          </Pressable>}
+        </View>
+        {copied && <ThemedText type="small" themeColor="textSecondary" accessibilityRole="alert" accessibilityLiveRegion="polite">{tr("주소를 복사했어요.")}</ThemedText>}
         {/* The legacy analytics target distinguishes this shared action by its screen. */}
         {place.id.startsWith('osm:') && <RaisedActionButton analyticsId="ticketmaster.meetup.find" label={language === 'en' ? 'Find a meetup here' : '이곳에 갈 모임 보기'} disabled={city.state !== 'open'} onPress={() => { play('selection'); router.push({ pathname: '/(tabs)/meetups', params: { placeId: place.id, placeCityId: city.id } }); }} />}
         {city.state !== 'open' && <ThemedText type="small" themeColor="textSecondary">{language === 'en' ? 'Meetups in this city are coming soon.' : '이 도시의 모임은 준비 중이에요.'}</ThemedText>}
         <Pressable analyticsId="places.open" accessibilityRole="button" accessibilityLabel={`${place.name} · ${tr('지도 보기')}`}
-          onPress={() => { play('selection'); router.navigate(placeMapRoute(place)); }} style={styles.link}>
+          onPress={() => { play('selection'); router.navigate(placeMapRoute(place)); }} style={[styles.link, clay && styles.clayLink]}>
+          {clay && <ClayPillFill kind="white" />}
           <ThemedText type="smallBold" themeColor="accent">{tr('지도 보기')}</ThemedText>
         </Pressable>
-        {place.id.startsWith('osm:') && <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} />}
+        {place.id.startsWith('osm:') && <View onLayout={event => { reviewsY.current = event.nativeEvent.layout.y; }}>
+          <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} writeRequest={reviewRequest} />
+        </View>}
         {place.id.startsWith('osm:') && <PlaceExternalRatings key={`${city.id}:${place.id}`} cityId={city.id} placeId={place.id} />}
+        <PlaceRelated place={place} saves={saves} />
+        {/* Business-linked places redirect to the company page, so only a booking-site website can show here. */}
+        <ReservationButton website={place.website} />
         {mapsUrl && <PostMapLink url={mapsUrl} label={place.name} onOpened={() => record('place_directions')} />}
         {!!place.recommendation && <Pressable analyticsId="places.detail.source" accessibilityRole="link" accessibilityLabel={tr("사진 명소 선정 출처 보기")} onPress={() => openSource(place.recommendation!.sourceUrl)} style={styles.link}>
           <ThemedText type="smallBold" themeColor="accent">{tr("사진 명소 선정 출처 보기")}</ThemedText>
@@ -136,17 +190,29 @@ export default function PlaceDetailScreen() {
         </Pressable>
       </>}
     </ScrollView>
+    {place && city && <ShareCardSheet target={{ kind: 'place', place, city }} visible={sharing} onClose={() => setSharing(false)} />}
+    {place && directions && <MeetupManageSheet visible title={place.name} onClose={() => setDirections(false)} actions={[
+      ...(place.address ? [{ key: 'copy', analyticsId: 'post.share.copy', label: tr("주소 복사"), hint: place.address, icon: { ios: 'doc.on.doc', android: 'content_copy', web: 'content_copy' } as const,
+        onPress: () => { Clipboard.setString(place.address); play('success'); setCopied(true); } }] : []),
+      ...(Platform.OS === 'ios' ? [{ key: 'apple', analyticsId: 'company.location', label: tr("Apple 지도"), icon: { ios: 'map', android: 'map', web: 'map' } as const,
+        onPress: () => openMap(`https://maps.apple.com/?daddr=${place.latitude},${place.longitude}`) }] : []),
+      { key: 'google', analyticsId: 'discovery.google', label: tr("Google 지도"), icon: { ios: 'map', android: 'map', web: 'map' }, onPress: () => openMap(directionsUrl(place, 'google')) },
+    ]} />}
   </SafeAreaView></KeyboardScreen>;
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  header: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', paddingHorizontal: Spacing.three, paddingVertical: Spacing.one, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   saveError: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', paddingHorizontal: Spacing.three },
   content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', padding: Spacing.three, gap: Spacing.three },
-  back: { minHeight: 44, alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   photo: { width: '100%', aspectRatio: 4 / 3, borderRadius: 16 },
   title: { fontSize: 26, lineHeight: 36, fontWeight: '700' },
+  clayCard: { backgroundColor: 'transparent', overflow: 'visible' },
   facts: { padding: Spacing.three, borderRadius: 16, gap: Spacing.two },
   link: { minHeight: 44, justifyContent: 'center' },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  clayPill: { overflow: 'visible', paddingHorizontal: 18 }, clayLink: { overflow: 'visible', paddingHorizontal: 18 },
+  pill: { flexDirection: 'row', gap: Spacing.one, borderWidth: 1 },
+  pillIcon: { width: IconSize.inline, height: IconSize.inline },
 });

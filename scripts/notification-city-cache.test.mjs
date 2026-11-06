@@ -44,6 +44,7 @@ function cityCache(file, { holdList = false, holdActors = false } = {}) {
   };
   const cache = new Map();
   const resolve = withLanguageImports(name => {
+    if (name === '@/components/screen-glow') return { useScreenGlow: () => ({ onLayout() {}, image: () => undefined }) };
     if (name === 'react') return hooks;
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'expo-router') return { useRouter: () => ({ push: value => routes.push(value), navigate: value => routes.push(value) }), usePathname: () => pathname, useIsFocused: () => focused, useFocusEffect: fn => { legacyFocus = fn; } };
@@ -53,6 +54,7 @@ function cityCache(file, { holdList = false, holdActors = false } = {}) {
     if (name === '@/lib/community-data') return data;
     if (name === '@/lib/supabase') return { supabase: client };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
+    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     if (name === '@/constants/theme') return { Depth: {}, MaxContentWidth: {}, Spacing: {}, TabBarHeight: 60 };
     if (name === '@/lib/notification-preferences') return { NOTIFICATION_CATEGORIES: [], NOTIFICATION_PREFERENCES_CHANGED: 'preferences', englishNotificationBody: item => item.body, loadAdminDashboardOrigin: async () => null,

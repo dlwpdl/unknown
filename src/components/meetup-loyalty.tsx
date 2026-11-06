@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { Pressable, Switch } from '@/components/analytics-controls';
 import { ChillingDateInput } from '@/components/chilling-date-input';
 import { DragSheet } from '@/components/drag-sheet';
 import { InitialAvatar, ListCard, ListLoading, ListRow, SectionLabel, Tag } from '@/components/list-card';
 import { RaisedActionButton } from '@/components/raised-action-button';
+import { ClayBoxFill, ClayControlFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
@@ -78,11 +79,12 @@ export function MeetupBadgeChips({ levels }: { levels: Partial<BadgeLevels> | un
 function ToggleChip({ analyticsId, label, selected, busy, disabled, onPress, hint }: {
   analyticsId: string; label: string; selected: boolean; busy?: boolean; disabled?: boolean; onPress: () => void; hint?: string;
 }) {
-  const theme = useTheme();
+  const theme = useTheme(), clay = useClay();
   const blocked = !!busy || !!disabled;
   return <Pressable analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={label} accessibilityHint={hint}
     accessibilityState={{ selected, disabled: blocked, busy: !!busy }} disabled={blocked} onPress={onPress}
-    style={({ pressed }) => [ControlStyles.pill, controlPresentation(theme, { selected, pressed, disabled, busy }).container]}>
+    style={({ pressed }) => [ControlStyles.pill, clay && styles.clayPill, controlPresentation(theme, { selected, pressed, disabled, busy, clay }).container]}>
+    {clay && <ClayControlFill selected={selected} />}
     <ThemedText type="smallBold" style={controlPresentation(theme, { selected }).text}>{label}</ThemedText>
   </Pressable>;
 }
@@ -146,7 +148,7 @@ export function MeetupProfileLoyalty({ postId, userId }: { postId: string; userI
 /** Next session and the host's notices, on top of the group chat. Answers and reading happen here, so nobody scrolls the chat for them. */
 export function MeetupRoomTop({ postId }: { postId: string }) {
   const { state, refresh } = useMeetupLoyalty(postId);
-  const theme = useTheme();
+  const theme = useTheme(), clayBox = useClayBox();
   const [rsvp, setRsvp] = useState<Rsvp | null>(null);
   // "Today/tomorrow" is judged at the time the answer arrived or changed.
   const [now, setNow] = useState(() => Date.now());
@@ -159,10 +161,13 @@ export function MeetupRoomTop({ postId }: { postId: string }) {
   const notices = pinnedNotices(state);
   const hasSession = !!rsvp?.available && !!rsvp.startsAt;
   if (!hasSession && !(state && notices.length)) return null;
-  return <View style={[styles.roomTop, { backgroundColor: theme.backgroundElement }]}>
+  const content = <>
     {hasSession && <NextSessionLine postId={postId} rsvp={rsvp!} now={now} onChange={showRsvp} />}
-    {!!state && notices.length > 0 && <View style={hasSession ? [styles.boardLine, { borderTopColor: theme.line }] : undefined}><NoticeBoard postId={postId} state={state} notices={notices} onChanged={refresh} /></View>}
-  </View>;
+    {!!state && notices.length > 0 && <View style={hasSession ? [styles.boardLine, clayBox && styles.boardLineInset, { borderTopColor: theme.line }] : undefined}><NoticeBoard postId={postId} state={state} notices={notices} onChanged={refresh} /></View>}
+  </>;
+  // The clay tile overhangs the card, so only the content inside is clipped to its corners.
+  if (clayBox) return <View style={styles.roomTopClay}><ClayBoxFill kind="tile" /><View style={styles.roomTopRows}>{content}</View></View>;
+  return <View style={[styles.roomTop, { backgroundColor: theme.backgroundElement }]}>{content}</View>;
 }
 
 function NextSessionLine({ postId, rsvp, now, onChange }: { postId: string; rsvp: Rsvp; now: number; onChange: (next: Rsvp) => void }) {
@@ -268,7 +273,7 @@ function NoticeBoard({ postId, state, notices, onChanged }: { postId: string; st
 
 function NoticeItem({ notice, label, day, children }: { notice: PinnedNotice; label: string; day: string; children?: React.ReactNode }) {
   const { tr } = useLanguage();
-  const { play } = useInteractionFeedback();
+  const { play } = useInteractionFeedback(), clay = useClay();
   const [full, setFull] = useState(false);
   const long = [...notice.body].length > 140;
   return <View style={styles.noticeItem}>
@@ -277,7 +282,8 @@ function NoticeItem({ notice, label, day, children }: { notice: PinnedNotice; la
       <ThemedText themeColor="textSecondary" style={Typography.caption}>{day}</ThemedText>
     </View>
     <ThemedText selectable numberOfLines={long && !full ? 5 : undefined} style={Typography.body}>{notice.body}</ThemedText>
-    {long && <Pressable analyticsId="meetup.notice.more" accessibilityRole="button" accessibilityState={{ expanded: full }} onPress={() => { play('selection'); setFull(value => !value); }} style={styles.more}>
+    {long && <Pressable analyticsId="meetup.notice.more" accessibilityRole="button" accessibilityState={{ expanded: full }} onPress={() => { play('selection'); setFull(value => !value); }} style={[styles.more, clay && styles.clayMore]}>
+      {clay && <ClayPillFill kind="white" />}
       <ThemedText type="smallBold" themeColor="accent">{full ? tr('접기') : tr('더 보기')}</ThemedText>
     </Pressable>}
     {children}
@@ -471,7 +477,8 @@ const styles = StyleSheet.create({
   rowPad: { paddingHorizontal: Spacing.three, paddingBottom: Spacing.two },
   roomTop: { marginHorizontal: Spacing.three, marginBottom: Spacing.two, borderRadius: 12, overflow: 'hidden' },
   nextLine: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 52, paddingHorizontal: Spacing.three, paddingVertical: Spacing.one },
-  boardLine: { borderTopWidth: StyleSheet.hairlineWidth },
+  boardLine: { borderTopWidth: StyleSheet.hairlineWidth }, boardLineInset: { marginHorizontal: Spacing.three },
+  roomTopClay: { marginHorizontal: Spacing.three, marginBottom: Spacing.two }, roomTopRows: { borderRadius: 16, overflow: 'hidden' },
   noticePage: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44, paddingHorizontal: Spacing.three },
   dot: { width: 8, height: 8, borderRadius: 4 },
   dots: { flexDirection: 'row', justifyContent: 'center', gap: Spacing.one, paddingBottom: Spacing.one },
@@ -480,6 +487,7 @@ const styles = StyleSheet.create({
   sheetList: { gap: Spacing.three, paddingBottom: Spacing.three },
   noticeItem: { gap: Spacing.one },
   noticeRow: { padding: Spacing.three, gap: Spacing.one },
+  clayPill: { overflow: 'visible', paddingHorizontal: 18 }, clayMore: { overflow: 'visible', paddingHorizontal: 18, alignSelf: 'flex-start' },
   more: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   send: { marginTop: Spacing.three },
   note: { marginTop: Spacing.two },

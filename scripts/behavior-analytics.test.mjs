@@ -52,7 +52,9 @@ test('every instrumented control is in the server allowlist', () => {
   const sql = readdirSync(migrations).filter((name) => name.endsWith('.sql'))
     .map((name) => readFileSync(new URL(name, migrations), 'utf8')).join('\n');
   for (const [id, path] of Object.entries(registry)) {
-    assert.ok(readFileSync(new URL(`../${path}`, import.meta.url), 'utf8').includes(`analyticsId="${id}"`), id);
+    // A control is either written in JSX or handed to a shared chip helper as `analyticsId: '<id>'`.
+    const source = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+    assert.ok(source.includes(`analyticsId="${id}"`) || source.includes(`analyticsId: '${id}'`), id);
     assert.ok(sql.includes(`('${id}')`) || sql.includes(`('${id}.on')`), id);
   }
 });

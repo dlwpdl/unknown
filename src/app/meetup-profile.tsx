@@ -6,7 +6,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { useFocusEffect, useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { AccessibilityInfo, Alert, AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Modal, Platform, type ScrollViewInstance, StyleSheet, TextInput, UIManager, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,7 +47,7 @@ export default function MeetupProfileRoute() {
 function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId?: string; returnPostId?: string }) {
   const { tr, language } = useLanguage();
   const { fontScale } = useWindowDimensions();
-  const theme = useTheme(), router = useRouter(), insets = useSafeAreaInsets();
+  const theme = useTheme(), router = useRouter(), insets = useSafeAreaInsets(), clay = useClay(), clayBox = useClayBox();
   const { isAuthed, me, promptLogin } = useAuth();
   const viewer = me.id;
   const [initialCity] = useState(me.cityId), [initialName] = useState((me.nickname || '').slice(0, 30));
@@ -210,7 +211,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
   const sharedNote = <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{language === 'en' ? 'You have one meetup profile for all your meetups, separate from your personal profile.' : '일반 프로필과 별개로 계정당 하나를 만들고, 모든 모임에서 함께 사용해요.'}</ThemedText>;
   const itemRow = (item: Item, title: string, detail: string, required?: boolean) => <ListRow analyticsId="meetup-profile.edit-item" title={title} detail={detail} trailing={required ? <Tag tone="danger" label={tr("필수")} /> : undefined} onPress={() => openItem(item)} />;
   const preview = <>
-    <View accessibilityRole="tablist" style={[styles.segment, { backgroundColor: theme.backgroundElement }]}>{(['host', 'members', 'public'] as const).map(value => <Pressable analyticsId="meetup-profile.preview-audience" key={value} accessibilityRole="tab" accessibilityState={{ selected: audience === value }} style={[styles.segmentItem, audience === value && { backgroundColor: theme.background }]} onPress={() => { play('selection'); setAudience(value); }}><ThemedText type="smallBold" themeColor={audience === value ? 'accent' : undefined}>{tr(value === 'host' ? '호스트' : value === 'members' ? '멤버' : '공개할 때')}</ThemedText></Pressable>)}</View>
+    <View accessibilityRole="tablist" style={[styles.segment, clay ? styles.clayTray : { backgroundColor: theme.backgroundElement }]}>{clay && <ClayPillFill kind="tray" />}{(['host', 'members', 'public'] as const).map(value => <Pressable analyticsId="meetup-profile.preview-audience" key={value} accessibilityRole="tab" accessibilityState={{ selected: audience === value }} style={[styles.segmentItem, clay ? styles.clayTray : audience === value && { backgroundColor: theme.background }]} onPress={() => { play('selection'); setAudience(value); }}>{clay && audience === value && <ClayPillFill kind="on" />}<ThemedText type="smallBold" themeColor={audience === value ? 'accent' : undefined} style={clay && audience === value ? { color: theme.accentInk } : undefined}>{tr(value === 'host' ? '호스트' : value === 'members' ? '멤버' : '공개할 때')}</ThemedText></Pressable>)}</View>
     <ChillingProfileCard profile={chillingProfilePreview(draftProfile, audience)} />
   </>;
   const whoSees = (title?: string) => <>
@@ -250,7 +251,8 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
                       </View>
                       <View style={[styles.pairItem, { flexBasis: 140 * fontScale }]}>
                         <ThemedText style={Typography.label}>{tr("활동 지역")}</ThemedText>
-                        <Pressable analyticsId="app_meetup-profile.pressable.12" accessibilityRole="button" accessibilityLabel={`${tr("활동 지역")}, ${cityName}`} disabled={saving} onPress={() => { play('selection'); Keyboard.dismiss(); setCityOpen(true); }} style={({ pressed }) => [ControlStyles.field, styles.city, { borderColor: theme.line, backgroundColor: theme.background, opacity: pressed ? 0.7 : 1 }]}>
+                        <Pressable analyticsId="app_meetup-profile.pressable.12" accessibilityRole="button" accessibilityLabel={`${tr("활동 지역")}, ${cityName}`} disabled={saving} onPress={() => { play('selection'); Keyboard.dismiss(); setCityOpen(true); }} style={({ pressed }) => [ControlStyles.field, styles.city, clay ? styles.clayChip : { borderColor: theme.line, backgroundColor: theme.background }, { opacity: pressed ? 0.7 : 1 }]}>
+                          {clay && <ClayPillFill kind="white" />}
                           <ThemedText numberOfLines={1} style={styles.flex}>{cityName}</ThemedText>
                           <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={14} tintColor={theme.textSecondary} />
                         </Pressable>
@@ -319,7 +321,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
                       </Pressable>
                     </MeetupProfilePhotoRow>;
                   })}</View>}
-                  <Pressable analyticsId="app_meetup-profile.pressable.5" accessibilityRole="button" onPress={() => void pickPhoto()} disabled={saving || photoSaving || photos.length >= 3} accessibilityState={{ disabled: saving || photoSaving || photos.length >= 3, busy: photoSaving }} style={[styles.ghost, Depth.control, { borderColor: theme.line, backgroundColor: theme.card, opacity: saving || photoSaving || photos.length >= 3 ? ControlMotion.disabledOpacity : 1 }]}><ThemedText type="smallBold" themeColor="accent" style={styles.label}>{photoSaving ? tr("사진 준비 중…") : tr("사진 추가")}</ThemedText></Pressable>
+                  <Pressable analyticsId="app_meetup-profile.pressable.5" accessibilityRole="button" onPress={() => void pickPhoto()} disabled={saving || photoSaving || photos.length >= 3} accessibilityState={{ disabled: saving || photoSaving || photos.length >= 3, busy: photoSaving }} style={[styles.ghost, clay ? styles.clayChip : [Depth.control, { borderColor: theme.line, backgroundColor: theme.card }], { opacity: saving || photoSaving || photos.length >= 3 ? ControlMotion.disabledOpacity : 1 }]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold" themeColor="accent" style={styles.label}>{photoSaving ? tr("사진 준비 중…") : tr("사진 추가")}</ThemedText></Pressable>
                   {photos.length > 1 && <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("손잡이를 끌거나 화살표로 순서를 바꿔요. 맨 위 사진이 프로필에 먼저 보여요.")}</ThemedText>}
                   <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("저장할 때만 반영돼요. 일반 프로필 사진은 바뀌지 않아요.")}</ThemedText>
                 </View>}
@@ -328,7 +330,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
                   { key: 'promptOne', label: tr(CHILLING_PROMPTS[profile.promptOneId ?? 'meet']), hint: tr("실제 나와 맞는 답변을 적어주세요."), limit: 300, examples: [tr("페스티벌 같이 가기"), tr("라이브 공연 보기"), tr("조용한 카페에서 수다"), tr("가볍게 걷기"), tr("맛집 원정"), tr("보드게임"), tr("맥주 한잔")] },
                   { key: 'promptTwo', label: tr(CHILLING_PROMPTS[profile.promptTwoId ?? 'join']), hint: tr("실제 나와 맞는 답변을 적어주세요."), limit: 300, examples: [tr("공연 취향이 맞는 사람들"), tr("소규모(4명 이하)"), tr("주말 낮"), tr("처음 보는 사람과도 편한 분위기")] },
                 ] as const).filter(field => showing(field.key)).map(field => <View key={field.key} style={[styles.promptPanel, { backgroundColor: theme.card }]}>
-                  {(field.key === 'promptOne' || field.key === 'promptTwo') && <View style={styles.chips}>{(field.key === 'promptOne' ? ['meet', 'weekend', 'comfort'] as const : ['join', 'learn', 'ritual'] as const).map(id => <Pressable analyticsId="meetup-profile.prompt" key={id} accessibilityRole="button" accessibilityState={{ selected: (field.key === 'promptOne' ? profile.promptOneId : profile.promptTwoId) === id }} disabled={saving} onPress={() => { play('selection'); setProfile(current => ({ ...current, [field.key === 'promptOne' ? 'promptOneId' : 'promptTwoId']: id })); }} style={[styles.promptChip, { borderColor: theme.line, backgroundColor: (field.key === 'promptOne' ? profile.promptOneId : profile.promptTwoId) === id ? theme.backgroundSelected : theme.backgroundElement }]}><ThemedText type="small" style={styles.helper}>{tr(CHILLING_PROMPTS[id])}</ThemedText></Pressable>)}</View>}
+                  {(field.key === 'promptOne' || field.key === 'promptTwo') && <View style={styles.chips}>{(field.key === 'promptOne' ? ['meet', 'weekend', 'comfort'] as const : ['join', 'learn', 'ritual'] as const).map(id => <Pressable analyticsId="meetup-profile.prompt" key={id} accessibilityRole="button" accessibilityState={{ selected: (field.key === 'promptOne' ? profile.promptOneId : profile.promptTwoId) === id }} disabled={saving} onPress={() => { play('selection'); setProfile(current => ({ ...current, [field.key === 'promptOne' ? 'promptOneId' : 'promptTwoId']: id })); }} style={[styles.promptChip, clay ? styles.clayChip : { borderColor: theme.line, backgroundColor: (field.key === 'promptOne' ? profile.promptOneId : profile.promptTwoId) === id ? theme.backgroundSelected : theme.backgroundElement }]}>{clay && <ClayPillFill kind={(field.key === 'promptOne' ? profile.promptOneId : profile.promptTwoId) === id ? 'on' : 'white'} />}<ThemedText type="small" style={[styles.helper, clay && (field.key === 'promptOne' ? profile.promptOneId : profile.promptTwoId) === id && { color: theme.accentInk }]}>{tr(CHILLING_PROMPTS[id])}</ThemedText></Pressable>)}</View>}
                   <ThemedText style={[styles.bodyText, styles.question]}>{field.label}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{field.hint}</ThemedText>
                   <View style={styles.choices}>{field.examples.map(example => {
@@ -336,7 +338,8 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
                     return <Pressable analyticsId="app_meetup-profile.pressable.4" key={example} accessibilityRole="button" accessibilityLabel={example}
                       accessibilityState={{ selected, disabled: saving }} disabled={saving}
                       onPress={() => { play('selection'); Keyboard.dismiss(); setCustomOpen(null); setProfile(p => ({ ...p, [field.key]: p[field.key] === example ? '' : example })); }}
-                      style={({ pressed }) => [styles.choice, { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.backgroundSelected : theme.card, opacity: pressed ? 0.7 : 1 }]}>
+                      style={({ pressed }) => [styles.choice, clayBox ? styles.clayChoice : { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.backgroundSelected : theme.card }, { opacity: pressed ? 0.7 : 1 }]}>
+                      {clayBox && <ClayBoxFill kind="tile" />}
                       <ThemedText style={[styles.bodyText, styles.choiceText]}>{example}</ThemedText>
                       <SymbolView name={selected ? { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' } : { ios: 'circle', android: 'radio_button_unchecked', web: 'radio_button_unchecked' }} size={20} tintColor={selected ? theme.accent : theme.textSecondary} />
                     </Pressable>;
@@ -348,7 +351,8 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
                         onChangeText={text => setProfile(p => ({ ...p, [field.key]: text }))} style={[styles.input, { color: theme.text, borderColor: theme.line }]} />
                     : <Pressable analyticsId="app_meetup-profile.pressable.11" accessibilityRole="button" accessibilityLabel={tr("{0} 직접 입력", (field.label))}
                         disabled={saving} onPress={() => { play('selection'); setCustomOpen(field.key); }}
-                        style={({ pressed }) => [styles.promptChip, Depth.control, { alignSelf: 'flex-start', borderColor: theme.line, backgroundColor: theme.card, }]}>
+                        style={({ pressed }) => [styles.promptChip, { alignSelf: 'flex-start' }, clay ? styles.clayChip : [Depth.control, { borderColor: theme.line, backgroundColor: theme.card }]]}>
+                        {clay && <ClayPillFill kind="white" />}
                         <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("＋ 직접 입력")}</ThemedText>
                       </Pressable>}
                   <ThemedText type="small" themeColor="textSecondary" style={[styles.helper, styles.count]}>{profile[field.key].length}/{field.limit}</ThemedText>
@@ -359,13 +363,15 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
                   <View style={styles.chips}>
                     {tags.map(tag => <Pressable analyticsId="app_meetup-profile.pressable.6" key={tag} accessibilityRole="button" accessibilityLabel={tr("{0} 삭제", (tag))}
                       disabled={saving} onPress={() => { play('selection'); setTags(current => current.filter(value => value !== tag)); }}
-                      style={({ pressed }) => [styles.promptChip, Depth.control, { borderColor: theme.accentDepth, backgroundColor: theme.accent, }]}>
+                      style={({ pressed }) => [styles.promptChip, clay ? styles.clayChip : [Depth.control, { borderColor: theme.accentDepth, backgroundColor: theme.accent }]]}>
+                      {clay && <ClayPillFill kind="on" />}
                       <ThemedText type="smallBold" style={[styles.label, { color: theme.accentInk }]}>{`${tag} ✕`}</ThemedText>
                     </Pressable>)}
                     {tags.length < 8 && [tr("페스티벌"), tr("라이브 공연"), tr("파티"), tr("산책"), tr("커피"), tr("맛집"), tr("여행"), tr("보드게임"), tr("운동")].filter(tag => !tags.includes(tag)).map(tag =>
                       <Pressable analyticsId="app_meetup-profile.pressable.10" key={tag} accessibilityRole="button" accessibilityLabel={tr("{0} 추가", (tag))}
                         disabled={saving} onPress={() => { play('selection'); Keyboard.dismiss(); setTags(current => current.length >= 8 || current.includes(tag) ? current : [...current, tag]); }}
-                        style={({ pressed }) => [styles.promptChip, Depth.control, { borderColor: theme.line, backgroundColor: theme.backgroundElement, }]}>
+                        style={({ pressed }) => [styles.promptChip, clay ? styles.clayChip : [Depth.control, { borderColor: theme.line, backgroundColor: theme.backgroundElement }]]}>
+                        {clay && <ClayPillFill kind="white" />}
                         <ThemedText type="small" style={styles.helper}>＋ {tag}</ThemedText>
                       </Pressable>)}
                     {tags.length < 8 && (tagOpen
@@ -374,7 +380,8 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
                         onChangeText={setTagDraft} onSubmitEditing={() => addTags(tagDraft)} onBlur={() => { addTags(tagDraft); setTagOpen(false); }}
                         placeholder={tr("예: 산책")} placeholderTextColor={theme.textSecondary} style={[styles.tagInput, { color: theme.text, borderColor: theme.accent }]} />
                       : <Pressable analyticsId="app_meetup-profile.pressable.7" accessibilityRole="button" accessibilityLabel={tr("관심사 추가")}
-                        disabled={saving} onPress={() => { play('selection'); setTagOpen(true); }} style={({ pressed }) => [styles.promptChip, Depth.control, { borderColor: theme.line, backgroundColor: theme.card, }]}>
+                        disabled={saving} onPress={() => { play('selection'); setTagOpen(true); }} style={({ pressed }) => [styles.promptChip, clay ? styles.clayChip : [Depth.control, { borderColor: theme.line, backgroundColor: theme.card }]]}>
+                        {clay && <ClayPillFill kind="white" />}
                         <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("＋ 추가")}</ThemedText>
                       </Pressable>)}
                   </View>
@@ -385,7 +392,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
                     <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("이 설정은 호스트와 멤버에게 공유되지 않아요.")}</ThemedText>
                     <TextInput accessibilityLabel={tr("선호하는 모임 활동")} value={privateActivities} maxLength={248} editable={!saving} placeholder={tr("예: 독서, 산책 · 쉼표로 구분")} placeholderTextColor={theme.textSecondary} onChangeText={setPrivateActivities} style={[styles.input, { color: theme.text, borderColor: theme.line }]} />
                     <TextInput accessibilityLabel={tr("편한 요일과 시간")} value={profile.preferences?.availability ?? ''} maxLength={160} editable={!saving} placeholder={tr("예: 토요일 오후가 편해요")} placeholderTextColor={theme.textSecondary} onChangeText={availability => setProfile(current => ({ ...current, preferences: { activities: [], pace: 'any', ...current.preferences, availability } }))} style={[styles.input, { color: theme.text, borderColor: theme.line }]} />
-                    <View style={styles.chips}>{(['any', 'relaxed', 'active'] as const).map(pace => <Pressable analyticsId="meetup-profile.pace" key={pace} accessibilityRole="button" accessibilityState={{ selected: profile.preferences?.pace === pace }} disabled={saving} style={[styles.promptChip, { borderColor: theme.line, backgroundColor: profile.preferences?.pace === pace ? theme.backgroundSelected : theme.backgroundElement }]} onPress={() => { play('selection'); setProfile(current => ({ ...current, preferences: { activities: [], availability: '', ...current.preferences, pace } })); }}><ThemedText type="small" style={styles.helper}>{tr(pace === 'any' ? '어느 쪽도 좋아요' : pace === 'relaxed' ? '느긋하게' : '활동적으로')}</ThemedText></Pressable>)}</View>
+                    <View style={styles.chips}>{(['any', 'relaxed', 'active'] as const).map(pace => <Pressable analyticsId="meetup-profile.pace" key={pace} accessibilityRole="button" accessibilityState={{ selected: profile.preferences?.pace === pace }} disabled={saving} style={[styles.promptChip, clay ? styles.clayChip : { borderColor: theme.line, backgroundColor: profile.preferences?.pace === pace ? theme.backgroundSelected : theme.backgroundElement }]} onPress={() => { play('selection'); setProfile(current => ({ ...current, preferences: { activities: [], availability: '', ...current.preferences, pace } })); }}>{clay && <ClayPillFill kind={profile.preferences?.pace === pace ? 'on' : 'white'} />}<ThemedText type="small" style={[styles.helper, clay && profile.preferences?.pace === pace && { color: theme.accentInk }]}>{tr(pace === 'any' ? '어느 쪽도 좋아요' : pace === 'relaxed' ? '느긋하게' : '활동적으로')}</ThemedText></Pressable>)}</View>
                   </View>
                 </View>}
                 {editing === 'publicPhoto' && <ChillingProfileCard profile={chillingProfilePreview(draftProfile, 'public')} />}
@@ -438,6 +445,8 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
   segment: { flexDirection: 'row', borderRadius: 12, padding: 3, gap: 3 }, segmentItem: { flex: 1, minHeight: 40, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   promptChip: { minHeight: 44, justifyContent: 'center', borderWidth: 1, borderRadius: 999, paddingHorizontal: Spacing.three },
+  clayChip: { overflow: 'visible', borderWidth: 0, backgroundColor: 'transparent', paddingHorizontal: 18 }, clayTray: { overflow: 'visible', backgroundColor: 'transparent' },
+  clayChoice: { overflow: 'visible', borderWidth: 0, backgroundColor: 'transparent' },
   tagInput: { minHeight: 44, minWidth: 120, borderWidth: 1, borderRadius: 999, paddingHorizontal: Spacing.three, fontSize: 16, lineHeight: 24 },
   button: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' }, field: { gap: Spacing.two },
   input: { borderWidth: 1, borderRadius: 12, padding: Spacing.three, minHeight: 52, maxHeight: 128, textAlignVertical: 'top', fontSize: 16, lineHeight: 24 },

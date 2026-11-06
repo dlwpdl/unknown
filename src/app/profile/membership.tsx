@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useFocusEffect } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Animated, LayoutAnimation, Linking, Platform, StyleSheet, UIManager, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -14,6 +14,7 @@ import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
 import { InfoNote, WhoSees } from '@/components/notice-blocks';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
@@ -34,6 +35,7 @@ const tierNames = { free: '베이직', plus: '플러스', pro: '프로', premium
 
 export default function MembershipScreen() {
   const { tr, locale: appLocale } = useLanguage();
+  const clay = useClay(), clayBox = useClayBox();
   const periodNames = { get month() { return tr("월"); }, get year() { return tr("년"); } };
   const theme = useTheme();
   const auth = useAuth();
@@ -150,9 +152,10 @@ export default function MembershipScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView edges={['bottom']} style={styles.safeArea}>
         <ScrollView analyticsId="app_profile_membership.scrollview.1" contentContainerStyle={styles.content}>
-          <View accessibilityRole="tablist" style={[styles.segment, { backgroundColor: theme.backgroundElement }]}>
+          <View accessibilityRole="tablist" style={[styles.segment, { backgroundColor: clay ? 'transparent' : theme.backgroundElement }]}>
+            {clay && <ClayPillFill kind="tray" />}
             {([['general', tr("개인")], ['business', tr("비즈니스")]] as const).map(([value, label]) => <Pressable analyticsId={`membership.family.${value}`} key={value} accessibilityRole="tab" accessibilityState={{ selected: kind === value, disabled: busy }} disabled={busy}
-              onPress={() => { play('selection'); animateLayout(); setKind(value); }} style={({ pressed }) => [styles.period, { backgroundColor: kind === value ? theme.card : 'transparent', opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold" themeColor={kind === value ? 'accent' : undefined}>{label}</ThemedText></Pressable>)}
+              onPress={() => { play('selection'); animateLayout(); setKind(value); }} style={({ pressed }) => [styles.period, { backgroundColor: kind === value && !clay ? theme.card : 'transparent', opacity: pressed ? 0.65 : 1 }]}>{clay && kind === value && <ClayPillFill kind="on" />}<ThemedText type="smallBold" themeColor={kind === value && !clay ? 'accent' : undefined} style={clay && kind === value ? { color: theme.accentInk } : undefined}>{label}</ThemedText></Pressable>)}
           </View>
           {kind === 'business' && <View style={styles.stack}>
             {companies.length > 1 && <Disclosure label={companies.find((item) => item.id === merchantId)?.name ?? tr("가게 선택")} note={tr("바꾸기")} open={open.picker} onPress={() => toggle('picker')} analyticsId="membership.business.picker" />}
@@ -165,7 +168,8 @@ export default function MembershipScreen() {
               onPress={() => { play('selection'); void supabase.rpc('bind_business_membership', { p_merchant_id: merchantId }).then(({ error }) => { if (error) { play('warning'); setBusinessError('현재 계정의 비즈니스 소유 확인을 다시 확인해 주세요.'); } else void refresh(); }); }}><ThemedText type="smallBold" themeColor="accent">{tr("기존 구독을 이 비즈니스에 연결")}</ThemedText></Pressable>}
           </View>}
 
-          <View style={[styles.me, { backgroundColor: theme.card }]}>
+          <View style={[styles.me, clayBox ? styles.clayCard : { backgroundColor: theme.card }]}>
+            {clayBox && <ClayBoxFill kind="tile" />}
             <ThemedText type="small" themeColor="textSecondary">{kind === 'business' ? companies.find((item) => item.id === merchantId)?.name ?? tr("이 가게의 멤버십") : tr("지금 쓰는 멤버십")}</ThemedText>
             <View style={styles.tierRow}>
               <ThemedText accessibilityRole="header" style={styles.heading}>{activeMembership ? tr(tierNames[activeMembership.tier]) : loading ? tr("확인 중") : tr("확인 필요")}</ThemedText>
@@ -178,7 +182,7 @@ export default function MembershipScreen() {
             {kind === 'general' && auth.isAdmin && <ThemedText type="small" themeColor="accent">{tr("관리자 계정 · 모임을 제한 없이 이용해요.")}</ThemedText>}
             {kind === 'general' && membership?.planVersion === 1 && <ThemedText type="small" themeColor="textSecondary">{tr("기존 구독 가격과 더 빠른 끌어올리기 혜택을 유지해요.")}</ThemedText>}
             {usage.length > 0 && <View style={styles.usage}>
-              {usage.map((item) => <View key={item.label} accessible accessibilityLabel={`${item.label} ${item.value}${item.detail ? `, ${item.detail}` : ''}`} style={[styles.usageTile, { backgroundColor: theme.backgroundElement }]}>
+              {usage.map((item) => <View key={item.label} accessible accessibilityLabel={`${item.label} ${item.value}${item.detail ? `, ${item.detail}` : ''}`} style={[styles.usageTile, { backgroundColor: clayBox ? theme.background : theme.backgroundElement }]}>
                 <ThemedText type="small" themeColor="textSecondary">{item.label}</ThemedText>
                 <ThemedText type="smallBold" style={styles.usageValue}>{item.value}</ThemedText>
                 {item.ratio != null && <View style={[styles.bar, { backgroundColor: theme.line }]}><View style={{ width: `${item.ratio * 100}%`, height: '100%', backgroundColor: theme.accent }} /></View>}
@@ -200,13 +204,14 @@ export default function MembershipScreen() {
           </View>}
 
           {/* 연간이 먼저(기본 선택), 월간으로 바꿀 수 있다. 상점에 두 기간이 다 있을 때만 보인다. */}
-          {periods.length > 1 && <View onLayout={event => setPeriodWidth(event.nativeEvent.layout.width)} style={[styles.periods, { backgroundColor: theme.backgroundElement }]}>
-            {periodWidth > 0 && <Animated.View pointerEvents="none" style={[styles.periodIndicator, { width: (periodWidth - 12) / 2, backgroundColor: theme.card, transform: [{ translateX: periodPosition.interpolate({ inputRange: [0, 1], outputRange: [0, (periodWidth - 12) / 2 + 4] }) }] }]} />}
+          {periods.length > 1 && <View onLayout={event => setPeriodWidth(event.nativeEvent.layout.width)} style={[styles.periods, { backgroundColor: clay ? 'transparent' : theme.backgroundElement }]}>
+            {clay && <ClayPillFill kind="tray" />}
+            {periodWidth > 0 && <Animated.View pointerEvents="none" style={[styles.periodIndicator, { width: (periodWidth - 12) / 2, backgroundColor: clay ? 'transparent' : theme.card, transform: [{ translateX: periodPosition.interpolate({ inputRange: [0, 1], outputRange: [0, (periodWidth - 12) / 2 + 4] }) }] }]}>{clay && <ClayPillFill kind="on" />}</Animated.View>}
             {periods.map((value) => <Pressable analyticsId="app_profile_membership.pressable.5" key={value} accessibilityRole="radio" aria-checked={value === period} accessibilityState={{ selected: value === period, checked: value === period, disabled: busy }} disabled={busy}
               onPress={() => selectPlan({ ...selection, period: value })}
-              style={({ pressed }) => [styles.period, styles.periodLabel, { backgroundColor: periodWidth === 0 && value === period ? theme.card : 'transparent', opacity: pressed ? 0.7 : 1 }]}>
-              <ThemedText type="smallBold" themeColor={value === period ? 'accent' : undefined}>{value === 'month' ? tr("월간") : tr("연간")}</ThemedText>
-              {value === 'year' && yearSaving && <View style={[styles.save, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={[styles.saveText, { color: theme.accentInk }]}>{'freeMonths' in yearSaving ? tr("2달 무료") : tr("{0}% 할인", yearSaving.percent)}</ThemedText></View>}
+              style={({ pressed }) => [styles.period, styles.periodLabel, { backgroundColor: periodWidth === 0 && value === period && !clay ? theme.card : 'transparent', opacity: pressed ? 0.7 : 1 }]}>
+              <ThemedText type="smallBold" themeColor={value === period && !clay ? 'accent' : undefined} style={clay && value === period ? { color: theme.accentInk } : undefined}>{value === 'month' ? tr("월간") : tr("연간")}</ThemedText>
+              {value === 'year' && yearSaving && <View style={[styles.save, { backgroundColor: clay && value === period ? theme.accentInk : theme.accent }]}><ThemedText type="smallBold" style={[styles.saveText, { color: clay && value === period ? theme.accent : theme.accentInk }]}>{'freeMonths' in yearSaving ? tr("2달 무료") : tr("{0}% 할인", yearSaving.percent)}</ThemedText></View>}
             </Pressable>)}
           </View>}
 
@@ -220,10 +225,11 @@ export default function MembershipScreen() {
             const selected = selection.tier === plan.tier;
             return <Pressable analyticsId="app_profile_membership.pressable.4" key={plan.tier} accessibilityRole="radio" aria-checked={selected} accessibilityState={{ selected, checked: selected, disabled: busy }} disabled={busy}
               onPress={() => selectPlan({ tier: plan.tier, period: offer?.period ?? period })}
-              style={({ pressed }) => [styles.plan, { backgroundColor: theme.card, borderColor: selected ? theme.accent : theme.line, opacity: pressed ? 0.88 : 1 }]}>
+              style={({ pressed }) => [styles.plan, { backgroundColor: clayBox ? 'transparent' : theme.card, borderColor: selected ? theme.accent : clayBox ? 'transparent' : theme.line, opacity: pressed ? 0.88 : 1 }]}>
+              {clayBox && <ClayBoxFill kind="tile" />}
               <View style={styles.planHeading}>
                 <ThemedText style={styles.planName}>{tr(plan.name)}</ThemedText>
-                <View style={[styles.radio, { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.accent : 'transparent' }]}>
+                <View style={[styles.radio, { borderColor: selected ? theme.accent : theme.textSecondary, backgroundColor: selected ? theme.accent : 'transparent' }]}>
                   {selected && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={12} tintColor={theme.accentInk} />}
                 </View>
               </View>
@@ -246,7 +252,8 @@ export default function MembershipScreen() {
           {kind === 'business' && <>
             <InfoNote>{tr("끌올은 올린 글 중 하나를 골라 정해진 간격마다 한 번 할 수 있어요. 같은 내용을 새 글로 다시 올릴 수는 없어요.")}</InfoNote>
             <Pressable analyticsId="membership.business.managed" accessibilityRole="button" accessibilityHint={tr("메일로 문의해요")} onPress={askManaged}
-              style={({ pressed }) => [styles.managed, { backgroundColor: theme.backgroundElement, opacity: pressed ? 0.7 : 1 }]}>
+              style={({ pressed }) => [styles.managed, { backgroundColor: clayBox ? 'transparent' : theme.backgroundElement, opacity: pressed ? 0.7 : 1 }]}>
+              {clayBox && <ClayBoxFill kind="tile" />}
               <View style={styles.planHeading}>
                 <ThemedText type="smallBold">{tr("글링 관리")}</ThemedText>
                 <ThemedText type="smallBold" themeColor="accent">{tr("문의하기 ›")}</ThemedText>
@@ -257,7 +264,9 @@ export default function MembershipScreen() {
 
           <View>
             <Disclosure label={tr("전체 비교 보기")} note={kind === 'general' ? tr("판매 글·끌올 포함") : undefined} open={open.compare} onPress={() => toggle('compare')} analyticsId="membership.compare" />
-            {open.compare && <View style={[styles.table, { backgroundColor: theme.card }]}>
+            {open.compare && <View style={clayBox ? styles.tableClay : [styles.table, { backgroundColor: theme.card }]}>
+              {clayBox && <ClayBoxFill kind="tile" />}
+              <View style={clayBox ? styles.table : undefined}>
               {[['', ...(['free', ...plans.map((plan) => plan.tier)] as const).map((tier) => tr(tierNames[tier]))],
                 ...(kind === 'general' ? [
                   [tr("모임 정원"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => String(MEMBERSHIP_LIMITS[tier].seats))],
@@ -275,10 +284,11 @@ export default function MembershipScreen() {
                   [tr("한 달 글"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => String(BUSINESS_LIMITS[tier].posts))],
                   [tr("끌올"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => bumpEvery(BUSINESS_LIMITS[tier].bumpCooldownHours))],
                   [tr("공동 관리자"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => BUSINESS_LIMITS[tier].managers ? String(BUSINESS_LIMITS[tier].managers) : '–')],
-                ])].map((cells, row) => <View key={cells[0] || 'head'} style={[styles.tableRow, { borderTopColor: theme.line }, row === 0 && { borderTopWidth: 0, backgroundColor: theme.backgroundElement }]}>
+                ])].map((cells, row) => <View key={cells[0] || 'head'} style={[styles.tableRow, clayBox && styles.tableRowInset, { borderTopColor: theme.line }, row === 0 && { borderTopWidth: 0, backgroundColor: clayBox ? 'transparent' : theme.backgroundElement }]}>
                   {cells.map((cell, column) => <ThemedText key={column} type={row === 0 ? 'smallBold' : 'small'} themeColor={column === 0 ? 'textSecondary' : undefined} style={[styles.cell, column === 0 && styles.cellLabel]}>{cell}</ThemedText>)}
                 </View>)}
               {kind === 'general' && <ThemedText type="small" themeColor="textSecondary" style={styles.tableNote}>{tr("오늘 글과 1:1 대화는 모든 등급 제한 없음")}</ThemedText>}
+              </View>
             </View>}
             {kind === 'general' && <>
               <Disclosure label={tr("모임 이용 규칙")} note={tr("나가기·칠링 제한")} open={open.rules} onPress={() => toggle('rules')} analyticsId="membership.rules" />
@@ -289,7 +299,8 @@ export default function MembershipScreen() {
                     ['1:1 대화', '바로 시작', '요청하고 수락받을 필요가 없어요. 끝내도 자리가 잠기지 않아요.', false],
                     ['스스로 나가기', '24시간 안에 3번째부터 12시간 참여 제한', '승인된 서로 다른 모임 기준이에요. 모임이 자연스럽게 끝났거나, 승인 전에 취소했거나, 호스트가 내보낸 경우는 세지 않아요.', true],
                     ['칠링 열기', '24시간 3번 · 7일 10번까지', '취소해도 연 횟수에 들어가요. 참가자가 있는 행사를 일찍 해산하면 7일 안에 두 번째부터 24시간 동안 새로 열 수 없어요. 무료·유료 모두 같아요.', true],
-                  ] as const).map(([label, value, detail, wide]) => <View key={label} style={[styles.tile, wide && styles.tileWide, { backgroundColor: theme.card }]}>
+                  ] as const).map(([label, value, detail, wide]) => <View key={label} style={[styles.tile, wide && styles.tileWide, clayBox ? styles.clayCard : { backgroundColor: theme.card }]}>
+                    {clayBox && <ClayBoxFill kind="tile" />}
                     <ThemedText type="small" themeColor="textSecondary">{tr(label)}</ThemedText>
                     <ThemedText type="smallBold" themeColor="accent">{tr(value)}</ThemedText>
                     <ThemedText type="small">{tr(detail)}</ThemedText>
@@ -315,7 +326,8 @@ export default function MembershipScreen() {
           {purchaseUnavailableReason && <ThemedText type="small" themeColor="textSecondary" style={styles.center} accessibilityLiveRegion="polite">{purchaseUnavailableReason}</ThemedText>}
           <Pressable analyticsId="app_profile_membership.pressable.6" accessibilityRole="button" disabled={purchaseDisabled} accessibilityState={{ disabled: purchaseDisabled, busy }}
             onPress={() => { play('selection'); if (businessBlockedReason) Alert.alert(tr(businessBlockedReason)); else if (selectedOffer) void purchase(selectedOffer, kind === 'business' && merchantId ? merchantId : undefined); }}
-            style={({ pressed }) => [styles.purchase, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: purchaseDisabled ? 0.5 : pressed ? 0.85 : 1 }]}>
+            style={({ pressed }) => [styles.purchase, clay ? styles.clayWide : Depth.control, { backgroundColor: clay ? 'transparent' : theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: clay ? 0 : 3, opacity: purchaseDisabled ? 0.5 : pressed ? 0.85 : 1 }]}>
+            {clay && <ClayPillFill kind="cta" />}
             {busy ? <GlingLoader color={theme.accentInk} accessibilityLabel={tr("구독 처리 중")} /> : <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
               {currentProduct ? tr("현재 이용 중인 구독") : selectedOffer ? tr("{0} {1} 구독하기", tr(tierNames[selectedOffer.tier]), selectedOffer.period === 'year' ? tr("연간") : tr("월간")) : tr("구독 준비 중")}
             </ThemedText>}
@@ -345,6 +357,8 @@ const styles = StyleSheet.create({
   loading: { flex: 1 },
   content: { padding: Spacing.three, paddingBottom: Spacing.five, gap: Spacing.three },
   stack: { gap: Spacing.two },
+  clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
+  tableClay: { borderRadius: 14, marginBottom: Spacing.two }, tableRowInset: { marginHorizontal: Spacing.three, paddingHorizontal: 0 },
   segment: { flexDirection: 'row', borderRadius: 12, padding: Spacing.one, gap: Spacing.one },
   me: { borderRadius: 16, padding: Spacing.three, gap: Spacing.one },
   tierRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
@@ -382,6 +396,7 @@ const styles = StyleSheet.create({
   save: { borderRadius: 999, paddingHorizontal: 6, paddingVertical: 1 },
   saveText: { fontSize: 11, lineHeight: 15 },
   checkout: { gap: Spacing.one, paddingHorizontal: Spacing.three, paddingTop: Spacing.two, paddingBottom: Spacing.two, borderTopWidth: StyleSheet.hairlineWidth },
+  clayWide: { overflow: 'visible', paddingHorizontal: 24 },
   purchase: { minHeight: 52, borderRadius: 14, padding: Spacing.three, alignItems: 'center', justifyContent: 'center' },
   textButton: { minHeight: 44, paddingHorizontal: Spacing.two, paddingVertical: Spacing.two, alignItems: 'center', justifyContent: 'center' },
   links: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: Spacing.two },

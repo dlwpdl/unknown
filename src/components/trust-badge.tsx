@@ -1,5 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 
 import { useTheme } from '@/hooks/use-theme';
 import { trustLevelOf } from '@/lib/trust';

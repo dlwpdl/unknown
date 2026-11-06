@@ -1,6 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { SelectionChip } from '@/components/selection-chip';
 import { ThemedText } from '@/components/themed-text';
@@ -9,11 +9,12 @@ import { useTheme } from '@/hooks/use-theme';
 import type { FeedSort } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
-export function FeedSortControl({ sort, title, onChange, action, children }: { sort: FeedSort; title: string; onChange: (sort: FeedSort) => void; action?: ReactNode; children?: ReactNode }) {
+export function FeedSortControl({ sort, title, onChange, action, children, style }: { sort: FeedSort; title: string; onChange: (sort: FeedSort) => void; action?: ReactNode; children?: ReactNode; style?: StyleProp<ViewStyle> }) {
   const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
-  return <View style={[styles.container, { backgroundColor: theme.background, borderBottomColor: theme.line }]}>
+  // 바깥은 배경(부르는 쪽이 넓히거나 바꿀 수 있음), 안쪽은 글 폭 그대로의 밑줄.
+  return <View style={[{ backgroundColor: theme.background }, style]}><View style={[styles.container, { borderBottomColor: theme.line }]}>
     <View style={styles.row}>
       <ThemedText accessibilityRole="header" style={styles.title}>{title}</ThemedText>
       <View style={styles.options}>
@@ -33,7 +34,7 @@ export function FeedSortControl({ sort, title, onChange, action, children }: { s
       {sort === 'latest' ? tr("새로 올라온 글부터") : tr("최근 7일 · 반응이 많은 글부터")}
     </ThemedText>{action}</View>
     {children ? <View style={styles.extra}>{children}</View> : null}
-  </View>;
+  </View></View>;
 }
 
 const styles = StyleSheet.create({

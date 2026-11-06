@@ -19,7 +19,7 @@ const expression = name => button.attributes.properties.find(attribute => attrib
 function control() {
   const calls = [], module = { exports: {} };
   const context = { module, styles: {}, Spacing: new Proxy({}, { get: () => 8 }), Typography: new Proxy({}, { get: () => ({}) }), Radius: new Proxy({}, { get: () => 8 }), StyleSheet: { hairlineWidth: 1 },
-    createDisabled: false, theme: { accent: '#abc', accentInk: '#123' }, play: kind => calls.push(kind), action: route => calls.push(route) };
+    createDisabled: false, clay: false, theme: { accent: '#abc', accentInk: '#123' }, play: kind => calls.push(kind), action: route => calls.push(route) };
   vm.runInNewContext(`styles = (${styles.getText(source)}); module.exports = { style: (${expression('style')}), press: (${expression('onPress')}) };`, context);
   return { style: Object.assign({}, ...module.exports.style({ pressed: false })), press: module.exports.press, calls };
 }

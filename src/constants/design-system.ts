@@ -36,15 +36,16 @@ export const Typography = {
 } as const;
 
 export type ControlPalette = { accent: string; accentInk: string; text: string; card: string; line: string; backgroundSelected: string };
-export type ControlState = { tone?: 'primary' | 'secondary' | 'ghost'; selected?: boolean; pressed?: boolean; disabled?: boolean; busy?: boolean; reducedMotion?: boolean };
+export type ControlState = { tone?: 'primary' | 'secondary' | 'ghost'; selected?: boolean; pressed?: boolean; disabled?: boolean; busy?: boolean; reducedMotion?: boolean; clay?: boolean };
 
-export function controlPresentation(theme: ControlPalette, { tone = 'secondary', selected = false, pressed = false, disabled = false, busy = false }: ControlState = {}) {
+export function controlPresentation(theme: ControlPalette, { tone = 'secondary', selected = false, pressed = false, disabled = false, busy = false, clay = false }: ControlState = {}) {
   const filled = tone === 'primary' || (tone === 'secondary' && selected);
   const active = pressed && !disabled && !busy;
   return {
     container: {
-      backgroundColor: filled ? theme.accent : tone === 'ghost' ? selected ? theme.backgroundSelected : 'transparent' : theme.card,
-      borderColor: filled ? theme.accent : tone === 'ghost' ? 'transparent' : theme.line,
+      // Clay art draws its own surface behind the control.
+      backgroundColor: clay ? 'transparent' : filled ? theme.accent : tone === 'ghost' ? selected ? theme.backgroundSelected : 'transparent' : theme.card,
+      borderColor: clay || tone === 'ghost' ? 'transparent' : filled ? theme.accent : theme.line,
       opacity: disabled || busy ? ControlMotion.disabledOpacity : active ? ControlMotion.pressedOpacity : 1,
     },
     text: { color: filled ? theme.accentInk : selected ? theme.accent : theme.text },

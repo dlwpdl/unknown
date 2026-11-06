@@ -28,7 +28,7 @@ function settings({ userId = 'recipient', platform = 'web', load = async () => (
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' }, 'expo-router': { Redirect: 'Redirect' },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView', Switch: 'Switch' },
     '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/themed-text': { ThemedText: 'Text' },
-    '@/constants/theme': { Depth: {}, Spacing: {} }, '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/constants/theme': { Depth: {}, Spacing: {} }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/lib/mock': { TAGS: [], CITIES: [] }, '@/lib/hashtags': { parseHashtags: () => [] },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: 'recipient' } }) },
     '@/lib/notification-preferences': preferencesModule,

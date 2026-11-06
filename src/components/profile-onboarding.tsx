@@ -1,4 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
+import { SymbolView } from '@/components/symbol-view';
 import { GlingLoader } from '@/components/gling-loader';
 import { behavior, flushBehavior } from '@/lib/behavior-analytics';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
@@ -10,6 +11,7 @@ import { KeyboardAvoidingView, Modal, Platform, StyleSheet, TextInput, View, typ
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
+import { ClayBoxFill, ClayCoinFill, ClayPhoto, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { PersonalInfoFields, type PersonalInfoDraft } from '@/components/personal-info-fields';
 import { WelcomeMoment } from '@/components/welcome-moment';
@@ -54,6 +56,8 @@ export function ProfileOnboarding({
 }) {
   const { tr, t } = useLanguage();
   const theme = useTheme();
+  const clay = useClay();
+  const clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
   const initialNickname = existingProfile?.nickname ?? normalizedNickname(socialNickname) ?? generateNickname('ko');
@@ -217,19 +221,21 @@ export function ProfileOnboarding({
             </View>
 
             {!consentOnly && <View style={styles.photoSection}>
-              <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}>
-                {photoUri ? (
+              <View style={[styles.avatar, clay ? { overflow: 'visible' } : { backgroundColor: theme.backgroundElement }]}>
+                {photoUri ? clay ? <ClayPhoto uri={photoUri} size={88} /> : (
                   <Image source={{ uri: photoUri }} style={styles.avatarImage} contentFit="cover" transition={ControlMotion.settleMs} />
                 ) : (
-                  <ThemedText type="subtitle" style={{ color: theme.navy }}>{nickname.trim()[0] ?? t.appName[0].toUpperCase()}</ThemedText>
+                  <>{clay && <ClayCoinFill />}<ThemedText type="subtitle" style={{ color: theme.navy }}>{nickname.trim()[0] ?? t.appName[0].toUpperCase()}</ThemedText></>
                 )}
               </View>
               <View style={styles.photoActions}>
-                <Pressable analyticsId="components_profile-onboarding.pressable.1" onPress={() => void pickPhoto()} accessibilityRole="button" style={({ pressed }) => [styles.smallButton, Depth.control, { borderColor: theme.line, backgroundColor: theme.card, }]}>
+                <Pressable analyticsId="components_profile-onboarding.pressable.1" onPress={() => void pickPhoto()} accessibilityRole="button" style={({ pressed }) => [styles.smallButton, clay ? styles.clayPad : Depth.control, { borderColor: clay ? 'transparent' : theme.line, backgroundColor: clay ? 'transparent' : theme.card, }]}>
+                  {clay && <ClayPillFill kind="white" />}
                   <ThemedText type="smallBold">{t.onboarding.choosePhoto}</ThemedText>
                 </Pressable>
                 {(socialNickname || socialPhoto) && (
-                  <Pressable analyticsId="components_profile-onboarding.pressable.2" onPress={useSocialProfile} accessibilityRole="button" style={({ pressed }) => [styles.smallButton, Depth.control, { borderColor: theme.line, backgroundColor: theme.card, }]}>
+                  <Pressable analyticsId="components_profile-onboarding.pressable.2" onPress={useSocialProfile} accessibilityRole="button" style={({ pressed }) => [styles.smallButton, clay ? styles.clayPad : Depth.control, { borderColor: clay ? 'transparent' : theme.line, backgroundColor: clay ? 'transparent' : theme.card, }]}>
+                  {clay && <ClayPillFill kind="white" />}
                     <ThemedText type="smallBold">{t.onboarding.useSocial}</ThemedText>
                   </Pressable>
                 )}
@@ -251,10 +257,12 @@ export function ProfileOnboarding({
                 style={[styles.nicknameInput, { color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]}
               />
               <View style={styles.randomActions}>
-                <Pressable analyticsId="components_profile-onboarding.pressable.4" onPress={() => { play('selection'); setNickname(generateNickname('ko')); }} accessibilityRole="button" style={({ pressed }) => [styles.pill, Depth.control, { backgroundColor: theme.backgroundElement, }]}>
+                <Pressable analyticsId="components_profile-onboarding.pressable.4" onPress={() => { play('selection'); setNickname(generateNickname('ko')); }} accessibilityRole="button" style={({ pressed }) => [styles.pill, clay ? styles.clayPad : Depth.control, { backgroundColor: clay ? 'transparent' : theme.backgroundElement, }]}>
+                  {clay && <ClayPillFill kind="white" />}
                   <ThemedText type="smallBold">{t.onboarding.koreanRandom}</ThemedText>
                 </Pressable>
-                <Pressable analyticsId="components_profile-onboarding.pressable.5" onPress={() => { play('selection'); setNickname(generateNickname('en')); }} accessibilityRole="button" style={({ pressed }) => [styles.pill, Depth.control, { backgroundColor: theme.backgroundElement, }]}>
+                <Pressable analyticsId="components_profile-onboarding.pressable.5" onPress={() => { play('selection'); setNickname(generateNickname('en')); }} accessibilityRole="button" style={({ pressed }) => [styles.pill, clay ? styles.clayPad : Depth.control, { backgroundColor: clay ? 'transparent' : theme.backgroundElement, }]}>
+                  {clay && <ClayPillFill kind="white" />}
                   <ThemedText type="smallBold">{t.onboarding.englishRandom}</ThemedText>
                 </Pressable>
               </View>
@@ -271,7 +279,8 @@ export function ProfileOnboarding({
                       onPress={() => { play('selection'); setCityId(city.id); }}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
-                      style={({ pressed }) => [styles.cityButton, Depth.control, { backgroundColor: selected ? theme.accent : theme.backgroundElement, borderBottomColor: selected ? theme.accentDepth : theme.line, borderBottomWidth: 3, }]}>
+                      style={({ pressed }) => [styles.cityButton, clay ? styles.clayPad : Depth.control, clay ? { backgroundColor: 'transparent', borderBottomWidth: 0 } : { backgroundColor: selected ? theme.accent : theme.backgroundElement, borderBottomColor: selected ? theme.accentDepth : theme.line, borderBottomWidth: 3, }]}>
+                      {clay && <ClayPillFill kind={selected ? 'on' : 'white'} />}
                       <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : theme.text }}>{tr(city.name)}</ThemedText>
                     </Pressable>
                   );
@@ -281,14 +290,15 @@ export function ProfileOnboarding({
 
             {askPersonalInfo && <PersonalInfoFields showConsent={false} value={personalInfo} disabled={saving} onChange={(value) => { setPersonalInfo(value); setError(null); }} />}
 
-            <View style={[styles.consents, { backgroundColor: theme.card, borderColor: theme.line }]}>
+            <View style={[styles.consents, clayBox ? styles.consentsClay : { backgroundColor: theme.card, borderColor: theme.line }]}>
+              {clayBox && <ClayBoxFill kind="tile" />}
               <Pressable analyticsId="components_profile-onboarding.pressable.7" onPress={toggleAll} disabled={saving} accessibilityRole="checkbox"
                 accessibilityLabel={!askPersonalInfo ? tr("모두 동의") : tr("모두 동의, 선택 항목 포함")} aria-checked={allChecked}
                 accessibilityState={{ checked: allChecked, disabled: saving }}
                 {...(Platform.OS === 'web' ? { onKeyDown: (event: KeyDownEvent) => { if (event.nativeEvent.key === ' ') { event.preventDefault(); toggleAll(); } } } : {})}
                 style={[styles.consent, styles.allConsent, { borderBottomColor: theme.line }]}>
-                <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { backgroundColor: someAccepted ? theme.accent : 'transparent', borderColor: someAccepted ? theme.accent : theme.line }]}>
-                  {someAccepted && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{allAccepted ? '✓' : '−'}</ThemedText>}
+                <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { backgroundColor: someAccepted ? theme.accent : 'transparent', borderColor: someAccepted ? theme.accent : theme.textSecondary }]}>
+                  {someAccepted && <SymbolView name={allAccepted ? { ios: 'checkmark', android: 'check', web: 'check' } : { ios: 'minus', android: 'remove', web: 'remove' }} size={14} tintColor={theme.accentInk} />}
                 </View>
                 <ThemedText type="smallBold" style={styles.consentText}>{tr("모두 동의")}{askPersonalInfo && <ThemedText type="small" themeColor="textSecondary"> {" " + tr("(선택 포함)")}</ThemedText>}</ThemedText>
               </Pressable>
@@ -301,8 +311,8 @@ export function ProfileOnboarding({
                       aria-checked={item.checked} accessibilityState={{ checked: item.checked, disabled: saving }}
                       {...(Platform.OS === 'web' ? { onKeyDown: (event: KeyDownEvent) => { if (event.nativeEvent.key === ' ') { event.preventDefault(); toggle(); } } } : {})}
                       style={styles.consent}>
-                      <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { backgroundColor: item.checked ? theme.accent : 'transparent', borderColor: item.checked ? theme.accent : theme.line }]}>
-                        {item.checked && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText>}
+                      <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { backgroundColor: item.checked ? theme.accent : 'transparent', borderColor: item.checked ? theme.accent : theme.textSecondary }]}>
+                        {item.checked && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={14} tintColor={theme.accentInk} />}
                       </View>
                       <ThemedText type="small" style={styles.consentText}>{tr(item.label)}</ThemedText>
                     </Pressable>
@@ -330,7 +340,8 @@ export function ProfileOnboarding({
               disabled={saving || !requiredAccepted}
               accessibilityRole="button"
               accessibilityState={{ disabled: saving || !requiredAccepted, busy: saving }}
-              style={({ pressed }) => [styles.submit, Depth.control, { backgroundColor: theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: 3, opacity: saving || !requiredAccepted ? 0.5 : 1, }]}>
+              style={({ pressed }) => [styles.submit, clay ? styles.clayWide : Depth.control, { backgroundColor: clay ? 'transparent' : theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: clay ? 0 : 3, opacity: saving || !requiredAccepted ? 0.5 : 1, }]}>
+              {clay && <ClayPillFill kind="cta" />}
               {saving && <GlingLoader color={theme.accentInk} />}
               <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
                 {saving ? t.onboarding.saving : consentOnly ? t.onboarding.consentSubmit : t.onboarding.submit}
@@ -365,6 +376,8 @@ const styles = StyleSheet.create({
   avatarImage: { width: '100%', height: '100%' },
   photoActions: { flex: 1, alignItems: 'flex-start', gap: Spacing.two },
   smallButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.three, borderWidth: 1, borderRadius: 8 },
+  clayPad: { overflow: 'visible', paddingHorizontal: 18 },
+  clayWide: { overflow: 'visible', paddingHorizontal: 24 },
   field: { gap: Spacing.two },
   nicknameInput: { minHeight: 60, paddingHorizontal: Spacing.three, borderWidth: 1, borderRadius: 10, fontSize: 22, fontWeight: 700 },
   randomActions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
@@ -372,6 +385,7 @@ const styles = StyleSheet.create({
   cityRow: { flexDirection: 'row', gap: Spacing.two },
   cityButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.four, borderRadius: 8 },
   consents: { borderWidth: 1, borderRadius: 12, paddingHorizontal: Spacing.three },
+  consentsClay: { borderWidth: 0 },
   consentRow: { flexDirection: 'row', alignItems: 'center' },
   consent: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.two },
   allConsent: { flex: 0, minHeight: 56, borderBottomWidth: 1, marginBottom: Spacing.one },
