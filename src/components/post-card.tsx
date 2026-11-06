@@ -3,7 +3,7 @@ import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Image } from 'expo-image';
 import { SymbolView } from '@/components/symbol-view';
-import { ClayBoxFill, ClayCoinFill, ClayIcon, ClayPhoto, useClay, useClayBox } from '@/components/clay';
+import { ClayBoxFill, ClayCoinFill, ClayIcon, ClayPhoto, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { Alert, Animated, DeviceEventEmitter, Easing, Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useReducedMotion } from 'react-native-reanimated';

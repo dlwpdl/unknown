@@ -22,6 +22,7 @@ test('cover picker preserves draft on cancel, optimizes selection, and supports 
         return {uri:'optimized.webp',base64:'aGk=',thumbBase64:'dGh1bWI=',mimeType:'image/webp',width:1280,height:720,bytes:3};},
     };
     if(name==='@/components/themed-text')return {ThemedText:'Text'};
+    if(name==='@/components/clay')return {useClayBox:()=>false,ClayBoxFill:()=>null};
     return {};
   })});
   const find=(node,label)=>node&&typeof node==='object'?(node.props?.accessibilityLabel===label?node:Object.values(node).flatMap(x=>Array.isArray(x)?x:[x]).map(x=>find(x,label)).find(Boolean)):null;
