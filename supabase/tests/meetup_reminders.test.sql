@@ -18,7 +18,8 @@ insert into public.profiles(id,nickname,city_id) select id,'일정검사102-'||r
 insert into auth.sessions(id,user_id,created_at) values ('a1020000-0000-0000-0000-000000000020','a1020000-0000-0000-0000-000000000001',now());
 insert into private.push_devices(user_id,session_id,token) values ('a1020000-0000-0000-0000-000000000001','a1020000-0000-0000-0000-000000000020','ExpoPushToken[reminder102testdevice]');
 insert into public.notification_preferences(user_id,push_enabled) values ('a1020000-0000-0000-0000-000000000001',true);
-create temp table reminder_clock as select (((now() at time zone 'America/Vancouver')::date+3)+time '15:00') at time zone 'America/Vancouver' as start;
+-- B.C. is on UTC-7 from now on, whatever zone data this database has.
+create temp table reminder_clock as select (((now() at time zone 'America/Phoenix')::date+3)+time '15:00') at time zone 'America/Phoenix' as start;
 insert into public.posts(id,author_id,city_id,tag_id,title,body,room_preview)
 select 'a1020000-0000-0000-0000-000000000010','a1020000-0000-0000-0000-000000000001','vancouver',1,'일정 알림 테스트','본문',
 jsonb_build_object('eventKind','once','startsAt',start,'endsAt',start+interval '2 hours','timezone','America/Vancouver','capacity',8)
@@ -49,5 +50,23 @@ select is(private.send_meetup_reminders((select start+interval '23 hours 2 minut
 select is(private.send_meetup_reminders((select start+interval '1 day' from reminder_clock)),0,'already started event sends nothing');
 update public.posts set room_preview=room_preview||'{"closed":true}' where id='a1020000-0000-0000-0000-000000000010';
 select is(private.send_meetup_reminders((select start+interval '23 hours' from reminder_clock)),0,'closed meetup sends nothing');
+
+-- A Vancouver meetup after the fall 2026 change: same clock as the app, on any zone data. The stored zone stays America/Vancouver.
+select is((select due_at from private.meetup_reminder_times('2030-12-02 02:00Z','America/Vancouver') where slot='morning'),'2030-12-01 16:00Z'::timestamptz,'winter Vancouver morning reminder is 9am at UTC-7');
+select is((select due_at from private.meetup_reminder_times('2026-10-16 02:00Z','America/Vancouver') where slot='morning'),'2026-10-15 16:00Z'::timestamptz,'a meetup before the change is unchanged');
+select is((select due_at from private.meetup_reminder_times('2027-01-16 00:00Z','America/Toronto') where slot='morning'),'2027-01-15 14:00Z'::timestamptz,'other cities keep their own zone');
+select is(private.meetup_clock_zone(null,'2030-12-02 02:00Z'),null,'a missing zone stays missing instead of failing the whole reminder run');
+select ok(not has_function_privilege('authenticated','private.meetup_clock_zone(text,timestamptz)','execute'),'clients cannot call the clock helper');
+select ok(has_function_privilege((select proowner from pg_proc where oid='private.send_meetup_reminders(timestamptz)'::regprocedure),'private.meetup_clock_zone(text,timestamptz)','execute'),'the reminder job can call the clock helper');
+insert into public.posts(id,author_id,city_id,tag_id,title,body,created_at,room_preview)
+values('a1020000-0000-0000-0000-000000000011','a1020000-0000-0000-0000-000000000001','vancouver',1,'밴쿠버 시계 테스트','본문','2030-11-02 00:00Z',
+  '{"eventKind":"once","startsAt":"2030-12-02T02:00:00Z","endsAt":"2030-12-02T03:00:00Z","timezone":"America/Vancouver","capacity":8}');
+select is(private.send_meetup_reminders('2030-12-01 02:00Z'),1,'day-before reminder goes out for the host');
+select ok(exists(select 1 from public.notifications where kind='meetup_reminder' and body like '%12/01 19:00%'),'day-before reminder says 19:00');
+select is(private.send_meetup_reminders('2030-12-01 16:00Z'),1,'morning reminder goes out at 9am');
+select ok(exists(select 1 from public.notifications where kind='meetup_morning' and body like '%오늘 19:00에%'),'morning reminder says 19:00');
+select is(private.send_meetup_reminders('2030-12-01 16:00:20Z'),0,'a retry in the same minute cannot resend');
+select is(private.send_meetup_reminders('2030-12-01 17:00Z'),0,'nothing fires at the old morning time, so a morning reminder sent before this change is not sent again');
+select is((select room_preview->>'timezone' from public.posts where id='a1020000-0000-0000-0000-000000000011'),'America/Vancouver','the stored zone is untouched');
 select * from finish();
 rollback;
