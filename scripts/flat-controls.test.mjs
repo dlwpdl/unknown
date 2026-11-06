@@ -93,11 +93,12 @@ test('primary buttons retain 44/52-point targets, labels and callbacks without d
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/components/raised-action-button.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, { exports, require(name) {
-    if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) };
+    if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'react-native') return { View: 'View', StyleSheet: { create: x => x } };
     if (name === '@/components/analytics-controls') return { Pressable: 'Pressable' };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
     if (name === '@/constants/design-system') return designSystem;
+    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ accent: '#CBB9FF', accentInk: '#171123' }) };
     throw new Error(name);
   } });
@@ -111,7 +112,7 @@ test('primary buttons retain 44/52-point targets, labels and callbacks without d
     assert.equal(calls, 0, 'unavailable primary actions must not invoke their caller');
     assert.equal(touch.props.disabled, true);
     assert.equal(touch.props.accessibilityState.busy, true);
-    assert.equal(touch.props.children.props.children, '신청하기');
+    assert.equal(touch.props.children.at(-1).props.children, '신청하기');
     for (const pressed of [false, true]) {
       const style = flatten(touch.props.style({ pressed }));
       assert.equal(style.minHeight, compact ? 44 : 52);

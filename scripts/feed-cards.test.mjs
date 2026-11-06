@@ -68,6 +68,7 @@ function load(file, imports) {
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
     if (name === '@/components/glass-surface') return { GlassSurface: 'GlassSurface' };
     if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, four: 24 }, Depth: { card: {}, control: {} } };
+    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     throw new Error(`Unexpected import: ${name}`);
   }) });

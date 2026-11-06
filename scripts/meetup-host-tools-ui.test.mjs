@@ -75,6 +75,7 @@ export function mount(file, exportName, initialProps = {}, options = {}) {
     '@/lib/meetup-reviews': reviews, '@/lib/meetup-loyalty': loyalty, '@/lib/meetup-convenience': convenience, '@/lib/meetup-host-home': hostHome,
     '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async key => ctx.storage?.[key] ?? null, setItem: async (key, value) => { (ctx.storage ??= {})[key] = value; } } },
     '@/hooks/use-language': { useLanguage: () => ({ language: ctx.language, locale: ctx.language === 'ko' ? 'ko-KR' : 'en-CA', tr: (text, ...values) => values.reduce((out, value, index) => out.replace(`{${index}}`, value), text) }) },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null },
     '@/hooks/use-theme': { useTheme: () => ctx.theme }, '@/lib/auth': { useAuth: () => ctx.auth },
     '@/constants/design-system': designSystem,
     'expo-router': { useIsFocused: () => ctx.focused !== false, useRouter: () => ({ push: value => (ctx.pushed ??= []).push(value) }) },

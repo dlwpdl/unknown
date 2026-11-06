@@ -27,6 +27,7 @@ function profile() {
     '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/login-panel': { LoginPanel: 'LoginPanel' }, '@/components/post-zoom-link': { PostZoomLink: 'PostZoomLink' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/constants/theme': { Depth: {}, Spacing: {}, TabBarHeight: 49, MaxContentWidth: 800 },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
     '@/lib/auth': { useAuth: () => ({ isAuthed: authenticated, me: { id: 'member', nickname: '이웃' }, trustLevel: 1 }) },
     '@/lib/membership-provider': { useMembership: () => ({ membership: { tier: 'free' } }) },

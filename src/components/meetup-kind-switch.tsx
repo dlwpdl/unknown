@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
+import { ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { GlassSurface } from '@/components/glass-surface';
 import { useTheme } from '@/hooks/use-theme';
@@ -20,6 +21,7 @@ export function MeetupKindSwitch({ value, onChange, onAll, disabled = false, ana
 }) {
   const { tr } = useLanguage();
   const theme = useTheme();
+  const clay = useClay();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
   const choices: ('all' | ChillingKind)[] = onAll ? ['all', 'once', 'group'] : ['once', 'group'];
@@ -33,13 +35,13 @@ export function MeetupKindSwitch({ value, onChange, onAll, disabled = false, ana
     else Animated.spring(position, { toValue: selectedIndex, damping: 16, stiffness: 260, mass: 0.8, useNativeDriver: true }).start();
   }, [position, reducedMotion, selectedIndex]);
 
-  return <GlassSurface tone="control" interactive style={styles.glass}><View accessibilityRole="tablist" onLayout={event => setWidth(event.nativeEvent.layout.width)}
+  return <GlassSurface tone="control" clay="tray" interactive style={styles.glass}><View accessibilityRole="tablist" onLayout={event => setWidth(event.nativeEvent.layout.width)}
     style={styles.row}>
     {width > 0 && (value != null || !!onAll) && <Animated.View pointerEvents="none" style={[styles.selection, {
       width: tabWidth,
-      backgroundColor: theme.accent,
+      backgroundColor: clay ? 'transparent' : theme.accent,
       transform: [{ translateX: position.interpolate({ inputRange: [0, choices.length - 1], outputRange: [0, (tabWidth + 4) * (choices.length - 1)] }) }],
-    }]} />}
+    }]}>{clay && <ClayPillFill kind="on" />}</Animated.View>}
     {choices.map(kind => <Pressable lens analyticsId={analyticsId} key={kind}
       accessibilityRole="tab" accessibilityState={{ selected: kind === 'all' ? value == null : value === kind, disabled }} disabled={disabled}
       onPress={() => { play('reaction'); if (kind === 'all') onAll?.(); else if (kind !== value) onChange(kind); }}

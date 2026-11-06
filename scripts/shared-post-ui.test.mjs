@@ -110,6 +110,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/lib/listing-details': { stripListingLead }, '@/components/listing-card': { ListingInfo: 'ListingInfo' },
     '@/lib/hashtags': { uniqueHashtags }, '@/lib/post-maps': { postLocationUrl, postMapBody }, '@/lib/meetup-ai': { visibleMeetupBody: body => body },
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' }, '@/components/post-detail': { PostDetail: 'PostDetail' }, '@/components/shared-link-card': { SharedPreviewContent: 'SharedPreviewContent' },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null },
     '@/hooks/use-theme': { useTheme: () => ({}) }, '@/hooks/use-content-visibility': { useContentVisibility: () => data.hidden ?? unhidden },
     '@/hooks/use-chat-identity': { useChatIdentity: () => data.businessIdentity ?? null },
     '@/lib/business-chat': { startBusinessConversation: async (...args) => { calls.push(['business-start', ...args.slice(1)]); return 'business-conversation'; }, sendBusinessChatMessage: async (...args) => { calls.push(['business-send', ...args.slice(1)]); return 'business-message'; } },

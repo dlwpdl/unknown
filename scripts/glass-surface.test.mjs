@@ -36,6 +36,7 @@ test('destructive text meets AA contrast on light, dark and admin surfaces', () 
 
 function glass(scheme, platform = 'ios', api = true, liquid = true) {
   return load('components/glass-surface.tsx', {
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null },
     '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => Colors[scheme] },
     '@/constants/theme': { Colors },
     'react-native': { Platform: { OS: platform }, View: 'View', StyleSheet: { hairlineWidth: 0.5, create: styles => styles } },

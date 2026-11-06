@@ -16,6 +16,7 @@ function render(props, reducedMotion = false) {
     if (name === '@/components/analytics-controls') return { Pressable: 'Pressable' };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
     if (name === '@/constants/design-system') return designSystem;
+    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ accent: '#cbb9ff', accentInk: '#171123', text: '#f6f3f0', card: '#171722', line: '#34343f', backgroundSelected: '#343443' }) };
     throw Error(name);
   }});

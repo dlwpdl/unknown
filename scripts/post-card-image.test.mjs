@@ -89,6 +89,7 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     '@/components/post-place-card': { PostPlaceCard: 'PostPlaceCard' },
     '@/lib/meetup-destination': { splitPlaceMeetupBody: () => null },
     '@/lib/place-reviews': { placeReviewPlace: () => feedPlace, placeReviewText: body => body },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: 'SymbolView', ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null },
     '@/hooks/use-theme': { useTheme: () => ({ backgroundElement: '#222231' }) },
     '@/i18n/ko': { count, t },
     '@/lib/auth': { useAuth: () => ({ isAuthed: authed, me: { id: viewer }, promptLogin: reason => logins.push(reason) }) },

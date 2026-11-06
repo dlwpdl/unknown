@@ -54,6 +54,7 @@ function cityCache(file, { holdList = false, holdActors = false } = {}) {
     if (name === '@/lib/community-data') return data;
     if (name === '@/lib/supabase') return { supabase: client };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
+    if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     if (name === '@/constants/theme') return { Depth: {}, MaxContentWidth: {}, Spacing: {}, TabBarHeight: 60 };
     if (name === '@/lib/notification-preferences') return { NOTIFICATION_CATEGORIES: [], NOTIFICATION_PREFERENCES_CHANGED: 'preferences', englishNotificationBody: item => item.body, loadAdminDashboardOrigin: async () => null,

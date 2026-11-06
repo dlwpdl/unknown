@@ -17,6 +17,7 @@ function avatar({ os = 'ios', authenticated = true } = {}) {
     '@/components/analytics-controls': { Pressable: 'Pressable' },
     '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/chat-identity-switcher': { ChatIdentitySwitcher: 'ChatIdentitySwitcher' },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: 'Symbol', ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null },
     '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: authenticated, me: { nickname: '개인', photoUri: 'own-photo' } }) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) },
@@ -80,7 +81,7 @@ test('actual Meetups uses the common account avatar and keeps a separate guarded
       compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
     }).outputText, {
       exports, require: () => ({ jsx, jsxs: jsx }),
-      View: 'View', GlassSurface: 'GlassSurface', Pressable: 'Pressable', ListRow: 'ListRow', ThemedText: 'Text', SymbolView: 'Symbol', ProfileAvatarButton: 'ProfileAvatarButton',
+      View: 'View', GlassSurface: 'GlassSurface', Pressable: 'Pressable', ListRow: 'ListRow', ThemedText: 'Text', SymbolView: 'Symbol', ClayIcon: 'Symbol', clay: false, ProfileAvatarButton: 'ProfileAvatarButton',
       styles: {}, Typography: { menu: {} }, theme: {}, compactHeader: true, city: { name: '밴쿠버' }, IconSize: { chevron: 14 },
       preferenceScope: { current: 'viewer' }, scope: 'viewer', destination: null, createDisabled: false, copy: value => value, sourceInvalid: false, sourceLabel: '', isAuthed, tr: value => value, t: { tabs: { meetups: '모임' } },
       router: { push: value => routes.push(value) }, play: value => feedback.push(value), promptLogin: value => login.push(value), setCityPicker() {},
