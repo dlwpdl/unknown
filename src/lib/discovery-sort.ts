@@ -12,11 +12,12 @@ export function discoveryDistanceKm(item: Pick<DiscoveryItem, 'latitude' | 'long
   return 6371*2*Math.asin(Math.sqrt(Math.min(1, a)));
 }
 
-export function sortDiscoveryItems(items: readonly DiscoveryItem[], origin: PostPin | null, order: 'near' | 'discount') {
-  return items.map(item => ({ item, distance: discoveryDistanceKm(item, origin) ?? Infinity,
+export function sortDiscoveryItems(items: readonly DiscoveryItem[], origin: PostPin | null, order: 'near' | 'discount' | 'saves', saverCount: (item: DiscoveryItem) => number = () => 0) {
+  return items.map(item => ({ item, distance: discoveryDistanceKm(item, origin) ?? Infinity, saves: order === 'saves' ? saverCount(item) : 0,
     discount: Number.isFinite(item.webshopDiscount) && item.webshopDiscount! > 0 && item.webshopDiscount! <= 100 ? item.webshopDiscount! : -Infinity }))
     .sort((a, b) => {
       if (order === 'discount' && a.discount !== b.discount) return b.discount-a.discount;
+      if (a.saves !== b.saves) return b.saves-a.saves;
       return a.distance === b.distance ? 0 : a.distance-b.distance;
     }).map(row => row.item);
 }

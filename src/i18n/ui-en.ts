@@ -592,6 +592,8 @@ export const uiEnglish: Record<string, string> = {
   "대화 내용 검색": "Search this conversation",
   "{0}개": "{0} results",
   "가까운 순": "Nearest",
+  "저장 많은 순": "Most saved",
+  "저장 {0}명": "{0} saved",
   "위치를 켜면 가까운 순으로 정렬해요": "Turn on location to sort by distance",
   "아직 배달 할인 가게가 없어요": "No stores with delivery savings yet",
   "가게가 직접 받는 주문 페이지를 준비하고 있어요.": "Ordering direct from stores is coming soon.",

@@ -139,6 +139,21 @@ export async function loadPlaceSaves(client: SupabaseClient, cityId: string, pla
   return parsePlaceSaves(data);
 }
 
+// 지도 목록·핀 (M1·M3, owner 2026-11-05): every saved place's total in one city, never who. null is an older server without the function; the map then shows none of it.
+export type CityPlaceSave = { saverCount: number };
+export function parseCityPlaceSaves(value: unknown): Map<string, CityPlaceSave> {
+  return new Map(list(value, 2000).map(place => {
+    if (!object(place) || typeof place.placeKey !== 'string' || !PLACE.test(place.placeKey)) invalid();
+    return [place.placeKey, { saverCount: count(place.saverCount) }] as const;
+  }));
+}
+export async function loadCityPlaceSaves(client: SupabaseClient, cityId: string): Promise<Map<string, CityPlaceSave> | null> {
+  const { data, error } = await client.rpc('get_city_place_saves', { p_city_id: cityId });
+  if (error?.code === 'PGRST202') return null;
+  if (error) throw error;
+  return parseCityPlaceSaves(data);
+}
+
 // 지도 '보여 줄 곳': places in one city saved by friends who share them (get_friend_saved_places). friendCount is every
 // friend, so the map can tell '친구 0명' from '보여 준 친구 0명'.
 export type FriendSaver = { id: string; nickname: string; avatarPath: string | null; avatarUrl?: string };

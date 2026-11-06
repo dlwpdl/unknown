@@ -59,7 +59,7 @@ import { facingDegrees, isFreshLocation, type LocationFix } from '@/lib/location
 import { loadLiveMap } from '@/lib/live-bubbles';
 import { mapCityCenter } from '@/lib/post-map-html';
 import { postPublicAddress, type PostPin } from '@/lib/post-maps';
-import { loadMapScope, type FriendSavedPlace, type MapScope, type MapScopePlaces } from '@/lib/profile-friends';
+import { loadCityPlaceSaves, loadMapScope, type CityPlaceSave, type FriendSavedPlace, type MapScope, type MapScopePlaces } from '@/lib/profile-friends';
 import { supabase } from '@/lib/supabase';
 import { safeMerchantSourceUrl } from '@/lib/merchant-source';
 import { PUBLIC_SITE, publicCompanyUrl } from '@/lib/public-seo';
@@ -113,7 +113,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const [dateOpen, setDateOpen] = useState(false), [dateDraft, setDateDraft] = useState(''), [dateError, setDateError] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false), [cityOpen, setCityOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null), [center, setCenter] = useState<(PostPin & { requestId: number }) | null>(null);
-  const [sortBy, setSortBy] = useState<'near' | 'discount'>('near');
+  const [sortBy, setSortBy] = useState<'near' | 'discount' | 'saves'>('near');
   const [openNow, setOpenNow] = useState(false), [showUnknown, setShowUnknown] = useState(false);
   // 보여 줄 곳 (owner 2026-11-04): 모두, or only the places I or my friends saved. Saved data loads only while one is chosen.
   const [scope, setScope] = useState<MapScope>('all'), [scopeOpen, setScopeOpen] = useState(false);
@@ -169,6 +169,14 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     void loadMapScope(supabase, 'mine', city.id, me.id).then(value => { if (active) setMineResult({ key: mineKey, places: value.places }); }, () => {});
     return () => { active = false; };
   }, [mineScope, isAuthed, isFocused, mineKey, city.id, me.id]);
+  // M3 (owner 2026-11-05): saver totals for this city (CityMap remounts per city). An older server answers null and a failed read keeps what we had, so the map still works without them.
+  const [placeSaves, setPlaceSaves] = useState<Map<string, CityPlaceSave> | null>(null);
+  useEffect(() => {
+    if (!isFocused) return;
+    let active = true;
+    void loadCityPlaceSaves(supabase, city.id).then(value => { if (active) setPlaceSaves(value); }, () => {});
+    return () => { active = false; };
+  }, [isFocused, city.id, attempt]);
   // M7 (owner 2026-11-05): the compass runs only while this map is on screen after a location fix (that fix already asked for permission).
   const [heading, setHeading] = useState<number | null>(null), hasLocation = !!userLocation;
   useEffect(() => {
@@ -279,6 +287,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   // A saved scope keeps only catalog places whose key someone saved; categories, open-now, price and sub-filters still apply inside it.
   const scopePlaces = scope === 'all' ? null : scopeData?.value?.places ?? new Map<string, FriendSavedPlace | null>();
   const placeKey = (item: DiscoveryItem) => item.place?.id ?? item.sourceId;
+  const savesOf = (item: DiscoveryItem) => item.source === 'place' ? placeSaves?.get(placeKey(item)) : undefined;
   const scopedItems = scopePlaces ? cityItems.filter(item => item.source === 'place' && scopePlaces.has(placeKey(item))) : cityItems;
   const matches = scopedItems.filter(item => discoveryMatches(item, selectedFilters, query) && discoveryEventOnDays(item, days));
   // Price and sub-filter chips show only when some place here has the value, and a choice only counts while its chip shows.
@@ -291,7 +300,10 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const shown = openNow ? refined.filter(item => hours(item) === 'open') : refined;
   const limited = !!current?.limited || shown.length > 500;
   const discountOrder = deliveryOnly && sortBy === 'discount';
-  const items = sortDiscoveryItems(shown, userLocation, discountOrder ? 'discount' : 'near').slice(0, 500);
+  // 저장 많은 순 exists only while some place here has a saver; without any (older server, nothing saved yet) the list stays nearest first.
+  const savesReady = shown.some(item => !!savesOf(item)?.saverCount), savesOrder = savesReady && sortBy === 'saves';
+  const order = discountOrder ? 'discount' : savesOrder ? 'saves' : 'near';
+  const items = sortDiscoveryItems(shown, userLocation, order, item => savesOf(item)?.saverCount ?? 0).slice(0, 500);
   const unknownItems = openNow ? sortDiscoveryItems(refined.filter(item => item.source === 'place' && hours(item) === 'unknown'), userLocation, 'near').slice(0, 500) : [];
   const listData = showUnknown && unknownItems.length ? [...items, ...unknownItems] : items;
   const hasVerifiedDiscount = items.some(item => Number.isFinite(item.webshopDiscount) && item.webshopDiscount! > 0 && item.webshopDiscount! <= 100);
@@ -368,7 +380,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     play('selection'); setBump(current => ({ id: value, n: current.n + 1 }));
     if (value !== 'all' && !selectedFilters.includes(value) && !filtersOpen && (sheet === 'closed' || sheet === 'peek')) { setSelectedId(null); setSheet('half'); }
     setSubcategories([]);
-    setSelectedFilters(current => value === 'all' ? [] : current.includes(value) ? current.filter(id => id !== value) : [...current, value]); setSortBy('near');
+    setSelectedFilters(current => value === 'all' ? [] : current.includes(value) ? current.filter(id => id !== value) : [...current, value]); setSortBy(value => value === 'saves' ? value : 'near');
     setDateFilter(null); setDate(''); setDateOpen(false); setDateError('');
   };
   const chooseDate = (value: DiscoveryDate) => {
@@ -413,6 +425,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   </>;
   const chooseNearest = () => { play('selection'); setSortBy('near'); if (!userLocation) void locate(); };
   const chooseDiscount = () => { play('selection'); setSortBy('discount'); };
+  const chooseSaves = () => { play('selection'); setSortBy('saves'); };
   const cardShown = !!selected && located(selected) && cardOpen;
   const dockShown = liveOn && showBubbles && sheet === 'closed' && !cardShown, dockSpace = dockShown ? Math.min(dockHeight + 12, 400) : 0;
   // One floating row above the dock or place card: the list pill, the map credits (ⓘ, drawn by the map at this inset) and the card toggle share it (owner 691cf630 "정렬좀 잘해줘").
@@ -431,7 +444,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   // Sheet stops are its top edge inside the map area: under the floating chips when full, half way, or only its summary.
   const sheetStops = { full: mapFiltersHeight, half: Math.max(mapFiltersHeight, Math.round(contentHeight * 0.5)), peek: Math.max(mapFiltersHeight, contentHeight - 96), closed: contentHeight };
   const sheetCover = sheet === 'closed' ? 0 : Math.min(Math.max(contentHeight - sheetStops[sheet], 0), 1000);
-  const sortLabel = discountOrder ? tr('할인율 높은 순') : locating ? tr('위치 확인 중') : userLocation ? tr('가까운 순') : tr('위치 사용 필요');
+  const sortLabel = discountOrder ? tr('할인율 높은 순') : savesOrder ? tr('저장 많은 순') : locating ? tr('위치 확인 중') : userLocation ? tr('가까운 순') : tr('위치 사용 필요');
   const refine = items.length || loading || deliveryUnavailable || current?.errors.length ? null
     : activePrices.length ? { title: tr('이 가격대에 맞는 곳이 없어요'), action: tr('가격 필터 풀기'), clear: () => setPriceLevels([]) }
     : activeSubcategories.length ? { title: tr('고른 분류에 맞는 곳이 없어요'), action: tr('세부 분류 풀기'), clear: () => setSubcategories([]) }
@@ -458,10 +471,10 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       onPress: () => { play('selection'); setSubcategories(value => value.includes(option.id) ? value.filter(id => id !== option.id) : [...value, option.id]); } });
   };
   const sortRow = <View style={styles.sortRow}>
-    {deliveryOnly ? ([['near', tr('가까운 순')], ['discount', tr('할인율 높은 순')]] as const).map(([key, label]) => <SelectionChip key={key} analyticsId="discovery.current" selected={sortBy === key} baseColor={theme.backgroundElement} disabled={key === 'discount' && !hasVerifiedDiscount}
-      accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: sortBy === key, disabled: key === 'discount' && !hasVerifiedDiscount }}
-      onPress={key === 'near' ? chooseNearest : chooseDiscount} style={[styles.sortChip, { borderColor: sortBy === key ? theme.accent : theme.line }]}>
-      <ThemedText type="smallBold" style={{ color: sortBy === key ? theme.accentInk : theme.text }}>{label}</ThemedText></SelectionChip>) : <ThemedText type="smallBold">{tr('가까운 순')}</ThemedText>}
+    {deliveryOnly || savesReady ? ([['near', tr('가까운 순')], ...(deliveryOnly ? [['discount', tr('할인율 높은 순')]] : []), ...(savesReady ? [['saves', tr('저장 많은 순')]] : [])] as const).map(([key, label]) => <SelectionChip key={key} analyticsId="discovery.current" selected={order === key} baseColor={theme.backgroundElement} disabled={key === 'discount' && !hasVerifiedDiscount}
+      accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: order === key, disabled: key === 'discount' && !hasVerifiedDiscount }}
+      onPress={key === 'near' ? chooseNearest : key === 'discount' ? chooseDiscount : chooseSaves} style={[styles.sortChip, { borderColor: order === key ? theme.accent : theme.line }]}>
+      <ThemedText type="smallBold" style={{ color: order === key ? theme.accentInk : theme.text }}>{label}</ThemedText></SelectionChip>) : <ThemedText type="smallBold">{tr('가까운 순')}</ThemedText>}
     {!userLocation && <Pressable analyticsId="discovery.current" accessibilityRole="button" accessibilityLabel={tr('내 위치 사용')} disabled={locating} onPress={() => { play('selection'); void locate(); }} style={[styles.sortChip, { borderColor: theme.line }]}><ThemedText type="small">{locating ? tr('위치 확인 중') : tr('내 위치 사용')}</ThemedText></Pressable>}
     <ThemedText type="caption" themeColor="textSecondary">{userLocation ? tr('내 위치 기준 · 직선거리') : tr('위치를 켜면 가까운 순으로 정렬해요')}</ThemedText>
     {deliveryOnly && registry.ready && !registry.failed && !hasVerifiedDiscount && <ThemedText type="caption" themeColor="textSecondary">{tr('아직 할인율을 확인한 가게가 없어요')}</ThemedText>}
@@ -534,7 +547,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       {cardShown ? <Reanimated.View entering={reduced ? undefined : SlideInDown.duration(ControlMotion.expandMs)} exiting={reduced ? undefined : SlideOutDown.duration(ControlMotion.sheetCloseMs)}
         onLayout={event => setCardHeight(event.nativeEvent.layout.height)} style={[styles.selected, { backgroundColor: theme.card, borderColor: theme.line }]}>
           <ScrollView analyticsId="discovery.detail" accessibilityLabel={tr("선택한 장소 상세, 스크롤로 더 보기")} style={styles.selectedScroll} contentContainerStyle={styles.selectedContent}>
-            <View style={styles.cardRow}><View style={styles.flex}><DiscoveryCard item={selected} now={now} distance={discoveryDistanceKm(selected, userLocation)} externalInfo={!!onClose} viewerScope={viewerScope} savedBy={scopePlaces?.get(placeKey(selected))} onOpen={() => open(selected)} /></View>{saveButton}</View>
+            <View style={styles.cardRow}><View style={styles.flex}><DiscoveryCard item={selected} now={now} distance={discoveryDistanceKm(selected, userLocation)} externalInfo={!!onClose} viewerScope={viewerScope} savedBy={scopePlaces?.get(placeKey(selected))} saves={savesOf(selected)} onOpen={() => open(selected)} /></View>{saveButton}</View>
             {!!savedEntry.error && <ThemedText type="small" accessibilityRole="alert">{savedEntry.error}</ThemedText>}<Top25Note item={selected} /><GlingVisitNote item={selected} /></ScrollView><Directions item={selected} reserveFromBusiness />
       </Reanimated.View>
         : sheet === 'closed' && !loading && !deliveryUnavailable && items.length === 0 && <View style={[styles.mapEmpty, { bottom: rowBottom }]}>{refineCard || <StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : visitedOnly ? visitedReady ? tr("조건에 맞는 글링 방문 장소가 없어요") : tr("아직 글링이 방문한 장소가 없어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 50 장소가 없어요") : tr("이 도시의 TOP 50을 준비하고 있어요") : deliveryOnly ? tr("아직 배달 할인 가게가 없어요") : tr("아직 표시할 공개 위치가 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : visitedOnly ? visitedReady ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : tr("직접 다녀온 장소만 모아 보여드려요. 다른 분류에서 먼저 둘러보세요.") : top25Only ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : deliveryOnly ? tr("가게가 직접 받는 주문 페이지를 준비하고 있어요.") : tr("직접 첨부한 핀과 위치가 확인된 행사만 지도에 표시해요.")} actionLabel={current?.errors.length ? tr("다시 시도") : visitedOnly ? tr("전체 장소 보기") : tr("리스트 보기")} onAction={current?.errors.length ? refresh : visitedOnly ? () => { setSelectedFilters([]); setDateFilter(null); setDate(''); } : () => showList('half')} />}</View>}
@@ -548,7 +561,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
         <FlatList analyticsId="discovery.list" refreshing={false} onRefresh={() => { play('selection'); refresh(); }} onViewableItemsChanged={trackTranslationResults} viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY} data={listData} keyExtractor={item => item.id}
           contentContainerStyle={[styles.list, { paddingBottom: 24 + Math.max(sheetStops[sheet] - sheetStops.full, 0) }]}
           ListHeaderComponent={<ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr('지도 {0}개 · 목록 {1}개', pins.length, items.length)}{limited ? tr(" · 500개까지 표시") : ''}</ThemedText>}
-          renderItem={({ item, index }) => <>{showUnknown && index === items.length && unknownRow}<View style={[styles.listCard, { backgroundColor: theme.card, borderColor: theme.line }]}><DiscoveryCard item={item} now={now} distance={discoveryDistanceKm(item, userLocation)} externalInfo={!!onClose} translationVisible={visibleResultIds.has(item.id)} viewerScope={viewerScope} savedBy={scopePlaces?.get(placeKey(item))} onOpen={() => open(item)} /><GlingVisitNote item={item} />{located(item) && <Directions item={item} />}</View>{adsSupported && !loading && !current?.errors.length && !selectedFilters.includes('top25') && index === 3 && contentAdPosition(index, items.length) && <FeedAd key={`ad-after-${item.id}`} surface="map" />}</>}
+          renderItem={({ item, index }) => <>{showUnknown && index === items.length && unknownRow}<View style={[styles.listCard, { backgroundColor: theme.card, borderColor: theme.line }]}><DiscoveryCard item={item} now={now} distance={discoveryDistanceKm(item, userLocation)} externalInfo={!!onClose} translationVisible={visibleResultIds.has(item.id)} viewerScope={viewerScope} savedBy={scopePlaces?.get(placeKey(item))} saves={savesOf(item)} onOpen={() => open(item)} /><GlingVisitNote item={item} />{located(item) && <Directions item={item} />}</View>{adsSupported && !loading && !current?.errors.length && !selectedFilters.includes('top25') && index === 3 && contentAdPosition(index, items.length) && <FeedAd key={`ad-after-${item.id}`} surface="map" />}</>}
           ListEmptyComponent={loading || deliveryUnavailable ? undefined : refineCard || <StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : visitedOnly ? visitedReady ? tr("조건에 맞는 글링 방문 장소가 없어요") : tr("아직 글링이 방문한 장소가 없어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 50 장소가 없어요") : tr("이 도시의 TOP 50을 준비하고 있어요") : deliveryOnly ? tr("아직 배달 할인 가게가 없어요") : tr("조건에 맞는 항목이 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : visitedOnly ? visitedReady ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : tr("직접 다녀온 장소만 모아 보여드려요. 다른 분류에서 먼저 둘러보세요.") : deliveryOnly ? tr("가게가 직접 받는 주문 페이지를 준비하고 있어요.") : tr("다른 분류나 날짜를 선택해 보세요. 장소 위치는 글을 쓸 때 첨부할 수 있어요.")} actionLabel={current?.errors.length ? tr("다시 시도") : visitedOnly ? tr("전체 장소 보기") : undefined} onAction={current?.errors.length ? refresh : visitedOnly ? () => { setSelectedFilters([]); setDateFilter(null); setDate(''); } : undefined} />}
           ListFooterComponent={<>{!showUnknown && unknownRow}{more && <Pressable analyticsId="discovery.more" accessibilityRole="button" disabled={loading} onPress={() => { if (morePending.current || loading) return; morePending.current = true; play('selection'); loadPage(current); }} style={[styles.more, { borderColor: theme.line }]}><ThemedText themeColor="accent">{loading ? tr("불러오는 중…") : tr("더 보기")}</ThemedText></Pressable>}{limited && <ThemedText type="small" themeColor="textSecondary">{tr("500개까지 표시했어요. 검색어나 분류로 범위를 줄여 주세요.")}</ThemedText>}<ThemedText type="small" themeColor="textSecondary" style={styles.source}>{tr("글링 공개 위치 · 장소 자료: OpenStreetMap · 행사 정보: Ticketmaster")}{items.some(item => !located(item)) ? tr("\n위치 확인 전 항목은 지도 핀 없이 목록에 표시해요.") : ''}</ThemedText></>} />
       </MapListSheet>
@@ -596,7 +609,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   </SafeAreaView>;
 }
 
-function DiscoveryCard({ item, viewerScope, onOpen, translationVisible = true, externalInfo = false, distance = null, now, savedBy }: { item: DiscoveryItem; distance?: number | null; viewerScope: string; onOpen: () => void; translationVisible?: boolean; externalInfo?: boolean; now?: number; savedBy?: FriendSavedPlace | null }) {
+function DiscoveryCard({ item, viewerScope, onOpen, translationVisible = true, externalInfo = false, distance = null, now, savedBy, saves }: { item: DiscoveryItem; distance?: number | null; viewerScope: string; onOpen: () => void; translationVisible?: boolean; externalInfo?: boolean; now?: number; savedBy?: FriendSavedPlace | null; saves?: CityPlaceSave }) {
   const theme = useTheme();
   const { tr, locale: appLocale } = useLanguage();
   const translatable = !!item.post && item.source === 'post';
@@ -615,7 +628,7 @@ function DiscoveryCard({ item, viewerScope, onOpen, translationVisible = true, e
     <View style={[styles.thumbnail, { backgroundColor: theme.backgroundElement }]}>{item.place && (item.place.mapPhotoUri || !item.post && item.place.photo) ? <CityPlacePhoto place={item.place} style={StyleSheet.absoluteFill} /> : image ? <Image source={image} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} /> : <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={26} tintColor={category.color} />}</View>
     <View style={styles.cardText}>{discountLabel && <ThemedText type="smallBold" style={{ color: theme === Colors.light ? '#276B57' : '#8FD9C4' }}>{discountLabel}</ThemedText>}<View style={styles.badge}><PostAdLabel hashtags={item.post?.hashtags} /><View style={[styles.dot, { backgroundColor: category.color }]} /><ThemedText type="small" themeColor="textSecondary">{tr(category.label)}{item.place?.priceLevel ? ` · ${priceSymbol(item.place.priceLevel)}` : ''}{!located(item) ? tr(" · 위치 확인 전") : ''}</ThemedText>{item.glingVisited && <GlingVisitedBadge />}{item.top25 && <View style={styles.top25Badge}><ThemedText style={styles.top25BadgeText}>✦ TOP 50</ThemedText></View>}</View><ThemedText type="smallBold" numberOfLines={2} style={housing ? styles.housingPrice : undefined}>{headline}</ThemedText>{housing && <ThemedText type="small" numberOfLines={2}>{displayTitle}</ThemedText>}<ThemedText type="small" themeColor="textSecondary" numberOfLines={housing ? 2 : 1}>{address}</ThemedText>{distanceLabel && <ThemedText type="small" themeColor="accent">{distanceLabel}</ThemedText>}{item.event && <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{eventTime(item.event, appLocale)}</ThemedText>}{!housing && !!price && <ThemedText type="smallBold" themeColor="accent">{price}</ThemedText>}</View>
     <ThemedText type={externalInfo ? 'small' : 'default'} themeColor="textSecondary">{externalInfo ? tr('공개 정보 ↗') : '›'}</ThemedText>
-  </Pressable>{!!savedBy && <FriendSavedLine entry={savedBy} />}{!!item.place?.openingHours && <PlaceHours openingHours={item.place.openingHours} cityId={item.cityId} now={now} />}{translatable && <TranslationControl translation={translation} />}</View>;
+  </Pressable>{!!saves?.saverCount && <ThemedText type="small" themeColor="textSecondary" style={styles.saveLine}>{tr('저장 {0}명', saves.saverCount.toLocaleString(appLocale))}</ThemedText>}{!!savedBy && <FriendSavedLine entry={savedBy} />}{!!item.place?.openingHours && <PlaceHours openingHours={item.place.openingHours} cityId={item.cityId} now={now} />}{translatable && <TranslationControl translation={translation} />}</View>;
 }
 function Top25Note({ item }: { item: DiscoveryItem }) {
   const theme = useTheme(), { play } = useInteractionFeedback();
@@ -683,7 +696,7 @@ const styles = StyleSheet.create({
   deliveryOrder: { marginTop: 14, minHeight: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   deliveryClose: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   cardToggle: { ...ControlStyles.icon, position: 'absolute', right: 20, bottom: 18, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
-  visitedCard: { marginLeft: 6 },
+  visitedCard: { marginLeft: 6 }, saveLine: { marginTop: 6 },
   sortRow: { flexWrap: 'wrap', flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingBottom: 8 },
   sortChip: { ...ControlStyles.pill, borderRadius: 999, borderWidth: 1, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
   notice: { marginHorizontal: 16, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10 },

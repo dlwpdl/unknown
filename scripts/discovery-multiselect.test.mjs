@@ -80,7 +80,7 @@ test('real map chips toggle a union and All clears category and date state', () 
     ScrollView: 'scroll', Pressable: 'button', SelectionChip: 'button', chipBackground: '#eee', View: 'view', ThemedText: 'text', GlingVisitedBadge: 'visited-badge', SymbolView: 'symbol', CategoryIcon: 'category-icon', IconSize, tr: value => value,
     bump: { id: '', n: 0 }, setBump() {}, liveOn: false, meetupsOn: false, scope: 'all', scopeOpen: false, setScopeOpen() {}, scopeName: '모두', openNow: false, setOpenNow() {}, setShowUnknown() {}, setSubcategories() {}, filtersOpen: false, sheet: 'closed', setSheet() {}, setSelectedId() {},
     play: value => feedback.push(value), setSelectedFilters: update => { selected = Array.from(typeof update === 'function' ? update(selected) : update); },
-    setDateFilter() {}, setDate() {}, setDateOpen() {}, setDateError() {}, setSortBy: value => { sort = value; },
+    setDateFilter() {}, setDate() {}, setDateOpen() {}, setDateError() {}, setSortBy: value => { sort = typeof value === 'function' ? value(sort) : value; },
     get selectedFilters() { return selected; },
     require: () => ({ jsx: element, jsxs: element }),
   };
@@ -131,7 +131,7 @@ test('the real result pipeline applies city, hidden author, listing expiry and e
     city: { id: cityId }, now: Date.parse('2026-10-15T12:00:00Z'), selectedFilters: ['top25', 'cafe', 'used', 'festival'], query: '', days: ['2026-10-17'],
     hidden: (_type, _id, author) => author === 'blocked-author', discoveryEvent, discoveryEventOnDays, discoveryMatches,
     mergeCityTop25: (items, city) => mergeCityTop25(items, city, picks.slice(0, 1)),
-    PRICE_FILTERS, PLACE_SUBCATEGORIES, discoveryRefines, cityClock, openState, priceLevels: [], subcategories: [], region: null, openNow: false, showUnknown: false,
+    PRICE_FILTERS, PLACE_SUBCATEGORIES, discoveryRefines, cityClock, openState, priceLevels: [], subcategories: [], region: null, openNow: false, showUnknown: false, placeSaves: null,
   };
   vm.runInNewContext(ts.transpileModule(`exports.run = () => { ${source.slice(start, end)} return items; };`, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, context);
   assert.deepEqual(Array.from(exports.run(), item => item.sourceId), ['fixture-pick-0', 'ordinary', '2026-10-17']);

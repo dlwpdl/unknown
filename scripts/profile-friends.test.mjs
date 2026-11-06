@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { friendErrorMessage, loadFriendSavedPlaces, loadMapScope, loadMerchantSaves, loadPlaceSaves, parseFriendSavedPlaces, parseProfileOverview, savedPlaceCities, setFriendship } from '../src/lib/profile-friends.ts';
+import { friendErrorMessage, loadCityPlaceSaves, loadFriendSavedPlaces, loadMapScope, loadMerchantSaves, loadPlaceSaves, parseFriendSavedPlaces, parseProfileOverview, savedPlaceCities, setFriendship } from '../src/lib/profile-friends.ts';
 import { saveMerchantIntro } from '../src/lib/merchant-conveniences.ts';
 import { mapMerchantProfile } from '../src/lib/merchant-profile.ts';
 import { notificationRoute } from '../src/lib/notification-preferences.ts';
@@ -36,6 +36,21 @@ test('friend actions call the server once and surface its refusal', async () => 
   await assert.rejects(setFriendship(client(new Error('FRIEND_UNAVAILABLE')), user, 'request'), /FRIEND_UNAVAILABLE/);
   assert.equal(friendErrorMessage(new Error('FRIEND_UNAVAILABLE')), '지금은 친구를 맺을 수 없어요.', 'operated, blocked and reported pairs all read the same');
   assert.equal(await loadMerchantSaves({ rpc: async () => ({ data: null, error: { code: 'PGRST202' } }) }, merchant), null);
+});
+
+test('city place saves: totals by place key; an older server is null, other failures throw and bad data is refused', async () => {
+  const calls = [];
+  const client = (data, error = null) => ({ rpc: async (name, args) => { calls.push([name, args]); return { data, error }; } });
+  const saves = await loadCityPlaceSaves(client([{ placeKey: 'osm:node:1', saverCount: 7, status: null }, { placeKey: 'partner:cafe-1', saverCount: 1, status: null }]), 'vancouver');
+  assert.deepEqual(calls, [['get_city_place_saves', { p_city_id: 'vancouver' }]]);
+  assert.equal(saves.get('osm:node:1').saverCount, 7);
+  assert.equal(saves.get('partner:cafe-1').saverCount, 1);
+  assert.equal(saves.size, 2);
+  assert.equal((await loadCityPlaceSaves(client([]), 'vancouver')).size, 0);
+  assert.equal(await loadCityPlaceSaves(client(null, { code: 'PGRST202' }), 'vancouver'), null, 'an older server shows nothing');
+  await assert.rejects(loadCityPlaceSaves(client(null, { code: '57014', message: 'timeout' }), 'vancouver'));
+  for (const bad of [null, {}, [{ placeKey: 'nope', saverCount: 1 }], [{ placeKey: 'osm:node:1', saverCount: -1 }], [{ placeKey: 'osm:node:1', saverCount: '3' }], [null], Array(2001).fill({ placeKey: 'osm:node:1', saverCount: 1 })])
+    await assert.rejects(loadCityPlaceSaves(client(bad), 'vancouver'), /INVALID_PROFILE_RESPONSE/);
 });
 
 test('place saves: keys only for similar places, friends checked like a business', async () => {
