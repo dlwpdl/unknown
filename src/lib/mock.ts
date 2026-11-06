@@ -16,6 +16,8 @@ export const CITIES: City[] = [
   { id: 'regina', name: '리자이나', englishName: 'Regina', province: 'SK', state: 'soon' },
   { id: 'saint-john', name: '세인트존', englishName: 'Saint John', aliases: ['세인트존스', 'St John'], province: 'NB', state: 'soon' },
   { id: 'halifax', name: '할리팩스', englishName: 'Halifax', aliases: ['핼리팩스'], province: 'NS', state: 'soon' },
+  // 2026-11-06 준비중으로만 보여 준다. 고를 수 없어 서버 도시 표에는 없고, 장소 카탈로그도 비어 있다.
+  { id: 'seoul', name: '서울', englishName: 'Seoul', province: 'KR', state: 'soon' },
 ];
 
 export const TAGS: Tag[] = [

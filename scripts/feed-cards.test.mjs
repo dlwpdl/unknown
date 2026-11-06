@@ -153,7 +153,7 @@ test('city picker searches Canadian cities and keeps upcoming cities and the US 
   const list = () => nodes(render()).find(node => node.type === 'SectionList').props;
   assert.deepEqual(Array.from(list().sections, section => section.data.map(city => city.id)), [
     ['montreal', 'toronto', 'vancouver'],
-    ['calgary', 'edmonton', 'halifax', 'ottawa', 'regina', 'saint-john', 'saskatoon', 'winnipeg'],
+    ['calgary', 'edmonton', 'halifax', 'ottawa', 'regina', 'saint-john', 'saskatoon', 'seoul', 'winnipeg'],
   ]);
   assert.equal(nodes(render()).some(node => node.props?.accessibilityRole === 'tab'), false, 'no country tabs');
   for (const [id, province] of Object.entries({ ottawa: 'ON', winnipeg: 'MB', regina: 'SK', 'saint-john': 'NB', halifax: 'NS' })) {
