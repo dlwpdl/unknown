@@ -41,6 +41,7 @@ import { MeetupSectionsView } from '@/components/meetup-sections';
 export function PostCard({
   post,
   onJoin,
+  joinStatus,
   onHashtag,
   onAuthor,
   onPress,
@@ -55,6 +56,7 @@ export function PostCard({
 }: {
   post: Post;
   onJoin?: () => void;
+  joinStatus?: 'pending' | 'approved';
   onHashtag?: (h: string) => void; // 해시태그 탭 → 검색/필터
   onAuthor?: () => void; // 작성자 탭 → 미니 프로필
   onPress?: () => void;
@@ -68,6 +70,7 @@ export function PostCard({
   postDetail?: boolean; // 일반 글 상세: 장소·링크는 정보 카드, 본문은 문단, 출처는 접고, 반응은 하단 바로 옮긴다
 }) {
   const { tr, t, locale: appLocale } = useLanguage();
+  const joinLabel = joinStatus === 'pending' ? tr('승인 대기') : joinStatus === 'approved' ? tr('참여 승인') : t.feed.joinRoom;
   const theme = useTheme();
   const { isAuthed, me, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
@@ -372,11 +375,11 @@ export function PostCard({
             {onJoin && !post.room.closed && (
               <Pressable lens analyticsId="components_post-card.pressable.6"
                 onPress={() => { play('selection'); onJoin(); }}
-                style={({ pressed }) => [styles.join, { backgroundColor: theme.accent }, pressed && styles.pressed]}
+                style={({ pressed }) => [styles.join, { backgroundColor: joinStatus ? theme.backgroundSelected : theme.accent }, pressed && styles.pressed]}
                 accessibilityRole="button"
-                accessibilityLabel={t.feed.joinRoom}>
-                <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
-                  {t.feed.joinRoom}
+                accessibilityLabel={joinLabel}>
+                <ThemedText type="smallBold" style={{ color: joinStatus ? theme.text : theme.accentInk }}>
+                  {joinLabel}
                 </ThemedText>
               </Pressable>
             )}
