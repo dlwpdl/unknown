@@ -288,7 +288,8 @@ export async function attachAuthorPhotos(client: SupabaseClient, posts: Post[]):
   try {
     const ids = [...new Set(posts.filter(post => !post.room).map(post => post.author.id))];
     if (!ids.length) return posts;
-    const profiles = await client.from('profiles').select('id,avatar_path').in('id', ids);
+    // Optional decoration: the public web blocks this read, and postgrest's default retries held the whole feed for 7 seconds.
+    const profiles = await client.from('profiles').select('id,avatar_path').in('id', ids).retry(false);
     if (profiles.error || !profiles.data) return posts;
     const rows = profiles.data as { id: string; avatar_path: string | null }[], now = Date.now();
     const missing = [...new Set(rows.flatMap(row => row.avatar_path ? [row.avatar_path] : []))].filter(path => (signedAvatars.get(path)?.expiresAt ?? 0) <= now);
