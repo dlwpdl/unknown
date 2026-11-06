@@ -12,12 +12,12 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 // Shared pieces for screens that used to stack grey notice paragraphs: who-sees-what, one-line notes, folded details, status.
 export type WhoSeesRow = { icon: SymbolViewProps['name']; label: string; detail: string; hidden?: boolean; accessory?: ReactNode };
 
-export function WhoSees({ title, rows }: { title: string; rows: WhoSeesRow[] }) {
+export function WhoSees({ title, rows }: { title?: string; rows: WhoSeesRow[] }) {
   const theme = useTheme(), clayBox = useClayBox();
   return <View style={clayBox ? undefined : [styles.card, { backgroundColor: theme.card }]}>
     {clayBox && <ClayBoxFill kind="tile" />}
     <View style={clayBox ? styles.card : undefined}>
-    <ThemedText type="smallBold" accessibilityRole="header" style={styles.cardTitle}>{title}</ThemedText>
+    {!!title && <ThemedText type="smallBold" accessibilityRole="header" style={styles.cardTitle}>{title}</ThemedText>}
     {rows.map((row, index) => <View key={row.label} style={[styles.row, index > 0 && !clayBox && { borderTopWidth: 1, borderTopColor: theme.line }]}>
       {index > 0 && clayBox && <View style={[styles.clayLine, { backgroundColor: theme.line }]} />}
       <View style={[styles.icon, { backgroundColor: theme.backgroundSelected }]}><SymbolView name={row.icon} size={14} tintColor={row.hidden ? theme.textSecondary : theme.accent} /></View>
