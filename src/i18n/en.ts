@@ -201,6 +201,7 @@ export const en: Translations = {
     photoErrorTitle: 'Couldn’t load the photo', photoErrorBody: 'Try again in a moment.', stats: (posts, likes, rooms) => `${count(posts)} ${posts === 1 ? 'post' : 'posts'} · ${count(likes)} ${likes === 1 ? 'like' : 'likes'} received · ${count(rooms)} ${rooms === 1 ? 'meetup' : 'meetups'}`,
     settings: 'Settings', appearance: 'Appearance', darkMode: 'Dark mode', lightMode: 'Light mode', appearancePreview: 'Pick the look that suits you',
     darkModeNote: 'On for dark, off for light.', darkModeHint: 'Switches between dark and light mode',
+    clayDesign: '3D design', clayDesignNote: 'On for 3D, off for flat.', clayDesignHint: 'Switches between 3D and flat design',
     appearanceSaveErrorTitle: 'Couldn’t save your appearance setting', appearanceSaveErrorBody: 'It’s applied for now. Choose it again to save it.',
     guidelines: 'Community guidelines', guidelinesTitle: 'Let stories bring us together', guidelinesIntro: 'A few simple promises so everyone can share their day safely and comfortably.',
     guidelineRules: [

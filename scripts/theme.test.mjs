@@ -98,6 +98,40 @@ test('a second tap cannot race an unfinished preference write', async () => {
   mounted.unmount();
 });
 
+test('the 2D·3D choice starts on 3D, switches at once, survives a restart and does not touch the theme', async () => {
+  const saved = {};
+  const storage = { getItem: async key => saved[key] ?? null, setItem: async (key, value) => { saved[key] = value; } };
+  const mounted = mountTheme(storage);
+  await settle();
+  assert.equal(mounted.render().design, '3d');
+  assert.equal(await mounted.render().setDesign('2d'), true);
+  assert.equal(mounted.render().design, '2d');
+  assert.deepEqual(saved, { 'gling.design': '2d' });
+  mounted.unmount();
+  const reopened = mountTheme(storage);
+  await settle();
+  assert.equal(reopened.render().design, '2d');
+  assert.equal(reopened.render().scheme, 'dark');
+  assert.equal(await reopened.render().setDesign('3d'), true);
+  assert.equal(saved['gling.design'], '3d');
+  reopened.unmount();
+});
+
+test('a broken or unreadable 2D·3D value stays 3D, and a failed save says so', async () => {
+  for (const value of ['broken', 'flat', '']) {
+    const mounted = mountTheme({ getItem: async key => key === 'gling.design' ? value : null, setItem: async () => {} });
+    await settle();
+    assert.equal(mounted.render().design, '3d', value);
+    mounted.unmount();
+  }
+  const failing = mountTheme({ getItem: async () => { throw new Error('read denied'); }, setItem: async () => { throw new Error('write denied'); } });
+  await settle();
+  assert.equal(failing.render().design, '3d');
+  assert.equal(await failing.render().setDesign('2d'), false);
+  assert.equal(failing.render().design, '2d');
+  failing.unmount();
+});
+
 test('native builds support both appearances instead of restricting the app to dark', () => {
   const config = JSON.parse(readFileSync(new URL('../app.json', import.meta.url), 'utf8'));
   assert.equal(config.expo.userInterfaceStyle, 'automatic');

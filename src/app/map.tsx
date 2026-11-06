@@ -551,7 +551,11 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     <View style={styles.content} onLayout={event => setContentHeight(event.nativeEvent.layout.height)}>
       <DiscoveryMap markers={mapMarkers} cityName={city.englishName} cities={CITIES.map(value => ({ id: value.id, name: tr(value.name), englishName: value.englishName, open: value.state === 'open' }))} selectedId={selected?.id} center={center} userLocation={userLocation} heading={heading} topInset={mapFiltersHeight}
         bottomInset={cardShown || sheet === 'closed' ? rowBottom : sheetCover} onSelect={selectPin} onMoved={(bounds, zoom) => setMoved({ bounds, zoom })} onCity={chooseCity} />
-      <View testID="map-filter-overlay" pointerEvents="box-none" onLayout={event => setMapFiltersHeight(event.nativeEvent.layout.height)} style={sheet === 'full' ? [styles.mapFilters, { backgroundColor: theme.background }] : styles.mapFilters}>{quickFilters}</View>
+      <View testID="map-filter-overlay" pointerEvents="box-none" onLayout={event => setMapFiltersHeight(event.nativeEvent.layout.height)} style={sheet === 'full' ? [styles.mapFilters, { backgroundColor: theme.background }] : styles.mapFilters}>
+        {/* Map labels stop running into the chip names (owner 2026-11-06 "칩 줄 뒤에 옅은 그라데이션"); the chips themselves stay as they are. */}
+        {sheet !== 'full' && <View pointerEvents="none" style={[styles.mapFiltersFade, { backgroundImage: `linear-gradient(to bottom, ${theme.background}F2 0%, ${theme.background}B3 62%, ${theme.background}00 100%)` }]} />}
+        {quickFilters}
+      </View>
       <View style={[styles.mapControls, { top: mapFiltersHeight + 12 }]}>
         <Pressable analyticsId="discovery.current" accessibilityRole="button" accessibilityLabel={locating ? tr("현재 위치 확인 중") : tr("내 위치로 지도 이동")} disabled={locating} onPress={() => { play('selection'); void locate(); }} style={[styles.mapControl, { backgroundColor: clayBox ? 'transparent' : theme.card, borderColor: clayBox ? 'transparent' : theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}{locating ? <GlingLoader size={12} accessibilityLabel={tr("현재 위치 확인 중")} /> : <ClayIcon clay="locate" claySize={24} name={{ ios: 'location', android: 'my_location', web: 'my_location' }} size={21} tintColor={theme.text} />}</Pressable>
         <Pressable analyticsId="discovery.refresh" accessibilityRole="button" accessibilityLabel={tr("지도 결과 새로고침")} onPress={() => { play('selection'); refresh(); }} style={[styles.mapControl, { backgroundColor: clayBox ? 'transparent' : theme.card, borderColor: clayBox ? 'transparent' : theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}<ClayIcon clay="refresh" claySize={24} name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={21} tintColor={theme.text} /></Pressable>
@@ -703,6 +707,7 @@ const styles = StyleSheet.create({
   unifiedSearch: { flex: 1, minWidth: 0, minHeight: 46, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10 }, unifiedSearchText: { flex: 1, minWidth: 0 },
   search: { marginHorizontal: 16, marginBottom: 10, borderWidth: StyleSheet.hairlineWidth, borderRadius: 14, flexDirection: 'row', alignItems: 'center', paddingLeft: 14, paddingRight: 4 }, input: { minHeight: 46, flex: 1, minWidth: 0, paddingHorizontal: 10, fontSize: 14 },
   mapFilters: { position: 'absolute', top: 0, left: 0, right: 0, paddingTop: 12, zIndex: 1 },
+  mapFiltersFade: { position: 'absolute', top: 0, left: 0, right: 0, bottom: -18 },
   mapDateLabel: { borderRadius: 12, paddingHorizontal: 8, paddingVertical: 6, overflow: 'hidden' },
   filterRow: { flexGrow: 0, flexShrink: 0, maxHeight: 58 }, artRow: { maxHeight: 74 }, artRowItems: { alignItems: 'center' },
   artChip: { minWidth: 52, minHeight: 44, alignItems: 'center', gap: 1, paddingHorizontal: 2 }, artLift: { transform: [{ translateY: -2 }, { scale: 1.06 }] },

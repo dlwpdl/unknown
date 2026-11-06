@@ -30,7 +30,7 @@ test('native map startup has a bounded fallback, cancels after ready and rearms 
     'react-native': { Platform: { OS: 'ios' }, View: 'View', StyleSheet: { create: value => value } },
     'react-native-webview': { __esModule: true, default: 'WebView' },
     '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value }) },
-    '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/components/clay': { useClay: () => true }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/components/analytics-controls': { Pressable: 'Pressable' },
     '@/components/themed-text': { ThemedText: 'Text' },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
@@ -65,6 +65,14 @@ test('native map startup has a bounded fallback, cancels after ready and rearms 
   props.markers = [{ ...marker, label: 'updated' }];
   render(); assert.equal(timers.size, 0, 'ordinary marker updates do not restart a loaded map');
   slots.forEach(slot => slot?.cleanup?.());
+});
+
+test('zoom buttons are clay only while 3D is on, and the picture pins stay either way', () => {
+  const page = clay => discoveryMapHtml({ markers: [], cityName: 'vancouver', sessionId: 's', clay });
+  assert.match(page(true), /maplibregl-ctrl-zoom-in \.maplibregl-ctrl-icon\{background:url\(data:image\/png/);
+  assert.doesNotMatch(page(false), /maplibregl-ctrl-zoom-in \.maplibregl-ctrl-icon\{background:url/);
+  assert.match(page(false), /\.maplibregl-ctrl-group button\{width:44px;height:44px\}/);
+  assert.equal(page(false).includes(Object.values(MAP_PIN_ART)[0]), page(true).includes(Object.values(MAP_PIN_ART)[0]));
 });
 
 test('validates marker bounds, coordinates, unique identifiers and CSS colors', () => {
@@ -595,7 +603,7 @@ function mountedBridge(props, platform) {
     'react-native': { Platform: { OS: platform }, View: 'View', StyleSheet: { create: value => value }, Linking: { openURL() {} } },
     'react-native-webview': { __esModule: true, default: 'WebView' },
     '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value }) },
-    '@/hooks/use-theme': { useTheme: () => ({}) }, '@/components/analytics-controls': { Pressable: 'Pressable' },
+    '@/components/clay': { useClay: () => true }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/components/analytics-controls': { Pressable: 'Pressable' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/discovery-map-html': { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers },
   };

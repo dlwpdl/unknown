@@ -3,6 +3,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Linking, Platform, StyleSheet, View } from 'react-native';
 import WebView from 'react-native-webview';
 import { Pressable } from '@/components/analytics-controls';
+import { useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -29,7 +30,7 @@ export function DiscoveryMap(props: Props) {
 const NO_CITIES: DiscoveryCity[] = [];
 function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, center = null, userLocation = null, heading = null, topInset = 0, bottomInset = 0, zoom, onSelect, onMoved, onCity }: Props) {
   const { language, tr } = useLanguage();
-  const theme = useTheme(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clay = useClay(), { play } = useInteractionFeedback();
   const native = useRef<WebView<unknown>>(null), web = useRef<HTMLIFrameElement>(null), id = useId();
   const sentMarkers = useRef<{ sessionId: string; key: string } | null>(null);
   const [seed] = useState({ markers, cityName, selectedId, center, userLocation, topInset, bottomInset, zoom });
@@ -37,12 +38,12 @@ function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, cent
   const [readySession, setReadySession] = useState<string | null>(null);
   const sessionId = `${id}.${retry}`;
   const parentOrigin = Platform.OS === 'web' && typeof window !== 'undefined' && window.location.protocol !== 'file:' ? window.location.origin : 'null';
-  // Pill names follow the language, so they rebuild the page like the language itself does; a new array with the same cities does not.
+  // Pill names follow the language, so they rebuild the page like the language itself does; a new array with the same cities does not. The 2D·3D choice rebuilds it the same way.
   const citiesKey = JSON.stringify(cities);
   const html = useMemo(() => {
-    try { return discoveryMapHtml({ ...seed, cities: JSON.parse(citiesKey), language, sessionId, parentOrigin }); }
+    try { return discoveryMapHtml({ ...seed, cities: JSON.parse(citiesKey), language, sessionId, parentOrigin, clay }); }
     catch { return null; }
-  }, [seed, citiesKey, language, sessionId, parentOrigin]);
+  }, [seed, citiesKey, language, sessionId, parentOrigin, clay]);
   const source = useMemo(() => ({ html: html ?? '' }), [html]);
   const markerData = useMemo(() => {
     try { const safe = discoveryMarkers(markers); return { markers: safe, key: JSON.stringify(safe) }; }
