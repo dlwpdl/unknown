@@ -15,6 +15,7 @@ export function SelectionChip({ selected, disabled, onPress, style, baseColor, a
 }) {
   const theme = useTheme();
   const clay = useClay();
+  const base = baseColor ?? (label ? theme.backgroundElement : 'transparent');
   const reducedMotion = useReducedMotion();
   const [fill] = useState(() => new Animated.Value(selected ? 1 : 0));
   useEffect(() => {
@@ -23,8 +24,10 @@ export function SelectionChip({ selected, disabled, onPress, style, baseColor, a
     else Animated.timing(fill, { toValue: selected ? 1 : 0, duration: 160, useNativeDriver: false }).start();
   }, [fill, reducedMotion, selected]);
   return <Pressable {...rest} analyticsId={analyticsId} disabled={disabled} onPress={onPress}
-    style={({ pressed }) => [label ? ControlStyles.pill : null, style, styles.chip, clay && styles.clayChip, { backgroundColor: (clay && selected) ? 'transparent' : baseColor ?? (label ? theme.backgroundElement : 'transparent'), opacity: pressed ? 0.82 : disabled ? 0.45 : 1 }]}>
+    style={({ pressed }) => [label ? ControlStyles.pill : null, style, styles.chip, clay && styles.clayChip, { backgroundColor: clay ? 'transparent' : base, opacity: pressed ? 0.82 : disabled ? 0.45 : 1 }]}>
     {/* Shared by the category line, sort, notification tabs and every other chip group. */}
+    {/* A chip with no base colour sits inside a tray and has no raised body of its own until it is chosen. */}
+    {clay && base !== 'transparent' && <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: fill.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }]}><ClayPillFill kind="white" /></Animated.View>}
     {clay ? <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { opacity: fill }]}><ClayPillFill kind="on" /></Animated.View>
       : <Animated.View pointerEvents="none" style={[styles.fillLayer, { backgroundColor: theme.accent, opacity: fill }]} />}
     <ControlTextStyle.Provider value={clay ? styles.clayText : null}>
@@ -35,7 +38,7 @@ export function SelectionChip({ selected, disabled, onPress, style, baseColor, a
 
 const styles = StyleSheet.create({
   chip: { overflow: 'hidden', backgroundColor: 'transparent' },
-  clayChip: { overflow: 'visible', paddingHorizontal: 18 },
+  clayChip: { overflow: 'visible', paddingHorizontal: 18, borderWidth: 0 },
   clayText: { fontSize: 15, lineHeight: 20 },
   fillLayer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 22 },
 });

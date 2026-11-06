@@ -38,7 +38,7 @@ async function confirmConnection(message: string) {
 
 export function MerchantAccountEntry() {
   const { tr } = useLanguage();
-  const { me, isAuthed, isAdmin } = useAuth(), theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
+  const { me, isAuthed, isAdmin } = useAuth(), theme = useTheme(), clay = useClay(), router = useRouter(), { play } = useInteractionFeedback();
   const [response, setResponse] = useState<MyMerchantConnections | null>(null), [busy, setBusy] = useState(false);
   const current = useRef(me.id), serial = useRef(0), opening = useRef(false);
   useLayoutEffect(() => { current.current = me.id; return () => { current.current = ''; }; }, [me.id]);
@@ -73,7 +73,7 @@ export function MerchantAccountEntry() {
   }
   const invitationOnly = !data?.merchants.length && !!data?.invitations.length;
   return <Pressable analyticsId="app_profile_index.merchant" accessibilityRole="button" accessibilityLabel={invitationOnly ? tr("비즈니스 계정 초대 확인") : tr("비즈니스 프로필 전환")} disabled={busy}
-    accessibilityState={{ disabled: busy }} onPress={() => { void open(); }} style={({ pressed }) => [styles.entry, { backgroundColor: pressed ? theme.backgroundSelected : theme.card, borderColor: theme.line }]}>
+    accessibilityState={{ disabled: busy }} onPress={() => { void open(); }} style={({ pressed }) => [styles.entry, clay && { borderTopWidth: 0 }, { backgroundColor: pressed ? theme.backgroundSelected : clay ? 'transparent' : theme.card, borderColor: theme.line }]}>
     <View style={[styles.entryIcon, { backgroundColor: theme.backgroundElement }]}>
       <SymbolView name={{ ios: 'storefront', android: 'storefront', web: 'storefront' }} size={22} tintColor={theme.navy} />
     </View>

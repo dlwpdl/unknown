@@ -9,6 +9,7 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import Reanimated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { Pressable } from '@/components/analytics-controls';
+import { SymbolView } from '@/components/symbol-view';
 import { ThemedText } from '@/components/themed-text';
 import { chillingSchedule } from '@/lib/chilling';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -96,7 +97,7 @@ function WelcomeMomentBody({ nickname, cityId, onContinue }: { nickname: string;
               <ThemedText style={styles.rowMeta}>{`${schedule} · ${city}`}</ThemedText>
               <ThemedText style={styles.rowMeta}>{[people, ...labels].join(' · ')}</ThemedText>
             </View>
-            <ThemedText style={styles.chevron}>›</ThemedText>
+            <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={18} tintColor="#CBB9FF" />
           </Pressable>;
         })}
       </Reanimated.View>}
@@ -110,7 +111,8 @@ function WelcomeMomentBody({ nickname, cityId, onContinue }: { nickname: string;
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#0B0B12', justifyContent: 'center', paddingHorizontal: 28, paddingBottom: 28 },
-  light: { ...StyleSheet.absoluteFill, width: '100%', height: '100%' },
+  // No width here: a percent width resolves against the screen's padded box and cuts the glow off 56pt short.
+  light: { ...StyleSheet.absoluteFill },
   scroll: { flex: 1 },
   content: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 24 },
   contentTop: { justifyContent: 'flex-start', paddingTop: 32 },
@@ -130,7 +132,6 @@ const styles = StyleSheet.create({
   rowCopy: { flex: 1, minWidth: 0, gap: 2 },
   rowTitle: { color: '#F6F3F0', fontSize: 16, lineHeight: 22, fontWeight: '700' },
   rowMeta: { color: '#D2CBDB', fontSize: 13, lineHeight: 19 },
-  chevron: { color: '#CBB9FF', fontSize: 22, lineHeight: 26 },
   button: { marginTop: 12, minHeight: 56, alignItems: 'center', justifyContent: 'center', borderRadius: 28, backgroundColor: '#CBB9FF' },
   buttonClay: { minHeight: 52, backgroundColor: 'transparent', overflow: 'visible' },
   buttonText: { color: '#171123', fontSize: 16, fontWeight: '700' },

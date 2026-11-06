@@ -11,7 +11,7 @@ import { Modal, Platform, StyleSheet, TextInput, View, type KeyDownEvent } from 
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { PersonalInfoFields, type PersonalInfoDraft } from '@/components/personal-info-fields';
 import { WelcomeMoment } from '@/components/welcome-moment';
@@ -57,6 +57,7 @@ export function ProfileOnboarding({
   const { tr, t } = useLanguage();
   const theme = useTheme();
   const clay = useClay();
+  const clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
   const initialNickname = existingProfile?.nickname ?? normalizedNickname(socialNickname) ?? generateNickname('ko');
@@ -289,7 +290,8 @@ export function ProfileOnboarding({
 
             {askPersonalInfo && <PersonalInfoFields showConsent={false} value={personalInfo} disabled={saving} onChange={(value) => { setPersonalInfo(value); setError(null); }} />}
 
-            <View style={[styles.consents, { backgroundColor: theme.card, borderColor: theme.line }]}>
+            <View style={[styles.consents, clayBox ? styles.consentsClay : { backgroundColor: theme.card, borderColor: theme.line }]}>
+              {clayBox && <ClayBoxFill kind="tile" />}
               <Pressable analyticsId="components_profile-onboarding.pressable.7" onPress={toggleAll} disabled={saving} accessibilityRole="checkbox"
                 accessibilityLabel={!askPersonalInfo ? tr("모두 동의") : tr("모두 동의, 선택 항목 포함")} aria-checked={allChecked}
                 accessibilityState={{ checked: allChecked, disabled: saving }}
@@ -383,6 +385,7 @@ const styles = StyleSheet.create({
   cityRow: { flexDirection: 'row', gap: Spacing.two },
   cityButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.four, borderRadius: 8 },
   consents: { borderWidth: 1, borderRadius: 12, paddingHorizontal: Spacing.three },
+  consentsClay: { borderWidth: 0 },
   consentRow: { flexDirection: 'row', alignItems: 'center' },
   consent: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.two },
   allConsent: { flex: 0, minHeight: 56, borderBottomWidth: 1, marginBottom: Spacing.one },
