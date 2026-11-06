@@ -5,6 +5,7 @@ import { StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { getPlaceReviewRating, PlaceReviewSummary } from '@/components/place-review-summary';
 import { ThemedText } from '@/components/themed-text';
 import { ControlMotion, ControlStyles, MiniCard } from '@/constants/design-system';
@@ -22,7 +23,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 
 export function NearbyPlacesLocation({ location, analyticsId }: { location: CurrentLocation; analyticsId: string }) {
-  const { language } = useLanguage(), ko = language === 'ko', { play } = useInteractionFeedback(), theme = useTheme();
+  const { language } = useLanguage(), ko = language === 'ko', { play } = useInteractionFeedback(), theme = useTheme(), clay = useClay();
   const settings = location.status === 'permission' && !location.canAskAgain;
   const message = location.fix ? ko ? '내 위치에서 가까운 순 · 직선거리' : 'Nearest to your location · straight-line distance'
     : location.busy ? ko ? '현재 위치를 확인하고 있어요…' : 'Checking your location…'
@@ -32,8 +33,8 @@ export function NearbyPlacesLocation({ location, analyticsId }: { location: Curr
     : location.fix ? ko ? '위치 다시 확인' : 'Refresh location' : ko ? '내 위치로 보기' : 'Use my location';
   return <View style={styles.locationRow}><ThemedText style={styles.subtitle} themeColor="textSecondary" accessibilityLiveRegion="polite">{message}</ThemedText>
     <Pressable analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={label} disabled={location.busy} accessibilityState={{ disabled: location.busy, busy: location.busy }}
-      onPress={() => { play('selection'); void location.request(); }} style={({ pressed }) => [ControlStyles.pill, { backgroundColor: theme.backgroundElement, opacity: location.busy ? .6 : pressed ? .82 : 1 }]}>
-      <ThemedText type="label" themeColor="accent">{label}</ThemedText></Pressable>
+      onPress={() => { play('selection'); void location.request(); }} style={({ pressed }) => [ControlStyles.pill, clay && { overflow: 'visible', paddingHorizontal: 18 }, { backgroundColor: clay ? 'transparent' : theme.backgroundElement, opacity: location.busy ? .6 : pressed ? .82 : 1 }]}>
+      {clay && <ClayPillFill kind="white" />}<ThemedText type="label" themeColor="accent">{label}</ThemedText></Pressable>
   </View>;
 }
 
