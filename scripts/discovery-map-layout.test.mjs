@@ -48,7 +48,7 @@ function mount({ cities = [], routeParams = {}, light = false, reduced = false, 
     '@/components/selection-chip': { SelectionChip: 'Pressable' }, '@/components/disclosure': { animateLayout() {} },
     '@/lib/delivery-partners': { DELIVERY_PARTNERS: [], deliveryPartnerPlace: () => undefined },
     '@/lib/webshops': { bindBusinessPlaces: (...args) => bindBusinessPlaces(...args).map(item => ({ ...item, ...business[item.sourceId] })), loadCityBusinessLinks: loadLinks, loadCityBusinessMapPhotos: loadPhotos, loadCityWebshops: loadWebshops },
-    '@/components/live-bubbles': { useLive: () => ({ status: 'idle', map: null }), useLiveMarkers: () => [], useMeetupMarkers: () => [], LiveDock: 'LiveDock', LiveSheets: 'LiveSheets' },
+    '@/components/live-bubbles': { useLive: () => ({ status: 'idle', map: null }), useLiveMarkers: () => [], useMeetupMarkers: () => [], useKeepClearOfNotice: () => ({ current: null }), LiveDock: 'LiveDock', LiveSheets: 'LiveSheets' },
     '@/lib/live-bubbles': { loadLiveMap: async () => {} }, '@/lib/post-map-html': { mapCityCenter: () => [-123.12, 49.28] },
     '@/components/discovery-map': { DiscoveryMap: 'DiscoveryMap' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
     '@/components/city-place-photo': { CityPlacePhoto: 'CityPlacePhoto' }, '@/components/category-icon': { CategoryIcon: 'CategoryIcon' },
@@ -210,13 +210,14 @@ test('collapsed place cards leave no panel or map inset and lower the list butto
   const panel = nodes(tree).find(node => typeof node.props?.onLayout === 'function' && Array.isArray(node.props.style));
   assert.ok(panel);
   panel.props.onLayout({ nativeEvent: { layout: { height: 220 } } }); tree = view.render();
-  assert.equal(nodes(tree).find(node => node.type === 'DiscoveryMap').props.bottomInset, 276);
+  // No credits strip under the map any more (owner 691cf630): the card sits 12pt up and the shared row 12pt above it.
+  assert.equal(nodes(tree).find(node => node.type === 'DiscoveryMap').props.bottomInset, 244);
   control(tree, '장소 카드 접기').props.onPress(); tree = view.render();
   assert.ok(!nodes(tree).some(node => typeof node.props?.onLayout === 'function' && Array.isArray(node.props.style)), 'the card surface must be removed, not left as an empty strip');
   map = nodes(tree).find(node => node.type === 'DiscoveryMap');
-  assert.equal(map.props.bottomInset, 0);
+  assert.equal(map.props.bottomInset, 12, 'only the floating row stays, where the map draws its ⓘ');
   const list = nodes(tree).find(node => node.props?.accessibilityLabel === '리스트 보기' && Array.isArray(node.props.style));
-  assert.equal(list.props.style.at(-1).bottom, 56);
+  assert.equal(list.props.style.at(-1).bottom, 12);
   assert.ok(map.props.selectedId, 'collapsing keeps the chosen pin');
 });
 

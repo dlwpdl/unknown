@@ -647,7 +647,6 @@ export const uiEnglish: Record<string, string> = {
   "분류와 날짜 필터 열기": "Open category and date filters",
   "분류와 날짜": "Categories and dates",
   "목록 {0}곳": "List · {0} places",
-  "이 도시의 결과 더 보기": "More results in this city",
   "행사 날짜": "Event date",
   "{0} 현지 날짜로 입력해 주세요.": "Enter the date in {0} local time.",
   "행사 날짜 연도-월-일": "Event date, year-month-day",

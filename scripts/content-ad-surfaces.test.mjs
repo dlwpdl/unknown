@@ -53,7 +53,7 @@ function mount(file, component, imports, globals = {}, props = {}) {
     '@/components/selection-chip': { SelectionChip: 'Pressable' },
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' },
     '@/components/feed-ad': { FeedAd: 'FeedAd' }, '@/lib/content-ad-placement': { contentAdPosition },
-    '@/components/live-bubbles': { useLive: () => ({ status: 'idle', map: null }), useLiveMarkers: () => [], useMeetupMarkers: () => [], LiveDock: 'LiveDock', LiveSheets: 'LiveSheets' },
+    '@/components/live-bubbles': { useLive: () => ({ status: 'idle', map: null }), useLiveMarkers: () => [], useMeetupMarkers: () => [], useKeepClearOfNotice: () => ({ current: null }), LiveDock: 'LiveDock', LiveSheets: 'LiveSheets' },
     '@/lib/live-bubbles': { loadLiveMap: async () => {} }, '@/lib/post-map-html': { mapCityCenter: () => [-123.12, 49.28] },
     '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ state: null }) },
     '@/lib/ads': { adsSupported: true }, './lazy-sections': { FeedAd: 'FeedAd' },

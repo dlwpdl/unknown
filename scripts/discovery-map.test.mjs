@@ -112,6 +112,7 @@ test('only accepts current session messages, known selection IDs and exact credi
 
 function canvas(markers = [marker], providedHtml, extra = {}, globals = {}) {
   const messages = [], listeners = {}, cameras = [], sources = {}, layers = [], images = {}, paddingCalls = [], userMarkers = [], cityMarkers = [], labels = [];
+  const rootVars = {}, credits = { 'credits-links': { hidden: true }, 'credits-toggle': { setAttribute(name, value) { this[name] = value; } } };
   const container = { clientHeight: 400, style: { setProperty(name, value) { this[name] = value; }, getPropertyValue(name) { return this[name] ?? ''; } } };
   let map;
   class Map {
@@ -142,12 +143,12 @@ function canvas(markers = [marker], providedHtml, extra = {}, globals = {}) {
     getElement() { return this.element; }
     setRotation(degrees) { this.rotation = degrees; return this; }
   }
-  const context = { window, document: { createElement: () => ({ getContext: () => drawing, setAttribute(name, value) { this[name] = value; } }), addEventListener: (type, callback) => { listeners['document:' + type] = callback; } }, maplibregl: { Map, Marker, NavigationControl: class {} }, setTimeout: () => 1, clearTimeout() {}, console, ...globals };
+  const context = { window, document: { createElement: () => ({ getContext: () => drawing, setAttribute(name, value) { this[name] = value; } }), addEventListener: (type, callback) => { listeners['document:' + type] = callback; }, documentElement: { style: { setProperty(name, value) { rootVars[name] = value; } } }, getElementById: id => credits[id] ?? null }, maplibregl: { Map, Marker, NavigationControl: class {} }, setTimeout: () => 1, clearTimeout() {}, console, ...globals };
   const html = providedHtml ?? discoveryMapHtml({ ...options, markers, ...extra });
   const script = [...html.matchAll(/<script nonce="gling-map">([\s\S]*?)<\/script>/g)].at(-1)[1];
   vm.runInNewContext(script, context);
   if (!globals.deferLoad) listeners.load();
-  return { window, listeners, cameras, sources, layers, images, paddingCalls, messages, map, html, userMarkers, cityMarkers, labels };
+  return { window, listeners, cameras, sources, layers, images, paddingCalls, messages, map, html, userMarkers, cityMarkers, labels, rootVars, credits };
 }
 
 test('a passing map error while loading never shows the failure; one that outlasts 5s does (owner b09e6df1)', () => {
@@ -338,6 +339,20 @@ test('credits and zoom controls send feedback but never open arbitrary links thr
   assert.equal(c.messages.at(-2).type, 'feedback');
   c.listeners['document:click']({ target: { closest: selector => selector === '.maplibregl-ctrl-group button' ? {} : null } });
   assert.equal(c.messages.at(-1).type, 'feedback');
+});
+
+test('credits fold into an ⓘ on the floating row and close when the map moves (owner 691cf630)', () => {
+  const c = canvas([marker], undefined, { bottomInset: 120 });
+  assert.equal(c.rootVars['--map-bottom-inset'], '120px', 'the ⓘ sits on the same row as the list pill');
+  assert.ok(c.html.includes('<span id="credits-links" hidden>') && c.html.includes('© OpenStreetMap'), 'attribution stays one tap away');
+  const toggle = () => c.listeners['document:click']({ target: { closest: selector => selector === '#credits-toggle' ? {} : null } });
+  toggle();
+  assert.equal(c.credits['credits-links'].hidden, false);
+  assert.equal(c.credits['credits-toggle']['aria-expanded'], 'true');
+  assert.equal(c.messages.at(-1).type, 'feedback');
+  c.listeners.movestart();
+  assert.equal(c.credits['credits-links'].hidden, true);
+  assert.equal(c.credits['credits-toggle']['aria-expanded'], 'false');
 });
 
 test('keeps bundled CSP and attribution, and rejects invalid explicit centers', () => {

@@ -18,7 +18,7 @@ import { FlatList, Pressable, ScrollView } from '@/components/analytics-controls
 import { animateLayout } from '@/components/disclosure';
 import { DiscoveryMap } from '@/components/discovery-map';
 import { DragSheet } from '@/components/drag-sheet';
-import { LiveDock, LiveSheets, useLive, useLiveMarkers, useMeetupMarkers, type LiveOpen } from '@/components/live-bubbles';
+import { LiveDock, LiveSheets, useKeepClearOfNotice, useLive, useLiveMarkers, useMeetupMarkers, type LiveOpen } from '@/components/live-bubbles';
 import { MapListSheet, type SheetSnap } from '@/components/map-list-sheet';
 import { FriendSavedLine, MapScopeSheet } from '@/components/map-scope';
 import { PlaceHours } from '@/components/place-hours';
@@ -183,6 +183,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const [showBubbles, setShowBubbles] = useState(true), [showMeetups, setShowMeetups] = useState(true);
   const [liveOpen, setLiveOpen] = useState<LiveOpen | null>(null), [dockHeight, setDockHeight] = useState(0), [openedRequest, setOpenedRequest] = useState<string | null>(null);
   const [cityLongitude, cityLatitude] = mapCityCenter(city.englishName);
+  const listClear = useKeepClearOfNotice(); // a live notice sits above the list pill too, now that it shares the row over the dock
   useEffect(() => {
     if (!isFocused || !isAuthed || onClose) return;
     const load = () => void loadLiveMap(supabase, me.id, city.id, { latitude: cityLatitude, longitude: cityLongitude }).catch(() => {});
@@ -413,7 +414,10 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const chooseNearest = () => { play('selection'); setSortBy('near'); if (!userLocation) void locate(); };
   const chooseDiscount = () => { play('selection'); setSortBy('discount'); };
   const cardShown = !!selected && located(selected) && cardOpen;
-  const dockShown = liveOn && showBubbles && sheet === 'closed' && !cardShown, dockSpace = dockShown ? Math.min(dockHeight + 8, 400) : 0;
+  const dockShown = liveOn && showBubbles && sheet === 'closed' && !cardShown, dockSpace = dockShown ? Math.min(dockHeight + 12, 400) : 0;
+  // One floating row above the dock or place card: the list pill, the map credits (ⓘ, drawn by the map at this inset) and the card toggle share it (owner 691cf630 "정렬좀 잘해줘").
+  // Cards, the list row and the ⓘ share a 20pt side line, close to the iOS 26 tab bar's edge.
+  const rowBottom = cardShown ? Math.min(cardHeight + 24, 1000) : 12 + dockSpace;
   // M2 (owner 2026-11-05): the open card saves with the place screen's own 가 보고 싶어요/가 봤어요 sheet, read only while the card shows.
   // 가 봤어요 then opens the place for its review, except in the chat sheet where that page would open behind it. A confirmed state also moves the pin mark (M5).
   const cardPlace = cardShown ? selected.place : undefined;
@@ -515,7 +519,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     {!!current?.errors.length && <View style={styles.notice}><ThemedText type="small" accessibilityRole="alert">{current.errors.map(error => tr(error)).join(' ')} {tr("새로고침으로 다시 시도할 수 있어요.")}</ThemedText></View>}
     <View style={styles.content} onLayout={event => setContentHeight(event.nativeEvent.layout.height)}>
       <DiscoveryMap markers={mapMarkers} cityName={city.englishName} cities={CITIES.map(value => ({ id: value.id, name: tr(value.name), englishName: value.englishName, open: value.state === 'open' }))} selectedId={selected?.id} center={center} userLocation={userLocation} heading={heading} topInset={mapFiltersHeight}
-        bottomInset={cardShown ? Math.min(cardHeight + 56, 1000) : dockShown ? Math.min(dockHeight + 24, 1000) : sheetCover} onSelect={selectPin} onMoved={(bounds, zoom) => setMoved({ bounds, zoom })} onCity={chooseCity} />
+        bottomInset={cardShown || sheet === 'closed' ? rowBottom : sheetCover} onSelect={selectPin} onMoved={(bounds, zoom) => setMoved({ bounds, zoom })} onCity={chooseCity} />
       <View testID="map-filter-overlay" pointerEvents="box-none" onLayout={event => setMapFiltersHeight(event.nativeEvent.layout.height)} style={sheet === 'full' ? [styles.mapFilters, { backgroundColor: theme.background }] : styles.mapFilters}>{quickFilters}</View>
       <View style={[styles.mapControls, { top: mapFiltersHeight + 12 }]}>
         <Pressable analyticsId="discovery.current" accessibilityRole="button" accessibilityLabel={locating ? tr("현재 위치 확인 중") : tr("내 위치로 지도 이동")} disabled={locating} onPress={() => { play('selection'); void locate(); }} style={[styles.mapControl, { backgroundColor: theme.card, borderColor: theme.line }]}>{locating ? <GlingLoader size={12} accessibilityLabel={tr("현재 위치 확인 중")} /> : <SymbolView name={{ ios: 'location', android: 'my_location', web: 'my_location' }} size={21} tintColor={theme.text} />}</Pressable>
@@ -526,15 +530,15 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
         <SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={IconSize.inline} tintColor={theme.accent} />
         <ThemedText type="smallBold" themeColor="accent">{tr('이 지역에서 다시 찾기')}</ThemedText>
       </Pressable>}
-      {sheet === 'closed' && <Pressable analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={tr("리스트 보기")} onPress={() => showList('half')} style={[styles.listLink, { backgroundColor: theme.card, borderColor: theme.line, bottom: cardShown ? Math.min(cardHeight + 64, 1000) : 56 + dockSpace }]}><SymbolView name={{ ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' }} size={18} tintColor={theme.text} /><View style={styles.listLinkText}><ThemedText type="smallBold" accessibilityLiveRegion="polite">{tr('목록 {0}개', items.length)}{limited ? '+' : ''}</ThemedText><ThemedText type="caption" themeColor="accent">{sortLabel}</ThemedText></View></Pressable>}
+      {sheet === 'closed' && <Pressable ref={listClear} analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={tr("리스트 보기")} onPress={() => showList('half')} style={[styles.listLink, { backgroundColor: theme.card, borderColor: theme.line, bottom: rowBottom }]}><SymbolView name={{ ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' }} size={18} tintColor={theme.text} /><View style={styles.listLinkText}><ThemedText type="smallBold" accessibilityLiveRegion="polite">{tr('목록 {0}개', items.length)}{limited || more ? '+' : ''}</ThemedText><ThemedText type="caption" themeColor="accent">{sortLabel}</ThemedText></View></Pressable>}
       {cardShown ? <Reanimated.View entering={reduced ? undefined : SlideInDown.duration(ControlMotion.expandMs)} exiting={reduced ? undefined : SlideOutDown.duration(ControlMotion.sheetCloseMs)}
         onLayout={event => setCardHeight(event.nativeEvent.layout.height)} style={[styles.selected, { backgroundColor: theme.card, borderColor: theme.line }]}>
           <ScrollView analyticsId="discovery.detail" accessibilityLabel={tr("선택한 장소 상세, 스크롤로 더 보기")} style={styles.selectedScroll} contentContainerStyle={styles.selectedContent}>
             <View style={styles.cardRow}><View style={styles.flex}><DiscoveryCard item={selected} now={now} distance={discoveryDistanceKm(selected, userLocation)} externalInfo={!!onClose} viewerScope={viewerScope} savedBy={scopePlaces?.get(placeKey(selected))} onOpen={() => open(selected)} /></View>{saveButton}</View>
             {!!savedEntry.error && <ThemedText type="small" accessibilityRole="alert">{savedEntry.error}</ThemedText>}<Top25Note item={selected} /><GlingVisitNote item={selected} /></ScrollView><Directions item={selected} reserveFromBusiness />
       </Reanimated.View>
-        : sheet === 'closed' && !loading && !deliveryUnavailable && items.length === 0 && <View style={[styles.mapEmpty, { bottom: 56 + dockSpace }]}>{refineCard || <StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : visitedOnly ? visitedReady ? tr("조건에 맞는 글링 방문 장소가 없어요") : tr("아직 글링이 방문한 장소가 없어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 50 장소가 없어요") : tr("이 도시의 TOP 50을 준비하고 있어요") : deliveryOnly ? tr("아직 배달 할인 가게가 없어요") : tr("아직 표시할 공개 위치가 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : visitedOnly ? visitedReady ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : tr("직접 다녀온 장소만 모아 보여드려요. 다른 분류에서 먼저 둘러보세요.") : top25Only ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : deliveryOnly ? tr("가게가 직접 받는 주문 페이지를 준비하고 있어요.") : tr("직접 첨부한 핀과 위치가 확인된 행사만 지도에 표시해요.")} actionLabel={current?.errors.length ? tr("다시 시도") : visitedOnly ? tr("전체 장소 보기") : tr("리스트 보기")} onAction={current?.errors.length ? refresh : visitedOnly ? () => { setSelectedFilters([]); setDateFilter(null); setDate(''); } : () => showList('half')} />}</View>}
-      {selected && located(selected) && <Pressable analyticsId="discovery.detail" accessibilityRole="button" accessibilityLabel={cardOpen ? tr('장소 카드 접기') : tr('장소 카드 펼치기')} accessibilityState={{ expanded: cardOpen }} onPress={() => { play('selection'); setClosedCardId(cardOpen ? selectedId : undefined); }} style={[styles.cardToggle, { backgroundColor: theme.card, borderColor: theme.line, bottom: cardOpen ? Math.min(cardHeight + 70, 1000) : 62 }]}>
+        : sheet === 'closed' && !loading && !deliveryUnavailable && items.length === 0 && <View style={[styles.mapEmpty, { bottom: rowBottom }]}>{refineCard || <StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : visitedOnly ? visitedReady ? tr("조건에 맞는 글링 방문 장소가 없어요") : tr("아직 글링이 방문한 장소가 없어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 50 장소가 없어요") : tr("이 도시의 TOP 50을 준비하고 있어요") : deliveryOnly ? tr("아직 배달 할인 가게가 없어요") : tr("아직 표시할 공개 위치가 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : visitedOnly ? visitedReady ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : tr("직접 다녀온 장소만 모아 보여드려요. 다른 분류에서 먼저 둘러보세요.") : top25Only ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : deliveryOnly ? tr("가게가 직접 받는 주문 페이지를 준비하고 있어요.") : tr("직접 첨부한 핀과 위치가 확인된 행사만 지도에 표시해요.")} actionLabel={current?.errors.length ? tr("다시 시도") : visitedOnly ? tr("전체 장소 보기") : tr("리스트 보기")} onAction={current?.errors.length ? refresh : visitedOnly ? () => { setSelectedFilters([]); setDateFilter(null); setDate(''); } : () => showList('half')} />}</View>}
+      {selected && located(selected) && <Pressable analyticsId="discovery.detail" accessibilityRole="button" accessibilityLabel={cardOpen ? tr('장소 카드 접기') : tr('장소 카드 펼치기')} accessibilityState={{ expanded: cardOpen }} onPress={() => { play('selection'); setClosedCardId(cardOpen ? selectedId : undefined); }} style={[styles.cardToggle, { backgroundColor: theme.card, borderColor: theme.line, bottom: rowBottom + 6 }]}>
         <SymbolView name={cardOpen ? { ios: 'chevron.down', android: 'expand_more', web: 'expand_more' } : { ios: 'chevron.up', android: 'expand_less', web: 'expand_less' }} size={IconSize.toolbar} tintColor={theme.text} />
       </Pressable>}
       {dockShown && <View style={styles.liveDock} onLayout={event => setDockHeight(event.nativeEvent.layout.height)}>
@@ -550,7 +554,6 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       </MapListSheet>
       {loading && <View pointerEvents="none" style={[styles.loading, styles.mapLoading]}><GlingLoader color={theme.accent} accessibilityLabel={tr("지도 결과 불러오는 중")} /></View>}
     </View>
-    {sheet === 'closed' && more && <Pressable analyticsId="discovery.more" accessibilityRole="button" disabled={loading} onPress={() => { if (morePending.current || loading) return; morePending.current = true; play('selection'); loadPage(current); }} style={[styles.moreMap, { borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">{loading ? tr("불러오는 중…") : tr("이 도시의 결과 더 보기")}</ThemedText></Pressable>}
     <Modal visible={filtersOpen} transparent animationType={reduced ? 'none' : 'fade'} onRequestClose={closeFilters}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.overlay}>
         <Pressable analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr("필터 닫기")} onPress={closeFilters} style={StyleSheet.absoluteFill} />
@@ -679,7 +682,7 @@ const styles = StyleSheet.create({
   deliverySheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, borderWidth: 1, padding: 20, gap: 6 },
   deliveryOrder: { marginTop: 14, minHeight: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   deliveryClose: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  cardToggle: { ...ControlStyles.icon, position: 'absolute', right: 16, bottom: 56, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
+  cardToggle: { ...ControlStyles.icon, position: 'absolute', right: 20, bottom: 18, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
   visitedCard: { marginLeft: 6 },
   sortRow: { flexWrap: 'wrap', flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingBottom: 8 },
   sortChip: { ...ControlStyles.pill, borderRadius: 999, borderWidth: 1, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
@@ -687,14 +690,14 @@ const styles = StyleSheet.create({
   content: { flex: 1, minHeight: 180 }, mapControls: { position: 'absolute', right: 22, top: 22, gap: 8 }, mapControl: { minWidth: 44, minHeight: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   listLinkText: { flexShrink: 1, alignItems: 'center' },
   listLink: { position: 'absolute', alignSelf: 'center', minHeight: 56, maxWidth: '55%', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  selected: { position: 'absolute', bottom: 56, left: 16, right: 16, maxWidth: 560, maxHeight: '45%', borderRadius: 18, borderWidth: 1, padding: 12, gap: 12, shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 }, selectedScroll: { flexShrink: 1, minHeight: 0 }, selectedContent: { gap: 12 }, cardRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4 },
+  selected: { position: 'absolute', bottom: 12, left: 20, right: 20, maxWidth: 560, maxHeight: '45%', borderRadius: 18, borderWidth: 1, padding: 12, gap: 12, shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 4 }, selectedScroll: { flexShrink: 1, minHeight: 0 }, selectedContent: { gap: 12 }, cardRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4 },
   cardBody: { minHeight: 84, flexDirection: 'row', alignItems: 'center', gap: 12 }, thumbnail: { width: 72, height: 84, borderRadius: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }, cardText: { flex: 1, minWidth: 0, gap: 3 }, badge: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
   housingPrice: { fontSize: 18, lineHeight: 25, fontWeight: '700' },
   directions: { flexDirection: 'row', gap: 8 }, reserve: { flex: 1, borderRadius: 10 }, direction: { flex: 1, minHeight: 37, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
-  liveDock: { position: 'absolute', left: 16, right: 16, bottom: 12, maxWidth: 560, alignSelf: 'center' },
-  list: { paddingHorizontal: 16, paddingBottom: 24, gap: 12 }, listCard: { padding: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, gap: 12 }, mapEmpty: { position: 'absolute', bottom: 56, left: 16, right: 16 },
+  liveDock: { position: 'absolute', left: 20, right: 20, bottom: 12, maxWidth: 560, alignSelf: 'center' },
+  list: { paddingHorizontal: 16, paddingBottom: 24, gap: 12 }, listCard: { padding: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, gap: 12 }, mapEmpty: { position: 'absolute', bottom: 12, left: 20, right: 20 },
   loading: { position: 'absolute', top: 20, left: 16, right: 16, alignItems: 'center' },
   mapLoading: { top: 0, bottom: 0, justifyContent: 'center' },
-  more: { minHeight: 48, borderWidth: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 12 }, moreMap: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderTopWidth: StyleSheet.hairlineWidth }, source: { fontSize: 11, lineHeight: 17, paddingTop: 16 },
+  more: { minHeight: 48, borderWidth: 1, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 12 }, source: { fontSize: 11, lineHeight: 17, paddingTop: 16 },
   overlay: { flex: 1, backgroundColor: '#0008', justifyContent: 'flex-end' }, filterSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, borderWidth: 1, width: '100%', maxWidth: 560, maxHeight: '90%', alignSelf: 'center' }, sheetHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 20, paddingRight: 8, paddingTop: 8 }, sheetScroll: { flexGrow: 0, flexShrink: 1 }, sheetContent: { padding: 20, paddingTop: 8, gap: 16 }, categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, info: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 8 }, sheetActions: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, padding: 16, borderTopWidth: StyleSheet.hairlineWidth }, dateInput: { minHeight: 48, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, fontSize: 17 }, apply: { flex: 1, minHeight: 44, minWidth: 90, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 });
