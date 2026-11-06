@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { tr } from '@/i18n';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import { SymbolView } from '@/components/symbol-view';
 import { Alert, AppState, Platform, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
 import { MerchantBadge } from '@/components/merchant-ui';

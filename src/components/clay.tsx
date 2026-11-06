@@ -22,6 +22,7 @@ const ICONS = {
   map: require('@/assets/images/ui-3d/tab_map_on.png'),
   chevron: require('@/assets/images/ui-3d/chevron.png'), share: require('@/assets/images/ui-3d/share.png'),
   more: require('@/assets/images/ui-3d/more.png'), home: require('@/assets/images/ui-3d/tab_home_on.png'),
+  close: require('@/assets/images/ui-3d/close.png'), check: require('@/assets/images/ui-3d/check.png'), pin: require('@/assets/images/ui-3d/pin.png'), store: require('@/assets/images/ui-3d/store.png'), photo: require('@/assets/images/ui-3d/photo.png'), camera: require('@/assets/images/ui-3d/camera.png'), trash: require('@/assets/images/ui-3d/trash.png'), sparkle: require('@/assets/images/ui-3d/sparkle.png'), info: require('@/assets/images/ui-3d/info.png'), calendar: require('@/assets/images/ui-3d/calendar.png'), clock: require('@/assets/images/ui-3d/clock.png'), box: require('@/assets/images/ui-3d/box.png'), send: require('@/assets/images/ui-3d/send.png'), person_add: require('@/assets/images/ui-3d/person_add.png'), gear: require('@/assets/images/ui-3d/gear.png'), flag: require('@/assets/images/ui-3d/flag.png'), warn: require('@/assets/images/ui-3d/warn.png'), doc: require('@/assets/images/ui-3d/doc.png'), seal: require('@/assets/images/ui-3d/seal.png'), lock: require('@/assets/images/ui-3d/lock.png'), link: require('@/assets/images/ui-3d/link.png'), phone: require('@/assets/images/ui-3d/phone.png'), globe: require('@/assets/images/ui-3d/globe.png'), gift: require('@/assets/images/ui-3d/gift.png'), envelope: require('@/assets/images/ui-3d/envelope.png'), megaphone: require('@/assets/images/ui-3d/megaphone.png'), flame: require('@/assets/images/ui-3d/flame.png'), open: require('@/assets/images/ui-3d/open.png'),
   chip_all: require('@/assets/images/ui-3d/chip_all.png'), chip_life: require('@/assets/images/ui-3d/chip_life.png'),
   chip_dining: require('@/assets/images/ui-3d/chip_dining.png'), chip_business: require('@/assets/images/ui-3d/chip_business.png'),
   chip_festival: require('@/assets/images/ui-3d/chip_festival.png'), chip_housing: require('@/assets/images/ui-3d/chip_housing.png'),
@@ -33,6 +34,7 @@ const ICONS = {
 const ICONS_DARK: Partial<Record<keyof typeof ICONS, number>> = {
   search: require('@/assets/images/ui-3d/search_d.png'), person: require('@/assets/images/ui-3d/person_d.png'), heart: require('@/assets/images/ui-3d/heart_d.png'), heart_on: require('@/assets/images/ui-3d/heart_on_d.png'), bubble: require('@/assets/images/ui-3d/bubble_d.png'), bookmark: require('@/assets/images/ui-3d/bookmark_d.png'), bookmark_on: require('@/assets/images/ui-3d/bookmark_on_d.png'), sliders: require('@/assets/images/ui-3d/sliders_d.png'), plus_ink: require('@/assets/images/ui-3d/plus_ink_d.png'), minus_ink: require('@/assets/images/ui-3d/minus_ink_d.png'), list: require('@/assets/images/ui-3d/list_d.png'), locate: require('@/assets/images/ui-3d/locate_d.png'), refresh: require('@/assets/images/ui-3d/refresh_d.png'), avatar: require('@/assets/images/ui-3d/avatar_d.png'), avatar_me: require('@/assets/images/ui-3d/avatar_me_d.png'), chevron: require('@/assets/images/ui-3d/chevron_d.png'), share: require('@/assets/images/ui-3d/share_d.png'), more: require('@/assets/images/ui-3d/more_d.png'),
   bell: require('@/assets/images/ui-3d/tab_bell_on_d.png'), meetups: require('@/assets/images/ui-3d/tab_meetups_on_d.png'), map: require('@/assets/images/ui-3d/tab_map_on_d.png'), home: require('@/assets/images/ui-3d/tab_home_on_d.png'),
+  close: require('@/assets/images/ui-3d/close_d.png'), check: require('@/assets/images/ui-3d/check_d.png'), pin: require('@/assets/images/ui-3d/pin_d.png'), store: require('@/assets/images/ui-3d/store_d.png'), photo: require('@/assets/images/ui-3d/photo_d.png'), camera: require('@/assets/images/ui-3d/camera_d.png'), trash: require('@/assets/images/ui-3d/trash_d.png'), sparkle: require('@/assets/images/ui-3d/sparkle_d.png'), info: require('@/assets/images/ui-3d/info_d.png'), calendar: require('@/assets/images/ui-3d/calendar_d.png'), clock: require('@/assets/images/ui-3d/clock_d.png'), box: require('@/assets/images/ui-3d/box_d.png'), send: require('@/assets/images/ui-3d/send_d.png'), person_add: require('@/assets/images/ui-3d/person_add_d.png'), gear: require('@/assets/images/ui-3d/gear_d.png'), flag: require('@/assets/images/ui-3d/flag_d.png'), warn: require('@/assets/images/ui-3d/warn_d.png'), doc: require('@/assets/images/ui-3d/doc_d.png'), seal: require('@/assets/images/ui-3d/seal_d.png'), lock: require('@/assets/images/ui-3d/lock_d.png'), link: require('@/assets/images/ui-3d/link_d.png'), phone: require('@/assets/images/ui-3d/phone_d.png'), globe: require('@/assets/images/ui-3d/globe_d.png'), gift: require('@/assets/images/ui-3d/gift_d.png'), envelope: require('@/assets/images/ui-3d/envelope_d.png'), megaphone: require('@/assets/images/ui-3d/megaphone_d.png'), flame: require('@/assets/images/ui-3d/flame_d.png'), open: require('@/assets/images/ui-3d/open_d.png'), pencil: require('@/assets/images/ui-3d/pencil_d.png'), trophy: require('@/assets/images/ui-3d/trophy_d.png'), plus: require('@/assets/images/ui-3d/plus_d.png'), empty: require('@/assets/images/ui-3d/empty_d.png'),
 };
 
 // Three slices stretch the same on iOS and Android. cap = end width ÷ art height; drop = the shadow hanging below the control.
@@ -51,6 +53,11 @@ const BOXES = {
   tile: { art: require('@/assets/images/ui-3d/tile.png'), dark: require('@/assets/images/ui-3d/tile_d.png'), insets: { top: 18, left: 18, bottom: 18, right: 18 }, outset: 3 },
 } as const;
 
+export const CLAY_CONFETTI = {
+  '#F9C76C': require('@/assets/images/ui-3d/confetti_y_d.png'), '#CBB9FF': require('@/assets/images/ui-3d/confetti_p_d.png'),
+  '#F35CBB': require('@/assets/images/ui-3d/confetti_m_d.png'), '#83D9E7': require('@/assets/images/ui-3d/confetti_c_d.png'),
+} as const;
+
 export type ClayName = keyof typeof ICONS;
 export type ClayPillKind = keyof typeof PILLS;
 export type ClayBoxKind = keyof typeof BOXES;
@@ -58,6 +65,7 @@ export type ClayBoxKind = keyof typeof BOXES;
 // iOS only: Android's tab bar tints every icon, so it keeps the Material symbols. The bar itself and its selected glass are the system's, only the icons can be drawings.
 const tab = (name: string, selected: number, plain: number) => ({ [name]: { default: plain, selected } });
 export const CLAY_TABS = {
+  ...tab('store', require('@/assets/images/ui-3d/store.png'), require('@/assets/images/ui-3d/store.png')),
   ...tab('home', require('@/assets/images/ui-3d/tab_home_on.png'), require('@/assets/images/ui-3d/tab_home.png')),
   ...tab('meetups', require('@/assets/images/ui-3d/tab_meetups_on.png'), require('@/assets/images/ui-3d/tab_meetups.png')),
   ...tab('map', require('@/assets/images/ui-3d/tab_map_on.png'), require('@/assets/images/ui-3d/tab_map.png')),
@@ -65,6 +73,7 @@ export const CLAY_TABS = {
   ...tab('bell', require('@/assets/images/ui-3d/tab_bell_on.png'), require('@/assets/images/ui-3d/tab_bell.png')),
 };
 export const CLAY_TABS_DARK = {
+  ...tab('store', require('@/assets/images/ui-3d/store_d.png'), require('@/assets/images/ui-3d/store_d.png')),
   ...tab('home', require('@/assets/images/ui-3d/tab_home_on_d.png'), require('@/assets/images/ui-3d/tab_home_d.png')),
   ...tab('meetups', require('@/assets/images/ui-3d/tab_meetups_on_d.png'), require('@/assets/images/ui-3d/tab_meetups_d.png')),
   ...tab('map', require('@/assets/images/ui-3d/tab_map_on_d.png'), require('@/assets/images/ui-3d/tab_map_d.png')),

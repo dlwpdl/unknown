@@ -46,7 +46,7 @@ export default function AppTabs() {
       {/* Acting as a business, the meetup tab becomes the business home (meetups stay personal-only). */}
       <NativeTabs.Trigger name="meetups">
         <NativeTabs.Trigger.Label>{business ? tr('내 가게') : t.tabs.meetups}</NativeTabs.Trigger.Label>
-        {business ? <NativeTabs.Trigger.Icon sf="storefront" md="storefront" /> : <NativeTabs.Trigger.Icon {...(art('meetups') ?? { sf: { default: 'person.2', selected: 'person.2.fill' } })} md="groups" />}
+        {business ? <NativeTabs.Trigger.Icon {...(art('store') ?? { sf: 'storefront' as const })} md="storefront" /> : <NativeTabs.Trigger.Icon {...(art('meetups') ?? { sf: { default: 'person.2', selected: 'person.2.fill' } })} md="groups" />}
       </NativeTabs.Trigger>
 
       {/* 지도가 글쓰기 탭 자리로 (owner 2026-11-01 A안). 글쓰기는 오늘 화면의 떠 있는 버튼. */}
