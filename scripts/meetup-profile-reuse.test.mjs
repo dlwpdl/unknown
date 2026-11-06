@@ -11,7 +11,7 @@ import { translateUi } from '../src/i18n/index.ts';
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 export const saved = { version: 2, revision: 'saved', displayName: '산책친구', cityId: 'vancouver', intro: '주말에 걸어요', interests: ['산책'], promptOne: '함께 걸어요', promptTwo: '느긋하게', promptOneId: 'meet', promptTwoId: 'join', photoPaths: [], publicPhotoPath: null, shareWithMembers: false, preferences: { activities: [], availability: '', pace: 'any' } };
 const owner = '00000000-0000-4000-8000-000000000001';
-export function profile(value, { upload, failSave = true, language = 'ko', theme = {}, nickname } = {}) {
+export function profile(value, { upload, failSave = true, language = 'ko', theme = {}, nickname, fontScale = 1 } = {}) {
   const slots = [], effects = [], writes = [], routes = [], uploads = [], cleanup = [];
   let at = 0, actor = owner, focused, focusCleanup, guard;
   const effect = (fn, deps) => { const i = at++, previous = slots[i]; if (!previous || deps.some((dep, index) => dep !== previous.deps[index])) { slots[i] = { deps }; effects.push(() => { previous?.cleanup?.(); slots[i].cleanup = fn(); }); } };
@@ -25,7 +25,7 @@ export function profile(value, { upload, failSave = true, language = 'ko', theme
     'react-native-safe-area-context': { SafeAreaProvider: 'SafeAreaProvider', SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) },
     react,
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': { AccessibilityInfo: { announceForAccessibility() {} }, View: 'View', TextInput: 'Input', KeyboardAvoidingView: 'KeyboardAvoidingView', Modal: 'Modal', StyleSheet: { create: x => x }, Platform: { OS: 'web' }, Keyboard: { dismiss() {} } },
+    'react-native': { AccessibilityInfo: { announceForAccessibility() {} }, View: 'View', TextInput: 'Input', KeyboardAvoidingView: 'KeyboardAvoidingView', Modal: 'Modal', StyleSheet: { create: x => x }, Platform: { OS: 'web' }, Keyboard: { dismiss() {} }, useWindowDimensions: () => ({ fontScale }) },
     'expo-router': { usePreventRemove: when => { guard = when; }, useLocalSearchParams: () => ({}), useFocusEffect: fn => { focused = fn; }, useRouter: () => ({ canGoBack: () => true, back: () => routes.push('back') }) },
     'expo-image-picker': { UIImagePickerPreferredAssetRepresentationMode: { Compatible: 'compatible' }, launchImageLibraryAsync: async () => ({ canceled: false, assets: [{ uri: 'fixture-photo' }] }) },
     'react-native-reanimated': { useReducedMotion: () => true },
@@ -83,6 +83,14 @@ test('the nickname fills an empty name, a saved name stays, and name, area and a
   assert.equal(app.writes[0].shareWithMembers, false, 'Sharing with members stays off unless switched on.');
   const kept = profile({ ...saved, intro: '' }, { nickname: '글링친구' }); kept.render(); await new Promise(setImmediate);
   assert.equal(nodes(kept.render()).find(node => node.props?.accessibilityLabel === '모임에서 쓸 이름').props.value, saved.displayName);
+});
+test('name and area stop sharing a row as the text grows, so a nickname is not cut off', async () => {
+  const basis = async fontScale => {
+    const app = profile(null, { nickname: '지혜로운솔방울', fontScale }); app.render(); await new Promise(setImmediate);
+    return nodes(app.render()).filter(node => node.props?.style?.[1]?.flexBasis).map(node => node.props.style[1].flexBasis);
+  };
+  assert.deepEqual(await basis(1), [140, 140]);
+  assert.deepEqual(await basis(1.5), [210, 210]);
 });
 test('an older profile says the whole profile goes to the host and keeps its extras when saved', async () => {
   const older = { ...saved, version: 1 };

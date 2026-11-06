@@ -7,7 +7,7 @@ import { useFocusEffect, useLocalSearchParams, usePreventRemove, useRouter } fro
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from 'expo-symbols';
-import { AccessibilityInfo, Alert, AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Modal, Platform, type ScrollViewInstance, StyleSheet, TextInput, UIManager, View } from 'react-native';
+import { AccessibilityInfo, Alert, AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Modal, Platform, type ScrollViewInstance, StyleSheet, TextInput, UIManager, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
@@ -45,6 +45,7 @@ export default function MeetupProfileRoute() {
 }
 function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId?: string; returnPostId?: string }) {
   const { tr, language } = useLanguage();
+  const { fontScale } = useWindowDimensions();
   const theme = useTheme(), router = useRouter(), insets = useSafeAreaInsets();
   const { isAuthed, me, promptLogin } = useAuth();
   const viewer = me.id;
@@ -243,11 +244,11 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
                   {/* shortcut: same card as introCard in meetup-join.tsx, copied while 3D work holds that file; share one component once it lands. */}
                   <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
                     <View style={styles.pair}>
-                      <View style={styles.pairItem}>
+                      <View style={[styles.pairItem, { flexBasis: 140 * fontScale }]}>
                         <ThemedText style={Typography.label}>{tr("모임에서 쓸 이름")}</ThemedText>
                         <TextInput accessibilityLabel={tr("모임에서 쓸 이름")} value={profile.displayName ?? ''} maxLength={30} editable={!saving} placeholder={tr("모임에서 불리고 싶은 이름")} placeholderTextColor={theme.textSecondary} onChangeText={displayName => setProfile(current => ({ ...current, displayName }))} style={[ControlStyles.field, styles.cardInput, { borderColor: theme.line, color: theme.text, backgroundColor: theme.background }]} />
                       </View>
-                      <View style={styles.pairItem}>
+                      <View style={[styles.pairItem, { flexBasis: 140 * fontScale }]}>
                         <ThemedText style={Typography.label}>{tr("활동 지역")}</ThemedText>
                         <Pressable analyticsId="app_meetup-profile.pressable.12" accessibilityRole="button" accessibilityLabel={`${tr("활동 지역")}, ${cityName}`} disabled={saving} onPress={() => { play('selection'); Keyboard.dismiss(); setCityOpen(true); }} style={({ pressed }) => [ControlStyles.field, styles.city, { borderColor: theme.line, backgroundColor: theme.background, opacity: pressed ? 0.7 : 1 }]}>
                           <ThemedText numberOfLines={1} style={styles.flex}>{cityName}</ThemedText>
@@ -417,7 +418,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
 const styles = StyleSheet.create({
   label: { ...Typography.menu }, helper: { fontSize: 14, lineHeight: 22 }, bodyText: { fontSize: 16, lineHeight: 24 },
   card: { borderWidth: 1, borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
-  pair: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, pairItem: { flexGrow: 1, flexBasis: 140, minWidth: 0, gap: Spacing.one },
+  pair: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, pairItem: { flexGrow: 1, minWidth: 0, gap: Spacing.one },
   cardInput: { borderWidth: 1, paddingHorizontal: Spacing.three, fontSize: 16 },
   city: { borderWidth: 1, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', gap: Spacing.one }, flex: { flex: 1, minWidth: 0 },
   examples: { gap: Spacing.one, paddingHorizontal: Spacing.three }, examplesRow: { marginHorizontal: -Spacing.three },
