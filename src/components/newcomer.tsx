@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { DeviceEventEmitter, StyleSheet, View } from 'react-native';
 
 import { Pressable, Switch } from '@/components/analytics-controls';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles, IconSize, Typography } from '@/constants/design-system';
@@ -53,11 +54,13 @@ const LABEL_COLORS: Record<MeetupLabel, { backgroundColor: string; color: string
 
 export function MeetupLabelBadges({ labels, overlay = true }: { labels: MeetupLabel[]; overlay?: boolean }) {
   const { tr } = useLanguage();
+  const theme = useTheme(), clay = useClay();
   if (!labels.length) return null;
   // The card's accessibility label already reads these before the title.
   return <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.badges, overlay && styles.overlay]}>
-    {labels.map(label => <View key={label} style={[styles.badge, { backgroundColor: LABEL_COLORS[label].backgroundColor }]}>
-      <ThemedText style={[styles.badgeText, { color: LABEL_COLORS[label].color }]}>{tr(MEETUP_LABEL_TEXT[label])}</ThemedText>
+    {labels.map(label => <View key={label} style={[styles.badge, clay ? styles.badgeClay : { backgroundColor: LABEL_COLORS[label].backgroundColor }]}>
+      {clay && <ClayPillFill kind={label === 'new' ? 'white' : 'on'} />}
+      <ThemedText style={[styles.badgeText, { color: !clay ? LABEL_COLORS[label].color : label === 'new' ? theme.text : theme.accentInk }]}>{tr(MEETUP_LABEL_TEXT[label])}</ThemedText>
     </View>)}
   </View>;
 }
@@ -174,6 +177,7 @@ const styles = StyleSheet.create({
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   overlay: { position: 'absolute', top: 12, left: 12, right: 12 },
   badge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  badgeClay: { paddingHorizontal: 12, paddingVertical: 4 },
   badgeText: { ...Typography.label },
   option: { gap: Spacing.two },
   optionCard: { borderWidth: 1, borderRadius: 16, padding: Spacing.three, gap: Spacing.two },

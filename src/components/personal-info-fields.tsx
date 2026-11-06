@@ -1,4 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
+import { SymbolView } from '@/components/symbol-view';
 import { Pressable } from '@/components/analytics-controls';
 import { useState } from 'react';
 import { Platform, StyleSheet, TextInput, View, type KeyDownEvent } from 'react-native';
@@ -61,7 +62,7 @@ export function PersonalInfoFields({ value, onChange, disabled = false, showCons
       {...(Platform.OS === 'web' ? { onKeyDown: (event: KeyDownEvent) => { if (event.nativeEvent.key === ' ') { event.preventDefault(); toggleConsent(); } } } : {})}
       style={({ pressed }) => [styles.consent, { borderColor: value.accepted ? theme.accent : theme.line, backgroundColor: theme.card, opacity: disabled ? 0.55 : pressed ? 0.7 : 1 }]}>
       <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { borderColor: value.accepted ? theme.accent : theme.line, backgroundColor: value.accepted ? theme.accent : theme.card }]}>
-        {value.accepted && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText>}
+        {value.accepted && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={14} tintColor={theme.accentInk} />}
       </View>
       <ThemedText type="small" style={styles.consentText}>{tr("[선택] 이름·생년월일·성별 수집·이용에 동의합니다.")}</ThemedText>
     </Pressable>

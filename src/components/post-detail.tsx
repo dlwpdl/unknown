@@ -36,7 +36,7 @@ import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { GlingLoader } from '@/components/gling-loader';
 import { ListCard, ListRow } from '@/components/list-card';
 import { RaisedActionButton } from '@/components/raised-action-button';
-import { ClayBoxFill, ClayControlFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
+import { ClayBoxFill, ClayCoinFill, ClayControlFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { PostCard, PostReactionToggle } from '@/components/post-card';
 import { TranslatedCommentBody } from '@/components/content-translation';
 import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
@@ -1000,6 +1000,8 @@ const styles = StyleSheet.create({
   fact: { padding: Spacing.three, gap: 2 },
   factTop: { borderTopWidth: 1 },
   factLeft: { borderLeftWidth: 1 },
+  factLineTop: { position: 'absolute', top: 0, left: Spacing.three, right: Spacing.three, height: StyleSheet.hairlineWidth },
+  factLineLeft: { position: 'absolute', left: 0, top: Spacing.three, bottom: Spacing.three, width: StyleSheet.hairlineWidth },
   factValue: { fontSize: 16, lineHeight: 24, fontWeight: '600' },
   statusNote: { borderRadius: 16, padding: Spacing.three },
   meetupSection: { gap: Spacing.two, paddingTop: Spacing.three, borderTopWidth: StyleSheet.hairlineWidth },
@@ -1110,7 +1112,10 @@ export function MeetupFacts({ post, canEnterChat, own }: { post: Post; canEnterC
     <View style={[styles.facts, clayBox ? styles.clayCard : { borderColor: theme.line }]}>
       {clayBox && <ClayBoxFill kind="tile" />}
       {facts.map(([label, value, note], index) => <View key={label} style={[styles.fact, { width: stacked ? '100%' : '50%', backgroundColor: clayBox ? 'transparent' : theme.card, borderColor: theme.line },
-        index >= (stacked ? 1 : 2) && styles.factTop, !stacked && index % 2 === 1 && styles.factLeft]}>
+        !clayBox && index >= (stacked ? 1 : 2) && styles.factTop, !clayBox && !stacked && index % 2 === 1 && styles.factLeft]}>
+        {/* Inset on clay, so a line never cuts through the card's raised edge. */}
+        {clayBox && index >= (stacked ? 1 : 2) && <View style={[styles.factLineTop, { backgroundColor: theme.line }]} />}
+        {clayBox && !stacked && index % 2 === 1 && <View style={[styles.factLineLeft, { backgroundColor: theme.line }]} />}
         <ThemedText type="small" themeColor="textSecondary">{label}</ThemedText>
         <ThemedText style={styles.factValue}>{value}</ThemedText>
         {!!note && <ThemedText type="small" themeColor="textSecondary">{note}</ThemedText>}
@@ -1144,7 +1149,7 @@ function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavi
   const tools = Platform.OS === 'web' ? null : own ? tr('호스트 관리') : participation?.status === 'approved' ? tr('참석 확인') : null;
   return <View style={styles.summary}>
     <View style={styles.host}>
-      <View style={[styles.hostAvatar, { backgroundColor: theme.backgroundSelected }]}><ThemedText type="smallBold">{post.author.nickname[0]}</ThemedText></View>
+      <View style={[styles.hostAvatar, !clay && { backgroundColor: theme.backgroundSelected }]}>{clay && <ClayCoinFill />}<ThemedText type="smallBold">{post.author.nickname[0]}</ThemedText></View>
       <View style={styles.hostName}><ThemedText type="smallBold" style={styles.hostNameText}>{post.author.nickname}</ThemedText><TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} /></View>
       <Pressable analyticsId="components_chilling-host-profile.pressable.1" accessibilityRole="button" accessibilityLabel={tr('{0} 모임 프로필', post.author.nickname)}
         accessibilityState={room.eventKind ? { expanded: !!profile, busy: loading } : undefined} style={[styles.hostLink, clay && styles.clayPad]}

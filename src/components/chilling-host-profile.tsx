@@ -1,4 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
+import { SymbolView } from '@/components/symbol-view';
 import { Pressable } from '@/components/analytics-controls';
 import { useCallback, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -86,7 +87,7 @@ export function MeetupNotes({ post }: { post: Post }) {
   ].filter(Boolean);
   return <View style={[styles.notes, { borderColor: theme.line }]}>
     <Pressable analyticsId="components_chilling-host-profile.pressable.3" accessibilityRole="button" accessibilityLabel={tr('참여 전에 알아둘 것')} accessibilityState={{ expanded: open }} onPress={() => { play('selection'); setOpen(value => !value); }} style={styles.row}>
-      <ThemedText style={Typography.menu}>{tr('참여 전에 알아둘 것')}</ThemedText><ThemedText themeColor="textSecondary">{open ? '−' : '＋'}</ThemedText>
+      <ThemedText style={Typography.menu}>{tr('참여 전에 알아둘 것')}</ThemedText><SymbolView name={open ? { ios: 'minus', android: 'remove', web: 'remove' } : { ios: 'plus', android: 'add', web: 'add' }} size={20} tintColor={theme.textSecondary} />
     </Pressable>
     {open && notes.map(note => <ThemedText key={note} type="small" themeColor="textSecondary">• {note}</ThemedText>)}
   </View>;

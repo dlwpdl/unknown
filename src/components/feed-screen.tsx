@@ -1368,7 +1368,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                             accessibilityRole="button"
                             accessibilityLabel={tr("{0}번째 사진 삭제", (index + 1))}
                             style={[styles.photoRemove, { backgroundColor: theme.card }]}>
-                            <ThemedText type="smallBold" style={{ color: theme.text }}>✕</ThemedText>
+                            <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={14} tintColor={theme.text} />
                           </Pressable>
                         </View>
                       ))}

@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 
+import { SymbolView } from '@/components/symbol-view';
 import { Pressable } from '@/components/analytics-controls';
 import { ClayControlFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
@@ -79,7 +80,7 @@ export function PlaceRelated({ place, saves }: { place: CityPlace; saves: PlaceS
           <ThemedText type="smallBold" numberOfLines={1}>{item.place.name}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{week(item.saverCount, item.weekCount, locale, tr)}</ThemedText>
         </View>
-        <ThemedText themeColor="textSecondary" accessible={false}>›</ThemedText>
+        <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
       </Pressable>)}
     </View>}
     {lists.length > 0 && <View style={styles.lists}>

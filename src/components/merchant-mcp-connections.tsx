@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Image } from 'expo-image';
 import { AppState, Linking, Platform, StyleSheet, View, type KeyDownEvent } from 'react-native';
 
+import { SymbolView } from '@/components/symbol-view';
 import { Pressable } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
 import { ThemedText } from '@/components/themed-text';
@@ -51,7 +52,7 @@ function Choice({ title, detail, checked, onPress, disabled = false }: { title: 
   return <Pressable lens {...keyboard} analyticsId="merchant.ai.permission" accessibilityRole="checkbox" accessibilityLabel={`${title}. ${detail}`} accessibilityState={{ checked, disabled }} aria-checked={checked} aria-disabled={disabled} disabled={disabled}
     onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.choice, { borderColor: checked ? theme.accent : theme.line, opacity: disabled || pressed ? 0.65 : 1 }]}>
     <View style={[styles.check, { borderColor: checked ? theme.accent : theme.line, backgroundColor: checked ? theme.accent : 'transparent' }]}>
-      {checked && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText>}
+      {checked && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={14} tintColor={theme.accentInk} />}
     </View><View style={styles.grow}><ThemedText type="smallBold">{title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{detail}</ThemedText></View>
   </Pressable>;
 }

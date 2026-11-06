@@ -1,4 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
+import { SymbolView } from '@/components/symbol-view';
 import { GlingLoader } from '@/components/gling-loader';
 import { behavior, flushBehavior } from '@/lib/behavior-analytics';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
@@ -295,7 +296,7 @@ export function ProfileOnboarding({
                 {...(Platform.OS === 'web' ? { onKeyDown: (event: KeyDownEvent) => { if (event.nativeEvent.key === ' ') { event.preventDefault(); toggleAll(); } } } : {})}
                 style={[styles.consent, styles.allConsent, { borderBottomColor: theme.line }]}>
                 <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { backgroundColor: someAccepted ? theme.accent : 'transparent', borderColor: someAccepted ? theme.accent : theme.line }]}>
-                  {someAccepted && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{allAccepted ? '✓' : '−'}</ThemedText>}
+                  {someAccepted && <SymbolView name={allAccepted ? { ios: 'checkmark', android: 'check', web: 'check' } : { ios: 'minus', android: 'remove', web: 'remove' }} size={14} tintColor={theme.accentInk} />}
                 </View>
                 <ThemedText type="smallBold" style={styles.consentText}>{tr("모두 동의")}{askPersonalInfo && <ThemedText type="small" themeColor="textSecondary"> {" " + tr("(선택 포함)")}</ThemedText>}</ThemedText>
               </Pressable>
@@ -309,7 +310,7 @@ export function ProfileOnboarding({
                       {...(Platform.OS === 'web' ? { onKeyDown: (event: KeyDownEvent) => { if (event.nativeEvent.key === ' ') { event.preventDefault(); toggle(); } } } : {})}
                       style={styles.consent}>
                       <View aria-hidden accessibilityElementsHidden style={[styles.checkbox, { backgroundColor: item.checked ? theme.accent : 'transparent', borderColor: item.checked ? theme.accent : theme.line }]}>
-                        {item.checked && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText>}
+                        {item.checked && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={14} tintColor={theme.accentInk} />}
                       </View>
                       <ThemedText type="small" style={styles.consentText}>{tr(item.label)}</ThemedText>
                     </Pressable>

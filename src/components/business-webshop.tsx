@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Share, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SymbolView } from '@/components/symbol-view';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { ClayBoxFill, ClayIcon, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
@@ -47,7 +48,7 @@ export function WebshopBanner({ shop, onPress }: { shop: Webshop; onPress: () =>
           ? language === 'ko' ? `최대 ${maximumPercent}% 할인` : `Save up to ${maximumPercent}%`
           : language === 'ko' ? '가게 웹샵에서 주문하기' : 'Order from the store’s webshop'}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">{shop.comparisons.length ? language === 'ko' ? '대표 메뉴 가격 비교 · 자세히 보기' : 'Compare selected menu prices' : language === 'ko' ? 'Uber에서 주문·결제해요' : 'Orders and payment handled by Uber'}</ThemedText>
-      </View><ThemedText themeColor="textSecondary" accessible={false}>›</ThemedText>
+      </View><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
     </Pressable>
     <UberOrderNotice />
   </View>;

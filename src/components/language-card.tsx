@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Modal, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { FlatPressable } from '@/components/flat-pressable';
+import { SymbolView } from '@/components/symbol-view';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
@@ -12,7 +14,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
 export function LanguageCard({ compact = false }: { compact?: boolean } = {}) {
   const { language, preference, isSaving, setPreference, t } = useLanguage();
-  const theme = useTheme();
+  const theme = useTheme(), clay = useClay();
   const { play } = useInteractionFeedback();
   const [failed, setFailed] = useState(false);
   const [open, setOpen] = useState(false);
@@ -33,7 +35,7 @@ export function LanguageCard({ compact = false }: { compact?: boolean } = {}) {
           void setPreference(value).then((saved) => { if (saved) setOpen(false); else { play('warning'); setFailed(true); } });
         }} style={({ pressed }) => [styles.row, index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.line }, pressed && { backgroundColor: theme.backgroundSelected }]}>
         <ThemedText type="small" style={styles.label}>{label}</ThemedText>
-        <ThemedText style={{ color: theme.accent }} accessible={false} accessibilityElementsHidden aria-hidden>{preference === value ? '✓' : '○'}</ThemedText>
+        {preference === value && clay ? <SymbolView name="checkmark" size={18} tintColor={theme.accent} /> : <ThemedText style={{ color: theme.accent }} accessible={false} accessibilityElementsHidden aria-hidden>{preference === value ? '✓' : '○'}</ThemedText>}
       </Pressable>)}
     </View>
     <ThemedText type="small" themeColor="textSecondary">{t.language.note}</ThemedText>
@@ -46,8 +48,9 @@ export function LanguageCard({ compact = false }: { compact?: boolean } = {}) {
     <FlatPressable testID="app_language.open" accessibilityRole="button" accessibilityLabel={`${t.language.title}, ${label}`}
       disabled={isSaving} accessibilityState={{ expanded: open, disabled: !!isSaving, busy: !!isSaving }}
       onPress={() => { if (!isSaving) { play('selection'); setOpen(true); } }}
-      style={({ pressed }) => [styles.compact, { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
-      <ThemedText type="small" themeColor="textSecondary">{label}</ThemedText><ThemedText type="small" themeColor="textSecondary" accessible={false}>⌄</ThemedText>
+      style={({ pressed }) => [styles.compact, clay ? styles.compactClay : { borderColor: theme.line, backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
+      {clay && <ClayPillFill kind="white" />}
+      <ThemedText type="small" themeColor={clay ? 'text' : 'textSecondary'}>{label}</ThemedText><SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={clay ? 16 : 14} tintColor={theme.textSecondary} />
     </FlatPressable>
     <Modal visible={open} transparent animationType="fade" onRequestClose={close}>
       <View style={styles.modalRoot}>
@@ -70,6 +73,7 @@ const styles = StyleSheet.create({
   row: { minHeight: 48, paddingVertical: 12, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   label: { flex: 1, flexShrink: 1 },
   compact: { minHeight: 44, paddingHorizontal: 12, borderWidth: 1, borderRadius: 999, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  compactClay: { borderWidth: 0, paddingHorizontal: 18, gap: 6 },
   modalRoot: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: Spacing.four },
   backdrop: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.6)' },
   modalCard: { width: '100%', maxWidth: 360, maxHeight: '90%', borderRadius: 24, borderWidth: 1, overflow: 'hidden' },

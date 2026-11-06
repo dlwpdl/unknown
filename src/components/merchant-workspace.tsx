@@ -2,10 +2,11 @@ import { useLanguage } from '@/hooks/use-language';
 import { tr } from '@/i18n';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import type { SymbolViewProps } from 'expo-symbols';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert, Linking, Platform, Share, StyleSheet, TextInput, View, type KeyDownEvent } from 'react-native';
 
+import { SymbolView } from '@/components/symbol-view';
 import { Pressable, Switch } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
 import { MerchantAccountInvitations, MerchantAccountManagement } from '@/components/merchant-account-connections';
@@ -145,7 +146,7 @@ function ToolRow({ title, detail, onPress, disabled }: { title: string; detail: 
   return <Pressable analyticsId="merchant.action" accessibilityRole="button" accessibilityLabel={title} accessibilityHint={detail} accessibilityState={{ disabled: !!disabled }} disabled={disabled}
     onPress={() => { play('selection'); onPress(); }} style={[styles.toolRow, { borderColor: theme.line }]}>
     <View style={styles.toolText}><ThemedText type="smallBold">{title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{detail}</ThemedText></View>
-    <ThemedText themeColor="textSecondary" accessible={false}>›</ThemedText>
+    <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
   </Pressable>;
 }
 function ToolTile({ title, detail, icon, badge, warn = false, onPress, disabled }: { title: string; detail: string; icon: SymbolViewProps['name']; badge?: string; warn?: boolean; onPress: () => void; disabled?: boolean }) {

@@ -1,4 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
+import { SymbolView } from '@/components/symbol-view';
 import { ClayPillFill, useClay } from '@/components/clay';
 import { Pressable } from '@/components/analytics-controls';
 import { useEffect, useRef, useState } from 'react';
@@ -103,7 +104,7 @@ function PersonalInfoEditor({ userId, nickname, onRetry }: { userId: string; nic
       <Pressable analyticsId="components_personal-info-card.pressable.6" accessibilityRole="button" accessibilityState={{ expanded: editing, disabled: busy }} disabled={busy}
         onPress={() => { play('selection'); animateLayout(reducedMotion); setEditing(value => !value); }} style={styles.editRow}>
         <ThemedText type="smallBold" style={{ color: theme.accent }}>{editing ? tr("계정 정보 닫기") : data.full_name ? tr("비공개 계정 정보 수정") : tr("비공개 계정 정보 입력")}</ThemedText>
-        <ThemedText themeColor="textSecondary">{editing ? '⌃' : '›'}</ThemedText>
+        <SymbolView name={editing ? { ios: 'chevron.up', android: 'expand_less', web: 'expand_less' } : { ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
       </Pressable>
       {editing && <View style={styles.editor}>
         <PersonalInfoFields value={draft} disabled={busy} onChange={(value) => { setDraft(value); setError(null); setNotice(null); setConfirmDelete(false); }} />

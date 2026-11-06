@@ -1,4 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
+import { SymbolView } from '@/components/symbol-view';
 import { Pressable } from '@/components/analytics-controls';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Alert, Animated, Easing, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
@@ -187,7 +188,7 @@ export function ReportSheet({
               accessibilityState={{ checked: blockAfter }}
                   style={({ pressed }) => [styles.blockRow, { opacity: pressed ? 0.65 : 1 }]}>
               <View style={[styles.checkbox, { borderColor: blockAfter ? theme.accent : theme.line, backgroundColor: blockAfter ? theme.accent : theme.card }]}>
-                {blockAfter && <ThemedText type="smallBold" style={{ color: theme.accentInk }}>✓</ThemedText>}
+                {blockAfter && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={14} tintColor={theme.accentInk} />}
               </View>
               <View style={styles.copy}>
                 <ThemedText type="smallBold">{t.report.block(reportedNickname)}</ThemedText>
