@@ -5,10 +5,10 @@ import { KeyboardAvoidingView, LayoutAnimation, Platform, StyleSheet, TextInput,
 import { useReducedMotion } from 'react-native-reanimated';
 import { SymbolView } from '@/components/symbol-view';
 
-import { ClayPillFill, useClay, useClayBox, ClayBoxFill } from '@/components/clay';
+import { useClayBox, ClayBoxFill } from '@/components/clay';
 import { GlassSurface } from '@/components/glass-surface';
 import { ThemedText } from '@/components/themed-text';
-import { Depth, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { ControlMetrics, ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
@@ -20,7 +20,7 @@ import type { City } from '@/lib/types';
 
 export function CityPicker({ onClose, draft, title }: { onClose: () => void; draft?: { city: City; onSelect: (city: City) => void }; title?: string }) {
   const { language, tr, t } = useLanguage();
-  const theme = useTheme(), clay = useClay(), clayBox = useClayBox();
+  const theme = useTheme(), clayBox = useClayBox();
   const { city, selectCity, saving } = useCommunityCity();
   const { play } = useInteractionFeedback();
   const [query, setQuery] = useState('');
@@ -47,10 +47,11 @@ export function CityPicker({ onClose, draft, title }: { onClose: () => void; dra
   const needle = normalize(query);
   const provinceQuery = CITIES.some(item => item.province.toLowerCase() === needle);
   const matches = CITIES.filter(item => provinceQuery ? item.province.toLowerCase() === needle
-    : normalize([item.name, item.englishName, item.id, item.province, ...(item.aliases ?? [])].join(' ')).includes(needle));
+    : normalize([item.name, item.englishName, item.id, item.province, ...(item.aliases ?? [])].join(' ')).includes(needle))
+    .sort((a, b) => a.englishName.localeCompare(b.englishName, 'en'));
   const sections = [
     { title: t.feed.cityOpenSection, data: matches.filter(item => item.state === 'open') },
-    { title: t.feed.citySoon, data: matches.filter(item => item.state === 'soon').sort((a, b) => a.name.localeCompare(b.name, 'ko')) },
+    { title: t.feed.citySoon, data: matches.filter(item => item.state === 'soon') },
   ].filter(section => section.data.length > 0);
 
   // Recreate native text layout when Dynamic Type changes while the sheet is open.
@@ -65,16 +66,6 @@ export function CityPicker({ onClose, draft, title }: { onClose: () => void; dra
       </Pressable></View>}
     </View>
     <View style={styles.controls}>
-      <View style={[styles.countriesGlass, { backgroundColor: theme.backgroundElement }]}><View accessibilityRole="tablist" accessibilityLabel={t.feed.cityCountry} style={styles.countries}>
-        <View accessible accessibilityRole="tab" accessibilityState={{ selected: true }} style={[styles.country, fontScale > 1.2 && styles.currentCountry, !clay && Depth.control, clay && { overflow: 'visible' }, controlPresentation(theme, { tone: 'ghost', selected: true, clay }).container]}>
-          {clay && <ClayPillFill kind="on" />}
-          <ThemedText type="label" style={[controlPresentation(theme, { tone: 'ghost', selected: true }).text, clay && { color: theme.accentInk }]}>{t.feed.cityCanada}</ThemedText>
-        </View>
-        <Pressable analyticsId="components_city-picker.pressable.3" disabled accessibilityRole="tab" accessibilityState={{ selected: false, disabled: true }} accessibilityLabel={`${t.feed.cityUnitedStates}, ${t.feed.citySoon}`} style={styles.country}>
-          <ThemedText type="smallBold" themeColor="textSecondary">{t.feed.cityUnitedStates}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{t.feed.citySoon}</ThemedText>
-        </Pressable>
-      </View></View>
       <View style={[styles.searchGlass, { backgroundColor: theme.card, borderColor: theme.line }]}><View style={styles.search}>
         <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
         <TextInput accessibilityLabel={t.feed.citySearch} placeholder={t.feed.citySearch} placeholderTextColor={theme.textSecondary}
@@ -139,9 +130,6 @@ const styles = StyleSheet.create({
   title: { ...Typography.sheetTitle, flex: 1 },
   iconButton: ControlStyles.icon, iconGlass: { borderRadius: ControlMetrics.radius.icon },
   controls: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two, gap: Spacing.two },
-  countriesGlass: { borderRadius: ControlMetrics.radius.field }, countries: { flexDirection: 'row', padding: Spacing.one, borderRadius: ControlMetrics.radius.field, gap: Spacing.one },
-  country: { ...ControlStyles.pill, borderRadius: ControlMetrics.radius.action, flex: 1, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'center', gap: Spacing.one, paddingHorizontal: Spacing.two, paddingVertical: Spacing.two },
-  currentCountry: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', alignSelf: 'center' },
   searchGlass: { borderRadius: ControlMetrics.radius.field, borderWidth: StyleSheet.hairlineWidth }, search: { flexDirection: 'row', alignItems: 'center', paddingLeft: Spacing.three, borderRadius: ControlMetrics.radius.field, gap: Spacing.two, minHeight: ControlMetrics.field },
   input: { flex: 1, minWidth: 0, minHeight: ControlMetrics.touch, fontSize: Typography.menu.fontSize, paddingVertical: Spacing.two, paddingRight: Spacing.two },
   list: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.four }, sectionTitle: { paddingHorizontal: Spacing.three, paddingTop: Spacing.four, paddingBottom: Spacing.two },

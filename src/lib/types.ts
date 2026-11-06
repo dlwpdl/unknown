@@ -8,7 +8,7 @@ export interface City {
   name: string;
   englishName: string;
   aliases?: string[];
-  province: string; // Canadian province or territory abbreviation
+  province: string; // Canadian province or territory abbreviation; 'KR' for Seoul, which is its own top-level region
   state: CityState;
 }
 

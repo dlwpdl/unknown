@@ -1,4 +1,4 @@
-import snapshot from './city-places.catalog.json';
+import bundledCatalog from './city-places.catalog.json';
 import photoSnapshot from './city-places.photos.json';
 import visitedPlaces from './gling-visited.json';
 import { replaceExternalPlaceRatings } from './place-external-ratings';
@@ -43,7 +43,11 @@ type PlaceCatalog = {
     // Places past the 200 that 1.4.4/1.4.5 accept per city; those apps ignore these fields.
     extraPlaces?: CityPlace[]; extraRecommendations?: PlaceRecommendation[]; extraPhotos?: PlacePhoto[] }>;
 };
-let catalog = snapshot as PlaceCatalog;
+// Seoul has no places yet and stays out of the catalog: released apps reject a server payload with any other city set.
+const withoutCatalog: PlaceCatalog['cities'] = { seoul: { coverage: 'city-center', places: [] } };
+const withEmptyCities = (value: PlaceCatalog): PlaceCatalog => ({ ...value, cities: { ...withoutCatalog, ...value.cities } });
+const snapshot = withEmptyCities(bundledCatalog as PlaceCatalog);
+let catalog = snapshot;
 let photoCatalog = photoSnapshot as PhotoCatalog;
 export let CITY_PLACES_COLLECTED_AT = catalog.collectedAt;
 let revision = 0;
@@ -96,16 +100,17 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
       || license.hostname !== 'creativecommons.org' || license.port || license.search || license.hash
       || !licensePath || license.pathname.replace(/\/$/, '') !== licensePath) invalid();
   };
+  const catalogCities = CITIES.filter(city => !Object.hasOwn(withoutCatalog, city.id));
   if (!next || !text(next.collectedAt, 80) || !Number.isFinite(Date.parse(next.collectedAt)) || Date.parse(next.collectedAt) > now + 300_000
-    || !next.cities || Object.keys(next.cities).length !== CITIES.length || Object.keys(next.cities).some(id => !CITIES.some(c => c.id === id))) invalid();
+    || !next.cities || Object.keys(next.cities).length !== catalogCities.length || Object.keys(next.cities).some(id => !catalogCities.some(c => c.id === id))) invalid();
   if (next.recommendationTheme !== 'photo-spots') return false;
   const nextSelection = next.selectionRevision ?? 0, currentSelection = catalog.selectionRevision ?? 0;
   if (!Number.isSafeInteger(nextSelection) || nextSelection < 0) invalid();
   // A catalog that would not replace the current one skips the full per-city validation below.
   if (nextSelection < currentSelection || (nextSelection === currentSelection && Date.parse(next.collectedAt) <= Date.parse(catalog.collectedAt))) return false;
-  for (const city of CITIES) {
+  for (const city of catalogCities) {
     const data = next.cities[city.id];
-    if (next.photoCatalog && (!next.photoCatalog.cities || Object.keys(next.photoCatalog.cities).length !== CITIES.length)) invalid();
+    if (next.photoCatalog && (!next.photoCatalog.cities || Object.keys(next.photoCatalog.cities).length !== catalogCities.length)) invalid();
     if (!data || !['municipal-boundary', 'city-center'].includes(data.coverage) || !Array.isArray(data.places) || !data.places.length || data.places.length > 200) invalid();
     const ids = new Set<string>();
     if (data.regionalPlaces !== undefined && (!Array.isArray(data.regionalPlaces) || data.regionalPlaces.length > 200)) invalid();
@@ -187,7 +192,7 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
       || !replaceExternalPlaceRatings(next.externalRatings)) invalid();
   }
   if (next.photoCatalog) photoCatalog = { ...next.photoCatalog, additionalCatalog: optional.additionalCatalog, flickrCatalog: optional.flickrCatalog };
-  catalog = next; CITY_PLACES_COLLECTED_AT = next.collectedAt; revision++;
+  catalog = withEmptyCities(next); CITY_PLACES_COLLECTED_AT = next.collectedAt; revision++;
   listeners.forEach(listener => listener());
   return true;
 }

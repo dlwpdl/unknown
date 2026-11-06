@@ -13,7 +13,7 @@ import * as distance from '../src/lib/discovery-sort.ts';
 const root = new URL('../', import.meta.url);
 const citySource = readFileSync(new URL('src/lib/mock.ts', root), 'utf8').split('export const TAGS')[0];
 const cities = [...citySource.matchAll(/id: '([^']+)', name: '([^']+)', englishName: '([^']+)'[^\n]*?province: '([^']+)'/g)]
-  .map(([, id, name, englishName, province]) => ({ id, name, englishName, province }));
+  .map(([, id, name, englishName, province]) => ({ id, name, englishName, province })).filter(city => city.id !== 'seoul');
 const nodes = v => !v || typeof v !== 'object' ? [] : [v, ...Object.values(v).flatMap(nodes)];
 const catalog = () => JSON.parse(readFileSync(new URL('src/lib/city-places.catalog.json', root), 'utf8'));
 const fixtureTime = Math.max(Date.parse(catalog().collectedAt), ...Object.values(catalog().cities)
@@ -50,6 +50,25 @@ function regionalFixture() {
   city.regionalPhotos = [{ ...photos().cities.vancouver[0], placeId: place.id }, { ...photos().cities.vancouver[0], artist: 'Ignored replacement' }];
   return { seed, city, place };
 }
+
+test('Seoul reads as an empty city and the unchanged 11-city server catalog still applies', () => {
+  const seoul = { id: 'seoul', name: '서울', englishName: 'Seoul', province: 'KR' };
+  const api = module('src/lib/city-places.ts', { '@/lib/mock': { CITIES: [...cities, seoul] }, './place-external-ratings': externalRatings() });
+  const empty = () => {
+    for (const read of [api.getCityPlaces, api.getCityRecommendations, api.getCityDiscoveryPlaces, api.getCityBrowsePlaces]) assert.equal(read('seoul').length, 0);
+    assert.equal(api.getCityPlacesCoverage('seoul'), '도심 주변의 장소');
+  };
+  empty();
+  const next = catalog();
+  next.collectedAt = new Date(fixtureTime).toISOString();
+  assert.equal(api.replaceCityPlacesCatalog(next, fixtureNow), true);
+  empty();
+  assert.ok(api.getCityPlaces('toronto').length > 0);
+  const withSeoul = catalog();
+  withSeoul.collectedAt = new Date(fixtureTime + 1000).toISOString();
+  withSeoul.cities.seoul = { coverage: 'city-center', places: [] };
+  assert.throws(() => api.replaceCityPlacesCatalog(withSeoul, fixtureNow), /INVALID_PLACE_CATALOG/);
+});
 
 test('optional regional facts join discovery once without changing legacy base arrays or visited status', () => {
   const { seed, city, place } = regionalFixture(), original = JSON.stringify(city.places), api = data(seed);
