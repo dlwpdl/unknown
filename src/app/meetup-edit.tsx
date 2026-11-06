@@ -194,7 +194,7 @@ function MeetupEditForm({ postId }: { postId: string }) {
 
   return <SafeAreaView style={[styles.root, { backgroundColor: theme.background }]}>
     <View style={[styles.head, { backgroundColor: theme.background }]}><Pressable analyticsId="app_meetup-create.pressable.1" accessibilityRole="button" accessibilityLabel={tr('뒤로가기')} disabled={saving} accessibilityState={{ disabled: saving }} onPress={() => { play('selection'); back(); }} style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable><ThemedText accessibilityRole="header" style={styles.headTitle}>{tr('모임 정보 수정')}</ThemedText></View>
-    <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView ref={scroll} analyticsId="app_meetup-create.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, loading && styles.loading]}>
+    <KeyboardAvoidingView style={styles.root} behavior="padding"><ScrollView ref={scroll} analyticsId="app_meetup-create.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, loading && styles.loading]}>
       {blocked ?? <>
         <View onLayout={event => { cardY.current.basics = event.nativeEvent.layout.y; }} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
           <ThemedText accessibilityRole="header" style={styles.cardTitle}>{tr('기본 정보')}</ThemedText>

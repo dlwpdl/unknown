@@ -191,6 +191,12 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const [manageOpen, setManageOpen] = useState(false);
   const [hostActions, setHostActions] = useState<Parameters<typeof MeetupManageSheet>[0]['actions']>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const shown = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
+    const hidden = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
+    return () => { shown.remove(); hidden.remove(); };
+  }, []);
   const [settingsSession, setSettingsSession] = useState(0);
   const settingsSequence = useRef(0), settingsActive = useRef(0);
   const reportAfterSettings = useRef<{ session: number; target: ReportSelection } | null>(null);
@@ -822,13 +828,15 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           disabled={busy || reviewPick === null} primary />
       </View>
     </View>}
+    <View style={keyboardOpen && styles.hiddenWhileTyping}>
     {group && conversation.groupPostId && access.read && <MeetupRoomSummary key={`${currentUserId}:${conversation.groupPostId}`} postId={conversation.groupPostId} onOpen={() => {
       if (!valid()) return;
       discoveryVisible.current = true; discoveryLastMessage.current = latestMessages.current.at(-1)?.id;
       Keyboard.dismiss(); setOverviewOpen(true);
     }} onManage={conversation.isGroupHost && access.write ? actions => { if (valid()) { Keyboard.dismiss(); setHostActions(actions); setManageOpen(true); } } : undefined} />}
     {group && conversation.groupPostId && access.read && <MeetupRoomTop key={`notice:${currentUserId}:${conversation.groupPostId}`} postId={conversation.groupPostId} />}
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    </View>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       {access.read ? loading && messages.length === 0 ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} /></View> : <View ref={listRegion} style={styles.messageList} onLayout={() => closeMessageMenu()}><FlatList ref={messageList} analyticsId="components_chat-room.flatlist.1" data={searchMatches} keyExtractor={(message) => message.id} contentContainerStyle={styles.scroll}
         onViewableItemsChanged={trackVisibleMessages} viewabilityConfig={viewability}
         onScrollBeginDrag={() => closeMessageMenu()} onScroll={onMessageScroll} scrollEventThrottle={32} maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
@@ -936,7 +944,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       </ScrollView>}
       {access.write ? <>
         {business && <ThemedText type="small" themeColor="textSecondary" numberOfLines={2} style={styles.feedback}>{tr('{0} 프로필로 보내요', publicSelfName)}</ThemedText>}
-        {!business && contextLoaded && !loading && !replyTarget && !allMessages.some(message => message.sender_id === currentUserId) && <View style={[styles.suggestions, { backgroundColor: theme.card }]}>
+        {!keyboardOpen && !business && contextLoaded && !loading && !replyTarget && !allMessages.some(message => message.sender_id === currentUserId) && <View style={[styles.suggestions, { backgroundColor: theme.card }]}>
           <ThemedText type="small" themeColor="textSecondary">{suggestionContext?.title ? `${suggestionContext.title} · ` : ''}{tr("누르면 바로 전송돼요")}</ThemedText>
           <View style={styles.suggestionRow}>{chatSuggestions(suggestionContext, suggestionContext?.authorId === currentUserId).map(body => {
             const disabled = sending || pickingPhoto || replyLocked || busy || !!uncertainSuggestion && uncertainSuggestion !== body;
@@ -1025,7 +1033,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       </View>
     </Modal>}
     {editingMessage && !hidden('message', editingMessage.id, editingMessage.sender_id) && auth.isAuthed && auth.me.id === currentUserId && access.write && <Modal visible transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={() => { play('selection'); setEditingMessage(null); }}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.messageSheetBackdrop} accessibilityViewIsModal>
+      <KeyboardAvoidingView behavior="padding" style={styles.messageSheetBackdrop} accessibilityViewIsModal>
         <View style={[styles.messageSheet, { backgroundColor: theme.card }]}>
           <ThemedText type="smallBold">{tr("메시지 수정")}</ThemedText>
           <TextInput value={messageEditDraft} onChangeText={setMessageEditDraft} accessibilityLabel={tr("수정할 메시지")} maxLength={2000} multiline autoFocus editable={!sending}
@@ -1081,6 +1089,8 @@ const styles = StyleSheet.create({
   settingsSheet: { width: '100%', maxWidth: 600, alignSelf: 'center', borderTopWidth: 1, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: Spacing.three, paddingTop: Spacing.two, gap: Spacing.two },
   settingsHeading: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   dangerAction: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
+  // Kept mounted so the room does not refetch each time the keyboard closes.
+  hiddenWhileTyping: { display: 'none' },
   suggestions: { paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, gap: Spacing.one },
   suggestionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
   suggestion: { minHeight: 44, maxWidth: '100%', borderWidth: 1, borderRadius: 18, paddingHorizontal: 12, paddingVertical: Spacing.two, justifyContent: 'center' },

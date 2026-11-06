@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Pressable } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
+import { KeyboardScreen } from '@/components/keyboard-screen';
 import { LoginPanel } from '@/components/login-panel';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { SavedLibraryButton } from '@/components/saved-library';
@@ -195,7 +196,7 @@ export default function ImportScreen() {
   const pickResults = step.kind === 'pick' && askText ? allPlaces.filter(place => place.name.toLowerCase().includes(askText.toLowerCase())).slice(0, 8) : [];
   const pickFrom = step.kind === 'pick' ? step.source : 'manual';
 
-  return <ThemedView style={styles.root}><SafeAreaView edges={['bottom']} style={styles.safeArea}>
+  return <KeyboardScreen><ThemedView style={styles.root}><SafeAreaView edges={['bottom']} style={styles.safeArea}>
     <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
       {step.kind === 'input' && <>
         <View style={styles.intro}><ThemedText type="section">{ko ? '다른 앱에 모아 둔 곳 가져오기' : 'Bring places from other apps'}</ThemedText>
@@ -250,7 +251,7 @@ export default function ImportScreen() {
         <SavedLibraryButton analyticsId="import.restart" label={ko ? '더 가져오기' : 'Import more'} onPress={restart} />
       </>}
     </ScrollView>
-  </SafeAreaView></ThemedView>;
+  </SafeAreaView></ThemedView></KeyboardScreen>;
 }
 
 const styles = StyleSheet.create({

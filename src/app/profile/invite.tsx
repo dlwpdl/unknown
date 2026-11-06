@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
 import { InviteStats, rewardName, useInviteShare } from '@/components/invite-parts';
+import { KeyboardScreen } from '@/components/keyboard-screen';
 import { LoginPanel } from '@/components/login-panel';
 import { InfoNote } from '@/components/notice-blocks';
 import { RaisedActionButton } from '@/components/raised-action-button';
@@ -59,7 +60,7 @@ export default function InviteScreen() {
   if (auth.isAuthLoading) return <GlingLoader color={theme.accent} style={styles.flex} accessibilityLabel={tr('로그인 확인 중')} />;
   if (!auth.isAuthed) return <LoginPanel reason="친구를 초대하려면 로그인해 주세요." onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
 
-  return <ThemedView style={styles.container}>
+  return <KeyboardScreen><ThemedView style={styles.container}>
     <SafeAreaView edges={['bottom']} style={styles.safeArea}>
       <ScrollView analyticsId="invite.scroll" contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}
@@ -130,7 +131,7 @@ export default function InviteScreen() {
         {!summary && !error && <GlingLoader color={theme.accent} accessibilityLabel={tr('초대 정보 불러오는 중')} />}
       </ScrollView>
     </SafeAreaView>
-  </ThemedView>;
+  </ThemedView></KeyboardScreen>;
 }
 
 const styles = StyleSheet.create({

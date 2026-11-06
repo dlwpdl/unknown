@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { SymbolView } from '@/components/symbol-view';
 import { Pressable } from '@/components/analytics-controls';
 import { useLayoutEffect, useRef, useState } from 'react';
-import { Alert, Animated, Easing, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, Animated, Easing, KeyboardAvoidingView, Modal, ScrollView, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReducedMotion } from 'react-native-reanimated';
 
@@ -123,7 +123,7 @@ export function ReportSheet({
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={close}
       onShow={() => { sheetOffset.setValue(screenHeight); if (reducedMotion) sheetOffset.setValue(0); else Animated.timing(sheetOffset, { toValue: 0, duration: ControlMotion.expandMs, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start(); }}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.backdrop, { paddingTop: insets.top }]}>
+      <KeyboardAvoidingView behavior="padding" style={[styles.backdrop, { paddingTop: insets.top }]}>
         {/* The dim follows the sheet: it darkens as the sheet rises and clears as it slides away. */}
         <Animated.View pointerEvents="none" style={[styles.scrim, { opacity: sheetOffset.interpolate({ inputRange: [0, screenHeight], outputRange: [1, 0], extrapolate: 'clamp' }) }]} />
         <Pressable analyticsId="components_report-sheet.pressable.1"

@@ -14,6 +14,7 @@ import { usePublicWebshop, WebshopBanner, WebshopComparisonSheet, WebshopOrderBu
 import { DragSheet } from '@/components/drag-sheet';
 import { GlingLoader } from '@/components/gling-loader';
 import { MerchantProfileHeader } from '@/components/merchant-profile-header';
+import { KeyboardScreen } from '@/components/keyboard-screen';
 import { MerchantReviews } from '@/components/merchant-reviews';
 import { ReportSheet } from '@/components/report-sheet';
 import { SavedEntryButton, useSavedEntry } from '@/components/saved-entry';
@@ -237,7 +238,7 @@ export default function CompanyProfileRoute() {
       if (operation.active) { setPostResult(previous => previous?.key === listKey ? { ...previous, failed: true } : previous); play('warning'); }
     } finally { operation.reading = false; if (operation.active) setPostBusy(false); }
   }
-  return <ThemedView style={styles.page}><SafeAreaView style={styles.page} edges={['left', 'right']}>
+  return <KeyboardScreen><ThemedView style={styles.page}><SafeAreaView style={styles.page} edges={['left', 'right']}>
     <PageHeader title={tr("비즈니스 프로필")} analyticsId="company.back" right={profile ? <View style={styles.headerActions}>
           <SavedEntryButton entry={saved} kind="place" analyticsId="company.save" onBeen={() => openReviews('usage')} />
           <Pressable analyticsId="company.more" accessibilityRole="button" accessibilityLabel={tr('더보기')} accessibilityHint={tr('공유, 신고')}
@@ -411,7 +412,7 @@ export default function CompanyProfileRoute() {
     {profile?.review_post_id && menu?.key === key && menu.view === 'report' && <ReportSheet visible targetType="post" targetId={profile.review_post_id} reportedBusinessId={merchantId}
       reportedNickname={profile.name} onClose={() => { setMenu(null); setRevision(value => value + 1); }} />}
     {profile && webshop.shop && <WebshopComparisonSheet key={merchantId} client={supabase} shop={webshop.shop} name={profile.name} visible={orderOpen} onClose={() => setOrderMerchant(null)} />}
-  </SafeAreaView></ThemedView>;
+  </SafeAreaView></ThemedView></KeyboardScreen>;
 }
 const styles = StyleSheet.create({
   page: { flex: 1 },

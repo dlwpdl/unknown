@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { MeetupManageSheet } from '@/components/meetup-manage-sheet';
+import { KeyboardScreen } from '@/components/keyboard-screen';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ReservationButton } from '@/components/reservation-button';
 import { PlaceReviews } from '@/components/place-reviews';
@@ -102,7 +103,7 @@ export default function PlaceDetailScreen() {
     void Linking.openURL(url).then(() => record('place_directions'), () => { play('warning'); Alert.alert(tr("길찾기를 열지 못했어요"), tr("인터넷 연결을 확인한 뒤 다시 시도해 주세요.")); });
   };
   const pill = ({ pressed }: { pressed: boolean }) => [ControlStyles.pill, styles.pill, clay && styles.clayPill, controlPresentation(theme, { pressed, clay }).container];
-  return <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.screen, { backgroundColor: theme.background }]}>
+  return <KeyboardScreen><SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.screen, { backgroundColor: theme.background }]}>
     <PageHeader title={tr('장소')} analyticsId="places.detail.back" fallback={{ pathname: '/places', params: { cityId: city?.id ?? selected.id } }}
       right={place ? <View style={styles.headerActions}>
         {city && <Pressable analyticsId="places.detail.share" accessibilityRole="button" accessibilityLabel={tr('장소 공유')} onPress={() => { play('selection'); setSharing(true); }} style={ControlStyles.icon}>
@@ -197,7 +198,7 @@ export default function PlaceDetailScreen() {
         onPress: () => openMap(`https://maps.apple.com/?daddr=${place.latitude},${place.longitude}`) }] : []),
       { key: 'google', analyticsId: 'discovery.google', label: tr("Google 지도"), icon: { ios: 'map', android: 'map', web: 'map' }, onPress: () => openMap(directionsUrl(place, 'google')) },
     ]} />}
-  </SafeAreaView>;
+  </SafeAreaView></KeyboardScreen>;
 }
 
 const styles = StyleSheet.create({

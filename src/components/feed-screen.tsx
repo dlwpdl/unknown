@@ -1209,7 +1209,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} allowSwipeDismissal
         onRequestClose={() => { play('reaction'); setWriting(false); }}>
         <SafeAreaProvider style={[styles.writer, { backgroundColor: theme.background }]}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.writer}>
+          <KeyboardAvoidingView behavior="padding" style={styles.writer}>
           <SafeAreaView style={styles.writer}>
             {writerPanel === 'city' ? (
               <CityPicker onClose={() => changeWriterPanel(null)} draft={{ city: draftCity, onSelect: setDraftCity }} />
@@ -1443,7 +1443,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               </View>} />
               <Modal visible={writerPanel === 'more'} transparent animationType="fade" onRequestClose={() => { play('selection'); changeWriterPanel(null); }}>
                 <SafeAreaProvider>
-                  <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.writerMoreBackdrop}>
+                  <KeyboardAvoidingView behavior="padding" style={styles.writerMoreBackdrop}>
                     <SafeAreaView edges={['bottom']} accessibilityViewIsModal style={[styles.writerMoreSheet, { backgroundColor: theme.card }]}>
                       <View style={[styles.writerHead, { borderBottomColor: theme.line }]}>
                         <ThemedText type="smallBold" accessibilityRole="header" style={styles.writerMoreTitle}>{tr("더보기")}</ThemedText>

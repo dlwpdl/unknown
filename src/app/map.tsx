@@ -6,7 +6,7 @@ import { PostAdLabel } from '@/components/post-ad-label';
 import { hasAdLabel } from '@/lib/hashtags';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
-import { Alert, AppState, KeyboardAvoidingView, Linking, Modal, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, AppState, KeyboardAvoidingView, Linking, Modal, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { SymbolView } from '@/components/symbol-view';
@@ -586,7 +586,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       {loading && <View pointerEvents="none" style={[styles.loading, styles.mapLoading]}><GlingLoader color={theme.accent} accessibilityLabel={tr("지도 결과 불러오는 중")} /></View>}
     </View>
     <Modal visible={filtersOpen} transparent animationType={reduced ? 'none' : 'fade'} onRequestClose={closeFilters}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.overlay}>
+      <KeyboardAvoidingView behavior="padding" style={styles.overlay}>
         <Pressable analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr("필터 닫기")} onPress={closeFilters} style={StyleSheet.absoluteFill} />
         <SafeAreaView accessibilityViewIsModal style={[styles.filterSheet, { backgroundColor: theme.card, borderColor: theme.line }]} edges={['bottom', 'left', 'right']}>
           <View style={styles.sheetHeading}><ThemedText accessibilityRole="header" type="smallBold">{tr("분류와 날짜")}</ThemedText><Pressable analyticsId="discovery.filter" accessibilityRole="button" accessibilityLabel={tr("필터 닫기")} onPress={closeFilters} style={styles.icon}><ThemedText>×</ThemedText></Pressable></View>

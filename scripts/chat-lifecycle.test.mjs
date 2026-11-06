@@ -31,7 +31,7 @@ function languageImports(resolve, data) {
 
 // Exercise the component's hooks, effects and event handlers, as in comment-threads.test.mjs.
 export function mount(file, exportName, data, props = {}, params = {}) {
-  const hooks = [], setters = [], appListeners = new Set(), channels = new Set(), timers = new Map(), animations = [];
+  const hooks = [], setters = [], appListeners = new Set(), channels = new Set(), timers = new Map(), animations = [], keyboardListeners = new Map();
   let index = 0, effects = [], dirty = true, tree, timerId = 0;
   const auth = { isAuthed: true, me: { id: 'me', nickname: '나' }, ...data.auth };
   const refreshMembership = async () => { data.membershipRefreshes = (data.membershipRefreshes ?? 0) + 1; };
@@ -98,7 +98,7 @@ export function mount(file, exportName, data, props = {}, params = {}) {
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === 'react') return react;
       if (name === 'react-native') return new Proxy({
-        Keyboard: { dismiss() {} },
+        Keyboard: { dismiss() {}, addListener(name, callback) { keyboardListeners.set(name, callback); return { remove() { keyboardListeners.delete(name); } }; } },
         StyleSheet: { create: value => value, flatten: value => Object.assign({}, ...[value].flat()) }, Platform: { OS: data.platform ?? 'ios' }, useWindowDimensions: () => ({ width: 390, height: 844 }),
         LayoutAnimation: { configureNext: config => animations.push(config), Presets: { easeInEaseOut: {} }, Types: { easeOut: 'easeOut' }, Properties: { opacity: 'opacity' } },
         AppState: { currentState: 'active', addEventListener(_name, callback) { appListeners.add(callback); return { remove: () => appListeners.delete(callback) }; } },
@@ -178,6 +178,7 @@ export function mount(file, exportName, data, props = {}, params = {}) {
     rerender() { dirty = true; render(); },
     async settle() { for (let i = 0; i < 5; i++) { render(); await new Promise(resolve => setImmediate(resolve)); } render(); },
     nodes: () => nodes(tree),
+    keyboardListeners,
     messages: () => nodes(tree).find(node => node.type === 'FlatList')?.props.data ?? [],
     animations,
     foreground() { for (const callback of appListeners) callback('active'); },
@@ -1277,6 +1278,26 @@ test('empty conversations retain active and ended guidance without a search quer
     harness.nodes().find(node => node.props?.analyticsId === 'chat.search-close').props.onPress(); await harness.settle();
     assert.equal(list().props.ListEmptyComponent.props.children, expected);
   }
+});
+
+test('the meetup card steps aside while the keyboard is open and comes back without reloading', async context => {
+  const post = { id: 'post-1', title: '한강 노을 러닝', room: { id: 'room-1', title: '한강 노을 러닝', memberCount: 5, capacity: 8, verifiedOnly: false, eventKind: 'once', startsAt: '2026-11-20T02:00:00.000Z' } };
+  let loads = 0;
+  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', {
+    loadConversationMessages: async () => { loads++; return [message(1)]; },
+    '@/lib/feed-data': { loadPublicPost: async () => post },
+  }, { ...roomProps, conversation: { ...conversation, kind: 'group', groupPostId: 'post-1', isGroupHost: false } });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const hiding = () => harness.nodes().filter(node => node.props?.style?.display === 'none');
+  assert.ok(harness.nodes().some(node => node.type === 'MeetupRoomSummary'));
+  assert.equal(hiding().length, 0);
+  const before = loads;
+  harness.keyboardListeners.get('keyboardDidShow')(); await harness.settle();
+  assert.equal(hiding().length, 1, 'the wrapper around the card hides while typing');
+  assert.ok(harness.nodes().some(node => node.type === 'MeetupRoomSummary'), 'the card stays mounted');
+  harness.keyboardListeners.get('keyboardDidHide')(); await harness.settle();
+  assert.equal(hiding().length, 0);
+  assert.equal(loads, before, 'closing the keyboard does not reload the room');
 });
 
 test('a group room shows the meetup summary and only the host gets the manage sheet', async context => {
