@@ -163,7 +163,8 @@ const styles = StyleSheet.create({
   pill: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', transform: [{ translateY: 1 }] },
   middle: { flex: 1, height: '100%' },
   leftHalf: { position: 'absolute', top: 0, bottom: 0, left: 0, right: '50%', overflow: 'hidden' },
-  rightHalf: { position: 'absolute', top: 0, bottom: 0, left: '50%', right: 0, overflow: 'hidden' },
+  // The hairline overlap closes the 1px gap that rounding leaves at some Android densities (420dpi).
+  rightHalf: { position: 'absolute', top: 0, bottom: 0, left: '50%', marginLeft: -StyleSheet.hairlineWidth, right: 0, overflow: 'hidden' },
   rightEnd: { position: 'absolute', top: 0, bottom: 0, right: 0 },
   coin: { position: 'absolute', top: '-3%', left: '-3%', width: '106%', height: '106%' },
 });

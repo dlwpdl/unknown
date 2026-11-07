@@ -622,7 +622,7 @@ test('M5: my saved places carry a pin mark in 모두, and a save confirmed on th
   const button = nodes(tree).find(node => node.type === 'SavedEntryButton');
   assert.equal(button.props.analyticsId, 'save.place');
   button.props.onBeen();
-  assert.equal(JSON.stringify(view.routes.at(-1)), JSON.stringify({ pathname: '/places/[id]', params: { id: 'osm:node:1', cityId: 'vancouver' } }), '가 봤어요 opens the place for its review');
+  assert.equal(JSON.stringify(view.routes.at(-1)), JSON.stringify({ pathname: '/places/[id]', params: { id: 'osm:node:1', cityId: 'vancouver', review: '1' } }), '가 봤어요 opens the place for its review');
   view.savedEntry.state = { saved: true }; view.render(); tree = view.render();
   assert.deepEqual(savedPins(tree), ['Place 1', 'Place 2']);
   map.props.onSelect(map.props.markers[1].id); view.savedEntry.state = { saved: false }; view.render(); tree = view.render();

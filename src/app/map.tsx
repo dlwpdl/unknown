@@ -446,7 +446,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const cardMark = `${viewerScope}:${cardPlace?.id}`, cardSaved = savedEntry.state?.saved;
   if (cardPlace && cardSaved !== undefined && savedNow[cardMark] !== cardSaved) setSavedNow(current => ({ ...current, [cardMark]: cardSaved }));
   const saveButton = cardPlace && <SavedEntryButton entry={savedEntry} kind="place" analyticsId="save.place"
-    onBeen={onClose ? undefined : () => router.push({ pathname: '/places/[id]', params: { id: cardPlace.id, cityId: cardPlace.cityId } })} />;
+    onBeen={onClose ? undefined : () => router.push({ pathname: '/places/[id]', params: { id: cardPlace.id, cityId: cardPlace.cityId, review: '1' } })} />;
   const listShown = sheet === 'half' || sheet === 'full';
   // Sheet stops are its top edge inside the map area: under the floating chips when full, half way, or only its summary.
   const sheetStops = { full: mapFiltersHeight, half: Math.max(mapFiltersHeight, Math.round(contentHeight * 0.5)), peek: Math.max(mapFiltersHeight, contentHeight - 96), closed: contentHeight };
