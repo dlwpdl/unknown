@@ -554,7 +554,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
         bottomInset={cardShown || sheet === 'closed' ? rowBottom : sheetCover} onSelect={selectPin} onMoved={(bounds, zoom) => setMoved({ bounds, zoom })} onCity={chooseCity} />
       <View testID="map-filter-overlay" pointerEvents="box-none" onLayout={event => setMapFiltersHeight(event.nativeEvent.layout.height)} style={sheet === 'full' ? [styles.mapFilters, { backgroundColor: theme.background }] : styles.mapFilters}>
         {/* Map labels stop running into the chip names (owner 2026-11-06 "칩 줄 뒤에 옅은 그라데이션"); the chips themselves stay as they are. */}
-        {sheet !== 'full' && <View pointerEvents="none" style={[styles.mapFiltersFade, { backgroundImage: `linear-gradient(to bottom, ${theme.background}F2 0%, ${theme.background}B3 62%, ${theme.background}00 100%)` }]} />}
+        {sheet !== 'full' && <View pointerEvents="none" style={[styles.mapFiltersFade, { backgroundImage: `linear-gradient(to bottom, ${theme.background}F2 0%, ${theme.background}B3 ${refineRow ? 80 : 62}%, ${theme.background}00 100%)` }]} />}
         {quickFilters}
         {refineRow}
       </View>
