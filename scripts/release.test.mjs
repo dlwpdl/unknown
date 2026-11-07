@@ -22,6 +22,26 @@ test('the iOS release toolchain rejects SDKs that cannot enable Duo edge-to-edge
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
 
+test('iOS signing gives the app and its share extension their own profiles and stops if either target is missing', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'gling-sign-ios-'));
+  const config = (id, bundle) => `\t\t${id} /* Release */ = {\n\t\t\tisa = XCBuildConfiguration;\n\t\t\tbuildSettings = {\n\t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = "${bundle}";\n\t\t\t};\n\t\t\tname = Release;\n\t\t};\n`;
+  const project = rows => `// !$*UTF8*$!\n{\n\tarchiveVersion = 1;\n\tclasses = {\n\t};\n\tobjectVersion = 46;\n\tobjects = {\n\n/* Begin XCBuildConfiguration section */\n${rows}/* End XCBuildConfiguration section */\n\t};\n\trootObject = 000000000000000000000001;\n}\n`;
+  const sign = text => {
+    const file = join(directory, 'project.pbxproj');
+    writeFileSync(file, text);
+    const result = spawnSync(process.execPath, [new URL('./sign-ios.cjs', import.meta.url).pathname, file], {
+      env: { ...process.env, GLING_TEAM: 'TEAM', GLING_PROFILE_UUID: 'APP-UUID', GLING_SHARE_PROFILE_UUID: 'SHARE-UUID' }, encoding: 'utf8',
+    });
+    return { status: result.status, text: readFileSync(file, 'utf8') };
+  };
+  try {
+    const signed = sign(project(config('000000000000000000000002', 'com.dlwpdl.gling') + config('000000000000000000000003', 'com.dlwpdl.gling.share-extension')));
+    assert.equal(signed.status, 0);
+    assert.match(signed.text, /PROVISIONING_PROFILE_SPECIFIER = APP-UUID[\s\S]*PROVISIONING_PROFILE_SPECIFIER = SHARE-UUID/);
+    assert.equal(sign(project(config('000000000000000000000002', 'com.dlwpdl.gling'))).status === 0, false);
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
 test('Android release gives R8 four GiB of heap while retaining signing and configuration checks', () => {
   const result = spawnSync('python3', ['-c', `
 import importlib.util, json, os, re, tempfile
