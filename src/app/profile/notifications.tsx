@@ -184,14 +184,10 @@ function Pill({ text, label, value, disabled, locked, onChange }: { text: string
 
 function ToggleRow({ label, value, onChange, disabled }: { label: string; value: boolean; onChange: (next: boolean) => void; disabled: boolean }) {
 
-  const theme = useTheme();
   const { play } = useInteractionFeedback();
   return <View style={styles.row}>
     <ThemedText style={styles.label}>{label}</ThemedText>
-    <Switch analyticsId="app_profile_notifications.switch.1" accessibilityLabel={label} hitSlop={{ top: 8, bottom: 8 }} style={styles.switch} value={value} disabled={disabled} onValueChange={next => { play('selection'); onChange(next); }}
-      {...(!pushSupported ? { activeThumbColor: theme.accentInk } : {})}
-      thumbColor={theme.accentInk}
-      trackColor={{ false: theme.line, true: theme.accent }} ios_backgroundColor={theme.line} />
+    <Switch analyticsId="app_profile_notifications.switch.1" accessibilityLabel={label} hitSlop={{ top: 8, bottom: 8 }} style={styles.switch} value={value} disabled={disabled} onValueChange={next => { play('selection'); onChange(next); }} />
   </View>;
 }
 

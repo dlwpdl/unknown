@@ -1,7 +1,8 @@
 import { useRef, type ComponentProps } from 'react';
-import { Switch as NativeSwitch, SectionList as NativeSectionList, type SectionListProps, Pressable as NativePressable, ScrollView as NativeScrollView, FlatList as NativeFlatList, type FlatListProps, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewProps } from 'react-native';
+import { Platform, Switch as NativeSwitch, SectionList as NativeSectionList, type SectionListProps, Pressable as NativePressable, ScrollView as NativeScrollView, FlatList as NativeFlatList, type FlatListProps, type NativeScrollEvent, type NativeSyntheticEvent, type ScrollViewProps } from 'react-native';
 import { behavior, behaviorView, scrollThresholds } from '@/lib/behavior-analytics';
 import { FlatPressable } from '@/components/flat-pressable';
+import { useTheme } from '@/hooks/use-theme';
 
 type Tracking = { analyticsId: string };
 export function Pressable({ analyticsId, onPress, style, lens: _legacyLens, ...props }: ComponentProps<typeof NativePressable> & Tracking & { lens?: boolean }) {
@@ -32,8 +33,10 @@ export function FlatList<T>({ analyticsId, onScroll, ...props }: FlatListProps<T
   return <NativeFlatList {...props} onScroll={record} scrollEventThrottle={props.scrollEventThrottle ?? 250} />;
 }
 
-export function Switch({ analyticsId, onValueChange, ...props }: ComponentProps<typeof NativeSwitch> & Tracking) {
-  return <NativeSwitch {...props} onValueChange={(value) => { behavior('press', `${analyticsId}.${value ? 'on' : 'off'}`); onValueChange?.(value); }} />;
+// One look on every screen: on = accent, off = line, white thumb. Without these Android and web fall back to their default teal.
+export function Switch({ analyticsId, onValueChange, ...props }: Omit<ComponentProps<typeof NativeSwitch>, 'trackColor' | 'thumbColor' | 'ios_backgroundColor'> & Tracking) {
+  const theme = useTheme();
+  return <NativeSwitch {...props} trackColor={{ false: theme.line, true: theme.accent }} thumbColor="#FFFFFF" ios_backgroundColor={theme.line} {...(Platform.OS === 'web' ? { activeThumbColor: '#FFFFFF' } : {})} onValueChange={(value) => { behavior('press', `${analyticsId}.${value ? 'on' : 'off'}`); onValueChange?.(value); }} />;
 }
 export function SectionList<T, S>({ analyticsId, onScroll, ...props }: SectionListProps<T, S> & Tracking) {
   const record = useScroll(analyticsId, props.horizontal, onScroll);

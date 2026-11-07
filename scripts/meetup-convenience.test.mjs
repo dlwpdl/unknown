@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { pickMeetupPlaces, functionErrorCode, MEETUP_TITLE_MAX } from '../src/lib/meetup-convenience.ts';
-import { englishNotificationBody } from '../src/lib/notification-copy.ts';
+import { englishNotificationBody, koreanNotificationBody } from '../src/lib/notification-copy.ts';
 
 const place = (id, category, extra = {}) => ({ id, cityId: 'vancouver', name: id, category, latitude: 0, longitude: 0, address: '', sourceUrl: '', ...extra });
 
@@ -28,4 +28,13 @@ test('new server notification bodies have English copy', () => {
     assert.doesNotMatch(englishNotificationBody({ kind, body }), /[가-힣]{3}/, body);
   }
   assert.match(englishNotificationBody({ kind: 'meetup_request', body: '기다리던 모임에 자리가 났어요. 1시간 안에 신청하면 바로 함께할 수 있어요.' }), /within 1 hour /);
+});
+
+test('the Korean inbox shows server clock text the way the app does; stored text and members\' words stay', () => {
+  const clock = new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }).format(Date.UTC(2000, 0, 1, 19, 5));
+  assert.equal(koreanNotificationBody({ kind: 'meetup_reminder', body: '「산책」 모임은 오늘 19:05에 시작해요. (모임 장소 기준)' }), `「산책」 모임은 오늘 ${clock}에 시작해요. (모임 장소 기준)`);
+  assert.equal(koreanNotificationBody({ kind: 'meetup_reminder', body: '「산책」 모임이 24시간 뒤에 시작해요. (11/07 19:05 · 모임 장소 기준)' }), `「산책」 모임이 24시간 뒤에 시작해요. (11/07 ${clock} · 모임 장소 기준)`);
+  assert.equal(koreanNotificationBody({ kind: 'meetup_changed', body: '「산책」 다음 모임 날짜가 잡혔어요. 11/07 19:05 (모임 현지 시간)' }), `「산책」 다음 모임 날짜가 잡혔어요. 11/07 ${clock} (모임 현지 시간)`);
+  assert.equal(koreanNotificationBody({ kind: 'message', body: '오늘 19:05에 시작해요. (모임 장소 기준)' }), '오늘 19:05에 시작해요. (모임 장소 기준)', 'a chat preview is the member\'s own text');
+  assert.equal(koreanNotificationBody({ kind: 'meetup_request', body: '자동 승인 조건에 맞는 신청이라 바로 승인됐어요.' }), '자동 승인 조건에 맞는 신청이라 바로 승인됐어요.');
 });

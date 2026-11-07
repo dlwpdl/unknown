@@ -14,7 +14,7 @@ test('warns before the next qualifying action and distinguishes hosting from par
 test('shows the later release when two hosting limits overlap, hides elapsed restrictions', () => {
   const early = '2026-09-18T01:00:00Z', late = '2026-09-19T03:15:00Z';
   const policy = { ...clear, hostBlockedUntil: early, createBlockedUntil: late };
-  const options = { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' };
+  const options = { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', timeZoneName: 'short' };
   assert.ok(meetupPolicyNotice(policy, 'once', now).includes(new Date(late).toLocaleString('ko-KR', options)));
   assert.ok(meetupPolicyNotice(policy, 'host', now).includes(new Date(early).toLocaleString('ko-KR', options)));
   assert.equal(meetupPolicyNotice({ ...clear, joinBlockedUntil: '2026-09-17T12:00:00Z' }, 'join', now), null);

@@ -136,7 +136,8 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
   const visibleCandidates = candidates.slice(page * 20, (page + 1) * 20);
   const feeMembers = roster.filter(person => !person.isHost), paidCount = feeMembers.filter(person => paid.includes(person.userId)).length;
   let feeIssue = '';
-  try { if (feeAmount.trim() || feeNote.trim() || feeDue) meetupFeeInput(feeAmount, feeNote, feeDue); } catch (failure) { feeIssue = (failure as Error).message; }
+  // Nothing to judge until an amount is typed: picking a due date first is not a mistake. Save stays off without an amount and re-checks.
+  try { if (feeAmount.trim()) meetupFeeInput(feeAmount, feeNote, feeDue); } catch (failure) { feeIssue = (failure as Error).message; }
   // The join screen's bottom action: same guards as the panel below, without the panel.
   if (waitlistOnly && cta) {
     if (!showPanel) return loading ? <RaisedActionButton analyticsId="meetup_host_tools.control.1" tone="secondary" busy onPress={() => {}} label={say('확인 중…', 'Checking…')} /> : fallback ?? null;

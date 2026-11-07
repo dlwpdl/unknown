@@ -57,7 +57,7 @@ function cityCache(file, { holdList = false, holdActors = false } = {}) {
     if (name === '@/components/clay') return { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({}) };
     if (name === '@/constants/theme') return { Depth: {}, MaxContentWidth: {}, Spacing: {}, TabBarHeight: 60 };
-    if (name === '@/lib/notification-preferences') return { NOTIFICATION_CATEGORIES: [], NOTIFICATION_PREFERENCES_CHANGED: 'preferences', englishNotificationBody: item => item.body, loadAdminDashboardOrigin: async () => null,
+    if (name === '@/lib/notification-preferences') return { NOTIFICATION_CATEGORIES: [], NOTIFICATION_PREFERENCES_CHANGED: 'preferences', englishNotificationBody: item => item.body, koreanNotificationBody: item => item.body, loadAdminDashboardOrigin: async () => null,
       openNotificationTarget: ({ route, navigate }) => { if (route) navigate(route); return !!route; } };
     if (name === '@/lib/notification-inbox') return load('lib/notification-inbox.ts');
     if (name === '@/lib/mock') return { CITIES: [] };

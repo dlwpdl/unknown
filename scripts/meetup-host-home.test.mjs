@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { daysLeftToConfirm, focusSession, hostTodos, inAttendanceWindow, liveSession, pastSessions, sessionRange, sessionToConfirm, sessionWhen, upcomingSessions } from '../src/lib/meetup-host-home.ts';
+import { daysLeftToConfirm, focusSession, hostTodos, inAttendanceWindow, liveSession, pastSessions, sessionRange, sessionToConfirm, sessionWhen, upcomingSessions, withOnceSession } from '../src/lib/meetup-host-home.ts';
 
 const HOUR = 3600000, DAY = 24 * HOUR, now = Date.parse('2026-10-31T18:00:00Z');
 const at = time => new Date(time).toISOString();
@@ -55,4 +55,17 @@ test('session wording says today and tomorrow, and always shows a range', () => 
   assert.match(sessionWhen(at(tomorrow), 'ko-KR', noon.getTime(), tr), /^내일 /);
   assert.doesNotMatch(sessionWhen(at(noon.getTime() + 5 * DAY), 'ko-KR', noon.getTime(), tr), /오늘|내일/);
   assert.match(sessionRange(session('a', 0), 'en-CA'), /–/);
+});
+
+test('a one-time meetup with no session row yet shows its own time; a real row or a group never gets a stand-in', () => {
+  const room = { eventKind: 'once', startsAt: at(now + DAY), endsAt: at(now + DAY + 2 * HOUR) };
+  const [standIn] = withOnceSession([], room);
+  assert.equal(standIn.id, '');
+  assert.equal(upcomingSessions([standIn], now)[0], standIn, 'the host screen and the meetup page name the same next time');
+  assert.deepEqual(withOnceSession([], { ...room, startsAt: at(now - 3 * HOUR), endsAt: at(now - HOUR) }).map(item => pastSessions([item], now).length), [1], 'after it ends it is past, not coming');
+  const real = session('real', DAY);
+  assert.deepEqual(withOnceSession([real], room), [real], 'attendance opened: the real row is the session');
+  assert.deepEqual(withOnceSession([], { ...room, eventKind: 'group' }), []);
+  assert.deepEqual(withOnceSession([], null), []);
+  assert.deepEqual(withOnceSession([], { eventKind: 'once', startsAt: room.startsAt, endsAt: null }), [], 'no end time, nothing to place');
 });

@@ -121,6 +121,6 @@ export function openState(openingHours: unknown, clock: LocalClock | null): 'ope
   return !hours || !clock ? 'unknown' : isOpenAt(hours, clock) ? 'open' : 'closed';
 }
 
-const pad = (value: number) => String(value).padStart(2, '0');
-export const formatTime = (value: number) => `${pad(value === 1440 ? 24 : Math.floor(value / 60) % 24)}:${pad(value % 60)}`;
-export const formatRanges = (day: [number, number][]) => day.map(([start, end]) => `${formatTime(start)}–${formatTime(end)}`).join(', ');
+// Minutes are wall-clock numbers, so UTC only keeps the formatter from shifting them.
+export const formatTime = (value: number, locale?: string) => new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }).format((value % 1440) * 60000);
+export const formatRanges = (day: [number, number][], locale?: string) => day.map(([start, end]) => `${formatTime(start, locale)}–${formatTime(end, locale)}`).join(', ');

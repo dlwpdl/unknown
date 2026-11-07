@@ -98,7 +98,7 @@ const md = (value: string) => {
   const at = new Date(value);
   return `${at.getMonth() + 1}/${at.getDate()}`;
 };
-const hm = (value: string) => { const at = new Date(value); return `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`; };
+const hm = (value: string) => new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit' }).format(new Date(value));
 const span = (row: StoreRow) => row.period_start === row.period_end ? md(row.period_start) : `${md(row.period_start)}–${md(row.period_end)}`;
 const later = (a: StoreRow, b: StoreRow) => a.period_end > b.period_end || (a.period_end === b.period_end && a.period_start >= b.period_start);
 const kindOf = (items: Content[]) => COPY.kind(items.filter(item => item.reel).length, items.length);

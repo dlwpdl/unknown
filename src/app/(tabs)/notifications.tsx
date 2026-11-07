@@ -28,7 +28,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 import { recordProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
-import { englishNotificationBody, loadAdminDashboardOrigin, openNotificationTarget } from '@/lib/notification-preferences';
+import { englishNotificationBody, koreanNotificationBody, loadAdminDashboardOrigin, openNotificationTarget } from '@/lib/notification-preferences';
 import { BELL_KEEP_UNREAD_KINDS, NOTIFICATION_PAGE_SIZE, appendPage, autoReadIds, groupInbox, inboxSections, inboxTab, itemUnread, likeActors, mergeHeadPage, type InboxItem, type InboxTab } from '@/lib/notification-inbox';
 import { subscribeNotificationChanges } from '@/lib/notification-refresh';
 
@@ -263,7 +263,7 @@ export default function NotificationsScreen() {
         ? tr(comment ? "{0}님 외 1명이 내 댓글을 좋아해요" : "{0}님 외 1명이 내 글을 좋아해요", name)
         : tr(comment ? "{0}님 외 {1}명이 내 댓글을 좋아해요" : "{0}님 외 {1}명이 내 글을 좋아해요", name, others);
     }
-    return language === 'en' ? englishNotificationBody(row, tr, person(row)?.nickname) : tr(row.body);
+    return language === 'en' ? englishNotificationBody(row, tr, person(row)?.nickname) : tr(koreanNotificationBody(row));
   };
 
   const renderRow = (item: InboxItem<AppNotification>) => {

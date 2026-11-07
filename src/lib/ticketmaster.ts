@@ -9,7 +9,7 @@ export type EventDays = { month: string; days: string[]; complete: boolean; fetc
 export function eventTime(event: TicketmasterEvent, locale = getLocale()) {
   if (locale === 'ko-KR') return koreanEventTime(event);
   if (!event.startsAt || event.timeUnconfirmed || !event.timezone) return `${event.localDate ?? 'Date TBA'} · Time TBA`;
-  return new Intl.DateTimeFormat('en-CA', { timeZone: event.timezone, month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(event.startsAt));
+  return new Intl.DateTimeFormat('en-CA', { timeZone: event.timezone, month: 'long', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(event.startsAt));
 }
 export function eventPriceLabel(event: TicketmasterEvent, locale = getLocale()) {
   if (locale === 'ko-KR') return koreanEventPriceLabel(event);

@@ -18,7 +18,7 @@ import { formatMeetupTime, meetupZone } from '@/lib/chilling-date';
 import { loadPublicMeetupContext, type PublicMeetupContext } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadMeetupAutomation, type MeetupAutomation } from '@/lib/meetup-convenience';
-import { daysLeftToConfirm, hostTodos, liveSession, sessionWhen, upcomingSessions, type HostTodo } from '@/lib/meetup-host-home';
+import { daysLeftToConfirm, hostTodos, liveSession, sessionWhen, upcomingSessions, withOnceSession, type HostTodo } from '@/lib/meetup-host-home';
 import { loadMeetupFee, loadMeetupFeePayments, loadMeetupHostRoster, loadMeetupHostTools, meetupFeeAmount, type MeetupFee, type MeetupHostIdentity, type MeetupHostToolsState } from '@/lib/meetup-host-tools';
 import { loadMeetupLoyalty, pinnedNotices, type MeetupLoyalty } from '@/lib/meetup-loyalty';
 import { loadMeetupSessions, type MeetupSession } from '@/lib/meetup-reviews';
@@ -76,8 +76,8 @@ export function MeetupHostHome({ postId, kind }: { postId: string; kind: 'once' 
   const members = home.roster.filter(person => !person.isHost);
   const unpaid = home.fee ? members.filter(person => !home.paid.includes(person.userId)).length : 0;
   const todos = hostTodos({ sessions: home.sessions, pending: home.pending ?? 0, unpaid, now });
-  const live = liveSession(home.sessions, now), next = upcomingSessions(home.sessions, now)[0];
   const room = home.context?.room, zone = meetupZone(room, home.context?.cityId);
+  const plan = withOnceSession(home.sessions, room), live = liveSession(plan, now), next = upcomingSessions(plan, now)[0];
   const notices = pinnedNotices(home.loyalty), scheduled = home.loyalty?.scheduled?.length ?? 0;
   const auto = home.automation && (home.automation.approve.sameCity || home.automation.approve.newcomer || home.automation.approve.age);
   const dateOf = (session: MeetupSession) => formatMeetupTime(session.startsAt, locale, zone, { month: 'long', day: 'numeric' });
@@ -99,11 +99,11 @@ export function MeetupHostHome({ postId, kind }: { postId: string; kind: 'once' 
       refreshControl={<RefreshControl refreshing={false} tintColor={theme.accent} onRefresh={() => { play('selection'); setRevision(value => value + 1); }} />}>
       <View>
         {!!home.context?.title && <ThemedText accessibilityRole="header" style={Typography.sheetTitle}>{home.context.title}</ThemedText>}
-        <ThemedText themeColor="textSecondary" style={Typography.supporting}>{next ? tr('{0} · {1}', live ? tr('이번 회차') : tr('다음 회차'), sessionWhen(next.startsAt, locale, now, tr, zone)) : tr('아직 잡힌 회차가 없어요.')}</ThemedText>
+        <ThemedText themeColor="textSecondary" style={Typography.supporting}>{next ? tr('{0} · {1}', live ? tr('이번 회차') : tr('다음 회차'), sessionWhen(next.startsAt, locale, now, tr, zone)) : kind === 'once' ? tr('종료된 모임이에요') : tr('아직 잡힌 회차가 없어요.')}</ThemedText>
       </View>
       <View style={styles.stats} accessibilityRole="summary">
         <Stat label={tr('참여')} value={String(room?.memberCount ?? members.length + 1)} total={room?.capacity ? String(room.capacity) : undefined} />
-        {live ? <Stat label={tr('체크인')} value={String(live.members.filter(member => member.checkedIn).length)} total={String(live.members.length)} /> : <Stat label={tr('신청')} value={home.pending == null ? '—' : String(home.pending)} />}
+        {live?.id ? <Stat label={tr('체크인')} value={String(live.members.filter(member => member.checkedIn).length)} total={String(live.members.length)} /> : <Stat label={tr('신청')} value={home.pending == null ? '—' : String(home.pending)} />}
         <Stat label={tr('대기')} value={home.tools.waitlistCount == null ? '—' : String(home.tools.waitlistCount)} />
       </View>
       {rest.length > 0 && <View>
@@ -113,7 +113,7 @@ export function MeetupHostHome({ postId, kind }: { postId: string; kind: 'once' 
       <View>
         <SectionLabel>{tr('관리')}</SectionLabel>
         <ListCard>
-          <ListRow analyticsId="meetup.home.schedule" title={tr('일정·참석')} detail={next ? tr('{0} {1}', live ? tr('이번 회차') : tr('다음 회차'), sessionWhen(next.startsAt, locale, now, tr, zone)) : tr('회차를 추가해 보세요')} onPress={() => section('schedule')} />
+          <ListRow analyticsId="meetup.home.schedule" title={tr('일정·참석')} detail={next ? tr('{0} {1}', live ? tr('이번 회차') : tr('다음 회차'), sessionWhen(next.startsAt, locale, now, tr, zone)) : kind === 'once' ? tr('종료된 모임이에요') : tr('회차를 추가해 보세요')} onPress={() => section('schedule')} />
           <ListRow analyticsId="meetup.home.members" title={tr('멤버')} detail={tr('{0}명 · 대기 {1}명', room?.memberCount ?? members.length + 1, home.tools.waitlistCount ?? 0)} onPress={() => section('members')} />
           <ListRow analyticsId="meetup.home.notices" title={language === 'en' ? 'Notices' : '공지'} detail={scheduled ? tr('걸린 공지 {0}개 · 예약 {1}개', notices.length, scheduled) : tr('걸린 공지 {0}개', notices.length)} onPress={() => section('notices')} />
           {home.tools.available && <ListRow analyticsId="meetup.home.dues" title={tr('회비')} detail={home.fee ? (unpaid ? tr('{0} · {1}명 아직', meetupFeeAmount(home.fee.amount), unpaid) : tr('{0} · 다 냈어요', meetupFeeAmount(home.fee.amount))) : tr('받지 않아요')} onPress={() => section('dues')} />}

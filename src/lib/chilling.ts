@@ -56,13 +56,13 @@ export function chillingSchedule(room: ChillingSchedule, locale = getLocale()): 
     const timeZone = clockZone(room.timezone, Date.parse(room.startsAt));
     const formatter = new Intl.DateTimeFormat(locale, {
       timeZone, month: 'long', day: 'numeric', weekday: 'short',
-      hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+      hour: 'numeric', minute: '2-digit',
     });
     const start = formatter.format(new Date(room.startsAt));
     if (!room.endsAt) return start;
     const day = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone });
     const end = day(room.startsAt) === day(room.endsAt)
-      ? new Intl.DateTimeFormat(locale, { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(room.endsAt))
+      ? new Intl.DateTimeFormat(locale, { timeZone, hour: 'numeric', minute: '2-digit' }).format(new Date(room.endsAt))
       : formatter.format(new Date(room.endsAt));
     return `${start} – ${end}`;
   } catch { return missing; }

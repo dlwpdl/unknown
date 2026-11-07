@@ -107,7 +107,7 @@ test('same-day schedules show the date once and zones read as names, not IANA id
   const room = { eventKind: 'once', startsAt: '2026-06-12T17:00:00Z', endsAt: '2026-06-12T19:00:00Z', timezone: 'America/Vancouver' };
   const ko = chillingSchedule(room, 'ko-KR');
   assert.equal((ko.match(/6월 12일/g) ?? []).length, 1, ko);
-  assert.match(ko, /– 12:00$/);
+  assert.match(ko, /– (?:오후|PM) 12:00$/); // ICU 78 (this Node) abbreviates to PM; phones and older ICU say 오후.
   assert.equal((chillingSchedule({ ...room, endsAt: '2026-06-13T19:00:00Z' }, 'ko-KR').match(/6월/g) ?? []).length, 2);
   assert.doesNotMatch(chillingTimezoneLabel(room, 'ko-KR'), /America\//);
   assert.equal(chillingTimezoneLabel({ eventKind: 'once' }, 'ko-KR'), null);

@@ -13,10 +13,10 @@ import { Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { daysLeftToConfirm, inAttendanceWindow, liveSession, pastSessions, sessionRange, upcomingSessions } from '@/lib/meetup-host-home';
+import { daysLeftToConfirm, inAttendanceWindow, liveSession, pastSessions, sessionRange, upcomingSessions, withOnceSession } from '@/lib/meetup-host-home';
 import { loadMeetupHostTools, type MeetupHostToolsState } from '@/lib/meetup-host-tools';
 import { formatMeetupTime, meetupZone } from '@/lib/chilling-date';
-import { loadPublicMeetupContext } from '@/lib/feed-data';
+import { loadPublicMeetupContext, type PublicMeetupContext } from '@/lib/feed-data';
 import { loadMeetupSessions, type MeetupSession, type MeetupSessions } from '@/lib/meetup-reviews';
 import { supabase } from '@/lib/supabase';
 
@@ -39,23 +39,25 @@ export function MeetupSchedule({ postId, kind, host }: { postId: string; kind: '
   const [failed, setFailed] = useState(false), [adding, setAdding] = useState(false), [revision, setRevision] = useState(0), [added, setAdded] = useState(0);
   // Live/upcoming/past are judged at the time the sessions arrived.
   const [now, setNow] = useState(() => Date.now());
-  const [zone, setZone] = useState(() => meetupZone());
+  const [zone, setZone] = useState(() => meetupZone()), [room, setRoom] = useState<PublicMeetupContext['room'] | null>(null);
   useFocusEffect(useCallback(() => {
     let active = true;
     Promise.all([loadMeetupSessions(supabase, postId), loadMeetupHostTools(supabase, postId), loadPublicMeetupContext(supabase, postId).catch(() => null)])
-      .then(([nextSessions, nextTools, context]) => { if (active) { setSessions(nextSessions); setTools(nextTools); setZone(meetupZone(context?.room, context?.cityId)); setNow(Date.now()); setFailed(false); } }, () => { if (active) setFailed(true); });
+      .then(([nextSessions, nextTools, context]) => { if (active) { setSessions(nextSessions); setTools(nextTools); setZone(meetupZone(context?.room, context?.cityId)); setRoom(context?.room ?? null); setNow(Date.now()); setFailed(false); } }, () => { if (active) setFailed(true); });
     return () => { active = false; };
   // revision re-reads the sessions after adding one or retrying. The compiler drops a dependency the body does not read unless this line skips it.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId, revision]));
   if (failed) return <StateCard kind="error" title={tr('일정을 불러오지 못했어요')} body={tr('연결을 확인하고 다시 시도해 주세요.')} actionLabel={tr('다시 불러오기')} onAction={() => setRevision(value => value + 1)} />;
   if (!sessions || !tools) return <ListLoading label={tr('불러오는 중이에요')} />;
-  const live = liveSession(sessions.sessions, now);
-  const upcoming = upcomingSessions(sessions.sessions, now), past = pastSessions(sessions.sessions, now);
+  const plan = withOnceSession(sessions.sessions, room), live = liveSession(plan, now);
+  const upcoming = upcomingSessions(plan, now), past = pastSessions(plan, now);
   const open = (session: MeetupSession) => router.push({ pathname: '/meetup-tools', params: { postId, kind, host: host ? '1' : '0', section: 'session', sessionId: session.id } });
   const canAdd = kind === 'group' && (sessions.isHost || tools.canManageSessions);
   const length = (session: MeetupSession) => Math.round((Date.parse(session.endsAt) - Date.parse(session.startsAt)) / 360000) / 10;
   const summary = (session: MeetupSession) => {
+    // Before attendance opens a one-time meetup has no session roster yet; the meetup's own count is the fact.
+    if (!session.id && !past.includes(session)) return tr('{0}명 참여', room?.memberCount ?? 1);
     const members = session.members.length, came = session.members.filter(member => member.checkedIn).length, verified = session.members.filter(member => member.verified).length;
     if (session.id === live?.id) return tr('체크인 {0}/{1}명', came, members);
     if (upcoming.includes(session)) return tr('{0}명 참여', members);
@@ -66,7 +68,7 @@ export function MeetupSchedule({ postId, kind, host }: { postId: string; kind: '
     <SectionLabel>{tr('앞으로')}</SectionLabel>
     {upcoming.length ? <ListCard>{upcoming.map((session, index) => <ListRow key={session.id} analyticsId="meetup.schedule.session" title={tr('{0} · {1}시간', sessionRange(session, locale, zone), length(session))} detail={summary(session)}
       leading={<DateTile iso={session.startsAt} on={index === 0} zone={zone} />} trailing={session.id === live?.id ? <Tag label={tr('지금')} /> : index === 0 ? <Tag label={tr('다음 회차')} /> : undefined} onPress={() => open(session)} />)}</ListCard>
-      : <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('아직 잡힌 회차가 없어요.')}</ThemedText>}
+      : <ThemedText themeColor="textSecondary" style={Typography.supporting}>{kind === 'once' ? tr('종료된 모임이에요') : tr('아직 잡힌 회차가 없어요.')}</ThemedText>}
     {canAdd && <View style={styles.add}><RaisedActionButton analyticsId="meetup.schedule.add" tone="secondary" label={tr('회차 추가')} onPress={() => { play('selection'); setAdding(true); }} /></View>}
     {added > 0 && <ThemedText accessibilityLiveRegion="polite" themeColor="textSecondary" style={[Typography.supporting, styles.note]}>{tr('회차 {0}개를 등록했어요.', added)}</ThemedText>}
     {past.length > 0 && <>

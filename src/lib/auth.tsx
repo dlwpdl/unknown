@@ -62,6 +62,7 @@ type AuthValue = {
   signInReview: (email: string, password: string) => Promise<void>;
   signInAdmin: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  expectSignOut: (expected: boolean) => void; // 탈퇴처럼 곧 스스로 나가는 동안: 실패한 요청을 세션 끊김으로 안내하지 않는다
   setProfilePhoto: (uri: string | null, base64?: string) => Promise<void>;
   setProfileCity: (cityId: string) => Promise<void>;
   setProfileNickname: (nickname: string, expectedNickname: string) => Promise<void>;
@@ -100,6 +101,8 @@ export function AuthProvider({ children, publicPage = false }: { children: React
   useEffect(() => { if (authError) play('warning'); }, [authError, play]);
   const [reason, setReason] = useState<string | undefined>();
   const [visible, setVisible] = useState(false);
+  // True only while a member's session could be lost without them asking: guests and people who just signed out never see "로그인이 풀렸어요".
+  const memberSession = useRef(false);
   const [profilePhotoUri, setProfilePhotoUri] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileRecord | null>(null);
   const [missingProfileUserId, setMissingProfileUserId] = useState<string | null>(null);
@@ -148,6 +151,8 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     void AsyncStorage.getItem(LAST_ACTIVE_KEY).then(async (raw) => {
       const lastActive = raw ? Number(raw) : null;
       const expired = lastActive != null && Date.now() - lastActive > SESSION_INACTIVITY_MS;
+      // shortcut: a stored session whose refresh also fails here gets the normal login instead of the notice; rare, and the login still opens on the next request.
+      const lapsed = expired && (await supabase.auth.getSession()).data.session != null;
       if (expired) await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
       await AsyncStorage.setItem(LAST_ACTIVE_KEY, String(Date.now()));
       const { data } = await supabase.auth.getSession();
@@ -155,7 +160,8 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       setBusinessImageSession(data.session?.user.id ?? null, data.session?.access_token ?? null);
       setSession(data.session);
       setSessionReady(true);
-      if (expired && lastActive != null) { setReason(sourceCopy.auth.sessionExpired); setVisible(true); }
+      if (data.session) memberSession.current = true;
+      if (lapsed) { setReason(sourceCopy.auth.sessionExpired); setVisible(true); }
     });
     const appState = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
@@ -168,6 +174,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     supabase.auth.startAutoRefresh();
     const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!active) return;
+      if (nextSession && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) memberSession.current = true;
       const nextLogin = nextSession?.user.last_sign_in_at ?? null;
       if (event === 'SIGNED_IN' && nextLogin && nextLogin !== observedLogin.current) setLoginKey(nextLogin);
       // Any sign-out (button, expiry, inactivity) drops kept linked-account logins so the next person cannot use them.
@@ -192,7 +199,10 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     const listener = DeviceEventEmitter.addListener(AUTH_EXPIRED_EVENT, () => {
       void supabase.auth.signOut({ scope: 'local' }).catch(() => {});
       setAuthError(null);
-      setReason(sourceCopy.auth.sessionExpired);
+      // The login still opens either way; only a session that really dropped says so. Several failed requests can land together, so keep the notice once it is up.
+      if (memberSession.current) setReason(sourceCopy.auth.sessionExpired);
+      else setReason(current => current === sourceCopy.auth.sessionExpired ? current : undefined);
+      memberSession.current = false;
       setVisible(true);
     });
     return () => listener.remove();
@@ -328,19 +338,25 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       setSigningIn(false);
     }
   }, [beginSignIn]);
+  const expectSignOut = useCallback((expected: boolean) => { memberSession.current = !expected; }, []);
   const signOut = useCallback(async () => {
     setAuthError(null);
+    setReason(undefined);
+    const wasMember = memberSession.current;
+    memberSession.current = false;
     const { data: { session: currentSession } } = await supabase.auth.getSession();
     // Supabase may clear the local session even when remote logout fails.
     // Revoke push first so an offline logout cannot leave an active device binding.
     try {
       if (currentSession) await unregisterPushDevice(supabase, currentSession.user.id);
     } catch {
+      memberSession.current = wasMember;
       setAuthError(sourceCopy.auth.signOutError);
       return;
     }
     const { error } = await supabase.auth.signOut();
     if (error) {
+      memberSession.current = wasMember;
       setAuthError(sourceCopy.auth.signOutError);
       return;
     }
@@ -476,6 +492,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       signInReview,
       signInAdmin,
       signOut,
+      expectSignOut,
       setProfilePhoto,
       setProfileCity,
       setProfileNickname,
@@ -504,6 +521,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       signInReview,
       signInAdmin,
       signOut,
+      expectSignOut,
       setProfilePhoto,
       setProfileCity,
       setProfileNickname,

@@ -41,7 +41,7 @@ export default function SettingsScreen() {
   const theme = useTheme();
   const { scheme, design, isSaving: themeSaving, setScheme, setDesign } = useThemePreference();
   const router = useRouter();
-  const { isAuthed, isAuthLoading, me, prepareAppleAccountDeletion, setProfilePhoto, signOut } = useAuth();
+  const { expectSignOut, isAuthed, isAuthLoading, me, prepareAppleAccountDeletion, setProfilePhoto, signOut } = useAuth();
   const { hapticsEnabled, play, setHapticsEnabled, setSoundEnabled, soundEnabled } = useInteractionFeedback();
   const { manage } = useMembership();
   const [deleting, setDeleting] = useState(false);
@@ -81,11 +81,13 @@ export default function SettingsScreen() {
     setDeleting(true);
     try {
       const appleAuthorizationCode = await prepareAppleAccountDeletion();
+      expectSignOut(true);
       await deleteMyAccount(supabase, appleAuthorizationCode);
       play('warning');
       await signOut();
       router.replace('/');
     } catch {
+      expectSignOut(false);
       play('warning');
       Alert.alert(t.profile.deleteErrorTitle, t.profile.deleteErrorBody);
     } finally {
@@ -142,9 +144,6 @@ export default function SettingsScreen() {
                 accessibilityHint={t.profile.darkModeHint}
                 accessibilityState={{ disabled: themeSaving, busy: themeSaving }}
                 hitSlop={7}
-                trackColor={{ false: '#837B91', true: theme.accent }}
-                thumbColor={scheme === 'dark' ? theme.accentInk : '#FFFFFF'}
-                ios_backgroundColor="#837B91"
                 onValueChange={(enabled) => {
                   play('selection');
                   void setScheme(enabled ? 'dark' : 'light').then((saved) => {
@@ -166,9 +165,6 @@ export default function SettingsScreen() {
                 accessibilityHint={t.profile.clayDesignHint}
                 accessibilityState={{ disabled: themeSaving, busy: themeSaving }}
                 hitSlop={7}
-                trackColor={{ false: '#837B91', true: theme.accent }}
-                thumbColor={design === '3d' ? theme.accentInk : '#FFFFFF'}
-                ios_backgroundColor="#837B91"
                 onValueChange={(enabled) => {
                   play('selection');
                   void setDesign(enabled ? '3d' : '2d').then((saved) => {
@@ -202,8 +198,6 @@ export default function SettingsScreen() {
                 value={soundEnabled}
                 onValueChange={(enabled) => { play('selection'); setSoundEnabled(enabled); }}
                 accessibilityLabel={t.profile.soundEffects}
-                trackColor={{ false: theme.line, true: theme.accent }}
-                ios_backgroundColor={theme.line}
               />
             </View>
             <View style={[styles.divider, { backgroundColor: theme.line }]} />
@@ -216,8 +210,6 @@ export default function SettingsScreen() {
                   setHapticsEnabled(enabled);
                 }}
                 accessibilityLabel={t.profile.haptics}
-                trackColor={{ false: theme.line, true: theme.accent }}
-                ios_backgroundColor={theme.line}
               />
             </View>
           </Card>
@@ -310,8 +302,7 @@ function PhotoConsentCard() {
           <ThemedText type="small" themeColor="textSecondary">{tr('켜 두면 사진을 붙인 새 글에서 ‘이 사진을 글링 공식 SNS에 소개해도 돼요’에 처음부터 체크가 돼 있어요. 끄면 지금까지 해 둔 체크가 모두 풀려요. 다시 켜도 되돌아오지 않아요.')}</ThemedText>
         </View>
         <Switch analyticsId="profile.settings.photo-consent" value={value?.on ?? false} disabled={disabled} onValueChange={on => void change(on)}
-          accessibilityLabel={label} accessibilityState={{ disabled, busy }}
-          trackColor={{ false: theme.line, true: theme.accent }} ios_backgroundColor={theme.line} />
+          accessibilityLabel={label} accessibilityState={{ disabled, busy }} />
       </View>
       {value && !value.on && value.consentedPosts > 0 && <>
         <View style={[styles.divider, { backgroundColor: theme.line }]} />

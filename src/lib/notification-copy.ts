@@ -102,6 +102,16 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
   admin_security: [[/^최근 10분 동안 요청이 (\d+)건 들어왔어요\. 관리자 화면에서 확인해 주세요\.$/, m => `${m[1]} requests from one account in the last 10 minutes. Check the admin dashboard.`]],
 };
 
+// Server bodies keep 24-hour text: stored rows, pushes and 1.4.7's English patterns above read it. Only the Korean inbox shows the app's clock.
+// UTC keeps the numbers as written: a local Date in 2000 reads an hour off on phones where BC's current offset differs from its history.
+const SERVER_CLOCK = /^(.+)(\d{2}):(\d{2})(에 시작해요\. \(모임 (?:장소 기준|현지 시간)\)| · 모임 (?:장소 기준|현지 시간)\)| \(모임 현지 시간\))$/;
+const FESTIVAL_CLOCK = /^(.+(?:공연이에요|경기예요|행사예요)\. \d{1,2}월 \d{1,2}일 )(\d{2}):(\d{2})(, .+)$/;
+export function koreanNotificationBody(item: { kind: string; body: string }) {
+  // A member's own words (chat previews, host notices) are never rewritten.
+  const match = item.kind === 'message' ? null : SERVER_CLOCK.exec(item.body) ?? FESTIVAL_CLOCK.exec(item.body);
+  return match ? `${match[1]}${new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }).format(Date.UTC(2000, 0, 1, Number(match[2]), Number(match[3])))}${match[4]}` : item.body;
+}
+
 // English inbox copy for server-written Korean bodies; stored rows (and routing above) keep the Korean text.
 export function englishNotificationBody(item: { kind: string; body: string }, translate: Translate = same, actorName?: string) {
   if (item.kind === 'message_reaction' && actorName) return `${actorName} loved your message.`;
