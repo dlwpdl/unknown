@@ -13,6 +13,9 @@ export function webEntrySource(): AcquisitionSource {
   return source;
 }
 
+// A tab left open sent a row every 30 seconds for days, so counting stops after this long without a scroll or click.
+const IDLE_AFTER_MS = 5 * 60 * 1000;
+
 export function useReaderAnalytics(screen: string, viewKey: string, ready = true) {
   useEffect(() => {
     const source = webEntrySource();
@@ -32,16 +35,27 @@ export function useReaderAnalytics(screen: string, viewKey: string, ready = true
     behaviorScreen(screen);
     let reached = 0;
     let started = document.hidden ? 0 : Date.now();
+    let active = Date.now();
     const measure = () => {
-      if (started) { const now = Date.now(); behavior('dwell', 'screen', Math.min(60000, now - started)); started = now; }
+      if (!started) return;
+      const now = Date.now();
+      if (now - active < IDLE_AFTER_MS) behavior('dwell', 'screen', Math.min(60000, now - started));
+      started = now;
     };
-    const visibility = () => { measure(); started = document.hidden ? 0 : Date.now(); void flushBehavior(); };
+    const visibility = () => {
+      measure();
+      started = document.hidden ? 0 : Date.now();
+      if (!document.hidden) active = Date.now();
+      void flushBehavior();
+    };
     const scroll = () => {
+      active = Date.now();
       for (const value of scrollThresholds(window.scrollY, window.innerHeight, document.documentElement.scrollHeight, reached)) {
         reached = value; behavior('scroll', 'web_page', value);
       }
     };
     const click = (event: MouseEvent) => {
+      active = Date.now();
       const target = event.target instanceof Element ? event.target.closest('[data-analytics]') : null;
       const id = target?.getAttribute('data-analytics');
       if (id) { behavior('press', id); void flushBehavior(); }
