@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { getLocale, translateUi, tr } from '@/i18n';
+import { clockZone } from '@/lib/chilling-date';
 import { eventTime as koreanEventTime, eventPriceLabel as koreanEventPriceLabel } from '../../supabase/functions/_shared/ticketmaster';
 import { meetupAllowed, type EventQuery, type FestivalSlot, type TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster';
 export { EVENT_CITIES, EVENT_CATEGORIES, eventMatchesPriceFilter, festivalLocalDay, featuredLocalEvents, isFestivalEvent, spotlightLocalEvents, meetupAllowed } from '../../supabase/functions/_shared/ticketmaster';
@@ -7,9 +8,11 @@ export type { EventCity, EventCategory, EventPriceFilter, TicketmasterEvent } fr
 export type EventList = { events: TicketmasterEvent[]; page: number; hasMore: boolean; fetchedAt: string; festivalSlots?: FestivalSlot[]; nextRefreshAt?: string };
 export type EventDays = { month: string; days: string[]; complete: boolean; fetchedAt: string };
 export function eventTime(event: TicketmasterEvent, locale = getLocale()) {
-  if (locale === 'ko-KR') return koreanEventTime(event);
-  if (!event.startsAt || event.timeUnconfirmed || !event.timezone) return `${event.localDate ?? 'Date TBA'} · Time TBA`;
-  return new Intl.DateTimeFormat('en-CA', { timeZone: event.timezone, month: 'long', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(event.startsAt));
+  // Same guard as meetups: phones with older zone data still drop Vancouver an hour in winter.
+  const timezone = event.timezone && event.startsAt ? clockZone(event.timezone, Date.parse(event.startsAt)) : event.timezone;
+  if (locale === 'ko-KR') return koreanEventTime({ ...event, timezone });
+  if (!event.startsAt || event.timeUnconfirmed || !timezone) return `${event.localDate ?? 'Date TBA'} · Time TBA`;
+  return new Intl.DateTimeFormat('en-CA', { timeZone: timezone, month: 'long', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(event.startsAt));
 }
 export function eventPriceLabel(event: TicketmasterEvent, locale = getLocale()) {
   if (locale === 'ko-KR') return koreanEventPriceLabel(event);
