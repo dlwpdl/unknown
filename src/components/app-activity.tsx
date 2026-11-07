@@ -3,7 +3,7 @@ import { usePathname } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { AppState, Platform } from 'react-native';
 
-import { behavior, behaviorScreen, configureBehavior, flushBehavior } from '@/lib/behavior-analytics';
+import { behavior, behaviorScreen, configureBehavior, flushBehavior, isIdle, noteTouch } from '@/lib/behavior-analytics';
 import { analyticsScreen } from '@/lib/analytics';
 import { useAuth } from '@/lib/auth';
 import { buildLabel } from '@/lib/error-reporting';
@@ -53,14 +53,16 @@ export function AppActivity() {
     const screen = analyticsScreen(pathname);
     if (isAdmin || !screen) return;
     behaviorScreen(screen);
+    noteTouch();
     let started = AppState.currentState === 'active' ? Date.now() : 0;
     const measure = () => {
-      if (started) { const now = Date.now(); behavior('dwell', 'screen', Math.min(60000, now - started)); started = now; }
+      if (started) { const now = Date.now(); if (!isIdle(now)) behavior('dwell', 'screen', Math.min(60000, now - started)); started = now; }
     };
     const interval = setInterval(() => { measure(); void flushBehavior(); }, 30000);
     const listener = AppState.addEventListener('change', (state) => {
       measure();
       started = state === 'active' ? Date.now() : 0;
+      if (state === 'active') noteTouch();
       void flushBehavior();
     });
     return () => { measure(); void flushBehavior(); clearInterval(interval); listener.remove(); };

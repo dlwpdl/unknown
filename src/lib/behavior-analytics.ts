@@ -22,6 +22,12 @@ export function configureBehavior(transport: typeof send) {
   clearTimeout(timer);
   timer = undefined;
 }
+// A phone left open sent a dwell row every 30 seconds for days, so counting stops after this long without a touch.
+// shortcut: typing on the keyboard is not a touch here, so a long compose undercounts; count it too if compose time ever matters.
+const IDLE_AFTER_MS = 5 * 60 * 1000;
+let lastTouch = Date.now();
+export function noteTouch() { lastTouch = Date.now(); }
+export function isIdle(now = Date.now()) { return now - lastTouch >= IDLE_AFTER_MS; }
 export function behaviorScreen(name: string) { screen = name; view++; behavior('view', 'screen'); }
 export function behavior(kind: BehaviorEvent['kind'], target: string, value = 1) {
   if (!send || !Number.isFinite(value)) return;
