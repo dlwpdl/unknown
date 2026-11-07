@@ -25,6 +25,14 @@ test('source extraction returns only recognized channels from Gling entry links'
   }
 });
 
+test('Play install referrers count only our own channels', () => {
+  assert.equal(product.getInstallReferrerSource?.('utm_source=Instagram&utm_campaign=bio'), 'instagram');
+  assert.equal(product.getInstallReferrerSource?.('utm_campaign=get&utm_source=naver'), 'naver');
+  for (const referrer of [null, '', 'utm_source=google-play&utm_medium=organic', 'utm_source=web&utm_campaign=home', 'utm_source=unknown', 'utm_source=%E0%A4%A', 'gclid=private-click']) {
+    assert.equal(product.getInstallReferrerSource?.(referrer), 'unknown', String(referrer));
+  }
+});
+
 test('performance loading preserves filters and reports unavailable backend separately from zero', async () => {
   const calls = [], data = { activity: { dau: 0 }, discovery: { startedAt: null } };
   const client = { rpc: async (...args) => { calls.push(args); return { data, error: null }; } };

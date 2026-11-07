@@ -8,12 +8,18 @@ import { Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { webEntrySource } from './analytics';
 
 const stores = { ios: 'https://apps.apple.com/ca/app/id6809273242', android: 'https://play.google.com/store/apps/details?id=com.dlwpdl.gling' };
 // Android is closed testing; testers are added by Google account, so ask for the Gmail address up front.
 const androidTester = `mailto:gling@ej-entertainment.com?subject=${encodeURIComponent('Android 테스트 참여 신청')}&body=${encodeURIComponent('Google Play에서 쓰는 Gmail 주소: ')}`;
-// Google Play hands this to the install referrer. App Store campaign links need a provider token (pt) we don't have yet.
-const playUrl = () => `${stores.android}&referrer=${encodeURIComponent(`utm_source=web&utm_campaign=${window.location.pathname.split('/')[1]?.replace(/[^a-z0-9-]/gi, '') || 'home'}`)}`;
+// The tab's first tagged entry (instagram, naver…); an untagged visit still counts as coming from the website.
+const storeSource = () => { const source = webEntrySource(); return source === 'unknown' ? 'website' : source; };
+// Google Play hands this to the install referrer, which the Android app reads on its first launch (app-activity.tsx).
+export const playUrl = () => `${stores.android}&referrer=${encodeURIComponent(`utm_source=${storeSource()}&utm_campaign=${window.location.pathname.split('/')[1]?.replace(/[^a-z0-9-]/gi, '') || 'home'}`)}`;
+// App Store Connect campaign link (provider token pt): App Analytics counts installs per source in ct, as totals only.
+const APP_STORE_PROVIDER_TOKEN = '129396942';
+export const appStoreUrl = (source: string = storeSource()) => `https://apps.apple.com/app/apple-store/id6809273242?pt=${APP_STORE_PROVIDER_TOKEN}&ct=${source}&mt=8`;
 const noDeviceChange = () => () => {};
 const readDevice = () => {
   const agent = navigator.userAgent;
@@ -29,7 +35,7 @@ export function useDevice() {
 export function InstallAction({ className, onPress }: { className?: string; onPress?: () => void }) {
   const { language } = useLanguage(), ko = language === 'ko';
   const device = useDevice();
-  return device === 'ios' ? <a data-analytics="web.install.ios" className={className} href={stores.ios} onClick={onPress}>{ko ? 'App Store에서 무료로 받기' : 'Get it free on the App Store'}</a>
+  return device === 'ios' ? <a data-analytics="web.install.ios" className={className} href={appStoreUrl()} onClick={onPress}>{ko ? 'App Store에서 무료로 받기' : 'Get it free on the App Store'}</a>
     : device === 'android' ? <a data-analytics="web.install.android" className={className} href={androidTester} onClick={onPress}>{ko ? 'Android 테스트 참여 신청' : 'Ask to join the Android test'}</a>
       : <a data-analytics="web.install.desktop" className={className} href="#app" onClick={onPress}>{ko ? '휴대폰에 앱 받기' : 'Get the app on your phone'}</a>;
 }
@@ -47,7 +53,7 @@ export function AppStoreChoices() {
   const { language } = useLanguage(), ko = language === 'ko';
   const theme = useTheme(), { play } = useInteractionFeedback(), device = useDevice();
   const [store, setStore] = useState<keyof typeof stores | null>(null);
-  const url = store === 'ios' ? stores.ios : store ? playUrl() : null;
+  const url = store === 'ios' ? appStoreUrl() : store ? playUrl() : null;
   const qr = useMemo(() => {
     if (!url) return null;
     try {

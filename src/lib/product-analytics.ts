@@ -13,12 +13,21 @@ export async function recordProductEvent(client: SupabaseClient, event: ProductE
   if (error) throw error;
 }
 
+export function knownAcquisitionSource(value: string | null | undefined): AcquisitionSource {
+  const source = value?.trim().toLowerCase() ?? '';
+  return (ACQUISITION_SOURCES as readonly string[]).includes(source) ? source as AcquisitionSource : 'unknown';
+}
+
 export function getAcquisitionSource(entryUrl: string | null): AcquisitionSource {
   try {
     if (!entryUrl) return 'unknown';
     const url = new URL(entryUrl);
     if (url.protocol !== 'gling:' && !(url.protocol === 'https:' && url.hostname === 'gling.ej-entertainment.com')) return 'unknown';
-    const source = url.searchParams.get('utm_source')?.trim().toLowerCase();
-    return source !== 'unknown' && (ACQUISITION_SOURCES as readonly string[]).includes(source ?? '') ? source as AcquisitionSource : 'unknown';
+    return knownAcquisitionSource(url.searchParams.get('utm_source'));
   } catch { return 'unknown'; }
+}
+
+// Google Play's install referrer is a bare query ("utm_source=instagram&utm_campaign=bio"); its own "google-play" is not one of our channels.
+export function getInstallReferrerSource(referrer: string | null): AcquisitionSource {
+  try { return knownAcquisitionSource(new URLSearchParams(referrer ?? '').get('utm_source')); } catch { return 'unknown'; }
 }
