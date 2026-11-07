@@ -4,7 +4,7 @@ delete from private.discovery_post_queue;
 select ok(not has_function_privilege('authenticated','private.process_discovery_posts(integer)','execute'),'clients cannot run fanout');
 select ok(not has_function_privilege('anon','private.process_discovery_posts(integer)','execute'),'guests cannot run fanout');
 select ok(not has_table_privilege('authenticated','private.discovery_post_queue','select,insert,update,delete'),'clients cannot access queue');
-select is((select schedule from cron.job where jobname='gling-discovery-posts'),'10 seconds','existing cron schedules bounded discovery batches');
+select is((select schedule from cron.job where jobname='gling-discovery-posts'),'* * * * *','existing cron schedules bounded discovery batches');
 insert into auth.users(id,email,raw_app_meta_data)
 select ('42000000-0000-0000-0000-'||lpad(n::text,12,'0'))::uuid,'worker-'||n||'@example.invalid','{}' from generate_series(0,8) n;
 insert into public.profiles(id,nickname,city_id)
