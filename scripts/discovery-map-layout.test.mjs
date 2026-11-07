@@ -468,6 +468,7 @@ test('price chips select several levels, hide without price data, and an empty r
   control(tree, '레스토랑').props.onPress(); tree = view.render();
   view.readResults(); await new Promise(setImmediate); tree = view.render();
   assert.equal(nodes(tree).find(node => node.type === 'MapListSheet').props.snap, 'half');
+  assert.ok(nodes(nodes(tree).find(node => node.props?.testID === 'map-filter-overlay')).some(node => node.props?.analyticsId === 'discovery.subcategory'), 'sub-filters sit right under the big chips, not only in the list (owner 2026-11-05)');
   assert.deepEqual(nodes(tree).filter(node => node.props?.analyticsId === 'discovery.subcategory' && node.props.accessibilityLabel).map(node => node.props.accessibilityLabel), ['점심', '저녁', '데이트'], 'only sub-filters some place has');
   assert.ok(priceChip(tree), 'the price chip shows once a priced category is chosen');
   control(tree, '가격 필터').props.onPress(); tree = view.render();
@@ -622,7 +623,7 @@ test('M5: my saved places carry a pin mark in 모두, and a save confirmed on th
   const button = nodes(tree).find(node => node.type === 'SavedEntryButton');
   assert.equal(button.props.analyticsId, 'save.place');
   button.props.onBeen();
-  assert.equal(JSON.stringify(view.routes.at(-1)), JSON.stringify({ pathname: '/places/[id]', params: { id: 'osm:node:1', cityId: 'vancouver' } }), '가 봤어요 opens the place for its review');
+  assert.equal(JSON.stringify(view.routes.at(-1)), JSON.stringify({ pathname: '/places/[id]', params: { id: 'osm:node:1', cityId: 'vancouver', review: '1' } }), '가 봤어요 opens the place for its review');
   view.savedEntry.state = { saved: true }; view.render(); tree = view.render();
   assert.deepEqual(savedPins(tree), ['Place 1', 'Place 2']);
   map.props.onSelect(map.props.markers[1].id); view.savedEntry.state = { saved: false }; view.render(); tree = view.render();

@@ -9,6 +9,7 @@ import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { loadBusinessChatMessages, sendBusinessChatMessage, editBusinessChatMessage, deleteBusinessChatMessage, markBusinessChatRead, setBusinessChatReaction, endBusinessConversation, blockBusinessConversation, subscribeBusinessChat } from '@/lib/business-chat';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
+import { KeyboardScreen } from '@/components/keyboard-screen';
 import { SymbolView } from '@/components/symbol-view';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
 import { Animated, AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Linking, Modal, Platform, ScrollView, StyleSheet, TextInput, UIManager, View, type FlatList as NativeFlatList, type NativeScrollEvent, type NativeSyntheticEvent, useWindowDimensions, type ScrollViewInstance, type ViewInstance, type KeyDownEvent } from 'react-native';
@@ -828,6 +829,8 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           disabled={busy || reviewPick === null} primary />
       </View>
     </View>}
+    <KeyboardScreen>
+      {/* Inside the avoider: hiding this on keyboard-open must not move the avoider itself, or its measured offset goes stale. */}
     <View style={keyboardOpen && styles.hiddenWhileTyping}>
     {group && conversation.groupPostId && access.read && <MeetupRoomSummary key={`${currentUserId}:${conversation.groupPostId}`} postId={conversation.groupPostId} onOpen={() => {
       if (!valid()) return;
@@ -836,7 +839,6 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     }} onManage={conversation.isGroupHost && access.write ? actions => { if (valid()) { Keyboard.dismiss(); setHostActions(actions); setManageOpen(true); } } : undefined} />}
     {group && conversation.groupPostId && access.read && <MeetupRoomTop key={`notice:${currentUserId}:${conversation.groupPostId}`} postId={conversation.groupPostId} />}
     </View>
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       {access.read ? loading && messages.length === 0 ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} /></View> : <View ref={listRegion} style={styles.messageList} onLayout={() => closeMessageMenu()}><FlatList ref={messageList} analyticsId="components_chat-room.flatlist.1" data={searchMatches} keyExtractor={(message) => message.id} contentContainerStyle={styles.scroll}
         onViewableItemsChanged={trackVisibleMessages} viewabilityConfig={viewability}
         onScrollBeginDrag={() => closeMessageMenu()} onScroll={onMessageScroll} scrollEventThrottle={32} maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
@@ -956,7 +958,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
             </Pressable>;
           })}</View>
         </View>}
-        <View style={[styles.composer, { borderTopColor: theme.line, backgroundColor: theme.card, paddingBottom: attachmentsOpen ? Spacing.one : Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>
+        <View style={[styles.composer, { borderTopColor: theme.line, backgroundColor: theme.card, paddingBottom: attachmentsOpen || keyboardOpen ? Spacing.one : Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>
           <Pressable analyticsId="components_chat-room.add-attachment" accessibilityRole="button" accessibilityLabel={tr(attachmentsOpen ? tr("첨부 메뉴 닫기") : tr("첨부 메뉴 열기"))} accessibilityState={{ expanded: attachmentsOpen, disabled: sending || pickingPhoto || replyLocked }} disabled={sending || pickingPhoto || replyLocked} onPress={openAttachments} style={({ pressed }) => [styles.addAttachment, clay && { overflow: 'visible' }, { backgroundColor: clay ? 'transparent' : attachmentsOpen ? theme.backgroundSelected : theme.backgroundElement, opacity: pressed ? 0.7 : 1 }]}>{clay && <ClayPillFill kind={attachmentsOpen ? 'on' : 'white'} />}<SymbolView name={{ ios: attachmentsOpen ? 'xmark' : 'plus', android: attachmentsOpen ? 'close' : 'add', web: attachmentsOpen ? 'close' : 'add' }} size={21} tintColor={theme.accent} /></Pressable>
           <TextInput value={draft} onChangeText={setDraft} maxLength={2000} multiline placeholder={t.chat.messagePlaceholder} accessibilityLabel={t.chat.messagePlaceholder} placeholderTextColor={theme.textSecondary} returnKeyType="send" submitBehavior="submit" onSubmitEditing={() => void send()} style={[styles.input, styles.composerInput, { color: theme.text, backgroundColor: theme.background, borderColor: theme.line }]} />
           <RoomAction label={sending ? t.chat.sending : t.chat.send} onPress={() => void send()} disabled={sending || pickingPhoto || replyLocked || busy || !draft.trim()} primary={selectedPhotos.length === 0} />
@@ -974,7 +976,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
           </Pressable>
         </View>}
       </> : status === 'ended' && <ThemedText type="small" themeColor="textSecondary" style={[styles.feedback, { paddingBottom: Math.max(insets.bottom, Spacing.three) }]}>{endedNotice}</ThemedText>}
-    </KeyboardAvoidingView>
+    </KeyboardScreen>
     <Modal key={settingsSession} testID="chat-room-settings-modal" visible={settingsOpen} transparent animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={closeSettings} onDismiss={() => { const pending = reportAfterSettings.current; if (pending?.session !== settingsSession || settingsActive.current) return; reportAfterSettings.current = null; if (valid()) setReport(pending.target); }}>
       <SafeAreaProvider><SafeAreaView edges={['top', 'left', 'right']} style={styles.settingsBackdrop}>
         <Pressable analyticsId="chat.settings.dismiss" accessibilityRole="button" accessibilityLabel={closeSettingsLabel} onPress={closeSettings} style={StyleSheet.absoluteFill} />

@@ -446,7 +446,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const cardMark = `${viewerScope}:${cardPlace?.id}`, cardSaved = savedEntry.state?.saved;
   if (cardPlace && cardSaved !== undefined && savedNow[cardMark] !== cardSaved) setSavedNow(current => ({ ...current, [cardMark]: cardSaved }));
   const saveButton = cardPlace && <SavedEntryButton entry={savedEntry} kind="place" analyticsId="save.place"
-    onBeen={onClose ? undefined : () => router.push({ pathname: '/places/[id]', params: { id: cardPlace.id, cityId: cardPlace.cityId } })} />;
+    onBeen={onClose ? undefined : () => router.push({ pathname: '/places/[id]', params: { id: cardPlace.id, cityId: cardPlace.cityId, review: '1' } })} />;
   const listShown = sheet === 'half' || sheet === 'full';
   // Sheet stops are its top edge inside the map area: under the floating chips when full, half way, or only its summary.
   const sheetStops = { full: mapFiltersHeight, half: Math.max(mapFiltersHeight, Math.round(contentHeight * 0.5)), peek: Math.max(mapFiltersHeight, contentHeight - 96), closed: contentHeight };
@@ -496,6 +496,8 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     <ThemedText type="caption" themeColor="textSecondary">{userLocation ? tr('내 위치 기준 · 직선거리') : tr('위치를 켜면 가까운 순으로 정렬해요')}</ThemedText>
     {deliveryOnly && registry.ready && !registry.failed && !hasVerifiedDiscount && <ThemedText type="caption" themeColor="textSecondary">{tr('아직 할인율을 확인한 가게가 없어요')}</ThemedText>}
   </View>;
+  // Owner 2026-11-05 "메인칩셋아래에 서브칩들": this row sits right under the big chips, so it shows without opening the list.
+  const refineRow = (!!priceChip || statusOptions.length > 0 || subcategoryOptions.length > 0) && <ScrollView horizontal analyticsId="discovery.subcategory" showsHorizontalScrollIndicator={false} style={[styles.filterRow, styles.artRow]} contentContainerStyle={[styles.filters, styles.artRowItems]}>{priceChip}{statusOptions.map(statusChip)}{subcategoryOptions.map(subcategoryChip)}</ScrollView>;
   const sheetHeader = <>
     <View style={styles.sheetSummary}>
       <View style={styles.flex}>
@@ -504,7 +506,6 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       </View>
       <Pressable analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={tr('목록 닫기')} onPress={showMap} style={styles.icon}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={IconSize.inline} tintColor={theme.textSecondary} /></Pressable>
     </View>
-    {(!!priceChip || statusOptions.length > 0 || subcategoryOptions.length > 0) && <ScrollView horizontal analyticsId="discovery.subcategory" showsHorizontalScrollIndicator={false} style={[styles.filterRow, styles.artRow]} contentContainerStyle={[styles.filters, styles.artRowItems]}>{priceChip}{statusOptions.map(statusChip)}{subcategoryOptions.map(subcategoryChip)}</ScrollView>}
     {sortRow}
   </>;
   const unknownRow = openNow && unknownItems.length > 0 && <Pressable analyticsId="discovery.unknown-hours" accessibilityRole="button" accessibilityState={{ expanded: showUnknown }}
@@ -553,8 +554,9 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
         bottomInset={cardShown || sheet === 'closed' ? rowBottom : sheetCover} onSelect={selectPin} onMoved={(bounds, zoom) => setMoved({ bounds, zoom })} onCity={chooseCity} />
       <View testID="map-filter-overlay" pointerEvents="box-none" onLayout={event => setMapFiltersHeight(event.nativeEvent.layout.height)} style={sheet === 'full' ? [styles.mapFilters, { backgroundColor: theme.background }] : styles.mapFilters}>
         {/* Map labels stop running into the chip names (owner 2026-11-06 "칩 줄 뒤에 옅은 그라데이션"); the chips themselves stay as they are. */}
-        {sheet !== 'full' && <View pointerEvents="none" style={[styles.mapFiltersFade, { backgroundImage: `linear-gradient(to bottom, ${theme.background}F2 0%, ${theme.background}B3 62%, ${theme.background}00 100%)` }]} />}
+        {sheet !== 'full' && <View pointerEvents="none" style={[styles.mapFiltersFade, { backgroundImage: `linear-gradient(to bottom, ${theme.background}F2 0%, ${theme.background}B3 ${refineRow ? 80 : 62}%, ${theme.background}00 100%)` }]} />}
         {quickFilters}
+        {refineRow}
       </View>
       <View style={[styles.mapControls, { top: mapFiltersHeight + 12 }]}>
         <Pressable analyticsId="discovery.current" accessibilityRole="button" accessibilityLabel={locating ? tr("현재 위치 확인 중") : tr("내 위치로 지도 이동")} disabled={locating} onPress={() => { play('selection'); void locate(); }} style={[styles.mapControl, { backgroundColor: clayBox ? 'transparent' : theme.card, borderColor: clayBox ? 'transparent' : theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}{locating ? <GlingLoader size={12} accessibilityLabel={tr("현재 위치 확인 중")} /> : <ClayIcon clay="locate" claySize={24} name={{ ios: 'location', android: 'my_location', web: 'my_location' }} size={21} tintColor={theme.text} />}</Pressable>

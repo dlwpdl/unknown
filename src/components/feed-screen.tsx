@@ -1,3 +1,4 @@
+import { KeyboardScreen } from '@/components/keyboard-screen';
 import { NewcomerProgressCard } from '@/components/newcomer';
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
@@ -1209,7 +1210,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} allowSwipeDismissal
         onRequestClose={() => { play('reaction'); setWriting(false); }}>
         <SafeAreaProvider style={[styles.writer, { backgroundColor: theme.background }]}>
-          <KeyboardAvoidingView behavior="padding" style={styles.writer}>
+          <KeyboardScreen>
           <SafeAreaView style={styles.writer}>
             {writerPanel === 'city' ? (
               <CityPicker onClose={() => changeWriterPanel(null)} draft={{ city: draftCity, onSelect: setDraftCity }} />
@@ -1509,7 +1510,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               </Modal>
             </View>}
           </SafeAreaView>
-          </KeyboardAvoidingView>
+          </KeyboardScreen>
         </SafeAreaProvider>
       </Modal>
     <UserSheet user={sheetUser} onClose={() => setSheetUser(null)} />

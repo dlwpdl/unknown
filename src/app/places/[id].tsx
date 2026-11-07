@@ -54,7 +54,9 @@ export default function PlaceDetailScreen() {
   const scroll = useRef<ScrollViewInstance>(null), reviewsY = useRef(0);
   // The scroll position only decides which reviews auto-translate; other modes skip a re-render per scroll event.
   const trackViewport = useTranslationPreference().mode === 'auto';
-  const { cityId, id } = useLocalSearchParams<{ cityId?: string; id?: string }>();
+  const { cityId, id, review } = useLocalSearchParams<{ cityId?: string; id?: string; review?: string }>();
+  // 가 봤어요 on the map card lands here for its review; the section's first layout gives the scroll target.
+  const reviewPending = useRef(review === '1');
   const { isAuthed, isAuthLoading, me } = useAuth();
   const hidden = useContentVisibility();
   const isFocused = useIsFocused(), userId = isAuthed ? me.id : null;
@@ -167,7 +169,7 @@ export default function PlaceDetailScreen() {
           {clay && <ClayPillFill kind="white" />}
           <ThemedText type="smallBold" themeColor="accent">{tr('지도 보기')}</ThemedText>
         </Pressable>
-        {place.id.startsWith('osm:') && <View onLayout={event => { reviewsY.current = event.nativeEvent.layout.y; }}>
+        {place.id.startsWith('osm:') && <View onLayout={event => { reviewsY.current = event.nativeEvent.layout.y; if (reviewPending.current) { reviewPending.current = false; openReview(); } }}>
           <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} writeRequest={reviewRequest} />
         </View>}
         {place.id.startsWith('osm:') && <PlaceExternalRatings key={`${city.id}:${place.id}`} cityId={city.id} placeId={place.id} />}
