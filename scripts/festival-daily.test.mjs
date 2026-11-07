@@ -9,6 +9,12 @@ const now = Date.parse('2026-10-11T12:00:00Z');
 const raw = (id, day = 12) => ({ id, name: `${id} Festival`, dates: { start: { dateTime: `2026-10-${day}T20:00:00Z`, localDate: `2026-10-${day}`, localTime: '13:00:00' }, timezone: 'America/Vancouver', status: { code: 'onsale' } }, _embedded: { venues: [{ name: 'Park', city: { name: 'Vancouver' }, country: { countryCode: 'CA' } }] } });
 class Clock extends Date { constructor(...args) { super(...(args.length ? args : [now])); } static now() { return now; } }
 
+test('the events calendar labels stay in UTC so a B.C. iPhone cannot show the wrong month or weekdays', () => {
+  const screen = fs.readFileSync(new URL('../src/app/events/index.tsx', import.meta.url), 'utf8');
+  assert.ok(screen.includes("new Date(Date.UTC(calendarYear, calendarMonthNumber - 1, 1)).toLocaleDateString(locale, { year: 'numeric', month: 'long', timeZone: 'UTC' })"));
+  assert.ok(screen.includes("new Date(Date.UTC(2024, 0, 7 + index)).toLocaleDateString(locale, { weekday: 'short', timeZone: 'UTC' })"));
+});
+
 function endpoint({ cached = null, slots = [], slotsAfterRead, readyCache, claim = true, upstreamStatus = 200, budget = true, upstreamEvents } = {}) {
   const calls = [], writes = [], requests = [];
   let cacheReads = 0;

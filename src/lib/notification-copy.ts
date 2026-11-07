@@ -2,10 +2,11 @@
 // Pure TS (no React, i18n or Supabase imports) so the app and the push edge function share it.
 export type Translate = (text: string, ...values: unknown[]) => string;
 const same: Translate = text => text;
+// UTC keeps the numbers as written: a local Date in 2000 reads an hour off on phones where B.C.'s current offset differs from its history.
 const monthDay = (month: string, day: string, time?: [string, string]) => new Intl.DateTimeFormat('en-CA', time
-  ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' } : { month: 'short', day: 'numeric' })
-  .format(new Date(2000, Number(month) - 1, Number(day), Number(time?.[0] ?? 0), Number(time?.[1] ?? 0)));
-const clock = (hour: string, minute: string) => new Intl.DateTimeFormat('en-CA', { hour: 'numeric', minute: '2-digit' }).format(new Date(2000, 0, 1, Number(hour), Number(minute)));
+  ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'UTC' } : { month: 'short', day: 'numeric', timeZone: 'UTC' })
+  .format(Date.UTC(2000, Number(month) - 1, Number(day), Number(time?.[0] ?? 0), Number(time?.[1] ?? 0)));
+const clock = (hour: string, minute: string) => new Intl.DateTimeFormat('en-CA', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }).format(Date.UTC(2000, 0, 1, Number(hour), Number(minute)));
 // Event kinds written by private.festival_notification_body.
 const EVENT_KINDS: Record<string, string> = {
   '록 공연': 'a rock concert', '팝 공연': 'a pop concert', '재즈 공연': 'a jazz show', '힙합 공연': 'a hip-hop show', '전자음악 공연': 'an electronic music show',
@@ -103,7 +104,6 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
 };
 
 // Server bodies keep 24-hour text: stored rows, pushes and 1.4.7's English patterns above read it. Only the Korean inbox shows the app's clock.
-// UTC keeps the numbers as written: a local Date in 2000 reads an hour off on phones where BC's current offset differs from its history.
 const SERVER_CLOCK = /^(.+)(\d{2}):(\d{2})(에 시작해요\. \(모임 (?:장소 기준|현지 시간)\)| · 모임 (?:장소 기준|현지 시간)\)| \(모임 현지 시간\))$/;
 const FESTIVAL_CLOCK = /^(.+(?:공연이에요|경기예요|행사예요)\. \d{1,2}월 \d{1,2}일 )(\d{2}):(\d{2})(, .+)$/;
 export function koreanNotificationBody(item: { kind: string; body: string }) {
