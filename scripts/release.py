@@ -18,6 +18,7 @@ import urllib.request
 
 APP = "6809273242"
 PACKAGE = "com.dlwpdl.gling"
+SHARE_EXTENSION = f"{PACKAGE}.share-extension"
 TEAM = "P3X3452TDZ"
 OUT = Path(".release")
 SUPABASE = "https://wjvahbdwmctzpkndqaxa.supabase.co"
@@ -243,16 +244,18 @@ def signing(directory, local):
         source = json.loads(Path("credentials.json").read_text())
         ios, android = source["ios"], source["android"]["keystore"]
         android["keystorePath"] = str(Path(android["keystorePath"]).expanduser().resolve())
-        return str(Path(ios["distributionCertificate"]["path"]).expanduser().resolve()), ios["distributionCertificate"]["password"], str(Path(ios["provisioningProfilePath"]).expanduser().resolve()), android
+        profiles = {PACKAGE: str(Path(ios["provisioningProfilePath"]).expanduser().resolve()), SHARE_EXTENSION: str(Path(ios["shareProvisioningProfilePath"]).expanduser().resolve())}
+        return str(Path(ios["distributionCertificate"]["path"]).expanduser().resolve()), ios["distributionCertificate"]["password"], profiles, android
     source = json.loads(os.environ["GLING_SIGNING_JSON"])
     for value in [source["ios"]["password"], source["android"]["keystorePassword"], source["android"]["keyPassword"]]:
         mask(value)
-    for name, encoded in [("certificate.p12", source["ios"]["certificate"]), ("profile.mobileprovision", source["ios"]["profile"]), ("upload.p12", source["android"]["keystore"])]:
+    for name, encoded in [("certificate.p12", source["ios"]["certificate"]), ("profile.mobileprovision", source["ios"]["profile"]), ("share-profile.mobileprovision", source["ios"]["shareProfile"]), ("upload.p12", source["android"]["keystore"])]:
         file = directory / name
         file.write_bytes(base64.b64decode(encoded, validate=True))
         file.chmod(0o600)
     android = {**source["android"], "keystorePath": str(directory / "upload.p12")}
-    return str(directory / "certificate.p12"), source["ios"]["password"], str(directory / "profile.mobileprovision"), android
+    profiles = {PACKAGE: str(directory / "profile.mobileprovision"), SHARE_EXTENSION: str(directory / "share-profile.mobileprovision")}
+    return str(directory / "certificate.p12"), source["ios"]["password"], profiles, android
 
 
 def build(platform, env, directory, local, number):
@@ -262,7 +265,7 @@ def build(platform, env, directory, local, number):
     Path("app.json").write_text(json.dumps(app, ensure_ascii=False, indent=2) + "\n")
     OUT.mkdir(exist_ok=True)
     run(["npx", "expo", "prebuild", "--platform", platform, "--clean", "--no-install"], env=env)
-    certificate, password, profile_path, android = signing(directory, local)
+    certificate, password, profile_paths, android = signing(directory, local)
     if platform == "android":
         env.update(GLING_UPLOAD_KEYSTORE=android["keystorePath"], GLING_UPLOAD_STORE_PASSWORD=android["keystorePassword"], GLING_UPLOAD_KEY_ALIAS=android["keyAlias"], GLING_UPLOAD_KEY_PASSWORD=android["keyPassword"])
         run(["android/gradlew", "-p", "android", "--no-daemon", "-Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=512m", "--init-script", str(Path("scripts/android-signing.init.gradle").resolve()), "--init-script", str(Path("scripts/android-r8-check.init.gradle").resolve()), "bundleRelease", "assembleRelease"], env=env)
@@ -285,12 +288,19 @@ def build(platform, env, directory, local, number):
             raise ValueError("R8 removed WorkManager's database constructor; the app would crash at launch.")
     else:
         run(["npx", "pod-install", "ios"], env=env)
-        profile = plistlib.loads(run(["security", "cms", "-D", "-i", profile_path], True).encode())
-        if profile["TeamIdentifier"] != [TEAM] or profile["Entitlements"].get("get-task-allow") or profile["Entitlements"].get("application-identifier") != f"{TEAM}.{PACKAGE}":
-            raise ValueError("An App Store distribution profile for the existing team is required.")
-        installed = Path.home() / "Library/Developer/Xcode/UserData/Provisioning Profiles" / f'{profile["UUID"]}.mobileprovision'
-        installed.parent.mkdir(parents=True, exist_ok=True)
-        installed.write_bytes(Path(profile_path).read_bytes())
+        profiles = {}
+        for bundle, profile_path in profile_paths.items():
+            profile = plistlib.loads(run(["security", "cms", "-D", "-i", profile_path], True).encode())
+            entitlements = profile["Entitlements"]
+            if profile["TeamIdentifier"] != [TEAM] or entitlements.get("get-task-allow") or entitlements.get("application-identifier") != f"{TEAM}.{bundle}":
+                raise ValueError("An App Store distribution profile for the existing team is required.")
+            # The share extension hands shared links to the app through this group.
+            if f"group.{PACKAGE}" not in entitlements.get("com.apple.security.application-groups", []):
+                raise ValueError(f"The {bundle} profile is missing the shared App Group.")
+            installed = Path.home() / "Library/Developer/Xcode/UserData/Provisioning Profiles" / f'{profile["UUID"]}.mobileprovision'
+            installed.parent.mkdir(parents=True, exist_ok=True)
+            installed.write_bytes(Path(profile_path).read_bytes())
+            profiles[bundle] = profile["UUID"]
         keychain, key_password = str(directory / "release.keychain-db"), secrets.token_hex(24)
         mask(key_password)
         prior = re.findall(r'"([^"]+)"', run(["security", "list-keychains", "-d", "user"], True))
@@ -302,12 +312,12 @@ def build(platform, env, directory, local, number):
             run(["security", "set-key-partition-list", "-S", "apple-tool:,apple:", "-s", "-k", key_password, keychain])
             run(["security", "list-keychains", "-d", "user", "-s", keychain, *prior])
             project = next(Path("ios").glob("*.xcodeproj"))
-            env.update(GLING_PROFILE_UUID=profile["UUID"], GLING_TEAM=TEAM)
+            env.update(GLING_PROFILE_UUID=profiles[PACKAGE], GLING_SHARE_PROFILE_UUID=profiles[SHARE_EXTENSION], GLING_TEAM=TEAM)
             run(["node", "scripts/sign-ios.cjs", str(project / "project.pbxproj")], env=env)
             workspace = next(Path("ios").glob("*.xcworkspace"))
             archive = str(OUT / "app.xcarchive")
             options = OUT / "export.plist"
-            options.write_bytes(plistlib.dumps({"method": "app-store-connect", "signingStyle": "manual", "teamID": TEAM, "provisioningProfiles": {PACKAGE: profile["UUID"]}, "manageAppVersionAndBuildNumber": False}))
+            options.write_bytes(plistlib.dumps({"method": "app-store-connect", "signingStyle": "manual", "teamID": TEAM, "provisioningProfiles": profiles, "manageAppVersionAndBuildNumber": False}))
             run(["xcodebuild", "-workspace", str(workspace), "-scheme", project.stem, "-configuration", "Release", "-destination", "generic/platform=iOS", "-archivePath", archive, "archive"], env=env)
             run(["xcodebuild", "-exportArchive", "-archivePath", archive, "-exportPath", str(OUT / "export"), "-exportOptionsPlist", str(options)], env=env)
             artifact = OUT / "app.ipa"
@@ -322,6 +332,9 @@ def build(platform, env, directory, local, number):
             info = plistlib.loads(ipa.read(next(n for n in ipa.namelist() if re.fullmatch(r"Payload/[^/]+\.app/Info.plist", n))))
         if (info["CFBundleIdentifier"], info["CFBundleShortVersionString"], info["CFBundleVersion"]) != (PACKAGE, app["expo"]["version"], str(number)):
             raise ValueError("IPA version, build number or application ID does not match the release.")
+            extension = plistlib.loads(ipa.read(next(n for n in ipa.namelist() if re.fullmatch(r"Payload/[^/]+\.app/PlugIns/[^/]+\.appex/Info.plist", n))))
+            if (extension["CFBundleIdentifier"], extension["CFBundleShortVersionString"], extension["CFBundleVersion"]) != (SHARE_EXTENSION, app["expo"]["version"], str(number)):
+                raise ValueError("Share extension version, build number or ID does not match the release.")
     summary(f"Verified {artifact.name}; SHA256 {hashlib.sha256(artifact.read_bytes()).hexdigest()}")
 
 

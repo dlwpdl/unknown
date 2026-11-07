@@ -83,7 +83,7 @@ python3 scripts/release.py submit --platform android --local
 
 ## 관리
 
-GitHub Secrets: `GLING_ASC_JSON`, `GLING_PLAY_JSON`, `GLING_SIGNING_JSON`, `GLING_PUBLIC_ENV_JSON`. 기존 서명·스토어 자격 증명을 사용합니다. PR에는 서명과 스토어 비밀 정보를 전달하지 않습니다. 네이티브 빌드와 로컬 제출은 같은 스크립트를 사용합니다.
+GitHub Secrets: `GLING_ASC_JSON`, `GLING_PLAY_JSON`, `GLING_SIGNING_JSON`, `GLING_PUBLIC_ENV_JSON`. 기존 서명·스토어 자격 증명을 사용합니다. `GLING_SIGNING_JSON`의 `ios`에는 앱 프로필 `profile`과 공유 확장 프로필 `shareProfile`이 함께 있어야 하고, 두 프로필 모두 App Group `group.com.dlwpdl.gling`을 포함해야 합니다. PR에는 서명과 스토어 비밀 정보를 전달하지 않습니다. 네이티브 빌드와 로컬 제출은 같은 스크립트를 사용합니다.
 
 Google Play의 기존 서비스 계정에는 글링 앱의 **앱을 테스트 트랙으로 출시** 권한을 추가했습니다. 저장된 권한과 내부 트랙 출시 검증 API를 확인했습니다. 프로덕션·관리자 권한은 추가하지 않았습니다.
 
