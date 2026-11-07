@@ -12,6 +12,19 @@ select is((select array_agg(runid) from cron.job_run_details where jobid=-1),arr
 
 select is((select count(*)::integer from cron.job where jobname='gling-discovery-posts'),1,'the discovery job was replaced, not duplicated');
 
+-- View pulses keep seven days, and the count shown on a post never comes from them.
+select is((select schedule from cron.job where jobname='gling-view-pulse-retention'),'53 8 * * *','view pulses are trimmed daily');
+insert into auth.users(id,email,raw_app_meta_data) values('14000000-0000-0000-0000-000000000002','free-tier-views@example.test','{}');
+insert into public.profiles(id,nickname,city_id) values('14000000-0000-0000-0000-000000000002','free-tier-views','vancouver');
+insert into public.posts(id,author_id,city_id,tag_id,title,body,posted_on,view_count)
+  values('14000000-0000-0000-0000-000000000003','14000000-0000-0000-0000-000000000002','vancouver',(select id from public.tags limit 1),'view pulse test','view pulse test',current_date,42);
+insert into private.post_view_pulse(post_id,bucket,views) values
+  ('14000000-0000-0000-0000-000000000003',now()-interval '8 days',5),
+  ('14000000-0000-0000-0000-000000000003',now()-interval '6 days',7);
+do $$ begin execute (select command from cron.job where jobname='gling-view-pulse-retention'); end $$;
+select is((select array_agg(views) from private.post_view_pulse where post_id='14000000-0000-0000-0000-000000000003'),array[7],'only pulses newer than seven days stay');
+select is((select view_count from public.posts where id='14000000-0000-0000-0000-000000000003'),42,'the post keeps its view count');
+
 -- Every branch of the timezone check. Abbreviations and POSIX strings work in AT TIME ZONE, so they must stay rejected here.
 insert into auth.users(id,email,raw_app_meta_data) values('14000000-0000-0000-0000-000000000001','free-tier@example.test','{}');
 insert into public.profiles(id,nickname,city_id) values('14000000-0000-0000-0000-000000000001','free-tier-tz','vancouver');
