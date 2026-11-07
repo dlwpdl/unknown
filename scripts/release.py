@@ -330,11 +330,11 @@ def build(platform, env, directory, local, number):
                 subprocess.run(["security", "delete-keychain", keychain], capture_output=True)
         with zipfile.ZipFile(artifact) as ipa:
             info = plistlib.loads(ipa.read(next(n for n in ipa.namelist() if re.fullmatch(r"Payload/[^/]+\.app/Info.plist", n))))
+            extension = plistlib.loads(ipa.read(next(n for n in ipa.namelist() if re.fullmatch(r"Payload/[^/]+\.app/PlugIns/[^/]+\.appex/Info.plist", n))))
         if (info["CFBundleIdentifier"], info["CFBundleShortVersionString"], info["CFBundleVersion"]) != (PACKAGE, app["expo"]["version"], str(number)):
             raise ValueError("IPA version, build number or application ID does not match the release.")
-            extension = plistlib.loads(ipa.read(next(n for n in ipa.namelist() if re.fullmatch(r"Payload/[^/]+\.app/PlugIns/[^/]+\.appex/Info.plist", n))))
-            if (extension["CFBundleIdentifier"], extension["CFBundleShortVersionString"], extension["CFBundleVersion"]) != (SHARE_EXTENSION, app["expo"]["version"], str(number)):
-                raise ValueError("Share extension version, build number or ID does not match the release.")
+        if (extension["CFBundleIdentifier"], extension["CFBundleShortVersionString"], extension["CFBundleVersion"]) != (SHARE_EXTENSION, app["expo"]["version"], str(number)):
+            raise ValueError("Share extension version, build number or ID does not match the release.")
     summary(f"Verified {artifact.name}; SHA256 {hashlib.sha256(artifact.read_bytes()).hexdigest()}")
 
 
