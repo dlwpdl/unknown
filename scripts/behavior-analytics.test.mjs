@@ -1,8 +1,18 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdirSync, readFileSync } from 'node:fs';
-import { configureBehavior, behaviorScreen, behavior, flushBehavior, scrollThresholds } from '../src/lib/behavior-analytics.ts';
+import { configureBehavior, behaviorScreen, behavior, flushBehavior, isIdle, noteTouch, scrollThresholds } from '../src/lib/behavior-analytics.ts';
 import { analyticsScreen } from '../src/lib/analytics.ts';
+
+test('a phone left untouched for five minutes stops counting dwell, and the next touch starts it again', () => {
+  noteTouch();
+  const now = Date.now();
+  assert.equal(isIdle(now + 4 * 60 * 1000), false);
+  assert.equal(isIdle(now + 6 * 60 * 1000), true);
+  const source = readFileSync(new URL('../src/components/app-activity.tsx', import.meta.url), 'utf8');
+  assert.ok(source.includes("if (!isIdle(now)) behavior('dwell'"));
+  assert.ok(readFileSync(new URL('../src/components/app-update-gate.tsx', import.meta.url), 'utf8').includes('onTouchStart={() => noteTouch()}'));
+});
 
 test('the shared find-destination target keeps place and event screens distinguishable without source metadata', async () => {
   const batches = [];

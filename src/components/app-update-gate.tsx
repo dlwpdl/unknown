@@ -12,6 +12,7 @@ import { LaunchMoment } from '@/components/launch-moment';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { requiresAppUpdate } from '@/lib/app-update';
+import { noteTouch } from '@/lib/behavior-analytics';
 import { markLaunchSettled } from '@/lib/launch-state';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
@@ -71,7 +72,7 @@ export function AppUpdateGate({ children }: { children: ReactNode }) {
 
   const intro = !introDone && status !== 'blocked';
   return <>
-    <View style={styles.app} importantForAccessibility={intro ? 'no-hide-descendants' : 'auto'} accessibilityElementsHidden={intro}>{children}</View>
+    <View style={styles.app} onTouchStart={() => noteTouch()} importantForAccessibility={intro ? 'no-hide-descendants' : 'auto'} accessibilityElementsHidden={intro}>{children}</View>
     {intro && <LaunchMoment ready={status === 'allowed'} onComplete={() => setIntroDone(true)} />}
     <Modal visible={status === 'blocked'} animationType="fade" onRequestClose={() => {}}>
       <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
