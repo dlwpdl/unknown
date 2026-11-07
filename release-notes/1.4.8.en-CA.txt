@@ -1,5 +1,16 @@
-Posts on Home now open in a new screen. On iPhone, the card you tapped grows into the post, and it works the same way in search, profiles and saved posts.
-Buttons and cards dip when you press them, then spring back. You’ll also see more motion when you switch tabs or open and close pop-ups and menus.
-The profile that opens when you tap a name now slides up from the bottom, and so does the “Manage my post” menu. To close either one, drag its top edge down.
-When you change the category or sort, the Gling logo appears at the top of the Home list while posts load. It used to sit at the very end, where it was easy to miss.
-Tapping a post in “Most-read stories this week” before signing in no longer shows “Couldn’t load the post”. The sign-in screen now comes up right away. Once you sign in, the post you wanted opens.
+Buttons, icons and cards across the app are now 3D, and the app icon is new too. For the old flat look, go to “More”, then “Settings”, and turn off “3D design” under “Appearance”. No restart needed.
+You can add friends from other members’ profiles. Once you’re friends, the places and businesses you’ve saved show up on that friend’s map under “Places friends saved”. Listings and profiles you’ve saved stay hidden, and you can turn this off anytime under “Shared with friends” in “Settings”.
+We added neighbourhood bubbles. Any member can use “Leave a bubble” to put a note of up to 40 characters on the map, and it stays up for 1 hour by default and 3 hours at most. People who see it can tap “Wave” or send a chat request (up to 5 a day), and the chat opens only once the other person accepts.
+Places on the map show “Open now” or “Closing soon”, and the list shows save counts and can sort by “Most saved”. You can narrow a category down further, and pins are now 3D pictures. Save right from the map card, and the places you’ve saved are marked on their pins. To change cities, tap the map title.
+Save a place as “Want to go” or “Been here”, and tapping “Been here” lets you write a review on the spot.
+Place and business screens show who saved them. Friends appear by name and everyone else as a number, and you’ll also see who saved it first, new saves this week and other places saved with it. Directions open in the app you pick, and websites open inside Gling.
+With “Import from other apps” in “Saved”, paste a note or a link to a map app list, or pick a file you’ve downloaded. Gling finds those places on its map and saves them all at once.
+Your profile and other members’ profiles show a saved map and history.
+Turn a saved folder or a place into a vertical image card to share it.
+Save straight from cards on Home, and “Hide this post” takes someone else’s post off your list.
+When you post, the writing screen closes right away and the top card shows how the upload is going. If it fails, the photos you picked are still there.
+On posts with photos, you can check “Gling can feature this photo on its official social accounts”. We ask once at the start, and you can change it in “Settings”.
+Posts on Home open in a new screen. Buttons and cards press in and spring back. The profile you open by tapping a name and the “Manage my post” menu slide up from the bottom, and you drag them down to close. When you change the category or sort, the loading indicator appears at the top of the list.
+Your join request and first meetup profile now fit on one screen. Meetup times show the local time of the city where the meetup happens, on every screen, and new meetups default to 7 p.m. tomorrow. Adding a session updates the list immediately.
+The city picker is now alphabetical, with no split by country.
+On some devices, the keyboard covered text fields and dates were saved a day late. We fixed both. We also fixed business chat photos that didn’t show, posts and host screens that never finished loading, and the “Couldn’t load the post” message when you tapped a post in “Most-read stories this week” before signing in.
