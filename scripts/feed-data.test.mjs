@@ -275,7 +275,7 @@ test('글 카드 회원 사진은 회원 글에만 붙고, 모임 글은 호스�
   const posts = [{ id: 'a', author: { id: 'u1' } }, { id: 'b', author: { id: 'u2' }, room: { id: 'r' } }, { id: 'c', author: { id: 'u3' } }];
   const asked = [];
   const client = {
-    from: table => { assert.equal(table, 'profiles'); return { select: () => ({ in: (_, ids) => { asked.push(ids); return Promise.resolve({ error: null, data: [{ id: 'u1', avatar_path: 'u1/avatar.jpg' }, { id: 'u3', avatar_path: null }] }); } }) }; },
+    from: table => { assert.equal(table, 'profiles'); return { select: () => ({ in: (_, ids) => { asked.push(ids); return { retry: () => Promise.resolve({ error: null, data: [{ id: 'u1', avatar_path: 'u1/avatar.jpg' }, { id: 'u3', avatar_path: null }] }) }; } }) }; },
     storage: { from: bucket => { assert.equal(bucket, 'avatars'); return { createSignedUrls: async paths => ({ data: paths.map(path => ({ path, signedUrl: `signed:${path}` })) }) }; } },
   };
   const result = await attachAuthorPhotos(client, posts);
@@ -283,7 +283,7 @@ test('글 카드 회원 사진은 회원 글에만 붙고, 모임 글은 호스�
   assert.equal(result[0].author.avatarUrl, 'signed:u1/avatar.jpg');
   assert.equal(result[1].author.avatarUrl, undefined);
   assert.equal(result[2].author.avatarUrl, undefined);
-  const guest = { from: () => ({ select: () => ({ in: () => Promise.resolve({ data: null, error: { code: '42501' } }) }) }) };
+  const guest = { from: () => ({ select: () => ({ in: () => ({ retry: () => Promise.resolve({ data: null, error: { code: '42501' } }) }) }) }) };
   assert.equal(await attachAuthorPhotos(guest, posts), posts);
   assert.equal(await attachAuthorPhotos({ from: () => { throw new Error('offline'); } }, posts), posts);
 });
