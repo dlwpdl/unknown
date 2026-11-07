@@ -759,8 +759,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
           {!!editor.original_url && <ThemedText type="small" themeColor="textSecondary">{editor.original_url}</ThemedText>}
           {([['gling', tr("글링에 게시"), tr('{0} · 비즈니스 안내', tr(data.merchant.city_name))], ['naver', tr("네이버 카페용 원고 준비"), tr("원고 복사 후 직접 등록")], ['daum', tr("다음 카페용 원고 준비"), tr("원고 복사 후 직접 등록")]] as const).map(([key, label, detail]) => <View key={key} style={styles.channelRow}>
             <View style={styles.channelText}><ThemedText type="smallBold">{tr(key === 'gling' ? tr("글링") : key === 'naver' ? tr("네이버 카페") : tr("다음 카페"))}</ThemedText><ThemedText type="small" themeColor="textSecondary">{detail}</ThemedText></View>
-            <Switch analyticsId={`merchant.channel.${key}`} accessibilityLabel={label} value={channels[key]} disabled={busy || (key === 'gling' && published)} onValueChange={(value) => { play('selection'); setChannels({ ...channels, [key]: value }); }} style={styles.channelSwitch}
-              thumbColor={channels[key] ? theme.accentInk : theme.text} {...(Platform.OS === 'web' ? { activeThumbColor: theme.accentInk } : {})} trackColor={{ false: theme.line, true: theme.accent }} ios_backgroundColor={theme.line} />
+            <Switch analyticsId={`merchant.channel.${key}`} accessibilityLabel={label} value={channels[key]} disabled={busy || (key === 'gling' && published)} onValueChange={(value) => { play('selection'); setChannels({ ...channels, [key]: value }); }} style={styles.channelSwitch} />
           </View>)}
           {channels.gling && !data.merchant.owner_verified_at && <ThemedText type="small" themeColor="textSecondary">{tr("글링 공개 게시에는 비즈니스 소유 확인이 필요해요.")}</ThemedText>}
           <ThemedText type="small" themeColor="textSecondary">{tr("글링에는 비즈니스 안내 표시와 게시 기준이 적용돼요. 카페는 가입·게시 규칙을 확인해 직접 올려주세요.")}</ThemedText>

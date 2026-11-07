@@ -89,7 +89,7 @@ export function notificationRoute(value: unknown, notification?: { kind?: unknow
   return new RegExp(`^(?:/post/${uuid}(?:\\?commentId=${uuid})?|/chat(?:\\?(?:conversationId=${uuid}(?:&view=requests)?|view=requests))?|/profile/(?:guidelines|settings|meetup-reviews)|/notifications)$`, 'i').test(value) ? value : null;
 }
 
-export { englishNotificationBody } from './notification-copy.ts';
+export { englishNotificationBody, koreanNotificationBody } from './notification-copy.ts';
 
 export function adminDashboardUrl(value: unknown, isAdmin: boolean, origin: string | null): string | null {
   if (!isAdmin || !origin) return null;

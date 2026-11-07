@@ -225,8 +225,7 @@ export function ProfileSharingCard() {
         <ThemedText type="small" themeColor="textSecondary">{tr('켜면 내가 저장한 장소와 비즈니스를 친구가 지도에서 볼 수 있어요. 저장해 둔 구해요·팔아요 글과 프로필은 안 보여요.')}</ThemedText>
       </View>
       <Switch analyticsId="profile.settings.share-saved-places" value={current?.on ?? true} disabled={!current || current.busy || current.on === null}
-        onValueChange={on => void change(on)} accessibilityLabel={tr('친구에게 저장한 곳 보여 주기')}
-        trackColor={{ false: theme.line, true: theme.accent }} ios_backgroundColor={theme.line} />
+        onValueChange={on => void change(on)} accessibilityLabel={tr('친구에게 저장한 곳 보여 주기')} />
     </View>
     {!!current?.error && <ThemedText type="small" accessibilityRole="alert">{current.error}</ThemedText>}
   </View>;

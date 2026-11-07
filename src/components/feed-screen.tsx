@@ -83,7 +83,7 @@ import {
   MEETUPS_CHANGED_EVENT,
   requestMeetupJoin,
 } from '@/lib/community-data';
-import { appendUniquePosts, limitBusinessPosts, loadPublicFeed, loadPublicPost, pinJustPosted, todayRowsAfter, type FeedSort, type JustPosted } from '@/lib/feed-data';
+import { appendUniquePosts, limitBusinessPosts, loadPublicFeed, loadPublicPost, pinJustPosted, todayRowsAfter, writeFabOverIntro, type FeedSort, type JustPosted } from '@/lib/feed-data';
 import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, hasAdLabel, MAX_HASHTAGS, parseHashtags, toggleAdLabel } from '@/lib/hashtags';
 import { canAddPostImage, MAX_POST_IMAGES } from '@/lib/image-upload';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -135,6 +135,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const clay = useClay(), clayBox = useClayBox();
   const writeFab = Platform.OS !== 'web' && !meetupsOnly;
   const writeFabCompact = viewportWidth < 380; // 폴드 바깥 화면 같은 좁은 폭에서는 + 하나만
+  // 머리 카드(처음 안내·새로 온 멤버)가 버튼 자리에 있으면 글자를 가리니 비켜 준다 (1.4.8 QA "모임 보기"). 카드가 지나가면 다시 나온다.
+  const [writeFabAside, setWriteFabAside] = useState(false);
   // 실측: iOS 탭 화면의 insets.bottom은 이미 탭바까지 포함(탭마다 SafeAreaProvider), 안드로이드 탭 내용은 탭바 위에서 끝난다.
   const [posts, setPosts] = useState<Post[]>([]);
   const [justPosted, setJustPosted] = useState<JustPosted<Post> | null>(null);
@@ -202,6 +204,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const feedIntroHeight = useRef(0);
   const feedOffset = useRef(0);
   const [sortStuck, setSortStuck] = useState(false);
+  const feedViewportHeight = useRef(0);
+  const placeWriteFab = () => setWriteFabAside(writeFabOverIntro({ introHeight: feedIntroHeight.current, offset: feedOffset.current, viewport: feedViewportHeight.current, bottom: (Platform.OS === 'ios' ? insets.bottom : 0) + Spacing.three, height: ControlMetrics.action }));
   const glow = useScreenGlow(!meetupsOnly);
   const [listAt, setListAt] = useState({ x: 0, y: 0, top: 0 }); // 글 목록이 화면 왼쪽 위에서 떨어진 자리(안쪽 x·y + 목록 top)
   const scrollToResults = useRef(false);
@@ -906,11 +910,12 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             </ScrollView></GlassSurface>
           </View>
         )}
-        <View style={styles.feedArea} onLayout={({ nativeEvent: { layout } }) => measureList({ top: layout.y })}><FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
-          onScroll={glowOn ? ({ nativeEvent }) => {
+        <View style={styles.feedArea} onLayout={({ nativeEvent: { layout } }) => { measureList({ top: layout.y }); feedViewportHeight.current = layout.height; placeWriteFab(); }}><FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
+          onScroll={glowOn || writeFab ? ({ nativeEvent }) => {
             feedOffset.current = nativeEvent.contentOffset.y;
             const stuck = feedOffset.current >= feedIntroHeight.current - 0.5;
             if (stuck !== sortStuck) setSortStuck(stuck);
+            placeWriteFab();
           } : undefined}
           scrollEventThrottle={16}
           accessibilityElementsHidden={loadingCover != null} importantForAccessibility={loadingCover ? 'no-hide-descendants' : 'auto'}
@@ -956,6 +961,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             <View style={[styles.header, !meetupsOnly && styles.todayHeader]} onLayout={event => {
               feedIntroHeight.current = event.nativeEvent.layout.height;
               setSortStuck(feedOffset.current >= feedIntroHeight.current - 0.5);
+              placeWriteFab();
             }}>
               {/* 오늘 탭은 날짜 줄 없이 바로 많이 읽은 글 (owner 2026-11-03 "공간낭비"). 모임 탭 제목 줄은 그대로. */}
               {meetupsOnly && <View style={styles.journalIntro}>
@@ -1008,12 +1014,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           style={[styles.loadingCover, loadingCover === 'page' && [styles.loadingCoverPage, { paddingBottom: bottomClear }], { backgroundColor: theme.background, backgroundImage: listGlow }]}>
           <GlingLoader color={theme.accent} accessibilityLabel={loadingCover === 'page' ? tr("{0} 소식 불러오는 중", tr(city.name)) : tr("글 불러오는 중")} />
         </Reanimated.View>}</View>
-        {writeFab && <Pressable analyticsId="feed.write" accessibilityRole="button" accessibilityLabel={t.tabs.write} onPress={openWriter}
-          style={({ pressed }) => [ControlStyles.pill, styles.writeFab, writeFabCompact && styles.writeFabCompact, { bottom: (Platform.OS === 'ios' ? insets.bottom : 0) + Spacing.three }, controlPresentation(theme, { tone: 'primary', clay, pressed, reducedMotion }).container]}>
+        {writeFab && !writeFabAside && <Reanimated.View entering={reducedMotion ? undefined : FadeIn.duration(ControlMotion.settleMs)} exiting={reducedMotion ? undefined : FadeOut.duration(ControlMotion.pressMs)}
+          style={[styles.writeFabDock, { bottom: (Platform.OS === 'ios' ? insets.bottom : 0) + Spacing.three }]}><Pressable analyticsId="feed.write" accessibilityRole="button" accessibilityLabel={t.tabs.write} onPress={openWriter}
+          style={({ pressed }) => [ControlStyles.pill, styles.writeFab, writeFabCompact && styles.writeFabCompact, controlPresentation(theme, { tone: 'primary', clay, pressed, reducedMotion }).container]}>
           {clay && <ClayPillFill kind="cta" />}
           <ClayIcon clay="pencil" claySize={24} name={{ ios: 'plus', android: 'add', web: 'add' }} size={IconSize.toolbar} tintColor={theme.accentInk} />
           {!writeFabCompact && <ThemedText type="label" style={{ color: theme.accentInk }}>{t.tabs.write}</ThemedText>}
-        </Pressable>}
+        </Pressable></Reanimated.View>}
       </View></SafeAreaView>
 
       <Modal visible={categorySheet} animationType={reducedMotion ? 'fade' : 'slide'} presentationStyle="pageSheet" onRequestClose={() => { play('selection'); setCategorySheet(false); }}>
@@ -1558,7 +1565,8 @@ const styles = StyleSheet.create({
   journalIntro: { paddingTop: Spacing.three, gap: Spacing.one },
   todayHeader: { paddingBottom: Spacing.one },
   journalStatusRow: { minHeight: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
-  writeFab: { position: 'absolute', right: Spacing.three, minHeight: ControlMetrics.action, flexDirection: 'row', gap: Spacing.one, borderWidth: 1 },
+  writeFabDock: { position: 'absolute', right: Spacing.three },
+  writeFab: { minHeight: ControlMetrics.action, flexDirection: 'row', gap: Spacing.one, borderWidth: 1 },
   clayPad: { overflow: 'visible', paddingHorizontal: 18 }, clayCta: { overflow: 'visible', paddingHorizontal: 24, borderBottomWidth: 0, borderWidth: 0 },
   clayChip: { flexDirection: 'row', gap: 4, paddingLeft: 8, paddingRight: 12 },
   writeFabCompact: { width: ControlMetrics.action, paddingHorizontal: 0 },

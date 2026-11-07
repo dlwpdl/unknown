@@ -4,6 +4,7 @@ import test from 'node:test';
 import { cityClock, formatRanges, formatTime, isOpenAt, localClock, minutesUntilClose, openState, parseOpeningHours } from '../src/lib/opening-hours.ts';
 
 const at = (day, time) => ({ day, minutes: Number(time.slice(0, 2)) * 60 + Number(time.slice(3)) });
+const plain = text => text.replace(/\s/g, ' '); // ICU puts a narrow space before AM/PM
 const MO = 0, TU = 1, WE = 2, TH = 3, FR = 4, SA = 5, SU = 6;
 
 test('weekday rules, day lists and wrap-around day ranges read the catalog format', () => {
@@ -44,8 +45,8 @@ test('hours past midnight belong to the evening they started and stay open into 
   assert.equal(isOpenAt(late, at(WE, '01:00')), true);
   assert.equal(isOpenAt(parseOpeningHours('Mo-Fr 05:30-00:00'), at(TU, '23:59')), true, '00:00 as an end means midnight');
   assert.equal(isOpenAt(parseOpeningHours('Fr,Sa 00:00-00:00'), at(SA, '12:00')), true);
-  assert.equal(formatRanges(late[FR]), '17:00–02:00');
-  assert.equal(formatRanges(parseOpeningHours('Mo-Su 07:00-24:00')[MO]), '07:00–24:00');
+  assert.equal(plain(formatRanges(late[FR], 'en-US')), '5:00 PM–2:00 AM');
+  assert.equal(plain(formatRanges(parseOpeningHours('Mo-Su 07:00-24:00')[MO], 'en-US')), '7:00 AM–12:00 AM');
 });
 
 test('values the reader cannot be sure of stay unknown instead of guessing', () => {
@@ -106,5 +107,5 @@ test('P6 곧 닫음: minutes until close follow overnight hours, and 24-hour pla
   assert.equal(left('Mo-Su 00:00-24:00', WE, '23:30'), null);
   assert.equal(left('Mo-Sa 00:00-24:00; Su 00:00-22:00', SU, '21:30'), 30, 'a 24-hour week that does end');
   assert.equal(left('Mo-Sa 00:00-24:00; Su 00:00-22:00', SA, '23:30'), 1350, 'Saturday night runs on to Sunday 22:00');
-  assert.deepEqual(['23:30', '23:59', '01:30'].map(time => formatTime(at(MO, time).minutes + 30)), ['24:00', '00:29', '02:00']);
+  assert.deepEqual(['23:30', '23:59', '01:30'].map(time => plain(formatTime(at(MO, time).minutes + 30, 'en-US'))), ['12:00 AM', '12:29 AM', '2:00 AM']);
 });

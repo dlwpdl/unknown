@@ -13,6 +13,7 @@ import {
   JUST_POSTED_MS,
   pinJustPosted,
   todayRowsAfter,
+  writeFabOverIntro,
 } from '../src/lib/feed-data.ts';
 import { contentAdPosition } from '../src/lib/content-ad-placement.ts';
 
@@ -286,4 +287,13 @@ test('글 카드 회원 사진은 회원 글에만 붙고, 모임 글은 호스�
   const guest = { from: () => ({ select: () => ({ in: () => ({ retry: () => Promise.resolve({ data: null, error: { code: '42501' } }) }) }) }) };
   assert.equal(await attachAuthorPhotos(guest, posts), posts);
   assert.equal(await attachAuthorPhotos({ from: () => { throw new Error('offline'); } }, posts), posts);
+});
+
+test('the write button steps aside only while the top cards reach its spot', () => {
+  const place = { viewport: 700, bottom: 16, height: 44 }; // its top edge sits at 640
+  assert.equal(writeFabOverIntro({ ...place, introHeight: 800, offset: 0 }), true, 'new member cards under the label at rest');
+  assert.equal(writeFabOverIntro({ ...place, introHeight: 800, offset: 160 }), false, 'the cards have passed');
+  assert.equal(writeFabOverIntro({ ...place, introHeight: 300, offset: 0 }), false, 'a short header never hides it');
+  assert.equal(writeFabOverIntro({ ...place, introHeight: 640, offset: -60 }), false, 'pull-to-refresh bounce keeps it');
+  assert.equal(writeFabOverIntro({ ...place, viewport: 0, introHeight: 800, offset: 0 }), false, 'before layout it stays');
 });

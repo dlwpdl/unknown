@@ -62,7 +62,7 @@ export function eventPriceLabel(event: TicketmasterEvent): string {
 }
 export function eventTime(event: TicketmasterEvent) {
   if (!event.startsAt || event.timeUnconfirmed || !event.timezone) return `${event.localDate ?? '날짜 미정'} · 시간 확정 전`;
-  return new Date(event.startsAt).toLocaleString('ko-KR', { timeZone: event.timezone, month: 'long', day: 'numeric', weekday: 'short', hour: '2-digit', minute: '2-digit' });
+  return new Date(event.startsAt).toLocaleString('ko-KR', { timeZone: event.timezone, month: 'long', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' });
 }
 export function eventMatchesPriceFilter(event: TicketmasterEvent, filter: EventPriceFilter): boolean {
   if (filter === 'all') return true;

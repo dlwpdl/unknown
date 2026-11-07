@@ -72,6 +72,11 @@ export function setBusinessImageSession(viewer: string | null, token: string | n
   businessImageSessionRevision++;
 }
 
+/** True while the top cards (first-steps, newcomer) still reach the floating write button, so its label would cover their text. */
+export function writeFabOverIntro({ introHeight, offset, viewport, bottom, height }: { introHeight: number; offset: number; viewport: number; bottom: number; height: number }): boolean {
+  return viewport > 0 && introHeight - Math.max(offset, 0) > viewport - bottom - height;
+}
+
 // Owner 2026-11-04 ('글 사이 줄'): in 오늘 '전체' the place row follows the second post, then festivals and places take turns
 // every TODAY_ROW_EVERY posts. 4 is the ad cadence offset by two posts, so a turn never takes an ad's slot (and shifts if that cadence changes).
 // A list too short for a row's first turn shows it under the last post, or under the empty state at index -1.

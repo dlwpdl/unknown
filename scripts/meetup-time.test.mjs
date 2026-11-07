@@ -22,7 +22,7 @@ test('a Vancouver meetup after the fall 2026 change stays UTC-7 whatever zone da
   // Node here can carry zone data older than tz 2026b, the same state as an old phone: bare Intl says 18:00 for this instant.
   assert.equal(clock('2026-12-02T02:00:00Z', 'America/Vancouver'), '19:00');
   assert.equal(clock('2027-07-02T02:00:00Z', 'America/Vancouver'), '19:00');
-  assert.match(chillingSchedule({ eventKind: 'once', startsAt: '2026-12-02T02:00:00Z', endsAt: '2026-12-02T03:00:00Z', timezone: 'America/Vancouver' }, 'en-CA'), /19:00.*20:00/);
+  assert.match(chillingSchedule({ eventKind: 'once', startsAt: '2026-12-02T02:00:00Z', endsAt: '2026-12-02T03:00:00Z', timezone: 'America/Vancouver' }, 'en-CA'), /7:00\s*p\.m\..*8:00\s*p\.m\./);
 });
 
 test('only instants from the change onward use the fixed clock; earlier ones and other cities keep their own zone', () => {

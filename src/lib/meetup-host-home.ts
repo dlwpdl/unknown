@@ -57,6 +57,13 @@ export function hostTodos({ sessions, pending, unpaid, now }: { sessions: Meetup
 }
 
 
+/** A one-time meetup only gets a session row once attendance opens. Until then its own time stands in (id ''), so the host screens say what the meetup page says. */
+export function withOnceSession(sessions: MeetupSession[], room?: { eventKind?: string | null; startsAt?: string | null; endsAt?: string | null } | null): MeetupSession[] {
+  const startsAt = room?.startsAt, endsAt = room?.endsAt;
+  if (room?.eventKind !== 'once' || !startsAt || !endsAt || sessions.some(session => Date.parse(session.startsAt) === Date.parse(startsAt))) return sessions;
+  return [...sessions, { id: '', startsAt, endsAt, checkedIn: false, verified: false, claimStatus: 'none', canReview: false, reviewStatus: null, members: [] }];
+}
+
 /** "Today 9:00 AM", "Tomorrow 9:00 AM", otherwise month, day, weekday and time. `tr` keeps the wording translatable. */
 export function sessionWhen(iso: string, locale: string, now: number, tr: (text: string, ...values: unknown[]) => string, zone = meetupZone()) {
   const clock = formatMeetupTime(iso, locale, zone, { hour: 'numeric', minute: '2-digit' });

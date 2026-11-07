@@ -54,7 +54,6 @@ export function ContentTranslationSettings() {
         disabled={!preference.ready || preference.saving} hitSlop={8}
         accessibilityLabel={english ? 'Translate posts and comments automatically' : '글과 댓글 자동 번역'}
         accessibilityState={{ disabled: !preference.ready || preference.saving, busy: preference.saving }}
-        trackColor={{ false: theme.line, true: theme.accent }}
         onValueChange={(enabled) => { play('selection'); void preference.requestMode(enabled ? 'auto' : 'manual'); }} />
     </View>
     <ThemedText type="small" themeColor="textSecondary">{english

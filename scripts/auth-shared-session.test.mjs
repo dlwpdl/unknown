@@ -18,7 +18,7 @@ const profile = (id, patch = {}) => ({ id, nickname: `${id} 이웃`, city_id: 'v
 
 // Run AuthProvider's real restore/profile effects with controllable network ordering.
 function mount(initialSession = session('member')) {
-  const state = [], reads = [], storage = new Map(); let index = 0, effects = [], tree, currentSession = initialSession, onAuthChange;
+  const state = [], reads = [], storage = new Map(); let index = 0, effects = [], tree, currentSession = initialSession, onAuthChange, authExpired;
   const effect = (fn, deps) => {
     const slot = index++, previous = state[slot];
     if (previous && deps && deps.length === previous.deps?.length && deps.every((value, i) => Object.is(value, previous.deps[i]))) return;
@@ -45,7 +45,7 @@ function mount(initialSession = session('member')) {
   const imports = {
     react, 'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { Platform: { OS: 'web' }, Modal: 'Modal', View: 'View', Pressable: 'Pressable', StyleSheet: { create: value => value },
-      DeviceEventEmitter: { addListener: () => ({ remove() {} }) }, AppState: { addEventListener: () => ({ remove() {} }) } },
+      DeviceEventEmitter: { addListener(_, listener) { authExpired = listener; return { remove() {} }; } }, AppState: { addEventListener: () => ({ remove() {} }) } },
     'react-native-safe-area-context': { SafeAreaProvider: 'SafeAreaProvider' },
     '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async key => storage.get(key) ?? null, setItem: async (key, value) => storage.set(key, value) } },
     '@react-native-google-signin/google-signin': {}, 'expo-apple-authentication': {}, 'expo-linking': {}, 'expo-web-browser': { maybeCompleteAuthSession() {} },
@@ -53,7 +53,7 @@ function mount(initialSession = session('member')) {
     '@/components/flat-pressable': { FlatPressable: 'Pressable' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },
     '@/constants/theme': { Spacing: {} }, '@/hooks/use-theme': { useTheme: () => ({}) },
-    '@/i18n/ko': { t: { auth: { loginError: '로그인 오류', sessionExpired: '세션 만료' } } }, '@/lib/admin': { isAdminRole: () => false },
+    '@/i18n/ko': { t: { auth: { loginError: '로그인 오류', sessionExpired: '세션 만료', signOutError: '로그아웃 오류' } } }, '@/lib/admin': { isAdminRole: () => false },
     '@/lib/account-security-device': { registerSecurityDevice: async () => {} }, '@/lib/invites': { claimRememberedInvite: async () => null }, '@/lib/linked-accounts': { clearLinkedSessions: async () => {} }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play }) },
     '@/lib/feed-data': { setBusinessImageSession }, '@/lib/chat-identity': chatIdentity, '@/lib/nickname': nickname, '@/lib/kakao-auth': kakao, '@/lib/contact': { CONTACT_EMAIL: 'fixture@example.invalid' },
     '@/lib/location-provider': { CommunityLocationProvider: 'CommunityLocationProvider' }, '@/lib/mock': { CITIES: [{ id: 'vancouver' }] },
@@ -69,7 +69,7 @@ function mount(initialSession = session('member')) {
   render();
   return { reads, render, nodes: () => nodes(tree), async settle() { for (let i = 0; i < 4; i++) { await tick(); render(); } return tree.props.value; },
     changeSession(next,event=next ? 'SIGNED_IN' : 'SIGNED_OUT') { currentSession = next; onAuthChange(event, next); return render(); },
-    unmount() { state.forEach(hook => hook?.cleanup?.()); } };
+    expire() { authExpired(); render(); return tree; }, unmount() { state.forEach(hook => hook?.cleanup?.()); } };
 }
 const onboarding = harness => harness.nodes().find(node => node.type === 'ProfileOnboarding');
 
@@ -172,4 +172,27 @@ test('business DM selection survives token refresh but is cleared on sign-out an
   harness.changeSession(null);
   harness.changeSession(session('another-member'));
   assert.equal(chatIdentity.chatBusinessIdentity('another-member'), null, 'signing back in starts with personal DMs');
+});
+
+const loginReason = harness => { const panel = harness.nodes().find(node => node.type === 'LoginPanel'); assert.ok(panel, 'the login still opens'); return panel.props.reason; };
+
+test('"로그인이 풀렸어요" is only for a session that really dropped, not for leaving on purpose', async context => {
+  const lost = mount(); context.after(() => lost.unmount()); await lost.settle();
+  lost.expire(); assert.equal(loginReason(lost), '세션 만료', 'a live session rejected by the server');
+  lost.expire(); assert.equal(loginReason(lost), '세션 만료', 'later failed requests keep the notice up');
+
+  const left = mount(); context.after(() => left.unmount()); let auth = await left.settle();
+  await auth.signOut(); await left.settle();
+  left.expire(); assert.equal(loginReason(left), undefined, 'requests failing right after a direct logout');
+
+  const guest = mount(null); context.after(() => guest.unmount()); await guest.settle();
+  guest.expire(); assert.equal(loginReason(guest), undefined, 'a guest never had a session to lose');
+
+  const back = mount(null); context.after(() => back.unmount()); await back.settle();
+  back.changeSession(session('member')); back.expire(); assert.equal(loginReason(back), '세션 만료', 'signing in arms the notice again');
+
+  const deleting = mount(); context.after(() => deleting.unmount()); auth = await deleting.settle();
+  auth.expectSignOut(true); deleting.expire(); assert.equal(loginReason(deleting), undefined, 'account deletion invalidates its own session');
+  const failed = mount(); context.after(() => failed.unmount()); auth = await failed.settle();
+  auth.expectSignOut(true); auth.expectSignOut(false); failed.expire(); assert.equal(loginReason(failed), '세션 만료', 'deletion failed, the member is still signed in');
 });
