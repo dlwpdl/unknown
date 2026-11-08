@@ -175,7 +175,7 @@ try{
   map.addImage('saved-mark',mx.getImageData(0,0,36,36),{pixelRatio:2});
   map.addSource('discovery',{type:'geojson',data:geojson()});
   map.addSource('discovery-selection',{type:'geojson',data:geojson(true)});
-  map.addSource('discovery-grouped',{type:'geojson',data:geojson(false,true),cluster:true,clusterMaxZoom:NEAR-1,clusterRadius:32});
+  map.addSource('discovery-grouped',{type:'geojson',data:geojson(false,true),cluster:true,clusterMaxZoom:NEAR-1,clusterRadius:44});
   // Every place layer starts at the mid stage; below it only the city pills show.
   const add=layer=>map.addLayer({minzoom:FAR,...layer}),step=(mid,near)=>['step',['zoom'],mid,NEAR,near];
   const nameFont={'text-font':['Noto Sans Regular'],'text-anchor':'left','text-max-width':14,'icon-image':'name-tag','icon-text-fit':'both','icon-text-fit-padding':[2,6,2,6]},namePaint={'text-color':'#302047'};
