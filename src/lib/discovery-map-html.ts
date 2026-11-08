@@ -185,9 +185,10 @@ try{
   add({id:'discovery-featured-labels',type:'symbol',source:'discovery',maxzoom:NEAR,filter:['all',['==',['get','featured'],true],['!',art]],layout:{...nameFont,'text-field':['get','label'],'text-size':11,'text-offset':[1,0],'text-padding':6},paint:namePaint});
   add({id:'discovery-hit',type:'circle',source:'discovery',paint:{'circle-radius':22,'circle-opacity':0}});
   // A picture pin carries its own TOP 50 ring (pin-<art>-top), so the ring never shows before or without the picture (owner 2026-11-08 "서클이 이게 아직 안보이는데도 서클만 먼저보여"); this ring is for dots only.
+  // Below NEAR the dot stays under the picture, so the small ring is never alone; the plain pin keeps the mid-zoom collision box as before.
   add({id:'discovery-top25',type:'circle',source:'discovery',filter:top25Filter(),paint:{'circle-radius':step(7,15),'circle-opacity':0,'circle-stroke-color':'#9C7637','circle-stroke-width':step(1.5,2),'circle-stroke-opacity':step(1,dot)}});
   // Pins are placed before their names: a pin that collides drops back to its dot, and its name (the tag layer after it) only shows where it fits. The pin also covers the small TOP 50 ring under it.
-  add({id:'discovery-art-featured',type:'symbol',source:'discovery',maxzoom:NEAR,filter:midArt,layout:{...topPin,'icon-size':0.75,'icon-allow-overlap':false,'icon-ignore-placement':false}});
+  add({id:'discovery-art-featured',type:'symbol',source:'discovery',maxzoom:NEAR,filter:midArt,layout:{...artPin,'icon-size':0.75,'icon-allow-overlap':false,'icon-ignore-placement':false}});
   add({id:'discovery-art-featured-labels',type:'symbol',source:'discovery',maxzoom:NEAR,filter:midArt,layout:{...nameFont,'text-field':['get','label'],'text-size':11,'text-offset':[1.8,0],'text-padding':6},paint:namePaint});
   add({id:'discovery-selected',type:'circle',source:'discovery-selection',paint:{'circle-radius':['case',art,21,17],'circle-color':'#ffffff','circle-stroke-color':'${accent}','circle-stroke-width':4}});
   add({id:'discovery-selected-pin',type:'circle',source:'discovery-selection',paint:{'circle-radius':11,'circle-color':['get','color'],'circle-stroke-color':'#ffffff','circle-stroke-width':2,'circle-opacity':dot,'circle-stroke-opacity':dot}});
