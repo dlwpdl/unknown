@@ -361,6 +361,7 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
         <View style={styles.previewMap}><PostPinMap pin={point} cityName={city.englishName} onSelect={move} /></View>
         <ThemedText type="caption" accessibilityLiveRegion="polite" style={{ color: atEdge ? theme.accent : theme.textSecondary }}>{atEdge ? tr('100m까지만 옮길 수 있어요. 그 끝에 놓아 뒀어요.') : tr('100m 안에서 옮길 수 있어요')}</ThemedText>
         {keptLine}
+        {problemLine}
       </>}
     </ScrollView>
     {/* Pinned under the scrolling part, so a long sheet (with people who waved) never pushes the buttons off screen. */}
@@ -376,7 +377,8 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
         </View>
         <Pressable analyticsId="livemap.preview" accessibilityRole="button" onPress={() => { play('selection'); setStep('write'); }} style={styles.link}><ThemedText type="smallBold" themeColor="accent">{tr('글 고치기')}</ThemedText></Pressable>
       </> : <View style={styles.actions}>
-        <Secondary analyticsId="livemap.preview" label={tr('처음 자리로')} onPress={() => { play('selection'); setAtEdge(false); if (origin) setSpot(origin); }} />
+        {/* Owner 2026-11-08 "내위치찾기로 새로고침가능하게": a fresh fix re-centres the pin and its 100 m circle on where the member is now. */}
+        <Secondary analyticsId="livemap.preview" label={locating ? tr('위치 확인 중') : tr('내 위치 찾기')} disabled={locating} onPress={() => { play('selection'); setAtEdge(false); setLocating(true); setProblem(''); void locate(); }} />
         <View style={styles.flex}><RaisedActionButton analyticsId="livemap.preview" label={tr('이 자리로 할게요')} onPress={() => { play('selection'); setStep('preview'); }} /></View>
       </View>}
     </View>

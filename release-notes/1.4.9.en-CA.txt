@@ -1,0 +1,2 @@
+On the “Move it” screen for bubbles, “Back to start” is now “Find my location”. Tap it to check where you are and move the pin there.
+On the map, the gold ring around TOP 50 places could flash up before the pin’s picture, leaving an empty ring for a moment. The ring and picture now appear together.
