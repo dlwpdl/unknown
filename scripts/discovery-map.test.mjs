@@ -363,6 +363,8 @@ test('mid-zoom crowded places fold into counts; TOP 50, Gling-visited and the ch
   c.window.glingDiscoveryUpdate(sessionId, { markers, selectedId: 'plain', center: null });
   assert.deepEqual(grouped(), [], 'the chosen place leaves its count');
   assert.match(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-saved').filter[1]), /"plain"/);
+  // Names: the single source keeps only single places and leaves the chosen one to its own label, so no plain name is laid out twice.
+  assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-labels').filter), '["all",["any",["==",["get","featured"],true],["==",["get","top25"],true],["==",["get","id"],"plain"]],true,["!",["==",["get","id"],"plain"]]]');
   c.window.glingDiscoveryUpdate(sessionId, { markers, selectedId: null, center: null });
   assert.deepEqual(grouped(), ['plain']);
 

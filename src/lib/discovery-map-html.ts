@@ -149,7 +149,7 @@ const apply=(markersChanged=false,selectionChanged=false)=>{if(!loaded)return;if
  const height=map.getContainer().clientHeight,top=Math.min(current.topInset||0,Math.max(0,height-44)),bottom=Math.min(current.bottomInset||0,Math.max(0,height-top-44)),padding=top+':'+bottom,paddingChanged=padding!==previousPadding;
  map.getContainer().style.setProperty('--map-top-inset',top+'px');document.documentElement.style.setProperty('--map-bottom-inset',bottom+'px');
  if(paddingChanged){map.setPadding({top,right:0,left:0,bottom});previousPadding=padding}
- map.setFilter('discovery-labels',notSelected());map.setFilter('discovery-featured-labels',['all',['==',['get','featured'],true],['!=',['get','art'],true],notSelected()]);for(const id of ['discovery-art-featured','discovery-art-featured-labels'])map.setFilter(id,['all',['==',['get','art'],true],['==',['get','featured'],true],notSelected()]);
+ map.setFilter('discovery-featured-labels',['all',['==',['get','featured'],true],['!=',['get','art'],true],notSelected()]);for(const id of ['discovery-art-featured','discovery-art-featured-labels'])map.setFilter(id,['all',['==',['get','art'],true],['==',['get','featured'],true],notSelected()]);
  const selected=current.markers.find(m=>m.id===current.selectedId),c=current.center;
  const changedCenter=c&&(!previousCenter||c.latitude!==previousCenter.latitude||c.longitude!==previousCenter.longitude||c.requestId!==previousCenter.requestId);
  if(c&&(changedCenter||paddingChanged))move({center:[c.longitude,c.latitude]});else if(selected&&(current.selectedId!==previousSelection||paddingChanged))move({center:[selected.longitude,selected.latitude]});
@@ -191,7 +191,7 @@ try{
   add({id:'discovery-counts',type:'symbol',source:'discovery-grouped',filter:['has','point_count'],layout:{'text-field':['get','point_count_abbreviated'],'text-font':['Noto Sans Bold'],'text-size':12,'text-allow-overlap':true,'text-ignore-placement':true},paint:{'text-color':'#302047'}});
   both({id:'discovery-pins',type:'circle',source:'discovery',paint:{'circle-radius':step(4,11),'circle-color':['get','color'],'circle-stroke-color':'#ffffff','circle-stroke-width':step(1.5,2),'circle-opacity':step(1,dot),'circle-stroke-opacity':step(1,dot)}});
   both({id:'discovery-art',type:'symbol',source:'discovery',minzoom:NEAR,filter:art,layout:topPin});
-  both({id:'discovery-labels',type:'symbol',source:'discovery',minzoom:NEAR,layout:{...nameFont,'text-field':['case',['!=',['get','sublabel'],''],['format',['get','label'],{},'\\n',{},['get','sublabel'],{'font-scale':0.85,'text-color':'#6b6280'}],['get','label']],'text-size':12,'text-offset':nameOffset,'text-padding':4},paint:namePaint});
+  both({id:'discovery-labels',type:'symbol',source:'discovery',minzoom:NEAR,layout:{...nameFont,'text-field':['case',['!=',['get','sublabel'],''],['format',['get','label'],{},'\\n',{},['get','sublabel'],{'font-scale':0.85,'text-color':'#6b6280'}],['get','label']],'text-size':12,'text-offset':nameOffset,'text-padding':4},paint:namePaint},true);
   add({id:'discovery-featured-labels',type:'symbol',source:'discovery',maxzoom:NEAR,filter:['all',['==',['get','featured'],true],['!',art]],layout:{...nameFont,'text-field':['get','label'],'text-size':11,'text-offset':[1,0],'text-padding':6},paint:namePaint});
   // The grouped hit area also covers each count (44px target) and sits under the single places' hit so a TOP 50 pin beside a count still wins.
   add({id:'discovery-hit-grouped',type:'circle',source:'discovery-grouped',paint:{'circle-radius':22,'circle-opacity':0}});
