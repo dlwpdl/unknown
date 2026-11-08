@@ -763,8 +763,14 @@ test('M7: the compass starts only on screen after a location fix, feeds the cone
   control(tree, '내 위치로 지도 이동').props.onPress(); await new Promise(setImmediate); tree = view.render();
   const stop = view.readCompass(); await new Promise(setImmediate);
   assert.equal(view.compass.watches.length, 1);
-  view.compass.watches[0]({ trueHeading: 181, magHeading: 165, accuracy: 3 }); tree = view.render();
-  assert.equal(nodes(tree).find(node => node.type === 'DiscoveryMap').props.heading, 180);
+  const tick = ms => new Promise(resolve => setTimeout(resolve, ms)), heading = () => nodes(view.render()).find(node => node.type === 'DiscoveryMap').props.heading;
+  view.compass.watches[0]({ trueHeading: 181, magHeading: 165, accuracy: 3 }); await tick(0);
+  assert.equal(heading(), 180);
+  // Map lag 2026-11-08: at most 4 turns a second, and the newest reading of a burst still lands.
+  view.compass.watches[0]({ trueHeading: 91, magHeading: 80, accuracy: 3 }); view.compass.watches[0]({ trueHeading: 271, magHeading: 260, accuracy: 3 }); await tick(0);
+  assert.equal(heading(), 180, 'a burst inside a quarter second waits');
+  await tick(260);
+  assert.equal(heading(), 270, 'then only the newest reading shows');
   stop(); tree = view.render();
   assert.equal(view.compass.removed, 1);
   assert.equal(nodes(tree).find(node => node.type === 'DiscoveryMap').props.heading, null, 'leaving drops the cone');

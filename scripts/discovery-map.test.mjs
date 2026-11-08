@@ -314,10 +314,10 @@ test('close-up and featured pins are never counted, keep 44px targets and preser
   const c = canvas();
   assert.equal(c.map.config.zoom, 11);
   assert.deepEqual(Array.from(c.map.config.center), [-123.12, 49.28]);
-  // Owner 2026-11-04 kept three zoom stages; owner 2026-11-08 "멀리서묶어보기" counts only the crowded mid-stage dots, on their own source.
+  // Owner 2026-11-04 kept three zoom stages; owner 2026-11-08 "멀리서묶어보기" counts crowded ordinary places on their own source, up to zoom 14 ("줌 14까지 묶기").
   assert.equal(c.sources.discovery.cluster, undefined);
   assert.equal(c.sources['discovery-grouped'].cluster, true);
-  assert.ok(c.sources['discovery-grouped'].clusterMaxZoom < 13, 'from NEAR every place is single');
+  assert.equal(c.sources['discovery-grouped'].clusterMaxZoom, 14, 'ordinary places fold into counts up to zoom 14 (owner 2026-11-08 "줌 14까지 묶기"), single from 15');
   assert.ok(c.layers.every(layer => layer.source !== 'discovery-grouped' || layer.maxzoom === undefined), 'above clusterMaxZoom the grouped source itself gives single places');
   assert.ok(c.layers.some(layer => layer.paint?.['circle-radius'] === 22));
   c.window.glingDiscoveryUpdate(sessionId, { markers: [{ ...marker, longitude: -123 }], selectedId: null, center: null });

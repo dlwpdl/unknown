@@ -21,7 +21,8 @@ const text = (value: unknown, length: number): value is string => typeof value =
 const coordinate = (value: Center) => value && Number.isFinite(value.latitude) && Math.abs(value.latitude) <= 90 && Number.isFinite(value.longitude) && Math.abs(value.longitude) <= 180
   && (value.requestId === undefined || Number.isSafeInteger(value.requestId) && value.requestId >= 0);
 // Zoom stages: near shows every name with its second line, mid shows dots with only featured names, far shows city pills.
-const NEAR = 13, FAR = 8;
+// GROUP: the last zoom where crowded ordinary places fold into a count (owner 2026-11-08 지도 렉 "가까이 묶기: 줌 14까지 묶기"); TOP 50, visited and chosen places stay single.
+const NEAR = 13, FAR = 8, GROUP = 14;
 const json = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 
 export function discoveryMarkers(markers: DiscoveryMarker[]): DiscoveryMarker[] {
@@ -115,7 +116,7 @@ const move=camera=>map.easeTo({...camera,duration:window.matchMedia?.('(prefers-
 const hitLayers=['discovery-selected-discount','discovery-selected-discount-dot','discovery-discount','discovery-discount-dot','discovery-discount-grouped','discovery-discount-dot-grouped','discovery-selected-top25','discovery-selected-hit','discovery-selected-label','discovery-top25','discovery-hit','discovery-hit-grouped','discovery-labels','discovery-labels-grouped','discovery-featured-labels','discovery-art-featured-labels'];
 const notSelected=()=>['!=',['get','id'],current.selectedId??''];
 const top25Filter=()=>['all',['==',['get','top25'],true],notSelected()];
-// TOP 50, Gling-visited (featured) and the chosen place are single: 'discovery' draws only them, at every zoom (apply sets that filter). Every other place lives only in 'discovery-grouped', which folds crowded dots into a count below NEAR and gives single points from NEAR (owner 2026-11-08 "멀리서묶어보기").
+// TOP 50, Gling-visited (featured) and the chosen place are single: 'discovery' draws only them, at every zoom (apply sets that filter). Every other place lives only in 'discovery-grouped', which folds crowded places into a count up to GROUP and gives single points above it (owner 2026-11-08 "멀리서묶어보기", then "줌 14까지 묶기"). Places left single at 13–14 already draw as close-up pins.
 // Each place has one source and no stage is switched by zoom in a filter or layer range, so a tile kept on screen while zooming still holds every place (supervisor review, PR #125).
 const everyPlace=[];
 const stage=()=>{const far=map.getZoom()<FAR;for(const pill of pills)pill.hidden=!far};
@@ -178,7 +179,7 @@ try{
   map.addImage('saved-mark',mx.getImageData(0,0,36,36),{pixelRatio:2});
   map.addSource('discovery',{type:'geojson',data:geojson()});
   map.addSource('discovery-selection',{type:'geojson',data:geojson(true)});
-  map.addSource('discovery-grouped',{type:'geojson',data:geojson(false,true),cluster:true,clusterMaxZoom:NEAR-1,clusterRadius:44});
+  map.addSource('discovery-grouped',{type:'geojson',data:geojson(false,true),cluster:true,clusterMaxZoom:${GROUP},clusterRadius:44});
   // Every place layer starts at the mid stage; below it only the city pills show.
   const add=layer=>map.addLayer({minzoom:FAR,...layer}),step=(mid,near)=>['step',['zoom'],mid,NEAR,near];
   const nameFont={'text-font':['Noto Sans Regular'],'text-anchor':'left','text-max-width':14,'icon-image':'name-tag','icon-text-fit':'both','icon-text-fit-padding':[2,6,2,6]},namePaint={'text-color':'#302047'};
