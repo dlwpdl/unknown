@@ -223,7 +223,8 @@ test('M1: a state colour crosses the map boundary only as a hex value and draws 
   const c = canvas([{ ...marker, statusColor: '#E8743B' }, { ...marker, id: 'place:2' }]);
   assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.statusColor), ['#E8743B', '']);
   const layer = c.layers.find(layer => layer.id === 'discovery-status');
-  assert.equal(JSON.stringify(layer.filter.at(-1)), '["!=",["get","statusColor"],""]', 'up close every place with a state');
+  assert.equal(JSON.stringify(layer.filter), '["!=",["get","statusColor"],""]', 'up close every place with a state');
+  assert.equal(layer.minzoom, 13);
   assert.equal(JSON.stringify(layer.paint['circle-color']), '["get","statusColor"]');
   assert.ok(c.layers.indexOf(layer) > c.layers.findIndex(value => value.id === 'discovery-selected'), 'a chosen pin keeps its dot');
   c.window.glingDiscoveryUpdate(sessionId, { markers: [marker, { ...marker, id: 'place:2', statusColor: '#E0559A' }] });
@@ -241,7 +242,8 @@ test('M5: a saved flag crosses the map boundary only as a boolean and draws the 
   assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.saved), [true, false]);
   assert.ok(c.images['saved-mark']);
   const layer = c.layers.find(layer => layer.id === 'discovery-saved');
-  assert.equal(JSON.stringify(layer.filter.at(-1)), '["==",["get","saved"],true]', 'up close every saved place');
+  assert.equal(JSON.stringify(layer.filter), '["==",["get","saved"],true]', 'up close every saved place');
+  assert.equal(layer.minzoom, 13);
   assert.ok(c.layers.indexOf(layer) > c.layers.findIndex(value => value.id === 'discovery-selected'), 'a chosen saved pin keeps its mark');
   c.window.glingDiscoveryUpdate(sessionId, { markers: [marker, { ...marker, id: 'place:2', saved: true }] });
   assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.saved), [false, true], 'saving from the card moves the mark without a reload');
@@ -339,25 +341,27 @@ test('close-up and featured pins are never counted, keep 44px targets and preser
 });
 
 test('mid-zoom crowded places fold into counts; TOP 50, Gling-visited and the chosen place stay single, and a count opens where it splits (owner 2026-11-08)', async () => {
-  const plain = { ...marker, id: 'plain' }, top = { ...marker, id: 'top', latitude: 49.281, featured: true, top25: true }, visited = { ...marker, id: 'visited', latitude: 49.282, featured: true };
-  const markers = [plain, top, visited], c = canvas(markers), tick = () => new Promise(done => setImmediate(done));
+  const plain = { ...marker, id: 'plain' }, top = { ...marker, id: 'top', latitude: 49.281, featured: true, top25: true }, visited = { ...marker, id: 'visited', latitude: 49.282, featured: true }, topOnly = { ...marker, id: 'top-only', latitude: 49.283, top25: true };
+  const markers = [plain, top, visited, topOnly], c = canvas(markers), tick = () => new Promise(done => setImmediate(done));
   const grouped = () => Array.from(c.sources['discovery-grouped'].data.features.map(feature => feature.properties.id));
   assert.deepEqual(grouped(), ['plain']);
-  assert.equal(c.sources.discovery.data.features.length, 3, 'up close every place still comes from the single source');
-  const pins = c.layers.find(layer => layer.id === 'discovery-pins'), index = id => c.layers.findIndex(layer => layer.id === id);
-  assert.equal(pins.filter[0], 'step');
-  assert.equal(pins.filter[3], 13);
-  assert.equal(JSON.stringify(pins.filter[2]), '["all",["any",["==",["get","featured"],true],["==",["get","id"],""]],true]', 'below NEAR only featured places are single');
+  assert.equal(c.sources.discovery.data.features.length, 4, 'up close every place still comes from the single source');
+  const pins = c.layers.find(layer => layer.id === 'discovery-pins'), mid = c.layers.find(layer => layer.id === 'discovery-pins-mid'), index = id => c.layers.findIndex(layer => layer.id === id);
+  assert.equal(pins.minzoom, 13); assert.equal(pins.filter, undefined, 'from NEAR every place');
+  assert.equal(mid.maxzoom, 13);
+  assert.equal(JSON.stringify(mid.filter), '["all",["any",["==",["get","featured"],true],["==",["get","top25"],true],["==",["get","id"],""]],true]', 'below NEAR only TOP 50, Gling-visited and the chosen place are single');
+  // A filter reads the tile's whole zoom, so a stage switched there would blink while crossing NEAR; layer min/max zoom switch with the camera.
+  assert.ok(!c.layers.some(layer => JSON.stringify(layer.filter ?? null).includes('"zoom"')), 'no stage is chosen inside a filter');
   for (const id of ['discovery-pins', 'discovery-saved', 'discovery-status', 'discovery-discount-dot']) {
     const copy = c.layers.find(layer => layer.id === id + '-grouped');
     assert.equal(copy.source, 'discovery-grouped');
     assert.equal(JSON.stringify(copy.filter[1]), '["!",["has","point_count"]]', id + ': a place inside a count draws no mark of its own');
   }
-  assert.ok(index('discovery-clusters') < index('discovery-pins') && index('discovery-counts') < index('discovery-pins'), 'counts sit under the single places');
-  assert.ok(index('discovery-hit-grouped') < index('discovery-hit'), 'a TOP 50 pin beside a count wins the tap');
+  assert.ok(index('discovery-clusters') < index('discovery-pins-mid') && index('discovery-counts') < index('discovery-pins-mid'), 'counts sit under the single places');
+  assert.ok(index('discovery-hit-grouped') < index('discovery-hit-mid'), 'a TOP 50 pin beside a count wins the tap');
   c.window.glingDiscoveryUpdate(sessionId, { markers, selectedId: 'plain', center: null });
   assert.deepEqual(grouped(), [], 'the chosen place leaves its count');
-  assert.match(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-saved').filter[2]), /"plain"/);
+  assert.match(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-saved-mid').filter[1]), /"plain"/);
   c.window.glingDiscoveryUpdate(sessionId, { markers, selectedId: null, center: null });
   assert.deepEqual(grouped(), ['plain']);
 
@@ -536,7 +540,8 @@ test('discount dots stay compact below neighborhood zoom and percentages reuse l
     assert.equal(dot.paint['circle-radius'], 4); assert.equal(dot.paint['circle-color'], '#8FD9C4');
     assert.equal(dot.paint['circle-translate-anchor'], 'viewport', 'dot stays next to the upright number when the map rotates');
     assert.ok(JSON.stringify(dot.paint['circle-translate']).includes('[-12,10]'), 'close-up dot sits beside the full-size pin');
-    assert.ok(dot.minzoom <= c.map.config.zoom, 'mint signal stays available at the initial city zoom');
+    const first = selected ? dot : c.layers.find(layer => layer.id === id + '-dot-mid');
+    assert.ok(first.minzoom <= c.map.config.zoom && !(first.maxzoom <= c.map.config.zoom), 'mint signal stays available at the initial city zoom');
     assert.equal(number.minzoom, 14, 'number starts at neighborhood zoom');
     assert.equal(number.layout['icon-allow-overlap'], selected);
     assert.equal(number.layout['icon-ignore-placement'], selected);
