@@ -340,14 +340,16 @@ test('close-up and featured pins are never counted, keep 44px targets and preser
   assert.equal(c.messages.filter(message => message.type === 'feedback').length, 1);
 });
 
-test('mid-zoom crowded places fold into counts; TOP 50, Gling-visited and the chosen place stay single, and a count opens where it splits (owner 2026-11-08)', async () => {
+test('mid-zoom crowded places fold into counts; TOP 50, Gling-visited, saved, discount and the chosen place stay single, and a count opens where it splits (owner 2026-11-08)', async () => {
   const plain = { ...marker, id: 'plain' }, top = { ...marker, id: 'top', latitude: 49.281, featured: true, top25: true }, visited = { ...marker, id: 'visited', latitude: 49.282, featured: true }, topOnly = { ...marker, id: 'top-only', latitude: 49.283, top25: true };
-  const markers = [plain, top, visited, topOnly], c = canvas(markers), tick = () => new Promise(done => setImmediate(done));
+  // Saved and discount places stay single (owner 2026-11-08 "저장한 곳·할인 가게도 따로 보이기").
+  const saved = { ...marker, id: 'saved', latitude: 49.284, saved: true }, deal = { ...marker, id: 'deal', latitude: 49.285, discount: 20 };
+  const markers = [plain, top, visited, topOnly, saved, deal], c = canvas(markers), tick = () => new Promise(done => setImmediate(done));
   const grouped = () => Array.from(c.sources['discovery-grouped'].data.features.map(feature => feature.properties.id));
   assert.deepEqual(grouped(), ['plain']);
-  assert.equal(c.sources.discovery.data.features.length, 4, 'up close every place still comes from the single source');
+  assert.equal(c.sources.discovery.data.features.length, 6, 'up close every place still comes from the single source');
   const pins = c.layers.find(layer => layer.id === 'discovery-pins'), index = id => c.layers.findIndex(layer => layer.id === id);
-  assert.equal(JSON.stringify(pins.filter), '["all",["any",["==",["get","featured"],true],["==",["get","top25"],true],["==",["get","id"],""]],true,true]', 'at every zoom the single source draws only TOP 50, Gling-visited and the chosen place');
+  assert.equal(JSON.stringify(pins.filter), '["all",["any",["==",["get","featured"],true],["==",["get","top25"],true],["==",["get","saved"],true],[">",["get","discount"],0],["==",["get","id"],""]],true,true]', 'at every zoom the single source draws only TOP 50, Gling-visited, saved, discount and the chosen place');
   // Each place has one source and no stage is switched by zoom, so a tile kept on screen while zooming past NEAR still draws every place (supervisor review, PR #125).
   const ours = c.layers.filter(layer => layer.id.includes('-grouped') || layer.id === 'discovery-clusters' || layer.id === 'discovery-counts' || ['discovery-pins', 'discovery-hit', 'discovery-saved', 'discovery-status', 'discovery-discount-dot'].includes(layer.id));
   assert.ok(ours.every(layer => layer.maxzoom === undefined && !JSON.stringify(layer.filter ?? null).includes('"zoom"')), 'no stage switch in the grouping layers');
@@ -364,7 +366,7 @@ test('mid-zoom crowded places fold into counts; TOP 50, Gling-visited and the ch
   assert.deepEqual(grouped(), [], 'the chosen place leaves its count');
   assert.match(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-saved').filter[1]), /"plain"/);
   // Names: the single source keeps only single places and leaves the chosen one to its own label, so no plain name is laid out twice.
-  assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-labels').filter), '["all",["any",["==",["get","featured"],true],["==",["get","top25"],true],["==",["get","id"],"plain"]],true,["!",["==",["get","id"],"plain"]]]');
+  assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-labels').filter), '["all",["any",["==",["get","featured"],true],["==",["get","top25"],true],["==",["get","saved"],true],[">",["get","discount"],0],["==",["get","id"],"plain"]],true,["!",["==",["get","id"],"plain"]]]');
   c.window.glingDiscoveryUpdate(sessionId, { markers, selectedId: null, center: null });
   assert.deepEqual(grouped(), ['plain']);
 
