@@ -276,5 +276,45 @@ reset role;
 select is((select count(*)::int from private.live_bubble_waves where bubble_id=current_setting('live.a')::uuid),0,'its waves went with it');
 select is((select count(*)::int from private.live_bubble_requests where bubble_id=current_setting('live.a')::uuid and status='pending'),0,'and so did the unanswered answer to C');
 
+-- No way around the request (owner 2026-11-07 "서버에서 막기", "중고거래랑 이런거는?"): seen on the map, a first 1:1 waits for the
+-- bubble's own request until 24 hours after it goes down, unless it starts from that person's trade post. E's accept above already
+-- went through while C's earlier bubble was within its 24 hours: a pending request from C let it pass.
+insert into public.posts(id,author_id,city_id,tag_id,title,body,kind,listing_status,expires_at) values
+ ('e5220000-0000-4000-8000-000000000001','e5200000-0000-4000-8000-000000000001','live-test',(select id from public.tags where slug='life'),'의자 팔아요','거의 새것','listing','open',now()+interval '14 days'),
+ ('e5220000-0000-4000-8000-000000000003','e5200000-0000-4000-8000-000000000007','live-test',(select id from public.tags where slug='life'),'책상 팔아요','튼튼해요','listing','open',now()+interval '14 days'),
+ ('e5220000-0000-4000-8000-000000000004','e5200000-0000-4000-8000-000000000006','live-test',(select id from public.tags where slug='life'),'램프 팔아요','밝아요','listing','open',now()+interval '14 days');
+insert into public.posts(id,author_id,city_id,tag_id,title,body) values
+ ('e5220000-0000-4000-8000-000000000002','e5200000-0000-4000-8000-000000000001','live-test',(select id from public.tags where slug='life'),'오늘 날씨','좋네요');
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000003","role":"authenticated"}',true);
+select throws_ok($$select public.start_conversation('e5200000-0000-4000-8000-000000000001')$$,'P0001','REQUEST_COOLDOWN','right after A takes her bubble down, her profile''s 대화하기 waits');
+select throws_ok($$select public.start_conversation('e5200000-0000-4000-8000-000000000001','e5220000-0000-4000-8000-000000000002')$$,'P0001','REQUEST_COOLDOWN','and so does one of her ordinary posts');
+select is(public.start_conversation('e5200000-0000-4000-8000-000000000006'),current_setting('live.conv')::uuid,'a chat that already exists still opens');
+select throws_ok($$select public.start_conversation('e5200000-0000-4000-8000-000000000007','e5220000-0000-4000-8000-000000000003')$$,'P0001','REQUEST_COOLDOWN','after F declined, C cannot reach her even through a trade post');
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000011","role":"authenticated"}',true);
+select ok(public.start_conversation('e5200000-0000-4000-8000-000000000001','e5220000-0000-4000-8000-000000000001') is not null,'asking about A''s trade post still opens a chat');
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000015","role":"authenticated","aal":"aal2","session_id":"e5260000-0000-4000-8000-000000000015","app_metadata":{"role":"admin"}}',true);
+select ok(public.start_conversation('e5200000-0000-4000-8000-000000000008') is not null,'an admin is never held back');
+reset role;
+update private.live_bubbles set created_at=now()-interval '26 hours',expires_at=now()-interval '25 hours',ended_at=now()-interval '25 hours'
+  where author_id in ('e5200000-0000-4000-8000-000000000001','e5200000-0000-4000-8000-000000000007');
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000003","role":"authenticated"}',true);
+select throws_ok($$select public.start_conversation('e5200000-0000-4000-8000-000000000007')$$,'P0001','REQUEST_COOLDOWN','a declined sender still waits once F''s bubble is a day old');
+select ok(public.start_conversation('e5200000-0000-4000-8000-000000000001') is not null,'but 24 hours after A''s bubble went down, C can message her like anyone');
+-- The business entry follows the same rule: G's business messaging E while E's bubble is up.
+reset role;
+update auth.users set raw_app_meta_data='{"merchant_enabled":true}' where id='e5200000-0000-4000-8000-000000000008';
+update public.profiles set terms_accepted_at=now(),privacy_accepted_at=now(),ai_safety_consent_at=now()
+  where id in ('e5200000-0000-4000-8000-000000000006','e5200000-0000-4000-8000-000000000008');
+insert into private.merchants(id,name,city_id,contact,status,consent,consent_note,record_kind,owner_id,owner_verified_at,trial_ends_at)
+  values('e5230000-0000-4000-8000-000000000008','라이브 비즈니스','live-test','','trial','granted','synthetic','business','e5200000-0000-4000-8000-000000000008',now(),current_date+2);
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5200000-0000-4000-8000-000000000008","role":"authenticated"}',true);
+select throws_ok($$select public.start_business_conversation('e5230000-0000-4000-8000-000000000008',null,'e5200000-0000-4000-8000-000000000006',null)$$,'P0001','REQUEST_COOLDOWN','a business cannot skip E''s bubble either');
+select ok(public.start_business_conversation('e5230000-0000-4000-8000-000000000008',null,'e5200000-0000-4000-8000-000000000006','e5220000-0000-4000-8000-000000000004') is not null,
+  'but can ask about her trade post');
+reset role;
+
 select * from finish();
 rollback;
