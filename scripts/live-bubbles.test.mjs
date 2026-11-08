@@ -159,6 +159,15 @@ test('the sibling sheets never share a React key, even before anything was opene
   assert.equal([...sheets.matchAll(/ key=\{/g)].length, keys.length, 'no keyed sheet without a prefix');
 });
 
+test('members move a bubble only around a fresh fix, and the adjust step can take a new one (owner 2026-11-08)', () => {
+  const source = readFileSync(new URL('../src/components/live-bubbles.tsx', import.meta.url), 'utf8');
+  const sheet = source.slice(source.indexOf('export function LiveComposeSheet'), source.indexOf('/** What a member sees after tapping'));
+  assert.match(sheet, /const next = clampWithin\(origin, pin\)/, 'a member drag is clamped to 100 m of the fix');
+  assert.match(sheet, /label=\{locating \? tr\('위치 확인 중'\) : tr\('내 위치 찾기'\)\} disabled=\{locating\} onPress=\{\(\) => \{[^}]*void locate\(\); \}\}/, '내 위치 찾기 reads the phone again');
+  assert.ok(!sheet.includes("tr('처음 자리로')"), 'no way back to an old fix');
+  assert.match(sheet.slice(sheet.indexOf("step === 'preview' ? <>")), /\{keptLine\}\n\s+\{problemLine\}\n\s+<\/>\}/, 'a failed new fix says why on the adjust step');
+});
+
 test('posting needs an honest fresh fix; only the development example takes the simulator place or the city centre', () => {
   const now = Date.parse('2026-11-05T18:00:00Z'), centre = { latitude: 49.28, longitude: -123.12 };
   const real = { ...vancouver, accuracy: 20, measuredAt: now - 5000, mocked: false };

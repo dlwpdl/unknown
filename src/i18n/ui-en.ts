@@ -4471,7 +4471,7 @@ export const uiEnglish: Record<string, string> = {
   "핀을 끌어 옮기면 남들에게 보이는 자리도 같이 바뀌어요": "Drag the pin and the spot others see moves with it",
   "100m까지만 옮길 수 있어요. 그 끝에 놓아 뒀어요.": "It can only go 100 m. We put it at the edge.",
   "100m 안에서 옮길 수 있어요": "You can move it within 100 m",
-  "처음 자리로": "Back to start",
+  "내 위치 찾기": "Find my location",
   "이 자리로 할게요": "Use this spot",
   "대화 신청 보냈어요. 오늘 {0}번 남았어요": "Chat request sent. {0} left today",
   "대화 신청 보냈어요. 오늘 신청은 다 썼어요": "Chat request sent. That was your last one today",
