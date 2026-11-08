@@ -2080,6 +2080,8 @@ export const uiEnglish: Record<string, string> = {
   "위치 공유": "Share location",
   "장소·주소 검색": "Search places and addresses",
   "장소나 주소 찾기": "Find a place or address",
+  "글링 지도에 있는 곳": "On the Gling map",
+  "이 장소를 첨부할 위치로 골라요": "Picks this place to attach",
   "주소 찾기": "Find address",
   "내 위치 선택": "Use my location",
   "찾는 중…": "Finding…",

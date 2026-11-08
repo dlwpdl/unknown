@@ -1232,3 +1232,17 @@ test('G2 place saves: friends by name, similar places named from the catalog, li
   const empty = [ui.PlaceSavedBy({ place: { ...place, intro: undefined }, saves: null }), ui.PlaceRelated({ place: { ...place, recommendation: undefined, glingVisited: undefined }, saves: { ...saves, similar: [] } })];
   assert.equal(text(empty), '', 'no saves, intro or lists shows nothing');
 });
+
+test('compose place search lists our map places before the phone address search (owner 2026-11-08)', () => {
+  const read = file => readFileSync(new URL(file, root), 'utf8'), src = read('src/components/post-location-picker.tsx');
+  // Same place set as the main map (map.tsx catalogPlaces), matched by name or address, any letter case.
+  assert.match(src, /getCityDiscoveryPlaces\(cityId\)\.filter\(place => `\$\{place\.name\} \$\{place\.address\}`\.toLocaleLowerCase\(\)\.includes\(needle\)\)/);
+  assert.match(read('src/app/map.tsx'), /const catalogPlaces = getCityDiscoveryPlaces\(city\.id\)/);
+  const first = src.indexOf('if (search && ours.length) { pick(ours[0]); return; }');
+  assert.ok(first > 0 && first < src.indexOf("search && Platform.OS === 'web'") && first < src.indexOf('Location.geocodeAsync'));
+  // The picker finds its city from the English name every editor passes in.
+  assert.match(src, /CITIES\.find\(city => city\.englishName === cityName\)\?\.id/);
+  for (const [file, pass] of [['src/components/feed-screen.tsx', 'cityName={draftCity.englishName}'], ['src/components/merchant-workspace.tsx', 'cityName={CITIES.find(city => city.id === data.merchant.city_id)?.englishName}'], ['src/components/post-detail.tsx', 'cityName={CITIES.find(city => city.id === post.cityId)?.englishName}']]) assert.ok(read(file).includes(pass), file);
+  const api = data(catalog()), top = catalog().cities.montreal.recommendations[0].placeId, place = api.getCityDiscoveryPlaces('montreal').find(row => row.id === top);
+  assert.ok(place && cities.find(city => city.englishName === 'Montréal')?.id === 'montreal');
+});
