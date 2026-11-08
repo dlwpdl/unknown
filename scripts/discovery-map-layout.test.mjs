@@ -524,6 +524,8 @@ test('map pins carry a second line, featured names and the category id for the d
   const places = [fixturePlace(1, { name: 'Brunch spot', category: 'cafe', subcategories: ['brunch'] }), fixturePlace(2, { name: 'Visited', glingVisited: { sourceUrl: 'https://www.instagram.com/reel/fixture/' } })];
   const markers = nodes(mount({ places }).render()).find(node => node.type === 'DiscoveryMap').props.markers;
   assert.deepEqual(Array.from(markers.map(marker => [marker.label, marker.sublabel, marker.featured ?? false, marker.icon])), [['Brunch spot', '브런치', false, 'cafe'], ['Visited', '다이닝', true, 'dining']]);
+  // featured keeps a place out of the mid-zoom counts (owner 2026-11-08 "멀리서묶어보기"), so TOP 50 must set it too.
+  assert.match(source, /item\.top25 \|\| item\.glingVisited \? \{ featured: true \}/);
 });
 
 test('category chips show the 3D icon in the icon spot and each press replays only the pressed icon', () => {
