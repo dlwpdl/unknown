@@ -1,5 +1,5 @@
 import { withLanguageImports } from './test-language-imports.mjs';
-import { discoveryPlace, placeMapRoute } from '../src/lib/discovery.ts';
+import { discoveryMatches, discoveryPlace, placeMapRoute } from '../src/lib/discovery.ts';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -1158,7 +1158,7 @@ test('actual Expo production compiled PlacesList updates on a catalog-only revis
   '@/lib/community-city':{useCommunityCity:()=>({city})},'@/lib/mock':{CITIES:[city]},
   '@/hooks/use-current-location':{useCurrentLocation:()=>({fix:null,status:'permission',busy:false,canAskAgain:true,request:async()=>{}})},
   '@/lib/discovery-sort':distance,
-  '@/lib/city-places':{getCityDiscoveryPlaces:()=>catalog,getCityBrowsePlaces:()=>catalog,getCityPlacesCoverage:()=>'',CITY_PLACES_COLLECTED_AT:'2026-10-23'},
+  '@/lib/city-places':{getCityDiscoveryPlaces:()=>catalog,getCityBrowsePlaces:()=>catalog,getCityPlacesCoverage:()=>'',placeMatchesQuery:(place,query)=>`${place.name} ${place.address}`.toLowerCase().includes(query.trim().toLowerCase()),CITY_PLACES_COLLECTED_AT:'2026-10-23'},
   '@/hooks/use-place-review-summaries':{usePlaceReviewSummaries:()=>ratings},
   '@/components/place-review-summary':{getPlaceReviewRating:()=>({score:null}),PlaceReviewSummary:'PlaceReviewSummary'},
   '@/lib/interaction-feedback':{useInteractionFeedback:()=>({play(){}})},
@@ -1235,8 +1235,8 @@ test('G2 place saves: friends by name, similar places named from the catalog, li
 
 test('compose place search lists our map places before the phone address search (owner 2026-11-08)', () => {
   const read = file => readFileSync(new URL(file, root), 'utf8'), src = read('src/components/post-location-picker.tsx');
-  // Same place set as the main map (map.tsx catalogPlaces), matched by name or address, any letter case.
-  assert.match(src, /getCityDiscoveryPlaces\(cityId\)\.filter\(place => `\$\{place\.name\} \$\{place\.address\}`\.toLocaleLowerCase\(\)\.includes\(needle\)\)/);
+  // Same place set as the main map (map.tsx catalogPlaces), matched by name, address or Korean search name.
+  assert.match(src, /getCityDiscoveryPlaces\(cityId\)\.filter\(place => placeMatchesQuery\(place, needle\)\)/);
   assert.match(read('src/app/map.tsx'), /const catalogPlaces = getCityDiscoveryPlaces\(city\.id\)/);
   const first = src.indexOf('if (search && ours.length) { pick(ours[0]); return; }');
   assert.ok(first > 0 && first < src.indexOf("search && Platform.OS === 'web'") && first < src.indexOf('Location.geocodeAsync'));
@@ -1245,4 +1245,31 @@ test('compose place search lists our map places before the phone address search 
   for (const [file, pass] of [['src/components/feed-screen.tsx', 'cityName={draftCity.englishName}'], ['src/components/merchant-workspace.tsx', 'cityName={CITIES.find(city => city.id === data.merchant.city_id)?.englishName}'], ['src/components/post-detail.tsx', 'cityName={CITIES.find(city => city.id === post.cityId)?.englishName}']]) assert.ok(read(file).includes(pass), file);
   const api = data(catalog()), top = catalog().cities.montreal.recommendations[0].placeId, place = api.getCityDiscoveryPlaces('montreal').find(row => row.id === top);
   assert.ok(place && cities.find(city => city.englishName === 'Montréal')?.id === 'montreal');
+});
+
+test('Korean search names find English places in every place search, and the shown name stays English (owner 2026-11-08)', () => {
+  const seed = catalog(), place = seed.cities.montreal.places[0];
+  const api = module('src/lib/city-places.ts', { '@/lib/mock': { CITIES: cities }, './city-places.catalog.json': seed, './place-external-ratings': externalRatings(), './city-places.ko.json': { [place.id]: ['크루 콜렉티브 카페'] } });
+  const found = api.getCityPlaces('montreal').find(row => row.id === place.id), other = api.getCityPlaces('montreal').find(row => row.id !== place.id);
+  assert.equal(found.name, place.name, 'the Korean name is never shown');
+  assert.deepEqual([...found.searchNames], ['크루 콜렉티브 카페']); assert.equal(other.searchNames, undefined);
+  for (const query of ['크루', ' 콜렉티브카페 ', '크루 콜렉티브']) assert.ok(api.placeMatchesQuery(found, query), query);
+  assert.ok(api.placeMatchesQuery(found, place.name.toUpperCase()), 'the English name still matches');
+  assert.ok(!api.placeMatchesQuery(found, '토론토') && !api.koreanNameMatches(found.searchNames, '  '));
+  const item = discoveryPlace(found);
+  assert.ok(discoveryMatches(item, 'all', '크루') && discoveryMatches(item, 'all', '콜렉티브 카페') && !discoveryMatches(item, 'all', '토론토'), 'main map search');
+  for (const file of ['src/components/post-location-picker.tsx', 'src/app/places/index.tsx']) assert.match(readFileSync(new URL(file, root), 'utf8'), /placeMatchesQuery\(place, /, file);
+  assert.match(readFileSync(new URL('src/lib/unified-search.ts', root), 'utf8'), /korean: koreanNameMatches\(place\.searchNames, query\)/);
+});
+
+test('bundled Korean search names cover real places with Hangul only', () => {
+  const names = JSON.parse(readFileSync(new URL('src/lib/city-places.ko.json', root), 'utf8')), seed = catalog();
+  const known = new Set(Object.values(seed.cities).flatMap(city => [...(city.places ?? []), ...(city.regionalPlaces ?? []), ...(city.extraPlaces ?? [])].map(place => place.id)));
+  for (const [id, list] of Object.entries(names)) {
+    assert.match(id, /^(osm:(node|way|relation):[1-9]\d*|[a-z0-9:-]+)$/, id);
+    assert.ok(Array.isArray(list) && list.length >= 1 && list.length <= 3 && list.every(name => /^[가-힣0-9 ]{1,60}$/.test(name)), id);
+  }
+  const crew = Object.values(seed.cities.montreal.places).find(place => place.name === 'Crew Collective & Café');
+  if (crew) assert.ok(names[crew.id]?.some(name => name.includes('크루')), 'the owner\'s own test: 크루 finds Crew in Montréal');
+  assert.ok(Object.keys(names).filter(id => known.has(id)).length >= Math.min(known.size, 1) || !Object.keys(names).length);
 });

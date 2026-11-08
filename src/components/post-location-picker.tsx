@@ -11,7 +11,7 @@ import { PostPinMap } from '@/components/post-pin-map';
 import { ThemedText } from '@/components/themed-text';
 import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { useTheme } from '@/hooks/use-theme';
-import { getCityDiscoveryPlaces, type CityPlace } from '@/lib/city-places';
+import { getCityDiscoveryPlaces, placeMatchesQuery, type CityPlace } from '@/lib/city-places';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { isFreshLocation } from '@/lib/location';
 import { CITIES } from '@/lib/mock';
@@ -30,7 +30,7 @@ export function PostLocationPicker({ visible, initialPin, initialLabel = '', cit
   // Our map's places come first (owner 2026-11-08 "글쓰기에서 장소추가하면 우리 지도에 있는걸 가져와야"): the phone's address search alone never finds them by name.
   const cityId = CITIES.find(city => city.englishName === cityName)?.id, needle = query.trim().toLocaleLowerCase();
   let ours: CityPlace[] = [];
-  if (needle && cityId) { try { ours = getCityDiscoveryPlaces(cityId).filter(place => `${place.name} ${place.address}`.toLocaleLowerCase().includes(needle)).slice(0, 4); } catch { /* A missing catalog leaves the address search. */ } }
+  if (needle && cityId) { try { ours = getCityDiscoveryPlaces(cityId).filter(place => placeMatchesQuery(place, needle)).slice(0, 4); } catch { /* A missing catalog leaves the address search. */ } }
   useEffect(() => { const gate = revision; return () => { gate.current++; }; }, []);
   useEffect(() => { const listener = AppState.addEventListener('change', state => { if (state === 'background') { revision.current++; setBusy(false); } }); return () => listener.remove(); }, []);
   const select = (selected: PostPin, name = '') => {

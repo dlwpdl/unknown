@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getCityDiscoveryPlaces } from './city-places.ts';
+import { getCityDiscoveryPlaces, koreanNameMatches } from './city-places.ts';
 import { DELIVERY_PARTNERS } from './delivery-partners.ts';
 import { CITIES } from './mock.ts';
 
@@ -24,11 +24,11 @@ export async function loadUnifiedSearch(client: SupabaseClient, options: { query
   if (!query) return { items: [], hasMore: false, nextOffset: 0 };
   const cafeQuery = ['cafe', 'café', 'coffee', '카페', '커피'].includes(query);
   const local = (cityId === null ? cities : [cityId]).flatMap(city => [
-    ...getCityDiscoveryPlaces(city).map(place => ({ id: place.id, cityId: city, title: place.name, subtitle: place.address, category: place.category })),
+    ...getCityDiscoveryPlaces(city).map(place => ({ id: place.id, cityId: city, title: place.name, subtitle: place.address, category: place.category, korean: koreanNameMatches(place.searchNames, query) })),
     ...DELIVERY_PARTNERS.filter(place => place.cityId === city).map(place => ({ id: `partner:${place.id}`, cityId: city, title: place.name, subtitle: place.label, category: place.category })),
   ]).flatMap(place => {
     const title = fold(place.title), index = title.indexOf(query);
-    return index < 0 && !(cafeQuery && place.category === 'cafe') ? [] : [{ ...place, rank: title === query ? 0 : index === 0 ? 1 : 2, sort: title }];
+    return index < 0 && !('korean' in place && place.korean) && !(cafeQuery && place.category === 'cafe') ? [] : [{ ...place, rank: title === query ? 0 : index === 0 ? 1 : 2, sort: title }];
   }).sort((a, b) => a.rank - b.rank || (a.sort < b.sort ? -1 : a.sort > b.sort ? 1 : a.cityId < b.cityId ? -1 : a.cityId > b.cityId ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const candidates = [...new Map(local.map(place => [`${place.cityId}:${place.id}`, place])).values()];
   // Current open-city curated/partner set is 360; cap also bounds Canada-wide link resolution.

@@ -214,5 +214,7 @@ export function discoveryMatches(item: DiscoveryItem, filters: DiscoveryFilter |
   return (!top25Only || !!item.top25) && (!selected.length || selected.some(filter => filter === 'all'
     || (filter === 'top25' ? !!item.top25 : filter === 'visited' ? !!item.glingVisited : filter === 'delivery' ? !!item.delivery : filter === 'events' ? item.source !== 'place' && ['festival', 'exhibition', 'event'].includes(category)
       : filter === 'places' ? !['housing', 'used', 'festival', 'event', 'nightlife', 'cafe', 'dining'].includes(category) : category === filter)))
-    && `${item.title} ${item.label} ${item.top25?.reason ?? ''} ${item.post?.business?.name ?? ''} ${item.post?.body ?? ''} ${(item.post?.hashtags ?? []).join(' ')} ${DISCOVERY_CATEGORIES.find(value => value.id === category)?.label}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
+    && (`${item.title} ${item.label} ${item.top25?.reason ?? ''} ${item.post?.business?.name ?? ''} ${item.post?.body ?? ''} ${(item.post?.hashtags ?? []).join(' ')} ${DISCOVERY_CATEGORIES.find(value => value.id === category)?.label}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
+    // A place's Korean search names (owner 2026-11-08 "영어를 한글로 쳐도 나오게하자"), spaces ignored; never shown.
+    || !!query.trim() && (item.place?.searchNames ?? []).some(name => name.replace(/\s+/g, '').includes(query.replace(/\s+/g, '').toLocaleLowerCase())));
 }
