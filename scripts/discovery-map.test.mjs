@@ -732,6 +732,11 @@ test('up close a place with 3D art is drawn as a white picture pin once the art 
   assert.ok(c.images['pin-cafe'] && !c.images['pin-dining'], 'a picture that fails to load adds no pin image');
   assert.equal(c.images['pin-cafe'].options.pixelRatio, 3);
   assert.equal(JSON.stringify(features()), JSON.stringify({ art: true, broken: false }), 'the failed picture keeps its coloured dot');
-  for (const id of ['discovery-art', 'discovery-selected-art']) assert.equal(JSON.stringify(c.layers.find(layer => layer.id === id).layout['icon-image']), JSON.stringify(['concat', 'pin-', ['get', 'icon']]));
+  assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-selected-art').layout['icon-image']), JSON.stringify(['concat', 'pin-', ['get', 'icon']]));
+  // A TOP 50 picture pin draws its own ring, so the ring arrives with the picture; the separate ring circle only shows around a dot.
+  assert.ok(c.images['pin-cafe-top'] && !c.images['pin-dining-top']);
+  const topPin = JSON.stringify(['concat', 'pin-', ['get', 'icon'], ['case', ['==', ['get', 'top25'], true], '-top', '']]);
+  for (const id of ['discovery-art', 'discovery-art-featured']) assert.equal(JSON.stringify(c.layers.find(layer => layer.id === id).layout['icon-image']), topPin);
+  assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-top25').paint['circle-stroke-opacity']), JSON.stringify(['step', ['zoom'], 1, 13, ['case', ['==', ['get', 'art'], true], 0, 1]]));
   assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-pins').paint['circle-opacity'].at(-1)), JSON.stringify(['case', ['==', ['get', 'art'], true], 0, 1]));
 });
