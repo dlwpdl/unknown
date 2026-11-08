@@ -2,6 +2,7 @@
 import argparse
 import base64
 import hashlib
+import http.client
 import json
 import os
 from pathlib import Path
@@ -166,9 +167,13 @@ def store_page_shows(version):
     # App Store page offered it, so old builds are blocked only once the page shows the version. A failed fetch blocks nothing.
     try:
         with urllib.request.urlopen(urllib.request.Request(f"https://apps.apple.com/ca/app/id{APP}?nocache={int(time.time())}", headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"}), timeout=60) as response:
-            return re.search(rf"(?<![\d.]){re.escape(version)}(?![\d.])", response.read().decode("utf-8", "replace")) is not None
-    except (urllib.error.URLError, TimeoutError):
+            shown = re.search(rf"(?<![\d.]){re.escape(version)}(?![\d.])", response.read().decode("utf-8", "replace")) is not None
+    except (OSError, http.client.HTTPException) as error:
+        summary(f"App Store page fetch failed ({type(error).__name__} {getattr(error, 'code', '')}".rstrip() + "); iOS minimum build unchanged.")
         return False
+    if not shown:
+        summary(f"App Store page does not show {version} yet; iOS minimum build unchanged.")
+    return shown
 
 
 def published_android_build(tracks):
