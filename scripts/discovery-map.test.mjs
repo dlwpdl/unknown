@@ -383,6 +383,7 @@ test('mid-zoom crowded places fold into counts; TOP 50, Gling-visited and the ch
   c.sources['discovery-grouped'].getClusterExpansionZoom = async () => { throw Error('No cluster with the specified id'); };
   await c.listeners.click({ point: { x: 1, y: 1 } }); await tick();
   assert.ok(!c.messages.some(message => message.type === 'error'), 'a stale count leaves the map as it is');
+  assert.ok(c.html.includes('개수가 적힌 동그라미로 묶이고, 누르면 펼쳐져요.'), 'the map label says what a count is');
 });
 
 test('embedded updates require the parent source, exact origin, type and session', () => {
