@@ -112,11 +112,11 @@ const pinArt={};
 // Each 3D picture becomes a white round pin image; until it loads, or if it cannot, the place keeps its coloured dot.
 const loadPins=()=>{if(typeof Image==='undefined')return;Promise.all(Object.entries(config.art||{}).map(([id,src])=>new Promise(done=>{const img=new Image();img.onload=()=>{try{const s=3,pin=(d,top)=>{const c=document.createElement('canvas');c.width=c.height=d*s;const ctx=c.getContext('2d');ctx.scale(s,s);ctx.shadowColor='rgba(23,17,35,.22)';ctx.shadowBlur=4;ctx.shadowOffsetY=1;ctx.beginPath();ctx.arc(d/2,d/2,16,0,Math.PI*2);ctx.fillStyle='#ffffff';ctx.fill();ctx.shadowColor='transparent';ctx.drawImage(img,d/2-12,d/2-12,24,24);if(top){ctx.beginPath();ctx.arc(d/2,d/2,21,0,Math.PI*2);ctx.strokeStyle='#9C7637';ctx.lineWidth=2;ctx.stroke()}return ctx.getImageData(0,0,c.width,c.height)};map.addImage('pin-'+id,pin(36),{pixelRatio:s});map.addImage('pin-'+id+'-top',pin(46,true),{pixelRatio:s});pinArt[id]=true}catch{}done()};img.onerror=()=>done();img.src=src}))).then(()=>{if(loaded&&Object.keys(pinArt).length)apply(true,true)})};
 const move=camera=>map.easeTo({...camera,duration:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?0:300});
-const hitLayers=['discovery-selected-discount','discovery-selected-discount-dot','discovery-discount','discovery-discount-dot','discovery-discount-dot-mid','discovery-selected-top25','discovery-selected-hit','discovery-selected-label','discovery-top25','discovery-hit','discovery-hit-mid','discovery-hit-grouped','discovery-labels','discovery-featured-labels','discovery-art-featured-labels'];
+const hitLayers=['discovery-selected-discount','discovery-selected-discount-dot','discovery-discount','discovery-discount-dot','discovery-discount-grouped','discovery-discount-dot-grouped','discovery-selected-top25','discovery-selected-hit','discovery-selected-label','discovery-top25','discovery-hit','discovery-hit-grouped','discovery-labels','discovery-labels-grouped','discovery-featured-labels','discovery-art-featured-labels'];
 const notSelected=()=>['!=',['get','id'],current.selectedId??''];
 const top25Filter=()=>['all',['==',['get','top25'],true],notSelected()];
-// Mid stage: TOP 50 and Gling-visited places (featured) and the chosen place stay single on 'discovery'; the rest come from 'discovery-grouped', where crowded dots fold into a count (owner 2026-11-08 "멀리서묶어보기"). From NEAR every place is single again.
-// The stages are split by layer min/max zoom, not ['zoom'] in a filter: a filter reads the tile's whole zoom, so places would blink while crossing NEAR.
+// TOP 50, Gling-visited (featured) and the chosen place are single: 'discovery' draws only them, at every zoom (apply sets that filter). Every other place lives only in 'discovery-grouped', which folds crowded dots into a count below NEAR and gives single points from NEAR (owner 2026-11-08 "멀리서묶어보기").
+// Each place has one source and no stage is switched by zoom in a filter or layer range, so a tile kept on screen while zooming still holds every place (supervisor review, PR #125).
 const everyPlace=[];
 const stage=()=>{const far=map.getZoom()<FAR;for(const pill of pills)pill.hidden=!far};
 const ensureBadges=()=>{
@@ -144,8 +144,8 @@ const apply=(markersChanged=false,selectionChanged=false)=>{if(!loaded)return;if
   // The whole marker turns with the map (a round dot looks the same), so only the cone shows the direction even when the map is rotated.
   const h=current.heading??null;if(h!==userHeading){userHeading=h;userMarker.getElement().setAttribute('data-facing',h===null?'0':'1');userMarker.setRotation(h??0)}}else if(userMarker){userMarker.remove();userMarker=null}
  if(markersChanged)ensureBadges();map.setFilter('discovery-top25',top25Filter());
- const chosen=['==',['get','id'],current.selectedId??''],single=['any',['==',['get','featured'],true],['==',['get','top25'],true],chosen],discount=['all',['>', ['get','discount'],0],['!',chosen]];
- for(const id of ['discovery-discount','discovery-discount-dot'])map.setFilter(id,discount);map.setFilter('discovery-discount-dot-mid',['all',single,discount]);for(const [id,f] of everyPlace)map.setFilter(id+'-mid',['all',single,f]);
+ const chosen=['==',['get','id'],current.selectedId??''],single=['any',['==',['get','featured'],true],['==',['get','top25'],true],chosen];
+ for(const [id,f,chosenElsewhere] of everyPlace)map.setFilter(id,['all',single,f,chosenElsewhere?['!',chosen]:true]);
  const height=map.getContainer().clientHeight,top=Math.min(current.topInset||0,Math.max(0,height-44)),bottom=Math.min(current.bottomInset||0,Math.max(0,height-top-44)),padding=top+':'+bottom,paddingChanged=padding!==previousPadding;
  map.getContainer().style.setProperty('--map-top-inset',top+'px');document.documentElement.style.setProperty('--map-bottom-inset',bottom+'px');
  if(paddingChanged){map.setPadding({top,right:0,left:0,bottom});previousPadding=padding}
@@ -185,17 +185,17 @@ try{
   // Places whose picture is loaded swap the near dot for the picture pin; names sit a little further out from the bigger pin.
   // Further out every place is a dot and a named (featured) place gets a smaller picture pin on top where it does not collide (corner-map-today 2026-11-04 zoom stages).
   const art=['==',['get','art'],true],midArt=['all',art,['==',['get','featured'],true]],dot=['case',art,0,1],nameOffset=['case',art,['literal',[2.4,0]],['literal',[2,0]]],artPin={'icon-image':['concat','pin-',['get','icon']],'icon-allow-overlap':true,'icon-ignore-placement':true},topPin={...artPin,'icon-image':['concat','pin-',['get','icon'],['case',['==',['get','top25'],true],'-top','']]};
-  // A layer that draws every place is split: from NEAR it draws them all; its '-mid' copy below NEAR draws only single places (apply sets that filter), and its '-grouped' copy draws the places that did not fold into a count.
-  const split=layer=>{add({...layer,minzoom:NEAR});add({...layer,id:layer.id+'-mid',maxzoom:NEAR})},grouped=layer=>add({...layer,id:layer.id+'-grouped',source:'discovery-grouped',maxzoom:NEAR,filter:['all',['!',['has','point_count']],layer.filter??true]}),both=layer=>{split(layer);everyPlace.push([layer.id,layer.filter??true]);grouped(layer)};
-  add({id:'discovery-clusters',type:'circle',source:'discovery-grouped',maxzoom:NEAR,filter:['has','point_count'],paint:{'circle-radius':['step',['get','point_count'],12,10,15,50,18],'circle-color':'#f8f6fc','circle-stroke-color':'#9283ac','circle-stroke-width':1.5}});
-  add({id:'discovery-counts',type:'symbol',source:'discovery-grouped',maxzoom:NEAR,filter:['has','point_count'],layout:{'text-field':['get','point_count_abbreviated'],'text-font':['Noto Sans Bold'],'text-size':12,'text-allow-overlap':true,'text-ignore-placement':true},paint:{'text-color':'#302047'}});
+  // A layer for every place draws the single ones (apply adds that filter) above its '-grouped' copy, which draws the places that did not fold into a count. chosenElsewhere: the chosen place has its own layer.
+  const grouped=layer=>add({...layer,id:layer.id+'-grouped',source:'discovery-grouped',filter:['all',['!',['has','point_count']],layer.filter??true]}),both=(layer,chosenElsewhere=false)=>{grouped(layer);add(layer);everyPlace.push([layer.id,layer.filter??true,chosenElsewhere])};
+  add({id:'discovery-clusters',type:'circle',source:'discovery-grouped',filter:['has','point_count'],paint:{'circle-radius':['step',['get','point_count'],12,10,15,50,18],'circle-color':'#f8f6fc','circle-stroke-color':'#9283ac','circle-stroke-width':1.5}});
+  add({id:'discovery-counts',type:'symbol',source:'discovery-grouped',filter:['has','point_count'],layout:{'text-field':['get','point_count_abbreviated'],'text-font':['Noto Sans Bold'],'text-size':12,'text-allow-overlap':true,'text-ignore-placement':true},paint:{'text-color':'#302047'}});
   both({id:'discovery-pins',type:'circle',source:'discovery',paint:{'circle-radius':step(4,11),'circle-color':['get','color'],'circle-stroke-color':'#ffffff','circle-stroke-width':step(1.5,2),'circle-opacity':step(1,dot),'circle-stroke-opacity':step(1,dot)}});
-  add({id:'discovery-art',type:'symbol',source:'discovery',minzoom:NEAR,filter:art,layout:topPin});
-  add({id:'discovery-labels',type:'symbol',source:'discovery',minzoom:NEAR,layout:{...nameFont,'text-field':['case',['!=',['get','sublabel'],''],['format',['get','label'],{},'\\n',{},['get','sublabel'],{'font-scale':0.85,'text-color':'#6b6280'}],['get','label']],'text-size':12,'text-offset':nameOffset,'text-padding':4},paint:namePaint});
+  both({id:'discovery-art',type:'symbol',source:'discovery',minzoom:NEAR,filter:art,layout:topPin});
+  both({id:'discovery-labels',type:'symbol',source:'discovery',minzoom:NEAR,layout:{...nameFont,'text-field':['case',['!=',['get','sublabel'],''],['format',['get','label'],{},'\\n',{},['get','sublabel'],{'font-scale':0.85,'text-color':'#6b6280'}],['get','label']],'text-size':12,'text-offset':nameOffset,'text-padding':4},paint:namePaint});
   add({id:'discovery-featured-labels',type:'symbol',source:'discovery',maxzoom:NEAR,filter:['all',['==',['get','featured'],true],['!',art]],layout:{...nameFont,'text-field':['get','label'],'text-size':11,'text-offset':[1,0],'text-padding':6},paint:namePaint});
   // The grouped hit area also covers each count (44px target) and sits under the single places' hit so a TOP 50 pin beside a count still wins.
-  add({id:'discovery-hit-grouped',type:'circle',source:'discovery-grouped',maxzoom:NEAR,paint:{'circle-radius':22,'circle-opacity':0}});
-  split({id:'discovery-hit',type:'circle',source:'discovery',paint:{'circle-radius':22,'circle-opacity':0}});everyPlace.push(['discovery-hit',true]);
+  add({id:'discovery-hit-grouped',type:'circle',source:'discovery-grouped',paint:{'circle-radius':22,'circle-opacity':0}});
+  add({id:'discovery-hit',type:'circle',source:'discovery',paint:{'circle-radius':22,'circle-opacity':0}});everyPlace.push(['discovery-hit',true,false]);
   // A picture pin carries its own TOP 50 ring (pin-<art>-top), so the ring never shows before or without the picture (owner 2026-11-08 "서클이 이게 아직 안보이는데도 서클만 먼저보여"); this ring is for dots only.
   // Below NEAR the dot stays under the picture, so the small ring is never alone; the plain pin keeps the mid-zoom collision box as before.
   add({id:'discovery-top25',type:'circle',source:'discovery',filter:top25Filter(),paint:{'circle-radius':step(7,15),'circle-opacity':0,'circle-stroke-color':'#9C7637','circle-stroke-width':step(1.5,2),'circle-stroke-opacity':step(1,dot)}});
@@ -215,8 +215,8 @@ try{
   for(const [id,source] of [['discovery-discount','discovery'],['discovery-selected-discount','discovery-selection']]){
    const selection=source==='discovery-selection';
    const dot={id:id+'-dot',type:'circle',source,filter:['>', ['get','discount'],0],paint:{'circle-radius':4,'circle-color':'#8FD9C4','circle-stroke-color':'#ffffff','circle-stroke-width':1.5,'circle-translate':selection?[-12,10]:step(['literal',[-5,4]],['literal',[-12,10]]),'circle-translate-anchor':'viewport'}};
-   if(selection)add(dot);else{split(dot);grouped(dot)}
-   add({id,type:'symbol',source,minzoom:14,filter:['>', ['get','discount'],0],layout:{'icon-image':['concat','discount-',['to-string',['get','discount']]],'icon-anchor':'right','icon-offset':[-20,10],'icon-allow-overlap':selection,'icon-ignore-placement':selection}});
+   const number={id,type:'symbol',source,minzoom:14,filter:['>', ['get','discount'],0],layout:{'icon-image':['concat','discount-',['to-string',['get','discount']]],'icon-anchor':'right','icon-offset':[-20,10],'icon-allow-overlap':selection,'icon-ignore-placement':selection}};
+   if(selection){add(dot);add(number)}else{both(dot,true);both(number,true)}
   }
   for(const c of config.cities){
    const el=document.createElement('button');el.className='city-pill';el.type='button';el.disabled=!c.open;el.textContent=c.open?c.name:c.name+' · ${language === 'en' ? 'Coming soon' : '준비 중'}';
