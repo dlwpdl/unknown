@@ -161,6 +161,16 @@ def published_ios_build(public, version):
     return None
 
 
+def store_page_shows(version):
+    # Owner 2026-11-08 "1.4.8 콩그레츄레이션 떳는데 앱스토어에 왜 안뜨냐": the lookup listed 1.4.8 ~30 minutes before the Canadian
+    # App Store page offered it, so old builds are blocked only once the page shows the version. A failed fetch blocks nothing.
+    try:
+        with urllib.request.urlopen(urllib.request.Request(f"https://apps.apple.com/ca/app/id{APP}?nocache={int(time.time())}", headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"}), timeout=60) as response:
+            return re.search(rf"(?<![\d.]){re.escape(version)}(?![\d.])", response.read().decode("utf-8", "replace")) is not None
+    except (urllib.error.URLError, TimeoutError):
+        return False
+
+
 def published_android_build(tracks):
     codes = [int(code) for track in tracks if track["track"] == "production"
              for release in track.get("releases", []) if release["status"] == "completed"
@@ -202,6 +212,8 @@ def sync_policy(env, google, directory, local):
     public = request(f"https://itunes.apple.com/lookup?id={APP}&country=ca&nocache={int(time.time())}")["results"]
     current = next((version for version in versions if public and version["attributes"]["versionString"] == public[0]["version"]), None)
     ios = published_ios_build(public[0], request(f'https://api.appstoreconnect.apple.com/v1/appStoreVersions/{current["id"]}?include=build', token)) if current else None
+    if ios is not None and not store_page_shows(public[0]["version"]):
+        ios = None
     token = google_token(google, directory)
     edit = play(token, "/edits", {}, "POST")["id"]
     try:
