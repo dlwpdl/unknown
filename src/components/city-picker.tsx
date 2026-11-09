@@ -18,6 +18,9 @@ import { useCommunityLocation } from '@/lib/location-provider';
 import { CITIES } from '@/lib/mock';
 import type { City } from '@/lib/types';
 
+// 2026-11-06 서울은 열지 않기로 해서 이 목록에서만 뺀다(QA Q10). CITIES의 서울 자료는 다른 곳을 위해 그대로 둔다.
+const PICKER_CITIES = CITIES.filter(item => item.id !== 'seoul');
+
 export function CityPicker({ onClose, draft, title }: { onClose: () => void; draft?: { city: City; onSelect: (city: City) => void }; title?: string }) {
   const { language, tr, t } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox();
@@ -46,8 +49,8 @@ export function CityPicker({ onClose, draft, title }: { onClose: () => void; dra
   };
   const normalize = (value: string) => value.toLowerCase().replace(/[\s.'’-]/g, '');
   const needle = normalize(query);
-  const provinceQuery = CITIES.some(item => item.province.toLowerCase() === needle);
-  const matches = CITIES.filter(item => provinceQuery ? item.province.toLowerCase() === needle
+  const provinceQuery = PICKER_CITIES.some(item => item.province.toLowerCase() === needle);
+  const matches = PICKER_CITIES.filter(item => provinceQuery ? item.province.toLowerCase() === needle
     : normalize([item.name, item.englishName, item.id, item.province, ...(item.aliases ?? [])].join(' ')).includes(needle))
     .sort((a, b) => a.englishName.localeCompare(b.englishName, 'en'));
   const sections = [

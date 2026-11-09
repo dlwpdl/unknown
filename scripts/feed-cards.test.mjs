@@ -171,8 +171,9 @@ test('city picker searches Canadian cities and keeps upcoming cities and the US 
   const list = () => nodes(render()).find(node => node.type === 'SectionList').props;
   assert.deepEqual(Array.from(list().sections, section => section.data.map(city => city.id)), [
     ['montreal', 'toronto', 'vancouver'],
-    ['calgary', 'edmonton', 'halifax', 'ottawa', 'regina', 'saint-john', 'saskatoon', 'seoul', 'winnipeg'],
+    ['calgary', 'edmonton', 'halifax', 'ottawa', 'regina', 'saint-john', 'saskatoon', 'winnipeg'],
   ]);
+  assert.ok(CITIES.some(city => city.id === 'seoul'), 'Seoul stays in the shared city data; only the picker leaves it out (QA Q10)');
   assert.equal(nodes(render()).some(node => node.props?.accessibilityRole === 'tab'), false, 'no country tabs');
   for (const [id, province] of Object.entries({ ottawa: 'ON', winnipeg: 'MB', regina: 'SK', 'saint-john': 'NB', halifax: 'NS' })) {
     const city = CITIES.find(city => city.id === id);
@@ -185,7 +186,7 @@ test('city picker searches Canadian cities and keeps upcoming cities and the US 
     assert.equal(selected, null);
     assert.equal(closed, 0);
   }
-  for (const [search, ids] of [[' Ottawa ', ['ottawa']], ['ON', ['toronto', 'ottawa']], ['NB', ['saint-john']], ['세인트존스', ['saint-john']], ['에드먼턴', ['edmonton']], ['NS', ['halifax']], ['missing-city', []]]) {
+  for (const [search, ids] of [[' Ottawa ', ['ottawa']], ['ON', ['toronto', 'ottawa']], ['NB', ['saint-john']], ['세인트존스', ['saint-john']], ['에드먼턴', ['edmonton']], ['NS', ['halifax']], ['서울', []], ['KR', []], ['missing-city', []]]) {
     nodes(render()).find(node => node.type === 'TextInput').props.onChangeText(search);
     assert.deepEqual(Array.from(list().sections).flatMap(section => section.data.map(city => city.id)), ids);
   }
