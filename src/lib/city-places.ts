@@ -1,6 +1,7 @@
 import bundledCatalog from './city-places.catalog.json';
 import photoSnapshot from './city-places.photos.json';
 import visitedPlaces from './gling-visited.json';
+import koreanNames from './city-places.ko.json';
 import { replaceExternalPlaceRatings } from './place-external-ratings';
 import { CITIES } from '@/lib/mock';
 
@@ -27,6 +28,8 @@ export type CityPlace = {
   glingVisited?: { sourceUrl: string };
   // 소개 3칸 (G2), written by the place automation from the place's own site or menu; each line may be missing.
   intro?: PlaceIntro;
+  // Korean names for search only, never shown (owner 2026-11-08 "영어를 한글로 쳐도 나오게하자", "물론 보이는건 영어로만 보이게하고").
+  searchNames?: string[];
 };
 export type PlaceIntro = { vibe?: string; order?: string; when?: string; vibeEn?: string; orderEn?: string; whenEn?: string; sourceUrl: string };
 const INTRO_FIELDS = ['vibe', 'order', 'when', 'vibeEn', 'orderEn', 'whenEn'] as const;
@@ -226,6 +229,18 @@ function displayedPicks(cityId: string): PlaceRecommendation[] {
 }
 
 // Keep unselected OSM identities available to existing detail and review links.
+const koreanNamesFor = (id: string) => { const names = (koreanNames as Record<string, unknown> | undefined)?.[id]; return Array.isArray(names) ? names as string[] : undefined; };
+const squash = (text: string) => text.normalize('NFC').toLocaleLowerCase().replace(/\s+/g, '');
+/** True when the query is inside one of the place's Korean search names, spaces ignored ("콜렉티브카페" finds "크루 콜렉티브 카페"). */
+export function koreanNameMatches(names: readonly string[] | undefined, query: string): boolean {
+  const needle = squash(query);
+  return !!needle && (names ?? []).some(name => squash(name).includes(needle));
+}
+/** A place search box: the shown (English) name or address, or a Korean search name. */
+export function placeMatchesQuery(place: Pick<CityPlace, 'name' | 'address' | 'searchNames'>, query: string): boolean {
+  return squash(`${place.name} ${place.address}`).includes(squash(query)) || koreanNameMatches(place.searchNames, query);
+}
+
 export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): CityPlace[] {
   if (!CITIES.some(city => city.id === cityId)) throw new Error('INVALID_PLACE_CITY');
   if (!['all', 'food', 'cafe', 'places'].includes(category)) throw new Error('INVALID_PLACE_CATEGORY');
@@ -244,7 +259,7 @@ export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): 
     .map(place => {
       const visit = (visitedPlaces as { cityId: string; placeId: string; sourceUrl: string; photo?: (typeof photos)[number] }[]).find(row => row.cityId === cityId && row.placeId === place.id);
       return { ...place, photo: photos[photoOrder.get(place.id) ?? -1] ?? visit?.photo ?? null, recommendation: reviewed.get(place.id), diningRecommendation: dining.get(place.id),
-        glingVisited: visit ? { sourceUrl: visit.sourceUrl } : undefined };
+        glingVisited: visit ? { sourceUrl: visit.sourceUrl } : undefined, searchNames: koreanNamesFor(place.id) };
     })
     .sort((a, b) => (photoOrder.get(a.id) ?? photos.length) - (photoOrder.get(b.id) ?? photos.length));
 }

@@ -12,7 +12,7 @@ const places = { vancouver: [
 function setup(change = value => value, catalog = places) {
   const calls = [], exports = {};
   const modules = {
-    './city-places.ts': { getCityDiscoveryPlaces: city => catalog[city] ?? [] },
+    './city-places.ts': { getCityDiscoveryPlaces: city => catalog[city] ?? [], koreanNameMatches: (names, query) => (names ?? []).some(name => name.replace(/\s+/g, '').includes(query.replace(/\s+/g, ''))) },
     './delivery-partners.ts': { DELIVERY_PARTNERS: [] },
     './mock.ts': { CITIES: [{ id: 'vancouver', state: 'open' }, { id: 'toronto', state: 'open' }, { id: 'closed', state: 'planned' }] },
   };
@@ -99,4 +99,11 @@ test('invalid requests and oversized local candidate sets fail before network ac
   }
   const catalog = { vancouver: Array.from({ length: 2201 }, (_, i) => ({ id: `osm:node:${i + 1}`, cityId: 'vancouver', name: 'Jimoco', address: '' })) };
   const h = setup(value => value, catalog); await assert.rejects(h.load(request), /SEARCH_PLACE_LIMIT/); assert.equal(h.calls.length, 0);
+});
+
+test('a Korean search name finds an English-named place; the result still shows the English name (owner 2026-11-08)', async () => {
+  const h = setup(value => value, { vancouver: [{ id: 'osm:node:4', cityId: 'vancouver', name: 'Crew Collective & Café', address: '360 Rue Saint-Jacques', searchNames: ['크루 콜렉티브 카페'] }] });
+  const page = await h.load({ query: '크루', cityId: 'vancouver', kind: 'place' });
+  assert.equal(page.items.length, 1); assert.equal(page.items[0].title, 'Crew Collective & Café');
+  assert.equal((await setup(value => value, { vancouver: [{ id: 'osm:node:4', cityId: 'vancouver', name: 'Crew Collective & Café', address: 'x' }] }).load({ query: '크루', cityId: 'vancouver', kind: 'place' })).items.length, 0);
 });
