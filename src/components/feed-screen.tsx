@@ -757,8 +757,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       setPriceInput('');
       setListingDraft(null);
       setListingTried(false);
-      // 첫 글이면 다 올라간 카드가 전면 축하를 띄운다. 세지 못하면 평소처럼 카드만.
-      const first = !post?.room && await isFirstPost(supabase, input.userId).catch(() => false);
+      // 첫 글이면 다 올라간 카드가 전면 축하를 띄운다. 세지 못하거나 3초 안에 답이 없으면 평소처럼 카드만.
+      const first = !post?.room && await Promise.race([isFirstPost(supabase, input.userId).catch(() => false), new Promise<boolean>(done => setTimeout(() => done(false), 3000))]);
       // 글은 이미 올라갔다. 동의가 저장되지 않으면 실패로 돌리지 않고 다 올라간 카드에 한 줄로만 알린다.
       if (consent && !(created.id && await savePostPhotoConsent(supabase, created.id))) return { notice: tr('SNS에 소개해도 된다는 체크만 저장이 안 됐어요'), first };
       return { first };

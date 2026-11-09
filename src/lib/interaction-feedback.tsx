@@ -159,7 +159,8 @@ function InteractiveFeedbackProvider({ children }: { children: ReactNode }) {
         Animated.sequence([Animated.delay(clay ? 300 : 260), Animated.timing(commitOpacity, { toValue: 0, duration: clay ? 340 : 360, useNativeDriver: true })]),
       ]).start(({ finished }) => { if (finished) setCommit(null); });
     }
-    if (preferences.soundEnabled) {
+    // The web keeps taps and warnings silent as before; the owner picked these sounds for the app (2026-11-08).
+    if (preferences.soundEnabled && !(Platform.OS === 'web' && (kind === 'selection' || kind === 'warning'))) {
       const player = ({
         selection: selectionPlayer, reaction: reactionPlayer, message: messagePlayer, warning: warningPlayer, success: successPlayer,
         meetupRequested: requestedPlayer, meetup: meetupPlayer, postUploaded: uploadedPlayer, meetupCreated: createdPlayer, postPublished: publishedPlayer,
