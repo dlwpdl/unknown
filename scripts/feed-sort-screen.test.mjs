@@ -37,7 +37,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     'react-native-reanimated': { default: { View: 'ReanimatedView' }, useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', SafeAreaProvider: 'SafeAreaProvider', useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
     '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
-    '@/hooks/use-theme': { useTheme: () => theme }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
+    '@/hooks/use-theme': { useTheme: () => theme }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false }, '@/hooks/use-reveal-chip': { useRevealChip: selected => ({ scroll: { revealing: selected }, chip: key => `layout:${key}` }) },
     '@/components/daily-chip': { todayLabel: () => '10월 12일 월요일' },
     '@/components/chilling-host-profile': { useMyOpenMeetupRequests: () => ({}) },
     '@/lib/image-upload': { canAddPostImage: () => true, MAX_POST_IMAGES: 10 },
@@ -515,4 +515,14 @@ test('the SNS photo box shows only with a photo, starts from the setting, and it
   older.calls[0].resolve([]); await new Promise(setImmediate);
   older.openWriter(); await new Promise(setImmediate); await addPhoto(older);
   assert.equal(box(older), undefined, 'an older server has no consent calls, so the box stays hidden');
+});
+
+test('the home category row scrolls the chosen chip into view (QA Q07)', () => {
+  const app = screen();
+  const row = () => nodes(app.render()).find(n => n.props?.analyticsId === 'components_feed-screen.scrollview.1');
+  assert.equal(row().props.revealing, 'all');
+  const chips = nodes(row()).filter(n => typeof n.props?.onLayout === 'string').map(n => n.props.onLayout);
+  assert.ok(chips.includes('layout:all') && chips.includes(`layout:${TAGS.find(tag => tag.slug === 'festival').id}`), 'every chip reports where it sits');
+  nodes(row()).find(n => n.props?.analyticsId === 'components_feed-screen.pressable.3' && n.props.selected === false).props.onPress();
+  assert.notEqual(row().props.revealing, 'all', 'a new choice is the chip the row brings into view');
 });

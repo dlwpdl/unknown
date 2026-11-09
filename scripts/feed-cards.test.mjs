@@ -333,3 +333,13 @@ test('an open sheet closes when a link or push changes the screen, unless it is 
   sheet({ visible: false });
   assert.equal(listener, null, 'a closed sheet does not listen');
 });
+
+test('a chosen chip cut at the edge or off screen scrolls fully into view; a visible one stays put (QA Q07)', async () => {
+  const { revealOffset } = await import('../src/hooks/use-reveal-chip.ts');
+  // Row 390 wide, content 900, chips are [x, width].
+  assert.equal(revealOffset(0, 390, 900, 100, 80), 0, 'already visible');
+  assert.equal(revealOffset(0, 390, 900, 340, 90), 340 + 90 + 24 - 390, 'cut at the right edge: the chip and a peek of the next');
+  assert.equal(revealOffset(0, 390, 900, 820, 76), 900 - 390, 'off screen at the end: stops at the content end');
+  assert.equal(revealOffset(400, 390, 900, 10, 60), 0, 'off screen to the left: back to the start');
+  assert.equal(revealOffset(0, 390, 300, 200, 60), 0, 'a row that fits never scrolls');
+});

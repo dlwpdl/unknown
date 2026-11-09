@@ -67,6 +67,7 @@ import { Colors, Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constan
 import { ControlMetrics, ControlMotion, ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
+import { useRevealChip } from '@/hooks/use-reveal-chip';
 import { useAuth } from '@/lib/auth';
 import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
 import { useTranslationVisibleIds } from '@/hooks/use-content-translation';
@@ -196,6 +197,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   };
   const [pendingPostId, setPendingPostId] = useState<string | null>(null); // 로그인 후 이어서 열 글
   const [tagFilter, setTagFilter] = useState<number | null>(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null); // 카테고리 칩
+  const categoryRow = useRevealChip(String(tagFilter ?? 'all'), !reducedMotion);
   const [feedSort, setFeedSort] = useState<FeedSort>('latest');
   const activeSort = meetupsOnly ? 'latest' : feedSort;
   const [categoryLoading, setCategoryLoading] = useState(false);
@@ -889,13 +891,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         </View>
         {cityOpen && !meetupsOnly && (
           <View style={styles.categoryHead}>
-            <GlassSurface tone="control" clay="tray" style={styles.chipGlass}><ScrollView analyticsId="components_feed-screen.scrollview.1" horizontal showsHorizontalScrollIndicator={false} style={clay && styles.chipClip} contentContainerStyle={styles.chipBar}>
+            <GlassSurface tone="control" clay="tray" style={styles.chipGlass}><ScrollView analyticsId="components_feed-screen.scrollview.1" {...categoryRow.scroll} horizontal showsHorizontalScrollIndicator={false} style={clay && styles.chipClip} contentContainerStyle={styles.chipBar}>
               {/* 처음 보이는 칩: PRIMARY_TAGS (owner 2026-11-01 순서); 나머지는 '더보기' 시트. */}
               {[...PRIMARY_TAGS, ...(tagFilter != null && !PRIMARY_TAGS.includes(tagFilter) ? [tagFilter] : [])].map((id) => {
                 const label = id == null ? t.feed.filterAll : tr(TAGS.find((tg) => tg.id === id)!.label);
                 const active = tagFilter === id;
                 return (
-                  <Animated.View key={id ?? 'all'} style={active && { borderRadius: 999, transform: [{ scale: chipLift }] }}><SelectionChip analyticsId="components_feed-screen.pressable.3"
+                  <Animated.View key={id ?? 'all'} onLayout={categoryRow.chip(String(id ?? 'all'))} style={active && { borderRadius: 999, transform: [{ scale: chipLift }] }}><SelectionChip analyticsId="components_feed-screen.pressable.3"
                     selected={active}
                     onPress={() => changeTagFilter(id)}
                     accessibilityRole="button"
