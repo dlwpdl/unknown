@@ -57,7 +57,7 @@ export function MeetupWhoSheet({ people, visible, onClose }: { people: MeetupRos
     {/* shortcut: a plain list; a meetup near the 5,000-person cap would want a virtualized one. */}
     <ScrollView analyticsId="meetup.who.sheet" contentContainerStyle={styles.sheet}>
       <ListCard>{people.map(person => <Person key={person.userId} person={person} />)}</ListCard>
-      <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('확정된 멤버만 보여요. 사진은 빼고 이름과 소개만 나와요.')}</ThemedText>
+      <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('승인된 멤버만 보여요. 사진은 빼고 이름, 한 줄 소개, 관심사만 나와요.')}</ThemedText>
     </ScrollView>
   </DragSheet>;
 }
@@ -84,7 +84,7 @@ export function MeetupWhoCard({ roster, error, onRetry }: { roster: MeetupRoster
         {roster.length > INLINE_PEOPLE && <ListRow analyticsId="meetup.who.all" title={tr('{0}명 모두 보기', roster.length)} onPress={() => setAll(true)} />}
       </ListCard>
       {roster.length === 1 && <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('아직 호스트 혼자예요.')}</ThemedText>}
-      <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('확정된 멤버만 보여요. 사진은 빼고 이름과 소개만 나와요.')}</ThemedText>
+      <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('승인된 멤버만 보여요. 사진은 빼고 이름, 한 줄 소개, 관심사만 나와요.')}</ThemedText>
       {roster.length > INLINE_PEOPLE && <MeetupWhoSheet people={roster} visible={all} onClose={() => setAll(false)} />}
     </>}
   </View>;
@@ -99,7 +99,7 @@ export function MeetupInviteNote() {
       <SymbolView name={{ ios: 'lock.fill', android: 'lock', web: 'lock' }} size={IconSize.inline} tintColor={theme.textSecondary} />
       <ThemedText style={[Typography.supporting, styles.shrink]}>{tr('초대받은 사람만 들어오는 모임이라 멤버는 안 보여요.')}</ThemedText>
     </View>
-    <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('링크를 받은 사람만 볼 수 있는 모임이에요.')}</ThemedText>
+    <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('초대받은 사람만 볼 수 있는 모임이에요.')}</ThemedText>
   </View>;
 }
 

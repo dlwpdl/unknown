@@ -375,7 +375,7 @@ function JoinForm({ postId }: { postId: string }) {
                     body={tr(status === 'approved' ? '모임 대화에서 집결 안내를 확인해 주세요.' : status === 'pending' ? availability === 'full' ? '내 신청은 대기 중이에요. 지금은 정원이 차서 호스트가 승인할 수 없어요. 신청만으로 자리가 잡히지는 않아요.' : '아직 참여가 확정되지 않았어요. 호스트가 승인하면 모임 대화에 들어갈 수 있어요.' : '현재 신청 상태를 다시 불러와 주세요.')}>
                     <JoinSteps steps={[{ label: tr('신청 보냄'), state: 'done' }, status === 'approved' ? { label: tr('호스트 승인'), state: 'done' } : { label: tr('호스트가 확인하는 중'), state: 'now' }, { label: tr('모임 대화 입장'), state: status === 'approved' ? 'now' : 'next' }]} />
                   </StateCard>
-                  {status === 'pending' && modern && !invite && <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr("승인되면 '누가 와요'에 내 이름과 소개가 나와요.")}</ThemedText>}
+                  {status === 'pending' && modern && !invite && <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr("승인되면 '누가 와요'에 내 이름, 한 줄 소개, 관심사가 나와요.")}</ThemedText>}
                   {meetCard()}
                   {status === 'approved' ? (!!post!.room!.fee || (modern && !!participation)) && <ListCard>
                     {!!post!.room!.fee && <ListRow title={tr('회비 {0}', meetupFeeAmount(post!.room!.fee.amount))} detail={[post!.room!.fee.note, post!.room!.fee.dueOn && tr('{0}까지', meetupFeeDue(post!.room!.fee.dueOn, appLocale)), feePaid == null ? '' : feePaid ? tr('냈음') : tr('아직 안 냈어요')].filter(Boolean).join(' · ') || undefined} />}

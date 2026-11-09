@@ -489,7 +489,7 @@ function MeetupCreateForm() {
         <ThemedText type="smallBold" style={styles.label}>{tr('누가 신청할 수 있나요?')}</ThemedText>
         <SegmentSwitch analyticsId="meetup.create.access" accessibilityLabel={tr('누가 신청할 수 있나요?')} disabled={saving} value={access} onSelect={setAccess}
           choices={[{ value: 'public', label: tr('공개') }, { value: 'invite', label: tr('초대용') }]} />
-        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{access === 'invite' ? tr('초대받았거나 링크가 있는 사람만 신청할 수 있어요. 모임 탭과 피드에 안 나오고, 멤버도 밖에서는 안 보여요.') : tr('모임 탭에 올라가요. 신청하려는 사람도 확정 멤버의 이름과 소개를 볼 수 있어요.')}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{access === 'invite' ? tr('초대받았거나 링크가 있는 사람만 신청할 수 있어요. 모임 탭과 피드에 안 나오고, 멤버도 밖에서는 안 보여요.') : tr('모임 탭에 올라가요. 신청하려는 사람도 승인된 멤버의 이름, 한 줄 소개, 관심사를 볼 수 있어요.')}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('모임을 연 뒤에는 바꿀 수 없어요.')}</ThemedText>
       </View>
       {field('meetup.create.question', tr("신청할 때 물어볼 질문"), question, value => editDraftField('question', value), tr("어떤 분위기의 모임을 기대하세요?"), 300)}
