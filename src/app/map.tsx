@@ -40,6 +40,7 @@ import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
 import { visibleTranslationSource } from '@/lib/translation-source';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
+import { useRevealChip } from '@/hooks/use-reveal-chip';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
@@ -104,6 +105,8 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const [selectedFilters, setSelectedFilters] = useState<DiscoveryFilter[]>(() => (initialCategory ?? '').split(',')
     .filter((id): id is DiscoveryFilter => id !== 'all' && filters.some(value => value.id === id)));
   const filter: DiscoveryFilter = selectedFilters.length === 1 ? selectedFilters[0] : 'all';
+  // The chip chosen last (here or in the filter sheet) scrolls into the row when it sits off screen or cut at the edge (QA Q07).
+  const filterRow = useRevealChip(selectedFilters.at(-1) ?? 'all', !reduced);
   const top25Only = selectedFilters.length === 1 && selectedFilters[0] === 'top25';
   const deliveryOnly = selectedFilters.length === 1 && selectedFilters[0] === 'delivery';
   const visitedOnly = selectedFilters.length === 1 && selectedFilters[0] === 'visited';
@@ -404,20 +407,20 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const filterChip = (value: typeof filters[number]) => {
     const selected = value.id === 'all' ? !selectedFilters.length : selectedFilters.includes(value.id);
     // Visited's picture already carries the gling logo (owner pick 2026-11-04), so the name under it is just "Visited".
-    return artChip({ id: value.id, label: value.id === 'visited' ? 'Visited' : tr(value.label), accessibilityLabel: tr(value.label), selected, analyticsId: 'discovery.filter', onPress: () => toggleFilter(value.id), ink: value.id === 'top25' ? top25Ink : undefined });
+    return artChip({ id: value.id, label: value.id === 'visited' ? 'Visited' : tr(value.label), accessibilityLabel: tr(value.label), selected, analyticsId: 'discovery.filter', onPress: () => toggleFilter(value.id), ink: value.id === 'top25' ? top25Ink : undefined, onLayout: filterRow.chip(value.id) });
   };
   // A chip with a 3D picture is just the picture and its name, no chip behind (owner 2026-11-04, mockup ⑪): the chosen one lifts and its name fills.
   // A setting (보여 줄 곳) only gets a purple outline on the card color, so it never reads as a chosen category.
   // Every name sits on the card color so map labels never run into it (owner 2026-11-04 "글이 백그라운드가없으니 지도에 뜨는 글과 겹쳐서").
-  const artChip = ({ id, label, selected, analyticsId, onPress, accessibilityLabel = label, expanded, outline, size = 40, ink = theme.text }: { id: string; label: string; selected: boolean; analyticsId: string; onPress: () => void; accessibilityLabel?: string; expanded?: boolean; outline?: boolean; size?: number; ink?: string }) =>
+  const artChip = ({ id, label, selected, analyticsId, onPress, accessibilityLabel = label, expanded, outline, size = 40, ink = theme.text, onLayout }: { id: string; label: string; selected: boolean; analyticsId: string; onPress: () => void; accessibilityLabel?: string; expanded?: boolean; outline?: boolean; size?: number; ink?: string; onLayout?: ReturnType<typeof filterRow.chip> }) =>
     <Pressable key={id} analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityState={expanded === undefined ? { selected } : { selected, expanded }}
-      onPress={onPress} style={({ pressed }) => [styles.artChip, { opacity: pressed ? 0.82 : 1 }]}>
+      onPress={onPress} onLayout={onLayout} style={({ pressed }) => [styles.artChip, { opacity: pressed ? 0.82 : 1 }]}>
       <View style={selected ? styles.artLift : null}><CategoryIcon id={id} size={size} play={bump.id === id ? bump.n : 0} /></View>
       <ThemedText numberOfLines={1} style={[styles.artLabel, !selected ? { color: ink, backgroundColor: `${theme.card}F0` }
         : outline ? { backgroundColor: theme.card, borderWidth: 1.5, borderColor: theme.accent, color: theme.accent } : { backgroundColor: theme.accent, color: theme.accentInk }]}>{label}</ThemedText>
     </Pressable>;
   const quickFilters = <>
-    <ScrollView horizontal analyticsId="discovery.filter" showsHorizontalScrollIndicator={false} style={[styles.filterRow, styles.artRow]} contentContainerStyle={[styles.filters, styles.artRowItems]}>
+    <ScrollView horizontal analyticsId="discovery.filter" {...filterRow.scroll} showsHorizontalScrollIndicator={false} style={[styles.filterRow, styles.artRow]} contentContainerStyle={[styles.filters, styles.artRowItems]}>
       {artChip({ id: 'scope', label: `${tr(scope === 'all' ? '보여 줄 곳' : scopeName)} ⌄`, selected: scope !== 'all', outline: true, expanded: scopeOpen, analyticsId: 'discovery.scope',
         accessibilityLabel: tr('보여 줄 곳, {0}', tr(scopeName)), onPress: () => { play('selection'); setScopeOpen(true); } })}
       {liveOn && artChip({ id: 'bubble', label: tr('말풍선'), selected: showBubbles, analyticsId: 'livemap.filter', onPress: () => { play('selection'); setShowBubbles(value => !value); } })}

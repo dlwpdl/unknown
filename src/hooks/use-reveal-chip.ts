@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, ScrollView } from 'react-native';
+import type { LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, ScrollViewInstance } from 'react-native';
 
 // Room left beside a revealed chip so the next one still peeks out and the row reads as scrollable.
 const EDGE = 24;
@@ -12,7 +12,7 @@ export function revealOffset(offset: number, viewport: number, content: number, 
 
 /** A sideways chip row that scrolls the chosen chip into view when it sits off screen or cut at the edge (QA Q07). */
 export function useRevealChip(selected: string, animated: boolean) {
-  const ref = useRef<ScrollView>(null);
+  const ref = useRef<ScrollViewInstance>(null);
   const row = useRef({ offset: 0, viewport: 0, content: 0 });
   const chips = useRef(new Map<string, { x: number; width: number }>());
   const reveal = () => {

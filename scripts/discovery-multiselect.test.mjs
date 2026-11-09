@@ -78,6 +78,7 @@ test('real map chips toggle a union and All clears category and date state', () 
     exports, TOP25_GOLD: '#F4CA78', top25Ink: '#68543A',
     styles: {}, theme: { accent: '#CBB9FF', line: '#ccc', backgroundSelected: '#ddd', backgroundElement: '#eee', text: '#222' },
     ScrollView: 'scroll', Pressable: 'button', SelectionChip: 'button', chipBackground: '#eee', View: 'view', ThemedText: 'text', GlingVisitedBadge: 'visited-badge', SymbolView: 'symbol', CategoryIcon: 'category-icon', IconSize, tr: value => value,
+    filterRow: { scroll: {}, chip: () => undefined },
     bump: { id: '', n: 0 }, setBump() {}, liveOn: false, meetupsOn: false, scope: 'all', scopeOpen: false, setScopeOpen() {}, scopeName: '모두', openNow: false, setOpenNow() {}, setShowUnknown() {}, setSubcategories() {}, filtersOpen: false, sheet: 'closed', setSheet() {}, setSelectedId() {},
     play: value => feedback.push(value), setSelectedFilters: update => { selected = Array.from(typeof update === 'function' ? update(selected) : update); },
     setDateFilter() {}, setDate() {}, setDateOpen() {}, setDateError() {}, setSortBy: value => { sort = typeof value === 'function' ? value(sort) : value; },
