@@ -3891,7 +3891,7 @@ export const uiEnglish: Record<string, string> = {
   "모임에서 나가고, 기다리던 분께 자리가 넘어가요. 다시 오려면 새로 신청해야 해요.": "You'll leave the meetup and someone on the waitlist can take your spot. To come back, you'll need to apply again.",
   "그대로 두기": "Keep it",
   "자리 비우기": "Give it up",
-  "참석 현황": "Who's coming",
+  "참석 현황": "Attendance",
   "참석 알려 주기": "Let the host know",
   "다음 만남 {0}": "Next meetup: {0}",
   "갈게요 {0}명 · 못 가요 {1}명 · 아직 답 없음 {2}명": "Going: {0} · Can't make it: {1} · No reply yet: {2}",
