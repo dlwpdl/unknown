@@ -252,3 +252,13 @@ test('the request sheet shows the sender photo, nickname, level, line and a way 
   assert.match(sheet, /GREETINGS\[request\.greeting\]/);
   assert.match(source.slice(source.indexOf('function Person'), source.indexOf('const locationProblem')), /TrustBadge/);
 });
+
+test('map name tags show when a bubble ends, so they stay the same minute to minute (owner 2026-11-08 "끝나는 시각으로")', async () => {
+  const source = readFileSync(new URL('../src/components/live-bubbles.tsx', import.meta.url), 'utf8');
+  const markers = source.slice(source.indexOf('export function useLiveMarkers'), source.indexOf('export function useMeetupMarkers'));
+  assert.match(markers, /tr\('\{0\} · \{1\}까지', who, untilClock\(bubble\.expiresAt, locale, cityId\)\)/);
+  assert.doesNotMatch(markers, /durationLabel|남음/, 'a countdown would resend every map place each minute');
+  const { formatMeetupTime } = await import('../src/lib/chilling-date.ts');
+  // Node without full ICU prints 'PM 3:40' for ko-KR, phones print '오후 3:40'; the hour is what matters.
+  assert.match(formatMeetupTime('2026-11-08T22:40:00Z', 'ko-KR', 'America/Vancouver', { hour: 'numeric', minute: '2-digit' }), /(^|\D)3:40$/, 'B.C. clock (UTC-7)');
+});

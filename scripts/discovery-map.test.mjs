@@ -223,7 +223,8 @@ test('M1: a state colour crosses the map boundary only as a hex value and draws 
   const c = canvas([{ ...marker, statusColor: '#E8743B' }, { ...marker, id: 'place:2' }]);
   assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.statusColor), ['#E8743B', '']);
   const layer = c.layers.find(layer => layer.id === 'discovery-status');
-  assert.equal(JSON.stringify(layer.filter), '["!=",["get","statusColor"],""]');
+  assert.equal(JSON.stringify(layer.filter.at(-2)), '["!=",["get","statusColor"],""]', 'up close every place with a state');
+  assert.equal(JSON.stringify(c.layers.find(value => value.id === 'discovery-status-grouped').filter.at(-1)), '["!=",["get","statusColor"],""]');
   assert.equal(JSON.stringify(layer.paint['circle-color']), '["get","statusColor"]');
   assert.ok(c.layers.indexOf(layer) > c.layers.findIndex(value => value.id === 'discovery-selected'), 'a chosen pin keeps its dot');
   c.window.glingDiscoveryUpdate(sessionId, { markers: [marker, { ...marker, id: 'place:2', statusColor: '#E0559A' }] });
@@ -241,7 +242,8 @@ test('M5: a saved flag crosses the map boundary only as a boolean and draws the 
   assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.saved), [true, false]);
   assert.ok(c.images['saved-mark']);
   const layer = c.layers.find(layer => layer.id === 'discovery-saved');
-  assert.equal(JSON.stringify(layer.filter), '["==",["get","saved"],true]');
+  assert.equal(JSON.stringify(layer.filter.at(-2)), '["==",["get","saved"],true]', 'up close every saved place');
+  assert.equal(JSON.stringify(c.layers.find(value => value.id === 'discovery-saved-grouped').filter.at(-1)), '["==",["get","saved"],true]');
   assert.ok(c.layers.indexOf(layer) > c.layers.findIndex(value => value.id === 'discovery-selected'), 'a chosen saved pin keeps its mark');
   c.window.glingDiscoveryUpdate(sessionId, { markers: [marker, { ...marker, id: 'place:2', saved: true }] });
   assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.saved), [false, true], 'saving from the card moves the mark without a reload');
@@ -308,13 +310,15 @@ test('Top 50 uses a circular outline and a selected-only label while preserving 
   assert.equal(c.sources.discovery.data.features[0].properties.top25, true);
 });
 
-test('pins are never grouped into counts, keep 44px targets and preserve the camera for result updates', async () => {
+test('close-up and featured pins are never counted, keep 44px targets and preserve the camera for result updates', async () => {
   const c = canvas();
   assert.equal(c.map.config.zoom, 11);
   assert.deepEqual(Array.from(c.map.config.center), [-123.12, 49.28]);
-  assert.equal(c.sources.discovery.cluster, undefined, 'owner 2026-11-04: no cluster counts');
-  assert.ok(!JSON.stringify(c.layers).includes('point_count'));
-  assert.ok(!c.layers.some(layer => /cluster|counts/.test(layer.id)));
+  // Owner 2026-11-04 kept three zoom stages; owner 2026-11-08 "멀리서묶어보기" counts crowded ordinary places on their own source, up to zoom 14 ("줌 14까지 묶기").
+  assert.equal(c.sources.discovery.cluster, undefined);
+  assert.equal(c.sources['discovery-grouped'].cluster, true);
+  assert.equal(c.sources['discovery-grouped'].clusterMaxZoom, 14, 'ordinary places fold into counts up to zoom 14 (owner 2026-11-08 "줌 14까지 묶기"), single from 15');
+  assert.ok(c.layers.every(layer => layer.source !== 'discovery-grouped' || layer.maxzoom === undefined), 'above clusterMaxZoom the grouped source itself gives single places');
   assert.ok(c.layers.some(layer => layer.paint?.['circle-radius'] === 22));
   c.window.glingDiscoveryUpdate(sessionId, { markers: [{ ...marker, longitude: -123 }], selectedId: null, center: null });
   assert.equal(c.cameras.length, 0);
@@ -334,6 +338,59 @@ test('pins are never grouped into counts, keep 44px targets and preserve the cam
   await c.listeners.click({ point: { x: 10, y: 10 } });
   assert.ok(c.messages.some(message => message.type === 'select' && message.id === marker.id));
   assert.equal(c.messages.filter(message => message.type === 'feedback').length, 1);
+});
+
+test('mid-zoom crowded places fold into counts; TOP 50, Gling-visited, saved, discount and the chosen place stay single, and a count opens where it splits (owner 2026-11-08)', async () => {
+  const plain = { ...marker, id: 'plain' }, top = { ...marker, id: 'top', latitude: 49.281, featured: true, top25: true }, visited = { ...marker, id: 'visited', latitude: 49.282, featured: true }, topOnly = { ...marker, id: 'top-only', latitude: 49.283, top25: true };
+  // Saved and discount places stay single (owner 2026-11-08 "저장한 곳·할인 가게도 따로 보이기").
+  const saved = { ...marker, id: 'saved', latitude: 49.284, saved: true }, deal = { ...marker, id: 'deal', latitude: 49.285, discount: 20 };
+  // Live bubbles and meetups stay single too: grouped, they hid until zoom 15 (git-76 review of #125).
+  const bubble = { ...marker, id: 'bubble:b1', latitude: 49.286 }, meetup = { ...marker, id: 'meetup:m1', latitude: 49.287 };
+  const markers = [plain, top, visited, topOnly, saved, deal, bubble, meetup], c = canvas(markers), tick = () => new Promise(done => setImmediate(done));
+  const grouped = () => Array.from(c.sources['discovery-grouped'].data.features.map(feature => feature.properties.id));
+  assert.deepEqual(grouped(), ['plain']);
+  assert.equal(c.sources.discovery.data.features.length, 8, 'up close every place still comes from the single source');
+  const pins = c.layers.find(layer => layer.id === 'discovery-pins'), index = id => c.layers.findIndex(layer => layer.id === id);
+  assert.equal(JSON.stringify(pins.filter), '["all",["any",["==",["get","featured"],true],["==",["get","top25"],true],["==",["get","saved"],true],[">",["get","discount"],0],["==",["slice",["get","id"],0,7],"bubble:"],["==",["slice",["get","id"],0,7],"meetup:"],["==",["get","id"],""]],true,true]', 'at every zoom the single source draws only TOP 50, Gling-visited, saved, discount, live bubbles, meetups and the chosen place');
+  // Each place has one source and no stage is switched by zoom, so a tile kept on screen while zooming past NEAR still draws every place (supervisor review, PR #125).
+  const ours = c.layers.filter(layer => layer.id.includes('-grouped') || layer.id === 'discovery-clusters' || layer.id === 'discovery-counts' || ['discovery-pins', 'discovery-hit', 'discovery-saved', 'discovery-status', 'discovery-discount-dot'].includes(layer.id));
+  assert.ok(ours.every(layer => layer.maxzoom === undefined && !JSON.stringify(layer.filter ?? null).includes('"zoom"')), 'no stage switch in the grouping layers');
+  for (const id of ['discovery-art', 'discovery-labels', 'discovery-discount']) assert.equal(c.layers.find(layer => layer.id === id + '-grouped').minzoom, c.layers.find(layer => layer.id === id).minzoom, id + ': the grouped copy keeps the close-up start');
+  for (const id of ['discovery-pins', 'discovery-saved', 'discovery-status', 'discovery-discount-dot', 'discovery-art', 'discovery-labels', 'discovery-discount']) {
+    const copy = c.layers.find(layer => layer.id === id + '-grouped');
+    assert.equal(copy.source, 'discovery-grouped');
+    assert.equal(JSON.stringify(copy.filter[1]), '["!",["has","point_count"]]', id + ': a place inside a count draws no mark of its own');
+  }
+  assert.ok(index('discovery-clusters') < index('discovery-pins-grouped') && index('discovery-counts') < index('discovery-pins-grouped'), 'counts sit under the places');
+  assert.ok(index('discovery-pins-grouped') < index('discovery-pins'), 'a TOP 50 dot is drawn above a plain one');
+  assert.ok(index('discovery-hit-grouped') < index('discovery-hit'), 'a TOP 50 pin beside a count wins the tap');
+  c.window.glingDiscoveryUpdate(sessionId, { markers, selectedId: 'plain', center: null });
+  assert.deepEqual(grouped(), [], 'the chosen place leaves its count');
+  assert.match(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-saved').filter[1]), /"plain"/);
+  // Names: the single source keeps only single places and leaves the chosen one to its own label, so no plain name is laid out twice.
+  assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-labels').filter), '["all",["any",["==",["get","featured"],true],["==",["get","top25"],true],["==",["get","saved"],true],[">",["get","discount"],0],["==",["slice",["get","id"],0,7],"bubble:"],["==",["slice",["get","id"],0,7],"meetup:"],["==",["get","id"],"plain"]],true,["!",["==",["get","id"],"plain"]]]');
+  c.window.glingDiscoveryUpdate(sessionId, { markers, selectedId: null, center: null });
+  assert.deepEqual(grouped(), ['plain']);
+
+  const cameras = c.cameras.length, count = { properties: { cluster: true, cluster_id: 7, point_count: 5 }, geometry: { type: 'Point', coordinates: [-123.1, 49.2] } };
+  c.sources['discovery-grouped'].getClusterExpansionZoom = async id => (assert.equal(id, 7), 12.5);
+  c.map.hits = [count];
+  await c.listeners.click({ point: { x: 1, y: 1 } }); await tick();
+  assert.equal(c.cameras.length, cameras + 1);
+  assert.deepEqual(Array.from(c.cameras.at(-1).center), [-123.1, 49.2]);
+  assert.equal(c.cameras.at(-1).zoom, 12.5);
+  assert.ok(!c.messages.some(message => message.type === 'select'), 'a count is not a place');
+  let answer;
+  c.sources['discovery-grouped'].getClusterExpansionZoom = () => new Promise(done => { answer = done; });
+  await c.listeners.click({ point: { x: 1, y: 1 } });
+  c.window.glingDiscoveryUpdate(sessionId, { markers, selectedId: 'top', center: null });
+  const afterUpdate = c.cameras.length;
+  answer(12); await tick();
+  assert.equal(c.cameras.length, afterUpdate, 'a count from before the update no longer exists');
+  c.sources['discovery-grouped'].getClusterExpansionZoom = async () => { throw Error('No cluster with the specified id'); };
+  await c.listeners.click({ point: { x: 1, y: 1 } }); await tick();
+  assert.ok(!c.messages.some(message => message.type === 'error'), 'a stale count leaves the map as it is');
+  assert.ok(c.html.includes('개수가 적힌 동그라미로 묶이고, 누르면 펼쳐져요.'), 'the map label says what a count is');
 });
 
 test('embedded updates require the parent source, exact origin, type and session', () => {

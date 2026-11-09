@@ -524,6 +524,8 @@ test('map pins carry a second line, featured names and the category id for the d
   const places = [fixturePlace(1, { name: 'Brunch spot', category: 'cafe', subcategories: ['brunch'] }), fixturePlace(2, { name: 'Visited', glingVisited: { sourceUrl: 'https://www.instagram.com/reel/fixture/' } })];
   const markers = nodes(mount({ places }).render()).find(node => node.type === 'DiscoveryMap').props.markers;
   assert.deepEqual(Array.from(markers.map(marker => [marker.label, marker.sublabel, marker.featured ?? false, marker.icon])), [['Brunch spot', '브런치', false, 'cafe'], ['Visited', '다이닝', true, 'dining']]);
+  // featured keeps a place out of the mid-zoom counts (owner 2026-11-08 "멀리서묶어보기"), so TOP 50 must set it too.
+  assert.match(source, /item\.top25 \|\| item\.glingVisited \? \{ featured: true \}/);
 });
 
 test('category chips show the 3D icon in the icon spot and each press replays only the pressed icon', () => {
@@ -761,8 +763,14 @@ test('M7: the compass starts only on screen after a location fix, feeds the cone
   control(tree, '내 위치로 지도 이동').props.onPress(); await new Promise(setImmediate); tree = view.render();
   const stop = view.readCompass(); await new Promise(setImmediate);
   assert.equal(view.compass.watches.length, 1);
-  view.compass.watches[0]({ trueHeading: 181, magHeading: 165, accuracy: 3 }); tree = view.render();
-  assert.equal(nodes(tree).find(node => node.type === 'DiscoveryMap').props.heading, 180);
+  const tick = ms => new Promise(resolve => setTimeout(resolve, ms)), heading = () => nodes(view.render()).find(node => node.type === 'DiscoveryMap').props.heading;
+  view.compass.watches[0]({ trueHeading: 181, magHeading: 165, accuracy: 3 }); await tick(0);
+  assert.equal(heading(), 180);
+  // Map lag 2026-11-08: at most 4 turns a second, and the newest reading of a burst still lands.
+  view.compass.watches[0]({ trueHeading: 91, magHeading: 80, accuracy: 3 }); view.compass.watches[0]({ trueHeading: 271, magHeading: 260, accuracy: 3 }); await tick(0);
+  assert.equal(heading(), 180, 'a burst inside a quarter second waits');
+  await tick(260);
+  assert.equal(heading(), 270, 'then only the newest reading shows');
   stop(); tree = view.render();
   assert.equal(view.compass.removed, 1);
   assert.equal(nodes(tree).find(node => node.type === 'DiscoveryMap').props.heading, null, 'leaving drops the cone');

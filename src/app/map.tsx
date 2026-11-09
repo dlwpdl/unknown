@@ -184,9 +184,11 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const [heading, setHeading] = useState<number | null>(null), hasLocation = !!userLocation;
   useEffect(() => {
     if (!isFocused || !hasLocation) return;
-    let active = true, watch: Location.LocationSubscription | null = null;
-    void Location.watchHeadingAsync(reading => { if (active) setHeading(facingDegrees(reading)); }).then(subscription => { if (active) watch = subscription; else subscription.remove(); }, () => {});
-    return () => { active = false; watch?.remove(); setHeading(null); };
+    let active = true, watch: Location.LocationSubscription | null = null, timer: ReturnType<typeof setTimeout> | undefined, last = 0, latest: number | null = null;
+    // At most 4 turns a second (map lag 2026-11-08): each reading re-renders this screen and messages the map; the newest reading still lands.
+    const show = () => { timer = undefined; last = Date.now(); if (active) setHeading(latest); };
+    void Location.watchHeadingAsync(reading => { latest = facingDegrees(reading); timer ??= setTimeout(show, Math.max(0, 250 - (Date.now() - last))); }).then(subscription => { if (active) watch = subscription; else subscription.remove(); }, () => {});
+    return () => { active = false; clearTimeout(timer); watch?.remove(); setHeading(null); };
   }, [isFocused, hasLocation]);
   // 동네 말풍선 지도 (owner 2026-11-05): bubbles and nearby meetups on this map, its own chips, a card under the map and its sheets.
   // Not in the chat sheet's map (onClose), and only for members; the bubble parts only while the live map loaded (server, or the dev example).
@@ -327,7 +329,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       ...(item.top25 || item.glingVisited ? { featured: true } : {}), ...(item.top25 ? { top25: true } : {}), ...(item.webshopDiscount ? { discount: item.webshopDiscount } : {}), ...(status ? { statusColor: status.color } : {}),
       ...(item.source === 'place' && (savedNow[`${viewerScope}:${placeKey(item)}`] ?? !!mySaved?.has(placeKey(item))) ? { saved: true } : {}) };
   });
-  const liveMarkers = useLiveMarkers(liveOn ? live.map : null, now, showBubbles);
+  const liveMarkers = useLiveMarkers(liveOn ? live.map : null, now, showBubbles, city.id);
   const meetupMarkers = useMeetupMarkers(city.id, viewerScope, now, meetupsOn && showMeetups && isFocused);
   // The map takes at most 500 pins; bubbles and meetups come first so a full city never pushes them out.
   const mapMarkers = [...liveMarkers, ...meetupMarkers, ...markers].slice(0, 500);
