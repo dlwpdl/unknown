@@ -59,20 +59,26 @@ test('길찾기는 검증한 좌표만 전달하고 출발지나 별도 API 키�
   for (const bad of [{ latitude: NaN, longitude: 0 }, { latitude: 0, longitude: 181 }, { latitude: '49', longitude: 0 }]) assert.throws(() => directionsUrl(bad, 'google'));
 });
 test('지도 화면의 Google Maps·Waze 버튼은 길안내를 바로 시작하지 않고 장소부터 연다', () => {
-  const at = { latitude: 49.28, longitude: -123.12 };
+  const at = { latitude: 49.28, longitude: -123.12, cityId: 'toronto' };
   const place = new URL(mapAppUrl({ ...at, place: { name: 'Anewen Greenbelt', address: '17 Anewen Drive, North York' } }, 'google'));
   assert.equal(place.pathname, '/maps/search/');
-  assert.equal(place.searchParams.get('query'), 'Anewen Greenbelt, 17 Anewen Drive, North York');
+  assert.equal(place.searchParams.get('query'), 'Anewen Greenbelt, 17 Anewen Drive, North York, Toronto, ON, Canada');
   assert.equal(place.searchParams.has('destination'), false);
   assert.equal(place.searchParams.has('dir_action'), false);
-  assert.equal(new URL(mapAppUrl({ ...at, event: { venue: 'Rogers Arena', city: 'Vancouver' } }, 'google')).searchParams.get('query'), 'Rogers Arena, Vancouver');
-  const pinned = new URL(mapAppUrl({ ...at, placeId: 'ChIJabc', place: { name: 'X', address: '' } }, 'google'));
-  assert.equal(pinned.searchParams.get('query_place_id'), 'ChIJabc');
-  assert.equal(new URL(mapAppUrl(at, 'google')).searchParams.get('query'), '49.28,-123.12');
+  // 번지 없는 장소·행사·글은 이름 검색이 다른 지점을 열 수 있어 정확한 좌표 핀으로 연다.
+  for (const item of [{ ...at, place: { name: 'Tim Hortons', address: '' } }, { ...at, place: { name: 'Tim Hortons', address: 'Toronto' } },
+    { ...at, event: { venue: 'Rogers Arena', city: 'Vancouver' } }, at]) {
+    const url = new URL(mapAppUrl(item, 'google'));
+    assert.equal(url.pathname, '/maps/search/');
+    assert.equal(url.searchParams.get('query'), '49.28,-123.12');
+  }
   const waze = new URL(mapAppUrl(at, 'waze'));
   assert.equal(waze.searchParams.get('ll'), '49.28,-123.12');
   assert.equal(waze.searchParams.has('navigate'), false);
   for (const bad of [{ latitude: NaN, longitude: 0 }, { latitude: 0, longitude: 181 }]) assert.throws(() => mapAppUrl(bad, 'waze'));
+  const map = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
+  assert.match(map, /Linking\.openURL\(mapAppUrl\(item, app\)\)/);
+  assert.doesNotMatch(map, /directionsUrl/);
 });
 test('도시 시간대의 오늘·이번 주말 날짜를 계산한다', () => {
   const now = Date.parse('2026-10-17T02:00:00Z'); // 밴쿠버 금요일, 토론토 금요일

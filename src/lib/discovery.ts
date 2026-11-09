@@ -6,6 +6,7 @@ import { EVENT_TIMEZONES, festivalLocalDay, isFestivalEvent, type EventCity, typ
 import { CITY_TOP25, type CityTop25Place } from './city-top25.ts';
 import type { CityPlace } from './city-places.ts';
 import { merchantMapsUrl } from './merchant-source.ts';
+import { CITIES } from './mock.ts';
 
 export const TOP25_GOLD = '#F4CA78';
 // M1 (owner 2026-11-05): a place's state, decided on the server from our own save numbers. The dot always comes with the word, so colour is never the only signal.
@@ -180,9 +181,10 @@ export function directionsUrl(pin: PostPin, app: 'google' | 'waze') {
 export function mapAppUrl(item: DiscoveryItem & PostPin, app: 'google' | 'waze') {
   const pinUrl = googlePinUrl(item);
   if (app === 'waze') return `https://waze.com/ul?${new URLSearchParams({ ll: `${item.latitude},${item.longitude}` })}`;
-  // A bare coordinate only drops a pin, so a named place or venue is searched by name to open its listing.
-  const name = item.placeId ? null : item.place ? [item.place.name, item.place.address] : item.event ? [item.event.venue, item.event.city] : null;
-  return (name?.[0] && merchantMapsUrl(name.filter(Boolean).join(', '))) || pinUrl;
+  // Google search has no location bias, so only a street address pins the right branch; anything else opens the exact pin.
+  const place = item.place, city = CITIES.find(entry => entry.id === item.cityId);
+  return place && city && /\d/.test(place.address)
+    ? merchantMapsUrl([place.name, place.address, city.englishName, city.province, 'Canada'].join(', ')) ?? pinUrl : pinUrl;
 }
 export function discoveryDays(filter: DiscoveryDate, cityId: string, date = '', now = Date.now()): string[] {
   if (filter === 'all') return [];
