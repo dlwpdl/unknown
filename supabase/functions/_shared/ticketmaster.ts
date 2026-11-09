@@ -60,8 +60,14 @@ export function eventPriceLabel(event: TicketmasterEvent): string {
   const amount = new Intl.NumberFormat('en-CA', { style: 'currency', currency: event.price.currency, maximumFractionDigits: 0 }).format(event.price.min);
   return `약 ${event.price.currency === 'CAD' ? `CA${amount}` : amount}부터`;
 }
+// An event day with no time in the same month/day/weekday form as timed events: 11월 8일 (일) · Sun, November 8. Read in UTC so the day never shifts.
+export function eventDayLabel(localDate: string | null, locale: 'ko-KR' | 'en-CA'): string | null {
+  if (!localDate || !/^\d{4}-\d{2}-\d{2}$/.test(localDate)) return localDate;
+  const day = new Date(`${localDate}T12:00:00Z`);
+  return Number.isNaN(day.getTime()) ? localDate : new Intl.DateTimeFormat(locale, { timeZone: 'UTC', month: 'long', day: 'numeric', weekday: 'short' }).format(day);
+}
 export function eventTime(event: TicketmasterEvent) {
-  if (!event.startsAt || event.timeUnconfirmed || !event.timezone) return `${event.localDate ?? '날짜 미정'} · 시간 확정 전`;
+  if (!event.startsAt || event.timeUnconfirmed || !event.timezone) return `${eventDayLabel(event.localDate, 'ko-KR') ?? '날짜 미정'} · 시간 확정 전`;
   return new Date(event.startsAt).toLocaleString('ko-KR', { timeZone: event.timezone, month: 'long', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' });
 }
 export function eventMatchesPriceFilter(event: TicketmasterEvent, filter: EventPriceFilter): boolean {
