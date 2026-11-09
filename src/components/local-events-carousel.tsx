@@ -1,12 +1,13 @@
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useFocusEffect, useIsFocused, useRouter } from 'expo-router';
+import { useFocusEffect, useIsFocused, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { SymbolView } from '@/components/symbol-view';
 import { AppState, StyleSheet, View } from 'react-native';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { ZoomLink } from '@/components/post-zoom-link';
 import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ControlMotion, MiniCard } from '@/constants/design-system';
@@ -85,7 +86,7 @@ function EventRowCard({ event, cityId }: { event: TicketmasterEvent; cityId: str
   const { play } = useInteractionFeedback();
   const when = eventTime(event, locale), place = event.venue || event.city;
   // shortcut: Ticketmaster gives only the original title; show a Korean title here once the event data carries one.
-  return <Link href={{ pathname: '/events/[id]', params: { id: event.id, cityId } }} asChild><Link.AppleZoom>
+  return <ZoomLink href={{ pathname: '/events/[id]', params: { id: event.id, cityId } }}>
   <Pressable analyticsId="today.events.open" accessibilityRole="button" accessibilityLabel={[event.name, when, place, event.price && eventPriceLabel(event, locale)].filter(Boolean).join(', ')}
     onPress={() => play('selection')} style={({ pressed }) => [styles.card, { opacity: pressed ? ControlMotion.pressedOpacity : 1 }]}>
     {event.image ? <Image source={{ uri: event.image }} transition={ControlMotion.settleMs} style={styles.photo} contentFit="cover" accessible={false} />
@@ -94,7 +95,7 @@ function EventRowCard({ event, cityId }: { event: TicketmasterEvent; cityId: str
     <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>{when}</ThemedText>
     <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>{place}</ThemedText>
     {event.price && <ThemedText type="caption" themeColor="accent" numberOfLines={1}>{eventPriceLabel(event, locale)}</ThemedText>}
-  </Pressable></Link.AppleZoom></Link>;
+  </Pressable></ZoomLink>;
 }
 
 const styles = StyleSheet.create({

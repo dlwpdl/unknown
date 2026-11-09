@@ -1,4 +1,4 @@
-import { Link, useRouter } from 'expo-router';
+import { Link, useRouter, type Href } from 'expo-router';
 import { cloneElement, useSyncExternalStore, type ReactElement } from 'react';
 import { AccessibilityInfo, Platform, type GestureResponderEvent } from 'react-native';
 
@@ -21,23 +21,27 @@ if (Platform.OS !== 'web') {
 const subscribeScreenReader = (listener: () => void) => { screenReaderListeners.add(listener); return () => { screenReaderListeners.delete(listener); }; };
 
 /**
- * Opens /post/[id] from the pressed card: iOS 18+ grows the post out of the card, Android pushes normally (owner 2026-11-02).
- * The card's own onPress runs first and may call event.preventDefault() to stay. `post` lets the detail draw on its first frame.
+ * Opens `href` from the pressed card: iOS 18+ grows the screen out of the card, Android pushes normally (owner 2026-11-02).
+ * The card's own onPress runs first and may call event.preventDefault() to stay; `onOpen` runs right before the screen opens.
  * The child must take an object style: the router's Slot drops function styles and rejects arrays.
  * Its root must stay one native view (a Pressable, or a View with collapsable={false}): the zoom source mounts only its first native child.
  */
-export function PostZoomLink({ id, post, children }: { id: string; post?: Post; children: Pressing }) {
+export function ZoomLink({ href, onOpen, children }: { href: Href; onOpen?: (event?: { defaultPrevented?: boolean }) => void; children: Pressing }) {
   const router = useRouter();
-  const { isAuthed, me } = useAuth();
   const screenReader = useSyncExternalStore(subscribeScreenReader, () => screenReaderOn);
-  const href = { pathname: '/post/[id]', params: { id } } as const;
-  const handOff = (event?: { defaultPrevented?: boolean }) => { if (post && isAuthed && !event?.defaultPrevented) handOffPost(me.id, post); };
-  if (Platform.OS !== 'web' && !screenReader) return <Link href={href} push asChild onPress={handOff}><Link.AppleZoom>{children}</Link.AppleZoom></Link>;
+  if (Platform.OS !== 'web' && !screenReader) return <Link href={href} push asChild onPress={onOpen}><Link.AppleZoom>{children}</Link.AppleZoom></Link>;
   // shortcut: web keeps a plain push, because an anchor-wrapped Pressable is untested there; switch to Link once web is checked.
   // Screen readers on iOS/Android land here too (see above).
   return cloneElement(children, { onPress: event => {
     children.props.onPress?.(event);
     if (event?.defaultPrevented) return;
-    handOff(event); router.push(href);
+    onOpen?.(event); router.push(href);
   } });
+}
+
+/** Opens /post/[id] through ZoomLink. `post` lets the detail draw on its first frame. */
+export function PostZoomLink({ id, post, children }: { id: string; post?: Post; children: Pressing }) {
+  const { isAuthed, me } = useAuth();
+  const handOff = (event?: { defaultPrevented?: boolean }) => { if (post && isAuthed && !event?.defaultPrevented) handOffPost(me.id, post); };
+  return <ZoomLink href={{ pathname: '/post/[id]', params: { id } }} onOpen={handOff}>{children}</ZoomLink>;
 }
