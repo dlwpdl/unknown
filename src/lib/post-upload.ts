@@ -12,8 +12,8 @@ export type PostUploadJob = {
   title: string;
   photoCount: number;
   photos: UploadPhoto[];
-  // retry=true: 이전 시도가 서버에 닿았는지 모르는 채로 다시 보낸다. 글은 올라갔는데 덧붙인 일이 안 됐으면 그 한 줄을 돌려준다.
-  send: (retry: boolean) => Promise<string | void>;
+  // retry=true: 이전 시도가 서버에 닿았는지 모르는 채로 다시 보낸다. 글은 올라갔는데 덧붙인 일이 안 됐으면 그 한 줄(notice)을, 내 첫 글이면 first를 돌려준다.
+  send: (retry: boolean) => Promise<{ notice?: string; first?: boolean } | void>;
 };
 export type PostUpload = Omit<PostUploadJob, 'send'> & {
   key: number;
@@ -22,6 +22,8 @@ export type PostUpload = Omit<PostUploadJob, 'send'> & {
   error?: unknown;
   // 다 올라간 카드에서 제목 대신 보여 줄 한 줄(예: SNS 소개 동의를 저장하지 못함).
   notice?: string;
+  // 내 첫 글: 다 올라가면 전면 3D 축하를 띄운다(사장님 2026-11-08). 두 번째부터는 카드만.
+  first?: boolean;
 };
 
 // 시안(upload-motion-2026-11-04)의 값. 지금 앱은 사진과 글을 한 번에 보내서 진행률을 모른다.
@@ -81,14 +83,14 @@ export const getPostUpload = () => current;
 function run(retry: boolean) {
   const key = current!.key, task = job!;
   task.send(retry).then(
-    notice => settle(key, 'done', undefined, notice || undefined),
+    result => settle(key, 'done', undefined, result || undefined),
     error => settle(key, 'failed', error),
   );
 }
 
-function settle(key: number, status: 'done' | 'failed', error?: unknown, notice?: string) {
+function settle(key: number, status: 'done' | 'failed', error?: unknown, result?: { notice?: string; first?: boolean }) {
   if (current?.key !== key) return;
-  current = { ...current, status, error, notice };
+  current = { ...current, status, error, notice: result?.notice, first: result?.first };
   if (status === 'done') job = null;
   emit();
 }

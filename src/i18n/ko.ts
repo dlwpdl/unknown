@@ -272,7 +272,6 @@ export const t = {
     joinFormPlaceholder: '예: 코퀴틀람에 살고 있고 주말 모임을 좋아해요.',
     joinSubmit: '요청 보내기',
     joinSending: '보내는 중…',
-    joinDoneTitle: '참여 요청을 보냈어요',
     joinDoneBody: '호스트가 승인하면 모임 자리 1개를 쓰고 모임 대화에 들어가요. 승인 전에는 자리를 사용하지 않아요.',
     all: '전체',
     groups: '모임',

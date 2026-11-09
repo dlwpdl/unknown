@@ -374,7 +374,8 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       const fix = { latitude: value.coords.latitude, longitude: value.coords.longitude, accuracy: value.coords.accuracy, measuredAt: value.timestamp, mocked: value.mocked ?? false };
       if (!freshMapFix(fix)) throw new Error('INACCURATE');
       setUserLocation({ latitude: fix.latitude, longitude: fix.longitude });
-      setSelectedId(null); setCenter({ latitude: fix.latitude, longitude: fix.longitude, requestId: revision }); play('success');
+      // No ring (owner 2026-11-08): the map gliding to the dot is the answer, and the list's own lookup was never a tap.
+      setSelectedId(null); setCenter({ latitude: fix.latitude, longitude: fix.longitude, requestId: revision });
     } catch (error) {
       if (revision !== locationRevision.current) return;
       play('warning'); setLocationError(error instanceof Error && error.message === 'PERMISSION' ? "위치 권한이 꺼져 있어요. 선택한 도시의 지도는 계속 볼 수 있어요." : "현재 위치를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.");

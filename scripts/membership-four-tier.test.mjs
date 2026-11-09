@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { MEMBERSHIP_LIMITS, BUSINESS_LIMITS, membershipOffer } from '../src/lib/membership.ts';
+import { MEMBERSHIP_LIMITS, BUSINESS_LIMITS, joinedMembership, membershipOffer } from '../src/lib/membership.ts';
 import { parseRevenueCatMembership } from '../supabase/functions/_shared/membership.ts';
 
 const now = Date.parse('2026-10-09T00:00:00Z');
@@ -62,4 +62,14 @@ test('Google base plans map to the same family without accepting arbitrary produ
   const item = { identifier:'general_plus_monthly', product:{ identifier:'gling_general_plus_v2:monthly', priceString:'CA$4.99', subscriptionPeriod:'P1M' } };
   assert.equal(membershipOffer(item)?.kind, 'general');
   assert.equal(membershipOffer({ ...item, product:{ ...item.product, identifier:'gling_business_plus_v2:monthly' } }), null);
+});
+
+test('only a purchase that turns a free or invite-reward member into a paying one is a membership join', () => {
+  const free = { tier: 'free', store: null }, reward = { tier: 'plus', store: 'reward' }, paid = { tier: 'plus', store: 'app_store' }, pro = { tier: 'pro', store: 'app_store' };
+  assert.equal(joinedMembership(free, paid, true), true);
+  assert.equal(joinedMembership(reward, paid, true), true, 'an invite pass was never paid for');
+  assert.equal(joinedMembership(free, paid, false), false, 'restoring is not joining');
+  assert.equal(joinedMembership(paid, pro, true), false, 'a plan change is not joining');
+  assert.equal(joinedMembership(free, free, true), false, 'the store has not confirmed it yet');
+  assert.equal(joinedMembership(reward, reward, true), false, 'still on the pass');
 });

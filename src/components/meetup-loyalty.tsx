@@ -102,9 +102,11 @@ export function MeetupFollowEncore({ post }: { post: Post }) {
     if (busy) return;
     setBusy(kind); setError(''); play('selection');
     try {
-      if (kind === 'follow') { const following = await setHostFollow(supabase, post.id, !state.following); setState({ ...state, following }); }
-      else { const encored = await setMeetupEncore(supabase, post.id, !state.encored); setState({ ...state, encored }); }
-      play('success');
+      let on: boolean;
+      if (kind === 'follow') { on = await setHostFollow(supabase, post.id, !state.following); setState({ ...state, following: on }); }
+      else { on = await setMeetupEncore(supabase, post.id, !state.encored); setState({ ...state, encored: on }); }
+      // Turning it off keeps only the press tick and the chip change (owner 2026-11-08: no success ring on unfollow).
+      if (on) play('success');
     } catch (failure) { setError(loyaltyError(failure)); play('warning'); }
     finally { setBusy(null); }
   };
@@ -136,7 +138,7 @@ export function MeetupProfileLoyalty({ postId, userId }: { postId: string; userI
   const follow = async () => {
     if (!state || busy) return;
     setBusy(true); setError(''); play('selection');
-    try { setState({ ...state, following: await setHostFollow(supabase, postId, !state.following) }); play('success'); }
+    try { const following = await setHostFollow(supabase, postId, !state.following); setState({ ...state, following }); if (following) play('success'); }
     catch (failure) { setError(loyaltyError(failure)); play('warning'); }
     finally { setBusy(false); }
   };

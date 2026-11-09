@@ -111,7 +111,8 @@ export default function InviteScreen() {
                   if (!value) { play('warning'); setClaimNote('코드 8자리를 확인해 주세요.'); return; }
                   try {
                     const result = await claimInviteCode(supabase, value);
-                    play(result === 'linked' ? 'success' : 'warning'); setClaimNote(claimMessages[result]);
+                    // 'linked' comes back once per account (the server refuses a second invite), so this cheers once.
+                    play(result === 'linked' ? 'inviteConnected' : 'warning'); setClaimNote(claimMessages[result]);
                     if (result === 'linked') { setCode(''); load(); void refreshMembership(); }
                   } catch { play('warning'); setClaimNote('코드를 넣지 못했어요. 잠시 후 다시 시도해 주세요.'); }
                 }); }}

@@ -56,7 +56,8 @@ export function useSavedEntry(target: SavedTarget | null, visible: boolean) {
     // Keep the raw place reference so the server can resolve links added since the read.
     void setSavedItem(supabase, { kind, id, ...(cityId ? { cityId } : {}) }, !current.state.saved).then(state => {
       if (!request.active || operation.current !== request) return;
-      setResult({ operation: request, state, error: '', saving: false }); play('success');
+      // Saving is a small win; unsaving keeps only the press tick and the button change (owner 2026-11-08).
+      setResult({ operation: request, state, error: '', saving: false }); if (state.saved) play('success');
     }).catch(() => {
       if (!request.active || operation.current !== request) return;
       setResult({ ...current, saving: false, error: 'write' }); play('warning');
@@ -72,7 +73,7 @@ export function useSavedEntry(target: SavedTarget | null, visible: boolean) {
     try {
       const state = await setSavedPlaceState(supabase, { kind, id, ...(cityId ? { cityId } : {}) }, status);
       if (!request.active || operation.current !== request) return false;
-      setResult({ operation: request, state, error: '', saving: false }); play('success');
+      setResult({ operation: request, state, error: '', saving: false }); if (status !== null) play('success');
       return true;
     } catch {
       if (request.active && operation.current === request) { setResult({ ...current, saving: false, error: 'write' }); play('warning'); }

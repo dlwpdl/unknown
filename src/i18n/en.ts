@@ -122,7 +122,7 @@ export const en: Translations = {
     approve: 'Approve', reject: 'Decline', requestHandled: 'Join request updated.', requestError: 'Couldn’t update the join request.',
     joinFormTitle: 'Ask to join', joinFormBody: 'Optional. Tell the host a bit about yourself so they can plan the meetup.',
     joinFormPlaceholder: 'e.g. I live in Coquitlam and love weekend meetups.', joinSubmit: 'Send request', joinSending: 'Sending…',
-    joinDoneTitle: 'Request sent', joinDoneBody: 'Once the host approves, you’ll use 1 meetup slot and join the group chat. No slot is used before then.',
+    joinDoneBody: 'Once the host approves, you’ll use 1 meetup slot and join the group chat. No slot is used before then.',
     all: 'All', groups: 'Meetups', direct: 'Direct', requestTab: 'Join requests', receivedRequest: 'Incoming chat requests', sentRequest: 'Sent chat requests',
     pendingBody: 'You can message each other once the request is accepted. Pending, declined and cancelled requests don’t use slots. Requests expire after 7 days.',
     accept: 'Accept and chat', acceptBody: 'Accepting uses 1 chat slot for each of you. When either of you ends the chat, only the requester’s slot is locked for 24 hours. Yours comes back right away.',
