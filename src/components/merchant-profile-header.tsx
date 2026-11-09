@@ -28,7 +28,7 @@ export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props
       </View>
       <View style={styles.name}>
         <ThemedText type="subtitle" style={styles.businessName}>{profile.name}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">{[profile.city_name, profile.industry].filter(Boolean).join(' · ')}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{[profile.city_name, profile.industry].filter((value): value is string => !!value).map(value => tr(value)).join(' · ')}</ThemedText>
       </View>
       {onReviewPress && <View style={styles.ratings}>{(['usage', 'employment'] as const).map((kind, index) => {
         const rating = ratings?.[kind], average = rating?.rating_average ?? null, label = tr(kind === 'usage' ? '상품·서비스 후기' : '직원 후기');

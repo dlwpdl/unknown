@@ -262,13 +262,15 @@ test('city picker location row discloses before collecting and hides in the post
   auth.isAuthed = false;
   assert.equal(list({ onClose() {} }).ListHeaderComponent, undefined, 'signed-out members see no GPS row');
   auth.isAuthed = true;
-  const row = () => nodes(list({ onClose() {} }).ListHeaderComponent).find(node => node.props?.accessibilityLabel === '내 위치로 찾기');
+  const row = () => nodes(list({ onClose() {} }).ListHeaderComponent).find(node => node.props?.analyticsId === 'components_city-picker.pressable.5');
+  assert.equal(row().props.accessibilityLabel, '내 위치로 찾기');
   assert.equal(text(row()), '내 위치로 찾기GPS로 가까운 도시를 한 번만 확인해요');
   row().props.onPress();
   assert.equal(open, true);
   assert.equal(captures, 0, 'opening the disclosure must not request permission or collect coordinates');
   assert.match(text(list({ onClose() {} }).ListHeaderComponent), /30일 보관/);
   assert.equal(text(row()).startsWith('동의하고 찾기'), true);
+  assert.equal(row().props.accessibilityLabel, '동의하고 찾기', 'the button is read by the words it shows (QA Q11)');
   await row().props.onPress();
   assert.equal(captures, 1);
   const toronto = renderCityRow(list({ onClose() {} }), CITIES.find(city => city.id === 'toronto'));

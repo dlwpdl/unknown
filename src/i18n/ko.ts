@@ -239,6 +239,7 @@ export const t = {
 
   chat: {
     conversationCount: (count: number) => `대화 ${count}개`,
+    searchMatches: (n: number) => `${count(n)}개`,
     refresh: '새로고침',
     loading: '대화 불러오는 중',
     loadError: '대화를 불러오지 못했어요. 잠시 후 다시 시도해주세요.',

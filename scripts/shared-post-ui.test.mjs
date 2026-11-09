@@ -354,6 +354,14 @@ test('native and web PostCard share controls open the connected share sheet with
   }
 });
 
+test('a detail card reads its body and #tags as plain text, not dimmed buttons (QA Q12)', async context => {
+  const item = { ...post(), room: undefined, hashtags: ['토론토'], author: { id: 'viewer', nickname: '이웃' }, likes: 0, saves: 0, comments: 0, createdAtLabel: '방금' };
+  for (const [props, interactive] of [[{ post: item, flat: true, postDetail: true }, false], [{ post: item, flat: true, onPress() {}, onHashtag() {} }, true]]) {
+    const harness = mount('../src/components/post-card.tsx', 'PostCard', {}, props); context.after(() => harness.unmount());
+    for (const id of ['components_post-card.pressable.2', 'components_post-card.pressable.3']) assert.equal(control(harness, id).props.accessible, interactive, id);
+  }
+});
+
 test('guest PostCard share control requests login before any share sheet or outbound call', async context => {
   const item = { ...post(), author: { id: 'viewer', nickname: '이웃' }, likes: 0, saves: 0, comments: 0, createdAtLabel: '방금' };
   const harness = mount('../src/components/post-card.tsx', 'PostCard', { auth: { isAuthed: false } }, { post: item }); context.after(() => harness.unmount());

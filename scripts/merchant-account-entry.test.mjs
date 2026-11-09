@@ -76,7 +76,7 @@ test('admin profiles can switch to a connected business after current access is 
   assert.equal(view.calls.length, 1);
   assert.equal(view.calls[0].name, 'get_my_business_chat_profiles');
   view.pending.shift()(context()); await flush();
-  assert.equal(view.render().props.accessibilityLabel, '비즈니스 프로필 전환');
+  assert.equal(view.render().props.accessibilityLabel, '업체 A로 글쓰기', 'read the same name the row shows (QA Q11)');
   view.foreground();
   assert.equal(view.calls.length, 2);
   view.pending.shift()(context()); await flush();
@@ -103,7 +103,7 @@ test('connected business owners and operators still switch to their business dra
     chatIdentity.resetChatIdentity();
     const view = app(), data = context('user-a', [{ id: 'company-a', name: '업체 A', role, city_name: '밴쿠버' }]);
     view.render(); view.pending.shift()(data); await flush();
-    const entry = view.render(); assert.equal(entry.props.accessibilityLabel, '비즈니스 프로필 전환');
+    const entry = view.render(); assert.equal(entry.props.accessibilityLabel, '업체 A로 글쓰기');
     entry.props.onPress(); view.pending.shift()(data); await flush();
     assert.deepEqual(JSON.parse(JSON.stringify(view.routes)), [{ pathname: '/profile/merchant', params: { merchant: 'company-a', tab: 'drafts' } }]);
     assert.deepEqual(view.feedback, ['selection']);

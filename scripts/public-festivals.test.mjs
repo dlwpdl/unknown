@@ -115,7 +115,11 @@ test('the public card shares the native local-time formatter and future event se
   const historical = { ...event, startsAt: '2025-01-02T04:00:00Z', localDate: '2025-01-01' };
   assert.match(ticketmaster.eventTime(historical), /1월 1일/);
   assert.match(ticketmaster.eventTime(historical), /(?:오후|PM) 8:00/);
-  assert.equal(ticketmaster.eventTime({ ...event, timeUnconfirmed: true }), '2099-01-01 · 시간 확정 전');
+  // QA Q06: an event with no time keeps the same day format as the timed cards beside it.
+  assert.equal(ticketmaster.eventTime({ ...event, timeUnconfirmed: true }), '1월 1일 (목) · 시간 확정 전');
+  assert.equal(ticketmaster.eventDayLabel('2099-01-01', 'en-CA'), 'Thu, January 1');
+  assert.equal(ticketmaster.eventTime({ ...event, timeUnconfirmed: true, localDate: null }), '날짜 미정 · 시간 확정 전');
+  assert.equal(ticketmaster.eventDayLabel('soon', 'ko-KR'), 'soon', 'an unexpected value is shown as it came');
   const client = { functions: { invoke: async () => ({ data: { events: [
     { ...event, id: 'past', startsAt: '2000-01-01T00:00:00Z' },
     { ...event, id: 'canceled', status: 'canceled' }, event,

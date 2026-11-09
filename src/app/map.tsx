@@ -501,7 +501,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const sheetHeader = <>
     <View style={styles.sheetSummary}>
       <View style={styles.flex}>
-        <ThemedText type="smallBold" accessibilityRole="header" accessibilityLiveRegion="polite">{tr('목록 {0}개', items.length)}{limited ? '+' : ''}{region ? ` · ${tr('이 지역')}` : ''}</ThemedText>
+        <ThemedText type="smallBold" accessibilityRole="header" accessibilityLiveRegion="polite">{tr(limited ? '목록 {0}개+' : '목록 {0}개', items.length)}{region ? ` · ${tr('이 지역')}` : ''}</ThemedText>
         <ThemedText type="caption" themeColor="accent">{sortLabel}</ThemedText>
       </View>
       <Pressable analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={tr('목록 닫기')} onPress={showMap} style={styles.icon}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={IconSize.inline} tintColor={theme.textSecondary} /></Pressable>
@@ -567,7 +567,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
         <SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={IconSize.inline} tintColor={theme.accent} />
         <ThemedText type="smallBold" themeColor="accent">{tr('이 지역에서 다시 찾기')}</ThemedText>
       </Pressable>}
-      {sheet === 'closed' && <Pressable ref={listClear} analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={tr("리스트 보기")} onPress={() => showList('half')} style={[styles.listLink, { backgroundColor: clay ? 'transparent' : theme.card, borderColor: clay ? 'transparent' : theme.line, bottom: rowBottom }]}>{clay && <ClayPillFill kind="white" />}<ClayIcon clay="list" claySize={24} name={{ ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' }} size={18} tintColor={theme.text} /><View style={styles.listLinkText}><ThemedText type="smallBold" accessibilityLiveRegion="polite">{tr('목록 {0}개', items.length)}{limited || more ? '+' : ''}</ThemedText><ThemedText type="caption" themeColor="accent">{sortLabel}</ThemedText></View></Pressable>}
+      {sheet === 'closed' && <Pressable ref={listClear} analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={tr("리스트 보기")} onPress={() => showList('half')} style={[styles.listLink, { backgroundColor: clay ? 'transparent' : theme.card, borderColor: clay ? 'transparent' : theme.line, bottom: rowBottom }]}>{clay && <ClayPillFill kind="white" />}<ClayIcon clay="list" claySize={24} name={{ ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' }} size={18} tintColor={theme.text} /><View style={styles.listLinkText}><ThemedText type="smallBold" accessibilityLiveRegion="polite">{tr(limited || more ? '목록 {0}개+' : '목록 {0}개', items.length)}</ThemedText><ThemedText type="caption" themeColor="accent">{sortLabel}</ThemedText></View></Pressable>}
       {cardShown ? <Reanimated.View entering={reduced ? undefined : SlideInDown.duration(ControlMotion.expandMs)} exiting={reduced ? undefined : SlideOutDown.duration(ControlMotion.sheetCloseMs)}
         onLayout={event => setCardHeight(event.nativeEvent.layout.height)} style={[styles.selected, { backgroundColor: theme.card, borderColor: theme.line }]}>
           <ScrollView analyticsId="discovery.detail" accessibilityLabel={tr("선택한 장소 상세, 스크롤로 더 보기")} style={styles.selectedScroll} contentContainerStyle={styles.selectedContent}>

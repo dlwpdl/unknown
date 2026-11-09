@@ -30,6 +30,7 @@ export function CityPicker({ onClose, draft, title }: { onClose: () => void; dra
   const reducedMotion = useReducedMotion();
   const { fontScale } = useWindowDimensions();
   const locationBusy = location.busy || !location.ready;
+  const locationLabel = location.busy ? tr("위치 확인 중…") : location.enabled ? tr("위치 다시 확인") : locationOpen ? tr("동의하고 찾기") : tr("내 위치로 찾기");
   // 첫 탭은 안내만 펼친다. 동의 버튼을 눌러야 권한 요청과 위치 확인이 시작된다.
   const onLocation = () => {
     play('selection');
@@ -80,11 +81,11 @@ export function CityPicker({ onClose, draft, title }: { onClose: () => void; dra
       keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.list}
       ListHeaderComponent={draft || !isAuthed ? undefined : <GlassSurface tone="control" clay="tile" interactive style={[styles.locationRow, controlPresentation(theme, { tone: 'ghost', clay: clayBox }).container, clayBox && { borderWidth: 0, overflow: 'visible', marginBottom: Spacing.two }]}>
         <Pressable analyticsId="components_city-picker.pressable.5" accessibilityRole="button" disabled={locationBusy} accessibilityState={{ disabled: locationBusy, busy: location.busy, expanded: locationOpen }}
-          accessibilityLabel={tr("내 위치로 찾기")} onPress={onLocation}
+          accessibilityLabel={locationLabel} onPress={onLocation}
           style={({ pressed }) => [styles.locationMain, controlPresentation(theme, { tone: 'ghost', pressed, disabled: locationBusy, busy: location.busy }).container]}>
           <SymbolView name={{ ios: 'location', android: 'near_me', web: 'near_me' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
           <View style={styles.name}>
-            <ThemedText type="label">{location.busy ? tr("위치 확인 중…") : location.enabled ? tr("위치 다시 확인") : locationOpen ? tr("동의하고 찾기") : tr("내 위치로 찾기")}</ThemedText>
+            <ThemedText type="label">{locationLabel}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{location.message || (locationOpen && !location.enabled ? tr("아래 내용에 동의하면 위치를 한 번 확인해요") : tr("GPS로 가까운 도시를 한 번만 확인해요"))}</ThemedText>
           </View>
           {!location.enabled && <SymbolView name={{ ios: locationOpen ? 'chevron.up' : 'chevron.down', android: locationOpen ? 'expand_less' : 'expand_more', web: locationOpen ? 'expand_less' : 'expand_more' }} size={IconSize.inline} tintColor={theme.textSecondary} />}

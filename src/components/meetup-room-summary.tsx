@@ -74,7 +74,7 @@ export function MeetupHistoryChoice({ value, onChange, disabled }: { value: bool
 /** 모임 대화 위에 붙는 요약 카드. 일정·인원은 모임 글에서 읽는다. */
 /** onManage receives the host recruiting/edit actions built from the loaded room so the caller's 모임 관리 sheet can list them. */
 export function MeetupRoomSummary({ postId, onOpen, onManage }: { postId: string; onOpen: () => void; onManage?: (hostActions: ManageAction[]) => void }) {
-  const { tr, language, locale: appLocale } = useLanguage();
+  const { tr, t, language, locale: appLocale } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const router = useRouter();
@@ -86,7 +86,7 @@ export function MeetupRoomSummary({ postId, onOpen, onManage }: { postId: string
   }, [postId, version]);
   const room = post?.room;
   const schedule = room ? chillingSchedule(room, appLocale) : null;
-  const count = room ? (room.capacity != null ? tr('{0}/{1}명', room.memberCount, room.capacity) : tr('{0}명', room.memberCount)) + (room.recruitingClosed ? tr(' · 모집 마감') : '') : null;
+  const count = room ? (room.capacity != null ? tr('{0}/{1}명', room.memberCount, room.capacity) : t.feed.members(room.memberCount)) + (room.recruitingClosed ? tr(' · 모집 마감') : '') : null;
   return <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>
     {clayBox && <ClayBoxFill kind="tile" />}
     <Pressable analyticsId="chat.meetup-summary" accessibilityRole="button" accessibilityLabel={language === 'en' ? 'Open meetup overview' : '모임 현황 열기'}

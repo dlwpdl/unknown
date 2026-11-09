@@ -234,7 +234,7 @@ function JoinForm({ postId }: { postId: string }) {
       <ThemedText style={Typography.supporting} themeColor="textSecondary">{recommendedAgeLabel(room, appLocale)}{room.recommendedAgeMin != null ? ` · ${tr('범위 밖이어도 신청할 수 있어요')}` : ''}</ThemedText>
       <View style={styles.seats}>
         {!!room.capacity && <View style={styles.flex}><SeatBar room={room} flush /></View>}
-        <ThemedText style={[Typography.caption, styles.tabular]} themeColor="textSecondary">{tr(room.capacity ? '{0} / {1}명' : '{0}명', room.memberCount ?? 0, room.capacity)}</ThemedText>
+        <ThemedText style={[Typography.caption, styles.tabular]} themeColor="textSecondary">{room.capacity ? tr('{0} / {1}명', room.memberCount ?? 0, room.capacity) : t.feed.members(room.memberCount ?? 0)}</ThemedText>
       </View>
     </View>;
   };

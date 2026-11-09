@@ -43,7 +43,8 @@ export function BusinessNewsCard({ post, onPress, onAuthor, translationVisible =
       <ThemedText type="supporting" numberOfLines={fontScale > 1.2 ? 3 : 2} style={styles.tileTitle}>{translation.display.title}</ThemedText>
     </Pressable>;
   }
-  return <View style={[styles.row, { borderBottomColor: theme.line }]}>
+  // collapsable={false}: PostZoomLink's zoom source needs one native root (post-zoom-link.tsx); without it the list rows drew empty (2026-11-08).
+  return <View collapsable={false} style={[styles.row, { borderBottomColor: theme.line }]}>
     <View style={styles.byline}>
       <Pressable analyticsId="business.news.author" accessibilityRole="button" accessibilityLabel={tr('{0} 프로필 보기', name)}
         onPress={() => { play('selection'); onAuthor(); }} style={({ pressed }) => [styles.author, { opacity: pressed ? ControlMotion.pressedOpacity : 1 }]}>
