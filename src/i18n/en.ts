@@ -110,7 +110,7 @@ export const en: Translations = {
     LISTING_NOT_OPEN: { title: 'This listing is closed', body: 'Reopening it uses 1 active listing slot.', membership: false },
   },
   chat: {
-    conversationCount: (n) => `${n} ${n === 1 ? 'chat' : 'chats'}`, refresh: 'Refresh', loading: 'Loading chats', loadError: 'Couldn’t load chats. Try again in a moment.',
+    conversationCount: (n) => `${n} ${n === 1 ? 'chat' : 'chats'}`, searchMatches: (n) => `${count(n)} ${n === 1 ? 'match' : 'matches'}`, refresh: 'Refresh', loading: 'Loading chats', loadError: 'Couldn’t load chats. Try again in a moment.',
     loadMessagesError: 'Couldn’t load messages.', loadOlder: 'Load earlier messages', emptyTitle: 'No chats yet',
     emptyBody: 'Find a post you like in the feed or join a meetup. Your chats will show up here.', newConversation: 'No messages yet. Say hi!',
     unverifiedNotice: 'This person hasn’t verified their ID yet.', unverifiedSafety: 'For a first meetup, pick a public place, and be careful if anyone asks for personal info or money.',

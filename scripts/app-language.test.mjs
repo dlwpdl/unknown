@@ -56,6 +56,23 @@ test('English covers the shared dictionary and language changes preserve user te
 });
 
 
+test('English counts, category names and list labels read as English (QA Q21-Q27)', async () => {
+  const { translateUi, translationsFor } = await import('../src/i18n/index.ts');
+  const en = (text, ...values) => translateUi('en', text, ...values);
+  // Bare Korean counters sit beside a label, so English shows only the number (was 'Co-hosts 1 people', 'Meetup slots 5 results').
+  for (const key of ['{0}개', '{0}명', '{0}편', '{0}회']) assert.equal(en(key, 1), '1', key);
+  assert.equal(translationsFor('en').feed.members(1), '1 person');
+  assert.equal(translationsFor('en').chat.searchMatches(1), '1 match');
+  assert.equal(translationsFor('en').chat.searchMatches(3), '3 matches');
+  assert.equal(translationsFor('ko').chat.searchMatches(3), '3개');
+  assert.equal(en('{0} 글', en('맛집')), 'Restaurants');
+  assert.equal(en('목록 {0}개+', 192), 'List (192+)');
+  assert.equal(translateUi('ko', '목록 {0}개+', 192), '목록 192개+');
+  // Business categories live on 2026-11-08 (Vancouver, Toronto, Montreal).
+  for (const industry of ['교육·도서', '부동산', '뷰티·피부관리', '산후·육아', '생활용품', '식품·음료', '앱·소프트웨어', '운송·이사', '웨딩·플라워', '음식점', '의료·재활',
+    '교육', '기타', '뷰티·웰니스', '식물·원예', '의류', '카페', '커피·차', '음식점 · 중식', '밴쿠버', '토론토', '몬트리올']) assert.doesNotMatch(en(industry), /[가-힣]/, industry);
+});
+
 test('dates and relative times use the selected language without altering event time zones', async () => {
   const { setActiveLanguage } = await import('../src/i18n/index.ts');
   const { relativeTime } = await import('../src/lib/feed-data.ts');

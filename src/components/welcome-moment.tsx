@@ -29,7 +29,7 @@ export function WelcomeMoment(props: { nickname: string; cityId: string; onConti
 }
 
 function WelcomeMomentBody({ nickname, cityId, onContinue }: { nickname: string; cityId: string; onContinue: () => void }) {
-  const { tr, locale } = useLanguage();
+  const { tr, t, locale } = useLanguage();
   const router = useRouter();
   const clay = useClay(), clayBox = useClayBox();
   const city = tr(CITIES.find(item => item.id === cityId)?.name ?? cityId);
@@ -85,7 +85,7 @@ function WelcomeMomentBody({ nickname, cityId, onContinue }: { nickname: string;
         {list.posts.map(post => {
           const room = post.room!;
           const labels = meetupLabels(post).map(label => tr(MEETUP_LABEL_TEXT[label]));
-          const people = tr(room.capacity ? '{0} / {1}명' : '{0}명', room.memberCount, room.capacity);
+          const people = room.capacity ? tr('{0} / {1}명', room.memberCount, room.capacity) : t.feed.members(room.memberCount);
           const schedule = chillingSchedule(room, locale);
           return <Pressable key={post.id} analyticsId="onboarding.welcome.meetup" accessibilityRole="button"
             accessibilityLabel={[...labels, post.title, schedule, city, people].join(', ')}

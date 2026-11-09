@@ -340,7 +340,7 @@ export default function CompanyProfileRoute() {
         {tab === 'about' && <Animated.View style={[styles.panel, { opacity: panelFade }]}>
           <ThemedText type="subtitle">{tr('{0} 소개', profile.name)}</ThemedText>
           <ThemedText>{profile.services || tr("등록된 소개가 없어요.")}</ThemedText>
-          {[[tr("업종"), profile.industry], [tr("지역"), profile.city_name], [tr("주소"), profile.address], [tr("전화"), profile.public_phone], [tr("영업시간"), profile.business_hours]].filter(([, value]) => !!value).map(([label, value]) =>
+          {[[tr("업종"), profile.industry && tr(profile.industry)], [tr("지역"), profile.city_name && tr(profile.city_name)], [tr("주소"), profile.address], [tr("전화"), profile.public_phone], [tr("영업시간"), profile.business_hours]].filter(([, value]) => !!value).map(([label, value]) =>
             <View key={label} style={styles.aboutRow}><ThemedText type="small" themeColor="textSecondary" style={styles.aboutLabel}>{label}</ThemedText><ThemedText type="small" style={styles.aboutValue}>{value}</ThemedText></View>)}
           <View style={styles.actions}>
             {!!phoneUrl && <Pressable analyticsId="company.about.phone" accessibilityRole="link" accessibilityLabel={tr("공개 전화 {0}", (profile.public_phone))} style={[styles.button, clay && styles.clayPad]} onPress={() => void openContact(phoneUrl)}>{clay && <ClayPillFill kind="white" />}<ThemedText themeColor="accent">{tr("전화하기")}</ThemedText></Pressable>}
