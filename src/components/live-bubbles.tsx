@@ -115,7 +115,7 @@ export function useLiveMarkers(map: LiveMap | null, now: number, show: boolean, 
 
 /** 근처 모임: the city's open meetups from the existing meetup feed, pinned at their linked place. */
 export function useMeetupMarkers(cityId: string, viewerScope: string, now: number, show: boolean): DiscoveryMarker[] {
-  const { tr } = useLanguage(), hidden = useContentVisibility();
+  const { tr, locale } = useLanguage(), hidden = useContentVisibility();
   const key = `${cityId}:${viewerScope}`;
   const [result, setResult] = useState<{ key: string; posts: Post[] } | null>(null);
   useEffect(() => {
@@ -131,8 +131,9 @@ export function useMeetupMarkers(cityId: string, viewerScope: string, now: numbe
     const url = postMapBody(post.body).url;
     const pin = splitPlaceMeetupBody(post.body, post.cityId)?.place ?? (url ? googleMapsPin(url) : null);
     if (!pin) return [];
+    // Within the hour the tag shows the start time, not a countdown that redraws the map every minute (git-76 review).
     const minutes = Math.round((start - now) / 60000), seats = room.capacity ? Math.max(0, room.capacity - room.memberCount) : null;
-    const when = !Number.isFinite(minutes) ? '' : minutes < 60 ? tr('{0}분 뒤', Math.max(1, minutes)) : minutes < 1440 ? tr('{0}시간 뒤', Math.round(minutes / 60)) : tr('{0}일 뒤', Math.round(minutes / 1440));
+    const when = !Number.isFinite(minutes) ? '' : minutes < 60 ? untilClock(room!.startsAt!, locale, cityId) : minutes < 1440 ? tr('{0}시간 뒤', Math.round(minutes / 60)) : tr('{0}일 뒤', Math.round(minutes / 1440));
     const sublabel = [when, seats === null ? '' : seats ? tr('{0}자리 남음', seats) : tr('자리 다 찼어요')].filter(Boolean).join(' · ');
     return [{ id: `meetup:${post.id}`, latitude: pin.latitude, longitude: pin.longitude, color: MEETUP_COLOR, label: (room.title || post.title).slice(0, 80),
       ...(sublabel ? { sublabel: sublabel.slice(0, 40) } : {}), icon: 'events' }];
