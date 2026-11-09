@@ -64,9 +64,15 @@ Deno.serve(async request => {
     const upstream = async url => {
       const delay = Math.max(0, 550 - (Date.now() - lastRequestAt));
       if (delay) await new Promise(resolve => setTimeout(resolve, delay));
-      const budget = await db.rpc('reserve_ticketmaster_request');
-      if (budget.error) throw new Error('QUOTA_ERROR');
-      if (!budget.data) throw new Error('RATE_LIMITED');
+      // The budget row lets one call through per 510ms across every instance, and the map asks for seven days at once
+      // (2026-11-08: six of seven came back RATE_LIMITED), so a caller waits a few turns before giving up.
+      for (let attempt = 0; ; attempt++) {
+        const budget = await db.rpc('reserve_ticketmaster_request');
+        if (budget.error) throw new Error('QUOTA_ERROR');
+        if (budget.data) break;
+        if (attempt === 15) throw new Error('RATE_LIMITED');
+        await new Promise(resolve => setTimeout(resolve, 250 + Math.random() * 300));
+      }
       lastRequestAt = Date.now();
       const response = await fetch(url, { signal: AbortSignal.timeout(8000), redirect: 'error' });
       if (response.status === 404) throw new Error('NOT_FOUND');
