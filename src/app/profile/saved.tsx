@@ -115,7 +115,8 @@ export default function SavedScreen() {
     setResult(previous => previous?.key === key && previous.visibility === hidden ? { ...previous,
       page: previous.page ? change(previous.page) : null, folders: nextFolders ? nextFolders(previous.folders) : previous.folders } : previous);
   };
-  async function perform(work: (operation: SavedReadOperation) => Promise<void>, failure: string) {
+  // cheer=false: unsaving keeps only the press tick, like the save button elsewhere (owner 2026-11-08).
+  async function perform(work: (operation: SavedReadOperation) => Promise<void>, failure: string, cheer = true) {
     const operation = activeOperation();
     if (!operation || mutation.current || operation.reading) return;
     const task = {}; mutation.current = task; setMutationKey(key); setMessage(null);
@@ -123,7 +124,7 @@ export default function SavedScreen() {
     const isCurrent = () => operation.active && request.current === operation;
     try {
       await work(operation);
-      if (isCurrent()) play('success');
+      if (isCurrent()) { if (cheer) play('success'); }
       else if (request.current?.active && request.current.accountId === operation.accountId) setRevision(value => value + 1);
     }
     catch { if (isCurrent()) { setMessage({ key, text: failure }); play('warning'); } }
@@ -133,7 +134,7 @@ export default function SavedScreen() {
     void perform(async operation => {
       await setSavedItem(supabase, item.target, false);
       if (operation.active && request.current === operation) update(page => ({ ...page, items: page.items.filter(row => row.key !== item.key) }));
-    }, ko ? '저장을 해제하지 못했어요. 항목은 그대로 남아 있어요. 다시 눌러주세요.' : 'Couldn’t remove this item. It’s still saved. Try again.');
+    }, ko ? '저장을 해제하지 못했어요. 항목은 그대로 남아 있어요. 다시 눌러주세요.' : 'Couldn’t remove this item. It’s still saved. Try again.', false);
   };
   const saveFolder = (name: string) => {
     if (!activeEditor || !['create', 'rename'].includes(activeEditor.kind)) return;
