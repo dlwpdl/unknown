@@ -888,7 +888,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         </View>
         {cityOpen && !meetupsOnly && (
           <View style={styles.categoryHead}>
-            <GlassSurface tone="control" clay="tray" style={styles.chipGlass}><ScrollView analyticsId="components_feed-screen.scrollview.1" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
+            <GlassSurface tone="control" clay="tray" style={styles.chipGlass}><ScrollView analyticsId="components_feed-screen.scrollview.1" horizontal showsHorizontalScrollIndicator={false} style={clay && styles.chipClip} contentContainerStyle={styles.chipBar}>
               {/* 처음 보이는 칩: PRIMARY_TAGS (owner 2026-11-01 순서); 나머지는 '더보기' 시트. */}
               {[...PRIMARY_TAGS, ...(tagFilter != null && !PRIMARY_TAGS.includes(tagFilter) ? [tagFilter] : [])].map((id) => {
                 const label = id == null ? t.feed.filterAll : tr(TAGS.find((tg) => tg.id === id)!.label);
@@ -1583,6 +1583,8 @@ const styles = StyleSheet.create({
   loadingCoverPage: { justifyContent: 'center', paddingTop: 0 },
   journalTitle: { fontSize: 28, lineHeight: 36, fontWeight: 700, letterSpacing: -0.8 },
   chipGlass: { borderRadius: 28, marginTop: Spacing.two },
+  // The clay tray can't clip (its shadow hangs below it), so the chips are cut to the tray's round ends here; its art ends ~2pt inside each side.
+  chipClip: { borderRadius: 999, overflow: 'hidden', marginHorizontal: 2 },
   chipBar: { flexDirection: 'row', gap: Spacing.one, padding: Spacing.one },
   filterChip: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 999, borderBottomWidth: 2, paddingHorizontal: 14, paddingVertical: Spacing.two },
   chipPressed: { opacity: 0.65 },
