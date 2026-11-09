@@ -155,6 +155,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [writerPanel, setWriterPanel] = useState<'city' | 'category' | 'kind' | 'more' | null>(null);
   const [writerOptionsOpen, setWriterOptionsOpen] = useState(false);
   const [cityPicker, setCityPicker] = useState(false);
+  const [cityPicks, setCityPicks] = useState(0); // 위쪽 도시 버튼으로 고른 횟수: 처음 안내의 '내 도시 고르기'를 채운다(QA Q17)
   const [writing, setWriting] = useState(false);
   const photoTiles = useRef<(ViewInstance | null)[]>([]);
   const [photosLaunched, setPhotosLaunched] = useState(false); // 위 카드로 날아간 사진은 닫히는 창에서 숨긴다
@@ -976,7 +977,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               </View>}
               {/* 이번 주 많이 읽은 글(탑10)은 카테고리 바로 아래, 다른 섹션보다 먼저 (owner 2026-10-30). */}
               {!feedLoading && weeklyRanking}
-              {!meetupsOnly && <StartGuide cityName={city.name} onPickCity={() => setCityPicker(true)} onOpenMeetups={() => router.navigate('/meetups')} />}
+              {!meetupsOnly && <StartGuide cityName={city.name} cityPicks={cityPicks} onPickCity={() => setCityPicker(true)} onOpenMeetups={() => router.navigate('/meetups')} />}
               {!meetupsOnly && isAuthed && <NewcomerProgressCard />}
               {meetupsOnly && <>
                 <MyMeetups onOpen={async (postId) => {
@@ -1210,7 +1211,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           )}
           <ThemedView style={[styles.citySheet, Platform.OS === 'ios' && styles.citySheetIOS]}>
             <View style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? insets.top : 0, paddingBottom: insets.bottom }}>
-              <CityPicker onClose={() => setCityPicker(false)} />
+              <CityPicker onClose={() => setCityPicker(false)} onPicked={() => setCityPicks(value => value + 1)} />
             </View>
           </ThemedView>
         </SafeAreaProvider>

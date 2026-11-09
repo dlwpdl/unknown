@@ -197,6 +197,33 @@ test('city picker searches Canadian cities and keeps upcoming cities and the US 
   await cityRow(renderCityRow(list(), CITIES[1])).props.onPress();
   assert.equal(selected, 'toronto');
   assert.equal(closed, 1);
+  let picked = 0;
+  await cityRow(renderCityRow(nodes(CityPicker({ onClose() {}, onPicked: () => { picked++; } })).find(node => node.type === 'SectionList').props, CITIES[1])).props.onPress();
+  assert.equal(picked, 1, 'a saved pick is reported so the start guide can count it (QA Q17)');
+});
+
+test('a city picked from the top city button checks off 내 도시 고르기 once and never reopens a hidden guide (QA Q17)', () => {
+  let guide = { hidden: false, done: [] }, at = 0;
+  const saved = [], refs = [];
+  const { StartGuide } = load('start-guide', {
+    react: { useState: initial => initial === null ? [guide, next => { guide = next; }] : [false, () => {}], useCallback: fn => fn, useEffect: fn => fn(), useRef: initial => (refs[at++] ??= { current: initial }) },
+    'expo-router': { useFocusEffect() {} },
+    '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async () => null, setItem: async (_key, value) => { saved.push(JSON.parse(value)); } } },
+    'react-native-reanimated': { useReducedMotion: () => true }, 'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
+    '@/components/disclosure': { animateLayout() {} }, '@/components/state-card': { PopIn: 'PopIn' },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+  });
+  const render = cityPicks => { at = 0; return StartGuide({ cityName: '토론토', cityPicks, onPickCity() {}, onOpenMeetups() {} }); };
+  render(0);
+  assert.deepEqual([...guide.done], [], 'opening the home screen alone does not count');
+  render(1);
+  assert.deepEqual([...guide.done], ['city']);
+  render(1);
+  assert.equal(saved.length, 1, 'the same pick is counted once');
+  guide = { hidden: true, done: [] };
+  render(2);
+  assert.equal(guide.hidden, true, 'a guide the member hid stays hidden');
+  assert.equal(saved.length, 1);
 });
 
 test('returning from system settings or a permission sheet checks feed ad permission again', () => {

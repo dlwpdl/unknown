@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
 import type { SymbolViewProps } from 'expo-symbols';
 import { SymbolView } from '@/components/symbol-view';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Platform, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -43,7 +43,7 @@ const TOUR: { icon: Icon; title: string; body: string }[] = [
   { icon: { ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' }, title: '채팅 · 알림', body: '채팅은 1:1 대화와 모임 단톡방, 알림은 내 글에 달린 댓글과 모임 소식이에요.' },
 ];
 
-export function StartGuide({ cityName, onPickCity, onOpenMeetups }: { cityName: string; onPickCity: () => void; onOpenMeetups: () => void }) {
+export function StartGuide({ cityName, cityPicks = 0, onPickCity, onOpenMeetups }: { cityName: string; cityPicks?: number; onPickCity: () => void; onOpenMeetups: () => void }) {
   const { tr } = useLanguage();
   const theme = useTheme();
   const clay = useClay(), clayBox = useClayBox();
@@ -67,6 +67,14 @@ export function StartGuide({ cityName, onPickCity, onOpenMeetups }: { cityName: 
     const done = [...state.done, step];
     save({ hidden: done.length === 3, done });
   };
+  // A city picked from the top city button counts too, not only one picked from this card (QA Q17).
+  const seenPicks = useRef(cityPicks);
+  useEffect(() => {
+    if (!state || seenPicks.current === cityPicks) return;
+    seenPicks.current = cityPicks;
+    if (!state.hidden) complete('city');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per new pick, after the saved steps have loaded
+  }, [cityPicks, state]);
 
   if (!state || state.hidden) return null;
   const steps: { id: Step; title: string; body: string; icon: Icon; run: () => void }[] = [
