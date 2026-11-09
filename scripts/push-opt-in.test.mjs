@@ -50,7 +50,7 @@ function invite({ denied = false, failure = null } = {}) {
       '@/lib/auth': { useAuth: () => ({ isAuthed: true, isAdmin: false, me: { id: 'member' } }) },
       '@/lib/notification-preferences': preferences, '@/lib/push-notifications': push, '@/lib/supabase': { supabase },
       '@/lib/community-data': {}, 'expo-router': { useRootNavigationState: () => ({ key: 'root' }), useRouter: () => ({}) },
-      '@/lib/product-analytics': product, '@/lib/meetup-push-rsvp': { registerMeetupRsvpCategory: async () => {}, answerMeetupRsvpFromPush: () => false },
+      '@/lib/product-analytics': product, '@/lib/link-open': { announceLinkOpen() {}, onLinkOpen: () => () => {} }, '@/lib/meetup-push-rsvp': { registerMeetupRsvpCategory: async () => {}, answerMeetupRsvpFromPush: () => false },
       'expo-notifications': { setNotificationHandler: value => { handler = value; }, getLastNotificationResponse: () => null,
         addNotificationResponseReceivedListener: subscription, addPushTokenListener: subscription },
     };

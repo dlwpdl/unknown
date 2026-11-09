@@ -1,10 +1,13 @@
 import { getShareExtensionKey } from 'expo-share-intent';
 
 import { appPathForLink } from '@/lib/app-links';
+import { announceLinkOpen } from '@/lib/link-open';
 
 // Universal Links / App Links arrive as https://gling.ej-entertainment.com/... and are mapped to app routes here.
-export function redirectSystemPath({ path }: { path: string; initial: boolean }) {
+export function redirectSystemPath({ path, initial }: { path: string; initial: boolean }) {
   try {
+    // A link that arrives while the app is open closes any open sheet so its screen is not left behind it.
+    if (!initial) announceLinkOpen();
     // The iOS share extension opens gling://dataUrl=glingShareKey…; that screen reads the shared text from the share context.
     if (path.includes(`dataUrl=${getShareExtensionKey()}`)) return '/profile/import';
     const route = appPathForLink(path);

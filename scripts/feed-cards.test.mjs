@@ -311,3 +311,25 @@ test('city picker location row discloses before collecting and hides in the post
   location.enabled = true; open = false;
   assert.equal(text(row()).startsWith('위치 다시 확인'), true);
 });
+
+test('an open sheet closes when a link or push changes the screen, unless it is saving (QA Q08)', () => {
+  let listener = null, closed = 0;
+  const { DragSheet } = load('drag-sheet', {
+    react: { useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}], useRef: current => ({ current }), useEffect: fn => { fn(); }, useLayoutEffect() {} },
+    'react-native': { Animated: { Value: class { setValue() {} stopAnimation() {} }, View: 'AnimatedView', parallel: () => ({ start() {} }), spring: () => ({}), timing: () => ({ start() {} }) },
+      Easing: { in: value => value, cubic: 0 }, KeyboardAvoidingView: 'KeyboardAvoidingView', Modal: 'Modal', PanResponder: { create: () => ({ panHandlers: {} }) },
+      Platform: { OS: 'ios' }, StyleSheet: { create: value => value, absoluteFill: {}, hairlineWidth: 1 }, useWindowDimensions: () => ({ height: 800 }), View: 'View' },
+    'react-native-reanimated': { useReducedMotion: () => true }, 'react-native-safe-area-context': { useSafeAreaInsets: () => ({ bottom: 0 }) },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+    '@/lib/link-open': { onLinkOpen: close => { listener = close; return () => { listener = null; }; } },
+  });
+  const sheet = props => { listener = null; DragSheet({ onClose: () => { closed++; }, children: null, ...props }); };
+  sheet({ visible: true });
+  listener();
+  assert.equal(closed, 1);
+  sheet({ visible: true, dismissible: false });
+  listener();
+  assert.equal(closed, 1, 'a sheet that is saving stays open');
+  sheet({ visible: false });
+  assert.equal(listener, null, 'a closed sheet does not listen');
+});
