@@ -72,12 +72,14 @@ export function MerchantAccountEntry() {
     finally { opening.current = false; if (current.current === me.id) setBusy(false); }
   }
   const invitationOnly = !data?.merchants.length && !!data?.invitations.length;
-  return <Pressable analyticsId="app_profile_index.merchant" accessibilityRole="button" accessibilityLabel={invitationOnly ? tr("비즈니스 계정 초대 확인") : tr("비즈니스 프로필 전환")} disabled={busy}
+  // VoiceOver and Voice Control use the same name the row shows.
+  const title = invitationOnly ? tr("비즈니스 계정 초대") : data?.merchants.length === 1 ? tr('{0}로 글쓰기', data.merchants[0].name) : tr("비즈니스");
+  return <Pressable analyticsId="app_profile_index.merchant" accessibilityRole="button" accessibilityLabel={title} disabled={busy}
     accessibilityState={{ disabled: busy }} onPress={() => { void open(); }} style={({ pressed }) => [styles.entry, clay && { borderTopWidth: 0 }, { backgroundColor: pressed ? theme.backgroundSelected : clay ? 'transparent' : theme.card, borderColor: theme.line }]}>
     <View style={[styles.entryIcon, { backgroundColor: theme.backgroundElement }]}>
       <SymbolView name={{ ios: 'storefront', android: 'storefront', web: 'storefront' }} size={22} tintColor={theme.navy} />
     </View>
-    <View style={{ flex: 1, gap: 4 }}><ThemedText type="smallBold">{invitationOnly ? tr("비즈니스 계정 초대") : data?.merchants.length === 1 ? tr('{0}로 글쓰기', data.merchants[0].name) : tr("비즈니스")}</ThemedText>
+    <View style={{ flex: 1, gap: 4 }}><ThemedText type="smallBold">{title}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{busy ? tr("현재 연결 확인 중…") : invitationOnly ? tr("초대한 비즈니스와 권한을 확인해 주세요.") : data?.merchants.length === 1 ? tr('비즈니스 프로필 · 개인 닉네임은 유지돼요.') : tr('{0}개 비즈니스 · 프로필 전환', data?.merchants.length ?? 0)}</ThemedText></View>
     <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
   </Pressable>;
