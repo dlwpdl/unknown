@@ -134,9 +134,11 @@ export function NewcomerProgressCard() {
   }, [isAuthed, me.id]);
   const celebrate = !!status?.newcomer && status.attended && stored?.celebrated === false;
   useEffect(() => {
-    // The celebration shows once; the next visit no longer finds the card.
-    if (celebrate) void AsyncStorage.setItem(celebratedKey(me.id), '1').catch(() => {});
-  }, [celebrate, me.id]);
+    // The celebration shows once; the next visit no longer finds the card. "First" = the server's attended newcomer status plus this account's celebrated flag.
+    if (!celebrate) return;
+    play('firstMeetup');
+    void AsyncStorage.setItem(celebratedKey(me.id), '1').catch(() => {});
+  }, [celebrate, me.id]); // eslint-disable-line react-hooks/exhaustive-deps -- play changes with the sound settings; cheer once
   if (!status?.newcomer || !stored || stored.hidden || (status.attended && !celebrate)) return null;
   const openMeetups = () => { play('selection'); router.navigate('/(tabs)/meetups'); };
   const link = (label: string) => <Pressable analyticsId="today.newcomer.meetups" accessibilityRole="link" onPress={openMeetups} style={styles.link}>

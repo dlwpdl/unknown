@@ -455,8 +455,9 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       if (registeredSecurityLogin.current === securityLogin) registeredSecurityLogin.current = null;
     });
     // An invite code kept from a deep link links once the member has signed up; network errors keep it for next time.
-    void claimRememberedInvite(supabase, AsyncStorage).catch(() => {});
-  }, [activeProfile?.id, securityLogin]);
+    // 'linked' comes back once per account (the server refuses a second invite), so the celebration shows once.
+    void claimRememberedInvite(supabase, AsyncStorage).then(result => { if (result === 'linked') play('inviteConnected'); }).catch(() => {});
+  }, [activeProfile?.id, play, securityLogin]);
 
   useEffect(() => {
     if (!activeProfile?.id || level === 0) return;

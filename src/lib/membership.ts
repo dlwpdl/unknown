@@ -63,6 +63,14 @@ export type MembershipSnapshot = {
   conversationUnlocksAt: string[];
 };
 
+/**
+ * A store purchase that turned a free member (or one on an invite-reward pass) into a paying one: the full-screen welcome (owner 2026-11-08).
+ * Restores and plan changes are not a join. "First" is read from the verified plan just before buying, so joining again after a lapse cheers again.
+ */
+export function joinedMembership(before: Pick<MembershipSnapshot, 'tier' | 'store'>, after: Pick<MembershipSnapshot, 'tier' | 'store'>, purchased: boolean) {
+  return purchased && (before.tier === 'free' || before.store === 'reward') && after.tier !== 'free' && after.store !== 'reward';
+}
+
 export type MembershipOffer = {
   id: string;
   tier: 'plus' | 'pro' | 'premium';

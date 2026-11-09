@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildPostImagePath, createCommunityPost, deleteMyAccount, editPost, getCommunityActionError, isContentRejected, leaveMeetup, loadChatReadPosition, loadMyMeetups, markChatRead, recordPostView, sendChatAttachment, uploadChatImage, uploadPostImages, uploadPostMedia } from '../src/lib/community-data.ts';
+import { buildPostImagePath, createCommunityPost, deleteMyAccount, editPost, getCommunityActionError, isContentRejected, isFirstPost, leaveMeetup, loadChatReadPosition, loadMyMeetups, markChatRead, recordPostView, sendChatAttachment, uploadChatImage, uploadPostImages, uploadPostMedia } from '../src/lib/community-data.ts';
 
 test('a poll is created atomically with its post and preserves the saved post id', async () => {
   const calls = [];
@@ -323,4 +323,18 @@ test('탈퇴 검증과 파일 삭제를 서버에 맡기고 실패를 호출자�
   ]);
   client.functions.invoke = async () => ({ error: new Error('APPLE_REVOCATION_FAILED') });
   await assert.rejects(deleteMyAccount(client, 'apple-code'), /APPLE_REVOCATION_FAILED/);
+});
+
+test('the first-post check counts only my own non-meetup posts, removed ones included', async () => {
+  const calls = [];
+  const client = count => ({ from(table) {
+    const query = { select(fields, options) { calls.push([table, fields, options]); return query; },
+      eq(column, value) { calls.push([column, value]); return query; }, is(column, value) { calls.push([column, value]); return Promise.resolve({ count, error: null }); } };
+    return query;
+  } });
+  assert.equal(await isFirstPost(client(1), 'me'), true);
+  assert.deepEqual(calls, [['posts', 'id', { count: 'exact', head: true }], ['author_id', 'me'], ['room_preview', null]]);
+  assert.equal(await isFirstPost(client(2), 'me'), false, 'a second post keeps the card-only finish');
+  const failing = { from: () => ({ select() { return this; }, eq() { return this; }, is: async () => ({ count: null, error: new Error('offline') }) }) };
+  await assert.rejects(isFirstPost(failing, 'me'), /offline/);
 });

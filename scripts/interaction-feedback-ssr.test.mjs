@@ -21,6 +21,7 @@ function renderFeedback({ browser = false, platform = 'web' } = {}) {
     'react-native-reanimated': { useReducedMotion: () => false }, '@/hooks/use-reduced-motion': { useReducedMotion: () => false },
     'expo-audio': { useAudioPlayer() { players++; if (!browser && platform === 'web') throw new ReferenceError('Audio is not defined'); return {}; } },
     './interaction-feedback-preferences': preferences,
+    '@/components/clay': { useClay: () => false, useDark: () => false, CLAY_CONFETTI: {}, CLAY_CELEBRATION: {} },
   };
   const exports = {};
   vm.runInNewContext(source, { exports, require: withLanguageImports(name => imports[name] ?? {}), ...(browser ? { window: {} } : {}) });

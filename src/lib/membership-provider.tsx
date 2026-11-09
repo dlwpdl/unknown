@@ -5,7 +5,7 @@ import { AppState, Linking, Platform } from 'react-native';
 
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { membershipOffer, type MembershipKind, type MembershipOffer, type MembershipSnapshot } from '@/lib/membership';
+import { joinedMembership, membershipOffer, type MembershipKind, type MembershipOffer, type MembershipSnapshot } from '@/lib/membership';
 import { purchaseUnavailableReason, withPurchases } from '@/lib/purchases';
 import { supabase } from '@/lib/supabase';
 
@@ -166,11 +166,12 @@ export function MembershipProvider({ children }: { children: ReactNode }) {
       const after = subscription(await sync(requestGeneration), kind);
       // A successful paid-plan change may be deferred by the store until renewal.
       if (offer && after.tier !== 'free') setPending(null);
-      if (currentUser.current === userId && after.tier !== 'free') play('success');
+      const joined = joinedMembership(before, after, !!offer);
+      if (currentUser.current === userId && after.tier !== 'free') play(joined ? 'membershipJoined' : 'success');
       if (currentUser.current === userId) setNotice(after.tier === 'free'
         ? offer ? "구매를 확인하고 있어요. 잠시 후 다시 확인해 주세요." : pending?.userId === userId
           ? "현재 활성 구독은 없어요. 이전 구매의 승인 대기 상태는 결제한 스토어에서 확인해 주세요." : "복원할 활성 구독이 없어요."
-        : offer ? "구독 상태를 확인했어요. 변경 예약은 스토어의 적용일에 반영돼요." : "구매를 복원했어요.");
+        : joined ? "멤버십이 시작됐어요." : offer ? "구독 상태를 확인했어요. 변경 예약은 스토어의 적용일에 반영돼요." : "구매를 복원했어요.");
     } catch (failure) {
       if (currentUser.current !== userId) return;
       if ((failure as { userCancelled?: boolean })?.userCancelled) setNotice("구매를 취소했어요. 현재 멤버십은 그대로 유지돼요.");

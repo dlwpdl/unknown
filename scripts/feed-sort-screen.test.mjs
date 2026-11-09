@@ -45,7 +45,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '@/i18n/ko': { t }, '@/lib/mock': { TAGS }, '@/lib/auth': { useAuth: () => ({ isAuthed: viewer !== null, isAuthLoading: authLoading, me: { id: viewer ?? 'guest' }, promptLogin() {} }) },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버', state: 'open' }, setCity() {} }) },
     '@/lib/location-provider': { useCommunityLocation: () => ({ record() {}, capture: async () => null }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
-    '@/lib/community-data': { loadListingQuota: async () => ({ used: 0, max: 3 }), createCommunityPost: (_client, input) => deferPublish ? new Promise((resolve, reject) => writes.push({ input, resolve, reject })) : Promise.resolve({ id: createdPost.id, post: createdPost }), getCommunityActionError: () => null, isContentRejected: () => false },
+    '@/lib/community-data': { loadListingQuota: async () => ({ used: 0, max: 3 }), createCommunityPost: (_client, input) => deferPublish ? new Promise((resolve, reject) => writes.push({ input, resolve, reject })) : Promise.resolve({ id: createdPost.id, post: createdPost }), getCommunityActionError: () => null, isContentRejected: () => false, isFirstPost: async () => false },
     '@/lib/post-maps': { withPostMap, postMapBody, googlePinUrl }, '@/lib/listing-details': listingDetails, '@/lib/neighborhoods': neighborhoods,
     '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async () => null, setItem: async () => {} } },
     '@/lib/hashtags': { getSuggestedHashtags: () => [], parseHashtags: () => [], canonicalizeHashtag: value => value },

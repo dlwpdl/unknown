@@ -79,6 +79,7 @@ import {
   loadListingQuota,
   getCommunityActionError,
   isContentRejected,
+  isFirstPost,
   loadTrendingHashtags,
   MEETUPS_CHANGED_EVENT,
   requestMeetupJoin,
@@ -495,10 +496,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       await requestMeetupJoin(supabase, joinPost.id, joinMessage);
       DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       requestPushPrompt('meetup_request');
+      // The ring says it was sent; the slot rule moved into the sheet so nothing pops on top of it (owner 2026-11-08).
       play('meetupRequested');
       setJoinPost(null);
       setJoinMessage('');
-      Alert.alert(t.chat.joinDoneTitle, t.chat.joinDoneBody);
     } catch (error) {
       play('warning');
       const code = getCommunityActionError(error);
@@ -756,8 +757,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       setPriceInput('');
       setListingDraft(null);
       setListingTried(false);
+      // 첫 글이면 다 올라간 카드가 전면 축하를 띄운다. 세지 못하면 평소처럼 카드만.
+      const first = !post?.room && await isFirstPost(supabase, input.userId).catch(() => false);
       // 글은 이미 올라갔다. 동의가 저장되지 않으면 실패로 돌리지 않고 다 올라간 카드에 한 줄로만 알린다.
-      if (consent && !(created.id && await savePostPhotoConsent(supabase, created.id))) return tr('SNS에 소개해도 된다는 체크만 저장이 안 됐어요');
+      if (consent && !(created.id && await savePostPhotoConsent(supabase, created.id))) return { notice: tr('SNS에 소개해도 된다는 체크만 저장이 안 됐어요'), first };
+      return { first };
     };
     // 위 카드로 날아갈 앞의 세 장이 지금 화면 어디 있는지 잰다. 못 재면 날지 않고 카드에만 쌓인다.
     const photos = await Promise.all(draftImages.slice(0, 3).map((image, index) => new Promise<UploadPhoto>((resolve) => {
@@ -1163,6 +1167,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           <ThemedView style={[styles.joinSheet, { backgroundColor: theme.card }]}>
             <ThemedText type="subtitle">{t.chat.joinFormTitle}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{t.chat.joinFormBody}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{t.chat.joinDoneBody}</ThemedText>
             <TextInput
               value={joinMessage}
               onChangeText={setJoinMessage}

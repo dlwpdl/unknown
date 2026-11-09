@@ -106,8 +106,8 @@ function UploadCard({ upload }: { upload: PostUpload }) {
     return () => loop.stop();
   }, [reduced, sheen, upload.status]);
 
-  // 다 올라간 순간 지금 앱의 글 올리기 소리·진동을 울리고, 1.5초 뒤 위로 빠져나간다.
-  useEffect(() => { if (finished) play('postUploaded'); }, [finished, play]);
+  // 다 올라간 순간 지금 앱의 글 올리기 소리·진동을 울리고, 1.5초 뒤 위로 빠져나간다. 내 첫 글이면 전면 3D 축하(사장님 2026-11-08).
+  useEffect(() => { if (finished) play(upload.first ? 'postPublished' : 'postUploaded'); }, [finished, play, upload.first]);
   useEffect(() => {
     if (!finished) return;
     let leave: Animated.CompositeAnimation | undefined;

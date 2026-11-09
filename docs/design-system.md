@@ -111,7 +111,9 @@ CityPicker는 도시를 섹션마다 테두리 없는 연속 목록으로 묶고
 
 ## 반응·소리·햅틱
 
-기존 `useInteractionFeedback().play(kind)`만 사용한다. 선택·탭·일반 도구는 selection, 주요 행동은 기존 reaction, 오류는 warning, 실제 저장/게시 성공은 기존 success/전용 완료 피드백을 유지한다. 동일 동작의 중복 피드백을 추가하지 않는다. 스위치·칩 같은 작은 조작은 selection만 쓰고, 실제 저장이 끝난 큰 행동만 success를 쓴다. 컴포넌트와 호출자 중 누가 play를 담당하는지 기존 계약을 확인한다. 소리·햅틱 사용자 설정과 reduced motion을 존중한다. 새 오디오 엔진·저장 키·전역 애니메이션을 만들지 않는다.
+기존 `useInteractionFeedback().play(kind)`만 사용한다. 선택·탭·일반 도구는 selection, 주요 행동은 기존 reaction, 오류는 warning, 실제 저장/게시 성공은 기존 success/전용 완료 피드백을 유지한다.
+
+해낸 순간의 그림(사장님 2026-11-08 "컨펌 답 (3D 축하): 추천대로 28곳", 점검표 `unknown/output/reviews/celebration-3d-2026-11-08/`): 드문 처음(모임 열기·첫 글·인증 레벨·멤버십 첫 구매·첫 모임 다녀옴·초대 연결)만 전면 3D 축하(어두운 화면, 클레이 그림이 튀고 클레이 색종이, 로고는 밝은 글자판 `gling-3d-wordmark-dark`)를 쓰고, 그 밖의 성공(success·meetup·meetupRequested)은 작은 클레이 링(3D 배지 + 색종이 다섯 개, 약 0.65초)이다. 저장 풀기·팔로우 끊기처럼 되돌리는 일과 지도 내 위치 찾기에는 success를 쓰지 않는다. 2D 디자인·웹은 같은 자리에 평면 그림을 쓰고, 동작 줄이기는 움직이지 않는 그림으로 보여 준다. 새 전면 축하는 `interaction-feedback.tsx`의 `CELEBRATIONS` 표에 한 줄로 더하고, 정말 드문 순간에만 쓴다. 동일 동작의 중복 피드백을 추가하지 않는다. 스위치·칩 같은 작은 조작은 selection만 쓰고, 실제 저장이 끝난 큰 행동만 success를 쓴다. 컴포넌트와 호출자 중 누가 play를 담당하는지 기존 계약을 확인한다. 소리·햅틱 사용자 설정과 reduced motion을 존중한다. 새 오디오 엔진·저장 키·전역 애니메이션을 만들지 않는다.
 
 ## 새 기능을 만들 때
 
