@@ -480,9 +480,11 @@ export function PostCard({
           )}
         </View>}
 
+        {/* No onPress (post and meetup detail): RN would read disabled as "dimmed", so it is plain text whose lines and links are read one by one. */}
         <Pressable analyticsId="components_post-card.pressable.2"
           onPress={openPost}
           disabled={!onPress}
+          accessible={!!onPress}
           accessibilityRole={onPress ? 'button' : undefined}
           accessibilityLabel={onPress ? `${tr(post.tag.label)} · ${translation.display.title}` : undefined}
           style={({ pressed }) => pressed && styles.pressed}>
@@ -571,6 +573,7 @@ export function PostCard({
                   onHashtag(chip);
                 } : undefined}
                 disabled={!onHashtag}
+                accessible={!!onHashtag}
                 accessibilityRole={onHashtag ? 'button' : undefined}
                 accessibilityLabel={t.feed.hashtagFilter(chip)}
                 style={({ pressed }) => [styles.hash, pressed && styles.pressed]}>
