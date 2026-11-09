@@ -26,10 +26,12 @@ const subscribeScreenReader = (listener: () => void) => { screenReaderListeners.
  * The child must take an object style: the router's Slot drops function styles and rejects arrays.
  * Its root must stay one native view (a Pressable, or a View with collapsable={false}): the zoom source mounts only its first native child.
  */
-export function ZoomLink({ href, onOpen, children }: { href: Href; onOpen?: (event?: { defaultPrevented?: boolean }) => void; children: Pressing }) {
+// anchor: keep the web <a> (open in new tab) where the card already had one, like event cards.
+export function ZoomLink({ href, onOpen, children, anchor = false }: { href: Href; onOpen?: (event?: { defaultPrevented?: boolean }) => void; children: Pressing; anchor?: boolean }) {
   const router = useRouter();
   const screenReader = useSyncExternalStore(subscribeScreenReader, () => screenReaderOn);
   if (Platform.OS !== 'web' && !screenReader) return <Link href={href} push asChild onPress={onOpen}><Link.AppleZoom>{children}</Link.AppleZoom></Link>;
+  if (Platform.OS === 'web' && anchor) return <Link href={href} asChild onPress={onOpen}>{children}</Link>;
   // shortcut: web keeps a plain push, because an anchor-wrapped Pressable is untested there; switch to Link once web is checked.
   // Screen readers on iOS/Android land here too (see above).
   return cloneElement(children, { onPress: event => {

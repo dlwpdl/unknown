@@ -86,7 +86,7 @@ function EventRowCard({ event, cityId }: { event: TicketmasterEvent; cityId: str
   const { play } = useInteractionFeedback();
   const when = eventTime(event, locale), place = event.venue || event.city;
   // shortcut: Ticketmaster gives only the original title; show a Korean title here once the event data carries one.
-  return <ZoomLink href={{ pathname: '/events/[id]', params: { id: event.id, cityId } }}>
+  return <ZoomLink href={{ pathname: '/events/[id]', params: { id: event.id, cityId } }} anchor>
   <Pressable analyticsId="today.events.open" accessibilityRole="button" accessibilityLabel={[event.name, when, place, event.price && eventPriceLabel(event, locale)].filter(Boolean).join(', ')}
     onPress={() => play('selection')} style={({ pressed }) => [styles.card, { opacity: pressed ? ControlMotion.pressedOpacity : 1 }]}>
     {event.image ? <Image source={{ uri: event.image }} transition={ControlMotion.settleMs} style={styles.photo} contentFit="cover" accessible={false} />

@@ -61,6 +61,8 @@ Deno.serve(async request => {
     const assigned = query.festival ? await db.rpc('get_ticketmaster_festival_slots', { p_city_id: query.cityId }) : { data: [] };
     if (assigned.error) throw new Error('CACHE_ERROR');
     let lastRequestAt = 0;
+    // The budget RPC answers false both for 'too soon' and 'daily 4500 used up', so retries share one 5s budget per request.
+    const retryUntil = Date.now() + 5000;
     const upstream = async url => {
       const delay = Math.max(0, 550 - (Date.now() - lastRequestAt));
       if (delay) await new Promise(resolve => setTimeout(resolve, delay));
@@ -70,7 +72,7 @@ Deno.serve(async request => {
         const budget = await db.rpc('reserve_ticketmaster_request');
         if (budget.error) throw new Error('QUOTA_ERROR');
         if (budget.data) break;
-        if (attempt === 15) throw new Error('RATE_LIMITED');
+        if (attempt === 15 || Date.now() > retryUntil) throw new Error('RATE_LIMITED');
         await new Promise(resolve => setTimeout(resolve, 250 + Math.random() * 300));
       }
       lastRequestAt = Date.now();
