@@ -1,6 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAudioPlayer } from 'expo-audio';
+import { type AudioPlayer, setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
 import { CLAY_CELEBRATION, CLAY_CONFETTI, useClay, useDark } from '@/components/clay';
 import { SymbolView } from '@/components/symbol-view';
@@ -48,6 +48,13 @@ const CONFETTI = Array.from({ length: 24 }, (_, index) => {
     color: (['#CBB9FF', '#F9C76C', '#F35CBB', '#83D9E7'] as const)[index % 4],
   };
 });
+// The kit files are 4–13dB louder than the old four sounds, so they play quieter rather than being edited: about the old loudness
+// at the same moment (reaction·message ≈ -31, completions ≈ -25 LUFS), the frequent tap quietest, celebrations ~2dB above completions.
+const VOLUME: Record<FeedbackKind, number> = {
+  selection: 0.25, reaction: 0.35, message: 0.35, warning: 0.4,
+  success: 0.65, meetupRequested: 0.65, meetup: 0.65, postUploaded: 0.65,
+  meetupCreated: 0.6, postPublished: 0.6, verification2: 0.6, verification3: 0.6, membershipJoined: 0.6, firstMeetup: 0.6, inviteConnected: 0.6,
+};
 // A few clay pieces around the small ring's 3D badge, in its 124pt box.
 const RING_CONFETTI = [[-4, 4, '#F9C76C', '-30deg'], [98, -2, '#F35CBB', '24deg'], [106, 72, '#83D9E7', '42deg'], [-8, 84, '#CBB9FF', '19deg'], [48, 108, '#F9C76C', '-18deg']] as const;
 
@@ -77,12 +84,24 @@ function InteractiveFeedbackProvider({ children }: { children: ReactNode }) {
   const [celebrationBurst] = useState(() => new Animated.Value(0));
   const [celebrationScale] = useState(() => new Animated.Value(0.62));
   const [celebrationOpacity] = useState(() => new Animated.Value(1));
-  const reactionPlayer = useAudioPlayer(require('@/assets/sounds/reaction-pop.wav'));
-  const messagePlayer = useAudioPlayer(require('@/assets/sounds/message-paper.wav'));
-  const successPlayer = useAudioPlayer(require('@/assets/sounds/post-stamp.wav'));
-  const meetupPlayer = useAudioPlayer(require('@/assets/sounds/meetup-knock.wav'));
+  // The owner's picks, one per moment (2026-11-08 "컨펌 답 (앱 효과음)", unknown/output/reviews/app-sounds-2026-11-08/kit).
+  const selectionPlayer = useAudioPlayer(require('@/assets/sounds/selection-B1.wav'));
+  const reactionPlayer = useAudioPlayer(require('@/assets/sounds/reaction-B1.wav'));
+  const messagePlayer = useAudioPlayer(require('@/assets/sounds/message-B2.wav'));
+  const warningPlayer = useAudioPlayer(require('@/assets/sounds/warning-B1.wav'));
+  const successPlayer = useAudioPlayer(require('@/assets/sounds/success-B2.wav'));
+  const requestedPlayer = useAudioPlayer(require('@/assets/sounds/meetupRequested-B1.wav'));
+  const meetupPlayer = useAudioPlayer(require('@/assets/sounds/meetup-B1.wav'));
+  const uploadedPlayer = useAudioPlayer(require('@/assets/sounds/postUploaded-B1.wav'));
+  const createdPlayer = useAudioPlayer(require('@/assets/sounds/meetupCreated-B1.wav'));
+  const publishedPlayer = useAudioPlayer(require('@/assets/sounds/postPublished-B2.wav'));
+  const level2Player = useAudioPlayer(require('@/assets/sounds/verification2-B2.wav'));
+  const level3Player = useAudioPlayer(require('@/assets/sounds/verification3-B2.wav'));
 
   useEffect(() => {
+    // Never set before, so iOS used soloAmbient (stopped other apps' music) and Android played through silent/vibrate and took audio focus.
+    // Now: quiet under the silent switch or ringer, and mixed over whatever else is playing.
+    if (Platform.OS !== 'web') void setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' }).catch(() => {});
     void AsyncStorage.getItem(STORAGE_KEY)
       .then((value) => setPreferences(parseInteractionPreferences(value)))
       .catch(() => {});
@@ -141,22 +160,19 @@ function InteractiveFeedbackProvider({ children }: { children: ReactNode }) {
       ]).start(({ finished }) => { if (finished) setCommit(null); });
     }
     if (preferences.soundEnabled) {
-      const player = kind === 'reaction'
-        ? reactionPlayer
-        : kind === 'message'
-          ? messagePlayer
-          : kind === 'success' || kind === 'postPublished' || kind === 'postUploaded' || kind === 'verification2' || kind === 'verification3' || kind === 'membershipJoined' || kind === 'firstMeetup' || kind === 'inviteConnected'
-            ? successPlayer
-            : kind === 'meetup' || kind === 'meetupRequested' || kind === 'meetupCreated'
-              ? meetupPlayer
-              : null;
-      if (player) {
-        try {
-          void player.seekTo(0).catch(() => {});
-          player.play();
-        } catch {
-          // 피드백 실패가 사용자의 원래 작업을 막으면 안 된다.
-        }
+      const player = ({
+        selection: selectionPlayer, reaction: reactionPlayer, message: messagePlayer, warning: warningPlayer, success: successPlayer,
+        meetupRequested: requestedPlayer, meetup: meetupPlayer, postUploaded: uploadedPlayer, meetupCreated: createdPlayer, postPublished: publishedPlayer,
+        verification2: level2Player, verification3: level3Player,
+        // Full-screen moments the sound board did not have share the post celebration's sound until they get their own.
+        membershipJoined: publishedPlayer, firstMeetup: publishedPlayer, inviteConnected: publishedPlayer,
+      } satisfies Record<FeedbackKind, AudioPlayer>)[kind];
+      try {
+        player.volume = VOLUME[kind];
+        void player.seekTo(0).catch(() => {});
+        player.play();
+      } catch {
+        // 피드백 실패가 사용자의 원래 작업을 막으면 안 된다.
       }
     }
 
@@ -169,7 +185,7 @@ function InteractiveFeedbackProvider({ children }: { children: ReactNode }) {
             kind === 'warning' ? Haptics.NotificationFeedbackType.Warning : Haptics.NotificationFeedbackType.Success,
           );
     void haptic.catch(() => {});
-  }, [clay, commitOpacity, commitScale, meetupPlayer, messagePlayer, preferences, reactionPlayer, reducedMotion, successPlayer]);
+  }, [clay, commitOpacity, commitScale, createdPlayer, level2Player, level3Player, meetupPlayer, messagePlayer, preferences, publishedPlayer, reactionPlayer, reducedMotion, requestedPlayer, selectionPlayer, successPlayer, uploadedPlayer, warningPlayer]);
 
   const commitLabel = commit === 'meetup' ? tr("참여 신청을 처리했어요") : commit === 'meetupRequested' ? tr('신청을 보냈어요') : tr("완료했어요");
   const shown = celebrating ? CELEBRATIONS[celebrating] : null, verification = !!celebrating?.startsWith('verification');

@@ -43,9 +43,9 @@ function renderFeedback({ browser = false, platform = 'web' } = {}) {
 test('web server rendering includes children without constructing unavailable Audio players', () => {
   assert.equal(renderFeedback().players, 0);
 });
-test('browser and native rendering retain all four existing feedback players', () => {
-  assert.equal(renderFeedback({ browser: true }).players, 4);
-  assert.equal(renderFeedback({ platform: 'ios' }).players, 4);
+test('browser and native rendering load one feedback player per owner-picked sound', () => {
+  assert.equal(renderFeedback({ browser: true }).players, 12);
+  assert.equal(renderFeedback({ platform: 'ios' }).players, 12);
 });
 test('server and initial browser markup preserve useId labels and control links during hydration', () => {
   assert.equal(renderFeedback().html, renderFeedback({ browser: true }).html);
