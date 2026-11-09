@@ -4,7 +4,7 @@ When you zoom out on the map, places close together fold into one circle with a 
 You can now find English-named places by typing their names in Korean, so “스탠리” brings up Stanley Park. When you search for a place while writing a post, places from the map come up first with a photo and address.
 Bubbles on the map now show when they end instead of the time left. Meetups starting within an hour show their start time.
 Once you’re approved, members of the same meetup see your name, one-line intro and interests. In meetups that show “Who’s going”, people who haven’t applied yet can see them too. Members see your photos only if you turn on “Show photos to approved members” in your meetup profile.
-Opening a meetup or sharing your first post now brings up a new celebration screen. The sound effects are new too, and buttons now make a sound when you tap them.
+Creating a meetup or sharing your first post now brings up a new celebration screen. The sound effects are new too, and buttons now make a sound when you tap them.
 With the app in English, counts like “1 people” and category names left in Korean are fixed.
 Screen readers can now read event cards, and they read post and meetup screens more naturally.
 We also fixed business category lists that showed only blank rows, and the meetup review screen that had two back buttons.
