@@ -64,6 +64,9 @@ export interface RoomPreview {
   applicationQuestion?: string | null;
   hostDisplayName?: string | null;
   fee?: { amount: number; note?: string; dueOn?: string }; // dueOn: YYYY-MM-DD; public so applicants see it
+  // Set by the server at creation and fixed after (20261108120000). Older meetups have neither until 20261108120100.
+  access?: 'public' | 'invite'; // invite: only the host, invited people and applicants see it
+  membersVisible?: boolean; // applicants see '누가 와요' (get_meetup_public_roster)
 }
 
 export interface PostComment {

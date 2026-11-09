@@ -59,6 +59,7 @@ export function mountParticipant(screen, options = {}) {
     '@/lib/feed-data': { loadPublicFeed: async () => ctx.posts ?? [ctx.post], appendUniquePosts: (a, b) => [...a, ...b], loadPublicPost: async () => ctx.post },
     '@/lib/community-data': { loadMyMeetups: async () => ctx.myItems ?? [{ ...ctx.post, authorId: ctx.post.author.id, role: 'approved', conversationId: 'conversation' }], recordPostShare: async () => {}, loadPendingMeetupRequests: async () => [], MEETUPS_CHANGED_EVENT: 'changed', leaveMeetup: async () => calls.push(['leave']), requestMeetupJoin: async () => calls.push(['legacy-join']) },
     '@/lib/chilling-data': { chillingProfilePreview: value => value, getChillingError: value => value.message, getChillingErrorCode: value => value.message, loadChillingProfile: async () => { if (ctx.profileError) throw new Error(ctx.profileError); return ctx.profile; }, loadMeetupParticipation: async () => { calls.push(['status-read']); return ctx.loadParticipation ? ctx.loadParticipation() : ctx.request; }, requestChillingJoin: async (...args) => { calls.push(['join', ...args.slice(1)]); if (ctx.submit) return ctx.submit(); }, saveChillingProfile: async (_, input) => { calls.push(['save-profile', input]); if (ctx.saveError) throw new Error(ctx.saveError); ctx.profile = { ...input, revision: 'made-r1' }; } },
+    '@/components/meetup-members': { MeetupWhoSheet: 'MeetupWhoSheet', useMeetupRoster: () => ctx.roster ?? { roster: null, error: '', reload: noop } },
     '@/components/chilling-host-profile': { MeetupChips: 'MeetupChips', useMyOpenMeetupRequests: () => ctx.myRequests ?? {} },
   };
   const filename = screen === 'discovery' ? 'app/(tabs)/meetups' : screen === 'mine' ? 'components/my-meetups' : 'app/meetup-join';
@@ -149,7 +150,7 @@ test('the footer says what is left, and leaving asks first only while an unsent 
   const hint = () => nodes(ui.tree).find(node => node.props?.accessibilityLiveRegion === 'polite' && node.type === 'ThemedText');
   assert.equal(text(hint()), '답변을 쓰면 보낼 수 있어요'); assert.equal(ui.ctx.preventRemove, null);
   nodes(ui.tree).find(node => node.type === 'TextInput').props.onChangeText('답변'); await ui.flush();
-  assert.equal(text(hint()), '호스트에게만 보내요');
+  assert.equal(text(hint()), '답변은 호스트만 봐요.');
   let left = 0; ui.ctx.preventRemove({ repeat: () => { left++; } });
   const [heading, , buttons] = ui.alerts.at(-1); assert.equal(heading, '쓰던 답변이 사라져요');
   assert.equal(buttons.find(button => button.style === 'cancel').text, '계속 쓰기'); assert.equal(left, 0);

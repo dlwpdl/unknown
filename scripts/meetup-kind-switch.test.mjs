@@ -25,7 +25,9 @@ function control(props) {
   };
   const exports = {};
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/components/meetup-kind-switch.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, { exports, require: name => imports[name] ?? {} });
-  const render = () => { at = 0; return exports.MeetupKindSwitch({ analyticsId: 'fixed-kind', onChange: value => selected.push(value), ...props, ...(props.all ? { onAll: () => { all++; } } : {}) }); };
+  // MeetupKindSwitch hands its choices to SegmentSwitch; render that one too.
+  const expand = element => typeof element?.type === 'function' ? expand(element.type(element.props)) : element;
+  const render = () => { at = 0; return expand(exports.MeetupKindSwitch({ analyticsId: 'fixed-kind', onChange: value => selected.push(value), ...props, ...(props.all ? { onAll: () => { all++; } } : {}) })); };
   return { render, selected, feedback, all: () => all };
 }
 

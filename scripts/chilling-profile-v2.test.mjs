@@ -37,10 +37,12 @@ test('each audience preview excludes private preferences and discloses only sele
   assert.deepEqual(publicHost.photoUris, ['data:public']);
   assert.equal(publicHost.promptOne, '', 'public host introductions do not publish application prompts');
   assert.equal(publicHost.promptTwo, '');
+  // Members always see intro and interests (20261108120000); the member switch decides photos only.
   const privateMember = chillingProfilePreview(photos, 'members');
-  assert.equal(privateMember.intro, '');
+  assert.equal(privateMember.intro, profile.intro);
+  assert.deepEqual(privateMember.interests, profile.interests);
   assert.deepEqual(privateMember.photoPaths, []);
-  assert.equal(privateMember.cityId, undefined, 'the name-only member preview does not disclose a city');
+  assert.equal(privateMember.cityId, undefined, 'members never see the area');
   const member = chillingProfilePreview({ ...photos, shareWithMembers: true }, 'members');
   assert.equal(member.intro, profile.intro);
   assert.equal(member.promptOne, '');

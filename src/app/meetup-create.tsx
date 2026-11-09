@@ -27,7 +27,7 @@ import { MeetupCoverPicker, type MeetupCover } from '@/components/meetup-cover-p
 import { MeetupAiDraftPreview } from '@/components/meetup-ai-draft-preview';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { MeetupTemplatePicker } from '@/components/meetup-template-picker';
-import { MeetupKindSwitch } from '@/components/meetup-kind-switch';
+import { MeetupKindSwitch, SegmentSwitch } from '@/components/meetup-kind-switch';
 import { MeetupLanguageSetup } from '@/components/meetup-language';
 import { DEFAULT_LANGUAGE_EXCHANGE, type LanguageExchange } from '@/lib/meetup-language';
 import { RaisedActionButton } from '@/components/raised-action-button';
@@ -36,7 +36,7 @@ import { InfoNote } from '@/components/notice-blocks';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
-import { chillingProfilePreview, createChillingEvent, getChillingError, getChillingErrorCode, loadChillingProfile, type ChillingProfile } from '@/lib/chilling-data';
+import { chillingProfilePreview, createChillingEvent, getChillingError, getChillingErrorCode, loadChillingProfile, type ChillingProfile, type MeetupAccess } from '@/lib/chilling-data';
 import { defaultMeetupStart, meetupZone, moveMeetupZone } from '@/lib/chilling-date';
 import { chillingCapacityLimit, normalizeChillingEvent, shiftChillingSchedule, type ChillingEventDraft } from '@/lib/chilling';
 import { getCommunityActionError, MEETUPS_CHANGED_EVENT } from '@/lib/community-data';
@@ -121,6 +121,8 @@ function MeetupCreateForm() {
   const [newcomer, setNewcomer] = useState({ welcome: false, only: false });
   // 언어교환 is a category pill in the form; on the server category stays 'casual' and this rides beside it.
   const [exchange, setExchange] = useState<LanguageExchange | null>(null);
+  // Fixed once the meetup opens; invite meetups stay out of lists and feeds (20261108120000).
+  const [access, setAccess] = useState<MeetupAccess>('public');
   const [saving, setSaving] = useState(false), [error, setError] = useState(''), [touched, setTouched] = useState(false);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [errorField, setErrorField] = useState<string | null>(null);
@@ -147,7 +149,7 @@ function MeetupCreateForm() {
     setDraftEdited(true); setAiDraftReady(false);
   };
   useLayoutEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  const dirty = draftEdited || touched || !!cover || !!topic.trim() || capacity !== '6' || !!ageMin || !!ageMax || newcomer.welcome;
+  const dirty = draftEdited || touched || !!cover || !!topic.trim() || capacity !== '6' || !!ageMin || !!ageMax || newcomer.welcome || access !== 'public';
   const dirtyRef = useRef(dirty);
   useLayoutEffect(() => { authed.current = isAuthed; dirtyRef.current = dirty; });
   // router.back()/replace() are queued and run after finally clears saving, so a finished save must drop this guard itself. Here it would also invite creating the same meetup twice.
@@ -170,7 +172,7 @@ function MeetupCreateForm() {
     behavior('press', 'meetup.create.login_prompt');
     const saved = dirty ? saveMeetupCreateDraft(AsyncStorage, {
       params: draftParams, awaitingLogin: true, kindChosen, kind: event.kind, startsAt: event.startsAt, endsAt: event.endsAt, cadence: event.cadence, category: event.category ?? 'casual',
-      title, body, question, topic, capacity, ageMin, ageMax, newcomer, exchange, pickedPlaceId: pickedPlace?.id ?? null, cover, coverDropped: false,
+      title, body, question, topic, capacity, ageMin, ageMax, newcomer, exchange, access, pickedPlaceId: pickedPlace?.id ?? null, cover, coverDropped: false,
     }) : clearMeetupCreateDraft(AsyncStorage);
     void saved.catch(() => {});
     promptLogin(reason);
@@ -184,7 +186,7 @@ function MeetupCreateForm() {
       setKindChosen(draft.kindChosen);
       setEvent(current => ({ ...current, kind: draft.kind, startsAt: draft.startsAt, endsAt: draft.endsAt, cadence: draft.cadence, category: draft.category as ChillingEventDraft['category'] }));
       setTitle(draft.title); setBody(draft.body); setQuestion(draft.question); setTopic(draft.topic);
-      setCapacity(draft.capacity); setAgeMin(draft.ageMin); setAgeMax(draft.ageMax); setNewcomer(draft.newcomer); setExchange(draft.exchange ?? null);
+      setCapacity(draft.capacity); setAgeMin(draft.ageMin); setAgeMax(draft.ageMax); setNewcomer(draft.newcomer); setExchange(draft.exchange ?? null); setAccess(draft.access ?? 'public');
       if (draft.cover) setCover(draft.cover);
       if (draft.pickedPlaceId && meetupCity && !destination) {
         try {
@@ -360,7 +362,7 @@ function MeetupCreateForm() {
         showValidation(aiCopy('이 모임에서 공개할 소개와 선택한 사진을 확인하고 동의해 주세요.', 'Review and consent to the introduction and selected photo shared for this meetup.'), 'profile');
         return;
       }
-      const id = await createChillingEvent(supabase, { userId: me.id, image: cover ?? undefined, cityId: meetupCity.id, title: title.trim(), body: body.trim() + eventDetails, question: question.trim(), hostProfileRevision: profile.revision, event: { ...event, capacity: Number(capacity), ...(ageMin ? { recommendedAgeMin: Number(ageMin), recommendedAgeMax: Number(ageMax) } : {}), ...(exchange ? { languageExchange: exchange } : {}) } });
+      const id = await createChillingEvent(supabase, { userId: me.id, image: cover ?? undefined, cityId: meetupCity.id, title: title.trim(), body: body.trim() + eventDetails, question: question.trim(), hostProfileRevision: profile.revision, event: { ...event, capacity: Number(capacity), ...(ageMin ? { recommendedAgeMin: Number(ageMin), recommendedAgeMax: Number(ageMax) } : {}), ...(exchange ? { languageExchange: exchange } : {}) }, access });
       // A failed label save leaves the meetup open without labels; the host can retry from edit.
       void clearMeetupCreateDraft(AsyncStorage).catch(() => {});
       const newcomerSaved = !newcomer.welcome || await setMeetupNewcomer(supabase, id, true, newcomer.only).then(() => true, () => false);
@@ -414,7 +416,7 @@ function MeetupCreateForm() {
           <Pressable analyticsId="meetup-create.host-consent" accessibilityRole="checkbox" accessibilityState={{ checked: hostConsent, disabled: saving }} aria-checked={hostConsent} disabled={saving} style={({ pressed }) => [styles.consent, { opacity: saving ? 0.45 : pressed ? 0.82 : 1 }]} onPress={() => { play('selection'); setHostConsent(value => !value); if (errorField === 'profile') { setError(''); setErrorField(null); } }}><View aria-hidden accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.checkbox, hostConsent ? { borderColor: theme.accent, backgroundColor: theme.accent } : { borderColor: errorField === 'profile' ? theme.danger : theme.textSecondary }]}>{hostConsent && <PopIn><SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={13} tintColor={theme.accentInk} /></PopIn>}</View><ThemedText type="smallBold" style={[styles.label, styles.consentText]}>{tr('이 모임에서 소개와 선택한 사진을 공개하는 데 동의해요.')}</ThemedText></Pressable>
           {errorField === 'profile' && !!error && <ThemedText accessibilityRole="alert" themeColor="danger" style={styles.bodyText}>{tr(error)}</ThemedText>}
           <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{aiCopy('저장한 모임 프로필을 다시 사용해요. 공개 동의는 이 모임에만 적용돼요.', 'Your saved meetup profile is reused. Sharing consent applies only to this meetup.')}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('로그인한 회원이 볼 수 있어요. 비공개 선호 설정과 나머지 사진은 공유하지 않아요.')}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{access === 'invite' ? tr('초대받은 사람과 링크가 있는 사람만 볼 수 있어요. 비공개 선호 설정과 나머지 사진은 공유하지 않아요.') : tr('로그인한 회원이 볼 수 있어요. 비공개 선호 설정과 나머지 사진은 공유하지 않아요.')}</ThemedText>
         </View>
       </ListCard></View> : <StateCard layout="start" title={tr('모임 프로필을 확인해 주세요')} body={aiCopy('모임 프로필은 한 번 저장하고 다음 모임에도 다시 사용해요.', 'Save one meetup profile and reuse it for future meetups.')}>
         <View style={styles.stateAction}><RaisedActionButton analyticsId="meetup-create.profile-edit" tone="secondary" disabled={saving} label={aiCopy('내 모임 프로필 확인', 'Review your meetup profile')} onPress={() => { play('selection'); setHostConsent(false); router.push('/meetup-profile'); }} /></View>
@@ -483,6 +485,13 @@ function MeetupCreateForm() {
       </View>
       <View onLayout={event => { cardY.current.who = event.nativeEvent.layout.y; }} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <ThemedText accessibilityRole="header" style={styles.cardTitle}>{aiCopy('누구와 함께해요?', 'Who can join?')}</ThemedText>
+      <View style={styles.field}>
+        <ThemedText type="smallBold" style={styles.label}>{tr('누가 신청할 수 있나요?')}</ThemedText>
+        <SegmentSwitch analyticsId="meetup.create.access" accessibilityLabel={tr('누가 신청할 수 있나요?')} disabled={saving} value={access} onSelect={setAccess}
+          choices={[{ value: 'public', label: tr('공개') }, { value: 'invite', label: tr('초대용') }]} />
+        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{access === 'invite' ? tr('초대받았거나 링크가 있는 사람만 신청할 수 있어요. 모임 탭과 피드에 안 나오고, 멤버도 밖에서는 안 보여요.') : tr('모임 탭에 올라가요. 신청하려는 사람도 확정 멤버의 이름과 소개를 볼 수 있어요.')}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('모임을 연 뒤에는 바꿀 수 없어요.')}</ThemedText>
+      </View>
       {field('meetup.create.question', tr("신청할 때 물어볼 질문"), question, value => editDraftField('question', value), tr("어떤 분위기의 모임을 기대하세요?"), 300)}
       <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("기본 질문 1개 · 신청자의 프로필과 함께 확인해요.")}</ThemedText>
       <View onLayout={event => { fieldY.current.capacity = event.nativeEvent.layout.y; }} style={styles.field}><ThemedText type="smallBold" style={styles.label}>{tr("정원 (호스트 포함)")}</ThemedText><TextInput ref={input => { inputs.current.capacity = input; }} accessibilityLabel={aiCopy(`정원, 2명부터 ${capacityLimit}명`, `Capacity, 2 to ${capacityLimit}`)} keyboardType="number-pad" value={capacity} onFocus={() => trackField('meetup.create.capacity')} onChangeText={value => { setCapacity(value); if (errorField === 'capacity') { setError(''); setErrorField(null); } }} editable={!saving && eventReady} maxLength={membership ? String(capacityLimit).length : 4} style={[styles.input, { color: theme.text, borderColor: errorField === 'capacity' ? theme.danger : theme.line, backgroundColor: theme.card }]} />

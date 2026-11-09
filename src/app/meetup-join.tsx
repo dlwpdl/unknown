@@ -19,6 +19,7 @@ import { Disclosure } from '@/components/disclosure';
 import { DragSheet } from '@/components/drag-sheet';
 import { InitialAvatar, ListCard, ListRow } from '@/components/list-card';
 import { MeetupWaitlist } from '@/components/meetup-host-tools';
+import { MeetupWhoSheet, useMeetupRoster } from '@/components/meetup-members';
 import { MeetupLanguagePicker } from '@/components/meetup-language';
 import { MEETUP_LANGUAGE_ENGLISH_NAMES, MEETUP_LANGUAGE_NAMES, loadMeetupLanguages, otherLanguage, parseLanguageExchange, sideOpen, type MeetupLanguage, type MeetupLanguages } from '@/lib/meetup-language';
 import { StateCard } from '@/components/state-card';
@@ -96,8 +97,11 @@ function JoinForm({ postId }: { postId: string }) {
   const [savedOnly, setSavedOnly] = useState(false);
   const insets = useSafeAreaInsets(), reducedMotion = useReducedMotion();
   const [errorCode, setErrorCode] = useState<string | null>(null), [profileError, setProfileError] = useState('');
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false), [whoOpen, setWhoOpen] = useState(false);
   const editAfterSheet = useRef(false);
+  // Invite meetups never list members; public ones show who's coming once the server switched them on.
+  const invite = post?.room?.access === 'invite';
+  const who = useMeetupRoster(postId, isAuthed && post?.room?.membersVisible === true && !invite);
   const [now, setNow] = useState(() => Date.now());
   const busy = useRef(false);
   const focusedScope = useRef<object | null>(null);
@@ -236,6 +240,17 @@ function JoinForm({ postId }: { postId: string }) {
         {!!room.capacity && <View style={styles.flex}><SeatBar room={room} flush /></View>}
         <ThemedText style={[Typography.caption, styles.tabular]} themeColor="textSecondary">{room.capacity ? tr('{0} / {1}명', room.memberCount ?? 0, room.capacity) : t.feed.members(room.memberCount ?? 0)}</ThemedText>
       </View>
+      {!!who.roster?.length && <View style={styles.whoLine}>
+        <View style={styles.coins} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          {who.roster.slice(0, 3).map(person => <InitialAvatar key={person.userId} name={person.displayName || tr('모임 멤버')} />)}
+        </View>
+        <ThemedText style={[Typography.supporting, styles.flex]} numberOfLines={2}>{who.roster.length > 2
+          ? tr('{0} 외 {1}명', who.roster.slice(0, 2).map(person => person.displayName || tr('모임 멤버')).join(', '), who.roster.length - 2)
+          : who.roster.map(person => person.displayName || tr('모임 멤버')).join(', ')}</ThemedText>
+        <Pressable analyticsId="meetup.join.who" accessibilityRole="button" onPress={() => { play('selection'); setWhoOpen(true); }} style={styles.button}>
+          <ThemedText type="smallBold" themeColor="accent">{tr('누가 와요')}</ThemedText>
+        </Pressable>
+      </View>}
     </View>;
   };
   const question = () => <View style={[styles.card, styles.questionCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
@@ -278,9 +293,10 @@ function JoinForm({ postId }: { postId: string }) {
     <ThemedText style={Typography.supporting} themeColor="textSecondary">{lead}</ThemedText>
     <Disclosure analyticsId="meetup.join.policy" title={copy('누가 무엇을 보나요', 'Who sees what')}>
       <View style={styles.who}>
-        <ThemedText style={Typography.supporting} themeColor="textSecondary"><ThemedText style={Typography.supporting}>{tr("승인된 뒤 멤버")}</ThemedText>{` ${profile?.shareWithMembers ? tr("모임 이름 · 사진 · 짧은 소개") : tr("모임 이름만 · 사진·소개 공유는 프로필에서 바꿀 수 있어요")}`}</ThemedText>
+        {([[tr('신청받는 호스트'), tr('모임 이름 · 사진 · 소개 · 신청 답변')], ...invite ? [] : [[tr('신청하려는 사람'), tr('승인된 뒤 이름 · 한 줄 소개 · 관심사')]], [tr('승인 전'), tr('호스트만 봐요')]] as [string, string][])
+          .map(([viewer, what]) => <ThemedText key={viewer} style={Typography.supporting} themeColor="textSecondary"><ThemedText style={Typography.supporting}>{viewer}</ThemedText>{` ${what}`}</ThemedText>)}
         <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr("프로필을 고쳐도 이미 보낸 신청은 그대로예요.")}</ThemedText>
-        <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr("다른 신청자에게는 보이지 않아요. 취소·거절·탈퇴·차단·모임 종료 뒤에는 새로 볼 수 없지만, 이미 본 내용은 되돌릴 수 없어요.")}</ThemedText>
+        <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('승인 전에는 호스트 말고는 아무도 못 봐요. 모임에서 나가거나 차단하면 그 뒤로는 안 보이지만, 이미 본 내용은 되돌릴 수 없어요.')}</ThemedText>
       </View>
       <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('승인 전까지는 자리가 잡히지 않아요. 신청은 호스트가 답하기 전까지 이 화면에서 취소할 수 있어요. 취소하거나 거절되면 24시간 뒤에 다시 신청할 수 있어요.')}</ThemedText>
       <MeetupPolicyNotice mode="join" />
@@ -331,7 +347,7 @@ function JoinForm({ postId }: { postId: string }) {
     </View>;
   };
   const askingProfile = view === 'noprofile' && !profileError;
-  const sendHint = askingProfile && !introReady && !answered ? tr('한 줄 소개와 답변을 쓰면 보낼 수 있어요') : askingProfile && !introReady ? tr('한 줄 소개를 쓰면 보낼 수 있어요') : !answered ? tr('답변을 쓰면 보낼 수 있어요') : askingProfile && !nameReady ? tr('이름을 쓰면 보낼 수 있어요') : tr('호스트에게만 보내요');
+  const sendHint = askingProfile && !introReady && !answered ? tr('한 줄 소개와 답변을 쓰면 보낼 수 있어요') : askingProfile && !introReady ? tr('한 줄 소개를 쓰면 보낼 수 있어요') : !answered ? tr('답변을 쓰면 보낼 수 있어요') : askingProfile && !nameReady ? tr('이름을 쓰면 보낼 수 있어요') : modern ? tr('답변은 호스트만 봐요.') : tr('호스트에게만 보내요');
   const pullable = view === 'result' || view === 'paused' || view === 'locked' || view === 'full' || view === 'cooling' || view === 'inactive';
   return <ThemedView style={styles.fill}><SafeAreaView style={styles.fill}>
     <View style={[styles.head, { backgroundColor: theme.background }]}>
@@ -359,6 +375,7 @@ function JoinForm({ postId }: { postId: string }) {
                     body={tr(status === 'approved' ? '모임 대화에서 집결 안내를 확인해 주세요.' : status === 'pending' ? availability === 'full' ? '내 신청은 대기 중이에요. 지금은 정원이 차서 호스트가 승인할 수 없어요. 신청만으로 자리가 잡히지는 않아요.' : '아직 참여가 확정되지 않았어요. 호스트가 승인하면 모임 대화에 들어갈 수 있어요.' : '현재 신청 상태를 다시 불러와 주세요.')}>
                     <JoinSteps steps={[{ label: tr('신청 보냄'), state: 'done' }, status === 'approved' ? { label: tr('호스트 승인'), state: 'done' } : { label: tr('호스트가 확인하는 중'), state: 'now' }, { label: tr('모임 대화 입장'), state: status === 'approved' ? 'now' : 'next' }]} />
                   </StateCard>
+                  {status === 'pending' && modern && !invite && <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr("승인되면 '누가 와요'에 내 이름과 소개가 나와요.")}</ThemedText>}
                   {meetCard()}
                   {status === 'approved' ? (!!post!.room!.fee || (modern && !!participation)) && <ListCard>
                     {!!post!.room!.fee && <ListRow title={tr('회비 {0}', meetupFeeAmount(post!.room!.fee.amount))} detail={[post!.room!.fee.note, post!.room!.fee.dueOn && tr('{0}까지', meetupFeeDue(post!.room!.fee.dueOn, appLocale)), feePaid == null ? '' : feePaid ? tr('냈음') : tr('아직 안 냈어요')].filter(Boolean).join(' · ') || undefined} />}
@@ -394,8 +411,10 @@ function JoinForm({ postId }: { postId: string }) {
                   {question()}
                   {!profileError && whoSees(profile
                     // An older profile keeps its interests, prompts and photos, and those reach the host too.
-                    ? tr('신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요. 다른 신청자에게는 안 보여요.')
-                    : tr('신청을 보내면 호스트가 내 이름, 지역, 소개, 답변을 봐요. 다른 신청자에게는 안 보여요.'))}
+                    ? invite ? tr('초대용 모임이라 모임 밖에서는 내가 있는지 안 보여요. 신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요.')
+                      : tr('신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요. 승인되고 나면 이 모임에 신청하려는 사람에게도 이름, 한 줄 소개, 관심사가 보여요. 사진과 답변은 안 보여요.')
+                    : invite ? tr('초대용 모임이라 모임 밖에서는 내가 있는지 안 보여요. 신청을 보내면 호스트가 내 이름, 지역, 소개, 답변을 봐요.')
+                      : tr('신청을 보내면 호스트가 내 이름, 지역, 소개, 답변을 봐요. 승인되고 나면 이 모임에 신청하려는 사람에게도 이름, 한 줄 소개, 관심사가 보여요. 사진과 답변은 안 보여요.'))}
                 </>}
                 {view === 'form' && <>
                   {meetCard()}
@@ -407,7 +426,8 @@ function JoinForm({ postId }: { postId: string }) {
                   {question()}
                   {/* The send button is fixed and the form is scrolled to it, so this sits beside the answer. */}
                   {savedOnly && <StateCard layout="start" kind="pending" title={tr('프로필은 저장했어요')} body={tr('신청은 아직 안 갔어요. 쓴 답변은 그대로 있으니 다시 보내 주세요.')} />}
-                  {modern ? whoSees(tr('신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요. 다른 신청자에게는 안 보여요.')) : <>
+                  {modern ? whoSees(invite ? tr('초대용 모임이라 모임 밖에서는 내가 있는지 안 보여요. 신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요.')
+                    : tr('신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요. 승인되고 나면 이 모임에 신청하려는 사람에게도 이름, 한 줄 소개, 관심사가 보여요. 사진과 답변은 안 보여요.')) : <>
                     <Disclosure analyticsId="meetup.join.policy" title={copy('신청·취소 안내', 'Application and cancellation details')}>
                       <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('승인 전까지는 자리가 잡히지 않아요. 신청은 호스트가 답하기 전까지 이 화면에서 취소할 수 있어요. 취소하거나 거절되면 24시간 뒤에 다시 신청할 수 있어요.')}</ThemedText>
                       <MeetupPolicyNotice mode="join" />
@@ -439,6 +459,7 @@ function JoinForm({ postId }: { postId: string }) {
         <View style={[styles.fill, { paddingTop: insets.top, paddingBottom: insets.bottom }]}><CityPicker title={tr("활동 지역")} onClose={() => setCityOpen(false)} draft={{ city: draftCity, onSelect: city => { setDraft(current => current && { ...current, cityId: city.id }); setCityOpen(false); } }} /></View>
       </SafeAreaProvider>
     </Modal>
+    {!!who.roster?.length && <MeetupWhoSheet people={who.roster} visible={whoOpen} onClose={() => setWhoOpen(false)} />}
     <DragSheet visible={sheetOpen} onClose={() => setSheetOpen(false)} title={tr('호스트에게 이렇게 보여요')}
       onDismissed={() => { if (editAfterSheet.current) { editAfterSheet.current = false; profileRoute(); } }}>
       {!!profile && <ScrollView analyticsId="app_meetup-join.scrollview.1" contentContainerStyle={styles.sheetBody}>
@@ -468,6 +489,8 @@ const styles = StyleSheet.create({
   clayCity: { overflow: 'visible', borderWidth: 0, backgroundColor: 'transparent' },
   examples: { gap: Spacing.one, paddingHorizontal: Spacing.three }, examplesRow: { marginHorizontal: -Spacing.three },
   who: { gap: Spacing.half },
+  whoLine: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: Spacing.two, marginTop: Spacing.one },
+  coins: { flexDirection: 'row', gap: Spacing.half },
   steps: { marginTop: Spacing.two },
   step: { flexDirection: 'row', gap: Spacing.two + Spacing.half }, stepRail: { width: 22, alignItems: 'center' },
   stepDot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' }, stepLine: { width: 2, flex: 1, minHeight: 14 },

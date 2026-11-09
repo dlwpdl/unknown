@@ -45,6 +45,15 @@ test('a language exchange setup comes back after login; a broken one drops the d
   assert.equal(await readMeetupCreateDraft(store, meetupDraftScope({})), null);
 });
 
+test('an invite-only choice survives login, so the meetup never opens as public by mistake', async t => {
+  t.mock.method(Date, 'now', () => now);
+  const store = storage();
+  await saveMeetupCreateDraft(store, draft({ access: 'invite' }));
+  assert.equal((await readMeetupCreateDraft(store, meetupDraftScope({})))?.access, 'invite');
+  await saveMeetupCreateDraft(store, draft({ access: 'secret' }));
+  assert.equal(await readMeetupCreateDraft(store, meetupDraftScope({})), null);
+});
+
 test('login that started on the create screen resumes there once; the draft stays until published or left', async t => {
   t.mock.method(Date, 'now', () => now);
   const store = storage();
@@ -100,6 +109,9 @@ test('create screen wires the draft through login, callback and publish, and eve
   assert.match(screen, /clearMeetupCreateDraft\(AsyncStorage\)[^\n]*\n\s*const newcomerSaved/, 'published drafts are cleared');
   assert.match(screen, /saveMeetupCreateDraft\([^]*?newcomer, exchange,/, 'the language exchange setup is saved with the draft');
   assert.match(screen, /setExchange\(draft\.exchange \?\? null\)/, 'and restored');
+  assert.match(screen, /exchange, access, pickedPlaceId/, 'the public/invite choice is saved with the draft');
+  assert.match(screen, /setAccess\(draft\.access \?\? 'public'\)/, 'and restored');
+  assert.match(screen, /createChillingEvent\([^\n]*\}, access \}\);/, 'and sent when the meetup opens');
   assert.match(callback, /takeMeetupLoginResume[\s\S]*router\.dismissTo\(\{ pathname: '\/meetup-create'/);
   assert.doesNotMatch(screen, /analyticsId="(app_meetup-create\.pressable|components_)/);
   const sql = readdirSync(new URL('../supabase/migrations/', import.meta.url)).filter(name => name.endsWith('.sql'))
