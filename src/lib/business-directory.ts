@@ -50,6 +50,12 @@ export function parseBusinessDirectoryPage(value: unknown, request: BusinessDire
   return { items, industries, hasMore: value.has_more, nextOffset: value.next_offset as number };
 }
 
+/** '기타' (the server's fallback industry) goes after every named industry; the rest keep the server order (QA Q14).
+ * shortcut: sorts only the rows already loaded, so a later page can still add a named group above 기타; order on the server if directories grow past one page. */
+export function otherIndustryLast<T>(values: T[], industry: (value: T) => string | null) {
+  return [...values].sort((a, b) => Number(industry(a) === '기타') - Number(industry(b) === '기타'));
+}
+
 function checkAbort(signal?: AbortSignal) {
   if (signal?.aborted) { const error = new Error('Business directory request aborted'); error.name = 'AbortError'; throw error; }
 }
