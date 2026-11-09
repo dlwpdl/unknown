@@ -293,7 +293,7 @@ function JoinForm({ postId }: { postId: string }) {
     <ThemedText style={Typography.supporting} themeColor="textSecondary">{lead}</ThemedText>
     <Disclosure analyticsId="meetup.join.policy" title={copy('누가 무엇을 보나요', 'Who sees what')}>
       <View style={styles.who}>
-        {([[tr('신청받는 호스트'), tr('모임 이름 · 사진 · 소개 · 신청 답변')], ...invite ? [] : [[tr('신청하려는 사람'), tr('승인된 뒤 이름 · 한 줄 소개 · 관심사')]], [tr('승인 전'), tr('호스트만 봐요')]] as [string, string][])
+        {([[tr('신청받는 호스트'), tr('모임 이름 · 사진 · 소개 · 신청 답변')], [tr('승인된 멤버'), profile?.shareWithMembers ? tr('모임 이름 · 한 줄 소개 · 관심사, 그리고 사진') : tr('모임 이름 · 한 줄 소개 · 관심사')], ...invite ? [] : [[tr('신청하려는 사람'), tr('승인된 뒤 이름 · 한 줄 소개 · 관심사')]], [tr('승인 전'), tr('호스트만 봐요')]] as [string, string][])
           .map(([viewer, what]) => <ThemedText key={viewer} style={Typography.supporting} themeColor="textSecondary"><ThemedText style={Typography.supporting}>{viewer}</ThemedText>{` ${what}`}</ThemedText>)}
         <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr("프로필을 고쳐도 이미 보낸 신청은 그대로예요.")}</ThemedText>
         <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('승인 전에는 호스트 말고는 아무도 못 봐요. 모임에서 나가거나 차단하면 그 뒤로는 안 보이지만, 이미 본 내용은 되돌릴 수 없어요.')}</ThemedText>

@@ -4577,7 +4577,7 @@ export const uiEnglish: Record<string, string> = {
   "모임 여는 중": "Opening the meetup",
   "로그인하고 모임 보기": "Sign in to see the meetup",
   "누가 와요": "Who’s going",
-  "승인된 멤버만 보여요. 사진은 빼고 이름, 한 줄 소개, 관심사만 나와요.": "Only approved members appear, with their name, one-line intro and interests but no photos.",
+  "승인된 멤버만 보여요. 사진은 빼고 이름, 한 줄 소개, 관심사만 나와요.": "Only approved members appear, with their name, one-line intro and interests. Photos aren’t shown.",
   "호스트 포함 {0}명": "{0} people, including the host",
   "멤버 불러오는 중": "Loading members",
   "{0}명 모두 보기": "See all {0}",

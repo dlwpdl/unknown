@@ -149,6 +149,21 @@ select throws_ok($$select public.request_chilling_join_v2(current_setting('test.
   'P0001','MEETUP_NOT_FOUND','outsiders cannot apply');
 reset role;
 
+-- Comments and host tools take the post id directly; invite meetups stay with their people there too (git-76 review).
+select pg_temp.act(12);
+set local role authenticated;
+select set_config('test.inv_comment',public.create_thread_comment(current_setting('test.inv')::uuid,'See you there',null,null)::text,true);
+reset role;
+select ok(private.comment_visible_to(current_setting('test.inv_comment')::uuid,pg_temp.uid(12)),'the host sees comments on an invite meetup');
+select ok(not private.comment_visible_to(current_setting('test.inv_comment')::uuid,pg_temp.uid(4)),'outsiders do not see comments on an invite meetup');
+select ok(not private.comment_visible_to(current_setting('test.inv_comment')::uuid,null),'logged-out readers do not either');
+select pg_temp.act(4);
+set local role authenticated;
+select throws_ok($$select public.create_thread_comment(current_setting('test.inv')::uuid,'hi',null,null)$$,'P0001','POST_NOT_FOUND','outsiders cannot comment on an invite meetup by id');
+select throws_ok($$select public.set_meetup_waitlist(current_setting('test.inv')::uuid,true)$$,'P0001','MEETUP_NOT_FOUND','outsiders cannot join an invite meetup waitlist');
+select lives_ok($$select public.create_thread_comment(current_setting('test.pub')::uuid,'Looks fun',null,null)$$,'public meetups still take comments');
+reset role;
+
 -- Links: the host reuses one link until making a new one, which blocks the old link at once.
 select pg_temp.act(12);
 set local role authenticated;

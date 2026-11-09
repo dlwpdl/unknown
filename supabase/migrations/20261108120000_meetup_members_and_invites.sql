@@ -2,6 +2,8 @@
 -- room_preview.access: 'public' | 'invite', chosen at creation by new apps and fixed afterwards.
 -- room_preview.membersVisible: applicants see the host and approved members (name, intro, interests; never photos, area or answers).
 -- Meetups that already exist are switched on only by 20261108120100, which also sends the one-time notice.
+-- posts and notifications take short exclusive locks below: give up fast instead of queueing every app request (apply off-peak).
+set local lock_timeout = '5s';
 
 -- 1) Invite links (one live token per meetup; a new token replaces the old one) and who was let in.
 create table private.meetup_invite_links (
@@ -41,6 +43,22 @@ create function private.meetup_profile_text_shared(p_preview jsonb, p_consent te
 language sql stable set search_path='' as $$
   select coalesce(p_consent='chilling-v3' or p_approved_at<=(p_preview->>'membersVisibleAt')::timestamptz,false);
 $$;
+
+-- Invite alerts sit with the other meetup alerts in the bell and in notification settings.
+do $$
+declare definition text; anchor constant text:='when ''message_reaction'' then ''messages''';
+begin
+  select pg_get_constraintdef(oid) into definition from pg_constraint
+   where conrelid='public.notifications'::regclass and conname='notifications_kind_check';
+  if definition is null or definition not like 'CHECK (%' or definition like '%meetup_invite%' then raise exception 'MEETUP_INVITE_KIND_CHANGED'; end if;
+  alter table public.notifications drop constraint notifications_kind_check;
+  execute 'alter table public.notifications add constraint notifications_kind_check '||
+    replace(definition,'CHECK (','CHECK (kind = ''meetup_invite'' or kind = ''meetup_visibility'' or ');
+  definition:=pg_get_functiondef('private.notification_category(text,text)'::regprocedure);
+  if array_length(string_to_array(definition,anchor),1)<>2 then raise exception 'MEETUP_INVITE_CATEGORY_CHANGED'; end if;
+  -- meetup_visibility stays 'system' (the default branch): everyone affected gets the notice once.
+  execute replace(definition,anchor,'when ''meetup_invite'' then ''meetups'' '||anchor);
+end $$;
 
 -- 2) What members agreed to never changes underneath them.
 create function private.guard_meetup_access() returns trigger
@@ -105,6 +123,19 @@ begin
     ('private.enqueue_push_notification()',
      'if new.kind in (''meetup_morning'',''admin_signup'',''admin_meetup_request'') then return new; end if;',
      'if new.kind in (''meetup_morning'',''admin_signup'',''admin_meetup_request'',''meetup_visibility'') then return new; end if;'),
+    -- Comments, comment reads (can_view_comment) and host tools such as the waitlist take a post id directly too (git-76 review).
+    ('public.create_thread_comment(uuid,text,uuid,uuid)',
+     'where p.id = p_post_id and p.status = ''published'' and author.account_status = ''active''',
+     'where p.id = p_post_id and p.status = ''published'' and author.account_status = ''active''
+       and (coalesce(p.room_preview->>''access'','''')<>''invite'' or private.meetup_invite_allowed(p.id,current_user_id))'),
+    ('private.comment_visible_to(uuid,uuid)',
+     'where c.id = p_comment_id and c.deleted_at is null',
+     'where c.id = p_comment_id and c.deleted_at is null
+      and (coalesce(p.room_preview->>''access'','''')<>''invite'' or private.meetup_invite_allowed(p.id,p_user_id))'),
+    ('private.meetup_tool_context(uuid,uuid,boolean)',
+     'if event.id is null or not private.is_active_account(event.author_id)',
+     'if event.id is null or not private.is_active_account(event.author_id)
+    or (event.room_preview->>''access''=''invite'' and not private.meetup_invite_allowed(event.id,p_user_id))'),
     -- Invited people are only reachable through the host's own request.
     ('private.request_meetup_join(uuid,text)',
      'if meetup is null then raise exception ''MEETUP_NOT_FOUND''; end if;',
@@ -373,21 +404,6 @@ begin
 end;
 $$;
 
--- Invite alerts sit with the other meetup alerts in the bell and in notification settings.
-do $$
-declare definition text; anchor constant text:='when ''message_reaction'' then ''messages''';
-begin
-  select pg_get_constraintdef(oid) into definition from pg_constraint
-   where conrelid='public.notifications'::regclass and conname='notifications_kind_check';
-  if definition is null or definition not like 'CHECK (%' or definition like '%meetup_invite%' then raise exception 'MEETUP_INVITE_KIND_CHANGED'; end if;
-  alter table public.notifications drop constraint notifications_kind_check;
-  execute 'alter table public.notifications add constraint notifications_kind_check '||
-    replace(definition,'CHECK (','CHECK (kind = ''meetup_invite'' or kind = ''meetup_visibility'' or ');
-  definition:=pg_get_functiondef('private.notification_category(text,text)'::regprocedure);
-  if array_length(string_to_array(definition,anchor),1)<>2 then raise exception 'MEETUP_INVITE_CATEGORY_CHANGED'; end if;
-  -- meetup_visibility stays 'system' (the default branch): everyone affected gets the notice once.
-  execute replace(definition,anchor,'when ''meetup_invite'' then ''meetups'' '||anchor);
-end $$;
 
 do $$ declare signature text; begin
  foreach signature in array array['private.meetup_invite_allowed(uuid,uuid)','private.meetup_profile_text_shared(jsonb,text,timestamp with time zone)',
