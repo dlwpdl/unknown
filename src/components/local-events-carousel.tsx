@@ -71,7 +71,7 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, page = 0 
       </Pressable>
     </View>
     {!current ? <View style={[styles.loading, { backgroundColor: cityLoading ? theme.backgroundElement : 'transparent' }]}>{!cityLoading && <GlingLoader color={theme.accent} accessibilityLabel={tr("행사 불러오는 중")} />}</View>
-        : current.error ? <Pressable analyticsId="today.events.retry" accessibilityRole="button" onPress={() => { play('selection'); setAttempt(value => value + 1); }} style={[styles.message, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="small" themeColor="textSecondary">{current.error}{" " + tr("눌러서 다시 시도해 주세요.")}</ThemedText></Pressable>
+        : current.error ? <Pressable analyticsId="today.events.retry" accessibilityRole="button" onPress={() => { play('selection'); setAttempt(value => value + 1); }} style={[styles.message, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="small" themeColor="textSecondary">{tr(current.error)}{" " + tr("눌러서 다시 시도해 주세요.")}</ThemedText></Pressable>
           : <ScrollView analyticsId="today.events.carousel" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
               {current.events.map(event => <EventRowCard key={event.id} event={event} cityId={cityId} />)}
             </ScrollView>}
