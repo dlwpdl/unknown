@@ -20,7 +20,13 @@ export type ChillingProfile = {
 export type MeetupParticipation = { id: string; post_id: string; host_id: string; requester_id: string; status: 'pending' | 'approved' | 'rejected' | 'cancelled'; created_at: string; responded_at: string | null };
 export type ChillingApplication = { postId: string; requesterId: string; profile: ChillingProfile; answer: string; question: string; consentVersion: string; consentedAt: string;
   request: (MeetupParticipation & { requester: { nickname: string; city_id: string; avatar_path: string | null; photoUri?: string } | null; post: { title: string } | null }) | null };
-export const CHILLING_CONSENT_VERSION = 'chilling-v2';
+// v3: applicants to a public meetup also see approved members' name, one-line intro and interests (20261108120000).
+export const CHILLING_CONSENT_VERSION = 'chilling-v3';
+// What a host agrees to publish did not change, so hosting keeps the v2 text.
+export const CHILLING_HOST_CONSENT_VERSION = 'chilling-v2';
+export type MeetupAccess = 'public' | 'invite';
+/** '누가 와요': host first, then approved members. Never photos, area or answers. */
+export type MeetupRosterPerson = { userId: string; displayName: string; intro: string; interests: string[]; isHost: boolean };
 
 export async function loadMeetupParticipation(client: SupabaseClient, postId: string, userId: string): Promise<MeetupParticipation | null> {
   const result = await client.from('meetup_requests').select('id,post_id,host_id,requester_id,status,created_at,responded_at')
@@ -62,12 +68,13 @@ export function normalizeChillingProfile(profile: ChillingProfile): ChillingProf
     shareWithMembers: profile.shareWithMembers, preferences: { activities: preferences.activities.map(x => x.trim()), availability: preferences.availability.trim(), pace: preferences.pace } };
 }
 
+// Members always see intro and interests; the member switch decides photos only, and area stays with the host.
 export function chillingProfilePreview(profile: ChillingProfile, audience: 'host' | 'members' | 'public'): ChillingProfile {
-  const share = audience !== 'members' || profile.shareWithMembers === true;
+  const photos = audience !== 'members' || profile.shareWithMembers === true;
   const prompts = audience === 'host' || (audience === 'public' && profile.version !== 2);
-  const paths = share ? audience === 'public' ? profile.publicPhotoPath ? [profile.publicPhotoPath] : [] : profile.photoPaths ?? [] : [];
-  return { version: profile.version, displayName: profile.displayName, cityId: share ? profile.cityId : undefined,
-    intro: share ? profile.intro : '', interests: share ? [...profile.interests] : [],
+  const paths = photos ? audience === 'public' ? profile.publicPhotoPath ? [profile.publicPhotoPath] : [] : profile.photoPaths ?? [] : [];
+  return { version: profile.version, displayName: profile.displayName, cityId: audience === 'members' ? undefined : profile.cityId,
+    intro: profile.intro, interests: [...profile.interests],
     promptOne: prompts ? profile.promptOne : '', promptTwo: prompts ? profile.promptTwo : '',
     promptOneId: prompts ? profile.promptOneId : undefined, promptTwoId: prompts ? profile.promptTwoId : undefined,
     photoPaths: paths, photoUris: paths.map(path => profile.photoUris?.[(profile.photoPaths ?? []).indexOf(path)] ?? null) };
@@ -133,6 +140,29 @@ export async function requestChillingJoin(client: SupabaseClient, postId: string
   if (result.error) throw result.error;
   return result.data as string;
 }
+export async function loadMeetupPublicRoster(client: SupabaseClient, postId: string): Promise<MeetupRosterPerson[] | null> {
+  const result = await client.rpc('get_meetup_public_roster', { p_post_id: postId });
+  if (result.error) throw result.error;
+  return result.data;
+}
+/** The host's invite link token; renew blocks the old link at once. */
+export async function getMeetupInviteToken(client: SupabaseClient, postId: string, renew = false) {
+  const result = await client.rpc('get_meetup_invite_link', { p_post_id: postId, p_renew: renew });
+  if (result.error) throw result.error;
+  return result.data as string;
+}
+/** Lets the signed-in member into an invite meetup and returns its post id. */
+export async function openMeetupInvite(client: SupabaseClient, token: string) {
+  const result = await client.rpc('open_meetup_invite', { p_token: token });
+  if (result.error) throw result.error;
+  return result.data as string;
+}
+/** Mutual friends only; one pick the server refuses refuses the whole send. Returns how many were newly invited. */
+export async function inviteMeetupFriends(client: SupabaseClient, postId: string, userIds: string[]) {
+  const result = await client.rpc('invite_meetup_friends', { p_post_id: postId, p_user_ids: userIds });
+  if (result.error) throw result.error;
+  return result.data as number;
+}
 // Approval can let the new member read the chat from before they joined; default is from approval onward.
 export async function respondMeetupRequestV2(client: SupabaseClient, requestId: string, response: 'approved' | 'rejected', shareHistory = false) {
   const result = await client.rpc('respond_meetup_request_v2', { p_request_id: requestId, p_response: response, p_share_history: response === 'approved' && shareHistory });
@@ -145,7 +175,7 @@ export async function setMeetupRecruiting(client: SupabaseClient, postId: string
   if (result.error) throw result.error;
 }
 export async function createChillingEvent(client: SupabaseClient, draft: {
-  cityId: string; title: string; body: string; event: ChillingEventDraft; question: string; userId?: string; image?: PostDraftImage; hostProfileRevision?: string;
+  cityId: string; title: string; body: string; event: ChillingEventDraft; question: string; userId?: string; image?: PostDraftImage; hostProfileRevision?: string; access?: MeetupAccess;
 }) {
   if (!draft.title.trim() || !draft.body.trim() || !draft.question.trim() || draft.question.trim().length > 300) throw new Error('INVALID_CHILLING_EVENT');
   const event = normalizeChillingEvent(draft.event);
@@ -153,7 +183,8 @@ export async function createChillingEvent(client: SupabaseClient, draft: {
   const imagePath = draft.image ? await uploadPostImage(client, draft.userId!, draft.image) : null;
   const result = await client.rpc('create_chilling_event', {
     p_city_id: draft.cityId, p_title: draft.title.trim(), p_body: draft.body.trim(),
-    p_event: { ...event, ...(draft.hostProfileRevision ? { hostProfileConsentVersion: CHILLING_CONSENT_VERSION, hostProfileRevision: draft.hostProfileRevision } : {}) }, p_question: draft.question.trim(),
+    p_event: { ...event, ...(draft.hostProfileRevision ? { hostProfileConsentVersion: CHILLING_HOST_CONSENT_VERSION, hostProfileRevision: draft.hostProfileRevision } : {}),
+      ...(draft.access ? { access: draft.access } : {}) }, p_question: draft.question.trim(),
     ...(imagePath ? { p_image_paths: [imagePath] } : {}),
   });
   if (result.error) {
@@ -183,6 +214,8 @@ const chillingErrors: Record<string, string> = {
     CONTENT_NOT_ALLOWED: '이 내용은 커뮤니티 기준에 맞지 않아 등록할 수 없어요.',
     MEETUP_EXPIRED: '이미 종료된 모임이에요. 새 참여 신청이나 승인을 할 수 없어요.', MEETUP_CLOSED: '모집이 마감됐어요. 새 참여 신청이나 승인을 할 수 없어요.',
     MEETUP_FULL: '정원이 모두 찼어요.', MEETUP_NOT_FOUND: '이 모임을 찾을 수 없어요.',
+    MEETUP_INVITE_NOT_FRIEND: '서로 친구인 사람만 초대할 수 있어요.',
+    MEETUP_ACCESS_FIXED: '모임을 연 뒤에는 바꿀 수 없어요.',
     MEETUP_RECRUITING_CLOSED: '지금은 새 참여 신청을 받지 않아요. 호스트가 모집을 다시 열면 신청할 수 있어요.',
     MEETUP_NEWCOMERS_ONLY: '새 멤버만 신청할 수 있는 모임이에요.',
     MEETUP_WAITLIST_ONLY: '이 호스트의 모임에 말없이 빠진 적이 여러 번 있어서 지금은 대기 명단으로만 신청할 수 있어요.',

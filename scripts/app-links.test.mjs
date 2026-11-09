@@ -6,7 +6,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 const site = 'https://gling.ej-entertainment.com';
-const id = 'B20B2F28-5902-461D-8FFC-FFEF3F23B2C0', lower = id.toLowerCase();
+const id = 'B20B2F28-5902-461D-8FFC-FFEF3F23B2C0', lower = id.toLowerCase(), token = '0123456789abcdef0123456789abcdef';
 
 test('public site links open the matching app screen', () => {
   for (const [link, route] of [
@@ -21,12 +21,13 @@ test('public site links open the matching app screen', () => {
     [`${site}/meetups?city=vancouver`, '/meetups'],
     [`${site}/invite?code=abcd-efgh`, '/invite?code=ABCDEFGH'],
     [`${site}/meetup-join?postId=${id}`, `/meetup-join?postId=${lower}`],
+    [`${site}/meetup-invite?token=${token}`, `/meetup-invite?token=${token}`],
   ]) assert.equal(appPathForLink(link), route, link);
 });
 
 test('unknown or malformed site links land on home without throwing', () => {
   for (const link of [`${site}/`, `${site}/merchant/x`, `${site}/admin`, `${site}/terms`, `${site}/posts/not-a-uuid`, `${site}/post?id=${id}&id=${id}`,
-    `${site}/invite?code=bad`, `${site}/meetup-join?postId=x`, `${site}/%E0%A4%A`]) assert.equal(appPathForLink(link), '/', link);
+    `${site}/invite?code=bad`, `${site}/meetup-join?postId=x`, `${site}/meetup-invite?token=${token.toUpperCase()}`, `${site}/meetup-invite?token=${token}&token=${token}`, `${site}/%E0%A4%A`]) assert.equal(appPathForLink(link), '/', link);
 });
 
 test('scheme links, other hosts and in-app paths pass through unchanged', () => {
@@ -59,7 +60,7 @@ test('association files claim only paths the app maps, for the release identitie
   assert.ok(filter.data.every(entry => entry.scheme === 'https' && entry.host === 'gling.ej-entertainment.com'));
   // Native mapping must agree with the URLs both platforms claim.
   for (const entry of filter.data) {
-    const sample = `${site}${entry.path ? `${entry.path}?id=${id}&code=ABCDEFGH&postId=${id}` : `${entry.pathPrefix}${id}`}`;
+    const sample = `${site}${entry.path ? `${entry.path}?id=${id}&code=ABCDEFGH&postId=${id}&token=${token}` : `${entry.pathPrefix}${id}`}`;
     assert.notEqual(appPathForLink(sample), '/', sample);
   }
 });

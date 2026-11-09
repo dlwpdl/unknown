@@ -55,6 +55,8 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
     [/^(.+) 모임에 아직 신청이 없어요\. 날짜를 바꾸거나 '처음 와도 돼요'를 켜 보세요\.$/, m => `No one has applied to “${m[1]}” yet. Try another date, or turn on “First-timers welcome”.`],
     [/^(.+) 모임에 아직 신청이 없어요\. 날짜를 바꿔 보는 건 어때요\?$/, m => `No one has applied to “${m[1]}” yet. How about another date?`],
   ],
+  meetup_invite: [[/^(.+?)님이 「(.+)」 모임에 초대했어요\.$/, m => `${m[1]} invited you to “${m[2]}”.`]],
+  meetup_visibility: [[/^이제 참여 중인 공개 모임에 신청하려는 사람도 내 이름, 한 줄 소개, 관심사를 볼 수 있어요\. 사진과 답변은 안 보여요\.$/, () => 'People applying to public meetups you’re in can now see your name, one-line intro and interests. Your photos and answers stay hidden.']],
   meetup_cancelled: [[/^(.+) 모임이 마감되거나 취소됐어요\. 모임 글에서 확인해 주세요\.$/, m => `“${m[1]}” was closed or cancelled. Check the meetup post for details.`]],
   meetup_changed: [
     [/^(.+) 모임의 시간이나 장소가 바뀌었어요\. 바뀐 내용을 확인해 주세요\.$/, m => `The time or place for “${m[1]}” changed. Check the updated details.`],

@@ -97,12 +97,12 @@ test('an older profile says the whole profile goes to the host and keeps its ext
   const older = { ...saved, version: 1 };
   const app = profile(older, { failSave: false }); app.render(); await new Promise(setImmediate);
   const copy = tree => nodes(tree).map(node => node.props?.children).flat(Infinity).filter(item => typeof item === 'string');
-  assert.ok(copy(app.render()).includes('신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요. 다른 신청자에게는 안 보여요.'));
+  assert.ok(copy(app.render()).includes('신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요. 공개 모임에서 승인되고 나면 그 모임에 신청하려는 사람에게도 이름, 한 줄 소개, 관심사가 보여요. 사진과 답변은 안 보여요.'));
   nodes(app.render()).find(node => node.props?.analyticsId === 'app_meetup-profile.pressable.8').props.onPress(); await new Promise(setImmediate);
   assert.deepEqual([...app.writes[0].interests], saved.interests);
   assert.equal(app.writes[0].promptOne, saved.promptOne);
   const fresh = profile(null); fresh.render(); await new Promise(setImmediate);
-  assert.ok(copy(fresh.render()).includes('신청을 보내면 호스트가 내 이름, 지역, 소개, 답변을 봐요. 다른 신청자에게는 안 보여요.'));
+  assert.ok(copy(fresh.render()).includes('신청을 보내면 호스트가 내 이름, 지역, 소개, 답변을 봐요. 공개 모임에서 승인되고 나면 그 모임에 신청하려는 사람에게도 이름, 한 줄 소개, 관심사가 보여요. 사진과 답변은 안 보여요.'));
 });
 test('a retained completed-profile save cannot write old account data after unmount or a new account commit', async () => {
   for (const leave of ['unmount', 'account']) {

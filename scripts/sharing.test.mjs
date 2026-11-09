@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { decodeSharedUuid, encodeSharedUuid } from '../src/lib/shared-uuid.ts';
 import test from 'node:test';
-import { buildSharedPostUrl, sharedLinkTarget, sharedLinkInMessage, sharedPostMessage, sharedPostReturnPath } from '../src/lib/sharing.ts';
+import { buildSharedPostUrl, meetupInviteMessage, meetupInviteUrl, sharedLinkTarget, sharedLinkInMessage, sharedPostMessage, sharedPostReturnPath } from '../src/lib/sharing.ts';
 
 test('public web sharing and clipboard fallback use the existing short post URL', async () => {
   const id = 'b20b2f28-5902-461d-8ffc-ffef3f23b2c0';
@@ -112,4 +112,15 @@ test('codec rejects non-UUID inputs and noncanonical base64url at its boundary',
 test('explicit owned gateway share and short aliases generate short links while custom endpoints stay exact', () => {
   for (const path of ['/share', '/share/', '/s', '/s/']) assert.equal(buildSharedPostUrl(id, 'https://custom.example', `https://gling-share-preview.vercel.app${path}`), `https://gling-share-preview.vercel.app/s/${short}`);
   for (const base of ['https://custom.example/share', 'https://custom.example/s', 'https://gling-share-preview.vercel.app.evil.example/share']) assert.equal(buildSharedPostUrl(id, undefined, base), `${base}?id=${id}`);
+});
+
+test('invite meetup links carry only the token and resume after web sign-in', () => {
+  const token = '0123456789abcdef0123456789abcdef';
+  assert.equal(meetupInviteUrl(token, 'https://gling.ej-entertainment.com/'), `https://gling.ej-entertainment.com/meetup-invite?token=${token}`);
+  const text = meetupInviteMessage('생일 브런치', token);
+  assert.ok(text.includes('생일 브런치') && text.endsWith(`/meetup-invite?token=${token}`));
+  // The preview gateway would turn the link into a public card; invite links never become one.
+  assert.equal(sharedLinkTarget(meetupInviteUrl(token)), null);
+  assert.equal(sharedPostReturnPath(`/meetup-invite?token=${token}&next=https://evil.test`), `/meetup-invite?token=${token}`);
+  for (const path of [`https://evil.test/meetup-invite?token=${token}`, `/meetup-invite?token=${token.toUpperCase()}`, `/meetup-invite?token=${token}&token=${token}`, '/meetup-invite?token=short']) assert.equal(sharedPostReturnPath(path), '/');
 });

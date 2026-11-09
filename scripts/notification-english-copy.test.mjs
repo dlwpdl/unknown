@@ -61,3 +61,19 @@ test('overhaul kinds render English, and the shared module works without a trans
   assert.equal(shared({ kind: 'post_like', body: '민지님이 내 글에 공감했어요.' }), '민지 liked your post.');
   assert.equal(shared({ kind: 'unknown', body: '그대로' }), '그대로');
 });
+
+const migration = name => new URL(`../supabase/migrations/${name}.sql`, import.meta.url);
+test('meetup invite notices read in English and match the server text', async () => {
+  const { readFileSync } = await import('node:fs');
+  assert.equal(en('meetup_invite', '민지님이 「토요일 「보드게임」 모임」 모임에 초대했어요.'), '민지 invited you to “토요일 「보드게임」 모임”.');
+  assert.ok(readFileSync(migration('20261108120000_meetup_members_and_invites'), 'utf8').includes(`'님이 「'||left(meetup.title,80)||'」 모임에 초대했어요.'`), 'invite body the pattern reads');
+});
+
+// The one-time switch for older meetups ships as its own migration and may be held back.
+const notice = migration('20261108120100_meetup_members_existing_notice');
+test('the member-visibility notice reads in English and opens the meetup profile', { skip: !(await import('node:fs')).existsSync(notice) }, async () => {
+  const { readFileSync } = await import('node:fs');
+  const body = /'(이제 참여 중인 공개 모임에[^']+)'/.exec(readFileSync(notice, 'utf8'))?.[1];
+  assert.equal(en('meetup_visibility', body), 'People applying to public meetups you’re in can now see your name, one-line intro and interests. Your photos and answers stay hidden.');
+  assert.equal(notificationRoute('/meetup-profile'), '/meetup-profile');
+});

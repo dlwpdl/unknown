@@ -1,6 +1,6 @@
 import { normalizeInviteCode } from './invites.ts';
 import { publicMerchantId } from './public-web.ts';
-import { sharedLinkTarget } from './sharing.ts';
+import { MEETUP_INVITE_TOKEN, sharedLinkTarget } from './sharing.ts';
 
 const SITE = 'https://gling.ej-entertainment.com';
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
@@ -23,6 +23,10 @@ export function appPathForLink(input: string): string {
   if (path === '/invite') {
     const code = normalizeInviteCode(url.searchParams.get('code'));
     return code ? `/invite?code=${code}` : '/';
+  }
+  if (path === '/meetup-invite') {
+    const token = url.searchParams.getAll('token');
+    return token.length === 1 && MEETUP_INVITE_TOKEN.test(token[0]) ? `/meetup-invite?token=${token[0]}` : '/';
   }
   if (path === '/meetup-join') {
     const postId = url.searchParams.get('postId');

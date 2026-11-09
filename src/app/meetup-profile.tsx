@@ -217,9 +217,10 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
   const whoSees = (title?: string) => <>
     <WhoSees title={title} rows={[
       { icon: { ios: 'person', android: 'person', web: 'person' }, label: tr("신청받는 호스트"), detail: tr("모임 이름 · 사진 · 소개 · 신청 답변") },
-      { icon: { ios: 'person.2', android: 'group', web: 'group' }, label: tr("승인된 멤버"), detail: profile.shareWithMembers ? tr("모임 이름, 그리고 사진 · 짧은 소개") : tr("모임 이름만"),
-        accessory: <Switch analyticsId="meetup-profile.share-members" accessibilityLabel={tr("승인 후 멤버에게 사진·짧은 소개 공유")} value={profile.shareWithMembers === true} disabled={saving} onValueChange={next => { play('selection'); setProfile(current => ({ ...current, shareWithMembers: next })); }} /> },
-      { icon: { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' }, label: tr("다른 신청자"), detail: tr("보이지 않아요"), hidden: true },
+      { icon: { ios: 'person.2', android: 'group', web: 'group' }, label: tr("승인된 멤버"), detail: profile.shareWithMembers ? tr("모임 이름 · 한 줄 소개 · 관심사, 그리고 사진") : tr("모임 이름 · 한 줄 소개 · 관심사"),
+        accessory: <Switch analyticsId="meetup-profile.share-members" accessibilityLabel={tr("승인된 멤버에게 사진 보여 주기")} value={profile.shareWithMembers === true} disabled={saving} onValueChange={next => { play('selection'); setProfile(current => ({ ...current, shareWithMembers: next })); }} /> },
+      { icon: { ios: 'person.3', android: 'groups', web: 'groups' }, label: tr("신청하려는 사람"), detail: tr("공개 모임에서 승인된 뒤 모임 이름 · 한 줄 소개 · 관심사") },
+      { icon: { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' }, label: tr("승인 전"), detail: tr("호스트만 봐요"), hidden: true },
     ]} />
     <InfoNote>{tr("상대가 이미 본 내용이나 저장한 사진은 되돌릴 수 없어요.")}</InfoNote>
   </>;
@@ -266,7 +267,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
                   </View>
                   <View>
                     {/* An older profile also sends its photos, prompts and interests, so only a fresh one can name exactly what goes. */}
-                    <ThemedText style={Typography.supporting} themeColor="textSecondary">{photos.length || tags.length || profile.promptOne.trim() || profile.promptTwo.trim() ? tr('신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요. 다른 신청자에게는 안 보여요.') : tr('신청을 보내면 호스트가 내 이름, 지역, 소개, 답변을 봐요. 다른 신청자에게는 안 보여요.')}</ThemedText>
+                    <ThemedText style={Typography.supporting} themeColor="textSecondary">{photos.length || tags.length || profile.promptOne.trim() || profile.promptTwo.trim() ? tr('신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요. 공개 모임에서 승인되고 나면 그 모임에 신청하려는 사람에게도 이름, 한 줄 소개, 관심사가 보여요. 사진과 답변은 안 보여요.') : tr('신청을 보내면 호스트가 내 이름, 지역, 소개, 답변을 봐요. 공개 모임에서 승인되고 나면 그 모임에 신청하려는 사람에게도 이름, 한 줄 소개, 관심사가 보여요. 사진과 답변은 안 보여요.')}</ThemedText>
                     <Disclosure analyticsId="meetup-profile.privacy-details" title={tr("누가 무엇을 보나요")}>
                       {whoSees()}
                       {privacyDetails.map(item => <ThemedText key={item} style={Typography.supporting} themeColor="textSecondary">{item}</ThemedText>)}

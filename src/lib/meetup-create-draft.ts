@@ -30,6 +30,8 @@ export type MeetupCreateDraft = {
   newcomer: { welcome: boolean; only: boolean };
   /** Language exchange setup; absent means a plain meetup. */
   exchange?: LanguageExchange | null;
+  /** Absent in drafts saved before invite meetups; read as public. */
+  access?: 'public' | 'invite';
   pickedPlaceId: string | null;
   cover: MeetupDraftCover | null;
   coverDropped: boolean;
@@ -83,6 +85,7 @@ function parse(raw: string | null, now: number): Stored | null {
     && text(value.capacity, 4) && text(value.ageMin, 3) && text(value.ageMax, 3)
     && !!newcomer && typeof newcomer.welcome === 'boolean' && typeof newcomer.only === 'boolean'
     && (value.exchange == null || !!parseLanguageExchange({ languageExchange: value.exchange as LanguageExchange }))
+    && (value.access === undefined || value.access === 'public' || value.access === 'invite')
     && (value.pickedPlaceId === null || text(value.pickedPlaceId, 200))
     && (value.cover === null || validCover(value.cover)) && typeof value.coverDropped === 'boolean';
   return ok ? { ...(value as unknown as Stored), params } : null;
