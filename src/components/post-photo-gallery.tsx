@@ -120,7 +120,8 @@ export function PostPhotoGallery({ post }: { post: Post }) {
             key={`${post.id}-${position}:${uri}`}
             source={Math.abs(position - index) <= 1 ? sources[position] : null}
             style={{ width, aspectRatio: 4 / 3, maxHeight: Math.min(520, screen.height * 0.55), backgroundColor: theme.backgroundElement }}
-            contentFit="contain"
+            // Meetup photos fill the frame (QA Q18); post photos stay whole so text in them is not cut. Tapping opens the original either way.
+            contentFit={post.room ? 'cover' : 'contain'}
             onLoad={({ source: { width: photoWidth, height: photoHeight } }) => {
               if (Number.isFinite(photoWidth) && Number.isFinite(photoHeight) && photoWidth > 0 && photoHeight > 0) {
                 setAspectRatios((previous) => ({ ...previous, [`${post.id}:${uri}`]: photoWidth / photoHeight }));
