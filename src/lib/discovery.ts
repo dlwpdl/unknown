@@ -5,6 +5,8 @@ import type { Post } from './types.ts';
 import { EVENT_TIMEZONES, festivalLocalDay, isFestivalEvent, type EventCity, type TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster.ts';
 import { CITY_TOP25, type CityTop25Place } from './city-top25.ts';
 import type { CityPlace } from './city-places.ts';
+import { merchantMapsUrl } from './merchant-source.ts';
+import { CITIES } from './mock.ts';
 
 export const TOP25_GOLD = '#F4CA78';
 // M1 (owner 2026-11-05): a place's state, decided on the server from our own save numbers. The dot always comes with the word, so colour is never the only signal.
@@ -174,6 +176,15 @@ export function directionsUrl(pin: PostPin, app: 'google' | 'waze') {
   return app === 'google'
     ? `https://www.google.com/maps/dir/?${new URLSearchParams({ api: '1', destination: coordinate, dir_action: 'navigate' })}`
     : `https://waze.com/ul?${new URLSearchParams({ ll: coordinate, navigate: 'yes' })}`;
+}
+// Owner 2026-11-09: the map's Google Maps/Waze buttons open the place first; that app's own directions button starts navigation.
+export function mapAppUrl(item: DiscoveryItem & PostPin, app: 'google' | 'waze') {
+  const pinUrl = googlePinUrl(item);
+  if (app === 'waze') return `https://waze.com/ul?${new URLSearchParams({ ll: `${item.latitude},${item.longitude}` })}`;
+  // Google search has no location bias, so only a street address pins the right branch; anything else opens the exact pin.
+  const place = item.place, city = CITIES.find(entry => entry.id === item.cityId);
+  return place && city && /\d/.test(place.address)
+    ? merchantMapsUrl([place.name, place.address, city.englishName, city.province, 'Canada'].join(', ')) ?? pinUrl : pinUrl;
 }
 export function discoveryDays(filter: DiscoveryDate, cityId: string, date = '', now = Date.now()): string[] {
   if (filter === 'all') return [];
