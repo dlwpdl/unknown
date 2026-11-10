@@ -54,6 +54,11 @@ test('weekly ranking: a thin folded pill under the categories, the expanded head
   }
 });
 
+// Owner 2026-11-09 "탑10에서만 조회수 안보이게하는게 중요해 다른글에서는 보이게하고": hidden here (since 11-01), shown on feed cards (post-card-image test).
+test('weekly ranking (TOP10) shows no view counts', () => {
+  assert.doesNotMatch(fs.readFileSync(new URL('../src/components/weekly-ranking.tsx', import.meta.url), 'utf8'), /\.views\b|조회/);
+});
+
 function load(file, imports) {
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL(`../src/components/${file}.tsx`, import.meta.url), 'utf8'), {
