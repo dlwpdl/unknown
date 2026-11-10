@@ -815,6 +815,6 @@ const styles = StyleSheet.create({
   feedSave: { marginLeft: 'auto' },
   // On a narrow screen with large text the count gives way first, so save never leaves the row.
   // Not a touch target, so it may go below 44pt; overflow keeps a squeezed count from drawing over save.
-  feedViews: { flexShrink: 1, minWidth: 0, overflow: 'hidden' },
+  feedViews: { flexShrink: 1, minWidth: 0, overflow: 'hidden', borderRadius: 0 },
   feedViewsCount: { flexShrink: 1 },
 });
