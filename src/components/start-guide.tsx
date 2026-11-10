@@ -72,6 +72,7 @@ export function StartGuide({ cityName, cityPicks = 0, onPickCity, onOpenMeetups 
   useEffect(() => {
     if (!state || seenPicks.current === cityPicks) return;
     seenPicks.current = cityPicks;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- once per new pick (seenPicks guard), and it also saves the step to storage
     if (!state.hidden) complete('city');
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per new pick, after the saved steps have loaded
   }, [cityPicks, state]);
