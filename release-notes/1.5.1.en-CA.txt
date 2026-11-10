@@ -1,0 +1,4 @@
+TOP 50 places close together on the map now fold into one gold-ringed circle with a count. Tap it to zoom in on that spot. TOP 50 places you’ve saved or that have a discount still show on their own.
+When you pick a place on the map and tap Google Maps or Waze, that app now shows the place first instead of jumping straight into navigation. Start navigation in that app when you’re ready.
+View counts are back on post cards in your Home feed.
+We also fixed category buttons poking out past the rounded ends of the category bar on Home when you scroll it.
