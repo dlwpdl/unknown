@@ -310,6 +310,52 @@ test('Top 50 uses a circular outline and a selected-only label while preserving 
   assert.equal(c.sources.discovery.data.features[0].properties.top25, true);
 });
 
+test('crowded TOP 50 places fold only among themselves into a gold count with no name tag; saved, discount and chosen TOP 50 stay single (owner 2026-11-10)', async () => {
+  const a = { ...marker, id: 'a', featured: true, top25: true }, b = { ...marker, id: 'b', latitude: 49.2801, top25: true };
+  const savedTop = { ...marker, id: 'saved-top', latitude: 49.2802, featured: true, top25: true, saved: true }, dealTop = { ...marker, id: 'deal-top', latitude: 49.2803, featured: true, top25: true, discount: 10 };
+  const plain = { ...marker, id: 'plain', latitude: 49.2804 }, visited = { ...marker, id: 'visited', latitude: 49.2805, featured: true };
+  const markers = [a, b, savedTop, dealTop, plain, visited], c = canvas(markers), tick = () => new Promise(done => setImmediate(done));
+  const top = () => Array.from(c.sources['discovery-top'].data.features.map(feature => feature.properties.id));
+  const layer = id => c.layers.find(value => value.id === id), index = id => c.layers.findIndex(value => value.id === id);
+  // Only the two closest (Vancouver Art Gallery, Robson Square) still touch at 16, so TOP 50 folds through 16 and is single from 17.
+  assert.equal(c.sources['discovery-top'].cluster, true);
+  assert.equal(c.sources['discovery-top'].clusterMaxZoom, 16);
+  assert.equal(c.sources['discovery-top'].clusterRadius, 48, 'wider than the 44px ringed pin, so two pins never touch unfolded');
+  assert.deepEqual(top(), ['a', 'b'], 'saved and discount TOP 50 places stay single (owner 2026-11-08)');
+  assert.deepEqual(Array.from(c.sources['discovery-grouped'].data.features.map(feature => feature.properties.id)), ['plain'], 'TOP 50 never joins an ordinary count');
+  assert.equal(JSON.stringify(c.sources.discovery.data.features.map(feature => [feature.properties.id, feature.properties.fold])), JSON.stringify([['a', true], ['b', true], ['saved-top', false], ['deal-top', false], ['plain', false], ['visited', false]]));
+  // The count: the TOP 50 ring's gold on the ordinary count's shape, and nothing written beside it.
+  assert.equal(layer('discovery-top-clusters').type, 'circle');
+  assert.equal(layer('discovery-top-clusters').paint['circle-stroke-color'], '#9C7637');
+  assert.equal(JSON.stringify(layer('discovery-top-counts').filter), '["has","point_count"]');
+  assert.deepEqual(Array.from(c.layers.filter(value => value.source === 'discovery-top' && JSON.stringify(value.filter) === '["has","point_count"]').map(value => value.id)), ['discovery-top-clusters', 'discovery-top-counts'], 'a gold count carries no name tag');
+  assert.ok(index('discovery-counts') < index('discovery-top-clusters') && index('discovery-top-counts') < index('discovery-pins-grouped'), 'gold counts sit above grey ones and under the places');
+  // Every mark a single TOP 50 place has comes from its copy on discovery-top; saved and discount marks never fold, so they have none.
+  for (const id of ['discovery-pins', 'discovery-art', 'discovery-labels', 'discovery-status', 'discovery-top25', 'discovery-featured-labels', 'discovery-art-featured', 'discovery-art-featured-labels']) {
+    const copy = layer(id + '-top');
+    assert.equal(copy?.source, 'discovery-top', id);
+    assert.equal(JSON.stringify(copy.filter[1]), '["!",["has","point_count"]]', id + ': a place inside a gold count draws no mark of its own');
+    assert.equal(copy.minzoom, layer(id).minzoom); assert.equal(copy.maxzoom, layer(id).maxzoom);
+    assert.ok(index(id + '-top') < index(id), id + ': the single copy (chosen, saved, discount) stays on top');
+  }
+  for (const id of ['discovery-saved', 'discovery-discount', 'discovery-discount-dot']) assert.equal(layer(id + '-top'), undefined, id);
+  assert.ok(index('discovery-hit-grouped') < index('discovery-hit-top') && index('discovery-hit-top') < index('discovery-hit'));
+  // The single source keeps only the TOP 50 places that cannot fold.
+  for (const id of ['discovery-top25', 'discovery-featured-labels', 'discovery-art-featured', 'discovery-art-featured-labels']) assert.match(JSON.stringify(layer(id).filter), /\["!=",\["get","fold"\],true\]/, id);
+  // Choosing a TOP 50 place takes it out of its count until it is let go.
+  c.window.glingDiscoveryUpdate(sessionId, { markers, selectedId: 'b', center: null });
+  assert.deepEqual(top(), ['a']);
+  c.window.glingDiscoveryUpdate(sessionId, { markers, selectedId: null, center: null });
+  assert.deepEqual(top(), ['a', 'b']);
+  // A gold count opens from its own source.
+  c.sources['discovery-top'].getClusterExpansionZoom = async id => (assert.equal(id, 3), 17);
+  c.sources['discovery-grouped'].getClusterExpansionZoom = async () => assert.fail('grey source asked for a gold count');
+  c.map.hits = [{ source: 'discovery-top', properties: { cluster: true, cluster_id: 3, point_count: 2 }, geometry: { type: 'Point', coordinates: [-123.12, 49.28] } }];
+  await c.listeners.click({ point: { x: 1, y: 1 } }); await tick();
+  assert.equal(c.cameras.at(-1).zoom, 17);
+  assert.ok(!c.messages.some(message => message.type === 'select'), 'a gold count is not a place');
+});
+
 test('close-up and featured pins are never counted, keep 44px targets and preserve the camera for result updates', async () => {
   const c = canvas();
   assert.equal(c.map.config.zoom, 11);
@@ -340,7 +386,7 @@ test('close-up and featured pins are never counted, keep 44px targets and preser
   assert.equal(c.messages.filter(message => message.type === 'feedback').length, 1);
 });
 
-test('mid-zoom crowded places fold into counts; TOP 50, Gling-visited, saved, discount and the chosen place stay single, and a count opens where it splits (owner 2026-11-08)', async () => {
+test('mid-zoom crowded places fold into counts; Gling-visited, saved, discount and the chosen place stay single, TOP 50 folds on its own, and a count opens where it splits (owner 2026-11-08)', async () => {
   const plain = { ...marker, id: 'plain' }, top = { ...marker, id: 'top', latitude: 49.281, featured: true, top25: true }, visited = { ...marker, id: 'visited', latitude: 49.282, featured: true }, topOnly = { ...marker, id: 'top-only', latitude: 49.283, top25: true };
   // Saved and discount places stay single (owner 2026-11-08 "저장한 곳·할인 가게도 따로 보이기").
   const saved = { ...marker, id: 'saved', latitude: 49.284, saved: true }, deal = { ...marker, id: 'deal', latitude: 49.285, discount: 20 };
@@ -351,7 +397,7 @@ test('mid-zoom crowded places fold into counts; TOP 50, Gling-visited, saved, di
   assert.deepEqual(grouped(), ['plain']);
   assert.equal(c.sources.discovery.data.features.length, 8, 'up close every place still comes from the single source');
   const pins = c.layers.find(layer => layer.id === 'discovery-pins'), index = id => c.layers.findIndex(layer => layer.id === id);
-  assert.equal(JSON.stringify(pins.filter), '["all",["any",["==",["get","featured"],true],["==",["get","top25"],true],["==",["get","saved"],true],[">",["get","discount"],0],["==",["slice",["get","id"],0,7],"bubble:"],["==",["slice",["get","id"],0,7],"meetup:"],["==",["get","id"],""]],true,true]', 'at every zoom the single source draws only TOP 50, Gling-visited, saved, discount, live bubbles, meetups and the chosen place');
+  assert.equal(JSON.stringify(pins.filter), '["all",["any",["all",["==",["get","featured"],true],["!=",["get","fold"],true]],["==",["get","saved"],true],[">",["get","discount"],0],["==",["slice",["get","id"],0,7],"bubble:"],["==",["slice",["get","id"],0,7],"meetup:"],["==",["get","id"],""]],true,true]', 'at every zoom the single source draws only Gling-visited, saved, discount, live bubbles, meetups and the chosen place; other TOP 50 places come from discovery-top');
   // Each place has one source and no stage is switched by zoom, so a tile kept on screen while zooming past NEAR still draws every place (supervisor review, PR #125).
   const ours = c.layers.filter(layer => layer.id.includes('-grouped') || layer.id === 'discovery-clusters' || layer.id === 'discovery-counts' || ['discovery-pins', 'discovery-hit', 'discovery-saved', 'discovery-status', 'discovery-discount-dot'].includes(layer.id));
   assert.ok(ours.every(layer => layer.maxzoom === undefined && !JSON.stringify(layer.filter ?? null).includes('"zoom"')), 'no stage switch in the grouping layers');
@@ -368,11 +414,11 @@ test('mid-zoom crowded places fold into counts; TOP 50, Gling-visited, saved, di
   assert.deepEqual(grouped(), [], 'the chosen place leaves its count');
   assert.match(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-saved').filter[1]), /"plain"/);
   // Names: the single source keeps only single places and leaves the chosen one to its own label, so no plain name is laid out twice.
-  assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-labels').filter), '["all",["any",["==",["get","featured"],true],["==",["get","top25"],true],["==",["get","saved"],true],[">",["get","discount"],0],["==",["slice",["get","id"],0,7],"bubble:"],["==",["slice",["get","id"],0,7],"meetup:"],["==",["get","id"],"plain"]],true,["!",["==",["get","id"],"plain"]]]');
+  assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-labels').filter), '["all",["any",["all",["==",["get","featured"],true],["!=",["get","fold"],true]],["==",["get","saved"],true],[">",["get","discount"],0],["==",["slice",["get","id"],0,7],"bubble:"],["==",["slice",["get","id"],0,7],"meetup:"],["==",["get","id"],"plain"]],true,["!",["==",["get","id"],"plain"]]]');
   c.window.glingDiscoveryUpdate(sessionId, { markers, selectedId: null, center: null });
   assert.deepEqual(grouped(), ['plain']);
 
-  const cameras = c.cameras.length, count = { properties: { cluster: true, cluster_id: 7, point_count: 5 }, geometry: { type: 'Point', coordinates: [-123.1, 49.2] } };
+  const cameras = c.cameras.length, count = { source: 'discovery-grouped', properties: { cluster: true, cluster_id: 7, point_count: 5 }, geometry: { type: 'Point', coordinates: [-123.1, 49.2] } };
   c.sources['discovery-grouped'].getClusterExpansionZoom = async id => (assert.equal(id, 7), 12.5);
   c.map.hits = [count];
   await c.listeners.click({ point: { x: 1, y: 1 } }); await tick();
