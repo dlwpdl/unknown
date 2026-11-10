@@ -253,7 +253,11 @@ test('Today card: author row, short text, place card, swipeable photos, then lik
     assert.ok(acts.every((at, i) => at >= 0 && (i === 0 || at > acts[i - 1])), 'like → comment → share → save (owner 2026-11-04 저장은 카드에 바로)');
     const views = tree.find(node => node.props?.accessibilityLabel === '조회 9');
     assert.ok(views, 'the Today card shows views again (owner 2026-11-09 조회수 넣어)');
-    assert.equal(views.props.onPress, undefined, 'views is a count, not a button');
+    assert.equal(views.type, 'View', 'views is a count, not a button');
+    assert.equal(views.props.accessible, true);
+    assert.equal(views.props.accessibilityRole, undefined);
+    assert.equal(style(views).minWidth, 0, 'the count may shrink below a touch target');
+    assert.equal(style(nodes(views).find(node => node.type === 'ThemedText')).flexShrink, 1, 'the text shrinks with its wrapper on native');
     assert.equal(nodes(views).find(node => node.type === 'SymbolView').props.name.ios, 'eye');
     assert.equal(textOf(nodes(views).find(node => node.type === 'ThemedText')), '9');
     const share = tree.find(node => node.props?.analyticsId === 'components_post-card.pressable.10'), saveNode = tree.find(node => node.props?.analyticsId === 'components_post-card.pressable.9');
