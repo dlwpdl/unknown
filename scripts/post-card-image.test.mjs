@@ -203,7 +203,7 @@ test('피드 사진 전체를 원본 비율로 표시하고 글·사진·뷰어 
   assert.equal(image(card.render({ ...props, hidePhoto: true })), undefined);
 });
 
-test('Today card: author row, short text, place card, swipeable photos, then like/comment/share with save at the right end; ··· holds hide then report on others\' posts', async () => {
+test('Today card: author row, short text, place card, swipeable photos, then like/comment/share/views with save at the right end; ··· holds hide then report on others\' posts', async () => {
   const card = cardRenderer();
   let opened = 0;
   const credits = '\n\n사진 출처·이용 조건\n1. Kim Lee · CC BY 2.0 · https://commons.wikimedia.org/wiki/File:A.jpg\n2. Park · CC BY 2.0 · https://commons.wikimedia.org/wiki/File:B.jpg';
@@ -251,6 +251,13 @@ test('Today card: author row, short text, place card, swipeable photos, then lik
     const ids = tree.map(node => node.props?.analyticsId).filter(Boolean);
     const acts = ['components_post-card.pressable.7', 'components_post-card.pressable.8', 'components_post-card.pressable.10', 'components_post-card.pressable.9'].map(id => ids.indexOf(id));
     assert.ok(acts.every((at, i) => at >= 0 && (i === 0 || at > acts[i - 1])), 'like → comment → share → save (owner 2026-11-04 저장은 카드에 바로)');
+    const views = tree.find(node => node.props?.accessibilityLabel === '조회 9');
+    assert.ok(views, 'the Today card shows views again (owner 2026-11-09 조회수 넣어)');
+    assert.equal(views.props.onPress, undefined, 'views is a count, not a button');
+    assert.equal(nodes(views).find(node => node.type === 'SymbolView').props.name.ios, 'eye');
+    assert.equal(textOf(nodes(views).find(node => node.type === 'ThemedText')), '9');
+    const share = tree.find(node => node.props?.analyticsId === 'components_post-card.pressable.10'), saveNode = tree.find(node => node.props?.analyticsId === 'components_post-card.pressable.9');
+    assert.ok(tree.indexOf(share) < tree.indexOf(views) && tree.indexOf(views) < tree.indexOf(saveNode), 'share → views → save');
     const save = () => nodes(card.render(props)).find(node => node.props?.analyticsId === 'components_post-card.pressable.9');
     assert.equal(style(save()).marginLeft, 'auto', 'save sits at the right end of the row');
     assert.ok(style(save()).minWidth >= 44 && style(save()).minHeight >= 44);
@@ -264,7 +271,7 @@ test('Today card: author row, short text, place card, swipeable photos, then lik
     assert.equal(save().props.accessibilityState.selected, true);
     assert.equal(nodes(save()).find(node => node.type === 'SymbolView').props.name.ios, 'bookmark.fill');
     tree = nodes(card.render(props));
-    assert.ok(!tree.some(node => node.type === 'SymbolView' && node.props.name?.ios === 'eye'), 'no view count on Today');
+    assert.equal(tree.filter(node => node.type === 'SymbolView' && node.props.name?.ios === 'eye').length, 1, 'one view count on Today (owner 2026-11-09)');
     assert.ok(!tree.some(node => node.type === 'MeetupManageSheet'));
     tree.find(node => node.props?.analyticsId === 'post.manage.open').props.onPress();
     const menu = nodes(card.render(props)).find(node => node.type === 'MeetupManageSheet');
