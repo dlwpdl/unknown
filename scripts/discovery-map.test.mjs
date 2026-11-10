@@ -310,7 +310,97 @@ test('Top 50 uses a circular outline and a selected-only label while preserving 
   assert.equal(c.sources.discovery.data.features[0].properties.top25, true);
 });
 
-test('close-up and featured pins are never counted, keep 44px targets and preserve the camera for result updates', async () => {
+test('crowded TOP 50 places fold only among themselves into a gold count with no name tag, only as far apart as they touch; saved, discount and chosen TOP 50 stay single (owner 2026-11-10)', async () => {
+  const a = { ...marker, id: 'a', featured: true, top25: true }, b = { ...marker, id: 'b', latitude: 49.2801, top25: true };
+  const savedTop = { ...marker, id: 'saved-top', latitude: 49.2802, featured: true, top25: true, saved: true }, dealTop = { ...marker, id: 'deal-top', latitude: 49.2803, featured: true, top25: true, discount: 10 };
+  const plain = { ...marker, id: 'plain', latitude: 49.2804 }, visited = { ...marker, id: 'visited', latitude: 49.2805, featured: true };
+  const markers = [a, b, savedTop, dealTop, plain, visited], c = canvas(markers), tick = () => new Promise(done => setImmediate(done));
+  const tops = ['discovery-top', 'discovery-top-near'], ids = source => Array.from(c.sources[source].data.features.map(feature => feature.properties.id));
+  const top = () => { assert.deepEqual(ids('discovery-top-near'), ids('discovery-top')); return ids('discovery-top'); };
+  const layer = id => c.layers.find(value => value.id === id), index = id => c.layers.findIndex(value => value.id === id);
+  // Mid stage folds within the 27px mid picture pin, close up within the 46px ringed pin. Only the two closest (Vancouver Art Gallery, Robson Square) still touch at 16, so TOP 50 folds through 16 and is single from 17.
+  for (const [source, radius] of [['discovery-top', 28], ['discovery-top-near', 48]]) {
+    assert.equal(c.sources[source].cluster, true, source);
+    assert.equal(c.sources[source].clusterMaxZoom, 16, source);
+    assert.equal(c.sources[source].clusterRadius, radius, source + ': as wide as the widest TOP 50 mark at its stage, so two marks never touch unfolded');
+    // A source is loaded only while one of its layers is in zoom range; its gold circle stays in range so the other stage finds its tiles ready.
+    assert.ok(c.layers.some(value => value.source === source && value.minzoom === 8 && value.maxzoom === undefined), source + ' stays loaded at every zoom');
+  }
+  assert.deepEqual(top(), ['a', 'b'], 'saved and discount TOP 50 places stay single (owner 2026-11-08)');
+  assert.deepEqual(Array.from(c.sources['discovery-grouped'].data.features.map(feature => feature.properties.id)), ['plain'], 'TOP 50 never joins an ordinary count');
+  assert.equal(JSON.stringify(c.sources.discovery.data.features.map(feature => [feature.properties.id, feature.properties.fold])), JSON.stringify([['a', true], ['b', true], ['saved-top', false], ['deal-top', false], ['plain', false], ['visited', false]]));
+  // The count: the ordinary count's shape with the TOP 50 ring's gold at each stage, shown only at its own stage, and nothing written beside it.
+  const grey = layer('discovery-clusters').paint['circle-radius'];
+  for (const [source, width, shown] of [['discovery-top', 1.5, [1, 0]], ['discovery-top-near', 2, [0, 1]]]) {
+    const circle = layer(source + '-clusters'), count = layer(source + '-counts');
+    assert.equal(circle.type, 'circle');
+    assert.equal(JSON.stringify(circle.paint['circle-radius']), JSON.stringify(grey), source + ': same size as a grey count');
+    assert.equal(circle.paint['circle-stroke-color'], '#9C7637');
+    assert.equal(circle.paint['circle-stroke-width'], width, source + ': the TOP 50 ring width at its stage');
+    assert.equal(JSON.stringify(circle.paint['circle-opacity']), JSON.stringify(['step', ['zoom'], shown[0], 13, shown[1]]));
+    assert.equal(JSON.stringify(circle.paint['circle-stroke-opacity']), JSON.stringify(circle.paint['circle-opacity']));
+    // No zoom range on either: a layer out of range gets no bucket in the tile still on screen while the zoom crosses 13.
+    assert.deepEqual([circle.minzoom, circle.maxzoom, count.minzoom, count.maxzoom], [8, undefined, 8, undefined]);
+    assert.equal(JSON.stringify(count.paint['text-opacity']), JSON.stringify(circle.paint['circle-opacity']));
+    assert.equal(count.paint['text-color'], '#6F5129');
+    assert.ok(index('discovery-counts') < index(source + '-clusters') && index(source + '-counts') < index('discovery-pins-grouped'), 'gold counts sit above grey ones and under the places');
+  }
+  // Only the circle, its number and the tap area draw a folded count: a gold count carries no name tag.
+  assert.deepEqual(Array.from(c.layers.filter(value => tops.includes(value.source) && !JSON.stringify(value.filter ?? null).includes('["!",["has","point_count"]]')).map(value => value.id)), ['discovery-top-clusters', 'discovery-top-counts', 'discovery-top-near-clusters', 'discovery-top-near-counts', 'discovery-hit-top', 'discovery-hit-top-near']);
+  // Every mark a single TOP 50 place has comes from its copy on the source of each stage the mark shows at; saved and discount marks never fold, so they have none.
+  // Circles (dot, ring, state dot) are drawn by both copies at every zoom and fade by stage, so the tile on screen while crossing 13 still holds them; names and mid picture pins keep their own zoom range, as before.
+  const stage = (value, mid) => { const v = value ?? 1, [m, n] = Array.isArray(v) && v[0] === 'step' ? [v[2], v[4]] : [v, v]; return JSON.stringify(mid ? ['step', ['zoom'], m, 13, 0] : ['step', ['zoom'], 0, 13, n]); };
+  for (const id of ['discovery-pins', 'discovery-status', 'discovery-top25']) {
+    const own = layer(id);
+    for (const [suffix, source, mid] of [['-top', 'discovery-top', true], ['-top-near', 'discovery-top-near', false]]) {
+      const copy = layer(id + suffix);
+      assert.equal(copy.source, source, id);
+      assert.equal(JSON.stringify(copy.filter[1]), '["!",["has","point_count"]]', id + ': a place inside a gold count draws no mark of its own');
+      assert.deepEqual([copy.minzoom, copy.maxzoom], [own.minzoom, own.maxzoom], id + suffix);
+      for (const key of ['circle-opacity', 'circle-stroke-opacity']) assert.equal(JSON.stringify(copy.paint[key]), stage(own.paint[key], mid), id + suffix + ' ' + key);
+      assert.ok(index(copy.id) < index(id), id + ': the single copy (chosen, saved, discount) stays on top');
+    }
+  }
+  for (const id of ['discovery-art', 'discovery-labels', 'discovery-featured-labels', 'discovery-art-featured', 'discovery-art-featured-labels']) {
+    const own = layer(id), mid = layer(id + '-top'), near = layer(id + '-top-near');
+    assert.equal(!!mid, !(own.minzoom >= 13), id + ': a mid copy only where the mark shows below 13');
+    assert.equal(!!near, !(own.maxzoom <= 13), id + ': a close-up copy only where the mark shows from 13');
+    for (const [copy, source, range] of [[mid, 'discovery-top', [own.minzoom, 13]], [near, 'discovery-top-near', [13, own.maxzoom]]]) {
+      if (!copy) continue;
+      assert.equal(copy.source, source, id);
+      assert.equal(JSON.stringify(copy.filter[1]), '["!",["has","point_count"]]', id + ': a place inside a gold count draws no mark of its own');
+      assert.deepEqual([copy.minzoom, copy.maxzoom], range, id);
+      assert.ok(index(copy.id) < index(id), id + ': the single copy (chosen, saved, discount) stays on top');
+    }
+  }
+  for (const id of ['discovery-saved', 'discovery-discount', 'discovery-discount-dot']) assert.equal(layer(id + '-top') ?? layer(id + '-top-near'), undefined, id);
+  assert.ok(index('discovery-hit-grouped') < index('discovery-hit-top') && index('discovery-hit-top') < index('discovery-hit-top-near') && index('discovery-hit-top-near') < index('discovery-hit'));
+  assert.deepEqual([layer('discovery-hit-top').maxzoom, layer('discovery-hit-top-near').minzoom], [13, 13], 'a tap only finds the count drawn at that stage');
+  // The single source keeps only the TOP 50 places that cannot fold.
+  for (const id of ['discovery-top25', 'discovery-featured-labels', 'discovery-art-featured', 'discovery-art-featured-labels']) assert.match(JSON.stringify(layer(id).filter), /\["!=",\["get","fold"\],true\]/, id);
+  // Choosing a TOP 50 place takes it out of its count until it is let go.
+  c.window.glingDiscoveryUpdate(sessionId, { markers, selectedId: 'b', center: null });
+  assert.deepEqual(top(), ['a']);
+  c.window.glingDiscoveryUpdate(sessionId, { markers, selectedId: null, center: null });
+  assert.deepEqual(top(), ['a', 'b']);
+  // A gold count opens from the source it was drawn from. A mid count that opens at 13 or later would still be one close-up count there (wider fold), so it goes one zoom further.
+  c.sources['discovery-grouped'].getClusterExpansionZoom = async () => assert.fail('grey source asked for a gold count');
+  for (const [source, opens, lands] of [['discovery-top', 12, 12], ['discovery-top', 13, 14], ['discovery-top-near', 17, 17], ['discovery-top-near', 13, 13]]) {
+    for (const other of tops) c.sources[other].getClusterExpansionZoom = async id => (assert.equal(other, source), assert.equal(id, 3), opens);
+    c.map.hits = [{ source, properties: { cluster: true, cluster_id: 3, point_count: 2 }, geometry: { type: 'Point', coordinates: [-123.12, 49.28] } }];
+    await c.listeners.click({ point: { x: 1, y: 1 } }); await tick();
+    assert.equal(c.cameras.at(-1).zoom, lands, source + ' ' + opens);
+  }
+  assert.ok(!c.messages.some(message => message.type === 'select'), 'a gold count is not a place');
+  // Real MapLibre answers an unknown layer id with nothing at all, so every tap layer has to exist.
+  assert.ok(c.map.queryOptions.layers.includes('discovery-hit-top') && c.map.queryOptions.layers.includes('discovery-hit-top-near'));
+  for (const id of c.map.queryOptions.layers) assert.ok(layer(id), id + ' exists');
+  // The faded ring copies have no zoom range, and a query ignores opacity, so they never take taps; the 44px hit areas cover TOP 50 at each stage.
+  assert.ok(!c.map.queryOptions.layers.some(id => /-top(-near)?$/.test(id) && layer(id).type === 'circle' && layer(id).maxzoom === undefined && layer(id).minzoom === 8 && !id.startsWith('discovery-hit')));
+  assert.ok(c.html.includes('붙어 있는 TOP 50끼리는 금색 테두리 동그라미로 따로 묶여요.'), 'the map label says what a gold count is');
+});
+
+test('close-up pins and Gling-visited places are never counted, keep 44px targets and preserve the camera for result updates', async () => {
   const c = canvas();
   assert.equal(c.map.config.zoom, 11);
   assert.deepEqual(Array.from(c.map.config.center), [-123.12, 49.28]);
@@ -340,7 +430,7 @@ test('close-up and featured pins are never counted, keep 44px targets and preser
   assert.equal(c.messages.filter(message => message.type === 'feedback').length, 1);
 });
 
-test('mid-zoom crowded places fold into counts; TOP 50, Gling-visited, saved, discount and the chosen place stay single, and a count opens where it splits (owner 2026-11-08)', async () => {
+test('mid-zoom crowded places fold into counts; Gling-visited, saved, discount and the chosen place stay single, TOP 50 folds on its own, and a count opens where it splits (owner 2026-11-08)', async () => {
   const plain = { ...marker, id: 'plain' }, top = { ...marker, id: 'top', latitude: 49.281, featured: true, top25: true }, visited = { ...marker, id: 'visited', latitude: 49.282, featured: true }, topOnly = { ...marker, id: 'top-only', latitude: 49.283, top25: true };
   // Saved and discount places stay single (owner 2026-11-08 "저장한 곳·할인 가게도 따로 보이기").
   const saved = { ...marker, id: 'saved', latitude: 49.284, saved: true }, deal = { ...marker, id: 'deal', latitude: 49.285, discount: 20 };
@@ -351,7 +441,7 @@ test('mid-zoom crowded places fold into counts; TOP 50, Gling-visited, saved, di
   assert.deepEqual(grouped(), ['plain']);
   assert.equal(c.sources.discovery.data.features.length, 8, 'up close every place still comes from the single source');
   const pins = c.layers.find(layer => layer.id === 'discovery-pins'), index = id => c.layers.findIndex(layer => layer.id === id);
-  assert.equal(JSON.stringify(pins.filter), '["all",["any",["==",["get","featured"],true],["==",["get","top25"],true],["==",["get","saved"],true],[">",["get","discount"],0],["==",["slice",["get","id"],0,7],"bubble:"],["==",["slice",["get","id"],0,7],"meetup:"],["==",["get","id"],""]],true,true]', 'at every zoom the single source draws only TOP 50, Gling-visited, saved, discount, live bubbles, meetups and the chosen place');
+  assert.equal(JSON.stringify(pins.filter), '["all",["any",["all",["==",["get","featured"],true],["!=",["get","fold"],true]],["==",["get","saved"],true],[">",["get","discount"],0],["==",["slice",["get","id"],0,7],"bubble:"],["==",["slice",["get","id"],0,7],"meetup:"],["==",["get","id"],""]],true,true]', 'at every zoom the single source draws only Gling-visited, saved, discount, live bubbles, meetups and the chosen place; other TOP 50 places come from discovery-top');
   // Each place has one source and no stage is switched by zoom, so a tile kept on screen while zooming past NEAR still draws every place (supervisor review, PR #125).
   const ours = c.layers.filter(layer => layer.id.includes('-grouped') || layer.id === 'discovery-clusters' || layer.id === 'discovery-counts' || ['discovery-pins', 'discovery-hit', 'discovery-saved', 'discovery-status', 'discovery-discount-dot'].includes(layer.id));
   assert.ok(ours.every(layer => layer.maxzoom === undefined && !JSON.stringify(layer.filter ?? null).includes('"zoom"')), 'no stage switch in the grouping layers');
@@ -368,11 +458,11 @@ test('mid-zoom crowded places fold into counts; TOP 50, Gling-visited, saved, di
   assert.deepEqual(grouped(), [], 'the chosen place leaves its count');
   assert.match(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-saved').filter[1]), /"plain"/);
   // Names: the single source keeps only single places and leaves the chosen one to its own label, so no plain name is laid out twice.
-  assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-labels').filter), '["all",["any",["==",["get","featured"],true],["==",["get","top25"],true],["==",["get","saved"],true],[">",["get","discount"],0],["==",["slice",["get","id"],0,7],"bubble:"],["==",["slice",["get","id"],0,7],"meetup:"],["==",["get","id"],"plain"]],true,["!",["==",["get","id"],"plain"]]]');
+  assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-labels').filter), '["all",["any",["all",["==",["get","featured"],true],["!=",["get","fold"],true]],["==",["get","saved"],true],[">",["get","discount"],0],["==",["slice",["get","id"],0,7],"bubble:"],["==",["slice",["get","id"],0,7],"meetup:"],["==",["get","id"],"plain"]],true,["!",["==",["get","id"],"plain"]]]');
   c.window.glingDiscoveryUpdate(sessionId, { markers, selectedId: null, center: null });
   assert.deepEqual(grouped(), ['plain']);
 
-  const cameras = c.cameras.length, count = { properties: { cluster: true, cluster_id: 7, point_count: 5 }, geometry: { type: 'Point', coordinates: [-123.1, 49.2] } };
+  const cameras = c.cameras.length, count = { source: 'discovery-grouped', properties: { cluster: true, cluster_id: 7, point_count: 5 }, geometry: { type: 'Point', coordinates: [-123.1, 49.2] } };
   c.sources['discovery-grouped'].getClusterExpansionZoom = async id => (assert.equal(id, 7), 12.5);
   c.map.hits = [count];
   await c.listeners.click({ point: { x: 1, y: 1 } }); await tick();
