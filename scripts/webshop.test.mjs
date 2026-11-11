@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parseWebshop, compareWebshopPrices, webshopRedirectUrl, parseBusinessPlaceLinks, bindBusinessPlaces } from '../src/lib/webshops.ts';
+import { parseWebshop, compareWebshopPrices, webshopRedirectUrl, webshopOrderUrl, recordWebshopSheetView, parseBusinessPlaceLinks, bindBusinessPlaces } from '../src/lib/webshops.ts';
 
 const merchantId = 'a3310000-0000-4000-8000-000000000001';
 const fixture = () => ({ merchantId, cityId: 'vancouver', url: 'https://www.order.store/ca/store/jimoco-cafe-%26-pasta-austin/ZFgz2GjZSAuhlUYeO1fupA', provider: 'uber',
@@ -40,6 +40,18 @@ test('tracked links use only the registry merchant and opaque event/session, nev
   assert.equal(url.searchParams.has('url'), false);
   assert.equal(url.searchParams.has('access_token'), false);
   assert.throws(() => webshopRedirectUrl('http://example.com', merchantId, { eventId: merchantId, session: 'x', platform: 'ios', source: 'comparison_sheet' }), /INVALID_WEBSHOP/);
+});
+
+test('a price sheet opened from the map records map; the business profile keeps its original sources', async () => {
+  process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
+  const source = origin => new URL(webshopOrderUrl(merchantId, 'ios', origin)).searchParams.get('source');
+  assert.equal(source('map'), 'map');
+  assert.equal(source('business_profile'), 'comparison_sheet');
+  assert.equal(source(), 'comparison_sheet');
+  const calls = [], client = { rpc: async (name, args) => { calls.push([name, args]); return { error: null }; } };
+  assert.equal(await recordWebshopSheetView(client, merchantId, 'android', 'map'), true);
+  assert.equal(await recordWebshopSheetView(client, merchantId, 'android'), true);
+  assert.deepEqual(calls.map(([name, args]) => [name, args.p_source, args.p_kind]), [['record_webshop_event', 'map', 'sheet_view'], ['record_webshop_event', 'business_profile', 'sheet_view']]);
 });
 
 test('business links preserve exact place/branch identity and reject conflicting bindings', () => {

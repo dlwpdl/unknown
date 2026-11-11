@@ -386,7 +386,7 @@ export default function CompanyProfileRoute() {
       </View>}
     </ScrollView>
     {profile && (webshop.shop || canMessage && business?.id !== merchantId || mapsUrl || glingPlace) && <SafeAreaView edges={['bottom']} style={[styles.inquiryBar, { borderTopColor: theme.line, backgroundColor: theme.background }]}>
-      {webshop.shop && <WebshopOrderButton onPress={() => setOrderMerchant(merchantId)} />}
+      {webshop.shop && <WebshopOrderButton shop={webshop.shop} onPress={() => setOrderMerchant(merchantId)} />}
       <View style={styles.footerActions}>
         {!!canMessage && business?.id !== merchantId && <Pressable analyticsId="company.inquiry" accessibilityRole="button" accessibilityLabel={tr("비즈니스 담당자에게 문의")}
           accessibilityState={{ disabled: busy, busy: busy && actionBusy?.kind === 'message' }} disabled={busy}
