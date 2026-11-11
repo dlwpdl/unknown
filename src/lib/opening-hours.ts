@@ -122,5 +122,11 @@ export function openState(openingHours: unknown, clock: LocalClock | null): 'ope
 }
 
 // Minutes are wall-clock numbers, so UTC only keeps the formatter from shifting them.
-export const formatTime = (value: number, locale?: string) => new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }).format((value % 1440) * 60000);
+// One formatter per locale (map lag 2026-11-11): building one per time cost about 28 on every list render.
+const times = new Map<string, Intl.DateTimeFormat>();
+export function formatTime(value: number, locale?: string) {
+  let format = times.get(locale ?? '');
+  if (!format) { format = new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }); times.set(locale ?? '', format); }
+  return format.format((value % 1440) * 60000);
+}
 export const formatRanges = (day: [number, number][], locale?: string) => day.map(([start, end]) => `${formatTime(start, locale)}–${formatTime(end, locale)}`).join(', ');
