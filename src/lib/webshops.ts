@@ -150,13 +150,15 @@ export function webshopRedirectUrl(origin: string, merchantId: string, context: 
   return url.href;
 }
 
-export const webshopOrderUrl = (merchantId: string, platform: WebshopPlatform) => webshopRedirectUrl(process.env.EXPO_PUBLIC_SUPABASE_URL!, merchantId,
-  { eventId: merchantEventId(), session, platform, source: 'comparison_sheet' });
+// The profile keeps its original 'comparison_sheet' value; a sheet opened from the map records 'map'.
+export type WebshopSheetOrigin = 'business_profile' | 'map';
+export const webshopOrderUrl = (merchantId: string, platform: WebshopPlatform, origin: WebshopSheetOrigin = 'business_profile') => webshopRedirectUrl(process.env.EXPO_PUBLIC_SUPABASE_URL!, merchantId,
+  { eventId: merchantEventId(), session, platform, source: origin === 'map' ? 'map' : 'comparison_sheet' });
 
-export async function recordWebshopSheetView(client: SupabaseClient, merchantId: string, platform: WebshopPlatform) {
+export async function recordWebshopSheetView(client: SupabaseClient, merchantId: string, platform: WebshopPlatform, origin: WebshopSheetOrigin = 'business_profile') {
   try {
     const { error } = await client.rpc('record_webshop_event', { p_merchant_id: merchantId, p_event_id: merchantEventId(), p_session: session,
-      p_platform: platform, p_source: 'business_profile', p_kind: 'sheet_view' });
+      p_platform: platform, p_source: origin, p_kind: 'sheet_view' });
     return !error;
   } catch { return false; }
 }
