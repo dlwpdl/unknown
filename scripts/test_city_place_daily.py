@@ -28,6 +28,28 @@ class DailyPlaces(unittest.TestCase):
             bad = json.loads(json.dumps(seed)); bad['cities']['vancouver']['regionalPhotos'][0][key] = value
             with self.assertRaises(ValueError): m.build_catalog(bad,osm,now)
 
+    def test_refused_overpass_falls_back_to_osm_api_by_id(self):
+        m = implementation(); seed, _, now = self.fixture()
+        way = dict(seed['cities']['vancouver']['places'][0], id='osm:way:7', name='Verified Park', category='places', latitude=49.3, longitude=-123.14, sourceUrl='https://www.openstreetmap.org/way/7')
+        gone = dict(way, id='osm:node:9', name='Gone Cafe', sourceUrl='https://www.openstreetmap.org/node/9')
+        seed['cities']['vancouver']['places'] += [way, gone]
+        api = {'node': [dict(type='node', id=1, lat=49.281, lon=-123.121, tags=dict(name='Verified Cafe', opening_hours='Mo-Su 08:00-18:00')), dict(type='node', id=9, visible=False)],
+               'way': [dict(type='way', id=7, nodes=[1, 2], tags=dict(name='Verified Park', leisure='park'))]}
+        calls = []
+        def fake(url, body, headers):
+            calls.append(url)
+            if 'overpass' in url: raise m.ValueError('refused')
+            self.assertIsNone(body)
+            return {'elements': api['node' if '/nodes.json' in url else 'way']}
+        with patch.object(m, 'http', side_effect=fake):
+            response = m.collect(seed)
+        self.assertEqual([u.split('?')[0] for u in calls[1:]], ['https://api.openstreetmap.org/api/0.6/nodes.json', 'https://api.openstreetmap.org/api/0.6/ways.json'])
+        self.assertEqual([(e['type'], e['id']) for e in response['elements']], [('node', 1), ('way', 7)])
+        seed['cities']['vancouver']['places'].remove(gone)  # keep the 80% completeness guard out of this check
+        places = {p['id']: p for p in m.build_catalog(seed, response['elements'], now)['cities']['vancouver']['places']}
+        self.assertEqual((places['osm:way:7']['latitude'], places['osm:way:7']['longitude']), (49.3, -123.14))
+        self.assertEqual(places['osm:node:1']['openingHours'], 'Mo-Su 08:00-18:00')
+
     def test_today_guard_stops_before_seed_credentials_collection_or_publication(self):
         m = implementation()
         with tempfile.TemporaryDirectory() as target:
