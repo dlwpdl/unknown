@@ -38,16 +38,17 @@ class DailyPlaces(unittest.TestCase):
         calls = []
         def fake(url, body, headers):
             calls.append(url)
-            if 'overpass' in url: raise m.ValueError('refused')
+            if 'overpass' in url: raise ConnectionRefusedError('refused')
             self.assertIsNone(body)
             return {'elements': api['node' if '/nodes.json' in url else 'way']}
+        previous = {'cities': {'vancouver': {'places': [dict(way, latitude=49.31, longitude=-123.15)]}}}
         with patch.object(m, 'http', side_effect=fake):
-            response = m.collect(seed)
+            response = m.collect(seed, previous)
         self.assertEqual([u.split('?')[0] for u in calls[1:]], ['https://api.openstreetmap.org/api/0.6/nodes.json', 'https://api.openstreetmap.org/api/0.6/ways.json'])
         self.assertEqual([(e['type'], e['id']) for e in response['elements']], [('node', 1), ('way', 7)])
         seed['cities']['vancouver']['places'].remove(gone)  # keep the 80% completeness guard out of this check
         places = {p['id']: p for p in m.build_catalog(seed, response['elements'], now)['cities']['vancouver']['places']}
-        self.assertEqual((places['osm:way:7']['latitude'], places['osm:way:7']['longitude']), (49.3, -123.14))
+        self.assertEqual((places['osm:way:7']['latitude'], places['osm:way:7']['longitude']), (49.31, -123.15))  # the published pin wins over the seed
         self.assertEqual(places['osm:node:1']['openingHours'], 'Mo-Su 08:00-18:00')
 
     def test_today_guard_stops_before_seed_credentials_collection_or_publication(self):

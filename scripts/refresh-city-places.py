@@ -200,8 +200,8 @@ def http(url, body, headers):
     cert = Path('/etc/ssl/cert.pem')
     context = ssl.create_default_context(cafile=str(cert) if cert.exists() else None)
     with urlopen(Request(url, data=body, headers=headers, method='GET' if body is None else 'POST'), context=context, timeout=60) as response:
-        raw = response.read(2_000_001)
-    if len(raw) > 2_000_000: raise ValueError('PLACE_RESPONSE_TOO_LARGE')
+        raw = response.read(8_000_001)  # the published catalog was 1.6 MB on 2026-11-11 and grows with every discovered place
+    if len(raw) > 8_000_000: raise ValueError('PLACE_RESPONSE_TOO_LARGE')
     return json.loads(raw)
 
 def current_catalog():
@@ -301,7 +301,7 @@ def main():
     raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
     digest = hashlib.sha256(raw).hexdigest()
     path = out/f'catalog-{digest}.json'; path.write_bytes(raw)
-    result = dict(status='prepared', day=day(now), payload_sha256=digest, path=str(path), upstream_json_sha256=upstream_sha, places=sum(len(c['places']) for c in payload['cities'].values()), recommendations=sum(len(c['recommendations']) for c in payload['cities'].values()))
+    result = dict(status='prepared', day=day(now), payload_sha256=digest, path=str(path), upstream_json_sha256=upstream_sha, osm_source=response.get('source', 'overpass-api.de'), places=sum(len(c['places']) for c in payload['cities'].values()), recommendations=sum(len(c['recommendations']) for c in payload['cities'].values()))
     if args.publish:
         with (out/'attempt.json').open('x') as f: json.dump(result, f)
         try: publish(payload, token)
