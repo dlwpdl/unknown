@@ -95,3 +95,9 @@ export function withPostMap(body: string, input: string, label?: string, { prese
   if ([...text].length > 1000) throw new Error('POST_BODY_TOO_LONG');
   return text;
 }
+
+// A named map place attached as the writer's place search attaches it: the place's own point and its name as the label.
+export function withPlacePin(body: string, place: { latitude: number; longitude: number; name: string }): string {
+  const label = place.name.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 100).trim() || '선택한 위치';
+  return withPostMap(body, googlePinUrl({ latitude: place.latitude, longitude: place.longitude }), label, { preserveWhitespace: true });
+}

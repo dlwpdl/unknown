@@ -65,6 +65,7 @@ function mount({ cities = [], routeParams = {}, light = false, reduced = false, 
     '@/lib/ticketmaster': { EVENT_CITIES: { vancouver: {} }, loadTicketmasterEvents: async () => ({ events: [], hasMore: false }) }, '@/components/post-ad-label': {}, '@/lib/hashtags': { hasAdLabel: () => false },
     '@/components/drag-sheet': { DragSheet: 'DragSheet' }, '@/components/city-picker': { CityPicker: 'CityPicker' }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: target => { savedEntry.targets.push(target); return { state: savedEntry.state }; } }, '@/components/map-list-sheet': { MapListSheet: 'MapListSheet' }, '@/components/map-scope': { FriendSavedLine: 'FriendSavedLine', MapScopeSheet: 'MapScopeSheet' }, '@/lib/profile-friends': { loadMapScope: (...args) => loadScope(...args), loadCityPlaceSaves: (...args) => loadSaves(...args) }, '@/components/place-hours': { PlaceHours: 'PlaceHours' },
     '@/components/reservation-button': { ReservationButton: 'ReservationButton' }, '@/components/business-webshop': { WebshopComparisonSheet: 'WebshopComparisonSheet', WebshopOrderButton: 'WebshopOrderButton' }, '@/lib/opening-hours': openingHours,
+    '@/hooks/use-place-compose': { usePlaceCompose: () => null },
     '@/lib/listing-details': { inBounds: (b, p) => p.latitude >= b.south && p.latitude <= b.north && p.longitude >= b.west && p.longitude <= b.east },
   };
   const exports = {};

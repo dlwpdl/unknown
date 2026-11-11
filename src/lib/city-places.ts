@@ -285,6 +285,13 @@ export function getCityDiscoveryPlaces(cityId: string): CityPlace[] {
   return [...ids].flatMap(id => { const place = byId.get(id); return place ? [place] : []; });
 }
 
+// A map place the writer may take as its place (owner 2026-11-11 "지도에서 장소누르고 글 추가"): the same places its place search lists,
+// in a city that takes posts. Anything else, such as a stale link or a city that is not open yet, gives null.
+export function composePlace(cityId: unknown, placeId: unknown): CityPlace | null {
+  if (typeof cityId !== 'string' || typeof placeId !== 'string' || CITIES.find(city => city.id === cityId)?.state !== 'open') return null;
+  try { return getCityDiscoveryPlaces(cityId).find(place => place.id === placeId) ?? null; } catch { return null; }
+}
+
 export function getCityBrowsePlaces(cityId: string, category: PlaceCategory = 'all'): CityPlace[] {
   getCityPlaces(cityId, category);
   return category === 'all' ? getCityRecommendations(cityId) : getCityDiscoveryPlaces(cityId).filter(place => place.category === category);

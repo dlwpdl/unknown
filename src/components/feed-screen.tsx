@@ -92,9 +92,10 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { normalizePoll, type PollDraft } from '@/lib/post-polls';
 import { loadPhotoConsentSettings, savePostPhotoConsent } from '@/lib/post-photo-consent';
 import { clearPostUpload, getPostUpload, savedByEarlierTry, startPostUpload, type UploadPhoto } from '@/lib/post-upload';
-import { TAGS } from '@/lib/mock';
+import { CITIES, TAGS } from '@/lib/mock';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
-import { googlePinUrl, postMapBody, withPostMap } from '@/lib/post-maps';
+import { googleMapsPin, googlePinUrl, postMapBody, withPlacePin, withPostMap } from '@/lib/post-maps';
+import { composePlace, type CityPlace } from '@/lib/city-places';
 import {
   BUSINESS_VIEW_KEY, emptyListingDraft, isListingCategory, LISTING_VIEW_KEY, listingFiltersActive, listingFromDraft, matchesListingFilters, NO_LISTING_FILTERS, parseListingView, withListingLead,
   type ListingCategory, type ListingDraft, type ListingFilters, type ListingView,
@@ -126,7 +127,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [hasBusinessSwitch, setHasBusinessSwitch] = useState(false);
   const expandedHeader = fontScale > 1.2 || (hasBusinessSwitch && viewportWidth < 380);
   const router = useRouter();
-  const { compose, hashtag } = useLocalSearchParams<{ compose?: string; hashtag?: string }>();
+  const { compose, hashtag, place: placeParam, placeCity } = useLocalSearchParams<{ compose?: string; hashtag?: string; place?: string; placeCity?: string }>();
   const { isAuthed, isAuthLoading, promptLogin, me, isAdmin } = useAuth();
   const business = useChatIdentity();
   const [businessWriting, setBusinessWriting] = useState(false);
@@ -518,7 +519,34 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     Alert.alert(tr("아직 올리는 중이에요"), tr("지금 올리는 글이 다 올라가면 바로 쓸 수 있어요."));
   }, [play, tr]);
 
-  const openWriter = useCallback(() => {
+  // The writer opens here once openWriter's checks pass. A map place goes in as if it were picked in the writer's place search, with its city.
+  const showWriter = useCallback((fresh: boolean, place: CityPlace | null) => {
+    setPhotosLaunched(false);
+    void loadListingQuota(supabase).then(setListingQuota).catch(() => {});
+    const revision = ++writerRevision.current;
+    draftLocation.current = null;
+    // 새 초안은 설정 값으로 다시 시작한다. 쓰던 초안은 고른 값을 그대로 둔다. 불러오기 전에는 칸이 안 보여 누를 수 없다.
+    if (fresh || photoConsent === null) void loadPhotoConsentSettings(supabase).then(saved => setPhotoConsent(current => current ?? saved?.on ?? null)).catch(() => {});
+    if (fresh) {
+      setPhotoConsent(null);
+      setDraftCity(city);
+      // Writing from 부동산·구인구직·중고거래 starts in that category with its fields.
+      const listingTag = !place && listingCategory && TAGS.find(item => item.slug === listingCategory);
+      if (listingTag) { setTag(listingTag); setPostKind('listing'); }
+      // 모임 and listing posts take no place, so a new draft with one starts as 라이프.
+      if (place && (tag.kind === 'meetup' || writerListing)) { setTag(TAGS[0]); setPostKind('story'); }
+    }
+    if (place) { setDraftCity(CITIES.find(item => item.id === place.cityId)!); setBody(withPlacePin(fresh ? '' : body, place)); }
+    setWriterPanel(null);
+    setWriterOptionsOpen(false);
+    setWriting(true);
+    void location.capture().then((fix) => {
+      if (revision !== writerRevision.current) return;
+      draftLocation.current = fix;
+    });
+  }, [city, location, body, photoConsent, listingCategory, tag, writerListing]);
+
+  const openWriter = useCallback((place?: CityPlace | null) => {
     play('reaction');
     if (!isAuthed) return promptLogin(t.auth.reasonWrite);
     // Acting as a business, the writer offers only business post types (owner 2026-10-25, option A).
@@ -528,28 +556,18 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     const upload = getPostUpload();
     if (upload?.status === 'uploading') { stillUploading(); return; }
     if (upload?.status === 'failed') clearPostUpload();
-    setPhotosLaunched(false);
-    void loadListingQuota(supabase).then(setListingQuota).catch(() => {});
-    const revision = ++writerRevision.current;
-    draftLocation.current = null;
     const fresh = !title.trim() && !body.trim() && !hashtagInput.trim() && draftImages.length === 0 && !pollDraft;
-    // 새 초안은 설정 값으로 다시 시작한다. 쓰던 초안은 고른 값을 그대로 둔다. 불러오기 전에는 칸이 안 보여 누를 수 없다.
-    if (fresh || photoConsent === null) void loadPhotoConsentSettings(supabase).then(saved => setPhotoConsent(current => current ?? saved?.on ?? null)).catch(() => {});
-    if (fresh) {
-      setPhotoConsent(null);
-      setDraftCity(city);
-      // Writing from 부동산·구인구직·중고거래 starts in that category with its fields.
-      const listingTag = listingCategory && TAGS.find(item => item.slug === listingCategory);
-      if (listingTag) { setTag(listingTag); setPostKind('listing'); }
-    }
-    setWriterPanel(null);
-    setWriterOptionsOpen(false);
-    setWriting(true);
-    void location.capture().then((fix) => {
-      if (revision !== writerRevision.current) return;
-      draftLocation.current = fix;
-    });
-  }, [isAuthed, promptLogin, business, writing, city, location, title, body, hashtagInput, draftImages, pollDraft, photoConsent, play, t.auth.reasonWrite, listingCategory, stillUploading]);
+    if (!place || fresh) return showWriter(fresh, place ?? null);
+    // '이 장소로 글쓰기' (owner 2026-11-11) over a draft in progress: the draft keeps its text and the place joins only after a yes, asked before the writer opens.
+    const pin = googleMapsPin(postMapBody(body, { preserveWhitespace: true }).url ?? ''), keep = () => { play('selection'); showWriter(false, null); };
+    if (pin && pin.latitude === place.latitude && pin.longitude === place.longitude && draftCity.id === place.cityId) return showWriter(false, null);
+    if (tag.kind === 'meetup' || writerListing) return Alert.alert(tr('쓰던 글이 있어요'), tr('지금 쓰는 글 종류에는 장소를 붙일 수 없어요.'), [{ text: tr('확인'), onPress: keep }]);
+    try { withPlacePin(body, place); } catch { play('warning'); return Alert.alert(t.write.validationTitle, t.write.bodyTooLong, [{ text: tr('확인'), onPress: keep }]); }
+    Alert.alert(tr('쓰던 글이 있어요'), tr(pin ? '쓰던 글의 장소를 이 장소로 바꿀까요?' : '쓰던 글에 이 장소를 붙일까요?'), [
+      { text: tr('그대로 두기'), style: 'cancel', onPress: keep },
+      { text: tr(pin ? '바꾸기' : '붙이기'), onPress: () => { play('success'); showWriter(false, place); } },
+    ]);
+  }, [isAuthed, promptLogin, business, writing, draftCity, title, body, hashtagInput, draftImages, pollDraft, play, t, tr, stillUploading, tag, writerListing, showWriter]);
 
   useEffect(() => {
     if (!writing) { writerRevision.current++; draftLocation.current = null; }
@@ -558,9 +576,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
 
   useEffect(() => {
     if (compose !== '1') return;
-    router.setParams({ compose: undefined });
-    queueMicrotask(openWriter);
-  }, [compose, openWriter, router]);
+    const place = placeParam ? composePlace(placeCity, placeParam) : null;
+    router.setParams({ compose: undefined, place: undefined, placeCity: undefined });
+    queueMicrotask(() => openWriter(place));
+  }, [compose, placeParam, placeCity, openWriter, router]);
 
   const pickDraftImage = async (source: 'camera' | 'library') => {
     try {
@@ -837,7 +856,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         <View style={styles.soon}>
           <ThemedText accessibilityRole="header" style={styles.soonTitle}>{meetupsOnly ? t.feed.meetupEmptyTitle : activeSort === 'popular' ? tr("최근 7일 글이 아직 없어요") : t.feed.emptyTitle}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary" style={styles.soonBody}>{meetupsOnly ? t.feed.meetupEmptyBody : activeSort === 'popular' ? tr("최신순에서 다른 이야기도 둘러보세요.") : t.feed.emptyBody}</ThemedText>
-          <Pressable analyticsId="components_feed-screen.pressable.6" onPress={openWriter} accessibilityRole="button" style={({ pressed }) => [styles.soonCta, !clay && Depth.control, clay && styles.clayCta, { backgroundColor: clay ? 'transparent' : theme.accent, borderBottomColor: theme.accentDepth, }]}>
+          <Pressable analyticsId="components_feed-screen.pressable.6" onPress={() => openWriter()} accessibilityRole="button" style={({ pressed }) => [styles.soonCta, !clay && Depth.control, clay && styles.clayCta, { backgroundColor: clay ? 'transparent' : theme.accent, borderBottomColor: theme.accentDepth, }]}>
             {clay && <ClayPillFill kind="cta" />}
             <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{t.feed.write}</ThemedText>
           </Pressable>
@@ -1022,7 +1041,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           <GlingLoader color={theme.accent} accessibilityLabel={loadingCover === 'page' ? tr("{0} 소식 불러오는 중", tr(city.name)) : tr("글 불러오는 중")} />
         </Reanimated.View>}</View>
         {writeFab && !writeFabAside && <Reanimated.View entering={reducedMotion ? undefined : FadeIn.duration(ControlMotion.settleMs)} exiting={reducedMotion ? undefined : FadeOut.duration(ControlMotion.pressMs)}
-          style={[styles.writeFabDock, { bottom: (Platform.OS === 'ios' ? insets.bottom : 0) + Spacing.three }]}><Pressable analyticsId="feed.write" accessibilityRole="button" accessibilityLabel={t.tabs.write} onPress={openWriter}
+          style={[styles.writeFabDock, { bottom: (Platform.OS === 'ios' ? insets.bottom : 0) + Spacing.three }]}><Pressable analyticsId="feed.write" accessibilityRole="button" accessibilityLabel={t.tabs.write} onPress={() => openWriter()}
           style={({ pressed }) => [ControlStyles.pill, styles.writeFab, writeFabCompact && styles.writeFabCompact, controlPresentation(theme, { tone: 'primary', clay, pressed, reducedMotion }).container]}>
           {clay && <ClayPillFill kind="cta" />}
           <ClayIcon clay="pencil" claySize={24} name={{ ios: 'plus', android: 'add', web: 'add' }} size={IconSize.toolbar} tintColor={theme.accentInk} />
