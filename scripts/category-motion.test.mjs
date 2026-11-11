@@ -5,7 +5,8 @@ import { ALIVE, ALIVE_MS, aliveMotion, aliveSteps } from '../src/lib/category-mo
 import { PLACE_SUBCATEGORIES } from '../src/lib/discovery.ts';
 
 const MAP_ICONS = ['top25', 'delivery', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used', 'events'];
-// Still pictures without a gesture: the row settings the owner picked, the live map's speech bubble (2026-11-05) and every sub-category (all drawn by 2026-11-05).
+// Still pictures without a gesture: the row settings the owner picked, the live map's speech bubble (2026-11-05) and every sub-category (all drawn by 2026-11-11).
+// A new chip must ship its own picture or both tests fail; category-icon.tsx still borrows the category picture at runtime.
 const OWN_SUBCATEGORY_ICONS = PLACE_SUBCATEGORIES.map(option => option.id);
 const STILL_ICONS = ['scope', 'all', 'open', 'visited', 'bubble', ...OWN_SUBCATEGORY_ICONS];
 

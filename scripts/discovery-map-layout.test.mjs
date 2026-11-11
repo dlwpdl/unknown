@@ -64,7 +64,7 @@ function mount({ cities = [], routeParams = {}, light = false, reduced = false, 
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) }, '@/lib/location': location, '@/lib/supabase': { supabase: {} },
     '@/lib/ticketmaster': { EVENT_CITIES: { vancouver: {} }, loadTicketmasterEvents: async () => ({ events: [], hasMore: false }) }, '@/components/post-ad-label': {}, '@/lib/hashtags': { hasAdLabel: () => false },
     '@/components/drag-sheet': { DragSheet: 'DragSheet' }, '@/components/city-picker': { CityPicker: 'CityPicker' }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: target => { savedEntry.targets.push(target); return { state: savedEntry.state }; } }, '@/components/map-list-sheet': { MapListSheet: 'MapListSheet' }, '@/components/map-scope': { FriendSavedLine: 'FriendSavedLine', MapScopeSheet: 'MapScopeSheet' }, '@/lib/profile-friends': { loadMapScope: (...args) => loadScope(...args), loadCityPlaceSaves: (...args) => loadSaves(...args) }, '@/components/place-hours': { PlaceHours: 'PlaceHours' },
-    '@/components/reservation-button': { ReservationButton: 'ReservationButton' }, '@/lib/opening-hours': openingHours,
+    '@/components/reservation-button': { ReservationButton: 'ReservationButton' }, '@/components/business-webshop': { WebshopComparisonSheet: 'WebshopComparisonSheet', WebshopOrderButton: 'WebshopOrderButton' }, '@/lib/opening-hours': openingHours,
     '@/lib/listing-details': { inBounds: (b, p) => p.latitude >= b.south && p.latitude <= b.north && p.longitude >= b.west && p.longitude <= b.east },
   };
   const exports = {};
@@ -435,6 +435,36 @@ test('late map photo reads cannot attach to another city or viewer', async () =>
   view.setCity('toronto'); view.render(); assert.notDeepEqual(view.registryDependencies, dependencies);
 });
 
+
+test('A안: a business with a published webshop gets the order button on its map card and list row, and it opens the map-tagged price sheet', async () => {
+  const place = { id: 'osm:node:200', cityId: 'vancouver', name: 'Webshop branch', category: 'food', address: 'A', latitude: 49.25, longitude: -122.86, sourceUrl: 'https://www.openstreetmap.org/node/200' };
+  const plain = { ...place, id: 'osm:node:201', name: 'Plain branch', latitude: 49.251, sourceUrl: 'https://www.openstreetmap.org/node/201' };
+  const merchantId = 'a3310000-0000-4000-8000-000000000002', otherCity = 'a3310000-0000-4000-8000-000000000003';
+  const shop = { merchantId, cityId: 'vancouver', url: 'https://example.com/shop', provider: 'uber', placeKeys: [place.id], comparisons: [], verifiedAt: null };
+  const view = mount({ places: [place, plain], loadLinks: async () => ({ [place.id]: merchantId, [plain.id]: otherCity }),
+    loadWebshops: async () => [shop, { ...shop, merchantId: otherCity, cityId: 'toronto' }] });
+  view.render(); const stop = view.readRegistry(); await new Promise(setImmediate);
+  const select = id => { nodes(view.render()).find(n => n.type === 'DiscoveryMap').props.onSelect(`place:vancouver:${id}`); return view.render(); };
+  let tree = select(place.id);
+  const button = nodes(tree).find(n => n.type === 'WebshopOrderButton');
+  assert.equal(button.props.shop, shop);
+  assert.equal(button.props.notice, false, 'the card keeps the Uber notice inside the sheet');
+  assert.ok(!nodes(tree).some(n => n.type === 'WebshopComparisonSheet'), 'no sheet before the tap');
+  button.props.onPress(); tree = view.render();
+  const sheet = nodes(tree).find(n => n.type === 'WebshopComparisonSheet');
+  assert.equal(sheet.props.origin, 'map');
+  assert.equal(sheet.props.shop, shop);
+  assert.equal(sheet.props.name, 'Webshop branch');
+  assert.equal(sheet.props.visible, true);
+  sheet.props.onClose(); tree = view.render();
+  assert.equal(nodes(tree).find(n => n.type === 'WebshopComparisonSheet').props.visible, false);
+  assert.ok(!nodes(select(plain.id)).some(n => n.type === 'WebshopOrderButton'), 'a shop registered for another city never attaches');
+  const list = nodes(view.render()).find(n => n.type === 'FlatList');
+  const row = title => list.props.renderItem({ item: list.props.data.find(item => item.title === title), index: 0 });
+  assert.ok(nodes(row('Webshop branch')).some(n => n.type === 'WebshopOrderButton'));
+  assert.ok(!nodes(row('Plain branch')).some(n => n.type === 'WebshopOrderButton'));
+  stop();
+});
 
 test('main Map opens common search while embedded Map retains its local input and dismissal context', () => {
   const main=mount();let tree=main.render();
