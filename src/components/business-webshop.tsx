@@ -55,11 +55,11 @@ export function WebshopBanner({ shop, onPress }: { shop: Webshop; onPress: () =>
 }
 
 // Owner 2026-11-11: the button itself shows the verified discount; pressing it opens the price summary sheet.
-export function WebshopOrderButton({ shop, onPress, notice = true, analyticsId = 'webshop.order-preview' }: { shop: Webshop; onPress: () => void; notice?: boolean; analyticsId?: string }) {
+export function WebshopOrderButton({ shop, onPress, notice = true }: { shop: Webshop; onPress: () => void; notice?: boolean }) {
   const theme = useTheme(), { language } = useLanguage(), { play } = useInteractionFeedback(), clay = useClay();
   const { maximumPercent } = compareWebshopPrices(shop), ko = language === 'ko';
   const label = maximumPercent > 0 ? ko ? `웹샵 주문 · 최대 ${maximumPercent}% 할인` : `Order from webshop · Save up to ${maximumPercent}%` : ko ? '웹샵 주문' : 'Order from webshop';
-  return <View style={styles.offer}><Pressable analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={`${label}, ${ko ? '가격 비교 열기' : 'opens the price comparison'}`}
+  return <View style={styles.offer}><Pressable analyticsId="webshop.order-preview" accessibilityRole="button" accessibilityLabel={`${label}, ${ko ? '가격 비교 열기' : 'opens the price comparison'}`}
     style={({ pressed }) => [ControlStyles.action, clay && styles.ctaClay, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: pressed ? 0.82 : 1 }]}
     onPress={() => { play('selection'); onPress(); }}>{clay && <ClayPillFill kind="cta" />}<ThemedText type="menu" style={{ color: theme.accentInk, textAlign: 'center' }}>{label} ↗</ThemedText></Pressable>
     {notice && <UberOrderNotice />}</View>;

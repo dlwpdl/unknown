@@ -435,7 +435,6 @@ test('A안: a business with a published webshop gets the order button on its map
   const button = nodes(tree).find(n => n.type === 'WebshopOrderButton');
   assert.equal(button.props.shop, shop);
   assert.equal(button.props.notice, false, 'the card keeps the Uber notice inside the sheet');
-  assert.equal(button.props.analyticsId, 'discovery.webshop');
   assert.ok(!nodes(tree).some(n => n.type === 'WebshopComparisonSheet'), 'no sheet before the tap');
   button.props.onPress(); tree = view.render();
   const sheet = nodes(tree).find(n => n.type === 'WebshopComparisonSheet');

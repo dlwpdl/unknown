@@ -27,7 +27,9 @@ test('full checkout comparison requires observed fees and consistent totals on b
 test('invalid prices, mismatched business IDs and non-webshop destinations cannot become order claims', () => {
   for (const patch of [{ url: 'https://www.order.store.evil.example/ca/store/slug/id' }, { url: 'https://user:pass@www.order.store/ca/store/slug/id' },
     { url: 'javascript:alert(1)' }, { url: 'https://www.ubereats.com/ca/store/slug/id' }, { merchantId: 'another-branch' },
-    { comparisons: [{ id: 'x', name: 'Bad money', uberCents: 24.01, webCents: 19 }] }]) {
+    { comparisons: [{ id: 'x', name: 'Bad money', uberCents: 24.01, webCents: 19 }] },
+    // A discount figure needs a verified comparison: no verification date, or a zero app price, is not a claim.
+    { verifiedAt: null }, { comparisons: [{ id: 'x', name: 'Free app price', uberCents: 0, webCents: 0 }] }]) {
     assert.throws(() => parseWebshop({ ...fixture(), ...patch }), /INVALID_WEBSHOP/);
   }
   assert.equal(parseWebshop(null), null);
@@ -43,6 +45,7 @@ test('tracked links use only the registry merchant and opaque event/session, nev
 });
 
 test('a price sheet opened from the map records map; the business profile keeps its original sources', async () => {
+  const before = process.env.EXPO_PUBLIC_SUPABASE_URL;
   process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
   const source = origin => new URL(webshopOrderUrl(merchantId, 'ios', origin)).searchParams.get('source');
   assert.equal(source('map'), 'map');
@@ -52,6 +55,7 @@ test('a price sheet opened from the map records map; the business profile keeps 
   assert.equal(await recordWebshopSheetView(client, merchantId, 'android', 'map'), true);
   assert.equal(await recordWebshopSheetView(client, merchantId, 'android'), true);
   assert.deepEqual(calls.map(([name, args]) => [name, args.p_source, args.p_kind]), [['record_webshop_event', 'map', 'sheet_view'], ['record_webshop_event', 'business_profile', 'sheet_view']]);
+  if (before === undefined) delete process.env.EXPO_PUBLIC_SUPABASE_URL; else process.env.EXPO_PUBLIC_SUPABASE_URL = before;
 });
 
 test('business links preserve exact place/branch identity and reject conflicting bindings', () => {
