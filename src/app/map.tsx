@@ -46,7 +46,7 @@ import { useCommunityCity } from '@/lib/community-city';
 import { bindBusinessPlaces, loadCityBusinessLinks, loadCityBusinessMapPhotos, loadCityWebshops, type BusinessMapPhotos, type Webshop } from '@/lib/webshops';
 import { DELIVERY_PARTNERS, deliveryPartnerPlace } from '@/lib/delivery-partners';
 import { discoveryDistanceKm, sortDiscoveryItems } from '@/lib/discovery-sort';
-import { DISCOVERY_CATEGORIES, PLACE_STATUS, PLACE_SUBCATEGORIES, PRICE_FILTERS, PRICE_LEVELS, TOP25_GOLD, discoveryDays, discoveryEvent, discoveryEventOnDays, discoveryMatches, discoveryPlace, discoveryRefines, mapAppUrl, mergeCityTop25, priceLabel, priceSymbol, type DiscoveryDate, type DiscoveryFilter, type DiscoveryItem } from '@/lib/discovery';
+import { DISCOVERY_CATEGORIES, PLACE_STATUS, PLACE_SUBCATEGORIES, PRICE_FILTERS, PRICE_LEVELS, TOP25_GOLD, discoveryDays, discoveryEvent, discoveryEventOnDays, discoveryMatches, discoveryPlace, discoveryRefines, mapAppUrl, mergeCityTop25, pinSubcategory, priceLabel, priceSymbol, type DiscoveryDate, type DiscoveryFilter, type DiscoveryItem } from '@/lib/discovery';
 import type { DiscoveryBounds } from '@/lib/discovery-map-html';
 import { inBounds } from '@/lib/listing-details';
 import { cityClock, openState } from '@/lib/opening-hours';
@@ -321,8 +321,8 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const mySaved = mineScope ? scopePlaces : mineResult?.key === mineKey ? mineResult.places : null;
   const markers = pins.map(item => {
     const category = DISCOVERY_CATEGORIES.find(value => value.id === item.category)!;
-    // The second line leads with the place's state when it has one (M1), then the first known sub-filter or the category.
-    const subcategory = PLACE_SUBCATEGORIES.find(option => item.place?.subcategories?.includes(option.id));
+    // The second line leads with the place's state when it has one (M1), then the first kind of place or the category.
+    const subcategory = pinSubcategory(item.place?.subcategories);
     const state = savesOf(item)?.status, status = state ? PLACE_STATUS[state] : null;
     return { id: item.id, latitude: item.latitude, longitude: item.longitude, color: category.color,
       label: `${hasAdLabel(item.post?.hashtags) ? 'AD · ' : ''}${item.title}`.slice(0,80), sublabel: `${status ? `${tr(status.label)} · ` : ''}${tr(subcategory?.label ?? category.label)}`.slice(0, 40), icon: category.art,
