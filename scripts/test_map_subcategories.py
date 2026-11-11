@@ -41,6 +41,13 @@ class MapSubcategories(unittest.TestCase):
         self.assertEqual(self.ids({'tourism': 'museum', 'museum': 'history', 'historic': 'building'}, 'places'), ['museum', 'historic'])
         self.assertEqual(self.ids({'cuisine': 'burger; Pizza'}, 'dining'), ['burger', 'pizza'])
 
+    def test_ice_cream_and_karaoke_come_only_from_their_own_tags(self):
+        self.assertEqual(self.ids({'amenity': 'ice_cream'}, 'cafe'), ['ice_cream', 'dessert'])
+        self.assertEqual(self.ids({'cuisine': 'gelato'}, 'cafe'), ['ice_cream', 'dessert'])
+        self.assertEqual(self.ids({'cuisine': 'cake'}, 'cafe'), ['dessert'])
+        self.assertEqual(self.ids({'amenity': 'karaoke_box'}, 'nightlife'), ['karaoke'])
+        self.assertEqual(self.ids({'amenity': 'bar', 'name': 'Karaoke Night'}, 'nightlife'), ['bar'], 'a name alone is not a karaoke box')
+
     def test_every_rule_id_is_an_app_sub_filter_under_the_same_chip(self):
         source = (ROOT / 'src/lib/discovery.ts').read_text()
         block = source[source.index('export const PLACE_SUBCATEGORIES'):source.index('] as const;', source.index('export const PLACE_SUBCATEGORIES'))]

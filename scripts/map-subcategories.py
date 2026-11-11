@@ -35,6 +35,7 @@ RULES = [
     ('dining', 'vegan', [(('cuisine', {'vegan'}),), (('diet:vegan', {'yes', 'only'}),)]),
     ('nightlife', 'izakaya', [(('cuisine', {'izakaya'}),), (('name', r'izakaya|居酒屋|이자카야'),), (('cuisine', {'japanese'}), ('amenity', {'bar', 'pub'}))]),
     ('nightlife', 'pocha', [(('name', r'\bpocha\b|pojangmacha|포차|포장마차'),)]),
+    ('nightlife', 'karaoke', [(('amenity', {'karaoke_box'}),)]),
     ('nightlife', 'cocktail_bar', [(('bar', {'cocktail'}),), (('cocktails', {'yes'}),), (('drink:cocktail', {'yes', 'served'}),), (('name', r'cocktail'),)]),
     ('nightlife', 'wine_bar', [(('bar', {'wine'}),), (('amenity', {'wine_bar'}),), (('name', r'wine bar|bar [àa] vins?|enoteca|vinoteca'),)]),
     ('nightlife', 'pub', [(('amenity', {'pub', 'biergarten'}),)]),
@@ -42,6 +43,8 @@ RULES = [
     ('nightlife', 'bar', [(('amenity', {'bar'}),)]),
     ('nightlife', 'brewery', [(('craft', {'brewery'}),), (('microbrewery', {'yes'}),), (('industrial', {'brewery'}),), (('name', r'\bbrew(?:ing|ery|eries|house|pub)\b'),)]),
     ('nightlife', 'live_music', [(('amenity', {'music_venue'}),), (('leisure', {'music_venue'}),), (('live_music', {'yes'}),)]),
+    # breakfast, speakeasy, sports_bar, jazz, happy_hour and matcha have no OSM tag to trust; they come from official sites.
+    ('cafe', 'ice_cream', [(('amenity', {'ice_cream'}),), (('cuisine', {'ice_cream', 'gelato'}),)]),
     ('cafe', 'dessert', [(('cuisine', {'dessert', 'cake', 'donut', 'ice_cream', 'pastry', 'crepe', 'frozen_yogurt', 'waffle', 'gelato', 'chocolate'}),),
                          (('amenity', {'ice_cream'}),), (('shop', {'pastry', 'confectionery', 'chocolate'}),)]),
     ('cafe', 'brunch', [(('cuisine', {'breakfast', 'brunch', 'pancake'}),)]),
