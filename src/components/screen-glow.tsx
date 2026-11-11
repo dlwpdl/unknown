@@ -8,7 +8,7 @@ type GlowColors = { glowA: string; glowB: string; bodyGlowA: string; bodyGlowB: 
 const px = (value: number) => `${Math.round(value * 10) / 10}px`;
 
 /**
- * 화면 배경 빛: 위쪽 빛 두 겹(시안 corner-style-today-feed의 .screen 값)과 본문 전체의 옅은 보라 → 푸른 회색.
+ * 화면 배경 빛: 위쪽 빛 두 겹(승인된 오늘 피드 시안의 .screen 값)과 본문 전체의 옅은 보라 → 푸른 회색.
  * 모두 화면 크기 기준 px 원형 그라데이션이라, 화면 왼쪽 위에서 (x, y) 떨어진 뷰에도 같은 자리의 빛을 이어 그릴 수 있다.
  * (iOS는 화면 밖으로 나간 선형 그라데이션 정지점을 잘라 버려서, 이어 그리기가 맞는 원형만 쓴다.)
  */
