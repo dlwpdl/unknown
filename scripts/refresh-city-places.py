@@ -199,9 +199,9 @@ def build_catalog(seed, elements, now):
 def http(url, body, headers):
     cert = Path('/etc/ssl/cert.pem')
     context = ssl.create_default_context(cafile=str(cert) if cert.exists() else None)
-    with urlopen(Request(url, data=body, headers=headers, method='POST'), context=context, timeout=60) as response:
-        raw = response.read(2_000_001)
-    if len(raw) > 2_000_000: raise ValueError('PLACE_RESPONSE_TOO_LARGE')
+    with urlopen(Request(url, data=body, headers=headers, method='GET' if body is None else 'POST'), context=context, timeout=60) as response:
+        raw = response.read(8_000_001)  # the published catalog was 1.6 MB on 2026-11-11 and grows with every discovered place
+    if len(raw) > 8_000_000: raise ValueError('PLACE_RESPONSE_TOO_LARGE')
     return json.loads(raw)
 
 def current_catalog():
@@ -209,7 +209,7 @@ def current_catalog():
     origin, key = configuration()
     return http(origin + '/rest/v1/rpc/get_city_place_catalog', b'{}', {'Content-Type':'application/json', 'apikey':key})
 
-def collect(seed):
+def collect(seed, previous=None):
     grouped = {kind:[] for kind in ['node','way','relation']}
     for city in seed['cities'].values():
         for p in [*city['places'], *city.get('regionalPlaces', []), *city.get('extraPlaces', [])]:
@@ -217,9 +217,29 @@ def collect(seed):
             if not match: raise ValueError('INVALID_PLACE_IDENTITY')
             if match[2] not in grouped[match[1]]: grouped[match[1]].append(match[2])
     query = '[out:json][timeout:45][maxsize:16777216];(' + ''.join(kind+'(id:'+','.join(ids)+');' for kind, ids in grouped.items() if ids) + ');out body center;'
-    response = http('https://overpass-api.de/api/interpreter', urlencode({'data':query}).encode(), {'User-Agent':'Gling-place-catalog/1.0','Content-Type':'application/x-www-form-urlencoded'})
-    if response.get('remark') or not isinstance(response.get('elements'), list): raise ValueError('INVALID_OSM_RESPONSE')
-    return response
+    try:
+        response = http('https://overpass-api.de/api/interpreter', urlencode({'data':query}).encode(), {'User-Agent':'Gling-place-catalog/1.0','Content-Type':'application/x-www-form-urlencoded'})
+        if response.get('remark') or not isinstance(response.get('elements'), list): raise ValueError('INVALID_OSM_RESPONSE')
+        return response
+    except Exception:
+        # overpass-api.de refused this Mac on 2026-11-07, 09 and 10; the official OSM API reads the same elements by id.
+        return collect_osm_api(seed, grouped, previous)
+
+def collect_osm_api(seed, grouped, previous=None):
+    # shortcut: the OSM API gives ways/relations no center, so they keep their published (else reviewed) coordinates; drop this once Overpass answers again.
+    reviewed = {p['id']: p for source in [seed, previous or {'cities': {}}] for city in source['cities'].values() for p in [*city.get('places', []), *city.get('regionalPlaces', []), *city.get('extraPlaces', [])]}
+    elements = []
+    for kind, ids in grouped.items():
+        for start in range(0, len(ids), 200):
+            response = http(f'https://api.openstreetmap.org/api/0.6/{kind}s.json?{kind}s=' + ','.join(ids[start:start+200]), None, {'User-Agent':'Gling-place-catalog/1.0'})
+            if not isinstance(response.get('elements'), list): raise ValueError('INVALID_OSM_RESPONSE')
+            for e in response['elements']:
+                if not isinstance(e, dict) or e.get('visible') is False: continue  # deleted: Overpass would not return it either
+                if kind != 'node':
+                    p = reviewed.get(f"osm:{kind}:{e.get('id')}", {})
+                    e = {**e, 'center': {'lat': p.get('latitude'), 'lon': p.get('longitude')}}
+                elements.append(e)
+    return {'elements': elements, 'source': 'api.openstreetmap.org'}
 
 def operations_token():
     # Reuse the existing city-operations Keychain credential; never expose it in argv or logs.
@@ -273,7 +293,7 @@ def main():
             known = {p['id'] for p in city['places']}
             city['places'] += [p for p in previous['cities'][city_id]['places'] if p['id'] not in known]
     token = operations_token() if args.publish else None
-    response = collect(seed)
+    response = collect(seed, previous)
     upstream = json.dumps(response, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
     upstream_sha = hashlib.sha256(upstream).hexdigest()
     (out/f'osm-{upstream_sha}.json').write_bytes(upstream)
@@ -281,7 +301,7 @@ def main():
     raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
     digest = hashlib.sha256(raw).hexdigest()
     path = out/f'catalog-{digest}.json'; path.write_bytes(raw)
-    result = dict(status='prepared', day=day(now), payload_sha256=digest, path=str(path), upstream_json_sha256=upstream_sha, places=sum(len(c['places']) for c in payload['cities'].values()), recommendations=sum(len(c['recommendations']) for c in payload['cities'].values()))
+    result = dict(status='prepared', day=day(now), payload_sha256=digest, path=str(path), upstream_json_sha256=upstream_sha, osm_source=response.get('source', 'overpass-api.de'), places=sum(len(c['places']) for c in payload['cities'].values()), recommendations=sum(len(c['recommendations']) for c in payload['cities'].values()))
     if args.publish:
         with (out/'attempt.json').open('x') as f: json.dump(result, f)
         try: publish(payload, token)
