@@ -103,8 +103,10 @@ function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, cent
     {html && (Platform.OS === 'web'
       ? <iframe key={sessionId} ref={web} srcDoc={html} title={tr("도시 탐색 지도")} sandbox="allow-scripts allow-same-origin" onLoad={() => sync(true)}
         style={{ border: 0, width: '100%', height: '100%', minHeight: 140, flex: 1 }} />
+      // Map lag 2026-11-11 (owner "열 때마다 다시 받기"): the WebView's HTTP cache keeps the public base-map tiles, fonts and icons from tiles.openfreemap.org
+      // between visits, as their cache headers allow. The page and MapLibre write no cookies or web storage; cookies stay unshared.
       : <WebView<unknown> key={sessionId} ref={native} source={source} originWhitelist={['*']} applicationNameForUserAgent="GlingDiscoveryMap/1.0"
-        style={styles.map} scrollEnabled={false} sharedCookiesEnabled={false} thirdPartyCookiesEnabled={false} cacheEnabled={false} incognito
+        style={styles.map} scrollEnabled={false} sharedCookiesEnabled={false} thirdPartyCookiesEnabled={false}
         allowFileAccess={false} allowFileAccessFromFileURLs={false} allowUniversalAccessFromFileURLs={false} mixedContentMode="never"
         onShouldStartLoadWithRequest={request => request.url === 'about:blank'} setSupportMultipleWindows={false}
         onLoadEnd={() => sync(true)} onError={() => setFailed(true)} onHttpError={() => setFailed(true)} onMessage={event => receive(event.nativeEvent.data)} />)}

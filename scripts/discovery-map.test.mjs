@@ -58,6 +58,8 @@ test('native map startup has a bounded fallback, cancels after ready and rearms 
   tree.find(node => node.props?.analyticsId === 'discovery.map.retry').props.onPress();
   tree = render(); assert.equal(failed(tree), false); assert.equal(timers.size, 1);
   const web = tree.find(node => node.type === 'WebView');
+  assert.ok(web.props.cacheEnabled !== false && !web.props.incognito, 'base-map tiles stay cached between visits (map lag 2026-11-11)');
+  assert.equal(web.props.sharedCookiesEnabled, false);
   web.props.onMessage({ nativeEvent: { data: JSON.stringify({ type: 'ready', sessionId: 'native-canvas.0' }) } });
   render(); assert.equal(timers.size, 1, 'old map readiness cannot cancel the new attempt');
   web.props.onMessage({ nativeEvent: { data: JSON.stringify({ type: 'ready', sessionId: 'native-canvas.1' }) } });
