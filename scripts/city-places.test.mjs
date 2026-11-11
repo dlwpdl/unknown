@@ -157,6 +157,63 @@ test('invalid extra places cannot change the last valid catalog', () => {
   }
 });
 
+function moreFixture() {
+  const { seed, city, bar } = extraFixture();
+  const more = { ...bar, id: 'osm:node:999999999997', name: 'More fixture cafe', category: 'cafe', sourceUrl: 'https://www.openstreetmap.org/node/999999999997' };
+  delete more.nightlife;
+  city.morePlaces = [more];
+  city.moreRecommendations = [{ placeId: more.id, reason: '창가 자리', sourceUrl: 'https://example.org/cafe', verifiedAt: new Date(fixtureTime - 86_400_000).toISOString() }];
+  city.morePhotos = [{ ...city.extraPhotos[0], placeId: more.id, imageSha256: 'c'.repeat(64) }];
+  return { seed, city, bar, more };
+}
+
+test('more places past the 500 that 1.5.1 accepts join the map, search and detail like extra places', () => {
+  const { seed, bar, more } = moreFixture(), api = data();
+  assert.equal(api.replaceCityPlacesCatalog(seed, fixtureNow), true);
+  const found = api.getCityPlaces('vancouver').find(row => row.id === more.id);
+  assert.equal(found.diningRecommendation.reason, '창가 자리');
+  assert.equal(found.photo.imageSha256, 'c'.repeat(64));
+  assert.ok(api.getCityPlaces('vancouver', 'cafe').some(row => row.id === more.id));
+  assert.ok(api.getCityDiscoveryPlaces('vancouver').some(row => row.id === more.id));
+  assert.ok(api.getCityDiscoveryPlaces('vancouver').some(row => row.id === bar.id));
+});
+
+test('invalid more places cannot change the last valid catalog', () => {
+  for (const mutate of [
+    city => { city.morePlaces = null; },
+    city => { city.morePlaces.push({ ...city.places[0] }); },
+    city => { city.morePlaces.push({ ...city.extraPlaces[0] }); },
+    city => { city.morePlaces = Array.from({ length: 501 }, (_, index) => ({ ...city.morePlaces[0], id: `osm:node:${999970000000 + index}`, sourceUrl: `https://www.openstreetmap.org/node/${999970000000 + index}` })); },
+    city => { city.moreRecommendations[0].placeId = city.extraPlaces[0].id; },
+    city => { city.morePhotos[0].placeId = city.places[0].id; },
+    city => { city.morePhotos[0].license = 'Unknown'; },
+  ]) {
+    const { seed, city } = moreFixture(), api = data(), before = api.cityPlacesRevision();
+    mutate(city);
+    assert.throws(() => api.replaceCityPlacesCatalog(seed, fixtureNow), /INVALID_PLACE_CATALOG/);
+    assert.equal(api.cityPlacesRevision(), before);
+  }
+  const { seed, city } = moreFixture();
+  city.morePlaces = Array.from({ length: 500 }, (_, index) => ({ ...city.morePlaces[0], id: `osm:node:${999970000000 + index}`, sourceUrl: `https://www.openstreetmap.org/node/${999970000000 + index}` }));
+  city.moreRecommendations = []; city.morePhotos = [];
+  assert.equal(data().replaceCityPlacesCatalog(seed, fixtureNow), true);
+});
+
+test('installed 1.5.1 apps accept a catalog with more places and simply leave them out', () => {
+  // The released 1.5.1 validator, byte for byte (git show v1.5.1:src/lib/city-places.ts); 1.4.4-1.5.0 read cities the same way.
+  const released = () => module('scripts/fixtures/city-places-v1.5.1.ts.txt', { '@/lib/mock': { CITIES: cities }, './place-external-ratings': externalRatings() });
+  const { seed, city, bar, more } = moreFixture();
+  city.morePlaces = Array.from({ length: 500 }, (_, index) => ({ ...more, id: `osm:node:${999970000000 + index}`, sourceUrl: `https://www.openstreetmap.org/node/${999970000000 + index}` }));
+  city.morePlaces[0] = more;
+  const old = released();
+  assert.equal(old.replaceCityPlacesCatalog(seed, fixtureNow), true);
+  assert.ok(old.getCityPlaces('vancouver').some(row => row.id === bar.id));
+  assert.ok(!old.getCityPlaces('vancouver').some(row => row.id === more.id));
+  // Even a malformed new field cannot make an installed app drop the whole catalog.
+  Object.assign(city, { morePlaces: 'not a list', moreRecommendations: [{}], morePhotos: null });
+  assert.equal(released().replaceCityPlacesCatalog(seed, fixtureNow), true);
+});
+
 test('regional Openverse photos reuse the existing exact Flickr identity and licence rules', () => {
   const seed = catalog(), city = seed.cities.vancouver;
   const place = { ...city.places[0], id: 'osm:node:9381204484', name: 'Port Coquitlam Cenotaph', address: '2580 Shaughnessy Street, Port Coquitlam, BC', sourceUrl: 'https://www.openstreetmap.org/node/9381204484' };
@@ -1264,7 +1321,7 @@ test('Korean search names find English places in every place search, and the sho
 
 test('bundled Korean search names cover real places with Hangul only', () => {
   const names = JSON.parse(readFileSync(new URL('src/lib/city-places.ko.json', root), 'utf8')), seed = catalog();
-  const known = new Set(Object.values(seed.cities).flatMap(city => [...(city.places ?? []), ...(city.regionalPlaces ?? []), ...(city.extraPlaces ?? [])].map(place => place.id)));
+  const known = new Set(Object.values(seed.cities).flatMap(city => [...(city.places ?? []), ...(city.regionalPlaces ?? []), ...(city.extraPlaces ?? []), ...(city.morePlaces ?? [])].map(place => place.id)));
   for (const [id, list] of Object.entries(names)) {
     assert.match(id, /^(osm:(node|way|relation):[1-9]\d*|[a-z0-9:-]+)$/, id);
     assert.ok(Array.isArray(list) && list.length >= 1 && list.length <= 3 && list.every(name => /^[가-힣0-9 ]{1,60}$/.test(name)), id);

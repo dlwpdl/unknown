@@ -126,7 +126,7 @@ def apply(catalog, places, checked):
     """Set each checked place's values in a catalog or seed (in memory); a checked place with none loses stale ones."""
     applied = 0
     for city in catalog['cities'].values():
-        for field in ['places', 'regionalPlaces', 'extraPlaces']:
+        for field in ['places', 'regionalPlaces', 'extraPlaces', 'morePlaces']:
             for place in city.get(field, []):
                 if place['id'] in places: place['subcategories'] = places[place['id']]['subcategories']; applied += 1
                 elif place['id'] in checked: place.pop('subcategories', None)
@@ -146,7 +146,7 @@ def main():
     context = ssl.create_default_context(cafile=str(cert) if cert.exists() else None)
     places, missing, counts, checked = {}, [], {}, set()
     for city_id, city in seed['cities'].items():
-        rows = [*city['places'], *city.get('regionalPlaces', []), *city.get('extraPlaces', [])]
+        rows = [*city['places'], *city.get('regionalPlaces', []), *city.get('extraPlaces', []), *city.get('morePlaces', [])]
         if any(not re.fullmatch(r'osm:(node|way|relation):[1-9]\d*', p['id']) for p in rows): raise ValueError('INVALID_PLACE_IDENTITY')
         tags = city_tags(city_id, sorted({p['id'] for p in rows}), args.output / 'osm', args.pause, context)
         for place in rows:
@@ -160,7 +160,7 @@ def main():
                 if city_id == 'vancouver': count['vancouver'] += 1
             if found: places[place['id']] = dict(cityId=city_id, name=place['name'], chip=place_chip,
                                                 subcategories=[ident for ident, _ in found], evidence=dict(found))
-    total = sum(len([*c['places'], *c.get('regionalPlaces', []), *c.get('extraPlaces', [])]) for c in seed['cities'].values())
+    total = sum(len([*c['places'], *c.get('regionalPlaces', []), *c.get('extraPlaces', []), *c.get('morePlaces', [])]) for c in seed['cities'].values())
     result = dict(generatedAt=datetime.now(timezone.utc).isoformat(), seedSha256=hashlib.sha256(raw).hexdigest(),
                   source='OpenStreetMap API 0.6 element tags', license='ODbL-1.0', attribution='© OpenStreetMap contributors',
                   rules='scripts/map-subcategories.py', placesChecked=total, placesWithValues=len(places), missingOsm=sorted(missing), places=places)
