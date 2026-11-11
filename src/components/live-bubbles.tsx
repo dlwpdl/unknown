@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
 import { Alert, StyleSheet, TextInput, View, type ViewInstance } from 'react-native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
@@ -101,16 +101,20 @@ const MEETUP_COLOR = DISCOVERY_CATEGORIES.find(value => value.id === 'event')?.c
 // The city's clock (meetupZone) so a phone with old B.C. zone data still shows the right hour.
 const untilClock = (expiresAt: string, locale: string, cityId: string) => formatMeetupTime(expiresAt, locale, meetupZone(null, cityId), { hour: 'numeric', minute: '2-digit' });
 
+// The same list object until something on it changes, so the map does not re-check every pin on each screen render (map lag 2026-11-11).
+const NO_MARKERS: DiscoveryMarker[] = [];
 export function useLiveMarkers(map: LiveMap | null, now: number, show: boolean, cityId: string): DiscoveryMarker[] {
   const { tr, locale } = useLanguage(), hidden = useContentVisibility();
-  if (!show || !map) return [];
-  const shown = [...(map.mine ? [map.mine] : []), ...map.bubbles.filter(bubble => !hidden('live_bubble', bubble.id, bubble.author.id))];
-  return shown.filter(bubble => minutesLeft(bubble.expiresAt, now) > 0).map(bubble => {
-    const who = bubble === map.mine ? tr('나') : bubble.kind === 'pin' ? tr('글링') : bubble.demo ? tr('개발용 예시') : bubble.author.nickname;
-    const sublabel = tr('{0} · {1}까지', who, untilClock(bubble.expiresAt, locale, cityId));
-    return { id: `bubble:${bubble.id}`, latitude: bubble.latitude, longitude: bubble.longitude, color: BUBBLE_COLOR, label: bubble.body.slice(0, 80),
-      sublabel: sublabel.slice(0, 40), icon: bubble.kind === 'pin' ? 'visited' : 'bubble' };
-  });
+  return useMemo(() => {
+    if (!show || !map) return NO_MARKERS;
+    const shown = [...(map.mine ? [map.mine] : []), ...map.bubbles.filter(bubble => !hidden('live_bubble', bubble.id, bubble.author.id))];
+    return shown.filter(bubble => minutesLeft(bubble.expiresAt, now) > 0).map(bubble => {
+      const who = bubble === map.mine ? tr('나') : bubble.kind === 'pin' ? tr('글링') : bubble.demo ? tr('개발용 예시') : bubble.author.nickname;
+      const sublabel = tr('{0} · {1}까지', who, untilClock(bubble.expiresAt, locale, cityId));
+      return { id: `bubble:${bubble.id}`, latitude: bubble.latitude, longitude: bubble.longitude, color: BUBBLE_COLOR, label: bubble.body.slice(0, 80),
+        sublabel: sublabel.slice(0, 40), icon: bubble.kind === 'pin' ? 'visited' : 'bubble' };
+    });
+  }, [map, now, show, cityId, tr, locale, hidden]);
 }
 
 /** 근처 모임: the city's open meetups from the existing meetup feed, pinned at their linked place. */
@@ -124,8 +128,7 @@ export function useMeetupMarkers(cityId: string, viewerScope: string, now: numbe
     void loadPublicFeed(supabase, cityId, MEETUP_TAG, null, null, { viewerScope }).then(posts => { if (active) setResult({ key, posts }); }, () => {});
     return () => { active = false; };
   }, [show, cityId, viewerScope, key]);
-  if (!show || result?.key !== key) return [];
-  return result.posts.flatMap(post => {
+  return useMemo(() => !show || result?.key !== key ? NO_MARKERS : result.posts.flatMap(post => {
     const room = post.room, start = room?.startsAt ? Date.parse(room.startsAt) : NaN;
     if (!room || room.closed || room.recruitingClosed || start < now || hidden('post', post.id, post.author.id)) return [];
     const url = postMapBody(post.body).url;
@@ -137,7 +140,7 @@ export function useMeetupMarkers(cityId: string, viewerScope: string, now: numbe
     const sublabel = [when, seats === null ? '' : seats ? tr('{0}자리 남음', seats) : tr('자리 다 찼어요')].filter(Boolean).join(' · ');
     return [{ id: `meetup:${post.id}`, latitude: pin.latitude, longitude: pin.longitude, color: MEETUP_COLOR, label: (room.title || post.title).slice(0, 80),
       ...(sublabel ? { sublabel: sublabel.slice(0, 40) } : {}), icon: 'events' }];
-  });
+  }), [show, result, key, now, hidden, tr, locale, cityId]);
 }
 
 /** The card under the map: leave a bubble, see mine, or open a request someone sent. */

@@ -58,7 +58,7 @@ import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { loadDiscoveryPosts } from '@/lib/discovery-data';
 import { getPostImageSource, type FeedCursor } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { facingDegrees, isFreshLocation, type LocationFix } from '@/lib/location';
+import { isFreshLocation, type LocationFix } from '@/lib/location';
 import { loadLiveMap } from '@/lib/live-bubbles';
 import { mapCityCenter } from '@/lib/post-map-html';
 import { postPublicAddress, type PostPin } from '@/lib/post-maps';
@@ -82,6 +82,11 @@ const freshMapFix = (fix: LocationFix) => isFreshLocation(fix) && fix.accuracy! 
 const located = (item: DiscoveryItem): item is DiscoveryItem & PostPin => item.latitude !== null && item.longitude !== null;
 // The embedded map's far stage, where city pills replace places; searching an area makes no sense there.
 const FAR_ZOOM = 8;
+type Registry = { links: Record<string, string>; shops: Webshop[]; photos: BusinessMapPhotos; failed: boolean; ready: boolean };
+// One shared empty value each, so a screen without them still hands the memoized list below the same object every render.
+const NO_REGISTRY: Registry = { links: {}, shops: [], photos: {}, failed: false, ready: false };
+const NO_SAVED_PLACES = new Map<string, FriendSavedPlace | null>();
+const placeKey = (item: DiscoveryItem) => item.place?.id ?? item.sourceId;
 
 export default function MapScreen({ onClose, initialFilter, tab = false }: { onClose?: () => void; initialFilter?: DiscoveryFilter; tab?: boolean } = {}) {
   const { city: selectedCity } = useCommunityCity();
@@ -133,8 +138,8 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const [moved, setMoved] = useState<{ bounds: DiscoveryBounds; zoom?: number } | null>(null), [region, setRegion] = useState<DiscoveryBounds | null>(null);
   const [contentHeight, setContentHeight] = useState(0);
   const viewerScope = isAuthed ? me.id : 'guest', registryKey = `${city.id}:${viewerScope}`;
-  const [registrySnapshot, setRegistry] = useState<{ key: string; links: Record<string, string>; shops: Webshop[]; photos: BusinessMapPhotos; failed: boolean; ready: boolean }>({ key: '', links: {}, shops: [], photos: {}, failed: false, ready: false });
-  const registry = registrySnapshot.key === registryKey ? registrySnapshot : { links: {}, shops: [], photos: {}, failed: false, ready: false };
+  const [registrySnapshot, setRegistry] = useState<Registry & { key: string }>({ key: '', ...NO_REGISTRY });
+  const registry = registrySnapshot.key === registryKey ? registrySnapshot : NO_REGISTRY;
 
   const [closedCardId, setClosedCardId] = useState<string | null | undefined>(undefined);
   const cardOpen = closedCardId !== selectedId;
@@ -189,15 +194,8 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     return () => { active = false; };
   }, [isFocused, city.id, attempt]);
   // M7 (owner 2026-11-05): the compass runs only while this map is on screen after a location fix (that fix already asked for permission).
-  const [heading, setHeading] = useState<number | null>(null), hasLocation = !!userLocation;
-  useEffect(() => {
-    if (!isFocused || !hasLocation) return;
-    let active = true, watch: Location.LocationSubscription | null = null, timer: ReturnType<typeof setTimeout> | undefined, last = 0, latest: number | null = null;
-    // At most 4 turns a second (map lag 2026-11-08): each reading re-renders this screen and messages the map; the newest reading still lands.
-    const show = () => { timer = undefined; last = Date.now(); if (active) setHeading(latest); };
-    void Location.watchHeadingAsync(reading => { latest = facingDegrees(reading); timer ??= setTimeout(show, Math.max(0, 250 - (Date.now() - last))); }).then(subscription => { if (active) watch = subscription; else subscription.remove(); }, () => {});
-    return () => { active = false; clearTimeout(timer); watch?.remove(); setHeading(null); };
-  }, [isFocused, hasLocation]);
+  // The map component owns the readings, so a turn redraws only the map, not this screen (map lag 2026-11-11).
+  const compass = isFocused && !!userLocation;
   // 동네 말풍선 지도 (owner 2026-11-05): bubbles and nearby meetups on this map, its own chips, a card under the map and its sheets.
   // Not in the chat sheet's map (onClose), and only for members; the bubble parts only while the live map loaded (server, or the dev example).
   const live = useLive(), liveOn = !onClose && isAuthed && live.status === 'ready' && !!live.map, meetupsOn = !onClose && isAuthed;
@@ -268,17 +266,23 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     return () => { request.current?.abort(); request.current = null; morePending.current = false; locationRevision.current++; setLocating(false); };
   }, [loadPage]));
 
-  useCityPlacesRevision();
-  const catalogPlaces = getCityDiscoveryPlaces(city.id);
-  const targetPlace = placeId ? getCityPlaces(city.id).find(place => place.id === placeId) ?? deliveryPartnerPlace(city.id, placeId) : undefined;
-  const targetItem = targetPlace ? discoveryPlace(targetPlace) : null;
-  const catalogItems = catalogPlaces.map(discoveryPlace).filter(item => item !== null);
-  for (const partner of DELIVERY_PARTNERS.filter(value => value.cityId === city.id)) {
-    const place = deliveryPartnerPlace(city.id, `partner:${partner.id}`);
-    const item = place ? discoveryPlace(place) : null;
-    if (item && !catalogItems.some(value => value.id === item.id)) catalogItems.push(item);
-  }
-  if (targetItem && !catalogItems.some(item => item.id === targetItem.id)) catalogItems.push(targetItem);
+  // Map lag 2026-11-11 (owner "화면 통째로 다시 계산"): the places, list and pins below are rebuilt only when something they show changes,
+  // not on a pan, a layout pass or a live-map refresh. A new place catalog comes in as a new revision.
+  const placesRevision = useCityPlacesRevision();
+  const { catalogItems, targetItem } = useMemo(() => {
+    void placesRevision;
+    const catalogPlaces = getCityDiscoveryPlaces(city.id);
+    const targetPlace = placeId ? getCityPlaces(city.id).find(place => place.id === placeId) ?? deliveryPartnerPlace(city.id, placeId) : undefined;
+    const targetItem = targetPlace ? discoveryPlace(targetPlace) : null;
+    const catalogItems = catalogPlaces.map(discoveryPlace).filter(item => item !== null);
+    for (const partner of DELIVERY_PARTNERS.filter(value => value.cityId === city.id)) {
+      const place = deliveryPartnerPlace(city.id, `partner:${partner.id}`);
+      const item = place ? discoveryPlace(place) : null;
+      if (item && !catalogItems.some(value => value.id === item.id)) catalogItems.push(item);
+    }
+    if (targetItem && !catalogItems.some(item => item.id === targetItem.id)) catalogItems.push(targetItem);
+    return { catalogItems, targetItem };
+  }, [city.id, placeId, placesRevision]);
   const targetId = targetItem?.id, targetLatitude = targetItem?.latitude, targetLongitude = targetItem?.longitude, targetRecommended = !!targetItem?.top25, targetVisited = !!targetItem?.glingVisited;
   useEffect(() => {
     if (!isFocused || !targetId || targetLatitude == null || targetLongitude == null) return;
@@ -291,48 +295,50 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     setSelectedId(targetId);
     setCenter({ latitude: targetLatitude, longitude: targetLongitude, requestId: locationRevision.current });
   }, [isFocused, targetId, targetLatitude, targetLongitude, targetRecommended, targetVisited, placeRequest]);
-  const publicItems = [...catalogItems, ...(current?.items ?? [])].filter(item => (item.source !== 'post' || !!item.post && item.post.kind === 'listing' && ['housing', 'used'].includes(item.category))
+  const publicItems = useMemo(() => [...catalogItems, ...(current?.items ?? [])].filter(item => (item.source !== 'post' || !!item.post && item.post.kind === 'listing' && ['housing', 'used'].includes(item.category))
     && (!item.post || (!hidden('post', item.post.id, item.post.author.id) && (item.post.kind !== 'listing' || (['open', 'partial'].includes(item.post.listingStatus ?? '') && Date.parse(item.post.expiresAt ?? '') > now))))
-    && (!item.event || discoveryEvent(item.event, item.cityId, now) !== null));
-  const cityItems = bindBusinessPlaces(mergeCityTop25(publicItems, city.id), registry.links, registry.shops, registry.photos);
+    && (!item.event || discoveryEvent(item.event, item.cityId, now) !== null)), [catalogItems, current?.items, hidden, now]);
+  const cityItems = useMemo(() => bindBusinessPlaces(mergeCityTop25(publicItems, city.id), registry.links, registry.shops, registry.photos), [publicItems, city.id, registry.links, registry.shops, registry.photos]);
   const top25Ready = cityItems.some(item => item.top25);
   const visitedReady = cityItems.some(item => item.glingVisited);
   // A saved scope keeps only catalog places whose key someone saved; categories, open-now, price and sub-filters still apply inside it.
-  const scopePlaces = scope === 'all' ? null : scopeData?.value?.places ?? new Map<string, FriendSavedPlace | null>();
-  const placeKey = (item: DiscoveryItem) => item.place?.id ?? item.sourceId;
-  const savesOf = (item: DiscoveryItem) => item.source === 'place' ? placeSaves?.get(placeKey(item)) : undefined;
-  const scopedItems = scopePlaces ? cityItems.filter(item => item.source === 'place' && scopePlaces.has(placeKey(item))) : cityItems;
-  const matches = scopedItems.filter(item => discoveryMatches(item, selectedFilters, query) && discoveryEventOnDays(item, days));
-  // Price and sub-filter chips show only when some place here has the value, and a choice only counts while its chip shows.
-  const priceReady = selectedFilters.some(id => PRICE_FILTERS.includes(id)) && matches.some(item => !!item.place?.priceLevel);
-  const subcategoryOptions = PLACE_SUBCATEGORIES.filter(option => selectedFilters.includes(option.filter) && matches.some(item => item.place?.subcategories?.includes(option.id)));
-  const activePrices = priceReady ? priceLevels : [], activeSubcategories = subcategories.filter(id => subcategoryOptions.some(option => option.id === id));
-  // M1 (owner 2026-11-05): 뜨는 중·인기 follow the same rule, and an older server has no statuses, so no chips.
-  const statusOptions = (['trending', 'popular'] as const).filter(id => matches.some(item => savesOf(item)?.status === id));
-  const activeStatus = statusFilter && statusOptions.includes(statusFilter) ? statusFilter : null;
-  const refined = matches.filter(item => discoveryRefines(item, activePrices, activeSubcategories) && (!activeStatus || savesOf(item)?.status === activeStatus) && (!region || located(item) && inBounds(region, item)));
-  // 지금 영업 중 uses the city's own clock: closed places leave, places with unknown hours wait in the list's last row, and events and posts (no hours) leave too.
-  const clock = cityClock(city.id, now), hours = (item: DiscoveryItem) => item.place ? openState(item.place.openingHours, clock) : 'unknown';
-  const shown = openNow ? refined.filter(item => hours(item) === 'open') : refined;
+  const scopePlaces = scope === 'all' ? null : scopeData?.value?.places ?? NO_SAVED_PLACES;
+  const savesOf = useCallback((item: DiscoveryItem) => item.source === 'place' ? placeSaves?.get(placeKey(item)) : undefined, [placeSaves]);
+  const { scopedItems, priceReady, subcategoryOptions, activePrices, activeSubcategories, statusOptions, activeStatus, shown, discountOrder, savesReady, savesOrder, order, items, unknownItems } = useMemo(() => {
+    const scopedItems = scopePlaces ? cityItems.filter(item => item.source === 'place' && scopePlaces.has(placeKey(item))) : cityItems;
+    const matches = scopedItems.filter(item => discoveryMatches(item, selectedFilters, query) && discoveryEventOnDays(item, days));
+    // Price and sub-filter chips show only when some place here has the value, and a choice only counts while its chip shows.
+    const priceReady = selectedFilters.some(id => PRICE_FILTERS.includes(id)) && matches.some(item => !!item.place?.priceLevel);
+    const subcategoryOptions = PLACE_SUBCATEGORIES.filter(option => selectedFilters.includes(option.filter) && matches.some(item => item.place?.subcategories?.includes(option.id)));
+    const activePrices = priceReady ? priceLevels : [], activeSubcategories = subcategories.filter(id => subcategoryOptions.some(option => option.id === id));
+    // M1 (owner 2026-11-05): 뜨는 중·인기 follow the same rule, and an older server has no statuses, so no chips.
+    const statusOptions = (['trending', 'popular'] as const).filter(id => matches.some(item => savesOf(item)?.status === id));
+    const activeStatus = statusFilter && statusOptions.includes(statusFilter) ? statusFilter : null;
+    const refined = matches.filter(item => discoveryRefines(item, activePrices, activeSubcategories) && (!activeStatus || savesOf(item)?.status === activeStatus) && (!region || located(item) && inBounds(region, item)));
+    // 지금 영업 중 uses the city's own clock: closed places leave, places with unknown hours wait in the list's last row, and events and posts (no hours) leave too.
+    const clock = cityClock(city.id, now), hours = (item: DiscoveryItem) => item.place ? openState(item.place.openingHours, clock) : 'unknown';
+    const shown = openNow ? refined.filter(item => hours(item) === 'open') : refined;
+    const discountOrder = deliveryOnly && sortBy === 'discount';
+    // 저장 많은 순 exists only while some place here has a saver; without any (older server, nothing saved yet) the list stays nearest first.
+    const savesReady = shown.some(item => !!savesOf(item)?.saverCount), savesOrder = savesReady && sortBy === 'saves';
+    const order = discountOrder ? 'discount' : savesOrder ? 'saves' : 'near';
+    const items = sortDiscoveryItems(shown, userLocation, order, item => savesOf(item)?.saverCount ?? 0).slice(0, 500);
+    const unknownItems = openNow ? sortDiscoveryItems(refined.filter(item => item.source === 'place' && hours(item) === 'unknown'), userLocation, 'near').slice(0, 500) : [];
+    return { scopedItems, priceReady, subcategoryOptions, activePrices, activeSubcategories, statusOptions, activeStatus, shown, discountOrder, savesReady, savesOrder, order, items, unknownItems };
+  }, [cityItems, scopePlaces, selectedFilters, query, days, priceLevels, subcategories, statusFilter, savesOf, region, city.id, now, openNow, deliveryOnly, sortBy, userLocation]);
   const limited = !!current?.limited || shown.length > 500;
-  const discountOrder = deliveryOnly && sortBy === 'discount';
-  // 저장 많은 순 exists only while some place here has a saver; without any (older server, nothing saved yet) the list stays nearest first.
-  const savesReady = shown.some(item => !!savesOf(item)?.saverCount), savesOrder = savesReady && sortBy === 'saves';
-  const order = discountOrder ? 'discount' : savesOrder ? 'saves' : 'near';
-  const items = sortDiscoveryItems(shown, userLocation, order, item => savesOf(item)?.saverCount ?? 0).slice(0, 500);
-  const unknownItems = openNow ? sortDiscoveryItems(refined.filter(item => item.source === 'place' && hours(item) === 'unknown'), userLocation, 'near').slice(0, 500) : [];
-  const listData = showUnknown && unknownItems.length ? [...items, ...unknownItems] : items;
+  const listData = useMemo(() => showUnknown && unknownItems.length ? [...items, ...unknownItems] : items, [showUnknown, unknownItems, items]);
   const hasVerifiedDiscount = items.some(item => Number.isFinite(item.webshopDiscount) && item.webshopDiscount! > 0 && item.webshopDiscount! <= 100);
-  const pins = items.filter(located);
+  const pins = useMemo(() => items.filter(located), [items]);
   // Owner 2026-11-11 (A안): a business with a published webshop gets the order button on its card; the registry already holds the shop.
-  const orderButton = (item: DiscoveryItem) => {
+  const orderButton = useCallback((item: DiscoveryItem) => {
     const shop = item.merchantId ? registry.shops.find(value => value.merchantId === item.merchantId && value.cityId === item.cityId) : undefined;
     return shop ? <WebshopOrderButton shop={shop} notice={false} onPress={() => setWebshopOrder({ shop, name: item.title, open: true })} /> : null;
-  };
+  }, [registry.shops]);
   // Only show the detail card for a pin the user actually picked; the map stays clear otherwise.
   const selected = items.find(item => item.id === selectedId) ?? null;
   const mySaved = mineScope ? scopePlaces : mineResult?.key === mineKey ? mineResult.places : null;
-  const markers = pins.map(item => {
+  const markers = useMemo(() => pins.map(item => {
     const category = DISCOVERY_CATEGORIES.find(value => value.id === item.category)!;
     // The second line leads with the place's state when it has one (M1), then the first kind of place or the category.
     const subcategory = pinSubcategory(item.place?.subcategories);
@@ -341,13 +347,13 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       label: `${hasAdLabel(item.post?.hashtags) ? 'AD · ' : ''}${item.title}`.slice(0,80), sublabel: `${status ? `${tr(status.label)} · ` : ''}${tr(subcategory?.label ?? category.label)}`.slice(0, 40), icon: category.art,
       ...(item.top25 || item.glingVisited ? { featured: true } : {}), ...(item.top25 ? { top25: true } : {}), ...(item.webshopDiscount ? { discount: item.webshopDiscount } : {}), ...(status ? { statusColor: status.color } : {}),
       ...(item.source === 'place' && (savedNow[`${viewerScope}:${placeKey(item)}`] ?? !!mySaved?.has(placeKey(item))) ? { saved: true } : {}) };
-  });
+  }), [pins, savesOf, tr, savedNow, viewerScope, mySaved]);
   const liveMarkers = useLiveMarkers(liveOn ? live.map : null, now, showBubbles, city.id);
   const meetupMarkers = useMeetupMarkers(city.id, viewerScope, now, meetupsOn && showMeetups && isFocused);
   // The map takes at most 500 pins; bubbles and meetups come first so a full city never pushes them out.
-  const mapMarkers = [...liveMarkers, ...meetupMarkers, ...markers].slice(0, 500);
+  const mapMarkers = useMemo(() => [...liveMarkers, ...meetupMarkers, ...markers].slice(0, 500), [liveMarkers, meetupMarkers, markers]);
   const more = scope === 'all' && current && !limited && (!top25Only || top25Ready) && (current.postMore || current.eventMore);
-  const open = (item: DiscoveryItem) => {
+  const open = useCallback((item: DiscoveryItem) => {
     play('selection');
     if (item.merchantId && !onClose) { router.push({ pathname: '/company/[id]', params: { id: item.merchantId } }); return; }
     if (onClose) {
@@ -365,7 +371,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       else Alert.alert(tr('장소 정보 준비 중'), tr('이 장소의 상세 정보를 준비하고 있어요.'));
     } else if (item.source === 'event') router.push({ pathname: '/events/[id]', params: { id: item.sourceId, cityId: city.id } });
     else router.push({ pathname: '/post/[id]', params: { id: item.post?.id ?? item.sourceId } });
-  };
+  }, [play, onClose, router, tr, city.id]);
   const selectPin = (id: string) => {
     if (id.startsWith('bubble:')) { const bubbleId = id.slice('bubble:'.length); play('selection'); setLiveOpen(live.map?.mine?.id === bubbleId ? { kind: 'compose', session: Date.now() } : { kind: 'request', bubbleId }); return; }
     if (id.startsWith('meetup:')) { play('selection'); router.push({ pathname: '/post/[id]', params: { id: id.slice('meetup:'.length) } }); return; }
@@ -525,11 +531,14 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     </View>
     {sortRow}
   </>;
-  const unknownRow = openNow && unknownItems.length > 0 && <Pressable analyticsId="discovery.unknown-hours" accessibilityRole="button" accessibilityState={{ expanded: showUnknown }}
+  const unknownRow = useMemo(() => openNow && unknownItems.length > 0 && <Pressable analyticsId="discovery.unknown-hours" accessibilityRole="button" accessibilityState={{ expanded: showUnknown }}
     onPress={() => { play('selection'); animateLayout(reduced); setShowUnknown(value => !value); }} style={[styles.unknownRow, { borderColor: theme.line }]}>
     <ThemedText type="smallBold" style={styles.flex}>{tr('영업시간을 모르는 곳 {0}곳', unknownItems.length)}</ThemedText>
     <SymbolView name={showUnknown ? { ios: 'chevron.up', android: 'expand_less', web: 'expand_less' } : { ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={IconSize.inline} tintColor={theme.textSecondary} />
-  </Pressable>;
+  </Pressable>, [openNow, unknownItems.length, showUnknown, theme, reduced, play, tr]);
+  // One card renderer while the cards' inputs stay the same, so a pan or a layout pass does not redraw every mounted card (map lag 2026-11-11).
+  const renderCard = useCallback(({ item, index }: { item: DiscoveryItem; index: number }) => <>{showUnknown && index === items.length && unknownRow}<View style={[styles.listCard, clayBox ? styles.listCardClay : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}<DiscoveryCard item={item} now={now} distance={discoveryDistanceKm(item, userLocation)} externalInfo={!!onClose} translationVisible={visibleResultIds.has(item.id)} viewerScope={viewerScope} savedBy={scopePlaces?.get(placeKey(item))} saves={savesOf(item)} onOpen={() => open(item)} /><GlingVisitNote item={item} />{orderButton(item)}{located(item) && <Directions item={item} />}</View>{adsSupported && !loading && !current?.errors.length && !selectedFilters.includes('top25') && index === 3 && contentAdPosition(index, items.length) && <FeedAd key={`ad-after-${item.id}`} surface="map" />}</>,
+    [showUnknown, items.length, unknownRow, clayBox, theme, now, userLocation, onClose, visibleResultIds, viewerScope, scopePlaces, savesOf, open, orderButton, loading, current?.errors.length, selectedFilters]);
   const searchHere = !!moved && moved.bounds !== region && (moved.zoom ?? FAR_ZOOM) >= FAR_ZOOM && sheet !== 'full' && !cardShown;
   // As a tab there is no back button; the bottom edge already stops above the tab bar (iOS inset includes it, Android content ends at it).
   // The route opened from a list wears the shared round-back bar (owner 2026-11-04 "위쪽: 동그란 뒤로 + 가운데 제목"); the tab and the chat sheet keep their own row.
@@ -567,7 +576,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     {!!locationError && <ThemedText accessibilityRole="alert" type="small" style={styles.notice}>{tr(locationError)}</ThemedText>}
     {!!current?.errors.length && <View style={styles.notice}><ThemedText type="small" accessibilityRole="alert">{current.errors.map(error => tr(error)).join(' ')} {tr("새로고침으로 다시 시도할 수 있어요.")}</ThemedText></View>}
     <View style={styles.content} onLayout={event => setContentHeight(event.nativeEvent.layout.height)}>
-      <DiscoveryMap markers={mapMarkers} cityName={city.englishName} cities={CITIES.map(value => ({ id: value.id, name: tr(value.name), englishName: value.englishName, open: value.state === 'open' }))} selectedId={selected?.id} center={center} userLocation={userLocation} heading={heading} topInset={mapFiltersHeight}
+      <DiscoveryMap markers={mapMarkers} cityName={city.englishName} cities={CITIES.map(value => ({ id: value.id, name: tr(value.name), englishName: value.englishName, open: value.state === 'open' }))} selectedId={selected?.id} center={center} userLocation={userLocation} compass={compass} topInset={mapFiltersHeight}
         bottomInset={cardShown || sheet === 'closed' ? rowBottom : sheetCover} onSelect={selectPin} onMoved={(bounds, zoom) => setMoved({ bounds, zoom })} onCity={chooseCity} />
       <View testID="map-filter-overlay" pointerEvents="box-none" onLayout={event => setMapFiltersHeight(event.nativeEvent.layout.height)} style={sheet === 'full' ? [styles.mapFilters, { backgroundColor: theme.background }] : styles.mapFilters}>
         {/* Map labels stop running into the chip names (owner 2026-11-06 "칩 줄 뒤에 옅은 그라데이션"); the chips themselves stay as they are. */}
@@ -602,7 +611,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
         <FlatList analyticsId="discovery.list" refreshing={false} onRefresh={() => { play('selection'); refresh(); }} onViewableItemsChanged={trackTranslationResults} viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY} data={listData} keyExtractor={item => item.id}
           contentContainerStyle={[styles.list, { paddingBottom: 24 + Math.max(sheetStops[sheet] - sheetStops.full, 0) }]}
           ListHeaderComponent={<ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr('지도 {0}개 · 목록 {1}개', pins.length, items.length)}{limited ? tr(" · 500개까지 표시") : ''}</ThemedText>}
-          renderItem={({ item, index }) => <>{showUnknown && index === items.length && unknownRow}<View style={[styles.listCard, clayBox ? styles.listCardClay : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}<DiscoveryCard item={item} now={now} distance={discoveryDistanceKm(item, userLocation)} externalInfo={!!onClose} translationVisible={visibleResultIds.has(item.id)} viewerScope={viewerScope} savedBy={scopePlaces?.get(placeKey(item))} saves={savesOf(item)} onOpen={() => open(item)} /><GlingVisitNote item={item} />{orderButton(item)}{located(item) && <Directions item={item} />}</View>{adsSupported && !loading && !current?.errors.length && !selectedFilters.includes('top25') && index === 3 && contentAdPosition(index, items.length) && <FeedAd key={`ad-after-${item.id}`} surface="map" />}</>}
+          renderItem={renderCard}
           ListEmptyComponent={loading || deliveryUnavailable ? undefined : refineCard || <StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : visitedOnly ? visitedReady ? tr("조건에 맞는 글링 방문 장소가 없어요") : tr("아직 글링이 방문한 장소가 없어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 50 장소가 없어요") : tr("이 도시의 TOP 50을 준비하고 있어요") : deliveryOnly ? tr("아직 배달 할인 가게가 없어요") : tr("조건에 맞는 항목이 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : visitedOnly ? visitedReady ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : tr("직접 다녀온 장소만 모아 보여드려요. 다른 분류에서 먼저 둘러보세요.") : deliveryOnly ? tr("가게가 직접 받는 주문 페이지를 준비하고 있어요.") : tr("다른 분류나 날짜를 선택해 보세요. 장소 위치는 글을 쓸 때 첨부할 수 있어요.")} actionLabel={current?.errors.length ? tr("다시 시도") : visitedOnly ? tr("전체 장소 보기") : undefined} onAction={current?.errors.length ? refresh : visitedOnly ? () => { setSelectedFilters([]); setRevealedFilter('all'); setDateFilter(null); setDate(''); } : undefined} />}
           ListFooterComponent={<>{!showUnknown && unknownRow}{more && <Pressable analyticsId="discovery.more" accessibilityRole="button" disabled={loading} onPress={() => { if (morePending.current || loading) return; morePending.current = true; play('selection'); loadPage(current); }} style={[styles.more, { borderColor: theme.line }]}><ThemedText themeColor="accent">{loading ? tr("불러오는 중…") : tr("더 보기")}</ThemedText></Pressable>}{limited && <ThemedText type="small" themeColor="textSecondary">{tr("500개까지 표시했어요. 검색어나 분류로 범위를 줄여 주세요.")}</ThemedText>}<ThemedText type="small" themeColor="textSecondary" style={styles.source}>{tr("글링 공개 위치 · 장소 자료: OpenStreetMap · 행사 정보: Ticketmaster")}{items.some(item => !located(item)) ? tr("\n위치 확인 전 항목은 지도 핀 없이 목록에 표시해요.") : ''}</ThemedText></>} />
       </MapListSheet>

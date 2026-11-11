@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers } from '../src/lib/discovery-map-html.ts';
 import { MAP_PIN_ART } from '../src/lib/map-pin-art.ts';
+import { facingDegrees } from '../src/lib/location.ts';
 
 
 const marker = { id: 'place:1', latitude: 49.28, longitude: -123.12, color: '#d86632', label: '카페' };
@@ -35,6 +36,7 @@ test('native map startup has a bounded fallback, cancels after ready and rearms 
     '@/components/themed-text': { ThemedText: 'Text' },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/discovery-map-html': { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers },
+    'expo-location': {}, '@/lib/location': { facingDegrees },
   };
   const exports = {};
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/components/discovery-map.tsx', import.meta.url), 'utf8'), {
@@ -763,7 +765,7 @@ test('each rendered marker field changes the place source, while optional false 
 });
 
 function mountedBridge(props, platform) {
-  const slots = [], calls = [], listeners = {}, timers = new Map();
+  const slots = [], calls = [], listeners = {}, timers = new Map(), compass = { watches: [], removed: 0 };
   let index = 0, effects = [], nextTimer = 0, embedded;
   const memo = (factory, deps) => { const at = index++, prior = slots[at]; if (prior && deps.every((v, i) => Object.is(v, prior.deps[i]))) return prior.value; const value = factory(); slots[at] = { deps, value }; return value; };
   const react = {
@@ -781,11 +783,12 @@ function mountedBridge(props, platform) {
     '@/components/clay': { useClay: () => true }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/components/analytics-controls': { Pressable: 'Pressable' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/discovery-map-html': { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers },
+    'expo-location': { watchHeadingAsync: async fn => { compass.watches.push(fn); return { remove() { compass.removed++; } }; } }, '@/lib/location': { facingDegrees },
   };
   const exports = {}, host = { location: { protocol: 'https:', origin: options.parentOrigin }, addEventListener(type, fn) { listeners[type] = fn; }, removeEventListener(type, fn) { if (listeners[type] === fn) delete listeners[type]; } };
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/components/discovery-map.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, {
     exports, window: host, require(name) { assert.ok(name in imports, name); return imports[name]; },
-    setTimeout(fn) { const id = ++nextTimer; timers.set(id, fn); return id; }, clearTimeout: id => timers.delete(id),
+    setTimeout(fn, delay) { const id = ++nextTimer; timers.set(id, { fn, delay }); return id; }, clearTimeout: id => timers.delete(id),
   });
   const Canvas = exports.DiscoveryMap(props).type;
   const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
@@ -805,7 +808,7 @@ function mountedBridge(props, platform) {
     if (platform === 'web') listeners.message({ source: rendered.contentWindow, origin: options.parentOrigin, data });
     else rendered.node.props.onMessage({ nativeEvent: { data } });
   }
-  return { render, ready: rendered => notify(rendered), notify, calls, reload() { embedded = canvas(props.markers, embedded.html); }, get embedded() { return embedded; } };
+  return { render, ready: rendered => notify(rendered), notify, calls, compass, timers, reload() { embedded = canvas(props.markers, embedded.html); }, get embedded() { return embedded; } };
 }
 
 for (const platform of ['ios', 'web']) test(`${platform} bridge sends marker data only when changed, including equivalent rebuilt props and reload recovery`, t => {
@@ -845,6 +848,33 @@ for (const platform of ['ios', 'web']) test(`${platform} bridge sends marker dat
   assert.equal(app.embedded.sources.discovery.data.features.length, 0, 'retry under a new session restores current data');
   app.notify(rendered, 'select', { id: pins[0].id, sessionId: 'mounted-canvas.0' });
   assert.deepEqual(selections, []);
+});
+
+test('M7: the map view follows the compass itself, at most 4 turns a second, and a turn sends only the cone (map lag 2026-11-11)', async () => {
+  const pins = Array.from({ length: 500 }, (_, i) => ({ ...marker, id: `place:${i}`, longitude: marker.longitude + i / 10000 }));
+  const props = { markers: pins, cityName: 'Vancouver', onSelect() {}, userLocation: { latitude: 49.29, longitude: -123.14 } };
+  const app = mountedBridge(props, 'ios'); app.ready(app.render()); app.render();
+  assert.equal(app.compass.watches.length, 0, 'no compass until the screen asks for it');
+  props.compass = true; app.render(); await new Promise(setImmediate);
+  assert.equal(app.compass.watches.length, 1);
+  const c = app.embedded, dot = c.userMarkers[0], writes = trackSourceWrites(c), start = app.calls.length;
+  const due = () => [...app.timers].map(([id, timer]) => { app.timers.delete(id); timer.fn(); return timer.delay; });
+  const read = degrees => app.compass.watches[0]({ trueHeading: degrees, magHeading: degrees - 10, accuracy: 3 });
+  read(181); assert.deepEqual(due(), [0]); app.render();
+  assert.equal(dot.rotation, 180);
+  read(91); read(271);
+  const waits = due();
+  assert.equal(waits.length, 1); assert.ok(waits[0] > 200, 'a burst inside a quarter second waits');
+  app.render(); assert.equal(dot.rotation, 270, 'then only the newest reading shows');
+  const updates = app.calls.slice(start);
+  assert.equal(updates.length, 2);
+  assert.ok(updates.every(call => !call.script.includes('"markers"') && call.bytes < 600), 'a turn never resends the pins');
+  assert.equal(writes.length, 0, 'a turn writes no map source');
+  props.compass = false; app.render(); app.render(); // the stop clears the reading, and that state change renders once more
+  assert.equal(app.compass.removed, 1);
+  assert.equal(dot.element['data-facing'], '0', 'the cone drops when the screen stops the compass');
+  read(90); due(); app.render();
+  assert.equal(dot.element['data-facing'], '0', 'a late reading after stopping is ignored');
 });
 
 test('three zoom stages: close-up names with a second line, mid dots with featured names only, far city pills', () => {

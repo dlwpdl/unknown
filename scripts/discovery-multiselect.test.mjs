@@ -127,7 +127,7 @@ test('the real result pipeline applies city, hidden author, listing expiry and e
   const blocked = { ...cafe('blocked'), source: 'post', post: { id: 'blocked', kind: 'story', author: { id: 'blocked-author' } } };
   const expired = { ...cafe('expired'), source: 'post', category: 'used', post: { id: 'expired', kind: 'listing', listingStatus: 'closed', expiresAt: '2027-01-01', author: { id: 'visible' } } };
   const exports = {}, context = {
-    bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, scope: 'all', registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null,
+    useMemo: fn => fn(), useCallback: fn => fn, bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, scope: 'all', registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null,
     exports, catalogItems: [], current: { items: [cafe('ordinary'), blocked, expired, { ...cafe('foreign'), cityId: 'toronto' }, event('2026-10-17'), event('2026-10-18')] },
     city: { id: cityId }, now: Date.parse('2026-10-15T12:00:00Z'), selectedFilters: ['top25', 'cafe', 'used', 'festival'], query: '', days: ['2026-10-17'],
     hidden: (_type, _id, author) => author === 'blocked-author', discoveryEvent, discoveryEventOnDays, discoveryMatches,

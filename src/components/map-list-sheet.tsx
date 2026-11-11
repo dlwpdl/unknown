@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
+import { memo, useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
 import { Animated, PanResponder, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
@@ -18,6 +18,9 @@ class SheetLive {
   constructor(props: Latest) { this.props = props; }
   update(props: Latest) { this.props = props; }
 }
+
+// The cards are first drawn when the sheet first opens, and a closed sheet keeps its last cards without redrawing them (map lag 2026-11-11).
+const Body = memo(function Body({ children }: { open: boolean; children: ReactNode }) { return children; }, (_, next) => !next.open);
 
 // Apple's momentum projection (decelerationRate 0.998); vy is px per ms.
 const project = (vy: number) => vy * 0.998 / (1 - 0.998);
@@ -60,7 +63,8 @@ export function MapListSheet({ snap, positions, onSnap, header, children }: { sn
     onPanResponderTerminate: () => { live.dragging = false; settle(live.props.snap); },
   }));
   const grow = () => { play('selection'); onSnap(snap === 'full' ? 'half' : 'full'); };
-  const open = snap !== 'closed';
+  const open = snap !== 'closed', [opened, setOpened] = useState(open);
+  if (open && !opened) setOpened(true);
   return <View pointerEvents="box-none" style={styles.frame}><Animated.View pointerEvents={open ? 'box-none' : 'none'} accessibilityElementsHidden={!open} importantForAccessibility={open ? 'auto' : 'no-hide-descendants'}
     style={[styles.sheet, { top: 0, height: Math.max(positions.closed - positions.full, 0), backgroundColor: theme.card, borderColor: theme.line, transform: [{ translateY: y }] }]}>
     <View {...pan.panHandlers}>
@@ -70,7 +74,7 @@ export function MapListSheet({ snap, positions, onSnap, header, children }: { sn
       </Pressable>
       {header}
     </View>
-    <View style={styles.body}>{children}</View>
+    <View style={styles.body}>{opened && <Body open={open}>{children}</Body>}</View>
   </Animated.View></View>;
 }
 
