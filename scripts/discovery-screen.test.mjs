@@ -153,7 +153,7 @@ test('changing accounts remounts the map and clears the previous private GPS cam
   assert.equal(exports.default().props.city.id, 'vancouver', 'unregistered route city cannot create a new city');
 });
 
-function requests({ deferFirst = false, filter = 'used', includeEvents = filter === 'all' || filter === 'events' || filter === 'festival', daysKey = '', failDay = '' } = {}) {
+function requests({ deferFirst = false, filter = 'used', includeEvents = filter === 'all' || filter === 'events' || filter === 'festival', daysKey = '', failDay = '', festivalRow = null } = {}) {
   const start = source.indexOf('    request.current?.abort();');
   const end = source.indexOf('  }, [key, isAuthed, filter, city.id, search, viewerScope, daysKey, includeEvents]);', start);
   assert.ok(start > 0 && end > start);
@@ -163,8 +163,8 @@ function requests({ deferFirst = false, filter = 'used', includeEvents = filter 
     exports, request, tr, key: previous.key, AbortController, Promise, Map, Set, isAuthed: true, filter, includeEvents,
     city: { id: 'vancouver' }, search: '', viewerScope: 'viewer', daysKey, supabase: {}, morePending: { current: false },
     setResult: value => results.push(value), setPendingKey() {},
-    EVENT_CITIES: { vancouver: 'Vancouver' }, discoveryEvent: event => ({ id: `event:${event.id}` }),
-    loadTicketmasterEvents: async query => { eventCalls.push(query); if (query.festival || query.date && query.date === failDay) throw new Error('offline'); return { events: [{ id: `available${query.date ? `-${query.date}` : ''}` }], hasMore: false }; },
+    EVENT_CITIES: { vancouver: 'Vancouver' }, discoveryEvent: (event, _city, _now, festival) => ({ id: `event:${event.id}`, category: festival ? 'festival' : 'event' }),
+    loadTicketmasterEvents: async query => { eventCalls.push(query); if (query.festival && festivalRow) return { events: festivalRow, hasMore: false }; if (query.festival || query.date && query.date === failDay) throw new Error('offline'); return { events: [{ id: `available${query.date ? `-${query.date}` : ''}` }], hasMore: false }; },
     loadDiscoveryPosts: (...args) => {
       calls.push(args);
       if (deferFirst && calls.length === 1) return new Promise(resolve => { finishOld = resolve; });
@@ -232,6 +232,18 @@ test('a failed day keeps the other dates in a seven-day event window and reports
   assert.deepEqual(Array.from(ui.results.at(-1).items, item => item.id), ['post:new', 'event:available-2026-10-18', 'event:available-2026-10-20']);
   assert.equal(ui.eventCalls.length, 4);
   assert.equal(ui.results.at(-1).errors.length, 1);
+});
+test('페스티벌 holds exactly the events-screen festival row, by membership and not by name', async () => {
+  const ui = requests({ filter: 'festival', festivalRow: [{ id: 'available' }, { id: 'pinned' }] });
+  ui.load(null); await tick();
+  const categories = result => Object.fromEntries(Array.from(result.items, item => [item.id, item.category]));
+  assert.deepEqual(categories(ui.results.at(-1)), { 'post:new': undefined, 'event:available': 'festival', 'event:pinned': 'festival' });
+  assert.equal(ui.results.at(-1).errors.length, 0);
+  // A later page re-lists a row event from a day page; it stays a festival because the row is kept, not refetched.
+  const more = requests({ filter: 'festival' });
+  more.load({ ...ui.results.at(-1), eventMore: true }); await tick();
+  assert.ok(!more.eventCalls.some(query => query.festival));
+  assert.equal(categories(more.results.at(-1))['event:available'], 'festival');
 });
 test('pagination retains a source warning until a full refresh retries it', async () => {
   const ui = requests(); ui.load({ ...previous, errors: ['게시물 위치를 불러오지 못했어요.'] }); await tick();

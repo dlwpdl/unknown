@@ -2,7 +2,7 @@ import { getLocale, tr } from '../i18n/index.ts';
 import { coarseListingPin, neighborhoodName } from './neighborhoods.ts';
 import { googleMapsPin, googlePinUrl, postMapBody, type PostPin } from './post-maps.ts';
 import type { Post } from './types.ts';
-import { EVENT_TIMEZONES, festivalLocalDay, isFestivalEvent, type EventCity, type TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster.ts';
+import { EVENT_TIMEZONES, festivalLocalDay, type EventCity, type TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster.ts';
 import { CITY_TOP25, type CityTop25Place } from './city-top25.ts';
 import type { CityPlace } from './city-places.ts';
 import { merchantMapsUrl } from './merchant-source.ts';
@@ -169,14 +169,15 @@ export function discoveryPost(post: Post, now = Date.now()): DiscoveryItem | nul
     category: categoryFor(post), label, latitude: pin?.latitude ?? null, longitude: pin?.longitude ?? null,
     price: typeof post.price === 'number' && Number.isFinite(post.price) ? post.price : null, imageUri: post.imageThumbs?.[0] ?? post.imageUris?.[0], post };
 }
-export function discoveryEvent(event: TicketmasterEvent, cityId: string, now = Date.now()): DiscoveryItem | null {
+// festival: the event is in the festival row the app shows (owner 2026-11-11 "행사 화면과 똑같이"), not a name match.
+export function discoveryEvent(event: TicketmasterEvent, cityId: string, now = Date.now(), festival = false): DiscoveryItem | null {
   if (['canceled', 'cancelled', 'postponed', 'unavailable'].includes(event.status)
     || (event.endsAt && Date.parse(event.endsAt) <= now)
     || (!event.endsAt && event.localDate && event.localDate < festivalLocalDay(cityId as EventCity, now))) return null;
   let pin: PostPin | null = null;
   try { if (event.location) { googlePinUrl(event.location); pin = event.location; } } catch { /* Missing venue coordinates stay in the list. */ }
   return { id: `event:${event.id}`, source: 'event', sourceId: event.id, cityId, title: event.name,
-    category: isFestivalEvent(event) ? 'festival' : 'event', label: event.venue || event.city,
+    category: festival ? 'festival' : 'event', label: event.venue || event.city,
     latitude: pin?.latitude ?? null, longitude: pin?.longitude ?? null, price: event.price?.min ?? null,
     imageUri: event.image ?? undefined, startsAt: event.startsAt, endsAt: event.endsAt, localDate: event.localDate, event };
 }

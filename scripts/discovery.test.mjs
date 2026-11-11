@@ -90,7 +90,8 @@ test('도시 시간대의 오늘·이번 주말 날짜를 계산한다', () => {
 });
 test('행사 좌표를 만들어내지 않고 취소·종료 일정은 숨긴다', () => {
   const event = { id: 'e1', name: 'Fall Festival', venue: 'Park', startsAt: '2026-10-15T19:00:00Z', endsAt: '2026-10-16T04:00:00Z', localDate: '2026-10-15', status: 'onsale', country: 'CA', location: { latitude: 49.28, longitude: -123.12 } };
-  assert.equal(discoveryEvent(event, 'vancouver', Date.parse('2026-10-15T20:00:00Z')).category, 'festival');
+  assert.equal(discoveryEvent(event, 'vancouver', Date.parse('2026-10-15T20:00:00Z'), true).category, 'festival');
+  assert.equal(discoveryEvent(event, 'vancouver', Date.parse('2026-10-15T20:00:00Z')).category, 'event', 'a festival name alone no longer decides the 페스티벌 chip');
   assert.equal(discoveryEvent({ ...event, location: null }, 'vancouver', Date.parse('2026-10-15T20:00:00Z')).latitude, null);
   assert.equal(discoveryEvent({ ...event, status: 'cancelled' }, 'vancouver'), null);
   assert.equal(discoveryEvent({ ...event, endsAt: '2020-01-01T00:00:00Z' }, 'vancouver'), null);
