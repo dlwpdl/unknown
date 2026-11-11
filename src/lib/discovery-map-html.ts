@@ -163,7 +163,8 @@ window.addEventListener('message',e=>{if(e.source!==window.parent||e.origin!==co
 const foldCredits=open=>{const links=document.getElementById('credits-links'),toggle=document.getElementById('credits-toggle');if(links&&toggle){links.hidden=!open;toggle.setAttribute('aria-expanded',String(open))}};
 document.addEventListener('click',e=>{const a=e.target.closest?.('#credits a'),pill=e.target.closest?.('.city-pill');if(e.target.closest?.('#credits-toggle')){send({type:'feedback'});foldCredits(document.getElementById('credits-links')?.hidden)}else if(pill){const c=config.cities.find(c=>c.id===pill.getAttribute('data-city'));if(c&&c.open){send({type:'feedback'});if(c.current)move({center:c.center,zoom:11});else send({type:'city',id:c.id})}}else if(a){e.preventDefault();if(config.credits.includes(a.href)){send({type:'feedback'});send({type:'credits',url:a.href})}}else if(e.target.closest?.('.maplibregl-ctrl-group button'))send({type:'feedback'})});
 try{
- map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/positron',center:config.center?[config.center.longitude,config.center.latitude]:config.cityCenter,zoom:config.zoom,attributionControl:false});
+ // Map lag 2026-11-11 (owner "지도 화질 2배"): at most 2 canvas pixels per point; a 3x phone otherwise draws 2.25 times the pixels on every frame.
+ map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/positron',center:config.center?[config.center.longitude,config.center.latitude]:config.cityCenter,zoom:config.zoom,attributionControl:false,pixelRatio:Math.min(window.devicePixelRatio||1,2)});
  window.glingMap=map;map.on('movestart',()=>foldCredits(false));
  map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-left');
  const timer=setTimeout(fail,15000);

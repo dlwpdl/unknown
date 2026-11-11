@@ -141,7 +141,7 @@ function canvas(markers = [marker], providedHtml, extra = {}, globals = {}) {
     getContainer() { return container; }
     setPadding(padding) { this.padding = padding; paddingCalls.push(padding); }
   }
-  const window = { parent: { postMessage: message => messages.push(JSON.parse(message)) }, addEventListener: (type, callback) => { listeners['window:' + type] = callback; }, matchMedia: () => ({ matches: true }) };
+  const window = { devicePixelRatio: globals.devicePixelRatio, parent: { postMessage: message => messages.push(JSON.parse(message)) }, addEventListener: (type, callback) => { listeners['window:' + type] = callback; }, matchMedia: () => ({ matches: true }) };
   const drawing = { scale() {}, arc() {}, drawImage() {}, fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, arcTo() {}, closePath() {}, fill() {}, stroke() {}, measureText: text => ({ width: text.length * 6 }), fillText(text) { labels.push(text); }, getImageData: (_x, _y, width, height) => ({ width, height, data: new Uint8Array(width * height * 4) }) };
   class Marker {
     constructor({ element }) { this.element = element; (element.className === 'city-pill' ? cityMarkers : userMarkers).push(this); }
@@ -170,6 +170,10 @@ test('a passing map error while loading never shows the failure; one that outlas
   const stuck = run();
   stuck.c.listeners.error({}); stuck.grace()[0].fn();
   assert.equal(stuck.errors(), 1, 'still not loaded after the grace: show the failure');
+});
+
+test('the map canvas draws at most two pixels per point (map lag 2026-11-11 "지도 화질 2배")', () => {
+  for (const [device, drawn] of [[undefined, 1], [1, 1], [2, 2], [3, 2]]) assert.equal(canvas([marker], undefined, {}, { devicePixelRatio: device }).map.config.pixelRatio, drawn, String(device));
 });
 
 test('own GPS marker stays separate from camera and place selection, updates and clears explicitly', () => {
