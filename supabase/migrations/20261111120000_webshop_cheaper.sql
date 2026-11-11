@@ -1,5 +1,6 @@
 -- Owner rule 2026-11-11: every compared menu, and the full checkout when recorded, must be cheaper on the webshop than in the Uber Eats app.
-create function private.webshop_cheaper(p_comparisons jsonb,p_checkout jsonb) returns boolean
+-- create or replace: if the constraint below fails on an existing row, fixing the row and re-running does not hit "already exists".
+create or replace function private.webshop_cheaper(p_comparisons jsonb,p_checkout jsonb) returns boolean
 language sql immutable set search_path='' as $$
   select not exists(select 1 from jsonb_array_elements(p_comparisons) item
       where ((item->>'webCents')::numeric<(item->>'uberCents')::numeric) is not true)

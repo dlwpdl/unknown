@@ -44,6 +44,13 @@ test('a webshop that is not cheaper than Uber Eats on every menu or the checkout
   assert.deepEqual((await loadCityWebshops(client, 'vancouver')).map(shop => shop.merchantId), [merchantId]);
 });
 
+test('the city loader still rejects a broken row, a null element or another city instead of skipping it', async () => {
+  const load = (row) => loadCityWebshops({ rpc: () => Promise.resolve({ data: [fixture(), row], error: null }) }, 'vancouver');
+  for (const row of [{ ...fixture(), url: 'https://evil.test/x' }, null, { ...fixture(), cityId: 'toronto' }]) {
+    await assert.rejects(load(row), /INVALID_WEBSHOP/);
+  }
+});
+
 test('tracked links use only the registry merchant and opaque event/session, never a destination or credential', () => {
   const url = new URL(webshopRedirectUrl('https://example.supabase.co', merchantId, { eventId: merchantId, session: `webshop-${merchantId}`, platform: 'ios', source: 'comparison_sheet' }));
   assert.equal(url.pathname, '/functions/v1/webshop-redirect');
