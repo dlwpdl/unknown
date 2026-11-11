@@ -6,9 +6,8 @@ import { PLACE_SUBCATEGORIES } from '../src/lib/discovery.ts';
 
 const MAP_ICONS = ['top25', 'delivery', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used', 'events'];
 // Still pictures without a gesture: the row settings the owner picked, the live map's speech bubble (2026-11-05) and every sub-category (all drawn by 2026-11-05).
-// Chips added 2026-11-10 have no picture yet and borrow their category's.
-const NOT_DRAWN = ['cinema', 'bowling', 'arcade', 'escape_room'];  // owner 11-11 picked these; icons are being drawn
-const OWN_SUBCATEGORY_ICONS = PLACE_SUBCATEGORIES.map(option => option.id).filter(id => !NOT_DRAWN.includes(id));
+// A chip added without its own picture borrows its category's (second test).
+const OWN_SUBCATEGORY_ICONS = PLACE_SUBCATEGORIES.map(option => option.id);
 const STILL_ICONS = ['scope', 'all', 'open', 'visited', 'bubble', ...OWN_SUBCATEGORY_ICONS];
 
 test('every map icon has the mockup gesture and origin, and the artwork ships with the app', () => {
