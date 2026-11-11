@@ -15,6 +15,8 @@ const settle = () => new Promise(setImmediate);
 const nodes = root => !root || typeof root !== 'object' ? [] : [root, ...Object.values(root).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 const text = root => nodes(root).flatMap(node => [node.props?.children].flat().filter(value => typeof value === 'string')).join(' ');
 const control = (root, id) => nodes(root).find(node => node.props?.analyticsId === id);
+// Reply buttons share the fixed 'merchant.reply.edit' analytics id; find one inside its review row.
+const edit = (root, id) => control(nodes(root).find(node => node.key === id), 'merchant.reply.edit');
 
 test('reply save trims text, carries company/review and revision, and verifies actual readback', async () => {
   assert.equal(typeof api.replyToMerchantReview, 'function');
@@ -78,9 +80,9 @@ test('merchant inbox limits reply controls to usage, preserves failed draft, and
   const view = screen('../src/components/merchant-review-inbox.tsx', { save: async () => { if (reject) throw Error('offline'); return { ...reply, body: '수정 답변' }; } });
   view.render('ScopedInbox'); await settle();
   let root = view.render('ScopedInbox');
-  assert.ok(control(root, `merchant.reply.edit.${reviewId}`));
-  assert.ok(!control(root, 'merchant.reply.edit.employment'));
-  control(root, `merchant.reply.edit.${reviewId}`).props.onPress(); root = view.render('ScopedInbox');
+  assert.ok(edit(root, reviewId));
+  assert.ok(!edit(root, 'employment'));
+  edit(root, reviewId).props.onPress(); root = view.render('ScopedInbox');
   nodes(root).find(node => node.type === 'TextInput').props.onChangeText('수정 답변'); root = view.render('ScopedInbox');
   control(root, 'merchant.reply.save').props.onPress(); await settle(); root = view.render('ScopedInbox');
   assert.equal(nodes(root).find(node => node.type === 'TextInput').props.value, '수정 답변');
@@ -94,7 +96,7 @@ test('merchant inbox limits reply controls to usage, preserves failed draft, and
 test('reply save refuses an account change and leaves the draft intact', async () => {
   const view = screen('../src/components/merchant-review-inbox.tsx', { sessionOwner: 'other' });
   view.render('ScopedInbox'); await settle();
-  control(view.render('ScopedInbox'), `merchant.reply.edit.${reviewId}`).props.onPress();
+  edit(view.render('ScopedInbox'), reviewId).props.onPress();
   nodes(view.render('ScopedInbox')).find(node => node.type === 'TextInput').props.onChangeText('남겨 둔 답변');
   control(view.render('ScopedInbox'), 'merchant.reply.save').props.onPress(); await settle();
   assert.equal(view.calls.length, 0);
@@ -120,7 +122,7 @@ test('dirty and saving replies prevent paging and reporting from hiding their dr
     assert.equal(pages.length, 1);
     nodes(root).find(node => node.type === 'ReviewCard').props.onReport();
     root = view.render('ScopedInbox');
-    control(root, `merchant.reply.edit.${reviewId}`).props.onPress();
+    edit(root, reviewId).props.onPress();
     root = view.render('ScopedInbox');
     const draftBody = phase === 'dirty' ? '보존해야 할 작성 중 답변' : reply.body;
     if (phase === 'dirty') nodes(root).find(node => node.type === 'TextInput').props.onChangeText(draftBody);
@@ -153,7 +155,7 @@ test('inbox defaults to reviews needing a reply, keeps the open draft listed, an
   assert.deepEqual(nodes(root).filter(node => node.type === 'Stat').map(({ props }) => [props.label, props.value]),
     [['불러온 후기', '3개'], ['답글 필요', '1개'], ['불러온 후기 평균', '7.5 / 10']]);
   assert.ok(nodes(root).find(node => node.type === 'Help').props.items.some(item => item.includes('증빙 원본은 비즈니스에 공개되지 않아요')));
-  control(root, 'merchant.reply.edit.waiting').props.onPress(); root = view.render('ScopedInbox', { bare: true });
+  edit(root, 'waiting').props.onPress(); root = view.render('ScopedInbox', { bare: true });
   nodes(root).find(node => node.type === 'TextInput').props.onChangeText('감사합니다'); root = view.render('ScopedInbox', { bare: true });
   nodes(root).find(node => node.type === 'Segments').props.onChange('all'); root = view.render('ScopedInbox', { bare: true });
   assert.deepEqual(ids(), [reviewId, 'waiting', 'employment']);

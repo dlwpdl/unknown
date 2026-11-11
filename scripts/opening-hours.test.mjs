@@ -63,7 +63,7 @@ test('values the reader cannot be sure of stay unknown instead of guessing', () 
 
 test('every bundled catalog value is either read or left unknown, and Vancouver keeps a usable share', () => {
   const catalog = JSON.parse(readFileSync(new URL('../src/lib/city-places.catalog.json', import.meta.url), 'utf8'));
-  const places = Object.values(catalog.cities).flatMap(city => [...city.places, ...(city.regionalPlaces ?? []), ...(city.extraPlaces ?? [])]);
+  const places = Object.values(catalog.cities).flatMap(city => [...city.places, ...(city.regionalPlaces ?? []), ...(city.extraPlaces ?? []), ...(city.morePlaces ?? [])]);
   const values = places.map(place => place.openingHours).filter(Boolean);
   for (const value of values) {
     const week = parseOpeningHours(value);

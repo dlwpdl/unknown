@@ -104,7 +104,7 @@ function ScopedInbox({ merchantId, onDirty, bare = false }: InboxProps) {
           <Pressable analyticsId="merchant.reply.cancel" accessibilityRole="button" disabled={replyBusy} accessibilityState={{ disabled: replyBusy }} style={styles.button}
             onPress={() => { play('selection'); setDraft(null); setReplyError(''); refresh(); }}><ThemedText type="small" themeColor="textSecondary">{tr("취소")}</ThemedText></Pressable>
         </View>
-      </View> : <Pressable analyticsId={`merchant.reply.edit.${row.id}`} accessibilityRole="button" disabled={!!draft || replyBusy} accessibilityState={{ disabled: !!draft || replyBusy }}
+      </View> : <Pressable analyticsId="merchant.reply.edit" accessibilityRole="button" disabled={!!draft || replyBusy} accessibilityState={{ disabled: !!draft || replyBusy }}
         style={styles.button} onPress={() => { play('selection'); setReplyError(''); setDraft({ id: row.id, body: row.reply?.body ?? '', original: row.reply?.body ?? '', updatedAt: row.reply?.updated_at ?? null }); }}>
         <ThemedText type="smallBold" themeColor="accent">{row.reply ? tr("답변 수정") : tr("답변하기")}</ThemedText>
       </Pressable>)}

@@ -107,6 +107,7 @@ select lives_ok($$select public.record_behavior_events('performance-place-contro
 select lives_ok($$select public.record_app_visit('ios','place-detail','1.2.3(65)')$$,'the real native version and places screen are accepted');
 update public.notifications set read_at=now() where user_id=auth.uid();
 reset role;
+select is((select target from private.behavior_events where session_id='performance-place-control-session'),'places.category.food','the place control is stored under its registered target');
 select is((select count(*)::int from private.product_events where kind like 'notification_%'),2,'bulk inbox reads do not create opens');
 update private.product_events set day=(now() at time zone 'UTC')::date-1 where kind='notification_push_open';
 select set_config('request.jwt.claims','{"sub":"88888888-1111-1111-1111-111111111111","role":"authenticated"}',true);

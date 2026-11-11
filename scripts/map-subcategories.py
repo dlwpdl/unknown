@@ -35,6 +35,7 @@ RULES = [
     ('dining', 'vegan', [(('cuisine', {'vegan'}),), (('diet:vegan', {'yes', 'only'}),)]),
     ('nightlife', 'izakaya', [(('cuisine', {'izakaya'}),), (('name', r'izakaya|居酒屋|이자카야'),), (('cuisine', {'japanese'}), ('amenity', {'bar', 'pub'}))]),
     ('nightlife', 'pocha', [(('name', r'\bpocha\b|pojangmacha|포차|포장마차'),)]),
+    ('nightlife', 'karaoke', [(('amenity', {'karaoke_box'}),)]),
     ('nightlife', 'cocktail_bar', [(('bar', {'cocktail'}),), (('cocktails', {'yes'}),), (('drink:cocktail', {'yes', 'served'}),), (('name', r'cocktail'),)]),
     ('nightlife', 'wine_bar', [(('bar', {'wine'}),), (('amenity', {'wine_bar'}),), (('name', r'wine bar|bar [àa] vins?|enoteca|vinoteca'),)]),
     ('nightlife', 'pub', [(('amenity', {'pub', 'biergarten'}),)]),
@@ -42,6 +43,8 @@ RULES = [
     ('nightlife', 'bar', [(('amenity', {'bar'}),)]),
     ('nightlife', 'brewery', [(('craft', {'brewery'}),), (('microbrewery', {'yes'}),), (('industrial', {'brewery'}),), (('name', r'\bbrew(?:ing|ery|eries|house|pub)\b'),)]),
     ('nightlife', 'live_music', [(('amenity', {'music_venue'}),), (('leisure', {'music_venue'}),), (('live_music', {'yes'}),)]),
+    # breakfast, speakeasy, sports_bar, jazz, happy_hour and matcha have no OSM tag to trust; they come from official sites.
+    ('cafe', 'ice_cream', [(('amenity', {'ice_cream'}),), (('cuisine', {'ice_cream', 'gelato'}),)]),
     ('cafe', 'dessert', [(('cuisine', {'dessert', 'cake', 'donut', 'ice_cream', 'pastry', 'crepe', 'frozen_yogurt', 'waffle', 'gelato', 'chocolate'}),),
                          (('amenity', {'ice_cream'}),), (('shop', {'pastry', 'confectionery', 'chocolate'}),)]),
     ('cafe', 'brunch', [(('cuisine', {'breakfast', 'brunch', 'pancake'}),)]),
@@ -60,6 +63,10 @@ RULES = [
     ('places', 'historic', [(('historic', None),), (('heritage', None),)]),
     ('places', 'market', [(('amenity', {'marketplace'}),)]),
     ('places', 'theatre', [(('amenity', {'theatre', 'concert_hall', 'music_venue'}),), (('building', {'theatre'}),)]),
+    ('places', 'cinema', [(('amenity', {'cinema'}),)]),
+    ('places', 'bowling', [(('leisure', {'bowling_alley'}),)]),
+    ('places', 'arcade', [(('leisure', {'amusement_arcade'}),)]),
+    ('places', 'escape_room', [(('leisure', {'escape_game'}),)]),
 ]
 
 def chip(place):
@@ -122,14 +129,18 @@ def city_tags(city_id, ids, cache, pause, context):
     path.write_text(json.dumps(tags, ensure_ascii=False, sort_keys=True))
     return tags
 
-def apply(catalog, places, checked):
-    """Set each checked place's values in a catalog or seed (in memory); a checked place with none loses stale ones."""
+def apply(catalog, places):
+    """Add each place's OSM values after the ones it already has (in memory), up to 12.
+    Existing values stay: some come from official sites, not OSM, and a rerun must not erase them."""
     applied = 0
     for city in catalog['cities'].values():
-        for field in ['places', 'regionalPlaces', 'extraPlaces']:
+        for field in ['places', 'regionalPlaces', 'extraPlaces', 'morePlaces']:
             for place in city.get(field, []):
-                if place['id'] in places: place['subcategories'] = places[place['id']]['subcategories']; applied += 1
-                elif place['id'] in checked: place.pop('subcategories', None)
+                if place['id'] not in places: continue
+                values = list(place.get('subcategories') or [])
+                for ident in places[place['id']]['subcategories']:
+                    if ident not in values and len(values) < 12: values.append(ident)
+                place['subcategories'] = values; applied += 1
     return applied
 
 def main():
@@ -144,14 +155,13 @@ def main():
     seed = json.loads(raw)
     cert = Path('/etc/ssl/cert.pem')
     context = ssl.create_default_context(cafile=str(cert) if cert.exists() else None)
-    places, missing, counts, checked = {}, [], {}, set()
+    places, missing, counts = {}, [], {}
     for city_id, city in seed['cities'].items():
-        rows = [*city['places'], *city.get('regionalPlaces', []), *city.get('extraPlaces', [])]
+        rows = [*city['places'], *city.get('regionalPlaces', []), *city.get('extraPlaces', []), *city.get('morePlaces', [])]
         if any(not re.fullmatch(r'osm:(node|way|relation):[1-9]\d*', p['id']) for p in rows): raise ValueError('INVALID_PLACE_IDENTITY')
         tags = city_tags(city_id, sorted({p['id'] for p in rows}), args.output / 'osm', args.pause, context)
         for place in rows:
             if place['id'] not in tags: missing.append(place['id']); continue
-            checked.add(place['id'])
             place_chip = chip(place)
             found = subcategories(tags[place['id']], place_chip)
             for ident, _ in found:
@@ -160,7 +170,7 @@ def main():
                 if city_id == 'vancouver': count['vancouver'] += 1
             if found: places[place['id']] = dict(cityId=city_id, name=place['name'], chip=place_chip,
                                                 subcategories=[ident for ident, _ in found], evidence=dict(found))
-    total = sum(len([*c['places'], *c.get('regionalPlaces', []), *c.get('extraPlaces', [])]) for c in seed['cities'].values())
+    total = sum(len([*c['places'], *c.get('regionalPlaces', []), *c.get('extraPlaces', []), *c.get('morePlaces', [])]) for c in seed['cities'].values())
     result = dict(generatedAt=datetime.now(timezone.utc).isoformat(), seedSha256=hashlib.sha256(raw).hexdigest(),
                   source='OpenStreetMap API 0.6 element tags', license='ODbL-1.0', attribution='© OpenStreetMap contributors',
                   rules='scripts/map-subcategories.py', placesChecked=total, placesWithValues=len(places), missingOsm=sorted(missing), places=places)
@@ -173,14 +183,14 @@ def main():
                                   # private.city_place_catalog checks octet_length(payload::text); jsonb text puts a space after ',' and ':'.
                                   jsonbText=len(json.dumps(value, ensure_ascii=False, separators=(', ', ': ')).encode()))
         before = size(catalog)
-        applied = apply(catalog, places, checked)
+        applied = apply(catalog, places)
         after = size(catalog)
         summary['catalog'] = dict(path=str(args.catalog), collectedAt=catalog['collectedAt'], placesTagged=applied, before=before, after=after, limit=2_000_000)
         # Simulator preview only: a newer collectedAt keeps the bundled copy ahead of the live one. Never commit it.
         catalog['collectedAt'] = datetime.now(timezone.utc).isoformat()
         (args.output / 'catalog-preview.json').write_text(json.dumps(catalog, ensure_ascii=False, separators=(',', ':')))
     if args.seed_copy:
-        summary['seedCopyTagged'] = apply(seed, places, checked)
+        summary['seedCopyTagged'] = apply(seed, places)
         # The operator replaces the seed with this copy atomically after review; this script never writes the seed.
         (args.output / 'seed-with-subcategories.json').write_text(json.dumps(seed, ensure_ascii=False, indent=1))
     (args.output / 'counts.json').write_text(json.dumps(summary, ensure_ascii=False, indent=1, sort_keys=True))
