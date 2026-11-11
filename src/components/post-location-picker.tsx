@@ -1,5 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, KeyboardAvoidingView, Modal, Platform, StyleSheet, TextInput, View } from 'react-native';
 import * as Location from 'expo-location';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +19,12 @@ import { isFreshLocation } from '@/lib/location';
 import { CITIES } from '@/lib/mock';
 import { googlePinUrl, type PostPin } from '@/lib/post-maps';
 
+// The revision is part of the cache key: one city's places change only when a refreshed catalog lands.
+const discoveryPlaces = (cityId: string | undefined, _revision: number): CityPlace[] => {
+  if (!cityId) return [];
+  try { return getCityDiscoveryPlaces(cityId); } catch { return []; /* A missing catalog opens the plain pin map. */ }
+};
+
 export function PostLocationPicker({ visible, initialPin, initialLabel = '', cityName = '', onClose, onConfirm }: {
   visible: boolean; initialPin: PostPin | null; initialLabel?: string; cityName?: string; onClose: () => void; onConfirm: (pin: PostPin, label: string) => void;
 }) {
@@ -29,26 +35,29 @@ export function PostLocationPicker({ visible, initialPin, initialLabel = '', cit
   const revision = useRef(0);
   const [ready, setReady] = useState(false), [cardHeight, setCardHeight] = useState(150);
   const [dropping, setDropping] = useState(false), [center, setCenter] = useState<{ latitude: number; longitude: number; requestId: number } | null>(initialPin && { latitude: initialPin.latitude, longitude: initialPin.longitude, requestId: 0 });
-  useCityPlacesRevision();
+  const catalog = useCityPlacesRevision();
   // Our map's places come first (owner 2026-11-08 "글쓰기에서 장소추가하면 우리 지도에 있는걸 가져와야"): the phone's address search alone never finds them by name.
   const cityId = CITIES.find(city => city.englishName === cityName)?.id, needle = query.trim().toLocaleLowerCase();
   let ours: CityPlace[] = [];
   if (needle && cityId) { try { ours = getCityDiscoveryPlaces(cityId).filter(place => placeMatchesQuery(place, needle)).slice(0, 4); } catch { /* A missing catalog leaves the address search. */ } }
   // The picker opens on the map tab's own place pins for the city (owner 2026-11-11 "장소 추가를 열면 지도가 텅 비어 있고"): a place is one tap away and search is for the rest.
   // 직접 핀 놓기 switches to the plain pin map, where any spot or the pin itself can be moved; a city without catalog places opens there.
-  let places: CityPlace[] = [];
-  if (cityId) { try { places = getCityDiscoveryPlaces(cityId); } catch { /* A missing catalog opens the plain pin map. */ } }
+  // Kept between keystrokes: a new pin list makes the map check and send every pin again (map lag 2026-11-11).
+  const places = useMemo(() => discoveryPlaces(cityId, catalog), [cityId, catalog]);
   const free = dropping || !places.length, mapReady = free ? ready : true;
-  const chosen = pin && places.find(place => place.latitude === pin.latitude && place.longitude === pin.longitude);
-  // Same fields as the map tab's place pins (src/app/map.tsx): category colour and 3D art, the kind of place on the second line, TOP 50 and visited places named from further out.
-  const markers = places.flatMap((place): DiscoveryMarker[] => {
-    const item = discoveryPlace(place), category = item && DISCOVERY_CATEGORIES.find(value => value.id === item.category);
-    if (!item || !category) return [];
-    return [{ id: place.id, latitude: place.latitude, longitude: place.longitude, color: category.color, label: place.name.slice(0, 80), sublabel: tr(pinSubcategory(place.subcategories)?.label ?? category.label).slice(0, 40),
-      icon: category.art, ...(item.top25 || item.glingVisited ? { featured: true } : {}), ...(item.top25 ? { top25: true } : {}) }];
-  });
-  // A spot that is not one of our places (내 위치, an address, an earlier pin) shows as its own chosen pin.
-  if (pin && !chosen) markers.push({ id: 'chosen', latitude: pin.latitude, longitude: pin.longitude, color: theme.accent, label: tr('선택한 위치'), featured: true });
+  const chosen = pin && places.find(place => place.latitude === pin.latitude && place.longitude === pin.longitude), accent = theme.accent;
+  const markers = useMemo(() => {
+    // Same fields as the map tab's place pins (src/app/map.tsx): category colour and 3D art, the kind of place on the second line, TOP 50 and visited places named from further out.
+    const list = places.flatMap((place): DiscoveryMarker[] => {
+      const item = discoveryPlace(place), category = item && DISCOVERY_CATEGORIES.find(value => value.id === item.category);
+      if (!item || !category) return [];
+      return [{ id: place.id, latitude: place.latitude, longitude: place.longitude, color: category.color, label: place.name.slice(0, 80), sublabel: tr(pinSubcategory(place.subcategories)?.label ?? category.label).slice(0, 40),
+        icon: category.art, ...(item.top25 || item.glingVisited ? { featured: true } : {}), ...(item.top25 ? { top25: true } : {}) }];
+    });
+    // A spot that is not one of our places (내 위치, an address, an earlier pin) shows as its own chosen pin.
+    if (pin && !chosen) list.push({ id: 'chosen', latitude: pin.latitude, longitude: pin.longitude, color: accent, label: tr('선택한 위치'), featured: true });
+    return list;
+  }, [places, pin, chosen, accent, tr]);
   useEffect(() => { const gate = revision; return () => { gate.current++; }; }, []);
   useEffect(() => { const listener = AppState.addEventListener('change', state => { if (state === 'background') { revision.current++; setBusy(false); } }); return () => listener.remove(); }, []);
   // quiet: a tap on a place pin, which the map already answered with its own feedback, so the camera also stays where the person put it.

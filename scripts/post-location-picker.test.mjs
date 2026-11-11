@@ -26,11 +26,12 @@ const places = run('src/lib/city-places.ts', {
 
 // The compose place picker with recorded feedback and a confirm callback.
 function picker({ cityName = 'Vancouver', initialPin = null, initialLabel = '' } = {}) {
-  const slots = [], feedback = [], confirmed = [];
+  const slots = [], feedback = [], confirmed = [], catalog = { revision: 0 };
   let at = 0;
   const jsx = (type, props) => ({ type, props });
   const ui = run('src/components/post-location-picker.tsx', {
-    react: { useState: initial => { const i = at++; if (!(i in slots)) slots[i] = initial; return [slots[i], next => { slots[i] = typeof next === 'function' ? next(slots[i]) : next; }]; }, useRef: value => ({ current: value }), useEffect() {} },
+    react: { useState: initial => { const i = at++; if (!(i in slots)) slots[i] = initial; return [slots[i], next => { slots[i] = typeof next === 'function' ? next(slots[i]) : next; }]; }, useRef: value => ({ current: value }), useEffect() {},
+      useMemo: (fn, deps) => { const i = at++, last = slots[i]; if (last && deps.every((dep, k) => Object.is(dep, last.deps[k]))) return last.value; slots[i] = { value: fn(), deps }; return slots[i].value; } },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { View: 'View', TextInput: 'TextInput', Modal: 'Modal', KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'ios' }, StyleSheet: { create: value => value }, AppState: { currentState: 'active', addEventListener: () => ({ remove() {} }) } },
     'react-native-reanimated': { useReducedMotion: () => true },
@@ -38,13 +39,13 @@ function picker({ cityName = 'Vancouver', initialPin = null, initialLabel = '' }
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/city-place-photo': { CityPlacePhoto: 'CityPlacePhoto' },
     '@/components/discovery-map': { DiscoveryMap: 'DiscoveryMap' }, '@/components/post-pin-map': { PostPinMap: 'PostPinMap' }, '@/components/themed-text': { ThemedText: 'ThemedText' },
     '@/components/clay': { useClay: () => false, ClayIcon: () => null, ClayPillFill: () => null },
-    '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 }, '@/hooks/use-theme': { useTheme: () => ({ accent: '#6E4AA2' }) },
+    '@/hooks/use-city-places': { useCityPlacesRevision: () => catalog.revision }, '@/hooks/use-theme': { useTheme: () => ({ accent: '#6E4AA2' }) },
     '@/lib/city-places': places, '@/lib/discovery': discovery, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/location': { isFreshLocation: () => true }, '@/lib/mock': { CITIES }, '@/lib/post-maps': maps,
   });
   const render = () => { at = 0; return nodes(ui.PostLocationPicker({ visible: true, initialPin, initialLabel, cityName, onClose() {}, onConfirm: (pin, label) => confirmed.push({ pin, label }) })); };
   const find = (tree, id) => tree.find(node => node.props?.analyticsId === id);
-  return { render, find, feedback, confirmed };
+  return { render, find, feedback, confirmed, catalog };
 }
 
 test('place add opens on the map tab pins for the city, and a tapped pin is the place that gets attached', () => {
@@ -61,6 +62,11 @@ test('place add opens on the map tab pins for the city, and a tapped pin is the 
   // The pins pass the map's own marker checks, which turn the whole map into its error card on any bad one.
   assert.equal(discoveryMarkers(map.props.markers).length, list.length);
   assert.equal(app.find(tree, 'post.location.confirm').props.disabled, true, 'nothing chosen yet');
+  // Typing in the search box keeps the same pin list, so the map is not handed every pin again (map lag 2026-11-11); a refreshed catalog is.
+  tree.find(node => node.type === 'TextInput' && node.props.accessibilityLabel === '장소·주소 검색').props.onChangeText('sci');
+  assert.strictEqual(app.render().find(node => node.type === 'DiscoveryMap').props.markers, map.props.markers);
+  app.catalog.revision++;
+  assert.notStrictEqual(app.render().find(node => node.type === 'DiscoveryMap').props.markers, map.props.markers);
 
   map.props.onSelect('chosen'); map.props.onSelect('osm:way:0');
   assert.equal(app.render().find(node => node.type === 'TextInput' && node.props.accessibilityLabel === '첨부할 위치 이름'), undefined, 'an unknown pin chooses nothing');
