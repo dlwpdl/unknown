@@ -28,7 +28,7 @@ export function useRevealChip(selected: string, animated: boolean) {
     scroll: {
       ref, scrollEventThrottle: 16,
       onScroll: (event: NativeSyntheticEvent<NativeScrollEvent>) => { row.current.offset = event.nativeEvent.contentOffset.x; },
-      onLayout: (event: LayoutChangeEvent) => { row.current.viewport = event.nativeEvent.layout.width; },
+      onLayout: (event: LayoutChangeEvent) => { row.current.viewport = event.nativeEvent.layout.width; reveal(); },
       // A chip chosen from a sheet is added at the end, so the row grows after the choice.
       onContentSizeChange: (width: number) => { row.current.content = width; reveal(); },
     },

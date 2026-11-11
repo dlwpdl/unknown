@@ -101,6 +101,10 @@ test('Q07 map: the category chosen last scrolls into the quick row', () => {
   assert.equal(row().props.revealing, 'top25');
   assert.equal(control(tree, 'TOP 50').props.onLayout, 'layout:top25');
   assert.equal(control(tree, '보여 줄 곳, 모두').props.onLayout, undefined, 'only category chips are measured');
+  control(tree, '카페').props.onPress(); tree = view.render();
+  const cafe = row().props.revealing; assert.notEqual(cafe, 'top25', 'the chip just turned on is the one revealed');
+  control(tree, 'TOP 50').props.onPress(); tree = view.render();
+  assert.equal(row().props.revealing, cafe, 'turning a chip off leaves the row where it is');
 });
 
 test('the quick category row preserves the owner-selected restaurant, cafe, festival and nightlife order', () => {
