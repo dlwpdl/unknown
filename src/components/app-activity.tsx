@@ -45,7 +45,8 @@ export function AppActivity() {
       const { error } = await supabase.rpc('record_behavior_events', {
         p_session: session, p_events: events, p_platform: Platform.OS, p_source: context.source,
       });
-      return !error;
+      // INVALID_BEHAVIOR never succeeds on retry; resending it from the queue front would block every later event.
+      return !error || error.message === 'INVALID_BEHAVIOR';
     });
     return () => { active = false; entry?.remove(); configureBehavior(null); };
   }, [isAdmin, isAuthed, me.id]);
