@@ -10,6 +10,7 @@ reset role;
 do $$ begin
   if (select count(*) from private.behavior_events where session_id='qa-public-web-controls-20261015') <> 3
     or (select target from private.behavior_events where session_id='qa-public-web-controls-20261015' and seq=3) <> 'unregistered'
+    or exists(select 1 from private.behavior_events where session_id='qa-public-web-controls-20261015' and seq<3 and target='unregistered')
     or exists(select 1 from private.behavior_events where target='private-user-text') then
     raise exception 'Analytics retry must store each event once and unknown targets only as unregistered';
   end if;

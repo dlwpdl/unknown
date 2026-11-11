@@ -15,6 +15,7 @@ reset role;
 do $$ begin
   if (select count(*) from private.behavior_events where session_id='qa-live-controls-20261016') <> 7
     or (select target from private.behavior_events where session_id='qa-live-controls-20261016' and seq=7) <> 'unregistered'
+    or exists(select 1 from private.behavior_events where session_id='qa-live-controls-20261016' and seq<7 and target='unregistered')
     or exists(select 1 from private.behavior_events where target='arbitrary-private-text') then
     raise exception 'Fixed targets must be accepted once and unknown targets kept only as unregistered';
   end if;

@@ -14,6 +14,9 @@ do $$ begin
  if exists(select 1 from public.get_discovery_posts('vancouver') where id='d1500000-0000-0000-0000-000000000003') then raise exception 'Anonymous map leaked body coordinates'; end if;
 end $$;
 reset role;
+do $$ begin
+ if (select array_agg(target order by seq) from private.behavior_events where session_id='qa-discovery-map-20261015') is distinct from array['discovery.mode','discovery.map.retry'] then raise exception 'Discovery map controls must stay registered'; end if;
+end $$;
 select set_config('request.jwt.claims','{"sub":"d1500000-0000-0000-0000-000000000002","role":"authenticated"}',true);
 set local role authenticated;
 select public.record_app_visit('web','discovery','1.1.4');

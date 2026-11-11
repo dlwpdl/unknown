@@ -23,9 +23,11 @@ select lives_ok($$select public.record_behavior_events('qa-151-template-session-
 select lives_ok($$select public.record_behavior_events('qa-151-template-session-0001','ios','[{"seq":26,"screen":"post","kind":"press","target":"web_page","value":1}]','direct')$$,'later events of that session are recorded');
 select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":4,"screen":"feed","kind":"view","target":"secret-user-text","value":1}]')$$,'P0001','INVALID_BEHAVIOR','views still need the screen target');
 select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":4,"screen":"feed","kind":"success","target":"secret-user-text","value":1}]')$$,'P0001','INVALID_BEHAVIOR','success still needs a listed target');
-select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":2,"screen":"feed","kind":"view","target":"screen","value":1,"email":"secret@example.com"}]')$$,'P0001','INVALID_BEHAVIOR','unexpected properties rejected');
-select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":2,"screen":"/chat/private-id","kind":"view","target":"screen","value":1}]')$$,'P0001','INVALID_BEHAVIOR','raw routes rejected');
-select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":2,"screen":"feed","kind":"scroll","target":"web_page","value":101}]')$$,'P0001','INVALID_BEHAVIOR','invalid depth rejected');
+select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":9,"screen":"feed","kind":"press","target":null,"value":1}]')$$,'P0001','INVALID_BEHAVIOR','a missing target is rejected');
+select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":9,"screen":"feed","kind":"press","target":7,"value":1}]')$$,'P0001','INVALID_BEHAVIOR','a target that is not text is rejected');
+select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":9,"screen":"feed","kind":"view","target":"screen","value":1,"email":"secret@example.com"}]')$$,'P0001','INVALID_BEHAVIOR','unexpected properties rejected');
+select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":9,"screen":"/chat/private-id","kind":"view","target":"screen","value":1}]')$$,'P0001','INVALID_BEHAVIOR','raw routes rejected');
+select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":9,"screen":"feed","kind":"scroll","target":"web_page","value":101}]')$$,'P0001','INVALID_BEHAVIOR','invalid depth rejected');
 select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[]')$$,'P0001','INVALID_BEHAVIOR','empty batches rejected');
 reset role;
 select is((select count(*) from private.behavior_events where session_id='qa-anonymous-session-12345'),4::bigint,'retry stores one event and rejected batches store none');
@@ -40,6 +42,7 @@ select lives_ok($$select public.record_behavior_events('qa-member-event-session-
 select throws_ok($$select public.record_behavior_events('qa-member-event-session-12345','ios','[{"seq":5,"screen":"events/G5vYZabc","kind":"view","target":"screen","value":1}]')$$,'P0001','INVALID_BEHAVIOR','event IDs cannot enter analytics screen names');
 reset role;
 select is((select count(*) from private.behavior_events where user_id='73737373-1111-1111-1111-111111111111'),7::bigint,'member identity assigned by server');
+select is((select array_agg(target order by seq) from private.behavior_events where session_id='qa-member-event-session-12345'),array['screen','ticketmaster.event.open','screen','ticketmaster.meetup.created'],'registered event targets are stored as sent');
 -- Admin reads need an MFA (aal2) session since 20261030140000_admin_direct_db.
 insert into auth.sessions(id,user_id,aal) values('73737373-2222-2222-2222-aaaaaaaaaaaa','73737373-2222-2222-2222-222222222222','aal2');
 select set_config('request.jwt.claims','{"sub":"73737373-2222-2222-2222-222222222222","role":"authenticated","aal":"aal2","session_id":"73737373-2222-2222-2222-aaaaaaaaaaaa","app_metadata":{"role":"admin"}}',true);
