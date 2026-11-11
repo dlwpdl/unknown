@@ -47,6 +47,25 @@ test('bounded retry batches preserve identity and order, reset on identity chang
   await flushBehavior();
   assert.equal(batches.length, 3);
 });
+test('a batch refused as INVALID_BEHAVIOR is dropped instead of blocking every later event', async () => {
+  for (const file of ['../src/components/app-activity.tsx', '../src/components/public-web/analytics.ts']) {
+    assert.match(readFileSync(new URL(file, import.meta.url), 'utf8'), /\.message === 'INVALID_BEHAVIOR';/);
+  }
+  const sent = [];
+  // A server that refuses the whole batch for one unknown target, and the transports' delivered rule.
+  configureBehavior(async batch => {
+    sent.push(batch.events.map(event => event.target));
+    const error = batch.events.some(event => event.target === 'post.poll.option.0') ? { message: 'INVALID_BEHAVIOR' } : null;
+    return !error || error.message === 'INVALID_BEHAVIOR';
+  });
+  behaviorScreen('post');
+  behavior('press', 'post.poll.option.0');
+  await flushBehavior();
+  behavior('press', 'web_control_1');
+  await flushBehavior();
+  assert.deepEqual(sent, [['screen', 'post.poll.option.0'], ['web_control_1']]);
+  configureBehavior(null);
+});
 test('scroll emits crossed thresholds once and ignores short/horizontal-invalid surfaces', () => {
   assert.deepEqual(scrollThresholds(0, 500, 2000, 0), [25]);
   assert.deepEqual(scrollThresholds(1100, 500, 2000, 25), [50, 75]);

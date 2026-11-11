@@ -72,6 +72,8 @@ function screen({ business = null, webshop = null, merchantSaves = async () => n
 }
 
 const control = (root, id) => nodes(root).find(node => node.props?.analyticsId === id);
+// Every post row shares the fixed 'company.post' analytics id; the row key tells them apart.
+const postRows = (root, id) => nodes(root).filter(node => node.key === id && node.props?.analyticsId === 'company.post');
 const text = root => nodes(root).flatMap(node => [node.props?.children].flat().filter(value => typeof value === 'string' || typeof value === 'number')).join(' ');
 
 test('company tabs show real counts, select hiring and open a real post detail', async () => {
@@ -83,7 +85,7 @@ test('company tabs show real counts, select hiring and open a real post detail',
   assert.match(text(control(root, 'company.tab.posts')), /3/);
   assert.match(text(control(root, 'company.tab.jobs')), /2/);
   assert.match(text(control(root, 'company.tab.reviews')), /6/);
-  control(root, `company.post.${post.id}`).props.onPress();
+  postRows(root, post.id)[0].props.onPress();
   assert.deepEqual(view.routes, [{ pathname: '/post/[id]', params: { id: post.id } }]);
   control(root, 'company.hiring').props.onPress(); root = view.render(); await settle(); root = view.render();
   assert.equal(control(root, 'company.tab.jobs').props.accessibilityState.selected, true);
@@ -157,8 +159,8 @@ test('visible retry resumes the failed page and preserves earlier pages without 
   assert.equal(view.postCalls.at(-1)[3], 2);
   resolve({ ...content, posts: [older, { ...post, id: '44444444-4444-4444-8444-444444444444', title: '다음 글' }], has_more: false, nextOffset: 4 });
   await settle(); root = view.render();
-  assert.equal(nodes(root).filter(node => node.props?.analyticsId === `company.post.${post.id}`).length, 1);
-  assert.equal(nodes(root).filter(node => node.props?.analyticsId === `company.post.${older.id}`).length, 1);
+  assert.equal(postRows(root, post.id).length, 1);
+  assert.equal(postRows(root, older.id).length, 1);
   assert.ok(text(root).includes(older.title) && text(root).includes('다음 글'));
 });
 
@@ -193,10 +195,10 @@ test('hidden posts disappear immediately and stale reads cannot restore the prev
   view.hidePost(post.id); view.render(); await settle(); view.render(); await settle();
   assert.equal(pending.length, 2, 'a visibility change revalidates the public counts');
   pending[0](content); await settle();
-  assert.equal(control(view.render(), `company.post.${post.id}`), undefined);
+  assert.equal(postRows(view.render(), post.id)[0], undefined);
   assert.ok(!text(control(view.render(), 'company.tab.posts')).includes('3'));
   pending[1]({ ...content, post_count: 1, job_count: 0, posts: [post] }); await settle();
-  assert.equal(control(view.render(), `company.post.${post.id}`), undefined, 'the house overlay filters late rows too');
+  assert.equal(postRows(view.render(), post.id)[0], undefined, 'the house overlay filters late rows too');
   assert.match(text(control(view.render(), 'company.tab.posts')), /1/);
 });
 

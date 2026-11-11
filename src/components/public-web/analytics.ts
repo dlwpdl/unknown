@@ -26,7 +26,8 @@ export function useReaderAnalytics(screen: string, viewKey: string, ready = true
         headers: { 'Content-Type': 'application/json', apikey: process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY! },
         body: JSON.stringify({ p_session: session, p_events: events, p_platform: 'web', p_source: source }),
       });
-      return response.ok;
+      // INVALID_BEHAVIOR never succeeds on retry; resending it from the queue front would block every later event.
+      return response.ok || (await response.json().catch(() => null))?.message === 'INVALID_BEHAVIOR';
     });
     return () => { void flushBehavior(); configureBehavior(null); };
   }, []);
