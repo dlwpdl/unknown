@@ -30,8 +30,10 @@ test('configuration keeps branch keys, revision, unknown commission basis and mi
 
 test('checkout quotes require explicit components, matching totals and same conditions', () => {
   const quote = { itemsCents: 5800, deliveryCents: 0, serviceCents: 0, discountCents: 0, taxCents: 290, tipCents: 0, totalCents: 6090 };
-  const checkoutComparison = { verifiedAt: config().verifiedAt, fulfillment: 'pickup', basketLabel: 'Same three menus', sameConditionsConfirmed: true, uber: quote, webshop: quote };
-  assert.equal(parseConfig({ ...config(), checkoutComparison }).checkoutComparison.webshop.totalCents, 6090);
+  const cheaper = { ...quote, itemsCents: 4800, taxCents: 240, totalCents: 5040 };
+  const checkoutComparison = { verifiedAt: config().verifiedAt, fulfillment: 'pickup', basketLabel: 'Same three menus', sameConditionsConfirmed: true, uber: quote, webshop: cheaper };
+  assert.equal(parseConfig({ ...config(), checkoutComparison }).checkoutComparison.webshop.totalCents, 5040);
+  assert.throws(() => parseConfig({ ...config(), checkoutComparison: { ...checkoutComparison, webshop: quote } }), /웹샵 총액이 Uber Eats 총액보다 싸야/);
   assert.throws(() => parseConfig({ ...config(), checkoutComparison: { ...checkoutComparison, sameConditionsConfirmed: false } }));
   assert.throws(() => parseConfig({ ...config(), checkoutComparison: { ...checkoutComparison, webshop: { ...quote, totalCents: 0 } } }));
   const { deliveryCents, ...incomplete } = quote;
@@ -147,6 +149,20 @@ test('config form saves the exact branch revision and preserves absent checkout 
   assert.equal(writes[0].id, merchantId);
   assert.equal(writes[0].config.updatedAt, fixtureStore.updatedAt);
   assert.equal(writes[0].config.checkoutComparison, null);
+});
+
+test('menus priced the same as or above Uber Eats are refused by name before saving', async () => {
+  for (const webCents of [2400, 2500]) {
+    assert.throws(() => parseConfig({ ...config(), comparisons: [{ ...config().comparisons[0], webCents }] }), /^Error: Pasta: 웹샵 가격이 Uber Eats보다 싸야 저장할 수 있어요\.$/);
+  }
+  const writes = [], store = { ...fixtureStore, comparisons: [{ id: 'pasta', name: 'Pasta', uberCents: 2400, webCents: 2400 }] };
+  const view = webshopView(async () => ({ ...fixtureData(), stores: [store] }), { saveAdminWebshop: async (...args) => writes.push(args) });
+  view.render(); await tick(); let tree = view.render();
+  treeNodes(tree).find(node => node.type === 'button' && treeText(node) === '연결 관리').props.onClick({ currentTarget: { focus() {} } }); tree = view.render();
+  const child = view.mount(treeNodes(tree).find(node => typeof node.type === 'function' && node.type.name === 'ConfigEditor'));
+  child.render().props.onSubmit({ preventDefault() {} }); await tick();
+  assert.equal(writes.length, 0);
+  assert.ok(treeNodes(child.render()).some(node => node.props?.role === 'alert'), 'the existing form alert shows instead of a save');
 });
 
 test('report form requires preflight and explicit evidence confirmation and keeps its UUID on failed retry', async () => {

@@ -48,6 +48,9 @@ export function parseWebshop(value: unknown): Webshop | null {
     checkoutComparison = { verifiedAt: comparison.verifiedAt, fulfillment: comparison.fulfillment, basketLabel: comparison.basketLabel,
       sameConditionsConfirmed: true, uber: quote(comparison.uber), webshop: quote(comparison.webshop) };
   }
+  // Owner rule 2026-11-11: a webshop that is not cheaper on every compared menu (and the checkout total) is shown as no webshop.
+  if (row.comparisons.some(item => item.webCents >= item.uberCents)
+    || checkoutComparison && checkoutComparison.webshop.totalCents >= checkoutComparison.uber.totalCents) return null;
   return { merchantId: row.merchantId.toLowerCase(), cityId: row.cityId, url, provider: 'uber', placeKeys: [...row.placeKeys],
     comparisons: row.comparisons.map(item => ({ id: item.id, name: item.name, uberCents: item.uberCents, webCents: item.webCents })),
     verifiedAt: row.verifiedAt, promoCode: row.promoCode ?? null, checkoutComparison };
@@ -116,7 +119,8 @@ export async function loadCityWebshops(client: SupabaseClient, cityId: string, s
   if (error?.code === 'PGRST202') return [];
   if (error) throw error;
   if (!Array.isArray(data) || data.length > 1000) return invalid();
-  return data.map(value => { const shop = parseWebshop(value); return shop?.cityId === cityId ? shop : invalid(); });
+  // A shop that is not cheaper parses to null and is skipped alone; the rest of the city keeps its webshops.
+  return data.flatMap(value => { const shop = parseWebshop(value ?? invalid()); return !shop ? [] : shop.cityId === cityId ? [shop] : invalid(); });
 }
 
 export function bindBusinessPlaces(items: DiscoveryItem[], links: Record<string, string>, shops: Webshop[], photos: BusinessMapPhotos = {}): DiscoveryItem[] {

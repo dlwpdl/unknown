@@ -51,6 +51,9 @@ select ok(not private.valid_webshop_checkout(current_setting('test.webshop.quote
 select ok(not private.valid_webshop_checkout(jsonb_set(current_setting('test.webshop.quote')::jsonb,'{uber,totalCents}','1')),'inconsistent checkout total refused');
 select ok(not private.valid_webshop_checkout(jsonb_set(current_setting('test.webshop.quote')::jsonb,'{webshop,taxCents}','1.5')),'fractional cents refused');
 select ok(not private.valid_webshop_checkout(jsonb_set(current_setting('test.webshop.quote')::jsonb,'{webshop,address}','"private address"')),'unexpected checkout customer data refused');
+select ok(private.webshop_cheaper('[{"uberCents":2400,"webCents":1900}]',current_setting('test.webshop.quote')::jsonb),'cheaper webshop menu and checkout accepted');
+select ok(not private.webshop_cheaper('[{"uberCents":2400,"webCents":2400}]',null),'webshop menu priced like Uber Eats refused');
+select ok(not private.webshop_cheaper('[]',jsonb_set(current_setting('test.webshop.quote')::jsonb,'{webshop,totalCents}','7800')),'webshop checkout above Uber Eats refused');
 select ok(not has_function_privilege('anon','public.resolve_webshop_redirect(uuid,uuid,text,text,text)','EXECUTE'),'anonymous cannot directly log outbound clicks');
 select ok(not has_function_privilege('authenticated','public.resolve_webshop_redirect(uuid,uuid,text,text,text)','EXECUTE'),'member cannot directly log outbound clicks');
 select ok(has_function_privilege('service_role','public.resolve_webshop_redirect(uuid,uuid,text,text,text)','EXECUTE'),'redirect service can resolve');
@@ -71,6 +74,7 @@ select is(public.get_admin_webshops()->'totals'->>'orderDataAvailable','false','
 select throws_ok($$select pg_temp.save_webshop('c2310000-0000-4000-8000-000000000001','{"cityId":"webshop-other"}')$$,'P0001','WEBSHOP_BRANCH_MISMATCH','another city cannot be linked');
 select throws_ok($$select pg_temp.save_webshop('c2310000-0000-4000-8000-000000000001','{"placeKeys":["osm:node:1","osm:node:1"]}')$$,'P0001','INVALID_WEBSHOP_PLACE','duplicate place keys refused');
 select throws_ok($$select pg_temp.save_webshop('c2310000-0000-4000-8000-000000000001','{"comparisons":[{"id":"x","name":"Menu","uberCents":1.5,"webCents":1}]}')$$,'P0001','INVALID_WEBSHOP_COMPARISON','integer menu cents enforced');
+select throws_ok($$select pg_temp.save_webshop('c2310000-0000-4000-8000-000000000001',jsonb_build_object('comparisons',jsonb_build_array(jsonb_build_object('id','same','name','Same price','uberCents',2400,'webCents',2400)),'verifiedAt',now()))$$,'P0001','INVALID_WEBSHOP','registry refuses a menu that is not cheaper than Uber Eats');
 select lives_ok($$select pg_temp.save_webshop('c2310000-0000-4000-8000-000000000001',jsonb_build_object('enabled',true,'url','https://www.order.store/ca/store/test-branch/ZFgz2GjZSAuhlUYeO1fupA','placeKeys',jsonb_build_array('osm:node:123456789'),
   'comparisons',jsonb_build_array(jsonb_build_object('id','rose','name','Rose Forno','uberCents',2400,'webCents',1900)),'verifiedAt',now()))$$,'enabled registry and exact branch link saved');
 select lives_ok($$select pg_temp.save_webshop('c2310000-0000-4000-8000-000000000002','{"placeKeys":["partner:test-existing-branch"]}')$$,'business without a webshop keeps a place link');
