@@ -3,7 +3,6 @@ import { KeyboardScreen } from '@/components/keyboard-screen';
 import { useLanguage } from '@/hooks/use-language';
 import { loadMannerSummary, type MannerSummary as Summary } from '@/lib/user-profile';
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { animateLayout } from '@/components/disclosure';
@@ -27,7 +26,7 @@ export default function MeetupReviewInbox() {
 }
 function Inbox() {
   const { tr } = useLanguage();
-  const { isAuthed, me, promptLogin } = useAuth(), theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback(), router = useRouter();
+  const { isAuthed, me, promptLogin } = useAuth(), theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
   const [items, setItems] = useState<{ postId: string; title: string; kind: 'once' | 'group' }[] | null>(null);
   const [feedback, setFeedback] = useState<MyMannerFeedback[]>([]), [summary, setSummary] = useState<Summary | null>(null);
@@ -41,9 +40,8 @@ function Inbox() {
     return () => { active = false; };
   }, [isAuthed, me.id, retry]);
   const button = [styles.button, { backgroundColor: theme.backgroundElement, borderColor: theme.line }];
-  return <KeyboardScreen><ThemedView style={{ flex: 1 }}><SafeAreaView style={{ flex: 1 }}><ScrollView contentContainerStyle={styles.page}>
-    <Pressable accessibilityRole="button" accessibilityLabel={tr("뒤로 가기")} onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/profile'); }} style={button}><ThemedText>{tr("뒤로")}</ThemedText></Pressable>
-    <ThemedText type="title">{tr("모임 후기 · 내 글링 리뷰")}</ThemedText>
+  // The profile stack header already shows the back button and the 모임 후기 title.
+  return <KeyboardScreen><ThemedView style={{ flex: 1 }}><SafeAreaView style={{ flex: 1 }} edges={['bottom']}><ScrollView contentContainerStyle={styles.page}>
     {!isAuthed ? <Pressable accessibilityRole="button" onPress={() => { play('selection'); promptLogin('후기와 비공개 평가를 관리하려면 로그인해주세요.'); }} style={button}><ThemedText>{tr("로그인")}</ThemedText></Pressable> : <>
       {summary && <MannerSummary summary={summary} />}
       <ThemedText type="subtitle">{tr("참여한 회차")}</ThemedText>

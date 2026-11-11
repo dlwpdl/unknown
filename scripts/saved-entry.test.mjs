@@ -145,6 +145,20 @@ test('G1: a place with save kinds opens 가 보고 싶어요/가 봤어요, and 
   const saved = nodes(view.button()).find(node => node.type === 'Sheet');
   assert.deepEqual(JSON.parse(JSON.stringify(saved.props.actions.map(action => action.key))), ['want', 'been', 'remove']);
   assert.ok(view.feedback.includes('selection') && view.feedback.includes('success'));
+  // Unsaving is no achievement: the sheet's own tick, no success ring (owner 2026-11-08).
+  const before = view.feedback.length;
+  saved.props.actions[2].onPress(); await tick(); await tick();
+  assert.equal(view.render().state.saved, false);
+  assert.equal(view.feedback.slice(before).includes('success'), false);
+  view.unmount();
+});
+
+test('the one-tap toggle rings success on save only, not on unsave', async () => {
+  const view = mount({ load: async () => state(true) });
+  view.render(); await tick(); view.render();
+  nodes(view.button()).find(node => node.type === 'Pressable').props.onPress(); await tick();
+  assert.equal(view.render().state.saved, false);
+  assert.deepEqual(view.feedback, ['selection']);
   view.unmount();
 });
 

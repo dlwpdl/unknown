@@ -101,6 +101,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/components/post-attachment-link': { PostAttachmentLink: 'PostAttachmentLink' }, '@/lib/post-info': { postInfoParts }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' }, '@/lib/mock': { CITIES: [] },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/components/drag-sheet': { DragSheet: 'DragSheet' },
+    '@/components/meetup-members': { MeetupWhoCard: 'MeetupWhoCard', MeetupInviteHost: 'MeetupInviteHost', MeetupInviteNote: 'MeetupInviteNote', useMeetupRoster: () => ({ roster: null, error: '', reload() {} }) },
     '@/components/manner-summary': { MannerSummary: 'MannerSummary' },
     '@/components/post-ad-label': { PostAdLabel: 'PostAdLabel' },
     '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' },
@@ -351,6 +352,14 @@ test('native and web PostCard share controls open the connected share sheet with
     assert.equal(harness.calls.filter(call => call[0] === 'share' || call[0] === 'count-share').length, 0, 'opening the sheet neither sends nor counts a share');
     sheet.props.onShared(); await harness.settle(); assert.equal(harness.calls.filter(call => call[0] === 'count-share').length, 1);
     sheet.props.onClose(); harness.render(); assert.ok(!harness.nodes().some(node => node.type === 'PostShareSheet'));
+  }
+});
+
+test('a detail card reads its body and #tags as plain text, not dimmed buttons (QA Q12)', async context => {
+  const item = { ...post(), room: undefined, hashtags: ['토론토'], author: { id: 'viewer', nickname: '이웃' }, likes: 0, saves: 0, comments: 0, createdAtLabel: '방금' };
+  for (const [props, interactive] of [[{ post: item, flat: true, postDetail: true }, false], [{ post: item, flat: true, onPress() {}, onHashtag() {} }, true]]) {
+    const harness = mount('../src/components/post-card.tsx', 'PostCard', {}, props); context.after(() => harness.unmount());
+    for (const id of ['components_post-card.pressable.2', 'components_post-card.pressable.3']) assert.equal(control(harness, id).props.accessible, interactive, id);
   }
 });
 

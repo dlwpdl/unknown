@@ -23,7 +23,9 @@ function load({ os = 'ios', screenReader = false } = {}) {
     { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(code, { exports: exported, require: name => modules[name] ?? {} });
   const card = { type: 'Pressable', props: { onPress: () => calls.pushes.push('card') } };
-  return { calls, Link, render: () => exported.PostZoomLink({ id: 'p1', post: { id: 'p1' }, children: card }) };
+  // PostZoomLink hands its href to ZoomLink; render that one level too.
+  const render = (element = exported.PostZoomLink({ id: 'p1', post: { id: 'p1' }, children: card })) => element.type(element.props);
+  return { calls, Link, render, ZoomLink: exported.ZoomLink, card };
 }
 
 test('native cards grow out of the pressed card through the zoom link', () => {
@@ -51,4 +53,14 @@ test('a card that prevents the default press stays put', () => {
   tree.props.onPress({ defaultPrevented: true });
   assert.deepEqual(calls.pushes, ['card']);
   assert.deepEqual(calls.handoffs, []);
+});
+
+test('event cards share the same screen-reader fallback (QA Q02: events were missing from the accessibility list)', () => {
+  const { calls, Link, ZoomLink, card } = load({ screenReader: true });
+  const href = { pathname: '/events/[id]', params: { id: 'e1', cityId: 'toronto' } };
+  const tree = ZoomLink({ href, children: card });
+  assert.notEqual(tree.type, Link);
+  tree.props.onPress({ defaultPrevented: false });
+  assert.equal(JSON.stringify(calls.pushes), JSON.stringify(['card', href]));
+  assert.equal(load().ZoomLink({ href, children: card }).props.children.type, 'AppleZoom', 'without a screen reader the card still zooms');
 });

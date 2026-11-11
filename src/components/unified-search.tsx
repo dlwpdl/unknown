@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Keyboard, StyleSheet, TextInput, View, type GestureResponderEvent } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
+import { Keyboard, ScrollView, StyleSheet, TextInput, View, type GestureResponderEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useIsFocused, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -16,6 +17,7 @@ import { ControlMotion, ControlStyles, IconSize, Typography } from '@/constants/
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useLanguage } from '@/hooks/use-language';
+import { useRevealChip } from '@/hooks/use-reveal-chip';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -112,6 +114,7 @@ type ViewProps = {
 type Row = { type: 'heading'; kind: Kind } | { type: 'item'; item: UnifiedSearchItem };
 export function UnifiedSearchView(props: ViewProps) {
   const theme = useTheme(), { language, tr } = useLanguage(), { play } = useInteractionFeedback(), ko = language === 'ko', clay = useClay();
+  const kindRow = useRevealChip(props.kind, !useReducedMotion());
   const labels = ko ? { all: '전체', business: '비즈니스', place: '장소', person: '사람', post: '게시글', meetup: '모임' }
     : { all: 'All', business: 'Businesses', place: 'Places', person: 'People', post: 'Posts', meetup: 'Meetups' };
   const cityName = (id: string) => tr(CITIES.find(value => value.id === id)?.name ?? id);
@@ -138,7 +141,8 @@ export function UnifiedSearchView(props: ViewProps) {
         <SelectionChip analyticsId="search.scope.city" selected={props.cityId !== null} accessibilityRole="radio" accessibilityState={{ checked: props.cityId !== null }} onPress={() => props.onScope(props.currentCityId)} style={ControlStyles.pill} baseColor={clay ? 'transparent' : theme.backgroundElement}>{clay && props.cityId === null && <ClayPillFill kind="white" />}<ThemedText type="label" style={{ color: props.cityId !== null ? theme.accentInk : theme.text }}>{cityName(props.currentCityId)}</ThemedText></SelectionChip>
         <SelectionChip analyticsId="search.scope.canada" selected={props.cityId === null} accessibilityRole="radio" accessibilityState={{ checked: props.cityId === null }} onPress={() => props.onScope(null)} style={ControlStyles.pill} baseColor={clay ? 'transparent' : theme.backgroundElement}>{clay && props.cityId !== null && <ClayPillFill kind="white" />}<ThemedText type="label" style={{ color: props.cityId === null ? theme.accentInk : theme.text }}>{ko ? '캐나다 전체' : 'All Canada'}</ThemedText></SelectionChip>
       </View>
-      <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel={ko ? '검색 종류' : 'Result type'}>{kinds.map(kind => <SelectionChip key={kind} analyticsId={kindActions[kind]} selected={props.kind === kind} accessibilityRole="radio" accessibilityState={{ checked: props.kind === kind }} onPress={() => props.onKind(kind)} style={ControlStyles.pill} baseColor={clay ? 'transparent' : theme.backgroundElement}>{clay && props.kind !== kind && <ClayPillFill kind="white" />}<ThemedText type="label" style={{ color: props.kind === kind ? theme.accentInk : theme.text }}>{labels[kind]}</ThemedText></SelectionChip>)}</View>
+      {/* One line that scrolls sideways: a sixth chip wrapping alone onto a second line looked broken (QA Q20). */}
+      <ScrollView testID="search.kinds" {...kindRow.scroll} horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={styles.kindRow} contentContainerStyle={styles.kindChips} accessibilityRole="radiogroup" accessibilityLabel={ko ? '검색 종류' : 'Result type'}>{kinds.map(kind => <SelectionChip key={kind} onLayout={kindRow.chip(kind)} analyticsId={kindActions[kind]} selected={props.kind === kind} accessibilityRole="radio" accessibilityState={{ checked: props.kind === kind }} onPress={() => props.onKind(kind)} style={ControlStyles.pill} baseColor={clay ? 'transparent' : theme.backgroundElement}>{clay && props.kind !== kind && <ClayPillFill kind="white" />}<ThemedText type="label" style={{ color: props.kind === kind ? theme.accentInk : theme.text }}>{labels[kind]}</ThemedText></SelectionChip>)}</ScrollView>
       <FlatList analyticsId="search.results" data={rows} keyExtractor={row => row.type === 'heading' ? `heading:${row.kind}` : identity(row.item)} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.results}
         ListEmptyComponent={empty ?? undefined} renderItem={({ item: row }) => row.type === 'heading' ? <View style={styles.group}><ThemedText type="section" accessibilityRole="header" style={styles.groupTitle}>{labels[row.kind]}</ThemedText><Pressable analyticsId="search.group.more" accessibilityRole="button" accessibilityLabel={ko ? `${labels[row.kind]} 더 보기` : `More ${labels[row.kind].toLowerCase()}`} onPress={() => props.onKind(row.kind)} style={styles.groupMore}><ThemedText type="label" themeColor="accent">{ko ? '더 보기' : 'See more'}</ThemedText></Pressable></View>
           : zoom(row.item, <Pressable analyticsId={resultActions[row.item.kind]} testID={`search.item.${identity(row.item)}`} accessibilityRole="button" accessibilityLabel={[labels[row.item.kind], row.item.title, row.item.subtitle, props.cityId === null ? cityName(row.item.cityId) : ''].filter(Boolean).join(', ')} onPress={event => props.onOpen(row.item, event)} style={StyleSheet.flatten([styles.result, { borderColor: theme.line, backgroundColor: theme.card }])}>
@@ -156,6 +160,8 @@ const styles = StyleSheet.create({
   field: { flexDirection: 'row', alignItems: 'center', marginHorizontal: Spacing.four, marginTop: Spacing.three, gap: Spacing.two },
   input: { flex: 1, minWidth: 0, minHeight: 48, paddingVertical: Spacing.three, ...Typography.body },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, paddingHorizontal: Spacing.four, marginTop: Spacing.three },
+  // The row clips sideways scrolling, so vertical padding keeps the clay chip shadow; the margin plus padding equals the wrapped row's gap.
+  kindRow: { flexGrow: 0, flexShrink: 0, marginTop: Spacing.two }, kindChips: { gap: Spacing.two, paddingHorizontal: Spacing.four, paddingVertical: Spacing.two },
   results: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six, paddingTop: Spacing.two }, state: { paddingTop: Spacing.five, gap: Spacing.three },
   group: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginTop: Spacing.three }, groupTitle: { flex: 1, minWidth: 0 }, groupMore: { minHeight: 44, minWidth: 44, paddingHorizontal: Spacing.two, justifyContent: 'center' },
   result: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, padding: Spacing.three, borderWidth: 1, borderRadius: 16, marginTop: Spacing.two, minHeight: 72 },

@@ -18,7 +18,10 @@ import { useCommunityLocation } from '@/lib/location-provider';
 import { CITIES } from '@/lib/mock';
 import type { City } from '@/lib/types';
 
-export function CityPicker({ onClose, draft, title }: { onClose: () => void; draft?: { city: City; onSelect: (city: City) => void }; title?: string }) {
+// 2026-11-06 서울은 열지 않기로 해서 이 목록에서만 뺀다(QA Q10). CITIES의 서울 자료는 다른 곳을 위해 그대로 둔다.
+const PICKER_CITIES = CITIES.filter(item => item.id !== 'seoul');
+
+export function CityPicker({ onClose, onPicked, draft, title }: { onClose: () => void; onPicked?: () => void; draft?: { city: City; onSelect: (city: City) => void }; title?: string }) {
   const { language, tr, t } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox();
   const { city, selectCity, saving } = useCommunityCity();
@@ -30,6 +33,7 @@ export function CityPicker({ onClose, draft, title }: { onClose: () => void; dra
   const reducedMotion = useReducedMotion();
   const { fontScale } = useWindowDimensions();
   const locationBusy = location.busy || !location.ready;
+  const locationLabel = location.busy ? tr("위치 확인 중…") : location.enabled ? tr("위치 다시 확인") : locationOpen ? tr("동의하고 찾기") : tr("내 위치로 찾기");
   // 첫 탭은 안내만 펼친다. 동의 버튼을 눌러야 권한 요청과 위치 확인이 시작된다.
   const onLocation = () => {
     play('selection');
@@ -45,8 +49,8 @@ export function CityPicker({ onClose, draft, title }: { onClose: () => void; dra
   };
   const normalize = (value: string) => value.toLowerCase().replace(/[\s.'’-]/g, '');
   const needle = normalize(query);
-  const provinceQuery = CITIES.some(item => item.province.toLowerCase() === needle);
-  const matches = CITIES.filter(item => provinceQuery ? item.province.toLowerCase() === needle
+  const provinceQuery = PICKER_CITIES.some(item => item.province.toLowerCase() === needle);
+  const matches = PICKER_CITIES.filter(item => provinceQuery ? item.province.toLowerCase() === needle
     : normalize([item.name, item.englishName, item.id, item.province, ...(item.aliases ?? [])].join(' ')).includes(needle))
     .sort((a, b) => a.englishName.localeCompare(b.englishName, 'en'));
   const sections = [
@@ -80,11 +84,11 @@ export function CityPicker({ onClose, draft, title }: { onClose: () => void; dra
       keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.list}
       ListHeaderComponent={draft || !isAuthed ? undefined : <GlassSurface tone="control" clay="tile" interactive style={[styles.locationRow, controlPresentation(theme, { tone: 'ghost', clay: clayBox }).container, clayBox && { borderWidth: 0, overflow: 'visible', marginBottom: Spacing.two }]}>
         <Pressable analyticsId="components_city-picker.pressable.5" accessibilityRole="button" disabled={locationBusy} accessibilityState={{ disabled: locationBusy, busy: location.busy, expanded: locationOpen }}
-          accessibilityLabel={tr("내 위치로 찾기")} onPress={onLocation}
+          accessibilityLabel={locationLabel} onPress={onLocation}
           style={({ pressed }) => [styles.locationMain, controlPresentation(theme, { tone: 'ghost', pressed, disabled: locationBusy, busy: location.busy }).container]}>
           <SymbolView name={{ ios: 'location', android: 'near_me', web: 'near_me' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
           <View style={styles.name}>
-            <ThemedText type="label">{location.busy ? tr("위치 확인 중…") : location.enabled ? tr("위치 다시 확인") : locationOpen ? tr("동의하고 찾기") : tr("내 위치로 찾기")}</ThemedText>
+            <ThemedText type="label">{locationLabel}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{location.message || (locationOpen && !location.enabled ? tr("아래 내용에 동의하면 위치를 한 번 확인해요") : tr("GPS로 가까운 도시를 한 번만 확인해요"))}</ThemedText>
           </View>
           {!location.enabled && <SymbolView name={{ ios: locationOpen ? 'chevron.up' : 'chevron.down', android: locationOpen ? 'expand_less' : 'expand_more', web: locationOpen ? 'expand_less' : 'expand_more' }} size={IconSize.inline} tintColor={theme.textSecondary} />}
@@ -109,7 +113,7 @@ export function CityPicker({ onClose, draft, title }: { onClose: () => void; dra
             if (disabled) return;
             play('selection');
             if (draft) { draft.onSelect(item); onClose(); }
-            else if (await selectCity(item)) onClose();
+            else if (await selectCity(item)) { onPicked?.(); onClose(); }
           }}
           style={({ pressed }) => [styles.row, controlPresentation(theme, { tone: 'ghost', selected, pressed, disabled, busy, reducedMotion, clay: clayBox }).container]}>
           {clayBox && <ClayBoxFill kind="tile" />}

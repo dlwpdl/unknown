@@ -1,6 +1,7 @@
 import bundledCatalog from './city-places.catalog.json';
 import photoSnapshot from './city-places.photos.json';
 import visitedPlaces from './gling-visited.json';
+import koreanNames from './city-places.ko.json';
 import { replaceExternalPlaceRatings } from './place-external-ratings';
 import { CITIES } from '@/lib/mock';
 
@@ -27,6 +28,8 @@ export type CityPlace = {
   glingVisited?: { sourceUrl: string };
   // 소개 3칸 (G2), written by the place automation from the place's own site or menu; each line may be missing.
   intro?: PlaceIntro;
+  // Korean names for search only, never shown (owner 2026-11-08 "영어를 한글로 쳐도 나오게하자", "물론 보이는건 영어로만 보이게하고").
+  searchNames?: string[];
 };
 export type PlaceIntro = { vibe?: string; order?: string; when?: string; vibeEn?: string; orderEn?: string; whenEn?: string; sourceUrl: string };
 const INTRO_FIELDS = ['vibe', 'order', 'when', 'vibeEn', 'orderEn', 'whenEn'] as const;
@@ -41,7 +44,9 @@ type PlaceCatalog = {
   photoCatalog?: PhotoCatalog; externalRatings?: unknown;
   collectedAt: string; selectionRevision?: number; recommendationTheme?: 'photo-spots'; cities: Record<string, { coverage: string; places: CityPlace[]; regionalPlaces?: CityPlace[]; regionalPhotos?: PlacePhoto[]; recommendations?: PlaceRecommendation[]; diningRecommendations?: PlaceRecommendation[];
     // Places past the 200 that 1.4.4/1.4.5 accept per city; those apps ignore these fields.
-    extraPlaces?: CityPlace[]; extraRecommendations?: PlaceRecommendation[]; extraPhotos?: PlacePhoto[] }>;
+    extraPlaces?: CityPlace[]; extraRecommendations?: PlaceRecommendation[]; extraPhotos?: PlacePhoto[];
+    // Up to 500 places past the 500 (200 + 300 extra) that 1.5.1 and earlier accept per city; those apps ignore these fields.
+    morePlaces?: CityPlace[]; moreRecommendations?: PlaceRecommendation[]; morePhotos?: PlacePhoto[] }>;
 };
 // Seoul has no places yet and stays out of the catalog: released apps reject a server payload with any other city set.
 const withoutCatalog: PlaceCatalog['cities'] = { seoul: { coverage: 'city-center', places: [] } };
@@ -59,8 +64,8 @@ function regionalPlacesForCity(cityId: string): CityPlace[] {
   return catalog.cities[cityId].regionalPlaces ?? (snapshot as PlaceCatalog).cities[cityId]?.regionalPlaces ?? [];
 }
 
-const addedPlacesForCity = (cityId: string) => [...regionalPlacesForCity(cityId), ...(catalog.cities[cityId].extraPlaces ?? [])];
-const diningPicksForCity = (cityId: string) => [...(catalog.cities[cityId].diningRecommendations ?? []), ...(catalog.cities[cityId].extraRecommendations ?? [])];
+const addedPlacesForCity = (cityId: string) => [...regionalPlacesForCity(cityId), ...(catalog.cities[cityId].extraPlaces ?? []), ...(catalog.cities[cityId].morePlaces ?? [])];
+const diningPicksForCity = (cityId: string) => [...(catalog.cities[cityId].diningRecommendations ?? []), ...(catalog.cities[cityId].extraRecommendations ?? []), ...(catalog.cities[cityId].moreRecommendations ?? [])];
 
 function photosForCity(cityId: string): PlacePhoto[] {
   const photos = [...(photoCatalog.cities[cityId] ?? [])], ids = new Set(photos.map(photo => photo.placeId));
@@ -71,7 +76,7 @@ function photosForCity(cityId: string): PlacePhoto[] {
       photos.push(photo);
     }
   }
-  for (const photo of [...(catalog.cities[cityId].regionalPhotos ?? (snapshot as PlaceCatalog).cities[cityId]?.regionalPhotos ?? []), ...(catalog.cities[cityId].extraPhotos ?? [])]) {
+  for (const photo of [...(catalog.cities[cityId].regionalPhotos ?? (snapshot as PlaceCatalog).cities[cityId]?.regionalPhotos ?? []), ...(catalog.cities[cityId].extraPhotos ?? []), ...(catalog.cities[cityId].morePhotos ?? [])]) {
     if (!ids.has(photo.placeId)) { ids.add(photo.placeId); photos.push(photo); }
   }
   return photos;
@@ -115,7 +120,8 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
     const ids = new Set<string>();
     if (data.regionalPlaces !== undefined && (!Array.isArray(data.regionalPlaces) || data.regionalPlaces.length > 200)) invalid();
     if (data.extraPlaces !== undefined && (!Array.isArray(data.extraPlaces) || data.extraPlaces.length > 300)) invalid();
-    for (const rows of [data.places, data.regionalPlaces ?? [], data.extraPlaces ?? []]) {
+    if (data.morePlaces !== undefined && (!Array.isArray(data.morePlaces) || data.morePlaces.length > 500)) invalid();
+    for (const rows of [data.places, data.regionalPlaces ?? [], data.extraPlaces ?? [], data.morePlaces ?? []]) {
       const seen = new Set<string>();
       for (const p of rows) {
         if (!p || !text(p.id, 80) || !/^osm:(node|way|relation):[1-9]\d*$/.test(p.id) || seen.has(p.id) || p.cityId !== city.id || !text(p.name, 300)
@@ -133,9 +139,10 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
       }
     }
     const baseIds = new Set(data.places.map(place => place.id)), extraIds = new Set((data.extraPlaces ?? []).map(place => place.id));
-    if ([...extraIds].some(id => baseIds.has(id))) invalid();
+    const moreIds = new Set((data.morePlaces ?? []).map(place => place.id));
+    if ([...extraIds].some(id => baseIds.has(id)) || [...moreIds].some(id => baseIds.has(id) || extraIds.has(id))) invalid();
     for (const [photos, photoIds, regional, max] of [...(next.photoCatalog ? [[next.photoCatalog.cities[city.id], baseIds, false, 200] as const] : []), ...(data.regionalPhotos !== undefined ? [[data.regionalPhotos, ids, true, 200] as const] : []),
-      ...(data.extraPhotos !== undefined ? [[data.extraPhotos, extraIds, false, 300] as const] : [])]) {
+      ...(data.extraPhotos !== undefined ? [[data.extraPhotos, extraIds, false, 300] as const] : []), ...(data.morePhotos !== undefined ? [[data.morePhotos, moreIds, false, 500] as const] : [])]) {
       const seenPhotos = new Set<string>();
       if (!Array.isArray(photos) || photos.length > max) invalid();
       for (const photo of photos) {
@@ -157,7 +164,7 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
         seenPhotos.add(photo.placeId);
       }
     }
-    for (const [picks, dining, pickIds, max] of [[data.recommendations, false, baseIds, 50], [data.diningRecommendations ?? [], true, baseIds, 200], [data.extraRecommendations ?? [], false, extraIds, 300]] as const) {
+    for (const [picks, dining, pickIds, max] of [[data.recommendations, false, baseIds, 50], [data.diningRecommendations ?? [], true, baseIds, 200], [data.extraRecommendations ?? [], false, extraIds, 300], [data.moreRecommendations ?? [], false, moreIds, 500]] as const) {
       if (!Array.isArray(picks) || picks.length > max) invalid();
       const selected = new Set<string>();
       for (const pick of picks!) {
@@ -226,6 +233,18 @@ function displayedPicks(cityId: string): PlaceRecommendation[] {
 }
 
 // Keep unselected OSM identities available to existing detail and review links.
+const koreanNamesFor = (id: string) => { const names = (koreanNames as Record<string, unknown> | undefined)?.[id]; return Array.isArray(names) ? names as string[] : undefined; };
+const squash = (text: string) => text.normalize('NFC').toLocaleLowerCase().replace(/\s+/g, '');
+/** True when the query is inside one of the place's Korean search names, spaces ignored ("콜렉티브카페" finds "크루 콜렉티브 카페"). */
+export function koreanNameMatches(names: readonly string[] | undefined, query: string): boolean {
+  const needle = squash(query);
+  return !!needle && (names ?? []).some(name => squash(name).includes(needle));
+}
+/** A place search box: the shown (English) name or address, or a Korean search name. */
+export function placeMatchesQuery(place: Pick<CityPlace, 'name' | 'address' | 'searchNames'>, query: string): boolean {
+  return squash(`${place.name} ${place.address}`).includes(squash(query)) || koreanNameMatches(place.searchNames, query);
+}
+
 export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): CityPlace[] {
   if (!CITIES.some(city => city.id === cityId)) throw new Error('INVALID_PLACE_CITY');
   if (!['all', 'food', 'cafe', 'places'].includes(category)) throw new Error('INVALID_PLACE_CATEGORY');
@@ -244,7 +263,7 @@ export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): 
     .map(place => {
       const visit = (visitedPlaces as { cityId: string; placeId: string; sourceUrl: string; photo?: (typeof photos)[number] }[]).find(row => row.cityId === cityId && row.placeId === place.id);
       return { ...place, photo: photos[photoOrder.get(place.id) ?? -1] ?? visit?.photo ?? null, recommendation: reviewed.get(place.id), diningRecommendation: dining.get(place.id),
-        glingVisited: visit ? { sourceUrl: visit.sourceUrl } : undefined };
+        glingVisited: visit ? { sourceUrl: visit.sourceUrl } : undefined, searchNames: koreanNamesFor(place.id) };
     })
     .sort((a, b) => (photoOrder.get(a.id) ?? photos.length) - (photoOrder.get(b.id) ?? photos.length));
 }

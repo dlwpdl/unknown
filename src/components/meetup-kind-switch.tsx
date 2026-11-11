@@ -20,12 +20,25 @@ export function MeetupKindSwitch({ value, onChange, onAll, disabled = false, ana
   analyticsId: string;
 }) {
   const { tr } = useLanguage();
+  const choices = [...(onAll ? [{ value: 'all' as const, label: tr('전체') }] : []), { value: 'once' as const, label: tr('칠링') }, { value: 'group' as const, label: tr('정기모임') }];
+  return <SegmentSwitch choices={choices} value={value ?? (onAll ? 'all' : null)} disabled={disabled} analyticsId={analyticsId}
+    onSelect={kind => { if (kind === 'all') onAll?.(); else if (kind !== value) onChange(kind); }} />;
+}
+
+/** The meetup tab-style switch for any short list of choices; null value shows no selection. */
+export function SegmentSwitch<T extends string>({ choices, value, onSelect, disabled = false, analyticsId, accessibilityLabel }: {
+  choices: { value: T; label: string }[];
+  value: T | null;
+  onSelect: (value: T) => void;
+  disabled?: boolean;
+  analyticsId: string;
+  accessibilityLabel?: string;
+}) {
   const theme = useTheme();
   const clay = useClay();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
-  const choices: ('all' | ChillingKind)[] = onAll ? ['all', 'once', 'group'] : ['once', 'group'];
-  const selectedIndex = onAll ? value == null ? 0 : value === 'once' ? 1 : 2 : value === 'group' ? 1 : 0;
+  const selectedIndex = Math.max(0, choices.findIndex(choice => choice.value === value));
   const [width, setWidth] = useState(0);
   const [position] = useState(() => new Animated.Value(selectedIndex));
   const tabWidth = (width - 4 * (choices.length + 1)) / choices.length;
@@ -35,19 +48,19 @@ export function MeetupKindSwitch({ value, onChange, onAll, disabled = false, ana
     else Animated.spring(position, { toValue: selectedIndex, damping: 16, stiffness: 260, mass: 0.8, useNativeDriver: true }).start();
   }, [position, reducedMotion, selectedIndex]);
 
-  return <GlassSurface tone="control" clay="tray" interactive style={styles.glass}><View accessibilityRole="tablist" onLayout={event => setWidth(event.nativeEvent.layout.width)}
+  return <GlassSurface tone="control" clay="tray" interactive style={styles.glass}><View accessibilityRole="tablist" accessibilityLabel={accessibilityLabel} onLayout={event => setWidth(event.nativeEvent.layout.width)}
     style={styles.row}>
-    {width > 0 && (value != null || !!onAll) && <Animated.View pointerEvents="none" style={[styles.selection, {
+    {width > 0 && value != null && <Animated.View pointerEvents="none" style={[styles.selection, {
       width: tabWidth,
       backgroundColor: clay ? 'transparent' : theme.accent,
       transform: [{ translateX: position.interpolate({ inputRange: [0, choices.length - 1], outputRange: [0, (tabWidth + 4) * (choices.length - 1)] }) }],
     }]}>{clay && <ClayPillFill kind="on" />}</Animated.View>}
-    {choices.map(kind => <Pressable lens analyticsId={analyticsId} key={kind}
-      accessibilityRole="tab" accessibilityState={{ selected: kind === 'all' ? value == null : value === kind, disabled }} disabled={disabled}
-      onPress={() => { play('reaction'); if (kind === 'all') onAll?.(); else if (kind !== value) onChange(kind); }}
+    {choices.map(choice => <Pressable lens analyticsId={analyticsId} key={choice.value}
+      accessibilityRole="tab" accessibilityState={{ selected: choice.value === value, disabled }} disabled={disabled}
+      onPress={() => { play('reaction'); onSelect(choice.value); }}
       style={({ pressed }) => [styles.tab, { opacity: pressed ? 0.8 : 1 }]}>
-      <ThemedText type="smallBold" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[Typography.menu, { color: (kind === 'all' ? value == null : value === kind) ? theme.accentInk : theme.text, textAlign: 'center' }]}>
-        {kind === 'all' ? tr('전체') : kind === 'once' ? tr('칠링') : tr('정기모임')}
+      <ThemedText type="smallBold" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[Typography.menu, { color: choice.value === value ? theme.accentInk : theme.text, textAlign: 'center' }]}>
+        {choice.label}
       </ThemedText>
     </Pressable>)}
   </View></GlassSurface>;

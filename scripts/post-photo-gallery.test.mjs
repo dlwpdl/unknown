@@ -397,3 +397,14 @@ test('썸네일이 없는 기존 20장 글도 보이는 작은 사진 범위만 
   thumbnails(tree)[19].props.onPress();
   assert.equal(thumbnails(gallery.Gallery(props))[19].props.accessibilityState.selected, true);
 });
+
+test('meetup photos fill the frame; the full-screen view still shows the original ratio (QA Q18)', () => {
+  const gallery = loadGallery();
+  const props = { post: { id: 'meetup-photo', title: '트레킹', imageUris: ['portrait'], room: { status: 'open' } } };
+  const inline = nodes(hero(gallery.Gallery(props))).filter(node => node.props?.onLoad);
+  assert.equal(inline.length, 1);
+  assert.equal(inline[0].props.contentFit, 'cover');
+  const full = nodes(openPortrait(gallery, props)).filter(node => node.props?.allowDownscaling === false);
+  assert.equal(full.length, 1);
+  assert.equal(full[0].props.contentFit, 'contain');
+});

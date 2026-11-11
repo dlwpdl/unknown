@@ -20,7 +20,7 @@ import { ControlMotion } from '@/constants/design-system';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useCommunityCity } from '@/lib/community-city';
-import { CITY_PLACES_COLLECTED_AT, getCityBrowsePlaces, getCityDiscoveryPlaces, getCityPlacesCoverage, type CityPlace, type PlaceCategory } from '@/lib/city-places';
+import { CITY_PLACES_COLLECTED_AT, getCityBrowsePlaces, getCityDiscoveryPlaces, getCityPlacesCoverage, placeMatchesQuery, type CityPlace, type PlaceCategory } from '@/lib/city-places';
 import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { usePlaceReviewSummaries } from '@/hooks/use-place-review-summaries';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -53,7 +53,7 @@ function PlacesList({ city, nearby = false }: { city?: (typeof CITIES)[number]; 
       recommendations = nearby ? getCityDiscoveryPlaces(city.id).filter(place => place.cityId === city.id && (category === 'all' || place.category === category)) : getCityBrowsePlaces(city.id, category);
       const ranked = rankPlacesByDistance(recommendations, nearby ? location.fix : null);
       recommendations = ranked.map(row => row.place); ranked.forEach(row => distances.set(row.place.id, row.distance));
-      places = recommendations.filter(place => (place.name + ' ' + place.address).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
+      places = recommendations.filter(place => placeMatchesQuery(place, query));
     }
     catch { error = '이 도시의 장소 정보를 불러오지 못했어요.'; }
   }

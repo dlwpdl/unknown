@@ -45,8 +45,8 @@ function RsvpBlock({ postId, zone, flush }: { postId: string; zone: string; flus
       const next = await setMeetupRsvp(supabase, postId, going, release);
       if (!active.current) return;
       animateLayout(reduced); setRsvp(next);
-      // Tapping an answer already gave its selection tick; only giving up the seat is a bigger finish.
-      if (release) play('success');
+      // Tapping an answer already gave its selection tick; 갈게요 and giving up the seat also get the small ring (owner 2026-11-08).
+      if (going || release) play('success');
     } catch { if (active.current) { setError(true); play('warning'); } }
     finally { if (active.current) setSaving(false); }
   };

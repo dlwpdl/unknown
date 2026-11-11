@@ -7,6 +7,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useAuth } from '@/lib/auth';
 import { markNotificationsRead } from '@/lib/community-data';
 import { loadAdminDashboardOrigin, loadNotificationPreferences, openNotificationTarget, NOTIFICATION_PREFERENCES_CHANGED, type NotificationCategory, type NotificationPreferences } from '@/lib/notification-preferences';
+import { announceLinkOpen } from '@/lib/link-open';
 import { answerMeetupRsvpFromPush, registerMeetupRsvpCategory } from '@/lib/meetup-push-rsvp';
 import { pushConfigured, pushSupported, registerPushDevice } from '@/lib/push-notifications';
 import { recordProductEvent } from '@/lib/product-analytics';
@@ -55,6 +56,7 @@ export function NotificationObserver() {
       opened = response.notification.request.identifier;
       const notificationId = typeof data.notificationId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.notificationId) ? data.notificationId : null;
       if (notificationId) void recordProductEvent(supabase, { kind: 'notification_push_open', targetId: notificationId, platform: Platform.OS }).catch(() => {});
+      announceLinkOpen();
       // Same navigation as a bell row; a push without a valid destination opens the bell.
       if (!openNotificationTarget({ route: data.route, notification: { category: data.category, body: response.notification.request.content.body }, adminAccount: isAdmin,
         navigate: route => router.navigate(route as never), dashboardOrigin: () => loadAdminDashboardOrigin(supabase, userId), openURL: url => Linking.openURL(url) })) router.navigate('/notifications' as never);

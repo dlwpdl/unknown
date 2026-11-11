@@ -67,6 +67,7 @@ import { Colors, Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constan
 import { ControlMetrics, ControlMotion, ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
+import { useRevealChip } from '@/hooks/use-reveal-chip';
 import { useAuth } from '@/lib/auth';
 import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
 import { useTranslationVisibleIds } from '@/hooks/use-content-translation';
@@ -79,6 +80,7 @@ import {
   loadListingQuota,
   getCommunityActionError,
   isContentRejected,
+  isFirstPost,
   loadTrendingHashtags,
   MEETUPS_CHANGED_EVENT,
   requestMeetupJoin,
@@ -154,6 +156,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [writerPanel, setWriterPanel] = useState<'city' | 'category' | 'kind' | 'more' | null>(null);
   const [writerOptionsOpen, setWriterOptionsOpen] = useState(false);
   const [cityPicker, setCityPicker] = useState(false);
+  const [cityPicks, setCityPicks] = useState(0); // 위쪽 도시 버튼으로 고른 횟수: 처음 안내의 '내 도시 고르기'를 채운다(QA Q17)
   const [writing, setWriting] = useState(false);
   const photoTiles = useRef<(ViewInstance | null)[]>([]);
   const [photosLaunched, setPhotosLaunched] = useState(false); // 위 카드로 날아간 사진은 닫히는 창에서 숨긴다
@@ -194,6 +197,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   };
   const [pendingPostId, setPendingPostId] = useState<string | null>(null); // 로그인 후 이어서 열 글
   const [tagFilter, setTagFilter] = useState<number | null>(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null); // 카테고리 칩
+  const categoryRow = useRevealChip(String(tagFilter ?? 'all'), !reducedMotion);
   const [feedSort, setFeedSort] = useState<FeedSort>('latest');
   const activeSort = meetupsOnly ? 'latest' : feedSort;
   const [categoryLoading, setCategoryLoading] = useState(false);
@@ -495,10 +499,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       await requestMeetupJoin(supabase, joinPost.id, joinMessage);
       DeviceEventEmitter.emit(MEETUPS_CHANGED_EVENT);
       requestPushPrompt('meetup_request');
+      // The ring says it was sent; the slot rule moved into the sheet so nothing pops on top of it (owner 2026-11-08).
       play('meetupRequested');
       setJoinPost(null);
       setJoinMessage('');
-      Alert.alert(t.chat.joinDoneTitle, t.chat.joinDoneBody);
     } catch (error) {
       play('warning');
       const code = getCommunityActionError(error);
@@ -756,8 +760,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       setPriceInput('');
       setListingDraft(null);
       setListingTried(false);
+      // 첫 글이면 다 올라간 카드가 전면 축하를 띄운다. 세지 못하거나 3초 안에 답이 없으면 평소처럼 카드만.
+      const first = !post?.room && await Promise.race([isFirstPost(supabase, input.userId).catch(() => false), new Promise<boolean>(done => setTimeout(() => done(false), 3000))]);
       // 글은 이미 올라갔다. 동의가 저장되지 않으면 실패로 돌리지 않고 다 올라간 카드에 한 줄로만 알린다.
-      if (consent && !(created.id && await savePostPhotoConsent(supabase, created.id))) return tr('SNS에 소개해도 된다는 체크만 저장이 안 됐어요');
+      if (consent && !(created.id && await savePostPhotoConsent(supabase, created.id))) return { notice: tr('SNS에 소개해도 된다는 체크만 저장이 안 됐어요'), first };
+      return { first };
     };
     // 위 카드로 날아갈 앞의 세 장이 지금 화면 어디 있는지 잰다. 못 재면 날지 않고 카드에만 쌓인다.
     const photos = await Promise.all(draftImages.slice(0, 3).map((image, index) => new Promise<UploadPhoto>((resolve) => {
@@ -884,13 +891,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         </View>
         {cityOpen && !meetupsOnly && (
           <View style={styles.categoryHead}>
-            <GlassSurface tone="control" clay="tray" style={styles.chipGlass}><ScrollView analyticsId="components_feed-screen.scrollview.1" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
+            <GlassSurface tone="control" clay="tray" style={styles.chipGlass}><ScrollView analyticsId="components_feed-screen.scrollview.1" {...categoryRow.scroll} horizontal showsHorizontalScrollIndicator={false} style={clay && styles.chipClip} contentContainerStyle={styles.chipBar}>
               {/* 처음 보이는 칩: PRIMARY_TAGS (owner 2026-11-01 순서); 나머지는 '더보기' 시트. */}
               {[...PRIMARY_TAGS, ...(tagFilter != null && !PRIMARY_TAGS.includes(tagFilter) ? [tagFilter] : [])].map((id) => {
                 const label = id == null ? t.feed.filterAll : tr(TAGS.find((tg) => tg.id === id)!.label);
                 const active = tagFilter === id;
                 return (
-                  <Animated.View key={id ?? 'all'} style={active && { borderRadius: 999, transform: [{ scale: chipLift }] }}><SelectionChip analyticsId="components_feed-screen.pressable.3"
+                  <Animated.View key={id ?? 'all'} onLayout={categoryRow.chip(String(id ?? 'all'))} style={active && { borderRadius: 999, transform: [{ scale: chipLift }] }}><SelectionChip analyticsId="components_feed-screen.pressable.3"
                     selected={active}
                     onPress={() => changeTagFilter(id)}
                     accessibilityRole="button"
@@ -943,7 +950,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText>
             : !feedLoading && showTodaySections && !feedRows.length ? <>{feedState}{todayRows(-1)}</> : feedState ?? undefined}
           renderItem={({ item, index }) => item == null && index === 1 && showFeedSort ? (
-            <FeedSortControl sort={activeSort} title={businessCategory ? tr('새 소식') : selectedFilterTag ? tr("{0} 글", (selectedFilterTag.label)) : tr("오늘 글")} onChange={changeFeedSort}
+            <FeedSortControl sort={activeSort} title={businessCategory ? tr('새 소식') : selectedFilterTag ? tr("{0} 글", tr(selectedFilterTag.label)) : tr("오늘 글")} onChange={changeFeedSort}
               style={[styles.sortBar, glowOn && (sortStuck ? { backgroundImage: listGlow } : { backgroundColor: 'transparent' })]}
               action={businessCategory ? <Pressable analyticsId="business.directory.open" accessibilityRole="button" accessibilityLabel={tr('비즈니스 찾기')}
                 onPress={() => { play('selection'); router.push('/businesses'); }}
@@ -972,7 +979,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               </View>}
               {/* 이번 주 많이 읽은 글(탑10)은 카테고리 바로 아래, 다른 섹션보다 먼저 (owner 2026-10-30). */}
               {!feedLoading && weeklyRanking}
-              {!meetupsOnly && <StartGuide cityName={city.name} onPickCity={() => setCityPicker(true)} onOpenMeetups={() => router.navigate('/meetups')} />}
+              {!meetupsOnly && <StartGuide cityName={city.name} cityPicks={cityPicks} onPickCity={() => setCityPicker(true)} onOpenMeetups={() => router.navigate('/meetups')} />}
               {!meetupsOnly && isAuthed && <NewcomerProgressCard />}
               {meetupsOnly && <>
                 <MyMeetups onOpen={async (postId) => {
@@ -1163,6 +1170,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           <ThemedView style={[styles.joinSheet, { backgroundColor: theme.card }]}>
             <ThemedText type="subtitle">{t.chat.joinFormTitle}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">{t.chat.joinFormBody}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{t.chat.joinDoneBody}</ThemedText>
             <TextInput
               value={joinMessage}
               onChangeText={setJoinMessage}
@@ -1205,7 +1213,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           )}
           <ThemedView style={[styles.citySheet, Platform.OS === 'ios' && styles.citySheetIOS]}>
             <View style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? insets.top : 0, paddingBottom: insets.bottom }}>
-              <CityPicker onClose={() => setCityPicker(false)} />
+              <CityPicker onClose={() => setCityPicker(false)} onPicked={() => setCityPicks(value => value + 1)} />
             </View>
           </ThemedView>
         </SafeAreaProvider>
@@ -1578,6 +1586,8 @@ const styles = StyleSheet.create({
   loadingCoverPage: { justifyContent: 'center', paddingTop: 0 },
   journalTitle: { fontSize: 28, lineHeight: 36, fontWeight: 700, letterSpacing: -0.8 },
   chipGlass: { borderRadius: 28, marginTop: Spacing.two },
+  // The clay tray can't clip (its shadow hangs below it), so the chips are cut to the tray's round ends here; its art ends ~2pt inside each side.
+  chipClip: { borderRadius: 999, overflow: 'hidden', marginHorizontal: 2 },
   chipBar: { flexDirection: 'row', gap: Spacing.one, padding: Spacing.one },
   filterChip: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 999, borderBottomWidth: 2, paddingHorizontal: 14, paddingVertical: Spacing.two },
   chipPressed: { opacity: 0.65 },

@@ -6,7 +6,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 const site = 'https://gling.ej-entertainment.com';
-const id = 'B20B2F28-5902-461D-8FFC-FFEF3F23B2C0', lower = id.toLowerCase();
+const id = 'B20B2F28-5902-461D-8FFC-FFEF3F23B2C0', lower = id.toLowerCase(), token = '0123456789abcdef0123456789abcdef';
 
 test('public site links open the matching app screen', () => {
   for (const [link, route] of [
@@ -21,12 +21,13 @@ test('public site links open the matching app screen', () => {
     [`${site}/meetups?city=vancouver`, '/meetups'],
     [`${site}/invite?code=abcd-efgh`, '/invite?code=ABCDEFGH'],
     [`${site}/meetup-join?postId=${id}`, `/meetup-join?postId=${lower}`],
+    [`${site}/meetup-invite?token=${token}`, `/meetup-invite?token=${token}`],
   ]) assert.equal(appPathForLink(link), route, link);
 });
 
 test('unknown or malformed site links land on home without throwing', () => {
   for (const link of [`${site}/`, `${site}/merchant/x`, `${site}/admin`, `${site}/terms`, `${site}/posts/not-a-uuid`, `${site}/post?id=${id}&id=${id}`,
-    `${site}/invite?code=bad`, `${site}/meetup-join?postId=x`, `${site}/%E0%A4%A`]) assert.equal(appPathForLink(link), '/', link);
+    `${site}/invite?code=bad`, `${site}/meetup-join?postId=x`, `${site}/meetup-invite?token=${token.toUpperCase()}`, `${site}/meetup-invite?token=${token}&token=${token}`, `${site}/%E0%A4%A`]) assert.equal(appPathForLink(link), '/', link);
 });
 
 test('scheme links, other hosts and in-app paths pass through unchanged', () => {
@@ -37,8 +38,12 @@ test('scheme links, other hosts and in-app paths pass through unchanged', () => 
 test('old compose-tab links open the writer on home now that the tab is the map', () => {
   const exports = {};
   const source = ts.transpileModule(readFileSync(new URL('../src/app/+native-intent.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
-  vm.runInNewContext(source, { exports, require: name => name === 'expo-share-intent' ? { getShareExtensionKey: () => 'glingShareKey' } : { appPathForLink } });
+  let announced = 0;
+  vm.runInNewContext(source, { exports, require: name => name === 'expo-share-intent' ? { getShareExtensionKey: () => 'glingShareKey' } : name === '@/lib/link-open' ? { announceLinkOpen: () => { announced++; } } : { appPathForLink } });
   const open = path => exports.redirectSystemPath({ path, initial: true });
+  // A cold-start link has nothing open yet; a link arriving later closes open sheets first (QA Q08).
+  assert.equal(exports.redirectSystemPath({ path: 'gling://post/abc', initial: false }), 'gling://post/abc');
+  assert.equal(announced, 1);
   for (const link of ['gling://compose', '/compose', '/compose?x=1']) assert.equal(open(link), '/?compose=1', link);
   for (const link of ['gling://composer', '/compose-draft', `${site}/compose`, '/notifications']) assert.notEqual(open(link), '/?compose=1', link);
   // The iOS share extension's hand-off opens the import screen (owner 2026-11-04 G3).
@@ -59,7 +64,7 @@ test('association files claim only paths the app maps, for the release identitie
   assert.ok(filter.data.every(entry => entry.scheme === 'https' && entry.host === 'gling.ej-entertainment.com'));
   // Native mapping must agree with the URLs both platforms claim.
   for (const entry of filter.data) {
-    const sample = `${site}${entry.path ? `${entry.path}?id=${id}&code=ABCDEFGH&postId=${id}` : `${entry.pathPrefix}${id}`}`;
+    const sample = `${site}${entry.path ? `${entry.path}?id=${id}&code=ABCDEFGH&postId=${id}&token=${token}` : `${entry.pathPrefix}${id}`}`;
     assert.notEqual(appPathForLink(sample), '/', sample);
   }
 });

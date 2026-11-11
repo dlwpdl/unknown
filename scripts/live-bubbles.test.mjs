@@ -159,6 +159,15 @@ test('the sibling sheets never share a React key, even before anything was opene
   assert.equal([...sheets.matchAll(/ key=\{/g)].length, keys.length, 'no keyed sheet without a prefix');
 });
 
+test('members move a bubble only around a fresh fix, and the adjust step can take a new one (owner 2026-11-08)', () => {
+  const source = readFileSync(new URL('../src/components/live-bubbles.tsx', import.meta.url), 'utf8');
+  const sheet = source.slice(source.indexOf('export function LiveComposeSheet'), source.indexOf('/** What a member sees after tapping'));
+  assert.match(sheet, /const next = clampWithin\(origin, pin\)/, 'a member drag is clamped to 100 m of the fix');
+  assert.match(sheet, /label=\{locating \? tr\('위치 확인 중'\) : tr\('내 위치 찾기'\)\} disabled=\{locating\} onPress=\{\(\) => \{[^}]*void locate\(\); \}\}/, '내 위치 찾기 reads the phone again');
+  assert.ok(!sheet.includes("tr('처음 자리로')"), 'no way back to an old fix');
+  assert.match(sheet.slice(sheet.indexOf("step === 'preview' ? <>")), /\{keptLine\}\n\s+\{problemLine\}\n\s+<\/>\}/, 'a failed new fix says why on the adjust step');
+});
+
 test('posting needs an honest fresh fix; only the development example takes the simulator place or the city centre', () => {
   const now = Date.parse('2026-11-05T18:00:00Z'), centre = { latitude: 49.28, longitude: -123.12 };
   const real = { ...vancouver, accuracy: 20, measuredAt: now - 5000, mocked: false };
@@ -242,4 +251,14 @@ test('the request sheet shows the sender photo, nickname, level, line and a way 
   assert.match(source, /photo \? <ClayPhoto uri=\{photo\} size=\{48\} \/> : <InitialAvatar name=\{person\.nickname\} \/>/, 'no photo stays the first letter');
   assert.match(sheet, /GREETINGS\[request\.greeting\]/);
   assert.match(source.slice(source.indexOf('function Person'), source.indexOf('const locationProblem')), /TrustBadge/);
+});
+
+test('map name tags show when a bubble ends, so they stay the same minute to minute (owner 2026-11-08 "끝나는 시각으로")', async () => {
+  const source = readFileSync(new URL('../src/components/live-bubbles.tsx', import.meta.url), 'utf8');
+  const markers = source.slice(source.indexOf('export function useLiveMarkers'), source.indexOf('export function useMeetupMarkers'));
+  assert.match(markers, /tr\('\{0\} · \{1\}까지', who, untilClock\(bubble\.expiresAt, locale, cityId\)\)/);
+  assert.doesNotMatch(markers, /durationLabel|남음/, 'a countdown would resend every map place each minute');
+  const { formatMeetupTime } = await import('../src/lib/chilling-date.ts');
+  // Node without full ICU prints 'PM 3:40' for ko-KR, phones print '오후 3:40'; the hour is what matters.
+  assert.match(formatMeetupTime('2026-11-08T22:40:00Z', 'ko-KR', 'America/Vancouver', { hour: 'numeric', minute: '2-digit' }), /(^|\D)3:40$/, 'B.C. clock (UTC-7)');
 });

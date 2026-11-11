@@ -28,6 +28,29 @@ class DailyPlaces(unittest.TestCase):
             bad = json.loads(json.dumps(seed)); bad['cities']['vancouver']['regionalPhotos'][0][key] = value
             with self.assertRaises(ValueError): m.build_catalog(bad,osm,now)
 
+    def test_refused_overpass_falls_back_to_osm_api_by_id(self):
+        m = implementation(); seed, _, now = self.fixture()
+        way = dict(seed['cities']['vancouver']['places'][0], id='osm:way:7', name='Verified Park', category='places', latitude=49.3, longitude=-123.14, sourceUrl='https://www.openstreetmap.org/way/7')
+        gone = dict(way, id='osm:node:9', name='Gone Cafe', sourceUrl='https://www.openstreetmap.org/node/9')
+        seed['cities']['vancouver']['places'] += [way, gone]
+        api = {'node': [dict(type='node', id=1, lat=49.281, lon=-123.121, tags=dict(name='Verified Cafe', opening_hours='Mo-Su 08:00-18:00')), dict(type='node', id=9, visible=False)],
+               'way': [dict(type='way', id=7, nodes=[1, 2], tags=dict(name='Verified Park', leisure='park'))]}
+        calls = []
+        def fake(url, body, headers):
+            calls.append(url)
+            if 'overpass' in url: raise ConnectionRefusedError('refused')
+            self.assertIsNone(body)
+            return {'elements': api['node' if '/nodes.json' in url else 'way']}
+        previous = {'cities': {'vancouver': {'places': [dict(way, latitude=49.31, longitude=-123.15)]}}}
+        with patch.object(m, 'http', side_effect=fake):
+            response = m.collect(seed, previous)
+        self.assertEqual([u.split('?')[0] for u in calls[1:]], ['https://api.openstreetmap.org/api/0.6/nodes.json', 'https://api.openstreetmap.org/api/0.6/ways.json'])
+        self.assertEqual([(e['type'], e['id']) for e in response['elements']], [('node', 1), ('way', 7)])
+        seed['cities']['vancouver']['places'].remove(gone)  # keep the 80% completeness guard out of this check
+        places = {p['id']: p for p in m.build_catalog(seed, response['elements'], now)['cities']['vancouver']['places']}
+        self.assertEqual((places['osm:way:7']['latitude'], places['osm:way:7']['longitude']), (49.31, -123.15))  # the published pin wins over the seed
+        self.assertEqual(places['osm:node:1']['openingHours'], 'Mo-Su 08:00-18:00')
+
     def test_today_guard_stops_before_seed_credentials_collection_or_publication(self):
         m = implementation()
         with tempfile.TemporaryDirectory() as target:
@@ -48,6 +71,22 @@ class DailyPlaces(unittest.TestCase):
             self.assertEqual(publish.call_count, 1); self.assertEqual(readback.call_count, 2)
             self.assertTrue((Path(target)/'attempt.json').exists())
             self.assertEqual(len(written['payload']['cities']['vancouver']['places']),200)
+
+    def test_catalog_over_the_server_size_check_stops_before_the_attempt_marker(self):
+        m = implementation(); seed, osm = self.publication_fixture()
+        payload = m.build_catalog(json.loads(json.dumps(seed)), osm, '2026-11-11T12:10:00.123456+00:00')
+        compact = len(json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode())
+        spaced = len(json.dumps(payload, ensure_ascii=False, separators=(', ', ': ')).encode())
+        self.assertGreater(spaced - compact, 1000)
+        with tempfile.TemporaryDirectory() as target:
+            path = Path(target)/'seed.json'; path.write_text(json.dumps(seed))
+            # The compact file fits, but the server's jsonb::text count does not.
+            with patch.object(m, 'CATALOG_DB_LIMIT', (compact + spaced) // 2), patch.object(sys, 'argv', ['refresh-city-places.py','--publish','--seed',str(path),'--output',target]), \
+                 patch.object(m, 'current_catalog', return_value=seed), patch.object(m, 'operations_token', return_value='fixture-token'), \
+                 patch.object(m, 'collect', return_value={'elements':osm}), patch.object(m, 'publish') as publish:
+                with self.assertRaisesRegex(ValueError, 'PLACE_CATALOG_TOO_LARGE'): m.main()
+            publish.assert_not_called()
+            self.assertFalse((Path(target)/'attempt.json').exists(), 'a later retry that day must not be blocked')
 
     def test_newer_seed_omission_preserves_prior_regional_fields_without_enlarging_legacy_arrays(self):
         m = implementation(); previous, osm = self.publication_fixture()
@@ -147,6 +186,37 @@ class DailyPlaces(unittest.TestCase):
         closed = json.loads(json.dumps(osm)); closed[-1]['tags']['closed'] = 'yes'
         removed = m.build_catalog(seed, closed, now)['cities']['vancouver']
         self.assertEqual((removed['extraPlaces'], removed['extraRecommendations'], removed['extraPhotos']), ([], [], []))
+
+    def test_more_places_carry_picks_photos_and_osm_facts_past_the_500_installed_apps_accept(self):
+        m = implementation(); seed, osm, now = self.fixture()
+        city = seed['cities']['vancouver']
+        bar = dict(city['places'][0], id='osm:node:3', name='Fixture Bar', category='food', nightlife=True, address='1 Bar St', sourceUrl='https://www.openstreetmap.org/node/3')
+        cafe = dict(city['places'][0], id='osm:node:4', name='Fixture Corner', subcategories=['bakery'], priceLevel=1, sourceUrl='https://www.openstreetmap.org/node/4')
+        pick = lambda ident: dict(placeId=ident, reason='Window seats', reasonEn='Window seats', sourceUrl='https://example.org/corner', verifiedAt='2026-10-17T10:00:00Z')
+        city.update(extraPlaces=[bar], extraRecommendations=[pick(bar['id'])], morePlaces=[cafe, dict(bar)], moreRecommendations=[pick(cafe['id']), pick(bar['id'])],
+                    morePhotos=[dict(cityId='vancouver', placeId=cafe['id'], artist='Fixture Corner', imageSha256='c'*64, license='Business-provided photo', discoveredVia='Business site', uri='https://example.org/corner.jpg', sourceUrl='https://example.org/corner', licenseUrl='https://example.org/corner')])
+        osm = osm + [dict(type='node', id=3, lat=49.29, lon=-123.1, tags={'name':'Fixture Bar'}),
+                     dict(type='node', id=4, lat=49.3, lon=-123.11, tags={'name':'Fixture Corner', 'opening_hours':'Mo-Su 07:00-15:00', 'addr:street':'Main St', 'addr:housenumber':'4'})]
+        with patch.object(m, 'http', return_value={'elements':osm}) as request:
+            m.collect(seed)
+            self.assertIn('node%28id%3A1%2C3%2C4%29', request.call_args.args[1].decode())
+        result = m.build_catalog(seed, osm, now)['cities']['vancouver']
+        self.assertEqual(([p['id'] for p in result['places']], [p['id'] for p in result['extraPlaces']]), (['osm:node:1'], ['osm:node:3']))
+        # A copy of an extra place leaves morePlaces with its pick: the app rejects a catalog that lists one place twice.
+        self.assertEqual([p['id'] for p in result['morePlaces']], ['osm:node:4'])
+        self.assertEqual([p['placeId'] for p in result['moreRecommendations']], ['osm:node:4'])
+        self.assertEqual(result['morePhotos'], city['morePhotos'])
+        more = result['morePlaces'][0]
+        self.assertEqual((more['latitude'], more['openingHours'], more['address'], more['subcategories'], more['priceLevel']), (49.3, 'Mo-Su 07:00-15:00', '4 Main St', ['bakery'], 1))
+        for mutate in [lambda c: c['moreRecommendations'][0].update(placeId='osm:node:1'),
+                       lambda c: c['morePhotos'][0].update(placeId='osm:node:1'),
+                       lambda c: c['morePlaces'].append(dict(cafe)),
+                       lambda c: c.update(morePlaces=[dict(cafe, id=f'osm:node:{i}', sourceUrl=f'https://www.openstreetmap.org/node/{i}') for i in range(10, 511)])]:
+            bad = json.loads(json.dumps(seed)); mutate(bad['cities']['vancouver'])
+            with self.assertRaises(ValueError): m.build_catalog(bad, osm, now)
+        closed = json.loads(json.dumps(osm)); closed[-1]['tags']['closed'] = 'yes'
+        removed = m.build_catalog(seed, closed, now)['cities']['vancouver']
+        self.assertEqual((removed['morePlaces'], removed['moreRecommendations'], removed['morePhotos']), ([], [], []))
 
     def fixture(self):
         now = '2026-10-18T01:00:00+00:00'

@@ -13,7 +13,7 @@ import { Colors } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { compareWebshopPrices, loadPublicWebshop, recordWebshopSheetView, webshopOrderUrl, type Webshop } from '@/lib/webshops';
+import { compareWebshopPrices, loadPublicWebshop, recordWebshopSheetView, webshopOrderUrl, type Webshop, type WebshopSheetOrigin } from '@/lib/webshops';
 
 export function usePublicWebshop(client: SupabaseClient, merchantId: string | undefined, revision: unknown = null) {
   const [result, setResult] = useState<{ id: string; shop: Webshop | null; failed: boolean } | null>(null);
@@ -54,16 +54,19 @@ export function WebshopBanner({ shop, onPress }: { shop: Webshop; onPress: () =>
   </View>;
 }
 
-export function WebshopOrderButton({ onPress }: { onPress: () => void }) {
+// Owner 2026-11-11: the button itself shows the verified discount; pressing it opens the price summary sheet.
+export function WebshopOrderButton({ shop, onPress, notice = true }: { shop: Webshop; onPress: () => void; notice?: boolean }) {
   const theme = useTheme(), { language } = useLanguage(), { play } = useInteractionFeedback(), clay = useClay();
-  return <View style={styles.offer}><Pressable analyticsId="webshop.order-preview" accessibilityRole="button"
+  const { maximumPercent } = compareWebshopPrices(shop), ko = language === 'ko';
+  const label = maximumPercent > 0 ? ko ? `웹샵 주문 · 최대 ${maximumPercent}% 할인` : `Order from webshop · Save up to ${maximumPercent}%` : ko ? '웹샵 주문' : 'Order from webshop';
+  return <View style={styles.offer}><Pressable analyticsId="webshop.order-preview" accessibilityRole="button" accessibilityLabel={`${label}, ${ko ? '가격 비교 열기' : 'opens the price comparison'}`}
     style={({ pressed }) => [ControlStyles.action, clay && styles.ctaClay, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: pressed ? 0.82 : 1 }]}
-    onPress={() => { play('selection'); onPress(); }}>{clay && <ClayPillFill kind="cta" />}<ThemedText type="menu" style={{ color: theme.accentInk }}>{language === 'ko' ? '웹샵 주문' : 'Order from webshop'} ↗</ThemedText></Pressable>
-    <UberOrderNotice /></View>;
+    onPress={() => { play('selection'); onPress(); }}>{clay && <ClayPillFill kind="cta" />}<ThemedText type="menu" style={{ color: theme.accentInk, textAlign: 'center' }}>{label} ↗</ThemedText></Pressable>
+    {notice && <UberOrderNotice />}</View>;
 }
 
-export function WebshopComparisonSheet({ client, shop, name, visible, onClose }: {
-  client: SupabaseClient; shop: Webshop; name: string; visible: boolean; onClose: () => void;
+export function WebshopComparisonSheet({ client, shop, name, visible, onClose, origin = 'business_profile' }: {
+  client: SupabaseClient; shop: Webshop; name: string; visible: boolean; onClose: () => void; origin?: WebshopSheetOrigin;
 }) {
   const theme = useTheme(), { language, locale } = useLanguage(), { play } = useInteractionFeedback(), reduced = useReducedMotion(), clay = useClay(), clayBox = useClayBox();
   const [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false);
@@ -75,9 +78,9 @@ export function WebshopComparisonSheet({ client, shop, name, visible, onClose }:
   useEffect(() => {
     if (visible && !started.current) {
       started.current = true; setError(''); setCopied(false);
-      void recordWebshopSheetView(client, shop.merchantId, platform);
+      void recordWebshopSheetView(client, shop.merchantId, platform, origin);
     } else if (!visible) started.current = false;
-  }, [client, platform, shop.merchantId, visible]);
+  }, [client, origin, platform, shop.merchantId, visible]);
   const fail = () => {
     if (!active.current) return;
     setBusy(false); setError(ko ? '웹샵을 열지 못했어요. 연결을 확인하고 다시 시도해주세요.' : 'Couldn’t open the webshop. Check your connection and try again.'); play('warning');
@@ -91,7 +94,7 @@ export function WebshopComparisonSheet({ client, shop, name, visible, onClose }:
     if (busy || pending.current) return;
     play('selection'); setError('');
     try {
-      const url = webshopOrderUrl(shop.merchantId, platform);
+      const url = webshopOrderUrl(shop.merchantId, platform, origin);
       if (platform === 'web') {
         // Open synchronously from the tap so browsers can allow the new tab.
         window.open(url, '_blank', 'noopener');

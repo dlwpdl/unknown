@@ -1,5 +1,5 @@
 import { withLanguageImports } from './test-language-imports.mjs';
-import { discoveryPlace, placeMapRoute } from '../src/lib/discovery.ts';
+import { discoveryMatches, discoveryPlace, placeMapRoute } from '../src/lib/discovery.ts';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -155,6 +155,63 @@ test('invalid extra places cannot change the last valid catalog', () => {
     assert.throws(() => api.replaceCityPlacesCatalog(seed, fixtureNow), /INVALID_PLACE_CATALOG/);
     assert.equal(api.cityPlacesRevision(), before);
   }
+});
+
+function moreFixture() {
+  const { seed, city, bar } = extraFixture();
+  const more = { ...bar, id: 'osm:node:999999999997', name: 'More fixture cafe', category: 'cafe', sourceUrl: 'https://www.openstreetmap.org/node/999999999997' };
+  delete more.nightlife;
+  city.morePlaces = [more];
+  city.moreRecommendations = [{ placeId: more.id, reason: '창가 자리', sourceUrl: 'https://example.org/cafe', verifiedAt: new Date(fixtureTime - 86_400_000).toISOString() }];
+  city.morePhotos = [{ ...city.extraPhotos[0], placeId: more.id, imageSha256: 'c'.repeat(64) }];
+  return { seed, city, bar, more };
+}
+
+test('more places past the 500 that 1.5.1 accepts join the map, search and detail like extra places', () => {
+  const { seed, bar, more } = moreFixture(), api = data();
+  assert.equal(api.replaceCityPlacesCatalog(seed, fixtureNow), true);
+  const found = api.getCityPlaces('vancouver').find(row => row.id === more.id);
+  assert.equal(found.diningRecommendation.reason, '창가 자리');
+  assert.equal(found.photo.imageSha256, 'c'.repeat(64));
+  assert.ok(api.getCityPlaces('vancouver', 'cafe').some(row => row.id === more.id));
+  assert.ok(api.getCityDiscoveryPlaces('vancouver').some(row => row.id === more.id));
+  assert.ok(api.getCityDiscoveryPlaces('vancouver').some(row => row.id === bar.id));
+});
+
+test('invalid more places cannot change the last valid catalog', () => {
+  for (const mutate of [
+    city => { city.morePlaces = null; },
+    city => { city.morePlaces.push({ ...city.places[0] }); },
+    city => { city.morePlaces.push({ ...city.extraPlaces[0] }); },
+    city => { city.morePlaces = Array.from({ length: 501 }, (_, index) => ({ ...city.morePlaces[0], id: `osm:node:${999970000000 + index}`, sourceUrl: `https://www.openstreetmap.org/node/${999970000000 + index}` })); },
+    city => { city.moreRecommendations[0].placeId = city.extraPlaces[0].id; },
+    city => { city.morePhotos[0].placeId = city.places[0].id; },
+    city => { city.morePhotos[0].license = 'Unknown'; },
+  ]) {
+    const { seed, city } = moreFixture(), api = data(), before = api.cityPlacesRevision();
+    mutate(city);
+    assert.throws(() => api.replaceCityPlacesCatalog(seed, fixtureNow), /INVALID_PLACE_CATALOG/);
+    assert.equal(api.cityPlacesRevision(), before);
+  }
+  const { seed, city } = moreFixture();
+  city.morePlaces = Array.from({ length: 500 }, (_, index) => ({ ...city.morePlaces[0], id: `osm:node:${999970000000 + index}`, sourceUrl: `https://www.openstreetmap.org/node/${999970000000 + index}` }));
+  city.moreRecommendations = []; city.morePhotos = [];
+  assert.equal(data().replaceCityPlacesCatalog(seed, fixtureNow), true);
+});
+
+test('installed 1.5.1 apps accept a catalog with more places and simply leave them out', () => {
+  // The released 1.5.1 validator, byte for byte (git show v1.5.1:src/lib/city-places.ts); 1.4.4-1.5.0 read cities the same way.
+  const released = () => module('scripts/fixtures/city-places-v1.5.1.ts.txt', { '@/lib/mock': { CITIES: cities }, './place-external-ratings': externalRatings() });
+  const { seed, city, bar, more } = moreFixture();
+  city.morePlaces = Array.from({ length: 500 }, (_, index) => ({ ...more, id: `osm:node:${999970000000 + index}`, sourceUrl: `https://www.openstreetmap.org/node/${999970000000 + index}` }));
+  city.morePlaces[0] = more;
+  const old = released();
+  assert.equal(old.replaceCityPlacesCatalog(seed, fixtureNow), true);
+  assert.ok(old.getCityPlaces('vancouver').some(row => row.id === bar.id));
+  assert.ok(!old.getCityPlaces('vancouver').some(row => row.id === more.id));
+  // Even a malformed new field cannot make an installed app drop the whole catalog.
+  Object.assign(city, { morePlaces: 'not a list', moreRecommendations: [{}], morePhotos: null });
+  assert.equal(released().replaceCityPlacesCatalog(seed, fixtureNow), true);
 });
 
 test('regional Openverse photos reuse the existing exact Flickr identity and licence rules', () => {
@@ -710,7 +767,9 @@ test('list uses each actual place photo and detail retains its credit and named 
   const place = data().getCityPlaces('toronto').find(p => p.photo);
   assert.ok(place);
   const detail = nodes(screen('src/app/places/[id].tsx', { cityId: 'toronto', id: place.id }).render());
-  assert.ok(detail.some(n => n.type === 'CityPlacePhoto' && n.props.place.id === place.id));
+  const hero = detail.find(n => n.type === 'CityPlacePhoto' && n.props.place.id === place.id);
+  assert.ok(hero);
+  assert.equal(hero.props.contentFit, undefined, 'the detail photo fills its frame with the default cover fit (QA Q18)');
   const credit = detail.find(n => n.type === 'PostPhotoCredits');
   assert.ok(credit);
   for (const value of [place.photo.artist, place.photo.sourceUrl, place.photo.license, place.photo.licenseUrl]) {
@@ -1158,7 +1217,7 @@ test('actual Expo production compiled PlacesList updates on a catalog-only revis
   '@/lib/community-city':{useCommunityCity:()=>({city})},'@/lib/mock':{CITIES:[city]},
   '@/hooks/use-current-location':{useCurrentLocation:()=>({fix:null,status:'permission',busy:false,canAskAgain:true,request:async()=>{}})},
   '@/lib/discovery-sort':distance,
-  '@/lib/city-places':{getCityDiscoveryPlaces:()=>catalog,getCityBrowsePlaces:()=>catalog,getCityPlacesCoverage:()=>'',CITY_PLACES_COLLECTED_AT:'2026-10-23'},
+  '@/lib/city-places':{getCityDiscoveryPlaces:()=>catalog,getCityBrowsePlaces:()=>catalog,getCityPlacesCoverage:()=>'',placeMatchesQuery:(place,query)=>`${place.name} ${place.address}`.toLowerCase().includes(query.trim().toLowerCase()),CITY_PLACES_COLLECTED_AT:'2026-10-23'},
   '@/hooks/use-place-review-summaries':{usePlaceReviewSummaries:()=>ratings},
   '@/components/place-review-summary':{getPlaceReviewRating:()=>({score:null}),PlaceReviewSummary:'PlaceReviewSummary'},
   '@/lib/interaction-feedback':{useInteractionFeedback:()=>({play(){}})},
@@ -1231,4 +1290,45 @@ test('G2 place saves: friends by name, similar places named from the catalog, li
   assert.ok(feedback.length >= 4 && feedback.every(v => v === 'selection'));
   const empty = [ui.PlaceSavedBy({ place: { ...place, intro: undefined }, saves: null }), ui.PlaceRelated({ place: { ...place, recommendation: undefined, glingVisited: undefined }, saves: { ...saves, similar: [] } })];
   assert.equal(text(empty), '', 'no saves, intro or lists shows nothing');
+});
+
+test('compose place search lists our map places before the phone address search (owner 2026-11-08)', () => {
+  const read = file => readFileSync(new URL(file, root), 'utf8'), src = read('src/components/post-location-picker.tsx');
+  // Same place set as the main map (map.tsx catalogPlaces), matched by name, address or Korean search name.
+  assert.match(src, /getCityDiscoveryPlaces\(cityId\)\.filter\(place => placeMatchesQuery\(place, needle\)\)/);
+  assert.match(read('src/app/map.tsx'), /const catalogPlaces = getCityDiscoveryPlaces\(city\.id\)/);
+  const first = src.indexOf('if (search && ours.length) { pick(ours[0]); return; }');
+  assert.ok(first > 0 && first < src.indexOf("search && Platform.OS === 'web'") && first < src.indexOf('Location.geocodeAsync'));
+  // The picker finds its city from the English name every editor passes in.
+  assert.match(src, /CITIES\.find\(city => city\.englishName === cityName\)\?\.id/);
+  for (const [file, pass] of [['src/components/feed-screen.tsx', 'cityName={draftCity.englishName}'], ['src/components/merchant-workspace.tsx', 'cityName={CITIES.find(city => city.id === data.merchant.city_id)?.englishName}'], ['src/components/post-detail.tsx', 'cityName={CITIES.find(city => city.id === post.cityId)?.englishName}']]) assert.ok(read(file).includes(pass), file);
+  const api = data(catalog()), top = catalog().cities.montreal.recommendations[0].placeId, place = api.getCityDiscoveryPlaces('montreal').find(row => row.id === top);
+  assert.ok(place && cities.find(city => city.englishName === 'Montréal')?.id === 'montreal');
+});
+
+test('Korean search names find English places in every place search, and the shown name stays English (owner 2026-11-08)', () => {
+  const seed = catalog(), place = seed.cities.montreal.places[0];
+  const api = module('src/lib/city-places.ts', { '@/lib/mock': { CITIES: cities }, './city-places.catalog.json': seed, './place-external-ratings': externalRatings(), './city-places.ko.json': { [place.id]: ['크루 콜렉티브 카페'] } });
+  const found = api.getCityPlaces('montreal').find(row => row.id === place.id), other = api.getCityPlaces('montreal').find(row => row.id !== place.id);
+  assert.equal(found.name, place.name, 'the Korean name is never shown');
+  assert.deepEqual([...found.searchNames], ['크루 콜렉티브 카페']); assert.equal(other.searchNames, undefined);
+  for (const query of ['크루', ' 콜렉티브카페 ', '크루 콜렉티브']) assert.ok(api.placeMatchesQuery(found, query), query);
+  assert.ok(api.placeMatchesQuery(found, place.name.toUpperCase()), 'the English name still matches');
+  assert.ok(!api.placeMatchesQuery(found, '토론토') && !api.koreanNameMatches(found.searchNames, '  '));
+  const item = discoveryPlace(found);
+  assert.ok(discoveryMatches(item, 'all', '크루') && discoveryMatches(item, 'all', '콜렉티브 카페') && !discoveryMatches(item, 'all', '토론토'), 'main map search');
+  for (const file of ['src/components/post-location-picker.tsx', 'src/app/places/index.tsx']) assert.match(readFileSync(new URL(file, root), 'utf8'), /placeMatchesQuery\(place, /, file);
+  assert.match(readFileSync(new URL('src/lib/unified-search.ts', root), 'utf8'), /korean: koreanNameMatches\(place\.searchNames, query\)/);
+});
+
+test('bundled Korean search names cover real places with Hangul only', () => {
+  const names = JSON.parse(readFileSync(new URL('src/lib/city-places.ko.json', root), 'utf8')), seed = catalog();
+  const known = new Set(Object.values(seed.cities).flatMap(city => [...(city.places ?? []), ...(city.regionalPlaces ?? []), ...(city.extraPlaces ?? []), ...(city.morePlaces ?? [])].map(place => place.id)));
+  for (const [id, list] of Object.entries(names)) {
+    assert.match(id, /^(osm:(node|way|relation):[1-9]\d*|[a-z0-9:-]+)$/, id);
+    assert.ok(Array.isArray(list) && list.length >= 1 && list.length <= 3 && list.every(name => /^[가-힣0-9 ]{1,60}$/.test(name)), id);
+  }
+  const crew = Object.values(seed.cities.montreal.places).find(place => place.name === 'Crew Collective & Café');
+  if (crew) assert.ok(names[crew.id]?.some(name => name.includes('크루')), 'the owner\'s own test: 크루 finds Crew in Montréal');
+  assert.ok(Object.keys(names).filter(id => known.has(id)).length >= Math.min(known.size, 1) || !Object.keys(names).length);
 });

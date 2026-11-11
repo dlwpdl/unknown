@@ -397,6 +397,11 @@ export function PostCard({
             accessibilityLabel={tr("{0} · {1}", (tr(post.room ? '모임 초대 링크 공유' : '게시물 링크 공유')), (t.feed.shares(shareCount)))} style={styles.feedAct}>
             <ClayIcon clay="share" claySize={26} name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
           </Pressable>
+          {/* Owner 2026-11-09 "조회수 넣어": the Today card shows views again; a count, not a button. */}
+          <View style={[styles.feedAct, styles.feedViews]} accessible accessibilityLabel={t.feed.views(post.views)}>
+            <ClayIcon clay="eye" claySize={26} name={{ ios: 'eye', android: 'visibility', web: 'visibility' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
+            <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={[styles.footItem, styles.feedViewsCount]}>{count(post.views)}</ThemedText>
+          </View>
           <Pressable analyticsId="components_post-card.pressable.9" onPress={() => void toggleSave()} disabled={!!busyReaction} accessibilityRole="button" accessibilityLabel={savedOn ? tr('저장 취소') : tr('저장')}
             accessibilityState={{ selected: savedOn, disabled: !!busyReaction, busy: busyReaction === 'save' }} style={[styles.feedAct, styles.feedSave]}>
             <ClayIcon clay={savedOn ? 'bookmark_on' : 'bookmark'} claySize={26} name={{ ios: savedOn ? 'bookmark.fill' : 'bookmark', android: savedOn ? 'bookmark_added' : 'bookmark', web: savedOn ? 'bookmark_added' : 'bookmark' }} size={IconSize.toolbar} tintColor={savedOn ? theme.accent : theme.textSecondary} />
@@ -480,9 +485,11 @@ export function PostCard({
           )}
         </View>}
 
+        {/* No onPress (post and meetup detail): RN would read disabled as "dimmed", so it is plain text whose lines and links are read one by one. */}
         <Pressable analyticsId="components_post-card.pressable.2"
           onPress={openPost}
           disabled={!onPress}
+          accessible={!!onPress}
           accessibilityRole={onPress ? 'button' : undefined}
           accessibilityLabel={onPress ? `${tr(post.tag.label)} · ${translation.display.title}` : undefined}
           style={({ pressed }) => pressed && styles.pressed}>
@@ -571,6 +578,7 @@ export function PostCard({
                   onHashtag(chip);
                 } : undefined}
                 disabled={!onHashtag}
+                accessible={!!onHashtag}
                 accessibilityRole={onHashtag ? 'button' : undefined}
                 accessibilityLabel={t.feed.hashtagFilter(chip)}
                 style={({ pressed }) => [styles.hash, pressed && styles.pressed]}>
@@ -805,4 +813,8 @@ const styles = StyleSheet.create({
   feedActs: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: FEED_TEXT_INSET - 8, paddingTop: 6 },
   feedAct: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, minWidth: 44, minHeight: 44, paddingHorizontal: 8, borderRadius: 999 },
   feedSave: { marginLeft: 'auto' },
+  // On a narrow screen with large text the count gives way first, so save never leaves the row.
+  // Not a touch target, so it may go below 44pt; overflow keeps a squeezed count from drawing over save.
+  feedViews: { flexShrink: 1, minWidth: 0, overflow: 'hidden', borderRadius: 0 },
+  feedViewsCount: { flexShrink: 1 },
 });

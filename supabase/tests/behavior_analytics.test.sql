@@ -12,13 +12,28 @@ select throws_ok($$select * from private.behavior_events$$,'42501',null,'anonymo
 select throws_ok($$select public.get_admin_behavior()$$,'42501',null,'anonymous cannot read reports');
 select lives_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":1,"screen":"feed","kind":"view","target":"screen","value":1}]')$$,'anonymous telemetry is accepted');
 select lives_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":1,"screen":"feed","kind":"view","target":"screen","value":1}]')$$,'retry is idempotent');
-select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":2,"screen":"feed","kind":"press","target":"secret-user-text","value":1}]')$$,'P0001','INVALID_BEHAVIOR','arbitrary text rejected');
-select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":2,"screen":"feed","kind":"view","target":"screen","value":1,"email":"secret@example.com"}]')$$,'P0001','INVALID_BEHAVIOR','unexpected properties rejected');
-select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":2,"screen":"/chat/private-id","kind":"view","target":"screen","value":1}]')$$,'P0001','INVALID_BEHAVIOR','raw routes rejected');
-select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":2,"screen":"feed","kind":"scroll","target":"web_page","value":101}]')$$,'P0001','INVALID_BEHAVIOR','invalid depth rejected');
+select lives_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":2,"screen":"feed","kind":"press","target":"web_page","value":1},{"seq":3,"screen":"feed","kind":"press","target":"secret-user-text","value":1}]')$$,'an unregistered target no longer rejects the rest of its batch');
+select lives_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":5,"screen":"feed","kind":"scroll","target":"secret-user-text","value":50}]','direct')$$,'the app''s four-argument call keeps unregistered targets too');
+-- 1.5.1 retries a refused batch forever from the front of its queue, so one template id (poll option, app language,
+-- membership family, business channel switch) used to stop every later event of that session.
+select lives_ok($$select public.record_behavior_events('qa-151-template-session-0001','ios',(select jsonb_agg(jsonb_build_object('seq',n,'screen','post','kind','press','value',1,
+  'target',(array['post.poll.option.0','app_language.ko','membership.family.business','merchant.channel.gling.on','web_page'])[1+n%5])) from generate_series(1,25) n),'direct')$$,'a 1.5.1 batch with template ids is accepted');
+select lives_ok($$select public.record_behavior_events('qa-151-template-session-0001','ios',(select jsonb_agg(jsonb_build_object('seq',n,'screen','post','kind','press','value',1,
+  'target',(array['post.poll.option.0','app_language.ko','membership.family.business','merchant.channel.gling.on','web_page'])[1+n%5])) from generate_series(1,25) n),'direct')$$,'its retry is accepted without duplicates');
+select lives_ok($$select public.record_behavior_events('qa-151-template-session-0001','ios','[{"seq":26,"screen":"post","kind":"press","target":"web_page","value":1}]','direct')$$,'later events of that session are recorded');
+select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":4,"screen":"feed","kind":"view","target":"secret-user-text","value":1}]')$$,'P0001','INVALID_BEHAVIOR','views still need the screen target');
+select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":4,"screen":"feed","kind":"success","target":"secret-user-text","value":1}]')$$,'P0001','INVALID_BEHAVIOR','success still needs a listed target');
+select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":9,"screen":"feed","kind":"press","target":null,"value":1}]')$$,'P0001','INVALID_BEHAVIOR','a missing target is rejected');
+select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":9,"screen":"feed","kind":"press","target":7,"value":1}]')$$,'P0001','INVALID_BEHAVIOR','a target that is not text is rejected');
+select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":9,"screen":"feed","kind":"view","target":"screen","value":1,"email":"secret@example.com"}]')$$,'P0001','INVALID_BEHAVIOR','unexpected properties rejected');
+select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":9,"screen":"/chat/private-id","kind":"view","target":"screen","value":1}]')$$,'P0001','INVALID_BEHAVIOR','raw routes rejected');
+select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[{"seq":9,"screen":"feed","kind":"scroll","target":"web_page","value":101}]')$$,'P0001','INVALID_BEHAVIOR','invalid depth rejected');
 select throws_ok($$select public.record_behavior_events('qa-anonymous-session-12345','web','[]')$$,'P0001','INVALID_BEHAVIOR','empty batches rejected');
 reset role;
-select is((select count(*) from private.behavior_events where session_id='qa-anonymous-session-12345'),1::bigint,'retry stores one event');
+select is((select count(*) from private.behavior_events where session_id='qa-anonymous-session-12345'),4::bigint,'retry stores one event and rejected batches store none');
+select is((select array_agg(target order by seq) from private.behavior_events where session_id='qa-anonymous-session-12345'),array['screen','web_page','unregistered','unregistered'],'the sent text is stored only as the fixed unregistered target');
+select ok(not exists(select 1 from private.behavior_events where target like '%secret%'),'unregistered text is never stored');
+select is((select count(*) filter(where target='unregistered')||'/'||count(*) from private.behavior_events where session_id='qa-151-template-session-0001'),'20/26','the 1.5.1 session keeps all 26 events, template ids as unregistered');
 select set_config('request.jwt.claims','{"sub":"73737373-1111-1111-1111-111111111111","role":"authenticated"}',true);
 set local role authenticated;
 select throws_ok($$select public.get_admin_behavior()$$,'P0001','ADMIN_REQUIRED','members cannot read reports');
@@ -27,7 +42,10 @@ select lives_ok($$select public.record_behavior_events('qa-member-event-session-
 select throws_ok($$select public.record_behavior_events('qa-member-event-session-12345','ios','[{"seq":5,"screen":"events/G5vYZabc","kind":"view","target":"screen","value":1}]')$$,'P0001','INVALID_BEHAVIOR','event IDs cannot enter analytics screen names');
 reset role;
 select is((select count(*) from private.behavior_events where user_id='73737373-1111-1111-1111-111111111111'),7::bigint,'member identity assigned by server');
-select set_config('request.jwt.claims','{"sub":"73737373-2222-2222-2222-222222222222","role":"authenticated","app_metadata":{"role":"admin"}}',true);
+select is((select array_agg(target order by seq) from private.behavior_events where session_id='qa-member-event-session-12345'),array['screen','ticketmaster.event.open','screen','ticketmaster.meetup.created'],'registered event targets are stored as sent');
+-- Admin reads need an MFA (aal2) session since 20261030140000_admin_direct_db.
+insert into auth.sessions(id,user_id,aal) values('73737373-2222-2222-2222-aaaaaaaaaaaa','73737373-2222-2222-2222-222222222222','aal2');
+select set_config('request.jwt.claims','{"sub":"73737373-2222-2222-2222-222222222222","role":"authenticated","aal":"aal2","session_id":"73737373-2222-2222-2222-aaaaaaaaaaaa","app_metadata":{"role":"admin"}}',true);
 set local role authenticated;
 select is((select (s->>'views')::integer from jsonb_array_elements(public.get_admin_behavior(7,'behavior-test')->'screens') s where s->>'screen'='feed'),1,'city report excludes anonymous views');
 select is((select (s->>'dwellMs')::integer from jsonb_array_elements(public.get_admin_behavior(7,'behavior-test')->'screens') s where s->>'screen'='feed'),30000,'foreground milliseconds aggregated');

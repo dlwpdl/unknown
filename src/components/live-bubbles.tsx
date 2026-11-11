@@ -31,6 +31,7 @@ import {
   GREETINGS, LIVE, QUICK_PHRASES, approximatePoint, myShownPoints, postingPlace, shownPoint, cancelLiveRequest, clampWithin, demoReceive, distanceMeters, durationLabel, endLiveBubble, extendLiveBubble, getLive, liveErrorCode, liveNotice,
   minutesLeft, postLiveBubble, refreshLive, replyToWave, respondLiveRequest, sendLiveRequest, subscribeLive, waveLiveBubble, type LiveAudience, type LiveBubble, type LiveKind, type LiveMap, type LivePerson, type LiveRequest, type LiveWave, type Point,
 } from '@/lib/live-bubbles';
+import { formatMeetupTime, meetupZone } from '@/lib/chilling-date';
 import type { LocationFix } from '@/lib/location';
 import { splitPlaceMeetupBody } from '@/lib/meetup-destination';
 import { googleMapsPin, postMapBody } from '@/lib/post-maps';
@@ -96,14 +97,17 @@ const BUBBLE_COLOR = '#8E6CE0', MEETUP_TAG = 5;
 const MEETUP_COLOR = DISCOVERY_CATEGORIES.find(value => value.id === 'event')?.color ?? '#5F7CF3';
 
 /** My bubble and everyone else's still up, as map pins (3D speech bubble; the Gling tag for an admin pin). */
-export function useLiveMarkers(map: LiveMap | null, now: number, show: boolean): DiscoveryMarker[] {
-  const { tr } = useLanguage(), hidden = useContentVisibility();
+// A map name tag says when the bubble ends (owner 2026-11-08 "말풍선 남은 시간: 끝나는 시각으로"): a countdown changed every minute and made the map place all its places again.
+// The city's clock (meetupZone) so a phone with old B.C. zone data still shows the right hour.
+const untilClock = (expiresAt: string, locale: string, cityId: string) => formatMeetupTime(expiresAt, locale, meetupZone(null, cityId), { hour: 'numeric', minute: '2-digit' });
+
+export function useLiveMarkers(map: LiveMap | null, now: number, show: boolean, cityId: string): DiscoveryMarker[] {
+  const { tr, locale } = useLanguage(), hidden = useContentVisibility();
   if (!show || !map) return [];
   const shown = [...(map.mine ? [map.mine] : []), ...map.bubbles.filter(bubble => !hidden('live_bubble', bubble.id, bubble.author.id))];
   return shown.filter(bubble => minutesLeft(bubble.expiresAt, now) > 0).map(bubble => {
-    const left = durationLabel(minutesLeft(bubble.expiresAt, now));
-    const sublabel = bubble === map.mine ? tr('나 · {0} 남음', left) : bubble.kind === 'pin' ? tr('글링 · {0} 남음', left)
-      : bubble.demo ? tr('개발용 예시 · {0} 남음', left) : tr('{0} · {1} 남음', bubble.author.nickname, left);
+    const who = bubble === map.mine ? tr('나') : bubble.kind === 'pin' ? tr('글링') : bubble.demo ? tr('개발용 예시') : bubble.author.nickname;
+    const sublabel = tr('{0} · {1}까지', who, untilClock(bubble.expiresAt, locale, cityId));
     return { id: `bubble:${bubble.id}`, latitude: bubble.latitude, longitude: bubble.longitude, color: BUBBLE_COLOR, label: bubble.body.slice(0, 80),
       sublabel: sublabel.slice(0, 40), icon: bubble.kind === 'pin' ? 'visited' : 'bubble' };
   });
@@ -111,7 +115,7 @@ export function useLiveMarkers(map: LiveMap | null, now: number, show: boolean):
 
 /** 근처 모임: the city's open meetups from the existing meetup feed, pinned at their linked place. */
 export function useMeetupMarkers(cityId: string, viewerScope: string, now: number, show: boolean): DiscoveryMarker[] {
-  const { tr } = useLanguage(), hidden = useContentVisibility();
+  const { tr, locale } = useLanguage(), hidden = useContentVisibility();
   const key = `${cityId}:${viewerScope}`;
   const [result, setResult] = useState<{ key: string; posts: Post[] } | null>(null);
   useEffect(() => {
@@ -127,8 +131,9 @@ export function useMeetupMarkers(cityId: string, viewerScope: string, now: numbe
     const url = postMapBody(post.body).url;
     const pin = splitPlaceMeetupBody(post.body, post.cityId)?.place ?? (url ? googleMapsPin(url) : null);
     if (!pin) return [];
+    // Within the hour the tag shows the start time, not a countdown that redraws the map every minute (git-76 review).
     const minutes = Math.round((start - now) / 60000), seats = room.capacity ? Math.max(0, room.capacity - room.memberCount) : null;
-    const when = !Number.isFinite(minutes) ? '' : minutes < 60 ? tr('{0}분 뒤', Math.max(1, minutes)) : minutes < 1440 ? tr('{0}시간 뒤', Math.round(minutes / 60)) : tr('{0}일 뒤', Math.round(minutes / 1440));
+    const when = !Number.isFinite(minutes) ? '' : minutes < 60 ? untilClock(room!.startsAt!, locale, cityId) : minutes < 1440 ? tr('{0}시간 뒤', Math.round(minutes / 60)) : tr('{0}일 뒤', Math.round(minutes / 1440));
     const sublabel = [when, seats === null ? '' : seats ? tr('{0}자리 남음', seats) : tr('자리 다 찼어요')].filter(Boolean).join(' · ');
     return [{ id: `meetup:${post.id}`, latitude: pin.latitude, longitude: pin.longitude, color: MEETUP_COLOR, label: (room.title || post.title).slice(0, 80),
       ...(sublabel ? { sublabel: sublabel.slice(0, 40) } : {}), icon: 'events' }];
@@ -266,7 +271,7 @@ async function readFix(): Promise<LocationFix> {
  * Members always start from a fresh fix where they are; admins drag the pin anywhere and pick 관리자 핀 or 회원처럼.
  */
 export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visible: boolean; onClose: () => void; city: { id: string; name: string; englishName: string }; mapCenter: Point }) {
-  const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), { isAdmin } = useAuth();
+  const { tr, locale } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), { isAdmin } = useAuth();
   const live = useLive(), mine = live.map?.mine ?? null, waves = live.map?.waves ?? [], now = useNow();
   const [step, setStep] = useState<'write' | 'preview' | 'adjust'>('write');
   const [body, setBody] = useState(mine?.body ?? ''), [audience, setAudience] = useState<LiveAudience>(mine?.audience ?? 'city');
@@ -313,7 +318,7 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
   const grid = spot && approximatePoint(spot), kept = !isAdmin && !!point && !!grid && (point.latitude !== grid.latitude || point.longitude !== grid.longitude);
   const keptLine = kept && <ThemedText type="caption" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr('전에 띄운 자리와 가까워서 같은 자리에 보여요')}</ThemedText>;
   const title = step === 'preview' ? tr('남들에게 이렇게 보여요') : step === 'adjust' ? tr('위치 바꾸기') : mine ? tr('내 말풍선') : tr('말풍선 남기기');
-  const preview: DiscoveryMarker[] = point ? [{ id: 'preview', ...point, color: BUBBLE_COLOR, label: body.trim().slice(0, 80) || tr('한마디'), sublabel: tr('나 · {0} 남음', durationLabel(minutes)), icon: kind === 'pin' && isAdmin ? 'visited' : 'bubble' }] : [];
+  const preview: DiscoveryMarker[] = point ? [{ id: 'preview', ...point, color: BUBBLE_COLOR, label: body.trim().slice(0, 80) || tr('한마디'), sublabel: tr('{0} · {1}까지', tr('나'), untilClock(new Date(now + minutes * 60000).toISOString(), locale, city.id)), icon: kind === 'pin' && isAdmin ? 'visited' : 'bubble' }] : [];
   const problemLine = !!problem && <View style={[styles.notice, { backgroundColor: theme.backgroundElement }]}>
     <ThemedText type="small" accessibilityRole="alert" style={styles.flex}>{tr(problem)}</ThemedText>
     {!isAdmin && !origin && !locating && <Pressable analyticsId="livemap.compose" accessibilityRole="button" accessibilityLabel={tr('지금 있는 곳 다시 확인')} onPress={() => { play('selection'); setLocating(true); setProblem(''); void locate(); }} style={styles.inlineLink}>
@@ -361,6 +366,7 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
         <View style={styles.previewMap}><PostPinMap pin={point} cityName={city.englishName} onSelect={move} /></View>
         <ThemedText type="caption" accessibilityLiveRegion="polite" style={{ color: atEdge ? theme.accent : theme.textSecondary }}>{atEdge ? tr('100m까지만 옮길 수 있어요. 그 끝에 놓아 뒀어요.') : tr('100m 안에서 옮길 수 있어요')}</ThemedText>
         {keptLine}
+        {problemLine}
       </>}
     </ScrollView>
     {/* Pinned under the scrolling part, so a long sheet (with people who waved) never pushes the buttons off screen. */}
@@ -376,7 +382,8 @@ export function LiveComposeSheet({ visible, onClose, city, mapCenter }: { visibl
         </View>
         <Pressable analyticsId="livemap.preview" accessibilityRole="button" onPress={() => { play('selection'); setStep('write'); }} style={styles.link}><ThemedText type="smallBold" themeColor="accent">{tr('글 고치기')}</ThemedText></Pressable>
       </> : <View style={styles.actions}>
-        <Secondary analyticsId="livemap.preview" label={tr('처음 자리로')} onPress={() => { play('selection'); setAtEdge(false); if (origin) setSpot(origin); }} />
+        {/* Owner 2026-11-08 "내위치찾기로 새로고침가능하게": a fresh fix re-centres the pin and its 100 m circle on where the member is now. */}
+        <Secondary analyticsId="livemap.preview" label={locating ? tr('위치 확인 중') : tr('내 위치 찾기')} disabled={locating} onPress={() => { play('selection'); setAtEdge(false); setLocating(true); setProblem(''); void locate(); }} />
         <View style={styles.flex}><RaisedActionButton analyticsId="livemap.preview" label={tr('이 자리로 할게요')} onPress={() => { play('selection'); setStep('preview'); }} /></View>
       </View>}
     </View>

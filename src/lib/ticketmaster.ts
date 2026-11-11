@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { getLocale, translateUi, tr } from '@/i18n';
 import { clockZone } from '@/lib/chilling-date';
-import { eventTime as koreanEventTime, eventPriceLabel as koreanEventPriceLabel } from '../../supabase/functions/_shared/ticketmaster';
+import { eventDayLabel, eventTime as koreanEventTime, eventPriceLabel as koreanEventPriceLabel } from '../../supabase/functions/_shared/ticketmaster';
 import { meetupAllowed, type EventQuery, type FestivalSlot, type TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster';
 export { EVENT_CITIES, EVENT_CATEGORIES, eventMatchesPriceFilter, festivalLocalDay, featuredLocalEvents, isFestivalEvent, spotlightLocalEvents, meetupAllowed } from '../../supabase/functions/_shared/ticketmaster';
 export type { EventCity, EventCategory, EventPriceFilter, TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster';
@@ -11,7 +11,7 @@ export function eventTime(event: TicketmasterEvent, locale = getLocale()) {
   // Same guard as meetups: phones with older zone data still drop Vancouver an hour in winter.
   const timezone = event.timezone && event.startsAt ? clockZone(event.timezone, Date.parse(event.startsAt)) : event.timezone;
   if (locale === 'ko-KR') return koreanEventTime({ ...event, timezone });
-  if (!event.startsAt || event.timeUnconfirmed || !timezone) return `${event.localDate ?? 'Date TBA'} · Time TBA`;
+  if (!event.startsAt || event.timeUnconfirmed || !timezone) return `${eventDayLabel(event.localDate, 'en-CA') ?? 'Date TBA'} · Time TBA`;
   return new Intl.DateTimeFormat('en-CA', { timeZone: timezone, month: 'long', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(event.startsAt));
 }
 export function eventPriceLabel(event: TicketmasterEvent, locale = getLocale()) {

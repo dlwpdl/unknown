@@ -42,6 +42,7 @@ import { TranslatedCommentBody } from '@/components/content-translation';
 import { CONTENT_TRANSLATION_VIEWABILITY } from '@/lib/content-translation';
 import { useTranslationVisibleIds } from '@/hooks/use-content-translation';
 import { PostShareSheet } from '@/components/post-share-sheet';
+import { MeetupInviteHost, MeetupInviteNote, MeetupWhoCard, useMeetupRoster } from '@/components/meetup-members';
 import { PostBodyEditor } from '@/components/post-body-editor';
 import { PostPhotoGallery } from '@/components/post-photo-gallery';
 import { PostPhotoEditor, type EditablePostImage } from '@/components/post-photo-editor';
@@ -776,7 +777,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           ? <View accessible accessibilityRole="header" accessibilityLabel={tr(post.room ? "모임 상세" : "글 상세")} style={styles.headSpacer} />
           : <ThemedText accessibilityRole="header" style={styles.headTitle}>{tr(postDraft ? tr(post.room ? "소개·사진 수정" : "글 수정") : commentId ? t.detail.commentsTitle(commentTotal) : tr("글 상세"))}</ThemedText>}
         {post.room && !postDraft && <PostReactionToggle post={post} kind="save" />}
-        {!postDraft && <Pressable analyticsId="post.detail.share" accessibilityRole="button" accessibilityLabel={tr(post.room ? tr("모임 초대 링크 공유") : tr("게시물 링크 공유"))}
+        {/* An invite meetup's link lives in the host's invite card; the public share link would not let anyone in. */}
+        {!postDraft && post.room?.access !== 'invite' && <Pressable analyticsId="post.detail.share" accessibilityRole="button" accessibilityLabel={tr(post.room ? tr("모임 초대 링크 공유") : tr("게시물 링크 공유"))}
           onPress={() => { play('selection'); setShareOpen(true); }} style={({ pressed }) => [styles.shareBtn, clay && styles.clayPad, { backgroundColor: pressed && !clay ? theme.backgroundSelected : 'transparent' }]}>
           {clay && <ClayPillFill kind="white" />}
           <SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={20} tintColor={theme.accent} />
@@ -1133,9 +1135,13 @@ function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavi
   const { play } = useInteractionFeedback();
   const [profile, setProfile] = useState<ChillingProfile | null>(null), [loading, setLoading] = useState(false), [error, setError] = useState(''), [report, setReport] = useState(false);
   const room = post.room;
+  const invite = room?.access === 'invite';
+  // '누가 와요' takes over the host's profile: same person, same screen (signed-in only, like the profile).
+  const who = useMeetupRoster(post.id, isAuthed && room?.membersVisible === true && !invite);
   if (!room) return null;
   const { own, participation, statusError } = status;
   const availability = chillingAvailability(room);
+  const showWho = isAuthed && room.membersVisible === true && !invite;
   const load = async () => {
     if (!isAuthed) return promptLogin('호스트 모임 프로필을 보려면 로그인해 주세요.');
     if (loading) return;
@@ -1152,7 +1158,7 @@ function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavi
     <View style={styles.host}>
       <View style={[styles.hostAvatar, !clay && { backgroundColor: theme.backgroundSelected }]}>{clay && <ClayCoinFill />}<ThemedText type="smallBold">{post.author.nickname[0]}</ThemedText></View>
       <View style={styles.hostName}><ThemedText type="smallBold" style={styles.hostNameText}>{post.author.nickname}</ThemedText><TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} /></View>
-      <Pressable analyticsId="components_chilling-host-profile.pressable.1" accessibilityRole="button" accessibilityLabel={tr('{0} 모임 프로필', post.author.nickname)}
+      {!showWho && <Pressable analyticsId="components_chilling-host-profile.pressable.1" accessibilityRole="button" accessibilityLabel={tr('{0} 모임 프로필', post.author.nickname)}
         accessibilityState={room.eventKind ? { expanded: !!profile, busy: loading } : undefined} style={[styles.hostLink, clay && styles.clayPad]}
         onPress={() => {
           play('selection');
@@ -1162,7 +1168,7 @@ function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavi
         }}>
         {clay && <ClayPillFill kind="white" />}
         <ThemedText type="smallBold" themeColor="accent">{profile ? tr('접기') : tr('프로필')}</ThemedText>
-      </Pressable>
+      </Pressable>}
       {!own && <Pressable analyticsId="meetup.detail.report" accessibilityRole="button" accessibilityLabel={t.report.title(post.author.nickname)} style={styles.hostLink}
         onPress={() => { play('selection'); if (isAuthed) setReport(true); else promptLogin(t.auth.reasonReport); }}>
         <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={21} tintColor={theme.textSecondary} />
@@ -1172,6 +1178,8 @@ function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavi
     {isAuthed && profile && <ChillingProfileCard profile={profile} />}
     {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
     <MeetupFacts post={post} canEnterChat={canEnterChat} own={own} />
+    {showWho && <MeetupWhoCard roster={who.roster} error={who.error} onRetry={who.reload} />}
+    {invite && (own ? availability === 'open' || availability === 'full' ? <MeetupInviteHost post={post} /> : null : <MeetupInviteNote />)}
     {!!statusNote && <View style={[styles.statusNote, clayBox ? styles.clayCard : { backgroundColor: theme.backgroundSelected }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="small">{statusNote}</ThemedText></View>}
     {!!statusError && <StateCard kind="error" title={tr('신청 상태를 불러오지 못했어요')} body={tr(statusError)} actionLabel={tr('다시 불러오기')} onAction={status.retry} />}
     <MeetupRsvp postId={post.id} zone={meetupZone(post.room, post.cityId)} flush />

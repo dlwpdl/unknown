@@ -94,7 +94,7 @@ test('sharing requires explicit consent, trims answer, and never uploads a clien
   await assert.rejects(data.requestChillingJoin(client,'post','hello',false,'revision'), /CHILLING_CONSENT_REQUIRED/);
   assert.equal(calls.length,0);
   assert.equal(await data.requestChillingJoin(client,'post',' hi ',true,'revision'),'request-id');
-  assert.deepEqual(calls,[['request_chilling_join_v2',{p_post_id:'post',p_answer:'hi',p_consent_version:'chilling-v2',p_profile_revision:'revision'}]]);
+  assert.deepEqual(calls,[['request_chilling_join_v2',{p_post_id:'post',p_answer:'hi',p_consent_version:'chilling-v3',p_profile_revision:'revision'}]]);
 });
 test('create uses one atomic RPC; invalid event cannot publish a partial legacy post', async () => {
   const calls=[];const client={rpc:async(name,args)=>{calls.push([name,args]);return {data:'post-id',error:null};}};

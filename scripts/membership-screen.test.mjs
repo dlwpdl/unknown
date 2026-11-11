@@ -10,7 +10,8 @@ import { MEMBERSHIP_LIMITS, GENERAL_BUMP_HOURS, BUSINESS_LIMITS, MEETUP_TOOL_PER
 
 test('membership keeps stories and direct chat free while preserving meetup and listing plans', () => {
   let states = [], cursor = 0, restored = 0, confirmed = 0, feedback = 0, confirmation, reducedMotion = false;
-  const purchases = [], opened = [];
+  const purchases = [], opened = [], profileStack = { index: 2, actions: [] };
+  let linkOpen = null;
   class AnimatedValue {
     constructor(value) { this.value = value; }
     setValue(value) { this.value = value; }
@@ -27,12 +28,15 @@ test('membership keeps stories and direct chat free while preserving meetup and 
   vm.runInNewContext(source, { exports, process: { env: {} }, require: withLanguageImports((name) => {
     if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if (name === 'react') return { useCallback: fn => fn, useEffect() {}, useState(initial) {
+    // Only the link listener runs; the other effects stay off as before.
+    if (name === 'react') return { useCallback: fn => fn, useEffect(fn) { if (/onLinkOpen/.test(String(fn))) fn(); }, useState(initial) {
       const index = cursor++;
       if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial;
       return [states[index], next => { states[index] = typeof next === 'function' ? next(states[index]) : next; }];
     } };
-    if (name === 'expo-router') return { useFocusEffect() {}, useRouter: () => ({ canGoBack: () => false, replace() {} }) };
+    if (name === 'expo-router') return { useFocusEffect() {}, useRouter: () => ({ canGoBack: () => false, replace() {} }),
+      useNavigation: () => ({ getState: () => ({ index: profileStack.index }), dispatch: action => profileStack.actions.push(action) }) };
+    if (name === '@/lib/link-open') return { onLinkOpen: fn => { linkOpen = fn; return () => {}; } };
     if (name === 'expo-symbols' || name === '@/components/symbol-view') return { SymbolView: 'SymbolView' };
     if (name === 'react-native-reanimated') return { useReducedMotion: () => reducedMotion };
     if ((name === 'react-native' || name === '@/components/analytics-controls')) return { View: 'View', ScrollView: 'ScrollView', Pressable: 'Pressable', Alert: { alert: (...args) => { confirmation = args; } }, Linking: { openURL: async url => { opened.push(url); } }, Animated: { Value: AnimatedValue, View: 'View', timing: (value, options) => ({ start() { value.setValue(options.toValue); } }) }, StyleSheet: { create: styles => styles } };
@@ -185,4 +189,10 @@ test('membership keeps stories and direct chat free while preserving meetup and 
   assert.equal(button(render(), cancellationLabel).props.disabled, true);
   value.busy = false; value.loading = true;
   assert.equal(button(render(), cancellationLabel).props.disabled, true);
+  // A link or push while this modal (and screens opened inside it) is up takes the profile stack back to its first screen (QA Q08).
+  linkOpen();
+  assert.deepEqual(profileStack.actions.map(action => action.type), ['POP_TO_TOP']);
+  profileStack.index = 0;
+  linkOpen();
+  assert.equal(profileStack.actions.length, 1, 'membership as the only profile screen is a plain card, so nothing is popped');
 });

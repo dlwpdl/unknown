@@ -76,6 +76,17 @@ export const CLAY_CONFETTI = {
   '#F35CBB': require('@/assets/images/ui-3d/confetti_m_d.png'), '#83D9E7': require('@/assets/images/ui-3d/confetti_c_d.png'),
 } as const;
 
+// What pops when something is done (owner 2026-11-08 3D 축하): the same renders at 360px (png/, not the 144px s/), so a 120pt drawing stays sharp.
+// The full-screen celebration is always dark (_d); the small ring follows the theme, so only seal and sparkle have both.
+export const CLAY_CELEBRATION = {
+  seal: require('@/assets/images/ui-3d/celebrate_seal.png'), seal_d: require('@/assets/images/ui-3d/celebrate_seal_d.png'),
+  sparkle: require('@/assets/images/ui-3d/celebrate_sparkle.png'), sparkle_d: require('@/assets/images/ui-3d/celebrate_sparkle_d.png'),
+  megaphone_d: require('@/assets/images/ui-3d/celebrate_megaphone_d.png'), trophy_d: require('@/assets/images/ui-3d/celebrate_trophy_d.png'),
+  gift_d: require('@/assets/images/ui-3d/celebrate_gift_d.png'),
+  // Light letters: the celebration screen is dark (owner 2026-11-08 "보라색에 검은글이라 잘안보이는데").
+  wordmark_d: require('@/assets/brand/gling-3d-wordmark-dark.png'),
+} as const;
+
 export type ClayName = keyof typeof ICONS;
 export type ClayPillKind = keyof typeof PILLS;
 export type ClayBoxKind = keyof typeof BOXES;
@@ -99,7 +110,7 @@ export const CLAY_TABS_DARK = {
   ...tab('bell', require('@/assets/images/ui-3d/tab_bell_on_d.png'), require('@/assets/images/ui-3d/tab_bell_d.png')),
 };
 
-const useDark = () => useTheme() === Colors.dark;
+export const useDark = () => useTheme() === Colors.dark;
 export function useClay() {
   const design = useDesign(), theme = useTheme();
   return design === '3d' && theme !== Colors.admin && Platform.OS !== 'web';

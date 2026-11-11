@@ -15,7 +15,7 @@ test('the events calendar labels stay in UTC so a B.C. iPhone cannot show the wr
   assert.ok(screen.includes("new Date(Date.UTC(2024, 0, 7 + index)).toLocaleDateString(locale, { weekday: 'short', timeZone: 'UTC' })"));
 });
 
-function endpoint({ cached = null, slots = [], slotsAfterRead, readyCache, claim = true, upstreamStatus = 200, budget = true, upstreamEvents } = {}) {
+function endpoint({ cached = null, slots = [], slotsAfterRead, readyCache, claim = true, upstreamStatus = 200, budget = true, upstreamEvents, wait = setTimeout } = {}) {
   const calls = [], writes = [], requests = [];
   let cacheReads = 0;
   const rows = new Map(cached ? [['tm-festival:vancouver', cached]] : []);
@@ -32,7 +32,7 @@ function endpoint({ cached = null, slots = [], slotsAfterRead, readyCache, claim
     async rpc(name) {
       calls.push(name);
       if (name === 'claim_ticketmaster_festival_refresh' && readyCache) rows.set('tm-festival:vancouver', readyCache);
-      return { data: name === 'get_ticketmaster_festival_slots' ? cacheReads && slotsAfterRead ? slotsAfterRead : slots : name === 'claim_ticketmaster_festival_refresh' ? claim : budget, error: null };
+      return { data: name === 'get_ticketmaster_festival_slots' ? cacheReads && slotsAfterRead ? slotsAfterRead : slots : name === 'claim_ticketmaster_festival_refresh' ? claim : typeof budget === 'function' ? budget() : budget, error: null };
     },
   };
   const source = ts.transpileModule(fs.readFileSync(new URL('../supabase/functions/ticketmaster-events/index.ts', import.meta.url), 'utf8'), {
@@ -43,7 +43,7 @@ function endpoint({ cached = null, slots = [], slotsAfterRead, readyCache, claim
     exports: {}, require: name => name.includes('supabase-js') ? { createClient: () => db }
       : { ...ticketmaster, festivalCacheExpiry: (cityId, at = now) => ticketmaster.festivalCacheExpiry(cityId, at) },
     Deno: { env: { get: name => ({ TICKETMASTER_API_KEY: 'test-key', SUPABASE_URL: 'https://example.invalid', SUPABASE_SERVICE_ROLE_KEY: 'test-service' })[name] }, serve: value => { handle = value; } },
-    URL, Response, Date: Clock, AbortSignal, setTimeout, console: { error() {} },
+    URL, Response, Date: Clock, AbortSignal, setTimeout: wait, console: { error() {} },
     fetch: async url => {
       const target = new URL(url); requests.push(target);
       const eventId = target.pathname.match(/\/events\/([^/]+)\.json$/)?.[1];
@@ -93,6 +93,22 @@ test('a competing collection cannot start another upstream request', async () =>
   const api = endpoint({ claim: false });
   const response = await api.invoke(query);
   assert.equal(response.status, 429); assert.equal(api.requests.length, 0); assert.equal(api.writes.length, 0);
+});
+test('a request that loses the shared 510ms turn waits for the next one instead of failing (the map sends seven days at once)', async () => {
+  const turns = [false, false, true], waits = [];
+  const api = endpoint({ budget: () => turns.shift() ?? true, wait: (resolve, ms) => { waits.push(ms); resolve(); } });
+  const response = await api.invoke({ cityId: 'vancouver', eventId: 'fixture' });
+  assert.equal(response.status, 200);
+  assert.equal(api.calls.filter(name => name === 'reserve_ticketmaster_request').length, 3);
+  assert.equal(waits.length, 2); assert.ok(waits.every(ms => ms >= 250 && ms < 550));
+  assert.equal(api.requests.length, 1);
+});
+test('a spent budget still answers RATE_LIMITED after a bounded wait and never reaches Ticketmaster', async () => {
+  const api = endpoint({ budget: false, wait: resolve => resolve() });
+  const response = await api.invoke({ cityId: 'vancouver', eventId: 'fixture' });
+  assert.equal(response.status, 429); assert.equal((await response.json()).error, 'RATE_LIMITED');
+  assert.equal(api.calls.filter(name => name === 'reserve_ticketmaster_request').length, 16);
+  assert.equal(api.requests.length, 0); assert.equal(api.writes.length, 0);
 });
 test('a failed collection is never saved as an empty successful day', async () => {
   const api = endpoint({ upstreamStatus: 502 });

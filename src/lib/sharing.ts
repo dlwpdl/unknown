@@ -47,11 +47,24 @@ export function sharedPostMessage(post: { id: string; title: string; room?: unkn
   return `${post.room ? `${tr('같이 가요!')} ` : ''}${post.title}\n${buildSharedPostUrl(post.id)}`;
 }
 
+// Invite meetup links (20261108120000): the token is the whole secret, so it never goes through the share preview.
+export const MEETUP_INVITE_TOKEN = /^[0-9a-f]{32}$/;
+export function meetupInviteUrl(token: string, appUrl = process.env.EXPO_PUBLIC_APP_URL) {
+  return `${(appUrl || appOrigin).replace(/\/+$/, '')}/meetup-invite?token=${encodeURIComponent(token)}`;
+}
+export function meetupInviteMessage(title: string, token: string) {
+  return `${tr('같이 가요!')} ${title}\n${meetupInviteUrl(token)}`;
+}
+
 export const SHARED_POST_RETURN_KEY = 'gling.sharedPostReturn';
 export function sharedPostReturnPath(value: string | null) {
   if (!value) return '/';
   try {
     const parsed = new URL(value, 'https://gling.ej-entertainment.com');
+    if (parsed.origin === 'https://gling.ej-entertainment.com' && parsed.pathname === '/meetup-invite') {
+      const token = parsed.searchParams.getAll('token');
+      return token.length === 1 && MEETUP_INVITE_TOKEN.test(token[0]) ? `/meetup-invite?token=${token[0]}` : '/';
+    }
     // The logged-out meetup join screen (meetup-join.tsx) returns to itself after web sign-in.
     const join = parsed.pathname === '/meetup-join', key = join ? 'postId' : 'id';
     const id = parsed.searchParams.get(key);

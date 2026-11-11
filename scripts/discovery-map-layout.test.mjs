@@ -56,7 +56,7 @@ function mount({ cities = [], routeParams = {}, light = false, reduced = false, 
     '@/components/state-card': { StateCard: 'StateCard' }, '@/components/content-translation': {}, '@/hooks/use-content-translation': { ...translationHookDefaults, useContentTranslation: (_kind, _id, source) => ({ display: source }) },
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: {} }, '@/lib/translation-source': {},
     '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: 'SymbolView', ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
-    '@/components/themed-text': { ThemedText: 'Text' }, '@/hooks/use-theme': { useTheme: () => theme },
+    '@/components/themed-text': { ThemedText: 'Text' }, '@/hooks/use-theme': { useTheme: () => theme }, '@/hooks/use-reveal-chip': { useRevealChip: selected => ({ scroll: { revealing: selected }, chip: key => `layout:${key}` }) },
     '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
     '@/lib/auth': { useAuth: () => ({ isAuthed: viewer !== 'guest', me: { id: viewer }, promptLogin() {} }) },
     '@/lib/community-city': { useCommunityCity: () => ({ city, selectCity: async next => { chosenCities.push(next.id); return true; } }) },
@@ -64,7 +64,7 @@ function mount({ cities = [], routeParams = {}, light = false, reduced = false, 
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) }, '@/lib/location': location, '@/lib/supabase': { supabase: {} },
     '@/lib/ticketmaster': { EVENT_CITIES: { vancouver: {} }, loadTicketmasterEvents: async () => ({ events: [], hasMore: false }) }, '@/components/post-ad-label': {}, '@/lib/hashtags': { hasAdLabel: () => false },
     '@/components/drag-sheet': { DragSheet: 'DragSheet' }, '@/components/city-picker': { CityPicker: 'CityPicker' }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: target => { savedEntry.targets.push(target); return { state: savedEntry.state }; } }, '@/components/map-list-sheet': { MapListSheet: 'MapListSheet' }, '@/components/map-scope': { FriendSavedLine: 'FriendSavedLine', MapScopeSheet: 'MapScopeSheet' }, '@/lib/profile-friends': { loadMapScope: (...args) => loadScope(...args), loadCityPlaceSaves: (...args) => loadSaves(...args) }, '@/components/place-hours': { PlaceHours: 'PlaceHours' },
-    '@/components/reservation-button': { ReservationButton: 'ReservationButton' }, '@/lib/opening-hours': openingHours,
+    '@/components/reservation-button': { ReservationButton: 'ReservationButton' }, '@/components/business-webshop': { WebshopComparisonSheet: 'WebshopComparisonSheet', WebshopOrderButton: 'WebshopOrderButton' }, '@/lib/opening-hours': openingHours,
     '@/lib/listing-details': { inBounds: (b, p) => p.latitude >= b.south && p.latitude <= b.north && p.longitude >= b.west && p.longitude <= b.east },
   };
   const exports = {};
@@ -91,6 +91,20 @@ test('main categories toggle independently and event dates belong to the festiva
   assert.ok(!nodes(tree).some(node => node.type === 'Modal'));
   assert.equal(control(tree, '분류와 날짜 필터 열기').props.accessibilityState.expanded, false);
   assert.ok(view.feedback.length >= 5);
+});
+
+test('Q07 map: the category chosen last scrolls into the quick row', () => {
+  const view = mount(); let tree = view.render();
+  const row = () => nodes(tree).find(node => node.type === 'ScrollView' && node.props.analyticsId === 'discovery.filter');
+  assert.equal(row().props.revealing, 'all');
+  control(tree, 'TOP 50').props.onPress(); tree = view.render();
+  assert.equal(row().props.revealing, 'top25');
+  assert.equal(control(tree, 'TOP 50').props.onLayout, 'layout:top25');
+  assert.equal(control(tree, '보여 줄 곳, 모두').props.onLayout, undefined, 'only category chips are measured');
+  control(tree, '카페').props.onPress(); tree = view.render();
+  const cafe = row().props.revealing; assert.notEqual(cafe, 'top25', 'the chip just turned on is the one revealed');
+  control(tree, 'TOP 50').props.onPress(); tree = view.render();
+  assert.equal(row().props.revealing, cafe, 'turning a chip off leaves the row where it is');
 });
 
 test('the quick category row preserves the owner-selected restaurant, cafe, festival and nightlife order', () => {
@@ -422,6 +436,36 @@ test('late map photo reads cannot attach to another city or viewer', async () =>
 });
 
 
+test('A안: a business with a published webshop gets the order button on its map card and list row, and it opens the map-tagged price sheet', async () => {
+  const place = { id: 'osm:node:200', cityId: 'vancouver', name: 'Webshop branch', category: 'food', address: 'A', latitude: 49.25, longitude: -122.86, sourceUrl: 'https://www.openstreetmap.org/node/200' };
+  const plain = { ...place, id: 'osm:node:201', name: 'Plain branch', latitude: 49.251, sourceUrl: 'https://www.openstreetmap.org/node/201' };
+  const merchantId = 'a3310000-0000-4000-8000-000000000002', otherCity = 'a3310000-0000-4000-8000-000000000003';
+  const shop = { merchantId, cityId: 'vancouver', url: 'https://example.com/shop', provider: 'uber', placeKeys: [place.id], comparisons: [], verifiedAt: null };
+  const view = mount({ places: [place, plain], loadLinks: async () => ({ [place.id]: merchantId, [plain.id]: otherCity }),
+    loadWebshops: async () => [shop, { ...shop, merchantId: otherCity, cityId: 'toronto' }] });
+  view.render(); const stop = view.readRegistry(); await new Promise(setImmediate);
+  const select = id => { nodes(view.render()).find(n => n.type === 'DiscoveryMap').props.onSelect(`place:vancouver:${id}`); return view.render(); };
+  let tree = select(place.id);
+  const button = nodes(tree).find(n => n.type === 'WebshopOrderButton');
+  assert.equal(button.props.shop, shop);
+  assert.equal(button.props.notice, false, 'the card keeps the Uber notice inside the sheet');
+  assert.ok(!nodes(tree).some(n => n.type === 'WebshopComparisonSheet'), 'no sheet before the tap');
+  button.props.onPress(); tree = view.render();
+  const sheet = nodes(tree).find(n => n.type === 'WebshopComparisonSheet');
+  assert.equal(sheet.props.origin, 'map');
+  assert.equal(sheet.props.shop, shop);
+  assert.equal(sheet.props.name, 'Webshop branch');
+  assert.equal(sheet.props.visible, true);
+  sheet.props.onClose(); tree = view.render();
+  assert.equal(nodes(tree).find(n => n.type === 'WebshopComparisonSheet').props.visible, false);
+  assert.ok(!nodes(select(plain.id)).some(n => n.type === 'WebshopOrderButton'), 'a shop registered for another city never attaches');
+  const list = nodes(view.render()).find(n => n.type === 'FlatList');
+  const row = title => list.props.renderItem({ item: list.props.data.find(item => item.title === title), index: 0 });
+  assert.ok(nodes(row('Webshop branch')).some(n => n.type === 'WebshopOrderButton'));
+  assert.ok(!nodes(row('Plain branch')).some(n => n.type === 'WebshopOrderButton'));
+  stop();
+});
+
 test('main Map opens common search while embedded Map retains its local input and dismissal context', () => {
   const main=mount();let tree=main.render();
   const entry=nodes(tree).find(node=>node.props?.analyticsId==='search.entry.map');assert.ok(entry);entry.props.onPress();
@@ -524,6 +568,8 @@ test('map pins carry a second line, featured names and the category id for the d
   const places = [fixturePlace(1, { name: 'Brunch spot', category: 'cafe', subcategories: ['brunch'] }), fixturePlace(2, { name: 'Visited', glingVisited: { sourceUrl: 'https://www.instagram.com/reel/fixture/' } })];
   const markers = nodes(mount({ places }).render()).find(node => node.type === 'DiscoveryMap').props.markers;
   assert.deepEqual(Array.from(markers.map(marker => [marker.label, marker.sublabel, marker.featured ?? false, marker.icon])), [['Brunch spot', '브런치', false, 'cafe'], ['Visited', '다이닝', true, 'dining']]);
+  // featured keeps a place out of the mid-zoom counts (owner 2026-11-08 "멀리서묶어보기"), so TOP 50 must set it too.
+  assert.match(source, /item\.top25 \|\| item\.glingVisited \? \{ featured: true \}/);
 });
 
 test('category chips show the 3D icon in the icon spot and each press replays only the pressed icon', () => {
@@ -761,8 +807,14 @@ test('M7: the compass starts only on screen after a location fix, feeds the cone
   control(tree, '내 위치로 지도 이동').props.onPress(); await new Promise(setImmediate); tree = view.render();
   const stop = view.readCompass(); await new Promise(setImmediate);
   assert.equal(view.compass.watches.length, 1);
-  view.compass.watches[0]({ trueHeading: 181, magHeading: 165, accuracy: 3 }); tree = view.render();
-  assert.equal(nodes(tree).find(node => node.type === 'DiscoveryMap').props.heading, 180);
+  const tick = ms => new Promise(resolve => setTimeout(resolve, ms)), heading = () => nodes(view.render()).find(node => node.type === 'DiscoveryMap').props.heading;
+  view.compass.watches[0]({ trueHeading: 181, magHeading: 165, accuracy: 3 }); await tick(0);
+  assert.equal(heading(), 180);
+  // Map lag 2026-11-08: at most 4 turns a second, and the newest reading of a burst still lands.
+  view.compass.watches[0]({ trueHeading: 91, magHeading: 80, accuracy: 3 }); view.compass.watches[0]({ trueHeading: 271, magHeading: 260, accuracy: 3 }); await tick(0);
+  assert.equal(heading(), 180, 'a burst inside a quarter second waits');
+  await tick(260);
+  assert.equal(heading(), 270, 'then only the newest reading shows');
   stop(); tree = view.render();
   assert.equal(view.compass.removed, 1);
   assert.equal(nodes(tree).find(node => node.type === 'DiscoveryMap').props.heading, null, 'leaving drops the cone');

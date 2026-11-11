@@ -47,6 +47,25 @@ test('bounded retry batches preserve identity and order, reset on identity chang
   await flushBehavior();
   assert.equal(batches.length, 3);
 });
+test('a batch refused as INVALID_BEHAVIOR is dropped instead of blocking every later event', async () => {
+  for (const file of ['../src/components/app-activity.tsx', '../src/components/public-web/analytics.ts']) {
+    assert.match(readFileSync(new URL(file, import.meta.url), 'utf8'), /\.message === 'INVALID_BEHAVIOR';/);
+  }
+  const sent = [];
+  // A server that refuses the whole batch for one unknown target, and the transports' delivered rule.
+  configureBehavior(async batch => {
+    sent.push(batch.events.map(event => event.target));
+    const error = batch.events.some(event => event.target === 'post.poll.option.0') ? { message: 'INVALID_BEHAVIOR' } : null;
+    return !error || error.message === 'INVALID_BEHAVIOR';
+  });
+  behaviorScreen('post');
+  behavior('press', 'post.poll.option.0');
+  await flushBehavior();
+  behavior('press', 'web_control_1');
+  await flushBehavior();
+  assert.deepEqual(sent, [['screen', 'post.poll.option.0'], ['web_control_1']]);
+  configureBehavior(null);
+});
 test('scroll emits crossed thresholds once and ignores short/horizontal-invalid surfaces', () => {
   assert.deepEqual(scrollThresholds(0, 500, 2000, 0), [25]);
   assert.deepEqual(scrollThresholds(1100, 500, 2000, 25), [50, 75]);
@@ -78,27 +97,39 @@ test('live native controls and public reader actions have fixed server targets',
       .flatMap(insert => [...insert[1].matchAll(/\('([^']+)'\)/g)].map(match => match[1]));
   }));
   const missing = [];
+  // Fixed ids in 'a', c ? 'a' : 'b' and ({ k: 'a' })[key]. Template and variable ids are not checked here.
+  const literals = node => !node ? [] : ts.isStringLiteralLike(node) ? [node.text]
+    : ts.isParenthesizedExpression(node) || ts.isJsxExpression(node) ? literals(node.expression)
+    : ts.isConditionalExpression(node) ? [...literals(node.whenTrue), ...literals(node.whenFalse)]
+    : ts.isElementAccessExpression(node) && ts.isObjectLiteralExpression(node.expression)
+      ? node.expression.properties.flatMap(property => ts.isPropertyAssignment(property) ? literals(property.initializer) : []) : [];
+  // Wrappers that add a suffix to the id they are given: every suffixed target must be registered. Others send the id as is.
+  const suffixes = { Switch: ['on', 'off'], LanguageChips: ['en', 'ko'] };
+  const src = new URL('../src/', import.meta.url);
   const scan = directory => {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
-      if (['admin', 'merchant-web'].includes(entry.name)) continue;
+      // src/admin and src/merchant-web are separate web roots; their layouts mount no sender (AppActivity is in src/app/_layout.tsx).
+      if (directory.href === src.href && ['admin', 'merchant-web'].includes(entry.name)) continue;
       const file = new URL(entry.name + (entry.isDirectory() ? '/' : ''), directory);
       if (entry.isDirectory()) { scan(file); continue; }
-      if (!entry.name.endsWith('.tsx')) continue;
-      const ast = ts.createSourceFile(file.pathname, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+      if (!/\.tsx?$/.test(entry.name)) continue;
+      const ast = ts.createSourceFile(file.pathname, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, entry.name.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
       const controls = new Map();
       for (const node of ast.statements) if (ts.isImportDeclaration(node) && node.moduleSpecifier.text === '@/components/analytics-controls') {
         for (const item of node.importClause?.namedBindings?.elements ?? []) controls.set(item.name.text, item.propertyName?.text ?? item.name.text);
       }
-      const visit = node => {
-        if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
-          const kind = controls.get(node.tagName.getText(ast));
-          for (const attribute of node.attributes.properties) {
-            if (!ts.isJsxAttribute(attribute) || !ts.isStringLiteral(attribute.initializer ?? {})) continue;
-            if (attribute.name.text !== 'data-analytics' && !(kind && attribute.name.text === 'analyticsId')) continue;
-            const id = attribute.initializer.text;
-            for (const target of kind === 'Switch' ? [id + '.on', id + '.off'] : [id]) if (!registered.has(target)) missing.push(`${target} (${file.pathname})`);
-          }
+      const check = (value, tag, node) => {
+        for (const id of literals(value)) for (const target of suffixes[tag]?.map(suffix => `${id}.${suffix}`) ?? [id]) {
+          if (!registered.has(target)) missing.push(`${target} (${file.pathname}:${ast.getLineAndCharacterOfPosition(node.getStart(ast)).line + 1})`);
         }
+      };
+      const visit = node => {
+        if (ts.isJsxAttribute(node) && node.name.getText(ast) === 'data-analytics') check(node.initializer, '', node);
+        else if (ts.isJsxAttribute(node) && node.name.getText(ast) === 'analyticsId') {
+          const tag = node.parent.parent.tagName.getText(ast);
+          check(node.initializer, controls.get(tag) ?? tag, node);
+        } else if (ts.isPropertyAssignment(node) && node.name.getText(ast) === 'analyticsId') check(node.initializer, '', node);
+        else if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'behavior') check(node.arguments[1], '', node);
         ts.forEachChild(node, visit);
       };
       visit(ast);

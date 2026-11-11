@@ -54,6 +54,11 @@ test('weekly ranking: a thin folded pill under the categories, the expanded head
   }
 });
 
+// Owner 2026-11-09 "탑10에서만 조회수 안보이게하는게 중요해 다른글에서는 보이게하고": hidden here (since 11-01), shown on feed cards (post-card-image test).
+test('weekly ranking (TOP10) shows no view counts', () => {
+  assert.doesNotMatch(fs.readFileSync(new URL('../src/components/weekly-ranking.tsx', import.meta.url), 'utf8'), /\.views\b|조회/);
+});
+
 function load(file, imports) {
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL(`../src/components/${file}.tsx`, import.meta.url), 'utf8'), {
@@ -166,8 +171,9 @@ test('city picker searches Canadian cities and keeps upcoming cities and the US 
   const list = () => nodes(render()).find(node => node.type === 'SectionList').props;
   assert.deepEqual(Array.from(list().sections, section => section.data.map(city => city.id)), [
     ['montreal', 'toronto', 'vancouver'],
-    ['calgary', 'edmonton', 'halifax', 'ottawa', 'regina', 'saint-john', 'saskatoon', 'seoul', 'winnipeg'],
+    ['calgary', 'edmonton', 'halifax', 'ottawa', 'regina', 'saint-john', 'saskatoon', 'winnipeg'],
   ]);
+  assert.ok(CITIES.some(city => city.id === 'seoul'), 'Seoul stays in the shared city data; only the picker leaves it out (QA Q10)');
   assert.equal(nodes(render()).some(node => node.props?.accessibilityRole === 'tab'), false, 'no country tabs');
   for (const [id, province] of Object.entries({ ottawa: 'ON', winnipeg: 'MB', regina: 'SK', 'saint-john': 'NB', halifax: 'NS' })) {
     const city = CITIES.find(city => city.id === id);
@@ -180,7 +186,7 @@ test('city picker searches Canadian cities and keeps upcoming cities and the US 
     assert.equal(selected, null);
     assert.equal(closed, 0);
   }
-  for (const [search, ids] of [[' Ottawa ', ['ottawa']], ['ON', ['toronto', 'ottawa']], ['NB', ['saint-john']], ['세인트존스', ['saint-john']], ['에드먼턴', ['edmonton']], ['NS', ['halifax']], ['missing-city', []]]) {
+  for (const [search, ids] of [[' Ottawa ', ['ottawa']], ['ON', ['toronto', 'ottawa']], ['NB', ['saint-john']], ['세인트존스', ['saint-john']], ['에드먼턴', ['edmonton']], ['NS', ['halifax']], ['서울', []], ['KR', []], ['missing-city', []]]) {
     nodes(render()).find(node => node.type === 'TextInput').props.onChangeText(search);
     assert.deepEqual(Array.from(list().sections).flatMap(section => section.data.map(city => city.id)), ids);
   }
@@ -191,6 +197,33 @@ test('city picker searches Canadian cities and keeps upcoming cities and the US 
   await cityRow(renderCityRow(list(), CITIES[1])).props.onPress();
   assert.equal(selected, 'toronto');
   assert.equal(closed, 1);
+  let picked = 0;
+  await cityRow(renderCityRow(nodes(CityPicker({ onClose() {}, onPicked: () => { picked++; } })).find(node => node.type === 'SectionList').props, CITIES[1])).props.onPress();
+  assert.equal(picked, 1, 'a saved pick is reported so the start guide can count it (QA Q17)');
+});
+
+test('a city picked from the top city button checks off 내 도시 고르기 once and never reopens a hidden guide (QA Q17)', () => {
+  let guide = { hidden: false, done: [] }, at = 0;
+  const saved = [], refs = [];
+  const { StartGuide } = load('start-guide', {
+    react: { useState: initial => initial === null ? [guide, next => { guide = next; }] : [false, () => {}], useCallback: fn => fn, useEffect: fn => fn(), useRef: initial => (refs[at++] ??= { current: initial }) },
+    'expo-router': { useFocusEffect() {} },
+    '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async () => null, setItem: async (_key, value) => { saved.push(JSON.parse(value)); } } },
+    'react-native-reanimated': { useReducedMotion: () => true }, 'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
+    '@/components/disclosure': { animateLayout() {} }, '@/components/state-card': { PopIn: 'PopIn' },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+  });
+  const render = cityPicks => { at = 0; return StartGuide({ cityName: '토론토', cityPicks, onPickCity() {}, onOpenMeetups() {} }); };
+  render(0);
+  assert.deepEqual([...guide.done], [], 'opening the home screen alone does not count');
+  render(1);
+  assert.deepEqual([...guide.done], ['city']);
+  render(1);
+  assert.equal(saved.length, 1, 'the same pick is counted once');
+  guide = { hidden: true, done: [] };
+  render(2);
+  assert.equal(guide.hidden, true, 'a guide the member hid stays hidden');
+  assert.equal(saved.length, 1);
 });
 
 test('returning from system settings or a permission sheet checks feed ad permission again', () => {
@@ -262,17 +295,51 @@ test('city picker location row discloses before collecting and hides in the post
   auth.isAuthed = false;
   assert.equal(list({ onClose() {} }).ListHeaderComponent, undefined, 'signed-out members see no GPS row');
   auth.isAuthed = true;
-  const row = () => nodes(list({ onClose() {} }).ListHeaderComponent).find(node => node.props?.accessibilityLabel === '내 위치로 찾기');
+  const row = () => nodes(list({ onClose() {} }).ListHeaderComponent).find(node => node.props?.analyticsId === 'components_city-picker.pressable.5');
+  assert.equal(row().props.accessibilityLabel, '내 위치로 찾기');
   assert.equal(text(row()), '내 위치로 찾기GPS로 가까운 도시를 한 번만 확인해요');
   row().props.onPress();
   assert.equal(open, true);
   assert.equal(captures, 0, 'opening the disclosure must not request permission or collect coordinates');
   assert.match(text(list({ onClose() {} }).ListHeaderComponent), /30일 보관/);
   assert.equal(text(row()).startsWith('동의하고 찾기'), true);
+  assert.equal(row().props.accessibilityLabel, '동의하고 찾기', 'the button is read by the words it shows (QA Q11)');
   await row().props.onPress();
   assert.equal(captures, 1);
   const toronto = renderCityRow(list({ onClose() {} }), CITIES.find(city => city.id === 'toronto'));
   assert.match(text(toronto), /가까움/);
   location.enabled = true; open = false;
   assert.equal(text(row()).startsWith('위치 다시 확인'), true);
+});
+
+test('an open sheet closes when a link or push changes the screen, unless it is saving (QA Q08)', () => {
+  let listener = null, closed = 0;
+  const { DragSheet } = load('drag-sheet', {
+    react: { useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}], useRef: current => ({ current }), useEffect: fn => { fn(); }, useLayoutEffect() {} },
+    'react-native': { Animated: { Value: class { setValue() {} stopAnimation() {} }, View: 'AnimatedView', parallel: () => ({ start() {} }), spring: () => ({}), timing: () => ({ start() {} }) },
+      Easing: { in: value => value, cubic: 0 }, KeyboardAvoidingView: 'KeyboardAvoidingView', Modal: 'Modal', PanResponder: { create: () => ({ panHandlers: {} }) },
+      Platform: { OS: 'ios' }, StyleSheet: { create: value => value, absoluteFill: {}, hairlineWidth: 1 }, useWindowDimensions: () => ({ height: 800 }), View: 'View' },
+    'react-native-reanimated': { useReducedMotion: () => true }, 'react-native-safe-area-context': { useSafeAreaInsets: () => ({ bottom: 0 }) },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+    '@/lib/link-open': { onLinkOpen: close => { listener = close; return () => { listener = null; }; } },
+  });
+  const sheet = props => { listener = null; DragSheet({ onClose: () => { closed++; }, children: null, ...props }); };
+  sheet({ visible: true });
+  listener();
+  assert.equal(closed, 1);
+  sheet({ visible: true, dismissible: false });
+  listener();
+  assert.equal(closed, 1, 'a sheet that is saving stays open');
+  sheet({ visible: false });
+  assert.equal(listener, null, 'a closed sheet does not listen');
+});
+
+test('a chosen chip cut at the edge or off screen scrolls fully into view; a visible one stays put (QA Q07)', async () => {
+  const { revealOffset } = await import('../src/hooks/use-reveal-chip.ts');
+  // Row 390 wide, content 900, chips are [x, width].
+  assert.equal(revealOffset(0, 390, 900, 100, 80), 0, 'already visible');
+  assert.equal(revealOffset(0, 390, 900, 340, 90), 340 + 90 + 24 - 390, 'cut at the right edge: the chip and a peek of the next');
+  assert.equal(revealOffset(0, 390, 900, 820, 76), 900 - 390, 'off screen at the end: stops at the content end');
+  assert.equal(revealOffset(400, 390, 900, 10, 60), 0, 'off screen to the left: back to the start');
+  assert.equal(revealOffset(0, 390, 300, 200, 60), 0, 'a row that fits never scrolls');
 });

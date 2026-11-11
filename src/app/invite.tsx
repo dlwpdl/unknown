@@ -25,8 +25,9 @@ export default function InviteLinkRoute() {
   useEffect(() => {
     if (!saved || !isAuthed) return;
     // Signed-in members go straight to their invite page; a too-late or own code simply isn't linked.
-    void claimRememberedInvite(supabase, AsyncStorage).catch(() => {}).finally(() => router.replace('/profile/invite'));
-  }, [saved, isAuthed, router]);
+    // 'linked' comes back once per account (the server refuses a second invite), so this cheers once.
+    void claimRememberedInvite(supabase, AsyncStorage).then(result => { if (result === 'linked') play('inviteConnected'); }).catch(() => {}).finally(() => router.replace('/profile/invite'));
+  }, [saved, isAuthed, router]); // eslint-disable-line react-hooks/exhaustive-deps -- play changes with the sound settings; claim once
 
   return <ThemedView style={styles.container}>
     <SafeAreaView style={styles.safeArea}>

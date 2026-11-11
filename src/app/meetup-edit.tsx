@@ -242,6 +242,11 @@ function MeetupEditForm({ postId }: { postId: string }) {
             <ThemedText style={styles.bodyText}>{room?.applicationQuestion || tr('함께하고 싶은 이유를 알려주세요')}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('신청 질문은 모임을 연 뒤에는 바꿀 수 없어요.')}</ThemedText>
           </View>
+          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+            <ThemedText accessibilityRole="header" style={styles.cardTitle}>{tr('누가 신청할 수 있나요?')}</ThemedText>
+            <ThemedText style={styles.bodyText}>{room?.access === 'invite' ? tr('초대용') : tr('공개')}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('모임을 연 뒤에는 바꿀 수 없어요.')}</ThemedText>
+          </View>
           <MeetupNewcomerOption welcome={newcomer.welcome} only={newcomer.only} onChange={setNewcomer} disabled={saving} />
         </>}
       </>}

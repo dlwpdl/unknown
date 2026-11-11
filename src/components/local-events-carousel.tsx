@@ -1,12 +1,13 @@
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useFocusEffect, useIsFocused, useRouter } from 'expo-router';
+import { useFocusEffect, useIsFocused, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { SymbolView } from '@/components/symbol-view';
 import { AppState, StyleSheet, View } from 'react-native';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { ZoomLink } from '@/components/post-zoom-link';
 import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ControlMotion, MiniCard } from '@/constants/design-system';
@@ -71,7 +72,7 @@ export function LocalEventsCarousel({ cityId, refreshKey, cityLoading, page = 0 
       </Pressable>
     </View>
     {!current ? <View style={[styles.loading, { backgroundColor: cityLoading ? theme.backgroundElement : 'transparent' }]}>{!cityLoading && <GlingLoader color={theme.accent} accessibilityLabel={tr("행사 불러오는 중")} />}</View>
-        : current.error ? <Pressable analyticsId="today.events.retry" accessibilityRole="button" onPress={() => { play('selection'); setAttempt(value => value + 1); }} style={[styles.message, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="small" themeColor="textSecondary">{current.error}{" " + tr("눌러서 다시 시도해 주세요.")}</ThemedText></Pressable>
+        : current.error ? <Pressable analyticsId="today.events.retry" accessibilityRole="button" onPress={() => { play('selection'); setAttempt(value => value + 1); }} style={[styles.message, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="small" themeColor="textSecondary">{tr(current.error)}{" " + tr("눌러서 다시 시도해 주세요.")}</ThemedText></Pressable>
           : <ScrollView analyticsId="today.events.carousel" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
               {current.events.map(event => <EventRowCard key={event.id} event={event} cityId={cityId} />)}
             </ScrollView>}
@@ -85,7 +86,7 @@ function EventRowCard({ event, cityId }: { event: TicketmasterEvent; cityId: str
   const { play } = useInteractionFeedback();
   const when = eventTime(event, locale), place = event.venue || event.city;
   // shortcut: Ticketmaster gives only the original title; show a Korean title here once the event data carries one.
-  return <Link href={{ pathname: '/events/[id]', params: { id: event.id, cityId } }} asChild><Link.AppleZoom>
+  return <ZoomLink href={{ pathname: '/events/[id]', params: { id: event.id, cityId } }} anchor>
   <Pressable analyticsId="today.events.open" accessibilityRole="button" accessibilityLabel={[event.name, when, place, event.price && eventPriceLabel(event, locale)].filter(Boolean).join(', ')}
     onPress={() => play('selection')} style={({ pressed }) => [styles.card, { opacity: pressed ? ControlMotion.pressedOpacity : 1 }]}>
     {event.image ? <Image source={{ uri: event.image }} transition={ControlMotion.settleMs} style={styles.photo} contentFit="cover" accessible={false} />
@@ -94,7 +95,7 @@ function EventRowCard({ event, cityId }: { event: TicketmasterEvent; cityId: str
     <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>{when}</ThemedText>
     <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>{place}</ThemedText>
     {event.price && <ThemedText type="caption" themeColor="accent" numberOfLines={1}>{eventPriceLabel(event, locale)}</ThemedText>}
-  </Pressable></Link.AppleZoom></Link>;
+  </Pressable></ZoomLink>;
 }
 
 const styles = StyleSheet.create({

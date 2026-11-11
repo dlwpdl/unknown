@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import { parseInteractionPreferences } from '../src/lib/interaction-feedback-preferences.ts';
@@ -33,4 +33,16 @@ test('모임 생성 완료는 참여 신청과 다른, 화면 이동 위의 축�
   assert.match(feedback, /commit === 'meetupRequested' \? tr\('신청을 보냈어요'\)/);
   for (const file of ['../src/app/(tabs)/chat.tsx', '../src/app/meetup-application.tsx']) assert.match(readFileSync(new URL(file, import.meta.url), 'utf8'), /play\(response === 'approved' \? 'meetup'/, file);
   assert.match(feedback, /<Modal visible=\{celebrating !== null\}/);
+});
+
+test('owner-picked sounds: one bundled file each, played quieter with the tap quietest, silent switch kept and other music mixed', () => {
+  const feedback = readFileSync(new URL('../src/lib/interaction-feedback.tsx', import.meta.url), 'utf8');
+  const files = [...feedback.matchAll(/require\('@\/assets\/sounds\/([^']+)'\)/g)].map(match => match[1]);
+  assert.equal(new Set(files).size, 12);
+  for (const file of files) assert.ok(existsSync(new URL(`../assets/sounds/${file}`, import.meta.url)), file);
+  const volumes = Object.fromEntries([...feedback.match(/const VOLUME[^}]+}/)[0].matchAll(/(\w+): ([\d.]+)/g)].map(match => [match[1], Number(match[2])]));
+  assert.equal(Object.keys(volumes).length, 15, 'every feedback kind has a volume');
+  assert.ok(Object.values(volumes).every(volume => volume > 0 && volume < 1), 'the louder kit only ever plays quieter');
+  assert.ok(Object.entries(volumes).every(([kind, volume]) => kind === 'selection' || volume > volumes.selection), 'the frequent tap is the quietest');
+  assert.match(feedback, /setAudioModeAsync\(\{ playsInSilentMode: false, interruptionMode: 'mixWithOthers' \}\)/);
 });

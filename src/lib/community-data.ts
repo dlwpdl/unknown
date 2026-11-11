@@ -904,6 +904,15 @@ export async function deleteMyAccount(client: SupabaseClient, appleAuthorization
   if (result.error) throw result.error;
 }
 
+/**
+ * Right after a post went up: is it the author's first ever (meetups aside)? Removed posts stay in the count, so deleting and posting again does not cheer twice.
+ */
+export async function isFirstPost(client: SupabaseClient, userId: string) {
+  const result = await client.from('posts').select('id', { count: 'exact', head: true }).eq('author_id', userId).is('room_preview', null);
+  if (result.error) throw result.error;
+  return result.count === 1;
+}
+
 export async function loadProfileSummary(client: SupabaseClient, userId: string): Promise<ProfileSummary> {
   const [profile, posts] = await Promise.all([
     client.from('profiles').select('city_id,neighborhood').eq('id', userId).single(),

@@ -344,6 +344,14 @@ versions['1.2.3']['data']['attributes']['appStoreState'] = 'READY_FOR_SALE'
 r.sync_policy(env, {}, None, False)
 assert policy == {'ios': 64, 'android': 64} and writes == [], 'approval alone is not public availability'
 public['version'] = '1.2.3'
+def reset(*args, **kwargs): raise ConnectionResetError()
+real_urlopen, r.urllib.request.urlopen = r.urllib.request.urlopen, reset
+assert r.store_page_shows('1.2.3') is False, 'a broken page read blocks nothing and does not stop the Android policy'
+r.urllib.request.urlopen = real_urlopen
+r.store_page_shows = lambda version: False
+r.sync_policy(env, {}, None, False)
+assert policy == {'ios': 64, 'android': 64} and writes == [], 'the lookup alone is not the App Store page'
+r.store_page_shows = lambda version: version == '1.2.3'
 r.sync_policy(env, {}, None, False)
 assert policy == {'ios': 65, 'android': 64} and writes == [('ios', 65)]
 `], { cwd: new URL('../', import.meta.url), encoding: 'utf8' });

@@ -203,7 +203,7 @@ test('피드 사진 전체를 원본 비율로 표시하고 글·사진·뷰어 
   assert.equal(image(card.render({ ...props, hidePhoto: true })), undefined);
 });
 
-test('Today card: author row, short text, place card, swipeable photos, then like/comment/share with save at the right end; ··· holds hide then report on others\' posts', async () => {
+test('Today card: author row, short text, place card, swipeable photos, then like/comment/share/views with save at the right end; ··· holds hide then report on others\' posts', async () => {
   const card = cardRenderer();
   let opened = 0;
   const credits = '\n\n사진 출처·이용 조건\n1. Kim Lee · CC BY 2.0 · https://commons.wikimedia.org/wiki/File:A.jpg\n2. Park · CC BY 2.0 · https://commons.wikimedia.org/wiki/File:B.jpg';
@@ -251,6 +251,17 @@ test('Today card: author row, short text, place card, swipeable photos, then lik
     const ids = tree.map(node => node.props?.analyticsId).filter(Boolean);
     const acts = ['components_post-card.pressable.7', 'components_post-card.pressable.8', 'components_post-card.pressable.10', 'components_post-card.pressable.9'].map(id => ids.indexOf(id));
     assert.ok(acts.every((at, i) => at >= 0 && (i === 0 || at > acts[i - 1])), 'like → comment → share → save (owner 2026-11-04 저장은 카드에 바로)');
+    const views = tree.find(node => node.props?.accessibilityLabel === '조회 9');
+    assert.ok(views, 'the Today card shows views again (owner 2026-11-09 조회수 넣어)');
+    assert.equal(views.type, 'View', 'views is a count, not a button');
+    assert.equal(views.props.accessible, true);
+    assert.equal(views.props.accessibilityRole, undefined);
+    assert.equal(style(views).minWidth, 0, 'the count may shrink below a touch target');
+    assert.equal(style(nodes(views).find(node => node.type === 'ThemedText')).flexShrink, 1, 'the text shrinks with its wrapper on native');
+    assert.equal(nodes(views).find(node => node.type === 'SymbolView').props.name.ios, 'eye');
+    assert.equal(textOf(nodes(views).find(node => node.type === 'ThemedText')), '9');
+    const share = tree.find(node => node.props?.analyticsId === 'components_post-card.pressable.10'), saveNode = tree.find(node => node.props?.analyticsId === 'components_post-card.pressable.9');
+    assert.ok(tree.indexOf(share) < tree.indexOf(views) && tree.indexOf(views) < tree.indexOf(saveNode), 'share → views → save');
     const save = () => nodes(card.render(props)).find(node => node.props?.analyticsId === 'components_post-card.pressable.9');
     assert.equal(style(save()).marginLeft, 'auto', 'save sits at the right end of the row');
     assert.ok(style(save()).minWidth >= 44 && style(save()).minHeight >= 44);
@@ -264,7 +275,7 @@ test('Today card: author row, short text, place card, swipeable photos, then lik
     assert.equal(save().props.accessibilityState.selected, true);
     assert.equal(nodes(save()).find(node => node.type === 'SymbolView').props.name.ios, 'bookmark.fill');
     tree = nodes(card.render(props));
-    assert.ok(!tree.some(node => node.type === 'SymbolView' && node.props.name?.ios === 'eye'), 'no view count on Today');
+    assert.equal(tree.filter(node => node.type === 'SymbolView' && node.props.name?.ios === 'eye').length, 1, 'one view count on Today (owner 2026-11-09)');
     assert.ok(!tree.some(node => node.type === 'MeetupManageSheet'));
     tree.find(node => node.props?.analyticsId === 'post.manage.open').props.onPress();
     const menu = nodes(card.render(props)).find(node => node.type === 'MeetupManageSheet');
@@ -553,8 +564,11 @@ test('profile logo/banner failures retain only the business fallback and recover
  const renderer=cardRenderer('MerchantProfileHeader');
  const profile={name:'지모코',city_name:'밴쿠버',industry:'카페',services:'',address:'',links:[],avatarUri:'logo',bannerUri:'banner'};
  const render=()=>renderer.render({profile});
+ const bannerBox=()=>Object.assign({},...nodes(render()).find(n=>[n.props?.style].flat().some(s=>s?.aspectRatio===1.18)).props.style.filter(Boolean));
+ assert.equal(bannerBox().aspectRatio,1.18,'a real banner keeps its tall frame');
  let images=nodes(render()).filter(n=>n.type==='Image');assert.equal(images.length,2);
  images.forEach(n=>n.props.onError());assert.equal(nodes(render()).filter(n=>n.type==='Image').length,0);
+ assert.equal(bannerBox().aspectRatio,3,'the gling. placeholder is a short strip (QA Q09)');
  assert.ok(nodes(render()).some(n=>n.type==='ThemedText'&&n.props.children==='지'));
  profile.avatarUri='new-logo';assert.equal(nodes(render()).find(n=>n.type==='Image').props.source.uri,'new-logo');
 });

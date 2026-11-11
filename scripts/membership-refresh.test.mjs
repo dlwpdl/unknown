@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { joinedMembership } from '../src/lib/membership.ts';
 
 test('store catalog failure preserves synchronized membership and clears stale purchase offers', async () => {
   const hooks = []; let cursor = 0, catalogFails = false, catalogEmpty = false, rpcFails = false, synced = 0;
@@ -25,7 +26,7 @@ test('store catalog failure preserves synchronized membership and clears stale p
     if (name === 'react-native') return { Platform: { OS: 'ios' }, DeviceEventEmitter: { emit() {} } };
     if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true, me: { id: 'member' } }) };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
-    if (name === '@/lib/membership') return { membershipOffer: item => ({ id: item.identifier }) };
+    if (name === '@/lib/membership') return { joinedMembership, membershipOffer: item => ({ id: item.identifier }) };
     if (name === '@/lib/purchases') return { purchaseUnavailableReason: () => null, withPurchases: async (_, fn) => fn({
       getOfferings: async () => {
         if (catalogFails) throw new Error('STORE_PRODUCTS_UNAVAILABLE');
@@ -83,7 +84,7 @@ test('pending approval recovery requires confirmation, unchanged account and suc
       if (name === 'react-native') return { Platform: { OS: platform } };
       if (name === '@/lib/auth') return { useAuth: () => ({ isAuthed: true, me: { id: authId } }) };
       if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play() {} }) };
-      if (name === '@/lib/membership') return { membershipOffer: () => offer };
+      if (name === '@/lib/membership') return { joinedMembership, membershipOffer: () => offer };
       if (name === '@/lib/purchases') return { purchaseUnavailableReason: () => unavailable, withPurchases: async (id, fn) => {
         if (id !== sessionId) throw new Error('ACCOUNT_CHANGED');
         return fn({

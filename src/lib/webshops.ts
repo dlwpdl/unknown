@@ -48,6 +48,9 @@ export function parseWebshop(value: unknown): Webshop | null {
     checkoutComparison = { verifiedAt: comparison.verifiedAt, fulfillment: comparison.fulfillment, basketLabel: comparison.basketLabel,
       sameConditionsConfirmed: true, uber: quote(comparison.uber), webshop: quote(comparison.webshop) };
   }
+  // Owner rule 2026-11-11: a webshop that is not cheaper on every compared menu (and the checkout total) is shown as no webshop.
+  if (row.comparisons.some(item => item.webCents >= item.uberCents)
+    || checkoutComparison && checkoutComparison.webshop.totalCents >= checkoutComparison.uber.totalCents) return null;
   return { merchantId: row.merchantId.toLowerCase(), cityId: row.cityId, url, provider: 'uber', placeKeys: [...row.placeKeys],
     comparisons: row.comparisons.map(item => ({ id: item.id, name: item.name, uberCents: item.uberCents, webCents: item.webCents })),
     verifiedAt: row.verifiedAt, promoCode: row.promoCode ?? null, checkoutComparison };
@@ -116,7 +119,8 @@ export async function loadCityWebshops(client: SupabaseClient, cityId: string, s
   if (error?.code === 'PGRST202') return [];
   if (error) throw error;
   if (!Array.isArray(data) || data.length > 1000) return invalid();
-  return data.map(value => { const shop = parseWebshop(value); return shop?.cityId === cityId ? shop : invalid(); });
+  // A shop that is not cheaper parses to null and is skipped alone; the rest of the city keeps its webshops.
+  return data.flatMap(value => { const shop = parseWebshop(value ?? invalid()); return !shop ? [] : shop.cityId === cityId ? [shop] : invalid(); });
 }
 
 export function bindBusinessPlaces(items: DiscoveryItem[], links: Record<string, string>, shops: Webshop[], photos: BusinessMapPhotos = {}): DiscoveryItem[] {
@@ -150,13 +154,15 @@ export function webshopRedirectUrl(origin: string, merchantId: string, context: 
   return url.href;
 }
 
-export const webshopOrderUrl = (merchantId: string, platform: WebshopPlatform) => webshopRedirectUrl(process.env.EXPO_PUBLIC_SUPABASE_URL!, merchantId,
-  { eventId: merchantEventId(), session, platform, source: 'comparison_sheet' });
+// The profile keeps its original 'comparison_sheet' value; a sheet opened from the map records 'map'.
+export type WebshopSheetOrigin = 'business_profile' | 'map';
+export const webshopOrderUrl = (merchantId: string, platform: WebshopPlatform, origin: WebshopSheetOrigin = 'business_profile') => webshopRedirectUrl(process.env.EXPO_PUBLIC_SUPABASE_URL!, merchantId,
+  { eventId: merchantEventId(), session, platform, source: origin === 'map' ? 'map' : 'comparison_sheet' });
 
-export async function recordWebshopSheetView(client: SupabaseClient, merchantId: string, platform: WebshopPlatform) {
+export async function recordWebshopSheetView(client: SupabaseClient, merchantId: string, platform: WebshopPlatform, origin: WebshopSheetOrigin = 'business_profile') {
   try {
     const { error } = await client.rpc('record_webshop_event', { p_merchant_id: merchantId, p_event_id: merchantEventId(), p_session: session,
-      p_platform: platform, p_source: 'business_profile', p_kind: 'sheet_view' });
+      p_platform: platform, p_source: origin, p_kind: 'sheet_view' });
     return !error;
   } catch { return false; }
 }

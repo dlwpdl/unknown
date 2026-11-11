@@ -5,6 +5,8 @@ import type { Post } from './types.ts';
 import { EVENT_TIMEZONES, festivalLocalDay, isFestivalEvent, type EventCity, type TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster.ts';
 import { CITY_TOP25, type CityTop25Place } from './city-top25.ts';
 import type { CityPlace } from './city-places.ts';
+import { merchantMapsUrl } from './merchant-source.ts';
+import { CITIES } from './mock.ts';
 
 export const TOP25_GOLD = '#F4CA78';
 // M1 (owner 2026-11-05): a place's state, decided on the server from our own save numbers. The dot always comes with the word, so colour is never the only signal.
@@ -32,24 +34,34 @@ export type DiscoveryFilter = 'all' | 'top25' | 'visited' | 'delivery' | 'nightl
 export type DiscoveryDate = 'all' | 'today' | 'week' | 'weekend' | 'date';
 // Owner 2026-11-04: sub-filters differ per map category. These ids are the catalog values in CityPlace.subcategories.
 // Owner 2026-11-05 added the rest; scripts/map-subcategories.py fills them from each place's OSM tags. A place's pin names
-// its first sub-filter in this order, so the specific ones come before the general ones (칵테일 바 before 바).
+// its first kind of place in this order (pinSubcategory), so the specific ones come before the general ones (칵테일 바 before 바).
 export const PLACE_SUBCATEGORIES = [
-  { id: 'lunch', filter: 'dining', label: '점심' }, { id: 'dinner', filter: 'dining', label: '저녁' }, { id: 'late_night', filter: 'dining', label: '늦은 밤' },
-  { id: 'solo', filter: 'dining', label: '혼밥' }, { id: 'date', filter: 'dining', label: '데이트' },
+  { id: 'breakfast', filter: 'dining', label: '아침' }, { id: 'lunch', filter: 'dining', label: '점심' }, { id: 'dinner', filter: 'dining', label: '저녁' },
+  { id: 'late_night', filter: 'dining', label: '늦은 밤' }, { id: 'solo', filter: 'dining', label: '혼밥' }, { id: 'date', filter: 'dining', label: '데이트' },
   { id: 'korean', filter: 'dining', label: '한식' }, { id: 'japanese', filter: 'dining', label: '일식' }, { id: 'chinese', filter: 'dining', label: '중식' },
   { id: 'vietnamese', filter: 'dining', label: '베트남' }, { id: 'thai', filter: 'dining', label: '태국' }, { id: 'indian', filter: 'dining', label: '인도 음식' },
   { id: 'italian', filter: 'dining', label: '이탈리안' }, { id: 'mexican', filter: 'dining', label: '멕시칸' }, { id: 'burger', filter: 'dining', label: '버거' },
   { id: 'pizza', filter: 'dining', label: '피자' }, { id: 'seafood', filter: 'dining', label: '해산물' }, { id: 'vegan', filter: 'dining', label: '비건' },
-  { id: 'izakaya', filter: 'nightlife', label: '이자카야' }, { id: 'pocha', filter: 'nightlife', label: '포차' }, { id: 'cocktail_bar', filter: 'nightlife', label: '칵테일 바' },
-  { id: 'wine_bar', filter: 'nightlife', label: '와인 바' }, { id: 'pub', filter: 'nightlife', label: '펍·술집' }, { id: 'club', filter: 'nightlife', label: '클럽' },
-  { id: 'bar', filter: 'nightlife', label: '바' }, { id: 'brewery', filter: 'nightlife', label: '브루어리' }, { id: 'live_music', filter: 'nightlife', label: '라이브 음악' },
-  { id: 'dessert', filter: 'cafe', label: '디저트' }, { id: 'brunch', filter: 'cafe', label: '브런치' }, { id: 'work_friendly', filter: 'cafe', label: '작업하기 좋은 곳' },
-  { id: 'bakery', filter: 'cafe', label: '베이커리' }, { id: 'bubble_tea', filter: 'cafe', label: '버블티' }, { id: 'roastery', filter: 'cafe', label: '로스터리' },
+  { id: 'izakaya', filter: 'nightlife', label: '이자카야' }, { id: 'pocha', filter: 'nightlife', label: '포차' }, { id: 'karaoke', filter: 'nightlife', label: '노래방' },
+  { id: 'speakeasy', filter: 'nightlife', label: '스피크이지' }, { id: 'cocktail_bar', filter: 'nightlife', label: '칵테일 바' }, { id: 'wine_bar', filter: 'nightlife', label: '와인 바' },
+  { id: 'sports_bar', filter: 'nightlife', label: '스포츠 바' }, { id: 'jazz', filter: 'nightlife', label: '재즈' }, { id: 'pub', filter: 'nightlife', label: '펍·술집' },
+  { id: 'club', filter: 'nightlife', label: '클럽' }, { id: 'bar', filter: 'nightlife', label: '바' }, { id: 'brewery', filter: 'nightlife', label: '브루어리' },
+  { id: 'live_music', filter: 'nightlife', label: '라이브 음악' }, { id: 'happy_hour', filter: 'nightlife', label: '해피아워' },
+  { id: 'ice_cream', filter: 'cafe', label: '아이스크림' }, { id: 'dessert', filter: 'cafe', label: '디저트' }, { id: 'brunch', filter: 'cafe', label: '브런치' },
+  { id: 'work_friendly', filter: 'cafe', label: '작업하기 좋은 곳' }, { id: 'bakery', filter: 'cafe', label: '베이커리' }, { id: 'bubble_tea', filter: 'cafe', label: '버블티' },
+  { id: 'matcha', filter: 'cafe', label: '말차' }, { id: 'roastery', filter: 'cafe', label: '로스터리' },
   { id: 'park', filter: 'places', label: '공원' }, { id: 'beach', filter: 'places', label: '해변' }, { id: 'garden', filter: 'places', label: '정원' },
   { id: 'viewpoint', filter: 'places', label: '전망대' }, { id: 'trail', filter: 'places', label: '산책·하이킹' }, { id: 'museum', filter: 'places', label: '박물관' },
   { id: 'gallery', filter: 'places', label: '미술관·갤러리' }, { id: 'library', filter: 'places', label: '도서관' }, { id: 'zoo_aquarium', filter: 'places', label: '동물원·아쿠아리움' },
   { id: 'historic', filter: 'places', label: '역사 명소' }, { id: 'market', filter: 'places', label: '시장' }, { id: 'theatre', filter: 'places', label: '공연장' },
+  { id: 'cinema', filter: 'places', label: '영화관' }, { id: 'bowling', filter: 'places', label: '볼링' }, { id: 'arcade', filter: 'places', label: '오락실' },
+  { id: 'escape_room', filter: 'places', label: '방탈출' },
 ] as const;
+// Owner 2026-11-10: these say when or with whom to go, not what the place is, so a pin's second line skips them (한식, not 점심).
+export const SITUATION_SUBCATEGORIES: ReadonlySet<string> = new Set(['breakfast', 'lunch', 'dinner', 'late_night', 'solo', 'date', 'work_friendly', 'happy_hour']);
+/** The sub-filter a map pin names: the first kind of place in list order, or none (the pin then names its category). */
+export const pinSubcategory = (subcategories: readonly string[] | undefined) =>
+  PLACE_SUBCATEGORIES.find(option => !SITUATION_SUBCATEGORIES.has(option.id) && subcategories?.includes(option.id));
 export type PlaceSubcategory = typeof PLACE_SUBCATEGORIES[number]['id'];
 export const PRICE_FILTERS: readonly DiscoveryFilter[] = ['dining', 'cafe', 'nightlife'];
 export const PRICE_LEVELS = [1, 2, 3, 4] as const;
@@ -175,6 +187,15 @@ export function directionsUrl(pin: PostPin, app: 'google' | 'waze') {
     ? `https://www.google.com/maps/dir/?${new URLSearchParams({ api: '1', destination: coordinate, dir_action: 'navigate' })}`
     : `https://waze.com/ul?${new URLSearchParams({ ll: coordinate, navigate: 'yes' })}`;
 }
+// Owner 2026-11-09: the map's Google Maps/Waze buttons open the place first; that app's own directions button starts navigation.
+export function mapAppUrl(item: DiscoveryItem & PostPin, app: 'google' | 'waze') {
+  const pinUrl = googlePinUrl(item);
+  if (app === 'waze') return `https://waze.com/ul?${new URLSearchParams({ ll: `${item.latitude},${item.longitude}` })}`;
+  // Google search has no location bias, so only a street address pins the right branch; anything else opens the exact pin.
+  const place = item.place, city = CITIES.find(entry => entry.id === item.cityId);
+  return place && city && /\d/.test(place.address)
+    ? merchantMapsUrl([place.name, place.address, city.englishName, city.province, 'Canada'].join(', ')) ?? pinUrl : pinUrl;
+}
 export function discoveryDays(filter: DiscoveryDate, cityId: string, date = '', now = Date.now()): string[] {
   if (filter === 'all') return [];
   const timezone = EVENT_TIMEZONES[cityId as EventCity];
@@ -214,5 +235,7 @@ export function discoveryMatches(item: DiscoveryItem, filters: DiscoveryFilter |
   return (!top25Only || !!item.top25) && (!selected.length || selected.some(filter => filter === 'all'
     || (filter === 'top25' ? !!item.top25 : filter === 'visited' ? !!item.glingVisited : filter === 'delivery' ? !!item.delivery : filter === 'events' ? item.source !== 'place' && ['festival', 'exhibition', 'event'].includes(category)
       : filter === 'places' ? !['housing', 'used', 'festival', 'event', 'nightlife', 'cafe', 'dining'].includes(category) : category === filter)))
-    && `${item.title} ${item.label} ${item.top25?.reason ?? ''} ${item.post?.business?.name ?? ''} ${item.post?.body ?? ''} ${(item.post?.hashtags ?? []).join(' ')} ${DISCOVERY_CATEGORIES.find(value => value.id === category)?.label}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase());
+    && (`${item.title} ${item.label} ${item.top25?.reason ?? ''} ${item.post?.business?.name ?? ''} ${item.post?.body ?? ''} ${(item.post?.hashtags ?? []).join(' ')} ${DISCOVERY_CATEGORIES.find(value => value.id === category)?.label}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
+    // A place's Korean search names (owner 2026-11-08 "영어를 한글로 쳐도 나오게하자"), spaces ignored; never shown.
+    || !!query.trim() && (item.place?.searchNames ?? []).some(name => name.replace(/\s+/g, '').includes(query.replace(/\s+/g, '').toLocaleLowerCase())));
 }

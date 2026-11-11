@@ -3,7 +3,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, discoveryMatches, discoveryPlace, mergeCityTop25, placeMapRoute } from '../src/lib/discovery.ts';
+import { DISCOVERY_CATEGORIES, discoveryMatches, discoveryPlace, mergeCityTop25, pinSubcategory, placeMapRoute } from '../src/lib/discovery.ts';
 
 const place = { id: 'osm:node:100', cityId: 'vancouver', name: 'Fixture firsthand restaurant', category: 'food',
   latitude: 49.29, longitude: -123.13, address: 'Fixture address', sourceUrl: 'https://www.openstreetmap.org/node/100' };
@@ -73,14 +73,16 @@ const run = (code, context) => vm.runInNewContext(ts.transpileModule(code, {
 test('the real map marker and explicit map entry identify team visits without changing the place pin', () => {
   const expression = nodes(map, node => ts.isVariableDeclaration(node) && node.name.getText(map) === 'markers')[0].initializer;
   const visited = discoveryPlace({ ...place, glingVisited: visit });
-  const markers = run(expression.getText(map), { pins: [visited, discoveryPlace({ ...place, id: 'osm:node:101' })], DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES,
-    tr: value => value, hasAdLabel: () => false, savedNow: {}, viewerScope: 'guest', mySaved: null, placeKey: item => item.place?.id ?? item.sourceId, savesOf: () => undefined });
+  const markers = run(expression.getText(map), { pins: [visited, discoveryPlace({ ...place, id: 'osm:node:101' }), discoveryPlace({ ...place, id: 'osm:node:102', subcategories: ['lunch', 'korean'] })],
+    DISCOVERY_CATEGORIES, pinSubcategory, tr: value => value, hasAdLabel: () => false, savedNow: {}, viewerScope: 'guest', mySaved: null, placeKey: item => item.place?.id ?? item.sourceId, savesOf: () => undefined });
   assert.equal(markers[0].label, place.name);
   assert.equal(markers[0].color, DISCOVERY_CATEGORIES.find(value => value.id === 'dining').color);
   assert.equal(markers[0].latitude, place.latitude);
   assert.equal(markers[0].longitude, place.longitude);
   assert.equal(markers[1].label, place.name);
   assert.equal(markers[1].color, markers[0].color, 'both places retain the restaurant category color');
+  assert.equal(markers[1].sublabel, '다이닝', 'no sub-filter: the category');
+  assert.equal(markers[2].sublabel, '한식', 'a kind of place, not the 점심 situation chip');
   const route = placeMapRoute({ ...place, glingVisited: visit });
   assert.equal(route.params.category, 'visited');
   assert.equal(route.params.cityId, place.cityId);

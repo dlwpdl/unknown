@@ -110,7 +110,7 @@ export const en: Translations = {
     LISTING_NOT_OPEN: { title: 'This listing is closed', body: 'Reopening it uses 1 active listing slot.', membership: false },
   },
   chat: {
-    conversationCount: (n) => `${n} ${n === 1 ? 'chat' : 'chats'}`, refresh: 'Refresh', loading: 'Loading chats', loadError: 'Couldn’t load chats. Try again in a moment.',
+    conversationCount: (n) => `${n} ${n === 1 ? 'chat' : 'chats'}`, searchMatches: (n) => `${count(n)} ${n === 1 ? 'match' : 'matches'}`, refresh: 'Refresh', loading: 'Loading chats', loadError: 'Couldn’t load chats. Try again in a moment.',
     loadMessagesError: 'Couldn’t load messages.', loadOlder: 'Load earlier messages', emptyTitle: 'No chats yet',
     emptyBody: 'Find a post you like in the feed or join a meetup. Your chats will show up here.', newConversation: 'No messages yet. Say hi!',
     unverifiedNotice: 'This person hasn’t verified their ID yet.', unverifiedSafety: 'For a first meetup, pick a public place, and be careful if anyone asks for personal info or money.',
@@ -122,7 +122,7 @@ export const en: Translations = {
     approve: 'Approve', reject: 'Decline', requestHandled: 'Join request updated.', requestError: 'Couldn’t update the join request.',
     joinFormTitle: 'Ask to join', joinFormBody: 'Optional. Tell the host a bit about yourself so they can plan the meetup.',
     joinFormPlaceholder: 'e.g. I live in Coquitlam and love weekend meetups.', joinSubmit: 'Send request', joinSending: 'Sending…',
-    joinDoneTitle: 'Request sent', joinDoneBody: 'Once the host approves, you’ll use 1 meetup slot and join the group chat. No slot is used before then.',
+    joinDoneBody: 'Once the host approves, you’ll use 1 meetup slot and join the group chat. No slot is used before then.',
     all: 'All', groups: 'Meetups', direct: 'Direct', requestTab: 'Join requests', receivedRequest: 'Incoming chat requests', sentRequest: 'Sent chat requests',
     pendingBody: 'You can message each other once the request is accepted. Pending, declined and cancelled requests don’t use slots. Requests expire after 7 days.',
     accept: 'Accept and chat', acceptBody: 'Accepting uses 1 chat slot for each of you. When either of you ends the chat, only the requester’s slot is locked for 24 hours. Yours comes back right away.',

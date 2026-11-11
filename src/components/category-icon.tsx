@@ -43,6 +43,14 @@ const ART = {
   seafood: require('@/assets/images/map-categories/seafood.png'), vegan: require('@/assets/images/map-categories/vegan.png'),
   bakery: require('@/assets/images/map-categories/bakery.png'), bubble_tea: require('@/assets/images/map-categories/bubble_tea.png'),
   roastery: require('@/assets/images/map-categories/roastery.png'),
+  // Sub-categories added 2026-11-11 (subchip-icons-2026-11-11, owner "8개 다 좋아요").
+  breakfast: require('@/assets/images/map-categories/breakfast.png'), ice_cream: require('@/assets/images/map-categories/ice_cream.png'),
+  matcha: require('@/assets/images/map-categories/matcha.png'), karaoke: require('@/assets/images/map-categories/karaoke.png'),
+  speakeasy: require('@/assets/images/map-categories/speakeasy.png'), jazz: require('@/assets/images/map-categories/jazz.png'),
+  sports_bar: require('@/assets/images/map-categories/sports_bar.png'), happy_hour: require('@/assets/images/map-categories/happy_hour.png'),
+  // Leisure chips added 2026-11-11 (leisure-icons-2026-11-11, owner "4개 다 좋아요").
+  cinema: require('@/assets/images/map-categories/cinema.png'), bowling: require('@/assets/images/map-categories/bowling.png'),
+  arcade: require('@/assets/images/map-categories/arcade.png'), escape_room: require('@/assets/images/map-categories/escape_room.png'),
 } as const;
 const easing = Easing.bezier(...ALIVE_BEZIER);
 

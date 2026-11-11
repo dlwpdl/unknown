@@ -37,7 +37,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     'react-native-reanimated': { default: { View: 'ReanimatedView' }, useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', SafeAreaProvider: 'SafeAreaProvider', useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
     '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
-    '@/hooks/use-theme': { useTheme: () => theme }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
+    '@/hooks/use-theme': { useTheme: () => theme }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false }, '@/hooks/use-reveal-chip': { useRevealChip: selected => ({ scroll: { revealing: selected }, chip: key => `layout:${key}` }) },
     '@/components/daily-chip': { todayLabel: () => '10월 12일 월요일' },
     '@/components/chilling-host-profile': { useMyOpenMeetupRequests: () => ({}) },
     '@/lib/image-upload': { canAddPostImage: () => true, MAX_POST_IMAGES: 10 },
@@ -45,7 +45,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '@/i18n/ko': { t }, '@/lib/mock': { TAGS }, '@/lib/auth': { useAuth: () => ({ isAuthed: viewer !== null, isAuthLoading: authLoading, me: { id: viewer ?? 'guest' }, promptLogin() {} }) },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버', state: 'open' }, setCity() {} }) },
     '@/lib/location-provider': { useCommunityLocation: () => ({ record() {}, capture: async () => null }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
-    '@/lib/community-data': { loadListingQuota: async () => ({ used: 0, max: 3 }), createCommunityPost: (_client, input) => deferPublish ? new Promise((resolve, reject) => writes.push({ input, resolve, reject })) : Promise.resolve({ id: createdPost.id, post: createdPost }), getCommunityActionError: () => null, isContentRejected: () => false },
+    '@/lib/community-data': { loadListingQuota: async () => ({ used: 0, max: 3 }), createCommunityPost: (_client, input) => deferPublish ? new Promise((resolve, reject) => writes.push({ input, resolve, reject })) : Promise.resolve({ id: createdPost.id, post: createdPost }), getCommunityActionError: () => null, isContentRejected: () => false, isFirstPost: async () => false },
     '@/lib/post-maps': { withPostMap, postMapBody, googlePinUrl }, '@/lib/listing-details': listingDetails, '@/lib/neighborhoods': neighborhoods,
     '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async () => null, setItem: async () => {} } },
     '@/lib/hashtags': { getSuggestedHashtags: () => [], parseHashtags: () => [], canonicalizeHashtag: value => value },
@@ -515,4 +515,14 @@ test('the SNS photo box shows only with a photo, starts from the setting, and it
   older.calls[0].resolve([]); await new Promise(setImmediate);
   older.openWriter(); await new Promise(setImmediate); await addPhoto(older);
   assert.equal(box(older), undefined, 'an older server has no consent calls, so the box stays hidden');
+});
+
+test('the home category row scrolls the chosen chip into view (QA Q07)', () => {
+  const app = screen();
+  const row = () => nodes(app.render()).find(n => n.props?.analyticsId === 'components_feed-screen.scrollview.1');
+  assert.equal(row().props.revealing, 'all');
+  const chips = nodes(row()).filter(n => typeof n.props?.onLayout === 'string').map(n => n.props.onLayout);
+  assert.ok(chips.includes('layout:all') && chips.includes(`layout:${TAGS.find(tag => tag.slug === 'festival').id}`), 'every chip reports where it sits');
+  nodes(row()).find(n => n.props?.analyticsId === 'components_feed-screen.pressable.3' && n.props.selected === false).props.onPress();
+  assert.notEqual(row().props.revealing, 'all', 'a new choice is the chip the row brings into view');
 });
