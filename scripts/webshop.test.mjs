@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parseWebshop, compareWebshopPrices, webshopRedirectUrl, webshopOrderUrl, recordWebshopSheetView, parseBusinessPlaceLinks, bindBusinessPlaces } from '../src/lib/webshops.ts';
+import { parseWebshop, compareWebshopPrices, webshopRedirectUrl, webshopOrderUrl, recordWebshopSheetView, parseBusinessPlaceLinks, bindBusinessPlaces, loadCityWebshops } from '../src/lib/webshops.ts';
 
 const merchantId = 'a3310000-0000-4000-8000-000000000001';
 const fixture = () => ({ merchantId, cityId: 'vancouver', url: 'https://www.order.store/ca/store/jimoco-cafe-%26-pasta-austin/ZFgz2GjZSAuhlUYeO1fupA', provider: 'uber',
@@ -33,6 +33,24 @@ test('invalid prices, mismatched business IDs and non-webshop destinations canno
     assert.throws(() => parseWebshop({ ...fixture(), ...patch }), /INVALID_WEBSHOP/);
   }
   assert.equal(parseWebshop(null), null);
+});
+
+test('a webshop that is not cheaper than Uber Eats on every menu or the checkout is hidden alone', async () => {
+  const menu = (webCents) => ({ ...fixture(), comparisons: [...fixture().comparisons, { id: 'same', name: 'Same', uberCents: 2400, webCents }] });
+  assert.equal(parseWebshop(menu(2400)), null);
+  assert.equal(parseWebshop(menu(2500)), null);
+  const quote = { itemsCents: 7100, deliveryCents: 0, serviceCents: 0, discountCents: 0, taxCents: 0, tipCents: 0, totalCents: 7100 };
+  assert.equal(parseWebshop({ ...fixture(), checkoutComparison: { verifiedAt: '2026-10-23T11:02:46Z', fulfillment: 'pickup', basketLabel: 'Same basket', sameConditionsConfirmed: true, uber: quote, webshop: quote } }), null);
+  const other = 'a3310000-0000-4000-8000-000000000002';
+  const client = { rpc: () => Promise.resolve({ data: [fixture(), { ...menu(2400), merchantId: other }], error: null }) };
+  assert.deepEqual((await loadCityWebshops(client, 'vancouver')).map(shop => shop.merchantId), [merchantId]);
+});
+
+test('the city loader still rejects a broken row, a null element or another city instead of skipping it', async () => {
+  const load = (row) => loadCityWebshops({ rpc: () => Promise.resolve({ data: [fixture(), row], error: null }) }, 'vancouver');
+  for (const row of [{ ...fixture(), url: 'https://evil.test/x' }, null, { ...fixture(), cityId: 'toronto' }]) {
+    await assert.rejects(load(row), /INVALID_WEBSHOP/);
+  }
 });
 
 test('tracked links use only the registry merchant and opaque event/session, never a destination or credential', () => {

@@ -87,6 +87,8 @@ export function validateWebshopConfig(value: unknown): AdminWebshopConfig {
     return item as WebshopComparison;
   });
   if (new Set(comparisons.map(item => item.id)).size !== comparisons.length) fail('메뉴 비교 ID가 중복됩니다.');
+  const notCheaper = comparisons.filter(item => item.webCents >= item.uberCents);
+  if (notCheaper.length) fail(`${notCheaper.map(item => item.name.trim()).join(', ')}: 웹샵 가격이 Uber Eats보다 싸야 저장할 수 있어요.`);
   if (data.verifiedAt !== null) observedAt(data.verifiedAt, '가격 관측 날짜');
   else if (comparisons.length) fail('메뉴 가격을 관측한 날짜가 필요합니다.');
   if (data.promoCode !== null && (typeof data.promoCode !== 'string' || !/^[A-Za-z0-9_-]{1,40}$/.test(data.promoCode))) fail('프로모션 코드는 확인된 영문·숫자·밑줄·하이픈 1–40자만 입력해주세요.');
@@ -94,7 +96,7 @@ export function validateWebshopConfig(value: unknown): AdminWebshopConfig {
     const checkout = object(data.checkoutComparison, '전체 결제 비교', ['verifiedAt', 'fulfillment', 'basketLabel', 'sameConditionsConfirmed', 'uber', 'webshop']);
     observedAt(checkout.verifiedAt, '결제 관측 날짜'); text(checkout.basketLabel, '동일 장바구니 설명', 200);
     if (!['delivery', 'pickup'].includes(String(checkout.fulfillment)) || checkout.sameConditionsConfirmed !== true) fail('전체 결제 비교: 같은 메뉴·옵션·수령 방식·배달 조건을 실제 확인해야 합니다.');
-    quote(checkout.uber); quote(checkout.webshop);
+    if (quote(checkout.webshop).totalCents >= quote(checkout.uber).totalCents) fail('전체 결제 비교: 웹샵 총액이 Uber Eats 총액보다 싸야 저장할 수 있어요.');
   }
   integer(data.commissionBps, '수수료 BPS', 10_000);
   if (typeof data.commissionBasisConfirmed !== 'boolean' || ![null, 'attributed', 'all_webshop'].includes(data.commissionScope as string | null)) fail('수수료의 기준 확인 여부와 적용 범위를 확인해주세요.');
