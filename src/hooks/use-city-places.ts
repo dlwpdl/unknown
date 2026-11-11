@@ -13,11 +13,18 @@ const catalogFile = () => new File(Paths.cache, 'gling-city-places.json');
 const catalogStorage = Platform.OS === 'web' ? AsyncStorage : {
   // Until the first file write, read the copy 1.5.1 and earlier left in AsyncStorage so an update does not download again that day.
   getItem: async (key: string) => { const file = catalogFile(); return file.exists ? file.text() : AsyncStorage.getItem(key); },
-  setItem: async (key: string, value: string) => { await catalogFile().write(value); await AsyncStorage.removeItem(key); },
+  // Write a temporary file and move it over the catalog (as share-card-image.ts does), so a crash mid-write keeps the last good file.
+  setItem: async (key: string, value: string) => {
+    const next = new File(Paths.cache, 'gling-city-places.json.tmp');
+    await next.write(value);
+    await next.move(catalogFile(), { overwrite: true });
+    await AsyncStorage.removeItem(key);
+  },
 };
 
 async function fetchCatalog() {
-  const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 15_000);
+  // 1,000 places a city is about 1 MB gzipped (4.7 MB raw): about 32 s on a slow 3G link (~250 kbps), which 15 s would cut off.
+  const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 45_000);
   try {
     const { data, error } = await supabase.rpc('get_city_place_catalog').abortSignal(controller.signal);
     if (error || !data) throw new Error('PLACE_CATALOG_UNAVAILABLE');

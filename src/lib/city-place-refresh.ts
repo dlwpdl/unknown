@@ -44,8 +44,9 @@ export function refreshCityPlaces(storage: CatalogStorage, fetchCatalog: () => P
     retryAfter = now + RETRY_DELAY;
     try {
       const next = await fetchCatalog();
-      applyUsableCatalog(next, day);
+      // The server answered: a catalog this app rejects stays the same until the next publication, so only network failures retry in 15 minutes.
       retryAfter = 0; answeredAt = now;
+      applyUsableCatalog(next, day);
     } catch { /* Preserve the last valid catalog through offline and invalid responses. */ }
     try { await storage.setItem(CACHE_KEY, JSON.stringify({ checkedOn, retryAfter, answeredAt, catalog })); } catch { /* In-memory deduplication still applies. */ }
   })().finally(() => { pending = null; });

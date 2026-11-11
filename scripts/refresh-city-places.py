@@ -15,6 +15,8 @@ from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT = 'wjvahbdwmctzpkndqaxa'
+# Same limit as the octet_length(payload::text) check in supabase/migrations/20261018040000_city_place_catalog.sql; raise both together.
+CATALOG_DB_LIMIT = 2_000_000
 
 def https(value):
     if not isinstance(value, str) or len(value) > 2500: return False
@@ -309,6 +311,9 @@ def main():
     raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()
     digest = hashlib.sha256(raw).hexdigest()
     path = out/f'catalog-{digest}.json'; path.write_bytes(raw)
+    # The server counts jsonb::text, whose ', ' and ': ' separators make it about 5% larger than the compact file
+    # (this count gave exactly the server's 1,628,658 bytes for the 2026-11-06 catalog). Stop before the attempt marker so a retry stays possible.
+    if len(json.dumps(payload, ensure_ascii=False, separators=(', ', ': ')).encode()) > CATALOG_DB_LIMIT: raise ValueError('PLACE_CATALOG_TOO_LARGE')
     result = dict(status='prepared', day=day(now), payload_sha256=digest, path=str(path), upstream_json_sha256=upstream_sha, osm_source=response.get('source', 'overpass-api.de'), places=sum(len(c['places']) for c in payload['cities'].values()), recommendations=sum(len(c['recommendations']) for c in payload['cities'].values()))
     if args.publish:
         with (out/'attempt.json').open('x') as f: json.dump(result, f)

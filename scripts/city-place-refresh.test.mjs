@@ -119,6 +119,16 @@ test('the first launch after updating keeps a 1.5.1 copy that holds today\'s cat
     assert.equal(calls, expected);
   }
 });
+test('a catalog the validator rejects waits for the next publication; only network failures retry in 15 minutes', async () => {
+  const storage = disk(), refresh = refreshModule(); let calls = 0;
+  const fetch = async () => { calls++; return { recommendationTheme: 'photo-spots', collectedAt: '2026-10-18T11:10:00Z', broken: true }; };
+  const reject = () => { throw new Error('INVALID_PLACE_CATALOG'); };
+  for (const later of [0, 16 * 60_000, 3 * 3_600_000]) await refresh(storage, fetch, reject, afterPublication + later);
+  await refreshModule()(storage, fetch, reject, afterPublication + 10 * 3_600_000);
+  assert.equal(calls, 1);
+  await refreshModule()(storage, fetch, reject, afterPublication + DAY);
+  assert.equal(calls, 2);
+});
 test('storage that cannot read or write keeps the downloaded catalog in memory without downloading again', async () => {
   const broken = { getItem: async () => { throw new Error('CursorWindow'); }, setItem: async () => { throw new Error('SQLITE_FULL'); } };
   const refresh = refreshModule(), applied = []; let calls = 0;
@@ -128,12 +138,16 @@ test('storage that cannot read or write keeps the downloaded catalog in memory w
   assert.equal(calls, 1); assert.equal(applied.length, 1);
 });
 function nativeStorage(os, saved = { 'gling.city-places.v1': 'from-1.5.1' }) {
-  let file = null, storage = null;
+  const files = new Map(), crash = { write: false };
+  let storage = null;
   const asyncStorage = { getItem: async key => saved[key] ?? null, setItem: async () => {}, removeItem: async key => { delete saved[key]; } };
   const imports = {
     '@react-native-async-storage/async-storage': { __esModule: true, default: asyncStorage },
-    'expo-file-system': { Paths: { cache: 'cache' }, File: class { constructor(dir, name) { assert.equal(`${dir}/${name}`, 'cache/gling-city-places.json'); }
-      get exists() { return file !== null; } async text() { return file; } async write(value) { file = value; } } },
+    'expo-file-system': { Paths: { cache: 'cache' }, File: class {
+      constructor(dir, name) { assert.equal(dir, 'cache'); this.name = name; }
+      get exists() { return files.has(this.name); } async text() { return files.get(this.name); }
+      async write(value) { files.set(this.name, crash.write ? value.slice(0, 10) : value); if (crash.write) throw new Error('killed mid-write'); }
+      async move(to, { overwrite }) { assert.equal(overwrite, true); files.set(to.name, files.get(this.name)); files.delete(this.name); } } },
     react: { useCallback: callback => callback, useSyncExternalStore: () => 0 },
     'react-native': { Platform: { OS: os }, AppState: { addEventListener: () => ({ remove() {} }) } },
     'expo-router': { useFocusEffect: effect => effect() },
@@ -144,7 +158,7 @@ function nativeStorage(os, saved = { 'gling.city-places.v1': 'from-1.5.1' }) {
   const exports = {};
   vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText, { exports, require: name => imports[name] });
   exports.useCityPlacesRevision();
-  return { storage, asyncStorage, saved, file: () => file };
+  return { storage, asyncStorage, saved, crash, file: () => files.get('gling-city-places.json') };
 }
 test('native apps keep the catalog in a cache file and take over the AsyncStorage copy older versions left', async () => {
   const app = nativeStorage('ios');
@@ -152,6 +166,10 @@ test('native apps keep the catalog in a cache file and take over the AsyncStorag
   assert.equal(await app.storage.getItem('gling.city-places.v1'), 'from-1.5.1');
   await app.storage.setItem('gling.city-places.v1', 'x'.repeat(3_000_000));
   assert.equal(app.file().length, 3_000_000); assert.deepEqual(app.saved, {});
+  assert.equal((await app.storage.getItem('gling.city-places.v1')).length, 3_000_000);
+  // A write cut short only touches the temporary file; the last good catalog stays readable.
+  app.crash.write = true;
+  await assert.rejects(app.storage.setItem('gling.city-places.v1', '{"new":true}'));
   assert.equal((await app.storage.getItem('gling.city-places.v1')).length, 3_000_000);
   const web = nativeStorage('web');
   assert.equal(web.storage, web.asyncStorage);

@@ -72,6 +72,22 @@ class DailyPlaces(unittest.TestCase):
             self.assertTrue((Path(target)/'attempt.json').exists())
             self.assertEqual(len(written['payload']['cities']['vancouver']['places']),200)
 
+    def test_catalog_over_the_server_size_check_stops_before_the_attempt_marker(self):
+        m = implementation(); seed, osm = self.publication_fixture()
+        payload = m.build_catalog(json.loads(json.dumps(seed)), osm, '2026-11-11T12:10:00.123456+00:00')
+        compact = len(json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode())
+        spaced = len(json.dumps(payload, ensure_ascii=False, separators=(', ', ': ')).encode())
+        self.assertGreater(spaced - compact, 1000)
+        with tempfile.TemporaryDirectory() as target:
+            path = Path(target)/'seed.json'; path.write_text(json.dumps(seed))
+            # The compact file fits, but the server's jsonb::text count does not.
+            with patch.object(m, 'CATALOG_DB_LIMIT', (compact + spaced) // 2), patch.object(sys, 'argv', ['refresh-city-places.py','--publish','--seed',str(path),'--output',target]), \
+                 patch.object(m, 'current_catalog', return_value=seed), patch.object(m, 'operations_token', return_value='fixture-token'), \
+                 patch.object(m, 'collect', return_value={'elements':osm}), patch.object(m, 'publish') as publish:
+                with self.assertRaisesRegex(ValueError, 'PLACE_CATALOG_TOO_LARGE'): m.main()
+            publish.assert_not_called()
+            self.assertFalse((Path(target)/'attempt.json').exists(), 'a later retry that day must not be blocked')
+
     def test_newer_seed_omission_preserves_prior_regional_fields_without_enlarging_legacy_arrays(self):
         m = implementation(); previous, osm = self.publication_fixture()
         seed = json.loads(json.dumps(previous)); seed['selectionRevision'] += 1
