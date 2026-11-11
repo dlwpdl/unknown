@@ -1,6 +1,6 @@
 # Chat photo bundles — 2026-10-13
 
-Owner request: send selected photos together as one chat message, like KakaoTalk. Keep the current compact attachment menu and the existing ordered selection limit of 20. Commit, release builds, deployment and review submission remain on hold; local source checks and simulator refresh are authorized.
+Owner request: send selected photos together as one chat message. Keep the current compact attachment menu and the existing ordered selection limit of 20. Commit, release builds, deployment and review submission remain on hold; local source checks and simulator refresh are authorized.
 
 One selection produces one atomic image message, one unread item and one notification. The bubble shows a compact grid (up to nine tiles, with a remaining-photo count), one timestamp and the existing message menu/reply/report controls. Opening a tile shows the same ordered bundle in the existing fullscreen viewer, with swipe and accessible previous/next controls. Existing single-photo messages continue to work.
 
@@ -12,6 +12,6 @@ The additive database migration must validate every image's owner, conversation,
 
 Affected scope: shared chat record/path/signing/send helpers; ChatRoom draft/send/grid/viewer; admin conversation types, signing and attachment rendering; message constraints/RPC/storage policies/history/deletion; behavioral JavaScript and transaction-only SQL regression checks. No dependency, service, job or production data changes.
 
-Reference inspected: WhatsApp https://mobbin.com/screens/2c807c0a-d708-4011-9437-140913bd920b (two photos and a shared timestamp in one bubble). BrandKit's current Gling assets and existing app theme remain the visual source. Simulator sends to real users are outside the verification scope.
+Layout: two photos and a shared timestamp in one bubble. BrandKit's current Gling assets and existing app theme remain the visual source. Simulator sends to real users are outside the verification scope.
 
 Release review regression: the shared legacy `send_chat_attachment` boundary also rejects paths already used anywhere in an album, under its existing relationship lock and after ownership/format validation. `send_message_v2` delegates to that same boundary. Both installed-client entry points have rollback SQL regressions that first demonstrated reuse and then passed.

@@ -33,7 +33,7 @@ Before production: schema and data backed up outside git under `/Users/ash/Libra
 
 Rollback: unschedule `gling-chilling-expiry`, remove only `posts_meetup_abuse` and `meetup_requests_abuse_limit` triggers, restore modified function definitions from the pre-change schema backup (including create_post, creation, membership, group leave/sync, previews, send_message and account purge). Retain the new ledger and existing evidence. Do not reopen naturally expired events or restore entire production data. Revert UI commit if needed. Monitor cron.job_run_details and existing client error reporting after rollout.
 
-References checked: [Expo 57](https://docs.expo.dev/versions/v57.0.0/), [Postgres locking](https://www.postgresql.org/docs/current/explicit-locking.html). BrandKit had no notice component; Mobbin/Kroma search unavailable without Serper credentials, so existing themed inline notices are reused.
+References checked: [Expo 57](https://docs.expo.dev/versions/v57.0.0/), [Postgres locking](https://www.postgresql.org/docs/current/explicit-locking.html). BrandKit had no notice component, so existing themed inline notices are reused.
 
 Independent review found stale pending applications after expiry and the actual inbox RPC was different from the legacy one. Forward migration 0067 cancels expired pending applications, hides natural expiry from current inbox pages, and retains read-only deep-link access for reporting. Approved memberships/messages are retained. Release timestamps include seconds.
 

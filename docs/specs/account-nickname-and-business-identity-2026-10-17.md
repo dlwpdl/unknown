@@ -17,7 +17,7 @@ Code: src/lib/nickname.ts, auth.tsx, profile settings/components; admin user rev
 
 Verification: `npm run typecheck`; targeted `node --experimental-strip-types --test scripts/profile-nickname.test.mjs` and existing affected tests; `npm test`; targeted `npx eslint <changed TS/TSX>`; local Docker Postgres pgTAP rollback checks including self/admin/auth expiry/stale nickname/unique conflicts and official vs curated attribution. Export admin/native/public/merchant bundles into review directories (preserve existing served admin export), run trust-boundary checks, render and inspect actual components plus phone-sized previews. Save a clickable local HTML review with reference URLs.
 
-Design references: current Gling UI/tokens from BrandKit, Apple design skill, actual profile/settings reference https://www.behance.net/gallery/166512961/Daily-UI-006-and-007-User-profile-and-settings via Pinterest. Kroma/Mobbin query unavailable due missing Serper credentials; no claim of viewing a private Mobbin app. Image generation is not applicable.
+Design basis: current Gling UI/tokens from BrandKit and the Apple design skill. Image generation is not applicable.
 
 Verified implementation (2026-10-17 Vancouver): nickname writes use ordered actor/target profile locks, then auth/session locks, exact-old-name checks, live expiry checks and audited AAL2 admin access. User detail pins the reviewed member into the existing connection form, searches business records only and reloads using the business timezone. Native admin renders the existing web-admin notice instead of importing HTML/CSS. The confirmation form now shows its six-character minimum and current Unicode character count.
 

@@ -9,7 +9,7 @@
 - 펼침을 닫거나 기존 탭을 바꿔도 편집 중인 값과 검토 메모를 보존한다. 권한·감사·모니터링·파괴적 조치의 확인 절차는 유지한다.
 - 기존 컨트롤과 피드백을 재사용하고, 좁은 화면·키보드·44px 조작 영역을 확인한다. 새 서비스, 의존성, 정기 작업은 추가하지 않는다.
 
-Design·Apple Design·Frontend Design을 적용했다. Mobbin의 [Meetup](https://mobbin.com/screens/a4f05e86-ab7f-4461-b266-c5ae6d61b336)에서 제목·주최자·일정과 부가 동작의 분리를, [Calendly](https://mobbin.com/screens/2cb90a92-7689-4166-92ff-86607ae0a3ca)에서 접힌 설정 구성을 실제 이미지로 확인했다. 별도 HTML 시안은 예시 데이터이며 390/1440px 렌더와 동작을 검수하고 기존 글링 프로젝트의 Orca Browser에서 열었다.
+Design·Apple Design·Frontend Design을 적용했다. 제목·주최자·일정과 부가 동작을 분리하고 설정은 접어 둔다. 별도 HTML 시안은 예시 데이터이며 390/1440px 렌더와 동작을 검수하고 기존 글링 프로젝트의 Orca Browser에서 열었다.
 
 ## 적용 범위
 

@@ -14,9 +14,8 @@ HTML은 실제 `RelationshipSlotCard`·`ThemedText`·테마를 React Native Web�
 
 Apple 디자인 스킬의 정보 위계·간결함 원칙과 기존 글링 B 컨셉의 종이색·인주색·남색을 적용했습니다.
 
-- [Mobbin · Google Photos](https://mobbin.com/screens/9887379e-abd7-42c1-ac14-0b2809caf976): 실제 화면의 얇은 용량 막대, 전체 수치와 범례의 관계를 참고했습니다.
-- [Pinterest · iPhone Storage](https://www.pinterest.com/pin/578149670937594434/): 실제 이미지의 연속된 용량 표시와 짧은 범례를 참고했습니다.
-- BrandKit은 `Your Brand` 기본값이므로 글링의 기존 `src/constants/theme.ts`를 유지했습니다. Kroma는 `SERPER_API_KEY` 미설정으로 검색 결과를 받지 못했습니다.
+- 얇은 연속 용량 막대와 짧은 범례로 전체 수치를 보여 줍니다.
+- BrandKit은 `Your Brand` 기본값이므로 글링의 기존 `src/constants/theme.ts`를 유지했습니다.
 
 ## 검증
 

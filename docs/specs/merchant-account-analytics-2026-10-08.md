@@ -25,6 +25,6 @@ Expo 57·React Native·Supabase를 그대로 사용한다. 변경 위치는 기�
 
 안전 경계: 업체 변경은 기존 AAL2 관리자 RPC, 서버 배포·Vault 설정은 기존 관리 경로. 개인 정보나 자격 증명을 Git·로그·클라이언트 번들에 넣지 않는다. 기존 자동화 일정과 미완료 제출을 바꾸지 않는다. 네이티브 화면 배포와 서버/웹 배포의 완료 상태를 구분한다.
 
-화면 참고: [Tripadvisor 소개 아래 상세 버튼](https://mobbin.com/screens/c1bd14ce-3fd2-4080-9531-ccc9386b2404), [Fresha 업체 정보와 주요 동작](https://mobbin.com/screens/e3a593d6-df18-42fe-a403-da9fb695e7d2). 현행 글링 night 색상과 버튼 구조를 유지한다.
+화면: 소개 아래 상세 버튼, 업체 정보와 주요 동작. 현행 글링 night 색상과 버튼 구조를 유지한다.
 
 공식 구현 근거: [GA4 Measurement Protocol](https://developers.google.com/analytics/devguides/collection/protocol/ga4/sending-events), [이벤트 검증](https://developers.google.com/analytics/devguides/collection/protocol/ga4/validating-events), [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/). 이 측정은 업체 버튼 클릭 이벤트에 한정하며 Firebase 앱 전체 행동 분석·광고 기여도 측정은 범위에 포함하지 않는다.

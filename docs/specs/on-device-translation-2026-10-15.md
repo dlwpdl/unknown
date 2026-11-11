@@ -19,7 +19,7 @@ Official sources read before implementation:
 - https://developers.google.com/ml-kit/language/translation/android
 - https://developers.google.com/ml-kit/language/translation/translation-terms
 
-Design: reuse the current compact text action and settings card. Google language selector reference https://mobbin.com/screens/0cebf73d-e923-4e12-95eb-af68aac46237 shows download arrows beside language rows. Keep touch feedback, visible download preparation/failure and original text; no new decorative button treatment.
+Design: reuse the current compact text action and settings card. Show download arrows beside language rows. Keep touch feedback, visible download preparation/failure and original text; no new decorative button treatment.
 
 Google branding: https://docs.cloud.google.com/translate/attribution requires the official powered-by badge beside translated results, “Translate with Google” action wording and the translation warranty disclaimer available in settings. The six PNGs under `assets/images/google-translate*` are unmodified regular/white 1x/2x/3x badges from https://docs.cloud.google.com/static/translate/images/google-translate-attribution.zip, displayed at their official176×16 size. They are Google brand assets used under these attribution rules, not original Gling artwork. Store descriptions/help should mention Google Translate and link https://cloud.google.com/translate when this native feature ships.
 

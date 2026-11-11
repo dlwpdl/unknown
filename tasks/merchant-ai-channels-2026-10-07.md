@@ -19,7 +19,7 @@
 
 서버 업체 확인은 `get_merchant_workspace(p_merchant_id)`의 기존 소유자·활성 계정·관리자 AAL2/감사 검사를 재사용한다. 50개 제한이 있는 업체 목록으로 권한을 판정하지 않는다. 응답에서 가게 이름·도시만 AI에 전달한다.
 
-근거: Apple Design 스킬, [Buffer AI 입력·삽입](https://mobbin.com/screens/ff1e037e-1a9f-4bd3-8264-45189fe6ec0e), 승인된 `output/design/gling-merchant-ai-channels-2026-10-07.html`, 공식 Expo SDK57 문서.
+근거: Apple Design 스킬, 승인된 `output/design/gling-merchant-ai-channels-2026-10-07.html`, 공식 Expo SDK57 문서.
 
 ## 순서와 검증
 

@@ -33,7 +33,7 @@ Expo SDK 57, React Native Web, 기존 Supabase RPC와 `Colors.light`/`Spacing`�
 
 [Apple](https://support.apple.com/guide/iphone/sign-in-with-apple-iph238921d37/ios)은 로그인 이름을 사용자가 편집할 수 있고 이메일을 숨길 수 있다. [카카오 동의항목](https://developers.kakao.com/docs/ko/kakaologin/utilize)은 이름·생일·출생연도별 권한과 동의를 구분한다. 외부 계정의 본인확인이 모든 앱으로 자동 전달되는 것은 아니다. [캐나다 개인정보위 수집 최소화](https://www.priv.gc.ca/en/privacy-topics/privacy-laws-in-canada/the-personal-information-protection-and-electronic-documents-act-pipeda/p_principle/principles/p_collection/) 및 [BC 적용 안내](https://www.oipc.bc.ca/about/legislation/)를 확인했다. 새 법적 의무·보관기간을 이 구현에서 단정하지 않는다.
 
-디자인: [Outseta 회원 상세](https://mobbin.com/screens/8bbb60b6-8760-4fb6-ba6c-d23b194da636)의 계정 정보/이력/활동 분리를 실제 화면으로 확인했다. [Pinterest 활동 목록](https://www.pinterest.com/pin/348466089936517960/)을 검색했다. BrandKit은 미설정 템플릿이라 기존 글링 토큰을 유지한다. Kroma는 Serper 인증키 부재로 실패했으며 새 서비스 가입/비용은 발생시키지 않는다.
+디자인: 계정 정보/이력/활동을 분리한다. BrandKit은 미설정 템플릿이라 기존 글링 토큰을 유지한다. 새 서비스 가입/비용은 발생시키지 않는다.
 
 ## 완료·검증 — 2026-09-11
 

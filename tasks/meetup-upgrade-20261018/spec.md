@@ -28,7 +28,7 @@ if (result.error) throw result.error;
 return result.data;
 ```
 
-UI follows the approved Hinge profile editing/preview references, with Gling's own brand and components. Design / Apple Design / Patina apply. Use visible loading, error, retry, disabled and feedback states and accessible controls in both themes and languages.
+UI follows the approved profile editing/preview mockups, with Gling's own brand and components. Design / Apple Design / Patina apply. Use visible loading, error, retry, disabled and feedback states and accessible controls in both themes and languages.
 
 ## Commands and verification
 

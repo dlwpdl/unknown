@@ -2,7 +2,7 @@
 
 Latest owner direction: keep the main festival cards, use small previous/next controls on the card, remove the lower `다가오는 일정` heading and seven thumbnails, and put `이 도시에서 요즘 많이 가는 곳` in that lower position. Show the actual existing iPhone simulator app before any build or deployment.
 
-Reuse the approved Luma Discover hierarchy and original Top 10 → category-filtered Top 25 → place/details/reviews/meetups direction. Reference: `/Users/ash/Desktop/Git/unknown/mobile/output/design/gling-city-discovery-entry-2026-10-12/top-places.html` and its full-flow-review.json. That artifact is a design prototype, not an implemented ranking API.
+Reuse the approved discover hierarchy and original Top 10 → category-filtered Top 25 → place/details/reviews/meetups direction. Reference: `/Users/ash/Desktop/Git/unknown/mobile/output/design/gling-city-discovery-entry-2026-10-12/top-places.html` and its full-flow-review.json. That artifact is a design prototype, not an implemented ranking API.
 
 This first slice is a native layout and navigation preview: a compact borderless home entry, the current city carried into `/places`, Top 10/25 and category controls, native back navigation, and an explicit data-not-connected state. No fabricated place order, visitor counts, reviews, venue photos or paid API. The home entry is development-only until the real data path is implemented. The shared CITIES registry applies to all cities; do not add a city feature allowlist or change city preferences.
 

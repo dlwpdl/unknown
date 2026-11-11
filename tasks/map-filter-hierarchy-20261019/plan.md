@@ -6,7 +6,7 @@ Keep the existing map, canonical place bridge, GPS behavior, date validation and
 
 Use the existing actual-source map render/handler harness to verify one category, All without hidden dates, festival-only date rows and custom-date validation before implementation. Keep the legacy programmatic union matcher compatible; its presence does not authorize UI multiselect. Run focused caller checks, types/lint/full tests, and KO/EN dark/light actual-source renders before the standalone source packet after b3eaf8e. Same sole native owner installs the next combined menu and reviewed-place-data candidate; source checks do not prove installation.
 
-Reference actually viewed: https://mobbin.com/screens/0741dca0-aba2-4763-bfc6-97588ab07338 (Eventbrite separates date from category, with one date selected). Its category checkboxes are not copied: the user's newer requirement explicitly requests one main category. No image generation, new dependency, paid provider, data reset or GUI ownership change.
+Date is separate from category, with one date selected. The user's newer requirement explicitly requests one main category. No image generation, new dependency, paid provider, data reset or GUI ownership change.
 
 Parallel data responsibility remains run_3b9c2f0283ed: populate popular photogenic candidates with actual external scores/review counts/photos using the existing cached discovery pipeline and API Anything where a verified public batch is supported. Do not claim 93 interim picks are fifty per city, or claim missing external review records were fixed through a UI-only change.
 

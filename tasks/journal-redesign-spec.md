@@ -4,7 +4,7 @@
 사용자는 2026-09-07 A/B 시안 리포트의 B안을 선택하고 실제 반영을 승인했다.
 사진과 모임은 B의 분위기를 살리고 사진 없는 질문은 A처럼 읽기 쉽게 보여준다.
 기존 `output/design/gling-redesign/index.html`과 PDF가 승인된 시각 기준이다.
-BrandKit 기본 템플릿 대신 저장소의 글링 색·로고를 사용한 기존 Mobbin/Pinterest 조사와 apple-design 원칙을 이어 적용한다.
+BrandKit 기본 템플릿 대신 저장소의 글링 색·로고와 apple-design 원칙을 이어 적용한다.
 
 ## 범위와 성공 조건
 - iOS/Android 오늘 피드: 기존 로고, 도시 선택·검색·알림, 날짜와 큰 제목, 한 줄의 9개 카테고리.

@@ -32,7 +32,7 @@ First agree the smallest data/RPC contract against the current schema. Prefer ex
 
 ## Design evidence
 
-Read Design, Apple Design and `docs/design-system.md`. Actual Mobbin screens reviewed: Savee saves/boards (`https://mobbin.com/screens/8fbd1638-c71d-4262-b334-6bb131cf8f18`), Doji private collection (`https://mobbin.com/screens/f8831bb6-e06f-4a37-ba5e-100566092df5`), Instagram collection (`https://mobbin.com/screens/fe3e262e-5b13-4bc5-a53b-d014bd1915b1`). Apply private collections and a simple save first; use Gling's existing mixed-content list cards instead of a photo-only grid. Other returned Google Maps screens showed labels/directions rather than the needed library and are not claimed as suitable references.
+Read Design, Apple Design and `docs/design-system.md`. Apply private collections and a simple save first; use Gling's existing mixed-content list cards instead of a photo-only grid.
 
 ## Plan and ownership
 

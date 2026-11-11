@@ -10,7 +10,7 @@
 - [Google 네이티브 광고](https://support.google.com/admob/answer/6239795?hl=en): 주변 콘텐츠의 시각 언어를 따르면서 광고임을 식별할 수 있어야 한다. 글링 PostCard와 같은 제목 18/26·본문 15/22·여백·종이 배경·얇은 구분선을 사용한다. 상단의 카테고리 위치에는 `Ad`, 아래에는 실제 광고주/아이콘과 SDK의 CTA를 표시한다.
 - [Google 자산 배치 기준](https://support.google.com/admanager/answer/7031536?hl=en): Ad 표시는 상단에서 읽을 수 있게 유지하고 AdChoices 공간을 확보한다. 미디어 비율을 왜곡하거나 광고 제목·본문을 강제로 자르지 않는다. 빈 배경이나 가짜 반응 버튼에 광고 클릭을 연결하지 않는다.
 
-연결된 디자인 도구도 확인했다. BrandKit에 Gling 항목이 없어 저장소의 `src/constants/theme.ts`와 PostCard를 기준으로 삼았다. Mobbin의 [Cash App 위치 안내](https://mobbin.com/screens/a83fa99d-5202-4250-898a-8ccb1745143d)를 직접 보며 짧은 이점 설명과 상세 정보 분리를 참고했다. Pinterest 검색은 보조 탐색으로만 사용했고 Kroma는 API 키가 없어 결과를 받지 못했다. Nextdoor 검색 결과는 광고임을 확인할 수 없는 뉴스 게시글이어서 광고 사례 근거로 사용하지 않았다.
+연결된 디자인 도구도 확인했다. BrandKit에 Gling 항목이 없어 저장소의 `src/constants/theme.ts`와 PostCard를 기준으로 삼았다. 짧은 이점 설명과 상세 정보를 분리한다.
 
 ## 원래 화면에서 확인한 문제
 

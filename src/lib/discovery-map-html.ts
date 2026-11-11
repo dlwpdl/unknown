@@ -174,7 +174,7 @@ try{
   tx.beginPath();tx.moveTo(14,1);tx.arcTo(39,1,39,39,13);tx.arcTo(39,39,1,39,13);tx.arcTo(1,39,1,1,13);tx.arcTo(1,1,39,1,13);tx.closePath();
   tx.fillStyle='rgba(255,255,255,0.95)';tx.fill();tx.strokeStyle='rgba(48,32,71,0.16)';tx.lineWidth=2;tx.stroke();
   map.addImage('name-tag',tx.getImageData(0,0,40,40),{pixelRatio:2,stretchX:[[16,24]],stretchY:[[16,24]]});
-  // My saved place: a lilac disc with a dark bookmark, white edge so it reads on the light map (corner m37 'saved' flag).
+  // My saved place: a lilac disc with a dark bookmark, white edge so it reads on the light map.
   const mark=document.createElement('canvas');mark.width=mark.height=36;const mx=mark.getContext('2d');if(!mx)throw Error('SAVED_CANVAS');mx.scale(2,2);
   mx.beginPath();mx.arc(9,9,8,0,Math.PI*2);mx.fillStyle='${accent}';mx.fill();mx.strokeStyle='#ffffff';mx.lineWidth=1.5;mx.stroke();
   mx.beginPath();mx.moveTo(6,5);mx.lineTo(12,5);mx.lineTo(12,13);mx.lineTo(9,10.5);mx.lineTo(6,13);mx.closePath();mx.fillStyle='#171123';mx.fill();

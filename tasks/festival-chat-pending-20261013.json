@@ -24,11 +24,7 @@
     "unrelated product/account/automation changes"
   ],
   "references": [
-    "https://mobbin.com/screens/571174da-8457-4b79-8576-5525951e2387",
-    "https://mobbin.com/screens/a515e117-c16e-4f6d-a34a-df952b01c603",
     "https://docs.expo.dev/versions/v57.0.0/",
-    "https://mobbin.com/screens/2c807c0a-d708-4011-9437-140913bd920b",
-    "https://mobbin.com/screens/3a78b2df-aebe-475c-89b6-df853ef212aa",
     "https://docs.expo.dev/versions/v57.0.0/sdk/notifications/"
   ],
   "image_generation": "not applicable",
@@ -41,7 +37,7 @@
   "latest_steering": [
     "Do not deploy; first show the actual app in simulator.",
     "Refresh the app using the latest uncommitted source.",
-    "Send selected photos in one bubble like KakaoTalk.",
+    "Send selected photos in one bubble.",
     "Show loading feedback while multi-photo selection and sending take time.",
     "Replace generic festival notification titles and introductions with event-specific explanatory content.",
     "Small previous/next controls belong ON main festival card; remove lower upcoming label and seven thumbnails.",

@@ -25,7 +25,7 @@ DB/API 계약 (기존 API는 호환 유지):
 
 검사: `npm run typecheck`, `npm run lint`, `npm test`; 로컬 Supabase에서 `supabase test db` (사용자 데이터 reset 금지); iOS/Android 빌드와 테스트 기기 알림 열기/거부/로그아웃 검증. 테스트 발송은 소유자가 쓰는 테스트 기기만 대상으로 한다.
 
-UI 근거: Mobbin의 [Threads 알림 설정](https://mobbin.com/screens/535cb43b-9c29-4722-95f7-a3493f50c9de)을 실제 열어 종류별 제어를 확인했다. 팔로우 시스템은 현재 글링에 없으므로 전체/팔로잉 하위 단계는 만들지 않고 기존 설정 화면의 Switch를 사용한다. BrandKit의 기존 Gling 검색은 결과가 없고 Kroma는 API 키 누락으로 사용 불가하다. Pinterest 보조 검색은 별도 확보했다.
+UI: 알림은 종류별로 제어한다. 팔로우 시스템은 현재 글링에 없으므로 전체/팔로잉 하위 단계는 만들지 않고 기존 설정 화면의 Switch를 사용한다. BrandKit의 기존 Gling 검색은 결과가 없다.
 
 푸시 공식 자료: [Expo SDK 57 Notifications](https://docs.expo.dev/versions/v57.0.0/sdk/notifications/), [설정](https://docs.expo.dev/push-notifications/push-notifications-setup/), [발송 및 영수증](https://docs.expo.dev/push-notifications/sending-notifications/).
 

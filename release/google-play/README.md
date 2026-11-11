@@ -16,7 +16,7 @@
 
 ## 홍보 이미지 생성 기록
 
-BrandKit에서 Gling 검색, Mobbin의 Circle 화면 구성 및 Pinterest의 커뮤니티 앱 자료를 확인했다. Kroma는 연결에 필요한 키가 없어 결과를 얻지 못했다. 실제 디자인 기준은 저장소의 기존 글링 브랜드 파일이다. 이미지 생성 도구에 `assets/brand/gling-lockup.png`, `assets/brand/gling-app-icon.png`를 참조 이미지로 전달했다.
+BrandKit에서 Gling 검색을 확인했다. 실제 디자인 기준은 저장소의 기존 글링 브랜드 파일이다. 이미지 생성 도구에 `assets/brand/gling-lockup.png`, `assets/brand/gling-app-icon.png`를 참조 이미지로 전달했다.
 
 프롬프트:
 

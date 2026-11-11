@@ -10,8 +10,6 @@ First viewport: title and one registration action, a single search/sort/filter l
 
 Detail: matching right drawers, clear titles, three functional sections and a stable close affordance. Creator sections are collaboration history, profile/contact and campaign participation. Vendor sections are creator collaboration, business profile and activity/results. Reuse the current editors and append/readback semantics; hide unrelated sections without destroying unsaved profile forms. Mobile rows become stacked records with labeled costs and reachable actions.
 
-References: [Orders table](https://dribbble.com/shots/15774926/attachments/7582157?mode=media) and [Attio homepage](https://attio.com/).
-
-References actually inspected: the existing live creator table and vendor native accessibility tree, and the retained Orders table image (Dribbble attachment 7582157). The Attio homepage was read and its OG artwork inspected; that artwork is a brand reference, not proof of its private app layout. Linear's triage page was inaccessible and no Mobbin tool was available. Do not claim those screens were reviewed.
+Checked before the redesign: the existing live creator table and vendor native accessibility tree.
 
 Finish: run type/lint and relevant/full tests; render both pages and detail states on desktop and mobile in one review round, fix the resulting defects together and confirm once. Keep a clickable HTML artifact in output/design, open it under Git → gling, and retain the actual saved-data proof separately.

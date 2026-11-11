@@ -8,6 +8,6 @@ Reuse the existing tracked Pressable and native wrapper. Flatten control-tone Gl
 
 The owner specifically requested breathing room between profile groups:16-point vertical gaps between review navigation, the four account shortcuts and business navigation. Buttons and horizontal spacing retain their sizes. The home category bar uses a selected fill and plain inactive labels, with no nested rims or selected outer shadow.
 
-Observed references: [Mindtrip profile](https://mobbin.com/screens/528cd69b-458f-4be3-99ef-cfe9f718934f), with quiet activity tabs and an outlined edit action; [Insight Timer profile](https://mobbin.com/screens/05cfed0c-2142-4190-be94-fb7ddd596029), with flat text tabs and outlined primary actions. Existing day/night brand colors and type remain.
+Profile pattern: quiet activity tabs, flat text tabs and outlined edit/primary actions. Existing day/night brand colors and type remain.
 
 Verify paint-only helper behavior, forwarding of refs/function children/accessibility,52/44-point primary geometry, callbacks/analytics and press feedback. Run full tests, TypeScript, lint, iOS/Android bundle exports and rendered comparisons at375px. Read back the actual simulator's home filters and profile spacing. Physical haptics/audio and store deployment are separate limits.

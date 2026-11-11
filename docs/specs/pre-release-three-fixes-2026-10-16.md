@@ -11,7 +11,7 @@ The owner approved all three audit corrections: the new public member profile, f
 
 ## Implementation and checks
 
-Use the installed Expo57, React Native, TypeScript and Node test runner; add no dependencies. Follow the existing `useLanguage` render binding and `useInteractionFeedback().play(...)` control feedback. Use the existing theme and accessible disclosure text. BrandKit product tokens and the actual [Yelp sponsored-results reference](https://mobbin.com/screens/fd9ef807-e28e-416c-8068-09b6e3577dd8) inform clear labeling adjacent to results.
+Use the installed Expo57, React Native, TypeScript and Node test runner; add no dependencies. Follow the existing `useLanguage` render binding and `useInteractionFeedback().play(...)` control feedback. Use the existing theme and accessible disclosure text. Use BrandKit product tokens and clear labeling adjacent to results.
 
 First add failing regression checks, then apply each narrow change. Commands:
 

@@ -53,4 +53,4 @@ Build a web home for Gling that reads like a real product website, not a scrolly
 
 [데스크톱 화면](../output/design/gling-redesign/implemented/web-home-desktop.png) · [320px 화면](../output/design/gling-redesign/implemented/web-home-mobile.png). `http://localhost:8091/`의 Git → gling 탭에서 로컬 검증을 마쳤다. 사용자가 이 개편안의 반영과 푸시를 승인했다. 배포 대상은 기존 `dlwpdl/gling`의 `mobile-app` 브랜치이며, 기존 GitHub Pages 워크플로가 [공개 웹사이트](https://dlwpdl.github.io/gling/)를 갱신한다.
 
-디자인 확인: 연결 BrandKit은 기본 템플릿 상태여서 승인된 앱 테마와 스토어 캡처를 기준으로 사용했다. Mobbin의 [Loom 제품 소개](https://mobbin.com/sites/sections/c2d8dd38-f6a9-401d-8749-b280c319cd46), [Aqua](https://mobbin.com/sites/sections/03f083e3-7838-429b-8800-3d25fad9310b) 이미지를 확인하고 Pinterest를 조회했다. Kroma는 API 키 미설정으로 사용할 수 없었다. 새 브랜딩·이미지 생성·외부 디자인 의존성 없이 기존 B안을 웹에 반영했다.
+디자인 확인: 연결 BrandKit은 기본 템플릿 상태여서 승인된 앱 테마와 스토어 캡처를 기준으로 사용했다. 새 브랜딩·이미지 생성·외부 디자인 의존성 없이 기존 B안을 웹에 반영했다.
