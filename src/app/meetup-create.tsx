@@ -517,6 +517,7 @@ function MeetupCreateForm() {
       {membershipError && <Pressable analyticsId="meetup.create.membership" accessibilityRole="button" onPress={() => { play('selection'); router.push('/profile/membership'); }} style={styles.membership}>
         <ThemedText type="smallBold" themeColor="accent" style={styles.label}>{tr("멤버십과 모임 자리 보기 ›")}</ThemedText>
       </Pressable>}
+      <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('모임에서 일어난 일은 호스트와 멤버가 각자 책임져요. 문제가 생겨 신고해 주시면 글링이 기록을 확인하고 최대한 도울게요. 위급하면 911에 먼저 연락해 주세요.')}</ThemedText>
     </ScrollView><View style={[styles.footer, { backgroundColor: theme.background, borderTopColor: theme.line }]}>
       {!!error && !errorField && <ThemedText accessibilityRole="alert" accessibilityLiveRegion="assertive" themeColor="danger" style={styles.bodyText}>{tr(error)}</ThemedText>}
       {!!resumeNote && !error && !saving && <ThemedText accessibilityLiveRegion="polite" type="small" themeColor="textSecondary" style={styles.helper}>{resumeNote === 'signedIn' ? aiCopy('로그인했어요. 쓰던 내용은 그대로 있어요.', 'You’re signed in. Your draft is still here.') : resumeNote === 'restoredNoPhoto' ? aiCopy('쓰던 내용을 불러왔어요. 사진만 다시 골라 주세요.', 'Your draft is back. Please pick the photo again.') : aiCopy('쓰던 내용을 불러왔어요.', 'Your draft is back.')}</ThemedText>}
