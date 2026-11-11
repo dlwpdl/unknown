@@ -78,27 +78,37 @@ test('live native controls and public reader actions have fixed server targets',
       .flatMap(insert => [...insert[1].matchAll(/\('([^']+)'\)/g)].map(match => match[1]));
   }));
   const missing = [];
+  // Fixed ids in 'a', c ? 'a' : 'b' and ({ k: 'a' })[key]. Template and variable ids are not checked here.
+  const literals = node => !node ? [] : ts.isStringLiteralLike(node) ? [node.text]
+    : ts.isParenthesizedExpression(node) || ts.isJsxExpression(node) ? literals(node.expression)
+    : ts.isConditionalExpression(node) ? [...literals(node.whenTrue), ...literals(node.whenFalse)]
+    : ts.isElementAccessExpression(node) && ts.isObjectLiteralExpression(node.expression)
+      ? node.expression.properties.flatMap(property => ts.isPropertyAssignment(property) ? literals(property.initializer) : []) : [];
   const scan = directory => {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      // These roots mount no behavior sender.
       if (['admin', 'merchant-web'].includes(entry.name)) continue;
       const file = new URL(entry.name + (entry.isDirectory() ? '/' : ''), directory);
       if (entry.isDirectory()) { scan(file); continue; }
-      if (!entry.name.endsWith('.tsx')) continue;
-      const ast = ts.createSourceFile(file.pathname, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+      if (!/\.tsx?$/.test(entry.name)) continue;
+      const ast = ts.createSourceFile(file.pathname, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, entry.name.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
       const controls = new Map();
       for (const node of ast.statements) if (ts.isImportDeclaration(node) && node.moduleSpecifier.text === '@/components/analytics-controls') {
         for (const item of node.importClause?.namedBindings?.elements ?? []) controls.set(item.name.text, item.propertyName?.text ?? item.name.text);
       }
-      const visit = node => {
-        if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
-          const kind = controls.get(node.tagName.getText(ast));
-          for (const attribute of node.attributes.properties) {
-            if (!ts.isJsxAttribute(attribute) || !ts.isStringLiteral(attribute.initializer ?? {})) continue;
-            if (attribute.name.text !== 'data-analytics' && !(kind && attribute.name.text === 'analyticsId')) continue;
-            const id = attribute.initializer.text;
-            for (const target of kind === 'Switch' ? [id + '.on', id + '.off'] : [id]) if (!registered.has(target)) missing.push(`${target} (${file.pathname})`);
-          }
+      // kind: an analytics-controls name sends the id as is (Switch adds .on/.off); 'wrapper' (BubblePressable, chips, object props) may add a suffix.
+      const check = (value, kind, node) => {
+        for (const id of literals(value)) {
+          const ok = kind === 'Switch' ? registered.has(id + '.on') && registered.has(id + '.off')
+            : registered.has(id) || (kind === 'wrapper' && [...registered].some(target => target.startsWith(id + '.')));
+          if (!ok) missing.push(`${id} (${file.pathname}:${ast.getLineAndCharacterOfPosition(node.getStart(ast)).line + 1})`);
         }
+      };
+      const visit = node => {
+        if (ts.isJsxAttribute(node) && node.name.getText(ast) === 'data-analytics') check(node.initializer, 'dom', node);
+        else if (ts.isJsxAttribute(node) && node.name.getText(ast) === 'analyticsId') check(node.initializer, controls.get(node.parent.parent.tagName.getText(ast)) ?? 'wrapper', node);
+        else if (ts.isPropertyAssignment(node) && node.name.getText(ast) === 'analyticsId') check(node.initializer, 'wrapper', node);
+        else if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'behavior') check(node.arguments[1], 'call', node);
         ts.forEachChild(node, visit);
       };
       visit(ast);
