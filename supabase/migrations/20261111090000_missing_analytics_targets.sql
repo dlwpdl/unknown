@@ -16,3 +16,11 @@ insert into private.behavior_targets(id) values
   ('event.partner.check'),
   ('event.partner.undo')
 on conflict do nothing;
+
+-- The admin MFA gate and admin action buttons also render inside the app (profile menu, linked account entry).
+-- AppActivity sends nothing for admin accounts today, so these are registered only so that never turns into a rejected batch.
+insert into private.behavior_targets(id) values
+  ('admin_mfa.enroll'),
+  ('admin_mfa.verify'),
+  ('admin.action')
+on conflict do nothing;
