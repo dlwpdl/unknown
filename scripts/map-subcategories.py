@@ -125,14 +125,18 @@ def city_tags(city_id, ids, cache, pause, context):
     path.write_text(json.dumps(tags, ensure_ascii=False, sort_keys=True))
     return tags
 
-def apply(catalog, places, checked):
-    """Set each checked place's values in a catalog or seed (in memory); a checked place with none loses stale ones."""
+def apply(catalog, places):
+    """Add each place's OSM values after the ones it already has (in memory), up to 12.
+    Existing values stay: some come from official sites, not OSM, and a rerun must not erase them."""
     applied = 0
     for city in catalog['cities'].values():
         for field in ['places', 'regionalPlaces', 'extraPlaces']:
             for place in city.get(field, []):
-                if place['id'] in places: place['subcategories'] = places[place['id']]['subcategories']; applied += 1
-                elif place['id'] in checked: place.pop('subcategories', None)
+                if place['id'] not in places: continue
+                values = list(place.get('subcategories') or [])
+                for ident in places[place['id']]['subcategories']:
+                    if ident not in values and len(values) < 12: values.append(ident)
+                place['subcategories'] = values; applied += 1
     return applied
 
 def main():
@@ -147,14 +151,13 @@ def main():
     seed = json.loads(raw)
     cert = Path('/etc/ssl/cert.pem')
     context = ssl.create_default_context(cafile=str(cert) if cert.exists() else None)
-    places, missing, counts, checked = {}, [], {}, set()
+    places, missing, counts = {}, [], {}
     for city_id, city in seed['cities'].items():
         rows = [*city['places'], *city.get('regionalPlaces', []), *city.get('extraPlaces', [])]
         if any(not re.fullmatch(r'osm:(node|way|relation):[1-9]\d*', p['id']) for p in rows): raise ValueError('INVALID_PLACE_IDENTITY')
         tags = city_tags(city_id, sorted({p['id'] for p in rows}), args.output / 'osm', args.pause, context)
         for place in rows:
             if place['id'] not in tags: missing.append(place['id']); continue
-            checked.add(place['id'])
             place_chip = chip(place)
             found = subcategories(tags[place['id']], place_chip)
             for ident, _ in found:
@@ -176,14 +179,14 @@ def main():
                                   # private.city_place_catalog checks octet_length(payload::text); jsonb text puts a space after ',' and ':'.
                                   jsonbText=len(json.dumps(value, ensure_ascii=False, separators=(', ', ': ')).encode()))
         before = size(catalog)
-        applied = apply(catalog, places, checked)
+        applied = apply(catalog, places)
         after = size(catalog)
         summary['catalog'] = dict(path=str(args.catalog), collectedAt=catalog['collectedAt'], placesTagged=applied, before=before, after=after, limit=2_000_000)
         # Simulator preview only: a newer collectedAt keeps the bundled copy ahead of the live one. Never commit it.
         catalog['collectedAt'] = datetime.now(timezone.utc).isoformat()
         (args.output / 'catalog-preview.json').write_text(json.dumps(catalog, ensure_ascii=False, separators=(',', ':')))
     if args.seed_copy:
-        summary['seedCopyTagged'] = apply(seed, places, checked)
+        summary['seedCopyTagged'] = apply(seed, places)
         # The operator replaces the seed with this copy atomically after review; this script never writes the seed.
         (args.output / 'seed-with-subcategories.json').write_text(json.dumps(seed, ensure_ascii=False, indent=1))
     (args.output / 'counts.json').write_text(json.dumps(summary, ensure_ascii=False, indent=1, sort_keys=True))

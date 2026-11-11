@@ -48,6 +48,16 @@ class MapSubcategories(unittest.TestCase):
         self.assertEqual(self.ids({'amenity': 'karaoke_box'}, 'nightlife'), ['karaoke'])
         self.assertEqual(self.ids({'amenity': 'bar', 'name': 'Karaoke Night'}, 'nightlife'), ['bar'], 'a name alone is not a karaoke box')
 
+    def test_apply_keeps_existing_values_and_only_adds_new_ones(self):
+        rows = [{'id': 'a', 'subcategories': ['korean']}, {'id': 'b', 'subcategories': ['cocktail_bar']}, {'id': 'c'},
+                {'id': 'd', 'subcategories': [f'v{n}' for n in range(12)]}, {'id': 'e', 'subcategories': ['korean']}]
+        catalog = {'cities': {'vancouver': {'places': rows}}}
+        found = {'b': {'subcategories': ['cocktail_bar', 'bar']}, 'c': {'subcategories': ['park']}, 'd': {'subcategories': ['bar']}}
+        self.assertEqual(m.apply(catalog, found), 3)
+        self.assertEqual([row.get('subcategories') for row in rows],
+                         [['korean'], ['cocktail_bar', 'bar'], ['park'], [f'v{n}' for n in range(12)], ['korean']],
+                         'official-site values survive a rerun with no or different OSM values; never more than 12')
+
     def test_every_rule_id_is_an_app_sub_filter_under_the_same_chip(self):
         source = (ROOT / 'src/lib/discovery.ts').read_text()
         block = source[source.index('export const PLACE_SUBCATEGORIES'):source.index('] as const;', source.index('export const PLACE_SUBCATEGORIES'))]
