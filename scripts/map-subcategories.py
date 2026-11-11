@@ -63,6 +63,10 @@ RULES = [
     ('places', 'historic', [(('historic', None),), (('heritage', None),)]),
     ('places', 'market', [(('amenity', {'marketplace'}),)]),
     ('places', 'theatre', [(('amenity', {'theatre', 'concert_hall', 'music_venue'}),), (('building', {'theatre'}),)]),
+    ('places', 'cinema', [(('amenity', {'cinema'}),)]),
+    ('places', 'bowling', [(('leisure', {'bowling_alley'}),)]),
+    ('places', 'arcade', [(('leisure', {'amusement_arcade'}),)]),
+    ('places', 'escape_room', [(('leisure', {'escape_game'}),)]),
 ]
 
 def chip(place):

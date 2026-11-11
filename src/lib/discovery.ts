@@ -54,6 +54,8 @@ export const PLACE_SUBCATEGORIES = [
   { id: 'viewpoint', filter: 'places', label: '전망대' }, { id: 'trail', filter: 'places', label: '산책·하이킹' }, { id: 'museum', filter: 'places', label: '박물관' },
   { id: 'gallery', filter: 'places', label: '미술관·갤러리' }, { id: 'library', filter: 'places', label: '도서관' }, { id: 'zoo_aquarium', filter: 'places', label: '동물원·아쿠아리움' },
   { id: 'historic', filter: 'places', label: '역사 명소' }, { id: 'market', filter: 'places', label: '시장' }, { id: 'theatre', filter: 'places', label: '공연장' },
+  { id: 'cinema', filter: 'places', label: '영화관' }, { id: 'bowling', filter: 'places', label: '볼링' }, { id: 'arcade', filter: 'places', label: '오락실' },
+  { id: 'escape_room', filter: 'places', label: '방탈출' },
 ] as const;
 // Owner 2026-11-10: these say when or with whom to go, not what the place is, so a pin's second line skips them (한식, not 점심).
 export const SITUATION_SUBCATEGORIES: ReadonlySet<string> = new Set(['breakfast', 'lunch', 'dinner', 'late_night', 'solo', 'date', 'work_friendly', 'happy_hour']);

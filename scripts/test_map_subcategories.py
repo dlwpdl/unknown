@@ -48,6 +48,13 @@ class MapSubcategories(unittest.TestCase):
         self.assertEqual(self.ids({'amenity': 'karaoke_box'}, 'nightlife'), ['karaoke'])
         self.assertEqual(self.ids({'amenity': 'bar', 'name': 'Karaoke Night'}, 'nightlife'), ['bar'], 'a name alone is not a karaoke box')
 
+    def test_leisure_chips_come_from_their_osm_tags(self):
+        self.assertEqual(self.ids({'amenity': 'cinema'}, 'places'), ['cinema'])
+        self.assertEqual(self.ids({'leisure': 'bowling_alley'}, 'places'), ['bowling'])
+        self.assertEqual(self.ids({'leisure': 'amusement_arcade'}, 'places'), ['arcade'])
+        self.assertEqual(self.ids({'leisure': 'escape_game'}, 'places'), ['escape_room'])
+        self.assertEqual(self.ids({'amenity': 'theatre'}, 'places'), ['theatre'], 'a stage theatre is not a cinema')
+
     def test_apply_keeps_existing_values_and_only_adds_new_ones(self):
         rows = [{'id': 'a', 'subcategories': ['korean']}, {'id': 'b', 'subcategories': ['cocktail_bar']}, {'id': 'c'},
                 {'id': 'd', 'subcategories': [f'v{n}' for n in range(12)]}, {'id': 'e', 'subcategories': ['korean']}]
