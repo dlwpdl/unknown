@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useNavigation } from 'expo-router';
 import { SymbolView } from '@/components/symbol-view';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Animated, LayoutAnimation, Linking, Platform, StyleSheet, UIManager, View } from 'react-native';
@@ -19,6 +19,7 @@ import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { onLinkOpen } from '@/lib/link-open';
 import { CONTACT_EMAIL } from '@/lib/contact';
 import { BUSINESS_LIMITS, GENERAL_BUMP_HOURS, MEETUP_TOOL_PERKS, MEMBERSHIP_LIMITS, yearlyListPrice, yearlySavings, type BusinessMembershipSnapshot, type MembershipKind, type MembershipOffer } from '@/lib/membership';
 import { useMembership } from '@/lib/membership-provider';
@@ -45,6 +46,12 @@ export default function MembershipScreen() {
   useFocusEffect(useCallback(() => {
     if (auth.isAuthed) void refresh();
   }, [auth.isAuthed, refresh]));
+  const navigation = useNavigation();
+  // This is the app's one modal route, and native-stack shows every profile screen opened after it as a modal too.
+  // A link or tapped push opens its screen beneath them, so the profile stack goes back to its first screen (QA Q08).
+  useEffect(() => onLinkOpen(() => {
+    if ((navigation.getState()?.index ?? 0) > 0) navigation.dispatch({ type: 'POP_TO_TOP' });
+  }), [navigation]);
   const [selection, setSelection] = useState<{ tier: MembershipOffer['tier']; period: MembershipOffer['period'] }>({ tier: 'premium', period: 'year' });
   const [kind, setKind] = useState<MembershipKind>('general');
   const [merchants, setMerchants] = useState<{ userId: string; values: BusinessMerchant[] } | null>(null);

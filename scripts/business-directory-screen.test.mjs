@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { otherIndustryLast } from '../src/lib/business-directory.ts';
 
 const item = { id: '10000000-0000-4000-8000-000000000001', name: '테스트 비즈니스', city_id: 'vancouver', industry: '카페', services: '커피', address: 'Main St', avatarUri: null, bannerUri: null, saved: false, has_webshop: true };
 const page = (items = [item], hasMore = false) => ({ items, industries: ['카페'], hasMore, nextOffset: items.length });
@@ -30,7 +31,7 @@ function screen() {
     '@/hooks/use-content-visibility': { useContentVisibility: () => visibility }, '@/lib/auth': { useAuth: () => ({ me: { id: viewer }, isAuthed: !!viewer, isAuthLoading: false, promptLogin: reason => routes.push(reason) }) },
     '@/lib/community-city': { useCommunityCity: () => ({ city }) }, '@/lib/supabase': { supabase: {} },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
-    '@/lib/business-directory': { loadBusinessDirectory: (_client, options) => new Promise((resolve, reject) => calls.push({ options, resolve, reject })) },
+    '@/lib/business-directory': { otherIndustryLast, loadBusinessDirectory: (_client, options) => new Promise((resolve, reject) => calls.push({ options, resolve, reject })) },
     '@/lib/merchant-conveniences': { setSavedMerchant: (_client, id, saved) => new Promise((resolve, reject) => saves.push({ id, saved, resolve, reject })) },
   };
   const exports = {};
@@ -113,4 +114,14 @@ test('a save completed after refocus refreshes the same viewer from the server',
   app.calls.at(-1).resolve(page([{ ...item, saved: true }])); await flush();
   assert.equal(app.render().page.items[0].saved, true);
   app.render().onSave(app.render().page.items[0]); assert.equal(app.saves[1].saved, false);
+});
+test('기타 comes after every named industry in the chips and the groups; the rest keep the server order (QA Q14)', () => {
+  const app = screen();
+  const rows = [['교육', 1], ['기타', 2], ['기타', 3], ['부동산', 4]].map(([industry, n]) => ({ ...item, id: `10000000-0000-4000-8000-00000000000${n}`, industry }));
+  const tree = app.view({ cityName: '토론토', query: '', industry: null, page: { items: rows, industries: ['교육', '기타', '부동산', '카페'], hasMore: false, nextOffset: 4 },
+    loading: false, loadingMore: false, failed: false, appendFailed: false, savingId: null, saveError: false,
+    onQuery() {}, onIndustry() {}, onSave() {}, onMore() {}, onRetry() {}, onBack() {}, onOpen() {} });
+  const chips = nodes(tree).filter(n => n.props?.analyticsId === 'business.directory.industry').map(chip => nodes(chip).find(n => n.type === 'ThemedText').props.children);
+  assert.deepEqual(chips, ['전체', '교육', '부동산', '카페', '기타']);
+  assert.deepEqual([...nodes(tree).find(n => n.type === 'FlatList').props.data].map(row => row.id.at(-1)), ['1', '4', '2', '3']);
 });

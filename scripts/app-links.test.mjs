@@ -38,8 +38,12 @@ test('scheme links, other hosts and in-app paths pass through unchanged', () => 
 test('old compose-tab links open the writer on home now that the tab is the map', () => {
   const exports = {};
   const source = ts.transpileModule(readFileSync(new URL('../src/app/+native-intent.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
-  vm.runInNewContext(source, { exports, require: name => name === 'expo-share-intent' ? { getShareExtensionKey: () => 'glingShareKey' } : { appPathForLink } });
+  let announced = 0;
+  vm.runInNewContext(source, { exports, require: name => name === 'expo-share-intent' ? { getShareExtensionKey: () => 'glingShareKey' } : name === '@/lib/link-open' ? { announceLinkOpen: () => { announced++; } } : { appPathForLink } });
   const open = path => exports.redirectSystemPath({ path, initial: true });
+  // A cold-start link has nothing open yet; a link arriving later closes open sheets first (QA Q08).
+  assert.equal(exports.redirectSystemPath({ path: 'gling://post/abc', initial: false }), 'gling://post/abc');
+  assert.equal(announced, 1);
   for (const link of ['gling://compose', '/compose', '/compose?x=1']) assert.equal(open(link), '/?compose=1', link);
   for (const link of ['gling://composer', '/compose-draft', `${site}/compose`, '/notifications']) assert.notEqual(open(link), '/?compose=1', link);
   // The iOS share extension's hand-off opens the import screen (owner 2026-11-04 G3).

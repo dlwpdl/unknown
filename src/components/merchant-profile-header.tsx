@@ -19,6 +19,7 @@ export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props
   const theme = useTheme(), { play } = useInteractionFeedback();
   const [linkError, setLinkError] = useState('');
   const [failedImage, setFailedImage] = useState<{ avatar?: string; banner?: string }>({});
+  const banner = profile.bannerUri && failedImage.banner !== profile.bannerUri ? profile.bannerUri : null;
   return <View style={styles.profile}>
     <View style={styles.identity}>
       <View style={[styles.avatar, { backgroundColor: theme.accent }]}>
@@ -45,9 +46,9 @@ export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props
         </Pressable>;
       })}</View>}
     </View>
-    <View style={[styles.banner, { backgroundColor: theme.card }]}>
-      {profile.bannerUri && failedImage.banner !== profile.bannerUri ? <Image source={{ uri: profile.bannerUri }} transition={ControlMotion.settleMs} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("{0} 배너", (profile.name))}
-        onError={() => setFailedImage(value => ({ ...value, banner: profile.bannerUri! }))} />
+    <View style={[styles.banner, !banner && styles.bannerEmpty, { backgroundColor: theme.card }]}>
+      {banner ? <Image source={{ uri: banner }} transition={ControlMotion.settleMs} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("{0} 배너", (profile.name))}
+        onError={() => setFailedImage(value => ({ ...value, banner }))} />
         : <ThemedText style={[styles.bannerG, { color: theme.accent }]} accessible={false}>gling.</ThemedText>}
     </View>
     {!!profile.services && <ThemedText>{profile.services}</ThemedText>}
@@ -67,6 +68,8 @@ const styles = StyleSheet.create({
   links: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   link: { minHeight: 44, maxWidth: '100%', justifyContent: 'center', paddingHorizontal: 14, borderWidth: 1, borderRadius: 12 },
   banner: { width: '100%', aspectRatio: 1.18, maxHeight: 360, borderRadius: 14, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
+  // Without a banner the gling. mark is a short strip, not a third of the screen (QA Q09).
+  bannerEmpty: { aspectRatio: 3 },
   bannerG: { fontSize: 38, lineHeight: 44, fontWeight: '800', opacity: 0.35 },
   identity: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'center' },
   avatar: { width: 46, height: 46, borderRadius: 10, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },

@@ -74,6 +74,7 @@ test('a legacy topic push opens today search once and ignores another account', 
     react: { useEffect: effect => { cleanup = effect(); } },
     'react-native': { AppState: { addEventListener: subscription }, DeviceEventEmitter: { addListener: subscription } },
     'expo-router': { useRootNavigationState: () => ({ key: 'root' }), useRouter: () => ({ navigate: value => routes.push(value) }) },
+    '@/lib/link-open': { announceLinkOpen: () => routes.push('sheets closed') },
     'expo-notifications': { DEFAULT_ACTION_IDENTIFIER: 'open', setNotificationHandler() {}, getLastNotificationResponse: () => null,
       addNotificationResponseReceivedListener: callback => { receive = callback; return subscription(); }, addPushTokenListener: subscription, clearLastNotificationResponseAsync: async () => {} },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: 'member' } }) },
@@ -88,7 +89,7 @@ test('a legacy topic push opens today search once and ignores another account', 
   receive(response); assert.equal(routes.length, 0);
   response.notification.request.content.data.userId = 'member';
   receive(response); receive(response);
-  assert.deepEqual(routes, ['/?hashtag=' + encodeURIComponent('밴쿠버')]);
+  assert.deepEqual(routes, ['sheets closed', '/?hashtag=' + encodeURIComponent('밴쿠버')], 'open sheets close before the push changes the screen (QA Q08)');
   cleanup();
 });
 
@@ -112,7 +113,7 @@ test('an in-flight preference refresh cannot restore foreground push after optin
     '@/lib/product-analytics': product,
     '@/lib/notification-preferences': preferences,
     '@/lib/push-notifications': { pushSupported: true, pushConfigured: true, registerPushDevice: async () => { registrations++; } },
-    '@/lib/meetup-push-rsvp': { registerMeetupRsvpCategory: async () => {}, answerMeetupRsvpFromPush: () => false },
+    '@/lib/meetup-push-rsvp': { registerMeetupRsvpCategory: async () => {}, answerMeetupRsvpFromPush: () => false }, '@/lib/link-open': { announceLinkOpen() {} },
     '@/lib/supabase': { supabase: { rpc: () => new Promise(resolve => { resolveRead = resolve; }) } },
   });
   NotificationObserver();

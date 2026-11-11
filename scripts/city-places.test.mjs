@@ -767,7 +767,9 @@ test('list uses each actual place photo and detail retains its credit and named 
   const place = data().getCityPlaces('toronto').find(p => p.photo);
   assert.ok(place);
   const detail = nodes(screen('src/app/places/[id].tsx', { cityId: 'toronto', id: place.id }).render());
-  assert.ok(detail.some(n => n.type === 'CityPlacePhoto' && n.props.place.id === place.id));
+  const hero = detail.find(n => n.type === 'CityPlacePhoto' && n.props.place.id === place.id);
+  assert.ok(hero);
+  assert.equal(hero.props.contentFit, undefined, 'the detail photo fills its frame with the default cover fit (QA Q18)');
   const credit = detail.find(n => n.type === 'PostPhotoCredits');
   assert.ok(credit);
   for (const value of [place.photo.artist, place.photo.sourceUrl, place.photo.license, place.photo.licenseUrl]) {

@@ -56,7 +56,7 @@ function mount({ cities = [], routeParams = {}, light = false, reduced = false, 
     '@/components/state-card': { StateCard: 'StateCard' }, '@/components/content-translation': {}, '@/hooks/use-content-translation': { ...translationHookDefaults, useContentTranslation: (_kind, _id, source) => ({ display: source }) },
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: {} }, '@/lib/translation-source': {},
     '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: 'SymbolView', ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
-    '@/components/themed-text': { ThemedText: 'Text' }, '@/hooks/use-theme': { useTheme: () => theme },
+    '@/components/themed-text': { ThemedText: 'Text' }, '@/hooks/use-theme': { useTheme: () => theme }, '@/hooks/use-reveal-chip': { useRevealChip: selected => ({ scroll: { revealing: selected }, chip: key => `layout:${key}` }) },
     '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
     '@/lib/auth': { useAuth: () => ({ isAuthed: viewer !== 'guest', me: { id: viewer }, promptLogin() {} }) },
     '@/lib/community-city': { useCommunityCity: () => ({ city, selectCity: async next => { chosenCities.push(next.id); return true; } }) },
@@ -91,6 +91,20 @@ test('main categories toggle independently and event dates belong to the festiva
   assert.ok(!nodes(tree).some(node => node.type === 'Modal'));
   assert.equal(control(tree, '분류와 날짜 필터 열기').props.accessibilityState.expanded, false);
   assert.ok(view.feedback.length >= 5);
+});
+
+test('Q07 map: the category chosen last scrolls into the quick row', () => {
+  const view = mount(); let tree = view.render();
+  const row = () => nodes(tree).find(node => node.type === 'ScrollView' && node.props.analyticsId === 'discovery.filter');
+  assert.equal(row().props.revealing, 'all');
+  control(tree, 'TOP 50').props.onPress(); tree = view.render();
+  assert.equal(row().props.revealing, 'top25');
+  assert.equal(control(tree, 'TOP 50').props.onLayout, 'layout:top25');
+  assert.equal(control(tree, '보여 줄 곳, 모두').props.onLayout, undefined, 'only category chips are measured');
+  control(tree, '카페').props.onPress(); tree = view.render();
+  const cafe = row().props.revealing; assert.notEqual(cafe, 'top25', 'the chip just turned on is the one revealed');
+  control(tree, 'TOP 50').props.onPress(); tree = view.render();
+  assert.equal(row().props.revealing, cafe, 'turning a chip off leaves the row where it is');
 });
 
 test('the quick category row preserves the owner-selected restaurant, cafe, festival and nightlife order', () => {

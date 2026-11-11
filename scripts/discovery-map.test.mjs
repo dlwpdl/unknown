@@ -249,6 +249,19 @@ test('M5: a saved flag crosses the map boundary only as a boolean and draws the 
   assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.saved), [false, true], 'saving from the card moves the mark without a reload');
 });
 
+test('Q05: base-map words like the city name give way to every place pin, saved or plain', () => {
+  const c = canvas([{ ...marker, saved: true }, { ...marker, id: 'place:2' }]), index = id => c.layers.findIndex(layer => layer.id === id);
+  for (const id of ['discovery-room', 'discovery-room-grouped']) {
+    const { layout, paint } = c.layers[index(id)];
+    assert.equal(layout['icon-allow-overlap'], true, id + ': always placed');
+    assert.notEqual(layout['icon-ignore-placement'], true, id + ': keeps its box so the base map labels placed after it hide');
+    assert.equal(paint['icon-opacity'], 0);
+  }
+  // Placement runs from the top layer down, so the box must sit under every place layer: ours are placed first, the base map's labels after it.
+  assert.ok(c.layers.slice(0, 2).every(layer => layer.id.startsWith('discovery-room')), 'the lowest of the map\'s own layers');
+  assert.equal(JSON.stringify(c.layers[index('discovery-room-grouped')].filter[1]), '["!",["has","point_count"]]', 'a place inside a count leaves the words alone');
+});
+
 test('own location validates both update boundaries and only forwards coordinates', () => {
   const state = { markers: [marker], userLocation: { latitude: 49.29, longitude: -123.14, privateText: 'private-location-context' } };
   const script = discoveryMapScript(state, sessionId);

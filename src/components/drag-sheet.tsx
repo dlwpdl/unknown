@@ -11,6 +11,7 @@ import { Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { onLinkOpen } from '@/lib/link-open';
 
 type Latest = { onClose: () => void; onDismissed?: () => void; dismissible: boolean; reduced: boolean; play: ReturnType<typeof useInteractionFeedback>['play'] };
 
@@ -62,6 +63,8 @@ export function DragSheet({ visible, onClose, onDismissed, dismissible = true, t
     ]).start(finish);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only the visible flag starts a transition
   }, [visible]);
+  // A link or tapped push changes the screen behind every sheet, so an open sheet steps aside (QA Q08). Saving sheets stay.
+  useEffect(() => visible ? onLinkOpen(() => { if (live.props.dismissible) live.props.onClose(); }) : undefined, [visible, live]);
   const [pan] = useState(() => {
     const claim = (_: unknown, g: { dx: number; dy: number }) => live.props.dismissible && Math.abs(g.dy) > 4 && Math.abs(g.dy) > Math.abs(g.dx);
     return PanResponder.create({

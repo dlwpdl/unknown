@@ -69,7 +69,7 @@ test('a consumed map target preserves later filters and pan on Back; a fresh sam
   const calls = {}, context = { isFocused: true, targetId: undefined, targetLatitude: undefined, targetLongitude: undefined,
     targetRecommended: true, targetVisited: false, placeRequest: 'first-entry', targetFocusRef: { current: null }, locationRevision: { current: 7 }, Date,
   };
-  for (const name of ['setLocating', 'setLocationError', 'setSelectedFilters', 'setQuery', 'setSearch', 'setSheet', 'setSelectedId', 'setCenter', 'setDateFilter', 'setDate']) {
+  for (const name of ['setLocating', 'setLocationError', 'setSelectedFilters', 'setRevealedFilter', 'setQuery', 'setSearch', 'setSheet', 'setSelectedId', 'setCenter', 'setDateFilter', 'setDate']) {
     context[name] = value => { calls[name] = value; };
   }
   const focus = () => evaluate(effect.arguments[0].getText(map), context)();

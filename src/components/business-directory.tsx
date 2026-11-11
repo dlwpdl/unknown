@@ -19,7 +19,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
-import { loadBusinessDirectory, type BusinessDirectoryItem, type BusinessDirectoryPage } from '@/lib/business-directory';
+import { loadBusinessDirectory, otherIndustryLast, type BusinessDirectoryItem, type BusinessDirectoryPage } from '@/lib/business-directory';
 import { setSavedMerchant } from '@/lib/merchant-conveniences';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
@@ -121,7 +121,7 @@ export function BusinessDirectoryView({ cityName, query, industry, page, loading
   onMore: () => void; onRetry: () => void; onBack: () => void; onOpen: (item: BusinessDirectoryItem) => void;
 }) {
   const theme = useTheme(), { tr } = useLanguage(), { play } = useInteractionFeedback(), clay = useClay();
-  const items = page?.items ?? [];
+  const items = otherIndustryLast(page?.items ?? [], item => item.industry);
   return <SafeAreaView edges={['bottom', 'left', 'right']} style={[styles.screen, { backgroundColor: theme.background }]}>
     <PageHeader title={tr('비즈니스 찾기')} analyticsId="business.directory.back" onBack={onBack} />
     <View style={styles.filters}>
@@ -136,7 +136,7 @@ export function BusinessDirectoryView({ cityName, query, industry, page, loading
         </Pressable>}
       </View>
       <ScrollView analyticsId="business.directory.industries" horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.chips}>
-        {[null, ...new Set([...(page?.industries ?? []), ...(industry ? [industry] : [])])].map(value => <SelectionChip key={value ?? 'all'}
+        {[null, ...otherIndustryLast([...new Set([...(page?.industries ?? []), ...(industry ? [industry] : [])])], value => value)].map(value => <SelectionChip key={value ?? 'all'}
           analyticsId="business.directory.industry" accessibilityRole="button" accessibilityState={{ selected: industry === value }}
           selected={industry === value} onPress={() => { play('selection'); onIndustry(value); }}
           style={[ControlStyles.pill, { borderWidth: 1, borderColor: clay ? 'transparent' : theme.line }]}>

@@ -64,8 +64,8 @@ export default function InviteScreen() {
     <SafeAreaView edges={['bottom']} style={styles.safeArea}>
       <ScrollView analyticsId="invite.scroll" contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}
-          <ThemedText accessibilityRole="header" style={Typography.section}>{tr('친구가 첫 모임에 오면\n플러스 2주 이용권을 드려요')}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{tr('모임을 열어 본 호스트가 친구를 데려오면 프로 2주 이용권이에요. 친구는 가입하는 날부터 새 멤버 혜택을 받아요.')}</ThemedText>
+          <ThemedText accessibilityRole="header" style={Typography.section}>{tr('친구가 첫 모임에 다녀오면\n내가 2주 이용권을 받아요')}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr('모임을 열어 본 적이 있으면 프로, 아니면 플러스 이용권이에요.\n친구는 가입한 날부터 새 멤버 혜택을 받아요.')}</ThemedText>
           {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
           {summary && (summary.code
             ? <>

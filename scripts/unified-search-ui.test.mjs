@@ -25,12 +25,12 @@ function screen({load=async()=>page(),initialQuery='',initialKind='all'}={}) {
   };
   const modules={
     react:hooks,'react/jsx-runtime':{jsx:(type,props,key)=>({type,props,key}),jsxs:(type,props,key)=>({type,props,key})},
-    'react-native':{View:'View',TextInput:'TextInput',Keyboard:{dismiss(){}},Platform:{OS:'ios'},StyleSheet:{create:x=>x,flatten:x=>Object.assign({},...[x].flat(Infinity).filter(Boolean)),hairlineWidth:1},useWindowDimensions:()=>({width:390,fontScale:1})},
+    'react-native':{View:'View',ScrollView:'ScrollView',TextInput:'TextInput',Keyboard:{dismiss(){}},Platform:{OS:'ios'},StyleSheet:{create:x=>x,flatten:x=>Object.assign({},...[x].flat(Infinity).filter(Boolean)),hairlineWidth:1},useWindowDimensions:()=>({width:390,fontScale:1})},
     'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},'expo-image':{Image:'Image'},'expo-symbols':{SymbolView:'Symbol'},'@/components/symbol-view':{SymbolView:'Symbol'},
     'expo-router':{useIsFocused:()=>focused,useRouter:()=>({push:route=>routes.push(route),canGoBack:()=>true,back:()=>routes.push('back'),replace:route=>routes.push(route)})},
     '@/components/analytics-controls':{Pressable:'Pressable',FlatList:'FlatList'},'@/components/selection-chip':{SelectionChip:'Chip'},'@/components/state-card':{StateCard:'StateCard'},'@/components/themed-text':{ThemedText:'Text'},'@/components/gling-loader':{GlingLoader:'Loader'},'@/components/post-zoom-link':{PostZoomLink:'PostZoomLink'},
     '@/constants/theme':{Spacing:{one:4,two:8,three:12,four:16,five:20,six:24},MaxContentWidth:800},'@/constants/design-system':{ControlMotion:{settleMs:180},ControlStyles:{icon:{},pill:{},field:{},action:{}},ControlMetrics:{touch:44},IconSize:{toolbar:21},Typography:{body:{fontSize:16}}},
-    '@/hooks/use-language':{useLanguage:()=>({language:'ko',tr:x=>x})},'@/hooks/use-theme':{useTheme:()=>({})},'@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },'@/hooks/use-content-visibility':{useContentVisibility:()=>hidden},
+    '@/hooks/use-language':{useLanguage:()=>({language:'ko',tr:x=>x})},'@/hooks/use-theme':{useTheme:()=>({})},'react-native-reanimated':{useReducedMotion:()=>false},'@/hooks/use-reveal-chip':{useRevealChip:kind=>({scroll:{revealing:kind},chip:key=>`layout:${key}`})},'@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },'@/hooks/use-content-visibility':{useContentVisibility:()=>hidden},
     '@/lib/auth':{useAuth:()=>({isAuthed:!!account,isAuthLoading:loading,me:{id:account??'guest'}})},'@/lib/mock':{CITIES:[city,{id:'toronto',name:'토론토',englishName:'Toronto'}]},
     '@/lib/supabase':{supabase:{}},'@/lib/interaction-feedback':{useInteractionFeedback:()=>({play:value=>feedback.push(value)})},
     '@/lib/unified-search':{loadUnifiedSearch:(_client,options)=>{calls.push(options);return load(options);}},
@@ -141,4 +141,13 @@ test('a query or scope committed before passive cleanup prevents an old debounce
   await app.flush();assert.equal(app.calls.length,0,'Layout invalidation blocks an old scheduled request before its passive cleanup');
   app.flushPassive();await app.flush();assert.equal(app.calls.length,1);assert.equal(app.calls[0].cityId,null);
   view=app.render();const select=rowControl(view).props.onPress;app.loading(true);app.render();select();assert.equal(app.routes.length,0,'Auth restoration also invalidates a retained result');app.unmount();
+});
+
+test('result type chips sit on one sideways-scrolling line instead of wrapping (QA Q20)',()=>{
+  const app=screen();const{tree}=app.render();
+  const row=control(tree,'search.kinds');
+  assert.equal(row.type,'ScrollView');assert.equal(row.props.horizontal,true);assert.equal(row.props.accessibilityRole,'radiogroup');
+  assert.equal(row.props.style.flexGrow,0,'the row keeps its own height beside the result list');
+  assert.equal(row.props.contentContainerStyle.flexWrap,undefined);
+  assert.deepEqual(nodes(row).filter(node=>node.props?.analyticsId?.startsWith('search.kind.')).map(node=>node.props.analyticsId),['search.kind.all','search.kind.business','search.kind.place','search.kind.person','search.kind.post','search.kind.meetup']);
 });

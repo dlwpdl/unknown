@@ -564,8 +564,11 @@ test('profile logo/banner failures retain only the business fallback and recover
  const renderer=cardRenderer('MerchantProfileHeader');
  const profile={name:'지모코',city_name:'밴쿠버',industry:'카페',services:'',address:'',links:[],avatarUri:'logo',bannerUri:'banner'};
  const render=()=>renderer.render({profile});
+ const bannerBox=()=>Object.assign({},...nodes(render()).find(n=>[n.props?.style].flat().some(s=>s?.aspectRatio===1.18)).props.style.filter(Boolean));
+ assert.equal(bannerBox().aspectRatio,1.18,'a real banner keeps its tall frame');
  let images=nodes(render()).filter(n=>n.type==='Image');assert.equal(images.length,2);
  images.forEach(n=>n.props.onError());assert.equal(nodes(render()).filter(n=>n.type==='Image').length,0);
+ assert.equal(bannerBox().aspectRatio,3,'the gling. placeholder is a short strip (QA Q09)');
  assert.ok(nodes(render()).some(n=>n.type==='ThemedText'&&n.props.children==='지'));
  profile.avatarUri='new-logo';assert.equal(nodes(render()).find(n=>n.type==='Image').props.source.uri,'new-logo');
 });
