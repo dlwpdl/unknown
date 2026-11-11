@@ -7,6 +7,7 @@ import { withLanguageImports } from './test-language-imports.mjs';
 import * as links from '../supabase/functions/_shared/post-links.ts';
 import * as maps from '../src/lib/post-maps.ts';
 
+const PICKED = 'https://www.google.com/maps/search/?api=1&query=45.5229869%2C-73.6013003', PICKED_PLACE = { id: 'osm:node:1751185097', name: 'St-Viateur Bagel Shop' };
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 function editor(initial = {}) {
   const slots = [], feedback = [], exports = {};
@@ -22,6 +23,8 @@ function editor(initial = {}) {
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/post-maps': maps,
     '../../supabase/functions/_shared/post-links': links,
+    '@/lib/mock': { CITIES: [{ id: 'montreal', englishName: 'Montreal' }] },
+    '@/lib/place-reviews': { mapPinPlace: (cityId, url) => cityId === 'montreal' && url === PICKED ? PICKED_PLACE : null },
   };
   const code = ts.transpileModule(fs.readFileSync(new URL('../src/components/post-body-editor.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(code, { exports, require: withLanguageImports(name => name in imports ? imports[name] : new Proxy({}, { get: (_, key) => String(key) })) });
@@ -82,4 +85,22 @@ test('default post/merchant editors keep their controls and compose respects rea
   assert.equal(actions.find(n => n.props?.analyticsId === 'post.attachment.add').props.disabled, true);
   assert.ok(!actions.some(n => n.props?.analyticsId === 'post.location.add'));
   assert.equal(app.layout().input.props.editable, false);
+});
+
+test('a place picked from the Gling map shows as its place card in the writer, only shown so the draft never leaves its sheet (owner 2026-11-11)', () => {
+  const value = maps.withPostMap('참깨 베이글을 샀어요.', PICKED, 'St-Viateur Bagel Shop');
+  let saved;
+  const app = editor({ value, cityName: 'Montreal', onChangeText: text => { saved = text; } });
+  let tree = nodes(app.compose());
+  const card = tree.find(n => n.type === 'PostPlaceCard');
+  assert.equal(card?.props.place, PICKED_PLACE);
+  assert.equal(card.props.preview, true, 'opening the map from the writer would hide it behind the sheet');
+  assert.ok(!tree.some(n => n.type === 'PostMapLink'));
+  tree.find(n => n.props?.analyticsId === 'post.location.remove').props.onPress();
+  assert.equal(maps.postMapBody(saved).url, null, 'the existing remove button still drops the place');
+  for (const other of [{ cityName: 'Toronto' }, { value: maps.withPostMap('참깨 베이글을 샀어요.', 'https://www.google.com/maps/search/?api=1&query=45.52%2C-73.6', '내 위치') }]) {
+    tree = nodes(app.compose(other));
+    assert.ok(!tree.some(n => n.type === 'PostPlaceCard'));
+    assert.ok(tree.some(n => n.type === 'PostMapLink'), 'any other pin keeps the small map');
+  }
 });

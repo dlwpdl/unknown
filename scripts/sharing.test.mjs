@@ -65,6 +65,12 @@ test('outbound sharing never copies the post body or private meetup location', (
   assert.ok(text.includes(`/s/${short}`));
   assert.ok(!text.includes(post.body));
 });
+test('a post pinned to a Gling map place sends the place name on its own line under the title; without one the message is unchanged (owner 2026-11-11)', () => {
+  const post = { id, title: '마일엔드 베이글집 다녀왔어요' };
+  assert.equal(sharedPostMessage({ ...post, place: 'St-Viateur Bagel Shop' }), `마일엔드 베이글집 다녀왔어요\nSt-Viateur Bagel Shop\n${buildSharedPostUrl(id)}`);
+  for (const place of [undefined, null, '']) assert.equal(sharedPostMessage({ ...post, place }), `마일엔드 베이글집 다녀왔어요\n${buildSharedPostUrl(id)}`);
+});
+
 test('login resumes only a validated local post, never an external redirect', () => {
   assert.equal(sharedPostReturnPath(`/post?id=${id}&invite=1`), `/post?id=${id}&invite=1`);
   for (const path of [`//evil.test/post?id=${id}`, `https://evil.test/post?id=${id}`, `/auth/callback?next=${id}`, `/post?id=${id}&id=other`, '/post?id=invalid', null]) assert.equal(sharedPostReturnPath(path), '/');

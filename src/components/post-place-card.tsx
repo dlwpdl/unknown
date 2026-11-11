@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import { useRouter } from 'expo-router';
 import { SymbolView } from '@/components/symbol-view';
-import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
@@ -14,8 +14,9 @@ import { placeMapRoute } from '@/lib/discovery';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { nearestNeighborhood, neighborhoodName } from '@/lib/neighborhoods';
 
-/** The place a Today post is already about, under its text. Opens that place on the Gling map (owner 2026-11-03); saving it comes later. */
-export function PostPlaceCard({ place }: { place: CityPlace }) {
+/** The place a Today post is already about, under its text. Opens that place on the Gling map (owner 2026-11-03); saving it comes later.
+ * `preview` only shows it: in the writer, opening the map would leave the draft behind its sheet. */
+export function PostPlaceCard({ place, preview = false, style }: { place: CityPlace; preview?: boolean; style?: StyleProp<ViewStyle> }) {
   const { tr, language } = useLanguage(), theme = useTheme(), router = useRouter(), { play } = useInteractionFeedback();
   const large = useWindowDimensions().fontScale > 1.2;
   const pick = place.recommendation ?? place.diningRecommendation;
@@ -24,15 +25,20 @@ export function PostPlaceCard({ place }: { place: CityPlace }) {
   const intro = (language === 'en' ? pick?.reasonEn : pick?.reason) || kind;
   const area = nearestNeighborhood(place.cityId, place);
   const sub = [area && neighborhoodName(area, language), intro === kind ? null : kind].filter(Boolean).join(' · ');
-  return <Pressable analyticsId="today.places.place-open" accessibilityRole="button" accessibilityLabel={[place.name, intro, sub, tr('지도 보기')].filter(Boolean).join(' · ')}
-    onPress={() => { play('selection'); router.push(placeMapRoute(place)); }}
-    style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
+  const card = [styles.card, { backgroundColor: theme.card, borderColor: theme.line }, style];
+  const content = <>
     <CityPlacePhoto place={place} style={styles.photo} />
     <View style={styles.copy}>
       <ThemedText type="label" numberOfLines={large ? 2 : 1}>{place.name}</ThemedText>
       <ThemedText type="small" numberOfLines={large ? 2 : 1}>{intro}</ThemedText>
       {!!sub && <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>{sub}</ThemedText>}
     </View>
+  </>;
+  if (preview) return <View accessible accessibilityLabel={[place.name, intro, sub].filter(Boolean).join(' · ')} style={card}>{content}</View>;
+  return <Pressable analyticsId="today.places.place-open" accessibilityRole="button" accessibilityLabel={[place.name, intro, sub, tr('지도 보기')].filter(Boolean).join(' · ')}
+    onPress={() => { play('selection'); router.push(placeMapRoute(place)); }}
+    style={card}>
+    {content}
     <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={IconSize.chevron} tintColor={theme.textSecondary} />
   </Pressable>;
 }

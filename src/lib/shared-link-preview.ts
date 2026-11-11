@@ -17,6 +17,8 @@ export type SharedLinkPreview = {
   id: string; title: string; teaser?: string | null; kind: 'post' | 'festival' | 'meetup'; city: string; label: string;
   // From 20261030121000_shared_link_preview_paragraph; absent until that migration is applied.
   preview?: string | null; createdAt?: string | null; commentCount?: number | null; author?: string | null; authorIsBusiness?: boolean;
+  // From 20261111210000_shared_preview_post_place: the Gling map place a post is pinned to; absent until that migration is applied.
+  place?: string | null;
   schedule: ChillingSchedule | null; imagePath: string | null; imageUrl?: string; closed: boolean;
 };
 export async function loadSharedLinkPreview(client: SupabaseClient, postId: string): Promise<SharedLinkPreview | null> {

@@ -353,3 +353,12 @@ test('static continuation matches canonical short UUIDs and rejects aliases or m
   for (const value of [short.slice(0, -1) + 'B', short + '=', short.slice(1), short + 'A', '%45' + short.slice(1), short + '/private']) assert.deepEqual(runRedirect(href, { location: { pathname: `/s/${value}` } }), []);
   assert.deepEqual(runRedirect(href.replace(id, '123e4567-e89b-42d3-a456-426614174999'), { location: { pathname: `/s/${short}` } }), []);
 });
+
+test('a post pinned to a Gling map place leads its link description with the place name; meetups and older servers stay as before (owner 2026-11-11)', async () => {
+  const describe = async value => (await (await handleSharePreview(request(), env, async () => json({ ...preview, ...value }))).text())
+    .match(/<meta property="og:description" content="([^"]*)">/)[1];
+  assert.equal(await describe({ kind: 'post', teaser: '참깨 베이글을 샀어요.', place: 'St-Viateur Bagel Shop' }), 'St-Viateur Bagel Shop · 참깨 베이글을 샀어요.');
+  assert.equal(await describe({ kind: 'post', schedule: null, place: 'Café <A> & "B"' }), 'Café &lt;A&gt; &amp; &quot;B&quot; · 글링 이야기 · 밴쿠버 · 로그인한 뒤 자세한 내용을 볼 수 있어요.');
+  for (const place of [undefined, null, '', ' ', 5]) assert.equal(await describe({ kind: 'post', teaser: '참깨 베이글을 샀어요.', place }), '참깨 베이글을 샀어요.');
+  assert.doesNotMatch(await describe({ kind: 'meetup', place: 'PRIVATE-MEETUP-PLACE' }), /PRIVATE-/);
+});

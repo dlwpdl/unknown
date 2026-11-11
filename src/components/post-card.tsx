@@ -33,7 +33,7 @@ import { deletePost, recordPostShare, setPostHidden, togglePostReaction } from '
 import { getPostImageSource, relativeTime } from '@/lib/feed-data';
 import { visibleMeetupBody } from '@/lib/meetup-ai';
 import { splitPlaceMeetupBody } from '@/lib/meetup-destination';
-import { placeReviewPlace, placeReviewText } from '@/lib/place-reviews';
+import { mapPinPlace, placeReviewPlace, placeReviewText } from '@/lib/place-reviews';
 import { uniqueHashtags } from '@/lib/hashtags';
 import { postLocationUrl, postMapBody } from '@/lib/post-maps';
 import { changePostReaction, postReactionsSnapshot, subscribePostReactions, syncPostReactions } from '@/lib/post-reactions';
@@ -129,7 +129,11 @@ export function PostCard({
   // Gling's proxy-post line becomes a mark under the author; the meetup summary has no author row, so there it stays in the body.
   // The feed shows the place a post is already tied to (a place meetup or a place review) as a card; a review's text then drops its score and reference lines.
   const reviewPlace = useMemo(() => feed && !post.room ? placeReviewPlace(post) : null, [feed, post]);
-  const linkedPlace = useMemo(() => feed && post.room ? splitPlaceMeetupBody(post.body, post.cityId)?.place ?? null : reviewPlace, [feed, post, reviewPlace]);
+  // A place picked from the Gling map while writing gets the same card in the feed and the post detail (owner 2026-11-11).
+  // Merchant web has no /map route, so there a post keeps its small map.
+  const linkedPlace = useMemo(() => feed && post.room ? splitPlaceMeetupBody(post.body, post.cityId)?.place ?? null
+    : reviewPlace ?? ((feed || postDetail) && !post.room && Platform.OS !== 'web' ? mapPinPlace(post.cityId, postMapBody(post.body).url) : null),
+  [feed, postDetail, post, reviewPlace]);
   const proxied = meetupDetail ? { body: post.body, proxy: false } : splitProxyDisclosure(reviewPlace ? placeReviewText(post.body) : post.body);
   const mapped = postMapBody(proxied.body);
   const source = visibleTranslationSource('post', post.title, proxied.body, !!post.room);
@@ -540,7 +544,7 @@ export function PostCard({
             </View>}
           </View>}
           {info && (infoPlace?.url || infoLinks.length > 0) && <View style={styles.info}>
-            {infoPlace?.url && <PostMapLink url={infoPlace.url} label={infoPlace.label} />}
+            {infoPlace?.url && (linkedPlace ? <PostPlaceCard place={linkedPlace} /> : <PostMapLink url={infoPlace.url} label={infoPlace.label} />)}
             {infoLinks.length > 0 && <View style={[styles.infoLinks, { borderColor: theme.line }]}>
               {infoLinks.map((url, index) => <View key={url} style={index > 0 && [styles.infoDivider, { borderTopColor: theme.line }]}><PostAttachmentLink url={url} row /></View>)}
             </View>}

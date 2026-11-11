@@ -46,6 +46,22 @@ test('a Today card finds the catalog place a review points at, and no place for 
   assert.equal(api.placeReviewPlace({ body, cityId: 'vancouver' }), null, 'a place from another city does not resolve');
 });
 
+test('a post map pin names a catalog place only when it sits exactly on one place of the post city (owner 2026-11-11)', () => {
+  const api = fixture();
+  const pinned = (pin, label = place.name) => maps.postMapBody(maps.withPostMap('참깨 베이글을 샀어요.', maps.googlePinUrl(pin), label)).url;
+  assert.equal(api.mapPinPlace(place.cityId, pinned(place))?.id, place.id, 'a place picked from the Gling map while writing');
+  assert.equal(api.mapPinPlace(place.cityId, pinned(place, '내가 고친 이름'))?.name, place.name, 'the name comes from the map data, not the editable label');
+  assert.equal(api.mapPinPlace(place.cityId, maps.postMapBody(api.placeReviewBody(place.cityId, place.id, '좋아요.')).url)?.id, place.id, 'a place review pin');
+  assert.equal(api.mapPinPlace(place.cityId, pinned({ latitude: place.latitude + 0.00001, longitude: place.longitude })), null, 'a moved pin');
+  assert.equal(api.mapPinPlace('vancouver', pinned(place)), null, 'another city');
+  for (const [cityId, url] of [[place.cityId, null], [place.cityId, undefined], [undefined, pinned(place)], ['nowhere', pinned(place)], [place.cityId, 'https://maps.app.goo.gl/Example']]) {
+    assert.equal(api.mapPinPlace(cityId, url), null);
+  }
+  const twins = module('src/lib/place-reviews.ts', { './city-places.ts': { getCityPlaces: () => [place, { ...place, id: 'osm:node:999999999' }] }, './post-maps.ts': maps,
+    './mock.ts': { TAGS }, './feed-data.ts': {}, './community-data.ts': {} });
+  assert.equal(twins.mapPinPlace(place.cityId, pinned(place)), null, 'two places on the same spot stay a plain map');
+});
+
 test('scored place reviews use the verified catalog, half-point scale and atomic rating RPC', async () => {
   const api = fixture({ rpc: async () => ({ data: { id: saved, score: 8.5 }, error: null }) });
   assert.equal(typeof api.writeRatedPlaceReview, 'function');

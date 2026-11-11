@@ -43,8 +43,9 @@ export function sharedLinkTarget(input: string) {
 export function sharedLinkInMessage(body: string) {
   return body.match(/https:\/\/[^\s<>]+/g)?.find(url => sharedLinkTarget(url)) ?? null;
 }
-export function sharedPostMessage(post: { id: string; title: string; room?: unknown }) {
-  return `${post.room ? `${tr('같이 가요!')} ` : ''}${post.title}\n${buildSharedPostUrl(post.id)}`;
+// place: the Gling map place the post is pinned to (mapPinPlace), on its own line under the title (owner 2026-11-11).
+export function sharedPostMessage(post: { id: string; title: string; room?: unknown; place?: string | null }) {
+  return `${post.room ? `${tr('같이 가요!')} ` : ''}${post.title}\n${post.place ? `${post.place}\n` : ''}${buildSharedPostUrl(post.id)}`;
 }
 
 // Invite meetup links (20261108120000): the token is the whole secret, so it never goes through the share preview.
