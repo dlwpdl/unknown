@@ -56,6 +56,7 @@ function mount(file, component, imports, globals = {}, props = {}) {
     '@/components/live-bubbles': { useLive: () => ({ status: 'idle', map: null }), useLiveMarkers: () => [], useMeetupMarkers: () => [], useKeepClearOfNotice: () => ({ current: null }), LiveDock: 'LiveDock', LiveSheets: 'LiveSheets' },
     '@/lib/live-bubbles': { loadLiveMap: async () => {} }, '@/lib/profile-friends': { loadCityPlaceSaves: async () => null }, '@/lib/post-map-html': { mapCityCenter: () => [-123.12, 49.28] },
     '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ state: null }) },
+    '@/hooks/use-place-compose': { usePlaceCompose: () => null },
     '@/lib/ads': { adsSupported: true }, './lazy-sections': { FeedAd: 'FeedAd' },
     '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value, locale: 'ko-KR' }) },
     '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },

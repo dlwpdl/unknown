@@ -84,6 +84,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     '@/lib/ticketmaster': { loadTicketmasterEvent: async () => { if (ctx.eventError) throw new Error('offline'); return { event: ctx.event }; },
       recordTicketmasterEventClick: async (cityId, id) => order.push(`recommendation:${cityId}:${id}`), eventNotice: () => '', eventTime: () => '', eventPriceLabel: () => '', meetupAllowed: () => true },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
+    '@/hooks/use-place-compose': { usePlaceCompose: () => null },
     '@/hooks/use-content-visibility': { useContentVisibility: () => hidden },
     '@/components/place-saves': { PlaceSavedBy: 'PlaceSavedBy', PlaceRelated: 'PlaceRelated', usePlaceSaves: () => null }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
     '@/lib/city-places': { getCityRecommendations: id => catalog.cities[id]?.places ?? [], CITY_PLACES_COLLECTED_AT: catalog.collectedAt, getCityPlaces: id => { if (ctx.catalogError) throw new Error('missing'); return ctx.places ?? catalog.cities[id]?.places ?? []; } },

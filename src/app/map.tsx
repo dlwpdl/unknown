@@ -1,5 +1,5 @@
 import { Colors } from '@/constants/theme';
-import { ControlMotion, ControlStyles, IconSize } from '@/constants/design-system';
+import { ControlMotion, ControlStyles, IconSize, controlPresentation } from '@/constants/design-system';
 import { useLanguage } from '@/hooks/use-language';
 import { PageHeader } from '@/components/page-header';
 import { PostAdLabel } from '@/components/post-ad-label';
@@ -26,6 +26,7 @@ import { PlaceHours } from '@/components/place-hours';
 import { ReservationButton } from '@/components/reservation-button';
 import { WebshopComparisonSheet, WebshopOrderButton } from '@/components/business-webshop';
 import { CategoryIcon } from '@/components/category-icon';
+import { usePlaceCompose } from '@/hooks/use-place-compose';
 import { CityPicker } from '@/components/city-picker';
 import { SavedEntryButton, useSavedEntry } from '@/components/saved-entry';
 import { CityPlacePhoto } from '@/components/city-place-photo';
@@ -470,6 +471,12 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   if (cardPlace && cardSaved !== undefined && savedNow[cardMark] !== cardSaved) setSavedNow(current => ({ ...current, [cardMark]: cardSaved }));
   const saveButton = cardPlace && <SavedEntryButton entry={savedEntry} kind="place" analyticsId="save.place"
     onBeen={onClose ? undefined : () => router.push({ pathname: '/places/[id]', params: { id: cardPlace.id, cityId: cardPlace.cityId, review: '1' } })} />;
+  // A quiet tool under save, so the name keeps its width on narrow screens (owner 2026-11-11 "지도에서 장소누르고 글 추가"); not in the chat sheet, where the writer would open behind it.
+  const composeHere = usePlaceCompose(onClose ? null : cardPlace);
+  const composeButton = composeHere && <Pressable analyticsId="discovery.compose" accessibilityRole="button" accessibilityLabel={tr('이 장소로 글쓰기')} onPress={composeHere}
+    style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
+    <SymbolView name={{ ios: 'square.and.pencil', android: 'edit_square', web: 'edit_square' }} size={IconSize.toolbar} tintColor={theme.text} />
+  </Pressable>;
   const listShown = sheet === 'half' || sheet === 'full';
   // Sheet stops are its top edge inside the map area: under the floating chips when full, half way, or only its summary.
   const sheetStops = { full: mapFiltersHeight, half: Math.max(mapFiltersHeight, Math.round(contentHeight * 0.5)), peek: Math.max(mapFiltersHeight, contentHeight - 96), closed: contentHeight };
@@ -597,7 +604,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       {cardShown ? <Reanimated.View entering={reduced ? undefined : SlideInDown.duration(ControlMotion.expandMs)} exiting={reduced ? undefined : SlideOutDown.duration(ControlMotion.sheetCloseMs)}
         onLayout={event => setCardHeight(event.nativeEvent.layout.height)} style={[styles.selected, { backgroundColor: theme.card, borderColor: theme.line }]}>
           <ScrollView analyticsId="discovery.detail" accessibilityLabel={tr("선택한 장소 상세, 스크롤로 더 보기")} style={styles.selectedScroll} contentContainerStyle={styles.selectedContent}>
-            <View style={styles.cardRow}><View style={styles.flex}><DiscoveryCard item={selected} now={now} distance={discoveryDistanceKm(selected, userLocation)} externalInfo={!!onClose} viewerScope={viewerScope} savedBy={scopePlaces?.get(placeKey(selected))} saves={savesOf(selected)} onOpen={() => open(selected)} /></View>{saveButton}</View>
+            <View style={styles.cardRow}><View style={styles.flex}><DiscoveryCard item={selected} now={now} distance={discoveryDistanceKm(selected, userLocation)} externalInfo={!!onClose} viewerScope={viewerScope} savedBy={scopePlaces?.get(placeKey(selected))} saves={savesOf(selected)} onOpen={() => open(selected)} /></View><View>{saveButton}{composeButton}</View></View>
             {!!savedEntry.error && <ThemedText type="small" accessibilityRole="alert">{savedEntry.error}</ThemedText>}<Top25Note item={selected} /><GlingVisitNote item={selected} /></ScrollView>{orderButton(selected)}<Directions item={selected} reserveFromBusiness />
       </Reanimated.View>
         : sheet === 'closed' && !loading && !deliveryUnavailable && items.length === 0 && <View style={[styles.mapEmpty, { bottom: rowBottom }]}>{refineCard || <StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : visitedOnly ? visitedReady ? tr("조건에 맞는 글링 방문 장소가 없어요") : tr("아직 글링이 방문한 장소가 없어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 50 장소가 없어요") : tr("이 도시의 TOP 50을 준비하고 있어요") : deliveryOnly ? tr("아직 배달 할인 가게가 없어요") : tr("아직 표시할 공개 위치가 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : visitedOnly ? visitedReady ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : tr("직접 다녀온 장소만 모아 보여드려요. 다른 분류에서 먼저 둘러보세요.") : top25Only ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : deliveryOnly ? tr("가게가 직접 받는 주문 페이지를 준비하고 있어요.") : tr("직접 첨부한 핀과 위치가 확인된 행사만 지도에 표시해요.")} actionLabel={current?.errors.length ? tr("다시 시도") : visitedOnly ? tr("전체 장소 보기") : tr("리스트 보기")} onAction={current?.errors.length ? refresh : visitedOnly ? () => { setSelectedFilters([]); setRevealedFilter('all'); setDateFilter(null); setDate(''); } : () => showList('half')} />}</View>}

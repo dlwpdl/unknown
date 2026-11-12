@@ -264,6 +264,7 @@ function detailViewport(mode = 'auto') {
     '@/hooks/use-content-translation': { ...translationHookDefaults, useTranslationPreference: () => ({ mode }) },
     '@/components/place-saves': { PlaceSavedBy: 'PlaceSavedBy', PlaceRelated: 'PlaceRelated', usePlaceSaves: () => null }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
+    '@/hooks/use-place-compose': { usePlaceCompose: () => null },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'toronto' } }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'guest' } }) },
     '@/lib/city-places': { getCityPlaces: () => [{ id: 'osm:node:1', name: 'Place', sourceUrl: 'https://www.openstreetmap.org/node/1' }] },

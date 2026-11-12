@@ -36,6 +36,7 @@ import { CITY_PLACES_COLLECTED_AT, getCityPlaces, type CityPlace } from '@/lib/c
 import { deliveryPartnerPlace } from '@/lib/delivery-partners';
 import { loadCityBusinessLinks } from '@/lib/webshops';
 import { useCityPlacesRevision } from '@/hooks/use-city-places';
+import { usePlaceCompose } from '@/hooks/use-place-compose';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 import { merchantMapsUrl, merchantPhoneUrl, safeMerchantSourceUrl } from '@/lib/merchant-source';
@@ -72,6 +73,7 @@ export default function PlaceDetailScreen() {
   const targetId = place?.id, loadedCityId = place?.cityId;
   const saves = usePlaceSaves(loadedCityId, targetId, isFocused && !isAuthLoading, userId);
   const saved = useSavedEntry(place ? { kind: 'place', id: place.id, cityId: place.cityId } : null, !!place && !!city);
+  const compose = usePlaceCompose(place);
   const linkScope = useRef<object | null>(null);
   useLayoutEffect(() => {
     linkScope.current = {};
@@ -158,6 +160,12 @@ export default function PlaceDetailScreen() {
             {clay && <ClayControlFill />}
             <Image source={{ uri: `data:image/svg+xml,${encodeURIComponent(INSTAGRAM_LINK_SVG.replaceAll('currentColor', theme.accent))}` }} style={styles.pillIcon} accessible={false} />
             <ThemedText type="smallBold">{tr("인스타그램")}</ThemedText>
+          </Pressable>}
+          {/* Same pill as the place's other actions; the page's one filled button stays 모임 보기. */}
+          {compose && <Pressable analyticsId="places.detail.compose" accessibilityRole="button" accessibilityLabel={tr('이 장소로 글쓰기')} onPress={compose} style={pill}>
+            {clay && <ClayControlFill />}
+            <SymbolView name={{ ios: 'square.and.pencil', android: 'edit_square', web: 'edit_square' }} size={IconSize.inline} tintColor={theme.accent} accessible={false} />
+            <ThemedText type="smallBold">{tr('이 장소로 글쓰기')}</ThemedText>
           </Pressable>}
         </View>
         {copied && <ThemedText type="small" themeColor="textSecondary" accessibilityRole="alert" accessibilityLiveRegion="polite">{tr("주소를 복사했어요.")}</ThemedText>}

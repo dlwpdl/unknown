@@ -8,7 +8,7 @@ import ts from 'typescript';
 import { t } from '../src/i18n/ko.ts';
 import { TAGS } from '../src/lib/mock.ts';
 import { groupJournalPosts, appendUniquePosts, limitBusinessPosts, pinJustPosted, todayRowsAfter, writeFabOverIntro } from '../src/lib/feed-data.ts';
-import { withPostMap, postMapBody, googlePinUrl } from '../src/lib/post-maps.ts';
+import { withPostMap, postMapBody, googlePinUrl, googleMapsPin, withPlacePin } from '../src/lib/post-maps.ts';
 import * as listingDetails from '../src/lib/listing-details.ts';
 import * as neighborhoods from '../src/lib/neighborhoods.ts';
 import * as postUpload from '../src/lib/post-upload.ts';
@@ -23,7 +23,7 @@ const glowModule = imports => {
   return exports;
 };
 function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = false, width = 390, fontScale = 1, adPosition = index => index >= 3 && (index - 3) % 4 === 0, photoConsent = null, consentSaves = [] } = {}) {
-  const slots = [], effects = [], calls = [], writes = [], drafts = [], routes = [], feedback = [], params = {}, consents = [];
+  const slots = [], effects = [], calls = [], writes = [], drafts = [], routes = [], feedback = [], params = {}, consents = [], alerts = [];
   let viewer = 'viewer', authLoading = false;
   let at = 0;
   const slot = initial => { const index = at++; if (!(index in slots)) slots[index] = typeof initial === 'function' ? initial() : initial; return index; };
@@ -32,7 +32,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
   const imports = {
     react: { useState: initial => { const i = slot(initial); return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; }, useRef: initial => slots[slot(() => ({ current: initial }))], useMemo: fn => fn(), useCallback: fn => fn, useEffect: fn => effects.push(fn) },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': { Platform: { OS: os }, useWindowDimensions: () => ({ width, fontScale }), View: 'View', KeyboardAvoidingView: 'KeyboardAvoidingView', TextInput: 'TextInput', Modal: 'Modal', StyleSheet: { create: x => x, hairlineWidth: 1 }, Animated: { Value, View: 'AnimatedView', timing: () => ({ start() {} }), spring: () => ({ start() {} }) }, Alert: { alert() {} }, Keyboard: { dismiss() {} }, DeviceEventEmitter: {}, Easing: { out: x => x, quad: 0 } },
+    'react-native': { Platform: { OS: os }, useWindowDimensions: () => ({ width, fontScale }), View: 'View', KeyboardAvoidingView: 'KeyboardAvoidingView', TextInput: 'TextInput', Modal: 'Modal', StyleSheet: { create: x => x, hairlineWidth: 1 }, Animated: { Value, View: 'AnimatedView', timing: () => ({ start() {} }), spring: () => ({ start() {} }) }, Alert: { alert: (...args) => alerts.push(args) }, Keyboard: { dismiss() {} }, DeviceEventEmitter: {}, Easing: { out: x => x, quad: 0 } },
     'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ push: path => routes.push(path), navigate: path => routes.push(path), setParams: next => Object.assign(params, next) }), useScrollToTop() {} },
     'react-native-reanimated': { default: { View: 'ReanimatedView' }, useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', SafeAreaProvider: 'SafeAreaProvider', useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
@@ -42,11 +42,12 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '@/components/chilling-host-profile': { useMyOpenMeetupRequests: () => ({}) },
     '@/lib/image-upload': { canAddPostImage: () => true, MAX_POST_IMAGES: 10 },
     '@/constants/theme': { Colors: { light: {} }, Depth: { control: {}, card: {} }, Spacing: { one: 4, two: 8, three: 16, four: 24, five: 32 }, TabBarHeight: 64 },
-    '@/i18n/ko': { t }, '@/lib/mock': { TAGS }, '@/lib/auth': { useAuth: () => ({ isAuthed: viewer !== null, isAuthLoading: authLoading, me: { id: viewer ?? 'guest' }, promptLogin() {} }) },
+    '@/i18n/ko': { t }, '@/lib/mock': { TAGS, CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }, { id: 'toronto', name: '토론토', state: 'open' }] },
+    '@/lib/city-places': { composePlace: (cityId, id) => cityId === 'toronto' && id === 'osm:way:1' ? { id, cityId, name: 'Nathan Phillips Square', latitude: 43.6525, longitude: -79.3835 } : null }, '@/lib/auth': { useAuth: () => ({ isAuthed: viewer !== null, isAuthLoading: authLoading, me: { id: viewer ?? 'guest' }, promptLogin() {} }) },
     '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버', state: 'open' }, setCity() {} }) },
     '@/lib/location-provider': { useCommunityLocation: () => ({ record() {}, capture: async () => null }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/community-data': { loadListingQuota: async () => ({ used: 0, max: 3 }), createCommunityPost: (_client, input) => deferPublish ? new Promise((resolve, reject) => writes.push({ input, resolve, reject })) : Promise.resolve({ id: createdPost.id, post: createdPost }), getCommunityActionError: () => null, isContentRejected: () => false, isFirstPost: async () => false },
-    '@/lib/post-maps': { withPostMap, postMapBody, googlePinUrl }, '@/lib/listing-details': listingDetails, '@/lib/neighborhoods': neighborhoods,
+    '@/lib/post-maps': { withPostMap, postMapBody, googlePinUrl, googleMapsPin, withPlacePin }, '@/lib/listing-details': listingDetails, '@/lib/neighborhoods': neighborhoods,
     '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async () => null, setItem: async () => {} } },
     '@/lib/hashtags': { getSuggestedHashtags: () => [], parseHashtags: () => [], canonicalizeHashtag: value => value },
     '@/lib/ads': { adsSupported: false, feedAdPosition: adPosition }, '@/lib/supabase': { supabase: { functions: { invoke: (...args) => new Promise((resolve, reject) => drafts.push({ args, resolve, reject })) } } },
@@ -69,7 +70,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
   const render = () => { at = 0; effects.length = 0; return exports.default({ meetupsOnly }); };
   const refresh = () => { cleanup?.(); cleanup = effects.find(fn => String(fn).includes('return cancelFeedRequests'))(); };
   const list = () => nodes(render()).find(n => n.props?.analyticsId === 'components_feed-screen.flatlist.1').props;
-  return { calls, writes, drafts, routes, feedback, consents, list, refresh, params, render, openWriter() { params.compose = '1'; render(); effects.find(fn => String(fn).includes("compose !== '1'"))(); return render(); }, openTopic: () => { render(); effects.find(fn => String(fn).includes('hashtag: undefined'))(); }, setViewer: next => { viewer = next; }, setAuthLoading: next => { authLoading = next; }, sort: () => { const props = list(); return props.renderItem({ item: null, index: 1 }).props; },
+  return { calls, writes, drafts, routes, feedback, consents, alerts, list, refresh, params, render, openWriter() { params.compose = '1'; render(); effects.find(fn => String(fn).includes("compose !== '1'"))(); return render(); }, openTopic: () => { render(); effects.find(fn => String(fn).includes('hashtag: undefined'))(); }, setViewer: next => { viewer = next; }, setAuthLoading: next => { authLoading = next; }, sort: () => { const props = list(); return props.renderItem({ item: null, index: 1 }).props; },
     publish: async () => {
       const inputs = nodes(render());
       inputs.find(n => n.props?.accessibilityLabel === t.write.titlePlaceholder).props.onChangeText('새 글');
@@ -525,4 +526,42 @@ test('the home category row scrolls the chosen chip into view (QA Q07)', () => {
   assert.ok(chips.includes('layout:all') && chips.includes(`layout:${TAGS.find(tag => tag.slug === 'festival').id}`), 'every chip reports where it sits');
   nodes(row()).find(n => n.props?.analyticsId === 'components_feed-screen.pressable.3' && n.props.selected === false).props.onPress();
   assert.notEqual(row().props.revealing, 'all', 'a new choice is the chip the row brings into view');
+});
+
+test('이 장소로 글쓰기: a new draft opens with the map place in its city; a draft in progress is asked first and kept on no', () => {
+  const app = screen();
+  const tree = () => nodes(app.render());
+  const writerOpen = () => tree().some(n => n.type === 'Modal' && n.props.visible && nodes(n).some(c => c.props?.analyticsId === 'components_feed-screen.pressable.14'));
+  const body = () => tree().find(n => n.props?.accessibilityLabel === t.write.bodyLabel).props.value;
+  const close = () => tree().find(n => n.props?.analyticsId === 'components_feed-screen.pressable.14').props.onPress();
+  const fromMap = () => { Object.assign(app.params, { place: 'osm:way:1', placeCity: 'toronto' }); app.openWriter(); };
+  const answer = text => app.alerts.at(-1)[2].find(button => button.text === text).onPress();
+  fromMap();
+  assert.equal(writerOpen(), true);
+  assert.deepEqual(googleMapsPin(postMapBody(body()).url), { latitude: 43.6525, longitude: -79.3835 }, 'the same pin the place search attaches');
+  assert.equal(postMapBody(body()).label, 'Nathan Phillips Square');
+  assert.ok(tree().some(n => [n.props?.children].flat().includes('토론토')), 'the post takes the place’s city');
+  assert.equal(app.params.place, undefined, 'the place is read once');
+  assert.equal(app.alerts.length, 0, 'a new draft is not asked');
+
+  tree().find(n => n.props?.accessibilityLabel === t.write.bodyLabel).props.onChangeText('쓰던 글');
+  close();
+  fromMap();
+  assert.equal(writerOpen(), false, 'a draft in progress is asked before the writer opens');
+  assert.deepEqual(app.alerts.at(-1).slice(0, 2), ['쓰던 글이 있어요', '쓰던 글에 이 장소를 붙일까요?']);
+  answer('그대로 두기');
+  assert.equal(writerOpen(), true);
+  assert.equal(body(), '쓰던 글', 'no keeps the draft exactly');
+  close();
+  fromMap();
+  answer('붙이기');
+  assert.equal(postMapBody(body()).body, '쓰던 글');
+  assert.equal(postMapBody(body()).label, 'Nathan Phillips Square');
+
+  close();
+  Object.assign(app.params, { place: 'osm:way:404', placeCity: 'toronto' });
+  const before = body(), asked = app.alerts.length;
+  app.openWriter();
+  assert.equal(body(), before, 'a place the writer would not list attaches nothing');
+  assert.equal(app.alerts.length, asked);
 });
