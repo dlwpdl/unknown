@@ -293,6 +293,8 @@ export async function attachAuthorPhotos(client: SupabaseClient, posts: Post[]):
   try {
     const ids = [...new Set(posts.filter(post => !post.room).map(post => post.author.id))];
     if (!ids.length) return posts;
+    // Guests may not read profiles, and that 401 reads as an expired session that opens the login sheet on launch.
+    if (!(await client.auth.getSession()).data.session) return posts;
     // Optional decoration: the public web blocks this read, and postgrest's default retries held the whole feed for 7 seconds.
     const profiles = await client.from('profiles').select('id,avatar_path').in('id', ids).retry(false);
     if (profiles.error || !profiles.data) return posts;
