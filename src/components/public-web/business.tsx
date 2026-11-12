@@ -2,6 +2,8 @@ import './business.css';
 
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { BUSINESS_LIMITS } from '@/lib/membership';
+import { useReaderAnalytics } from './analytics';
+import { BusinessWebshop } from './business-webshop';
 
 // Owner-confirmed store prices (CA$); the server limits come from BUSINESS_LIMITS (mirrors private.business_membership_details_base).
 const PLANS = [
@@ -43,6 +45,7 @@ export const MANAGED_MAIL = `mailto:gling@ej-entertainment.com?subject=${encodeU
 export default function PublicBusiness() {
   const { play } = useInteractionFeedback();
   const tap = () => play('selection');
+  useReaderAnalytics('business', 'business');
   return <div className="biz">
     <main className="biz-main">
       <p className="biz-kicker"><a href="/" onClick={tap}>글링</a> 비즈니스</p>
@@ -53,10 +56,13 @@ export default function PublicBusiness() {
         <a className="biz-secondary" href="#pricing" onClick={tap}>요금제 보기</a>
       </div>
       <p className="biz-note">등록과 기본 기능은 무료예요. 결제 정보 없이 시작할 수 있어요.</p>
+      <p className="biz-note">음식점은 글링 지도에 ‘웹샵 주문’ 버튼도 달 수 있어요. <a href="#webshop" onClick={tap}>웹샵 제휴 보기</a></p>
 
       <section aria-labelledby="biz-features"><h2 id="biz-features">글링에서 할 수 있는 일</h2>
         <ul className="biz-features">{FEATURES.map(([title, body]) => <li key={title}><h3>{title}</h3><p>{body}</p></li>)}</ul>
       </section>
+
+      <BusinessWebshop />
 
       <section aria-labelledby="biz-examples"><h2 id="biz-examples">먼저 시작한 가게들</h2>
         <ul className="biz-examples">{EXAMPLES.map(item => <li key={item.id}><a href={`/company/${item.id}`} onClick={tap}><strong>{item.name}</strong><span>{item.meta}</span></a></li>)}</ul>

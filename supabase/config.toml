@@ -113,3 +113,7 @@ verify_jwt = false
 # Public event apply/store links; the function validates input, hashes tokens and IPs, and calls service-role-only RPCs.
 [functions.event-link]
 verify_jwt = false
+
+# Public webshop partnership applications; the function validates input, hashes IPs and calls service-role-only RPCs.
+[functions.webshop-apply]
+verify_jwt = false

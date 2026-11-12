@@ -100,6 +100,10 @@ export function placeMapRoute(place: Pick<CityPlace, 'id' | 'cityId' | 'glingVis
 export const placeCategory = (place: Pick<CityPlace, 'nightlife' | 'category'>) =>
   place.nightlife ? 'nightlife' : place.category === 'food' ? 'dining' : place.category === 'cafe' ? 'cafe' : 'place';
 
+/** 웹샵 제휴 (owner 2026-11-12): a map restaurant or cafe that no business holds yet. `links` is null until the business links load. */
+export const webshopApplicable = (place: Pick<CityPlace, 'id' | 'nightlife' | 'category'>, links: Record<string, string> | null) =>
+  !!links && !links[place.id] && place.id.startsWith('osm:') && ['dining', 'cafe'].includes(placeCategory(place));
+
 export function discoveryPlace(place: CityPlace): DiscoveryItem | null {
   if (!Number.isFinite(place.latitude) || Math.abs(place.latitude) > 90 || !Number.isFinite(place.longitude) || Math.abs(place.longitude) > 180) return null;
   const category = placeCategory(place);

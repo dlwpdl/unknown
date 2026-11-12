@@ -5,9 +5,9 @@ import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
 import { Typography } from '@/constants/design-system';
 import {
-  editableWebshopConfig, importAdminWebshopOrders, loadAdminWebshops, parseWebshopConfig, parseWebshopReport,
-  saveAdminWebshop, webshopError, webshopMoney,
-  type AdminWebshop, type AdminWebshops, type WebshopReport,
+  editableWebshopConfig, importAdminWebshopOrders, loadAdminWebshopApplications, loadAdminWebshops, parseWebshopConfig, parseWebshopReport,
+  saveAdminWebshop, setAdminWebshopApplicationStatus, webshopError, webshopMoney,
+  type AdminWebshop, type AdminWebshopApplication, type AdminWebshops, type WebshopApplicationStatus, type WebshopReport,
 } from '@/lib/admin-webshops';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
@@ -38,7 +38,7 @@ export function AdminWebshopsView({ localPreview, refreshSignal = 0, onStateChan
   const [stores, setStores] = useState<AdminWebshop[]>([]);
   const editorHeading = useRef<HTMLHeadingElement>(null), editorTrigger = useRef<HTMLButtonElement | null>(null), dialog = useRef<HTMLDialogElement>(null);
   const [editor, setEditor] = useState<Editor | null>(null), [dirty, setDirty] = useState(false), [busy, setBusy] = useState(false), [notice, setNotice] = useState('');
-  const [tab, setTab] = useState<'stores' | 'orders'>('stores');
+  const [tab, setTab] = useState<'stores' | 'orders' | 'applications'>('stores');
   const [restaurantConfirmed, setRestaurantConfirmed] = useState(false);
   const requestKey = JSON.stringify([days, merchantId, retry, refreshSignal, localPreview]);
   const current = !localPreview && result?.key === requestKey ? result : null;
@@ -109,7 +109,7 @@ export function AdminWebshopsView({ localPreview, refreshSignal = 0, onStateChan
             </div>
             {!data.totals.orderDataAvailable && <p className="partnership-muted">선택 기간에 검증된 주문 보고서가 없어서 주문·매출·예상 수수료는 확인할 수 없어요.</p>}
             <div role="tablist" aria-label="웹샵 성과 보기" className="webshop-tabs">
-              {([['stores', '음식점', listed.length], ['orders', '주문 보고서', null]] as const).map(([value, label, total]) => <button key={value} type="button" role="tab" id={`webshop-tab-${value}`} aria-selected={tab === value} aria-controls={`webshop-panel-${value}`} tabIndex={tab === value ? 0 : -1}
+              {([['stores', '음식점', listed.length], ['orders', '주문 보고서', null], ['applications', '신청', null]] as const).map(([value, label, total]) => <button key={value} type="button" role="tab" id={`webshop-tab-${value}`} aria-selected={tab === value} aria-controls={`webshop-panel-${value}`} tabIndex={tab === value ? 0 : -1}
                 onKeyDown={adminOptionKeys} onClick={() => { play('selection'); setTab(value); }}>{label}{total != null && <span className="webshop-tab-count">{total}</span>}</button>)}
             </div>
             {tab === 'stores' ? <div role="tabpanel" id="webshop-panel-stores" aria-labelledby="webshop-tab-stores" className="webshop-panel">
@@ -128,6 +128,8 @@ export function AdminWebshopsView({ localPreview, refreshSignal = 0, onStateChan
               })}</ul>}
               <h2 style={SECTION_STYLE}>음식점별 성과</h2>
               <Table caption="비즈니스별 웹샵 성과" headers={['비즈니스', '비교표 조회', '이동 / 세션', '확인 주문 / 기여 확인', '전체 순매출 / 기여 확인', '예상 수수료']} rows={data.breakdown.filter(row => importable.some(store => store.merchantId === row.merchantId)).map(row => ({ key: row.merchantId, cells: [row.name, count(row.sheetViews), `${count(row.clicks)} / ${count(row.sessions)}`, `${count(row.verifiedOrders)} / ${count(row.attributedVerifiedOrders)}`, `${webshopMoney(row.netRevenueCents, row.currency)} / ${webshopMoney(row.attributedNetRevenueCents, row.currency)}`, webshopMoney(row.estimatedCommissionCents, row.currency)] }))} empty="등록된 비즈니스가 없습니다." />
+            </div> : tab === 'applications' ? <div role="tabpanel" id="webshop-panel-applications" aria-labelledby="webshop-tab-applications" className="webshop-panel">
+              <WebshopApplications />
             </div> : <div role="tabpanel" id="webshop-panel-orders" aria-labelledby="webshop-tab-orders" className="webshop-panel">
               <div className="admin-summary-strip">
                 {[['이동 세션', count(data.totals.sessions)], ['기여 확인 주문', count(data.totals.attributedVerifiedOrders)], ['기여 확인 순매출', webshopMoney(data.totals.attributedNetRevenueCents, data.totals.currency)], ['예상 수수료', webshopMoney(data.totals.estimatedCommissionCents, data.totals.currency)]].map(([label, value]) => <span key={label}>{label}<strong>{value}</strong></span>)}
@@ -151,6 +153,53 @@ export function AdminWebshopsView({ localPreview, refreshSignal = 0, onStateChan
 
 function Table({ caption, headers, rows, empty, mobileRows = false }: { mobileRows?: boolean; caption: string; headers: string[]; rows: { key: string; cells: ReactNode[] }[]; empty: string }) {
   return <div className="admin-table-wrap" role="region" aria-label={caption} tabIndex={0}><table role="table" className={`admin-table admin-table-dense partnership-table${mobileRows ? ' admin-webshop-mobile-rows' : ''}`}><caption className="admin-sr-only">{caption}</caption><thead role="rowgroup"><tr role="row">{headers.map(header => <th role="columnheader" scope="col" key={header}>{header}</th>)}</tr></thead><tbody role="rowgroup">{rows.length ? rows.map(row => <tr role="row" key={row.key}>{row.cells.map((cell, index) => <td role="cell" key={index} data-label={headers[index]}>{cell}</td>)}</tr>) : <tr role="row"><td role="cell" colSpan={headers.length}>{empty}</td></tr>}</tbody></table></div>;
+}
+
+const APPLICATION_STATUS: { value: WebshopApplicationStatus; label: string }[] = [{ value: 'new', label: '새 신청' }, { value: 'contacted', label: '연락함' }, { value: 'done', label: '끝남' }];
+const APPLICATION_SHOP = { yes: '있어요', no: '없어요', unknown: '모르겠어요' };
+const APPLICATION_DISCOUNT = { '5': '5% 싸게', '10': '10% 싸게', '15_plus': '15% 이상 싸게', unknown: '잘 모르겠어요' };
+const APPLICATION_CITY: Record<string, string> = { vancouver: '밴쿠버', toronto: '토론토', montreal: '몬트리올' };
+const APPLICATION_MAIL = { pending: '메일 알림 확인 중', failed: '메일 알림 실패', not_configured: '메일 알림 설정 없음' };
+const vancouverTime = (value: string) => new Date(value).toLocaleString('ko-KR', { timeZone: 'America/Vancouver', dateStyle: 'medium', timeStyle: 'short' });
+
+// Loaded only when the tab opens: the list holds names and contact details, and each read is written to the admin access log.
+function WebshopApplications() {
+  const { play } = useInteractionFeedback();
+  const [retry, setRetry] = useState(0), [saving, setSaving] = useState(''), [notice, setNotice] = useState('');
+  const [result, setResult] = useState<{ key: number; rows: AdminWebshopApplication[] | null; error: string } | null>(null);
+  useEffect(() => {
+    let active = true;
+    void loadAdminWebshopApplications(supabase).then(rows => { if (active) setResult({ key: retry, rows, error: '' }); })
+      .catch(error => { if (active) setResult({ key: retry, rows: null, error: webshopError(error) }); });
+    return () => { active = false; };
+  }, [retry]);
+  const current = result?.key === retry ? result : null;
+  async function change(row: AdminWebshopApplication, status: WebshopApplicationStatus) {
+    if (saving || status === row.status) return;
+    setSaving(row.id); setNotice('');
+    try {
+      const saved = await setAdminWebshopApplicationStatus(supabase, row.id, status);
+      setResult(previous => previous?.rows ? { ...previous, rows: previous.rows.map(item => item.id === saved.id ? { ...item, status: saved.status, updatedAt: saved.updatedAt } : item) } : previous);
+      setNotice(`${row.placeName}: ${APPLICATION_STATUS.find(item => item.value === saved.status)?.label ?? saved.status}(으)로 바꿨어요.`); play('success');
+    } catch (error) { setNotice(webshopError(error)); play('warning'); }
+    finally { setSaving(''); }
+  }
+  if (!current) return <p role="status" aria-busy="true">신청 목록을 불러오는 중이에요.</p>;
+  if (!current.rows) return <div role="alert"><p>{current.error}</p><button type="button" onClick={() => { play('selection'); setRetry(value => value + 1); }}>다시 시도</button></div>;
+  return <>
+    <div className="partnership-title-row"><h2 style={SECTION_STYLE}>웹샵 제휴 신청</h2><AdminInfo label="신청 목록 기준" text={['/business 신청서와 앱 장소 화면의 ‘사장님이세요?’에서 들어온 신청이에요. 최근 신청이 위에 있어요.', '받은 시각은 밴쿠버 시간이에요. 연락처는 신청 안내에만 써요.']} /></div>
+    {notice && <p role="status">{notice}</p>}
+    <Table mobileRows caption="웹샵 제휴 신청" headers={['받은 시각 (밴쿠버)', '가게', '이름 / 연락처', '이메일', 'Uber 웹샵', '앱보다', '들어온 곳', '상태']} rows={current.rows.map(row => ({ key: row.id, cells: [
+      <>{vancouverTime(row.createdAt)}{row.emailStatus !== 'sent' && <small>{APPLICATION_MAIL[row.emailStatus]}</small>}</>,
+      <>{row.placeName}<small>{row.cityId ? APPLICATION_CITY[row.cityId] ?? row.cityId : '목록에 없어서 직접 적음'}</small></>,
+      <>{row.name}<small>{row.contact}</small></>,
+      row.email ?? '없음',
+      <>{APPLICATION_SHOP[row.webshop] ?? row.webshop}{row.webshopUrl && <small>{row.webshopUrl}</small>}</>,
+      APPLICATION_DISCOUNT[row.discount] ?? row.discount,
+      row.source === 'place' ? '앱 장소 화면' : '웹 /business',
+      <AdminSelect key="status" label={`${row.placeName} 상태`} value={row.status} options={APPLICATION_STATUS} onChange={value => { void change(row, value as WebshopApplicationStatus); }} />,
+    ] }))} empty="아직 들어온 신청이 없어요." />
+  </>;
 }
 
 type EditorCallbacks = { store: AdminWebshop; onDirty: (dirty: boolean) => void; onBusy: (busy: boolean) => void; onSaved: (message: string) => void };
