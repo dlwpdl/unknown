@@ -5,7 +5,7 @@ import { Image } from 'expo-image';
 import { SymbolView } from '@/components/symbol-view';
 import { openBrowserAsync } from 'expo-web-browser';
 // shortcut: React Native's own Clipboard is deprecated (a dev-only warning); move to expo-clipboard with the next native build.
-import { Alert, Clipboard, Linking, Platform, StyleSheet, View, type ScrollViewInstance } from 'react-native';
+import { Alert, Clipboard, Keyboard, Linking, Platform, StyleSheet, View, type ScrollViewInstance } from 'react-native';
 import Reanimated, { FadeIn, SlideInDown, useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -57,6 +57,12 @@ export default function PlaceDetailScreen() {
   const [sharing, setSharing] = useState(false), [reviewRequest, setReviewRequest] = useState(0);
   const [directions, setDirections] = useState(false), [copied, setCopied] = useState(false);
   const scroll = useRef<ScrollViewInstance>(null), reviewsY = useRef(0);
+  // The fixed buttons step aside while a review is being typed, so they never sit on the keyboard.
+  const [typing, setTyping] = useState(false);
+  useEffect(() => {
+    const shown = Keyboard.addListener('keyboardDidShow', () => setTyping(true)), hidden = Keyboard.addListener('keyboardDidHide', () => setTyping(false));
+    return () => { shown.remove(); hidden.remove(); };
+  }, []);
   // The scroll position only decides which reviews auto-translate; other modes skip a re-render per scroll event.
   const trackViewport = useTranslationPreference().mode === 'auto';
   const { cityId, id, review } = useLocalSearchParams<{ cityId?: string; id?: string; review?: string }>();
@@ -220,7 +226,8 @@ export default function PlaceDetailScreen() {
           <PlaceExternalRatings key={`${city.id}:${place.id}`} cityId={city.id} placeId={place.id} />
         </View>}
         <PlaceRelated place={place} saves={saves} />
-        <Disclosure analyticsId="places.detail.attribution" title={tr('출처·이용 조건')}>
+        {/* OSM attribution has to show without a tap, so it rides in the folded title. */}
+        <Disclosure analyticsId="places.detail.attribution" title={tr('출처·이용 조건 · © OpenStreetMap')}>
           {!!place.recommendation && <Pressable analyticsId="places.detail.source" accessibilityRole="link" accessibilityLabel={tr("사진 명소 선정 출처 보기")} onPress={() => openSource(place.recommendation!.sourceUrl)} style={styles.link}>
             <ThemedText type="smallBold" themeColor="accent">{tr("사진 명소 선정 출처 보기")}</ThemedText>
           </Pressable>}
@@ -236,7 +243,7 @@ export default function PlaceDetailScreen() {
       </>}
     </ScrollView>
     {/* A안: 길찾기 and 글쓰기 stay at the bottom however far the page scrolls. */}
-    {place && city && <Reanimated.View entering={reduced ? FadeIn.duration(ControlMotion.settleMs) : SlideInDown.duration(ControlMotion.expandMs)} style={[styles.footer, { backgroundColor: theme.background, borderTopColor: theme.line }]}>
+    {place && city && !typing && <Reanimated.View entering={reduced ? FadeIn.duration(ControlMotion.settleMs) : SlideInDown.duration(ControlMotion.expandMs)} style={[styles.footer, { backgroundColor: theme.background, borderTopColor: theme.line }]}>
       <View style={styles.footerRow}>
         <View style={styles.grow}><RaisedActionButton analyticsId="company.about.maps" tone={compose ? 'secondary' : 'primary'} label={tr("길찾기")} onPress={openDirections} /></View>
         {compose && <View style={styles.grow}><RaisedActionButton analyticsId="places.detail.compose" label={tr('이 장소로 글쓰기')} onPress={compose} /></View>}

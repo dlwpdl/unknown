@@ -94,9 +94,8 @@ test('month and date rules apply only on the days of the current week they name'
   assert.deepEqual(parseOpeningHours(seasons, on('2026-11-11'))[MO], [], 'Nov 09 off');
 
   const holidays = 'Dec 24 11:00-17:00; Dec 25 off; Dec 26 11:00-17:00; Dec 31 11:00-17:00; Jan 1 off';
-  const days = parseOpeningHours(holidays, on('2025-12-22'));
-  assert.deepEqual([days[MO], days[WE], days[TH], days[FR]], [[], [[660, 1020]], [], [[660, 1020]]]);
-  assert.deepEqual(parseOpeningHours(holidays, on('2026-11-11')), [[], [], [], [], [], [], []], 'no rule applies, so the week is closed');
+  assert.equal(parseOpeningHours(holidays, on('2025-12-22')), null, 'holiday lines alone say nothing about the other days of Christmas week');
+  assert.equal(openState(holidays, on('2026-11-11')), 'unknown', 'nor about a normal week, so the raw text shows instead of closed');
 });
 
 test('month ranges wrap the new year, and a , rule keeps the months of the rule before it', () => {
@@ -182,5 +181,10 @@ test('P6 곧 닫음: minutes until close follow overnight hours, and 24-hour pla
   assert.equal(left('Mo-Su 00:00-24:00', WE, '23:30'), null);
   assert.equal(left('Mo-Sa 00:00-24:00; Su 00:00-22:00', SU, '21:30'), 30, 'a 24-hour week that does end');
   assert.equal(left('Mo-Sa 00:00-24:00; Su 00:00-22:00', SA, '23:30'), 1350, 'Saturday night runs on to Sunday 22:00');
+  assert.equal(left('Fr 18:00-48:00; Su 00:00-12:00', SA, '23:30'), 750, 'a 48:00 close reaches two days on before it carries over');
+  assert.equal(left('Fr 18:00-48:00', SA, '23:30'), 30);
+  const joined = parseOpeningHours('Mo 10:00-12:00,14:00-16:00, Mo 11:00-15:00');
+  assert.deepEqual(joined[MO], [[600, 960]], 'one added range joins both ranges it overlaps');
+  assert.equal(minutesUntilClose(joined, at(MO, '14:30')), 90);
   assert.deepEqual(['23:30', '23:59', '01:30'].map(time => plain(formatTime(at(MO, time).minutes + 30, 'en-US'))), ['12:00 AM', '12:29 AM', '2:00 AM']);
 });

@@ -2455,7 +2455,7 @@ export const uiEnglish: Record<string, string> = {
   "영업 시간": "Hours",
   "웹사이트": "Website",
   "글링 지도에서 보기": "View on the Gling map",
-  "출처·이용 조건": "Sources and terms",
+  "출처·이용 조건 · © OpenStreetMap": "Sources and terms · © OpenStreetMap",
   "방문 전 운영 여부와 시간을 확인해 주세요.": "Check that it’s open and confirm the hours before you go.",
   "OpenStreetMap 자료 출처와 이용 조건": "OpenStreetMap credits and terms",
   "© OpenStreetMap contributors · {0} 확인 자료": "© OpenStreetMap contributors · Data as of {0}",

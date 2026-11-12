@@ -68,10 +68,11 @@ function dateRanges(text: string): [number, number][] | null {
   return result;
 }
 
-// A range that overlaps one the day already has widens it, so a day never lists the same hours twice.
-const add = (day: [number, number][], [start, end]: [number, number]): [number, number][] => {
-  const index = day.findIndex(([from, to]) => start <= to && from <= end);
-  return index < 0 ? [...day, [start, end]] : day.map((range, i) => i === index ? [Math.min(range[0], start), Math.max(range[1], end)] : range);
+// A range joins every range it overlaps or touches, so a day never lists the same hours twice.
+const add = (day: [number, number][], range: [number, number]): [number, number][] => {
+  const apart = day.filter(([from, to]) => to < range[0] || range[1] < from);
+  const joined = day.filter(item => !apart.includes(item)).reduce(([start, end], [from, to]) => [Math.min(start, from), Math.max(end, to)], range);
+  return [...apart, joined];
 };
 
 const cache = new Map<string, WeekHours | null>();
@@ -91,7 +92,8 @@ function parse(text: string, monday?: number): WeekHours | null {
   if (text === '24/7') return DAYS.map(() => [[0, 1440]]);
   const week: WeekHours = DAYS.map(() => []);
   const calendar = monday === undefined ? undefined : DAYS.map((_, day) => { const date = new Date(monday + day * 86400000); return (date.getUTCMonth() + 1) * 100 + date.getUTCDate(); });
-  let sawRule = false;
+  // A value made only of single-date lines (Dec 24 11:00-17:00; Dec 25 off) lists holidays and says nothing about a normal week.
+  let sawRule = false, general = false;
   for (const group of text.split(';')) {
     // A comma before a weekday starts an additional rule only after times or off; otherwise it continues the day list (Sa, Su 10:00-17:00).
     const rules: string[] = [];
@@ -100,13 +102,13 @@ function parse(text: string, monday?: number): WeekHours | null {
       if (previous !== undefined && !/\d|\b(?:off|closed)$/.test(previous)) rules[rules.length - 1] = `${previous},${piece.trim()}`;
       else rules.push(piece.trim());
     }
-    let dates: [number, number][] | null | undefined;
+    let dates: [number, number][] | null | undefined, dateText: string | undefined;
     for (const [index, rule] of rules.entries()) {
       const match = RULE.exec(rule.replace(/,\s+/g, ','));
       if (!match) return null;
-      const [, dateText, selector, times] = match;
+      const [, ruleDates, selector, times] = match;
       // A , rule without months keeps the previous rule's: Jun-Aug: Mo-Fr 11:00-23:00, Sa-Su 10:00-23:00 means summer hours for every day.
-      if (index === 0 || dateText !== undefined) dates = dateText === undefined ? undefined : dateRanges(dateText);
+      if (index === 0 || ruleDates !== undefined) { dateText = ruleDates; dates = dateText === undefined ? undefined : dateRanges(dateText); }
       if (dates === null || (dates && !calendar)) return null;
       if (selector !== undefined && !SELECTOR.test(selector)) return null;
       const selected = selector === undefined ? [0, 1, 2, 3, 4, 5, 6] : days(selector);
@@ -116,6 +118,7 @@ function parse(text: string, monday?: number): WeekHours | null {
       if (!open) return null;
       if (!selected.length) continue; // PH-only rule
       sawRule = true;
+      if (!dateText || !/\d/.test(dateText)) general = true;
       for (const day of selected) {
         const date = calendar?.[day] ?? 0;
         if (dates && !dates.some(([from, to]) => from <= to ? from <= date && date <= to : date >= from || date <= to)) continue;
@@ -123,7 +126,7 @@ function parse(text: string, monday?: number): WeekHours | null {
       }
     }
   }
-  return sawRule ? week : null;
+  return sawRule && general ? week : null;
 }
 
 const clocks = new Map<string, Intl.DateTimeFormat>();
@@ -149,9 +152,10 @@ export function minutesUntilClose(hours: WeekHours, { day, minutes: at }: LocalC
   let offset = today ? 0 : -1, end = range[1];
   for (let step = 0; end >= 1440; step++) {
     if (step === 7) return null;
-    const next = hours[(day + offset + 8) % 7].find(([start]) => start === end - 1440);
+    const ahead = Math.floor(end / 1440); // 48:00 ends two days on
+    const next = hours[(day + offset + ahead + 7) % 7].find(([start]) => start === end - ahead * 1440);
     if (!next) break;
-    offset++; end = next[1];
+    offset += ahead; end = next[1];
   }
   return offset * 1440 + end - at;
 }

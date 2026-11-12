@@ -63,6 +63,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     Alert: { alert: (...args) => alerts.push(args) }, LayoutAnimation: { configureNext() {}, Types: { easeOut: 'easeOut' }, Properties: { opacity: 'opacity' } },
     AppState: { currentState: 'active', addEventListener: (_name, listener) => subscription('app-state', listener) },
     DeviceEventEmitter: { addListener: (name, listener) => subscription(name, listener) },
+    Keyboard: { addListener: (name, listener) => subscription(name, listener) },
   }, { get: (target, key) => target[key] ?? key });
   const imports = {
     '@/components/screen-glow': { useScreenGlow: () => ({ onLayout() {}, image: () => undefined }) },
@@ -226,6 +227,11 @@ test('P3/P4: 길찾기 offers address copy, Apple and Google maps; 전화·인�
   assert.equal(ui.opened.at(-1), directionsUrl(place, 'google'));
   assert.deepEqual(ui.product().at(-1), payload('place_directions', id, 'vancouver'));
   sheet.props.onClose(); ui.render(); assert.ok(!ui.nodes().some(node => node.type === 'MeetupManageSheet'));
+  const directions = () => ui.nodes().some(node => node.props?.analyticsId === 'company.about.maps');
+  ui.listeners.get('keyboardDidShow')(); ui.render();
+  assert.equal(directions(), false, 'the fixed buttons leave the keyboard to the review being typed');
+  ui.listeners.get('keyboardDidHide')(); ui.render();
+  assert.equal(directions(), true);
   const android = mount('app/places/[id].tsx', 'default', {}, { params: { id, cityId: 'vancouver' }, platform: 'android' });
   t.after(android.cleanup);
   android.nodes().find(node => node.props?.analyticsId === 'company.about.maps').props.onPress(); android.render();
