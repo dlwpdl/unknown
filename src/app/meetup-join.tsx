@@ -302,6 +302,7 @@ function JoinForm({ postId }: { postId: string }) {
       <MeetupPolicyNotice mode="join" />
     </Disclosure>
     <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.')}</ThemedText>
+    <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('모임에서 일어난 일은 호스트와 멤버가 각자 책임져요. 문제가 생겨 신고해 주시면 글링이 기록을 확인하고 최대한 도울게요. 위급하면 911에 먼저 연락해 주세요.')}</ThemedText>
   </>;
   const sentRow = (detail?: string) => <ListRow analyticsId="app_meetup-join.pressable.11" title={tr('보낸 프로필과 답변')} detail={detail} onPress={() => router.push({ pathname: '/meetup-application', params: { requestId: participation!.id } })} />;
   const footerError = !!error && !!post && <>
@@ -433,6 +434,7 @@ function JoinForm({ postId }: { postId: string }) {
                       <MeetupPolicyNotice mode="join" />
                     </Disclosure>
                     <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.')}</ThemedText>
+                    <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('모임에서 일어난 일은 호스트와 멤버가 각자 책임져요. 문제가 생겨 신고해 주시면 글링이 기록을 확인하고 최대한 도울게요. 위급하면 911에 먼저 연락해 주세요.')}</ThemedText>
                   </>}
                 </>}
               </Rise>}

@@ -4656,5 +4656,6 @@ export const uiEnglish: Record<string, string> = {
   "신청을 보내면 호스트가 내 이름, 지역, 소개, 답변을 봐요. 공개 모임에서 승인되고 나면 그 모임에 신청하려는 사람에게도 이름, 한 줄 소개, 관심사가 보여요. 사진과 답변은 안 보여요.": "When you apply, the host sees your name, area, intro and answer. Once you’re approved in a public meetup, people applying to it can also see your name, one-line intro and interests, but not your photos or answer.",
   "초대받은 모임": "Invited",
   "서로 친구인 사람만 초대할 수 있어요.": "You can only invite people who are your friends.",
-  "이 초대 링크로는 들어갈 수 없어요": "This invite link doesn’t work"
+  "이 초대 링크로는 들어갈 수 없어요": "This invite link doesn’t work",
+  "모임에서 일어난 일은 호스트와 멤버가 각자 책임져요. 문제가 생겨 신고해 주시면 글링이 기록을 확인하고 최대한 도울게요. 위급하면 911에 먼저 연락해 주세요.": "Hosts and members are each responsible for themselves at a meetup. If something goes wrong, report it. We'll look into it and do everything we can to help. In an emergency, call 911 first."
 };
