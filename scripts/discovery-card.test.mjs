@@ -17,7 +17,7 @@ function render(item) {
     useContentTranslation: () => ({ display: { title: item.post?.title ?? item.title } }), visibleTranslationSource: () => ({}),
     postPublicAddress: maps.postPublicAddress, getPostImageSource: post => post.imageUris?.[0] ? { uri: post.imageUris[0] } : undefined,
     DISCOVERY_CATEGORIES, hasAdLabel: () => false, located: value => value.latitude !== null && value.longitude !== null,
-    eventTime: () => '오늘 18:00', eventPriceLabel: () => 'CA$25', styles: {}, StyleSheet: { absoluteFill: {} }, View: 'View', Pressable: 'Pressable', Image: 'Image', CityPlacePhoto: 'CityPlacePhoto', SymbolView: 'SymbolView', ThemedText: 'Text', PostAdLabel: 'AdLabel', TranslationControl: 'Translation',
+    eventTime: () => '오늘 18:00', eventPriceLabel: () => 'CA$25', styles: {}, StyleSheet: { absoluteFill: {} }, View: 'View', Pressable: 'Pressable', Image: 'Image', CityPlacePhoto: 'CityPlacePhoto', Top50Badge: 'Top50Badge', SymbolView: 'SymbolView', ThemedText: 'Text', PostAdLabel: 'AdLabel', TranslationControl: 'Translation',
   });
   return exports.render({ item, viewerScope: 'test', onOpen() {} });
 }

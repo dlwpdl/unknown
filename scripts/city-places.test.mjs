@@ -1,5 +1,5 @@
 import { withLanguageImports } from './test-language-imports.mjs';
-import { discoveryMatches, discoveryPlace, placeMapRoute } from '../src/lib/discovery.ts';
+import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, discoveryMatches, discoveryPlace, placeCategory, placeMapRoute, priceSymbol } from '../src/lib/discovery.ts';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -495,7 +495,7 @@ function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = da
     'expo-router': { useIsFocused: () => true, useRouter: () => ({ push: p => routes.push(p), navigate: p => routes.push(p), canGoBack: () => true, back: () => routes.push('back') }), useLocalSearchParams: () => params },
     'react-native': { useWindowDimensions: () => ({ width: 390, fontScale: 1 }), StyleSheet: { create: v => v }, View: 'View', TextInput: 'TextInput', Linking: { openURL: async value => { opened.push(value); } }, Alert: { alert() {} } },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
-    'react-native-reanimated': { __esModule: true, default: { View: 'ReanimatedView' }, useReducedMotion: () => true },
+    'react-native-reanimated': { __esModule: true, default: { View: 'ReanimatedView' }, FadeIn: { duration: () => 'fade' }, SlideInDown: { duration: () => 'slide' }, useReducedMotion: () => true },
     '@/lib/mock': { CITIES: cities },
     '@/lib/community-city': { useCommunityCity: () => ({ city: cities[0] }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'anonymous' } }) },
@@ -511,7 +511,7 @@ function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = da
       getPlaceReviewRating: (cityId, placeId) => ({ cityId, placeId, score: null, source: null, count: null, externalScore: null }) },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16, four: 24 }, MaxContentWidth: 920 },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: v => feedback.push(v) }) },
-    '@/lib/city-places': placeData, '@/lib/discovery': { placeMapRoute }, '@/lib/post-maps': module('src/lib/post-maps.ts'),
+    '@/lib/city-places': placeData, '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, placeMapRoute, priceSymbol }, '@/lib/post-maps': module('src/lib/post-maps.ts'),
     '@/lib/merchant-source': module('src/lib/merchant-source.ts', {
       '../../supabase/functions/_shared/post-links.ts': { safePostLink: value => value },
     }),
@@ -1060,9 +1060,10 @@ test('a verified optional Flickr catalog fills only missing photos and preserves
   assert.equal(api.getCityPlaces('toronto').find(p => p.id === supplementary.placeId).photo?.uri, supplementary.uri);
   assert.equal(api.getCityPlaces('toronto').find(p => p.id === original.placeId).photo.uri, original.uri);
   const detail = nodes(screen('src/app/places/[id].tsx', { cityId: 'toronto', id: supplementary.placeId }, false, api).render());
-  assert.ok(detail.find(node => node.type === 'PostPhotoCredits').props.credits.includes(supplementary.title));
-  assert.ok(detail.some(node => node.type === 'ThemedText' && typeof node.props.children === 'string'
-    && node.props.children.includes('Openverse로 찾은 사진') && node.props.children.includes('인증하거나 보증하지 않아요')));
+  const credits = detail.find(node => node.type === 'PostPhotoCredits').props.credits;
+  assert.ok(credits.includes(supplementary.title));
+  // 장소 상세 A안 (owner 2026-11-11): the Openverse note sits with the photo's other credits.
+  assert.ok(credits.includes('Openverse로 찾은 사진') && credits.includes('인증하거나 보증하지 않아요'));
 });
 
 

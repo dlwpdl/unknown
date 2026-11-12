@@ -15,7 +15,7 @@ const weekday = (locale: string, day: number) => new Intl.DateTimeFormat(locale,
 export function PlaceHours({ openingHours, cityId, now, fallback = null }: { openingHours?: string; cityId: string; now?: number; fallback?: ReactNode }) {
   const { tr, locale } = useLanguage(), { play } = useInteractionFeedback(), reduced = useReducedMotion();
   const [expanded, setExpanded] = useState(false), [openedAt] = useState(() => Date.now());
-  const hours = parseOpeningHours(openingHours), clock = cityClock(cityId, now ?? openedAt);
+  const clock = cityClock(cityId, now ?? openedAt), hours = parseOpeningHours(openingHours, clock);
   if (!hours || !clock) return fallback;
   // 곧 닫음 (P6): within the hour it shows orange with the closing time instead of today's hours.
   const open = isOpenAt(hours, clock), left = minutesUntilClose(hours, clock);

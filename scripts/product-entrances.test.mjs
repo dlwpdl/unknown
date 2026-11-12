@@ -1,5 +1,5 @@
 import { deliveryPartnerPlace } from '../src/lib/delivery-partners.ts';
-import { directionsUrl, placeMapRoute } from '../src/lib/discovery.ts';
+import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, directionsUrl, placeCategory, placeMapRoute, priceSymbol } from '../src/lib/discovery.ts';
 import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -63,6 +63,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     Alert: { alert: (...args) => alerts.push(args) }, LayoutAnimation: { configureNext() {}, Types: { easeOut: 'easeOut' }, Properties: { opacity: 'opacity' } },
     AppState: { currentState: 'active', addEventListener: (_name, listener) => subscription('app-state', listener) },
     DeviceEventEmitter: { addListener: (name, listener) => subscription(name, listener) },
+    Keyboard: { addListener: (name, listener) => subscription(name, listener) },
   }, { get: (target, key) => target[key] ?? key });
   const imports = {
     '@/components/screen-glow': { useScreenGlow: () => ({ onLayout() {}, image: () => undefined }) },
@@ -73,7 +74,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
       clearLastNotificationResponseAsync: async () => {}, addNotificationResponseReceivedListener: listener => subscription('response', listener), addPushTokenListener: listener => subscription('token', listener) },
     'expo-linking': Linking, 'expo-web-browser': { openBrowserAsync: url => { browsed.push(url); return Linking.openURL(url); } }, 'expo-application': { nativeApplicationVersion: '1.2.2', nativeBuildVersion: '64' },
     'expo-constants': { __esModule: true, default: { expoConfig: { version: '9.9.9', ios: { buildNumber: '999' } } } },
-    'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, FadeIn: { duration: () => 'fade' }, FadeInDown: { duration: () => 'fade' }, useReducedMotion: () => true }, 'react-native-webview': { __esModule: true, default: 'WebView' },
+    'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, FadeIn: { duration: () => 'fade' }, FadeInDown: { duration: () => 'fade' }, SlideInDown: { duration: () => 'slide' }, useReducedMotion: () => true }, 'react-native-webview': { __esModule: true, default: 'WebView' },
     '@/lib/auth': { useAuth: () => ctx.auth }, '@/lib/product-analytics': product, '@/lib/notification-preferences': preferences,
     '@/lib/push-notifications': { pushSupported: true, pushConfigured: true, registerPushDevice: async () => {} },
     '@/lib/meetup-push-rsvp': { registerMeetupRsvpCategory: async () => {}, answerMeetupRsvpFromPush: () => false },
@@ -89,7 +90,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     '@/components/place-saves': { PlaceSavedBy: 'PlaceSavedBy', PlaceRelated: 'PlaceRelated', usePlaceSaves: () => null }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
     '@/lib/city-places': { getCityRecommendations: id => catalog.cities[id]?.places ?? [], CITY_PLACES_COLLECTED_AT: catalog.collectedAt, getCityPlaces: id => { if (ctx.catalogError) throw new Error('missing'); return ctx.places ?? catalog.cities[id]?.places ?? []; } },
     '@/lib/community-city': { useCommunityCity: () => ({ city, setCity() {} }) }, '@/lib/mock': { CITIES: [city] },
-    '@/lib/discovery': { directionsUrl, placeMapRoute },
+    '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, directionsUrl, placeCategory, placeMapRoute, priceSymbol },
     '@/lib/delivery-partners': { deliveryPartnerPlace },
     '@/lib/webshops': { loadCityBusinessLinks: async () => ({}) },
     '@/lib/merchant-source': { merchantMapsUrl, merchantPhoneUrl, safeMerchantSourceUrl }, '@/lib/post-maps': maps,
@@ -226,8 +227,14 @@ test('P3/P4: 길찾기 offers address copy, Apple and Google maps; 전화·인�
   assert.equal(ui.opened.at(-1), directionsUrl(place, 'google'));
   assert.deepEqual(ui.product().at(-1), payload('place_directions', id, 'vancouver'));
   sheet.props.onClose(); ui.render(); assert.ok(!ui.nodes().some(node => node.type === 'MeetupManageSheet'));
+  const directions = () => ui.nodes().some(node => node.props?.analyticsId === 'company.about.maps');
+  ui.listeners.get('keyboardWillShow')(); ui.render();
+  assert.equal(directions(), false, 'the fixed buttons leave the keyboard to the review being typed');
+  ui.listeners.get('keyboardWillHide')(); ui.render();
+  assert.equal(directions(), true);
   const android = mount('app/places/[id].tsx', 'default', {}, { params: { id, cityId: 'vancouver' }, platform: 'android' });
   t.after(android.cleanup);
+  assert.ok(android.listeners.has('keyboardDidShow'), 'Android only reports the keyboard once it is up');
   android.nodes().find(node => node.props?.analyticsId === 'company.about.maps').props.onPress(); android.render();
   assert.deepEqual(plain(android.nodes().find(node => node.type === 'MeetupManageSheet').props.actions.map(action => action.key)), ['copy', 'google'], 'Apple Maps is offered on iPhone only');
   const rich = mount('app/places/[id].tsx', 'default', {}, { params: { id, cityId: 'vancouver' },

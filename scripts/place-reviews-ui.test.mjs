@@ -5,6 +5,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { tr, setActiveLanguage } from '../src/i18n/index.ts';
+import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, priceSymbol } from '../src/lib/discovery.ts';
 
 const author = '11111111-1111-4111-8111-111111111111';
 const settle = () => new Promise(setImmediate);
@@ -255,6 +256,8 @@ function detailViewport(mode = 'auto') {
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { StyleSheet: { create: x => x }, View: 'View' },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
+    'react-native-reanimated': { __esModule: true, default: { View: 'ReanimatedView' }, FadeIn: { duration: () => 'fade' }, SlideInDown: { duration: () => 'slide' }, useReducedMotion: () => true },
+    '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, priceSymbol },
     'expo-router': { useIsFocused: () => true, useLocalSearchParams: () => ({ cityId: 'toronto', id: 'osm:node:1' }), useRouter: () => ({}) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/components/place-reviews': { PlaceReviews: 'PlaceReviews' },
@@ -272,7 +275,7 @@ function detailViewport(mode = 'auto') {
     '@/lib/merchant-source': { safeMerchantSourceUrl: () => null, merchantMapsUrl: () => null },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16 }, MaxContentWidth: 920 },
-    '@/constants/design-system': { ControlStyles: { icon: {} }, IconSize: { toolbar: 21 } },
+    '@/constants/design-system': { ControlStyles: { icon: {} }, IconSize: { toolbar: 21 }, ControlMotion: { settleMs: 180, expandMs: 220 } },
     '@/components/share-card': { ShareCardSheet: 'ShareCardSheet' },
   };
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/app/places/[id].tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText,
