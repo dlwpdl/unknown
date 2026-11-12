@@ -61,7 +61,7 @@ const halo = (light: boolean) => Platform.OS === 'ios'
   : { filter: light ? 'drop-shadow(0 0 1.2px rgba(255,255,255,0.95)) drop-shadow(0 0 0.6px rgba(255,255,255,0.95))' : 'drop-shadow(0 0 1.2px rgba(11,11,18,0.9))' };
 
 /** A map category's 3D icon, hidden from screen readers (the chip carries the name). Each new `play` value runs its gesture once. */
-export function CategoryIcon({ id, play, size = 24 }: { id: string; play: number; size?: number }) {
+export function CategoryIcon({ id, play, size = 24, cache = true }: { id: string; play: number; size?: number; cache?: boolean }) {
   const light = useTheme() === Colors.light, reduced = useReducedMotion();
   const x = useSharedValue(0), y = useSharedValue(0), rotate = useSharedValue(0), scaleX = useSharedValue(1), scaleY = useSharedValue(1);
   const played = useRef(0);
@@ -82,9 +82,10 @@ export function CategoryIcon({ id, play, size = 24 }: { id: string; play: number
   const art = Object.hasOwn(ART, id) ? id : PLACE_SUBCATEGORIES.find(option => option.id === id)?.filter;
   if (!art || !Object.hasOwn(ART, art)) return null;
   const box = { width: size, height: size };
-  // Owner 2026-11-12 (map lag ⑤): draw the icon and its halo once and reuse that bitmap; the gesture only moves/scales it.
+  // Owner 2026-11-12 (map lag ⑤): iOS draws the icon and its halo once and reuses that bitmap; the gesture only moves/scales it.
+  // A parent that keeps the icon scaled up passes cache={false} so the bitmap is not stretched. Android's drop-shadow is already its own layer.
   return <Animated.View pointerEvents="none" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
-    shouldRasterizeIOS renderToHardwareTextureAndroid style={[box, halo(light), moving]}>
+    shouldRasterizeIOS={cache} style={[box, halo(light), moving]}>
     <Image source={ART[art as keyof typeof ART]} contentFit="contain" style={box} accessible={false} />
   </Animated.View>;
 }

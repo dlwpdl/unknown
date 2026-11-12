@@ -434,7 +434,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const artChip = ({ id, label, selected, analyticsId, onPress, accessibilityLabel = label, expanded, outline, size = 40, ink = theme.text, onLayout }: { id: string; label: string; selected: boolean; analyticsId: string; onPress: () => void; accessibilityLabel?: string; expanded?: boolean; outline?: boolean; size?: number; ink?: string; onLayout?: ReturnType<typeof filterRow.chip> }) =>
     <Pressable key={id} analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityState={expanded === undefined ? { selected } : { selected, expanded }}
       onPress={onPress} onLayout={onLayout} style={({ pressed }) => [styles.artChip, { opacity: pressed ? 0.82 : 1 }]}>
-      <View style={selected ? styles.artLift : null}><CategoryIcon id={id} size={size} play={bump.id === id ? bump.n : 0} /></View>
+      <View style={selected ? styles.artLift : null}><CategoryIcon id={id} size={size} play={bump.id === id ? bump.n : 0} cache={!selected} /></View>
       <ThemedText numberOfLines={1} style={[styles.artLabel, !selected ? { color: ink, backgroundColor: `${theme.card}F0` }
         : outline ? { backgroundColor: theme.card, borderWidth: 1.5, borderColor: theme.accent, color: theme.accent } : { backgroundColor: theme.accent, color: theme.accentInk }]}>{label}</ThemedText>
     </Pressable>;

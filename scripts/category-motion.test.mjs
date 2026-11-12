@@ -35,9 +35,12 @@ test('a sub-category without its own picture yet shows its map category picture'
   }
 });
 
-test('the haloed icon is drawn once and reused instead of redrawing its shadow every frame (map lag ⑤)', () => {
+test('iOS draws the haloed icon once and reuses it, except while the map keeps the selected chip scaled up (map lag ⑤)', () => {
   const icon = readFileSync(new URL('../src/components/category-icon.tsx', import.meta.url), 'utf8');
-  assert.match(icon, /<Animated\.View[^>]*shouldRasterizeIOS renderToHardwareTextureAndroid style=\{\[box, halo\(light\), moving\]\}>/);
+  assert.match(icon, /cache = true/);
+  assert.match(icon, /<Animated\.View[^>]*shouldRasterizeIOS=\{cache\}[^>]*style=\{\[box, halo\(light\), moving\]\}>/);
+  const map = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
+  assert.match(map, /<View style=\{selected \? styles\.artLift : null\}><CategoryIcon [^>]*cache=\{!selected\} \/>/);
 });
 
 test('each gesture runs once in 0.64s and ends where it started', () => {
