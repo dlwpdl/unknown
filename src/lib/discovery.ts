@@ -96,9 +96,13 @@ export function placeMapRoute(place: Pick<CityPlace, 'id' | 'cityId' | 'glingVis
     placeRequest: Date.now().toString(36) + '-' + (++placeMapRequestId).toString(36) } };
 }
 
+/** The map category a place is filed under; the place screen names it the same way (owner 2026-11-11). */
+export const placeCategory = (place: Pick<CityPlace, 'nightlife' | 'category'>) =>
+  place.nightlife ? 'nightlife' : place.category === 'food' ? 'dining' : place.category === 'cafe' ? 'cafe' : 'place';
+
 export function discoveryPlace(place: CityPlace): DiscoveryItem | null {
   if (!Number.isFinite(place.latitude) || Math.abs(place.latitude) > 90 || !Number.isFinite(place.longitude) || Math.abs(place.longitude) > 180) return null;
-  const category = place.nightlife ? 'nightlife' : place.category === 'food' ? 'dining' : place.category === 'cafe' ? 'cafe' : 'place';
+  const category = placeCategory(place);
   const pick = place.recommendation?.placeId === place.id ? place.recommendation : null;
   return { id: `place:${place.cityId}:${place.id}`, source: 'place', sourceId: place.id, cityId: place.cityId, title: place.name,
     category, label: place.address || place.name,

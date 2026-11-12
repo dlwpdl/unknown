@@ -11,7 +11,8 @@ import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
-export function PostPhotoCredits({ credits }: { credits: string }) {
+/** `photo` sits on the picture as a small dark chip; `link` is a plain start-aligned link in a list of sources. */
+export function PostPhotoCredits({ credits, variant = 'toolbar' }: { credits: string; variant?: 'toolbar' | 'photo' | 'link' }) {
   const { tr } = useLanguage();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -22,10 +23,12 @@ export function PostPhotoCredits({ credits }: { credits: string }) {
   if (!credits) return null;
 
   return <>
-    <View style={styles.toolbar}>
+    <View style={variant === 'toolbar' ? styles.toolbar : variant === 'link' ? styles.start : undefined}>
       <Pressable analyticsId="post.photo-credits.open" accessibilityRole="button" accessibilityLabel={tr("사진 출처와 이용 조건 보기")}
-        onPress={() => { play('selection'); setVisible(true); }} style={({ pressed }) => [styles.button, { opacity: pressed ? 0.65 : 1 }]}>
-        <ThemedText type="small" themeColor="textSecondary">{tr("사진 출처")}</ThemedText>
+        onPress={() => { play('selection'); setVisible(true); }} style={({ pressed }) => [styles.button, variant === 'link' && styles.linkButton, { opacity: pressed ? 0.65 : 1 }]}>
+        {variant === 'photo'
+          ? <View style={styles.chip}><ThemedText type="small" style={styles.chipText}>{tr("사진 출처")}</ThemedText></View>
+          : <ThemedText type={variant === 'link' ? 'smallBold' : 'small'} themeColor={variant === 'link' ? 'accent' : 'textSecondary'}>{tr("사진 출처")}</ThemedText>}
       </Pressable>
     </View>
     <Modal visible={visible} transparent animationType={reducedMotion ? 'none' : 'fade'} onRequestClose={close}>
@@ -55,6 +58,10 @@ export function PostPhotoCredits({ credits }: { credits: string }) {
 
 const styles = StyleSheet.create({
   toolbar: { alignItems: 'flex-end', paddingHorizontal: Spacing.three },
+  start: { alignItems: 'flex-start' },
+  linkButton: { paddingHorizontal: 0, alignItems: 'flex-start' },
+  chip: { backgroundColor: '#0009', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  chipText: { color: '#fff' },
   button: { minWidth: 44, minHeight: 44, paddingHorizontal: Spacing.two, justifyContent: 'center', alignItems: 'center' },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#0009' },
   sheet: { maxHeight: '80%', borderTopLeftRadius: 24, borderTopRightRadius: 24 },
