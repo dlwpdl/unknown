@@ -116,7 +116,7 @@ test('the quick category row preserves the owner-selected restaurant, cafe, fest
   const tree = mount().render();
   const row = nodes(tree).find(node => node.type === 'ScrollView' && node.props.horizontal);
   // The live-map chips (말풍선, 근처 모임) are for members only, so a guest sees the row as before.
-  assert.deepEqual(children(row).filter(Boolean).map(node => node.props.accessibilityLabel), ['보여 줄 곳, 모두', '전체', '지금 영업 중', 'gling Visited', 'TOP 50', '배달 할인', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳', '부동산', '중고거래']);
+  assert.deepEqual(children(row).filter(Boolean).map(node => node.props.accessibilityLabel), ['보여 줄 곳, 모두', '전체', '지금 영업 중', 'gling Visited', 'TOP 50', '배달 할인', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳', '운동', '부동산', '중고거래']);
 });
 
 test('gling Visited selects only attested map pins while dining, cafe and All remain independent', () => {

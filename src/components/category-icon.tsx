@@ -52,6 +52,8 @@ const ART = {
   cinema: require('@/assets/images/map-categories/cinema.png'), bowling: require('@/assets/images/map-categories/bowling.png'),
   arcade: require('@/assets/images/map-categories/arcade.png'), escape_room: require('@/assets/images/map-categories/escape_room.png'),
 } as const;
+// shortcut: 운동 and its sub-chips (owner 2026-11-12) borrow 산책·하이킹's shoe until their own pictures are drawn; then give each a require.
+const BORROWED: Record<string, keyof typeof ART> = { fitness: 'trail' };
 const easing = Easing.bezier(...ALIVE_BEZIER);
 
 // A thin halo keeps the artwork readable over the map seen through the chip (mockup ⑪): white on light chips, dark on dark ones.
@@ -79,11 +81,12 @@ export function CategoryIcon({ id, play, size = 24 }: { id: string; play: number
   const moving = useAnimatedStyle(() => ({ transform: [{ translateX: originX + x.get() }, { translateY: originY + y.get() }, { rotate: `${rotate.get()}deg` },
     { scaleX: scaleX.get() }, { scaleY: scaleY.get() }, { translateX: -originX }, { translateY: -originY }] }));
   // A sub-category without its own picture yet borrows its map category's (owner 2026-11-05: its own is being drawn).
-  const art = Object.hasOwn(ART, id) ? id : PLACE_SUBCATEGORIES.find(option => option.id === id)?.filter;
-  if (!art || !Object.hasOwn(ART, art)) return null;
+  const picture = (key?: string) => !key ? undefined : Object.hasOwn(ART, key) ? key as keyof typeof ART : Object.hasOwn(BORROWED, key) ? BORROWED[key] : undefined;
+  const art = picture(id) ?? picture(PLACE_SUBCATEGORIES.find(option => option.id === id)?.filter);
+  if (!art) return null;
   const box = { width: size, height: size };
   return <Animated.View pointerEvents="none" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[box, halo(light), moving]}>
-    <Image source={ART[art as keyof typeof ART]} contentFit="contain" style={box} accessible={false} />
+    <Image source={ART[art]} contentFit="contain" style={box} accessible={false} />
   </Animated.View>;
 }
 

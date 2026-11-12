@@ -28,9 +28,11 @@ export const DISCOVERY_CATEGORIES = [
   { id: 'nightlife', label: '나이트라이프', short: '밤', color: '#DD737F', art: 'nightlife' },
   { id: 'library', label: '도서관', short: '책', color: '#B8A270', art: 'places' },
   { id: 'place', label: '장소', short: '장소', color: '#B6B9CC', art: 'places' },
+  // shortcut: 운동 (owner 2026-11-12) borrows 액티비티's color and the 장소 pin picture until its own are drawn.
+  { id: 'fitness', label: '운동', short: '운동', color: '#82ADF0', art: 'places' },
 ] as const;
 export type DiscoveryCategory = typeof DISCOVERY_CATEGORIES[number]['id'];
-export type DiscoveryFilter = 'all' | 'top25' | 'visited' | 'delivery' | 'nightlife' | 'festival' | 'cafe' | 'dining' | 'places' | 'events' | 'housing' | 'used';
+export type DiscoveryFilter = 'all' | 'top25' | 'visited' | 'delivery' | 'nightlife' | 'festival' | 'cafe' | 'dining' | 'places' | 'fitness' | 'events' | 'housing' | 'used';
 export type DiscoveryDate = 'all' | 'today' | 'week' | 'weekend' | 'date';
 // Owner 2026-11-04: sub-filters differ per map category. These ids are the catalog values in CityPlace.subcategories.
 // Owner 2026-11-05 added the rest; scripts/map-subcategories.py fills them from each place's OSM tags. A place's pin names
@@ -56,6 +58,11 @@ export const PLACE_SUBCATEGORIES = [
   { id: 'historic', filter: 'places', label: '역사 명소' }, { id: 'market', filter: 'places', label: '시장' }, { id: 'theatre', filter: 'places', label: '공연장' },
   { id: 'cinema', filter: 'places', label: '영화관' }, { id: 'bowling', filter: 'places', label: '볼링' }, { id: 'arcade', filter: 'places', label: '오락실' },
   { id: 'escape_room', filter: 'places', label: '방탈출' },
+  // Owner 2026-11-12 "운동관련 세부칩 기능 다 넣어야겟네": places in a city's fitnessPlaces, found by their OSM tags.
+  { id: 'running', filter: 'fitness', label: '러닝 코스' }, { id: 'gym', filter: 'fitness', label: '헬스·피트니스' }, { id: 'yoga_pilates', filter: 'fitness', label: '요가·필라테스' },
+  { id: 'climbing', filter: 'fitness', label: '클라이밍' }, { id: 'swimming', filter: 'fitness', label: '수영장' }, { id: 'sauna_spa', filter: 'fitness', label: '사우나·스파' },
+  { id: 'golf', filter: 'fitness', label: '골프' }, { id: 'tennis_pickleball', filter: 'fitness', label: '테니스·피클볼' }, { id: 'badminton', filter: 'fitness', label: '배드민턴' },
+  { id: 'ice_rink', filter: 'fitness', label: '스케이트장' }, { id: 'soccer', filter: 'fitness', label: '축구·풋살' }, { id: 'basketball', filter: 'fitness', label: '농구' },
 ] as const;
 // Owner 2026-11-10: these say when or with whom to go, not what the place is, so a pin's second line skips them (한식, not 점심).
 export const SITUATION_SUBCATEGORIES: ReadonlySet<string> = new Set(['breakfast', 'lunch', 'dinner', 'late_night', 'solo', 'date', 'work_friendly', 'happy_hour']);
@@ -96,9 +103,12 @@ export function placeMapRoute(place: Pick<CityPlace, 'id' | 'cityId' | 'glingVis
     placeRequest: Date.now().toString(36) + '-' + (++placeMapRequestId).toString(36) } };
 }
 
+const FITNESS_SUBCATEGORIES: ReadonlySet<string> = new Set(PLACE_SUBCATEGORIES.filter(option => option.filter === 'fitness').map(option => option.id));
 /** The map category a place is filed under; the place screen names it the same way (owner 2026-11-11). */
-export const placeCategory = (place: Pick<CityPlace, 'nightlife' | 'category'>) =>
-  place.nightlife ? 'nightlife' : place.category === 'food' ? 'dining' : place.category === 'cafe' ? 'cafe' : 'place';
+export const placeCategory = (place: Pick<CityPlace, 'nightlife' | 'category' | 'subcategories'>) =>
+  place.nightlife ? 'nightlife' : place.category === 'food' ? 'dining' : place.category === 'cafe' ? 'cafe'
+    // An exercise place stays 'places' in the catalog (installed apps accept only food/cafe/places) and is told apart by its sub-chip.
+    : place.subcategories?.some(id => FITNESS_SUBCATEGORIES.has(id)) ? 'fitness' : 'place';
 
 export function discoveryPlace(place: CityPlace): DiscoveryItem | null {
   if (!Number.isFinite(place.latitude) || Math.abs(place.latitude) > 90 || !Number.isFinite(place.longitude) || Math.abs(place.longitude) > 180) return null;
@@ -238,7 +248,7 @@ export function discoveryMatches(item: DiscoveryItem, filters: DiscoveryFilter |
   const selected = typeof filters === 'string' ? [filters] : filters;
   return (!top25Only || !!item.top25) && (!selected.length || selected.some(filter => filter === 'all'
     || (filter === 'top25' ? !!item.top25 : filter === 'visited' ? !!item.glingVisited : filter === 'delivery' ? !!item.delivery : filter === 'events' ? item.source !== 'place' && ['festival', 'exhibition', 'event'].includes(category)
-      : filter === 'places' ? !['housing', 'used', 'festival', 'event', 'nightlife', 'cafe', 'dining'].includes(category) : category === filter)))
+      : filter === 'places' ? !['housing', 'used', 'festival', 'event', 'nightlife', 'cafe', 'dining', 'fitness'].includes(category) : category === filter)))
     && (`${item.title} ${item.label} ${item.top25?.reason ?? ''} ${item.post?.business?.name ?? ''} ${item.post?.body ?? ''} ${(item.post?.hashtags ?? []).join(' ')} ${DISCOVERY_CATEGORIES.find(value => value.id === category)?.label}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())
     // A place's Korean search names (owner 2026-11-08 "영어를 한글로 쳐도 나오게하자"), spaces ignored; never shown.
     || !!query.trim() && (item.place?.searchNames ?? []).some(name => name.replace(/\s+/g, '').includes(query.replace(/\s+/g, '').toLocaleLowerCase())));

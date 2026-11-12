@@ -75,7 +75,7 @@ const filters: { id: DiscoveryFilter; label: string }[] = [
   { id: 'top25', label: 'TOP 50' }, { id: 'delivery', label: '배달 할인' },
   { id: 'dining', label: '레스토랑' }, { id: 'cafe', label: '카페' },
   { id: 'festival', label: '페스티벌' }, { id: 'nightlife', label: '나이트라이프' },
-  { id: 'places', label: '가볼 만한 곳' },
+  { id: 'places', label: '가볼 만한 곳' }, { id: 'fitness', label: '운동' },
   { id: 'housing', label: '부동산' }, { id: 'used', label: '중고거래' },
   { id: 'events', label: '행사 전체' },
 ];
@@ -447,7 +447,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
         onPress: () => { play('selection'); setBump(value => ({ id: 'events', n: value.n + 1 })); setShowMeetups(value => !value); } })}
       {filterChip(filters[0])}
       {artChip({ id: 'open', label: tr('지금 영업 중'), selected: openNow, analyticsId: 'discovery.open-now', onPress: () => { play('selection'); setOpenNow(value => !value); setShowUnknown(false); } })}
-      {(['visited', 'top25', 'delivery', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used'] as const).map(id => filterChip(filters.find(value => value.id === id)!))}
+      {(['visited', 'top25', 'delivery', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'fitness', 'housing', 'used'] as const).map(id => filterChip(filters.find(value => value.id === id)!))}
     </ScrollView>
     {Object.hasOwn(EVENT_CITIES, city.id) && eventCategory && <ScrollView horizontal analyticsId="discovery.date" showsHorizontalScrollIndicator={false} style={styles.eventDateRow} contentContainerStyle={styles.eventDates}>
       <ThemedText type="small" themeColor="textSecondary" style={[styles.mapDateLabel, { backgroundColor: chipBackground }]}>{tr('행사 날짜')}</ThemedText>

@@ -24,7 +24,7 @@ import { CITY_PLACES_COLLECTED_AT, getCityBrowsePlaces, getCityDiscoveryPlaces, 
 import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { usePlaceReviewSummaries } from '@/hooks/use-place-review-summaries';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { placeMapRoute } from '@/lib/discovery';
+import { placeCategory, placeMapRoute } from '@/lib/discovery';
 import { CITIES } from '@/lib/mock';
 
 
@@ -50,7 +50,9 @@ function PlacesList({ city, nearby = false }: { city?: (typeof CITIES)[number]; 
   let places: CityPlace[] = [], recommendations: CityPlace[] = [], error = '';
   if (city) {
     try {
-      recommendations = nearby ? getCityDiscoveryPlaces(city.id).filter(place => place.cityId === city.id && (category === 'all' || place.category === category)) : getCityBrowsePlaces(city.id, category);
+      recommendations = (nearby ? getCityDiscoveryPlaces(city.id).filter(place => place.cityId === city.id && (category === 'all' || place.category === category)) : getCityBrowsePlaces(city.id, category))
+        // Exercise places have the map's 운동 chip; they are not 가볼 만한 곳 (owner 2026-11-12).
+        .filter(place => category !== 'places' || placeCategory(place) !== 'fitness');
       const ranked = rankPlacesByDistance(recommendations, nearby ? location.fix : null);
       recommendations = ranked.map(row => row.place); ranked.forEach(row => distances.set(row.place.id, row.distance));
       places = recommendations.filter(place => placeMatchesQuery(place, query));

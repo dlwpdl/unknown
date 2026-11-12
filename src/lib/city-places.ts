@@ -46,7 +46,9 @@ type PlaceCatalog = {
     // Places past the 200 that 1.4.4/1.4.5 accept per city; those apps ignore these fields.
     extraPlaces?: CityPlace[]; extraRecommendations?: PlaceRecommendation[]; extraPhotos?: PlacePhoto[];
     // Up to 500 places past the 500 (200 + 300 extra) that 1.5.1 and earlier accept per city; those apps ignore these fields.
-    morePlaces?: CityPlace[]; moreRecommendations?: PlaceRecommendation[]; morePhotos?: PlacePhoto[] }>;
+    morePlaces?: CityPlace[]; moreRecommendations?: PlaceRecommendation[]; morePhotos?: PlacePhoto[];
+    // Up to 300 exercise places for the 운동 chip (owner 2026-11-12), category 'places' with a fitness sub-chip; 1.5.1 and earlier ignore this field.
+    fitnessPlaces?: CityPlace[] }>;
 };
 // Seoul has no places yet and stays out of the catalog: released apps reject a server payload with any other city set.
 const withoutCatalog: PlaceCatalog['cities'] = { seoul: { coverage: 'city-center', places: [] } };
@@ -64,7 +66,8 @@ function regionalPlacesForCity(cityId: string): CityPlace[] {
   return catalog.cities[cityId].regionalPlaces ?? (snapshot as PlaceCatalog).cities[cityId]?.regionalPlaces ?? [];
 }
 
-const addedPlacesForCity = (cityId: string) => [...regionalPlacesForCity(cityId), ...(catalog.cities[cityId].extraPlaces ?? []), ...(catalog.cities[cityId].morePlaces ?? [])];
+const addedPlacesForCity = (cityId: string) => [...regionalPlacesForCity(cityId), ...(catalog.cities[cityId].extraPlaces ?? []), ...(catalog.cities[cityId].morePlaces ?? []),
+  ...(catalog.cities[cityId].fitnessPlaces ?? [])];
 const diningPicksForCity = (cityId: string) => [...(catalog.cities[cityId].diningRecommendations ?? []), ...(catalog.cities[cityId].extraRecommendations ?? []), ...(catalog.cities[cityId].moreRecommendations ?? [])];
 
 function photosForCity(cityId: string): PlacePhoto[] {
@@ -121,7 +124,8 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
     if (data.regionalPlaces !== undefined && (!Array.isArray(data.regionalPlaces) || data.regionalPlaces.length > 200)) invalid();
     if (data.extraPlaces !== undefined && (!Array.isArray(data.extraPlaces) || data.extraPlaces.length > 300)) invalid();
     if (data.morePlaces !== undefined && (!Array.isArray(data.morePlaces) || data.morePlaces.length > 500)) invalid();
-    for (const rows of [data.places, data.regionalPlaces ?? [], data.extraPlaces ?? [], data.morePlaces ?? []]) {
+    if (data.fitnessPlaces !== undefined && (!Array.isArray(data.fitnessPlaces) || data.fitnessPlaces.length > 300)) invalid();
+    for (const rows of [data.places, data.regionalPlaces ?? [], data.extraPlaces ?? [], data.morePlaces ?? [], data.fitnessPlaces ?? []]) {
       const seen = new Set<string>();
       for (const p of rows) {
         if (!p || !text(p.id, 80) || !/^osm:(node|way|relation):[1-9]\d*$/.test(p.id) || seen.has(p.id) || p.cityId !== city.id || !text(p.name, 300)
@@ -140,7 +144,8 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
     }
     const baseIds = new Set(data.places.map(place => place.id)), extraIds = new Set((data.extraPlaces ?? []).map(place => place.id));
     const moreIds = new Set((data.morePlaces ?? []).map(place => place.id));
-    if ([...extraIds].some(id => baseIds.has(id)) || [...moreIds].some(id => baseIds.has(id) || extraIds.has(id))) invalid();
+    if ([...extraIds].some(id => baseIds.has(id)) || [...moreIds].some(id => baseIds.has(id) || extraIds.has(id))
+      || (data.fitnessPlaces ?? []).some(place => baseIds.has(place.id) || extraIds.has(place.id) || moreIds.has(place.id))) invalid();
     for (const [photos, photoIds, regional, max] of [...(next.photoCatalog ? [[next.photoCatalog.cities[city.id], baseIds, false, 200] as const] : []), ...(data.regionalPhotos !== undefined ? [[data.regionalPhotos, ids, true, 200] as const] : []),
       ...(data.extraPhotos !== undefined ? [[data.extraPhotos, extraIds, false, 300] as const] : []), ...(data.morePhotos !== undefined ? [[data.morePhotos, moreIds, false, 500] as const] : [])]) {
       const seenPhotos = new Set<string>();

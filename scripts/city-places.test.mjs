@@ -214,6 +214,55 @@ test('installed 1.5.1 apps accept a catalog with more places and simply leave th
   assert.equal(released().replaceCityPlacesCatalog(seed, fixtureNow), true);
 });
 
+function fitnessFixture() {
+  const { seed, city, more } = moreFixture();
+  const gym = { ...city.places[0], id: 'osm:node:999999999996', name: 'Fitness fixture pool', category: 'places', subcategories: ['swimming', 'gym'], sourceUrl: 'https://www.openstreetmap.org/node/999999999996' };
+  delete gym.nightlife; delete gym.priceLevel;
+  city.fitnessPlaces = [gym];
+  return { seed, city, more, gym };
+}
+
+test('exercise places join the map under 운동 and stay out of 가볼 만한 곳', () => {
+  const { seed, gym } = fitnessFixture(), api = data();
+  assert.equal(api.replaceCityPlacesCatalog(seed, fixtureNow), true);
+  const found = api.getCityDiscoveryPlaces('vancouver').find(row => row.id === gym.id);
+  assert.ok(found);
+  const item = discoveryPlace(found);
+  assert.equal(item.category, 'fitness');
+  assert.equal(DISCOVERY_CATEGORIES.find(value => value.id === item.category).label, '운동');
+  assert.equal(discoveryMatches(item, 'fitness', ''), true);
+  assert.equal(discoveryMatches(item, 'places', ''), false);
+  assert.equal(discoveryMatches(item, 'all', '운동'), true, 'the chip name finds it');
+  assert.equal(placeCategory({ category: 'places', subcategories: ['park'] }), 'place');
+  assert.equal(placeCategory({ category: 'places', subcategories: ['a-later-value', 'golf'] }), 'fitness');
+  assert.ok(PLACE_SUBCATEGORIES.filter(option => option.filter === 'fitness').every(option => option.id !== 'trail' && option.id !== 'bowling'), '산책·하이킹 and 볼링 stay in 가볼 만한 곳');
+});
+
+test('invalid exercise places cannot change the last valid catalog', () => {
+  for (const mutate of [
+    city => { city.fitnessPlaces = null; },
+    city => { city.fitnessPlaces.push({ ...city.places[0] }); },
+    city => { city.fitnessPlaces.push({ ...city.morePlaces[0] }); },
+    city => { city.fitnessPlaces[0].category = 'fitness'; },
+    city => { city.fitnessPlaces = Array.from({ length: 301 }, (_, index) => ({ ...city.fitnessPlaces[0], id: `osm:node:${999960000000 + index}`, sourceUrl: `https://www.openstreetmap.org/node/${999960000000 + index}` })); },
+  ]) {
+    const { seed, city } = fitnessFixture(), api = data(), before = api.cityPlacesRevision();
+    mutate(city);
+    assert.throws(() => api.replaceCityPlacesCatalog(seed, fixtureNow), /INVALID_PLACE_CATALOG/);
+    assert.equal(api.cityPlacesRevision(), before);
+  }
+});
+
+test('installed 1.5.1 apps accept a catalog with exercise places and simply leave them out', () => {
+  const released = () => module('scripts/fixtures/city-places-v1.5.1.ts.txt', { '@/lib/mock': { CITIES: cities }, './place-external-ratings': externalRatings() });
+  const { seed, city, gym } = fitnessFixture();
+  const old = released();
+  assert.equal(old.replaceCityPlacesCatalog(seed, fixtureNow), true);
+  assert.ok(!old.getCityPlaces('vancouver').some(row => row.id === gym.id), 'no gym shows up under 가볼 만한 곳 in an installed app');
+  city.fitnessPlaces = 'not a list';
+  assert.equal(released().replaceCityPlacesCatalog(seed, fixtureNow), true);
+});
+
 test('regional Openverse photos reuse the existing exact Flickr identity and licence rules', () => {
   const seed = catalog(), city = seed.cities.vancouver;
   const place = { ...city.places[0], id: 'osm:node:9381204484', name: 'Port Coquitlam Cenotaph', address: '2580 Shaughnessy Street, Port Coquitlam, BC', sourceUrl: 'https://www.openstreetmap.org/node/9381204484' };

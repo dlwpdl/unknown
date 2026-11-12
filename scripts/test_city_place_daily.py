@@ -218,6 +218,27 @@ class DailyPlaces(unittest.TestCase):
         removed = m.build_catalog(seed, closed, now)['cities']['vancouver']
         self.assertEqual((removed['morePlaces'], removed['moreRecommendations'], removed['morePhotos']), ([], [], []))
 
+    def test_fitness_places_are_collected_refreshed_and_published_beside_the_other_lists(self):
+        m = implementation(); seed, osm, now = self.fixture()
+        city = seed['cities']['vancouver']
+        gym = dict(city['places'][0], id='osm:node:5', name='Fixture Gym', category='places', subcategories=['gym'], sourceUrl='https://www.openstreetmap.org/node/5')
+        city.update(morePlaces=[dict(gym, id='osm:node:6', sourceUrl='https://www.openstreetmap.org/node/6')], fitnessPlaces=[gym, dict(gym, id='osm:node:6', sourceUrl='https://www.openstreetmap.org/node/6')])
+        osm = osm + [dict(type='node', id=5, lat=49.27, lon=-123.1, tags={'name': 'Fixture Gym', 'leisure': 'fitness_centre', 'opening_hours': 'Mo-Su 06:00-22:00'}),
+                     dict(type='node', id=6, lat=49.26, lon=-123.1, tags={'name': 'Fixture Gym'})]
+        with patch.object(m, 'http', return_value={'elements': osm}) as request:
+            m.collect(seed)
+            self.assertIn('node%28id%3A1%2C6%2C5%29', request.call_args.args[1].decode())
+        result = m.build_catalog(seed, osm, now)['cities']['vancouver']
+        # A copy of a morePlaces row stays out: the app rejects a catalog that lists one place twice.
+        self.assertEqual([(p['id'], p['subcategories'], p['openingHours'], p['latitude']) for p in result['fitnessPlaces']], [('osm:node:5', ['gym'], 'Mo-Su 06:00-22:00', 49.27)])
+        self.assertNotIn('fitnessPlaces', m.build_catalog(*self.fixture())['cities']['vancouver'], 'absent stays absent')
+        for mutate in [lambda c: c.update(fitnessPlaces=[dict(gym, id=f'osm:node:{i}', sourceUrl=f'https://www.openstreetmap.org/node/{i}') for i in range(10, 311)]),
+                       lambda c: c['fitnessPlaces'].append(dict(gym)), lambda c: c['fitnessPlaces'][0].update(category='fitness')]:
+            bad = json.loads(json.dumps(seed)); mutate(bad['cities']['vancouver'])
+            with self.assertRaises(ValueError): m.build_catalog(bad, osm, now)
+        private = json.loads(json.dumps(osm)); private[-2]['tags']['access'] = 'private'
+        self.assertEqual(m.build_catalog(seed, private, now)['cities']['vancouver']['fitnessPlaces'], [])
+
     def fixture(self):
         now = '2026-10-18T01:00:00+00:00'
         place = dict(id='osm:node:1', cityId='vancouver', name='Verified Cafe', category='cafe', latitude=49.28, longitude=-123.12, address='Address', sourceUrl='https://www.openstreetmap.org/node/1')

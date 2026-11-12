@@ -93,7 +93,7 @@ test('real map chips toggle a union and All clears category and date state', () 
   assert.equal(row[0].props.analyticsId, 'discovery.scope', '보여 줄 곳 leads the row');
   assert.equal(row[row.findIndex(node => node.key === 'all') + 1].props.analyticsId, 'discovery.open-now', '지금 영업 중 sits right after 전체');
   const button = id => buttons().find(node => node.key === id);
-  assert.deepEqual(buttons().map(node => node.key), ['all', 'visited', 'top25', 'delivery', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used']);
+  assert.deepEqual(buttons().map(node => node.key), ['all', 'visited', 'top25', 'delivery', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'fitness', 'housing', 'used']);
   button('top25').props.onPress();
   button('cafe').props.onPress();
   assert.deepEqual(selected, ['top25', 'cafe']);

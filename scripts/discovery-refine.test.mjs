@@ -24,12 +24,14 @@ test('price and sub-filters leave out places without the value instead of assumi
 
 test('sub-filter ids are unique and belong to the owner-chosen categories', () => {
   assert.equal(new Set(PLACE_SUBCATEGORIES.map(value => value.id)).size, PLACE_SUBCATEGORIES.length);
-  assert.deepEqual([...new Set(PLACE_SUBCATEGORIES.map(value => value.filter))], ['dining', 'nightlife', 'cafe', 'places']);
+  assert.deepEqual([...new Set(PLACE_SUBCATEGORIES.map(value => value.filter))], ['dining', 'nightlife', 'cafe', 'places', 'fitness']);
   assert.deepEqual(PLACE_SUBCATEGORIES.filter(value => value.filter === 'dining').map(value => value.label), ['아침', '점심', '저녁', '늦은 밤', '혼밥', '데이트',
     '한식', '일식', '중식', '베트남', '태국', '인도 음식', '이탈리안', '멕시칸', '버거', '피자', '해산물', '비건']);
   assert.deepEqual(PLACE_SUBCATEGORIES.filter(value => value.filter === 'nightlife').map(value => value.label), ['이자카야', '포차', '노래방', '스피크이지', '칵테일 바', '와인 바', '스포츠 바', '재즈', '펍·술집', '클럽', '바', '브루어리', '라이브 음악', '해피아워']);
   assert.deepEqual(PLACE_SUBCATEGORIES.filter(value => value.filter === 'cafe').map(value => value.label), ['아이스크림', '디저트', '브런치', '작업하기 좋은 곳', '베이커리', '버블티', '말차', '로스터리']);
   assert.deepEqual(PLACE_SUBCATEGORIES.filter(value => value.filter === 'places').map(value => value.label), ['공원', '해변', '정원', '전망대', '산책·하이킹', '박물관', '미술관·갤러리', '도서관', '동물원·아쿠아리움', '역사 명소', '시장', '공연장', '영화관', '볼링', '오락실', '방탈출']);
+  assert.deepEqual(PLACE_SUBCATEGORIES.filter(value => value.filter === 'fitness').map(value => value.label), ['러닝 코스', '헬스·피트니스', '요가·필라테스', '클라이밍', '수영장', '사우나·스파',
+    '골프', '테니스·피클볼', '배드민턴', '스케이트장', '축구·풋살', '농구']);
 });
 
 test('a pin names the kind of place, never a situation chip like 점심', () => {

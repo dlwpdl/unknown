@@ -7,7 +7,9 @@ import { PLACE_SUBCATEGORIES } from '../src/lib/discovery.ts';
 const MAP_ICONS = ['top25', 'delivery', 'dining', 'cafe', 'festival', 'nightlife', 'places', 'housing', 'used', 'events'];
 // Still pictures without a gesture: the row settings the owner picked, the live map's speech bubble (2026-11-05) and every sub-category (all drawn by 2026-11-11).
 // A new chip must ship its own picture or both tests fail; category-icon.tsx still borrows the category picture at runtime.
-const OWN_SUBCATEGORY_ICONS = PLACE_SUBCATEGORIES.map(option => option.id);
+// 운동 and its sub-chips borrow 산책·하이킹's shoe until their own are drawn (owner 2026-11-12).
+const BORROWING = { fitness: 'trail' };
+const OWN_SUBCATEGORY_ICONS = PLACE_SUBCATEGORIES.filter(option => !Object.hasOwn(BORROWING, option.filter)).map(option => option.id);
 const STILL_ICONS = ['scope', 'all', 'open', 'visited', 'bubble', ...OWN_SUBCATEGORY_ICONS];
 
 test('every map icon has the mockup gesture and origin, and the artwork ships with the app', () => {
@@ -31,8 +33,9 @@ test('a sub-category without its own picture yet shows its map category picture'
   for (const option of PLACE_SUBCATEGORIES) {
     const own = OWN_SUBCATEGORY_ICONS.includes(option.id);
     assert.equal(drawn.has(option.id), own, option.id);
-    if (!own) assert.ok(MAP_ICONS.includes(option.filter) && drawn.has(option.filter), option.id);
+    if (!own) assert.ok(drawn.has(MAP_ICONS.includes(option.filter) ? option.filter : BORROWING[option.filter]), option.id);
   }
+  for (const [chip, picture] of Object.entries(BORROWING)) assert.ok(icon.includes(`{ ${chip}: '${picture}' }`) && drawn.has(picture), chip);
 });
 
 test('each gesture runs once in 0.64s and ends where it started', () => {

@@ -1215,7 +1215,7 @@ export const uiEnglish: Record<string, string> = {
   "산책": "Walking",
   "커피": "Coffee",
   "맛집": "Restaurants",
-  "운동": "Exercise",
+  "운동": "Fitness",
   "{0} 추가": "Add {0}",
   "관심사 추가": "Add an interest",
   "예: 산책": "e.g. Walking",
@@ -4653,5 +4653,15 @@ export const uiEnglish: Record<string, string> = {
   "신청을 보내면 호스트가 내 이름, 지역, 소개, 답변을 봐요. 공개 모임에서 승인되고 나면 그 모임에 신청하려는 사람에게도 이름, 한 줄 소개, 관심사가 보여요. 사진과 답변은 안 보여요.": "When you apply, the host sees your name, area, intro and answer. Once you’re approved in a public meetup, people applying to it can also see your name, one-line intro and interests, but not your photos or answer.",
   "초대받은 모임": "Invited",
   "서로 친구인 사람만 초대할 수 있어요.": "You can only invite people who are your friends.",
-  "이 초대 링크로는 들어갈 수 없어요": "This invite link doesn’t work"
+  "이 초대 링크로는 들어갈 수 없어요": "This invite link doesn’t work",
+  "러닝 코스": "Running",
+  "헬스·피트니스": "Gym",
+  "요가·필라테스": "Yoga & Pilates",
+  "클라이밍": "Climbing",
+  "수영장": "Swimming",
+  "사우나·스파": "Sauna & spa",
+  "테니스·피클볼": "Tennis & pickleball",
+  "배드민턴": "Badminton",
+  "스케이트장": "Ice rink",
+  "축구·풋살": "Soccer & futsal"
 };
