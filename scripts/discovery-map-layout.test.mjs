@@ -27,11 +27,15 @@ const control = (tree, label) => { const result = nodes(tree).find(node => node.
 
 // Render the actual route and run its handlers; only native/external services are replaced.
 function mount({ cities = [], routeParams = {}, light = false, reduced = false, places = [], business = {}, origin = { latitude: 49.25, longitude: -122.86 }, registryReady = true, onClose, loadWebshops = async () => [], loadLinks = async () => ({}), loadPhotos = async () => ({}), loadSaves = async () => null, loadScope = async () => ({ places: new Map(), friendCount: 0 }) } = {}) {
-  const routes = [], state = [], feedback = [], alerts = [], memoValues = [], effects = [], focusEffects = [], chosenCities = [], compass = { watches: [], removed: 0 }, savedEntry = { targets: [], state: null };
-  let index = 0, focused = true, viewer = 'guest', city = { id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver' };
+  const routes = [], state = [], feedback = [], alerts = [], memoValues = [], cityMemos = [], effects = [], focusEffects = [], chosenCities = [], compass = { watches: [], removed: 0 }, savedEntry = { targets: [], state: null };
+  // useMemo/useCallback keep their value while the dependencies stay the same, like React; only CityMap renders keep that memory.
+  let index = 0, memoSlot = 0, memos = null, focused = true, viewer = 'guest', city = { id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver' };
   const theme = { background: light ? '#fff' : '#0B0B12', card: light ? '#fff' : '#171722', backgroundElement: '#222231', backgroundSelected: '#343443', text: '#F6F3F0', textSecondary: '#B7B4C3', accent: '#CBB9FF', accentInk: '#171123', line: '#343443' };
-  const hooks = { useState(initial) { const slot = index++; if (!(slot in state)) { const value = typeof initial === 'function' ? initial() : initial; state[slot] = value && typeof value === 'object' && 'ready' in value && 'shops' in value ? { ...value, key: 'vancouver:guest', ready: registryReady } : value; } return [state[slot], next => { state[slot] = typeof next === 'function' ? next(state[slot]) : next; }]; }, useRef: current => ({ current }), useMemo: fn => { const value = fn(); memoValues.push(value); return value; }, useCallback: fn => fn, useEffect: (fn, deps) => effects.push({ fn, deps }) };
+  const memo = (fn, deps) => { const slot = memoSlot++, last = memos?.[slot], value = last && deps && last.deps.length === deps.length && last.deps.every((dep, i) => Object.is(dep, deps[i])) ? last.value : fn(); if (memos) memos[slot] = { deps, value }; return value; };
+  const hooks = { useState(initial) { const slot = index++; if (!(slot in state)) { const value = typeof initial === 'function' ? initial() : initial; state[slot] = value && typeof value === 'object' && 'ready' in value && 'shops' in value ? { ...value, key: 'vancouver:guest', ready: registryReady } : value; } return [state[slot], next => { state[slot] = typeof next === 'function' ? next(state[slot]) : next; }]; }, useRef: current => ({ current }), useMemo(fn, deps) { const value = memo(fn, deps); memoValues.push(value); return value; }, useCallback: (fn, deps) => memo(() => fn, deps), useEffect: (fn, deps) => effects.push({ fn, deps }) };
   const jsx = (type, props, key) => ({ type, props, key });
+  // The real router, feedback, visibility and live-marker hooks hand back the same values between renders.
+  const router = { push: route => routes.push(route), setParams: params => routes.push({ setParams: params }) }, play = kind => feedback.push(kind), neverHidden = () => false, noMarkers = [], visibleIds = [new Set(), () => {}];
   const imports = {
     react: hooks, 'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
     'react-native': { ActivityIndicator: 'ActivityIndicator', Alert: { alert: (...args) => alerts.push(args) }, AppState: { currentState: 'active' }, Linking: {}, Modal: 'Modal', StyleSheet: { create: value => value, hairlineWidth: 1 }, TextInput: 'TextInput', View: 'View', KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'ios' } },
@@ -41,27 +45,27 @@ function mount({ cities = [], routeParams = {}, light = false, reduced = false, 
     '../../supabase/functions/_shared/ticketmaster': {},
     'react-native-reanimated': { __esModule: true, default: { View: 'ReanimatedView' }, useReducedMotion: () => reduced, LayoutAnimationConfig: 'LayoutAnimationConfig',
       FadeIn: { duration: ms => ({ fadeIn: ms }) }, SlideInDown: { duration: ms => ({ slideIn: ms }) }, SlideOutDown: { duration: ms => ({ slideOut: ms }) } },
-    'expo-router': { useFocusEffect: fn => focusEffects.push(fn), useIsFocused: () => focused, useLocalSearchParams: () => routeParams, useRouter: () => ({ push: route => routes.push(route), setParams: params => routes.push({ setParams: params }) }) },
+    'expo-router': { useFocusEffect: fn => focusEffects.push(fn), useIsFocused: () => focused, useLocalSearchParams: () => routeParams, useRouter: () => router },
     '@/lib/mock': { CITIES: cities },
     '@/constants/theme': { Colors: { dark: { ...theme, card: '#171722' }, light: theme } }, '@/constants/design-system': designSystem, '@/hooks/use-language': { useLanguage: () => ({ tr }) },
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' }, '@/components/page-header': { PageHeader: 'PageHeader' },
     '@/components/selection-chip': { SelectionChip: 'Pressable' }, '@/components/disclosure': { animateLayout() {} },
     '@/lib/delivery-partners': { DELIVERY_PARTNERS: [], deliveryPartnerPlace: () => undefined },
     '@/lib/webshops': { bindBusinessPlaces: (...args) => bindBusinessPlaces(...args).map(item => ({ ...item, ...business[item.sourceId] })), loadCityBusinessLinks: loadLinks, loadCityBusinessMapPhotos: loadPhotos, loadCityWebshops: loadWebshops },
-    '@/components/live-bubbles': { useLive: () => ({ status: 'idle', map: null }), useLiveMarkers: () => [], useMeetupMarkers: () => [], useKeepClearOfNotice: () => ({ current: null }), LiveDock: 'LiveDock', LiveSheets: 'LiveSheets' },
+    '@/components/live-bubbles': { useLive: () => ({ status: 'idle', map: null }), useLiveMarkers: () => noMarkers, useMeetupMarkers: () => noMarkers, useKeepClearOfNotice: () => ({ current: null }), LiveDock: 'LiveDock', LiveSheets: 'LiveSheets' },
     '@/lib/live-bubbles': { loadLiveMap: async () => {} }, '@/lib/post-map-html': { mapCityCenter: () => [-123.12, 49.28] },
     '@/components/discovery-map': { DiscoveryMap: 'DiscoveryMap' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
     '@/components/city-place-photo': { CityPlacePhoto: 'CityPlacePhoto' }, '@/components/category-icon': { CategoryIcon: 'CategoryIcon' },
     '@/components/feed-ad': { FeedAd: 'FeedAd' }, '@/lib/ads': { adsSupported: false }, '@/lib/content-ad-placement': { contentAdPosition },
-    '@/components/state-card': { StateCard: 'StateCard' }, '@/components/content-translation': {}, '@/hooks/use-content-translation': { ...translationHookDefaults, useContentTranslation: (_kind, _id, source) => ({ display: source }) },
+    '@/components/state-card': { StateCard: 'StateCard' }, '@/components/content-translation': {}, '@/hooks/use-content-translation': { ...translationHookDefaults, useTranslationVisibleIds: () => visibleIds, useContentTranslation: (_kind, _id, source) => ({ display: source }) },
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: {} }, '@/lib/translation-source': {},
     '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: 'SymbolView', ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/hooks/use-theme': { useTheme: () => theme }, '@/hooks/use-reveal-chip': { useRevealChip: selected => ({ scroll: { revealing: selected }, chip: key => `layout:${key}` }) },
-    '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
+    '@/hooks/use-content-visibility': { useContentVisibility: () => neverHidden },
     '@/lib/auth': { useAuth: () => ({ isAuthed: viewer !== 'guest', me: { id: viewer }, promptLogin() {} }) },
     '@/lib/community-city': { useCommunityCity: () => ({ city, selectCity: async next => { chosenCities.push(next.id); return true; } }) },
     '@/lib/discovery': discovery, '@/lib/discovery-sort': discoverySort, '@/lib/post-maps': postMaps, '@/lib/city-places': { getCityDiscoveryPlaces: () => places }, '@/lib/city-top25': { cityTop25Recommendations: () => [] }, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 }, '@/lib/discovery-data': { loadDiscoveryPosts: async () => ({ items: [], cursor: null, hasMore: false }) }, '@/lib/feed-data': {},
-    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) }, '@/lib/location': location, '@/lib/supabase': { supabase: {} },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play }) }, '@/lib/location': location, '@/lib/supabase': { supabase: {} },
     '@/lib/ticketmaster': { EVENT_CITIES: { vancouver: {} }, loadTicketmasterEvents: async () => ({ events: [], hasMore: false }) }, '@/components/post-ad-label': {}, '@/lib/hashtags': { hasAdLabel: () => false },
     '@/components/drag-sheet': { DragSheet: 'DragSheet' }, '@/components/city-picker': { CityPicker: 'CityPicker' }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: target => { savedEntry.targets.push(target); return { state: savedEntry.state }; } }, '@/components/map-list-sheet': { MapListSheet: 'MapListSheet' }, '@/components/map-scope': { FriendSavedLine: 'FriendSavedLine', MapScopeSheet: 'MapScopeSheet' }, '@/lib/profile-friends': { loadMapScope: (...args) => loadScope(...args), loadCityPlaceSaves: (...args) => loadSaves(...args) }, '@/components/place-hours': { PlaceHours: 'PlaceHours' },
     '@/components/reservation-button': { ReservationButton: 'ReservationButton' }, '@/components/business-webshop': { WebshopComparisonSheet: 'WebshopComparisonSheet', WebshopOrderButton: 'WebshopOrderButton' }, '@/lib/opening-hours': openingHours,
@@ -70,7 +74,7 @@ function mount({ cities = [], routeParams = {}, light = false, reduced = false, 
   const exports = {};
   const code = ts.transpileModule(source + '\nexports.CityMap = CityMap; exports.DiscoveryCard = DiscoveryCard; exports.GlingVisitedBadge = GlingVisitedBadge;', { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(code, { exports, Date, AbortController, setTimeout, clearTimeout, require: name => { if (name.startsWith('@/assets/')) return name; assert.ok(Object.hasOwn(imports, name), name); return imports[name]; } });
-  return { render() { index = 0; memoValues.length = 0; effects.length = 0; focusEffects.length = 0; return exports.CityMap({ city: imports['@/lib/community-city'].useCommunityCity().city, onClose }); }, renderCard(item, distance, saves) { index = 0; return exports.DiscoveryCard({ item, distance, saves, viewerScope: 'guest', onOpen() {} }); }, renderBadge(selected) { index = 0; return exports.GlingVisitedBadge({ selected }); }, get days() { return memoValues[0]; }, get registryDependencies() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).deps; }, readRegistry() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).fn(); }, readResults() { return focusEffects.find(fn => String(fn).includes('loadPage(null)'))(); }, readScope() { return effects.find(value => String(value.fn).includes('loadMapScope')).fn(); }, readMine() { return effects.find(value => String(value.fn).includes("'mine'")).fn(); }, readSaves() { return effects.find(value => String(value.fn).includes('loadCityPlaceSaves')).fn(); }, readCompass() { return effects.find(value => String(value.fn).includes('watchHeadingAsync')).fn(); }, compass, savedEntry, setCity: id => { city = { ...city, id }; }, setViewer: id => { viewer = id; }, setFocused: value => { focused = value; }, feedback, alerts, routes, chosenCities };
+  return { render() { index = 0; memoSlot = 0; memos = cityMemos; memoValues.length = 0; effects.length = 0; focusEffects.length = 0; return exports.CityMap({ city: imports['@/lib/community-city'].useCommunityCity().city, onClose }); }, renderCard(item, distance, saves) { index = 0; memoSlot = 0; memos = null; return exports.DiscoveryCard({ item, distance, saves, viewerScope: 'guest', onOpen() {} }); }, renderBadge(selected) { index = 0; memoSlot = 0; memos = null; return exports.GlingVisitedBadge({ selected }); }, get days() { return memoValues[0]; }, get registryDependencies() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).deps; }, readRegistry() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).fn(); }, readResults() { return focusEffects.find(fn => String(fn).includes('loadPage(null)'))(); }, readScope() { return effects.find(value => String(value.fn).includes('loadMapScope')).fn(); }, readMine() { return effects.find(value => String(value.fn).includes("'mine'")).fn(); }, readSaves() { return effects.find(value => String(value.fn).includes('loadCityPlaceSaves')).fn(); }, compass, savedEntry, setCity: id => { city = { ...city, id }; }, setViewer: id => { viewer = id; }, setFocused: value => { focused = value; }, feedback, alerts, routes, chosenCities };
 }
 
 test('main categories toggle independently and event dates belong to the festival category', () => {
@@ -799,29 +803,28 @@ test('M1: an empty result under a state filter offers to clear it, and the choic
   assert.equal(listOf(tree).length, 2, 'the place lost its state, so the filter stops counting instead of emptying the list');
 });
 
-test('M7: the compass starts only on screen after a location fix, feeds the cone and stops when the map leaves', async () => {
+test('M7: the map view gets the compass only on screen after a location fix, and the screen itself never holds readings', async () => {
   const view = mount();
+  const compassOf = tree => nodes(tree).find(node => node.type === 'DiscoveryMap').props.compass;
   let tree = view.render();
-  assert.equal(view.readCompass(), undefined, 'no location yet, so no compass');
-  assert.equal(nodes(tree).find(node => node.type === 'DiscoveryMap').props.heading, null);
+  assert.equal(compassOf(tree), false, 'no location yet, so no compass');
   control(tree, '내 위치로 지도 이동').props.onPress(); await new Promise(setImmediate); tree = view.render();
-  const stop = view.readCompass(); await new Promise(setImmediate);
-  assert.equal(view.compass.watches.length, 1);
-  const tick = ms => new Promise(resolve => setTimeout(resolve, ms)), heading = () => nodes(view.render()).find(node => node.type === 'DiscoveryMap').props.heading;
-  view.compass.watches[0]({ trueHeading: 181, magHeading: 165, accuracy: 3 }); await tick(0);
-  assert.equal(heading(), 180);
-  // Map lag 2026-11-08: at most 4 turns a second, and the newest reading of a burst still lands.
-  view.compass.watches[0]({ trueHeading: 91, magHeading: 80, accuracy: 3 }); view.compass.watches[0]({ trueHeading: 271, magHeading: 260, accuracy: 3 }); await tick(0);
-  assert.equal(heading(), 180, 'a burst inside a quarter second waits');
-  await tick(260);
-  assert.equal(heading(), 270, 'then only the newest reading shows');
-  stop(); tree = view.render();
-  assert.equal(view.compass.removed, 1);
-  assert.equal(nodes(tree).find(node => node.type === 'DiscoveryMap').props.heading, null, 'leaving drops the cone');
-  view.compass.watches[0]({ trueHeading: 90, magHeading: 80, accuracy: 3 }); tree = view.render();
-  assert.equal(nodes(tree).find(node => node.type === 'DiscoveryMap').props.heading, null, 'a late reading after leaving is ignored');
+  assert.equal(compassOf(tree), true);
+  // Map lag 2026-11-11: the map view listens itself, so turning the phone re-renders only the map, not this screen and its list.
+  assert.equal(view.compass.watches.length, 0);
   view.setFocused(false); tree = view.render();
-  assert.equal(view.readCompass(), undefined, 'a hidden map does not listen');
+  assert.equal(compassOf(tree), false, 'a hidden map does not listen');
+});
+
+test('map lag 2026-11-11: moving the map keeps the pins, list rows and card renderer the same objects', () => {
+  const view = mount({ places: [fixturePlace(1), fixturePlace(2)] });
+  const parts = tree => { const map = nodes(tree).find(node => node.type === 'DiscoveryMap').props, list = nodes(tree).find(node => node.type === 'FlatList').props; return [map.markers, list.data, list.renderItem]; };
+  let tree = view.render();
+  const before = parts(tree);
+  assert.equal(before[0].length, 2);
+  nodes(tree).find(node => node.type === 'DiscoveryMap').props.onMoved({ west: -123, south: 49.2, east: -122.8, north: 49.3 }, 12); tree = view.render();
+  assert.ok(nodes(tree).some(node => node.props?.analyticsId === 'discovery.search-here'), 'the move reached the screen');
+  parts(tree).forEach((value, index) => assert.equal(value, before[index]));
 });
 
 test('M6: the map title opens the existing city picker with feedback', () => {
@@ -838,4 +841,30 @@ test('M6: the map title opens the existing city picker with feedback', () => {
   assert.ok(picker, 'the same picker the home screen uses');
   picker.props.onClose(); tree = view.render();
   assert.ok(!nodes(tree).some(node => node.type === 'CityPicker'));
+});
+
+test('map lag 2026-11-11: the list sheet draws its cards on first opening and a closed sheet keeps them without redrawing', () => {
+  const slots = [];
+  let index = 0;
+  const jsx = (type, props) => ({ type, props });
+  const imports = {
+    react: { memo: (render, same) => ({ render, same }), useState(initial) { const slot = index++; if (!(slot in slots)) slots[slot] = typeof initial === 'function' ? initial() : initial; return [slots[slot], next => { slots[slot] = next; }]; }, useEffect() {}, useLayoutEffect() {} },
+    'react/jsx-runtime': { jsx, jsxs: jsx },
+    'react-native': { Animated: { Value: class {}, View: 'AnimatedView' }, PanResponder: { create: () => ({ panHandlers: {} }) }, StyleSheet: { create: value => value }, View: 'View' },
+    'react-native-reanimated': { useReducedMotion: () => false }, '@/components/analytics-controls': { Pressable: 'Pressable' },
+    '@/hooks/use-language': { useLanguage: () => ({ tr }) }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+  };
+  const exports = {};
+  vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/components/map-list-sheet.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText,
+    { exports, require: name => imports[name] });
+  const positions = { full: 100, half: 300, peek: 500, closed: 700 };
+  // A state set while rendering renders again at once, as React does.
+  const body = snap => { let tree; for (let pass = 0; pass < 2; pass++) { index = 0; tree = exports.MapListSheet({ snap, positions, onSnap() {}, header: null, children: 'cards' }); } return tree.props.children.props.children.at(-1).props.children; };
+  assert.equal(body('closed'), false, 'a sheet that has never opened draws no cards');
+  const opened = body('half');
+  assert.equal(opened.props.children, 'cards');
+  assert.equal(opened.type.same(opened.props, { open: true, children: 'new cards' }), false, 'an open sheet redraws its cards');
+  const closed = body('closed');
+  assert.equal(closed.props.open, false, 'the cards stay mounted after closing');
+  assert.equal(closed.type.same(opened.props, closed.props), true, 'a closed sheet skips redrawing them');
 });

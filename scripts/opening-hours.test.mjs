@@ -109,3 +109,14 @@ test('P6 곧 닫음: minutes until close follow overnight hours, and 24-hour pla
   assert.equal(left('Mo-Sa 00:00-24:00; Su 00:00-22:00', SA, '23:30'), 1350, 'Saturday night runs on to Sunday 22:00');
   assert.deepEqual(['23:30', '23:59', '01:30'].map(time => plain(formatTime(at(MO, time).minutes + 30, 'en-US'))), ['12:00 AM', '12:29 AM', '2:00 AM']);
 });
+
+test('the hours line builds one time formatter per locale, not one per time (map lag 2026-11-11)', () => {
+  const Real = Intl.DateTimeFormat; let built = 0;
+  Intl.DateTimeFormat = function (...args) { built++; return new Real(...args); };
+  try {
+    const week = parseOpeningHours('Mo-Fr 09:00-17:00; Sa 10:00-14:00');
+    for (let card = 0; card < 20; card++) formatRanges(week[MO], 'fr-CA');
+    assert.equal(built, 1, '40 times on 20 cards, one formatter');
+  } finally { Intl.DateTimeFormat = Real; }
+  assert.equal(plain(formatTime(13 * 60, 'en-US')), '1:00 PM', 'another locale still gets its own format');
+});

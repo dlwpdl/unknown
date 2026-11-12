@@ -125,7 +125,7 @@ test('curated canonical pins survive the existing 500-result cap', () => {
     id: `post:${index}`, source: 'post', cityId: 'vancouver', category: 'housing',
     post: { id: `${index}`, author: { id: 'u' }, kind: 'listing', listingStatus: 'open', expiresAt: '2099-01-01T00:00:00Z' },
   }));
-  const publicItems = evaluate(expression.getText(map), { current: { items: posts }, catalogItems, hidden: () => false,
+  const publicItems = evaluate(expression.getText(map), { useMemo: fn => fn(), current: { items: posts }, catalogItems, hidden: () => false,
     now: Date.now(), discoveryEvent: discovery.discoveryEvent });
   const visible = discovery.mergeCityTop25(publicItems, 'vancouver').slice(0, 500);
   assert.ok(visible.some(item => item.id === catalogItems[0].id));

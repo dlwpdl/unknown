@@ -74,7 +74,7 @@ test('the combined screen includes its current-city catalog while backend rows a
   const start = mapSource.indexOf('  const publicItems = '), end = mapSource.indexOf('  const pins = ', start);
   const exports = {};
   vm.runInNewContext(compile(`exports.run = () => { ${mapSource.slice(start, end)} return items; };`), {
-    exports, bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, scope: 'all', registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null, current: null, catalogItems: [discovery.discoveryPlace(place)], city: { id: place.cityId }, now: Date.now(), selectedFilters: [], query: '', days: [],
+    exports, useMemo: fn => fn(), useCallback: fn => fn, bindBusinessPlaces, sortDiscoveryItems, deliveryOnly: false, scope: 'all', registry: { links: {}, shops: [] }, sortBy: 'near', userLocation: null, current: null, catalogItems: [discovery.discoveryPlace(place)], city: { id: place.cityId }, now: Date.now(), selectedFilters: [], query: '', days: [],
     hidden: () => false, discoveryEvent: () => null, discoveryEventOnDays: discovery.discoveryEventOnDays, mergeCityTop25: discovery.mergeCityTop25, discoveryMatches: discovery.discoveryMatches,
     PRICE_FILTERS: discovery.PRICE_FILTERS, PLACE_SUBCATEGORIES: discovery.PLACE_SUBCATEGORIES, discoveryRefines: discovery.discoveryRefines, cityClock, openState, priceLevels: [], subcategories: [], region: null, openNow: false, showUnknown: false, placeSaves: null, statusFilter: null,
   });
@@ -84,10 +84,10 @@ test('the combined screen includes its current-city catalog while backend rows a
 
 test('opening a catalog map card uses the existing place detail route and leaves editorial-only source links intact', () => {
   assert.equal(typeof discovery.discoveryPlace, 'function');
-  const start = mapSource.indexOf('  const open = (item: DiscoveryItem) => {'), end = mapSource.indexOf('  const selectPin = ', start);
+  const start = mapSource.indexOf('  const open = useCallback((item: DiscoveryItem) => {'), end = mapSource.indexOf('  const selectPin = ', start);
   const exports = {}, routes = [], links = [], feedback = [];
   vm.runInNewContext(compile(mapSource.slice(start, end) + '\nexports.open = open;'), {
-    exports, onClose: undefined, city: { id: place.cityId }, router: { push: value => routes.push(value) }, play: value => feedback.push(value),
+    exports, useCallback: fn => fn, onClose: undefined, city: { id: place.cityId }, router: { push: value => routes.push(value) }, play: value => feedback.push(value),
     Linking: { openURL: async url => links.push(url) }, tr: value => value, Alert: { alert() {} },
   });
   exports.open(discovery.discoveryPlace(place));
@@ -101,10 +101,10 @@ test('opening a catalog map card uses the existing place detail route and leaves
 });
 
 test('embedded discovery permits public HTTPS information and rejects invalid post and event targets', async () => {
-  const start = mapSource.indexOf('  const open = (item: DiscoveryItem) => {'), end = mapSource.indexOf('  const selectPin = ', start);
+  const start = mapSource.indexOf('  const open = useCallback((item: DiscoveryItem) => {'), end = mapSource.indexOf('  const selectPin = ', start);
   const exports = {}, opened = [], routes = [];
   vm.runInNewContext(compile(mapSource.slice(start, end) + '\nexports.open = open;'), {
-    exports, onClose() {}, safeMerchantSourceUrl, safeTicketUrl, PUBLIC_SITE: 'https://gling.ej-entertainment.com', publicCompanyUrl: id => `https://gling.ej-entertainment.com/company/${id}`,
+    exports, useCallback: fn => fn, city: { id: place.cityId }, onClose() {}, safeMerchantSourceUrl, safeTicketUrl, PUBLIC_SITE: 'https://gling.ej-entertainment.com', publicCompanyUrl: id => `https://gling.ej-entertainment.com/company/${id}`,
     openBrowserAsync: async url => opened.push(url), router: { push: value => routes.push(value) },
     play() {}, tr: value => value, Alert: { alert() {} }, encodeURIComponent,
   });
@@ -123,9 +123,9 @@ test('every overlapping map filter opens the same explicitly linked business; em
   const item = discovery.discoveryPlace({ ...place, category: 'food', glingVisited: { sourceUrl: 'https://www.instagram.com/reel/fixture/' } });
   const shop = { merchantId, cityId: place.cityId, comparisons: [{ id: 'fixture', name: 'Fixture menu', uberCents: 2000, webCents: 1600 }] };
   const linked = bindBusinessPlaces([item], { [place.id]: merchantId }, [shop])[0];
-  const start = mapSource.indexOf('  const open = (item: DiscoveryItem) => {'), end = mapSource.indexOf('  const selectPin = ', start);
+  const start = mapSource.indexOf('  const open = useCallback((item: DiscoveryItem) => {'), end = mapSource.indexOf('  const selectPin = ', start);
   const exports = {}, routes = [], opened = [], context = {
-    exports, onClose: undefined, city: { id: place.cityId }, router: { push: route => routes.push(route) }, play() {},
+    exports, useCallback: fn => fn, onClose: undefined, city: { id: place.cityId }, router: { push: route => routes.push(route) }, play() {},
     PUBLIC_SITE: 'https://gling.ej-entertainment.com', publicCompanyUrl: id => `https://gling.ej-entertainment.com/company/${id}`, safeMerchantSourceUrl, safeTicketUrl,
     openBrowserAsync: async url => opened.push(url), Linking: { openURL: async url => opened.push(url) }, tr: value => value, Alert: { alert() {} },
   };
@@ -147,9 +147,9 @@ test('a partner detail map target and its curated marker use the same normalized
   const partner = deliveryPartnerPlace('vancouver', 'partner:jimoco-coquitlam');
   const expected = discovery.discoveryPlace(partner);
   const route = discovery.placeMapRoute(partner);
-  const start = mapSource.indexOf('  const catalogPlaces = '), end = mapSource.indexOf('  useEffect(() => {', start);
+  const start = mapSource.indexOf('  const placesRevision = '), end = mapSource.indexOf('  useEffect(() => {', start);
   assert.ok(start > 0 && end > start);
-  const exports = {}, context = { exports, city: { id: route.params.cityId }, placeId: route.params.placeId,
+  const exports = {}, context = { exports, useMemo: fn => fn(), useCityPlacesRevision() {}, city: { id: route.params.cityId }, placeId: route.params.placeId,
     getCityDiscoveryPlaces: () => [], getCityPlaces: () => [], discoveryPlace: discovery.discoveryPlace, DELIVERY_PARTNERS, deliveryPartnerPlace };
   vm.runInNewContext(compile(`exports.run = () => { ${mapSource.slice(start, end)} return { targetId, targetItem, catalogItems }; };`), context);
   const result = exports.run();

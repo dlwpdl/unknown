@@ -2,11 +2,13 @@ import { useLanguage } from '@/hooks/use-language';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Linking, Platform, StyleSheet, View } from 'react-native';
 import WebView from 'react-native-webview';
+import * as Location from 'expo-location';
 import { Pressable } from '@/components/analytics-controls';
 import { useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { facingDegrees } from '@/lib/location';
 import { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers, type DiscoveryBounds, type DiscoveryCity, type DiscoveryMarker } from '@/lib/discovery-map-html';
 
 export type { DiscoveryCity, DiscoveryMarker } from '@/lib/discovery-map-html';
@@ -16,8 +18,8 @@ type Props = {
   /** City pills for the far zoom stage; tapping another open city calls onCity. */
   cities?: DiscoveryCity[]; onCity?: (id: string) => void;
   userLocation?: { latitude: number; longitude: number } | null;
-  /** Degrees from north the phone faces; draws the cone on the location dot. */
-  heading?: number | null;
+  /** Follow the way the phone faces with a cone on the location dot. The screen turns it on only while shown after a location fix. */
+  compass?: boolean;
   topInset?: number; bottomInset?: number;
   /** Starting zoom (default 11, the whole city). */
   zoom?: number;
@@ -28,7 +30,7 @@ export function DiscoveryMap(props: Props) {
 }
 
 const NO_CITIES: DiscoveryCity[] = [];
-function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, center = null, userLocation = null, heading = null, topInset = 0, bottomInset = 0, zoom, onSelect, onMoved, onCity }: Props) {
+function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, center = null, userLocation = null, compass = false, topInset = 0, bottomInset = 0, zoom, onSelect, onMoved, onCity }: Props) {
   const { language, tr } = useLanguage();
   const theme = useTheme(), clay = useClay(), { play } = useInteractionFeedback();
   const native = useRef<WebView<unknown>>(null), web = useRef<HTMLIFrameElement>(null), id = useId();
@@ -37,6 +39,16 @@ function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, cent
   const [failed, setFailed] = useState(false), [retry, setRetry] = useState(0);
   const [readySession, setReadySession] = useState<string | null>(null);
   const sessionId = `${id}.${retry}`;
+  // M7 (owner 2026-11-05): degrees from north the phone faces. Kept here so a turn redraws only the map, never the screen around it (map lag 2026-11-11).
+  const [heading, setHeading] = useState<number | null>(null);
+  useEffect(() => {
+    if (!compass) return;
+    let active = true, watch: Location.LocationSubscription | null = null, timer: ReturnType<typeof setTimeout> | undefined, last = 0, latest: number | null = null;
+    // At most 4 turns a second (map lag 2026-11-08); the newest reading still lands.
+    const show = () => { timer = undefined; last = Date.now(); if (active) setHeading(latest); };
+    void Location.watchHeadingAsync(reading => { latest = facingDegrees(reading); timer ??= setTimeout(show, Math.max(0, 250 - (Date.now() - last))); }).then(subscription => { if (active) watch = subscription; else subscription.remove(); }, () => {});
+    return () => { active = false; clearTimeout(timer); watch?.remove(); setHeading(null); };
+  }, [compass]);
   const parentOrigin = Platform.OS === 'web' && typeof window !== 'undefined' && window.location.protocol !== 'file:' ? window.location.origin : 'null';
   // Pill names follow the language, so they rebuild the page like the language itself does; a new array with the same cities does not. The 2D·3D choice rebuilds it the same way.
   const citiesKey = JSON.stringify(cities);
@@ -103,8 +115,10 @@ function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, cent
     {html && (Platform.OS === 'web'
       ? <iframe key={sessionId} ref={web} srcDoc={html} title={tr("도시 탐색 지도")} sandbox="allow-scripts allow-same-origin" onLoad={() => sync(true)}
         style={{ border: 0, width: '100%', height: '100%', minHeight: 140, flex: 1 }} />
+      // Map lag 2026-11-11 (owner "열 때마다 다시 받기"): the WebView's HTTP cache keeps the public base-map tiles, fonts and icons from tiles.openfreemap.org
+      // between visits, as their cache headers allow. The page and MapLibre write no cookies or web storage; cookies stay unshared.
       : <WebView<unknown> key={sessionId} ref={native} source={source} originWhitelist={['*']} applicationNameForUserAgent="GlingDiscoveryMap/1.0"
-        style={styles.map} scrollEnabled={false} sharedCookiesEnabled={false} thirdPartyCookiesEnabled={false} cacheEnabled={false} incognito
+        style={styles.map} scrollEnabled={false} sharedCookiesEnabled={false} thirdPartyCookiesEnabled={false}
         allowFileAccess={false} allowFileAccessFromFileURLs={false} allowUniversalAccessFromFileURLs={false} mixedContentMode="never"
         onShouldStartLoadWithRequest={request => request.url === 'about:blank'} setSupportMultipleWindows={false}
         onLoadEnd={() => sync(true)} onError={() => setFailed(true)} onHttpError={() => setFailed(true)} onMessage={event => receive(event.nativeEvent.data)} />)}
