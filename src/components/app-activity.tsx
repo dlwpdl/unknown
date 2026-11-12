@@ -1,3 +1,5 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Application from 'expo-application';
 import * as Linking from 'expo-linking';
 import { usePathname } from 'expo-router';
 import { useEffect, useRef } from 'react';
@@ -8,8 +10,19 @@ import { analyticsScreen } from '@/lib/analytics';
 import { useAuth } from '@/lib/auth';
 import { buildLabel } from '@/lib/error-reporting';
 import { getOAuthCallbackPath } from '@/lib/kakao-auth';
-import { getAcquisitionSource, type AcquisitionSource } from '@/lib/product-analytics';
+import { getAcquisitionSource, getInstallReferrerSource, knownAcquisitionSource, type AcquisitionSource } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
+
+const INSTALL_SOURCE_KEY = 'gling.install-source';
+// Android: Play's install referrer is read once, on the first launch without an account, and kept until the first login.
+async function installSource(): Promise<AcquisitionSource> {
+  const saved = await AsyncStorage.getItem(INSTALL_SOURCE_KEY);
+  if (saved !== null) return knownAcquisitionSource(saved);
+  const { data } = await supabase.auth.getSession();
+  const source = data.session ? 'unknown' : getInstallReferrerSource(await Application.getInstallReferrerAsync().catch(() => null));
+  await AsyncStorage.setItem(INSTALL_SOURCE_KEY, source);
+  return source;
+}
 
 export function AppActivity() {
   const { isAuthed, me, isAdmin } = useAuth();
@@ -24,12 +37,19 @@ export function AppActivity() {
     }
     const initial = context.initial;
     context.initial = false;
+    if (isAuthed && Platform.OS === 'android') void AsyncStorage.setItem(INSTALL_SOURCE_KEY, 'unknown').catch(() => {});
     if (isAdmin) { context.source = 'unknown'; context.revision += 1; configureBehavior(null); return; }
     let active = true;
     if (initial) {
       const revision = context.revision;
       if (Platform.OS === 'web') context.source = getAcquisitionSource(typeof window === 'undefined' ? null : window.location.href);
-      else void Linking.getInitialURL().then(url => { if (context.revision === revision) context.source = getAcquisitionSource(url); }, () => {});
+      else {
+        const linked = Linking.getInitialURL().then(url => { if (context.revision === revision) context.source = getAcquisitionSource(url); }, () => {});
+        // A tagged link that opened the app wins; otherwise the guest keeps the store install source.
+        if (Platform.OS === 'android') void Promise.all([installSource(), linked]).then(([installed]) => {
+          if (context.revision === revision && context.source === 'unknown') context.source = installed;
+        }, () => {});
+      }
     }
     const entry = Platform.OS === 'web' ? null : Linking.addEventListener('url', ({ url }) => {
       if (!active) return;

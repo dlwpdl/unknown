@@ -35,7 +35,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
   let cursor = 0, dirty = true, tree, transport;
   const ctx = { auth: { isAuthed: true, isAdmin: false, isAuthLoading: false, me: { id: 'member', cityId: 'vancouver' } },
     params: { id: event.id, cityId: 'vancouver' }, rows: [notification], focused: true, platform: 'ios', event,
-    entryUrl: 'gling://events?utm_source=instagram', pathname: '/events', ...options };
+    entryUrl: 'gling://events?utm_source=instagram', pathname: '/events', storage: new Map(), referrers: [], ...options };
   const effect = (fn, deps = []) => {
     const slot = cursor++, previous = hooks[slot];
     if (previous && deps.every((value, i) => Object.is(value, previous.deps[i]))) return;
@@ -52,7 +52,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
   };
   const subscription = (key, listener) => { listeners.set(key, listener); return { remove: () => listeners.delete(key) }; };
   const channel = { on: () => channel, subscribe: () => channel };
-  const supabase = { channel: () => channel, removeChannel() {}, rpc(name, args) {
+  const supabase = { channel: () => channel, removeChannel() {}, auth: { getSession: async () => ({ data: { session: ctx.session ?? null } }) }, rpc(name, args) {
     calls.push([name, plain(args)]); order.push(name);
     return ctx.rpc?.(name, args) ?? Promise.resolve({ data: true, error: null });
   } };
@@ -72,7 +72,9 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
       useIsFocused: () => ctx.focused, useFocusEffect: fn => effect(() => ctx.focused ? fn() : undefined, [fn, ctx.focused]), usePathname: () => ctx.pathname, Link: { AppleZoomTarget: 'ZoomTarget' } },
     'expo-notifications': { DEFAULT_ACTION_IDENTIFIER: DEFAULT_ACTION, setNotificationHandler() {}, getLastNotificationResponse: () => ctx.initialResponse ?? null,
       clearLastNotificationResponseAsync: async () => {}, addNotificationResponseReceivedListener: listener => subscription('response', listener), addPushTokenListener: listener => subscription('token', listener) },
-    'expo-linking': Linking, 'expo-web-browser': { openBrowserAsync: url => { browsed.push(url); return Linking.openURL(url); } }, 'expo-application': { nativeApplicationVersion: '1.2.2', nativeBuildVersion: '64' },
+    'expo-linking': Linking, 'expo-web-browser': { openBrowserAsync: url => { browsed.push(url); return Linking.openURL(url); } }, 'expo-application': { nativeApplicationVersion: '1.2.2', nativeBuildVersion: '64',
+      getInstallReferrerAsync: async () => { ctx.referrers.push(ctx.referrer); if (ctx.referrer instanceof Error) throw ctx.referrer; return ctx.referrer; } },
+    '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async key => ctx.storage.get(key) ?? null, setItem: async (key, value) => { ctx.storage.set(key, value); } } },
     'expo-constants': { __esModule: true, default: { expoConfig: { version: '9.9.9', ios: { buildNumber: '999' } } } },
     'react-native-reanimated': { __esModule: true, default: { View: 'AnimatedView' }, FadeIn: { duration: () => 'fade' }, FadeInDown: { duration: () => 'fade' }, SlideInDown: { duration: () => 'slide' }, useReducedMotion: () => true }, 'react-native-webview': { __esModule: true, default: 'WebView' },
     '@/lib/auth': { useAuth: () => ctx.auth }, '@/lib/product-analytics': product, '@/lib/notification-preferences': preferences,
@@ -361,6 +363,31 @@ test('a delayed anonymous entry belongs only to its first claimed member', async
     finish('gling://events?utm_source=instagram'); await ui.settle(); realBehavior.behavior('success', 'signup_complete'); await ui.settle();
     assert.equal(ui.calls.filter(([name]) => name === 'record_behavior_events').at(-1)[1].p_source, switchMember ? 'unknown' : 'instagram');
     ui.cleanup();
+  }
+});
+
+test('Android keeps the Play install source for guest sessions until the first login, and a tagged link still wins', async t => {
+  const guest = { isAuthed: false, isAdmin: false, me: { id: 'me' } };
+  const launch = async options => {
+    const ui = mount('components/app-activity.tsx', 'AppActivity', {}, { platform: 'android', auth: guest, entryUrl: null, ...options });
+    t.after(ui.cleanup); await ui.settle(); await ui.behavior(); return ui;
+  };
+  const storage = new Map(), referrers = [];
+  let ui = await launch({ storage, referrers, referrer: 'utm_source=instagram&utm_campaign=bio' });
+  assert.equal(ui.calls.at(-1)[1].p_source, 'instagram'); assert.equal(storage.get('gling.install-source'), 'instagram');
+  ui = await launch({ storage, referrers, referrer: 'utm_source=threads' });
+  assert.equal(ui.calls.at(-1)[1].p_source, 'instagram', 'later guest launches reuse the first read');
+  assert.equal(referrers.length, 1, 'Play is asked only once');
+  ui = await launch({ storage, referrers, entryUrl: 'gling://events?utm_source=naver' });
+  assert.equal(ui.calls.at(-1)[1].p_source, 'naver', 'a tagged link that opened the app comes first');
+  ui = await launch({ storage, referrers, auth: { isAuthed: true, isAdmin: false, me: { id: 'member' } } });
+  assert.equal(storage.get('gling.install-source'), 'unknown', 'the first login ends the install source');
+  ui = await launch({ storage, referrers }); assert.equal(ui.calls.at(-1)[1].p_source, 'unknown');
+  for (const options of [{ referrer: 'utm_source=google-play&utm_medium=organic' }, { referrer: new Error('emulator') }, { referrer: 'utm_source=instagram', session: { user: { id: 'member' } } }, { platform: 'ios', referrer: 'utm_source=instagram' }]) {
+    ui = await launch(options);
+    assert.equal(ui.calls.at(-1)[1].p_source, 'unknown', JSON.stringify(options));
+    if (options.platform === 'ios') assert.deepEqual(ui.ctx.referrers, [], 'iOS never asks for a Play referrer');
+    else assert.equal(ui.ctx.storage.get('gling.install-source'), 'unknown', 'failures and existing sessions are not asked again');
   }
 });
 
