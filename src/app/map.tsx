@@ -79,7 +79,7 @@ const filters: { id: DiscoveryFilter; label: string }[] = [
   { id: 'housing', label: '부동산' }, { id: 'used', label: '중고거래' },
   { id: 'events', label: '행사 전체' },
 ];
-type Result = { key: string; page: number; items: DiscoveryItem[]; cursor: FeedCursor | null; postMore: boolean; eventMore: boolean; errors: string[]; limited: boolean };
+type Result = { key: string; page: number; items: DiscoveryItem[]; cursor: FeedCursor | null; postMore: boolean; eventMore: boolean; errors: string[]; limited: boolean; festivalIds?: string[] };
 const freshMapFix = (fix: LocationFix) => isFreshLocation(fix) && fix.accuracy! <= 250 && Date.now() - fix.measuredAt <= 120000;
 const located = (item: DiscoveryItem): item is DiscoveryItem & PostPin => item.latitude !== null && item.longitude !== null;
 // The embedded map's far stage, where city pills replace places; searching an area makes no sense there.
@@ -242,14 +242,15 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       loadTicketmasterEvents({ cityId: city.id as EventCity, category: 'all', page, ...(day ? { date: day } : {}) })))
       .then(async results => {
         const pages = results.flatMap(result => result.status === 'fulfilled' ? [result.value] : []);
-        let partialError = pages.length !== results.length;
+        let partialError = pages.length !== results.length, festivalIds = previous?.festivalIds ?? [];
+        // 페스티벌 is exactly the festival row the events screens show (owner 2026-11-11 "행사 화면과 똑같이"); later pages keep that row.
         if (page === 0) {
-          try { pages.push(await loadTicketmasterEvents({ cityId: city.id as EventCity, category: 'all', page: 0, festival: true })); }
+          try { const festival = await loadTicketmasterEvents({ cityId: city.id as EventCity, category: 'all', page: 0, festival: true }); pages.push(festival); festivalIds = festival.events.map(event => event.id); }
           catch { partialError = true; }
         }
         if (!pages.length) throw new Error('EVENTS_UNAVAILABLE');
-        return { items: pages.flatMap(value => value.events.map(event => discoveryEvent(event, city.id)).filter(item => item !== null)), hasMore: pages.some(value => value.hasMore) && page < 19, partialError };
-      }) : Promise.resolve({ items: [], hasMore: false, partialError: false });
+        return { items: pages.flatMap(value => value.events.map(event => discoveryEvent(event, city.id, Date.now(), festivalIds.includes(event.id))).filter(item => item !== null)), hasMore: pages.some(value => value.hasMore) && page < 19, partialError, festivalIds };
+      }) : Promise.resolve({ items: [], hasMore: false, partialError: false, festivalIds: previous?.festivalIds });
     void Promise.allSettled([posts, events]).then(([postResult, eventResult]) => {
       if (controller.signal.aborted || request.current !== controller) return;
       const added = [...(postResult.status === 'fulfilled' ? postResult.value.items : []), ...(eventResult.status === 'fulfilled' ? eventResult.value.items : [])];
@@ -258,6 +259,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
         cursor: postResult.status === 'fulfilled' ? postResult.value.cursor : previous?.cursor ?? null,
         postMore: postResult.status === 'fulfilled' && postResult.value.hasMore,
         eventMore: eventResult.status === 'fulfilled' && eventResult.value.hasMore,
+        festivalIds: eventResult.status === 'fulfilled' ? eventResult.value.festivalIds : previous?.festivalIds,
         errors: [...new Set([...(previous?.errors ?? []), postResult.status === 'rejected' ? "게시물 위치를 불러오지 못했어요." : '', eventResult.status === 'rejected' ? "행사 정보를 불러오지 못했어요." : eventResult.value.partialError ? "일부 페스티벌 정보를 불러오지 못했어요." : ''].filter(Boolean))] });
       morePending.current = false;
       setPendingKey(null);
