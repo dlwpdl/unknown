@@ -35,6 +35,11 @@ test('a sub-category without its own picture yet shows its map category picture'
   }
 });
 
+test('the haloed icon is drawn once and reused instead of redrawing its shadow every frame (map lag ⑤)', () => {
+  const icon = readFileSync(new URL('../src/components/category-icon.tsx', import.meta.url), 'utf8');
+  assert.match(icon, /<Animated\.View[^>]*shouldRasterizeIOS renderToHardwareTextureAndroid style=\{\[box, halo\(light\), moving\]\}>/);
+});
+
 test('each gesture runs once in 0.64s and ends where it started', () => {
   for (const id of MAP_ICONS) {
     const { tracks } = aliveMotion(id, 24, false);

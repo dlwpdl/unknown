@@ -82,7 +82,9 @@ export function CategoryIcon({ id, play, size = 24 }: { id: string; play: number
   const art = Object.hasOwn(ART, id) ? id : PLACE_SUBCATEGORIES.find(option => option.id === id)?.filter;
   if (!art || !Object.hasOwn(ART, art)) return null;
   const box = { width: size, height: size };
-  return <Animated.View pointerEvents="none" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[box, halo(light), moving]}>
+  // Owner 2026-11-12 (map lag ⑤): draw the icon and its halo once and reuse that bitmap; the gesture only moves/scales it.
+  return <Animated.View pointerEvents="none" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+    shouldRasterizeIOS renderToHardwareTextureAndroid style={[box, halo(light), moving]}>
     <Image source={ART[art as keyof typeof ART]} contentFit="contain" style={box} accessible={false} />
   </Animated.View>;
 }
