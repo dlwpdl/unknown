@@ -32,7 +32,7 @@ node node_modules/typescript/bin/tsc --ignoreConfig --noEmit --strict --target e
 
 Before claiming external sharing works, verify the authorized deployed `/share/:UUID` response is `text/html` with the actual link's OG tags, source/account filtering, actual covers, the login return flow, and an external platform's rendered card. Local tests do not establish deployment or Google/social provider configuration.
 
-Design references: Apple's legible hierarchy, keyboard focus, touch target, and reduced-motion guidance; [Once invitation](https://mobbin.com/screens/0612120c-8ad7-4581-828c-fb8face6ac9c) for cover/title/one CTA and [Givingli event card](https://mobbin.com/screens/c023134b-53f7-4404-b13c-d700a9ff11e1) for title/date/city hierarchy. The current night palette is `#0B0B12`, `#171722`, `#CBB9FF`, `#F6F3F0`, and `#B7B4C3`.
+Design: Apple's legible hierarchy, keyboard focus, touch target, and reduced-motion guidance; a cover/title/one CTA invitation and a title/date/city event card hierarchy. The current night palette is `#0B0B12`, `#171722`, `#CBB9FF`, `#F6F3F0`, and `#B7B4C3`.
 
 
 ## Vercel prebuilt bundle

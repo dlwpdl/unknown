@@ -1081,7 +1081,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       {(listingCategory === 'housing' || listingCategory === 'used') && <ListingMapScreen visible={listingMap} category={listingCategory} city={city} posts={listingPosts}
         filters={listingFilters} onFilters={setListingFilters} onClose={() => setListingMap(false)}
         onOpenPost={post => { setListingMap(false); setTimeout(() => openDetail(post), Platform.OS === 'ios' ? 350 : 0); }} />}
-      {/* 검색: 제목·내용·해시태그. 입력 전엔 인기 해시태그 칩 (당근 검색 패턴) */}
+      {/* 검색: 제목·내용·해시태그. 입력 전엔 인기 해시태그 칩 */}
       <Modal visible={searching} animationType={reducedMotion ? 'fade' : 'slide'} onRequestClose={() => { play('selection'); setSearching(false); }}
         onDismiss={() => {
           const post = searchSelection.current;

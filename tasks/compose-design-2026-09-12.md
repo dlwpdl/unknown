@@ -12,9 +12,9 @@
 
 ## 참고
 
-[Apple Modality](https://developer.apple.com/design/human-interface-guidelines/modality), [Expo 57](https://docs.expo.dev/versions/v57.0.0/), [Threads 작성 화면](https://mobbin.com/screens/87614707-9bd9-4b71-8eb5-7a4ab54e03ad), [Locals 위치 선택](https://mobbin.com/screens/e587f61c-5755-4bd0-9e9d-1f02e32bfc40), [Pinterest 위치 선택 참고](https://www.pinterest.com/pin/464363411602946447/).
+[Apple Modality](https://developer.apple.com/design/human-interface-guidelines/modality), [Expo 57](https://docs.expo.dev/versions/v57.0.0/).
 
-Apple Design 스킬을 적용하고 Mobbin/Pinterest 실제 이미지를 확인했다. BrandKit은 기본 템플릿만 있고 글링 자료가 없어 기존 코드 토큰을 기준으로 삼았다. Kroma는 SERPER_API_KEY가 없어 조사하지 못했다.
+Apple Design 스킬을 적용했다. BrandKit은 기본 템플릿만 있고 글링 자료가 없어 기존 코드 토큰을 기준으로 삼았다.
 
 ## 확인
 

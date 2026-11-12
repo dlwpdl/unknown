@@ -14,7 +14,7 @@ The excerpt uses the first 180 Unicode characters, adding an ellipsis when longe
 
 Verification: offline actual-worker payload tests; transactional pgTAP checks for top-five selection, visibility, opt-outs, current body, receipt privacy and stable retries; `npx tsc --noEmit`; `npm run lint -- --no-cache`; relevant Node regressions, then full suite before integration. A clickable HTML preview lives in `output/design/` and is shown in the existing Gling Orca folder. Physical-device checks are deferred until deployment at the owner's request.
 
-References: the owner's screenshot; Apple notification HIG; Expo SDK 57 notifications and Expo Push payload contract. Mobbin's Insight Timer discussion screen and Mindtrip Updates screen confirm readable title/body hierarchy; they are not lock-screen examples. No image generation is involved.
+References: the owner's screenshot; Apple notification HIG; Expo SDK 57 notifications and Expo Push payload contract. Keep a readable title/body hierarchy. No image generation is involved.
 
 Deployment uses the existing single DB/Edge operator. Before applying, recheck the captured live function definitions, owner/ACL, push v13 source and all 14 cron identities. Run the migration in a rollback transaction against that baseline, then apply the DB migration before the worker. Read back the service-only claim columns, postgres owner, empty search path and unchanged cron schedules. Download the active Edge bundle and verify the source hash. Do not invoke producers, claim the real queue, or send test notifications.
 

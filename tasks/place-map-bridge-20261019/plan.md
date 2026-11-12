@@ -7,7 +7,7 @@ Approved scope: Home/full-list cards open the existing map at the same catalog I
 3. Update Home/full-list callers and add a detail-map entry using existing control styling and selection feedback. Fix `locale === 'en'` in the three curated-copy callers using `language`, retaining locale for Intl dates.
 4. Run focused map/navigation/language checks, type/lint/full repository checks, and render/view the changed detail entry and KO/EN curated copy. Send one isolated source commit and changed-file hashes to the release owner; same sole native installer verifies installed Home/list → exact pin → detail/reviews/directions/back/GPS on iOS and Android.
 
-Reference actually viewed: https://mobbin.com/screens/5b38f4ff-989f-4634-a8e6-1072bbd2d9ab (Google Maps selected pin with bottom place card, rating, photos and Directions). Retain Gling's approved map layout rather than changing its visual system. No image generation, provider call, new dependency, build/install/reset or GUI ownership change.
+A selected pin opens a bottom place card with rating, photos and directions. Retain Gling's approved map layout rather than changing its visual system. No image generation, provider call, new dependency, build/install/reset or GUI ownership change.
 
 Catalog reselection is independently owned by run_3b9c2f0283ed. This UI packet is not evidence that all eleven cities contain fifty reviewed places, or that a native installation/store update has occurred.
 

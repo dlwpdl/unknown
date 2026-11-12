@@ -31,6 +31,6 @@ python3 scripts/check-business-directory.py --map-photo
 
 For the offline snapshot, add `--schema` with the existing schema-only SQL file path. Run frontend checks with the installed release checkout's dependencies; do not install packages for this change.
 
-Design research used the connected Mobbin photo-selection screen ([WHOOP](https://mobbin.com/screens/614c5819-58b6-43b6-9ea8-c8b369c9edbb)): keep the photo role explicit and selection/save actions distinct. The existing editor row and feedback remain the UI contract. BrandKit returned no token specimens, Pinterest results did not provide a relevant editor, and Kroma had no configured key; these were not treated as design evidence. No new design system or generated photo was added.
+Keep the photo role explicit and selection/save actions distinct. The existing editor row and feedback remain the UI contract. BrandKit returned no token specimens. No new design system or generated photo was added.
 
 The live migration and media-function deployment are **unexecuted**, pending the supervisor's schema/permission review and existing release authority. No native builds, GUI/account changes, publication, tags, push, merge, or deployment were performed. The profile-switch redesign remains outside this change.

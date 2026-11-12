@@ -26,4 +26,4 @@
 
 Code and local private admin export are updated. No signed mobile build was installed or distributed, and no production database data was changed for testing. The installed app requires a new build for this behavior.
 
-UI reference inspected through connected Mobbin before the display change: [GoDaddy address fields](https://mobbin.com/screens/9ef61d30-06a4-43bf-8b90-aef5a43bf64a). Existing Gling admin components and styling were retained.
+Existing Gling admin components and styling were retained.

@@ -14,7 +14,7 @@ MapLibre HTML은 로컬 고정 SDK 코드와 안전한 숫자 설정만 포함�
 
 검사: node --experimental-strip-types --test scripts/post-maps.test.mjs scripts/maplibre-map.test.mjs; npx tsc --noEmit; npm test; npm run lint; 실제 MapLibre HTML/React 위치 선택기의 선택·첨부·취소·원문·4000자·권한·늦은 응답 검사; 원래 Git→gling Orca 탭에서 실제 화면 확인. 설정/코드 반영과 실제 iOS/Android 빌드·GPS·스토어 출시를 구분한다.
 
-공식 계약: Expo57 WebView/Location 문서, 고정 MapLibre GL JS 패키지와 Map/Marker API, OpenFreeMap quick_start 및 공개 서버 조건. 기존 Mobbin Telegram/Google Maps 실제 화면과 승인된2안·나이트 테마를 재사용한다. 공개·유료 권한은 확대하지 않는다.
+공식 계약: Expo57 WebView/Location 문서, 고정 MapLibre GL JS 패키지와 Map/Marker API, OpenFreeMap quick_start 및 공개 서버 조건. 승인된2안·나이트 테마를 재사용한다. 공개·유료 권한은 확대하지 않는다.
 
 현재 실제 소스: 일반/비즈니스/편집과 공개 읽기의 기존 본문/링크 경로를 유지하며, 위치 이름/좌표와 지도 이미지를 연결했다. 개인정보처리방침에는 선택해 게시한 핀과 도시 추천용 비공개 기록을 구분하고 OpenFreeMap 지도 요청을 안내한다. 기존 안전 분석/접근/30일 삭제는 유지한다. foreground 권한 문구만 지도 공유 목적을 포함해 보완했고, 기존 출시 구현의 prebuild가 이 문구를 적용한다. 새 키/결제/SDK 의존성/DB/자동화/공개 제출은 없다.
 

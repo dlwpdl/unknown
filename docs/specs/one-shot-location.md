@@ -15,7 +15,7 @@ Reuse audited admin user overview/timeline. Login IP remains separately labeled 
 
 ## Interface
 One reusable nearby-city card alongside manual city buttons in onboarding and composition, and a recommendation card in the feed. Permission denial, unavailable/slow fixes and network errors preserve normal reading/writing. No prechecked consent.
-References inspected: Mobbin Wolt 26742773-2c58-4848-85c2-9946961147a5, Uber Eats 0acc307e-d01e-499b-9936-d1fcf6988991, corner 3e34e9e8-ee0f-4ab8-8870-24e22829469a. BrandKit is unconfigured; retain Gling tokens. Pinterest metadata inspected; Kroma unavailable without a key.
+BrandKit is unconfigured; retain Gling tokens.
 
 ## Checks
 Node checks for geographic/freshness boundaries and manual override. pgTAP checks for opt-in, identity binding, timestamp/coordinate rejection, idempotency, admin-only audited reads and deletion/retention. Typecheck/lint, web/admin exports, Orca responsive behavior and native permission configuration.

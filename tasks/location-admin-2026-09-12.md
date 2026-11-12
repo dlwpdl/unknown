@@ -16,9 +16,6 @@ Apple Design and Frontend UI Engineering applied to the local admin: sidebar ico
 This is not in the existing TestFlight build 11. A new native binary and App Store/Play location disclosure updates are needed before distribution. On-device permission denial, Allow Once/approximate permission, GPS timeout, cancellation/manual override and sign-out mid-request still need device acceptance checks. See `release/app-store/location-release.md`.
 The local Expo preview unexpectedly bundled the production Supabase URL despite shell overrides; its backend-origin guard caught this before any test publication/location storage. Do not count that preview as a local end-to-end location test. Use an isolated build with verified backend origin for subsequent device tests.
 
-## Inspected design references
-- [Outseta navigation and metrics](https://mobbin.com/screens/b97fc96c-eda9-4241-bfd6-757e55814cd0)
-- [Zoho CRM sidebar and tables](https://mobbin.com/screens/050cf6d0-08c9-41e3-b677-f6801ee33bbb)
-- [Shopify customer detail](https://mobbin.com/screens/0923dee6-44f2-4b31-8fa2-ef202f0548ae)
+## Design
 
-BrandKit is an unconfigured template, so existing Gling tokens were retained. Pinterest metadata was checked; Kroma could not run without a Serper key. No new paid services were used.
+BrandKit is an unconfigured template, so existing Gling tokens were retained. No new paid services were used.

@@ -57,7 +57,7 @@ Orca browser: seven flow assertions passed; required application consent blocks 
 
 Integration caveat: existing create_post caps initial capacity at 30; configure_chilling_event supports 2–50. Before native creation integration, make initial creation and event configuration atomic rather than publishing a partial legacy meetup if the second call fails.
 
-Reference boundaries: Apple design skill and official Luma guidance informed the proposal. Mobbin MCP was unavailable (indirect Kroma discovery lacked its configured search key); no Mobbin screens were inspected. No paid services or new dependencies used.
+Design: the Apple design skill informed the proposal. No paid services or new dependencies used.
 
 Independent review approved this isolated foundation; one prototype validity issue was reproduced and fixed. Runnable regression in the preview browser console:
 
@@ -73,4 +73,4 @@ f.elements.start.dispatchEvent(new Event('input', { bubbles: true }));
 console.assert(f.checkValidity());
 ```
 
-Official references: https://help.luma.com/p/collect-registration-questions and https://help.luma.com/p/managing-your-guest-list ; https://developer.apple.com/design/human-interface-guidelines/segmented-controls and https://developer.apple.com/design/human-interface-guidelines/sheets .
+Official references: https://developer.apple.com/design/human-interface-guidelines/segmented-controls and https://developer.apple.com/design/human-interface-guidelines/sheets .

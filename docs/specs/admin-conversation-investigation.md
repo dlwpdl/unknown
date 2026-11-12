@@ -43,4 +43,4 @@ SQL 검사는 기존 `supabase_db_gling`에서 트랜잭션으로 실행하고 r
 
 허용된 변경: 승인한 조사함에 필요한 클라이언트, additive migration, 관련 검사, 기존 관리자 bundle 반영. 새 의존성·자동화·계정·DNS·법 집행 연락·실사용자 경고/차단·새 네이티브 제출은 추가하지 않는다.
 
-참고 시안: `output/design/admin-conversation-investigation-2026-10-12/index.html` (기존 main 체크아웃). Mobbin Intercom `d4d6efaf-d387-4211-9bdf-1c207d1f2714`와 Klaviyo `ccdbfba0-03ae-4d3d-8fa6-775af9df52bd`의 실제 분할 화면, Apple Design의 즉각적인 피드백·고정된 탐색·키보드 초점·모션 줄이기를 적용한다.
+참고 시안: `output/design/admin-conversation-investigation-2026-10-12/index.html` (기존 main 체크아웃). 분할 화면과 Apple Design의 즉각적인 피드백·고정된 탐색·키보드 초점·모션 줄이기를 적용한다.

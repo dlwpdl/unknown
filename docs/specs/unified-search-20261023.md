@@ -41,7 +41,7 @@ export function loadUnifiedSearch(client: SupabaseClient, options: {
 - Backend helper/migration/tests are a separate ownership boundary from UI/callers.
 - Existing result/profile components and loading/empty/error states take precedence over new abstractions. All changed controls get `useInteractionFeedback().play(...)`, correct accessibility labels, 44pt targets and enlarged-text support.
 
-Design references actually observed: [Fresha grouped places/people search](https://mobbin.com/screens/3f9f8d23-9c63-4363-9b3f-d2d07cfa87e9), [Tripadvisor typed results and map continuation](https://mobbin.com/screens/2c1b5e60-835d-4e4f-8b09-232cb3f039bf). Reuse the installed Design and Apple Design workflow and the current design system; these are structure references, not measured conversion evidence.
+Group places/people results, show typed results and continue into the map. Reuse the installed Design and Apple Design workflow and the current design system.
 
 ## Commands and checks
 

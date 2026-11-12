@@ -19,7 +19,7 @@
 
 ## 화면 근거
 
-Apple Design의 기존 위치에 보조 행동/즉시 피드백/접근성 및 Mobbin의 실제 [inDrive 추천 대화](https://mobbin.com/screens/d33849c4-5367-46cd-90ca-1c2e2d6f2be7)·[Shopee 입력창 위 보조 칩](https://mobbin.com/screens/13b2cbcf-b882-4b7f-8b39-b6e9d68c2ae3)을 확인했다. 글링 나이트/라일락 토큰을 유지하고 44px 터치 영역, 글자 확대/단어 줄바꿈, 입력 초안 보존, 선택 시 `useInteractionFeedback().play(...)`를 적용한다. HTML 예시는 output/design에 저장해 실제 앱 구현과 예시 데이터를 구분한다.
+Apple Design의 기존 위치에 보조 행동/즉시 피드백/접근성과 입력창 위 보조 칩 구성을 적용한다. 글링 나이트/라일락 토큰을 유지하고 44px 터치 영역, 글자 확대/단어 줄바꿈, 입력 초안 보존, 선택 시 `useInteractionFeedback().play(...)`를 적용한다. HTML 예시는 output/design에 저장해 실제 앱 구현과 예시 데이터를 구분한다.
 
 체크인·상호 확인·AI는 실제 만남/진위를 완전히 증명하지 못한다. 허위 확인/보복/집단 평가와 오탐을 검토할 관리자 경로, 신고 증거, 정정 가능성을 함께 유지한다.
 

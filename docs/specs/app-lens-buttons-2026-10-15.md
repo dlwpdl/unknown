@@ -6,7 +6,7 @@ Preserve every caller's dimensions, minimum sizes, padding, margins, font and ic
 
 Use the existing tracked Pressable with an explicit lens opt-in. Keep its non-opted-in behavior intact. A small shared material helper may change only paint properties; retain border widths as layout reservations while replacing the old thick bottom-edge paint. Preserve existing interaction feedback without duplicate sounds. The wide/compact RaisedActionButton keeps its existing 52/44 minimum touch heights and 2-point base reservation.
 
-Reuse current day/night brand colors. The approved preview and its observed references remain in `output/design/gling-buttons-seven-20261015/` in the original checkout. Additional observed reference: [Luma event detail](https://mobbin.com/screens/d0f6cb30-04d6-40ac-9d11-54f3add802a9): small outlined circular header controls, an opaque registration action and quiet secondary actions. Use the established action hierarchy, not its event content.
+Reuse current day/night brand colors. The approved preview remains in `output/design/gling-buttons-seven-20261015/` in the original checkout. Event detail actions: small outlined circular header controls, an opaque registration action and quiet secondary actions.
 
 Expo SDK57 versioned documentation and React Native0.86 View Style Props were read before implementation. Use stable boxShadow for the rim/reflection; the documented experimental background-image API is excluded from production. Android versions without inset shadow support retain the solid fill and rounded outline.
 

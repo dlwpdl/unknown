@@ -23,4 +23,4 @@ iOS: 빌드 `83bef489-7bc7-4feb-a2f6-147ae965f20b`, 내부 그룹 `03fefab3-98b9
 
 Android: 서명된 AAB 빌드와 서명 검사 완료. SHA-256 `b991057933b3fc04b7787007184138495ddb90aed03fe1d6f7aa2b66c0ff40f0`. 9월 11일 오후 3시 Play Console 내부 테스트 트랙에서 최신 버전 11, «내부 테스터에게 제공됨»을 확인했다. 가독화 파일 경고 1개가 있으며 출시를 차단하는 오류는 없었다. 계좌 확인용 입금 대기는 사용자가 확인 중이며 결제 계좌 설정은 변경하지 않았다. 양쪽 모두 내부 테스트 배포이며 정식 출시 심사 승인과는 별개다.
 
-디자인 참고: 설치된 apple-design / frontend-ui-engineering, BrandKit 모션 토큰, Mobbin [Handshake 글 상세](https://mobbin.com/flows/0eb021f2-221c-4f1a-9c2f-393583991aae)와 [MasterClass 글 보기](https://mobbin.com/flows/716b4015-aa37-4700-b1ed-385c0cbe752c). Mobbin 정지 화면에서 애니메이션 시간을 추정하지 않았다. 구현은 [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/router/)와 [모달 SafeAreaProvider 안내](https://docs.expo.dev/versions/v57.0.0/sdk/safe-area-context/)를 확인했다. Kroma 검색은 연결된 검색 키 부재로 사용할 수 없었다.
+디자인 기준: 설치된 apple-design / frontend-ui-engineering, BrandKit 모션 토큰. 구현은 [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/router/)와 [모달 SafeAreaProvider 안내](https://docs.expo.dev/versions/v57.0.0/sdk/safe-area-context/)를 확인했다.

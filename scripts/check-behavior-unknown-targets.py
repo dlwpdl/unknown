@@ -15,7 +15,7 @@ CONTAINER = 'gling-behavior-unknown-check-' + uuid.uuid4().hex[:12]
 DATABASE = 'behavior_unknown_check'
 IMAGE = 'public.ecr.aws/supabase/postgres:17.6.1.165'
 MIGRATION = '20261111130000_behavior_unknown_targets.sql'
-PGTAP = ['behavior_analytics', 'map_corner_targets', 'security_low_20261030']
+PGTAP = ['behavior_analytics', 'map_tab_targets', 'security_low_20261030']
 CHECKS = ['live_behavior_controls', 'public_behavior_controls']
 
 

@@ -2,13 +2,11 @@
 
 상태: 사용자 추가 지시에 따라 출시 앱에는 크레딧·끌어올리기를 완전히 숨긴다. 이번에 작성한 화면은 개발 빌드에서 `EXPO_PUBLIC_PROMOTIONS_PREVIEW=1`을 명시한 경우에만 열 수 있다. 기본값과 모든 출시 빌드에서는 프로필 메뉴·내 글 진입 버튼이 없고, 직접 경로에 접근해도 프로필로 돌아간다. 결제·홍보 판매를 개시한 상태가 아니다. 아래는 향후 개발 검토용 설계다.
 
-## 실제 확인한 참고 화면
+## 화면 구성
 
-- [Blank Street Wallet · Mobbin](https://mobbin.com/screens/e81cb598-360f-4240-aef8-1f53b0e07dd0): 상품 사진 아래 Available Balance, Manage·Add Funds 버튼, 아래쪽 Order history에 주문·충전 항목과 금액이 보인다. 잔액·충전·사용 내역의 정보 순서만 참고한다. 커피 구매 지갑의 정책을 글링의 인앱 재화 정책으로 해석하지 않는다.
-- [Zopa Bank 계좌 닫기 확인 · Mobbin](https://mobbin.com/screens/fcb8c082-214f-4d82-817a-5c6207e0cdd2): 뒤로가기, 중앙 경고 아이콘·질문, 하단 Close my Smart Saver 버튼을 실제 확인했다. ‘계속 진행/나중에’ 두 선택지는 없고 계좌 폐쇄라는 다른 맥락이므로 글링의 비차단 안내 패턴으로 채택하지 않는다. 이번 조사에서 Mobbin 화면은 두 개만 열람했다.
-- [Wallet balance concept · Pinterest](https://www.pinterest.com/pin/844493676473080/): 원본 이미지를 내려받아 직접 열람했다. 잔액, Send·Withdraw, Transaction History가 보이는 흰색 유리 효과 시안이다. 큰 잔액과 낮은 대비, 송금·출금 버튼, 장식적인 재질은 글링에 가져오지 않는다. 잔액과 내역이 연결된다는 정보 구조만 보조 참고한다.
+- 잔액·충전·사용 내역 순서로 정보를 둔다. 큰 잔액과 낮은 대비, 송금·출금 버튼, 장식적인 재질은 쓰지 않는다.
 
-BrandKit은 이번 세션의 기존 조회에서 YourBrand 기본 자료였고 Kroma는 SERPER_API_KEY 미설정으로 확인되어 반복 호출하지 않았다. 글링의 실제 브랜드 근거는 승인된 B 시안, src/constants/theme.ts, src/assets/brand의 기존 자산이다. Apple 디자인과 frontend-ui-engineering 스킬의 선택권·맥락 가까운 상태 안내·명확한 피드백·접근성 원칙을 적용한다.
+BrandKit은 이번 세션의 기존 조회에서 YourBrand 기본 자료였다. 글링의 실제 브랜드 근거는 승인된 B 시안, src/constants/theme.ts, src/assets/brand의 기존 자산이다. Apple 디자인과 frontend-ui-engineering 스킬의 선택권·맥락 가까운 상태 안내·명확한 피드백·접근성 원칙을 적용한다.
 
 ## 가장 작은 진입 구조
 

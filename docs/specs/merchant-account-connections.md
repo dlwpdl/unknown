@@ -18,7 +18,7 @@
 
 1. 기존 로컬 Postgres에서 pgTAP로 직접 연결·초대·업체 격리·운영 담당자 제한·해제·위조/만료/동시 변경을 먼저 재현한다. 신규 migration과 테스트는 rollback되는 트랜잭션에서 실행해 공유 로컬 DB를 보존한다.
 2. 순차 migration, 현재 권한 helper, 보안 RPC, 저장소 조회 정책을 연결한다. 새 private 테이블은 RLS를 켜고 직접 접근 권한을 주지 않는다. 기본 search_path를 비우고 기존 안전 검토·작성자 기록을 유지한다.
-3. 관리자 연결 화면·앱 초대 확인·전환 진입·운영 담당자 도구를 연결한다. 기존 night/iris와 admin light, 44px·접근성·play 피드백을 유지한다. 이미 확인한 Mobbin Plain 초대 사례(https://mobbin.com/flows/5547be1b-fceb-4104-be4d-21eded14329e)의 계정·역할·초대 대기 구분을 참고한다.
+3. 관리자 연결 화면·앱 초대 확인·전환 진입·운영 담당자 도구를 연결한다. 기존 night/iris와 admin light, 44px·접근성·play 피드백을 유지한다. 계정·역할·초대 대기를 구분한다.
 4. 실제 컴포넌트 브라우저 검증, Node 테스트, TypeScript, 변경 lint와 Expo 앱/관리 웹 빌드를 확인하고 output/design에 클릭 가능한 HTML을 남긴다.
 
 소스: supabase/migrations·supabase/tests, src/lib/merchant-connections.ts, 기존 merchant-workspace·admin-merchants·profile 진입. 테스트는 scripts의 기존 Node/Playwright와 Docker의 기존 supabase_db_gling을 사용한다. 새 의존성·서버·worker·일정·결제/OAuth 연동은 추가하지 않는다.

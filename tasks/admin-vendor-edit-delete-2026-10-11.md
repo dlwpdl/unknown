@@ -30,4 +30,4 @@ Use the existing light admin tokens, feedback hook, table, native browser confir
 - HTML preview, actual exported UI and verification evidence live in this task's `output/design` and `output/qa` folders.
 
 ## Design evidence
-Apple Design: immediate response, clear consequences and accessible targets. Mobbin Stripe selection toolbar: https://mobbin.com/screens/d412df8a-c1d6-4d9c-af5d-04fd317f627f. Gorgias row-selection reference: https://mobbin.com/screens/fe3adbec-623a-4e3b-ad92-c8d101d53ecd. BrandKit confirms the admin light palette is separate from the public night identity. Pinterest search was available; Kroma was unavailable because its search credential was not configured. Expo SDK 57 versioned reference was read at https://docs.expo.dev/versions/v57.0.0/.
+Apple Design: immediate response, clear consequences and accessible targets. Use a selection toolbar and row selection. BrandKit confirms the admin light palette is separate from the public night identity. Expo SDK 57 versioned reference was read at https://docs.expo.dev/versions/v57.0.0/.

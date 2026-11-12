@@ -6,7 +6,7 @@ The existing account-bound receipt now records version `2026-09-19`, identifying
 
 Validation: 180 Node tests, TypeScript and lint pass; 40 selected pgTAP checks pass (login terms, AI consent/scheduler, account lifecycle). Regression test failed before implementation and passes after: missing/either-only agreement blocks providers, both enable them, unchecking privacy blocks again, and both links open the intended URLs. Orca browser independently checked the real rendered review-login form, both links, and a 320px content width. Both public policy URLs return HTTP 200. Public web export excludes admin code. Native physical-device signup and photo-picker QA are not claimed.
 
-Design: reused existing controls and BrandKit product tokens. Mobbin search through Kroma was unavailable (missing Serper key). Consulted Expo 57 documentation and Apple's current App Review Guidelines; this work does not establish that consent was the only rejection reason.
+Design: reused existing controls and BrandKit product tokens. Consulted Expo 57 documentation and Apple's current App Review Guidelines; this work does not establish that consent was the only rejection reason.
 
 Production migration 0071 applied and verified in remote migration history. Backups: `~/Library/Application Support/gling/backups/pre-build30-2026-09-19/` (public/private schema and private data, mode 0600).
 

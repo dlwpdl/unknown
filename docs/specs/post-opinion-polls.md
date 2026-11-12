@@ -10,7 +10,7 @@
 
 검증: 기존 로컬 DB 안의 트랜잭션에서 실제 RLS/RPC, 익명/다른 계정/차단/삭제/잘못된 보기·중복 요청, 글+투표 원자성·투표자 비공개를 확인한다. 관련 Node checks, typecheck, npm test 및 클릭 가능한 HTML 시안을 확인한다. 운영 투표나 실제 사용자 전환 성과는 테스트 결과와 구분한다.
 
-디자인: 기존 night/라일락 토큰,44px 터치, 라디오 단일선택, 실제 선택/저장/오류 시 useInteractionFeedback, 하나의 채워진 기본 버튼. 확인한 Mobbin 사례는 WhatsApp 투표 작성 https://mobbin.com/screens/ff40ba9d-4f7e-42e7-a7e3-9b215db7967a 및 단일선택 응답 https://mobbin.com/screens/f7d8cba0-46fb-49df-9201-0aad35f28629 이다. 다중선택이나 개별 응답자 공개는 구현하지 않는다.
+디자인: 기존 night/라일락 토큰,44px 터치, 라디오 단일선택, 실제 선택/저장/오류 시 useInteractionFeedback, 하나의 채워진 기본 버튼. 다중선택이나 개별 응답자 공개는 구현하지 않는다.
 
 ## 현재 검증 상태
 

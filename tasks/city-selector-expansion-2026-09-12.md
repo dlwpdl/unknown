@@ -8,7 +8,7 @@ NB로 지정했으므로 [Saint John 시](https://saintjohn.ca/en)를 기준으�
 
 확장 원칙: 당장은 캐나다 11개 도시를 같은 목록에서 찾는다. 추가 도시는 카탈로그 항목으로 늘리고, 미국 서비스를 실제로 열 때 국가 선택 동작과 도시 데이터만 연결한다. 주 목록을 한 단계 더 거치는 탐색은 현재 규모에서 필요하지 않다. 준비 중 지역은 선택/저장/GPS 추천을 열지 않으며 오픈 일정이나 회원 수를 만들지 않는다.
 
-근거: [Apple Searching](https://developer.apple.com/design/human-interface-guidelines/searching)의 검색 범위, [UIKit 세그먼트 비활성 상태](https://developer.apple.com/documentation/uikit/uisegmentedcontrol/isenabledforsegment(at:))를 확인했다. BrandKit에는 Gling 항목이 없어 현재 앱 토큰을 따른다. Mobbin의 [Singapore Airlines 도시 검색](https://mobbin.com/screens/64e00cdf-58e8-494d-aa72-e4fa1849ba04)은 도시명과 보조 지역 정보를 분리하며, [Trip.com 지역 선택](https://mobbin.com/screens/864a3891-dc58-4c61-82ff-5f696db126c8)은 국가별 목록을 나눈다. 둘의 실제 이미지를 참고했다. The Infatuation의 칩 목록은 도시 수·긴 한국어 이름에 덜 적합해 채택하지 않았다. Pinterest는 보조 검색으로만 사용했고 Kroma는 API 키가 없어 결과를 받지 못했다.
+근거: [Apple Searching](https://developer.apple.com/design/human-interface-guidelines/searching)의 검색 범위, [UIKit 세그먼트 비활성 상태](https://developer.apple.com/documentation/uikit/uisegmentedcontrol/isenabledforsegment(at:))를 확인했다. BrandKit에는 Gling 항목이 없어 현재 앱 토큰을 따른다. 도시명과 보조 지역 정보를 분리하고 국가별 목록을 나눈다.
 
 구현: `CITIES`에 준비 중 도시와 영문명을 추가하고 기존 도시 모달의 내용만 `CityPicker`로 옮긴다. 공통 `selectCity`에서 카탈로그의 open 상태를 검사해 준비 중 도시가 다른 호출 경로로 저장되는 것도 막는다. 관리자 분석도 같은 카탈로그를 필터로 사용하고 RPC가 DB의 도시 존재 여부를 검사하므로, migration `0039`로 `public.cities`에도 신규 5개 도시를 `is_open = false`로 등록한다. 새 DB 구조는 추가하지 않고 실제 서비스 지역, 회원 선호 지역과 GPS 좌표를 변경하지 않는다.
 

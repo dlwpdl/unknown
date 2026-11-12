@@ -55,14 +55,11 @@ Never use a customer message as a test fixture.
 Commands: `npm test`, `npm run typecheck`, `npm run lint`; backend tests use the
 existing `scripts/check-business-identity.py` and Postgres rollback-check pattern.
 
-## Design references actually inspected
+## Design
 
-- [Instagram inbox](https://mobbin.com/screens/fafb59d5-9aa6-4c27-8ead-ddd7098eb85b):
-  active account name and chevron above the list; keep identity above list filters.
-- [Quo inbox](https://mobbin.com/screens/13068f2b-386b-4078-a8f9-627a8624893c):
-  avatar/name at top and clear separation of scope and conversation content.
+- Active account name and chevron above the list; keep identity above list filters.
+- Avatar/name at top and clear separation of scope and conversation content.
 - Apple Design: predictable identity, instant control feedback, 44px targets,
   reduced motion and existing Gling theme tokens. BrandKit Gling overview read;
   its historical paper taste primer does not replace the owner's current native
-  night-theme source tokens. Kroma lookup failed (missing API key); Pinterest
-  search returned unrelated results, which are not adopted as visual evidence.
+  night-theme source tokens.

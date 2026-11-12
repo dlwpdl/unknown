@@ -33,3 +33,7 @@ For every branding, UI, UX, logo, icon, visual-system, or other design request, 
 # Marketing operations
 
 Marketing and operations material is never committed to this public app repository. On the operator's Mac it stays in this checkout as git-ignored local files (the local automations run here) and is backed up privately; start from `/Users/ash/Desktop/Git/unknown/CLAUDE.md`. Do not `git add` it.
+
+# No outside-product references in this public repository
+
+Code, comments, docs, test/file/branch names, commit messages and PR titles or bodies in this repository never say that a design or feature references, copies or was compared with another app or service, and never use another product's name for mockups or identifiers. Keep reference and comparison notes in the private operations workspace only.

@@ -11,6 +11,6 @@ Approved browser concepts. The selected revision is now implemented in the local
 Run from this directory: `python3 -m http.server 8177 --bind 127.0.0.1`.
 Check the open Orca page: `python3 check.py <browser-page-id>`.
 
-Research: [Apple HIG launching](https://developer.apple.com/design/human-interface-guidelines/launching), [Expo 57 SplashScreen](https://docs.expo.dev/versions/v57.0.0/sdk/splash-screen/), [Mobbin Klarna](https://mobbin.com/screens/c4259511-2fdd-4492-8bf9-5ac3b4deeeda), [Mobbin Glovo](https://mobbin.com/screens/78e3a230-a46c-4121-8a9a-f9dfc84def0c). Mobbin references were static screens, not observed motion. BrandKit had no Gling record; repo brand assets, theme, and brand story supplied the direction. Pinterest returned logo-motion references; Kroma returned an authentication error.
+Research: [Apple HIG launching](https://developer.apple.com/design/human-interface-guidelines/launching), [Expo 57 SplashScreen](https://docs.expo.dev/versions/v57.0.0/sdk/splash-screen/). BrandKit had no Gling record; repo brand assets, theme, and brand story supplied the direction.
 
 The native version uses the same wordmark crops and 950 ms sequence, with matching light/dark launch backgrounds and a 120 ms reduced-motion fade. Native recordings are in `output/qa/launch-motion-2026-09-12/`; this browser page remains a concept reference, not native performance evidence.

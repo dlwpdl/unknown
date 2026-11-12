@@ -21,7 +21,7 @@
 - Production web export + public-route check; Orca Gling workspace at 390×844: unchecked disables login; checked enables login and exposes checked=true to accessibility.
 - Independent read-only review: Apple receipt ordering issue fixed; no remaining critical/important findings.
 - `npm audit`: 16 existing moderate, zero high/critical. Existing Expo toolchain deferral/recheck 2026-10-01 remains; no forced upgrade.
-- BrandKit tokens reused. Mobbin/Kroma unavailable because SERPER_API_KEY is missing; no fabricated research results.
+- BrandKit tokens reused.
 - Production migrations 0068–0070 applied after dry-run and schema/data backup in `~/Library/Application Support/gling/backups/pre-build29-2026-09-17/`. Data dump has existing circular comments-FK restore caveat.
 - Physical-device picker/auth QA and a new real-device terms recording require the owner's device; web checks are not represented as physical-device evidence.
 

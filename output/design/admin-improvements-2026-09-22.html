@@ -239,11 +239,10 @@
 <div class="page">
   <div class="lede">
     <h1>글링 운영 콘솔 개선 시안</h1>
-    <p>실제 콘솔을 열어 7개 화면(분석·현황·AI 안전·감시어 경보·앱 오류·신고·사용자·게시글·대화)을 캡처해 확인한 문제와, Mobbin에서 검증된 운영 도구 패턴을 대조한 제안입니다. 숫자·문구는 실제 화면 값이며 개선안은 시안입니다.</p>
+    <p>실제 콘솔을 열어 7개 화면(분석·현황·AI 안전·감시어 경보·앱 오류·신고·사용자·게시글·대화)을 캡처해 확인한 문제와 개선 제안입니다. 숫자·문구는 실제 화면 값이며 개선안은 시안입니다.</p>
     <div class="meta">
       <span>2026-09-22</span>
       <span>근거: 로컬 운영 콘솔 캡처 7장</span>
-      <span>참고 패턴: Reddit 모드 큐 · Sentry 이슈 · Vercel 분석</span>
       <span>토큰은 기존 admin 팔레트 재사용</span>
     </div>
   </div>
@@ -446,7 +445,7 @@
   </div>
 
   <h2>4. 시안 B — 신고 관리</h2>
-  <p class="sub">Reddit 모드 큐처럼 상태 탭 → 요약 행 → 상세로 이어지게 하고, 상세 상단에 처리 액션을 고정했습니다. 상세가 길어져도 버튼이 항상 보입니다.</p>
+  <p class="sub">상태 탭 → 요약 행 → 상세로 이어지게 하고, 상세 상단에 처리 액션을 고정했습니다. 상세가 길어져도 버튼이 항상 보입니다.</p>
   <div class="card mock">
     <aside class="side">
       <div class="brand"><b>gling</b><span>운영 콘솔</span></div>
@@ -579,7 +578,7 @@
       </div>
     </section>
   </div>
-  <p class="caption">바꾼 것: 상태 탭 · 행 본문 요약 · 인물 카드 · 상단 고정 액션 · 처리 이력 타임라인 · 원본 ID는 접기. <a href="https://mobbin.com/screens/9e81dbcf-db79-45ef-8347-08e81e1b5b77">Reddit 모드 큐</a> · <a href="https://mobbin.com/screens/46fc60e0-4555-475a-8553-3b414e423ba0">Sentry 이슈 상세</a></p>
+  <p class="caption">바꾼 것: 상태 탭 · 행 본문 요약 · 인물 카드 · 상단 고정 액션 · 처리 이력 타임라인 · 원본 ID는 접기.</p>
 
   <h2>5. 시안 C — 운영 현황</h2>
   <p class="sub">처리할 일과 서비스 규모를 분리하고, 모든 지표에 전일 대비 델타를 붙였습니다. 인코딩 버그가 있던 카드는 요약 문장으로 정리했습니다.</p>
@@ -724,7 +723,7 @@
       </div>
     </div>
   </div>
-  <p class="caption">바꾼 것: Y축 눈금·보조선 · 차트 높이 축소 · 무데이터 구간은 옅은 회색 · KPI 델타 · 지역 필터 접기 + 분포 카드. <a href="https://mobbin.com/screens/b39e4b87-cdb8-410a-945f-6a34c807468e">Vercel 분석</a></p>
+  <p class="caption">바꾼 것: Y축 눈금·보조선 · 차트 높이 축소 · 무데이터 구간은 옅은 회색 · KPI 델타 · 지역 필터 접기 + 분포 카드.</p>
 
   <h2>8. 시안 F — 공통 상태와 사이드바</h2>
   <div class="cols">

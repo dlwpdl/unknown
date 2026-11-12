@@ -18,4 +18,4 @@ D-U-N-S 해외 사업자 등록 및 비즈 앱 전환은 이미 완료돼 있다
 
 신청용 서비스 URL/설명/실제 앱 화면을 준비했지만 별도 심사는 제출하지 않았다. 기존 등록 완료 사실을 확인한 후, 카카오가 요구하는 추가 심사 자료의 확보/인정 여부가 남아 있다. 동의 권한이 없는 scope를 켜거나 이름/생년월일을 가져왔다고 표시하지 않는다. [공식 절차](https://developers.kakao.com/docs/ko/app-setting/app), [데이터 형식·동의](https://developers.kakao.com/docs/ko/kakaologin/rest-api).
 
-UI는 기존 Apple Design 스타일을 유지하고 [Cosmos 계정 상세](https://mobbin.com/screens/26489d97-9f40-4061-801e-3a81d57c7ca2)의 실제 이미지에서 필드 라벨/그룹 구성을 확인했다. Kroma는 키 부재로 사용할 수 없었다.
+UI는 기존 Apple Design 스타일을 유지하고 필드 라벨/그룹을 나눈다.
