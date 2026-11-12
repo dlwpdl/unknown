@@ -291,7 +291,7 @@ test('글 카드 회원 사진은 회원 글에만 붙고, 모임 글은 호스�
   assert.equal(guestRead, false, 'a guest read of profiles comes back 401 and opens the login sheet');
   const denied = { auth: client.auth, from: () => ({ select: () => ({ in: () => ({ retry: () => Promise.resolve({ data: null, error: { code: '42501' } }) }) }) }) };
   assert.equal(await attachAuthorPhotos(denied, posts), posts);
-  assert.equal(await attachAuthorPhotos({ from: () => { throw new Error('offline'); } }, posts), posts);
+  assert.equal(await attachAuthorPhotos({ auth: client.auth, from: () => { throw new Error('offline'); } }, posts), posts, 'a failed read keeps the first letter');
 });
 
 test('the write button steps aside only while the top cards reach its spot', () => {
