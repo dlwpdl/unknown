@@ -38,5 +38,5 @@
 .biz tbody th{color:#B4ADB8;font-weight:600;white-space:nowrap}
 .biz-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .biz-managed{padding:20px;border:1px solid #36303F;border-radius:16px;background:#19161E}
-.biz-footer{margin-top:48px;color:#B4ADB8;font-size:14px}
+.biz .biz-footer{margin-top:48px;color:#B4ADB8;font-size:14px}
 @media (prefers-reduced-motion:reduce){.biz-primary,.biz-secondary,.biz-examples a{transition:none}.biz-primary:active,.biz-secondary:active{transform:none}}

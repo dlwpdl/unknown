@@ -35,7 +35,7 @@ const EXAMPLES = [
   { id: 'cced331d-59c4-433a-a68d-285a51f4db7a', name: 'Purple Penguin Cafe', meta: '카페 · 토론토' },
 ];
 const FEATURES = [
-  ['동네 한인에게 보여요', '올린 소식은 밴쿠버·토론토·몬트리올 한인들이 보는 피드와 비즈니스 찾기에 나와요.'],
+  ['동네 글링 사용자에게 보여요', '올린 소식은 밴쿠버·토론토·몬트리올에서 글링을 쓰는 사람들이 보는 피드와 비즈니스 찾기에 나와요.'],
   ['영수증으로 확인한 후기', '손님이 영수증으로 인증한 후기만 평점에 들어가요. 후기마다 사장님 답글을 달 수 있어요.'],
   ['웹에서 바로 올리기', '컴퓨터에서 가게 소식, 이벤트, 직원 구하는 글을 쓰고 끌어올릴 수 있어요.'],
   ['AI로 초안 쓰기', '유료 요금제에서는 Claude나 ChatGPT를 글링에 연결해 초안을 만들 수 있어요. 게시는 웹에서 직접 확인한 뒤에 해요.'],
@@ -49,8 +49,8 @@ export default function PublicBusiness() {
   return <div className="biz">
     <main className="biz-main">
       <p className="biz-kicker"><a href="/" onClick={tap}>글링</a> 비즈니스</p>
-      <h1>한인 손님이 모이는 곳에 가게를 알려 보세요</h1>
-      <p className="biz-lede">글링은 밴쿠버·토론토·몬트리올에 사는 한인들이 동네 이야기를 나누는 앱이에요. 가게 프로필을 만들어 두면 그 도시 한인들이 비즈니스를 찾을 때 함께 보여요.</p>
+      <h1>광고비 없이, 새 손님이 먼저 찾아오는 가게</h1>
+      <p className="biz-lede">한국 음식과 한국 가게를 찾는 손님이 글링에서 사장님 가게를 봐요. 등록은 무료고, 결제 정보는 받지 않아요.</p>
       <div className="biz-actions">
         <a className="biz-primary" href="/merchant/" onClick={tap}>무료로 시작하기</a>
         <a className="biz-secondary" href="#pricing" onClick={tap}>요금제 보기</a>
