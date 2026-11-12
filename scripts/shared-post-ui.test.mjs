@@ -108,7 +108,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/components/meetup-loyalty': { MeetupFollowEncore: 'MeetupFollowEncore' },
     '@/constants/theme': { Depth: {}, MaxContentWidth: 800, Spacing: { one: 4, two: 8, three: 16, four: 24 } }, '@/i18n/ko': { count, t },
     '@/components/meetup-manage-sheet': { MeetupManageSheet: 'MeetupManageSheet' }, '@/components/post-place-card': { PostPlaceCard: 'PostPlaceCard' },
-    '@/lib/meetup-destination': { splitPlaceMeetupBody: () => null }, '@/lib/place-reviews': { placeReviewPlace: () => null, placeReviewText: body => body },
+    '@/lib/meetup-destination': { splitPlaceMeetupBody: () => null }, '@/lib/place-reviews': { placeReviewPlace: () => null, placeReviewText: body => body, mapPinPlace: () => null },
     '@/lib/listing-details': { stripListingLead }, '@/components/listing-card': { ListingInfo: 'ListingInfo' },
     '@/lib/hashtags': { uniqueHashtags }, '@/lib/post-maps': { postLocationUrl, postMapBody }, '@/lib/meetup-ai': { visibleMeetupBody: body => body },
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' }, '@/components/post-detail': { PostDetail: 'PostDetail' }, '@/components/shared-link-card': { SharedPreviewContent: 'SharedPreviewContent' },

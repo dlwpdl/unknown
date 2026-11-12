@@ -4,7 +4,7 @@ import { getCityPlaces, type CityPlace } from './city-places.ts';
 import { createCommunityPost } from './community-data.ts';
 import { loadPublicFeed, type FeedCursor } from './feed-data.ts';
 import { TAGS } from './mock.ts';
-import { googlePinUrl, postMapBody, withPostMap } from './post-maps.ts';
+import { googleMapsPin, googlePinUrl, postMapBody, withPostMap } from './post-maps.ts';
 import type { Post } from './types.ts';
 
 // posts.body is capped at 1000 in production; the score, place reference and map lines add up to ~225 more.
@@ -42,6 +42,17 @@ export function placeReviewPlace(post: Pick<Post, 'body' | 'cityId'>): CityPlace
   const match = /\/(node|way|relation)\/(\d+)$/.exec(placeReviewReference(post.body) ?? '');
   if (!match) return null;
   try { return catalogPlace(post.cityId, `osm:${match[1]}:${match[2]}`); } catch { return null; }
+}
+
+// A post's map pin that sits exactly on one catalog place, as when it was picked from the Gling map while writing (owner 2026-11-11).
+// A moved pin, '내 위치', or two places on the same spot stay a plain map. 20261111210000 names the place in share previews by the same rule.
+export function mapPinPlace(cityId: string | undefined, mapUrl: string | null | undefined): CityPlace | null {
+  const pin = googleMapsPin(mapUrl ?? '');
+  if (!pin || !cityId) return null;
+  try {
+    const hits = getCityPlaces(cityId).filter(place => place.latitude === pin.latitude && place.longitude === pin.longitude);
+    return hits.length === 1 ? hits[0] : null;
+  } catch { return null; }
 }
 
 export function placeReviewBody(cityId: string, placeId: string, input: string): string {

@@ -106,10 +106,12 @@ export async function handleSharePreview(request: Request, env: SharePreviewEnv,
     const closed = kind === 'meetup' && preview.closed;
     const teaser = kind !== 'meetup' && typeof preview.teaser === 'string'
       ? Array.from(preview.teaser.replace(/\s+/gu, ' ').trim()).slice(0, 120).join('') : '';
+    // The Gling map place a post is pinned to (20261111210000); meetups never send one.
+    const place = kind !== 'meetup' ? text(preview.place, 300) : '';
     const cardTitle = kind === 'meetup' ? `${closed ? '모집 마감' : '글링 모임 초대'} · ${title}` : title;
     const description = kind === 'meetup'
       ? [closed ? '모집이 마감된 모임이에요.' : '함께할 모임에 초대됐어요!', city, schedule].filter(Boolean).join(' · ')
-      : teaser || [kinds[kind], city, schedule, '로그인한 뒤 자세한 내용을 볼 수 있어요.'].filter(Boolean).join(' · ');
+      : [place, teaser || [kinds[kind], city, schedule, '로그인한 뒤 자세한 내용을 볼 수 있어요.'].filter(Boolean).join(' · ')].filter(Boolean).join(' · ');
     const canonical = `${share}/${route[1]}/${route[1] === 's' ? route[2] : id}`;
     const destination = `${app}/post?id=${id}&shared=1${kind === 'meetup' ? '&invite=1' : ''}`;
     const cover = coverUrl(preview.imagePath, id, kind, city, app);

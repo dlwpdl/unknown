@@ -1,5 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Platform, Share, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -20,6 +20,8 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadConversations, sendDirectMessage, type ConversationPage, type ConversationPreview } from '@/lib/community-data';
 import { appendUniquePosts, getPostImageSource } from '@/lib/feed-data';
 import { chillingSchedule } from '@/lib/chilling';
+import { mapPinPlace } from '@/lib/place-reviews';
+import { postMapBody } from '@/lib/post-maps';
 import { buildSharedPostUrl, sharedPostMessage } from '@/lib/sharing';
 import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
@@ -51,6 +53,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
     return () => { live = false; };
   }, [visible, isAuthed, me.id, retry, asBusinessId]);
   const url = buildSharedPostUrl(post.id), image = getPostImageSource(post, me.id);
+  const message = useMemo(() => sharedPostMessage({ ...post, place: post.room ? null : mapPinPlace(post.cityId, postMapBody(post.body).url)?.name }), [post]);
   const invite = Boolean(post.room), label = invite ? me.id === post.author.id ? '내 모임에 초대하기' : '모임 같이 가요' : post.tag.slug === 'festival' ? '페스티벌 같이 가요' : '게시물 공유';
   const control = [styles.button, clay && styles.buttonClay, { backgroundColor: clay ? 'transparent' : theme.backgroundElement, borderColor: clay ? 'transparent' : theme.line }];
   const requesting = busy || Boolean(loading && inbox);
@@ -63,7 +66,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
         if (!copy && navigator.share) await navigator.share({ title: post.title, text: invite ? tr('같이 가요!') : undefined, url });
         else { await navigator.clipboard.writeText(url); if (active.current) setNotice("링크를 복사했어요."); }
       } else {
-        const result = await Share.share({ title: post.title, message: sharedPostMessage(post), url });
+        const result = await Share.share({ title: post.title, message, url });
         if (result.action !== Share.sharedAction) return;
       }
       if (active.current) { onShared(); play('message'); }
@@ -76,8 +79,8 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
     pending.current = true; setBusy(true); setNotice(''); play('selection');
     try {
       const id = conversation.kind === 'business'
-        ? await sendBusinessChatMessage(supabase, conversation, { clientId: merchantEventId(), body: sharedPostMessage(post) })
-        : await sendDirectMessage(supabase, conversation.id, sharedPostMessage(post));
+        ? await sendBusinessChatMessage(supabase, conversation, { clientId: merchantEventId(), body: message })
+        : await sendDirectMessage(supabase, conversation.id, message);
       if (!id) throw new Error('MESSAGE_SAVE_NOT_VERIFIED');
       if (active.current) { setSent(values => [...values, conversation.id]); setNotice({ conversationTitle: conversation.title }); onShared(); play('message'); }
     } catch {

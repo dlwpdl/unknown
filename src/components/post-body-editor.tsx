@@ -8,9 +8,12 @@ import { ClayIcon, ClayPillFill, useClay } from '@/components/clay';
 import { PostAttachmentLink } from '@/components/post-attachment-link';
 import { PostMapLink } from '@/components/post-map-link';
 import { PostLocationPicker } from '@/components/post-location-picker';
+import { PostPlaceCard } from '@/components/post-place-card';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { CITIES } from '@/lib/mock';
+import { mapPinPlace } from '@/lib/place-reviews';
 import { googleMapsPin, googlePinUrl, postMapBody, withPostMap } from '@/lib/post-maps';
 import { instagramPostLink, postLinkChecks, safePostLink, splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
 
@@ -24,6 +27,8 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
   const inputRef = useRef<TextInputInstance>(null);
   const mapped = postMapBody(value, { preserveWhitespace: true });
   const initialPin = useMemo(() => googleMapsPin(mapped.url ?? ''), [mapped.url]);
+  const cityId = CITIES.find(city => city.englishName === cityName)?.id;
+  const place = useMemo(() => mapPinPlace(cityId, mapped.url), [cityId, mapped.url]);
   const attached = splitPostAttachments(mapped.body);
   const bodyLimit = mapped.url ? Math.min(maxLength, 1000) : maxLength;
   const candidate = stage === 'instagram' ? instagramPostLink(input)?.url : stage === 'url' ? safePostLink(input) : null;
@@ -67,7 +72,7 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
       </View>;
   const attachments = <>
       {mapped.url && <View style={styles.row}>
-        <PostMapLink url={mapped.url} label={mapped.label} />
+        {place ? <PostPlaceCard place={place} preview style={styles.place} /> : <PostMapLink url={mapped.url} label={mapped.label} />}
         {allowLocation && <Pressable analyticsId="post.location.remove" accessibilityRole="button" accessibilityLabel={t.write.placeRemove} disabled={!editable}
           onPress={() => { play('selection'); onChangeText?.(mapped.body); }} style={styles.iconButton}>
           {clay ? <ClayIcon clay="close" size={18} /> : <ThemedText themeColor="textSecondary">×</ThemedText>}
@@ -140,6 +145,7 @@ const styles = StyleSheet.create({
   toolbarLabel: { fontSize: 11, lineHeight: 16 },
   attachButton: { alignSelf: 'flex-start', minHeight: 44, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 12 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, maxWidth: '100%' },
+  place: { flex: 1 },
   pillClay: { overflow: 'visible', paddingHorizontal: 18 }, choiceClay: { overflow: 'visible', paddingHorizontal: 20 }, confirmClay: { overflow: 'visible', paddingHorizontal: 24 },
   iconButton: { minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#0009' },

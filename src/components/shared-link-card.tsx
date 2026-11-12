@@ -4,7 +4,9 @@ import { Image } from 'expo-image';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { Pressable } from '@/components/analytics-controls';
+import { SymbolView } from '@/components/symbol-view';
 import { ThemedText } from '@/components/themed-text';
+import { IconSize } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useAuth } from '@/lib/auth';
@@ -25,6 +27,10 @@ export function SharedPreviewContent({ preview }: { preview: SharedLinkPreview }
     <View style={styles.copy}>
       <ThemedText type="smallBold" themeColor="accent">{preview.kind === 'meetup' ? tr("모임 초대") : preview.kind === 'festival' ? tr("페스티벌 같이 가요") : preview.label}</ThemedText>
       <ThemedText type="subtitle" numberOfLines={3}>{preview.title}</ThemedText>
+      {typeof preview.place === 'string' && !!preview.place.trim() && <View style={styles.place}>
+        <SymbolView name={{ ios: 'mappin', android: 'location_on', web: 'location_on' }} size={IconSize.inline} tintColor={theme.textSecondary} />
+        <ThemedText type="smallBold" numberOfLines={2} style={styles.placeName}>{preview.place}</ThemedText>
+      </View>}
       <ThemedText type="small" themeColor="textSecondary">{preview.city}{preview.schedule ? ` · ${chillingSchedule(preview.schedule, appLocale)}` : ''}{preview.closed ? tr(" · 모집 마감") : ''}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{preview.kind === 'meetup' ? tr('글링에서 모임 확인하기') : tr('글링에서 전체 내용 보기')} ›</ThemedText>
     </View>
@@ -46,9 +52,10 @@ export function SharedLinkCard({ url }: { url: string }) {
     return () => { active = false; };
   }, [postId, key, hidden]);
   if (!target || result?.key !== key || hidden('post', target.id)) return null;
-  return <Pressable analyticsId="chat.shared-link.open" accessibilityRole="link" accessibilityLabel={tr("{0} · 글링에서 보기", (result.preview.title))}
+  return <Pressable analyticsId="chat.shared-link.open" accessibilityRole="link" accessibilityLabel={tr("{0} · 글링에서 보기", [result.preview.title, result.preview.place].filter(Boolean).join(' · '))}
     onPress={() => { play('selection'); router.push(Platform.OS === 'web' ? `/post?id=${target.id}${result.preview.kind === 'meetup' ? '&invite=1' : ''}` as Href : { pathname: '/post/[id]', params: { id: target.id, invite: result.preview.kind === 'meetup' ? '1' : undefined } }); }}
     style={({ pressed }) => [styles.link, { opacity: pressed ? 0.8 : 1 }]}><SharedPreviewContent preview={result.preview} /></Pressable>;
 }
 const styles = StyleSheet.create({ link: { minHeight: 44, width: '100%', maxWidth: 460, alignSelf: 'flex-start', marginTop: 8 },
-  card: { borderRadius: 16, borderWidth: 1, overflow: 'hidden', width: '100%' }, cover: { width: '100%', aspectRatio: 16 / 9 }, copy: { padding: 16, gap: 8 } });
+  card: { borderRadius: 16, borderWidth: 1, overflow: 'hidden', width: '100%' }, cover: { width: '100%', aspectRatio: 16 / 9 }, copy: { padding: 16, gap: 8 },
+  place: { flexDirection: 'row', alignItems: 'center', gap: 4 }, placeName: { flexShrink: 1 } });

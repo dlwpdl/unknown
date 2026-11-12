@@ -102,3 +102,13 @@ test('public cover URL accepts only an exact post ID and exposes no storage path
   for(const value of ['bad',`../${id}`,`${id}&path=private/file.webp`]) assert.throws(()=>api.previewImage(value),/INVALID_SHARED_POST/);
   assert.deepEqual(api.calls,[]);
 });
+
+test('the share preview names a pinned Gling map place only for non-meetup posts, from every map list, through a private function (20261111210000)', () => {
+  const sql = readFileSync(new URL('../supabase/migrations/20261111210000_shared_preview_post_place.sql', import.meta.url), 'utf8');
+  assert.match(sql, /'''place'',case when p\.room_preview is null then private\.post_catalog_place\(p\.body,p\.city_id\)->>''name'' end,'\|\|anchor/);
+  assert.match(sql, /array\['places','regionalPlaces','extraPlaces','morePlaces'\]/, 'compose search offers all four lists');
+  assert.match(sql, /count\(distinct id\)=1/, 'two places on one spot name none');
+  assert.match(sql, /revoke all on function private\.post_catalog_place\(text,text\) from public,anon,authenticated,service_role;/);
+  assert.match(sql, /raise exception 'shared preview projection changed/, 'stops when the live projection is not the expected one');
+  assert.doesNotMatch(sql, /alter table|linked_place_key/i, 'posts stay unchanged (map collection is the next step)');
+});

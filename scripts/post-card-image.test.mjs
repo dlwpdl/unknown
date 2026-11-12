@@ -18,6 +18,7 @@ import * as product from '../src/lib/product-analytics.ts';
 // Native image events and React state are supplied here; sizing/rendering runs the real components.
 let sharedReactions;
 let feedPlace = null; // the catalog place a Today fixture post is tied to
+let pinPlaces = {}; // map URL → the catalog place its pin sits on (mapPinPlace)
 function reactionModule() {
   if (!sharedReactions) {
     const exports = {};
@@ -88,7 +89,7 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     '@/components/meetup-manage-sheet': { MeetupManageSheet: 'MeetupManageSheet' },
     '@/components/post-place-card': { PostPlaceCard: 'PostPlaceCard' },
     '@/lib/meetup-destination': { splitPlaceMeetupBody: () => null },
-    '@/lib/place-reviews': { placeReviewPlace: () => feedPlace, placeReviewText: body => body },
+    '@/lib/place-reviews': { placeReviewPlace: () => feedPlace, placeReviewText: body => body, mapPinPlace: (_cityId, url) => pinPlaces[url] ?? null },
     '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: 'SymbolView', ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/hooks/use-theme': { useTheme: () => ({ backgroundElement: '#222231' }) },
     '@/i18n/ko': { count, t },
@@ -599,4 +600,23 @@ test('글 상세는 📍 주소·링크를 정보 카드로, 본문을 문단으
   assert.deepEqual(nodes(tree).filter(node => node.type === 'PostAttachmentLink').map(node => [node.props.url, node.props.row]), [['https://www.instagram.com/handsonyvr/', true]]);
   assert.ok(nodes(tree).some(node => node.props?.analyticsId === 'post.detail.credits'));
   assert.ok(!nodes(tree).some(node => node.props?.analyticsId === 'components_post-card.pressable.7'), 'likes move to the bottom bar');
+});
+
+test('a place picked from the Gling map while writing gets the place card in the feed and the post detail; any other pin keeps the small map (owner 2026-11-11)', () => {
+  const card = cardRenderer();
+  const picked = 'https://www.google.com/maps/search/?api=1&query=45.5229869%2C-73.6013003', moved = 'https://www.google.com/maps/search/?api=1&query=45.52%2C-73.6';
+  const place = { id: 'osm:node:1751185097', name: 'St-Viateur Bagel Shop' };
+  const post = url => ({ id: 'pin', cityId: 'montreal', title: '마일엔드 베이글집 다녀왔어요', body: `참깨 베이글을 샀어요.\n\nGoogle 지도: ${url}\n위치: 베이글집`,
+    author: { id: 'author', nickname: '베이글러버' }, tag: { kind: 'post', label: '맛집' }, likes: 0, saves: 0, comments: 0, views: 0, createdAtLabel: '방금' });
+  pinPlaces = { [picked]: place };
+  try {
+    for (const mode of [{ feed: true, flat: true }, { postDetail: true }]) {
+      let tree = nodes(card.render({ post: post(picked), ...mode }));
+      assert.equal(tree.find(node => node.type === 'PostPlaceCard')?.props.place, place, JSON.stringify(mode));
+      assert.ok(!tree.some(node => node.type === 'PostMapLink'), 'the card replaces the small map');
+      tree = nodes(card.render({ post: post(moved), ...mode }));
+      assert.ok(!tree.some(node => node.type === 'PostPlaceCard'));
+      assert.equal(tree.find(node => node.type === 'PostMapLink')?.props.url, moved);
+    }
+  } finally { pinPlaces = {}; }
 });
