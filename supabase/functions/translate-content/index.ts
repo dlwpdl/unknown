@@ -32,6 +32,11 @@ Deno.serve(async (request) => {
     let row = input.kind === 'post'
       ? await viewer.from('posts').select('title,body').eq('id', input.id).eq('status', 'published').maybeSingle()
       : await viewer.from('comments').select('body').eq('id', input.id).is('deleted_at', null).maybeSingle();
+    if (input.kind === 'post' && !row.error && !row.data) {
+      // A business's post (rent, jobs, business news) is hidden from direct table reads; the viewer's own
+      // public post read, the one the post screen uses, returns the title and body they are shown.
+      row = await viewer.rpc('get_public_post', { p_post_id: input.id }).select('title,body').maybeSingle();
+    }
     if (input.kind === 'comment' && !row.error && !row.data) {
       // A business comment row holds the operator's id, so RLS hides it from other members; the viewer's
       // definer lookup confirms they can see that comment before the body is read without RLS.
