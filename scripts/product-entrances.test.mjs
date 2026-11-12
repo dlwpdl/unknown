@@ -228,12 +228,13 @@ test('P3/P4: 길찾기 offers address copy, Apple and Google maps; 전화·인�
   assert.deepEqual(ui.product().at(-1), payload('place_directions', id, 'vancouver'));
   sheet.props.onClose(); ui.render(); assert.ok(!ui.nodes().some(node => node.type === 'MeetupManageSheet'));
   const directions = () => ui.nodes().some(node => node.props?.analyticsId === 'company.about.maps');
-  ui.listeners.get('keyboardDidShow')(); ui.render();
+  ui.listeners.get('keyboardWillShow')(); ui.render();
   assert.equal(directions(), false, 'the fixed buttons leave the keyboard to the review being typed');
-  ui.listeners.get('keyboardDidHide')(); ui.render();
+  ui.listeners.get('keyboardWillHide')(); ui.render();
   assert.equal(directions(), true);
   const android = mount('app/places/[id].tsx', 'default', {}, { params: { id, cityId: 'vancouver' }, platform: 'android' });
   t.after(android.cleanup);
+  assert.ok(android.listeners.has('keyboardDidShow'), 'Android only reports the keyboard once it is up');
   android.nodes().find(node => node.props?.analyticsId === 'company.about.maps').props.onPress(); android.render();
   assert.deepEqual(plain(android.nodes().find(node => node.type === 'MeetupManageSheet').props.actions.map(action => action.key)), ['copy', 'google'], 'Apple Maps is offered on iPhone only');
   const rich = mount('app/places/[id].tsx', 'default', {}, { params: { id, cityId: 'vancouver' },

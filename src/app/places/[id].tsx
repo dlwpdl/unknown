@@ -60,7 +60,9 @@ export default function PlaceDetailScreen() {
   // The fixed buttons step aside while a review is being typed, so they never sit on the keyboard.
   const [typing, setTyping] = useState(false);
   useEffect(() => {
-    const shown = Keyboard.addListener('keyboardDidShow', () => setTyping(true)), hidden = Keyboard.addListener('keyboardDidHide', () => setTyping(false));
+    // iOS announces the keyboard before it rises; Android only once it is up.
+    const [show, hide] = Platform.OS === 'ios' ? ['keyboardWillShow', 'keyboardWillHide'] as const : ['keyboardDidShow', 'keyboardDidHide'] as const;
+    const shown = Keyboard.addListener(show, () => setTyping(true)), hidden = Keyboard.addListener(hide, () => setTyping(false));
     return () => { shown.remove(); hidden.remove(); };
   }, []);
   // The scroll position only decides which reviews auto-translate; other modes skip a re-render per scroll event.

@@ -186,5 +186,6 @@ test('P6 곧 닫음: minutes until close follow overnight hours, and 24-hour pla
   const joined = parseOpeningHours('Mo 10:00-12:00,14:00-16:00, Mo 11:00-15:00');
   assert.deepEqual(joined[MO], [[600, 960]], 'one added range joins both ranges it overlaps');
   assert.equal(minutesUntilClose(joined, at(MO, '14:30')), 90);
+  assert.deepEqual(parseOpeningHours('Mo-Fr 10:00-12:00,14:00-16:00, Mo 11:30-12:30')[MO], [[600, 750], [840, 960]], 'the joined range keeps its place in the day');
   assert.deepEqual(['23:30', '23:59', '01:30'].map(time => plain(formatTime(at(MO, time).minutes + 30, 'en-US'))), ['12:00 AM', '12:29 AM', '2:00 AM']);
 });

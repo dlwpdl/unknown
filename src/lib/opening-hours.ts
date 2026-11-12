@@ -68,11 +68,12 @@ function dateRanges(text: string): [number, number][] | null {
   return result;
 }
 
-// A range joins every range it overlaps or touches, so a day never lists the same hours twice.
+// A range joins every range it overlaps or touches, in the place of the first one, so a day never lists the same hours twice.
 const add = (day: [number, number][], range: [number, number]): [number, number][] => {
-  const apart = day.filter(([from, to]) => to < range[0] || range[1] < from);
-  const joined = day.filter(item => !apart.includes(item)).reduce(([start, end], [from, to]) => [Math.min(start, from), Math.max(end, to)], range);
-  return [...apart, joined];
+  const touching = day.filter(([from, to]) => from <= range[1] && range[0] <= to);
+  if (!touching.length) return [...day, range];
+  const joined = touching.reduce<[number, number]>(([start, end], [from, to]) => [Math.min(start, from), Math.max(end, to)], range);
+  return day.flatMap(item => item === touching[0] ? [joined] : touching.includes(item) ? [] : [item]);
 };
 
 const cache = new Map<string, WeekHours | null>();
