@@ -1,0 +1,7 @@
+The map now does less work when you drag it or tap a pin. Map images you’ve loaded stay saved on your phone, and the place list downloads once a day.
+Place pages have a new layout with the price range, hours and address up top, plus Website, Call, Instagram and Book buttons when the place has them.
+Tap the pencil on a map card, or “Post about this place” on a place page, to start a post with that place already attached.
+Adding a place to a post now opens the map with the same pins as the Map tab. Places picked this way show as a card on Home and on the post, and their name comes along in chat previews and shares.
+New map filters: Breakfast, Karaoke, Speakeasy, Sports bar, Jazz, Happy hour, Ice cream and Matcha. Pins now show the kind of place, like Korean, rather than a situation like Lunch.
+Businesses with a webshop now have an “Order from webshop” button on their map card. It shows the price comparison first.
+Place and meetup photos now fill their frames, and street names on the map no longer cover place pins. We also fixed the sign-in sheet popping up by itself when you open the app without signing in.
