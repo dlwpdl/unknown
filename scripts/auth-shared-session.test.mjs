@@ -204,3 +204,13 @@ test('logging out ends only this device session, not the member\'s other phones 
   await auth.signOut();
   assert.deepEqual(JSON.parse(JSON.stringify(signOuts)), [{ scope: 'local' }]);
 });
+
+test('sign out everywhere, the admin dashboard and the business web revoke every session of the account', async context => {
+  const harness = mount(); context.after(() => harness.unmount()); const auth = await harness.settle();
+  signOuts.length = 0;
+  await auth.signOut('global');
+  assert.deepEqual(JSON.parse(JSON.stringify(signOuts)), [{ scope: 'global' }]);
+  const read = path => readFileSync(new URL(`../src/${path}`, import.meta.url), 'utf8');
+  for (const path of ['components/admin/admin-screen.tsx', 'components/admin/admin-mfa-gate.tsx', 'merchant-web/index.tsx']) assert.match(read(path), /signOut\('global'\)/, path);
+  assert.match(read('app/profile/settings.tsx'), /signOut\('global'\)/, 'settings offers sign out on all devices');
+});

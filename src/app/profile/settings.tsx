@@ -71,6 +71,21 @@ export default function SettingsScreen() {
       },
     ]);
 
+  const confirmSignOutAll = () =>
+    Alert.alert(t.profile.signOutAllTitle, t.profile.signOutAllBody, [
+      { text: t.profile.cancel, style: 'cancel', onPress: () => play('selection') },
+      {
+        text: t.profile.signOutAll,
+        style: 'destructive',
+        onPress: () => {
+          play('warning');
+          void signOut('global');
+          if (router.canGoBack()) router.back();
+          else router.replace('/');
+        },
+      },
+    ]);
+
   const openSupport = () => {
     if (!supportEmail) return Alert.alert(t.profile.supportUnavailableTitle, t.profile.supportUnavailableBody);
     void Linking.openURL(`mailto:${supportEmail}?subject=${encodeURIComponent(t.profile.supportSubject)}`);
@@ -243,6 +258,10 @@ export default function SettingsScreen() {
             </Pressable><View style={[styles.divider, { backgroundColor: theme.line }]} /></>}
             <Pressable analyticsId="app_profile_settings.pressable.7" onPress={() => { play('selection'); confirmSignOut(); }} accessibilityRole="button" style={({ pressed }) => [styles.navRow, pressed && { backgroundColor: theme.backgroundSelected }]}>
               <ThemedText type="smallBold" style={styles.navCopy}>{t.profile.signOut}</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText>
+            </Pressable>
+            <View style={[styles.divider, { backgroundColor: theme.line }]} />
+            <Pressable analyticsId="app_profile_settings.sign-out-all" onPress={() => { play('selection'); confirmSignOutAll(); }} accessibilityRole="button" style={({ pressed }) => [styles.navRow, pressed && { backgroundColor: theme.backgroundSelected }]}>
+              <ThemedText type="smallBold" style={styles.navCopy}>{t.profile.signOutAll}</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText>
             </Pressable>
             <View style={[styles.divider, { backgroundColor: theme.line }]} />
             <Pressable analyticsId="app_profile_settings.pressable.8" onPress={() => { play('selection'); confirmDelete(); }} disabled={deleting} accessibilityRole="button" accessibilityState={{ disabled: deleting, busy: deleting }} style={({ pressed }) => [styles.navRow, { opacity: deleting ? 0.55 : 1 }, pressed && { backgroundColor: theme.backgroundSelected }]}>

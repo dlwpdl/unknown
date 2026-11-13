@@ -61,7 +61,7 @@ type AuthValue = {
   signInDev: (email: string, password: string) => Promise<void>;
   signInReview: (email: string, password: string) => Promise<void>;
   signInAdmin: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
+  signOut: (scope?: 'local' | 'global') => Promise<void>; // 기본은 이 기기만, 'global'은 계정의 모든 기기
   expectSignOut: (expected: boolean) => void; // 탈퇴처럼 곧 스스로 나가는 동안: 실패한 요청을 세션 끊김으로 안내하지 않는다
   setProfilePhoto: (uri: string | null, base64?: string) => Promise<void>;
   setProfileCity: (cityId: string) => Promise<void>;
@@ -339,7 +339,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     }
   }, [beginSignIn]);
   const expectSignOut = useCallback((expected: boolean) => { memberSession.current = !expected; }, []);
-  const signOut = useCallback(async () => {
+  const signOut = useCallback(async (scope: 'local' | 'global' = 'local') => {
     setAuthError(null);
     setReason(undefined);
     const wasMember = memberSession.current;
@@ -354,8 +354,8 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       setAuthError(sourceCopy.auth.signOutError);
       return;
     }
-    // Only this device: the member's other phones and the web stay signed in.
-    const { error } = await supabase.auth.signOut({ scope: 'local' });
+    // Members sign out this device only; admin, business web and "sign out everywhere" revoke every session.
+    const { error } = await supabase.auth.signOut({ scope });
     if (error) {
       memberSession.current = wasMember;
       setAuthError(sourceCopy.auth.signOutError);

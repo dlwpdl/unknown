@@ -24,3 +24,6 @@ begin
   return total;
 end;
 $$;
+
+-- The alert opens settings, which now has "sign out on all devices" (security review on PR #176). Its tap is an analytics target.
+insert into private.behavior_targets(id) values ('app_profile_settings.sign-out-all') on conflict do nothing;

@@ -58,7 +58,7 @@ export default function MerchantWebIndex() {
   async function exit() {
     if (signOutBusy.current) return;
     signOutBusy.current = true; setSigningOut(true); play('selection');
-    try { await signOut(); } finally { signOutBusy.current = false; setSigningOut(false); }
+    try { await signOut('global'); } finally { signOutBusy.current = false; setSigningOut(false); }
   }
   const retry = () => { play('selection'); setAccess(null); setRevision(value => value + 1); };
   function login() {

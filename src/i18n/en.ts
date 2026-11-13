@@ -212,7 +212,7 @@ export const en: Translations = {
     ],
     account: 'Account', feedback: 'Sound and haptics', soundEffects: 'Sound effects', haptics: 'Haptics', feedbackNote: 'Follows your device’s silent mode and accessibility settings.',
     nickname: 'Nickname', area: 'Your area', removePhoto: 'Remove profile photo', removePhotoTitle: 'Remove your profile photo?', removePhotoBody: 'Your initial will show instead.',
-    remove: 'Remove', cancel: 'Cancel', signOut: 'Sign out', signOutTitle: 'Sign out on this device?', signOutBody: 'Your other devices stay signed in. Sign back in anytime to get to your posts and saved items.',
+    remove: 'Remove', cancel: 'Cancel', signOut: 'Sign out', signOutTitle: 'Sign out on this device?', signOutBody: 'Your other devices stay signed in. Sign back in anytime to get to your posts and saved items.', signOutAll: 'Sign out everywhere', signOutAllTitle: 'Sign out on all devices?', signOutAllBody: 'This phone, your other phones and the web will all be signed out. Use this if you got a sign-in alert you don’t recognize.',
     support: 'Contact support', supportSubject: 'Gling support', supportNeedsSetup: 'Support email not set up yet', supportUnavailableTitle: 'Support email coming soon',
     supportUnavailableBody: 'Once it’s connected, you can email us right from Settings.', deleteAccount: 'Delete account', deleting: 'Deleting account…', deleteTitle: 'Delete your Gling account?',
     deleteWarning: 'Your posts, comments, chats, uploaded files and activity data will be permanently deleted. App store subscriptions aren’t cancelled automatically, so cancel any active subscription in your subscription settings first.',
