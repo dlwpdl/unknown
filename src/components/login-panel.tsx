@@ -55,6 +55,8 @@ export function LoginPanel({
   const disabled = loading;
   const showWelcome = !onAdminLogin && !onReviewLogin;
   const passwordLogin = onAdminLogin ?? onReviewLogin ?? (__DEV__ ? onDevLogin : undefined);
+  // Android settles the scroll on a focused field after layout, so the form is brought up two frames later; the flag is read then, after a field-to-field move (QA A3-1).
+  const showForm = () => requestAnimationFrame(() => requestAnimationFrame(() => { if (formFocused.current) scroll.current?.scrollToEnd({ animated: true }); }));
   const submitPassword = () => { if (passwordLogin && !disabled && email.trim() && password) { play('selection'); passwordLogin(email, password); } };
   const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
 
@@ -63,7 +65,7 @@ export function LoginPanel({
     const submitAdmin = () => { if (!submitDisabled) { play('selection'); onAdminLogin(email, password); } };
     return <ThemeOverrideProvider scheme="dark">
       <View style={[styles.wrap, styles.adminBackground]}><SafeAreaView style={styles.wrap}>
-        <KeyboardAvoidingView style={styles.wrap} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView style={styles.wrap} behavior="padding">
           <ScrollView analyticsId="components_login-panel.scrollview.1" contentContainerStyle={styles.adminCenter} keyboardShouldPersistTaps="handled">
             <Image source={require('@/assets/brand/gling-night-wordmark.png')} style={styles.adminLogo} contentFit="contain" accessibilityLabel={t.appName} />
             <View style={styles.adminHeader}>
@@ -117,7 +119,7 @@ export function LoginPanel({
       <SafeAreaView style={styles.wrap}>
       <KeyboardAvoidingView style={styles.wrap} behavior="padding">
       {/* The keyboard shrinks this view; bring the whole password form above it, not just the focused field (QA A3-1). */}
-      <ScrollView ref={scroll} onLayout={() => { if (formFocused.current) scroll.current?.scrollToEnd({ animated: true }); }}
+      <ScrollView ref={scroll} onLayout={showForm}
         analyticsId="components_login-panel.scrollview.1" contentContainerStyle={styles.center} keyboardShouldPersistTaps="handled">
         <View style={styles.brandRow}>
           <Image source={dark ? require('@/assets/brand/gling-night-wordmark.png') : require('@/assets/brand/gling-night-wordmark-light.png')}
@@ -172,7 +174,7 @@ export function LoginPanel({
                   spellCheck={false}
                   returnKeyType="next"
                   onSubmitEditing={() => passwordInput.current?.focus()}
-                  onFocus={() => { formFocused.current = true; }}
+                  onFocus={() => { formFocused.current = true; showForm(); }}
                   onBlur={() => { formFocused.current = false; }}
                   style={[styles.devInput, { color: theme.text, borderColor: theme.line }]}
                 />
@@ -188,7 +190,7 @@ export function LoginPanel({
                   autoComplete="current-password"
                   returnKeyType="go"
                   onSubmitEditing={submitPassword}
-                  onFocus={() => { formFocused.current = true; }}
+                  onFocus={() => { formFocused.current = true; showForm(); }}
                   onBlur={() => { formFocused.current = false; }}
                   placeholder={onAdminLogin ? tr("관리자 비밀번호") : onReviewLogin ? t.auth.reviewPassword : t.auth.devPassword}
                   placeholderTextColor={theme.textSecondary}

@@ -6,19 +6,19 @@ import ts from 'typescript';
 import { withLanguageImports } from './test-language-imports.mjs';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
-function avatar({ os = 'ios', authenticated = true } = {}) {
+function avatar({ os = 'ios', authenticated = true, business = null, width = 411 } = {}) {
   const routes = [], feedback = [];
   const jsx = (type, props) => ({ type, props });
   const imports = {
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': { Platform: { OS: os }, View: 'View', StyleSheet: { create: value => value } },
+    'react-native': { Platform: { OS: os }, View: 'View', StyleSheet: { create: value => value }, useWindowDimensions: () => ({ width }) },
     'expo-router': { useRouter: () => ({ push: value => routes.push(value) }) },
     'expo-image': { Image: 'Image' }, 'expo-symbols': { SymbolView: 'Symbol' }, '@/components/symbol-view': { SymbolView: 'Symbol' },
     '@/components/analytics-controls': { Pressable: 'Pressable' },
     '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/chat-identity-switcher': { ChatIdentitySwitcher: 'ChatIdentitySwitcher' },
     '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: 'Symbol', ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: 'ClayPhoto' },
-    '@/hooks/use-chat-identity': { useChatIdentity: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/hooks/use-chat-identity': { useChatIdentity: () => business }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: authenticated, me: { nickname: '개인', photoUri: 'own-photo' } }) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => feedback.push(value) }) },
   };
@@ -61,6 +61,15 @@ test('the web avatar remains absent and a native guest keeps its normal profile 
   assert.ok(nodes(tree).some(n => n.type === 'Symbol'));
   nodes(tree).find(n => n.type === 'Pressable').props.onPress();
   assert.deepEqual(app.routes, ['/profile']);
+});
+
+test('acting as a business, the name pill grows with the screen so a 411pt phone shows the whole name (QA G38-1)', () => {
+  const pill = width => nodes(avatar({ business: { name: 'Gling App Review' }, width }).render()).find(n => n.type === 'Pressable');
+  const maxWidth = width => Object.assign({}, ...pill(width).props.style({ pressed: false })).maxWidth;
+  assert.ok(maxWidth(411) > 160, 'room for Gling App Review');
+  assert.ok(maxWidth(320) <= 150, 'a small phone keeps room for the city button');
+  assert.equal(maxWidth(1024), 240);
+  assert.equal(nodes(pill(411)).find(n => n.type === 'Text').props.numberOfLines, 1);
 });
 
 test('actual Meetups uses the common account avatar and keeps a separate guarded meetup-profile entry', () => {

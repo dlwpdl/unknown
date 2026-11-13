@@ -259,7 +259,7 @@ export default function PlaceDetailScreen() {
       ...(place.address ? [{ key: 'copy', analyticsId: 'post.share.copy', label: tr("주소 복사"), hint: place.address, icon: { ios: 'doc.on.doc', android: 'content_copy', web: 'content_copy' } as const,
         onPress: copyAddress }] : []),
       ...(Platform.OS === 'ios' ? [{ key: 'apple', analyticsId: 'company.location', label: tr("Apple 지도"), icon: { ios: 'map', android: 'map', web: 'map' } as const,
-        onPress: () => openMap(`https://maps.apple.com/?daddr=${place.latitude},${place.longitude}`) }] : []),
+        onPress: () => openMap(mapAppUrl({ cityId: place.cityId, latitude: place.latitude, longitude: place.longitude, place }, 'apple')) }] : []),
       { key: 'google', analyticsId: 'discovery.google', label: tr("Google 지도"), icon: { ios: 'map', android: 'map', web: 'map' }, onPress: () => openMap(mapAppUrl({ cityId: place.cityId, latitude: place.latitude, longitude: place.longitude, place }, 'google')) },
     ]} />}
   </SafeAreaView></KeyboardScreen>;

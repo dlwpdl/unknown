@@ -116,10 +116,10 @@ test('the quick category row preserves the owner-selected restaurant, cafe, fest
   const tree = mount().render();
   const row = nodes(tree).find(node => node.type === 'ScrollView' && node.props.horizontal);
   // The live-map chips (말풍선, 근처 모임) are for members only, so a guest sees the row as before.
-  assert.deepEqual(children(row).filter(Boolean).map(node => node.props.accessibilityLabel), ['보여 줄 곳, 모두', '전체', '지금 영업 중', 'gling Visited', 'TOP 50', '배달 할인', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳', '부동산', '중고거래']);
+  assert.deepEqual(children(row).filter(Boolean).map(node => node.props.accessibilityLabel), ['보여 줄 곳, 모두', '전체', '지금 영업 중', '다녀온 곳', 'TOP 50', '배달 할인', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳', '부동산', '중고거래']);
 });
 
-test('gling Visited selects only attested map pins while dining, cafe and All remain independent', () => {
+test('Visited (다녀온 곳) selects only attested map pins while dining, cafe and All remain independent', () => {
   const food = { id: 'osm:node:100', cityId: 'vancouver', name: 'Fixture team visit', category: 'food',
     address: 'Fixture address', latitude: 49.29, longitude: -123.13, sourceUrl: 'https://www.openstreetmap.org/node/100',
     glingVisited: { sourceUrl: 'https://www.instagram.com/reel/fixture/' } };
@@ -128,18 +128,18 @@ test('gling Visited selects only attested map pins while dining, cafe and All re
   let tree = view.render();
   const pins = () => nodes(tree).find(node => node.type === 'DiscoveryMap').props.markers;
   assert.equal(pins().length, 2);
-  control(tree, 'gling Visited').props.onPress(); tree = view.render();
-  assert.equal(control(tree, 'gling Visited').props.accessibilityState.selected, true);
+  control(tree, '다녀온 곳').props.onPress(); tree = view.render();
+  assert.equal(control(tree, '다녀온 곳').props.accessibilityState.selected, true);
   assert.equal(pins().length, 1);
   assert.equal(pins()[0].label, food.name);
   assert.equal(pins()[0].latitude, food.latitude);
   assert.ok(!nodes(tree).some(node => node.props?.analyticsId === 'discovery.date'));
   control(tree, '카페').props.onPress(); tree = view.render();
-  assert.equal(control(tree, 'gling Visited').props.accessibilityState.selected, true);
+  assert.equal(control(tree, '다녀온 곳').props.accessibilityState.selected, true);
   assert.equal(control(tree, '카페').props.accessibilityState.selected, true);
   assert.equal(pins().length, 2, 'visited or cafe includes both places without duplicating the visited restaurant');
-  control(tree, 'gling Visited').props.onPress(); tree = view.render();
-  assert.equal(control(tree, 'gling Visited').props.accessibilityState.selected, false);
+  control(tree, '다녀온 곳').props.onPress(); tree = view.render();
+  assert.equal(control(tree, '다녀온 곳').props.accessibilityState.selected, false);
   assert.equal(pins().length, 1);
   assert.equal(pins()[0].label, cafe.name);
   control(tree, '전체').props.onPress(); tree = view.render();
@@ -322,7 +322,7 @@ test('map categories float over the map and list categories keep normal flow', (
     assert.equal(fade.props.pointerEvents, 'none', 'the fade behind the chips never takes a tap');
     assert.match(Object.assign({}, ...fade.props.style).backgroundImage, /^linear-gradient\(to bottom, .*00 100%\)$/, 'it fades out toward the map');
     assert.equal(control(overlay, '전체').props.baseColor, undefined, '전체 is a picture with its name, nothing behind it');
-    assert.equal(control(overlay, 'gling Visited').props.baseColor, undefined, 'no chip in the row has a pill behind it');
+    assert.equal(control(overlay, '다녀온 곳').props.baseColor, undefined, 'no chip in the row has a pill behind it');
     overlay.props.onLayout({ nativeEvent: { layout: { height: 68 } } }); tree = view.render();
     assert.equal(nodes(tree).find(node => node.type === 'DiscoveryMap').props.topInset, 68);
     const location = control(tree, '내 위치로 지도 이동');
@@ -620,9 +620,10 @@ test('category chips show the 3D icon in the icon spot and each press replays on
   const view = mount(); let tree = view.render();
   const icon = (tree, label) => nodes(control(tree, label)).find(node => node.type === 'CategoryIcon');
   assert.equal(icon(tree, '전체').props.id, 'all', '전체 draws the four-tile picture the owner picked');
-  assert.equal(icon(tree, 'gling Visited').props.id, 'visited', 'Visited draws the gling logo tag');
+  assert.equal(icon(tree, '다녀온 곳').props.id, 'visited', 'Visited draws the gling logo tag');
   const name = label => nodes(control(tree, label)).find(node => typeof node.props?.children === 'string');
-  assert.equal(name('gling Visited').props.children, '다녀온 곳', 'the name under the logo is Korean (QA C15-1); the brand stays in the spoken label');
+  assert.equal(name('다녀온 곳').props.children, '다녀온 곳', 'the name under the logo is Korean and a screen reader says the same name (QA C15-1)');
+  assert.equal(control(tree, '다녀온 곳').props.accessibilityLabel, '다녀온 곳');
   assert.equal(Object.assign({}, ...[name('카페').props.style].flat(Infinity)).borderWidth, 1, 'every name has an edge so a white chip still reads on a light map (QA H43-2)');
   assert.equal(icon(tree, '지금 영업 중').props.id, 'open', '지금 영업 중 draws the desk clock');
   for (const label of ['TOP 50', '배달 할인', '레스토랑', '카페', '페스티벌', '나이트라이프', '가볼 만한 곳', '부동산', '중고거래']) assert.equal(icon(tree, label).props.play, 0, label);

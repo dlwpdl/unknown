@@ -72,7 +72,8 @@ import { EVENT_CITIES, eventPriceLabel, eventTime, loadTicketmasterEvents, type 
 import { loadPublicFestivals } from '@/lib/public-web';
 
 const filters: { id: DiscoveryFilter; label: string }[] = [
-  { id: 'all', label: '전체' }, { id: 'visited', label: 'gling Visited' },
+  // Visited's picture already carries the gling logo (owner pick 2026-11-04), so its name, shown and read aloud, is just 다녀온 곳 / Visited (QA C15-1).
+  { id: 'all', label: '전체' }, { id: 'visited', label: '다녀온 곳' },
   { id: 'top25', label: 'TOP 50' }, { id: 'delivery', label: '배달 할인' },
   { id: 'dining', label: '레스토랑' }, { id: 'cafe', label: '카페' },
   { id: 'festival', label: '페스티벌' }, { id: 'nightlife', label: '나이트라이프' },
@@ -435,8 +436,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const chipBackground = sheet !== 'full' && !filtersOpen ? `${theme.backgroundElement}C7` : theme.backgroundElement;
   const filterChip = (value: typeof filters[number]) => {
     const selected = value.id === 'all' ? !selectedFilters.length : selectedFilters.includes(value.id);
-    // Visited's picture already carries the gling logo (owner pick 2026-11-04), so the name under it is just "다녀온 곳" / "Visited" (QA C15-1).
-    return artChip({ id: value.id, label: value.id === 'visited' ? tr('다녀온 곳') : tr(value.label), accessibilityLabel: tr(value.label), selected, analyticsId: 'discovery.filter', onPress: () => toggleFilter(value.id), ink: value.id === 'top25' ? top25Ink : undefined, onLayout: filterRow.chip(value.id) });
+    return artChip({ id: value.id, label: tr(value.label), selected, analyticsId: 'discovery.filter', onPress: () => toggleFilter(value.id), ink: value.id === 'top25' ? top25Ink : undefined, onLayout: filterRow.chip(value.id) });
   };
   // A chip with a 3D picture is just the picture and its name, no chip behind (owner 2026-11-04, mockup ⑪): the chosen one lifts and its name fills.
   // A setting (보여 줄 곳) only gets a purple outline on the card color, so it never reads as a chosen category.

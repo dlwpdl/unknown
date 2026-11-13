@@ -134,7 +134,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const { compose, hashtag, place: placeParam, placeCity } = useLocalSearchParams<{ compose?: string; hashtag?: string; place?: string; placeCity?: string }>();
   const { isAuthed, isAuthLoading, promptLogin, me, isAdmin } = useAuth();
   const business = useChatIdentity();
-  // The business-name pill (up to 150 + its ⌄) leaves the city about 40pt on a 411pt phone, so the header takes two lines below 500 (QA G38-1).
+  // The business-name pill (up to 45% of the screen + its ⌄) leaves the city too little room on a phone, so the header takes two lines below 500 (QA G38-1).
   const expandedHeader = fontScale > 1.2 || (hasBusinessSwitch && viewportWidth < 380) || (!!business && viewportWidth < 500);
   const [businessWriting, setBusinessWriting] = useState(false);
   const { play } = useInteractionFeedback();
@@ -942,7 +942,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         </View>
         {cityOpen && !meetupsOnly && (
           <View style={styles.categoryHead}>
-            <GlassSurface tone="control" clay="tray" style={styles.chipGlass}>{/* 안드로이드 가로 스크롤은 둥근 모서리로 자르지 않아 끝 칩이 세로로 잘린다(QA B7-1): 감싼 View가 자른다. */}<View style={clay && styles.chipClip}><ScrollView analyticsId="components_feed-screen.scrollview.1" {...categoryRow.scroll} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
+            <GlassSurface tone="control" clay="tray" style={styles.chipGlass}>{/* 안드로이드 가로 스크롤은 둥근 모서리로 자르지 않아 끝 칩이 세로로 잘린다(QA B7-1): 감싼 View가 자르고, 더 넘길 칩이 있는 끝은 안드로이드가 흐리게 지운다. */}<View style={clay && styles.chipClip}><ScrollView analyticsId="components_feed-screen.scrollview.1" {...categoryRow.scroll} horizontal showsHorizontalScrollIndicator={false} fadingEdgeLength={Spacing.four} contentContainerStyle={styles.chipBar}>
               {/* 처음 보이는 칩: PRIMARY_TAGS (owner 2026-11-01 순서); 나머지는 '더보기' 시트. */}
               {[...PRIMARY_TAGS, ...(tagFilter != null && !PRIMARY_TAGS.includes(tagFilter) ? [tagFilter] : [])].map((id) => {
                 const label = id == null ? t.feed.filterAll : tr(TAGS.find((tg) => tg.id === id)!.label);

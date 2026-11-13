@@ -1,8 +1,10 @@
 import { Image, type ImageProps } from 'expo-image';
 import type { SymbolViewProps } from 'expo-symbols';
-import { Image as NativeImage, Platform, StyleSheet, View, type ImageSourcePropType, type ViewStyle } from 'react-native';
+import { useState } from 'react';
+import { Image as NativeImage, PixelRatio, Platform, StyleSheet, View, type ImageSourcePropType, type ViewStyle } from 'react-native';
 
 import { SymbolView } from '@/components/system-symbol';
+import { pillSlices } from '@/constants/design-system';
 import { Colors } from '@/constants/theme';
 import { useDesign, useTheme } from '@/hooks/use-theme';
 
@@ -132,14 +134,21 @@ export function ClayIcon({ clay, claySize, name, size = 21, tintColor }: { clay:
 /** Stretched behind a control's content. The caller clears the control's own background. */
 export function ClayPillFill({ kind }: { kind: ClayPillKind }) {
   const { end, drop, dark, ...light } = PILLS[kind], { l, m, r } = useDark() ? dark : light;
+  // The first frame uses ratios; once measured, every slice edge sits on a whole device pixel (pillSlices).
+  const [box, setBox] = useState<{ width: number; height: number }>();
+  const fit = box && pillSlices(box.width, box.height, end, PixelRatio.get());
+  const endBox = fit ? { height: '100%' as const, width: fit.end } : { height: '100%' as const, aspectRatio: end };
   // Android fades a dimmed (disabled) control's children one by one, so the slices' overlap would show as two vertical lines; the layer fades them as one.
-  return <View pointerEvents="none" renderToHardwareTextureAndroid style={[styles.pill, { bottom: drop as ViewStyle['bottom'] }]}>
-    <View style={{ height: '100%', aspectRatio: end }} />
-    <Image source={m} style={styles.middle} contentFit="fill" accessible={false} />
-    <View style={{ height: '100%', aspectRatio: end }} />
-    {/* Each end is cut at the centre line: on a 44pt round button the two would overlap and their flat tops poke past each other's curve. A % maxWidth does not work here: Yoga resolves it against the text width. */}
-    <View style={styles.leftHalf}><Image source={l} style={{ height: '100%', aspectRatio: end }} contentFit="fill" accessible={false} /></View>
-    <View style={styles.rightHalf}><Image source={r} style={[styles.rightEnd, { aspectRatio: end }]} contentFit="fill" accessible={false} /></View>
+  return <View pointerEvents="none" renderToHardwareTextureAndroid style={[styles.pill, { bottom: drop as ViewStyle['bottom'] }]}
+    onLayout={({ nativeEvent: { layout: { width, height } } }) => setBox(old => old?.width === width && old.height === height ? old : { width, height })}>
+    <View style={[styles.slices, { width: fit ? fit.width : '100%' }]}>
+      <View style={endBox} />
+      <Image source={m} style={styles.middle} contentFit="fill" accessible={false} />
+      <View style={endBox} />
+      {/* Each end is cut at the centre line: on a 44pt round button the two would overlap and their flat tops poke past each other's curve. A % maxWidth does not work here: Yoga resolves it against the text width. */}
+      <View style={[styles.half, { left: 0, width: fit ? fit.half : '50%' }]}><Image source={l} style={endBox} contentFit="fill" accessible={false} /></View>
+      <View style={[styles.half, { left: fit ? fit.half : '50%', right: 0 }]}><Image source={r} style={[styles.rightEnd, endBox]} contentFit="fill" accessible={false} /></View>
+    </View>
   </View>;
 }
 
@@ -173,11 +182,10 @@ export function ClayControlFill({ tone = 'secondary', selected = false }: { tone
 
 const styles = StyleSheet.create({
   // Sits 1pt low so the label rests on the top face rather than across the front edge (mockup v2, owner "이대로").
-  pill: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', transform: [{ translateY: 1 }] },
+  pill: { position: 'absolute', top: 0, left: 0, right: 0, transform: [{ translateY: 1 }] },
+  slices: { position: 'absolute', top: 0, bottom: 0, left: 0, flexDirection: 'row' },
   middle: { flex: 1, height: '100%' },
-  leftHalf: { position: 'absolute', top: 0, bottom: 0, left: 0, right: '50%', overflow: 'hidden' },
-  // The hairline overlap closes the 1px gap that rounding leaves at some Android densities (420dpi).
-  rightHalf: { position: 'absolute', top: 0, bottom: 0, left: '50%', marginLeft: -StyleSheet.hairlineWidth, right: 0, overflow: 'hidden' },
+  half: { position: 'absolute', top: 0, bottom: 0, overflow: 'hidden' },
   rightEnd: { position: 'absolute', top: 0, bottom: 0, right: 0 },
   coin: { position: 'absolute', top: '-3%', left: '-3%', width: '106%', height: '106%' },
 });

@@ -119,6 +119,8 @@ export function PostCard({
   const [photoPage, setPhotoPage] = useState(0), [photoRowWidth, setPhotoRowWidth] = useState(0), [failedSlides, setFailedSlides] = useState<string[]>([]);
   const isMeetup = post.tag.kind === 'meetup';
   const isListing = post.kind === 'listing';
+  // 칸이 있는 글은 그 글의 종류(구인·렌트 내놓음·팝니다)로 적는다. '구해요·팔아요'로는 구인·렌트 글이 중고거래처럼 읽힌다(QA H43-7·B12-2). 피드 카드와 상세가 같은 이름을 쓴다.
+  const listingKind = post.listingDetails ? dealLabel(post.listingDetails, language) : t.detail.listingBadge;
   const viewerScope = isAuthed ? me.id : 'guest';
   const photoSource = getPostImageSource(post, viewerScope);
   const firstPhoto = photoSource?.uri;
@@ -316,7 +318,7 @@ export function PostCard({
 
   if (feed && !meetupDetail && !postDetail) {
     const name = post.business?.name ?? post.author.nickname;
-    const kind = post.business ? tr('비즈니스') : post.room ? tr('모임 호스트') : `${tr(post.tag.label)}${isListing ? ` · ${t.detail.listingBadge}` : ''}`;
+    const kind = post.business ? tr('비즈니스') : post.room ? tr('모임 호스트') : `${tr(post.tag.label)}${isListing ? ` · ${listingKind}` : ''}`;
     const time = `${post.createdAt ? relativeTime(post.createdAt, undefined, appLocale) : post.createdAtLabel ?? ''}${post.bumpedAt ? ` · ${t.detail.bumpedLabel}` : ''}`;
     const title = translation.display.title ?? post.title;
     const logo = post.business?.avatarUri && failedBusinessLogo !== post.business.avatarUri ? post.business.avatarUri : null;
@@ -503,8 +505,7 @@ export function PostCard({
           {meetupDetail ? meetupDetail.beforeTitle : <ThemedText
             type="smallBold"
             style={[styles.category, { color: isMeetup ? theme.accent : theme.textSecondary }]}>
-            {/* 칸이 있는 글은 그 글의 종류(구인·렌트 내놓음·팝니다)로 적는다. '구해요·팔아요'로는 구인·렌트 글이 중고거래처럼 읽힌다(QA H43-7·B12-2). */}
-            {tr(post.tag.label)}{isListing ? ` · ${post.listingDetails ? dealLabel(post.listingDetails, language) : t.detail.listingBadge}` : ''}
+            {tr(post.tag.label)}{isListing ? ` · ${listingKind}` : ''}
           </ThemedText>}
           <ThemedText accessibilityRole={meetupDetail ? 'header' : undefined} style={[styles.title, flat && !onPress && styles.detailTitle, meetupDetail && Typography.sheetTitle]}>
             {translation.display.title}

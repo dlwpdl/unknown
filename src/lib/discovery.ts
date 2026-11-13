@@ -189,10 +189,12 @@ export function discoveryEvent(event: TicketmasterEvent, cityId: string, now = D
     latitude: pin?.latitude ?? null, longitude: pin?.longitude ?? null, price: event.price?.min ?? null,
     imageUri: event.image ?? undefined, startsAt: event.startsAt, endsAt: event.endsAt, localDate: event.localDate, event };
 }
-// Owner 2026-11-09: the map's and the place screen's Google Maps/Waze buttons open the place first; that app's own directions button starts navigation.
-export function mapAppUrl(item: Pick<DiscoveryItem, 'cityId' | 'place'> & PostPin, app: 'google' | 'waze') {
+// Owner 2026-11-09: the map's and the place screen's Apple Maps/Google Maps/Waze buttons open the place first; that app's own directions button starts navigation.
+export function mapAppUrl(item: Pick<DiscoveryItem, 'cityId' | 'place'> & PostPin, app: 'apple' | 'google' | 'waze') {
   const pinUrl = googlePinUrl(item);
   if (app === 'waze') return `https://waze.com/ul?${new URLSearchParams({ ll: `${item.latitude},${item.longitude}` })}`;
+  // Apple Maps drops a pin named after the place at its exact spot (q labels the pin when ll is given), not a route.
+  if (app === 'apple') return `https://maps.apple.com/?${new URLSearchParams({ ...(item.place?.name ? { q: item.place.name } : {}), ll: `${item.latitude},${item.longitude}` })}`;
   // Google search has no location bias, so only a street address pins the right branch; anything else opens the exact pin.
   const place = item.place, city = CITIES.find(entry => entry.id === item.cityId);
   return place && city && /\d/.test(place.address)

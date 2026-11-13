@@ -226,7 +226,8 @@ test('P3/P4: 길찾기 offers address copy, Apple and Google maps; 전화·인�
   assert.deepEqual(ui.copied, [place.address]);
   assert.ok(ui.nodes().some(node => node.props?.children === '주소를 복사했어요.'));
   sheet.props.actions[1].onPress(); await ui.settle();
-  assert.equal(ui.opened.at(-1), `https://maps.apple.com/?daddr=${place.latitude},${place.longitude}`);
+  assert.equal(ui.opened.at(-1), mapAppUrl({ ...place, place }, 'apple'));
+  assert.ok(!/daddr|dirflg/.test(ui.opened.at(-1)), 'Apple Maps opens the place, not a route');
   sheet.props.actions[2].onPress(); await ui.settle();
   assert.equal(ui.opened.at(-1), mapAppUrl({ ...place, place }, 'google'));
   assert.ok(!/dir_action|\/maps\/dir/.test(ui.opened.at(-1)), 'Google Maps opens the place, not navigation (QA C19-1, #132)');

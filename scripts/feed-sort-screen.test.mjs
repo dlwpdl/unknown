@@ -527,6 +527,7 @@ test('the home category row scrolls the chosen chip into view (QA Q07)', () => {
   const app = screen();
   const row = () => nodes(app.render()).find(n => n.props?.analyticsId === 'components_feed-screen.scrollview.1');
   assert.equal(row().props.revealing, 'all');
+  assert.ok(row().props.fadingEdgeLength > 0, 'on Android the last chip fades into the round end instead of being cut straight (QA B7-1)');
   const chips = nodes(row()).filter(n => typeof n.props?.onLayout === 'string').map(n => n.props.onLayout);
   assert.ok(chips.includes('layout:all') && chips.includes(`layout:${TAGS.find(tag => tag.slug === 'festival').id}`), 'every chip reports where it sits');
   nodes(row()).find(n => n.props?.analyticsId === 'components_feed-screen.pressable.3' && n.props.selected === false).props.onPress();

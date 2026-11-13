@@ -367,6 +367,16 @@ test('Today card ··· 이 글 숨기기 on someone else\'s post: saves the hid
   assert.equal(card.hiddenCalls.length, calls, 'a guest is asked to sign in first');
 });
 
+test('Today card names a listing by its own kind, the same as the post page (QA B12-2)', () => {
+  const card = cardRenderer();
+  const textOf = node => [node?.props?.children].flat(Infinity).filter(child => typeof child === 'string').join('');
+  const header = listingDetails => nodes(card.render({ post: { id: 'rent-1', cityId: 'vancouver', kind: 'listing', title: '1베드 렌트', body: '12월 입주', author: { id: 'author', nickname: '수달' },
+    tag: { kind: 'post', label: '부동산' }, listingDetails, likes: 0, saves: 0, comments: 0, views: 0, createdAtLabel: '방금' }, feed: true, flat: true, onPress() {} }))
+    .filter(node => node.type === 'ThemedText').map(textOf);
+  assert.ok(header({ type: 'housing', deal: 'rent_offer' }).includes('· 부동산 · 렌트 내놓음 · 방금'));
+  assert.ok(header(undefined).includes(`· 부동산 · ${t.detail.listingBadge} · 방금`), 'an old post without the listing fields keeps the general name');
+});
+
 test('Today card: a post without photos stays a small text card, and 더 보기 shows only when the text is cut', () => {
   const card = cardRenderer();
   const props = { post: { id: 'feed-text', cityId: 'vancouver', title: '오늘 비 와요', body: '우산 챙기세요.', author: { id: 'author', nickname: '비' }, tag: { kind: 'post', label: '일상' },

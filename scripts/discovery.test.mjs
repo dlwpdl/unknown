@@ -61,12 +61,20 @@ test('지도 화면·장소 화면의 Google Maps·Waze 버튼은 길안내를 �
     assert.equal(url.pathname, '/maps/search/');
     assert.equal(url.searchParams.get('query'), '49.28,-123.12');
   }
+  // Apple Maps: a pin named after the place at its spot, never a route (daddr).
+  const apple = new URL(mapAppUrl({ ...at, place: { name: 'Science World', address: '1455 Quebec St' } }, 'apple'));
+  assert.equal(apple.origin, 'https://maps.apple.com');
+  assert.equal(apple.searchParams.get('q'), 'Science World');
+  assert.equal(apple.searchParams.get('ll'), '49.28,-123.12');
+  assert.equal(apple.searchParams.has('daddr'), false);
+  assert.equal(new URL(mapAppUrl(at, 'apple')).searchParams.has('q'), false, 'without a name it is the exact pin');
+  assert.throws(() => mapAppUrl({ latitude: 91, longitude: 0 }, 'apple'));
   const waze = new URL(mapAppUrl(at, 'waze'));
   assert.equal(waze.searchParams.get('ll'), '49.28,-123.12');
   assert.equal(waze.searchParams.has('navigate'), false);
   for (const bad of [{ latitude: NaN, longitude: 0 }, { latitude: 0, longitude: 181 }, { latitude: '49', longitude: 0 }]) assert.throws(() => mapAppUrl(bad, 'google'));
   assert.equal(new URL(mapAppUrl(at, 'google')).searchParams.has('key'), false, 'no API key or origin leaves the app');
-  assert.doesNotMatch(readFileSync(new URL('../src/app/places/[id].tsx', import.meta.url), 'utf8'), /maps\/dir|dir_action|directionsUrl/);
+  assert.doesNotMatch(readFileSync(new URL('../src/app/places/[id].tsx', import.meta.url), 'utf8'), /maps\/dir|dir_action|directionsUrl|daddr/);
   const map = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
   assert.match(map, /Linking\.openURL\(mapAppUrl\(item, app\)\)/);
   assert.doesNotMatch(map, /directionsUrl/);

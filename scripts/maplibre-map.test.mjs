@@ -24,6 +24,9 @@ test('숫자 핀만 스크립트에 들어가고 지도 코드는 로컬 번들�
   assert.throws(() => mapHtml({ pin: null, background: 'red}</style>' }));
   // The page behind the tiles takes the screen's card colour, so dark mode waits on a dark box.
   assert.ok(mapHtml({ pin: null, background: '#171722' }).includes('background:#171722}'));
+  // Before its tiles MapLibre paints the light style's own background, so the map shows only after its first complete drawing (QA Android dark).
+  assert.ok(html.includes('#map{opacity:0}#map.drawn{opacity:1'));
+  assert.match(html, /map\.on\('load',\(\)=>\{[^}]*classList\.add\('drawn'\)/);
   assert.throws(() => mapPinScript({ latitude: NaN, longitude: 0 }));
   assert.ok(mapPinScript({ latitude: 49.2, longitude: -123.1 }).includes('49.2'));
   assert.ok(!mapHtml({ pin: null, cityName: '</script>', accent: '#CBB9FF' }).includes('cityName":"</script>'));

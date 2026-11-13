@@ -8,11 +8,11 @@ import { t } from '../src/i18n/ko.ts';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 const dark = { accent: '#CBB9FF' }, light = { accent: '#6B4FD8' };
-function panel({ OS = 'android', theme = dark } = {}) {
+function panel({ OS = 'android', theme = dark, frames = [] } = {}) {
   const exports = {}, jsx = (type, props) => ({ type, props });
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/components/login-panel.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
-  }).outputText, { exports, __DEV__: false, process: { env: {} }, require: withLanguageImports(name => {
+  }).outputText, { exports, __DEV__: false, process: { env: {} }, requestAnimationFrame: callback => frames.push(callback), require: withLanguageImports(name => {
     if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
     if (name === 'react') return { useRef: current => ({ current }), useState: value => [typeof value === 'function' ? value() : value, () => {}] };
     if (name === 'expo-font') return { useFonts: () => [true] };
@@ -30,24 +30,36 @@ function panel({ OS = 'android', theme = dark } = {}) {
 }
 
 test('the password form rises above the keyboard as a whole and its keys move to the next step (QA A3-1)', () => {
-  const tree = panel()({ onReviewLogin() {} });
+  const frames = [], flush = () => { while (frames.length) frames.shift()(); };
+  const tree = panel({ frames })({ onReviewLogin() {} });
   const scroll = nodes(tree).find(node => node.type === 'ScrollView');
   const [email, password] = nodes(tree).filter(node => node.type === 'TextInput');
-  const calls = [];
+  const calls = [], scrolls = () => calls.filter(([kind]) => kind === 'scrollToEnd').length;
   scroll.props.ref.current = { scrollToEnd: options => calls.push(['scrollToEnd', options.animated]) };
   password.props.ref.current = { focus: () => calls.push(['focus']) };
-  scroll.props.onLayout();
+  scroll.props.onLayout(); flush();
   assert.deepEqual(calls, [], 'an ordinary layout leaves the scroll where the member put it');
   email.props.onFocus(); scroll.props.onLayout();
-  assert.deepEqual(calls, [['scrollToEnd', true]], 'the keyboard shrinking the view shows the password and the start button too');
+  assert.equal(scrolls(), 0, 'it waits for Android to finish placing the focused field');
+  flush();
+  assert.deepEqual(calls.at(-1), ['scrollToEnd', true], 'the keyboard shrinking the view shows the password and the start button too');
   assert.equal(email.props.returnKeyType, 'next');
   email.props.onSubmitEditing();
   assert.deepEqual(calls.at(-1), ['focus']);
-  email.props.onBlur(); password.props.onFocus(); scroll.props.onLayout();
-  assert.equal(calls.length, 3);
+  // '다음' moves focus while the keyboard settles again: the layout between the two fields still ends on the start button.
+  const before = scrolls();
+  email.props.onBlur(); scroll.props.onLayout(); password.props.onFocus(); flush();
+  assert.ok(scrolls() > before);
+  assert.deepEqual(calls.at(-1), ['scrollToEnd', true]);
   assert.equal(password.props.returnKeyType, 'go');
-  password.props.onBlur(); scroll.props.onLayout();
-  assert.equal(calls.length, 3, 'after leaving the form the scroll is left alone');
+  const after = scrolls();
+  password.props.onBlur(); scroll.props.onLayout(); flush();
+  assert.equal(scrolls(), after, 'after leaving the form the scroll is left alone');
+});
+
+test('the admin sign-in also avoids the keyboard on Android', () => {
+  const tree = panel()({ onAdminLogin() {} });
+  assert.equal(nodes(tree).find(node => node.type === 'KeyboardAvoidingView').props.behavior, 'padding');
 });
 
 test('Sign in with Apple is white on the dark screen and black on the light one, in a plate as tall as the other buttons', () => {
