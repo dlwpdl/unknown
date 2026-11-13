@@ -248,13 +248,13 @@ export function NewcomerProgressCard({ cityId, onOpenCategory }: { cityId: strin
     {vancouver && arrival && list && !asking && <View style={styles.arrival}>
       <View>
         <ThemedText accessibilityRole="header" type="smallBold">{listTitle}</ThemedText>
-        <Pressable analyticsId="today.newcomer.arrival" accessibilityRole="button" accessibilityLabel={`${tr(arrival[2])}, ${tr('바꾸기')}`}
+        <Pressable analyticsId="today.newcomer.arrival-change" accessibilityRole="button" accessibilityLabel={`${tr(arrival[2])}, ${tr('바꾸기')}`}
           onPress={() => { play('selection'); setAsking(true); }} style={styles.link}>
           <ThemedText type="small" themeColor="textSecondary">{tr(arrival[2])} · <ThemedText type="smallBold" themeColor="accent">{tr('바꾸기')}</ThemedText></ThemedText>
         </Pressable>
       </View>
       {list.next.length > 0 && <View accessibilityRole="list">{list.next.map((step, index) => stepRow(step, index, true))}</View>}
-      <Pressable analyticsId="today.newcomer.step-link" accessibilityRole="button" onPress={() => { play('selection'); setListOpen(true); }} style={styles.allRow}>
+      <Pressable analyticsId="today.newcomer.list" accessibilityRole="button" onPress={() => { play('selection'); setListOpen(true); }} style={styles.allRow}>
         <ThemedText type="small" themeColor="textSecondary" style={styles.flex}>{tr('{0}개 중 {1}개 끝냈어요', list.shown.length, list.finished)}</ThemedText>
         <ThemedText type="smallBold" themeColor="accent">{tr('전체 보기 ›')}</ThemedText>
       </Pressable>
@@ -263,7 +263,7 @@ export function NewcomerProgressCard({ cityId, onOpenCategory }: { cityId: strin
       <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
         <ThemedText type="caption" themeColor="textSecondary">{tr('끝낸 건 체크해 두면 홈 카드에서 빠져요. 이 폰에만 저장돼요.')}</ThemedText>
         <View accessibilityRole="list">{list.shown.map((step, index) => stepRow(step, index, false))}</View>
-        <Pressable analyticsId="today.newcomer.hide" accessibilityRole="button" onPress={hideList} style={styles.link}>
+        <Pressable analyticsId="today.newcomer.list-hide" accessibilityRole="button" onPress={hideList} style={styles.link}>
           <ThemedText type="small" themeColor="textSecondary">{tr('이 목록 숨기기')}</ThemedText>
         </Pressable>
       </ScrollView>

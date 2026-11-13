@@ -149,7 +149,8 @@ reset role;
 -- Account deletion lists this bucket's folder too.
 select is(public.account_image_cleanup_paths('f7100000-0000-4000-8000-000000000001','listing-checks',array['f7100000-0000-4000-8000-000000000001/f7120000-0000-4000-8000-000000000001.webp']),
   array['f7100000-0000-4000-8000-000000000001/f7120000-0000-4000-8000-000000000001.webp'],'deleting the account removes the check photo');
-select is((select count(*)::int from private.behavior_targets where id in ('listing.rent.scam-tips','listing.rent.scam-link','compose.rent-check-photo',
-  'compose.rent-check-photo.remove','today.newcomer.arrival','today.newcomer.step','today.newcomer.step-link')),7,'the new app controls are accepted by analytics');
+select is((select count(*)::int from private.behavior_targets where id in ('compose.rent-check-photo',
+  'compose.rent-check-photo.remove','today.newcomer.arrival','today.newcomer.step','today.newcomer.step-link',
+  'today.newcomer.arrival-change','today.newcomer.list','today.newcomer.list-hide')),8,'the new app controls are accepted by analytics');
 select * from finish();
 rollback;

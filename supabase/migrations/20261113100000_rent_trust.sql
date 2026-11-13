@@ -234,6 +234,7 @@ end $$;
 
 -- New app controls; unregistered targets make the server reject the whole analytics batch.
 insert into private.behavior_targets(id) values
- ('listing.rent.scam-tips'),('listing.rent.scam-link'),('compose.rent-check-photo'),('compose.rent-check-photo.remove'),
- ('today.newcomer.arrival'),('today.newcomer.step'),('today.newcomer.step-link')
+ ('compose.rent-check-photo'),('compose.rent-check-photo.remove'),
+ ('today.newcomer.arrival'),('today.newcomer.step'),('today.newcomer.step-link'),
+ ('today.newcomer.arrival-change'),('today.newcomer.list'),('today.newcomer.list-hide')
 on conflict do nothing;
