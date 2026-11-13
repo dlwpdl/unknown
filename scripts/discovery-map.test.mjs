@@ -55,6 +55,11 @@ test('native map startup has a bounded fallback, cancels after ready and rearms 
   assert.equal(failed(tree), false);
   assert.equal(timers.size, 1, 'native startup cannot rely on JavaScript inside a stalled WebView');
   assert.equal([...timers.values()][0].delay, 15000);
+  const first = [...timers.keys()][0], page = () => tree.find(node => node.type === 'WebView').props;
+  page().onMessage({ nativeEvent: { data: JSON.stringify({ type: 'progress', sessionId: 'native-canvas.0' }) } });
+  assert.equal(timers.size, 1); assert.notEqual([...timers.keys()][0], first, 'page progress restarts the wait, so a slow first download is no failure (corner check m00 11-13)');
+  page().onMessage({ nativeEvent: { data: JSON.stringify({ type: 'progress', sessionId: 'stale' }) } });
+  assert.equal(timers.size, 1);
   [...timers.values()][0].fn();
   tree = render(); assert.equal(failed(tree), true);
   tree.find(node => node.props?.analyticsId === 'discovery.map.retry').props.onPress();
@@ -108,7 +113,7 @@ test('escapes dynamic JSON in HTML and injected scripts without forwarding extra
 
 test('only accepts current session messages, known selection IDs and exact credit URLs', () => {
   const parse = message => discoveryMapMessage(JSON.stringify({ sessionId, ...message }), sessionId, [marker]);
-  for (const type of ['ready', 'error', 'feedback']) assert.deepEqual(parse({ type, privateText: 'secret' }), { type });
+  for (const type of ['ready', 'error', 'feedback', 'progress']) assert.deepEqual(parse({ type, privateText: 'secret' }), { type });
   assert.deepEqual(parse({ type: 'select', id: marker.id }), { type: 'select', id: marker.id });
   for (const url of ['https://openfreemap.org/', 'https://www.openmaptiles.org/', 'https://www.openstreetmap.org/copyright']) {
     assert.deepEqual(parse({ type: 'credits', url }), { type: 'credits', url });
@@ -174,6 +179,22 @@ test('a passing map error while loading never shows the failure; one that outlas
   const stuck = run();
   stuck.c.listeners.error({}); stuck.grace()[0].fn();
   assert.equal(stuck.errors(), 1, 'still not loaded after the grace: show the failure');
+});
+
+test('a slow first download is not a failure: progress pushes the 15s wait back, cancels an error grace and tells the app it is alive (corner check m00 11-13)', () => {
+  let now = 0, next = 0; const timers = new Map();
+  const c = canvas([marker], undefined, {}, { deferLoad: true, Date: { now: () => now }, setTimeout: (fn, ms) => { timers.set(++next, { fn, ms }); return next; }, clearTimeout: id => timers.delete(id) });
+  const count = type => c.messages.filter(m => m.type === type).length, waits = ms => [...timers.values()].filter(t => t.ms === ms);
+  assert.equal(waits(15000).length, 1);
+  c.listeners.error({}); assert.equal(waits(5000).length, 1);
+  now = 3000; c.listeners.data({});
+  assert.equal(waits(5000).length, 0, 'progress after an error cancels its grace'); assert.equal(waits(15000).length, 1, 'one 15s wait, restarted');
+  assert.equal(count('progress'), 1);
+  now = 4000; c.listeners.dataloading({}); assert.equal(count('progress'), 1, 'at most one alive message every 2s');
+  now = 6000; c.listeners.data({}); assert.equal(count('progress'), 2);
+  waits(15000)[0].fn(); assert.equal(count('error'), 1, 'a real stall still fails');
+  c.listeners.load(); assert.equal(count('ready'), 1);
+  c.listeners.data({}); assert.equal(count('progress'), 2, 'nothing more once loaded');
 });
 
 test('the map canvas draws at most two pixels per point (map lag 2026-11-11 "지도 화질 2배")', () => {

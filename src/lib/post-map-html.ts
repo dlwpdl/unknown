@@ -67,9 +67,12 @@ try{
  map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/positron',center:config.center,zoom:config.area?13:config.preview?14.5:15,interactive:!config.preview,attributionControl:false,canvasContextAttributes:{preserveDrawingBuffer:config.preview},pixelRatio:config.preview?1.5:undefined});
  window.glingMap=map;
  if(!config.preview)map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
- const timer=setTimeout(fail,15000);
- map.on('load',()=>{clearTimeout(timer);failed=false;window.glingSetPin(pin);send({type:'ready'})});
- map.on('error',()=>{if(!map.isStyleLoaded())fail()});
+ // Same rule as the discovery map: a slow first download is not a failure; 15s with no progress is, and an error before the style loads only when 5s follow with no progress.
+ let loaded=false,timer=setTimeout(fail,15000),grace=0;
+ const progress=()=>{if(loaded)return;clearTimeout(timer);clearTimeout(grace);grace=0;timer=setTimeout(fail,15000)};
+ map.on('dataloading',progress);map.on('data',progress);
+ map.on('load',()=>{loaded=true;clearTimeout(timer);failed=false;window.glingSetPin(pin);send({type:'ready'})});
+ map.on('error',()=>{if(!loaded&&!map.isStyleLoaded()&&!grace)grace=setTimeout(()=>{if(!loaded)fail()},5000)});
  if(!config.preview)map.on('click',e=>{const poi=map.queryRenderedFeatures(e.point).find(f=>f.layer.type==='symbol'&&/poi/i.test(f.layer.id));const coordinate=poi?.geometry?.type==='Point'?poi.geometry.coordinates:null;const ll=coordinate&&Number.isFinite(coordinate[0])&&Number.isFinite(coordinate[1])&&Math.abs(coordinate[1])<=90?new maplibregl.LngLat(coordinate[0],coordinate[1]).wrap():e.lngLat.wrap();pin={latitude:ll.lat,longitude:ll.lng};window.glingSetPin(pin);send({type:'pick',pin,label:poi?.properties?.name||poi?.properties?.['name:en']||''})});
  if(config.preview)map.on('idle',()=>{if(snapped||!pin)return;snapped=true;try{
   const original=map.getCanvas(),canvas=document.createElement('canvas');canvas.width=original.width;canvas.height=original.height;const ctx=canvas.getContext('2d');ctx.drawImage(original,0,0);
