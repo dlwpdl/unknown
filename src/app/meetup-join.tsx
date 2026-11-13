@@ -3,7 +3,7 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useFocusEffect, useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
-import { Alert, Animated, AppState, DeviceEventEmitter, Easing, KeyboardAvoidingView, Modal, Platform, RefreshControl, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, Animated, AppState, DeviceEventEmitter, Easing, Keyboard, KeyboardAvoidingView, Modal, Platform, RefreshControl, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { requestPushPrompt } from '@/lib/push-prompt';
 import { SymbolView } from '@/components/symbol-view';
@@ -87,6 +87,13 @@ export default function MeetupJoinRoute() {
 }
 function JoinForm({ postId, code = null }: { postId: string; code?: string | null }) {
   const { fontScale, height } = useWindowDimensions();
+  const [typing, setTyping] = useState(false);
+  useEffect(() => {
+    // iOS announces the keyboard before it rises; Android only once it is up.
+    const [show, hide] = Platform.OS === 'ios' ? ['keyboardWillShow', 'keyboardWillHide'] as const : ['keyboardDidShow', 'keyboardDidHide'] as const;
+    const shown = Keyboard.addListener(show, () => setTyping(true)), gone = Keyboard.addListener(hide, () => setTyping(false));
+    return () => { shown.remove(); gone.remove(); };
+  }, []);
   const { tr, t, language, locale: appLocale } = useLanguage();
   const theme = useTheme(), router = useRouter(), hidden = useContentVisibility(), clay = useClay();
   const copy = (ko: string, en: string) => language === 'en' ? en : ko;
@@ -313,10 +320,11 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
         <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr("프로필을 고쳐도 이미 보낸 신청은 그대로예요.")}</ThemedText>
         <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('승인 전에는 호스트 말고는 아무도 못 봐요. 모임에서 나가거나 차단하면 그 뒤로는 안 보이지만, 이미 본 내용은 되돌릴 수 없어요.')}</ThemedText>
       </View>
+      {/* Operator review is one more "who sees", so it sits in here and keeps the fixed bar short. */}
+      <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.')}</ThemedText>
       <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('승인 전까지는 자리가 잡히지 않아요. 신청은 호스트가 답하기 전까지 이 화면에서 취소할 수 있어요. 취소하거나 거절되면 24시간 뒤에 다시 신청할 수 있어요.')}</ThemedText>
       <MeetupPolicyNotice mode="join" />
     </Disclosure>
-    <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.')}</ThemedText>
   </>;
   const sentRow = (detail?: string) => <ListRow analyticsId="app_meetup-join.pressable.11" title={tr('보낸 프로필과 답변')} detail={detail} onPress={() => router.push({ pathname: '/meetup-application', params: { requestId: participation!.id } })} />;
   const footerError = !!error && !!post && <>
@@ -458,8 +466,9 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
         {view === 'full' && <MeetupWaitlist postId={postId} language={choice} cta="primary" fallback={browseButton} />}
         {view === 'noprofile' && !!profileError && <RaisedActionButton analyticsId="app_meetup-join.pressable.5" onPress={() => { play('selection'); profileRoute(); }} label={tr("모임 프로필 열기")} />}
         {(view === 'form' || askingProfile) && <>
-          {/* What 동의하고 agrees to sits right above the button that sends it (owner 2026-11-13); opened details scroll here so the button stays on screen. */}
-          {modern && <ScrollView analyticsId="app_meetup-join.scrollview.1" style={{ maxHeight: height * 0.3 }} contentContainerStyle={styles.consent} keyboardShouldPersistTaps="handled">{whoSees(profile
+          {/* What 동의하고 agrees to sits right above the button that sends it (owner 2026-11-13); opened details scroll here so the button stays on screen.
+            It steps aside while the keyboard is up so the field being typed in keeps its room. */}
+          {modern && !typing && <ScrollView analyticsId="app_meetup-join.scrollview.1" style={{ maxHeight: height * 0.3 }} contentContainerStyle={styles.consent} keyboardShouldPersistTaps="handled">{whoSees(profile
             // An older profile keeps its interests, prompts and photos, and those reach the host too.
             ? invite ? tr('초대용 모임이라 모임 밖에서는 내가 있는지 안 보여요. 신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요.')
               : tr('신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요. 승인되고 나면 이 모임에 신청하려는 사람에게도 이름, 한 줄 소개, 관심사가 보여요. 사진과 답변은 안 보여요.')
