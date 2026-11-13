@@ -7,6 +7,7 @@ import { Disclosure } from '@/components/disclosure';
 import { InitialAvatar, ListCard, ListLoading, ListRow, SectionLabel, Tag } from '@/components/list-card';
 import { MannerReviewButton } from '@/components/manner-review';
 import { MeetupHostTools } from '@/components/meetup-host-tools';
+import { MeetupQuestRows } from '@/components/meetup-quest-tools';
 import { MeetupRsvp } from '@/components/meetup-rsvp';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ClayBoxFill, ClayControlFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
@@ -108,6 +109,7 @@ function Attendance({ zone, sessions, kind, postId, meId, now, sessionId, canSta
     : <ThemedText themeColor="textSecondary" style={Typography.body}>{tr('아직 등록된 회차가 없어요.')}</ThemedText>;
   return <View>
     <Session key={focus.id} zone={zone} now={now} session={focus} meId={meId} kind={kind} isHost={sessions.isHost} canStaffCheckIn={canStaffCheckIn} onChanged={onChanged} />
+    {sessions.isHost && <MeetupQuestRows postId={postId} kind={kind} sessionId={focus.id} startsAt={focus.startsAt} endsAt={focus.endsAt} now={now} />}
     {upcoming && Date.parse(focus.startsAt) > now && <MeetupRsvp postId={postId} zone={zone} />}
     {others.length > 0 && <>
       <SectionLabel>{tr('다른 회차')}</SectionLabel>

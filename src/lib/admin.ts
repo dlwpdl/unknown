@@ -2,7 +2,7 @@ import type { KeyDownEvent } from 'react-native';
 
 export type ReportStatus = 'open' | 'actioned' | 'dismissed';
 export type ReportFilter = 'all' | ReportStatus;
-export type AdminSection = 'analytics' | 'webshops' | 'ticketmaster' | 'merchants' | 'creators' | 'campaigns' | 'benefits' | 'meetups' | 'overview' | 'safety' | 'alerts' | 'trending' | 'errors' | 'reports' | 'users' | 'posts' | 'conversations';
+export type AdminSection = 'analytics' | 'webshops' | 'ticketmaster' | 'merchants' | 'creators' | 'campaigns' | 'benefits' | 'meetups' | 'overview' | 'safety' | 'alerts' | 'trending' | 'errors' | 'reports' | 'users' | 'posts' | 'conversations' | 'quests';
 
 const REPORT_REASON_LABELS: Record<string, string> = {
   spam: '스팸',
@@ -42,6 +42,7 @@ export const ADMIN_SECTIONS: { id: AdminSection; label: string }[] = [
   { id: 'users', label: '사용자' },
   { id: 'posts', label: '게시글' },
   { id: 'meetups', label: '모임' },
+  { id: 'quests', label: '모임장 퀘스트' },
   { id: 'conversations', label: '대화' },
 ];
 
@@ -56,7 +57,7 @@ export const adminTotpQrUri = (qr: string) => `data:image/svg+xml;utf8,${encodeU
 export const ADMIN_NAV_GROUPS: { label: string; sections: AdminSection[] }[] = [
   { label: '운영', sections: ['overview', 'analytics'] },
   { label: '안전 검토', sections: ['reports', 'safety', 'alerts', 'errors'] },
-  { label: '콘텐츠·회원', sections: ['users', 'posts', 'meetups', 'conversations', 'trending'] },
+  { label: '콘텐츠·회원', sections: ['users', 'posts', 'meetups', 'quests', 'conversations', 'trending'] },
   { label: '제휴 운영', sections: ['merchants', 'creators', 'campaigns', 'benefits'] },
   { label: '수익', sections: ['webshops', 'ticketmaster'] },
 ];

@@ -40,6 +40,9 @@ export default function ProfileLayout() {
       <Stack.Screen name="merchant" options={{ title: tr('비즈니스') }} />
       <Stack.Screen name="meetup-reviews" options={{ title: tr('모임 후기') }} />
       <Stack.Screen name="invite" options={{ title: tr('친구 초대') }} />
+      <Stack.Screen name="host-quest" options={{ title: tr('모임장 퀘스트') }} />
+      <Stack.Screen name="host-quest-step" options={{ title: tr('모임장 퀘스트') }} />
+      <Stack.Screen name="host-quest-payout" options={{ title: tr('$50 받기') }} />
       <Stack.Screen name="trust" options={{ title: tr('인증 단계') }} />
       <Stack.Screen name="saved" options={{ title: t.profile.saved }} />
       <Stack.Screen name="import" options={{ title: tr('가져오기') }} />
