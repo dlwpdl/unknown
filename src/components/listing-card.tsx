@@ -19,18 +19,44 @@ import { areaName, dealLabel, formatMoveIn, isFreeListing, LISTING_LABELS, listi
 import { CITIES } from '@/lib/mock';
 import { findNeighborhood } from '@/lib/neighborhoods';
 import { postLocationUrl } from '@/lib/post-maps';
+import { rentAverage } from '@/lib/rent-average';
+import type { AppLanguage } from '@/i18n/language';
 import type { Post } from '@/lib/types';
 
 export type DetailedPost = Post & { listingDetails: ListingDetails };
 const wanting = (details: ListingDetails) => details.deal === 'rent_wanted' || details.deal === 'buy' || details.deal === 'seeking';
 
-function Badge({ label, tone }: { label: string; tone: 'accent' | 'want' | 'done' }) {
+function Badge({ label, tone, checked }: { label: string; tone: 'accent' | 'want' | 'done'; checked?: boolean }) {
   const theme = useTheme();
   const color = tone === 'accent' ? theme.accent : tone === 'want' ? theme.navy : theme.textSecondary;
-  return <View style={[styles.badge, { backgroundColor: tone === 'accent' ? theme.backgroundSelected : theme.backgroundElement }]}>
+  return <View style={[styles.badge, checked && styles.checkedBadge, { backgroundColor: tone === 'accent' ? theme.backgroundSelected : theme.backgroundElement }]}>
+    {checked && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={12} tintColor={color} />}
     <ThemedText type="micro" style={[styles.badgeText, { color }]}>{label}</ThemedText>
   </View>;
 }
+
+// A 렌트 내놓음 post: when the team checked the room photo, and where the rent sits against the CMHC average.
+function RentFacts({ post }: { post: DetailedPost }) {
+  const theme = useTheme(), { tr, language } = useLanguage();
+  if (post.listingDetails.type !== 'housing') return null;
+  const average = rentAverage(post.cityId, post.listingDetails, post.price, language);
+  if (!average) return null;
+  return <>
+    <ThemedText type="small" themeColor="textSecondary" style={styles.average}>{average.line}</ThemedText>
+    {average.cheap && <View accessibilityRole="alert" style={[styles.warn, { backgroundColor: `${theme.danger}17`, borderColor: `${theme.danger}47` }]}>
+      <SymbolView name={{ ios: 'exclamationmark.triangle', android: 'warning', web: 'warning' }} size={IconSize.inline} tintColor={theme.danger} />
+      <View style={styles.flex}>
+        <ThemedText type="small">{average.cheap}</ThemedText>
+        <ThemedText type="caption" themeColor="textSecondary">{tr('평균은 CMHC 2025년 10월 임대 아파트 기준이에요.')}</ThemedText>
+      </View>
+    </View>}
+  </>;
+}
+
+const checkedDay = (value: string, language: AppLanguage) => {
+  const day = new Date(value);
+  return formatMoveIn(`${day.getFullYear()}-${day.getMonth() + 1}-${day.getDate()}`, language);
+};
 
 function Tags({ items }: { items: string[] }) {
   const theme = useTheme();
@@ -169,8 +195,12 @@ export function ListingInfo({ post }: { post: DetailedPost }) {
     <View style={styles.meta}>
       <Badge label={text.deal} tone={wanting(details) ? 'want' : 'accent'} />
       <Badge label={text.status} tone={text.closed ? 'done' : 'accent'} />
+      {post.photoCheckedAt && <Badge checked label={tr('사진 확인 · {0}', checkedDay(post.photoCheckedAt, language))} tone="accent" />}
     </View>
-    {text.price && <ThemedText style={styles.detailPrice}>{text.price}</ThemedText>}
+    {text.price && <View>
+      <ThemedText style={styles.detailPrice}>{text.price}</ThemedText>
+      <RentFacts post={post} />
+    </View>}
     {rows.some(row => row.value) && <View style={clayBox ? undefined : [styles.infoCard, { borderColor: theme.line, backgroundColor: theme.card }]}>
       {clayBox && <ClayBoxFill kind="tile" />}
       <View style={clayBox && styles.clayRows}>
@@ -218,6 +248,9 @@ const styles = StyleSheet.create({
   detailPrice: { ...Typography.sheetTitle, fontSize: 22, lineHeight: 30 },
   badge: { minHeight: 22, paddingHorizontal: 8, borderRadius: 6, justifyContent: 'center' },
   badgeText: { letterSpacing: 0 },
+  checkedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  average: { marginTop: 2 },
+  warn: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two, marginTop: Spacing.two, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   tag: { minHeight: 24, paddingHorizontal: 8, borderRadius: 6, justifyContent: 'center' },
   tagText: { fontWeight: '600' },

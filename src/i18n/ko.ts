@@ -233,6 +233,7 @@ export const t = {
     BUSINESS_BUMP_COOLDOWN: { title: '비즈니스 끌어올리기를 기다려 주세요', body: '끌어올리기는 업체의 모든 글을 합쳐 무료 5일, 플러스 이틀, 프로 하루, 프리미엄 12시간에 한 번이에요. 계정이나 AI 도구를 바꿔도 같아요.', membership: false },
     BUSINESS_MONTHLY_LIMIT_REACHED: { title: '이번 달 비즈니스 사용량을 모두 썼어요', body: '신규 글과 끌어올리기 사용량을 확인해 주세요. 운영대행분은 전체 한도에 포함돼요.', membership: true },
     BUSINESS_TAG_RESERVED: { title: '비즈니스 글은 비즈니스 프로필에서 써요', body: '다른 카테고리를 골라 주세요. 가게 소식은 비즈니스 프로필로 바꾼 뒤 올릴 수 있어요.', membership: false },
+    RENT_POSTING_BLOCKED: { title: '부동산에는 더 올릴 수 없어요', body: '운영팀이 이 계정으로 올린 집 글 세 개를 사기로 확인했어요. 다른 카테고리에는 지금처럼 쓸 수 있어요.', membership: false },
     DUPLICATE_PROMOTION: { title: '같은 홍보글이 이미 있어요', body: '기존 글을 수정하거나 끌어올려 주세요. 제목·사진 순서만 바꿔 새 글로 다시 올릴 수 없어요.', membership: false },
     LISTING_NOT_OPEN: { title: '마감된 글이에요', body: '다시 열면 살아있는 글 자리를 하나 사용해요.', membership: false },
   },
@@ -442,6 +443,7 @@ export const t = {
       sexual: '성적 콘텐츠',
       privacy: '개인정보 침해',
       other: '기타',
+      scam: '허위 매물·사기',
     },
   },
 

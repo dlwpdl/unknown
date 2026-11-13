@@ -6,6 +6,7 @@ import { Alert, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 import { DragSheet } from '@/components/drag-sheet';
 import { ReportSheet } from '@/components/report-sheet';
+import { RentScamNote, RentScamTipsSheet } from '@/components/rent-safety';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ThemedText } from '@/components/themed-text';
 import { TrustBadge } from '@/components/trust-badge';
@@ -36,6 +37,7 @@ export type SheetUser = {
   mine?: boolean;
   listingId?: string; // 구해요·팔아요 글에서 열렸을 때. 대화의 출처로 남아 거래 후기 자격이 된다.
   contextPostId?: string;
+  rentNotice?: boolean; // 렌트 내놓음 글에서 열렸을 때 대화하기 바로 위에 사기 주의 한 줄
 };
 
 // Shared by the feed and the post detail so an author tap opens the same profile sheet everywhere.
@@ -54,6 +56,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
   const [requesting, setRequesting] = useState(false);
   const [openTradeKey, setOpenTradeKey] = useState<string | null>(null);
   const [reporting, setReporting] = useState<SheetUser | null>(null);
+  const [tips, setTips] = useState(false);
   const [trade, setTrade] = useState<{ key: string; value: TradeProfile } | null>(null);
   const [manner, setManner] = useState<{ key: string; value: Summary } | null>(null);
   const busy = useRef(false);
@@ -168,12 +171,13 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
               <View style={styles.identityCopy}><ThemedText type="smallBold">{tr('공개한 글 보기')}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('오늘·구해요·팔아요')}</ThemedText></View><ThemedText themeColor="textSecondary">›</ThemedText>
             </Pressable>}
           </ScrollView>
-          {!user.mine && user.id && <View style={styles.actionArea}><RaisedActionButton analyticsId="components_user-sheet.pressable.4" onPress={() => void requestChat(user)} disabled={requesting} busy={requesting} label={requesting ? t.chat.joinSending : t.profileSheet.chatRequest} /></View>}
+          {!user.mine && user.id && <View style={styles.actionArea}>{user.rentNotice && <RentScamNote onTips={() => close(() => setTips(true))} />}<RaisedActionButton analyticsId="components_user-sheet.pressable.4" onPress={() => void requestChat(user)} disabled={requesting} busy={requesting} label={requesting ? t.chat.joinSending : t.profileSheet.chatRequest} /></View>}
         </>}
       </DragSheet>
       {reporting?.id && (
         <ReportSheet visible targetType="user" targetId={reporting.id} reportedUserId={reporting.id} reportedNickname={reporting.nickname} onClose={() => setReporting(null)} />
       )}
+      <RentScamTipsSheet visible={tips} onClose={() => setTips(false)} />
     </>
   );
 }
@@ -249,7 +253,7 @@ const styles = StyleSheet.create({
   nickRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   profileRow: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   rowIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  actionArea: { paddingHorizontal: Spacing.two, paddingTop: 16 },
+  actionArea: { paddingHorizontal: Spacing.two, paddingTop: 16, gap: Spacing.one },
   record: { alignSelf: 'stretch', gap: Spacing.two, marginTop: Spacing.one },
   facts: { borderWidth: 1, borderRadius: 12, overflow: 'hidden' },
   fact: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: 9 },

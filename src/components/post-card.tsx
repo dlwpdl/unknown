@@ -284,6 +284,7 @@ export function PostCard({
       reportedUserId={post.business ? undefined : post.author.id}
       reportedBusinessId={post.business?.id}
       reportedNickname={post.business?.name ?? post.author.nickname}
+      listing={isListing}
       onClose={() => setReportOpen(false)}
     />
   </>;

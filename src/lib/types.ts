@@ -113,6 +113,7 @@ export interface Post {
   kind?: PostKind; // story(기본) | listing(구인구직·렌트·중고·차량). 규칙은 카테고리가 아니라 종류를 따른다
   listingStatus?: ListingStatus;
   listingDetails?: ListingDetails; // 부동산·구인구직·중고거래 칸. 없으면 지금처럼 본문만 보여준다
+  photoCheckedAt?: string; // 운영팀이 확인 사진을 보고 '사진 확인'을 단 때. 사진 자체는 글에 오지 않는다
   price?: number | null;
   expiresAt?: string | null;
   bumpedAt?: string | null;

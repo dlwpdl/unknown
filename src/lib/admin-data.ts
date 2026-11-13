@@ -464,6 +464,35 @@ export async function loadAdminMerchantReviewReplyContent(client: SupabaseClient
   if (result.error) throw result.error;
   return result.data;
 }
+// 렌트 신뢰: posts three people reported (held until an admin decides) and room check photos waiting for review.
+export type AdminHeldListing = {
+  id: string; title: string; body: string; category: 'housing' | 'jobs' | 'used'; cityId: string; price: number | null;
+  authorId: string; nickname: string; heldAt: string; authorFraudCount: number;
+  reports: { reason: string; details: string | null; createdAt: string }[];
+};
+export type AdminListingPhotoCheck = { postId: string; title: string; cityId: string; price: number | null; authorId: string; nickname: string; photoPath: string; submittedAt: string };
+export async function loadAdminHeldListings(client: SupabaseClient): Promise<AdminHeldListing[]> {
+  return dataOrThrow<AdminHeldListing[]>(await client.rpc('get_admin_held_listings'));
+}
+export async function resolveAdminHeldListing(client: SupabaseClient, postId: string, action: 'restore' | 'remove' | 'fraud') {
+  const result = await client.rpc('resolve_held_listing', { p_post_id: postId, p_action: action });
+  if (result.error) throw new Error(result.error.message);
+}
+export async function loadAdminListingPhotoChecks(client: SupabaseClient): Promise<AdminListingPhotoCheck[]> {
+  return dataOrThrow<AdminListingPhotoCheck[]>(await client.rpc('get_admin_listing_photo_checks'));
+}
+// Every open is logged on the server (storage policy), and the link lasts five minutes.
+export async function loadAdminListingCheckUrl(client: SupabaseClient, path: string): Promise<string> {
+  const result = await client.storage.from('listing-checks').createSignedUrl(path, 300);
+  if (result.error) throw result.error;
+  if (!result.data?.signedUrl) throw new Error('LISTING_CHECK_UNAVAILABLE');
+  return result.data.signedUrl;
+}
+export async function reviewAdminListingPhotoCheck(client: SupabaseClient, postId: string, verified: boolean) {
+  const result = await client.rpc('review_listing_photo_check', { p_post_id: postId, p_verified: verified });
+  if (result.error) throw new Error(result.error.message);
+}
+
 export async function loadAdminMerchantReceiptUrl(client: SupabaseClient, path: string): Promise<string> {
   const result = await client.storage.from('merchant-review-receipts').createSignedUrl(path, 300);
   if (result.error) throw result.error;

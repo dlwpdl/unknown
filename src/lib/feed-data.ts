@@ -4,7 +4,7 @@ import { getLocale, tr } from '../i18n/index.ts';
 import { thumbPathFor } from './image-upload.ts';
 import { businessMediaUrl } from './business-media.ts';
 import type { ListingStatus, Post, PostComment, PostKind, RoomPreview, TagSlug } from './types.ts';
-import { isListingCategory, parseListingDetails, type ListingDetails } from './listing-details.ts';
+import { isListingCategory, parseListingDetails } from './listing-details.ts';
 
 export type PublicFeedRow = {
   id: string;
@@ -316,7 +316,7 @@ export async function hydratePublicPosts(client: SupabaseClient, posts: Post[], 
   const ids = [...new Set(posts.map(post => post.id))];
   const [images, response] = await Promise.all([
     Promise.all([attachSignedPostImages(client, posts, viewerScope), loadListingDetails(client, posts)])
-      .then(([signed, details]) => details.size ? signed.map(post => details.has(post.id) ? { ...post, listingDetails: details.get(post.id) } : post) : signed)
+      .then(([signed, details]) => details.size ? signed.map(post => details.has(post.id) ? { ...post, ...details.get(post.id) } : post) : signed)
       .then(hydrated => attachAuthorPhotos(client, hydrated)),
     client.rpc('get_public_post_businesses', { p_post_ids: ids }),
   ]);
@@ -336,17 +336,19 @@ export async function hydratePublicPosts(client: SupabaseClient, posts: Post[], 
 }
 
 // 부동산·구인구직·중고거래 칸. Optional: before the migration, or on any read error, posts render from the body lead as before.
-export async function loadListingDetails(client: SupabaseClient, posts: readonly Post[]): Promise<Map<string, ListingDetails>> {
+export async function loadListingDetails(client: SupabaseClient, posts: readonly Post[]): Promise<Map<string, Pick<Post, 'listingDetails' | 'photoCheckedAt'>>> {
   const listings = posts.filter(post => post.kind === 'listing' && isListingCategory(post.tag.slug));
   if (!listings.length) return new Map();
   const response = await client.rpc('get_public_post_listing_details', { p_post_ids: [...new Set(listings.map(post => post.id))] });
   if (response.error || !Array.isArray(response.data)) return new Map();
   const bodies = new Map(listings.map(post => [post.id, post.body]));
-  const details = new Map<string, ListingDetails>();
-  for (const row of response.data as { post_id?: unknown; details?: unknown }[]) {
+  const details = new Map<string, Pick<Post, 'listingDetails' | 'photoCheckedAt'>>();
+  for (const row of response.data as { post_id?: unknown; details?: unknown; photo_checked_at?: unknown }[]) {
     const body = typeof row?.post_id === 'string' ? bodies.get(row.post_id) : undefined;
     const parsed = body == null ? null : parseListingDetails(row.details, body);
-    if (parsed && parsed.type === listings.find(post => post.id === row.post_id)?.tag.slug) details.set(row.post_id as string, parsed);
+    // 사진 확인 is the review date only; anything that is not a date is dropped.
+    const checked = typeof row.photo_checked_at === 'string' && !Number.isNaN(Date.parse(row.photo_checked_at)) ? row.photo_checked_at : undefined;
+    if (parsed && parsed.type === listings.find(post => post.id === row.post_id)?.tag.slug) details.set(row.post_id as string, checked ? { listingDetails: parsed, photoCheckedAt: checked } : { listingDetails: parsed });
   }
   return details;
 }

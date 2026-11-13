@@ -11,6 +11,7 @@ const REPORT_REASON_LABELS: Record<string, string> = {
   sexual: '성적 콘텐츠',
   privacy: '개인정보 침해',
   other: '기타',
+  scam: '허위 매물·사기',
 };
 
 const REPORT_TARGET_LABELS: Record<string, string> = {
