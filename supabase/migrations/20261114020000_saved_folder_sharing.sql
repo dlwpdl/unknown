@@ -155,21 +155,42 @@ do $$ declare r record; d text; begin
  end loop;
 end $$;
 
+-- 6) On a place screen: friends' folders that hold the place. A folder shows only if this member may open it
+-- (saved_folder_role) and the place is one friends see in it (saved_folder_places).
+create index saved_folder_items_place on private.saved_folder_items(place_city_id,place_key) where place_key is not null;
+create index saved_folder_items_merchant on private.saved_folder_items(merchant_id) where merchant_id is not null;
+
+create function public.get_place_friend_folders(p_city_id text,p_place_key text) returns jsonb
+language plpgsql stable security definer set search_path='' as $$ declare uid uuid:=private.saved_owner(); v_merchant uuid; begin
+ perform private.saved_validate('place',p_place_key,p_city_id);
+ select l.merchant_id into v_merchant from private.webshop_place_links l where l.place_key=p_place_key and l.city_id=p_city_id;
+ return (select coalesce(jsonb_agg(x.item order by x.created_at desc,x.id),'[]'::jsonb) from (
+  select f.id,f.created_at,private.saved_folder_json(f)||jsonb_build_object('owner',jsonb_build_object('id',p.id,'nickname',p.nickname)) item
+  from private.saved_folders f join public.profiles p on p.id=f.user_id
+  where f.id in (select i.folder_id from private.saved_folder_items i
+    where i.user_id in (select case when r.user_low_id=uid then r.user_high_id else r.user_low_id end from private.friendships r
+      where (r.user_low_id=uid or r.user_high_id=uid) and r.accepted_at is not null)
+     and ((i.place_city_id=p_city_id and i.place_key=p_place_key) or (v_merchant is not null and i.merchant_id=v_merchant)))
+   and private.saved_folder_role(uid,f.id) is not null
+   and exists(select 1 from private.saved_folder_places(f.id) s where (s.city_id=p_city_id and s.place_key=p_place_key) or s.merchant_id=v_merchant)
+  order by f.created_at desc,f.id limit 10) x);
+end $$;
+
 do $$ declare signature text; begin
  foreach signature in array array['private.saved_folder_places(uuid)','private.saved_folder_role(uuid,uuid)','private.saved_folder_json(private.saved_folders)',
   'public.save_saved_folder(uuid,text,text,text)','public.set_saved_folder_cover(uuid,text,text)','public.get_saved_folder(uuid)','public.get_friend_saved_folders(uuid)',
-  'public.set_saved_note(text,text,text,text)'] loop
+  'public.set_saved_note(text,text,text,text)','public.get_place_friend_folders(text,text)'] loop
   execute 'alter function '||signature||' owner to postgres';
   execute 'revoke all on function '||signature||' from public,anon,authenticated,service_role';
  end loop;
 end $$;
 grant execute on function public.save_saved_folder(uuid,text,text,text),public.set_saved_folder_cover(uuid,text,text),public.get_saved_folder(uuid),public.get_friend_saved_folders(uuid),
- public.set_saved_note(text,text,text,text) to authenticated;
+ public.set_saved_note(text,text,text,text),public.get_place_friend_folders(text,text) to authenticated;
 
 -- An unknown target rejects the whole analytics batch, so these must reach production before the app build.
 insert into private.behavior_targets(id) values
  ('saved.editor.visibility.on'),('saved.editor.visibility.off'),('saved.folder.open'),('folder.scroll'),('folder.place.open'),('user.folder.open'),
  ('folder.cover.open'),('folder.cover.scroll'),('folder.cover.pick'),
- ('saved.note'),('saved.note.close'),('saved.note.submit'),('saved.note.delete')
+ ('saved.note'),('saved.note.close'),('saved.note.submit'),('saved.note.delete'),('places.friend-folder.open')
 on conflict (id) do nothing;
 notify pgrst,'reload schema';

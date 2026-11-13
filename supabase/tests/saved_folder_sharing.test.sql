@@ -51,6 +51,7 @@ select ok(exists(select 1 from pg_class where oid='private.saved_item_notes'::re
  and not has_table_privilege('authenticated','private.saved_item_notes','select') and not has_table_privilege('anon','private.saved_item_notes','select'),
  'memos have row level security and no direct read grant');
 select ok(not has_function_privilege('anon','public.set_saved_note(text,text,text,text)','execute'),'visitors cannot write memos');
+select ok(not has_function_privilege('anon','public.get_place_friend_folders(text,text)','execute'),'visitors cannot list friend folders on a place');
 
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);
@@ -82,6 +83,10 @@ select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-00000000
 select is(public.get_saved_folder('e5180000-0000-4000-8000-000000000002')->>'role','viewer','a friend sees a folder for friends');
 select is(jsonb_array_length(public.get_saved_folder('e5180000-0000-4000-8000-000000000002')->'places'),2,'only the places show, not the saved person');
 select is(public.get_saved_folder('e5180000-0000-4000-8000-000000000002')->>'description','주말에 걷기 좋은 곳','a friend reads the description');
+select is((select jsonb_agg(jsonb_build_array(x->>'name',x->'owner'->>'nickname')) from jsonb_array_elements(public.get_place_friend_folders('sfs-test','osm:node:830001')) x),
+ '[["같이 볼 곳","폴더주인"]]'::jsonb,'the place screen lists only the friend folder shared with friends, not a private one or one whose owner hides saved places');
+select is(public.get_place_friend_folders('sfs-test','osm:node:830003'),'[]'::jsonb,'a place in no friend folder lists none');
+select throws_ok($$select public.get_place_friend_folders('sfs-test','../830001')$$,'P0001','INVALID_SAVED_TARGET','a malformed place key is refused');
 select ok(strpos(public.get_saved_folder('e5180000-0000-4000-8000-000000000002')::text,'창가')=0
  and strpos(public.get_friend_saved_folders('e5170000-0000-4000-8000-000000000001')::text,'창가')=0
  and strpos(public.get_saved_folder('e5180000-0000-4000-8000-000000000002')::text,'동네 모임')=0,'a friend never sees the owner''s memo in a shared folder');
@@ -100,10 +105,12 @@ select throws_ok($$select public.save_saved_folder(null,' ','friends',null)$$,'P
 
 select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000003","role":"authenticated"}',true);
 select throws_ok($$select public.get_saved_folder('e5180000-0000-4000-8000-000000000002')$$,'P0001','FOLDER_UNAVAILABLE','someone who is not a friend cannot open it');
+select is(public.get_place_friend_folders('sfs-test','osm:node:830001'),'[]'::jsonb,'nor find it from the place screen');
 select is(public.get_friend_saved_folders('e5170000-0000-4000-8000-000000000001'),'[]'::jsonb,'nor see the folder list');
 
 select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000004","role":"authenticated"}',true);
 select throws_ok($$select public.get_saved_folder('e5180000-0000-4000-8000-000000000002')$$,'P0001','FOLDER_UNAVAILABLE','a blocked pair cannot open it');
+select is(public.get_place_friend_folders('sfs-test','osm:node:830001'),'[]'::jsonb,'nor find it from the place screen');
 select is(public.get_friend_saved_folders('e5170000-0000-4000-8000-000000000001'),'[]'::jsonb,'nor see the folder list');
 
 reset role;

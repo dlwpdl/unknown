@@ -4697,5 +4697,6 @@ export const uiEnglish: Record<string, string> = {
   "표지 고르기": "Pick a cover",
   "표지를 바꾸지 못했어요. 다시 시도해 주세요.": "Couldn't change the cover. Please try again.",
   "이 폴더에 넣은 장소 사진 중에서 골라요. 고르지 않으면 가장 최근에 저장한 장소가 표지가 돼요.": "Pick from photos of the places in this folder. If you don't pick one, the place you saved most recently is the cover.",
-  "{0}, 지금 표지": "{0}, current cover"
+  "{0}, 지금 표지": "{0}, current cover",
+  "이 장소를 넣은 친구 폴더": "Friend folders with this place"
 };

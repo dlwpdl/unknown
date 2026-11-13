@@ -7,11 +7,13 @@ import { ListCard, ListRow } from '@/components/list-card';
 import { SymbolView } from '@/components/symbol-view';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
+import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/lib/auth';
 import { getCityPlaces, type CityPlace } from '@/lib/city-places';
 import { deliveryPartnerPlace } from '@/lib/delivery-partners';
-import { loadFriendFolders, type FolderCard, type FolderPlace } from '@/lib/saved-items';
+import { loadFriendFolders, loadPlaceFriendFolders, type FolderCard, type FolderPlace, type PlaceFolder } from '@/lib/saved-items';
 import { supabase } from '@/lib/supabase';
 
 // Finds places in the app's catalog, reading each city once (getCityPlaces rebuilds a whole city per call).
@@ -62,6 +64,31 @@ export function FriendFolders({ userId, nickname }: { userId: string; nickname: 
     <ThemedText type="smallBold">{tr('{0}님의 폴더', nickname)}</ThemedText>
     <ListCard>{folders.map(folder => <ListRow key={folder.id} analyticsId="user.folder.open" title={folder.name}
       detail={[tr('장소 {0}곳', folder.placeCount.toLocaleString(locale)), folder.description].filter(Boolean).join(' · ')} leading={<FolderCover place={folder.place} />}
+      onPress={() => router.push({ pathname: '/profile/folder', params: { id: folder.id } })} />)}</ListCard>
+  </View>;
+}
+
+// On a place screen: friends' folders that hold this place. Quiet until there is one, and quiet on a failed read.
+export function PlaceFriendFolders({ cityId, placeKey }: { cityId: string; placeKey: string }) {
+  const { tr } = useLanguage(), router = useRouter(), hidden = useContentVisibility();
+  const { isAuthed, isAuthLoading, me } = useAuth();
+  const key = `${isAuthed ? me.id : 'guest'}:${cityId}:${placeKey}`;
+  const [state, setState] = useState<{ key: string; folders: (PlaceFolder & { place?: CityPlace })[] } | null>(null);
+  useEffect(() => {
+    if (!isAuthed || isAuthLoading) return;
+    let active = true;
+    void loadPlaceFriendFolders(supabase, cityId, placeKey).then(folders => {
+      const find = placeLookup();
+      if (active) setState({ key, folders: folders.map(folder => ({ ...folder, place: folder.cover ? find(folder.cover.cityId, folder.cover.placeKey) : undefined })) });
+    }).catch(() => { if (active) setState({ key, folders: [] }); });
+    return () => { active = false; };
+  }, [key, isAuthed, isAuthLoading, cityId, placeKey]);
+  const folders = (state?.key === key ? state.folders : []).filter(folder => !hidden('user', folder.owner.id));
+  if (!folders.length) return null;
+  return <View style={styles.section}>
+    <ThemedText type="smallBold">{tr('이 장소를 넣은 친구 폴더')}</ThemedText>
+    <ListCard>{folders.map(folder => <ListRow key={folder.id} analyticsId="places.friend-folder.open" title={folder.name}
+      detail={tr('{0}님이 만든 폴더', folder.owner.nickname)} leading={<FolderCover place={folder.place} />}
       onPress={() => router.push({ pathname: '/profile/folder', params: { id: folder.id } })} />)}</ListCard>
   </View>;
 }

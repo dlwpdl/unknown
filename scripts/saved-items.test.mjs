@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { loadSavedItems, loadSavedItemState, loadSavedPlaceState, setSavedPlaceState, setSavedItem, loadSavedFolders, saveSavedFolder, loadSavedFolder, loadFriendFolders, setSavedFolderCover, setSavedNote, deleteSavedFolder, setSavedItemFolders } from '../src/lib/saved-items.ts';
+import { loadSavedItems, loadSavedItemState, loadSavedPlaceState, setSavedPlaceState, setSavedItem, loadSavedFolders, saveSavedFolder, loadSavedFolder, loadFriendFolders, setSavedFolderCover, setSavedNote, loadPlaceFriendFolders, deleteSavedFolder, setSavedItemFolders } from '../src/lib/saved-items.ts';
 
 const merchant = 'e2310000-0000-4000-8000-000000000001';
 const person = 'e2300000-0000-4000-8000-000000000002';
@@ -139,4 +139,15 @@ test('a memo is one line the server must keep as written, and a malformed memo i
   const item = { key: `merchant:vancouver:${merchant}`, target, savedAt: stamp, title: 'Jimoco', subtitle: '', folderIds: [] };
   assert.equal((await loadSavedItems(client({ items: [{ ...item, note: '메모' }], hasMore: false, nextCursor: null }))).items[0].note, '메모');
   for (const note of ['', '가'.repeat(201), 7]) await assert.rejects(loadSavedItems(client({ items: [{ ...item, note }], hasMore: false, nextCursor: null })), /INVALID_SAVED_RESPONSE/);
+});
+
+test('friend folders on a place carry their owner, at most ten, and a bad place never reaches the server', async () => {
+  const owner = 'e2300000-0000-4000-8000-000000000009';
+  const row = { id: folder, name: 'Food', visibility: 'friends', description: null, cover: null, placeCount: 1, owner: { id: owner.toUpperCase(), nickname: '친구' } };
+  const c = client([row]);
+  assert.deepEqual(await loadPlaceFriendFolders(c, 'vancouver', 'osm:node:42'), [{ ...row, owner: { id: owner, nickname: '친구' } }]);
+  assert.deepEqual(c.calls[0], ['get_place_friend_folders', { p_city_id: 'vancouver', p_place_key: 'osm:node:42' }]);
+  for (const bad of [[{ ...row, owner: null }], Array(11).fill(row)]) await assert.rejects(loadPlaceFriendFolders(client(bad), 'vancouver', 'osm:node:42'), /INVALID_SAVED_RESPONSE/);
+  await assert.rejects(loadPlaceFriendFolders(c, 'vancouver', 'osm:node:0'), /INVALID_SAVED_TARGET/);
+  assert.equal(c.calls.length, 1);
 });

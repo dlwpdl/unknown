@@ -23,6 +23,7 @@ import { PlaceExternalRatings } from '@/components/place-external-ratings';
 import { PlaceHours } from '@/components/place-hours';
 import { PageHeader } from '@/components/page-header';
 import { PlaceRelated, PlaceSavedBy, usePlaceSaves } from '@/components/place-saves';
+import { PlaceFriendFolders } from '@/components/friend-folders';
 import { PostMapLink } from '@/components/post-map-link';
 import { PostPhotoCredits } from '@/components/post-photo-credits';
 import { StateCard } from '@/components/state-card';
@@ -222,6 +223,7 @@ export default function PlaceDetailScreen() {
             onPress={city.state === 'open' ? () => router.push({ pathname: '/(tabs)/meetups', params: { placeId: place.id, placeCityId: city.id } }) : undefined} />
         </ListCard>}
         <PlaceSavedBy place={place} saves={saves} />
+        <PlaceFriendFolders cityId={city.id} placeKey={place.id} />
         {place.id.startsWith('osm:') && <View style={styles.section} onLayout={event => { reviewsY.current = event.nativeEvent.layout.y; if (reviewPending.current) { reviewPending.current = false; openReview(); } }}>
           <ThemedText type="subtitle" accessibilityRole="header">{tr('후기')}</ThemedText>
           <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} writeRequest={reviewRequest} />

@@ -15,6 +15,7 @@ export type FolderPlace = { cityId: string; placeKey: string | null; merchantId:
 export type FolderCover = { cityId: string; placeKey: string };
 export type FolderCard = { id: string; name: string; visibility: FolderVisibility; description: string | null; cover: FolderCover | null; placeCount: number };
 export type FolderRole = 'owner' | 'viewer';
+export type PlaceFolder = FolderCard & { owner: { id: string; nickname: string } };
 export type FolderDetail = FolderCard & { role: FolderRole; owner: { id: string; nickname: string }; places: FolderPlace[] };
 export type SavedItem = {
   key: string; target: SavedTarget; savedAt: string; title: string; subtitle: string;
@@ -193,6 +194,17 @@ export async function setSavedNote(client: SupabaseClient, value: SavedTarget, n
   const result = await call(client, 'set_saved_note', { ...args(value), p_note: line });
   if (!object(result) || !text(result.key, 240) || result.note !== line) throw new Error('NOTE_NOT_VERIFIED');
   return line;
+}
+// Friends' folders that hold this place, as far as this member may open them. At most 10.
+export async function loadPlaceFriendFolders(client: SupabaseClient, cityId: string, placeKey: string): Promise<PlaceFolder[]> {
+  if (!CITY.test(cityId) || !PLACE.test(placeKey)) throw new Error('INVALID_SAVED_TARGET');
+  const value = await call(client, 'get_place_friend_folders', { p_city_id: cityId, p_place_key: placeKey });
+  if (!Array.isArray(value) || value.length > 10) invalid();
+  return value.map(row => {
+    const card = folderCard(row);
+    if (!object(row) || !object(row.owner) || typeof row.owner.id !== 'string' || !UUID.test(row.owner.id) || !text(row.owner.nickname, 200)) invalid();
+    return { ...card, owner: { id: row.owner.id.toLowerCase(), nickname: row.owner.nickname } };
+  });
 }
 export async function deleteSavedFolder(client: SupabaseClient, id: string): Promise<void> {
   if (await call(client, 'delete_saved_folder', { p_folder_id: folderId(id) }) !== true) throw new Error('FOLDER_DELETE_NOT_VERIFIED');
