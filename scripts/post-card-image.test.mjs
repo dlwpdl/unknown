@@ -620,3 +620,17 @@ test('a place picked from the Gling map while writing gets the place card in the
     }
   } finally { pinPlaces = {}; }
 });
+
+test('글 상세 ··· 도 피드 카드처럼 이 글 숨기기 → 신고 메뉴를 연다 (QA B9-1)', () => {
+  const card = cardRenderer();
+  const props = { post: { id: 'detail-menu', title: '제목', body: '본문', cityId: 'vancouver',
+    author: { id: 'neighbor', nickname: '하늘' }, tag: { kind: 'post', label: '일상' }, likes: 0, saves: 0, comments: 0, views: 1 }, postDetail: true };
+  const more = nodes(card.render(props)).find(node => node.props?.accessibilityLabel === '글 메뉴');
+  assert.ok(more, 'the detail ··· is named as the post menu');
+  more.props.onPress();
+  const tree = nodes(card.render(props));
+  assert.equal(tree.find(node => node.type === 'ReportSheet').props.visible, false, 'the report form waits until 신고 is chosen');
+  const menu = tree.find(node => node.type === 'MeetupManageSheet');
+  assert.deepEqual(Array.from(menu.props.actions, action => action.label), ['이 글 숨기기', t.report.title('하늘')]);
+  assert.ok(card.feedback.includes('selection'));
+});
