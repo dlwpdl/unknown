@@ -45,6 +45,7 @@ function mount(file, name, data, props = {}, params = {}) {
     '@/constants/theme': { Spacing: {}, Depth: { control: {} } }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/constants/design-system': { ControlStyles: {}, IconSize: {}, controlPresentation: () => ({ container: {} }) },
     '@/components/profile-overview': { FriendButton: 'FriendButton', ProfileRecordTiles: 'ProfileRecordTiles', ProfileSavedMap: 'ProfileSavedMap' },
+    '@/components/friend-folders': { FriendFolders: 'FriendFolders' },
     '@/lib/profile-friends': { loadProfileOverview: data.loadProfileOverview ?? (async () => null) },
     '@/hooks/use-chat-identity': { useChatIdentity: () => data.businessIdentity ?? null },
     '@/lib/business-chat': { startBusinessConversation: data.startBusinessConversation },

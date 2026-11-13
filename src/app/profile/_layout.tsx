@@ -45,6 +45,7 @@ export default function ProfileLayout() {
       <Stack.Screen name="host-quest-payout" options={{ title: tr('$20 받기') }} />
       <Stack.Screen name="trust" options={{ title: tr('인증 단계') }} />
       <Stack.Screen name="saved" options={{ title: t.profile.saved }} />
+      <Stack.Screen name="folder" options={{ title: tr('폴더') }} />
       <Stack.Screen name="import" options={{ title: tr('가져오기') }} />
       <Stack.Screen name="promotions" options={{ title: tr(PROMOTIONS_PREVIEW_ENABLED ? '홍보 크레딧' : ''), headerShown: PROMOTIONS_PREVIEW_ENABLED }} />
       <Stack.Screen name="settings" options={{ title: t.profile.settings }} />

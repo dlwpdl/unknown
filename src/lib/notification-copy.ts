@@ -38,6 +38,8 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
     [/^(.+?)님이 ‘(.+)’ 저장했어요\.$/, m => `${m[1]} saved “${m[2]}”.`],
   ],
   weekend_picks: [[/^이번 주말 갈 만한 곳 골라 뒀어요\. (.+)$/, m => `A few picks for this weekend: ${m[1]}`]],
+  // 같이 만드는 저장 폴더 (20261114020000).
+  saved_folder_invite: [[/^(.+?)님이 「(.+)」 폴더를 같이 만들자고 했어요\.$/, m => `${m[1]} invited you to build “${m[2]}” together.`]],
   // 동네 말풍선 지도 (20261105030000).
   live_bubble_request: [
     [/^(.+)님이 말풍선을 보고 대화를 신청했어요\.$/, m => `${m[1]} saw your bubble and asked to chat.`],

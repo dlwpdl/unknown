@@ -25,7 +25,7 @@ function screen(overrides = {}) {
     useEffect(fn, deps) { const slot = index++; if (!state[slot] || deps.some((value, i) => value !== state[slot][i])) { state[slot] = deps; const run = () => { if (state[slot] !== deps) return; cleanups[slot]?.(); cleanups[slot] = fn(); }; if (deferPassive) passive.push(run); else run(); } },
     useLayoutEffect(fn, deps) { const slot = index++; if (!state[slot] || deps.some((value, i) => value !== state[slot][i])) { cleanups[slot]?.(); state[slot] = deps; cleanups[slot] = fn(); } },
   };
-  const actions = { loadSavedItems: async () => page(), loadSavedFolders: async () => [folder], setSavedItem: async (_client, target, saved) => ({ target, saved, available: true, savedAt: item.savedAt, folderIds: [] }), createSavedFolder: async (_client, name) => ({ ...folder, name }), renameSavedFolder: async (_client, id, name) => ({ id, name }), deleteSavedFolder: async () => {}, setSavedItemFolders: async () => {}, ...overrides };
+  const actions = { loadSavedItems: async () => page(), loadSavedFolders: async () => [folder], setSavedItem: async (_client, target, saved) => ({ target, saved, available: true, savedAt: item.savedAt, folderIds: [] }), saveSavedFolder: async (_client, id, name, visibility) => ({ id: id ?? folder.id, name, visibility }), deleteSavedFolder: async () => {}, setSavedItemFolders: async () => {}, setSavedNote: async (_client, _target, note) => note, ...overrides };
   const api = Object.fromEntries(Object.entries(actions).map(([name, fn]) => [name, (...args) => { calls.push({ name, args: args.slice(1) }); return fn(...args); }]));
   const modules = {
     react: hooks, 'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) },
@@ -33,8 +33,8 @@ function screen(overrides = {}) {
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' }, 'expo-symbols': { SymbolView: 'Symbol' }, '@/components/symbol-view': { SymbolView: 'Symbol' },
     'expo-router': { useRouter: () => ({ push: route => routes.push(JSON.parse(JSON.stringify(route))) }), useLocalSearchParams: () => ({}), useIsFocused: () => focused, useFocusEffect: fn => hooks.useEffect(() => focused ? fn() : undefined, [fn, focused]) },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/login-panel': { LoginPanel: 'Login' }, '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/state-card': { StateCard: 'StateCard' }, '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },
-    '@/components/saved-library': { SavedItemCard: 'SavedItemCard', SavedFolderSheet: 'SavedFolderSheet', SavedLibraryButton: 'SavedLibraryButton' },
-    '@/components/business-webshop': { WebshopComparisonSheet: 'WebshopComparisonSheet' },
+    '@/components/saved-library': { SavedItemCard: 'SavedItemCard', SavedFolderSheet: 'SavedFolderSheet', SavedNoteSheet: 'SavedNoteSheet', SavedLibraryButton: 'SavedLibraryButton' },
+    '@/components/business-webshop': { WebshopComparisonSheet: 'WebshopComparisonSheet' }, '@/components/folder-together': { SharedFolders: 'SharedFolders' },
     '@/components/share-card': { ShareCardSheet: 'ShareCardSheet' }, '@/lib/city-places': { getCityPlaces: () => [] },
     '@/lib/share-card': { savedListPlaces: rows => rows.filter(row => row.target.kind === 'place') },
     '@/constants/theme': { Depth: {}, Spacing: { one: 4, two: 8, three: 16, four: 24, five: 32 }, MaxContentWidth: 800 }, '@/constants/design-system': { ControlStyles: { icon: {}, pill: {}, field: {} }, IconSize: { toolbar: 21, chevron: 14 }, controlPresentation: () => ({ container: {}, text: {} }) },
@@ -55,6 +55,22 @@ for (const [kind,route,target] of [['merchant','/company/[id]',{ kind:'merchant'
   // A saved post opens through the PostZoomLink around the card's open row (checked below), so the screen pushes nothing.
   if(kind==='post'){assert.equal(view.routes.length,0);view.unmount();return;}
   assert.equal(view.routes[0].pathname,route);assert.equal(view.routes[0].params.id,target.id);if(kind==='place')assert.equal(view.routes[0].params.cityId,'vancouver');view.unmount();
+});
+
+test('a memo is written from the card menu and shows on that card only', async () => {
+  const other={...post,key:'post:other'};const view=screen({loadSavedItems:async()=>page([item,other])});view.render();await settle();
+  list(view.render()).props.renderItem({item}).props.onNote();let sheet=nodes(view.render()).find(x=>x.type==='SavedNoteSheet');
+  assert.equal(sheet.props.item.key,item.key);sheet.props.onSave('창가 자리가 좋아요');await settle();
+  assert.deepEqual(view.calls.find(call=>call.name==='setSavedNote').args,[item.target,'창가 자리가 좋아요']);
+  const rows=list(view.render()).props.data;assert.equal(rows[0].note,'창가 자리가 좋아요');assert.equal(rows[1].note,undefined);
+  assert.equal(nodes(view.render()).some(x=>x.type==='SavedNoteSheet'),false,'the sheet closes once the server keeps it');view.unmount();
+});
+
+test('a memo the server refused keeps the sheet open with the error', async () => {
+  const view=screen({setSavedNote:async()=>{throw Error('INVALID_SAVED_NOTE');}});view.render();await settle();
+  list(view.render()).props.renderItem({item}).props.onNote();nodes(view.render()).find(x=>x.type==='SavedNoteSheet').props.onSave('메모');await settle();
+  const sheet=nodes(view.render()).find(x=>x.type==='SavedNoteSheet');assert.match(sheet.props.error,/메모를 저장하지 못했어요/);
+  assert.equal(list(view.render()).props.data[0].note,undefined);assert.ok(view.feedback.includes('warning'));view.unmount();
 });
 
 test('filter, folder, account and lost-focus boundaries reject stale saved responses', async () => {
@@ -195,7 +211,7 @@ test('saved telemetry carries fixed action identifiers without target or folder 
   const sheet=library('SavedFolderSheet',{...editorProps(),editor:{kind:'item',item}}).render();assert.equal(control(sheet,`saved.editor.folder.${folder.id}`).props.analyticsId,'saved.editor.select');
 });
 
-const writeNames = new Set(['setSavedItem','createSavedFolder','renameSavedFolder','deleteSavedFolder','setSavedItemFolders']);
+const writeNames = new Set(['setSavedItem','saveSavedFolder','deleteSavedFolder','setSavedItemFolders','setSavedNote']);
 async function retainedActions(view) {
   view.render();await settle();control(view.render(),`saved.folder.${folder.id}`).props.onPress();view.render();await settle();
   const row=list(view.render()).props.renderItem({item});const retained={remove:row.props.onRemove,compare:row.props.onCompare};
