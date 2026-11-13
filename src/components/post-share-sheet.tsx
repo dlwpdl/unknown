@@ -58,7 +58,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
   // Never while sharing as a business: the code would name the operator's personal account (security review on PR #171).
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   useEffect(() => {
-    if (!visible || !invite || asBusinessId) { setInviteCode(null); return; }
+    if (!visible || !invite || asBusinessId) return; // the url and message below also drop the code for a business share
     let live = true;
     void createInviteLink(supabase).then(code => { if (live) setInviteCode(code); }, () => {});
     return () => { live = false; };
