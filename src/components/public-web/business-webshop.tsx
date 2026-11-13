@@ -150,16 +150,16 @@ export function BusinessWebshop() {
   return <section className="ws" id="webshop" aria-labelledby="ws-h">
     <p className="biz-kicker">웹샵 제휴</p>
     <h2 id="ws-h">글링 지도에서 가게 웹샵으로 주문이 들어와요</h2>
-    <p className="biz-lede">글링 지도의 가게 카드에 ‘웹샵 주문’ 버튼을 달아 드려요. 손님이 누르면 사장님 가게의 Uber 웹샵이 열려요.</p>
+    <p className="biz-lede">글링 지도의 가게 카드에 ‘웹샵 주문’ 버튼을 달아 드려요. 손님이 누르면 사장님 가게의 웹샵(가게 온라인 주문 페이지)이 열려요.</p>
     <ul className="ws-gets">{GETS.map(([icon, title, body]) => <li key={title}><span className="ic"><Icon name={icon} /></span><h3>{title}</h3><p>{body}</p></li>)}</ul>
-    <div className="ws-rule" role="note"><span className="k">조건은 하나</span><p>웹샵 가격이 Uber Eats 앱보다 싸야 해요. 같은 메뉴끼리 비교해서 하나라도 같거나 비싸면 주문 버튼을 달지 않아요.</p><p>주문과 결제는 가게 Uber 웹샵에서 해요. 글링은 주문을 직접 받지 않아요.</p></div>
+    <div className="ws-rule" role="note"><span className="k">조건은 하나</span><p>웹샵 가격이 배달 앱보다 싸야 해요. 같은 메뉴끼리 비교해서 하나라도 같거나 비싸면 주문 버튼을 달지 않아요.</p><p>주문과 결제는 가게 웹샵에서 해요. 글링은 주문을 직접 받지 않아요.</p></div>
 
     {done ? <div className="ws-form ws-done" id="ws-done" tabIndex={-1} role="status" aria-labelledby="ws-dh">
       <span className="ok-ic"><Icon name="check" /></span>
       <h3 id="ws-dh">접수됐어요</h3>
       <p>{done.place} 신청을 받았어요. 적어 주신 연락처로 연락드릴게요.</p>
       <dl className="ws-sum">{([['가게', done.place], ['연락처', done.contact], ['웹샵', done.webshop], ['앱보다', done.discount]] as const).map(([key, value]) => <Row key={key} label={key}>{value}</Row>)}</dl>
-      <ol className="ws-next"><li>글링이 웹샵과 Uber Eats 앱에서 같은 메뉴 가격을 비교해요.</li><li>조건이 맞으면 비용과 자세한 조건을 안내해요.</li><li>지도의 가게 카드에 ‘웹샵 주문’ 버튼이 붙어요.</li></ol>
+      <ol className="ws-next"><li>글링이 웹샵과 배달 앱에서 같은 메뉴 가격을 비교해요.</li><li>조건이 맞으면 비용과 자세한 조건을 안내해요.</li><li>지도의 가게 카드에 ‘웹샵 주문’ 버튼이 붙어요.</li></ol>
       <button type="button" className="biz-secondary" onClick={again}>다른 가게도 신청하기</button>
     </div> : <form className="ws-form" noValidate aria-labelledby="ws-fh" onSubmit={event => { void submit(event); }}>
       <h3 id="ws-fh">웹샵 제휴 신청</h3>
@@ -185,7 +185,7 @@ export function BusinessWebshop() {
       <Field id="ws-nm" label="이름" error={error('name')}><input id="ws-nm" name="name" className="ws-input" type="text" autoComplete="name" maxLength={APPLICATION_LIMITS.name} aria-describedby="ws-nm-e" aria-invalid={!!error('name') || undefined} value={name} onChange={event => setName(event.target.value)} /></Field>
       <Field id="ws-ct" label="연락처" error={error('contact')} hint="전화번호나 카카오톡 ID, 편한 쪽으로 적어 주세요."><input id="ws-ct" name="contact" className="ws-input" type="text" autoComplete="tel" maxLength={APPLICATION_LIMITS.contact} aria-describedby="ws-ct-h ws-ct-e" aria-invalid={!!error('contact') || undefined} value={contact} onChange={event => setContact(event.target.value)} /></Field>
       <Field id="ws-em" label={<>이메일 <span className="opt-t">(선택)</span></>} error={error('email')}><input id="ws-em" name="email" className="ws-input" type="email" autoComplete="email" inputMode="email" maxLength={APPLICATION_LIMITS.email} aria-describedby="ws-em-e" aria-invalid={!!error('email') || undefined} value={email} onChange={event => setEmail(event.target.value)} /></Field>
-      <fieldset className="f"><legend className="f-label">Uber 웹샵이 있나요?</legend>
+      <fieldset className="f"><legend className="f-label">웹샵이 있나요?</legend>
         {options('shop', SHOPS, webshop, setWebshop, 'ws-sh-e', !!error('webshop'))}
         {webshop === 'yes' && <div className="f-sub"><label className="f-label" htmlFor="ws-url">웹샵 링크 <span className="opt-t">(선택)</span></label>
           <input id="ws-url" className="ws-input" type="url" inputMode="url" placeholder="https://" maxLength={APPLICATION_LIMITS.webshopUrl} aria-describedby="ws-url-e" aria-invalid={!!error('webshopUrl') || undefined} value={url} onChange={event => setUrl(event.target.value)} />
@@ -194,7 +194,7 @@ export function BusinessWebshop() {
         {err('ws-sh-e', error('webshop'))}
       </fieldset>
       <fieldset className="f"><legend className="f-label">앱보다 얼마나 싸게 팔 수 있나요?</legend>
-        <p className="f-hint" id="ws-dc-h">같은 메뉴의 Uber Eats 앱 가격과 비교했을 때예요.</p>
+        <p className="f-hint" id="ws-dc-h">같은 메뉴의 배달 앱 가격과 비교했을 때예요.</p>
         {options('disc', DISCOUNTS, discount, setDiscount, 'ws-dc-h ws-dc-e', !!error('discount'))}
         {err('ws-dc-e', error('discount'))}
       </fieldset>

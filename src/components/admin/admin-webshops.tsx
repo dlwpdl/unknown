@@ -180,7 +180,7 @@ function WebshopApplications() {
     try {
       const saved = await setAdminWebshopApplicationStatus(supabase, row.id, status);
       setResult(previous => previous?.rows ? { ...previous, rows: previous.rows.map(item => item.id === saved.id ? { ...item, status: saved.status, updatedAt: saved.updatedAt } : item) } : previous);
-      setNotice(`${row.placeName}: ${APPLICATION_STATUS.find(item => item.value === saved.status)?.label ?? saved.status}(으)로 바꿨어요.`); play('success');
+      setNotice(`${row.placeName} 상태를 ‘${APPLICATION_STATUS.find(item => item.value === saved.status)?.label ?? saved.status}’으로 바꿨어요.`); play('success');
     } catch (error) { setNotice(webshopError(error)); play('warning'); }
     finally { setSaving(''); }
   }
@@ -189,7 +189,7 @@ function WebshopApplications() {
   return <>
     <div className="partnership-title-row"><h2 style={SECTION_STYLE}>웹샵 제휴 신청</h2><AdminInfo label="신청 목록 기준" text={['/business 신청서와 앱 장소 화면의 ‘사장님이세요?’에서 들어온 신청이에요. 최근 신청이 위에 있어요.', '받은 시각은 밴쿠버 시간이에요. 연락처는 신청 안내에만 써요.']} /></div>
     {notice && <p role="status">{notice}</p>}
-    <Table mobileRows caption="웹샵 제휴 신청" headers={['받은 시각 (밴쿠버)', '가게', '이름 / 연락처', '이메일', 'Uber 웹샵', '앱보다', '들어온 곳', '상태']} rows={current.rows.map(row => ({ key: row.id, cells: [
+    <Table mobileRows caption="웹샵 제휴 신청" headers={['받은 시각 (밴쿠버)', '가게', '이름 / 연락처', '이메일', '웹샵', '앱보다', '들어온 곳', '상태']} rows={current.rows.map(row => ({ key: row.id, cells: [
       <>{vancouverTime(row.createdAt)}{row.emailStatus !== 'sent' && <small>{APPLICATION_MAIL[row.emailStatus]}</small>}</>,
       <>{row.placeName}<small>{row.cityId ? APPLICATION_CITY[row.cityId] ?? row.cityId : '목록에 없어서 직접 적음'}</small></>,
       <>{row.name}<small>{row.contact}</small></>,

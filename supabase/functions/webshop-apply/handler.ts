@@ -27,7 +27,7 @@ export function applicationMail(value: WebshopApplication) {
     text: [
       '웹샵 제휴 신청이 새로 들어왔어요.', '',
       `가게: ${value.placeName}${city ? ` (${city})` : ' (직접 적음)'}`,
-      `Uber 웹샵: ${WEBSHOP[value.webshop]}${value.webshopUrl ? ' · 링크 있음' : ''}`,
+      `웹샵: ${WEBSHOP[value.webshop]}${value.webshopUrl ? ' · 링크 있음' : ''}`,
       `앱보다: ${DISCOUNT[value.discount]}`,
       `들어온 곳: ${value.source === 'place' ? '앱 장소 화면' : '웹 /business'}`, '',
       '이름과 연락처는 글링 관리자 → 웹샵 성과 → 신청에서 볼 수 있어요.',
