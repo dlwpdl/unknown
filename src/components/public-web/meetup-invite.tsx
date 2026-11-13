@@ -10,7 +10,7 @@ import { Colors, Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
-import { chillingAvailability, chillingKind, chillingSchedule, recommendedAgeLabel } from '@/lib/chilling';
+import { chillingAvailability, chillingKind, chillingSchedule, chillingTimezoneLabel, recommendedAgeLabel } from '@/lib/chilling';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { rememberInviteCode } from '@/lib/invites';
 import { loadMeetupInviteCard, seatsLeft, type MeetupInviteCard } from '@/lib/meetup-invite';
@@ -96,12 +96,13 @@ export function MeetupInvite({ postId, code, onMissing }: { postId: string; code
   const photo = brokenCover ? null : post.imageUris?.[0] ?? null;
   const spoken = meetupLanguageNote(room, `${post.title}\n${card.intro}`, language);
   const facts: [string, string, string | null][] = [
-    [ko ? '언제' : 'When', chillingSchedule(room, locale), null],
+    // The same 언제 cell as the request form: times are in the meetup's own zone.
+    [ko ? '언제' : 'When', chillingSchedule(room, locale), room.timezone ? tr('{0} 기준', chillingTimezoneLabel(room, locale)) : null],
     [ko ? '어디' : 'Where', area ? ko ? `${neighborhoodName(area, 'ko')} 근처` : `Near ${neighborhoodName(area, 'en')}` : cityName,
       tr('집결지는 승인 후')],
     [ko ? '인원' : 'Spots', room.capacity ? `${room.memberCount ?? 0} / ${room.capacity}${ko ? '명' : ''}` : ko ? `${room.memberCount ?? 0}명` : `${room.memberCount ?? 0} going`,
       room.capacity && left != null ? ko ? `${room.capacity}자리 중 ${left}자리 남았어요` : `${left} of ${room.capacity} spots left` : null],
-    card.fee ? [ko ? '회비' : 'Fee', meetupFeeAmount(card.fee), null] : [ko ? '나이' : 'Ages', recommendedAgeLabel(room, locale), null],
+    card.fee ? [ko ? '회비' : 'Fee', meetupFeeAmount(card.fee), null] : [ko ? '나이' : 'Ages', recommendedAgeLabel(room, locale), room.recommendedAgeMin != null ? tr('나이가 달라도 신청할 수 있어요') : null],
   ];
   const state = { full: ko ? '정원이 다 찼어요. 앱에서 빈자리 알림을 받을 수 있어요.' : 'This one’s full. You can get an alert in the app if a spot opens.',
     closed: ko ? '모집이 마감된 모임이에요.' : 'This meetup isn’t taking requests.', ended: ko ? '이미 끝난 모임이에요.' : 'This meetup has ended.', open: '' }[availability];

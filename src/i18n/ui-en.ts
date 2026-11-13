@@ -4290,6 +4290,7 @@ export const uiEnglish: Record<string, string> = {
   "쓰던 답변이 사라져요": "Your answer will be lost",
   "나가면 지금 쓴 답변은 남지 않아요.": "If you leave, what you've written won't be kept.",
   "범위 밖이어도 신청할 수 있어요": "you can apply outside this range",
+  "나이가 달라도 신청할 수 있어요": "You can still apply at any age",
   "모임 대화에서 집결 안내를 확인해 주세요.": "Check the meetup chat for where to meet.",
   "내 신청은 대기 중이에요. 지금은 정원이 차서 호스트가 승인할 수 없어요. 신청만으로 자리가 잡히지는 않아요.": "Your request is waiting. The meetup is full, so the host can't approve it right now. A request doesn't hold a spot.",
   "아직 참여가 확정되지 않았어요. 호스트가 승인하면 모임 대화에 들어갈 수 있어요.": "You're not confirmed yet. Once the host approves, you can join the meetup chat.",
