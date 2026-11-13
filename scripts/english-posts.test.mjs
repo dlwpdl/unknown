@@ -20,6 +20,8 @@ const post = (id, extra = {}) => ({
 const ENGLISH = { title: 'Davisville studio for rent in Midtown Toronto, $1,700 a month', body: 'For rent · Studio · $1,700/month\nIt\'s close to Davisville subway station, and the listing says students are welcome.' };
 const on = (extra = {}) => ({ startsOn: '2026-11-01', mode: 'include', businessIds: [CINDY], ...extra });
 const NOW = Date.parse('2026-11-13T12:00:00Z');
+// Both businesses are in the public business directory unless a test says otherwise.
+const PUBLIC = [{ id: CINDY }, { id: OTHER }], PUBLIC_IDS = new Set([CINDY, OTHER]);
 
 // Fake public RPCs and translate-content: `translations` maps a post id to the server's reply (or an HTTP status).
 function server({ owners = { [RENT]: CINDY, [JOB]: OTHER }, translations = { [RENT]: ENGLISH, [JOB]: ENGLISH } } = {}) {
@@ -43,9 +45,11 @@ function dist(posts) {
   return directory;
 }
 
-test('the switch ships off and a start date turns it on from that day', () => {
-  assert.equal(ENGLISH_POSTS.startsOn, null);
-  assert.equal(englishPostsOn(ENGLISH_POSTS, NOW), false);
+test('the switch is on from the merge day for every public business, and a start date turns it on from that day', () => {
+  assert.deepEqual(ENGLISH_POSTS, { startsOn: '2026-11-13', mode: 'exclude', businessIds: [] });
+  assert.equal(englishPostsOn(ENGLISH_POSTS, NOW), true);
+  assert.equal(englishPostsOn(ENGLISH_POSTS, Date.parse('2026-11-12T23:59:00Z')), false);
+  assert.equal(englishPostsOn(on({ startsOn: null }), NOW), false);
   assert.equal(englishPostsOn(on({ startsOn: '2026-11-14' }), NOW), false);
   assert.equal(englishPostsOn(on({ startsOn: '2026-11-13' }), NOW), true);
   assert.equal(englishPostsOn(on({ startsOn: 'soon' }), NOW), false);
@@ -55,7 +59,9 @@ test('the switch ships off and a start date turns it on from that day', () => {
 test('while off, the build sends nothing and leaves the Korean pages and sitemap alone', async () => {
   const { calls, options } = server(), directory = dist([post(RENT)]);
   const before = readFileSync(join(directory, 'posts', `${RENT}.html`), 'utf8');
-  assert.deepEqual(await prerenderEnglishPosts(directory, [post(RENT)], options, { now: NOW }), []);
+  assert.deepEqual(await prerenderEnglishPosts(directory, [post(RENT)], options, { config: on({ startsOn: null }), now: NOW, businesses: PUBLIC }), []);
+  // No public business loaded (or a build without them) is off as well.
+  assert.deepEqual(await prerenderEnglishPosts(directory, [post(RENT)], options, { config: on(), now: NOW }), []);
   assert.deepEqual(calls, []);
   assert.equal(readFileSync(join(directory, 'posts', `${RENT}.html`), 'utf8'), before);
   assert.ok(!existsSync(join(directory, 'en')) && !readFileSync(join(directory, 'sitemap.xml'), 'utf8').includes('/en/posts/'));
@@ -63,17 +69,21 @@ test('while off, the build sends nothing and leaves the Korean pages and sitemap
 
 test('include translates only listed businesses, exclude every business but the listed ones, members never', async () => {
   const posts = [post(RENT), post(JOB, { tagSlug: 'jobs', label: '구인구직' }), post(MEMBER, { authorIsBusiness: false })];
-  const pick = async config => (await englishCandidates(posts, server().options, config)).map(item => item.id);
+  const pick = async (config, publicIds = PUBLIC_IDS) => (await englishCandidates(posts, server().options, config, publicIds)).map(item => item.id);
   assert.deepEqual(await pick(on()), [RENT]);
   assert.deepEqual(await pick(on({ mode: 'exclude' })), [JOB]);
   assert.deepEqual(await pick(on({ mode: 'exclude', businessIds: [] })), [RENT, JOB]);
-  // An empty include list asks nobody anything.
+  // A business that has not agreed to be public never gets an English page, even when listed.
+  assert.deepEqual(await pick(on({ mode: 'exclude', businessIds: [] }), new Set([OTHER])), [JOB]);
+  assert.deepEqual(await pick(on(), new Set([OTHER])), []);
+  // An empty include list, or no public business at all, asks nobody anything.
   const quiet = server();
-  assert.deepEqual(await englishCandidates(posts, quiet.options, on({ businessIds: [] })), []);
+  assert.deepEqual(await englishCandidates(posts, quiet.options, on({ businessIds: [] }), PUBLIC_IDS), []);
+  assert.deepEqual(await englishCandidates(posts, quiet.options, on({ mode: 'exclude', businessIds: [] }), new Set()), []);
   assert.deepEqual(quiet.calls, []);
   // A businessId already on the post (#160/#161) skips the lookup.
   const known = server();
-  assert.deepEqual((await englishCandidates([post(RENT, { businessId: CINDY.toUpperCase() })], known.options, on())).map(item => item.id), [RENT]);
+  assert.deepEqual((await englishCandidates([post(RENT, { businessId: CINDY.toUpperCase() })], known.options, on(), PUBLIC_IDS)).map(item => item.id), [RENT]);
   assert.deepEqual(known.calls, []);
 });
 
@@ -88,7 +98,7 @@ test('an unchanged or still-Korean reply is not an English page; kept names are 
 
 test('the build sends the Korean page text with its token, writes the English page and pairs both pages', async () => {
   const { calls, options } = server(), directory = dist([post(RENT)]);
-  assert.deepEqual(await prerenderEnglishPosts(directory, [post(RENT)], options, { config: on(), now: NOW, hubs: new Map([['toronto/housing', { path: '/toronto/rent' }]]) }), [RENT]);
+  assert.deepEqual(await prerenderEnglishPosts(directory, [post(RENT)], options, { config: on(), now: NOW, hubs: new Map([['toronto/housing', { path: '/toronto/rent' }]]), businesses: PUBLIC }), [RENT]);
   const sent = calls.find(call => call.url.endsWith('/functions/v1/translate-content'));
   assert.deepEqual(sent.body, { kind: 'post', id: RENT, language: 'en', source: { title: post(RENT).title, body: post(RENT).preview } });
   assert.equal(sent.token, 'build-token');
@@ -107,7 +117,7 @@ test('a missing or failed translation leaves that post with no English page and 
   for (const reply of [500, 429, null, { title: post(RENT).title, body: post(RENT).preview }]) {
     const { options } = server({ translations: { [RENT]: reply } }), directory = dist([post(RENT)]);
     const before = readFileSync(join(directory, 'posts', `${RENT}.html`), 'utf8');
-    assert.deepEqual(await prerenderEnglishPosts(directory, [post(RENT)], options, { config: on(), now: NOW }), []);
+    assert.deepEqual(await prerenderEnglishPosts(directory, [post(RENT)], options, { config: on(), now: NOW, businesses: PUBLIC }), []);
     assert.ok(!existsSync(join(directory, 'en', 'posts', `${RENT}.html`)));
     assert.equal(readFileSync(join(directory, 'posts', `${RENT}.html`), 'utf8'), before);
   }
@@ -116,12 +126,12 @@ test('a missing or failed translation leaves that post with no English page and 
 test('an edited post is sent with its new text, and a deleted one gets no page on the next build', async () => {
   const edited = post(RENT, { preview: '렌트 내놓음 · 스튜디오 · $1,650/월' });
   const next = server({ translations: { [RENT]: { title: ENGLISH.title, body: 'For rent · Studio · $1,650/month' } } }), directory = dist([edited]);
-  await prerenderEnglishPosts(directory, [edited], next.options, { config: on(), now: NOW });
+  await prerenderEnglishPosts(directory, [edited], next.options, { config: on(), now: NOW, businesses: PUBLIC });
   assert.equal(next.calls.at(-1).body.source.body, '렌트 내놓음 · 스튜디오 · $1,650/월');
   assert.ok(readFileSync(join(directory, 'en', 'posts', `${RENT}.html`), 'utf8').includes('$1,650/month'));
   // A removed post is no longer in the public feed the build reads, so nothing is written for it (each deploy exports a fresh dist).
   const gone = server(), empty = dist([]);
-  assert.deepEqual(await prerenderEnglishPosts(empty, [], gone.options, { config: on(), now: NOW }), []);
+  assert.deepEqual(await prerenderEnglishPosts(empty, [], gone.options, { config: on(), now: NOW, businesses: PUBLIC }), []);
   assert.ok(!existsSync(join(empty, 'en')));
 });
 

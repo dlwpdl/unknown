@@ -321,6 +321,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const { posts, meetups } = prerender ? await prerenderPublicPosts(directory, { url: url.replace(/\/+$/, ''), key, cities: CITIES.filter(city => city.state === 'open').map(city => city.id), searchToken: process.env.GLING_SEARCH_BUILD_TOKEN }) : { posts: [], meetups: [] };
   const companies = prerender ? await prerenderPublicCompanies(directory, { url: url.replace(/\/+$/, ''), key, cities: CITIES.filter(city => city.state === 'open').map(city => city.id) }) : [];
   const { hubs } = finishPublicWeb(directory, posts, companies, { meetups });
-  const english = prerender ? await prerenderEnglishPosts(directory, posts, { url: url.replace(/\/+$/, ''), key, searchToken: process.env.GLING_SEARCH_BUILD_TOKEN }, { hubs }) : [];
+  const english = prerender ? await prerenderEnglishPosts(directory, posts, { url: url.replace(/\/+$/, ''), key, searchToken: process.env.GLING_SEARCH_BUILD_TOKEN }, { hubs, businesses: companies }) : [];
   console.log(`Prerendered ${posts.length} public posts (${english.length} in English), ${hubs.size} topic hubs and ${companies.length} business profiles.`);
 }

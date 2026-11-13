@@ -5,13 +5,13 @@ import { CITIES } from '../src/lib/mock.ts';
 import { jsonLd, PUBLIC_CHANNELS, PUBLIC_SITE, publicPostUrl, publicSiteName } from '../src/lib/public-seo.ts';
 import { escapeHtml, isoDate, postCover, rpc } from './prerender-public-posts.mjs';
 
-// English copies of business posts at /en/posts/:id (owner 2026-11-13 "OK, 이대로 만들기").
-// Off while `startsOn` is null: no English pages, no hreflang on Korean pages and no translation requests at build time.
-// The privacy notice has to go out first (privacy review 2026-11-13), so turning it on is a dated owner change here:
+// English copies of business posts at /en/posts/:id (owner 2026-11-13 "OK, 이대로 만들기", "영어글페이지는 그냥 올리면됨").
+// Only businesses that agreed to be public (the ones in the public business directory, the same as /company/<id>) ever get one.
+// On from the day this merges; when the owner names a business to leave out, add its id to businessIds:
 //   startsOn    'YYYY-MM-DD' (the build's UTC date) from which the daily build makes the pages, or null for off.
-//   mode        'include' = only the businesses in businessIds (the ones that asked), 'exclude' = every business except them.
+//   mode        'exclude' = every public business except businessIds, 'include' = only the businesses in businessIds.
 //   businessIds business ids, the same id as the business's public page /company/<id>.
-export const ENGLISH_POSTS = { startsOn: null, mode: 'include', businessIds: [] };
+export const ENGLISH_POSTS = { startsOn: '2026-11-13', mode: 'exclude', businessIds: [] };
 
 export const englishPostUrl = id => `${PUBLIC_SITE}/en/posts/${encodeURIComponent(id.toLowerCase())}`;
 
@@ -23,17 +23,18 @@ export function englishPostsOn(config, now = Date.now()) {
 // Exactly the text the Korean page prints (renderPublicPost), so the translation never shows more than the original does.
 const shownText = post => post.preview || post.teaser || '';
 
-// Business posts the owner's list allows. #160/#161 add businessId to each post; until then it is looked up here (50 per call, the RPC limit).
-export async function englishCandidates(posts, { url, key, fetcher = fetch }, config) {
+// Posts of public businesses (`publicIds`, lowercase ids) that the owner's list allows.
+// #160/#161 add businessId to each post; until then it is looked up here (50 per call, the RPC limit).
+export async function englishCandidates(posts, { url, key, fetcher = fetch }, config, publicIds) {
   const listed = new Set(config.businessIds.map(id => String(id).toLowerCase()));
-  if (config.mode === 'include' && !listed.size) return [];
+  if (!publicIds.size || config.mode === 'include' && !listed.size) return [];
   const business = posts.filter(post => post.authorIsBusiness && post.title && shownText(post).trim());
   const owners = new Map(business.filter(post => post.businessId).map(post => [post.id, String(post.businessId).toLowerCase()]));
   const missing = business.filter(post => !owners.has(post.id)).map(post => post.id);
   for (let index = 0; index < missing.length; index += 50) {
     for (const item of await rpc(url, key, 'get_public_post_businesses', { p_post_ids: missing.slice(index, index + 50) }, fetcher) ?? []) owners.set(String(item.post_id).toLowerCase(), String(item.business_id).toLowerCase());
   }
-  return business.filter(post => owners.has(post.id) && (config.mode === 'include') === listed.has(owners.get(post.id)));
+  return business.filter(post => publicIds.has(owners.get(post.id)) && (config.mode === 'include') === listed.has(owners.get(post.id)));
 }
 
 const HANGUL = /[\u1100-\u11ff\u3131-\u318e\uac00-\ud7a3]/g;
@@ -169,9 +170,10 @@ export function renderEnglishPost(shell, post, translation, hubPath = null) {
 
 // After finishPublicWeb: writes /en/posts/:id, links each Korean page to it and adds the English pages to the sitemap.
 // A post whose translation is missing or failed gets no English page at all.
-export async function prerenderEnglishPosts(directory, posts, options, { config = ENGLISH_POSTS, now = Date.now(), hubs = new Map() } = {}) {
+// `businesses` are the public business profiles the build just loaded (loadPublicCompanies); none means no English pages.
+export async function prerenderEnglishPosts(directory, posts, options, { config = ENGLISH_POSTS, now = Date.now(), hubs = new Map(), businesses = [] } = {}) {
   if (!englishPostsOn(config, now) || !options.searchToken) return [];
-  const candidates = await englishCandidates(posts, options, config);
+  const candidates = await englishCandidates(posts, options, config, new Set(businesses.map(business => String(business.id).toLowerCase())));
   if (!candidates.length) return [];
   const shell = shellParts(readFileSync(join(directory, '+not-found.html'), 'utf8'));
   const done = [], queue = [...candidates];
