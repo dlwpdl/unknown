@@ -81,7 +81,7 @@ export function SavedItemCard({ item, folders, disabled = false, compareBusy = f
       { key: 'remove', analyticsId: 'saved.remove', label: ko ? '저장 해제' : 'Unsave', danger: true, onPress: onRemove, icon: { ios: 'bookmark.slash', android: 'bookmark_remove', web: 'bookmark_remove' } },
     ]} />}
     {item.hasWebshop && onCompare && <View style={[styles.offer, { borderTopColor: theme.line }]}>
-      <SavedLibraryButton analyticsId="saved.compare" testID={`saved.compare.${item.key}`} label={compareBusy ? ko ? '현재 가격 확인 중…' : 'Checking current prices…' : ko ? '웹샵 가격 비교' : 'Compare webshop prices'} onPress={onCompare} disabled={disabled || compareBusy} primary />
+      <SavedLibraryButton analyticsId="saved.compare" testID={`saved.compare.${item.key}`} label={compareBusy ? ko ? '현재 가격 확인 중…' : 'Checking current prices…' : ko ? '배달/픽업 가격 비교' : 'Compare delivery and pickup prices'} onPress={onCompare} disabled={disabled || compareBusy} primary />
       <UberOrderNotice />
     </View>}
   </View>;

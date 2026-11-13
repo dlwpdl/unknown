@@ -50,7 +50,7 @@ test('directory is an explicit route to existing business profiles and webshop a
   assert.equal(app.routes[0].pathname, '/company/[id]'); assert.equal(app.routes[0].params.id, item.id);
   assert.equal(app.routes[1], 'back');
   const row = app.row({ item, saving: false, onOpen: props.onOpen, onSave: props.onSave });
-  assert.ok(nodes(row).some(n => n.props?.children === '웹샵 주문 가능'));
+  assert.ok(nodes(row).some(n => n.props?.children === '배달/픽업 주문 가능'));
   nodes(row).find(n => n.props?.analyticsId === 'business.directory.save').props.onPress();
   assert.equal(app.saves.length, 1); assert.equal(app.saves[0].id, item.id);
   app.saves[0].resolve(true); await flush(); assert.equal(app.render().page.items[0].saved, true);
