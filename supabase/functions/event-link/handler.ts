@@ -18,7 +18,7 @@ type Options = { rpc: Rpc; ipSalt: string; origins?: string[] };
 
 /** The hourly cap counts an IPv4 address, or an IPv6 address cut to its /64: one home or phone gets a whole /64 and can change
  * the rest of the address at will (security re-review 2026-11-03). */
-function ipCapKey(ip: string) {
+export function ipCapKey(ip: string) {
   if (!ip.includes(':')) return ip;
   if (ip.includes('.')) return ip.slice(ip.lastIndexOf(':') + 1); // ::ffff:203.0.113.9 is that IPv4 address
   const [head, tail] = ip.split('::');

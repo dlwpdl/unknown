@@ -5,7 +5,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { tr, setActiveLanguage } from '../src/i18n/index.ts';
-import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, priceSymbol } from '../src/lib/discovery.ts';
+import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, priceSymbol, webshopApplicable } from '../src/lib/discovery.ts';
 
 const author = '11111111-1111-4111-8111-111111111111';
 const settle = () => new Promise(setImmediate);
@@ -257,7 +257,7 @@ function detailViewport(mode = 'auto') {
     'react-native': { StyleSheet: { create: x => x }, View: 'View' },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     'react-native-reanimated': { __esModule: true, default: { View: 'ReanimatedView' }, FadeIn: { duration: () => 'fade' }, SlideInDown: { duration: () => 'slide' }, useReducedMotion: () => true },
-    '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, priceSymbol },
+    '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, priceSymbol, webshopApplicable },
     'expo-router': { useIsFocused: () => true, useLocalSearchParams: () => ({ cityId: 'toronto', id: 'osm:node:1' }), useRouter: () => ({}) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/components/place-reviews': { PlaceReviews: 'PlaceReviews' },

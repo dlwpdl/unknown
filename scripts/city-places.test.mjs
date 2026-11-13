@@ -1,5 +1,5 @@
 import { withLanguageImports } from './test-language-imports.mjs';
-import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, discoveryMatches, discoveryPlace, placeCategory, placeMapRoute, priceSymbol } from '../src/lib/discovery.ts';
+import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, discoveryMatches, discoveryPlace, placeCategory, placeMapRoute, priceSymbol, webshopApplicable } from '../src/lib/discovery.ts';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -511,7 +511,7 @@ function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = da
       getPlaceReviewRating: (cityId, placeId) => ({ cityId, placeId, score: null, source: null, count: null, externalScore: null }) },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16, four: 24 }, MaxContentWidth: 920 },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: v => feedback.push(v) }) },
-    '@/lib/city-places': placeData, '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, placeMapRoute, priceSymbol }, '@/lib/post-maps': module('src/lib/post-maps.ts'),
+    '@/lib/city-places': placeData, '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, placeMapRoute, priceSymbol, webshopApplicable }, '@/lib/post-maps': module('src/lib/post-maps.ts'),
     '@/lib/merchant-source': module('src/lib/merchant-source.ts', {
       '../../supabase/functions/_shared/post-links.ts': { safePostLink: value => value },
     }),

@@ -46,7 +46,8 @@ import { CITIES } from '@/lib/mock';
 import { merchantMapsUrl, merchantPhoneUrl, safeMerchantSourceUrl } from '@/lib/merchant-source';
 import { useAuth } from '@/lib/auth';
 import { recordProductEvent } from '@/lib/product-analytics';
-import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, directionsUrl, placeCategory, placeMapRoute, priceSymbol } from '@/lib/discovery';
+import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, directionsUrl, placeCategory, placeMapRoute, priceSymbol, webshopApplicable } from '@/lib/discovery';
+import { PUBLIC_SITE } from '@/lib/public-seo';
 import { supabase } from '@/lib/supabase';
 import { INSTAGRAM_LINK_SVG, instagramPostLink } from '../../../supabase/functions/_shared/post-links';
 
@@ -88,6 +89,8 @@ export default function PlaceDetailScreen() {
   const saved = useSavedEntry(place ? { kind: 'place', id: place.id, cityId: place.cityId } : null, !!place && !!city);
   const compose = usePlaceCompose(place);
   const linkScope = useRef<object | null>(null);
+  // The city's business links: a linked place opens its business profile, an unlinked restaurant or cafe gets the owner row.
+  const [businessLinks, setBusinessLinks] = useState<{ cityId: string; links: Record<string, string> } | null>(null);
   useLayoutEffect(() => {
     linkScope.current = {};
     return () => { linkScope.current = null; };
@@ -97,7 +100,9 @@ export default function PlaceDetailScreen() {
     const scope = linkScope.current;
     const controller = new AbortController();
     void loadCityBusinessLinks(supabase, loadedCityId, controller.signal).then(links => {
-      if (!controller.signal.aborted && linkScope.current === scope && links[targetId]) router.replace({ pathname: '/company/[id]', params: { id: links[targetId] } });
+      if (controller.signal.aborted || linkScope.current !== scope) return;
+      if (links[targetId]) router.replace({ pathname: '/company/[id]', params: { id: links[targetId] } });
+      else setBusinessLinks({ cityId: loadedCityId, links });
     }).catch(() => {});
     return () => controller.abort();
   }, [isFocused, isAuthLoading, targetId, loadedCityId, router, userId, hidden]);
@@ -115,6 +120,11 @@ export default function PlaceDetailScreen() {
     play('selection');
     // P4: the place's own website opens in the in-app browser like the map screen; sources keep the system browser.
     void (kind ? openBrowserAsync(url) : Linking.openURL(url)).then(() => { if (kind) record(kind); }).catch(() => { play('warning'); Alert.alert(tr("페이지를 열지 못했어요"), tr("잠시 후 다시 시도해 주세요.")); });
+  };
+  const openOwnerWebshop = (target: CityPlace) => {
+    play('selection');
+    void openBrowserAsync(`${PUBLIC_SITE}/business?${new URLSearchParams({ place: target.id, city: target.cityId })}#webshop`)
+      .catch(() => { play('warning'); Alert.alert(tr("페이지를 열지 못했어요"), tr("잠시 후 다시 시도해 주세요.")); });
   };
   const openMap = (url: string) => {
     void Linking.openURL(url).then(() => record('place_directions'), () => { play('warning'); Alert.alert(tr("길찾기를 열지 못했어요"), tr("인터넷 연결을 확인한 뒤 다시 시도해 주세요.")); });
@@ -228,6 +238,12 @@ export default function PlaceDetailScreen() {
           <PlaceExternalRatings key={`${city.id}:${place.id}`} cityId={city.id} placeId={place.id} />
         </View>}
         <PlaceRelated place={place} saves={saves} />
+        {webshopApplicable(place, businessLinks && businessLinks.cityId === place.cityId ? businessLinks.links : null) && <Pressable analyticsId="places.detail.owner_webshop" accessibilityRole="link"
+          accessibilityLabel={`${tr('이 가게 사장님이세요?')} ${tr('웹샵 연결하고 글링 손님 받기')}`} onPress={() => openOwnerWebshop(place)} style={({ pressed }) => [styles.owner, pressed && styles.ownerPressed]}>
+          <ThemedText type="small" themeColor="textSecondary">{tr('이 가게 사장님이세요?')}</ThemedText>
+          <View style={styles.ownerGo}><ThemedText type="smallBold" themeColor="accent">{tr('웹샵 연결하고 글링 손님 받기')}</ThemedText>
+            <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={IconSize.chevron} tintColor={theme.accent} accessible={false} /></View>
+        </Pressable>}
         {/* OSM attribution has to show without a tap, so it rides in the folded title. */}
         <Disclosure analyticsId="places.detail.attribution" title={tr('출처·이용 조건 · © OpenStreetMap')}>
           {!!place.recommendation && <Pressable analyticsId="places.detail.source" accessibilityRole="link" accessibilityLabel={tr("사진 명소 선정 출처 보기")} onPress={() => openSource(place.recommendation!.sourceUrl)} style={styles.link}>
@@ -280,6 +296,9 @@ const styles = StyleSheet.create({
   addressRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   section: { gap: Spacing.two },
   link: { minHeight: 44, justifyContent: 'center' },
+  owner: { minHeight: 44, paddingVertical: Spacing.one, alignItems: 'flex-start', justifyContent: 'center' },
+  ownerPressed: { opacity: 0.7 },
+  ownerGo: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   clayPill: { overflow: 'visible', paddingHorizontal: 18 },
   pill: { flexDirection: 'row', gap: Spacing.one, borderWidth: 1 },

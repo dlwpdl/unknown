@@ -1,5 +1,5 @@
 import { deliveryPartnerPlace } from '../src/lib/delivery-partners.ts';
-import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, directionsUrl, placeCategory, placeMapRoute, priceSymbol } from '../src/lib/discovery.ts';
+import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, directionsUrl, placeCategory, placeMapRoute, priceSymbol, webshopApplicable } from '../src/lib/discovery.ts';
 import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -92,7 +92,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     '@/components/place-saves': { PlaceSavedBy: 'PlaceSavedBy', PlaceRelated: 'PlaceRelated', usePlaceSaves: () => null }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
     '@/lib/city-places': { getCityRecommendations: id => catalog.cities[id]?.places ?? [], CITY_PLACES_COLLECTED_AT: catalog.collectedAt, getCityPlaces: id => { if (ctx.catalogError) throw new Error('missing'); return ctx.places ?? catalog.cities[id]?.places ?? []; } },
     '@/lib/community-city': { useCommunityCity: () => ({ city, setCity() {} }) }, '@/lib/mock': { CITIES: [city] },
-    '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, directionsUrl, placeCategory, placeMapRoute, priceSymbol },
+    '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, directionsUrl, placeCategory, placeMapRoute, priceSymbol, webshopApplicable },
     '@/lib/delivery-partners': { deliveryPartnerPlace },
     '@/lib/webshops': { loadCityBusinessLinks: async () => ({}) },
     '@/lib/merchant-source': { merchantMapsUrl, merchantPhoneUrl, safeMerchantSourceUrl }, '@/lib/post-maps': maps,
