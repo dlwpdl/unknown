@@ -177,7 +177,7 @@ export default function SavedScreen() {
       if (!shop) throw new Error('UNAVAILABLE');
       setOffer({ key, visibility: hidden, name: item.title, shop });
     } catch {
-      if (operation.active && request.current === operation) { setMessage({ key, text: ko ? '지금은 웹샵 가격을 확인할 수 없어요. 잠시 후 다시 눌러주세요.' : 'Can’t check webshop prices right now. Try again in a moment.' }); play('warning'); }
+      if (operation.active && request.current === operation) { setMessage({ key, text: ko ? '지금은 배달/픽업 가격을 확인할 수 없어요. 잠시 후 다시 시도해주세요.' : 'Can’t check delivery and pickup prices right now. Try again in a moment.' }); play('warning'); }
     } finally { if (comparing.current === task) { comparing.current = null; setCompareKey(null); } }
   }
   function open(item: SavedItem) {

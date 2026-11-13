@@ -257,7 +257,7 @@ export default function CompanyProfileRoute() {
         </Pressable>}
         {!!profile.services && <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{profile.services.split(/\r?\n/, 1)[0]}</ThemedText>}
         {webshop.shop && <WebshopBanner shop={webshop.shop} onPress={() => setOrderMerchant(merchantId)} />}
-        {webshop.failed && <Pressable analyticsId="webshop.retry" accessibilityRole="button" style={[styles.button, clay && styles.clayPad]} onPress={() => { play('selection'); webshop.retry(); }}>{clay && <ClayPillFill kind="white" />}<ThemedText type="small" themeColor="accent">{tr("웹샵 정보를 다시 확인해주세요")}</ThemedText></Pressable>}
+        {webshop.failed && <Pressable analyticsId="webshop.retry" accessibilityRole="button" style={[styles.button, clay && styles.clayPad]} onPress={() => { play('selection'); webshop.retry(); }}>{clay && <ClayPillFill kind="white" />}<ThemedText type="small" themeColor="accent">{tr("배달/픽업 정보 다시 불러오기")}</ThemedText></Pressable>}
         <View style={styles.actions}>
 
           {isAuthed && isSaved && <Pressable analyticsId="company.notifications" accessibilityRole="button" accessibilityLabel={tr("새 소식 받기")}

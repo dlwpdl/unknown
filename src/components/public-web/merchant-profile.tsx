@@ -342,7 +342,7 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
         <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" aria-label={ko ? `${profile.name} ${link.label}, 새 창 열기` : `${profile.name} ${link.label}, opens in a new tab`}
           onClick={() => play('selection')}>{link.label} <span aria-hidden="true">↗</span></a>)}</nav>}
       {webshop.shop && <div style={{ display: 'grid', gap: 16, paddingTop: 16 }}><WebshopBanner shop={webshop.shop} onPress={() => setOrderOpen(true)} /><WebshopOrderButton shop={webshop.shop} onPress={() => setOrderOpen(true)} /></div>}
-      {webshop.failed && <button type="button" onClick={() => { play('selection'); webshop.retry(); }}>{ko ? '웹샵 정보를 다시 확인해주세요' : 'Reload webshop'}</button>}
+      {webshop.failed && <button type="button" onClick={() => { play('selection'); webshop.retry(); }}>{ko ? '배달/픽업 정보 다시 불러오기' : 'Reload ordering info'}</button>}
       <div className="reader-company-hero-actions"><a className="reader-company-app-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>{ko ? profile.can_message ? '앱에서 문의하기' : '앱에서 비즈니스 보기' : profile.can_message ? 'Message in the app' : 'View in the app'} <span aria-hidden="true">↗</span></a>
         <a className="reader-company-save-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>{ko ? '앱에서 저장' : 'Save in the app'} <span aria-hidden="true">↗</span></a></div>
       {(profile.imageLoadFailed || broken.banner || broken.avatar) && <div className="reader-company-image-notice" role="status">
