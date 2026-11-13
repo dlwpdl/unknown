@@ -200,7 +200,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const openAuthor = (post: Post) => {
     if (post.business) { router.push({ pathname: '/company/[id]', params: { id: post.business.id } }); return; }
     if (post.room) { router.push({ pathname: '/meetup-profile', params: { postId: post.id } }); return; }
-    setSheetUser({ id: post.author.id, nickname: post.author.nickname, neighborhood: post.author.neighborhood, verified: post.author.verified, trustLevel: post.author.trustLevel, mine: post.author.id === me.id });
+    setSheetUser({ id: post.author.id, nickname: post.author.nickname, avatarUrl: post.author.avatarUrl, neighborhood: post.author.neighborhood, verified: post.author.verified, trustLevel: post.author.trustLevel, mine: post.author.id === me.id });
   };
   const [pendingPostId, setPendingPostId] = useState<string | null>(null); // 로그인 후 이어서 열 글
   const [tagFilter, setTagFilter] = useState<number | null>(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null); // 카테고리 칩

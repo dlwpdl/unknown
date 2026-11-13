@@ -320,7 +320,7 @@ export default function ChatScreen() {
         {/* 자리(슬롯)는 상태라 칩 안의 숫자와 한 줄 안내로만 보여준다. 큰 카드는 대화 목록을 밀어냈다. */}
         <View style={styles.filters}>{([['all', t.chat.all],
           // 관리자에게는 자리 한도가 적용되지 않으므로 숫자 대신 제한 없음을 알린다.
-          ['group', auth.isAdmin ? tr("{0} 제한 없음", (t.chat.groups)) : `${t.chat.groups}${meetupSlots ? ` ${meetupSlots.active}/${meetupSlots.limit}` : ''}`],
+          ['group', auth.isAdmin ? tr("{0} 제한 없음", (t.chat.groups)) : meetupSlots ? tr('모임 {0}/{1}', String(meetupSlots.active), String(meetupSlots.limit)) : t.chat.groups],
           ['direct', t.chat.direct],
           ['requests', `${t.chat.requestTab} ${pendingCount}${moreRequests ? '+' : ''}`]] as const).filter(([key]) => !asBusinessId || key === 'all' || key === 'direct').map(([key, label]) => <SelectionChip analyticsId="app_tabs_chat.pressable.2" key={key} label={label} selected={filter === key} onPress={() => { play('selection'); if (key !== filter) { animateList(); setLoading(true); setFilter(key); } }} accessibilityRole="tab" accessibilityState={{ selected: filter === key }} />)}</View>
         {filter === 'requests' && <>

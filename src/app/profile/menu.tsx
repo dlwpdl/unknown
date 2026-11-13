@@ -101,7 +101,8 @@ const styles = StyleSheet.create({
   clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   clayRows: { borderRadius: 16, overflow: 'hidden' },
   manage: { flexDirection: 'row', borderRadius: 16, padding: Spacing.one },
-  manageCell: { flex: 1, minWidth: 0, minHeight: 88, borderRadius: 12, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', gap: 2, paddingVertical: 12, paddingHorizontal: Spacing.one },
+  // Top-aligned so the four icons and names stay on one line when a label wraps (QA H42-1).
+  manageCell: { flex: 1, minWidth: 0, minHeight: 88, borderRadius: 12, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'flex-start', gap: 2, paddingVertical: 12, paddingHorizontal: Spacing.one },
   manageIcon: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   manageDot: { position: 'absolute', top: 1, right: 1, width: 9, height: 9, borderRadius: 5, borderWidth: 2 },
   manageLabel: { textAlign: 'center' },

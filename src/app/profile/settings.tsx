@@ -5,7 +5,6 @@ import { LanguageCard } from '@/components/language-card';
 import { Pressable, ScrollView, Switch } from '@/components/analytics-controls';
 import Constants from 'expo-constants';
 import { Redirect, useRouter } from 'expo-router';
-import { SymbolView } from '@/components/symbol-view';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, Linking, Platform, StyleSheet, View } from 'react-native';
 import { ClayBoxFill, useClayBox } from '@/components/clay';
@@ -18,7 +17,7 @@ import { PersonalInfoCard } from '@/components/personal-info-card';
 import { ProfileSharingCard } from '@/components/profile-overview';
 import { resetStartGuide } from '@/components/start-guide';
 import { ThemedView } from '@/components/themed-view';
-import { Colors, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
+import { MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
 import { useTheme, useThemePreference } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { deleteMyAccount } from '@/lib/community-data';
@@ -119,19 +118,8 @@ export default function SettingsScreen() {
           <ContentTranslationSettings />
 
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{t.profile.appearance}</ThemedText>
+          {/* The switch is the one place to choose (QA H43-1·F34-1): a checked preview row above it read as a second, one-option picker. */}
           <Card accent style={styles.appearanceCard}>
-            <View style={[styles.appearancePreview, { backgroundColor: theme.backgroundElement }]}>
-              <View style={styles.previewPair} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-                {[Colors.light, Colors.dark].map((palette, index) => <View key={index} style={[styles.previewPage, { backgroundColor: palette.background, borderColor: palette.line }]}>
-                  {[0, 1, 2].map((line) => <View key={line} style={[styles.previewLine, { backgroundColor: palette.accent }]} />)}
-                </View>)}
-              </View>
-              <View style={styles.navCopy}>
-                <ThemedText type="smallBold">{scheme === 'dark' ? t.profile.darkMode : t.profile.lightMode}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">{t.profile.appearancePreview}</ThemedText>
-              </View>
-              <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={20} tintColor={theme.accent} />
-            </View>
             <View style={styles.appearanceRow}>
               <View style={styles.navCopy}>
                 <ThemedText type="smallBold">{t.profile.darkMode}</ThemedText>
@@ -324,10 +312,6 @@ const styles = StyleSheet.create({
   card: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, overflow: 'hidden' },
   clayRows: { borderRadius: 16, overflow: 'hidden' },
   appearanceCard: { padding: 14, borderRadius: 16, gap: Spacing.two },
-  appearancePreview: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 10, borderRadius: 12 },
-  previewPair: { flexDirection: 'row', gap: 3 },
-  previewPage: { width: 21, height: 48, borderWidth: 1, borderRadius: 5, padding: 3, justifyContent: 'center', gap: 3 },
-  previewLine: { height: 3, borderRadius: 2 },
   appearanceRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 52 },
   row: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three, padding: Spacing.three },
   navRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },

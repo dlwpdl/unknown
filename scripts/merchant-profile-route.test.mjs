@@ -223,8 +223,13 @@ test('unconnected businesses offer only registered public links and never report
   assert.equal(control(root, 'company.inquiry'), undefined);
   assert.match(text(root), /앱에서 연결할 수 있는 담당자가 없어요/);
   control(root, 'company.contact.phone').props.onPress(); await settle();
-  control(root, 'company.contact.source.0').props.onPress(); await settle();
-  assert.deepEqual(view.links, ['tel:+16045550100', 'https://shop.example.com/']);
+  assert.deepEqual(view.links, ['tel:+16045550100']);
+  // The registered page is shown once, in the header, not again under the no-contact note (QA H43-6).
+  assert.equal(control(root, 'company.contact.source.0'), undefined);
+  assert.deepEqual(nodes(root).find(node => node.type === 'ProfileHeader').props.profile.links.map(link => [link.label, link.url]), [['shop.example.com', 'https://shop.example.com/']]);
+  const unsafe = screen({ loadProfile: async () => ({ ...profile, links: [...profile.links, { url: 'javascript:alert(1)', label: 'bad' }] }) });
+  unsafe.render(); await settle();
+  assert.deepEqual(nodes(unsafe.render()).find(node => node.type === 'ProfileHeader').props.profile.links.map(link => link.label), ['shop.example.com'], 'the header only gets links that pass the page filter');
   assert.deepEqual(view.rpcCalls, []); assert.deepEqual(view.routes, []);
   const empty = screen({ loadProfile: async () => ({ ...profile, can_message: false, public_phone: '', links: [] }) });
   empty.render(); await settle(); root = empty.render();

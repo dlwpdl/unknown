@@ -34,9 +34,10 @@ export function FlatList<T>({ analyticsId, onScroll, ...props }: FlatListProps<T
 }
 
 // One look on every screen: on = accent, off = line, white thumb. Without these Android and web fall back to their default teal.
+// Android's off switch has no shadow or edge, so a white thumb on the pale track vanished on white cards (QA F34-2): it gets the secondary text grey, as Android's own off thumb does.
 export function Switch({ analyticsId, onValueChange, ...props }: Omit<ComponentProps<typeof NativeSwitch>, 'trackColor' | 'thumbColor' | 'ios_backgroundColor'> & Tracking) {
   const theme = useTheme();
-  return <NativeSwitch {...props} trackColor={{ false: theme.line, true: theme.accent }} thumbColor="#FFFFFF" ios_backgroundColor={theme.line} {...(Platform.OS === 'web' ? { activeThumbColor: '#FFFFFF' } : {})} onValueChange={(value) => { behavior('press', `${analyticsId}.${value ? 'on' : 'off'}`); onValueChange?.(value); }} />;
+  return <NativeSwitch {...props} trackColor={{ false: theme.line, true: theme.accent }} thumbColor={Platform.OS === 'android' && !props.value ? theme.textSecondary : '#FFFFFF'} ios_backgroundColor={theme.line} {...(Platform.OS === 'web' ? { activeThumbColor: '#FFFFFF' } : {})} onValueChange={(value) => { behavior('press', `${analyticsId}.${value ? 'on' : 'off'}`); onValueChange?.(value); }} />;
 }
 export function SectionList<T, S>({ analyticsId, onScroll, ...props }: SectionListProps<T, S> & Tracking) {
   const record = useScroll(analyticsId, props.horizontal, onScroll);

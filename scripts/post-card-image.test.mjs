@@ -569,7 +569,8 @@ test('profile logo/banner failures retain only the business fallback and recover
  assert.equal(bannerBox().aspectRatio,1.18,'a real banner keeps its tall frame');
  let images=nodes(render()).filter(n=>n.type==='Image');assert.equal(images.length,2);
  images.forEach(n=>n.props.onError());assert.equal(nodes(render()).filter(n=>n.type==='Image').length,0);
- assert.equal(bannerBox().aspectRatio,3,'the gling. placeholder is a short strip (QA Q09)');
+ assert.ok(!nodes(render()).some(n=>[n.props?.style].flat().some(s=>s?.aspectRatio)),'a missing banner leaves no empty gling. box (QA H43-6)');
+ assert.ok(!nodes(render()).some(n=>n.props?.children==='gling.'));
  assert.ok(nodes(render()).some(n=>n.type==='ThemedText'&&n.props.children==='지'));
  profile.avatarUri='new-logo';assert.equal(nodes(render()).find(n=>n.type==='Image').props.source.uri,'new-logo');
 });
