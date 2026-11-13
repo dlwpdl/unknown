@@ -117,6 +117,8 @@ export function renderPublicPost(template, post, related = [], hub = null) {
     + crumbs
     + `<h1 style="margin:0;font-size:24px;line-height:1.35">${escapeHtml(post.title)}</h1>`
     + `<p style="margin:8px 0 0;color:#B7B4C3;font-size:13px">${meta}</p>`
+    // Set by the build when the post's place has its own page (scripts/prerender-public-places.mjs).
+    + (post.placePath ? `<p style="margin:8px 0 0;font-size:14px">장소: <a href="${escapeHtml(post.placePath)}" style="${LINK}">${escapeHtml(post.place)}</a></p>` : '')
     // The cover sits right under the title, so it is usually the largest paint: fetch it first rather than lazily.
     + (post.imageUrl ? `<img src="${escapeHtml(post.imageUrl)}" alt="${escapeHtml(post.title)}" style="display:block;width:100%;margin-top:16px;border-radius:12px" fetchpriority="high" decoding="async"/>` : '')
     + (text ? `<p style="margin:16px 0 0;white-space:pre-line">${escapeHtml(text)}</p>` : '')
@@ -139,11 +141,12 @@ export function withStaticPage(template, head, body) {
   const stripped = template.replace(/<title[^>]*>[^<]*<\/title>|<meta\b[^>]*\b(?:name="(?:description|robots|apple-itunes-app|twitter:[^"]*)"|property="og:[^"]*")[^>]*\/?>|<link\b[^>]*\brel="canonical"[^>]*\/?>|<script\b[^>]*\btype="application\/ld\+json"[^>]*>[\s\S]*?<\/script>/g, '')
     .replace(/<h1\b/g, '<p').replace(/<\/h1>/g, '</p>');
   if (!/<\/head>/.test(stripped) || !/<body[^>]*>/.test(stripped)) throw new Error('Unexpected web shell for prerendered pages');
-  return stripped.replace('</head>', `${head}</head>`).replace(/<body[^>]*>/, match => `${match}${body}`);
+  // A function, not a string: `$$` or `$'` in a title or price would otherwise be read as a replacement pattern.
+  return stripped.replace('</head>', () => `${head}</head>`).replace(/<body[^>]*>/, match => `${match}${body}`);
 }
 
-export async function prerenderPublicPosts(directory, options) {
-  const { posts, meetups } = await loadPublicPosts(options);
+export async function prerenderPublicPosts(directory, options, loaded = null) {
+  const { posts, meetups } = loaded ?? await loadPublicPosts(options);
   const hubs = topicHubs(posts);
   // The 404 shell is what static hosts already serve for /posts/:id, so the client router hydrates it unchanged.
   const template = readFileSync(join(directory, '+not-found.html'), 'utf8');

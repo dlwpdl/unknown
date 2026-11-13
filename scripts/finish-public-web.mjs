@@ -5,9 +5,10 @@ import { CITIES, TAGS } from '../src/lib/mock.ts';
 import {
   CITY_PAGE_SIZE, jsonLd, PUBLIC_SITE, publicSiteName, PUBLIC_SOURCE, publicAboutGling, publicAboutGlingEn, publicCitySubpageMeta, publicCompanyUrl, publicDisambiguation, publicImmigrationMeta, PUBLIC_PLAY_STORE, publicPostUrl, TOPIC_HUBS,
 } from '../src/lib/public-seo.ts';
-import { breadcrumbHtml, escapeHtml, isoDate, koreanDate, postCover, prerenderPublicPosts, redirectPage, withStaticPage, topicHubs } from './prerender-public-posts.mjs';
+import { breadcrumbHtml, escapeHtml, isoDate, koreanDate, loadPublicPosts, postCover, prerenderPublicPosts, redirectPage, withStaticPage, topicHubs } from './prerender-public-posts.mjs';
 import { prerenderPublicCompanies } from './prerender-public-companies.mjs';
 import { prerenderEnglishPosts } from './english-posts.mjs';
+import { loadPlaceCatalog, loadPlaceRatings, publicPlaces, writePublicPlaces } from './prerender-public-places.mjs';
 
 const LINK = 'color:#CBB9FF';
 const SECTION = 'max-width:720px;margin:24px auto;padding:20px;color:#F6F3F0;font:16px/1.6 system-ui,sans-serif';
@@ -59,7 +60,7 @@ function collectionSchema(url, name, description, posts, crumbs, lastReviewed) {
 }
 
 // Kept on the city page (the reader moves it next to the live feed) so the city's own facts and paths stay visible.
-function cityBlock(city, facts, hubs, pages) {
+function cityBlock(city, facts, hubs, pages, hasPlaces = false) {
   const own = [...hubs.values()].filter(hub => hub.cityId === city.id).sort((a, b) => b.count - a.count);
   const business = own.find(hub => hub.tagSlug === 'business');
   return `<section id="gling-static-city" lang="ko" style="${SECTION}">`
@@ -69,6 +70,7 @@ function cityBlock(city, facts, hubs, pages) {
     + `<p style="margin:16px 0 0">${[`<a href="/${city.id}/meetups" style="${LINK}">${escapeHtml(city.name)} 모임·소모임</a>`,
       hubs.has(`${city.id}/settlement`) && `<a href="/${city.id}/settlement" style="${LINK}">${escapeHtml(city.name)} 정착 가이드</a>`,
       business && `<a href="${business.path}" style="${LINK}">${escapeHtml(city.name)} 비즈니스 소식</a>`,
+      hasPlaces && `<a href="/${city.id}/places" style="${LINK}">${escapeHtml(city.name)} 맛집·카페·가 볼 곳</a>`,
       `<a href="/visited${city.id === 'vancouver' ? '' : `?city=${city.id}`}" style="${LINK}">${escapeHtml(city.name)}에서 글링이 가 본 곳</a>`].filter(Boolean).join(' · ')}</p>`
     + pageList(city, pages, 1)
     + '</section>';
@@ -209,7 +211,7 @@ function meetupPage(template, city, list, hubs, cities) {
 // GitHub Pages serves 404.html (HTTP 404) for unknown paths: send old post links and trailing slashes to the real page.
 const LEGACY_REDIRECT = '<script>(function(l){var p=l.pathname,m=p.match(/^\\/(?:posts?|share)\\/([0-9a-fA-F-]{36})\\/?$/),t=m?"/posts/"+m[1].toLowerCase():p.length>1&&/\\/$/.test(p)?p.replace(/\\/+$/,""):null;if(t&&t!==p)l.replace(t+l.search+l.hash)})(location)</script>';
 
-export function finishPublicWeb(directory = 'dist', posts = [], companies = [], { meetups = [], now = Date.now() } = {}) {
+export function finishPublicWeb(directory = 'dist', posts = [], companies = [], { meetups = [], places = [], catalog = null, now = Date.now() } = {}) {
   // GitHub Pages serves this for app-only paths and existing /post/:id links.
   copyFileSync(join(directory, '+not-found.html'), join(directory, '404.html'));
   writeFileSync(join(directory, '404.html'), readFileSync(join(directory, '404.html'), 'utf8').replace(/<head[^>]*>/, match => `${match}${LEGACY_REDIRECT}`));
@@ -241,16 +243,18 @@ export function finishPublicWeb(directory = 'dist', posts = [], companies = [], 
       entries.push([`/${city.id}/meetups`, events.map(item => item.createdAt).filter(Boolean).sort().at(-1)]);
     }
   }
+  // Every catalog city's places with an intro, post, review or Gling visit (scripts/prerender-public-places.mjs).
+  if (shell) entries.push(...writePublicPlaces(directory, template, places, catalog));
   const home = `<meta name="naver-site-verification" content="3840dfdac2db5fd4f65e9c9160c31225d7e05db5"/><link rel="alternate" type="application/rss+xml" title="글링 새 글" href="${PUBLIC_SITE}/rss.xml"/>`;
   const languages = `<link rel="alternate" hreflang="ko" href="${PUBLIC_SITE}/"/><link rel="alternate" hreflang="en" href="${PUBLIC_SITE}/en"/><link rel="alternate" hreflang="x-default" href="${PUBLIC_SITE}/"/>`;
   for (const [file, city] of [['index.html', null], ...cities.map(city => [`${city.id}.html`, city])]) {
     const target = join(directory, file);
     if (!existsSync(target)) continue;
     const own = city ? posts.filter(post => post.cityId === city.id) : [];
-    const kept = city ? cityBlock(city, cityFacts(city, posts, meetups, now), hubs, Math.ceil(own.length / CITY_PAGE_SIZE)) : '';
+    const kept = city ? cityBlock(city, cityFacts(city, posts, meetups, now), hubs, Math.ceil(own.length / CITY_PAGE_SIZE), shell && places.some(entry => entry.cityId === city.id)) : '';
     const schema = city ? ldScript(collectionSchema(`${PUBLIC_SITE}/${city.id}`, `${city.name} 한인 커뮤니티`, publicAboutGling, own.slice(0, CITY_PAGE_SIZE), [['글링', '/'], [city.name, `/${city.id}`]])) : '';
     const html = readFileSync(target, 'utf8')
-      .replace('</head>', `${home}${city ? '' : languages}${schema}</head>`)
+      .replace('</head>', () => `${home}${city ? '' : languages}${schema}</head>`)
       .replace(/<body[^>]*>/, match => `${match}${kept}${staticHub(cities, posts, city)}`);
     writeFileSync(target, html);
     // /vancouver/ (with the slash) now hits the folder above; serve the same page there, canonical to /vancouver.
@@ -286,6 +290,7 @@ export function finishPublicWeb(directory = 'dist', posts = [], companies = [], 
     `- 도시 페이지: ${cities.map(city => `[${city.name} 한인 커뮤니티](${PUBLIC_SITE}/${city.id})`).join(' · ')}`,
     `- 모임·소모임 페이지: ${cities.map(city => `[${city.name} 한인 모임·소모임](${PUBLIC_SITE}/${city.id}/meetups)`).join(' · ')}`,
     `- 이민·유학 길잡이: [${publicImmigrationMeta.heading}](${PUBLIC_SITE}/immigration) (IRCC·주정부 공식 페이지 링크 모음, 확인 날짜 ${publicImmigrationMeta.checked})`,
+    ...(shell && places.length ? [`- 장소 페이지(주소·영업시간·지도 링크): ${CITIES.filter(city => places.some(entry => entry.cityId === city.id)).map(city => `[${city.name} 맛집·카페·가 볼 곳](${PUBLIC_SITE}/${city.id}/places)`).join(' · ')}`] : []),
     ...(hubs.size ? [`- 주제별 페이지: ${[...hubs.values()].map(hub => `[${TOPIC_HUBS[hub.tagSlug].name(CITIES.find(city => city.id === hub.cityId).name)}](${PUBLIC_SITE}${hub.path})`).join(' · ')}`] : []),
     `- 비즈니스: 가게 프로필, 소식·채용 글, 영수증 인증 후기를 글링에서 관리할 수 있어요. 등록과 요금제는 ${PUBLIC_SITE}/business 에서 볼 수 있어요.`,
   ].join('\n');
@@ -320,9 +325,15 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   // Only the Pages deploy prerenders (CI exports against a stub project); there a failed fetch fails the deploy and keeps the previous site live.
   const prerender = process.env.GLING_PRERENDER_POSTS === '1';
   if (prerender && (!url || !key)) throw new Error('Supabase public env is required to prerender public posts');
-  const { posts, meetups } = prerender ? await prerenderPublicPosts(directory, { url: url.replace(/\/+$/, ''), key, cities: CITIES.filter(city => city.state === 'open').map(city => city.id), searchToken: process.env.GLING_SEARCH_BUILD_TOKEN }) : { posts: [], meetups: [] };
-  const companies = prerender ? await prerenderPublicCompanies(directory, { url: url.replace(/\/+$/, ''), key, cities: CITIES.filter(city => city.state === 'open').map(city => city.id), posts }) : [];
-  const { hubs } = finishPublicWeb(directory, posts, companies, { meetups });
-  const english = prerender ? await prerenderEnglishPosts(directory, posts, { url: url.replace(/\/+$/, ''), key, searchToken: process.env.GLING_SEARCH_BUILD_TOKEN }, { hubs, businesses: companies }) : [];
-  console.log(`Prerendered ${posts.length} public posts (${english.length} in English), ${hubs.size} topic hubs and ${companies.length} business profiles.`);
+  const options = prerender ? { url: url.replace(/\/+$/, ''), key, cities: CITIES.filter(city => city.state === 'open').map(city => city.id), searchToken: process.env.GLING_SEARCH_BUILD_TOKEN } : null;
+  const loaded = options ? await loadPublicPosts(options) : { posts: [], meetups: [] };
+  // Places first, so each post page can link the page of its place.
+  const catalog = options ? await loadPlaceCatalog(options) : null;
+  const places = catalog ? publicPlaces(catalog, loaded.posts, await loadPlaceRatings(catalog, options)) : [];
+  for (const entry of places) for (const post of entry.posts) post.placePath = entry.path;
+  const { posts, meetups } = options ? await prerenderPublicPosts(directory, options, loaded) : loaded;
+  const companies = options ? await prerenderPublicCompanies(directory, { ...options, posts }) : [];
+  const { hubs } = finishPublicWeb(directory, posts, companies, { meetups, places, catalog });
+  const english = options ? await prerenderEnglishPosts(directory, posts, options, { hubs, businesses: companies }) : [];
+  console.log(`Prerendered ${posts.length} public posts (${english.length} in English), ${hubs.size} topic hubs, ${places.length} place pages and ${companies.length} business profiles.`);
 }
