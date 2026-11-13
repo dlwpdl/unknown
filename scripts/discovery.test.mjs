@@ -26,6 +26,18 @@ test('지도에는 공개 첨부 핀만 쓰며 거래 종료·만료 위치는 �
   assert.equal(unresolved.label, '이 근처');
   assert.equal(discoveryPost({ ...post, kind: 'story', tag: { slug: 'food' }, body: post.body }).label, '도서관 앞');
 });
+test('업체가 올린 렌트 글은 공개한 매물 주소에, 개인 렌트 글과 중고는 동네 중심에 핀을 찍는다 (owner 2026-11-13)', () => {
+  const at = Date.parse('2026-10-15T00:00:00Z'), address = '뷰잉 예약\n\nGoogle 지도: https://www.google.com/maps/search/?api=1&query=49.22594%2C-123.00041\n위치: 6000 McKay Ave, Burnaby';
+  const rent = { ...post, tag: { slug: 'housing' }, body: address };
+  const business = discoveryPost({ ...rent, business: { id: 'b1', name: '메트로 렌탈' } }, at);
+  assert.deepEqual([business.latitude, business.longitude, business.label], [49.22594, -123.00041, '6000 McKay Ave, Burnaby']);
+  const member = discoveryPost(rent, at);
+  assert.deepEqual([member.latitude, member.longitude, member.label], [49.226, -123.004, '메트로타운'], 'a member\'s home is never shown');
+  const used = discoveryPost({ ...post, body: address, business: { id: 'b1', name: '메트로 렌탈' } }, at);
+  assert.deepEqual([used.latitude, used.longitude], [49.226, -123.004], 'only rent posts keep the address');
+  const nameOnly = discoveryPost({ ...rent, business: { id: 'b1', name: '메트로 렌탈' }, body: 'Google 지도: https://www.google.com/maps/search/?api=1&query=Metrotown%2C+Burnaby' }, at);
+  assert.deepEqual([nameOnly.latitude, nameOnly.label], [null, '이 근처'], 'no coordinates, no pin');
+});
 test('릴스 카테고리 색을 바꾸지 않고 장소 유형을 구분한다', () => {
   const colors = JSON.parse(readFileSync(new URL('./fixtures/discovery-category-colors.json', import.meta.url))).categoryPointColors;
   for (const category of DISCOVERY_CATEGORIES.filter(item => colors[item.label])) assert.equal(category.color, colors[category.label]);

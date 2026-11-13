@@ -299,3 +299,18 @@ test('글 수정 본문은 새 첫 줄을 붙이고, 동네가 바뀔 때만 지
   assert.equal(editedListingBody(moved, text, 'metrotown', 'vancouver', 'ko'), withPostMap(`${moved.lead}\n\n뷰잉은 연락 주세요.`, googlePinUrl(area), '다운타운'));
   assert.throws(() => editedListingBody(moved, 'ㄱ'.repeat(1000), 'metrotown', 'vancouver', 'ko'), /POST_BODY_TOO_LONG/);
 });
+
+test('부동산 목록 지도: 업체 렌트 글은 매물 주소에, 개인 글·좌표 없는 글은 동네 중심에, 같은 주소는 한 핀으로 묶는다', () => {
+  const map = 'Google 지도: https://www.google.com/maps/search/?api=1&query=49.22594%2C-123.00041\n위치: 6000 McKay Ave';
+  const base = { cityId: 'vancouver', tag: { slug: 'housing' }, listingDetails: { type: 'housing', deal: 'rent_offer', area: 'metrotown' }, price: 2100 };
+  const business = { id: 'a', ...base, business: { id: 'b1', name: '메트로 렌탈' }, body: `첫 줄\n\n${map}` };
+  assert.deepEqual(listingPin(business, 'ko'), { key: '49.22594,-123.00041', latitude: 49.22594, longitude: -123.00041, name: '메트로타운' });
+  const member = { id: 'b', ...base, body: `첫 줄\n\n${map}` };
+  assert.equal(listingPin(member, 'ko').key, 'metrotown', 'a member\'s address snaps to the card neighborhood');
+  const plain = { id: 'c', ...base, business: { id: 'b1', name: '메트로 렌탈' }, body: '주소 없는 글' };
+  assert.equal(listingPin(plain, 'ko').key, 'metrotown', 'no coordinates: the card neighborhood');
+  const sameBuilding = { ...business, id: 'd', price: 2400 };
+  const areas = groupListingsByArea([business, sameBuilding, member, plain], 'ko');
+  assert.deepEqual(areas.map(area => [area.id, area.posts.map(item => item.id), area.label]),
+    [['area:49.22594,-123.00041', ['a', 'd'], '메트로타운 · 2'], ['area:metrotown', ['b', 'c'], '메트로타운 · 2']]);
+});

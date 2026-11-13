@@ -1,6 +1,6 @@
 import { translateUi } from '../i18n/index.ts';
 import type { AppLanguage } from '../i18n/language.ts';
-import { coarseListingPin, findNeighborhood, neighborhoodName } from './neighborhoods.ts';
+import { coarseListingPin, exactListingAddress, findNeighborhood, nearestNeighborhood, neighborhoodName } from './neighborhoods.ts';
 import { googleMapsPin, googlePinUrl, postMapBody, withPostMap } from './post-maps.ts';
 import type { ListingStatus, Post } from './types.ts';
 
@@ -260,11 +260,17 @@ export function listingStatusLabel(category: ListingCategory, status: ListingSta
 
 // ---- map ---------------------------------------------------------------------------------------
 export type ListingPin = { key: string; latitude: number; longitude: number; name: string | null };
-// Neighborhood centre only. Older posts with an exact pin are snapped too, so no listing shows a home or meeting point.
-export function listingPin(post: Pick<Post, 'cityId' | 'body' | 'listingDetails'>, language: AppLanguage): ListingPin | null {
+// Neighborhood centre, and older posts with an exact pin are snapped too, so no member's listing shows a home or meeting point.
+// A business's rent post sits at the address in its map line (exactListingAddress); listings there share one marker.
+type PinnedPost = Pick<Post, 'cityId' | 'body' | 'listingDetails' | 'business' | 'tag'>;
+export function listingPin(post: PinnedPost, language: AppLanguage): ListingPin | null {
+  const mapped = postMapBody(post.body), pin = mapped.url ? googleMapsPin(mapped.url) : null;
+  if (pin && exactListingAddress(post)) {
+    const near = nearestNeighborhood(post.cityId, pin);
+    return { key: `${pin.latitude},${pin.longitude}`, latitude: pin.latitude, longitude: pin.longitude, name: near ? neighborhoodName(near, language) : null };
+  }
   const area = findNeighborhood(post.cityId, post.listingDetails?.area);
   if (area) return { key: area.id, latitude: area.latitude, longitude: area.longitude, name: neighborhoodName(area, language) };
-  const mapped = postMapBody(post.body), pin = mapped.url ? googleMapsPin(mapped.url) : null;
   if (!pin) return null;
   const coarse = coarseListingPin(post.cityId, pin);
   return { key: coarse.neighborhood?.id ?? `${coarse.latitude},${coarse.longitude}`, latitude: coarse.latitude, longitude: coarse.longitude,
@@ -272,7 +278,7 @@ export function listingPin(post: Pick<Post, 'cityId' | 'body' | 'listingDetails'
 }
 
 export type ListingArea<P> = { id: string; latitude: number; longitude: number; name: string | null; label: string; posts: P[] };
-export function groupListingsByArea<P extends Pick<Post, 'cityId' | 'body' | 'listingDetails' | 'price'>>(posts: readonly P[], language: AppLanguage): ListingArea<P>[] {
+export function groupListingsByArea<P extends PinnedPost & Pick<Post, 'price'>>(posts: readonly P[], language: AppLanguage): ListingArea<P>[] {
   const areas = new Map<string, ListingArea<P>>();
   for (const post of posts) {
     const pin = listingPin(post, language);
@@ -345,7 +351,7 @@ export function freeBand<P extends Pick<Post, 'price' | 'listingDetails' | 'titl
   return { count: free.length, tiles: free.slice(0, 8), more: Math.max(0, free.length - 8), names: free.slice(0, 2).map(post => post.title), others: Math.max(0, free.length - 2) };
 }
 // The loaded posts by neighborhood, the same grouping as the map, busiest first (ties keep feed order). Posts with no place come last.
-export function listingAreaRows<P extends Pick<Post, 'cityId' | 'body' | 'listingDetails' | 'price'>>(posts: readonly P[], language: AppLanguage) {
+export function listingAreaRows<P extends PinnedPost & Pick<Post, 'price'>>(posts: readonly P[], language: AppLanguage) {
   const areas = groupListingsByArea(posts.filter(post => post.listingDetails), language).sort((a, b) => b.posts.length - a.posts.length);
   const placed = new Set(areas.flatMap(area => area.posts));
   return { areas, rest: posts.filter(post => !placed.has(post)) };
