@@ -194,7 +194,7 @@ test('every kind gets its own cover and fixed same-origin destination', async ()
 test('a valid first cover uses the bounded id-only preview image egress without storage signing', async () => {
   let count = 0;
   const response = await handleSharePreview(request(), env, async (url) => {
-    count++; assert.equal(String(url), 'https://project.supabase.co/rest/v1/rpc/get_shared_link_preview');
+    if (String(url).endsWith('/get_meetup_invite_card')) return json(null); count++; assert.equal(String(url), 'https://project.supabase.co/rest/v1/rpc/get_shared_link_preview');
     return json({ ...preview, imagePath: 'PRIVATE-UPLOADER/cover.jpg' });
   });
   const html = await response.text();
@@ -206,8 +206,8 @@ test('a valid first cover uses the bounded id-only preview image egress without 
 test('invalid cover paths never trigger a second request', async () => {
   for (const imagePath of ['https://evil.example/cover.jpg', '../private.jpg', 'owner/../private.jpg', '/other-bucket/a.jpg', 'owner/%2e%2e/private.jpg', 'owner/a.jpg?x=1', 'owner\\private.jpg']) {
     let count = 0;
-    const response = await handleSharePreview(request(), env, async () => {
-      count++;
+    const response = await handleSharePreview(request(), env, async (url) => {
+      if (String(url).endsWith('/get_meetup_invite_card')) return json(null); count++;
       return json({ ...preview, imagePath });
     });
     assert.equal(count, 1, imagePath);
@@ -218,8 +218,8 @@ test('invalid cover paths never trigger a second request', async () => {
 test('only the same business post index-zero cover can select the preview-image URL', async () => {
   for (const imagePath of [`business-post/${id}/0/${'a'.repeat(32)}`, `business-post/${id}/1/${'a'.repeat(32)}`, `business-post/123e4567-e89b-42d3-a456-426614174999/0/${'a'.repeat(32)}`]) {
     let count = 0;
-    const response = await handleSharePreview(request(), env, async () => {
-      count++; return json({ ...preview, imagePath });
+    const response = await handleSharePreview(request(), env, async (url) => {
+      if (String(url).endsWith('/get_meetup_invite_card')) return json(null); count++; return json({ ...preview, imagePath });
     });
     const html = await response.text();
     assert.equal(response.status, 200); assert.equal(count, 1);
@@ -328,8 +328,8 @@ test('short gateway routes preserve the legacy preview, privacy headers and UUID
   const gateway = 'https://gling-share-preview.vercel.app';
   const configured = { ...env, SHARE_ORIGIN: gateway };
   let calls = 0;
-  const fetcher = async (_url, init) => {
-    calls++;
+  const fetcher = async (url, init) => {
+    if (String(url).endsWith('/get_meetup_invite_card')) return json(null); calls++;
     assert.deepEqual(JSON.parse(init.body), { p_post_id: id });
     assert.equal(init.headers.Authorization, undefined); assert.equal(init.headers.Cookie, undefined);
     return json({ ...preview, body: 'PRIVATE-BODY' });
@@ -361,4 +361,48 @@ test('a post pinned to a Gling map place leads its link description with the pla
   assert.equal(await describe({ kind: 'post', schedule: null, place: 'Café <A> & "B"' }), 'Café &lt;A&gt; &amp; &quot;B&quot; · 글링 이야기 · 밴쿠버 · 로그인한 뒤 자세한 내용을 볼 수 있어요.');
   for (const place of [undefined, null, '', ' ', 5]) assert.equal(await describe({ kind: 'post', teaser: '참깨 베이글을 샀어요.', place }), '참깨 베이글을 샀어요.');
   assert.doesNotMatch(await describe({ kind: 'meetup', place: 'PRIVATE-MEETUP-PLACE' }), /PRIVATE-/);
+});
+
+test('an open meetup leads with seats left and the neighborhood, and carries only a valid sharer code', async () => {
+  const seen = [];
+  const fetcher = async (url, init) => {
+    seen.push([String(url).split('/rpc/')[1], JSON.parse(init.body)]);
+    return String(url).endsWith('/get_meetup_invite_card')
+      ? json({ id, capacity: 8, memberCount: 4, area: 'metrotown', intro: 'PRIVATE-INTRO', inviter: 'PRIVATE-INVITER' })
+      : json(preview);
+  };
+  const html = await (await handleSharePreview(new Request(`https://gling-share-preview.vercel.app/s/${short}?c=HJKM2345`), env, fetcher)).text();
+  assert.deepEqual(seen, [['get_shared_link_preview', { p_post_id: id }], ['get_meetup_invite_card', { p_post_id: id }]], 'the code never reaches the server read');
+  assert.match(html, /<meta property="og:description" content="4자리 남았어요 · 밴쿠버 메트로타운 근처 · 2026[^"]+">/);
+  assert.ok(html.includes(`post?id=${id}&amp;shared=1&amp;invite=1&amp;code=HJKM2345`));
+  assert.doesNotMatch(html, /PRIVATE-|함께할 모임에 초대됐어요!/);
+
+  for (const query of ['?c=bad', '?c=HJKM2345&c=HJKM2345', '?c=HJKM234O', '?code=HJKM2345']) {
+    const other = await (await handleSharePreview(new Request(`https://gling-share-preview.vercel.app/s/${short}${query}`), env, fetcher)).text();
+    assert.ok(other.includes(`post?id=${id}&amp;shared=1&amp;invite=1"`), query);
+  }
+  const story = await (await handleSharePreview(new Request(`https://gling-share-preview.vercel.app/s/${short}?c=HJKM2345`), env, async () => json({ ...preview, kind: 'post' }))).text();
+  assert.doesNotMatch(story, /code=/, 'only meetup invitations carry the code');
+});
+
+test('the older meetup line stays when the card is missing, full, unknown or the read fails', async () => {
+  for (const card of [null, { id, capacity: 4, memberCount: 4 }, { id: 'other', capacity: 8, memberCount: 1, area: 'metrotown' }, 'throw', 'status']) {
+    const html = await (await handleSharePreview(request(), env, async (url) => {
+      if (!String(url).endsWith('/get_meetup_invite_card')) return json(preview);
+      if (card === 'throw') throw new TypeError('network');
+      return card === 'status' ? json({}, 500) : json(card);
+    })).text();
+    assert.match(html, /<meta property="og:description" content="함께할 모임에 초대됐어요! · 밴쿠버 · 2026/, JSON.stringify(card));
+  }
+  const area = await (await handleSharePreview(request(), env, async (url) => json(String(url).endsWith('/get_meetup_invite_card') ? { id, capacity: 4, memberCount: 4, area: 'metrotown' } : preview))).text();
+  assert.match(area, /content="밴쿠버 메트로타운 근처 · 2026/, 'a full meetup still names its neighborhood');
+  let cards = 0;
+  await handleSharePreview(request(), env, async (url) => { if (String(url).endsWith('/get_meetup_invite_card')) cards++; return json({ ...preview, closed: true }); });
+  assert.equal(cards, 0, 'a closed meetup does not read the card');
+});
+
+test('static continuation keeps one valid sharer code and nothing else', () => {
+  const base = `https://gling.ej-entertainment.com/post?id=${id}&shared=1&invite=1`;
+  assert.deepEqual(runRedirect(`${base}&code=HJKM2345`), [`${base}&code=HJKM2345`]);
+  for (const bad of [`${base}&code=bad`, `${base}&code=HJKM2345&code=HJKM2345`, `${base}&code=hjkm2345`, `${base}&c=HJKM2345`]) assert.deepEqual(runRedirect(bad), [], bad);
 });

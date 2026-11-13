@@ -71,7 +71,8 @@ test('authenticated read-only article reads one exact post, no comments and only
 test('meetup projection omits raw body and private host/application fields before article mapping', async () => {
   const row = { id, title: 'Meetup', body: 'PRIVATE_DESTINATION_AND_CONTACT', image_paths: [], author_nickname: 'Harin',
     room_preview: { id: 'room', title: 'Meetup', memberCount: 3, verifiedOnly: true, category: 'casual', recommendedAgeMin: 20, recommendedAgeMax: 39,
-      startsAt: '2026-11-01T19:00:00Z', hostDisplayName: 'PRIVATE_HOST', applicationQuestion: 'PRIVATE_QUESTION', secret: 'PRIVATE_OTHER' } };
+      startsAt: '2026-11-01T19:00:00Z', hostDisplayName: 'PRIVATE_HOST', applicationQuestion: 'PRIVATE_QUESTION', secret: 'PRIVATE_OTHER',
+      recruitingClosed: true, languageExchange: { languages: ['ko', 'en'], share: 50 } } };
   const api = setup({ data: [row], error: null });
   const post = await api.loadSharedLinkPost(api.client, id);
   assert.equal(post.body, '');
@@ -79,6 +80,8 @@ test('meetup projection omits raw body and private host/application fields befor
   // The logged-out join screen shows the category chip, the age fact and the host's meetup name from the public row.
   assert.equal(post.room.category, 'casual'); assert.equal(post.room.recommendedAgeMin, 20); assert.equal(post.room.recommendedAgeMax, 39);
   assert.equal(post.room.hostDisplayName, 'Harin');
+  // The invitation and shop QR pages show the language pair and a paused recruitment, as the app's public card does.
+  assert.equal(post.room.recruitingClosed, true); assert.deepEqual(post.room.languageExchange, { languages: ['ko', 'en'], share: 50 });
   assert.equal(JSON.stringify(api.mapped).includes('PRIVATE_'), false);
   assert.equal(post.imageUris.length, 0);
 });
