@@ -32,6 +32,12 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
   post_like: [[/^(.+)님이 내 글에 공감했어요\.$/, m => `${m[1]} liked your post.`]],
   friend_request: [[/^(.+)님이 친구 요청을 보냈어요\.$/, m => `${m[1]} sent you a friend request.`]],
   friend_accepted: [[/^(.+)님과 친구가 됐어요\.$/, m => `You and ${m[1]} are now friends.`]],
+  // Friend saves and Friday picks: 20261114030000_friend_save_and_weekend_alerts.sql.
+  friend_saved_place: [
+    [/^(.+?)님이 장소 (\d+)곳을 저장했어요\.$/, m => `${m[1]} saved ${m[2]} places.`],
+    [/^(.+?)님이 ‘(.+)’ 저장했어요\.$/, m => `${m[1]} saved “${m[2]}”.`],
+  ],
+  weekend_picks: [[/^이번 주말 갈 만한 곳 골라 뒀어요\. (.+)$/, m => `A few picks for this weekend: ${m[1]}`]],
   // 동네 말풍선 지도 (20261105030000).
   live_bubble_request: [
     [/^(.+)님이 말풍선을 보고 대화를 신청했어요\.$/, m => `${m[1]} saw your bubble and asked to chat.`],

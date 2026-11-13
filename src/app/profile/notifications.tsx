@@ -16,7 +16,7 @@ import { useAuth } from '@/lib/auth';
 import { parseHashtags } from '@/lib/hashtags';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES, TAGS } from '@/lib/mock';
-import { loadNotificationPreferences, NOTIFICATION_PREFERENCES_CHANGED, NOTIFICATION_SETTING_GROUPS, saveNotificationPreferences, settingPatch, settingState, type NotificationPreferences } from '@/lib/notification-preferences';
+import { loadNotificationPreferences, NOTIFICATION_PREFERENCES_CHANGED, NOTIFICATION_SETTING_GROUPS, saveNotificationPreferences, settingPatch, settingRowShown, settingState, type NotificationPreferences } from '@/lib/notification-preferences';
 import { pushConfigured, pushPermissionGranted, pushSupported, registerPushDevice, unregisterPushDevice } from '@/lib/push-notifications';
 import { supabase } from '@/lib/supabase';
 
@@ -115,7 +115,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.label}>{group.id === 'mine' ? tr("나한테 온 것") : group.id === 'city' ? tr("{0} 소식", tr(cityName)) : tr("계정")}</ThemedText>
         </View>
         <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
-          {group.rows.map(row => {
+          {group.rows.filter(row => settingRowShown(preferences, row)).map(row => {
             const state = settingState(preferences, row);
             const description = row.id === 'interests' && preferences.interest_hashtags.length ? preferences.interest_hashtags.map(tag => `#${tag}`).join(' ') : row.description && tr(row.description);
             return <CategoryRow key={row.id} label={tr(row.label)} description={description || undefined} app={state.app} push={state.push} pushDisabled={state.pushDisabled} locked={!!row.locked} disabled={busy}

@@ -19,6 +19,8 @@ export const NOTIFICATION_CATEGORIES = [
   { key: 'weekly_ranking', label: '주간 인기 글 순위' },
   { key: 'merchant_updates', label: '저장한 비즈니스 새 소식' },
   { key: 'merchant_operations', label: '비즈니스 게시·연결 문제' },
+  { key: 'friend_saves', label: '친구가 저장한 곳' },
+  { key: 'weekend_picks', label: '주말 갈 만한 곳' },
   { key: 'account_security', label: '계정 보안' },
 ] as const;
 export type NotificationCategory = typeof NOTIFICATION_CATEGORIES[number]['key'];
@@ -26,6 +28,8 @@ export type NotificationPreferences = Record<NotificationCategory, boolean> & {
   push_enabled: boolean;
   /** Categories whose push is off while the in-app row stays. Older servers omit it (= none muted). */
   push_muted: string[];
+  /** Server-switched categories that are on (20261114030000). Older servers omit it (= none). */
+  switched_on: string[];
   message_preview: boolean;
   interest_tag_ids: number[];
   interest_hashtags: string[];
@@ -37,9 +41,10 @@ function preferenceReadback(data: unknown): NotificationPreferences {
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('NOTIFICATION_PREFERENCES_READ_FAILED');
   const row = data as NotificationPreferences;
   if (['merchant_updates', 'merchant_operations', 'account_security'].some(key => row[key as NotificationCategory] != null && typeof row[key as NotificationCategory] !== 'boolean')) throw new Error('NOTIFICATION_PREFERENCES_READ_FAILED');
-  const muted = (row as { push_muted?: unknown }).push_muted;
+  const muted = (row as { push_muted?: unknown }).push_muted, on = (row as { switched_on?: unknown }).switched_on;
   return { ...row, merchant_updates: row.merchant_updates ?? true, merchant_operations: row.merchant_operations ?? true, account_security: row.account_security ?? true,
-    push_muted: Array.isArray(muted) ? muted.filter((key): key is string => typeof key === 'string') : [] };
+    push_muted: Array.isArray(muted) ? muted.filter((key): key is string => typeof key === 'string') : [],
+    switched_on: Array.isArray(on) ? on.filter((key): key is string => typeof key === 'string') : [] };
 }
 
 export async function loadNotificationPreferences(client: SupabaseClient): Promise<NotificationPreferences> {
@@ -133,7 +138,8 @@ export function openNotificationTarget({ route: value, notification, adminAccoun
   return true;
 }
 
-export type SettingRow = { id: string; label: string; description?: string; keys: NotificationCategory[]; locked?: boolean };
+// gated rows are for alerts the server ships switched off; they show once get_notification_preferences lists them in switched_on.
+export type SettingRow = { id: string; label: string; description?: string; keys: NotificationCategory[]; locked?: boolean; gated?: true };
 // Settings rows by group; each category appears once (direct_requests stays server-side only).
 export const NOTIFICATION_SETTING_GROUPS: { id: 'mine' | 'city' | 'account'; rows: SettingRow[] }[] = [
   { id: 'mine', rows: [
@@ -144,6 +150,7 @@ export const NOTIFICATION_SETTING_GROUPS: { id: 'mine' | 'city' | 'account'; row
     { id: 'meetups', label: '모임', description: '신청·수락·일정 변경·하루 전 안내', keys: ['meetups'] },
     { id: 'business', label: '비즈니스', description: '후기·답변·게시 문제', keys: ['merchant_reviews', 'merchant_operations'] },
     { id: 'merchant_updates', label: '저장한 비즈니스 새 소식', description: '새 소식 받기를 켠 비즈니스만', keys: ['merchant_updates'] },
+    { id: 'friend_saves', label: '친구가 저장한 곳', description: '친구마다 하루 한 번', keys: ['friend_saves'], gated: true },
   ] },
   { id: 'city', rows: [
     { id: 'city_food', label: '맛집', keys: ['city_food'] },
@@ -152,11 +159,15 @@ export const NOTIFICATION_SETTING_GROUPS: { id: 'mine' | 'city' | 'account'; row
     { id: 'interests', label: '관심 태그 새 글', keys: ['interests'] },
     { id: 'nearby', label: '근처 새 모임', keys: ['nearby'] },
     { id: 'weekly_ranking', label: '이번 주 인기 글', description: '월요일에 한 번', keys: ['weekly_ranking'] },
+    { id: 'weekend_picks', label: '주말 갈 만한 곳', description: '금요일 낮에 한 번', keys: ['weekend_picks'], gated: true },
   ] },
   { id: 'account', rows: [
     { id: 'account_security', label: '계정 보안', description: '새 기기 로그인·비밀번호 변경. 끌 수 없어요', keys: ['account_security'], locked: true },
   ] },
 ];
+
+export const settingRowShown = (preferences: Pick<NotificationPreferences, 'switched_on'>, row: SettingRow) =>
+  !row.gated || row.keys.every(key => preferences.switched_on.includes(key));
 
 export function settingState(preferences: Pick<NotificationPreferences, NotificationCategory | 'push_enabled' | 'push_muted'>, row: SettingRow) {
   const app = !!row.locked || row.keys.every(key => preferences[key] !== false);

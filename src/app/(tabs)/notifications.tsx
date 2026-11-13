@@ -55,7 +55,7 @@ const KIND_SYMBOLS: Record<string, SymbolViewProps['name']> = {
 // 종류별 3D 그림 (app-3d-ui 시안). 답글·태그·관리자·불꽃은 아직 빚지 않아서 종을 쓴다.
 const KIND_CLAY = new Map<SymbolViewProps['name'], ClayName>([[KIND_SYMBOLS.likes, 'heart_on'], [KIND_SYMBOLS.comment, 'bubble'], [KIND_SYMBOLS.meetups, 'chip_meetup'],
   [KIND_SYMBOLS.city_food, 'chip_dining'], [KIND_SYMBOLS.city_places, 'chip_places'], [KIND_SYMBOLS.weekly_ranking, 'trophy']]);
-const CITY_LABELS: Record<string, string> = { city_food: '맛집', city_places: '가볼 만한 곳·행사', trending: '지금 뜨는 글', interests: '관심 태그', nearby: '근처 새 모임', weekly_ranking: '이번 주 인기 글' };
+const CITY_LABELS: Record<string, string> = { city_food: '맛집', city_places: '가볼 만한 곳·행사', trending: '지금 뜨는 글', interests: '관심 태그', nearby: '근처 새 모임', weekly_ranking: '이번 주 인기 글', weekend_picks: '주말 갈 만한 곳' };
 function symbolFor(item: InboxItem<AppNotification>, admin: boolean) {
   const row = item.lead;
   if (admin) return KIND_SYMBOLS.admin;
@@ -63,6 +63,7 @@ function symbolFor(item: InboxItem<AppNotification>, admin: boolean) {
   if (row.kind === 'comment' || row.kind === 'reply') return KIND_SYMBOLS[row.kind];
   if (row.kind.startsWith('meetup') || row.category === 'meetups' || row.category === 'nearby') return KIND_SYMBOLS.meetups;
   if (row.kind === 'trending_hashtag' || row.category === 'interests') return KIND_SYMBOLS.tag;
+  if (row.category === 'friend_saves' || row.category === 'weekend_picks') return KIND_SYMBOLS.city_places;
   return KIND_SYMBOLS[row.category] ?? KIND_SYMBOLS.system;
 }
 
