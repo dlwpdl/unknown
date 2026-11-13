@@ -63,7 +63,7 @@ test('notification settings save only the requested patch and propagate server f
   const calls = [];
   const client = { rpc: async (...args) => { calls.push(args); return { data: { replies: false }, error: null }; } };
   await loadNotificationPreferences(client);
-  assert.deepEqual(await saveNotificationPreferences(client, { replies: false }), { replies: false, merchant_updates: true, merchant_operations: true, account_security: true, push_muted: [] });
+  assert.deepEqual(await saveNotificationPreferences(client, { replies: false }), { replies: false, merchant_updates: true, merchant_operations: true, account_security: true, push_muted: [], switched_on: [] });
   assert.deepEqual(calls, [['get_notification_preferences'], ['update_notification_preferences', { p_preferences: { replies: false } }]]);
   await assert.rejects(saveNotificationPreferences({ rpc: async () => ({ error: new Error('NETWORK') }) }, { nearby: true }), /NETWORK/);
 });
@@ -79,7 +79,7 @@ test('message preview is a self-scoped preference patch and preserves the server
   const calls = [];
   const saved = { message_preview: false, messages: true, merchant_reviews: true };
   const client = { rpc: async (...args) => { calls.push(args); return { data: saved, error: null }; } };
-  assert.deepEqual(await saveNotificationPreferences(client, { message_preview: false }), { ...saved, merchant_updates: true, merchant_operations: true, account_security: true, push_muted: [] });
+  assert.deepEqual(await saveNotificationPreferences(client, { message_preview: false }), { ...saved, merchant_updates: true, merchant_operations: true, account_security: true, push_muted: [], switched_on: [] });
   assert.deepEqual(calls, [['update_notification_preferences', { p_preferences: { message_preview: false } }]]);
   await assert.rejects(saveNotificationPreferences({ rpc: async () => ({ error: new Error('AUTH_REQUIRED') }) }, { message_preview: true }), /AUTH_REQUIRED/);
 });
@@ -87,9 +87,9 @@ test('message preview is a self-scoped preference patch and preserves the server
  test('new categories default on without resetting existing opt-outs or city settings', async () => {
   const legacy = { replies: false, city_food: false, push_enabled: false, interest_tag_ids: [2], interest_hashtags: ['coffee'] };
   const result = await loadNotificationPreferences({ rpc: async () => ({ data: legacy }) });
-  assert.deepEqual(result, { ...legacy, merchant_updates: true, merchant_operations: true, account_security: true, push_muted: [] });
+  assert.deepEqual(result, { ...legacy, merchant_updates: true, merchant_operations: true, account_security: true, push_muted: [], switched_on: [] });
   const optedOut = { ...legacy, merchant_updates: false, merchant_operations: false, account_security: false, push_muted: ['trending'] };
-  assert.deepEqual(await loadNotificationPreferences({ rpc: async () => ({ data: optedOut }) }), optedOut);
+  assert.deepEqual(await loadNotificationPreferences({ rpc: async () => ({ data: optedOut }) }), { ...optedOut, switched_on: [] });
  });
 
 test('business operation notification accepts only the exact internal merchant destination', () => {
