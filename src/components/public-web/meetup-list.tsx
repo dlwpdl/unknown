@@ -5,16 +5,27 @@ import { ControlMetrics, ControlMotion, Typography } from '@/constants/design-sy
 import { Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
-import { chillingAvailability, chillingSchedule } from '@/lib/chilling';
+import { chillingAvailability, chillingSchedule, type ChillingSchedule } from '@/lib/chilling';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 import { previewImage } from '@/lib/shared-link-preview';
 import type { Post } from '@/lib/types';
 
+// Schedule, city and members, the same on a meetup's list card and its detail page. Needs --pm-small-gap and --pm-meta from the page.
+export function MeetupDetails({ room, city }: { room: ChillingSchedule & { memberCount?: number | null; capacity?: number | null }; city: string }) {
+  const { language, locale } = useLanguage(), ko = language === 'ko';
+  const memberCount = Number.isSafeInteger(room.memberCount) && room.memberCount! >= 0 ? room.memberCount! : null;
+  const capacity = Number.isSafeInteger(room.capacity) && room.capacity! > 0 ? room.capacity! : null;
+  return <dl className="public-meetup-details"><div><dt>{ko ? '일정' : 'When'}</dt><dd>{chillingSchedule(room, locale)}</dd></div>
+    <div><dt>{ko ? '도시' : 'City'}</dt><dd>{city}</dd></div>
+    <div><dt>{ko ? '참여' : 'Members'}</dt><dd>{memberCount === null ? ko ? '참여 현황 확인 필요' : 'Attendance unavailable' : ko ? `${memberCount.toLocaleString(locale)}명 참여` : `${memberCount.toLocaleString(locale)} members`}
+      {capacity !== null && (ko ? ` · 정원 ${capacity.toLocaleString(locale)}명` : ` · Capacity ${capacity.toLocaleString(locale)}`)}</dd></div></dl>;
+}
+
 export function PublicMeetupList({ posts, cityName, loading, failed, onRetry }: {
   posts: Post[]; cityName: string; loading: boolean; failed: boolean; onRetry: () => void;
 }) {
-  const { language, locale, tr } = useLanguage(), ko = language === 'ko';
+  const { language, tr } = useLanguage(), ko = language === 'ko';
   const theme = useTheme(), { play } = useInteractionFeedback();
   const [failedImages, setFailedImages] = useState<Set<string>>(() => new Set());
   const meetups = posts.filter(post => !!post.room);
@@ -49,10 +60,7 @@ export function PublicMeetupList({ posts, cityName, loading, failed, onRetry }: 
                 : <span>{image ? ko ? '사진을 불러오지 못했어요' : 'Photo unavailable' : ko ? '모임 사진이 없어요' : 'No meetup photo'}</span>}</div>
               <div className="public-meetup-content"><p className="public-meetup-kind">{room.eventKind === 'once' ? ko ? '일회성 모임' : 'One-time meetup' : ko ? '지속 모임' : 'Recurring meetup'}{state && <span className="public-meetup-status">{state}</span>}</p>
                 <h3>{title}</h3>
-                <dl className="public-meetup-details"><div><dt>{ko ? '일정' : 'When'}</dt><dd>{chillingSchedule(room, locale)}</dd></div>
-                  <div><dt>{ko ? '도시' : 'City'}</dt><dd>{city}</dd></div>
-                  <div><dt>{ko ? '참여' : 'Members'}</dt><dd>{memberCount === null ? ko ? '참여 현황 확인 필요' : 'Attendance unavailable' : ko ? `${memberCount.toLocaleString(locale)}명 참여` : `${memberCount.toLocaleString(locale)} members`}
-                    {capacity !== null && (ko ? ` · 정원 ${capacity.toLocaleString(locale)}명` : ` · Capacity ${capacity.toLocaleString(locale)}`)}</dd></div></dl>
+                <MeetupDetails room={room} city={city} />
                 <span className="public-meetup-cue">{ko ? '모임 살펴보기' : 'View meetup'} <span aria-hidden="true">→</span></span>
               </div>
               </a>

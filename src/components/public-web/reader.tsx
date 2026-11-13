@@ -6,19 +6,17 @@ import { useReaderAnalytics } from './analytics';
 import { FeedAd, PublicFestivals, PublicMerchantProfile, PublicMerchantProfileLink } from './lazy-sections';
 import { PublicMeetupList } from './meetup-list';
 import { AppStoreChoices, AppStoreRating, InstallAction, useDevice } from './app-store-choices';
+import { PublicFooter, PublicHeader, readerPalette } from './public-header';
 import { contentAdPosition } from '@/lib/content-ad-placement';
 
-import { Asset } from 'expo-asset';
 import { splitPostAttachments } from '../../../supabase/functions/_shared/post-links';
 import { PostAttachmentLink } from '@/components/post-attachment-link';
 import { useLocalSearchParams, usePathname } from 'expo-router';
 import Head from 'expo-router/head';
-import { Fragment, useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react';
+import { Fragment, useEffect, useState, useSyncExternalStore } from 'react';
 
-import { WebNightColors } from '@/constants/theme';
 import { ControlMetrics } from '@/constants/design-system';
 import { useLanguage } from '@/hooks/use-language';
-import { useAuth } from '@/lib/auth';
 import { chillingSchedule, recommendedAgeLabel } from '@/lib/chilling';
 import { appendUniquePosts, loadPublicFeed, loadPublicPost, type FeedCursor } from '@/lib/feed-data';
 import { CITIES, TAGS } from '@/lib/mock';
@@ -28,18 +26,15 @@ import { hasAdLabel } from '@/lib/hashtags';
 import { publicMerchantId, publicWebTarget } from '@/lib/public-web';
 import { buildSharedPostUrl } from '@/lib/sharing';
 import { publicWebClient } from '@/lib/public-web-client';
-import { jsonLd, postSeo, publicCitySubpage, publicCitySubpageMeta, publicCompanyUrl, publicMeetupsMeta, publicSiteName, PUBLIC_CHANNELS, PUBLIC_SITE } from '@/lib/public-seo';
-import { CONTACT_EMAIL } from '@/lib/contact';
+import { jsonLd, postSeo, publicCitySubpage, publicCitySubpageMeta, publicCompanyUrl, publicMeetupsMeta, publicSiteName, PUBLIC_SITE } from '@/lib/public-seo';
 import { adoptStatic } from './static-slot';
 import { publicHomeSchema } from './metadata';
 import { InteractionFeedbackProvider, useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadMerchantSource, merchantSourceActionLabel, trackPublicMerchantSourceClick, type MerchantSource } from '@/lib/merchant-source';
 import type { Post } from '@/lib/types';
 
-const wordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark.png')).uri;
 const BRAND_CARD = `${PUBLIC_SITE}/share-covers/post.png`;
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
-const palette = Object.fromEntries(Object.entries(WebNightColors).map(([key, value]) => [`--${key}`, value])) as CSSProperties;
 const cities = CITIES.filter((city) => city.state === 'open');
 // Meetup place checks pull the ~150 KB gzip city place catalog, so it loads only once loaded posts include a meetup.
 let meetupPlaces: typeof import('./meetup-place') | null = null;
@@ -158,7 +153,6 @@ export default function PublicReader() {
 
 function ReaderContent() {
   const { play } = useInteractionFeedback();
-  const { isAuthed } = useAuth();
   const { language, tr } = useLanguage(), ko = language === 'ko';
   const params = useLocalSearchParams<{ id?: string; postId?: string; userId?: string; returnPostId?: string; requestId?: string; city?: string; tag?: string }>();
   const routerPath = usePathname();
@@ -273,7 +267,7 @@ function ReaderContent() {
     }
   }
 
-  return <div className="reader" style={palette} lang={language}>
+  return <div className="reader" style={readerPalette} lang={language}>
     <Head><title>{detail && noindex ? ko ? '글을 찾을 수 없어요 | 글링' : 'Post unavailable | Gling' : pageTitle}</title>
       <meta name="description" content={description} />
       <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
@@ -293,17 +287,8 @@ function ReaderContent() {
       {schema && <script type="application/ld+json">{jsonLd(schema)}</script>}
     </Head>
     <a data-analytics="web_control_4" className="reader-skip" href="#reader-main">{ko ? '본문으로 바로가기' : 'Skip to content'}</a>
-    <header className="reader-header">
-      <a data-analytics="web_control_5" className="reader-brand" href="/" aria-label={ko ? '글링 홈' : 'Gling home'}><img src={wordmark} alt="gling" width="144" height="60" /></a>
-      <nav aria-label={ko ? '주요 메뉴' : 'Main navigation'}>
-        <a href={`/${city.id}`} aria-current={browse && !meetupPage && !tag ? 'page' : undefined} onClick={() => play('selection')}>{ko ? '오늘' : 'Today'}</a>
-        <a data-analytics="web_control_7" href={`/meetups?city=${city.id}`} aria-current={meetupPage ? 'page' : undefined} onClick={() => play('selection')}>{ko ? '모임' : 'Meetups'}</a>
-        <a data-analytics="web_control_6" href={`/?city=${city.id}&tag=festival#stories`} aria-current={tag?.slug === 'festival' ? 'page' : undefined} onClick={() => play('selection')}>{ko ? '페스티벌' : 'Festivals'}</a>
-        <a href={`/${(placePage && subCity ? subCity : city).id}/places`} aria-current={placePage ? 'page' : undefined} onClick={() => play('selection')}>{ko ? '장소' : 'Places'}</a>
-        <a href="/visited" onClick={() => play('selection')}>Gling Visited</a>
-      </nav>
-      <a className="reader-header-account" href="/merchant/" rel="nofollow" onClick={() => play('selection')}>{isAuthed ? ko ? '비즈니스 관리' : 'Manage business' : ko ? '비즈니스 로그인' : 'Business sign-in'}</a>
-    </header>
+    <PublicHeader cityId={city.id} placesCityId={placePage && subCity ? subCity.id : undefined}
+      current={meetupPage ? 'meetups' : tag?.slug === 'festival' ? 'festival' : placePage ? 'places' : browse && !tag ? 'today' : undefined} />
     <main id="reader-main" className={`reader-main${company ? ' reader-main-company' : ''}`} tabIndex={-1}>
       <div className="reader-content">
         {browse ? <>
@@ -331,6 +316,7 @@ function ReaderContent() {
             </article>{contentAdPosition(index, current.posts.length) && <FeedAd key={`ad-after-${item.id}`} />}</Fragment>; })}</InteractionFeedbackProvider>}
           </div>}
           {current?.more && <button data-analytics="web_control_11" className="reader-more" onClick={() => { play('selection'); void more(); }} disabled={busy}>{busy ? ko ? '불러오는 중…' : 'Loading…' : meetupPage ? ko ? '모임 더 보기' : 'More meetups' : ko ? '이야기 더 보기' : 'More stories'}</button>}
+          {cityPage && <div ref={adoptStatic('gling-static-city-pages')} />}
         </> : company ? <InteractionFeedbackProvider>{merchantId
           ? <PublicMerchantProfile key={merchantId} merchantId={merchantId} />
           : hydrated ? <div className="reader-notice"><h1>{ko ? '비즈니스 프로필을 찾을 수 없어요' : 'Business profile not found'}</h1><p>{ko ? '올바른 비즈니스 프로필 링크를 열어 주세요.' : 'Check the link and try again.'}</p></div>
@@ -359,7 +345,6 @@ function ReaderContent() {
       <aside id="app"><AppInvitation target={target} body={sub?.kind === 'place' ? '이 장소에 후기를 남기거나 같이 갈 모임을 찾으려면 앱에서 열어 주세요.' : undefined} /></aside>
     </main>
     <InstallBar />
-    <footer className="reader-footer"><div className="reader-footer-brand"><span>{ko ? 'gling · 같이 갈 사람, 같이 나눌 이야기' : 'gling · People to go with, stories to share'}</span>
-      <nav aria-label={ko ? '글링 연락처와 SNS' : 'Contact and social links'}><a href={`mailto:${CONTACT_EMAIL}`} onClick={() => play('selection')}>{CONTACT_EMAIL}</a>{PUBLIC_CHANNELS.map(channel => <a key={channel.url} href={channel.url} rel="me noopener" onClick={() => play('selection')}>{channel.name}</a>)}</nav></div><nav aria-label={ko ? '정책' : 'Policies'}><a href="/immigration" onClick={() => play('selection')}>{ko ? '이민·유학 길잡이' : 'Immigration guide (Korean)'}</a><a href="/business" onClick={() => play('selection')}>{ko ? '비즈니스 등록·관리' : 'List or manage your business'}</a><a data-analytics="web_control_18" href="/terms">{ko ? '이용약관' : 'Terms'}</a><a data-analytics="web_control_19" href="/privacy">{ko ? '개인정보처리방침' : 'Privacy'}</a><a data-analytics="web_control_20" href="/account-deletion">{ko ? '계정 삭제' : 'Delete account'}</a></nav></footer>
+    <PublicFooter />
   </div>;
 }

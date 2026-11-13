@@ -165,10 +165,11 @@ function readerMarkup(path, { mounted = false, search = '', directPost = false, 
   }
   const article = load('../src/components/public-web/shared-post-article.tsx');
   modules['./shared-post-article'] = article;
+  modules['./public-header'] = load('../src/components/public-web/public-header.tsx');
+  modules['./meetup-list'] = load('../src/components/public-web/meetup-list.tsx');
   const landing = load('../src/components/public-web/shared-post-landing.tsx');
   modules['./shared-post-landing'] = { __esModule: true, default: landing.default };
   modules['./app-store-choices'] = load('../src/components/public-web/app-store-choices.tsx');
-  modules['./meetup-list'] = load('../src/components/public-web/meetup-list.tsx');
   const component = articlePost ? article.SharedPostArticle : directPost ? landing.default : load('../src/components/public-web/reader.tsx').default;
   return renderToStaticMarkup(React.createElement(component, articlePost ? { post: articlePost } : undefined));
 }

@@ -94,7 +94,7 @@ body:has(.reader) { margin: 0; overflow-y: auto !important; }
 .reader-footer-brand nav { gap: 20px; }
 .reader-intro-action { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
 @media (max-width: 1000px) { .reader-main { grid-template-columns: minmax(0,1fr) 260px; gap: 32px; } .reader nav { gap: 18px; } }
-@media (max-width: 760px) { .reader-main { grid-template-columns: minmax(0,1fr); padding-top: 20px; gap: 34px; } .reader-main aside { position: static; } .reader-invitation { max-width: none; } .reader-header, .reader-footer { flex-wrap: wrap; } .reader-footer nav { gap: 0 16px; } }
+@media (max-width: 900px) { .reader-main { grid-template-columns: minmax(0,1fr); padding-top: 20px; gap: 34px; } .reader-main aside { position: static; } .reader-invitation { max-width: none; } .reader-header, .reader-footer { flex-wrap: wrap; } .reader-footer nav { gap: 0 16px; } }
 @media (max-width: 560px) { .reader-header, .reader-footer { padding: 18px 20px; } .reader-header { gap: 8px; } .reader-header nav { width: 100%; justify-content: space-between; gap: 8px; font-size: 13px; } .reader-header-account { position: absolute; top: 16px; right: 20px; padding: 0 12px; } .reader-main { padding: 16px 20px 54px; gap: 30px; } .reader-section-heading { display: block; } .reader-section-heading :is(h1,h2) { font-size:1.625rem; } .reader-section-heading > span { display: inline-block; margin-top: 12px; } .reader-card { gap: 12px; } .reader-card h3 { font-size: 19px; } .reader-thumbnail { width: 78px; height: 78px; } .reader-filters { gap: 8px; } .reader-filters button { min-width: 72px; padding: 8px 12px; } .reader-actions > * { width: 100%; } }
 @media (max-width: 760px) {
   .reader:has(.reader-install-bar) { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
@@ -110,3 +110,5 @@ body:has(.reader) { margin: 0; overflow-y: auto !important; }
 /* Keep the approved wordmark's full intrinsic frame visible. */
 .reader-header .reader-brand{display:flex;align-items:center;flex-shrink:0;width:144px;min-height:60px;overflow:visible}.reader-header .reader-brand img{display:block;width:144px;height:60px;max-width:100%;object-fit:contain;transform:none}
 @media(max-width:560px){.reader-header .reader-brand{width:116px;min-height:48px}.reader-header .reader-brand img{width:116px;height:48px}}
+/* The build-time city block keeps its centered crawler box before the reader loads; adopted, it lines up with the title and feed. */
+.reader-content #gling-static-city{max-width:none!important;margin:0 0 24px!important;padding:0!important}

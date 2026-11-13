@@ -1,6 +1,7 @@
 import Head from 'expo-router/head';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { jsonLd, publicAboutGlingEn, publicDisambiguation, PUBLIC_PLAY_STORE, PUBLIC_SITE } from '@/lib/public-seo';
+import { PublicFooter, PublicHeader, readerPalette } from './public-header';
 
 const FAQ = [
   { question: 'What is Gling?', answer: 'A community app for Koreans living in Vancouver, Toronto and Montreal. People share neighbourhood stories, food spots, rentals, jobs and used goods, find company for festivals and concerts, and start or join small meetups.' },
@@ -16,10 +17,11 @@ const link = { color: '#CBB9FF' };
 // One English page for people (and AI answers) searching in English; the community itself is in Korean.
 export default function PublicEnglish() {
   const { play } = useInteractionFeedback();
-  return <div lang="en" style={{ backgroundColor: '#0D0C10', color: '#F6F3F0', minHeight: '100%' }}>
+  return <div className="reader" lang="en" style={readerPalette}>
     <Head>
       <script type="application/ld+json">{jsonLd(publicEnglishSchema)}</script>
     </Head>
+    <PublicHeader language="en" />
     <main style={{ maxWidth: 640, margin: '0 auto', padding: '32px 20px 48px', font: '16px/1.7 system-ui, sans-serif' }}>
       <p style={{ margin: '0 0 8px', color: '#CBB9FF', fontSize: 13, fontWeight: 700 }}>Gling · 글링</p>
       <h1 style={{ margin: '0 0 8px', fontSize: 28, lineHeight: 1.35 }}>Gling, the Korean community app in Canada</h1>
@@ -38,5 +40,6 @@ export default function PublicEnglish() {
         <p style={{ margin: 0 }}>{item.answer}</p>
       </section>)}
     </main>
+    <PublicFooter language="en" />
   </div>;
 }
