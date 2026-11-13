@@ -130,8 +130,8 @@ function UploadCard({ upload }: { upload: PostUpload }) {
   const edit = () => {
     play('selection');
     clearPostUpload(upload.key);
-    // 초안은 오늘 화면의 글쓰기에 그대로 있다. 그 화면이 compose=1을 받아 창을 연다.
-    router.navigate('/?compose=1');
+    // 초안은 그 글을 쓴 창에 그대로 있다. 장소 위 글쓰기는 그 창을, 아니면 오늘 화면이 compose=1을 받아 연다(QA B10-2).
+    if (upload.edit) upload.edit(); else router.navigate('/?compose=1');
   };
 
   return <>

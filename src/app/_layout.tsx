@@ -16,6 +16,7 @@ import { LIVE_ACCESSORY, LiveBubbleBar, LiveNotice } from '@/components/live-bub
 import { NotificationObserver } from '@/components/notification-observer';
 import { PushInvite } from '@/components/push-invite';
 import { PostUploadCard } from '@/components/post-upload-card';
+import { PlaceWriterHost } from '@/components/feed-screen';
 import { SharedImport } from '@/components/shared-import';
 import { AuthProvider } from '@/lib/auth';
 import { CommunityCityProvider } from '@/lib/community-city';
@@ -71,6 +72,8 @@ function AppLayout() {
           </View>}
           {/* Opens only right after a first comment, post, meetup request or meetup creation. */}
           <PushInvite />
+          {/* '이 장소로 글쓰기'는 보던 장소 화면 위에 뜬다(사장님 2026-11-13, QA B10-2). */}
+          <PlaceWriterHost />
           {/* 글쓰기 창을 닫은 뒤에도 올리기를 앱 맨 위에서 보여 준다 (owner 2026-11-04 ③). */}
           <PostUploadCard />
           <LiveNotice />

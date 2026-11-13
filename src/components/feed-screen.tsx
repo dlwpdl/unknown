@@ -51,6 +51,7 @@ import { PollDraftFields } from '@/components/poll-draft-fields';
 import { ProfileAvatarButton } from '@/components/profile-avatar-button';
 import { BusinessWriter } from '@/components/business-writer';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
+import { openPlaceWriter, PLACE_WRITE_EVENT } from '@/hooks/use-place-compose';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ClayBoxFill, ClayIcon, ClayPillFill, useClay, useClayBox, type ClayName } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
@@ -122,13 +123,15 @@ const TAG_HINTS: Record<string, string> = {
   festival: '행사·공연·축제', education: '학교·학원·유학', shopping: '세일·장보기 정보', travel: '근교·여행 후기',
 };
 
-export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: boolean }) {
+// writeRequest: only the writer, floated over the screen in view by PlaceWriterHost (QA B10-2). No feed is loaded or drawn.
+export default function FeedScreen({ meetupsOnly = false, writeRequest }: { meetupsOnly?: boolean; writeRequest?: { place: CityPlace | null } }) {
+  const writerOnly = !!writeRequest;
   const { tr, t, language, locale: appLocale } = useLanguage();
   const theme = useTheme();
   const hidden = useContentVisibility();
   const myRequests = useMyOpenMeetupRequests();
   const reducedMotion = useReducedMotion();
-  const { fontScale, width: viewportWidth } = useWindowDimensions();
+  const { fontScale, width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const [hasBusinessSwitch, setHasBusinessSwitch] = useState(false);
   const router = useRouter();
   const { compose, hashtag, place: placeParam, placeCity } = useLocalSearchParams<{ compose?: string; hashtag?: string; place?: string; placeCity?: string }>();
@@ -143,7 +146,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   // 글쓰기 탭 대신 떠 있는 버튼 (owner 2026-11-01 A안). 웹은 아래 탭에 글쓰기가 그대로 있다.
   const clay = useClay(), clayBox = useClayBox();
   const writeFab = Platform.OS !== 'web' && !meetupsOnly;
-  const writeFabCompact = viewportWidth < 380; // 폴드 바깥 화면 같은 좁은 폭에서는 + 하나만
   // 머리 카드(처음 안내·새로 온 멤버)가 버튼 자리에 있으면 글자를 가리니 비켜 준다 (1.4.8 QA "모임 보기"). 카드가 지나가면 다시 나온다.
   const [writeFabAside, setWriteFabAside] = useState(false);
   // 내려 읽는 동안에도 비켜 있다가 올리면 다시 나온다(QA B8·H42-3). 카테고리를 바꿔 목록이 저절로 움직일 때는 따라 숨지 않는다.
@@ -254,6 +256,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const cancelFeedRequests = useCallback(() => { feedRevision.current++; setLoadingMore(false); }, []);
 
   const refreshFeed = useCallback(() => {
+    if (writerOnly) return Promise.resolve(); // 장소 위 글쓰기 창은 목록이 없다(QA B10-2)
     if (feedRequest.current?.key === feedKey && feedRequest.current.revision === feedRevision.current) {
       return feedRequest.current.promise;
     }
@@ -289,7 +292,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       });
     feedRequest.current = { key: feedKey, revision, promise };
     return promise;
-  }, [activeSort, city.id, feedKey, feedOpacity, reducedMotion, tagFilter, viewerScope]);
+  }, [activeSort, city.id, feedKey, feedOpacity, reducedMotion, tagFilter, viewerScope, writerOnly]);
 
   useEffect(() => {
     const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, () => void refreshFeed().catch(() => {}));
@@ -328,6 +331,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const showFeedSort = cityOpen && !meetupsOnly;
   const businessCategory = !meetupsOnly && TAGS.find(item => item.id === tagFilter)?.slug === 'business';
   const listingCategory = !meetupsOnly && isListingCategory(TAGS.find(item => item.id === tagFilter)?.slug) ? TAGS.find(item => item.id === tagFilter)!.slug as ListingCategory : null;
+  // 세로 760pt 미만(1080×1920 안드로이드 731dp, iPhone SE 667pt)은 위 고정 영역과 아래 탭이 화면 절반을 넘겨 글이 1.5개만 보였다. 그 화면의 부동산·구인구직·중고거래만 정렬 줄을 접는다(사장님 2026-11-13, QA B12-1).
+  const shortListingHeader = !!listingCategory && viewportHeight < 760;
   const listingPosts = useMemo(() => {
     if (!listingCategory || !listingFiltersActive(listingFilters)) return feedData;
     const now = new Date(), today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -371,12 +376,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const selectedHashtags = parseHashtags(hashtagInput);
 
   useEffect(() => {
+    if (writerOnly) return; // 인기 태그는 목록 검색 줄에만 쓴다(QA B10-2)
     let active = true;
     void loadTrendingHashtags(supabase, city.id, tagFilter)
       .then((next) => active && setTrendingTags(next))
       .catch(() => active && setTrendingTags([]));
     return () => { active = false; };
-  }, [city.id, tagFilter]);
+  }, [city.id, tagFilter, writerOnly]);
 
   useEffect(() => {
     const revision = ++searchRevision.current;
@@ -610,6 +616,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     router.setParams({ compose: undefined, place: undefined, placeCity: undefined });
     queueMicrotask(() => openWriter(place));
   }, [compose, placeParam, placeCity, openWriter, router]);
+  // 장소 화면 위 글쓰기: 부를 때마다 한 번 연다(QA B10-2). 같은 요청으로 다시 그려도 다시 열지 않는다.
+  const handledWrite = useRef<typeof writeRequest>(undefined);
+  useEffect(() => {
+    if (!writeRequest || handledWrite.current === writeRequest) return;
+    handledWrite.current = writeRequest;
+    queueMicrotask(() => openWriter(writeRequest.place));
+  }, [writeRequest, openWriter]);
 
   const pickDraftImage = async (source: 'camera' | 'library') => {
     try {
@@ -789,7 +802,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       const post = created.post;
       // 올리는 동안 목록을 새로 고쳐도 위치 기록은 글에 붙인다(계정이 바뀌면 record가 스스로 거른다).
       if (created.id) void location.record(fix, created.id);
-      if (revision === feedRevision.current) {
+      // 장소 위 글쓰기는 보던 화면에 남으니 도시·오늘 목록과 '방금 올린 글' 카드를 건드리지 않는다(사장님 2026-11-13, QA B10-2).
+      if (!writerOnly && revision === feedRevision.current) {
         setCity(draftCity);
         if (post && !meetupsOnly) setJustPosted({ post, at: Date.now(), viewer: viewerScope });
         if (post && activeSort !== 'popular') setPosts((prev) => [post, ...prev.filter(({ id }) => id !== created.id)]);
@@ -824,7 +838,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       const timer = setTimeout(() => resolve({ uri: image.uri }), 120);
       tile.measureInWindow((x, y, width, height) => { clearTimeout(timer); resolve({ uri: image.uri, from: width > 0 ? { x, y, width, height } : undefined }); });
     })));
-    if (!startPostUpload({ owner: me.id, title: input.title, photoCount: draftImages.length, photos, send })) {
+    // 실패 카드의 수정하기는 초안이 있는 이 창을 다시 연다(장소 위 글쓰기, QA B10-2). 오늘 화면 글쓰기는 원래대로 compose=1.
+    if (!startPostUpload({ owner: me.id, title: input.title, photoCount: draftImages.length, photos, send, ...(writerOnly ? { edit: () => openPlaceWriter(null) } : {}) })) {
       setSubmitting(false);
       stillUploading();
       return;
@@ -915,10 +930,12 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     )
   );
 
+  // 장소 위 글쓰기는 창(Modal)만 그린다. Modal은 크기 0인 자리에서도 화면 전체에 뜬다(QA B10-2).
+  const Shell = writerOnly ? View : TabContent;
   return (
-    <TabContent style={[styles.container, screenGlow != null && { backgroundImage: screenGlow }]}
+    <Shell style={writerOnly ? styles.writerHost : [styles.container, screenGlow != null && { backgroundImage: screenGlow }]}
       onLayout={glow.onLayout}>
-      <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}><View style={styles.safeArea} onLayout={({ nativeEvent: { layout } }) => measureList({ x: layout.x, y: layout.y })}>
+      {!writerOnly && <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}><View style={styles.safeArea} onLayout={({ nativeEvent: { layout } }) => measureList({ x: layout.x, y: layout.y })}>
         <View style={[styles.headRow, expandedHeader && styles.headRowLarge]}>
           <Pressable analyticsId="feed.home" accessibilityRole="button" accessibilityLabel={`${t.appName}, ${t.tabs.today}`}
             onPress={() => { play('selection'); router.navigate('/'); }} style={[styles.homeButton, expandedHeader && styles.homeButtonLarge]}>
@@ -1018,7 +1035,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={IconSize.chevron} tintColor={theme.accent} />
               </Pressable> : listingCategory === 'used' ? <ListingViewSwitch view={listingView} onView={changeListingView} onMap={() => setListingMap(true)} disabled={byArea} />
               : listingCategory === 'housing' ? <ListingModeSwitch mode="list" onChange={mode => setListingMap(mode === 'map')} /> : undefined}
-              byArea={listingCategory === 'used'}>
+              byArea={listingCategory === 'used'} compact={shortListingHeader}>
               {listingCategory && <ListingFilterBar category={listingCategory} cityId={city.id} filters={listingFilters} onChange={setListingFilters} />}
               {businessCategory && <ListingViewSwitch view={businessView} onView={changeBusinessView} />}
             </FeedSortControl>
@@ -1114,12 +1131,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         </Reanimated.View>}</View>
         {writeFab && !writeFabAside && !writeFabAway && <Reanimated.View entering={reducedMotion ? undefined : FadeIn.duration(ControlMotion.settleMs)} exiting={reducedMotion ? undefined : FadeOut.duration(ControlMotion.pressMs)}
           style={[styles.writeFabDock, { bottom: (Platform.OS === 'ios' ? insets.bottom : 0) + Spacing.three }]}><Pressable analyticsId="feed.write" accessibilityRole="button" accessibilityLabel={t.tabs.write} onPress={() => openWriter()}
-          style={({ pressed }) => [ControlStyles.pill, styles.writeFab, writeFabCompact && styles.writeFabCompact, controlPresentation(theme, { tone: 'primary', clay, pressed, reducedMotion }).container]}>
+          style={({ pressed }) => [ControlStyles.pill, styles.writeFab, controlPresentation(theme, { tone: 'primary', clay, pressed, reducedMotion }).container]}>
           {clay && <ClayPillFill kind="cta" />}
           <ClayIcon clay="pencil" claySize={24} name={{ ios: 'plus', android: 'add', web: 'add' }} size={IconSize.toolbar} tintColor={theme.accentInk} />
-          {!writeFabCompact && <ThemedText type="label" style={{ color: theme.accentInk }}>{t.tabs.write}</ThemedText>}
         </Pressable></Reanimated.View>}
-      </View></SafeAreaView>
+      </View></SafeAreaView>}
 
       <Modal visible={categorySheet} animationType={reducedMotion ? 'fade' : 'slide'} presentationStyle="pageSheet" onRequestClose={() => { play('selection'); setCategorySheet(false); }}>
         <SafeAreaView style={[styles.categorySheet, { backgroundColor: theme.background }]}>
@@ -1621,8 +1637,22 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         </SafeAreaProvider>
       </Modal>
     <UserSheet user={sheetUser} onClose={() => setSheetUser(null)} />
-    </TabContent>
+    </Shell>
   );
+}
+
+/**
+ * '이 장소로 글쓰기' floats the writer over the place in view, so closing it goes back to that place (owner 2026-11-13, QA B10-2).
+ * It sits in the root layout: a Modal inside a screen covered by another one is dropped on Android, so the 오늘 writer cannot open over a place.
+ * Made on the first call and kept, so a draft stays here like the 오늘 writer's; that draft is its own. A post from here shows no '방금 올린 글' card on 오늘.
+ */
+export function PlaceWriterHost() {
+  const [request, setRequest] = useState<{ place: CityPlace | null } | null>(null);
+  useEffect(() => {
+    const listener = DeviceEventEmitter.addListener(PLACE_WRITE_EVENT, (place: CityPlace | null) => setRequest({ place }));
+    return () => listener.remove();
+  }, []);
+  return request && <FeedScreen writeRequest={request} />;
 }
 
 const styles = StyleSheet.create({
@@ -1666,10 +1696,11 @@ const styles = StyleSheet.create({
   todayHeader: { paddingBottom: Spacing.one },
   journalStatusRow: { minHeight: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
   writeFabDock: { position: 'absolute', right: Spacing.three },
-  writeFab: { minHeight: ControlMetrics.action, flexDirection: 'row', gap: Spacing.one, borderWidth: 1 },
+  writerHost: { position: 'absolute', width: 0, height: 0 },
+  // 글자 없는 48pt 둥근 + 버튼: 카드를 덮는 면적을 절반쯤으로 줄인다(사장님 2026-11-13, QA B8-1·B8-3·H42-3). 읽어 주기 이름은 그대로 '글쓰기'.
+  writeFab: { minHeight: ControlMetrics.action, width: ControlMetrics.action, paddingHorizontal: 0, borderWidth: 1 },
   clayPad: { overflow: 'visible', paddingHorizontal: 18 }, clayCta: { overflow: 'visible', paddingHorizontal: 24, borderBottomWidth: 0, borderWidth: 0 },
   clayChip: { flexDirection: 'row', gap: 4, paddingLeft: 8, paddingRight: 12 },
-  writeFabCompact: { width: ControlMetrics.action, paddingHorizontal: 0 },
   journalDate: { fontSize: 12, lineHeight: 18, letterSpacing: 0.8 },
   feedArea: { flex: 1 },
   // 목록 좌우 여백까지 덮어, 위에 붙었을 때 꽉 찬 사진이 정렬 줄 옆으로 비치지 않게.

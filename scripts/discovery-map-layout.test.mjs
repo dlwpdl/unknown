@@ -321,6 +321,10 @@ test('map categories float over the map and list categories keep normal flow', (
     const fade = children(overlay)[0];
     assert.equal(fade.props.pointerEvents, 'none', 'the fade behind the chips never takes a tap');
     assert.match(Object.assign({}, ...fade.props.style).backgroundImage, /^linear-gradient\(to bottom, .*00 100%\)$/, 'it fades out toward the map');
+    assert.match(Object.assign({}, ...fade.props.style).backgroundImage, /F2 0%, .*B3 62%, .*00 100%\)$/, 'the light 11-06 fade again (owner 2026-11-13 "다시 옅게", QA C15-2·H43-2)');
+    const name = nodes(control(overlay, '다녀온 곳')).find(node => node.props?.children === '다녀온 곳');
+    const look = Object.assign({}, ...[name.props.style].flat(Infinity).filter(Boolean));
+    assert.ok(look.borderWidth > 0 && look.borderColor, 'a chip name keeps its own line, which now tells it from the map');
     assert.equal(control(overlay, '전체').props.baseColor, undefined, '전체 is a picture with its name, nothing behind it');
     assert.equal(control(overlay, '다녀온 곳').props.baseColor, undefined, 'no chip in the row has a pill behind it');
     overlay.props.onLayout({ nativeEvent: { layout: { height: 68 } } }); tree = view.render();

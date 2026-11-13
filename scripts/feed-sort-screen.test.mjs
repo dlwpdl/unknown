@@ -22,8 +22,8 @@ const glowModule = imports => {
   vm.runInNewContext(source, { exports, require: name => imports[name] });
   return exports;
 };
-function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = false, width = 390, fontScale = 1, adPosition = index => index >= 3 && (index - 3) % 4 === 0, photoConsent = null, consentSaves = [] } = {}) {
-  const slots = [], effects = [], calls = [], writes = [], drafts = [], routes = [], feedback = [], params = {}, consents = [], alerts = [];
+function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = false, writeRequest, width = 390, height, fontScale = 1, adPosition = index => index >= 3 && (index - 3) % 4 === 0, photoConsent = null, consentSaves = [] } = {}) {
+  const slots = [], effects = [], calls = [], writes = [], drafts = [], routes = [], feedback = [], params = {}, consents = [], alerts = [], reopened = [], cityChanges = [];
   let viewer = 'viewer', authLoading = false;
   let at = 0;
   const slot = initial => { const index = at++; if (!(index in slots)) slots[index] = typeof initial === 'function' ? initial() : initial; return index; };
@@ -32,7 +32,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
   const imports = {
     react: { useState: initial => { const i = slot(initial); return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; }, useRef: initial => slots[slot(() => ({ current: initial }))], useMemo: fn => fn(), useCallback: fn => fn, useEffect: fn => effects.push(fn) },
     'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': { Platform: { OS: os }, useWindowDimensions: () => ({ width, fontScale }), View: 'View', KeyboardAvoidingView: 'KeyboardAvoidingView', TextInput: 'TextInput', Modal: 'Modal', StyleSheet: { create: x => x, hairlineWidth: 1 }, Animated: { Value, View: 'AnimatedView', timing: () => ({ start() {} }), spring: () => ({ start() {} }) }, Alert: { alert: (...args) => alerts.push(args) }, Keyboard: { dismiss() {} }, DeviceEventEmitter: {}, Easing: { out: x => x, quad: 0 } },
+    'react-native': { Platform: { OS: os }, useWindowDimensions: () => ({ width, height, fontScale }), View: 'View', KeyboardAvoidingView: 'KeyboardAvoidingView', TextInput: 'TextInput', Modal: 'Modal', StyleSheet: { create: x => x, hairlineWidth: 1 }, Animated: { Value, View: 'AnimatedView', timing: () => ({ start() {} }), spring: () => ({ start() {} }) }, Alert: { alert: (...args) => alerts.push(args) }, Keyboard: { dismiss() {} }, DeviceEventEmitter: {}, Easing: { out: x => x, quad: 0 } },
     'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ push: path => routes.push(path), navigate: path => routes.push(path), setParams: next => Object.assign(params, next) }), useScrollToTop() {} },
     'react-native-reanimated': { default: { View: 'ReanimatedView' }, useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', SafeAreaProvider: 'SafeAreaProvider', useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
@@ -44,7 +44,8 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '@/constants/theme': { Colors: { light: {} }, Depth: { control: {}, card: {} }, Spacing: { one: 4, two: 8, three: 16, four: 24, five: 32 }, TabBarHeight: 64 },
     '@/i18n/ko': { t }, '@/lib/mock': { TAGS, CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }, { id: 'toronto', name: '토론토', state: 'open' }] },
     '@/lib/city-places': { composePlace: (cityId, id) => cityId === 'toronto' && id === 'osm:way:1' ? { id, cityId, name: 'Nathan Phillips Square', latitude: 43.6525, longitude: -79.3835 } : null }, '@/lib/auth': { useAuth: () => ({ isAuthed: viewer !== null, isAuthLoading: authLoading, me: { id: viewer ?? 'guest' }, promptLogin() {} }) },
-    '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버', state: 'open' }, setCity() {} }) },
+    '@/lib/community-city': { useCommunityCity: () => ({ city: { id: 'vancouver', name: '밴쿠버', state: 'open' }, setCity: next => cityChanges.push(next) }) },
+    '@/hooks/use-place-compose': { PLACE_WRITE_EVENT: 'place-write', openPlaceWriter: place => reopened.push(place) },
     '@/lib/location-provider': { useCommunityLocation: () => ({ record() {}, capture: async () => null }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/community-data': { loadListingQuota: async () => ({ used: 0, max: 3 }), createCommunityPost: (_client, input) => deferPublish ? new Promise((resolve, reject) => writes.push({ input, resolve, reject })) : Promise.resolve({ id: createdPost.id, post: createdPost }), getCommunityActionError: () => null, isContentRejected: () => false, isFirstPost: async () => false },
     '@/lib/post-maps': { withPostMap, postMapBody, googlePinUrl, googleMapsPin, withPlacePin }, '@/lib/listing-details': listingDetails, '@/lib/neighborhoods': neighborhoods,
@@ -67,10 +68,11 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     return new Proxy({}, { get: (_, key) => key === '__esModule' ? true : key === 'Image' ? 'Image' : key === 'default' ? { View: 'ReanimatedView' } : String(key) });
   }), requestAnimationFrame: fn => fn(), queueMicrotask: fn => fn(), setTimeout, clearTimeout });
   let cleanup;
-  const render = () => { at = 0; effects.length = 0; return exports.default({ meetupsOnly }); };
+  const render = () => { at = 0; effects.length = 0; return exports.default({ meetupsOnly, writeRequest }); };
   const refresh = () => { cleanup?.(); cleanup = effects.find(fn => String(fn).includes('return cancelFeedRequests'))(); };
   const list = () => nodes(render()).find(n => n.props?.analyticsId === 'components_feed-screen.flatlist.1').props;
-  return { calls, writes, drafts, routes, feedback, consents, alerts, list, refresh, params, render, openWriter() { params.compose = '1'; render(); effects.find(fn => String(fn).includes("compose !== '1'"))(); return render(); }, openTopic: () => { render(); effects.find(fn => String(fn).includes('hashtag: undefined'))(); }, setViewer: next => { viewer = next; }, setAuthLoading: next => { authLoading = next; }, sort: () => { const props = list(); return props.renderItem({ item: null, index: 1 }).props; },
+  return { calls, writes, drafts, routes, feedback, consents, alerts, reopened, cityChanges, list, refresh, params, render,
+    openPlace() { render(); effects.find(fn => String(fn).includes('handledWrite'))(); return render(); }, openWriter() { params.compose = '1'; render(); effects.find(fn => String(fn).includes("compose !== '1'"))(); return render(); }, openTopic: () => { render(); effects.find(fn => String(fn).includes('hashtag: undefined'))(); }, setViewer: next => { viewer = next; }, setAuthLoading: next => { authLoading = next; }, sort: () => { const props = list(); return props.renderItem({ item: null, index: 1 }).props; },
     publish: async () => {
       const inputs = nodes(render());
       inputs.find(n => n.props?.accessibilityLabel === t.write.titlePlaceholder).props.onChangeText('새 글');
@@ -473,11 +475,13 @@ test('Home search is a magnifier next to the profile that still says what it fin
   assert.equal(nodes(tree).some(node => node.props?.analyticsId === 'discovery.open'), false, 'no map icon stays in the header');
   assert.equal(nodes(app.list().renderItem({ item: null, index: 0 })).some(node => node.props?.analyticsId === 'discovery.open'), false, 'the rent·used map pill is gone; the map is a tab');
   assert.equal(nodes(tree).some(node => node.props?.analyticsId === 'feed.write'), false, 'web keeps its write tab');
-  for (const [width, compact] of [[390, false], [344, true]]) {
+  for (const width of [390, 430, 344]) {
     const native = screen({ os: 'ios', width });
     const write = nodes(native.render()).find(node => node.props?.analyticsId === 'feed.write');
-    assert.equal(write.props.accessibilityLabel, t.tabs.write);
-    assert.equal(nodes(write).some(node => node.props?.children === t.tabs.write), !compact, 'a narrow screen (Fold cover) keeps only the + icon');
+    assert.equal(write.props.accessibilityLabel, t.tabs.write, 'screen readers still hear 글쓰기');
+    assert.equal(nodes(write).some(node => node.props?.children === t.tabs.write), false, 'a round + with no words on every width (owner 2026-11-13, QA B8-1)');
+    const look = Object.assign({}, ...[write.props.style({ pressed: false })].flat(Infinity).filter(Boolean));
+    assert.ok(look.width >= 44 && look.minHeight >= 44 && look.width === look.minHeight && look.borderRadius >= look.width / 2, 'a 44pt+ circle');
     write.props.onPress();
     assert.equal(native.feedback.at(-1), 'reaction');
     const shown = () => nodes(native.render()).some(node => node.props?.analyticsId === 'feed.write');
@@ -570,4 +574,40 @@ test('이 장소로 글쓰기: a new draft opens with the map place in its city;
   app.openWriter();
   assert.equal(body(), before, 'a place the writer would not list attaches nothing');
   assert.equal(app.alerts.length, asked);
+});
+
+test('a short screen folds the sort line only for 부동산·구인구직·중고거래 (owner 2026-11-13, QA B12-1)', () => {
+  const pick = (app, label) => nodes(app.render()).find(n => ['components_feed-screen.pressable.3', 'feed.categories.pick'].includes(n.props?.analyticsId) && nodes(n).some(c => c.props?.children === label)).props.onPress();
+  for (const [height, folded] of [[731, true], [667, true], [915, false]]) {
+    const app = screen({ os: 'android', height });
+    assert.equal(app.sort().compact, false, `${height}: 전체 keeps its sort line`);
+    for (const label of ['부동산', '구인구직', '중고거래']) { pick(app, label); assert.equal(app.sort().compact, folded, `${height} ${label}`); }
+    pick(app, '맛집');
+    assert.equal(app.sort().compact, false, `${height}: other boards keep it`);
+  }
+});
+
+test('이 장소로 글쓰기 floats only the writer over the place, loads no feed, and the post leaves 오늘 alone (owner 2026-11-13, QA B10-2)', async () => {
+  const place = { id: 'osm:way:1', cityId: 'toronto', name: 'Nathan Phillips Square', latitude: 43.6525, longitude: -79.3835 };
+  const app = screen({ os: 'android', createdPost: post('from-place', { cityId: 'toronto' }), writeRequest: { place } });
+  let tree = nodes(app.render());
+  assert.equal(tree.some(n => n.props?.analyticsId === 'components_feed-screen.flatlist.1'), false, 'no feed is drawn behind the writer');
+  assert.equal(tree.some(n => n.props?.analyticsId === 'feed.write'), false);
+  app.refresh();
+  assert.equal(app.calls.length, 0, 'no feed request');
+  tree = nodes(app.openPlace());
+  const writer = tree.find(n => n.type === 'Modal' && n.props.visible && nodes(n).some(c => c.props?.analyticsId === 'components_feed-screen.pressable.14'));
+  assert.ok(writer, 'the writer is open over the screen in view');
+  assert.equal(postMapBody(tree.find(n => n.props?.accessibilityLabel === t.write.bodyLabel).props.value).label, 'Nathan Phillips Square');
+  tree.find(n => n.props?.analyticsId === 'components_feed-screen.pressable.14').props.onPress();
+  assert.equal(nodes(app.render()).some(n => n.type === 'Modal' && n.props.visible && nodes(n).some(c => c.props?.analyticsId === 'components_feed-screen.pressable.14')), false, 'closing leaves the place where it was; nothing navigates');
+  assert.deepEqual(app.routes, []);
+  app.openPlace();
+  assert.equal(nodes(app.render()).some(n => n.type === 'Modal' && n.props.visible), false, 'the same request does not reopen on a re-render');
+  await app.publish(); await new Promise(setImmediate);
+  assert.equal(postUpload.getPostUpload().status, 'done', 'the post goes up');
+  assert.deepEqual(app.cityChanges, [], 'the city and 오늘 list stay as they were (no 방금 올린 글 card)');
+  postUpload.getPostUpload().edit();
+  assert.deepEqual(app.reopened, [null], '수정하기 reopens this writer with its draft');
+  postUpload.clearPostUpload();
 });

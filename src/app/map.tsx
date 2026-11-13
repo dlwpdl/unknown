@@ -600,8 +600,9 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       <DiscoveryMap markers={mapMarkers} cityName={city.englishName} cities={CITIES.map(value => ({ id: value.id, name: tr(value.name), englishName: value.englishName, open: value.state === 'open' }))} selectedId={selected?.id} center={center} userLocation={userLocation} compass={compass} topInset={mapFiltersHeight}
         bottomInset={cardShown || sheet === 'closed' ? rowBottom : sheetCover} active={isFocused} loading={waiting} onSelect={selectPin} onMoved={(bounds, zoom) => setMoved({ bounds, zoom })} onCity={chooseCity} />
       <View testID="map-filter-overlay" pointerEvents="box-none" onLayout={event => setMapFiltersHeight(event.nativeEvent.layout.height)} style={sheet === 'full' ? [styles.mapFilters, { backgroundColor: theme.background }] : styles.mapFilters}>
-        {/* Map labels stop running into the chip names (owner 2026-11-06 "칩 줄 뒤에 옅은 그라데이션"); the chips themselves stay as they are. */}
-        {sheet !== 'full' && <View pointerEvents="none" style={[styles.mapFiltersFade, { backgroundImage: `linear-gradient(to bottom, ${theme.background}F2 0%, ${theme.background}E6 ${refineRow ? 88 : 80}%, ${theme.background}00 100%)` }]} />}
+        {/* Map labels stop running into the chip names (owner 2026-11-06 "칩 줄 뒤에 옅은 그라데이션"); the chips themselves stay as they are.
+          Back to the 11-06 light fade (owner 2026-11-13 "다시 옅게", QA C15-2·H43-2): each chip name's own line tells it from the map. */}
+        {sheet !== 'full' && <View pointerEvents="none" style={[styles.mapFiltersFade, { backgroundImage: `linear-gradient(to bottom, ${theme.background}F2 0%, ${theme.background}B3 ${refineRow ? 80 : 62}%, ${theme.background}00 100%)` }]} />}
         {quickFilters}
         {refineRow}
       </View>
