@@ -9,7 +9,7 @@ import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { WebshopComparisonSheet } from '@/components/business-webshop';
 import { GlingLoader } from '@/components/gling-loader';
 import { LoginPanel } from '@/components/login-panel';
-import { SavedFolderSheet, SavedItemCard, SavedLibraryButton, type SavedFolderEditor } from '@/components/saved-library';
+import { SavedFolderSheet, SavedItemCard, SavedLibraryButton, SavedNoteSheet, type SavedFolderEditor } from '@/components/saved-library';
 import { ShareCardSheet } from '@/components/share-card';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
@@ -24,12 +24,13 @@ import { getCityPlaces } from '@/lib/city-places';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import {
   deleteSavedFolder, loadSavedFolders, loadSavedItems, saveSavedFolder,
-  setSavedItem, setSavedItemFolders, type FolderVisibility, type SavedFilter, type SavedFolder, type SavedItem, type SavedPage,
+  setSavedItem, setSavedItemFolders, setSavedNote, type FolderVisibility, type SavedFilter, type SavedFolder, type SavedItem, type SavedPage,
 } from '@/lib/saved-items';
 import { savedListPlaces } from '@/lib/share-card';
 import { supabase } from '@/lib/supabase';
 import { loadPublicWebshop } from '@/lib/webshops';
 
+type SavedEditor = SavedFolderEditor | { kind: 'note'; item: SavedItem };
 type SavedReadOperation = { active: boolean; reading: boolean; accountId: string; key: string; visibility: ReturnType<typeof useContentVisibility> };
 
 export default function SavedScreen() {
@@ -45,7 +46,7 @@ export default function SavedScreen() {
   const [result, setResult] = useState<{ key: string; visibility: typeof hidden; operation: SavedReadOperation; page: SavedPage | null; folders: SavedFolder[]; failed: boolean; appendFailed: boolean } | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null), [mutationKey, setMutationKey] = useState<string | null>(null);
   const [message, setMessage] = useState<{ key: string; text: string } | null>(null);
-  const [editor, setEditor] = useState<{ key: string; visibility: typeof hidden; value: SavedFolderEditor } | null>(null);
+  const [editor, setEditor] = useState<{ key: string; visibility: typeof hidden; value: SavedEditor } | null>(null);
   const [offer, setOffer] = useState<{ key: string; visibility: typeof hidden; name: string; shop: NonNullable<Awaited<ReturnType<typeof loadPublicWebshop>>> } | null>(null);
   const request = useRef<SavedReadOperation | null>(null);
   const mutation = useRef<object | null>(null), comparing = useRef<object | null>(null);
@@ -54,7 +55,7 @@ export default function SavedScreen() {
   const page = current?.page, folders = current?.folders ?? [], loading = busyKey === key || !current;
   const rows = (page?.items ?? []).filter(item => item.target.kind === 'post' ? !hidden('post', item.target.id) : item.target.kind !== 'user' || !hidden('user', item.target.id));
   const busy = mutationKey !== null;
-  const editingItem = editor?.value.kind === 'item' ? editor.value.item : editor?.value.kind === 'create' ? editor.value.returnItem : null;
+  const editingItem = editor?.value.kind === 'item' || editor?.value.kind === 'note' ? editor.value.item : editor?.value.kind === 'create' ? editor.value.returnItem : null;
   const activeEditor = !pendingSearch && editor?.key === key && editor.visibility === hidden
     && (!editingItem || rows.some(item => item.key === editingItem.key)) ? editor.value : null;
   const error = message?.key === key ? message.text : null;
@@ -167,6 +168,16 @@ export default function SavedScreen() {
       setEditor(null);
     }, ko ? '폴더 정리를 저장하지 못했어요. 기존 정리는 유지돼요. 다시 시도해 주세요.' : 'Couldn’t save folder changes. Your items stay where they were. Try again.');
   };
+  const saveNote = (note: string | null) => {
+    if (activeEditor?.kind !== 'note') return;
+    const item = activeEditor.item;
+    void perform(async operation => {
+      const saved = await setSavedNote(supabase, item.target, note);
+      if (!operation.active || request.current !== operation) return;
+      update(page => ({ ...page, items: page.items.map(row => row.key === item.key ? { ...row, note: saved } : row) }));
+      setEditor(null);
+    }, ko ? '메모를 저장하지 못했어요. 다시 시도해 주세요.' : 'Couldn’t save the memo. Try again.');
+  };
   async function compare(item: SavedItem) {
     const operation = activeOperation();
     if (!operation || comparing.current || !operation.active || item.target.kind !== 'merchant') return;
@@ -237,9 +248,12 @@ export default function SavedScreen() {
       </View>}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       renderItem={({ item }) => <SavedItemCard item={item} folders={folders} disabled={busy || loading} compareBusy={compareKey === item.key} onOpen={() => open(item)} onRemove={() => remove(item)}
-        onOrganize={() => { setMessage(null); setEditor({ key, visibility: hidden, value: { kind: 'item', item } }); }} onCompare={item.hasWebshop && item.target.kind === 'merchant' ? () => void compare(item) : undefined} />}
+        onOrganize={() => { setMessage(null); setEditor({ key, visibility: hidden, value: { kind: 'item', item } }); }}
+        onNote={() => { setMessage(null); setEditor({ key, visibility: hidden, value: { kind: 'note', item } }); }} onCompare={item.hasWebshop && item.target.kind === 'merchant' ? () => void compare(item) : undefined} />}
     />
-    {activeEditor && <SavedFolderSheet key={`${key}:${activeEditor.kind}:${activeEditor.kind === 'item' ? activeEditor.item.key : activeEditor.kind === 'create' ? 'new' : activeEditor.folder.id}`}
+    {activeEditor?.kind === 'note' && <SavedNoteSheet key={`${key}:note:${activeEditor.item.key}`} item={activeEditor.item} busy={busy} error={error}
+      onClose={() => { if (!busy) { setEditor(null); setMessage(null); } }} onSave={saveNote} />}
+    {activeEditor && activeEditor.kind !== 'note' && <SavedFolderSheet key={`${key}:${activeEditor.kind}:${activeEditor.kind === 'item' ? activeEditor.item.key : activeEditor.kind === 'create' ? 'new' : activeEditor.folder.id}`}
       editor={activeEditor} folders={folders} busy={busy} error={error} onClose={() => { if (!busy) { setEditor(null); setMessage(null); } }} onCreate={saveFolder} onRename={saveFolder} onDelete={() => void deleteFolder()} onAssign={assign}
       onCreateForItem={ids => { if (activeEditor.kind === 'item') { setMessage(null); setEditor({ key, visibility: hidden, value: { kind: 'create', returnItem: { ...activeEditor.item, folderIds: ids } } }); } }}
       onRequestDelete={() => { if (activeEditor.kind === 'rename') { setMessage(null); setEditor({ key, visibility: hidden, value: { kind: 'delete', folder: activeEditor.folder } }); } }} />}

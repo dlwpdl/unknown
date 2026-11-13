@@ -20,6 +20,8 @@ export type SavedItem = {
   key: string; target: SavedTarget; savedAt: string; title: string; subtitle: string;
   imageUrl?: string | null; cityId?: string | null; address?: string | null;
   postType?: 'post' | 'meetup' | 'job' | 'listing'; closed?: boolean; hasWebshop?: boolean; folderIds: string[];
+  /** The member's own memo. Only their own list carries it; no friend or folder reader does. */
+  note?: string | null;
 };
 export type SavedPage = { items: SavedItem[]; hasMore: boolean; nextCursor: SavedCursor | null };
 
@@ -97,10 +99,10 @@ function folderName(name: string) {
   if (typeof name !== 'string' || !name.trim() || name.trim().length > 80 || /[\u0000-\u001f\u007f]/.test(name)) throw new Error('INVALID_SAVED_FOLDER');
   return name.trim();
 }
-// One line of up to 150 letters; a blank one means no description.
-function folderDescription(value: string | null) {
+// One line of up to max letters; a blank one means none.
+function oneLine(value: string | null, max: number, error: string) {
   const line = (value ?? '').replace(/\s+/g, ' ').trim();
-  if (line.length > 150 || /[\u0000-\u001f\u007f]/.test(line)) throw new Error('INVALID_SAVED_FOLDER');
+  if (line.length > max || /[\u0000-\u001f\u007f]/.test(line)) throw new Error(error);
   return line || null;
 }
 export async function loadSavedItemState(client: SupabaseClient, value: SavedTarget): Promise<SavedState> {
@@ -139,6 +141,7 @@ export async function loadSavedItems(client: SupabaseClient, options: { filter?:
     if (row.address != null && !text(row.address, 1000)) invalid();
     if (row.postType !== undefined && !['post', 'meetup', 'job', 'listing'].includes(row.postType as string)) invalid();
     if ((row.closed !== undefined && typeof row.closed !== 'boolean') || (row.hasWebshop !== undefined && typeof row.hasWebshop !== 'boolean')) invalid();
+    if (row.note != null && (!text(row.note, 200) || !row.note.trim())) invalid();
     folderIds(row.folderIds);
     return { ...row, target: resolved } as SavedItem;
   });
@@ -158,7 +161,7 @@ export async function loadSavedFolders(client: SupabaseClient): Promise<SavedFol
 // Every edit sends the description too: a blank one clears it.
 export async function saveSavedFolder(client: SupabaseClient, id: string | null, name: string, visibility: FolderVisibility, description: string | null): Promise<SavedFolder> {
   if (visibility !== 'friends' && visibility !== 'private') throw new Error('INVALID_SAVED_FOLDER');
-  const line = folderDescription(description);
+  const line = oneLine(description, 150, 'INVALID_SAVED_FOLDER');
   const result = folderCard(await call(client, 'save_saved_folder', { p_folder_id: id === null ? null : folderId(id), p_name: folderName(name), p_visibility: visibility, p_description: line }));
   if ((id !== null && result.id !== id) || result.visibility !== visibility || result.description !== line) invalid();
   return { id: result.id, name: result.name, visibility: result.visibility, description: result.description };
@@ -183,6 +186,13 @@ export async function loadFriendFolders(client: SupabaseClient, userId: string):
   const value = await call(client, 'get_friend_saved_folders', { p_user_id: userId });
   if (!Array.isArray(value) || value.length > 100) invalid();
   return value.map(folderCard);
+}
+// A blank memo deletes it. The memo stays with this member; the server never shows it to anyone else.
+export async function setSavedNote(client: SupabaseClient, value: SavedTarget, note: string | null): Promise<string | null> {
+  const line = oneLine(note, 200, 'INVALID_SAVED_NOTE');
+  const result = await call(client, 'set_saved_note', { ...args(value), p_note: line });
+  if (!object(result) || !text(result.key, 240) || result.note !== line) throw new Error('NOTE_NOT_VERIFIED');
+  return line;
 }
 export async function deleteSavedFolder(client: SupabaseClient, id: string): Promise<void> {
   if (await call(client, 'delete_saved_folder', { p_folder_id: folderId(id) }) !== true) throw new Error('FOLDER_DELETE_NOT_VERIFIED');

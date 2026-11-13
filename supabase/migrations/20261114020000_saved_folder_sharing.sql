@@ -112,18 +112,64 @@ language plpgsql stable security definer set search_path='' as $$ declare uid uu
   where (x.item->>'placeCount')::integer>0);
 end $$;
 
+-- 3) A memo on a saved item. Only its writer reads it: get_saved_items is the one reader, and it is the caller's own list.
+-- The memo hangs on the saved-item key, so a place and its business share one memo, like they share one card.
+create table private.saved_item_notes (
+ user_id uuid not null references public.profiles(id) on delete cascade,
+ saved_key text not null check(length(saved_key) between 3 and 300),
+ note text not null check(length(note) between 1 and 200 and note=btrim(note) and note!~'[[:cntrl:]]'),
+ updated_at timestamptz not null default clock_timestamp(),
+ primary key(user_id,saved_key)
+);
+alter table private.saved_item_notes enable row level security;
+revoke all on private.saved_item_notes from public,anon,authenticated,service_role;
+alter table private.saved_item_notes owner to postgres;
+
+-- A blank memo deletes it. Writing a memo also drops memos left on items that are no longer saved.
+create function public.set_saved_note(p_kind text,p_id text,p_note text,p_city_id text default null) returns jsonb
+language plpgsql security definer set search_path='' as $$ declare uid uuid:=private.saved_owner(true); k text; v_note text:=nullif(btrim(p_note),''); begin
+ perform private.saved_validate(p_kind,p_id,p_city_id);
+ if length(v_note)>200 or v_note ~ '[[:cntrl:]]' then raise exception 'INVALID_SAVED_NOTE'; end if;
+ k:=private.saved_key(private.saved_ref(p_kind,p_id,p_city_id));
+ if v_note is null then delete from private.saved_item_notes where user_id=uid and saved_key=k;
+ else
+  if not exists(select 1 from private.saved_sources(uid) s where s.key=k) then raise exception 'SAVED_TARGET_UNAVAILABLE'; end if;
+  delete from private.saved_item_notes n where n.user_id=uid and n.saved_key not in (select s.key from private.saved_sources(uid) s where s.key is not null);
+  insert into private.saved_item_notes(user_id,saved_key,note) values(uid,k,v_note)
+   on conflict(user_id,saved_key) do update set note=excluded.note,updated_at=clock_timestamp();
+ end if;
+ return jsonb_build_object('key',k,'note',v_note);
+end $$;
+
+-- The caller's saved list carries their memo; the account eraser drops memos with the rest of the library.
+do $$ declare r record; d text; begin
+ for r in select * from (values
+  ('public.get_saved_items(text,text,uuid,timestamp with time zone,text)','''folderIds'',folders\)',
+   '''folderIds'',folders,''note'',(select n.note from private.saved_item_notes n where n.user_id=uid and n.saved_key=cards.key))'),
+  ('private.erase_saved_library()','delete from private\.saved_folders where user_id=new\.id;',
+   'delete from private.saved_folders where user_id=new.id; delete from private.saved_item_notes where user_id=new.id;')
+ ) v(fn,pattern,replacement) loop
+  d:=pg_get_functiondef(r.fn::regprocedure);
+  if regexp_count(d,r.pattern)<>1 then raise exception 'SAVED_FOLDER_SHARING_ANCHOR_CHANGED %',r.fn; end if;
+  execute regexp_replace(d,r.pattern,r.replacement);
+ end loop;
+end $$;
+
 do $$ declare signature text; begin
  foreach signature in array array['private.saved_folder_places(uuid)','private.saved_folder_role(uuid,uuid)','private.saved_folder_json(private.saved_folders)',
-  'public.save_saved_folder(uuid,text,text,text)','public.set_saved_folder_cover(uuid,text,text)','public.get_saved_folder(uuid)','public.get_friend_saved_folders(uuid)'] loop
+  'public.save_saved_folder(uuid,text,text,text)','public.set_saved_folder_cover(uuid,text,text)','public.get_saved_folder(uuid)','public.get_friend_saved_folders(uuid)',
+  'public.set_saved_note(text,text,text,text)'] loop
   execute 'alter function '||signature||' owner to postgres';
   execute 'revoke all on function '||signature||' from public,anon,authenticated,service_role';
  end loop;
 end $$;
-grant execute on function public.save_saved_folder(uuid,text,text,text),public.set_saved_folder_cover(uuid,text,text),public.get_saved_folder(uuid),public.get_friend_saved_folders(uuid) to authenticated;
+grant execute on function public.save_saved_folder(uuid,text,text,text),public.set_saved_folder_cover(uuid,text,text),public.get_saved_folder(uuid),public.get_friend_saved_folders(uuid),
+ public.set_saved_note(text,text,text,text) to authenticated;
 
 -- An unknown target rejects the whole analytics batch, so these must reach production before the app build.
 insert into private.behavior_targets(id) values
  ('saved.editor.visibility.on'),('saved.editor.visibility.off'),('saved.folder.open'),('folder.scroll'),('folder.place.open'),('user.folder.open'),
- ('folder.cover.open'),('folder.cover.scroll'),('folder.cover.pick')
+ ('folder.cover.open'),('folder.cover.scroll'),('folder.cover.pick'),
+ ('saved.note'),('saved.note.close'),('saved.note.submit'),('saved.note.delete')
 on conflict (id) do nothing;
 notify pgrst,'reload schema';

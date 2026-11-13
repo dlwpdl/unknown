@@ -47,6 +47,10 @@ select is((select visibility from private.saved_folders where id='e5180000-0000-
 select ok(not has_function_privilege('anon','public.get_saved_folder(uuid)','execute') and not has_function_privilege('anon','public.get_friend_saved_folders(uuid)','execute'),
  'visitors who are not signed in cannot read folders');
 select ok(exists(select 1 from pg_class where oid='private.saved_folders'::regclass and relrowsecurity),'folders keep row level security');
+select ok(exists(select 1 from pg_class where oid='private.saved_item_notes'::regclass and relrowsecurity)
+ and not has_table_privilege('authenticated','private.saved_item_notes','select') and not has_table_privilege('anon','private.saved_item_notes','select'),
+ 'memos have row level security and no direct read grant');
+select ok(not has_function_privilege('anon','public.set_saved_note(text,text,text,text)','execute'),'visitors cannot write memos');
 
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);
@@ -63,11 +67,27 @@ select is(public.get_saved_folder('e5180000-0000-4000-8000-000000000002')->'cove
 select is(public.set_saved_folder_cover('e5180000-0000-4000-8000-000000000002','sfs-test','osm:node:830002')->'cover'->>'placeKey','osm:node:830002','the owner picks a place in the folder as the cover');
 select throws_ok($$select public.set_saved_folder_cover('e5180000-0000-4000-8000-000000000002','sfs-test','osm:node:830003')$$,'P0001','FOLDER_COVER_UNAVAILABLE','a saved place outside the folder cannot be the cover');
 select throws_ok($$select public.set_saved_folder_cover('e5180000-0000-4000-8000-000000000002','sfs-test',null)$$,'P0001','INVALID_SAVED_FOLDER_COVER','a half cover is refused');
+select is(public.set_saved_note('place','osm:node:830001','  창가 자리가 좋아요  ','sfs-test')->>'note','창가 자리가 좋아요','the owner writes a memo on a saved place');
+-- This test city has no place catalog rows, so the list shows the saved person; a memo rides on any saved card the same way.
+select is(public.set_saved_note('user','e5170000-0000-4000-8000-000000000003','동네 모임에서 만남',null)->>'note','동네 모임에서 만남','a memo on a saved person');
+select is((select x->>'note' from jsonb_array_elements(public.get_saved_items()->'items') x where x->'target'->>'id'='e5170000-0000-4000-8000-000000000003'),'동네 모임에서 만남',
+ 'the memo comes back on the owner''s saved list');
+select throws_ok($$select public.set_saved_note('place','osm:node:830009','메모','sfs-test')$$,'P0001','SAVED_TARGET_UNAVAILABLE','an item that is not saved takes no memo');
+select throws_ok($$select public.set_saved_note('place','osm:node:830001',repeat('가',201),'sfs-test')$$,'P0001','INVALID_SAVED_NOTE','a memo over 200 letters is refused');
+select throws_ok($$select public.set_saved_note('place','osm:node:830001',E'첫 줄\n둘째 줄','sfs-test')$$,'P0001','INVALID_SAVED_NOTE','a memo with a line break is refused');
+select throws_ok($$select * from private.saved_item_notes$$,'42501',null,'members cannot read the memo table directly');
+select is(public.set_saved_note('place','osm:node:830003','지울 메모','sfs-test')->>'note','지울 메모','a memo on another saved place');
 
 select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000002","role":"authenticated"}',true);
 select is(public.get_saved_folder('e5180000-0000-4000-8000-000000000002')->>'role','viewer','a friend sees a folder for friends');
 select is(jsonb_array_length(public.get_saved_folder('e5180000-0000-4000-8000-000000000002')->'places'),2,'only the places show, not the saved person');
 select is(public.get_saved_folder('e5180000-0000-4000-8000-000000000002')->>'description','주말에 걷기 좋은 곳','a friend reads the description');
+select ok(strpos(public.get_saved_folder('e5180000-0000-4000-8000-000000000002')::text,'창가')=0
+ and strpos(public.get_friend_saved_folders('e5170000-0000-4000-8000-000000000001')::text,'창가')=0
+ and strpos(public.get_saved_folder('e5180000-0000-4000-8000-000000000002')::text,'동네 모임')=0,'a friend never sees the owner''s memo in a shared folder');
+select throws_ok($$select public.set_saved_note('place','osm:node:830001','덮어쓰기','sfs-test')$$,'P0001','SAVED_TARGET_UNAVAILABLE',
+ 'a friend cannot write on the owner''s item');
+select ok(strpos(public.get_saved_items()::text,'창가')=0,'and the friend''s own list has no memo of the owner''s');
 select is((public.get_friend_saved_folders('e5170000-0000-4000-8000-000000000001')->0)->'cover'->>'placeKey','osm:node:830002','and sees the picked cover on the profile');
 select throws_ok($$select public.set_saved_folder_cover('e5180000-0000-4000-8000-000000000002',null,null)$$,'P0001','FOLDER_UNAVAILABLE','a friend cannot change the cover');
 select throws_ok($$select public.get_saved_folder('e5180000-0000-4000-8000-000000000001')$$,'P0001','FOLDER_UNAVAILABLE','a friend cannot open a private folder');
@@ -90,6 +110,19 @@ reset role;
 delete from private.saved_folder_items where folder_id='e5180000-0000-4000-8000-000000000002' and place_key='osm:node:830002';
 select is((select private.saved_folder_json(f)->'cover'->>'placeKey' from private.saved_folders f where id='e5180000-0000-4000-8000-000000000002'),'osm:node:830001',
  'once the picked place leaves the folder, the newest place is the cover again');
+
+
+-- An unsaved item's memo goes away the next time the owner writes one.
+delete from private.saved_places where user_id='e5170000-0000-4000-8000-000000000001' and place_key='osm:node:830003';
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select is(public.set_saved_note('place','osm:node:830002','두 번째 메모','sfs-test')->>'note','두 번째 메모','the owner writes another memo');
+select is(public.set_saved_note('place','osm:node:830002','  ','sfs-test')->'note','null'::jsonb,'a blank memo deletes it');
+reset role;
+select is((select array_agg(saved_key order by saved_key) from private.saved_item_notes where user_id='e5170000-0000-4000-8000-000000000001'),
+ array['place:sfs-test:osm:node:830001','user:sfs-test:e5170000-0000-4000-8000-000000000003'],'only memos on still-saved items are left');
+update public.profiles set account_status='deleted' where id='e5170000-0000-4000-8000-000000000001';
+select is((select count(*)::integer from private.saved_item_notes where user_id='e5170000-0000-4000-8000-000000000001'),0,'deleting the account erases its memos');
 
 select * from finish();
 rollback;

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { loadSavedItems, loadSavedItemState, loadSavedPlaceState, setSavedPlaceState, setSavedItem, loadSavedFolders, saveSavedFolder, loadSavedFolder, loadFriendFolders, setSavedFolderCover, deleteSavedFolder, setSavedItemFolders } from '../src/lib/saved-items.ts';
+import { loadSavedItems, loadSavedItemState, loadSavedPlaceState, setSavedPlaceState, setSavedItem, loadSavedFolders, saveSavedFolder, loadSavedFolder, loadFriendFolders, setSavedFolderCover, setSavedNote, deleteSavedFolder, setSavedItemFolders } from '../src/lib/saved-items.ts';
 
 const merchant = 'e2310000-0000-4000-8000-000000000001';
 const person = 'e2300000-0000-4000-8000-000000000002';
@@ -126,4 +126,17 @@ test('a cover is one of the folder places, and the server must confirm the pick'
   await assert.rejects(setSavedFolderCover(c, folder, { cityId: 'vancouver', placeKey: 'osm:node:43' }), /INVALID_SAVED_RESPONSE/);
   await assert.rejects(setSavedFolderCover(c, folder, { cityId: 'Vancouver', placeKey: 'osm:node:42' }), /INVALID_SAVED_FOLDER_COVER/);
   assert.equal(c.calls.length, 3, 'a malformed cover never reaches the server');
+});
+
+test('a memo is one line the server must keep as written, and a malformed memo is refused', async () => {
+  const c = client({ key: `merchant:vancouver:${merchant}`, note: '창가 자리가 좋아요' });
+  assert.equal(await setSavedNote(c, place, ' 창가 자리가\n좋아요 '), '창가 자리가 좋아요');
+  assert.deepEqual(c.calls[0], ['set_saved_note', { p_kind: 'place', p_id: place.id, p_city_id: 'vancouver', p_note: '창가 자리가 좋아요' }]);
+  await assert.rejects(setSavedNote(c, place, '다른 메모'), /NOTE_NOT_VERIFIED/);
+  assert.equal(await setSavedNote(client({ key: 'place:x', note: null }), place, '   '), null, 'a blank memo deletes it');
+  await assert.rejects(setSavedNote(c, place, '가'.repeat(201)), /INVALID_SAVED_NOTE/);
+  await assert.rejects(setSavedNote(c, { kind: 'user', id: 'me' }, '메모'), /INVALID_SAVED_TARGET/);
+  const item = { key: `merchant:vancouver:${merchant}`, target, savedAt: stamp, title: 'Jimoco', subtitle: '', folderIds: [] };
+  assert.equal((await loadSavedItems(client({ items: [{ ...item, note: '메모' }], hasMore: false, nextCursor: null }))).items[0].note, '메모');
+  for (const note of ['', '가'.repeat(201), 7]) await assert.rejects(loadSavedItems(client({ items: [{ ...item, note }], hasMore: false, nextCursor: null })), /INVALID_SAVED_RESPONSE/);
 });

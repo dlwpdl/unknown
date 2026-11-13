@@ -39,9 +39,9 @@ export function SavedLibraryButton({ analyticsId: id, testID, label, onPress, di
   </Pressable>;
 }
 
-export function SavedItemCard({ item, folders, disabled = false, compareBusy = false, onOpen, onRemove, onOrganize, onCompare }: {
+export function SavedItemCard({ item, folders, disabled = false, compareBusy = false, onOpen, onRemove, onOrganize, onNote, onCompare }: {
   item: SavedItem; folders: SavedFolder[]; disabled?: boolean; compareBusy?: boolean;
-  onOpen: () => void; onRemove: () => void; onOrganize: () => void; onCompare?: () => void;
+  onOpen: () => void; onRemove: () => void; onOrganize: () => void; onNote?: () => void; onCompare?: () => void;
 }) {
   const theme = useTheme(), clayBox = useClayBox(), { language } = useLanguage(), { play } = useInteractionFeedback(), ko = language === 'ko';
   const kind = item.target.kind === 'merchant' ? ko ? '비즈니스' : 'Business'
@@ -76,8 +76,14 @@ export function SavedItemCard({ item, folders, disabled = false, compareBusy = f
       </Pressable>
     </View>
     {item.target.kind === 'user' && <ThemedText type="supporting" themeColor="textSecondary">{ko ? '저장해도 상대에게 알림이 가지 않아요.' : 'They won’t be notified when you save them.'}</ThemedText>}
+    {!!item.note && <View style={styles.note} accessible accessibilityLabel={`${ko ? '나만 보는 메모' : 'Private memo'}: ${item.note}`}>
+      <SymbolView name={{ ios: 'lock', android: 'lock', web: 'lock' }} size={14} tintColor={theme.textSecondary} accessible={false} />
+      <ThemedText type="supporting" themeColor="textSecondary" style={styles.grow}>{item.note}</ThemedText>
+    </View>}
     {menuOpen && <MeetupManageSheet visible title={item.title} onClose={() => setMenuOpen(false)} actions={[
       { key: 'organize', analyticsId: 'saved.organize', label: ko ? '폴더 정리' : 'Organize', onPress: onOrganize, icon: { ios: 'folder', android: 'folder', web: 'folder' } },
+      ...onNote ? [{ key: 'note', analyticsId: 'saved.note', label: item.note ? ko ? '메모 고치기' : 'Edit memo' : ko ? '메모 남기기' : 'Add a memo', onPress: onNote,
+        icon: { ios: 'square.and.pencil', android: 'edit_note', web: 'edit_note' } as const }] : [],
       { key: 'remove', analyticsId: 'saved.remove', label: ko ? '저장 해제' : 'Unsave', danger: true, onPress: onRemove, icon: { ios: 'bookmark.slash', android: 'bookmark_remove', web: 'bookmark_remove' } },
     ]} />}
     {item.hasWebshop && onCompare && <View style={[styles.offer, { borderTopColor: theme.line }]}>
@@ -85,6 +91,30 @@ export function SavedItemCard({ item, folders, disabled = false, compareBusy = f
       <UberOrderNotice />
     </View>}
   </View>;
+}
+
+// A memo only its writer sees. Saying why it stays private sits right above the field.
+export function SavedNoteSheet({ item, busy, error, onClose, onSave }: {
+  item: SavedItem; busy: boolean; error: string | null; onClose: () => void; onSave: (note: string | null) => void;
+}) {
+  const theme = useTheme(), { language } = useLanguage(), ko = language === 'ko';
+  const [note, setNote] = useState(item.note ?? ''), [open, setOpen] = useState(true);
+  const unchanged = note.trim() === (item.note ?? '');
+  return <DragSheet visible={open} onClose={() => setOpen(false)} onDismissed={onClose} dismissible={!busy}>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.sheetContent}>
+      <View style={styles.heading}><ThemedText type="sheetTitle" style={styles.grow}>{ko ? '메모' : 'Memo'}</ThemedText>
+        <SavedLibraryButton analyticsId="saved.note.close" label={ko ? '닫기' : 'Close'} onPress={() => setOpen(false)} disabled={busy} /></View>
+      <ThemedText type="menu">{item.title}</ThemedText>
+      <ThemedText type="supporting" themeColor="textSecondary">{ko ? '나만 보는 메모라 편하게 적어도 돼요. 친구에게 보이는 폴더에 넣어도 친구는 메모를 못 봐요.' : 'Only you see this memo, so write whatever helps. Even in a folder friends can see, they never see it.'}</ThemedText>
+      <TextInput value={note} onChangeText={value => setNote(value.replace(/\n/g, ' '))} maxLength={200} editable={!busy} autoFocus multiline submitBehavior="blurAndSubmit"
+        accessibilityLabel={ko ? '메모' : 'Memo'} placeholder={ko ? '예: 창가 자리가 좋아요. 주말엔 줄이 길어요.' : 'e.g. Window seats are best. Long line on weekends.'} placeholderTextColor={theme.textSecondary}
+        style={[ControlStyles.field, styles.description, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]} />
+      {!!error && <ThemedText accessibilityRole="alert">{error}</ThemedText>}
+      <SavedLibraryButton analyticsId="saved.note.submit" primary disabled={busy || unchanged} label={busy ? ko ? '저장 중…' : 'Saving…' : ko ? '저장' : 'Save'}
+        onPress={() => onSave(note.trim() || null)} />
+      {!!item.note && <SavedLibraryButton analyticsId="saved.note.delete" label={ko ? '메모 지우기' : 'Delete memo'} disabled={busy} onPress={() => onSave(null)} />}
+    </ScrollView>
+  </DragSheet>;
 }
 
 export type SavedFolderEditor = { kind: 'create'; returnItem?: SavedItem }
@@ -172,4 +202,5 @@ const styles = StyleSheet.create({
   check: { minHeight: 48, borderWidth: 1, borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 44 },
   description: { textAlignVertical: 'top', paddingVertical: 12 },
+  note: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one },
 });
