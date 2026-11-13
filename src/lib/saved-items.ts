@@ -9,10 +9,11 @@ export type SavedPlaceStatus = 'want' | 'been';
 export type SavedState = { target: SavedTarget; saved: boolean; available: boolean; savedAt: string | null; folderIds: string[]; status?: SavedPlaceStatus | null };
 // 'friends': friends see its places (owner 2026-11-13). Undefined is an older server, where every folder is private.
 export type FolderVisibility = 'friends' | 'private';
-export type SavedFolder = { id: string; name: string; visibility?: FolderVisibility };
+export type SavedFolder = { id: string; name: string; visibility?: FolderVisibility; description?: string | null };
 // A folder as someone else may see it: places and consented businesses only. The app names places from its catalog.
 export type FolderPlace = { cityId: string; placeKey: string | null; merchantId: string | null; name: string | null; address: string | null };
-export type FolderCard = { id: string; name: string; visibility: FolderVisibility; placeCount: number };
+export type FolderCover = { cityId: string; placeKey: string };
+export type FolderCard = { id: string; name: string; visibility: FolderVisibility; description: string | null; cover: FolderCover | null; placeCount: number };
 export type FolderRole = 'owner' | 'viewer';
 export type FolderDetail = FolderCard & { role: FolderRole; owner: { id: string; nickname: string }; places: FolderPlace[] };
 export type SavedItem = {
@@ -67,14 +68,20 @@ async function call(client: SupabaseClient, name: string, values: Record<string,
 }
 function folder(value: unknown): SavedFolder {
   if (!object(value) || typeof value.id !== 'string' || !UUID.test(value.id) || !text(value.name, 80) || !value.name.trim()
-    || (value.visibility !== undefined && value.visibility !== 'friends' && value.visibility !== 'private')) invalid();
-  return { id: value.id, name: value.name, ...(value.visibility !== undefined ? { visibility: value.visibility as FolderVisibility } : {}) };
+    || (value.visibility !== undefined && value.visibility !== 'friends' && value.visibility !== 'private')
+    || (value.description != null && (!text(value.description, 150) || !value.description.trim()))) invalid();
+  return { id: value.id, name: value.name, ...(value.visibility !== undefined ? { visibility: value.visibility as FolderVisibility } : {}),
+    ...(value.description !== undefined ? { description: value.description as string | null } : {}) };
 }
 const count = (value: unknown) => typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : invalid();
 function folderCard(value: unknown): FolderCard {
   const base = folder(value);
-  if (!base.visibility || !object(value)) invalid();
-  return { id: base.id, name: base.name, visibility: base.visibility, placeCount: count(value.placeCount) };
+  if (!base.visibility || base.description === undefined || !object(value)) invalid();
+  return { id: base.id, name: base.name, visibility: base.visibility, description: base.description, cover: value.cover === null ? null : cover(value.cover), placeCount: count(value.placeCount) };
+}
+function cover(value: unknown, error = 'INVALID_SAVED_RESPONSE'): FolderCover {
+  if (!object(value) || typeof value.cityId !== 'string' || !CITY.test(value.cityId) || typeof value.placeKey !== 'string' || !PLACE.test(value.placeKey)) throw new Error(error);
+  return { cityId: value.cityId, placeKey: value.placeKey };
 }
 function folderPlace(value: unknown): FolderPlace {
   if (!object(value) || typeof value.cityId !== 'string' || !CITY.test(value.cityId)
@@ -89,6 +96,12 @@ function folderId(id: string) { if (!UUID.test(id)) throw new Error('INVALID_SAV
 function folderName(name: string) {
   if (typeof name !== 'string' || !name.trim() || name.trim().length > 80 || /[\u0000-\u001f\u007f]/.test(name)) throw new Error('INVALID_SAVED_FOLDER');
   return name.trim();
+}
+// One line of up to 150 letters; a blank one means no description.
+function folderDescription(value: string | null) {
+  const line = (value ?? '').replace(/\s+/g, ' ').trim();
+  if (line.length > 150 || /[\u0000-\u001f\u007f]/.test(line)) throw new Error('INVALID_SAVED_FOLDER');
+  return line || null;
 }
 export async function loadSavedItemState(client: SupabaseClient, value: SavedTarget): Promise<SavedState> {
   return state(await call(client, 'get_saved_item_state', args(value)), value);
@@ -142,11 +155,20 @@ export async function loadSavedFolders(client: SupabaseClient): Promise<SavedFol
   return rows;
 }
 // Creates a folder (id null) or edits one of the member's own.
-export async function saveSavedFolder(client: SupabaseClient, id: string | null, name: string, visibility: FolderVisibility): Promise<SavedFolder> {
+// Every edit sends the description too: a blank one clears it.
+export async function saveSavedFolder(client: SupabaseClient, id: string | null, name: string, visibility: FolderVisibility, description: string | null): Promise<SavedFolder> {
   if (visibility !== 'friends' && visibility !== 'private') throw new Error('INVALID_SAVED_FOLDER');
-  const result = folderCard(await call(client, 'save_saved_folder', { p_folder_id: id === null ? null : folderId(id), p_name: folderName(name), p_visibility: visibility }));
-  if ((id !== null && result.id !== id) || result.visibility !== visibility) invalid();
-  return { id: result.id, name: result.name, visibility: result.visibility };
+  const line = folderDescription(description);
+  const result = folderCard(await call(client, 'save_saved_folder', { p_folder_id: id === null ? null : folderId(id), p_name: folderName(name), p_visibility: visibility, p_description: line }));
+  if ((id !== null && result.id !== id) || result.visibility !== visibility || result.description !== line) invalid();
+  return { id: result.id, name: result.name, visibility: result.visibility, description: result.description };
+}
+// The owner's pick among the folder's places; null goes back to the newest place.
+export async function setSavedFolderCover(client: SupabaseClient, id: string, value: FolderCover | null): Promise<FolderCard> {
+  const picked = value === null ? null : cover(value, 'INVALID_SAVED_FOLDER_COVER');
+  const result = folderCard(await call(client, 'set_saved_folder_cover', { p_folder_id: folderId(id), p_city_id: picked?.cityId ?? null, p_place_key: picked?.placeKey ?? null }));
+  if (result.id !== id.toLowerCase() || (picked && (result.cover?.cityId !== picked.cityId || result.cover.placeKey !== picked.placeKey))) invalid();
+  return result;
 }
 export async function loadSavedFolder(client: SupabaseClient, id: string): Promise<FolderDetail> {
   const value = await call(client, 'get_saved_folder', { p_folder_id: folderId(id) });

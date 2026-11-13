@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
+import { CityPlacePhoto } from '@/components/city-place-photo';
 import { ListCard, ListRow } from '@/components/list-card';
 import { SymbolView } from '@/components/symbol-view';
 import { ThemedText } from '@/components/themed-text';
@@ -13,26 +14,32 @@ import { deliveryPartnerPlace } from '@/lib/delivery-partners';
 import { loadFriendFolders, type FolderCard, type FolderPlace } from '@/lib/saved-items';
 import { supabase } from '@/lib/supabase';
 
-// Names a folder's places from the app's catalog, reading each city once (getCityPlaces rebuilds a whole city per call).
-// A place the catalog no longer has and no business name for drops out.
-export function folderPlaces(places: FolderPlace[]) {
+// Finds places in the app's catalog, reading each city once (getCityPlaces rebuilds a whole city per call).
+export function placeLookup() {
   const cities = new Map<string, Map<string, CityPlace>>();
-  return places.flatMap(item => {
-    let place: CityPlace | undefined;
-    if (item.placeKey) {
-      if (!cities.has(item.cityId)) {
-        try { cities.set(item.cityId, new Map(getCityPlaces(item.cityId).map(value => [value.id, value]))); } catch { cities.set(item.cityId, new Map()); }
-      }
-      place = cities.get(item.cityId)!.get(item.placeKey) ?? deliveryPartnerPlace(item.cityId, item.placeKey);
+  return (cityId: string, placeKey: string): CityPlace | undefined => {
+    if (!cities.has(cityId)) {
+      try { cities.set(cityId, new Map(getCityPlaces(cityId).map(value => [value.id, value]))); } catch { cities.set(cityId, new Map()); }
     }
+    return cities.get(cityId)!.get(placeKey) ?? deliveryPartnerPlace(cityId, placeKey);
+  };
+}
+
+// Names a folder's places from the catalog. A place the catalog no longer has and no business name for drops out.
+export function folderPlaces(places: FolderPlace[]) {
+  const find = placeLookup();
+  return places.flatMap(item => {
+    const place = item.placeKey ? find(item.cityId, item.placeKey) : undefined;
     const title = item.name ?? place?.name;
     return title ? [{ ...item, place, title, subtitle: item.address ?? place?.address ?? '' }] : [];
   });
 }
 
-function FolderIcon() {
+// A folder's cover: its cover place's photo, or a folder icon when the catalog has no such place.
+export function FolderCover({ place, style }: { place?: CityPlace; style?: StyleProp<ViewStyle> }) {
   const theme = useTheme();
-  return <View style={[styles.thumb, styles.icon, { backgroundColor: theme.backgroundElement }]}>
+  if (place) return <CityPlacePhoto place={place} style={[styles.thumb, style]} />;
+  return <View style={[styles.thumb, styles.icon, { backgroundColor: theme.backgroundElement }, style]}>
     <SymbolView name={{ ios: 'folder', android: 'folder', web: 'folder' }} size={20} tintColor={theme.textSecondary} accessible={false} />
   </View>;
 }
@@ -40,10 +47,13 @@ function FolderIcon() {
 // A friend's folders under their profile. Nothing shows until there is at least one, and a failed read stays quiet.
 export function FriendFolders({ userId, nickname }: { userId: string; nickname: string }) {
   const { tr, locale } = useLanguage(), router = useRouter();
-  const [state, setState] = useState<{ userId: string; folders: FolderCard[] } | null>(null);
+  const [state, setState] = useState<{ userId: string; folders: (FolderCard & { place?: CityPlace })[] } | null>(null);
   useEffect(() => {
     let active = true;
-    void loadFriendFolders(supabase, userId).then(folders => { if (active) setState({ userId, folders }); }).catch(() => { if (active) setState({ userId, folders: [] }); });
+    void loadFriendFolders(supabase, userId).then(folders => {
+      const find = placeLookup();
+      if (active) setState({ userId, folders: folders.map(folder => ({ ...folder, place: folder.cover ? find(folder.cover.cityId, folder.cover.placeKey) : undefined })) });
+    }).catch(() => { if (active) setState({ userId, folders: [] }); });
     return () => { active = false; };
   }, [userId]);
   const folders = state?.userId === userId ? state.folders : [];
@@ -51,7 +61,7 @@ export function FriendFolders({ userId, nickname }: { userId: string; nickname: 
   return <View style={styles.section}>
     <ThemedText type="smallBold">{tr('{0}님의 폴더', nickname)}</ThemedText>
     <ListCard>{folders.map(folder => <ListRow key={folder.id} analyticsId="user.folder.open" title={folder.name}
-      detail={tr('장소 {0}곳', folder.placeCount.toLocaleString(locale))} leading={<FolderIcon />}
+      detail={[tr('장소 {0}곳', folder.placeCount.toLocaleString(locale)), folder.description].filter(Boolean).join(' · ')} leading={<FolderCover place={folder.place} />}
       onPress={() => router.push({ pathname: '/profile/folder', params: { id: folder.id } })} />)}</ListCard>
   </View>;
 }

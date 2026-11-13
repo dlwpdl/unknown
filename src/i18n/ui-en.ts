@@ -4692,5 +4692,10 @@ export const uiEnglish: Record<string, string> = {
   "나만 보는 폴더예요. 저장함의 폴더 관리에서 친구에게 보이게 바꿀 수 있어요.": "Only you can see this folder. You can share it with friends from Manage folder in Saved.",
   "아직 장소가 없어요": "No places yet",
   "저장함에서 장소 카드의 ··· 를 누르면 이 폴더에 넣을 수 있어요.": "In Saved, tap ··· on a place to add it to this folder.",
-  "친구가 장소를 넣으면 여기에 보여요.": "Places show up here once your friend adds them."
+  "친구가 장소를 넣으면 여기에 보여요.": "Places show up here once your friend adds them.",
+  "표지 바꾸기": "Change cover",
+  "표지 고르기": "Pick a cover",
+  "표지를 바꾸지 못했어요. 다시 시도해 주세요.": "Couldn't change the cover. Please try again.",
+  "이 폴더에 넣은 장소 사진 중에서 골라요. 고르지 않으면 가장 최근에 저장한 장소가 표지가 돼요.": "Pick from photos of the places in this folder. If you don't pick one, the place you saved most recently is the cover.",
+  "{0}, 지금 표지": "{0}, current cover"
 };

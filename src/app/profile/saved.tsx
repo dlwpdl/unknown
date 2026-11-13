@@ -136,11 +136,11 @@ export default function SavedScreen() {
       if (operation.active && request.current === operation) update(page => ({ ...page, items: page.items.filter(row => row.key !== item.key) }));
     }, ko ? '저장을 해제하지 못했어요. 항목은 그대로 남아 있어요. 다시 눌러주세요.' : 'Couldn’t remove this item. It’s still saved. Try again.', false);
   };
-  const saveFolder = (name: string, visibility: FolderVisibility) => {
+  const saveFolder = (name: string, visibility: FolderVisibility, description: string | null) => {
     if (!activeEditor || !['create', 'rename'].includes(activeEditor.kind)) return;
     const editing = activeEditor;
     void perform(async operation => {
-      const folder = await saveSavedFolder(supabase, editing.kind === 'rename' ? editing.folder.id : null, name, visibility);
+      const folder = await saveSavedFolder(supabase, editing.kind === 'rename' ? editing.folder.id : null, name, visibility, description);
       if (!operation.active || request.current !== operation) return;
       update(page => page, folders => editing.kind === 'rename' ? folders.map(row => row.id === folder.id ? folder : row) : [...folders, folder]);
       setEditor(editing.kind === 'create' && editing.returnItem ? { key, visibility: hidden, value: { kind: 'item', item: { ...editing.returnItem, folderIds: [...editing.returnItem.folderIds, folder.id] } } } : null);

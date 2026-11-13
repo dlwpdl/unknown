@@ -93,7 +93,8 @@ export type SavedFolderEditor = { kind: 'create'; returnItem?: SavedItem }
 
 export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCreate, onRename, onDelete, onAssign, onCreateForItem, onRequestDelete }: {
   editor: SavedFolderEditor; folders: SavedFolder[]; busy: boolean; error: string | null;
-  onClose: () => void; onCreate: (name: string, visibility: FolderVisibility) => void; onRename: (name: string, visibility: FolderVisibility) => void; onDelete: () => void;
+  onClose: () => void; onCreate: (name: string, visibility: FolderVisibility, description: string | null) => void;
+  onRename: (name: string, visibility: FolderVisibility, description: string | null) => void; onDelete: () => void;
   onAssign: (ids: string[]) => void; onCreateForItem: (ids: string[]) => void; onRequestDelete: () => void;
 }) {
   const theme = useTheme(), { language } = useLanguage(), { play } = useInteractionFeedback(), ko = language === 'ko';
@@ -101,6 +102,8 @@ export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCrea
   const [name, setName] = useState(editor.kind === 'rename' ? editor.folder.name : '');
   // New folders start shown to friends, like saved places; a folder from before keeps what it was.
   const [visibility, setVisibility] = useState<FolderVisibility>(editor.kind === 'rename' ? editor.folder.visibility ?? 'private' : 'friends');
+  const [description, setDescription] = useState(editor.kind === 'rename' ? editor.folder.description ?? '' : '');
+  const submit = () => { if (editor.kind === 'create') onCreate(name.trim(), visibility, description.trim() || null); else if (editor.kind === 'rename') onRename(name.trim(), visibility, description.trim() || null); };
   const [ids, setIds] = useState(editor.kind === 'item' ? editor.item.folderIds : []);
   // Closing slides the sheet down first; the parent unmounts it once DragSheet reports it is gone.
   const [open, setOpen] = useState(true);
@@ -117,7 +120,10 @@ export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCrea
             <TextInput value={name} onChangeText={setName} maxLength={80} editable={!busy} autoFocus
               accessibilityLabel={ko ? '폴더 이름' : 'Folder name'} placeholder={ko ? '폴더 이름' : 'Folder name'} placeholderTextColor={theme.textSecondary}
               style={[ControlStyles.field, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]}
-              returnKeyType="done" onSubmitEditing={() => { if (!busy && !invalid) { play('selection'); if (editor.kind === 'create') onCreate(name.trim(), visibility); else onRename(name.trim(), visibility); } }} />
+              returnKeyType="done" onSubmitEditing={() => { if (!busy && !invalid) { play('selection'); submit(); } }} />
+            <TextInput value={description} onChangeText={value => setDescription(value.replace(/\n/g, ' '))} maxLength={150} editable={!busy} multiline submitBehavior="blurAndSubmit"
+              accessibilityLabel={ko ? '폴더 설명' : 'Folder description'} placeholder={ko ? '어떤 곳을 모았는지 한 줄로 (안 써도 돼요)' : 'What’s in it, in a line (optional)'} placeholderTextColor={theme.textSecondary}
+              style={[ControlStyles.field, styles.description, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]} />
             <View style={styles.toggle}>
               <View style={styles.grow}>
                 <ThemedText type="menu">{ko ? '친구에게 보여요' : 'Friends can see it'}</ThemedText>
@@ -147,7 +153,7 @@ export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCrea
           {!!error && <ThemedText accessibilityRole="alert">{error}</ThemedText>}
           <SavedLibraryButton analyticsId="saved.editor.submit" primary disabled={busy || ((editor.kind === 'create' || editor.kind === 'rename') && invalid)}
             label={busy ? ko ? '저장 중…' : 'Saving…' : editor.kind === 'delete' ? ko ? '폴더 삭제' : 'Delete folder' : ko ? '완료' : 'Done'}
-            onPress={() => { if (editor.kind === 'item') onAssign(ids); else if (editor.kind === 'create') onCreate(name.trim(), visibility); else if (editor.kind === 'rename') onRename(name.trim(), visibility); else onDelete(); }} />
+            onPress={() => { if (editor.kind === 'item') onAssign(ids); else if (editor.kind === 'delete') onDelete(); else submit(); }} />
           {editor.kind === 'rename' && <SavedLibraryButton analyticsId="saved.editor.delete" label={ko ? '폴더 삭제' : 'Delete folder'} disabled={busy} onPress={onRequestDelete} />}
         </ScrollView>
   </DragSheet>;
@@ -165,4 +171,5 @@ const styles = StyleSheet.create({
   sheetContent: { padding: Spacing.three, gap: Spacing.three }, heading: { flexDirection: 'row', alignItems: 'flex-start', flexWrap: 'wrap', gap: Spacing.two },
   check: { minHeight: 48, borderWidth: 1, borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   toggle: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 44 },
+  description: { textAlignVertical: 'top', paddingVertical: 12 },
 });

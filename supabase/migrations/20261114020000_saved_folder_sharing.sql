@@ -5,6 +5,13 @@
 -- app's create_saved_folder still makes a private folder, because that app still says folders are private.
 alter table private.saved_folders add column visibility text not null default 'private' check(visibility in ('private','friends'));
 
+-- 2) A short description and a cover picked from the folder's own places (no uploads). With no pick, or once the
+-- picked place leaves the folder, the newest place is the cover.
+alter table private.saved_folders
+ add column description text check(description is null or (length(description) between 1 and 150 and description=btrim(description) and description!~'[[:cntrl:]]')),
+ add column cover_city_id text, add column cover_place_key text,
+ add constraint saved_folders_cover_pair check(num_nulls(cover_city_id,cover_place_key) in (0,2));
+
 -- What anyone but the owner sees in a folder: its catalog places and consented businesses, the profile map's rule
 -- (private.profile_saved_places). Saved posts and people never leave the owner. The app names places from its catalog.
 create function private.saved_folder_places(p_folder uuid) returns table(city_id text,place_key text,merchant_id uuid,added_at timestamptz)
@@ -40,29 +47,44 @@ $$;
 
 create function private.saved_folder_json(p_folder private.saved_folders) returns jsonb
 language sql stable security definer set search_path='' as $$
- select jsonb_build_object('id',p_folder.id,'name',p_folder.name,'visibility',p_folder.visibility,
-  'placeCount',(select count(*)::integer from private.saved_folder_places(p_folder.id)))
+ with p as (select * from private.saved_folder_places(p_folder.id))
+ select jsonb_build_object('id',p_folder.id,'name',p_folder.name,'visibility',p_folder.visibility,'description',p_folder.description,
+  'placeCount',(select count(*)::integer from p),
+  'cover',(select jsonb_build_object('cityId',c.city_id,'placeKey',c.place_key) from p c where c.place_key is not null
+   order by (c.city_id=p_folder.cover_city_id and c.place_key=p_folder.cover_place_key) desc nulls last,c.added_at desc,c.place_key limit 1))
 $$;
 
 -- Old apps read id and name; the extra fields ride along.
 create or replace function public.get_saved_folders() returns jsonb
 language plpgsql stable security definer set search_path='' as $$ declare uid uuid:=private.saved_owner(); begin
- return (select coalesce(jsonb_agg(jsonb_build_object('id',id,'name',name,'visibility',visibility) order by created_at,id),'[]'::jsonb)
+ return (select coalesce(jsonb_agg(jsonb_build_object('id',id,'name',name,'visibility',visibility,'description',description) order by created_at,id),'[]'::jsonb)
   from private.saved_folders where user_id=uid);
 end $$;
 
--- Creates (p_folder_id null) or edits one of the caller's folders.
-create function public.save_saved_folder(p_folder_id uuid,p_name text,p_visibility text) returns jsonb
-language plpgsql security definer set search_path='' as $$ declare uid uuid:=private.saved_owner(true); item private.saved_folders; begin
+-- Creates (p_folder_id null) or edits one of the caller's folders. A blank description clears it.
+create function public.save_saved_folder(p_folder_id uuid,p_name text,p_visibility text,p_description text) returns jsonb
+language plpgsql security definer set search_path='' as $$ declare uid uuid:=private.saved_owner(true); item private.saved_folders;
+ v_description text:=nullif(btrim(p_description),''); begin
  if p_name is null or length(btrim(p_name)) not between 1 and 80 or p_name ~ '[[:cntrl:]]' or p_visibility is null or p_visibility not in ('private','friends')
-  then raise exception 'INVALID_SAVED_FOLDER'; end if;
+  or length(v_description)>150 or v_description ~ '[[:cntrl:]]' then raise exception 'INVALID_SAVED_FOLDER'; end if;
  if p_folder_id is null then
   if (select count(*) from private.saved_folders where user_id=uid)>=100 then raise exception 'SAVED_FOLDER_LIMIT'; end if;
-  insert into private.saved_folders(user_id,name,visibility) values(uid,btrim(p_name),p_visibility) returning * into item;
+  insert into private.saved_folders(user_id,name,visibility,description) values(uid,btrim(p_name),p_visibility,v_description) returning * into item;
  else
-  update private.saved_folders set name=btrim(p_name),visibility=p_visibility where user_id=uid and id=p_folder_id returning * into item;
+  update private.saved_folders set name=btrim(p_name),visibility=p_visibility,description=v_description where user_id=uid and id=p_folder_id returning * into item;
   if not found then raise exception 'FOLDER_UNAVAILABLE'; end if;
  end if;
+ return private.saved_folder_json(item);
+end $$;
+
+-- The owner picks the cover from the folder's places; both null goes back to the newest place.
+create function public.set_saved_folder_cover(p_folder_id uuid,p_city_id text,p_place_key text) returns jsonb
+language plpgsql security definer set search_path='' as $$ declare uid uuid:=private.saved_owner(true); item private.saved_folders; begin
+ if num_nulls(p_city_id,p_place_key)=1 then raise exception 'INVALID_SAVED_FOLDER_COVER'; end if;
+ if private.saved_folder_role(uid,p_folder_id) is distinct from 'owner' then raise exception 'FOLDER_UNAVAILABLE'; end if;
+ if p_place_key is not null and not exists(select 1 from private.saved_folder_places(p_folder_id) x where x.city_id=p_city_id and x.place_key=p_place_key)
+  then raise exception 'FOLDER_COVER_UNAVAILABLE'; end if;
+ update private.saved_folders set cover_city_id=p_city_id,cover_place_key=p_place_key where id=p_folder_id and user_id=uid returning * into item;
  return private.saved_folder_json(item);
 end $$;
 
@@ -92,15 +114,16 @@ end $$;
 
 do $$ declare signature text; begin
  foreach signature in array array['private.saved_folder_places(uuid)','private.saved_folder_role(uuid,uuid)','private.saved_folder_json(private.saved_folders)',
-  'public.save_saved_folder(uuid,text,text)','public.get_saved_folder(uuid)','public.get_friend_saved_folders(uuid)'] loop
+  'public.save_saved_folder(uuid,text,text,text)','public.set_saved_folder_cover(uuid,text,text)','public.get_saved_folder(uuid)','public.get_friend_saved_folders(uuid)'] loop
   execute 'alter function '||signature||' owner to postgres';
   execute 'revoke all on function '||signature||' from public,anon,authenticated,service_role';
  end loop;
 end $$;
-grant execute on function public.save_saved_folder(uuid,text,text),public.get_saved_folder(uuid),public.get_friend_saved_folders(uuid) to authenticated;
+grant execute on function public.save_saved_folder(uuid,text,text,text),public.set_saved_folder_cover(uuid,text,text),public.get_saved_folder(uuid),public.get_friend_saved_folders(uuid) to authenticated;
 
 -- An unknown target rejects the whole analytics batch, so these must reach production before the app build.
 insert into private.behavior_targets(id) values
- ('saved.editor.visibility.on'),('saved.editor.visibility.off'),('saved.folder.open'),('folder.scroll'),('folder.place.open'),('user.folder.open')
+ ('saved.editor.visibility.on'),('saved.editor.visibility.off'),('saved.folder.open'),('folder.scroll'),('folder.place.open'),('user.folder.open'),
+ ('folder.cover.open'),('folder.cover.scroll'),('folder.cover.pick')
 on conflict (id) do nothing;
 notify pgrst,'reload schema';

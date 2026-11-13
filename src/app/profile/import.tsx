@@ -74,7 +74,7 @@ export default function ImportScreen() {
   async function folderFor(name: string) {
     const same = (await loadSavedFolders(supabase)).find(item => item.name === name);
     // An imported list stays private: this screen never asks who may see it.
-    return same ?? saveSavedFolder(supabase, null, name, 'private');
+    return same ?? saveSavedFolder(supabase, null, name, 'private', null);
   }
 
   // Returns false when a request could not be sent; names go grouped by where they came from.
