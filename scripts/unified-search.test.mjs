@@ -107,3 +107,16 @@ test('a Korean search name finds an English-named place; the result still shows 
   assert.equal(page.items.length, 1); assert.equal(page.items[0].title, 'Crew Collective & Café');
   assert.equal((await setup(value => value, { vancouver: [{ id: 'osm:node:4', cityId: 'vancouver', name: 'Crew Collective & Café', address: 'x' }] }).load({ query: '크루', cityId: 'vancouver', kind: 'place' })).items.length, 0);
 });
+
+test('English place names match from the start of a word, so pho never finds a taphouse (QA B12-3)', async () => {
+  const catalog = { vancouver: [
+    { id: 'osm:node:21', name: "Malone's Social Lounge & Taphouse", category: 'food', address: '' },
+    { id: 'osm:node:22', name: 'Saigon Pho', category: 'food', address: '' },
+    { id: 'osm:node:23', name: 'Pho Hoa', category: 'food', address: '' },
+    { id: 'osm:node:24', name: '강남순두부', category: 'food', address: '' },
+  ] };
+  const ids = async query => [...(await setup(value => value, catalog).load({ query, cityId: 'vancouver', kind: 'place' })).items.map(item => item.id)];
+  assert.deepEqual(await ids('pho'), ['osm:node:23', 'osm:node:22'], 'a name that starts with it first, then a later word');
+  assert.deepEqual(await ids('순두부'), ['osm:node:24'], 'Korean names still match inside the word');
+  assert.deepEqual(await ids('lounge'), ['osm:node:21']);
+});

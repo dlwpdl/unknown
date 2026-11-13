@@ -176,7 +176,7 @@ export function ListingFields({ category, cityId, value, onChange, missing = [],
 
     {!!lead && <View style={[styles.preview, clayBox ? styles.clayCard : { backgroundColor: theme.backgroundElement }]} accessible accessibilityLabel={`${tr('본문 첫 줄 미리보기')}, ${lead}`}>
       {clayBox && <ClayBoxFill kind="tile" />}
-      <ThemedText type="caption" themeColor="textSecondary">{tr('본문 첫 줄 미리보기 (구버전 앱에도 이렇게 보여요)')}</ThemedText>
+      <ThemedText type="caption" themeColor="textSecondary">{tr('본문 첫 줄 미리보기')}</ThemedText>
       <ThemedText type="supporting">{lead}</ThemedText>
     </View>}
     {picking && <NeighborhoodPicker visible cityId={cityId} initial={value.area} onClose={() => setPicking(false)} onConfirm={id => { set({ area: id }); setPicking(false); }} />}

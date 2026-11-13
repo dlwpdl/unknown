@@ -14,6 +14,11 @@ const fold = (value: string) => value.normalize('NFKC').trim().replace(/\s+/gu, 
 const text = (value: unknown, max: number): value is string => typeof value === 'string' && value.length <= max && !/[\u0000-\u001f\u007f]/.test(value);
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 function invalid(): never { throw new Error('INVALID_UNIFIED_SEARCH_RESPONSE'); }
+// 영어 이름은 단어 첫머리부터 맞춘다: 'pho'가 Taphouse 가운데에 걸려 술집이 나오지 않게(QA B12-3). 한글은 붙여 쓴 이름이 많아 가운데서도 찾는다.
+function wordStart(title: string, query: string) {
+  for (let at = title.indexOf(query); at >= 0; at = title.indexOf(query, at + 1)) if (at === 0 || !/[\p{Script=Latin}\p{N}]/u.test(title[at - 1])) return at;
+  return -1;
+}
 
 export async function loadUnifiedSearch(client: SupabaseClient, options: { query: string; cityId: string | null; kind: UnifiedSearchKind; offset?: number; signal?: AbortSignal }): Promise<UnifiedSearchPage> {
   const { cityId, kind, signal } = options, offset = options.offset ?? 0;
@@ -27,7 +32,7 @@ export async function loadUnifiedSearch(client: SupabaseClient, options: { query
     ...getCityDiscoveryPlaces(city).map(place => ({ id: place.id, cityId: city, title: place.name, subtitle: place.address, category: place.category, korean: koreanNameMatches(place.searchNames, query) })),
     ...DELIVERY_PARTNERS.filter(place => place.cityId === city).map(place => ({ id: `partner:${place.id}`, cityId: city, title: place.name, subtitle: place.label, category: place.category })),
   ]).flatMap(place => {
-    const title = fold(place.title), index = title.indexOf(query);
+    const title = fold(place.title), index = wordStart(title, query);
     return index < 0 && !('korean' in place && place.korean) && !(cafeQuery && place.category === 'cafe') ? [] : [{ ...place, rank: title === query ? 0 : index === 0 ? 1 : 2, sort: title }];
   }).sort((a, b) => a.rank - b.rank || (a.sort < b.sort ? -1 : a.sort > b.sort ? 1 : a.cityId < b.cityId ? -1 : a.cityId > b.cityId ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const candidates = [...new Map(local.map(place => [`${place.cityId}:${place.id}`, place])).values()];

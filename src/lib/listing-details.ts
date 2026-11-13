@@ -323,6 +323,17 @@ export function freeBand<P extends Pick<Post, 'price' | 'listingDetails' | 'titl
   const free = posts.filter(isFreeListing);
   return { count: free.length, tiles: free.slice(0, 8), more: Math.max(0, free.length - 8), names: free.slice(0, 2).map(post => post.title), others: Math.max(0, free.length - 2) };
 }
+// Photo grids pair two tiles per row. An item that is not a tile (a used-goods story with no listing fields) gets a full row instead of half of one,
+// placed right after the row it interrupted fills up, so no tile row is left half empty mid-list (QA 2026-11-13 B13-1).
+export function pairTiles<T>(items: readonly T[], tile: (item: T) => boolean): (T | T[])[] {
+  const rows: (T | T[])[] = [];
+  let open: T[] | null = null, waiting: T[] = [];
+  for (const item of items) {
+    if (!tile(item)) { if (open) waiting.push(item); else rows.push(item); continue; }
+    if (open) { open.push(item); rows.push(...waiting); waiting = []; open = null; } else rows.push(open = [item]);
+  }
+  return [...rows, ...waiting];
+}
 // The loaded posts by neighborhood, the same grouping as the map, busiest first (ties keep feed order). Posts with no place come last.
 export function listingAreaRows<P extends Pick<Post, 'cityId' | 'body' | 'listingDetails' | 'price'>>(posts: readonly P[], language: AppLanguage) {
   const areas = groupListingsByArea(posts.filter(post => post.listingDetails), language).sort((a, b) => b.posts.length - a.posts.length);

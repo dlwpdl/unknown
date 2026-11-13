@@ -39,7 +39,7 @@ const TOUR: { icon: Icon; title: string; body: string }[] = [
   { icon: { ios: 'person.2', android: 'groups', web: 'groups' }, title: '아래 모임 탭', body: '이번 주 열리는 모임을 보고 바로 신청해요. 직접 모임을 열 수도 있어요.' },
   WEB
     ? { icon: { ios: 'square.and.pencil', android: 'edit_square', web: 'edit_square' }, title: '아래 글쓰기 탭', body: '궁금한 걸 묻거나 집·일자리·중고 글을 올려요. 주제를 고르면 맞는 칸이 나와요.' }
-    : { icon: { ios: 'plus', android: 'add', web: 'add' }, title: "'+ 글쓰기' 버튼", body: '홈 오른쪽 아래에 떠 있어요. 안내 카드 때문에 안 보이면 화면을 아래로 내려 보세요. 궁금한 걸 묻거나 집·일자리·중고 글을 올려요. 주제를 고르면 맞는 칸이 나와요.' },
+    : { icon: { ios: 'plus', android: 'add', web: 'add' }, title: "'+ 글쓰기' 버튼", body: '홈 오른쪽 아래에 떠 있어요. 글을 내려 읽는 동안엔 잠깐 숨고, 위로 올리면 다시 나와요. 궁금한 걸 묻거나 집·일자리·중고 글을 올려요. 주제를 고르면 맞는 칸이 나와요.' },
   { icon: { ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' }, title: '채팅 · 알림', body: '채팅은 1:1 대화와 모임 단톡방, 알림은 내 글에 달린 댓글과 모임 소식이에요.' },
 ];
 

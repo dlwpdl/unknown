@@ -14,6 +14,7 @@ import {
   pinJustPosted,
   todayRowsAfter,
   writeFabOverIntro,
+  writeFabScroll,
 } from '../src/lib/feed-data.ts';
 import { contentAdPosition } from '../src/lib/content-ad-placement.ts';
 
@@ -301,4 +302,15 @@ test('the write button steps aside only while the top cards reach its spot', () 
   assert.equal(writeFabOverIntro({ ...place, introHeight: 300, offset: 0 }), false, 'a short header never hides it');
   assert.equal(writeFabOverIntro({ ...place, introHeight: 640, offset: -60 }), false, 'pull-to-refresh bounce keeps it');
   assert.equal(writeFabOverIntro({ ...place, viewport: 0, introHeight: 800, offset: 0 }), false, 'before layout it stays');
+});
+
+test('the write button steps away while the list is read downward and comes back on the way up (QA B8·H42-3)', () => {
+  const walk = offsets => offsets.reduce((state, offset) => writeFabScroll(state, offset), { away: false, turn: 0 });
+  assert.equal(walk([4, 12, 20]).away, false, 'a nudge under the slack keeps it');
+  assert.equal(walk([10, 40]).away, true, 'reading down hides it');
+  assert.equal(walk([10, 40, 400, 390]).away, true, 'a small wobble back stays hidden');
+  assert.equal(walk([10, 40, 400, 360]).away, false, 'scrolling back up brings it back');
+  assert.equal(walk([10, 40, 400, 360, 340, 360]).away, false, 'the turning point follows the way up');
+  assert.equal(walk([10, 40, 400, 360, 340, 380]).away, true, 'and down again hides it');
+  assert.equal(walk([10, 40, 400, -30]).away, false, 'the top and pull-to-refresh always show it');
 });

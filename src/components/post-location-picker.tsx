@@ -7,10 +7,12 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { Pressable } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { DiscoveryMap, type DiscoveryMarker } from '@/components/discovery-map';
-import { ClayIcon, ClayPillFill, useClay } from '@/components/clay';
+import { ClayPillFill, useClay } from '@/components/clay';
 import { PostPinMap } from '@/components/post-pin-map';
+import { SymbolView } from '@/components/symbol-view';
 import { ThemedText } from '@/components/themed-text';
 import { useCityPlacesRevision } from '@/hooks/use-city-places';
+import { ControlStyles, controlPresentation, IconSize } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { getCityDiscoveryPlaces, placeMatchesQuery, type CityPlace } from '@/lib/city-places';
 import { DISCOVERY_CATEGORIES, discoveryPlace, pinSubcategory } from '@/lib/discovery';
@@ -32,6 +34,7 @@ export function PostLocationPicker({ visible, initialPin, initialLabel = '', cit
   const theme = useTheme(), clay = useClay(), { play } = useInteractionFeedback(), insets = useSafeAreaInsets(), reduced = useReducedMotion();
   const [pin, setPin] = useState<PostPin | null>(initialPin), [label, setLabel] = useState(initialLabel);
   const [query, setQuery] = useState(''), [busy, setBusy] = useState(false), [message, setMessage] = useState('');
+  const [folded, setFolded] = useState(false); // 검색으로 고른 뒤에는 검색어를 남기고 결과 목록만 접는다(QA 안드로이드 B10-1)
   const revision = useRef(0);
   const [ready, setReady] = useState(false), [cardHeight, setCardHeight] = useState(150);
   const [dropping, setDropping] = useState(false), [center, setCenter] = useState<{ latitude: number; longitude: number; requestId: number } | null>(initialPin && { latitude: initialPin.latitude, longitude: initialPin.longitude, requestId: 0 });
@@ -65,7 +68,7 @@ export function PostLocationPicker({ visible, initialPin, initialLabel = '', cit
     try { googlePinUrl(selected); } catch { return; }
     revision.current++; if (!quiet) { play('selection'); setCenter({ latitude: selected.latitude, longitude: selected.longitude, requestId: revision.current }); } setPin(selected); setLabel((typeof name === 'string' ? name : '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 100)); setBusy(false); setMessage('');
   };
-  const pick = (place: CityPlace, quiet = false) => { select({ latitude: place.latitude, longitude: place.longitude }, place.name, quiet); setQuery(''); };
+  const pick = (place: CityPlace, quiet = false) => { select({ latitude: place.latitude, longitude: place.longitude }, place.name, quiet); if (quiet) setQuery(''); else setFolded(true); };
   const toggle = () => { revision.current++; play('selection'); setBusy(false); setDropping(!free); if (pin) setCenter({ latitude: pin.latitude, longitude: pin.longitude, requestId: revision.current }); };
   const close = () => { revision.current++; setBusy(false); onClose(); };
   const locate = async (search: boolean) => {
@@ -81,7 +84,7 @@ export function PostLocationPicker({ visible, initialPin, initialLabel = '', cit
         if (!permission.granted) throw new Error('PERMISSION');
       } else if (Platform.OS === 'android' && !(await Location.getForegroundPermissionsAsync()).granted) throw new Error('SEARCH_PERMISSION');
       const result = await Promise.race([
-        search ? Location.geocodeAsync([query.trim(), cityName].filter(Boolean).join(', ')) : Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+        search ? geocodeInCity(query.trim(), cityName) : Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
         new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('TIMEOUT')), 15000); }),
       ]);
       if (revision.current !== operation || AppState.currentState !== 'active') return;
@@ -103,17 +106,18 @@ export function PostLocationPicker({ visible, initialPin, initialLabel = '', cit
   return <Modal visible={visible} animationType={reduced ? 'fade' : 'slide'} onRequestClose={close}>
     <SafeAreaProvider style={[styles.backdrop, { backgroundColor: theme.background }]}>
     <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: theme.background, paddingBottom: Math.max(insets.bottom, 12) }]}>
-      <View style={styles.header}><Pressable analyticsId="post.location.cancel" accessibilityRole="button" accessibilityLabel={tr("위치 선택 취소")} onPress={close} style={styles.control}>{clay ? <ClayIcon clay="chevron_left" size={22} /> : <ThemedText>‹</ThemedText>}</Pressable><ThemedText type="smallBold">{tr("위치 공유")}</ThemedText><View style={styles.control} /></View>
+      <View style={styles.header}><Pressable analyticsId="post.location.cancel" accessibilityRole="button" accessibilityLabel={tr("위치 선택 취소")} onPress={() => { play('selection'); close(); }}
+        style={({ pressed }) => [ControlStyles.icon, styles.back, controlPresentation(theme, { pressed, clay }).container]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={IconSize.toolbar} tintColor={theme.text} /></Pressable><ThemedText type="smallBold">{tr("위치 공유")}</ThemedText><View style={styles.control} /></View>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.canvas}>
         {visible && (free ? <PostPinMap pin={pin} label={label} cityName={cityName} onSelect={select} onReadyChange={setReady} bottomInset={cardHeight + 24} />
           : <DiscoveryMap markers={markers} cityName={cityName} selectedId={chosen ? chosen.id : pin ? 'chosen' : null} center={center} zoom={center ? 15 : undefined} topInset={74} bottomInset={cardHeight + 100}
             onSelect={id => { const place = places.find(item => item.id === id); if (place) pick(place, true); }} />)}
         <View style={[styles.search, { backgroundColor: theme.card, borderColor: theme.line }]}>
-          <TextInput value={query} onChangeText={value => { revision.current++; setBusy(false); setQuery(value); }} accessibilityLabel={tr("장소·주소 검색")} placeholder={tr("장소나 주소 찾기")} placeholderTextColor={theme.textSecondary}
+          <TextInput value={query} onChangeText={value => { revision.current++; setBusy(false); setQuery(value); setFolded(false); }} accessibilityLabel={tr("장소·주소 검색")} placeholder={tr("장소나 주소 찾기")} placeholderTextColor={theme.textSecondary}
             onFocus={() => play('selection')} onSubmitEditing={() => void locate(true)} returnKeyType="search" maxLength={150} style={[styles.input, { color: theme.text }]} />
           <Pressable analyticsId="post.location.search" accessibilityRole="button" accessibilityLabel={tr("주소 찾기")} disabled={!mapReady || busy || !query.trim()} onPress={() => void locate(true)} style={[styles.control, clay && { overflow: 'visible', paddingHorizontal: 18 }]}>{clay && <ClayPillFill kind="white" />}<ThemedText themeColor={clay ? undefined : 'accent'}>{tr("검색")}</ThemedText></Pressable>
         </View>
-        {ours.length > 0 && <View style={[styles.results, { backgroundColor: theme.card, borderColor: theme.line }]}>
+        {ours.length > 0 && !folded && <View style={[styles.results, { backgroundColor: theme.card, borderColor: theme.line }]}>
           <ThemedText type="small" themeColor="textSecondary">{tr("글링 지도에 있는 곳")}</ThemedText>
           {ours.map(place => <Pressable key={place.id} analyticsId="post.location.search" accessibilityRole="button" accessibilityLabel={`${place.name}, ${place.address}`} accessibilityHint={tr("이 장소를 첨부할 위치로 골라요")}
             disabled={!mapReady || busy} onPress={() => pick(place)} style={({ pressed }) => [styles.result, { opacity: !mapReady || busy ? 0.5 : pressed ? 0.82 : 1 }]}>
@@ -141,10 +145,18 @@ export function PostLocationPicker({ visible, initialPin, initialLabel = '', cit
   </Modal>;
 }
 
+// 주소 찾기는 못 알아본 검색어에도 도시 한가운데를 돌려준다(QA B10-2: 'ㅅㄱㄷㄷㄴ'에 시청 앞 핀). 도시 이름만 찾은 자리와 같으면 못 찾은 것으로 본다.
+async function geocodeInCity(text: string, cityName: string) {
+  const found = await Location.geocodeAsync([text, cityName].filter(Boolean).join(', '));
+  if (!found.length || !cityName) return found;
+  const [city] = await Location.geocodeAsync(cityName);
+  return city && Math.abs(city.latitude - found[0].latitude) < 1e-4 && Math.abs(city.longitude - found[0].longitude) < 1e-4 ? [] : found;
+}
+
 const styles = StyleSheet.create({
   backdrop: { flex: 1 },
   screen: { flex: 1, width: '100%', maxWidth: 600, alignSelf: 'center' }, header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, height: 56 },
-  control: { minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
+  control: { minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'center' }, back: { borderWidth: 1 },
   search: { position: 'absolute', top: 16, left: 16, right: 16, flexDirection: 'row', borderWidth: 1, borderRadius: 14, paddingLeft: 12 },
   results: { position: 'absolute', top: 72, left: 16, right: 16, borderWidth: 1, borderRadius: 14, padding: 8, gap: 4 },
   result: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10 }, photo: { width: 40, height: 40, borderRadius: 8, overflow: 'hidden' }, resultText: { flex: 1, gap: 2 },

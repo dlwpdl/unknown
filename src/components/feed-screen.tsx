@@ -85,7 +85,7 @@ import {
   MEETUPS_CHANGED_EVENT,
   requestMeetupJoin,
 } from '@/lib/community-data';
-import { appendUniquePosts, limitBusinessPosts, loadPublicFeed, loadPublicPost, pinJustPosted, todayRowsAfter, writeFabOverIntro, type FeedSort, type JustPosted } from '@/lib/feed-data';
+import { appendUniquePosts, limitBusinessPosts, loadPublicFeed, loadPublicPost, pinJustPosted, todayRowsAfter, writeFabOverIntro, writeFabScroll, type FeedSort, type JustPosted } from '@/lib/feed-data';
 import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, hasAdLabel, MAX_HASHTAGS, parseHashtags, toggleAdLabel } from '@/lib/hashtags';
 import { canAddPostImage, MAX_POST_IMAGES } from '@/lib/image-upload';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -97,7 +97,7 @@ import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/po
 import { googleMapsPin, googlePinUrl, postMapBody, withPlacePin, withPostMap } from '@/lib/post-maps';
 import { composePlace, type CityPlace } from '@/lib/city-places';
 import {
-  BUSINESS_VIEW_KEY, emptyListingDraft, FREE_FOLDED_KEY, freeBand, isListingCategory, LISTING_VIEW_KEY, listingAreaRows, listingFiltersActive, listingFromDraft, matchesListingFilters, NO_LISTING_FILTERS, parseListingView, withListingLead,
+  BUSINESS_VIEW_KEY, emptyListingDraft, FREE_FOLDED_KEY, freeBand, isListingCategory, LISTING_VIEW_KEY, listingAreaRows, listingFiltersActive, listingFromDraft, matchesListingFilters, NO_LISTING_FILTERS, pairTiles, parseListingView, withListingLead,
   type ListingCategory, type ListingDraft, type ListingFilters, type ListingView,
 } from '@/lib/listing-details';
 import { findNeighborhood, neighborhoodName } from '@/lib/neighborhoods';
@@ -146,6 +146,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const writeFabCompact = viewportWidth < 380; // 폴드 바깥 화면 같은 좁은 폭에서는 + 하나만
   // 머리 카드(처음 안내·새로 온 멤버)가 버튼 자리에 있으면 글자를 가리니 비켜 준다 (1.4.8 QA "모임 보기"). 카드가 지나가면 다시 나온다.
   const [writeFabAside, setWriteFabAside] = useState(false);
+  // 내려 읽는 동안에도 비켜 있다가 올리면 다시 나온다(QA B8·H42-3). 카테고리를 바꿔 목록이 저절로 움직일 때는 따라 숨지 않는다.
+  const [writeFabAway, setWriteFabAway] = useState(false);
+  const writeFabTrack = useRef({ away: false, turn: 0 }), writeFabByHand = useRef(true);
   // 실측: iOS 탭 화면의 insets.bottom은 이미 탭바까지 포함(탭마다 SafeAreaProvider), 안드로이드 탭 내용은 탭바 위에서 끝난다.
   const [posts, setPosts] = useState<Post[]>([]);
   const [justPosted, setJustPosted] = useState<JustPosted<Post> | null>(null);
@@ -344,7 +347,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     ...areaRows.areas.map(area => ({ area: area.id, name: area.name ?? tr('이 근처'), posts: area.posts })),
     ...areaRows.rest.length ? [{ area: 'rest', name: tr('그 밖의 글'), posts: areaRows.rest }, ...areaRows.rest] : [],
   ] : usedGrid || businessGrid
-    ? listingPosts.reduce<Post[][]>((rows, post, index) => (index % 2 ? rows[rows.length - 1].push(post) : rows.push([post]), rows), [])
+    ? pairTiles(listingPosts, post => businessGrid || !!post.listingDetails)
     : listingPosts;
   const firstRow = (showFeedSort ? 2 : 1) + (band?.count ? 1 : 0);
   const feedLoading = categoryLoading || loadedFeedKey !== feedKey;
@@ -391,7 +394,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   }, [canonicalQuery, city.id, q, searching, viewerScope]);
 
 
-  const searchHint = tr('{0}에서 집·일자리·중고 찾기', tr(city.name));
   const openSearch = (initial?: string) => {
     router.push({ pathname: '/search', params: { ...(initial ? { query: initial } : {}), ...(meetupsOnly ? { kind: 'meetup' } : {}) } });
   };
@@ -677,6 +679,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       aiUndo.current ??= { title, body, tag, hashtagInput, postKind, priceInput };
       const nextTag = TAGS.find(({ slug }) => slug === draft.categorySlug && (isAdmin || slug !== 'business')) ?? tag;
       setTag(nextTag);
+      // AI가 맛집 같은 일반 카테고리로 옮기면 금액 칸·글 수 안내도 같이 내린다(QA B10-1). 구해요·팔아요로 옮길 때는 지금처럼 가격이 있는 중고만 바꾼다.
+      if (nextTag.id !== tag.id && !isListingCategory(nextTag.slug)) setPostKind('story');
       setAiFields(draft.fields);
       if (draft.price != null && nextTag.slug === 'used') { setPostKind('listing'); setPriceInput(String(draft.price)); }
       const notes = [
@@ -928,9 +932,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             <ThemedText type="smallBold" numberOfLines={1} style={styles.city}>{tr(city.name)}</ThemedText>
             <ClayIcon clay="chevron" name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.text} />
           </Pressable></GlassSurface>
-          {/* 검색칸이 카테고리 줄과 겹쳐 보여 프로필 옆 돋보기로 (owner 2026-11-01); 읽어 주기 이름에 찾는 것을 남김. */}
+          {/* 검색칸이 카테고리 줄과 겹쳐 보여 프로필 옆 돋보기로 (owner 2026-11-01). 읽어 주기 이름은 열리는 화면 이름과 같게(QA B12-4). */}
           <View style={styles.iconGlass}><Pressable analyticsId="components_feed-screen.pressable.2"
-            onPress={() => { play('selection'); openSearch(); }} accessibilityRole="button" accessibilityLabel={searchHint} accessibilityHint={tr('검색 화면이 열려요')}
+            onPress={() => { play('selection'); openSearch(); }} accessibilityRole="button" accessibilityLabel={tr('통합검색')} accessibilityHint={tr('검색 화면이 열려요')}
             style={({ pressed }) => [styles.iconButton, controlPresentation(theme, { tone: 'ghost', pressed, reducedMotion }).container]}>
             <ClayIcon clay="search" claySize={26} name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={IconSize.toolbar} tintColor={theme.text} />
           </Pressable></View>
@@ -938,7 +942,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         </View>
         {cityOpen && !meetupsOnly && (
           <View style={styles.categoryHead}>
-            <GlassSurface tone="control" clay="tray" style={styles.chipGlass}><ScrollView analyticsId="components_feed-screen.scrollview.1" {...categoryRow.scroll} horizontal showsHorizontalScrollIndicator={false} style={clay && styles.chipClip} contentContainerStyle={styles.chipBar}>
+            <GlassSurface tone="control" clay="tray" style={styles.chipGlass}>{/* 안드로이드 가로 스크롤은 둥근 모서리로 자르지 않아 끝 칩이 세로로 잘린다(QA B7-1): 감싼 View가 자른다. */}<View style={clay && styles.chipClip}><ScrollView analyticsId="components_feed-screen.scrollview.1" {...categoryRow.scroll} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
               {/* 처음 보이는 칩: PRIMARY_TAGS (owner 2026-11-01 순서); 나머지는 '더보기' 시트. */}
               {[...PRIMARY_TAGS, ...(tagFilter != null && !PRIMARY_TAGS.includes(tagFilter) ? [tagFilter] : [])].map((id) => {
                 const label = id == null ? t.feed.filterAll : tr(TAGS.find((tg) => tg.id === id)!.label);
@@ -961,7 +965,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 <ThemedText type="smallBold" themeColor="accent">{tr('더보기')}</ThemedText>
                 <ClayIcon clay="chevron" name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={IconSize.chevron} tintColor={theme.accent} />
               </Pressable>
-            </ScrollView></GlassSurface>
+            </ScrollView></View></GlassSurface>
           </View>
         )}
         <View style={styles.feedArea} onLayout={({ nativeEvent: { layout } }) => { measureList({ top: layout.y }); feedViewportHeight.current = layout.height; placeWriteFab(); }}><FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
@@ -970,7 +974,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             const stuck = feedOffset.current >= feedIntroHeight.current - 0.5;
             if (stuck !== sortStuck) setSortStuck(stuck);
             placeWriteFab();
+            writeFabTrack.current = writeFabByHand.current ? writeFabScroll(writeFabTrack.current, feedOffset.current) : { away: false, turn: feedOffset.current };
+            setWriteFabAway(writeFabTrack.current.away);
           } : undefined}
+          onScrollBeginDrag={() => { writeFabByHand.current = true; }}
           scrollEventThrottle={16}
           accessibilityElementsHidden={loadingCover != null} importantForAccessibility={loadingCover ? 'no-hide-descendants' : 'auto'}
           onViewableItemsChanged={trackTranslationFeed}
@@ -980,6 +987,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           onContentSizeChange={() => {
             if (!feedLoading && scrollToResults.current) {
               scrollToResults.current = false;
+              writeFabByHand.current = false;
               feedListRef.current?.scrollToOffset({ offset: feedIntroHeight.current, animated: !reducedMotion });
             }
           }}
@@ -1072,8 +1080,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             Array.isArray(item) ? <Animated.View style={[styles.listingGrid, { opacity: feedOpacity }]}>
               {item.map(post => businessGrid ? zoomCard(post, <BusinessNewsCard key={post.id} variant="tile" post={post} onPress={() => pressCard(post)} onAuthor={() => openAuthor(post)}
                 translationVisible={visibleFeedIds.has(post.id) && !searching && !writing} />)
-                : post.listingDetails ? zoomCard(post, <ListingCard key={post.id} variant="tile" post={post as DetailedPost} onPress={() => pressCard(post)} />)
-                : <View key={post.id} style={styles.flexText}>{zoomCard(post, <PostCard flat post={post} onPress={() => pressCard(post)} onJoin={() => void onJoin(post)} joinStatus={myRequests[post.id]} onHashtag={openSearch} onAuthor={() => openAuthor(post)} />)}</View>)}
+                : zoomCard(post, <ListingCard key={post.id} variant="tile" post={post as DetailedPost} onPress={() => pressCard(post)} />))}
               {item.length === 1 && <View style={styles.flexText} />}
             </Animated.View> :
             'area' in item ? <Animated.View style={[styles.areaRow, { opacity: feedOpacity }]}>
@@ -1105,7 +1112,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           style={[styles.loadingCover, loadingCover === 'page' && [styles.loadingCoverPage, { paddingBottom: bottomClear }], { backgroundColor: theme.background, backgroundImage: listGlow }]}>
           <GlingLoader color={theme.accent} accessibilityLabel={loadingCover === 'page' ? tr("{0} 소식 불러오는 중", tr(city.name)) : tr("글 불러오는 중")} />
         </Reanimated.View>}</View>
-        {writeFab && !writeFabAside && <Reanimated.View entering={reducedMotion ? undefined : FadeIn.duration(ControlMotion.settleMs)} exiting={reducedMotion ? undefined : FadeOut.duration(ControlMotion.pressMs)}
+        {writeFab && !writeFabAside && !writeFabAway && <Reanimated.View entering={reducedMotion ? undefined : FadeIn.duration(ControlMotion.settleMs)} exiting={reducedMotion ? undefined : FadeOut.duration(ControlMotion.pressMs)}
           style={[styles.writeFabDock, { bottom: (Platform.OS === 'ios' ? insets.bottom : 0) + Spacing.three }]}><Pressable analyticsId="feed.write" accessibilityRole="button" accessibilityLabel={t.tabs.write} onPress={() => openWriter()}
           style={({ pressed }) => [ControlStyles.pill, styles.writeFab, writeFabCompact && styles.writeFabCompact, controlPresentation(theme, { tone: 'primary', clay, pressed, reducedMotion }).container]}>
           {clay && <ClayPillFill kind="cta" />}
@@ -1400,7 +1407,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                             }
                             animateLayout();
                             setTag(tg);
-                            if (isListingCategory(tg.slug)) setPostKind('listing');
+                            // 종류도 새 카테고리 기본으로 다시 맞춘다: 맛집으로 옮긴 중고거래 글에 금액 칸·글 수 안내가 남지 않게(QA B10-1).
+                            setPostKind(isListingCategory(tg.slug) ? 'listing' : 'story');
                             setWriterPanel(null);
                             setWriterOptionsOpen(false);
                           }}

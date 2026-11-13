@@ -231,7 +231,8 @@ export function ListingMapScreen({ visible, category, city, posts, filters, onFi
   const [free, setFree] = useState(false); // after the first pan or tap the camera is the person's
   const color = DISCOVERY_CATEGORIES.find(item => item.id === category)!.color;
   const areas = useMemo(() => groupListingsByArea(posts, language).filter(area => !region || inBounds(region, area)), [posts, language, region]);
-  const markers = useMemo(() => areas.map(area => ({ id: area.id, latitude: area.latitude, longitude: area.longitude, color, label: area.label })), [areas, color]);
+  // featured: every area keeps its price or count tag from further out, not just a small dot (QA B13-2: 'two posts here' showed one faint dot).
+  const markers = useMemo(() => areas.map(area => ({ id: area.id, latitude: area.latitude, longitude: area.longitude, color, label: area.label, featured: true })), [areas, color]);
   const selected = areas.find(area => area.id === selectedId) ?? null;
   // Open on the busiest neighborhood: the city centre can sit outside every listing.
   const busiest = areas.reduce<typeof areas[number] | null>((top, area) => !top || area.posts.length > top.posts.length ? area : top, null);

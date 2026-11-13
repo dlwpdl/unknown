@@ -61,7 +61,7 @@ export const en: Translations = {
     kindListingHint: 'Jobs, rentals, roommates, used items and cars', pricePlaceholder: 'Price (optional, CAD)',
     listingNote: 'Listings close automatically after 14 days, and you can only have so many open at once. You can bump every 48 hours on Basic, 36 on Plus, 30 on Pro and 24 on Premium. This applies to your account and to each listing. Your existing subscription benefits stay the same.',
     listingRemaining: (used, max) => `${used} of ${max} active listings`,
-    listingBodyPlaceholder: 'What are you looking for or offering? Add details like job requirements, item condition and location.',
+    listingBodyPlaceholder: 'Describe what you’re looking for or offering.',
     bodyPlaceholder: {
       life: 'Share a moment from your day or ask a question', festival: 'Talk about a festival or show you want to see', food: 'Share a hidden-gem spot you love',
       travel: 'Share a trip or a day out', shopping: 'Share shopping tips, deals or secondhand finds', settlement: 'Share how you settled in: immigration, study or working holiday',

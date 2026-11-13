@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import {
   buildListingLead, emptyListingDraft, freeBand, groupListingsByArea, isFreeListing, listingAreaRows, listingExtras, listingFromDraft, listingPin, listingPriceLabel, matchesListingFilters,
-  NO_LISTING_FILTERS, parseListingDetails, parseListingView, stripListingLead, withListingLead,
+  NO_LISTING_FILTERS, pairTiles, parseListingDetails, parseListingView, stripListingLead, withListingLead,
 } from '../src/lib/listing-details.ts';
 import { coarseListingPin, findNeighborhood, NEIGHBORHOODS, neighborhoodGroups } from '../src/lib/neighborhoods.ts';
 import { hydratePublicPosts } from '../src/lib/feed-data.ts';
@@ -253,4 +253,13 @@ test('Vancouver job areas are grouped so every neighborhood sits in exactly one 
   const ids = neighborhoodGroups('vancouver').flatMap(group => group.items.map(item => item.id));
   assert.deepEqual([...ids].sort(), NEIGHBORHOODS.vancouver.map(item => item.id).sort());
   assert.equal(neighborhoodGroups('toronto'), null, 'a short list stays flat');
+});
+
+test('the photo grid pairs listings and gives a story without listing fields its own full row after the pair (QA B13-1)', () => {
+  const tile = item => item === item.toUpperCase();
+  assert.deepEqual(pairTiles(['A', 'B', 'C', 'D'], tile), [['A', 'B'], ['C', 'D']]);
+  assert.deepEqual(pairTiles(['A', 'x', 'B', 'C'], tile), [['A', 'B'], 'x', ['C']], 'the story waits until the half row fills, never sits in half a cell');
+  assert.deepEqual(pairTiles(['x', 'A', 'y', 'z', 'B'], tile), ['x', ['A', 'B'], 'y', 'z']);
+  assert.deepEqual(pairTiles(['A', 'x'], tile), [['A'], 'x'], 'a last tile alone still ends its row');
+  assert.deepEqual(pairTiles([], tile), []);
 });

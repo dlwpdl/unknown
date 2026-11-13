@@ -9,6 +9,7 @@ import { uniqueHashtags } from '../src/lib/hashtags.ts';
 import { count, t } from '../src/i18n/ko.ts';
 import { googleMapsPin, googleMapsUrl, postLocationUrl, postMapBody } from '../src/lib/post-maps.ts';
 import { postInfoParts } from '../src/lib/post-info.ts';
+import { dealLabel } from '../src/lib/listing-details.ts';
 import { parseMeetupSections } from '../src/lib/meetup-sections.ts';
 import { translationSource } from './test-meetup-source-imports.mjs';
 import { photoCreditNames, splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
@@ -79,7 +80,7 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     '../../supabase/functions/_shared/post-links': postLinks,
     '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
     '@/components/post-attachment-link': { PostAttachmentLink: 'PostAttachmentLink' },
-    '@/lib/post-info': { postInfoParts }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' },
+    '@/lib/post-info': { postInfoParts }, '@/lib/listing-details': { dealLabel }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' },
     '@/lib/mock': { CITIES: [] },
     '@/components/post-pin-map': { PostPinMap: 'PostPinMap' },
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' },
@@ -340,7 +341,7 @@ test('Today card ··· 이 글 숨기기 on someone else\'s post: saves the hid
   assert.deepEqual(card.hiddenCalls, [['viewer-a', 'theirs-1', true]]);
   const [title, body, buttons] = card.alerts.at(-1);
   assert.equal(title, '글을 숨겼어요');
-  assert.equal(body, undefined);
+  assert.equal(body, '이제 내 화면에 이 글이 안 보여요.', 'a short line fills the alert (QA 안드로이드 B8-2)');
   assert.deepEqual(Array.from(buttons, button => button.text), ['되돌리기', '확인']);
   buttons[0].onPress(); await settle();
   assert.deepEqual(card.hiddenCalls.at(-1), ['viewer-a', 'theirs-1', false], '되돌리기 un-hides the same post');

@@ -73,6 +73,18 @@ export function setBusinessImageSession(viewer: string | null, token: string | n
   businessImageSessionRevision++;
 }
 
+/**
+ * The floating write button steps away while the list is read downward and comes back on the way up, so it never rests on a card's save,
+ * ··· or 내 위치로 보기 button while someone reads past it (QA 2026-11-13 B8·H42-3). `turn` is the farthest point in the current direction;
+ * moving back more than `slack` from it flips the button. The top of the list (and pull-to-refresh) always shows it.
+ */
+export type WriteFabScroll = { away: boolean; turn: number };
+export function writeFabScroll(state: WriteFabScroll, offset: number, slack = 24): WriteFabScroll {
+  if (offset <= 0) return { away: false, turn: 0 };
+  if (state.away ? offset >= state.turn : offset <= state.turn) return { away: state.away, turn: offset };
+  return Math.abs(offset - state.turn) > slack ? { away: !state.away, turn: offset } : state;
+}
+
 /** True while the top cards (first-steps, newcomer) still reach the floating write button, so its label would cover their text. */
 export function writeFabOverIntro({ introHeight, offset, viewport, bottom, height }: { introHeight: number; offset: number; viewport: number; bottom: number; height: number }): boolean {
   return viewport > 0 && introHeight - Math.max(offset, 0) > viewport - bottom - height;
