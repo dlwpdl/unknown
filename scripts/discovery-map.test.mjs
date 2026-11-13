@@ -610,9 +610,10 @@ test('a place name gives way to a count circle instead of covering it (QA C17-1)
     assert.equal(room.layout['icon-allow-overlap'], true, 'the count is always drawn, so its box always counts');
     assert.notEqual(room.layout['icon-ignore-placement'], true, 'its box is kept for the names placed after it');
     assert.equal(room.paint['icon-opacity'], 0);
-    // saved-mark is 18px; with the 2px icon padding the box covers the 12/15/18px circle and its stroke.
+    // saved-mark is 18px: the box is the 12/15/18px circle itself, and the name's own 4px text padding keeps it off the stroke.
     assert.equal(JSON.stringify(room.layout['icon-size']), '["step",["get","point_count"],1.4,10,1.7,50,2]');
-    for (const [size, radius] of [[1.4, 12], [1.7, 15], [2, 18]]) assert.ok(18 * size + 4 >= 2 * radius + 2, source + ': box covers a ' + radius + 'px count');
+    assert.equal(room.layout['icon-padding'], 0, 'no extra margin that would hide names that only come near');
+    for (const [size, radius] of [[1.4, 12], [1.7, 15], [2, 18]]) assert.ok(Math.abs(18 * size - 2 * radius) <= 1.5, source + ': box covers a ' + radius + 'px count');
     // MapLibre places the top layer first: the room has to sit above every name.
     for (const id of names) assert.ok(index(source + '-room') > index(id), source + '-room above ' + id);
   }
