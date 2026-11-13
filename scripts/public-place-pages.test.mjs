@@ -5,13 +5,16 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { finishPublicWeb } from './finish-public-web.mjs';
 import { prerenderPublicPosts, withStaticPage } from './prerender-public-posts.mjs';
-import { hoursText, loadPlaceCatalog, loadPlaceRatings, publicPlaces } from './prerender-public-places.mjs';
+import { hoursText, loadPlaceCatalog, loadPlaceRatings, publicPlaceMeta, publicPlaces } from './prerender-public-places.mjs';
 import { PUBLIC_SITE, publicCitySubpage, publicPlacePath } from '../src/lib/public-seo.ts';
 
 const SHELL = '<html><head><meta charSet="utf-8"/><title data-rh="true">글링 | 앱에서 이어가기</title><meta name="robots" content="noindex, nofollow" data-rh="true"/></head><body><div id="root"><section class="reader-hero"><h1>앱에서 이어가세요.</h1></section></div></body></html>';
 const NOW = Date.parse('2026-11-12T12:00:00Z');
 const uuid = n => `${String(n).padStart(8, '0')}-2222-4222-8222-222222222222`;
 const h1s = html => (html.match(/<h1\b/g) ?? []).length;
+// Heading levels in page order go down one step at a time (h1 → h2 → h3), never h1 → h3.
+const skips = html => [...html.matchAll(/<h([1-6])\b/g)].map(match => Number(match[1])).some((level, index, levels) => index > 0 && level > levels[index - 1] + 1);
+const description = html => html.match(/<meta name="description" content="([^"]*)"/)[1];
 const graph = html => [...html.matchAll(/<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)].map(match => JSON.parse(match[1])).find(item => item['@graph'])['@graph'];
 const read = (directory, path) => readFileSync(join(directory, path), 'utf8');
 const HANDSON = 'osm:node:4976343547'; // In src/lib/gling-visited.json, so it opens with no post or intro.
@@ -124,6 +127,8 @@ test('장소 페이지는 11개 도시에서 소개·글·후기·직접 방문�
     assert.match(list, /data-cat="all">전체<span>6<\/span><\/button><button type="button" aria-pressed="false" data-cat="food">맛집<span>2<\/span>.*data-cat="cafe">카페<span>3<\/span>.*data-cat="places">가볼 만한 곳<span>1<\/span>/);
     assert.match(list, /<h3><a href="\/vancouver\/places\/way-1">Bakery One<\/a><\/h3><p class="reader-excerpt">“제목 1”<\/p><p class="reader-meta">카페 · 581 Clarke Road, Coquitlam<\/p>/);
     assert.doesNotMatch(list, /place-pager/, 'one page, no pager');
+    assert.match(list, /<section class="place-list" aria-labelledby="place-list-h"><h2 id="place-list-h" class="place-sr-only">밴쿠버 장소 목록<\/h2><article/);
+    for (const page of [list, bakery, spot]) assert.ok(!skips(page), 'no heading level is skipped');
     assert.equal(read(directory, 'vancouver/places/index.html'), list, '/vancouver/places/ serves the same page');
     assert.ok(!existsSync(join(directory, 'toronto', 'places.html')), 'no list without places');
 
@@ -131,6 +136,9 @@ test('장소 페이지는 11개 도시에서 소개·글·후기·직접 방문�
     assert.match(first, /<nav aria-label="경로" class="place-crumbs"><a href="\/">글링<\/a> › 캘거리 › 장소<\/nav>/, 'no link to a city page that does not exist');
     assert.match(first, /<p class="reader-meta">1 \/ 2쪽<\/p><a class="reader-secondary" href="\/calgary\/places\/2" rel="next">다음 1곳 보기<\/a>/);
     assert.match(second, /<title data-rh="true">캘거리 맛집·카페·가 볼 곳 31곳 · 2쪽 \| 글링<\/title>/);
+    assert.equal(description(first), '캘거리에서 글링 회원 글이나 소개가 있는 장소 31곳을 골랐어요. 맛집·카페·가 볼 곳마다 지도 링크가 있어요.');
+    assert.equal(description(second), '캘거리에서 글링 회원 글이나 소개가 있는 장소 31곳을 골랐어요. 2쪽에는 31번째 곳이 있어요. 맛집·카페·가 볼 곳마다 지도 링크가 있어요.', 'each list page has its own description');
+    assert.ok(!skips(first) && !skips(second));
     assert.match(second, new RegExp(`<link rel="canonical" href="${PUBLIC_SITE}/calgary/places/2"`));
     assert.match(second, /href="\/calgary\/places" rel="prev">이전 30곳 보기<\/a><\/div>/);
     assert.equal((second.match(/<article class="reader-card"/g) ?? []).length, 1);
@@ -152,6 +160,19 @@ test('장소 페이지는 11개 도시에서 소개·글·후기·직접 방문�
     assert.ok(!sitemap.includes('/toronto/places'));
     assert.match(read(directory, 'llms.txt'), /장소 페이지\(주소·영업시간·지도 링크\): \[밴쿠버 맛집·카페·가 볼 곳\]\(https:\/\/gling\.ej-entertainment\.com\/vancouver\/places\) · \[캘거리 맛집·카페·가 볼 곳\]/);
   } finally { rmSync(directory, { recursive: true }); }
+});
+
+test('장소 설명은 160자 안에서 문장 끝이나 단어 끝에서 자른다', () => {
+  const city = { name: '밴쿠버', province: 'BC', englishName: 'Vancouver' };
+  const meta = (name, reason) => publicPlaceMeta({ place: { name, address: '' }, city, kind: 'food', reviews: null, posts: [], reason: { reason } }).description;
+  const sentences = '좁은 방 천장을 휘어 놓은 합판 아치가 끝까지 덮고 있어서, 까만 바 위로 나뭇결이 따뜻하게 비쳐요. 잉글우드 Super Variety 뒤 골목으로 들어가는 21석 칵테일 바라 밤에 한잔하러 가기 딱이에요. 바 자리에서 찍으면 휘어진 나뭇결 아치가 사진에 그대로 담겨요.';
+  assert.equal(meta('Business & Pleasure', sentences), '밴쿠버 맛집 Business & Pleasure의 지도 링크를 볼 수 있어요. 좁은 방 천장을 휘어 놓은 합판 아치가 끝까지 덮고 있어서, 까만 바 위로 나뭇결이 따뜻하게 비쳐요. 잉글우드 Super Variety 뒤 골목으로 들어가는 21석 칵테일 바라 밤에 한잔하러 가기 딱이에요.', 'the whole sentences that fit; the third is left out');
+  // One long sentence, Korean and English words: cut after the last whole word.
+  const full = `밴쿠버 맛집 Long Bar의 지도 링크를 볼 수 있어요. ${'Relais Desserts 목록에 '.repeat(9)}이름을 올린 집이에요.`;
+  const cut = meta('Long Bar', full.slice(full.indexOf('. ') + 2));
+  assert.ok(cut.length <= 160 && cut.endsWith('…'), cut);
+  assert.ok(full.startsWith(cut.slice(0, -1)) && /\s/.test(full[cut.length - 1]), 'no word is cut in half');
+  assert.equal(meta('Short', '바다가 보이는 공원이에요.'), '밴쿠버 맛집 Short의 지도 링크를 볼 수 있어요. 바다가 보이는 공원이에요.', 'a short intro stays whole');
 });
 
 test('장소 주소는 지도 장소 번호로 오가고, 영업시간은 읽을 수 있는 것만 바꾸고, 후기 수는 공개 요약에서 25곳씩 읽는다', async () => {
