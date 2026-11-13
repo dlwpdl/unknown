@@ -187,8 +187,7 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
           {store && storeUrl && <div className="shared-store-result" aria-live="polite">
             {qr && <svg className="shared-qr" role="img" aria-label={`${store === 'ios' ? 'App Store' : 'Google Play'} ${ko ? '설치 안내 QR 코드' : 'download QR code'}`} viewBox={`0 0 ${qr.extent} ${qr.extent}`} width={180} height={180} shapeRendering="crispEdges">
               <rect width={qr.extent} height={qr.extent} fill="#fff" /><path d={qr.path} fill="#000" /></svg>}
-            <a className="shared-secondary" data-analytics={store === 'ios' ? 'shared.web.ios_store' : 'shared.web.android_store'} href={storeUrl} target="_blank" rel="noopener" onClick={() => play('selection')}>{store === 'ios' ? ko ? 'App Store에서 받기' : 'Get it on the App Store' : ko ? 'Google Play에서 확인' : 'View on Google Play'} <span aria-hidden="true">↗</span></a>
-            {store === 'android' && <p className="shared-support">{ko ? 'Android는 비공개 테스트 중이며 공개 출시를 준비하고 있어요. 테스트 참여 대상만 설치할 수 있어요.' : 'Android is in private testing, with a public release on the way. For now, only eligible testers can install it.'}</p>}
+            <a className="shared-secondary" data-analytics={store === 'ios' ? 'shared.web.ios_store' : 'shared.web.android_store'} href={storeUrl} target="_blank" rel="noopener" onClick={() => play('selection')}>{store === 'ios' ? ko ? 'App Store에서 받기' : 'Get it on the App Store' : ko ? 'Google Play에서 받기' : 'Get it on Google Play'} <span aria-hidden="true">↗</span></a>
             <p className="shared-support">{ko ? '설치 후 이 글의 링크를 다시 열어 주세요.' : 'After installing, open this post’s link again.'}</p>
           </div>}
         </div>

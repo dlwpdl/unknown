@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CITIES, TAGS } from '../src/lib/mock.ts';
 import {
-  CITY_PAGE_SIZE, jsonLd, PUBLIC_SITE, publicSiteName, PUBLIC_SOURCE, publicAboutGling, publicAboutGlingEn, publicCitySubpageMeta, publicCompanyUrl, publicDisambiguation, publicImmigrationMeta, publicPostUrl, TOPIC_HUBS,
+  CITY_PAGE_SIZE, jsonLd, PUBLIC_SITE, publicSiteName, PUBLIC_SOURCE, publicAboutGling, publicAboutGlingEn, publicCitySubpageMeta, publicCompanyUrl, publicDisambiguation, publicImmigrationMeta, publicPostUrl, PUBLIC_PLAY_URL, TOPIC_HUBS,
 } from '../src/lib/public-seo.ts';
 import { breadcrumbHtml, escapeHtml, isoDate, koreanDate, postCover, prerenderPublicPosts, redirectPage, withStaticPage, topicHubs } from './prerender-public-posts.mjs';
 import { prerenderPublicCompanies } from './prerender-public-companies.mjs';
@@ -18,7 +18,7 @@ function staticHub(cities, posts, city) {
   const list = (city ? posts.filter(post => post.cityId === city.id) : posts).slice(0, 30);
   return `<section id="gling-static-home" lang="ko" style="${SECTION}">`
     + `<p style="margin:0">${escapeHtml(publicAboutGling)}</p>`
-    + `<p style="margin:12px 0 0">${cities.map(item => `<a href="/${item.id}" style="${LINK}">${escapeHtml(item.name)} 한인 커뮤니티</a>`).join(' · ')} · <a href="/meetups" style="${LINK}">한인 모임·소모임</a> · <a href="/immigration" style="${LINK}">캐나다 이민·유학 길잡이</a> · <a href="/faq" style="${LINK}">자주 묻는 질문</a> · <a href="https://apps.apple.com/ca/app/id6809273242" style="${LINK}">iPhone 앱 받기</a></p>`
+    + `<p style="margin:12px 0 0">${cities.map(item => `<a href="/${item.id}" style="${LINK}">${escapeHtml(item.name)} 한인 커뮤니티</a>`).join(' · ')} · <a href="/meetups" style="${LINK}">한인 모임·소모임</a> · <a href="/immigration" style="${LINK}">캐나다 이민·유학 길잡이</a> · <a href="/faq" style="${LINK}">자주 묻는 질문</a> · <a href="https://apps.apple.com/ca/app/id6809273242" style="${LINK}">iPhone 앱 받기</a> · <a href="${PUBLIC_PLAY_URL}" style="${LINK}">Android 앱 받기</a></p>`
     + (list.length ? `<h2 style="margin:24px 0 8px;font-size:18px">${escapeHtml(city ? `${city.name} 한인 최근 이야기` : '최근 동네 이야기')}</h2><ul style="margin:0;padding-left:20px">${list.map(post => `<li><a href="/posts/${post.id}" style="${LINK}">${escapeHtml(post.title)}</a>${post.city || post.label ? ` <small>${escapeHtml([post.city, post.label].filter(Boolean).join(' · '))}</small>` : ''}</li>`).join('')}</ul>` : '')
     + '</section>';
 }
@@ -122,7 +122,7 @@ function hubFaq(city, hub, hasPosts = true) {
   const topic = label(hub.tagSlug);
   return [
     hasPosts && { question: `이 글들은 누가 썼어요?`, answer: `${city.name}에 사는 글링 이용자가 ${topic} 주제로 직접 올린 공개 글이에요. 미리보기는 누구나 볼 수 있고, 전체 글은 로그인하면 읽을 수 있어요.` },
-    { question: `${topic} 글은 어떻게 올려요?`, answer: `글링 앱에서 도시를 ${city.name}로 고르고 ${topic} 주제로 글을 쓰면 돼요. iPhone 앱은 App Store에서 무료로 받을 수 있고, Android는 비공개 테스트 중이에요.` },
+    { question: `${topic} 글은 어떻게 올려요?`, answer: `글링 앱에서 도시를 ${city.name}로 고르고 ${topic} 주제로 글을 쓰면 돼요. iPhone 앱은 App Store에서, Android 앱은 Google Play에서 무료로 받을 수 있어요.` },
   ].filter(Boolean);
 }
 
@@ -180,7 +180,7 @@ function meetupPage(template, city, list, hubs, cities) {
     + `<p style="margin:8px 0 0">${escapeHtml(`${city.name}에 사는 한인들이 운동이나 취미, 여행처럼 마음 맞는 사람끼리 모이는 소모임을 글링에서 열기도 하고 들어가기도 해요. 축제나 공연에 같이 갈 동행도 여기서 구해요.`)}</p>`
     + (list.length
       ? `<h2 style="margin:24px 0 8px;font-size:18px">${escapeHtml(`지금 신청받는 ${city.name} 모임 ${list.length}개`)}</h2><ul style="margin:0;padding-left:20px">${list.map(item => `<li id="m-${item.id}"><a href="/post?id=${item.id}&amp;invite=1" style="${LINK}" rel="nofollow">${escapeHtml(item.title)}</a> <small>${escapeHtml(when(item.room))}</small></li>`).join('')}</ul><p style="margin:8px 0 0">장소와 자세한 안내는 글링 앱에서 볼 수 있어요.</p>`
-      : `<div style="margin:20px 0 0;padding:16px;border:1px solid #343443;border-radius:12px"><h2 style="margin:0 0 6px;font-size:17px">${escapeHtml(`지금 신청받는 ${city.name} 모임은 없어요`)}</h2><p style="margin:0">${escapeHtml(`하고 싶은 모임이 있으면 글링 앱에서 직접 열면 돼요. 새 모임은 하루에 한 번 이 페이지에도 올라와요.`)}</p><p style="margin:10px 0 0"><a href="https://apps.apple.com/ca/app/id6809273242" style="${LINK}">iPhone 앱 받기</a></p></div>`)
+      : `<div style="margin:20px 0 0;padding:16px;border:1px solid #343443;border-radius:12px"><h2 style="margin:0 0 6px;font-size:17px">${escapeHtml(`지금 신청받는 ${city.name} 모임은 없어요`)}</h2><p style="margin:0">${escapeHtml(`하고 싶은 모임이 있으면 글링 앱에서 직접 열면 돼요. 새 모임은 하루에 한 번 이 페이지에도 올라와요.`)}</p><p style="margin:10px 0 0"><a href="https://apps.apple.com/ca/app/id6809273242" style="${LINK}">iPhone 앱 받기</a> · <a href="${PUBLIC_PLAY_URL}" style="${LINK}">Android 앱 받기</a></p></div>`)
     + `<h2 style="margin:24px 0 8px;font-size:18px">글링 모임은 이렇게 해요</h2><ul style="margin:0;padding-left:20px;display:grid;gap:6px">`
     + `<li>한 번 만나고 끝나는 모임도 있고, 매주 토요일처럼 정해 둔 날마다 만나는 정기 모임도 있어요.</li>`
     + `<li>모임을 여는 사람이 날짜와 정원을 정하고, 신청이 오면 직접 보고 받아 주고, 그러면 앱에서 모임 대화에 같이 들어가요.</li>`
@@ -279,7 +279,7 @@ export function finishPublicWeb(directory = 'dist', posts = [], companies = [], 
     `- 열린 도시: ${cities.map(city => `${city.name}(${city.englishName})`).join(', ')}`,
     '- 할 수 있는 것: 동네 이야기, 맛집·가 볼 곳 지도, 렌트·구인·중고 거래, 축제·공연 동행, 소모임 만들기와 참여, 한국어↔영어 번역 보기',
     '- 요금: 무료, 일부 기능은 인앱 구매',
-    '- 앱: iPhone은 App Store에서 받을 수 있고, Android는 비공개 테스트 중',
+    '- 앱: iPhone은 App Store, Android는 Google Play (둘 다 무료)',
     `- 도시 페이지: ${cities.map(city => `[${city.name} 한인 커뮤니티](${PUBLIC_SITE}/${city.id})`).join(' · ')}`,
     `- 모임·소모임 페이지: ${cities.map(city => `[${city.name} 한인 모임·소모임](${PUBLIC_SITE}/${city.id}/meetups)`).join(' · ')}`,
     `- 이민·유학 길잡이: [${publicImmigrationMeta.heading}](${PUBLIC_SITE}/immigration) (IRCC·주정부 공식 페이지 링크 모음, 확인 날짜 ${publicImmigrationMeta.checked})`,
@@ -294,7 +294,7 @@ export function finishPublicWeb(directory = 'dist', posts = [], companies = [], 
     ['글링은 무료인가요?', '무료로 쓸 수 있어요. 일부 기능은 인앱 구매가 있어요.'],
   ].map(([question, answer]) => `- **${question}** ${answer}`).join('\n');
   const updated = new Date(now).toISOString().slice(0, 10);
-  writeFileSync(join(directory, 'llms.txt'), `# 글링 Gling: 캐나다 한인 커뮤니티 (${cities.map(city => city.name).join('·')})\n\n마지막 갱신 ${updated}\n\n> ${publicAboutGlingEn}\n\n${publicDisambiguation}\n\n${publicAboutGling}\n\n${facts}\n\n## 자주 묻는 질문\n\n${faq}\n\n공개 미리보기는 작성자의 게시물 정보이며 글링의 공식 사실 확인이나 비즈니스 소유 인증을 뜻하지 않습니다. 게스트는 허용된 대표 이미지 한 장과 짧은 소개를 볼 수 있습니다. 로그인하거나 정상 가입을 마치면 현재 공개 상태와 열람 권한을 확인한 뒤 공개 글의 전체 본문을 웹에서 읽을 수 있습니다. 댓글 작성·대화·모임 참여는 앱에서 이용합니다. 아래 원문은 현재 공개 상태를 조회합니다. 삭제·비공개 글의 내용, 개인 대화와 계정 정보는 제공하지 않습니다. 공개 미리보기를 전체 원문으로 간주하지 마세요.\n\n## 공개 이야기\n\n- [글링 공개 게시판](${PUBLIC_SITE}/)\n${cities.map(city => `- [${city.name} 공개 미리보기 · 다음 페이지](${PUBLIC_SOURCE}?format=markdown&city=${city.id})`).join('\n')}\n${cities.map(city => recent(city) && `\n## ${city.name} 최근 글\n\n${recent(city)}\n`).filter(Boolean).join('')}\n## 이용 안내\n\n- [자주 묻는 질문](${PUBLIC_SITE}/faq)\n- [${publicImmigrationMeta.heading}](${PUBLIC_SITE}/immigration)\n- [비즈니스 등록·요금제](${PUBLIC_SITE}/business)\n- [English](${PUBLIC_SITE}/en)\n- [iPhone 앱](https://apps.apple.com/ca/app/id6809273242)\n- [이용약관](${PUBLIC_SITE}/terms)\n- [개인정보처리방침](${PUBLIC_SITE}/privacy)\n- [계정 삭제](${PUBLIC_SITE}/account-deletion)\n`);
+  writeFileSync(join(directory, 'llms.txt'), `# 글링 Gling: 캐나다 한인 커뮤니티 (${cities.map(city => city.name).join('·')})\n\n마지막 갱신 ${updated}\n\n> ${publicAboutGlingEn}\n\n${publicDisambiguation}\n\n${publicAboutGling}\n\n${facts}\n\n## 자주 묻는 질문\n\n${faq}\n\n공개 미리보기는 작성자의 게시물 정보이며 글링의 공식 사실 확인이나 비즈니스 소유 인증을 뜻하지 않습니다. 게스트는 허용된 대표 이미지 한 장과 짧은 소개를 볼 수 있습니다. 로그인하거나 정상 가입을 마치면 현재 공개 상태와 열람 권한을 확인한 뒤 공개 글의 전체 본문을 웹에서 읽을 수 있습니다. 댓글 작성·대화·모임 참여는 앱에서 이용합니다. 아래 원문은 현재 공개 상태를 조회합니다. 삭제·비공개 글의 내용, 개인 대화와 계정 정보는 제공하지 않습니다. 공개 미리보기를 전체 원문으로 간주하지 마세요.\n\n## 공개 이야기\n\n- [글링 공개 게시판](${PUBLIC_SITE}/)\n${cities.map(city => `- [${city.name} 공개 미리보기 · 다음 페이지](${PUBLIC_SOURCE}?format=markdown&city=${city.id})`).join('\n')}\n${cities.map(city => recent(city) && `\n## ${city.name} 최근 글\n\n${recent(city)}\n`).filter(Boolean).join('')}\n## 이용 안내\n\n- [자주 묻는 질문](${PUBLIC_SITE}/faq)\n- [${publicImmigrationMeta.heading}](${PUBLIC_SITE}/immigration)\n- [비즈니스 등록·요금제](${PUBLIC_SITE}/business)\n- [English](${PUBLIC_SITE}/en)\n- [iPhone 앱](https://apps.apple.com/ca/app/id6809273242)\n- [Android 앱](${PUBLIC_PLAY_URL})\n- [이용약관](${PUBLIC_SITE}/terms)\n- [개인정보처리방침](${PUBLIC_SITE}/privacy)\n- [계정 삭제](${PUBLIC_SITE}/account-deletion)\n`);
   // Naver Search Advisor and other feed readers pick up new pages from this (post previews only, same as the post pages).
   const date = value => { const time = Date.parse(value); return Number.isFinite(time) ? `<pubDate>${new Date(time).toUTCString()}</pubDate>` : ''; };
   const item = ({ title, link, description, lastmod }) => `<item><title>${escapeHtml(title)}</title><link>${link}</link><guid isPermaLink="true">${link}</guid><description>${escapeHtml(description)}</description>${date(lastmod)}</item>`;

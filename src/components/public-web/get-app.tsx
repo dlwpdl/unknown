@@ -11,7 +11,7 @@ import { useReaderAnalytics } from './analytics';
 import { AppStoreChoices, AppStoreRating, appStoreUrl, useDevice } from './app-store-choices';
 
 // /get?utm_source=instagram&utm_campaign=bio: a profile link that sends iPhones straight to the App Store with the source attached.
-// Android is closed testing, so it stays on the store choices with the tester request first (owner 2026-11-11); so do computers.
+// Android stays on the store choices with Google Play first (owner 2026-11-11, decided while Android was in closed testing); so do computers.
 export default function GetAppPage() {
   const { language } = useLanguage(), ko = language === 'ko';
   const device = useDevice();

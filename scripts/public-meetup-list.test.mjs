@@ -135,22 +135,22 @@ test('store choices start unselected and encode only the explicitly selected sto
   const path = elements(svg).find(n => n.type === 'path').props.d; const points = [...path.matchAll(/M(\d+) (\d+)h1v1h-1z/g)].map(m => [Number(m[1]), Number(m[2])]);
   assert.ok(points.length > 0 && points.every(([x, y]) => x >= 4 && y >= 4 && x < size + 4 && y < size + 4));
   elements(tree).find(n => n.type === 'button' && text(n) === 'Google Play').props.onClick(); tree = ui.render();
-  assert.ok(elements(tree).some(n => n.props?.href === `${play}&referrer=utm_source%3Dwebsite%26utm_campaign%3Dvancouver`)); assert.match(text(tree), /비공개 테스트/); assert.deepEqual(ui.feedback, ['selection', 'selection']);
+  assert.ok(elements(tree).some(n => n.props?.href === `${play}&referrer=utm_source%3Dwebsite%26utm_campaign%3Dvancouver`)); assert.match(text(tree), /Google Play에서 받기/); assert.doesNotMatch(text(tree), /비공개 테스트|테스트 참여/); assert.deepEqual(ui.feedback, ['selection', 'selection']);
 });
 
 test('store copy follows language changes, link feedback is present and QR failure retains a usable store link', () => {
   const ui = mount('app-store-choices.tsx', 'AppStoreChoices'); ui.failQr();
   elements(ui.render()).find(n => n.type === 'button' && text(n) === 'Google Play').props.onClick(); ui.language('en'); const tree = ui.render();
-  assert.equal(elements(tree).some(n => n.type === 'svg'), false); assert.match(text(tree), /private testing/);
+  assert.equal(elements(tree).some(n => n.type === 'svg'), false); assert.match(text(tree), /Get it on Google Play/); assert.doesNotMatch(text(tree), /private testing/);
   const link = elements(tree).find(n => n.props?.href?.includes('play.google.com')); assert.ok(link); link.props.onClick(); assert.deepEqual(ui.feedback, ['selection', 'selection']);
 });
 
-test('static no-script fallback retains both real store links and Android eligibility without a QR or analytics target', () => {
+test('static no-script fallback retains both real store links without a QR or analytics target', () => {
   const ui = mount('app-store-choices.tsx', 'AppStoreChoices'); ui.language('en'); const tree = ui.render();
   const fallback = elements(tree).find(n => n.type === 'noscript'); assert.ok(fallback);
   assert.ok(elements(fallback).some(n => n.props?.href === 'https://apps.apple.com/ca/app/id6809273242'));
   assert.ok(elements(fallback).some(n => n.props?.href === play));
-  assert.match(text(fallback), /private testing/); assert.equal(elements(tree).some(n => n.type === 'svg'), false);
+  assert.match(text(fallback), /Get it on Google Play/); assert.doesNotMatch(text(fallback), /private testing/); assert.equal(elements(tree).some(n => n.type === 'svg'), false);
   assert.equal(elements(fallback).some(n => n.props?.['data-analytics']), false);
   const list = mount('meetup-list.tsx', 'PublicMeetupList', props()).render();
   assert.equal(elements(list).some(n => n.props?.['data-analytics']), false, 'unknown behavior targets must not invalidate an otherwise valid event batch');
@@ -167,13 +167,13 @@ test('phones get one tap to their own install path without a QR code', () => {
   assert.equal(rendered(ipad.render()).find(n => n.type === 'a').props.href, `${iosCampaign}website&mt=8`, 'iPadOS reports a Mac user agent');
   const android = mount('app-store-choices.tsx', 'AppStoreChoices'); android.device('Mozilla/5.0 (Linux; Android 15; Pixel 9)');
   tree = android.render(); const links = rendered(tree).filter(n => n.type === 'a');
-  assert.match(links[0].props.href, /^mailto:gling@ej-entertainment\.com\?subject=Android%20/); assert.equal(links[0].props['data-analytics'], 'web.install.android');
-  assert.equal(links[1].props.href, `${play}&referrer=utm_source%3Dwebsite%26utm_campaign%3Dvancouver`); assert.match(text(tree), /비공개 테스트/); assert.doesNotMatch(text(tree), /QR/);
+  assert.equal(links.length, 1, 'one Play button, no tester request'); assert.equal(links[0].props['data-analytics'], 'web.install.android');
+  assert.equal(links[0].props.href, `${play}&referrer=utm_source%3Dwebsite%26utm_campaign%3Dvancouver`); assert.match(text(links[0]), /Google Play에서 무료로 받기/); assert.doesNotMatch(text(tree), /비공개 테스트|QR/);
 });
 
 test('store links carry the tab entry source as the Play referrer and the App Store campaign', () => {
   const ui = mount('app-store-choices.tsx', 'AppStoreChoices'); ui.device('Mozilla/5.0 (Linux; Android 15; Pixel 9)'); ui.entry('instagram');
-  assert.equal(rendered(ui.render()).filter(n => n.type === 'a')[1].props.href, `${play}&referrer=utm_source%3Dinstagram%26utm_campaign%3Dvancouver`);
+  assert.equal(rendered(ui.render()).filter(n => n.type === 'a')[0].props.href, `${play}&referrer=utm_source%3Dinstagram%26utm_campaign%3Dvancouver`);
   assert.equal(ui.exports.appStoreUrl(), `${iosCampaign}instagram&mt=8`);
   assert.equal(ui.exports.appStoreUrl('naver'), `${iosCampaign}naver&mt=8`);
   const iphone = mount('app-store-choices.tsx', 'AppStoreChoices'); iphone.device('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)'); iphone.entry('threads');

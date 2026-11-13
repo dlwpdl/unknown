@@ -1,13 +1,13 @@
 import Head from 'expo-router/head';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { jsonLd, publicAboutGlingEn, publicDisambiguation, PUBLIC_SITE } from '@/lib/public-seo';
+import { jsonLd, publicAboutGlingEn, publicDisambiguation, PUBLIC_PLAY_URL, PUBLIC_SITE } from '@/lib/public-seo';
 
 const FAQ = [
   { question: 'What is Gling?', answer: 'A community app for Koreans living in Vancouver, Toronto and Montreal. People share neighbourhood stories, food spots, rentals, jobs and used goods, find company for festivals and concerts, and start or join small meetups.' },
   { question: 'Is it free?', answer: 'Yes. Gling is free to use; some features are in-app purchases.' },
   { question: 'Do I have to write in Korean?', answer: 'No. You can post in Korean or English, and translation lets you read posts in the other language.' },
   { question: 'Can I read without signing up?', answer: 'Public posts can be previewed on the web. Sign in to read full posts; commenting, chatting and joining meetups happen in the app.' },
-  { question: 'Which phones are supported?', answer: 'The iPhone app is on the App Store. Android is in closed testing.' },
+  { question: 'Which phones are supported?', answer: 'Get it on the App Store for iPhone or on Google Play for Android.' },
 ];
 export const publicEnglishSchema = { '@context': 'https://schema.org', '@type': 'FAQPage', '@id': `${PUBLIC_SITE}/en#faq`, url: `${PUBLIC_SITE}/en`, inLanguage: 'en',
   mainEntity: FAQ.map(item => ({ '@type': 'Question', name: item.question, acceptedAnswer: { '@type': 'Answer', text: item.answer } })) };
@@ -27,6 +27,7 @@ export default function PublicEnglish() {
       <p style={{ margin: '0 0 24px', color: '#B9B2C8' }}>{publicDisambiguation}</p>
       <p style={{ margin: '0 0 32px' }}>
         <a href="https://apps.apple.com/ca/app/id6809273242" style={link} onClick={() => play('selection')}>Get the iPhone app</a>
+        {' · '}<a href={PUBLIC_PLAY_URL} style={link} onClick={() => play('selection')}>Get the Android app</a>
         {' · '}<a href="/vancouver" style={link} hrefLang="ko" onClick={() => play('selection')}>Vancouver</a>
         {' · '}<a href="/toronto" style={link} hrefLang="ko" onClick={() => play('selection')}>Toronto</a>
         {' · '}<a href="/montreal" style={link} hrefLang="ko" onClick={() => play('selection')}>Montreal</a>

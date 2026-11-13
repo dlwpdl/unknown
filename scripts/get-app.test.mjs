@@ -39,7 +39,7 @@ test('/get sends an iPhone straight to the App Store campaign link', async () =>
   assert.deepEqual(page.replaced, ['https://apps.apple.com/campaign']);
 });
 
-test('/get keeps Android on the store choices with the tester request instead of forwarding to Play', async () => {
+test('/get keeps Android and computers on the store choices instead of forwarding to Play', async () => {
   for (const device of ['android', 'desktop', null]) {
     const page = await open(device);
     assert.equal(page.events.length, 0, `${device}: no store-open event`);

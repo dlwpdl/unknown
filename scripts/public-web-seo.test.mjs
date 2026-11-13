@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { finishPublicWeb } from './finish-public-web.mjs';
 import { CITIES } from '../src/lib/mock.ts';
-import { PUBLIC_SITE, PUBLIC_SOURCE } from '../src/lib/public-seo.ts';
+import { PUBLIC_PLAY_URL, PUBLIC_SITE, PUBLIC_SOURCE } from '../src/lib/public-seo.ts';
 
 test('기존 export는 공개 도시별 라이브 sitemap/AI 탐색과 보호 경로 robots를 생성한다', () => {
   const directory = mkdtempSync(join(tmpdir(), 'gling-seo-export-'));
@@ -37,6 +37,8 @@ test('기존 export는 공개 도시별 라이브 sitemap/AI 탐색과 보호 �
     assert.ok(llms.startsWith('# 글링 Gling: 캐나다 한인 커뮤니티 (밴쿠버·토론토·몬트리올)'));
     assert.ok(llms.includes('Gling is a free community app for Koreans in Vancouver, Toronto and Montreal'));
     assert.doesNotMatch(llms, /캘거리|에드먼/);
+    assert.ok(llms.includes(PUBLIC_PLAY_URL) && llms.includes('Android는 Google Play'), 'Android has been public on Google Play since 2026-11-12');
+    assert.doesNotMatch(llms, /비공개 테스트|closed testing|private testing/);
     for (const city of ['vancouver', 'toronto', 'montreal']) {
       assert.ok(sitemap.includes(`<loc>${PUBLIC_SITE}/${city}</loc>`));
       assert.ok(llms.includes(`${PUBLIC_SITE}/${city}`));

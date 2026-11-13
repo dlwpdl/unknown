@@ -5,9 +5,12 @@ export function publicSiteName(language: 'ko' | 'en' = 'ko') {
   return language === 'en' ? 'Gling | Korean Community in Canada' : '글링 | 캐나다 한인 커뮤니티';
 }
 
+// Android has been publicly installable on Google Play since 2026-11-12.
+export const PUBLIC_PLAY_URL = 'https://play.google.com/store/apps/details?id=com.dlwpdl.gling';
+
 // Plain facts at the top of the prerendered home and city pages and llms.txt, for crawlers and AI answers.
-export const publicAboutGling = '글링(Gling)은 밴쿠버·토론토·몬트리올에 사는 한인을 위한 무료 커뮤니티 앱이에요. 동네 이야기와 맛집, 렌트·구인·중고 거래, 축제·공연 동행과 소모임을 한곳에서 나누고, 한국어와 영어 글을 번역해서 볼 수 있어요. iPhone 앱은 App Store에서 받을 수 있고, Android는 비공개 테스트 중이에요.';
-export const publicAboutGlingEn = 'Gling is a free community app for Koreans in Vancouver, Toronto and Montreal: neighbourhood stories, food spots, rentals, jobs and used goods, festival buddies and small-group meetups, with Korean–English translation. The iPhone app is on the App Store; Android is in closed testing.';
+export const publicAboutGling = '글링(Gling)은 밴쿠버·토론토·몬트리올에 사는 한인을 위한 무료 커뮤니티 앱이에요. 동네 이야기와 맛집, 렌트·구인·중고 거래, 축제·공연 동행과 소모임을 한곳에서 나누고, 한국어와 영어 글을 번역해서 볼 수 있어요. iPhone 앱은 App Store에서, Android 앱은 Google Play에서 받을 수 있어요.';
+export const publicAboutGlingEn = 'Gling is a free community app for Koreans in Vancouver, Toronto and Montreal: neighbourhood stories, food spots, rentals, jobs and used goods, festival buddies and small-group meetups, with Korean–English translation. Get it on the App Store for iPhone or on Google Play for Android.';
 
 // Prerendered at build time (scripts/prerender-public-posts.mjs); `/post?id=` stays the noindex app shell.
 export function publicPostUrl(id: string) {
