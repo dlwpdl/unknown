@@ -159,7 +159,7 @@ export const t = {
     pricePlaceholder: '금액 (선택, CAD)',
     listingNote: '구해요·팔아요 글은 살아있는 글 수에 따라 제한돼요. 14일 뒤 자동 마감되고, 베이직은 48시간·플러스는 36시간·프로는 30시간·프리미엄은 24시간 간격으로 끌어올릴 수 있어요. 계정과 같은 글에 함께 적용돼요. 기존 구독 혜택은 유지돼요.',
     listingRemaining: (used: number, max: number) => `살아있는 글 ${used} / ${max}`,
-    listingBodyPlaceholder: '무엇을 구하거나 제안하나요? 구인·구직 조건이나 물건 상태, 지역을 적어주세요',
+    listingBodyPlaceholder: '구하는 것이나 내놓는 것을 자세히 적어주세요',
     bodyPlaceholder: {
       life: '오늘의 일상이나 궁금한 이야기를 나눠보세요',
       festival: '가보고 싶은 페스티벌이나 공연 이야기를 나눠보세요',

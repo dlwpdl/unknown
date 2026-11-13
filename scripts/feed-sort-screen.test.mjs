@@ -7,7 +7,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { t } from '../src/i18n/ko.ts';
 import { TAGS } from '../src/lib/mock.ts';
-import { groupJournalPosts, appendUniquePosts, limitBusinessPosts, pinJustPosted, todayRowsAfter, writeFabOverIntro } from '../src/lib/feed-data.ts';
+import { groupJournalPosts, appendUniquePosts, limitBusinessPosts, pinJustPosted, todayRowsAfter, writeFabOverIntro, writeFabScroll } from '../src/lib/feed-data.ts';
 import { withPostMap, postMapBody, googlePinUrl, googleMapsPin, withPlacePin } from '../src/lib/post-maps.ts';
 import * as listingDetails from '../src/lib/listing-details.ts';
 import * as neighborhoods from '../src/lib/neighborhoods.ts';
@@ -52,7 +52,7 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     '@/lib/hashtags': { getSuggestedHashtags: () => [], parseHashtags: () => [], canonicalizeHashtag: value => value },
     '@/lib/ads': { adsSupported: false, feedAdPosition: adPosition }, '@/lib/supabase': { supabase: { functions: { invoke: (...args) => new Promise((resolve, reject) => drafts.push({ args, resolve, reject })) } } },
     '@/hooks/use-chat-identity': { useChatIdentity: () => null },
-    '@/lib/feed-data': { groupJournalPosts, appendUniquePosts, limitBusinessPosts, pinJustPosted, todayRowsAfter, writeFabOverIntro, loadPublicFeed: (...args) => new Promise((resolve, reject) => calls.push({ args, resolve, reject })) },
+    '@/lib/feed-data': { groupJournalPosts, appendUniquePosts, limitBusinessPosts, pinJustPosted, todayRowsAfter, writeFabOverIntro, writeFabScroll, loadPublicFeed: (...args) => new Promise((resolve, reject) => calls.push({ args, resolve, reject })) },
     '../../supabase/functions/_shared/post-links': { splitPostAttachments: body => ({ body }) },
     '@/lib/ai-draft': aiDraft, '@/lib/post-upload': postUpload, '@/lib/push-prompt': { requestPushPrompt() {} },
     '@/lib/post-photo-consent': { loadPhotoConsentSettings: async () => photoConsent, savePostPhotoConsent: async (_client, id) => { consents.push(id); return consentSaves.shift() ?? true; } },
@@ -463,8 +463,8 @@ test('Home search is a magnifier next to the profile that still says what it fin
   const app = screen(), tree = app.render();
   const search = nodes(tree).find(node => node.props?.analyticsId === 'components_feed-screen.pressable.2');
   assert.equal(search.props.accessibilityRole, 'button');
-  assert.equal(search.props.accessibilityLabel, '밴쿠버에서 집·일자리·중고 찾기', 'the icon still tells screen readers what it finds');
-  assert.equal(nodes(search).some(node => node.props?.children === '밴쿠버에서 집·일자리·중고 찾기'), false, 'no wide search box above the category chips (owner 2026-11-01)');
+  assert.equal(search.props.accessibilityLabel, '통합검색', 'screen readers hear the name of the screen it opens (QA B12-4)');
+  assert.equal(nodes(search).some(node => node.props?.children === '통합검색'), false, 'no wide search box above the category chips (owner 2026-11-01)');
   const row = nodes(tree).find(node => [node.props?.children].flat(Infinity).some(child => child?.props?.analyticsId === 'feed.home'));
   const items = [row.props.children].flat(Infinity).filter(Boolean);
   const at = items.findIndex(child => nodes(child).includes(search));
@@ -480,6 +480,11 @@ test('Home search is a magnifier next to the profile that still says what it fin
     assert.equal(nodes(write).some(node => node.props?.children === t.tabs.write), !compact, 'a narrow screen (Fold cover) keeps only the + icon');
     write.props.onPress();
     assert.equal(native.feedback.at(-1), 'reaction');
+    const shown = () => nodes(native.render()).some(node => node.props?.analyticsId === 'feed.write');
+    native.list().onScrollBeginDrag(); native.list().onScroll({ nativeEvent: { contentOffset: { y: 60 } } });
+    assert.equal(shown(), false, 'reading down, it is off the cards (QA B8·H42-3)');
+    native.list().onScroll({ nativeEvent: { contentOffset: { y: 20 } } });
+    assert.equal(shown(), true, 'back up, it is there again');
   }
 });
 

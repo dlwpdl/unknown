@@ -16,7 +16,7 @@ const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.p
 const run = (path, imports) => {
   const exports = {};
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL(path, root), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText,
-    { exports, require: withLanguageImports(name => name in imports ? imports[name] : new Proxy({}, { get: (_, key) => String(key) })), URL, URLSearchParams, Error, Set, Map });
+    { exports, require: withLanguageImports(name => name in imports ? imports[name] : new Proxy({}, { get: (_, key) => String(key) })), URL, URLSearchParams, Error, Set, Map, setTimeout, clearTimeout });
   return exports;
 };
 const places = run('src/lib/city-places.ts', {
@@ -25,7 +25,7 @@ const places = run('src/lib/city-places.ts', {
 });
 
 // The compose place picker with recorded feedback and a confirm callback.
-function picker({ cityName = 'Vancouver', initialPin = null, initialLabel = '' } = {}) {
+function picker({ cityName = 'Vancouver', initialPin = null, initialLabel = '', location = {} } = {}) {
   const slots = [], feedback = [], confirmed = [], catalog = { revision: 0 };
   let at = 0;
   const jsx = (type, props) => ({ type, props });
@@ -41,7 +41,7 @@ function picker({ cityName = 'Vancouver', initialPin = null, initialLabel = '' }
     '@/components/clay': { useClay: () => false, ClayIcon: () => null, ClayPillFill: () => null },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => catalog.revision }, '@/hooks/use-theme': { useTheme: () => ({ accent: '#6E4AA2' }) },
     '@/lib/city-places': places, '@/lib/discovery': discovery, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
-    '@/lib/location': { isFreshLocation: () => true }, '@/lib/mock': { CITIES }, '@/lib/post-maps': maps,
+    '@/lib/location': { isFreshLocation: () => true }, '@/lib/mock': { CITIES }, '@/lib/post-maps': maps, 'expo-location': location,
   });
   const render = () => { at = 0; return nodes(ui.PostLocationPicker({ visible: true, initialPin, initialLabel, cityName, onClose() {}, onConfirm: (pin, label) => confirmed.push({ pin, label }) })); };
   const find = (tree, id) => tree.find(node => node.props?.analyticsId === id);
@@ -107,4 +107,29 @@ test('a city without map places opens the free pin map with no switch', () => {
   assert.equal(tree.some(node => node.type === 'DiscoveryMap'), false);
   assert.equal(app.find(tree, 'post.location.mode'), undefined);
   assert.ok(tree.some(node => node.props?.children === '가게를 누르거나, 원하는 지점으로 핀을 옮겨보세요.'));
+});
+
+test('a search the address lookup only answers with the city itself pins nothing, and a picked place keeps its search words (QA B10-1·B10-2)', async () => {
+  const calls = [], center = { latitude: 49.2609, longitude: -123.1139 }, pier = { latitude: 49.2888, longitude: -123.1111 };
+  const app = picker({ location: { geocodeAsync: async text => { calls.push(text); return text === '1055 Canada Pl, Vancouver' ? [pier] : text.endsWith('Vancouver') ? [center] : []; } } });
+  const field = () => app.render().find(node => node.type === 'TextInput' && node.props.accessibilityLabel === '장소·주소 검색');
+  const settle = () => new Promise(resolve => setTimeout(resolve, 0));
+  const shown = text => app.render().some(node => node.props?.children === text);
+  field().props.onChangeText('ㅅㄱㄷㄷㄴ'); field().props.onSubmitEditing(); await settle();
+  assert.deepEqual(calls, ['ㅅㄱㄷㄷㄴ, Vancouver', 'Vancouver']);
+  assert.ok(shown('위치를 찾지 못했어요. 주소를 다시 확인하거나 지도에서 핀을 골라주세요.'), 'a typo that only finds the city center says so');
+  assert.equal(app.find(app.render(), 'post.location.confirm').props.disabled, true, 'and no city-center pin can be attached');
+  assert.equal(app.feedback.at(-1), 'warning');
+  field().props.onChangeText('1055 Canada Pl'); field().props.onSubmitEditing(); await settle();
+  assert.deepEqual(plain(app.render().find(node => node.type === 'DiscoveryMap').props.markers.at(-1)), { id: 'chosen', ...pier, color: '#6E4AA2', label: '선택한 위치', featured: true }, 'a real address still pins');
+
+  const top = places.getCityDiscoveryPlaces('vancouver')[0];
+  field().props.onChangeText(top.name);
+  assert.ok(shown('글링 지도에 있는 곳'), 'our places list while typing');
+  field().props.onSubmitEditing();
+  assert.equal(field().props.value, top.name, 'the search words stay in the box');
+  assert.equal(shown('글링 지도에 있는 곳'), false, 'the result list folds once a place is picked');
+  assert.equal(app.render().find(node => node.type === 'DiscoveryMap').props.selectedId, top.id);
+  field().props.onChangeText(top.name.slice(0, 3));
+  assert.ok(shown('글링 지도에 있는 곳'), 'typing again opens the list again');
 });

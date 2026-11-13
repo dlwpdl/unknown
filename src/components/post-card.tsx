@@ -13,6 +13,7 @@ import { PostAdLabel } from '@/components/post-ad-label';
 import { PostBody } from '@/components/post-body';
 import { PostMapLink } from '@/components/post-map-link';
 import { PostAttachmentLink } from '@/components/post-attachment-link';
+import { dealLabel } from '@/lib/listing-details';
 import { postInfoParts } from '@/lib/post-info';
 import { CITIES } from '@/lib/mock';
 import { TranslationControl } from '@/components/content-translation';
@@ -81,7 +82,7 @@ export function PostCard({
   postDetail?: boolean; // 일반 글 상세: 장소·링크는 정보 카드, 본문은 문단, 출처는 접고, 반응은 하단 바로 옮긴다
   feed?: boolean; // 오늘 탭 목록 (owner 2026-11-03): 프로필 줄 → 짧은 글 → 장소 카드 → 넘기는 사진 → 공감·댓글·공유·저장(오른쪽 끝). ··· 은 남의 글 숨기기·신고, 내 글 고치기·삭제 (owner 2026-11-04)
 }) {
-  const { tr, t, locale: appLocale } = useLanguage();
+  const { tr, t, locale: appLocale, language } = useLanguage();
   const joinLabel = joinStatus === 'pending' ? tr('승인 대기') : joinStatus === 'approved' ? tr('참여 승인') : t.feed.joinRoom;
   const theme = useTheme(), router = useRouter();
   const clay = useClay(), clayBox = useClayBox();
@@ -230,7 +231,7 @@ export function PostCard({
     if (!isAuthed) return promptLogin(tr('글을 숨기려면 로그인이 필요해요'));
     try {
       await setPostHidden(supabase, me.id, post.id, hidden);
-      if (hidden) Alert.alert(tr('글을 숨겼어요'), undefined, [
+      if (hidden) Alert.alert(tr('글을 숨겼어요'), tr('이제 내 화면에 이 글이 안 보여요.'), [
         { text: tr('되돌리기'), onPress: () => { play('selection'); void hidePost(false); } },
         { text: tr('확인'), onPress: () => play('selection') },
       ]);
@@ -288,9 +289,11 @@ export function PostCard({
     />
   </>;
 
-  const listingLine = isListing && !beforeBody && (post.price != null || (post.listingStatus && post.listingStatus !== 'open')) && (
+  // 본문 첫 줄(옛 앱도 읽는 요약)이 이미 가격을 말하면 카드 아래에서 또 쓰지 않는다(QA B8-2).
+  const price = post.listingDetails?.lead && post.body.startsWith(post.listingDetails.lead) ? null : post.price;
+  const listingLine = isListing && !beforeBody && (price != null || (post.listingStatus && post.listingStatus !== 'open')) && (
     <View style={styles.listingLine}>
-      {post.price != null && <ThemedText style={styles.price}>{t.detail.price(post.price)}</ThemedText>}
+      {price != null && <ThemedText style={styles.price}>{t.detail.price(price)}</ThemedText>}
       {post.listingStatus && post.listingStatus !== 'open' && (
         <ThemedText type="small" themeColor="textSecondary">{t.detail.listingStatus[post.listingStatus]}</ThemedText>
       )}
@@ -500,7 +503,8 @@ export function PostCard({
           {meetupDetail ? meetupDetail.beforeTitle : <ThemedText
             type="smallBold"
             style={[styles.category, { color: isMeetup ? theme.accent : theme.textSecondary }]}>
-            {tr(post.tag.label)}{isListing ? ` · ${t.detail.listingBadge}` : ''}
+            {/* 칸이 있는 글은 그 글의 종류(구인·렌트 내놓음·팝니다)로 적는다. '구해요·팔아요'로는 구인·렌트 글이 중고거래처럼 읽힌다(QA H43-7·B12-2). */}
+            {tr(post.tag.label)}{isListing ? ` · ${post.listingDetails ? dealLabel(post.listingDetails, language) : t.detail.listingBadge}` : ''}
           </ThemedText>}
           <ThemedText accessibilityRole={meetupDetail ? 'header' : undefined} style={[styles.title, flat && !onPress && styles.detailTitle, meetupDetail && Typography.sheetTitle]}>
             {translation.display.title}

@@ -16,7 +16,7 @@ import { count, t } from '../src/i18n/ko.ts';
 import { uniqueHashtags } from '../src/lib/hashtags.ts';
 import { postLocationUrl, postMapBody } from '../src/lib/post-maps.ts';
 import { postInfoParts } from '../src/lib/post-info.ts';
-import { stripListingLead } from '../src/lib/listing-details.ts';
+import { dealLabel, stripListingLead } from '../src/lib/listing-details.ts';
 import { parseMeetupSections } from '../src/lib/meetup-sections.ts';
 import { translationSource } from './test-meetup-source-imports.mjs';
 import { photoCreditNames, splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
@@ -109,7 +109,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/constants/theme': { Depth: {}, MaxContentWidth: 800, Spacing: { one: 4, two: 8, three: 16, four: 24 } }, '@/i18n/ko': { count, t },
     '@/components/meetup-manage-sheet': { MeetupManageSheet: 'MeetupManageSheet' }, '@/components/post-place-card': { PostPlaceCard: 'PostPlaceCard' },
     '@/lib/meetup-destination': { splitPlaceMeetupBody: () => null }, '@/lib/place-reviews': { placeReviewPlace: () => null, placeReviewText: body => body, mapPinPlace: () => null },
-    '@/lib/listing-details': { stripListingLead }, '@/components/listing-card': { ListingInfo: 'ListingInfo' },
+    '@/lib/listing-details': { dealLabel, stripListingLead }, '@/components/listing-card': { ListingInfo: 'ListingInfo' },
     '@/lib/hashtags': { uniqueHashtags }, '@/lib/post-maps': { postLocationUrl, postMapBody }, '@/lib/meetup-ai': { visibleMeetupBody: body => body },
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' }, '@/components/post-detail': { PostDetail: 'PostDetail' }, '@/components/shared-link-card': { SharedPreviewContent: 'SharedPreviewContent' },
     '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
@@ -583,5 +583,28 @@ test('web chat preview opens the hosted flat post route and keeps the invitation
     const harness = mount('../src/components/shared-link-card.tsx', 'SharedLinkCard', { os: 'web' }, { url }); context.after(() => harness.unmount()); await harness.settle();
     control(harness, 'chat.shared-link.open').props.onPress();
     assert.equal(harness.calls.find(call => call[0] === 'navigate')[1], `/post?id=${id}&invite=1`);
+  }
+});
+
+test('a listing card whose first line already gives the price does not repeat it under the text (QA B8-2)', async context => {
+  const lead = '팝니다 · $46,800 · 사용감 있음 · 코퀴틀람';
+  const base = { ...post(), room: undefined, kind: 'listing', price: 46800, tag: { slug: 'used', label: '중고거래' }, author: { id: 'viewer', nickname: '이웃' }, likes: 0, saves: 0, comments: 0, createdAtLabel: '방금' };
+  for (const [item, repeated] of [[{ ...base, body: `${lead}\n\n무사고예요`, listingDetails: { type: 'used', deal: 'sell', lead } }, false], [{ ...base, body: '무사고예요' }, true]]) {
+    for (const feed of [true, false]) {
+      const harness = mount('../src/components/post-card.tsx', 'PostCard', {}, { post: item, feed }); context.after(() => harness.unmount());
+      assert.equal(harness.nodes().some(node => node.props?.children === t.detail.price(46800)), repeated, `${feed ? 'feed' : 'flat'} card, lead ${!repeated}`);
+    }
+  }
+});
+
+test('a detail card names a listing by its own kind, so a job or rent post never reads as 구해요·팔아요 (QA H43-7·B12-2)', async context => {
+  const base = { ...post(), room: undefined, kind: 'listing', body: '본문', author: { id: 'viewer', nickname: '이웃' }, likes: 0, saves: 0, comments: 0, createdAtLabel: '방금' };
+  for (const [item, label] of [
+    [{ ...base, tag: { slug: 'jobs', label: '구인구직' }, listingDetails: { type: 'jobs', deal: 'hiring' } }, '구인구직 · 구인'],
+    [{ ...base, tag: { slug: 'housing', label: '부동산' }, listingDetails: { type: 'housing', deal: 'rent_offer' } }, '부동산 · 렌트 내놓음'],
+    [{ ...base, tag: { slug: 'used', label: '중고거래' } }, '중고거래 · 구해요·팔아요'],
+  ]) {
+    const harness = mount('../src/components/post-card.tsx', 'PostCard', {}, { post: item, flat: true, postDetail: true }); context.after(() => harness.unmount());
+    assert.equal([control(harness, 'components_post-card.pressable.2').props.children[0].props.children].flat().join(''), label);
   }
 });
