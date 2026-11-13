@@ -9,7 +9,7 @@ import { AdminMerchantReviewReplyContent } from '@/components/admin/admin-mercha
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { reportReasonLabel, reportStatusLabel, reportTargetLabel, type AdminSection } from '@/lib/admin';
-import { displayName, shortId } from '@/lib/admin-labels';
+import { displayName, lateReplyText, replyTimeText, shortId } from '@/lib/admin-labels';
 import { loadAdminClientErrors, resolveAdminClientError, type AdminDashboardData, type AdminReport } from '@/lib/admin-data';
 import type { AdminClientError } from '@/lib/admin-trending';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -38,11 +38,19 @@ export function AdminSectionView({ section, data, onUser, onLoadMore, loadingMor
   let rows: Row[] = [];
   if (section === 'overview') {
     title = '운영 현황';
+    const people = data.realPeople;
+    // replyWeeks is newest first and always starts with the Vancouver week in progress.
+    const [week, lastWeek] = people?.replyWeeks ?? [];
     rows = [
       { id: 'reports', title: '미처리 신고', body: `${data.counts.openReports}건`, meta: `전체 ${data.counts.reports}건` },
       { id: 'alerts', title: '감시어 경보', body: `${data.counts.alertsOpen}건`, meta: '미처리' },
       { id: 'safety', title: 'AI 안전 검토', body: `고위험 ${data.counts.safetyHigh}건`, meta: `처리 대기 ${data.counts.safetyPending}건` },
-      { id: 'members', title: '전체 사용자', body: `${data.counts.profiles}명`, meta: `글 ${data.counts.posts}건 · 메시지 ${data.counts.messages}건` },
+      people
+        ? { id: 'real-members', title: '진짜 회원', body: `${people.members}명`, meta: `${date(people.generatedAt)} 기준 · 운영 캐릭터·시험 계정 제외` }
+        : { id: 'real-members', title: '진짜 회원', body: '숫자를 불러오지 못했어요', meta: '새로고침하면 다시 불러와요' },
+      ...(people ? [{ id: 'first-reply', title: '이번 주 첫 답까지 보통 걸린 시간', body: replyTimeText(week, true),
+        meta: `진행 중 · 진짜 회원 글 ${week?.posts ?? 0}건 중 ${week?.replied ?? 0}건 답 · ${lateReplyText(week)}\n지난주 ${replyTimeText(lastWeek)} · ${lateReplyText(lastWeek)}` }] : []),
+      { id: 'members', title: '전체 계정(운영 캐릭터 포함)', body: `${data.counts.profiles}개`, meta: `글 ${data.counts.posts}건 · 메시지 ${data.counts.messages}건` },
     ];
   } else if (section === 'alerts') {
     title = '감시어 경보';
