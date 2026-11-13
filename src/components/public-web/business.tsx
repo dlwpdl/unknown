@@ -55,7 +55,6 @@ export default function PublicBusiness() {
         <a className="biz-primary" href="/merchant/" onClick={tap}>무료로 시작하기</a>
         <a className="biz-secondary" href="#pricing" onClick={tap}>요금제 보기</a>
       </div>
-      <p className="biz-note">등록과 기본 기능은 무료예요. 결제 정보 없이 시작할 수 있어요.</p>
       <p className="biz-note">음식점은 글링 지도에 ‘웹샵 주문’ 버튼도 달 수 있어요. <a href="#webshop" onClick={tap}>웹샵 제휴 보기</a></p>
 
       <section aria-labelledby="biz-features"><h2 id="biz-features">글링에서 할 수 있는 일</h2>
