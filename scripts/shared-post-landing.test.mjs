@@ -36,7 +36,7 @@ function mount({href=canonical,load=async()=>preview,language='ko',copy=async()=
     '@/hooks/use-language':{useLanguage:()=>({language})},'@/lib/interaction-feedback':{useInteractionFeedback:()=>({play:kind=>feedback.push(kind)})},
     '@/lib/shared-link-preview':{loadSharedLinkPost:(client,postId)=>{calls.push(['post',client,postId,auth.me.id]);return loadPost(postId);},loadSharedLinkPreview:(client,postId)=>{calls.push(['preview',client,postId]);return load(postId);}},
     '@/lib/public-web-client':{publicWebClient:'ANON_ONLY'},'@/lib/public-seo':{publicSiteName,publicPostDescription,publicPostSchema,jsonLd:JSON.stringify,PUBLIC_SITE:'https://gling.ej-entertainment.com'},'@/lib/mock':{CITIES,TAGS},'./static-slot':{adoptStatic:()=>()=>{}},
-    '@/lib/auth':{useAuth:()=>({...auth,promptLogin:reason=>calls.push(['login',reason])})},'@/hooks/use-content-visibility':{useContentVisibility:()=>hidden},'@/lib/supabase':{supabase:'AUTHENTICATED'},'./shared-post-article':{SharedPostArticle:'SharedPostArticle'},'@/lib/sharing':{sharedLinkTarget,SHARED_POST_RETURN_KEY},'@/lib/public-web':{publicWebTarget},'./analytics':{useReaderAnalytics(){}}};
+    '@/lib/auth':{useAuth:()=>({...auth,promptLogin:reason=>calls.push(['login',reason])})},'@/hooks/use-content-visibility':{useContentVisibility:()=>hidden},'@/lib/supabase':{supabase:'AUTHENTICATED'},'./shared-post-article':{SharedPostArticle:'SharedPostArticle'},'./meetup-invite':{MeetupInvite:'MeetupInvite'},'@/lib/sharing':{sharedLinkTarget,SHARED_POST_RETURN_KEY},'@/lib/public-web':{publicWebTarget},'./analytics':{useReaderAnalytics(){}}};
   const exported={},source=ts.transpileModule(readFileSync(new URL('../src/components/public-web/shared-post-landing.tsx',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
   vm.runInNewContext(source,{exports:exported,require:name=>{if(name.includes('assets/brand/'))return'brand';assert.ok(name in modules,`Known preview-only import: ${name}`);return modules[name];},window:{location,addEventListener(){},removeEventListener(){},sessionStorage:{setItem:(key,value)=>{if(storageFailure)throw Error('PRIVATE_STORAGE_ERROR');stored.set(key,value);}}},document:{visibilityState:'visible',addEventListener(){},removeEventListener(){}},navigator:{clipboard:{writeText:value=>{calls.push(['copy',value]);return copy(value);}}},URL,URLSearchParams,Math,Map});
   return{calls,feedback,encoded,stored,location,flushPassive(){pendingEffects.splice(0).forEach(fn=>fn());},render(name='default',props){index=0;return exported[name](props);},unmount(){cleanups.forEach(fn=>fn?.());}};
@@ -94,6 +94,19 @@ test('invalid or missing destinations have invalid-link copy and never create a 
 });
 
 
+test('a meetup invitation link opens the web invitation with the sharer code and reads nothing itself', async () => {
+  const app=mount({href:canonical+'&invite=1&code=HJKM2345'});
+  const tree=app.render();await settle();
+  assert.equal(tree.type,'MeetupInvite');assert.deepEqual([tree.props.postId,tree.props.code],[id,'HJKM2345']);
+  assert.deepEqual(app.calls,[],'the invitation loads its own narrow card');
+  tree.props.onMissing(id);
+  assert.equal(app.render().type.name,'SharedPostLandingContent','a link that is not a meetup falls back to this landing');
+  app.unmount();
+  const sent=mount({href:canonical+'&shared=1&invite=1'});
+  assert.equal(sent.render().type,'MeetupInvite','a link sent through the share gateway opens it without a code too');sent.unmount();
+  const listed=mount({href:canonical+'&invite=1'});
+  assert.equal(listed.render().type.name,'SharedPostLandingContent','the public city list keeps the plain landing (link-only invitation)');listed.unmount();
+});
 test('web login preserves the exact shared post before opening the normal signup/login panel', () => {
   const app=mount({href:canonical+'&invite=1'});
   let props=app.render().props;

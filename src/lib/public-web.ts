@@ -35,7 +35,7 @@ export function publicWebFetch(baseUrl: string, key: string, transport: typeof f
     const request = new Request(input, init);
     const url = new URL(request.url);
     const allowed = url.origin === new URL(baseUrl).origin && request.method === 'POST' && (
-      /^\/rest\/v1\/rpc\/(get_public_feed_page_v2|get_public_post|get_shared_link_preview|get_public_comments_page|get_public_post_businesses|get_merchant_post_source|get_merchant_profile|get_merchant_reviews|get_merchant_profile_posts|get_city_place_catalog|get_public_webshop)$/.test(url.pathname)
+      /^\/rest\/v1\/rpc\/(get_public_feed_page_v2|get_public_post|get_shared_link_preview|get_public_comments_page|get_public_post_businesses|get_merchant_post_source|get_merchant_profile|get_merchant_reviews|get_merchant_profile_posts|get_city_place_catalog|get_meetup_invite_card|get_business_invite_landing|get_public_webshop)$/.test(url.pathname)
       || url.pathname === '/storage/v1/object/sign/post-images'
       || url.pathname === '/storage/v1/object/sign/merchant-profile-images'
       || url.pathname === '/functions/v1/ticketmaster-events'

@@ -138,9 +138,21 @@ export type AdminSafetyAlert = {
 export type AdminSharedSessionUser = { id: string; nickname: string; account_type: string; last_seen: string; comments: number; posts: number };
 export type AdminSharedSessionGroup = { ip: string; user_agent: string | null; same_device: boolean; user_count: number; first_seen: string; last_seen: string; users: AdminSharedSessionUser[] };
 
+/** Numbers only, operated characters and staff/test accounts left out (get_admin_real_people). */
+export type AdminRealPeople = {
+  generatedAt: string;
+  members: number;
+  visitDays: { none: number; one: number; twoToThree: number; fourToSeven: number; eightToFourteen: number; fifteenPlus: number };
+  weekFour: { eligible: number; returned: number };
+  signups: { total: number; onTheirOwn: number };
+  replyWeeks: { week: string; posts: number; replied: number; medianMinutes: number | null; due: number; unanswered: number }[];
+};
+
 export type AdminDashboardData = {
   counts: AdminCounts;
   deltas?: AdminCountDeltas;
+  /** Missing when the server has not been updated yet; the overview says so instead of blocking the console. */
+  realPeople?: AdminRealPeople;
   sharedSessions: AdminSharedSessionGroup[];
   safetyAlerts: AdminSafetyAlert[];
   profiles: AdminProfile[];
@@ -283,6 +295,7 @@ export async function loadAdminSharedSessions(client: SupabaseClient, days = 30)
 export async function loadAdminDashboard(client: SupabaseClient): Promise<AdminDashboardData> {
   await logAdminAccess(client, 'dashboard');
   const sharedSessions = loadAdminSharedSessions(client).catch(() => [] as AdminSharedSessionGroup[]);
+  const realPeople = Promise.resolve(client.rpc('get_admin_real_people')).then(({ data, error }) => error ? undefined : data as AdminRealPeople, () => undefined);
 
   const [reports, profiles, posts, conversations, messages, actions, safety, reportCount, openCount, profileCount, postCount, messageCount, safetyPending, safetyHigh] =
     await Promise.all([
@@ -348,6 +361,7 @@ export async function loadAdminDashboard(client: SupabaseClient): Promise<AdminD
       safetyHigh: safetyHigh.count ?? 0,
     },
     deltas,
+    realPeople: await realPeople,
     sharedSessions: await sharedSessions,
     safetyAlerts: loadedAlerts,
     reports: loadedReports,
