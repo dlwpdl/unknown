@@ -144,7 +144,16 @@ set local role anon;
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 select ok((public.get_public_post_listing_details(array['f7110000-0000-4000-8000-000000000001'::uuid])->0->>'photo_checked_at')::timestamptz <= now(),
   'everyone now sees the checked date on the room');
+select set_config('request.jwt.claims','{"sub":"f7100000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+set local role authenticated;
+update public.posts set body = body || ' 다른 방으로 바꿨어요' where id = 'f7110000-0000-4000-8000-000000000001';
+set local role anon;
+select set_config('request.jwt.claims','{"role":"anon"}',true);
+select ok(public.get_public_post_listing_details(array['f7110000-0000-4000-8000-000000000001'::uuid])->0->'photo_checked_at' = 'null'::jsonb,
+  'editing the room after the check takes the mark off');
 reset role;
+select is((select status from private.listing_photo_checks where post_id = 'f7110000-0000-4000-8000-000000000001'),'pending',
+  'and sends the photo back to the review queue');
 
 -- Account deletion lists this bucket's folder too.
 select is(public.account_image_cleanup_paths('f7100000-0000-4000-8000-000000000001','listing-checks',array['f7100000-0000-4000-8000-000000000001/f7120000-0000-4000-8000-000000000001.webp']),

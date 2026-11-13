@@ -114,6 +114,22 @@ create table private.listing_photo_checks (
 create index listing_photo_checks_pending_idx on private.listing_photo_checks (submitted_at) where status = 'pending';
 revoke all on private.listing_photo_checks from public, anon, authenticated;
 
+-- A checked mark covers the room as it was reviewed: once the author edits the title, body, photos or listing card,
+-- the mark comes off and the photo goes back to the review queue (security review on PR #170). A rejected check stays final.
+create function private.reset_listing_photo_check() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  if (new.title, new.body, new.image_paths, new.listing_details)
+     is distinct from (old.title, old.body, old.image_paths, old.listing_details) then
+    update private.listing_photo_checks set status = 'pending', reviewed_at = null, reviewed_by = null
+    where post_id = new.id and status = 'verified';
+  end if;
+  return new;
+end $$;
+revoke all on function private.reset_listing_photo_check() from public, anon, authenticated;
+create trigger posts_reset_listing_photo_check after update of title, body, image_paths, listing_details on public.posts
+  for each row execute function private.reset_listing_photo_check();
+
 -- Right after create_post, from the composer. Only the author, only a 부동산 listing, only a file they uploaded to their folder.
 create function public.submit_listing_photo_check(p_post_id uuid, p_path text) returns void
 language plpgsql security definer set search_path = '' as $$
