@@ -31,12 +31,12 @@ function mount({href=canonical,load=async()=>preview,language='ko',copy=async()=
   const modules={react:hooks,'react/jsx-runtime':{jsx:(type,props,key)=>({type,props,key}),jsxs:(type,props,key)=>({type,props,key})},
     'expo-router':{usePathname:()=>location.pathname,useLocalSearchParams:()=>Object.fromEntries(location.searchParams)},'expo-router/head':{default:'Head'},
     'expo-asset':{Asset:{fromModule:()=>({uri:'local-brand.png'})}},toqr:{toQR:input=>{encoded.push(input);return toQR(input);}},
-    '@/constants/theme':{Colors:{dark:{}},Spacing:{three:16,four:24,five:32}},'@/constants/design-system':{ControlMetrics:{touch:44,action:48},Typography:{body:{fontSize:15,lineHeight:22},sheetTitle:{fontSize:24,lineHeight:32},menu:{fontSize:16,lineHeight:24},supporting:{fontSize:13,lineHeight:19}}},
+    '@/constants/theme':{Spacing:{two:8,three:16,four:24,five:32}},'@/constants/design-system':{ControlMetrics:{touch:44,action:48},Typography:{body:{fontSize:15,lineHeight:22},sheetTitle:{fontSize:24,lineHeight:32},menu:{fontSize:16,lineHeight:24},supporting:{fontSize:13,lineHeight:19}}},
     '@/hooks/use-theme':{useTheme:()=>({background:'#0B0B12',card:'#171722',text:'#F6F3F0',textSecondary:'#B7B4C3',line:'#343443',accent:'#CBB9FF',accentInk:'#171123',backgroundSelected:'#343443'})},
-    '@/hooks/use-language':{useLanguage:()=>({language})},'@/lib/interaction-feedback':{useInteractionFeedback:()=>({play:kind=>feedback.push(kind)})},
+    '@/hooks/use-language':{useLanguage:()=>({language,tr:value=>language==='en'?({'밴쿠버':'Vancouver','비즈니스':'Business'}[value]??value):value})},'@/lib/interaction-feedback':{useInteractionFeedback:()=>({play:kind=>feedback.push(kind)})},
     '@/lib/shared-link-preview':{loadSharedLinkPost:(client,postId)=>{calls.push(['post',client,postId,auth.me.id]);return loadPost(postId);},loadSharedLinkPreview:(client,postId)=>{calls.push(['preview',client,postId]);return load(postId);}},
     '@/lib/public-web-client':{publicWebClient:'ANON_ONLY'},'@/lib/public-seo':{publicSiteName,publicPostDescription,publicPostSchema,jsonLd:JSON.stringify,PUBLIC_SITE:'https://gling.ej-entertainment.com'},'@/lib/mock':{CITIES,TAGS},'./static-slot':{adoptStatic:()=>()=>{}},
-    '@/lib/auth':{useAuth:()=>({...auth,promptLogin:reason=>calls.push(['login',reason])})},'@/hooks/use-content-visibility':{useContentVisibility:()=>hidden},'@/lib/supabase':{supabase:'AUTHENTICATED'},'./shared-post-article':{SharedPostArticle:'SharedPostArticle'},'./meetup-invite':{MeetupInvite:'MeetupInvite'},'@/lib/sharing':{sharedLinkTarget,SHARED_POST_RETURN_KEY},'@/lib/public-web':{publicWebTarget},'./analytics':{useReaderAnalytics(){}}};
+    '@/lib/auth':{useAuth:()=>({...auth,promptLogin:reason=>calls.push(['login',reason])})},'@/hooks/use-content-visibility':{useContentVisibility:()=>hidden},'@/lib/supabase':{supabase:'AUTHENTICATED'},'./shared-post-article':{SharedPostArticle:'SharedPostArticle'},'./meetup-list':{MeetupDetails:'MeetupDetails'},'./meetup-invite':{MeetupInvite:'MeetupInvite'},'./public-header':{PublicHeader:'PublicHeader',PublicFooter:'PublicFooter',readerPalette:{}},'@/lib/sharing':{sharedLinkTarget,SHARED_POST_RETURN_KEY},'@/lib/public-web':{publicWebTarget},'./analytics':{useReaderAnalytics(){}}};
   const exported={},source=ts.transpileModule(readFileSync(new URL('../src/components/public-web/shared-post-landing.tsx',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
   vm.runInNewContext(source,{exports:exported,require:name=>{if(name.includes('assets/brand/'))return'brand';assert.ok(name in modules,`Known preview-only import: ${name}`);return modules[name];},window:{location,addEventListener(){},removeEventListener(){},sessionStorage:{setItem:(key,value)=>{if(storageFailure)throw Error('PRIVATE_STORAGE_ERROR');stored.set(key,value);}}},document:{visibilityState:'visible',addEventListener(){},removeEventListener(){}},navigator:{clipboard:{writeText:value=>{calls.push(['copy',value]);return copy(value);}}},URL,URLSearchParams,Math,Map});
   return{calls,feedback,encoded,stored,location,flushPassive(){pendingEffects.splice(0).forEach(fn=>fn());},render(name='default',props){index=0;return exported[name](props);},unmount(){cleanups.forEach(fn=>fn?.());}};
@@ -212,4 +212,40 @@ test('loading and fetch errors never flip a prerendered post to noindex; removed
   const shell = mount({ href: canonical });
   assert.equal(nodes(shell.render('SharedPostLandingContent', { postId: id, preview: null, status: 'loading', onRetry() {} })).find(node => node.type === 'meta' && node.props?.name === 'robots')?.props.content, 'noindex, follow', 'the /post?id= app shell stays noindex');
   shell.unmount();
+});
+
+test('a guest meetup shows its schedule, city and the public member count, and the posting date reads as the posting day', async () => {
+  const schedule = { eventKind:'once', startsAt:'2026-11-20T02:00:00Z', timezone:'America/Vancouver' };
+  const meetup = { ...preview, kind:'meetup', schedule, createdAt:'2026-10-25T18:00:00Z' };
+  const app = mount({ loadPost: async () => ({ id, room: { memberCount:3, capacity:8, eventKind:'once' } }) });
+  const props = { postId:id, preview:meetup, status:'ready', onRetry(){}, onLogin(){} };
+  let details = nodes(app.render('SharedPostLandingContent', props)).find(node => node.type === 'MeetupDetails');
+  assert.equal(JSON.stringify(details.props), JSON.stringify({ room: schedule, city: '밴쿠버' }));
+  assert.deepEqual(app.calls.filter(call => call[0] === 'post'), [['post','ANON_ONLY',id,'guest']], 'Member counts come from the anonymous public row');
+  await settle();
+  const tree = app.render('SharedPostLandingContent', props);
+  details = nodes(tree).find(node => node.type === 'MeetupDetails');
+  assert.equal(details.props.room.memberCount, 3); assert.equal(details.props.room.capacity, 8); assert.equal(details.props.room.startsAt, schedule.startsAt);
+  assert.match(text(tree), /올린 날/);
+  assert.equal(nodes(tree).find(node => node.type === 'PublicHeader').props.current, 'meetups');
+  const story = mount();
+  const storyTree = story.render('SharedPostLandingContent', { ...props, preview:{ ...preview, createdAt:'2026-10-25T18:00:00Z' } });
+  assert.equal(nodes(storyTree).some(node => node.type === 'MeetupDetails'), false); assert.doesNotMatch(text(storyTree), /올린 날/);
+  assert.equal(story.calls.length, 0, 'Ordinary stories read nothing beyond the vetted preview');
+  app.unmount(); story.unmount();
+});
+
+test('the shared landing carries the public footer, and an English visit shows English city and topic names', () => {
+  const ko = mount();
+  assert.ok(nodes(ko.render('SharedPostLandingContent', { postId:id, preview, status:'ready', onRetry(){} })).some(node => node.type === 'PublicFooter'));
+  ko.unmount();
+  const en = mount({ language:'en' });
+  const tree = en.render('SharedPostLandingContent', { postId:id, preview:{ ...preview, kind:'meetup', label:'모임' }, status:'ready', onRetry(){} });
+  const crumbs = nodes(tree).find(node => node.props?.className === 'shared-crumbs'), kicker = nodes(tree).find(node => node.props?.className === 'shared-kicker');
+  assert.match(text(crumbs), /Vancouver.*Meetups/); assert.match(text(kicker), /Vancouver · Meetups/);
+  assert.equal(nodes(tree).find(node => node.type === 'MeetupDetails').props.city, 'Vancouver');
+  assert.doesNotMatch(text(crumbs) + text(kicker), /밴쿠버|모임/);
+  const story = en.render('SharedPostLandingContent', { postId:id, preview, status:'ready', onRetry(){} });
+  assert.match(text(nodes(story).find(node => node.props?.className === 'shared-kicker')), /Vancouver · Business/, 'other topics use their English label');
+  en.unmount();
 });

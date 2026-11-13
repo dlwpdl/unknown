@@ -343,3 +343,12 @@ test('a chosen chip cut at the edge or off screen scrolls fully into view; a vis
   assert.equal(revealOffset(400, 390, 900, 10, 60), 0, 'off screen to the left: back to the start');
   assert.equal(revealOffset(0, 390, 300, 200, 60), 0, 'a row that fits never scrolls');
 });
+
+test('a sideways row fades only an end with more chips past it (QA new-left-fade)', async () => {
+  const { scrollEdges } = await import('../src/hooks/use-reveal-chip.ts');
+  assert.deepEqual(scrollEdges(0, 390, 900), { start: false, end: true }, 'at the start the first chip stays clear');
+  assert.deepEqual(scrollEdges(200, 390, 900), { start: true, end: true });
+  assert.deepEqual(scrollEdges(510, 390, 900), { start: true, end: false }, 'at the end the last chip stays clear');
+  assert.deepEqual(scrollEdges(0, 390, 300), { start: false, end: false }, 'a row that fits fades nowhere');
+  assert.deepEqual(scrollEdges(0.5, 390, 390.6), { start: false, end: false }, 'sub-pixel rounding is no scroll');
+});

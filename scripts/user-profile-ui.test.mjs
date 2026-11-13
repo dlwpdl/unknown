@@ -41,7 +41,7 @@ function mount(file, name, data, props = {}, params = {}) {
     '@/components/post-card': { PostCard: 'PostCard' }, '@/components/post-detail': { PostDetail: 'PostDetail' }, '@/components/post-zoom-link': { PostZoomLink: 'PostZoomLink' }, '@/lib/post-open': postOpen,
     '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: (target, visible) => { calls.push(['savedEntry', target, visible]); return { state: null, error: '', loading: false, busy: false, visible, onPress() {} }; } },
     '@/components/manner-summary': { MannerSummary: 'MannerSummary' }, '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/drag-sheet': { DragSheet: 'DragSheet' },
-    '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
+    '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' }, '@/components/clay': { ClayPhoto: 'ClayPhoto' },
     '@/constants/theme': { Spacing: {}, Depth: { control: {} } }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/constants/design-system': { ControlStyles: {}, IconSize: {}, controlPresentation: () => ({ container: {} }) },
     '@/components/profile-overview': { FriendButton: 'FriendButton', ProfileRecordTiles: 'ProfileRecordTiles', ProfileSavedMap: 'ProfileSavedMap' },
@@ -243,8 +243,33 @@ test('web mini profiles retain inline reviews, direct chat and reporting without
   control(harness, 'components_user-sheet.pressable.5').props.onPress(); harness.render();
   assert.ok(!harness.nodes().some(node => node.type === 'ReportSheet'), 'the report waits until the profile sheet is gone');
   dismiss(harness);
+  // ··· now offers report and block as separate rows (QA E32-2); the report sheet waits for the menu to leave.
+  const menuSheet = () => harness.nodes().filter(node => node.type === 'DragSheet')[1];
+  assert.equal(menuSheet().props.visible, true);
+  assert.ok(control(harness, 'user.menu.block'), 'blocking no longer needs a report');
+  control(harness, 'user.menu.report').props.onPress(); harness.render();
+  assert.equal(menuSheet().props.visible, false);
+  assert.ok(!harness.nodes().some(node => node.type === 'ReportSheet'));
+  menuSheet().props.onDismissed(); harness.render();
   assert.ok(harness.nodes().some(node => node.type === 'ReportSheet' && node.props.targetType === 'user' && node.props.targetId === 'neighbor'));
   assert.equal(closed.length, 2, 'chat navigation and report action still dismiss their profile overlay');
+});
+
+test('the mini profile ··· blocks after one confirmation without opening a report (QA E32-2)', async context => {
+  const blocked = [], harness = mount('../src/components/user-sheet.tsx', 'UserSheet', {
+    loadTradeProfile: async () => null, loadMannerSummary: async () => manner, blockUser: async (...args) => { blocked.push(args.slice(1)); },
+  }, { user: { id: 'neighbor', nickname: '이웃' }, onClose() {} });
+  context.after(() => harness.cleanup()); await harness.settle();
+  control(harness, 'components_user-sheet.pressable.5').props.onPress(); dismiss(harness);
+  control(harness, 'user.menu.block').props.onPress(); harness.render();
+  harness.nodes().filter(node => node.type === 'DragSheet')[1].props.onDismissed(); harness.render();
+  const alert = harness.calls.find(call => call[0] === 'alert');
+  assert.equal(alert[1], t.report.block('이웃'));
+  assert.deepEqual(blocked, []);
+  alert[3].find(button => button.style === 'destructive').onPress(); await harness.settle();
+  assert.deepEqual(blocked, [['viewer', 'neighbor']]);
+  assert.ok(!harness.nodes().some(node => node.type === 'ReportSheet'));
+  assert.ok(harness.calls.some(call => call[0] === 'alert' && call[1] === t.chat.blockDone));
 });
 
 test('web self profiles retain inline reviews without an unsupported account-profile destination', async context => {

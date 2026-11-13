@@ -18,6 +18,8 @@ import { useAuth } from '@/lib/auth';
 import { loadMyHostQuest, showQuestEntry, type HostQuest } from '@/lib/host-quests';
 import { supabase } from '@/lib/supabase';
 import { useMembership } from '@/lib/membership-provider';
+import { useChatIdentity } from '@/hooks/use-chat-identity';
+import { selectChatBusiness } from '@/lib/chat-identity';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useUnreadCount } from '@/hooks/use-unread-count';
 import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
@@ -26,7 +28,7 @@ import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 export default function ProfileMenuScreen() {
   const { tr, t } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox(), router = useRouter(), { play } = useInteractionFeedback();
-  const { trustLevel, signOut, isAuthed, me } = useAuth(), { membership } = useMembership();
+  const { trustLevel, signOut, isAuthed, me } = useAuth(), { membership } = useMembership(), business = useChatIdentity();
   const [quest, setQuest] = useState<{ userId: string; value: HostQuest } | null>(null);
   useEffect(() => {
     if (!isAuthed) return;
@@ -36,13 +38,14 @@ export default function ProfileMenuScreen() {
   const unread = useUnreadCount('other');
   const membershipLabel = membership ? tr(({ free: '베이직', plus: '플러스', pro: '프로', premium: '프리미엄', admin: '관리자' } as const)[membership.tier]) : null;
   const unreadLabel = unread > 0 ? tr('새 소식 {0}', unread) : tr('새 소식 없음');
-  const row = (id: string, symbol: ComponentProps<typeof SymbolView>['name'], title: string, sub: string, path: Parameters<typeof router.push>[0]) =>
+  // A function instead of a path is an in-place action, so it gets no chevron.
+  const row = (id: string, symbol: ComponentProps<typeof SymbolView>['name'], title: string, sub: string, path: Parameters<typeof router.push>[0] | (() => void)) =>
     <Pressable key={id} analyticsId={id} accessibilityRole="button" accessibilityLabel={title}
-      onPress={() => { play('selection'); router.push(path); }}
+      onPress={() => { play('selection'); if (typeof path === 'function') path(); else router.push(path); }}
       style={({ pressed }) => [styles.accountRow, { backgroundColor: pressed ? theme.backgroundSelected : clayBox ? 'transparent' : theme.card }]}>
       <View style={[styles.accountIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={symbol} size={22} tintColor={theme.navy} /></View>
       <View style={styles.accountText}><ThemedText type="smallBold">{title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{sub}</ThemedText></View>
-      <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
+      {typeof path !== 'function' && <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />}
     </Pressable>;
 
   return (
@@ -75,6 +78,8 @@ export default function ProfileMenuScreen() {
             {row('profile.meetup-profile', { ios: 'person.crop.rectangle', android: 'badge', web: 'badge' }, tr('모임 프로필 관리'), tr('모임 사진·소개·공개 범위를 따로 설정해요'), '/meetup-profile')}
             {row('profile.meetup-reviews', { ios: 'person.2', android: 'group', web: 'group' }, tr('모임 후기 · 매너 평가'), tr('내 후기와 매너 평가 관리'), '/profile/meetup-reviews')}
             {row('profile.invite', { ios: 'gift', android: 'redeem', web: 'redeem' }, tr('친구 초대'), tr('친구가 첫 모임에 다녀오면 2주 이용권'), '/profile/invite')}
+            {/* Writing as a business: the way back sits next to the business entry (QA G38-2). Same store as the chat and meetup switches. */}
+            {business && row('chat.identity.personal', { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }, tr('개인으로 돌아가기'), tr('지금은 {0} 이름으로 쓰는 중', business.name), () => selectChatBusiness(me.id, null))}
             {showQuestEntry(quest?.userId === me.id ? quest.value : null) && row('profile.host-quest', { ios: 'flag', android: 'flag', web: 'flag' }, tr('모임장 퀘스트'), tr('운영팀에서 받은 코드로 시작해요'), '/profile/host-quest')}
             <MerchantAccountEntry />
             <LinkedAccountEntry />
@@ -110,7 +115,8 @@ const styles = StyleSheet.create({
   clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   clayRows: { borderRadius: 16, overflow: 'hidden' },
   manage: { flexDirection: 'row', borderRadius: 16, padding: Spacing.one },
-  manageCell: { flex: 1, minWidth: 0, minHeight: 88, borderRadius: 12, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', gap: 2, paddingVertical: 12, paddingHorizontal: Spacing.one },
+  // Top-aligned so the four icons and names stay on one line when a label wraps (QA H42-1).
+  manageCell: { flex: 1, minWidth: 0, minHeight: 88, borderRadius: 12, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'flex-start', gap: 2, paddingVertical: 12, paddingHorizontal: Spacing.one },
   manageIcon: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   manageDot: { position: 'absolute', top: 1, right: 1, width: 9, height: 9, borderRadius: 5, borderWidth: 2 },
   manageLabel: { textAlign: 'center' },

@@ -106,12 +106,16 @@ export default function ProfileScreen() {
       </>
     );
 
-  const cityName = CITIES.find(({ id }) => id === summary?.cityId)?.name ?? summary?.cityId ?? '';
+  // The signed-in city shows at once; the summary only adds the neighbourhood, so loading never reads as 'no city set' (QA H42-2).
+  const cityId = summary?.cityId ?? me.cityId;
+  const cityName = CITIES.find(({ id }) => id === cityId)?.name ?? cityId ?? '';
   const own = overview?.user === me.id ? overview.value : null;
+  // While loading a count stays blank, not '–' or 0; '–' is left for a count that failed to load.
+  const loadingOverview = overview?.user !== me.id, blank = ' ';
   const stats = [
-    ['saved', own?.savedCount != null ? count(own.savedCount) : '–', tr('저장한 곳'), () => router.push({ pathname: '/profile/saved', params: { filter: 'places' } })],
-    ['friends', own ? count(own.friendCount) : '–', tr('친구'), () => router.push('/profile/friends')],
-    ['posts', count(summary?.posts ?? 0), tr('쓴 글'), null],
+    ['saved', own?.savedCount != null ? count(own.savedCount) : loadingOverview ? blank : '–', tr('저장한 곳'), () => router.push({ pathname: '/profile/saved', params: { filter: 'places' } })],
+    ['friends', own ? count(own.friendCount) : loadingOverview ? blank : '–', tr('친구'), () => router.push('/profile/friends')],
+    ['posts', summary ? count(summary.posts) : blank, tr('쓴 글'), null],
   ] as const;
 
   const pickProfilePhoto = async () => {
@@ -207,7 +211,7 @@ export default function ProfileScreen() {
         {own && <View style={styles.records}><ProfileRecordTiles overview={own} /></View>}
         <View accessibilityRole="tablist" onLayout={event => setSegmentWidth(event.nativeEvent.layout.width)} style={[styles.segments, { borderBottomColor: theme.line }]}>
           {segmentWidth > 0 && <Animated.View pointerEvents="none" style={[styles.segmentIndicator, Depth.control, { width: segmentWidth / 3, backgroundColor: theme.backgroundElement, borderBottomColor: theme.accent, transform: [{ translateX: segmentPosition.interpolate({ inputRange: [0, 2], outputRange: [0, segmentWidth * 2 / 3] }) }] }]} />}
-          {([['story', tr("내 글")], ['replies', tr("답글")], ['listing', tr("구해요·팔아요")]] as const).map(([key, label]) => (
+          {([['story', tr("내 글")], ['replies', t.profile.repliesTab], ['listing', tr("구해요·팔아요")]] as const).map(([key, label]) => (
             <Pressable analyticsId="app_profile_index.pressable.3" key={key} onPress={() => { play('selection'); if (key !== segment) setSegment(key); }} accessibilityRole="tab" accessibilityState={{ selected: segment === key }}
               style={({ pressed }) => [styles.segment, { opacity: pressed ? 0.65 : 1, }]}>
               <ThemedText type={segment === key ? 'smallBold' : 'small'} themeColor={segment === key ? undefined : 'textSecondary'}>{label}</ThemedText>

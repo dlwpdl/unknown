@@ -4,7 +4,8 @@ import { Linking, Platform, StyleSheet, View } from 'react-native';
 import WebView from 'react-native-webview';
 import * as Location from 'expo-location';
 import { Pressable } from '@/components/analytics-controls';
-import { useClay } from '@/components/clay';
+import { GlingLoader } from '@/components/gling-loader';
+import { useClay, useDark } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -23,6 +24,10 @@ type Props = {
   topInset?: number; bottomInset?: number;
   /** Starting zoom (default 11, the whole city). */
   zoom?: number;
+  /** Off while the screen is not shown: a tab mounted in the background draws no frames, so a slow start there is not a failure (QA C14-1). */
+  active?: boolean;
+  /** The caller's results are loading; the map shows its logo (never over a failure) instead of the caller drawing a second one. */
+  loading?: boolean;
 };
 
 export function DiscoveryMap(props: Props) {
@@ -30,14 +35,15 @@ export function DiscoveryMap(props: Props) {
 }
 
 const NO_CITIES: DiscoveryCity[] = [];
-function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, center = null, userLocation = null, compass = false, topInset = 0, bottomInset = 0, zoom, onSelect, onMoved, onCity }: Props) {
+function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, center = null, userLocation = null, compass = false, topInset = 0, bottomInset = 0, zoom, active = true, loading = false, onSelect, onMoved, onCity }: Props) {
   const { language, tr } = useLanguage();
-  const theme = useTheme(), clay = useClay(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clay = useClay(), dark = useDark() ? theme : undefined, { play } = useInteractionFeedback();
   const native = useRef<WebView<unknown>>(null), web = useRef<HTMLIFrameElement>(null), id = useId();
   const sentMarkers = useRef<{ sessionId: string; key: string } | null>(null);
   const [seed] = useState({ markers, cityName, selectedId, center, userLocation, topInset, bottomInset, zoom });
   const [failed, setFailed] = useState(false), [retry, setRetry] = useState(0);
-  const [readySession, setReadySession] = useState<string | null>(null);
+  // The page this map last heard 'ready' from; a new page (retry, language, 2D·3D) loads under the cover again.
+  const [readyHtml, setReadyHtml] = useState<string | null>(null);
   const sessionId = `${id}.${retry}`;
   // M7 (owner 2026-11-05): degrees from north the phone faces. Kept here so a turn redraws only the map, never the screen around it (map lag 2026-11-11).
   const [heading, setHeading] = useState<number | null>(null);
@@ -50,13 +56,14 @@ function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, cent
     return () => { active = false; clearTimeout(timer); watch?.remove(); setHeading(null); };
   }, [compass]);
   const parentOrigin = Platform.OS === 'web' && typeof window !== 'undefined' && window.location.protocol !== 'file:' ? window.location.origin : 'null';
-  // Pill names follow the language, so they rebuild the page like the language itself does; a new array with the same cities does not. The 2D·3D choice rebuilds it the same way.
+  // Pill names follow the language, so they rebuild the page like the language itself does; a new array with the same cities does not. The 2D·3D choice and the light·dark theme rebuild it the same way.
   const citiesKey = JSON.stringify(cities);
   const html = useMemo(() => {
-    try { return discoveryMapHtml({ ...seed, cities: JSON.parse(citiesKey), language, sessionId, parentOrigin, clay }); }
+    try { return discoveryMapHtml({ ...seed, cities: JSON.parse(citiesKey), language, sessionId, parentOrigin, clay, dark }); }
     catch { return null; }
-  }, [seed, citiesKey, language, sessionId, parentOrigin, clay]);
+  }, [seed, citiesKey, language, sessionId, parentOrigin, clay, dark]);
   const source = useMemo(() => ({ html: html ?? '' }), [html]);
+  const ready = !!html && readyHtml === html;
   const markerData = useMemo(() => {
     try { const safe = discoveryMarkers(markers); return { markers: safe, key: JSON.stringify(safe) }; }
     catch { return null; }
@@ -86,21 +93,22 @@ function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, cent
     if (!update || !markerData) return;
     const message = discoveryMapMessage(raw, sessionId, markerData.markers, (JSON.parse(citiesKey) as DiscoveryCity[]).filter(city => city.open).map(city => city.id));
     if (!message) return;
-    if (message.type === 'ready') { setReadySession(sessionId); setFailed(false); sync(true); }
+    if (message.type === 'ready') { setReadyHtml(html); setFailed(false); sync(true); }
     else if (message.type === 'error') setFailed(true);
     else if (message.type === 'select') onSelect(message.id);
     else if (message.type === 'feedback') play('selection');
     else if (message.type === 'credits') void Linking.openURL(message.url).catch(() => play('warning'));
     else if (message.type === 'moved') onMoved?.(message.bounds, message.zoom);
     else if (message.type === 'city') onCity?.(message.id);
-  }, [sessionId, update, markerData, sync, onSelect, onMoved, onCity, play, citiesKey]);
+  }, [sessionId, html, update, markerData, sync, onSelect, onMoved, onCity, play, citiesKey]);
   useEffect(() => { sync(); }, [sync]);
   useEffect(() => {
-    if (!html || readySession === sessionId) return;
+    if (!html || !active || ready) return;
     // WebView/GPU startup can stall before the embedded timeout ever runs.
     const timer = setTimeout(() => setFailed(true), 15000);
     return () => clearTimeout(timer);
-  }, [html, sessionId, readySession]);
+  }, [html, active, ready]);
+  const broken = failed || !html || !update || !markerData;
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     const listener = (event: MessageEvent) => {
@@ -122,7 +130,11 @@ function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, cent
         allowFileAccess={false} allowFileAccessFromFileURLs={false} allowUniversalAccessFromFileURLs={false} mixedContentMode="never"
         onShouldStartLoadWithRequest={request => request.url === 'about:blank'} setSupportMultipleWindows={false}
         onLoadEnd={() => sync(true)} onError={() => setFailed(true)} onHttpError={() => setFailed(true)} onMessage={event => receive(event.nativeEvent.data)} />)}
-    {(failed || !html || !update || !markerData) && <View style={[styles.error, { backgroundColor: theme.card }]} accessibilityLiveRegion="polite">
+    {/* Loading and failure never show together (QA C14-1): until the page is ready the cover hides the blank page in the app's own colour. */}
+    {!broken && (!ready || loading) && <View pointerEvents="none" style={[styles.cover, { paddingTop: topInset, paddingBottom: bottomInset }, !ready && { backgroundColor: theme.background }]}>
+      <GlingLoader accessibilityLabel={ready ? '지도 결과 불러오는 중' : '지도 불러오는 중'} />
+    </View>}
+    {broken && <View style={[styles.error, { backgroundColor: theme.card }]} accessibilityLiveRegion="polite">
       <ThemedText type="small">{tr("지도를 불러오지 못했어요. 목록에서 계속 둘러볼 수 있어요.")}</ThemedText>
       <Pressable analyticsId="discovery.map.retry" accessibilityRole="button" accessibilityLabel={tr("지도 다시 불러오기")}
         onPress={() => { play('selection'); setFailed(false); setRetry(value => value + 1); }} style={styles.retry}>
@@ -135,5 +147,6 @@ function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, cent
 const styles = StyleSheet.create({
   map: { flex: 1, minHeight: 140 },
   error: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, justifyContent: 'center', alignItems: 'center', padding: 20, gap: 12 },
+  cover: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, justifyContent: 'center', alignItems: 'center' },
   retry: { minHeight: 44, minWidth: 44, paddingHorizontal: 16, justifyContent: 'center' },
 });

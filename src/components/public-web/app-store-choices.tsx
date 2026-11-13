@@ -47,7 +47,7 @@ export function AppStoreRating() {
   return <p className="public-app-rating"><span aria-hidden="true">★</span> {ko ? `App Store 평점 ${score} · 평가 ${count}개` : `App Store rating ${score} · ${count} ${count === '1' ? 'rating' : 'ratings'}`}</p>;
 }
 
-export function AppStoreChoices() {
+export function AppStoreChoices({ returnHint = true }: { returnHint?: boolean } = {}) {
   const { language } = useLanguage(), ko = language === 'ko';
   const theme = useTheme(), { play } = useInteractionFeedback(), device = useDevice();
   const [store, setStore] = useState<keyof typeof stores | null>(null);
@@ -80,7 +80,7 @@ export function AppStoreChoices() {
       {store === 'ios' ? <a data-analytics="web.store.ios.open" href={url} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>{ko ? 'App Store에서 받기' : 'Get it on the App Store'} <span aria-hidden="true">↗</span></a>
         : <a data-analytics="web.store.android.open" href={url} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>{ko ? 'Google Play에서 받기' : 'Get it on Google Play'} <span aria-hidden="true">↗</span></a>}
       {!qr && <p>{ko ? 'QR 코드 대신 위 스토어 링크를 이용해 주세요.' : 'Use the store link above if the QR code is unavailable.'}</p>}
-      <p>{ko ? '설치 후 이 페이지로 돌아와 앱에서 이어가세요.' : 'After installing, return to this page and open the meetup or story in the app.'}</p>
+      {returnHint && <p>{ko ? '설치 후 이 페이지로 돌아와 앱에서 이어가세요.' : 'After installing, return to this page and open the meetup or story in the app.'}</p>}
     </div>}
     <noscript><div className="public-app-store-result">
       <a href={stores.ios} target="_blank" rel="noopener noreferrer">{ko ? 'App Store에서 받기' : 'Get it on the App Store'}</a>

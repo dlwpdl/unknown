@@ -113,6 +113,9 @@ test('검색용 글·허브·옛 주소 페이지는 H1 하나, 70자 이상 설
     assert.match(vancouver, /지금 참여 신청을 받는 모임은 2개예요/);
     assert.match(vancouver, /href="\/vancouver\/rent"[^>]*>부동산 6<\/a>/);
     assert.match(vancouver, /href="\/vancouver\/2"/);
+    // Page numbers follow the post list (the reader moves them under the live feed), not the city intro above the filters.
+    assert.doesNotMatch(vancouver.match(/id="gling-static-city"[\s\S]*?<\/section>/)[0], /쪽 넘김/);
+    assert.match(vancouver, /id="gling-static-home"[\s\S]*?<\/section><nav id="gling-static-city-pages" aria-label="쪽 넘김"[^>]*>[\s\S]*?href="\/vancouver\/2"/);
     assert.equal(graphs(vancouver)[0]['@graph'][0]['@type'], 'CollectionPage');
     assert.equal(readFileSync(join(directory, 'vancouver', 'index.html'), 'utf8'), vancouver, '/vancouver/ serves the same page');
     const toronto = readFileSync(join(directory, 'toronto.html'), 'utf8');

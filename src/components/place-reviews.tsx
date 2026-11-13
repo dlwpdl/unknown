@@ -130,7 +130,8 @@ function ScopedPlaceReviews({ cityId, placeId, userId, viewport, writeRequest = 
         <ThemedText type="smallBold" themeColor="accent">{tr('새로고침')}</ThemedText>
       </Pressable>
     </View>
-    {rating && <View style={styles.rating}>
+    {/* With no rating yet the empty review card below says so once (QA C19-1). */}
+    {!!rating?.count && <View style={styles.rating}>
       <MerchantRatingBar score={rating.average} label={tr('글링')} />
       <ThemedText type="smallBold">{rating.average == null ? tr('아직 글링 평점이 없어요') : tr('{0}점 / 10점', rating.average.toFixed(1))}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{tr('글링 {0}개 평가', rating.count)}</ThemedText>

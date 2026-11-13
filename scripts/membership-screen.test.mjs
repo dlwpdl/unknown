@@ -118,6 +118,15 @@ test('membership keeps stories and direct chat free while preserving meetup and 
   assert.match(text(render()), /복원 확인 중/);
   assert.ok(button(render(),'스토어에서 대기 구매 취소·거절을 확인했어요'),'business approval pending must retain the same recovery controls');
   value.error = null; value.notice = null; value.pendingApproval = false;
+  // The server refills business posts at the UTC month start (business_membership_details_base); west of UTC that instant is still the day before.
+  const kindAt = states.indexOf('business'), zoneBefore = process.env.TZ;
+  states[kindAt + 2] = 'biz-a';
+  states[kindAt + 3] = { userId: 'member', value: { merchantId: 'biz-a', tier: 'free', expiresAt: null, productId: null, store: null, willRenew: null, canPurchase: false,
+    postLimit: 1, bumpLimit: 2, postsUsed: 0, bumpsUsed: 0, managedPostLimit: 0, managedBumpLimit: 0, managedPostsUsed: 0, managedBumpsUsed: 0, reportLimit: 0, reportsUsed: 0,
+    resetsAt: '2026-12-01T00:00:00+00:00', nextBumpAt: null } };
+  process.env.TZ = 'America/Vancouver';
+  try { assert.match(text(render()), /12월 1일에 글 수가 다시 채워져요/, 'the business refill reads as the 1st, the same rule as the personal tab'); }
+  finally { if (zoneBefore === undefined) delete process.env.TZ; else process.env.TZ = zoneBefore; states[kindAt + 2] = null; states[kindAt + 3] = null; }
   button(render(),'개인').props.onPress();
   assert.deepEqual(planOrder(render()), ['플러스', '프로', '프리미엄'], 'switching families preserves ascending general ordering');
   assert.match(t.write.listingNote, /14일 뒤 자동 마감/);

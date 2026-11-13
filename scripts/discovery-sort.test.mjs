@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { discoveryDistanceKm, preferVisitedPlaces, sortDiscoveryItems } from '../src/lib/discovery-sort.ts';
+import { discoveryDistanceKm, preferVisitedPlaces, sortDiscoveryItems, sortEventList } from '../src/lib/discovery-sort.ts';
 
 const origin = { latitude: 49.25, longitude: -122.86 };
 const place = (id, latitude, discount) => ({ id, source: 'place', sourceId: id, cityId: 'vancouver', title: id, category: 'dining', label: id, latitude, longitude: origin.longitude, price: null, webshopDiscount: discount });
@@ -54,4 +54,28 @@ test('places members rated or saved lead in server order, then Gling visits, and
   assert.deepEqual(preferVisitedPlaces(rows, []).map(row => row.place.id), ['visited', 'tower', 'aquarium', 'kimchi', 'cafe']);
   assert.deepEqual(preferVisitedPlaces(rows, ['not-in-catalog']).map(row => row.place.id), ['visited', 'tower', 'aquarium', 'kimchi', 'cafe']);
   assert.deepEqual(rows.map(row => row.place.id), ['tower', 'aquarium', 'kimchi', 'visited', 'cafe'], 'input order is untouched');
+});
+
+test('QA C22-3: two loaded event pages read as one list in city day and start order, each event id once', () => {
+  // Vancouver, Nov 13 evening (UTC-8): the pages overlap on one event and each comes back out of start order.
+  const event = (id, name, startsAt, localDate = '2026-11-13') => ({ id, name, startsAt, localDate });
+  const first = [event('ubc-bb', 'UBC Basketball', '2026-11-14T01:30:00Z'), event('alley', 'ALLEYCVT', '2026-11-14T02:30:00Z'),
+    event('boy', 'BOYNEXTDOOR', '2026-11-14T03:30:00Z'), event('canucks', 'Canucks', '2026-11-14T03:00:00Z')];
+  const second = [event('canucks', 'Canucks', '2026-11-14T03:00:00Z'), event('luzia', 'Luzia', '2026-11-14T20:00:00Z', '2026-11-14'),
+    event('alley-cyclops', 'ALLEYCVT w/ Cyclops', '2026-11-14T02:30:00Z'), event('tba', 'Time TBA', null), event('sassy', 'Sassy', '2026-11-14T02:00:00Z')];
+  const loaded = [...first, ...second];
+  const list = sortEventList(loaded);
+  assert.deepEqual(list.map(item => item.id), ['ubc-bb', 'sassy', 'alley', 'alley-cyclops', 'canucks', 'boy', 'tba', 'luzia']);
+  assert.equal(new Set(list.map(item => item.id)).size, list.length, 'no event id shows twice');
+  assert.deepEqual(list.filter(item => item.name.startsWith('ALLEYCVT')).map(item => item.name), ['ALLEYCVT', 'ALLEYCVT w/ Cyclops'], 'different ids with a similar name both stay');
+  assert.equal(loaded.length, 9, 'the loaded pages are left as they came');
+});
+
+test('final QA C22-3: rows follow the venue clock they show, even when the feed tags a Vancouver venue with Los Angeles time', () => {
+  // Real feed rows, Nov 13: BOYNEXTDOOR 19:30 tagged Vancouver (UTC-7) and ALLEYCVT w/ Cyclops 18:30 tagged Los Angeles (UTC-8) share one startsAt.
+  const event = (id, localTime, startsAt) => ({ id, localDate: '2026-11-13', localTime, startsAt });
+  const list = sortEventList([event('boy', '19:30:00', '2026-11-14T02:30:00Z'), event('cyclops', '18:30:00', '2026-11-14T02:30:00Z'),
+    event('sassy-la', '19:00:00', '2026-11-14T03:00:00Z'), event('wolf', '20:00:00', '2026-11-14T03:00:00Z'), event('luzia', '19:30:00', '2026-11-14T03:30:00Z'),
+    event('tba', null, null), event('canucks', '19:00:00', '2026-11-14T02:00:00Z')]);
+  assert.deepEqual(list.map(item => item.id), ['cyclops', 'canucks', 'sassy-la', 'boy', 'luzia', 'wolf', 'tba']);
 });

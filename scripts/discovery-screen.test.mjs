@@ -157,21 +157,23 @@ function requests({ deferFirst = false, filter = 'used', includeEvents = filter 
   const start = source.indexOf('    request.current?.abort();');
   const end = source.indexOf('  }, [key, isAuthed, filter, city.id, search, viewerScope, daysKey, includeEvents]);', start);
   assert.ok(start > 0 && end > start);
-  const calls = [], eventCalls = [], results = [], exports = {}, request = { current: null };
+  const calls = [], eventCalls = [], results = [], exports = {}, request = { current: null }, flight = { now: 0, most: 0 };
   let finishOld;
+  const asked = async query => { eventCalls.push(query); flight.most = Math.max(flight.most, ++flight.now); await tick(); flight.now--; };
   vm.runInNewContext(compile(`export function run(previous) { ${source.slice(start, end)}\n}`), {
     exports, request, tr, key: previous.key, AbortController, Promise, Map, Set, isAuthed: true, filter, includeEvents,
     city: { id: 'vancouver' }, search: '', viewerScope: 'viewer', daysKey, supabase: {}, morePending: { current: false },
     setResult: value => results.push(value), setPendingKey() {},
     EVENT_CITIES: { vancouver: 'Vancouver' }, discoveryEvent: (event, _city, _now, festival) => ({ id: `event:${event.id}`, category: festival ? 'festival' : 'event' }),
-    loadTicketmasterEvents: async query => { eventCalls.push(query); if (query.festival && festivalRow) return { events: festivalRow, hasMore: false }; if (query.festival || query.date && query.date === failDay) throw new Error('offline'); return { events: [{ id: `available${query.date ? `-${query.date}` : ''}` }], hasMore: false }; },
+    loadTicketmasterEvents: async query => { await asked(query); if (query.date && query.date === failDay) throw new Error('offline'); return { events: [{ id: `available${query.date ? `-${query.date}` : ''}` }], hasMore: false }; },
+    loadPublicFestivals: async (_client, cityId) => { await asked({ cityId, festival: true }); if (festivalRow) return { events: festivalRow }; throw new Error('offline'); },
     loadDiscoveryPosts: (...args) => {
       calls.push(args);
       if (deferFirst && calls.length === 1) return new Promise(resolve => { finishOld = resolve; });
       return Promise.resolve({ items: [{ id: 'post:new' }], cursor: null, hasMore: false });
     },
   });
-  return { load: exports.run, calls, eventCalls, results, request, finish: () => finishOld({ items: [{ id: 'post:stale' }], cursor: null, hasMore: false }) };
+  return { load: exports.run, calls, eventCalls, flight, results, request, finish: () => finishOld({ items: [{ id: 'post:stale' }], cursor: null, hasMore: false }) };
 }
 test('focus entry starts at page zero and cancels the request on blur', () => {
   const marker = '  useFocusEffect(useCallback(() => {';
@@ -220,28 +222,46 @@ test('selecting a pin cancels a pending GPS recenter request', () => {
   assert.equal(locationRevision.current, 2);
   assert.deepEqual(changes, { locating: false, error: '', id: 'post:chosen', center: null, sheet: 'closed' });
 });
+const settle = async () => { for (let i = 0; i < 20; i++) await tick(); };
 test('a failed festival supplement keeps available results and reports the partial failure', async () => {
-  const ui = requests({ filter: 'all' }); ui.load(null); await tick();
+  const ui = requests({ filter: 'all' }); ui.load(null); await settle();
   assert.deepEqual(Array.from(ui.results.at(-1).items, item => item.id), ['post:new', 'event:available']);
-  assert.equal(ui.results.at(-1).errors.length, 1);
+  assert.deepEqual(Array.from(ui.results.at(-1).errors), ['일부 페스티벌 정보를 불러오지 못했어요.']);
 });
 test('a failed day keeps the other dates in a seven-day event window and reports partial results', async () => {
   const days = ['2026-10-18', '2026-10-19', '2026-10-20'];
-  const ui = requests({ filter: 'festival', daysKey: days.join(','), failDay: days[1] });
-  ui.load(null); await tick();
+  const ui = requests({ filter: 'events', daysKey: days.join(','), failDay: days[1] });
+  ui.load(null); await settle();
   assert.deepEqual(Array.from(ui.results.at(-1).items, item => item.id), ['post:new', 'event:available-2026-10-18', 'event:available-2026-10-20']);
   assert.equal(ui.eventCalls.length, 4);
-  assert.equal(ui.results.at(-1).errors.length, 1);
+  assert.deepEqual(Array.from(ui.results.at(-1).errors), ['일부 행사 정보를 불러오지 못했어요.'], 'a missing day is not called a festival failure');
+});
+test('QA C22-1: the days of a week go one at a time, and 페스티벌 alone asks only for the festival row', async () => {
+  const days = ['2026-11-13', '2026-11-14', '2026-11-15', '2026-11-16', '2026-11-17', '2026-11-18', '2026-11-19'];
+  const week = requests({ filter: 'events', daysKey: days.join(','), festivalRow: [] });
+  week.load(null); await settle();
+  assert.equal(week.eventCalls.length, 8, 'no extra calls: seven days and the row, as before');
+  assert.equal(week.flight.most, 1, 'never two event requests at once');
+  assert.deepEqual(Array.from(week.results.at(-1).errors), []);
+  const festival = requests({ filter: 'festival', daysKey: days.join(','), festivalRow: [{ id: 'row' }] });
+  festival.load(null); await settle();
+  assert.deepEqual(festival.eventCalls.map(query => !!query.festival), [true], 'seven day pages that the chip would hide are not asked for');
+  assert.deepEqual(Array.from(festival.results.at(-1).items, item => item.id), ['post:new', 'event:row']);
+  assert.equal(festival.results.at(-1).eventMore, false);
+  assert.deepEqual(Array.from(festival.results.at(-1).errors), []);
+  const offline = requests({ filter: 'festival', daysKey: days.join(',') });
+  offline.load(null); await settle();
+  assert.deepEqual(Array.from(offline.results.at(-1).errors), ['행사 정보를 불러오지 못했어요.']);
 });
 test('페스티벌 holds exactly the events-screen festival row, by membership and not by name', async () => {
   const ui = requests({ filter: 'festival', festivalRow: [{ id: 'available' }, { id: 'pinned' }] });
-  ui.load(null); await tick();
+  ui.load(null); await settle();
   const categories = result => Object.fromEntries(Array.from(result.items, item => [item.id, item.category]));
   assert.deepEqual(categories(ui.results.at(-1)), { 'post:new': undefined, 'event:available': 'festival', 'event:pinned': 'festival' });
   assert.equal(ui.results.at(-1).errors.length, 0);
   // A later page re-lists a row event from a day page; it stays a festival because the row is kept, not refetched.
-  const more = requests({ filter: 'festival' });
-  more.load({ ...ui.results.at(-1), eventMore: true }); await tick();
+  const more = requests({ filter: 'all' });
+  more.load({ ...ui.results.at(-1), eventMore: true }); await settle();
   assert.ok(!more.eventCalls.some(query => query.festival));
   assert.equal(categories(more.results.at(-1))['event:available'], 'festival');
 });

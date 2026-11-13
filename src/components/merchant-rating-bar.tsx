@@ -23,7 +23,10 @@ export function GlingRatingIcon({ score }: { score: number | null }) {
 export function MerchantRatingBar({ score, reviewKind = 'usage', label }: { score: number | null; reviewKind?: MerchantReviewKind; label?: string }) {
   const { tr } = useLanguage();
   const theme = useTheme(), reducedMotion = useReducedMotion();
-  const iris = theme.background === Colors.dark.background ? IRIS.dark : IRIS.light;
+  const dark = theme.background === Colors.dark.background, iris = dark ? IRIS.dark : IRIS.light;
+  // The line colour vanished on white cards (QA H43-6), so light mode draws empty marks in 70% secondary grey (about 3:1 on white).
+  // Dark keeps line: a brighter grey there would read like the lowest filled iris colour.
+  const empty = dark ? theme.line : `${theme.textSecondary}B3`;
   const employment = reviewKind === 'employment';
   // Both kinds use five marks worth two points each; employment draws cells instead of sparkles.
   const pointsPerUnit = 2, unitCount = 5;
@@ -43,7 +46,7 @@ export function MerchantRatingBar({ score, reviewKind = 'usage', label }: { scor
     : <Text style={[styles.sparkle, { color }]} accessible={false}>✦</Text>;
   return <View style={[styles.bar, employment && styles.employmentBar]} accessible accessibilityLabel={tr("{0} {1}", (label ?? (employment ? tr('직원 후기') : tr('상품·서비스 후기'))), (rounded == null ? tr('점수 없음') : tr("평균 {0}점, 10점 만점", rounded.toFixed(1))))}>
     {progress.slice(0, unitCount).map((value, index) => <View key={index} style={[styles.unit, employment && styles.employmentUnit]} accessible={false}>
-      {shape(theme.line)}
+      {shape(empty)}
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.25, 1] }),
         transform: [{ translateY: value.interpolate({ inputRange: [0, 1], outputRange: [2, 0] }) }] }]}>
         <View testID={`merchant-rating-fill-${index}`} style={{ width: `${rounded == null ? 0 : Math.max(0, Math.min(100, Math.round((rounded / pointsPerUnit - index) * 100)))}%`, overflow: 'hidden', height: employment ? 10 : 14 }}>

@@ -169,7 +169,7 @@ test('native wrappers preserve callbacks and refs, record fixed IDs, and reset s
     if (name === 'react') return { useRef: value => ({ current: value }) };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) };
     if (name === 'react-native') return { Pressable: 'Pressable', ScrollView: 'ScrollView', FlatList: 'FlatList', SectionList: 'SectionList', Switch: 'Switch', Platform: { OS: 'android' } };
-    if (name === '@/hooks/use-theme') return { useTheme: () => ({ accent: 'accent', line: 'line' }) };
+    if (name === '@/hooks/use-theme') return { useTheme: () => ({ accent: 'accent', line: 'line', textSecondary: 'secondary' }) };
     if (name === '@/lib/behavior-analytics') return { behavior: (...args) => events.push(args), behaviorView: () => view, scrollThresholds };
     if (name === '@/components/flat-pressable') return { FlatPressable: 'FlatPressable' };
     throw new Error(name);
@@ -200,6 +200,7 @@ test('native wrappers preserve callbacks and refs, record fixed IDs, and reset s
   const toggle = exports.Switch({ analyticsId: 'alerts', value: true, trackColor: { true: 'teal' }, onValueChange: value => calls.push(value) });
   assert.deepEqual({ ...toggle.props.trackColor }, { false: 'line', true: 'accent' }, 'one look on every screen');
   assert.equal(toggle.props.thumbColor, '#FFFFFF');
+  assert.equal(exports.Switch({ analyticsId: 'alerts', value: false }).props.thumbColor, 'secondary', 'an Android off thumb stays visible on a white card');
   toggle.props.onValueChange(false);
   assert.deepEqual(events.at(-1), ['press', 'alerts.off']);
 });

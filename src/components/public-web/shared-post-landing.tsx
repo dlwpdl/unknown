@@ -1,4 +1,3 @@
-import { Asset } from 'expo-asset';
 import { useLocalSearchParams, usePathname } from 'expo-router';
 import Head from 'expo-router/head';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
@@ -9,7 +8,7 @@ import { MeetupInvite } from './meetup-invite';
 import { SharedPostArticle } from './shared-post-article';
 import { useReaderAnalytics } from './analytics';
 import { ControlMetrics, Typography } from '@/constants/design-system';
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
@@ -19,13 +18,13 @@ import { publicWebClient } from '@/lib/public-web-client';
 import { jsonLd, publicPostDescription, publicPostSchema, publicSiteName, PUBLIC_SITE } from '@/lib/public-seo';
 import { CITIES, TAGS } from '@/lib/mock';
 import { adoptStatic } from './static-slot';
+import { MeetupDetails } from './meetup-list';
+import { PublicFooter, PublicHeader, readerPalette } from './public-header';
 import { loadSharedLinkPost, loadSharedLinkPreview, type SharedLinkPreview } from '@/lib/shared-link-preview';
 import { sharedLinkTarget, SHARED_POST_RETURN_KEY } from '@/lib/sharing';
 import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
 
-const wordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark.png')).uri;
-const lightWordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark-light.png')).uri;
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 // The Play referrer names this landing; App Store campaign links need a provider token we don't have yet.
 const stores = { ios: 'https://apps.apple.com/ca/app/id6809273242', android: 'https://play.google.com/store/apps/details?id=com.dlwpdl.gling&referrer=utm_source%3Dweb%26utm_campaign%3Dshared-post' };
@@ -99,7 +98,7 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
   postId: string | null; preview: SharedLinkPreview | null; post?: Post | null; authenticated?: boolean; authPending?: boolean; status: Status;
   onRetry: () => void; onLogin: () => void; loginError?: string; invite?: boolean;
 }) {
-  const { language } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), ko = language === 'ko';
+  const { language, tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), ko = language === 'ko';
   const id = postId && UUID.test(postId) ? postId.toLowerCase() : null;
   const ready = status === 'ready' && !!id && (authenticated ? post?.id === id : preview?.id === id);
   const canonical = id ? `${PUBLIC_SITE}/posts/${id}${invite ? '?invite=1' : ''}` : null;
@@ -111,6 +110,15 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
     // Keep it on errors so a slow or failed fetch never leaves crawlers an empty page.
     if (status === 'ready' || status === 'unavailable') globalThis.document?.getElementById?.('gling-static-post')?.remove();
   }, [status]);
+  // The vetted preview has the schedule but no member count; the anonymous public post row the meetup list reads has it.
+  const guestMeetup = ready && !authenticated && preview?.kind === 'meetup' ? id : null;
+  const [guestRoom, setGuestRoom] = useState<{ id: string; room: Post['room'] } | null>(null);
+  useEffect(() => {
+    if (!guestMeetup) return;
+    let active = true;
+    void loadSharedLinkPost(publicWebClient, guestMeetup).then(value => { if (active && value?.room) setGuestRoom({ id: guestMeetup, room: value.room }); }).catch(() => {});
+    return () => { active = false; };
+  }, [guestMeetup]);
   const appUrl = id ? `gling://post/${id}${invite ? '?invite=1' : ''}` : null;
   const [copyMessage, setCopyMessage] = useState(''), [failedImage, setFailedImage] = useState<string | null>(null);
   const [store, setStore] = useState<'ios' | 'android' | null>(null);
@@ -135,11 +143,14 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
     : ko ? '로그인하거나 가입하면 웹에서 전체 글을 읽을 수 있어요.' : 'Sign in or sign up to read the full post on the web.';
   const title = authenticated ? post?.title : preview?.title;
   const cityId = CITIES.find(item => item.name === preview?.city)?.id ?? null;
+  // The server sends the Korean city and topic names; on screen they follow the visitor's language (the meetup topic reads like the Meetups menu).
+  const city = preview ? tr(preview.city) : '', topic = preview?.kind === 'meetup' && !ko ? 'Meetups' : preview?.label ? tr(preview.label) : '';
   const facts = preview ? { ...preview, cityId, tagSlug: TAGS.find(item => item.label === preview.label)?.slug ?? null, text: preview.preview || preview.teaser || '' } : null;
   const published = preview?.createdAt && Number.isFinite(Date.parse(preview.createdAt)) ? preview.createdAt : null;
   const palette = { ...Object.fromEntries(Object.entries(theme).map(([name, value]) => [`--${name}`, value])),
     '--shared-touch': `${ControlMetrics.touch}px`, '--shared-action': `${ControlMetrics.action}px`, '--shared-gap': `${Spacing.three}px`, '--shared-padding': `${Spacing.four}px`,
-    '--shared-title': `${Typography.sheetTitle.fontSize / 16}rem`, '--shared-menu': `${Typography.menu.fontSize / 16}rem` } as CSSProperties;
+    '--shared-title': `${Typography.sheetTitle.fontSize / 16}rem`, '--shared-menu': `${Typography.menu.fontSize / 16}rem`,
+    '--pm-small-gap': `${Spacing.two}px`, '--pm-meta': `${Typography.supporting.fontSize / 16}rem` } as CSSProperties;
   return <div className="shared-post-landing" lang={ko ? 'ko' : 'en'} style={palette}>
     <Head><title>{ready ? `${title} | ${ko ? '글링' : 'Gling'}` : ko ? '글링 공유 글' : 'Shared post | Gling'}</title>
       <meta property="og:site_name" content={publicSiteName(language)} /><meta property="og:locale" content={ko ? 'ko_KR' : 'en_CA'} />
@@ -153,22 +164,21 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
       {/* Prerendered /posts/:id pages keep their build-time graph (same builder, plus the topic hub link); only other addresses add it here. */}
       {indexable && !prerendered && <script type="application/ld+json">{jsonLd(publicPostSchema(facts!, null))}</script>}</Head>
     <style>{styles}</style>
-    <header><a data-analytics="shared.web.home" href="/" aria-label={ko ? '글링 홈' : 'Gling home'} onClick={() => play('selection')}>
-      <img src={theme === Colors.dark ? wordmark : lightWordmark} alt="gling" width={132} height={55} /></a><span>{ko ? '함께 나눈 이야기' : 'A story shared with you'}</span>
-      <a href="/merchant/" onClick={() => play('selection')}>{authenticated ? ko ? '비즈니스 관리' : 'Manage business' : ko ? '비즈니스 로그인' : 'Business sign-in'}</a></header>
+    <div className="reader" style={readerPalette}><PublicHeader cityId={cityId ?? post?.cityId} current={preview?.kind === 'meetup' || post?.room ? 'meetups' : undefined} /></div>
     <main>
       <div className="shared-story">
         {/* 글링 › city › topic: the prerendered page's own trail (it links the topic hub) or the same three steps built here. */}
         {prerendered ? <div className="shared-crumbs" ref={adoptStatic('gling-static-crumbs')} /> : ready && !!preview && <nav className="shared-crumbs" aria-label={ko ? '경로' : 'Breadcrumb'}>
-          <a href="/" onClick={() => play('selection')}>{ko ? '글링' : 'Gling'}</a>{cityId && <> › <a href={`/${cityId}`} onClick={() => play('selection')}>{preview.city}</a></>}{!!preview.label && <> › <a href={cityId ? `/${cityId}` : '/'} onClick={() => play('selection')}>{preview.label}</a></>}</nav>}
+          <a href="/" onClick={() => play('selection')}>{ko ? '글링' : 'Gling'}</a>{cityId && <> › <a href={`/${cityId}`} onClick={() => play('selection')}>{city}</a></>}{!!topic && <> › <a href={cityId ? `/${cityId}` : '/'} onClick={() => play('selection')}>{topic}</a></>}</nav>}
         {ready ? authenticated && post ? <SharedPostArticle post={post} /> : <section className="shared-preview" aria-label={ko ? '공개 미리보기' : 'Public preview'}>
           {!!preview!.imageUrl && preview!.imageUrl !== failedImage && <img className="shared-cover" src={preview!.imageUrl} alt="" referrerPolicy="no-referrer" onError={() => setFailedImage(preview!.imageUrl!)} />}
-          <div className="shared-preview-copy"><p className="shared-kicker">{[preview!.city, preview!.label].filter(Boolean).join(' · ')}{preview!.closed ? ko ? ' · 모집 마감' : ' · Closed' : ''}</p>
+          <div className="shared-preview-copy"><p className="shared-kicker">{[city, topic].filter(Boolean).join(' · ')}{preview!.closed ? ko ? ' · 모집 마감' : ' · Closed' : ''}</p>
             <h1>{preview!.title}</h1>
             {(published || Number.isSafeInteger(preview!.commentCount) || !!preview!.author) && <p className="shared-meta">{[
-              published && <time key="date" dateTime={new Date(published).toISOString()}>{new Date(published).toLocaleDateString(ko ? 'ko-KR' : 'en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}</time>,
+              published && <time key="date" dateTime={new Date(published).toISOString()}>{preview!.kind === 'meetup' ? ko ? '올린 날 ' : 'Posted ' : ''}{new Date(published).toLocaleDateString(ko ? 'ko-KR' : 'en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}</time>,
               Number.isSafeInteger(preview!.commentCount) && (ko ? `댓글 ${preview!.commentCount}개` : `${preview!.commentCount} comments`), preview!.author,
             ].filter(Boolean).flatMap((item, index) => index ? [' · ', item] : [item])}</p>}
+            {preview!.kind === 'meetup' && <div className="shared-meetup"><MeetupDetails room={{ ...preview!.schedule, ...(guestRoom?.id === id ? guestRoom.room : null) }} city={city} /></div>}
             {preview!.kind !== 'meetup' && !!(preview!.preview || preview!.teaser) && <p className="shared-teaser">{preview!.preview || preview!.teaser}</p>}
           </div></section>
           : <section className={id ? 'shared-state' : 'shared-state shared-invalid'} aria-live="polite" aria-busy={status === 'loading'}>
@@ -202,15 +212,14 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
           <p className="shared-copy-status" role="status" aria-live="polite">{copyMessage}</p><a className="shared-same-post" data-analytics="shared.web.same_post" href={canonical!} onClick={() => play('selection')}>{canonical}</a></div>
       </aside>}
     </main>
+    <div className="reader" style={readerPalette}><PublicFooter /></div>
   </div>;
 }
 
 const styles = `
 .shared-post-landing{min-height:100vh;background:var(--background);color:var(--text);font:1rem/1.5 system-ui,-apple-system,BlinkMacSystemFont,sans-serif;overflow-wrap:anywhere}
-.shared-post-landing *{box-sizing:border-box}.shared-post-landing header,.shared-post-landing main{width:min(100%,1088px);margin:0 auto;padding:var(--shared-padding)}
-.shared-post-landing header{display:flex;align-items:center;justify-content:space-between;gap:var(--shared-gap);flex-wrap:wrap;border-bottom:1px solid var(--line)}
-.shared-post-landing header a{display:inline-flex;min-height:var(--shared-touch);align-items:center}.shared-post-landing header img{object-fit:contain;max-width:100%}
-.shared-post-landing header span,.shared-post-landing p{color:var(--textSecondary)}.shared-post-landing main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px;padding-top:32px;padding-bottom:48px;align-items:start}
+.shared-post-landing *{box-sizing:border-box}.shared-post-landing>.reader{min-height:0;background:none}
+.shared-post-landing p{color:var(--textSecondary)}.shared-post-landing main{width:min(100%,1240px);margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px;padding:32px 32px 48px;align-items:start}
 .shared-post-landing h1{font-size:var(--shared-title);line-height:1.35;letter-spacing:-.5px;margin:0;color:var(--text)}.shared-post-landing h2{font-size:1.125rem;line-height:1.45;letter-spacing:-.4px;margin:0;color:var(--text)}
 .shared-post-landing p{margin:8px 0 0}.shared-story,.shared-preview,.shared-handoff,.shared-state,.shared-full{min-width:0}.shared-preview,.shared-handoff,.shared-state,.shared-full{border:1px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden}
 .shared-cover{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}.shared-preview-copy,.shared-full{padding:var(--shared-padding)}.shared-full .shared-cover{margin:20px 0;object-fit:contain;aspect-ratio:auto;max-height:640px}
@@ -223,5 +232,6 @@ const styles = `
 .shared-crumbs{margin:0 0 12px;font-size:.8125rem;color:var(--textSecondary)}.shared-crumbs a{color:var(--accent)}.shared-crumbs nav{margin:0!important}.shared-post-landing .shared-meta{margin:8px 0 0;font-size:.8125rem}
 .shared-post-landing a:active,.shared-post-landing button:active{opacity:.82}.shared-post-landing button:disabled{opacity:.6;cursor:default}.shared-post-landing a:focus-visible,.shared-post-landing button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 .shared-same-post{display:flex;align-items:center;min-height:var(--shared-touch);color:var(--accent);font-size:.8125rem;word-break:break-all;padding:8px 0}.shared-copy-status:empty{display:none}.shared-state{padding:32px}.shared-invalid{max-width:640px;margin:16px auto}.shared-state button{margin-top:20px}
-@media(max-width:767px){.shared-post-landing header span{display:none}.shared-post-landing header,.shared-post-landing main{padding:16px}.shared-post-landing main{grid-template-columns:minmax(0,1fr);gap:20px}.shared-preview-copy,.shared-full{padding:20px}.shared-handoff{padding:20px}.shared-state{padding:24px}}
+@media(max-width:767px){.shared-post-landing main{grid-template-columns:minmax(0,1fr);gap:20px;padding:20px 32px 40px}.shared-preview-copy,.shared-full{padding:20px}.shared-handoff{padding:20px}.shared-state{padding:24px}}
+@media(max-width:560px){.shared-post-landing main{padding:16px 20px 40px}}
 `;

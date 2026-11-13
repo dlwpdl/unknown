@@ -31,6 +31,7 @@ export function resetStartGuide() {
 type Icon = SymbolViewProps['name'];
 const WEB = Platform.OS === 'web';
 // 앱은 지도 탭·떠 있는 글쓰기 버튼(owner 2026-11-01 A안), 웹은 아래 탭에 글쓰기가 그대로이고 지도 탭이 없어요.
+// 떠 있는 버튼은 글자 없는 둥근 버튼이라 이름에 '+ 글쓰기' 글자를 쓰지 않아요(사장님 2026-11-13, QA B8-1).
 const TOUR: { icon: Icon; title: string; body: string }[] = [
   { icon: { ios: 'location', android: 'location_on', web: 'location_on' }, title: '위쪽 도시 이름', body: '눌러서 사는 도시로 바꿀 수 있어요. 글·모임·장소가 모두 그 도시 기준으로 바뀌어요.' },
   { icon: { ios: 'magnifyingglass', android: 'search', web: 'search' }, title: '맨 위 돋보기', body: '프로필 옆에 있어요. 글·모임·장소·비즈니스를 한 번에 찾아요. "원베드", "알바"처럼 짧게 쳐 보세요.' },
@@ -39,7 +40,7 @@ const TOUR: { icon: Icon; title: string; body: string }[] = [
   { icon: { ios: 'person.2', android: 'groups', web: 'groups' }, title: '아래 모임 탭', body: '이번 주 열리는 모임을 보고 바로 신청해요. 직접 모임을 열 수도 있어요.' },
   WEB
     ? { icon: { ios: 'square.and.pencil', android: 'edit_square', web: 'edit_square' }, title: '아래 글쓰기 탭', body: '궁금한 걸 묻거나 집·일자리·중고 글을 올려요. 주제를 고르면 맞는 칸이 나와요.' }
-    : { icon: { ios: 'plus', android: 'add', web: 'add' }, title: "'+ 글쓰기' 버튼", body: '홈 오른쪽 아래에 떠 있어요. 안내 카드 때문에 안 보이면 화면을 아래로 내려 보세요. 궁금한 걸 묻거나 집·일자리·중고 글을 올려요. 주제를 고르면 맞는 칸이 나와요.' },
+    : { icon: { ios: 'plus', android: 'add', web: 'add' }, title: '둥근 글쓰기 버튼', body: '홈 오른쪽 아래에 떠 있어요. 글을 내려 읽는 동안엔 잠깐 숨고, 위로 올리면 다시 나와요. 궁금한 걸 묻거나 집·일자리·중고 글을 올려요. 주제를 고르면 맞는 칸이 나와요.' },
   { icon: { ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' }, title: '채팅 · 알림', body: '채팅은 1:1 대화와 모임 단톡방, 알림은 내 글에 달린 댓글과 모임 소식이에요.' },
 ];
 

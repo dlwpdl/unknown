@@ -77,3 +77,16 @@ test('the member-visibility notice reads in English and opens the meetup profile
   assert.equal(en('meetup_visibility', body), 'People applying to public meetups you’re in can now see your name, one-line intro and interests. Your photos and answers stay hidden.');
   assert.equal(notificationRoute('/meetup-profile'), '/meetup-profile');
 });
+
+test('both server sign-in alerts read as one alert in the inbox, in Korean and English', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { koreanNotificationBody } = await import('../src/lib/notification-copy.ts');
+  const { uiEnglish } = await import('../src/i18n/ui-en.ts');
+  const sql = readFileSync(migration('0153_account_security_notifications'), 'utf8');
+  const device = /'new_device' then '([^']+)'/.exec(sql)[1], login = /'new_login' then '([^']+)'/.exec(sql)[1];
+  assert.notEqual(device, login, 'the server still writes two texts');
+  assert.equal(koreanNotificationBody({ kind: 'account_security', body: login }), device);
+  assert.equal(koreanNotificationBody({ kind: 'account_security', body: device }), device);
+  assert.equal(koreanNotificationBody({ kind: 'message', body: login }), login, 'only the security alert is rewritten');
+  assert.equal(uiEnglish[login], uiEnglish[device]);
+});

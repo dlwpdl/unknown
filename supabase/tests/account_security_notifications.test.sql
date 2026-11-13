@@ -70,7 +70,9 @@ insert into auth.sessions(id,user_id) values ('15390000-0000-4000-8000-000000000
 select private.flush_account_security_logins(now()+interval '2 minutes');
 select private.flush_account_security_logins(now()+interval '3 minutes');
 select is((select count(*)::int from public.notifications where user_id='15300000-0000-4000-8000-000000000001' and kind='account_security'),4,'unregistered genuine login receives one fallback alert');
-select ok(exists(select 1 from public.notifications where user_id='15300000-0000-4000-8000-000000000001' and body like '%새 로그인%'),'fallback never pretends to identify physical hardware');
+-- QA E31-1 (owner 2026-11-13 "서버까지 맞추기"): the fallback says the same one sentence as a new device, still without naming any hardware.
+select is((select count(distinct body)::int from public.notifications where user_id='15300000-0000-4000-8000-000000000001' and kind='account_security' and body like '%로그인%'),1,'every sign-in alert is one sentence');
+select ok(not exists(select 1 from public.notifications where user_id='15300000-0000-4000-8000-000000000001' and body like '%새 로그인이 확인됐어요%'),'the old fallback sentence is no longer written');
 update public.notification_preferences set account_security=false where user_id='15300000-0000-4000-8000-000000000001';
 select ok(private.push_notification_eligible((select id from private.push_devices where user_id='15300000-0000-4000-8000-000000000001'),(select id from public.notifications where user_id='15300000-0000-4000-8000-000000000001' and kind='account_security' limit 1)),'a stored security opt-out no longer cancels the push');
 update auth.users set encrypted_password='another-hash' where id='15300000-0000-4000-8000-000000000001';

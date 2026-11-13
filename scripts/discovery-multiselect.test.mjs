@@ -107,7 +107,7 @@ test('real map chips toggle a union and All clears category and date state', () 
   assert.equal(button('cafe').props.accessibilityState.selected, true);
   button('visited').props.onPress();
   assert.deepEqual(selected, ['cafe', 'visited']);
-  assert.equal(button('visited').props.accessibilityLabel, 'gling Visited');
+  assert.equal(button('visited').props.accessibilityLabel, '다녀온 곳', 'read aloud as the name it shows (QA C15-1)');
   assert.equal(button('top25').props.accessibilityState.selected, false);
   sort = 'discount';
   button('all').props.onPress();

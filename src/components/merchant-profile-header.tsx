@@ -46,11 +46,11 @@ export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props
         </Pressable>;
       })}</View>}
     </View>
-    <View style={[styles.banner, !banner && styles.bannerEmpty, { backgroundColor: theme.card }]}>
-      {banner ? <Image source={{ uri: banner }} transition={ControlMotion.settleMs} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("{0} 배너", (profile.name))}
+    {/* No banner, no box: an empty gling. strip still read as a missing picture (QA Q09 → H43-6). The editor asks for a banner on its own. */}
+    {banner && <View style={[styles.banner, { backgroundColor: theme.card }]}>
+      <Image source={{ uri: banner }} transition={ControlMotion.settleMs} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("{0} 배너", (profile.name))}
         onError={() => setFailedImage(value => ({ ...value, banner }))} />
-        : <ThemedText style={[styles.bannerG, { color: theme.accent }]} accessible={false}>gling.</ThemedText>}
-    </View>
+    </View>}
     {!!profile.services && <ThemedText>{profile.services}</ThemedText>}
     {!!profile.address && <ThemedText type="small" themeColor="textSecondary">{profile.address}</ThemedText>}
     {!!profile.links?.length && <View style={styles.links}>{profile.links.map(link => <Pressable key={link.url}
@@ -68,9 +68,6 @@ const styles = StyleSheet.create({
   links: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   link: { minHeight: 44, maxWidth: '100%', justifyContent: 'center', paddingHorizontal: 14, borderWidth: 1, borderRadius: 12 },
   banner: { width: '100%', aspectRatio: 1.18, maxHeight: 360, borderRadius: 14, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
-  // Without a banner the gling. mark is a short strip, not a third of the screen (QA Q09).
-  bannerEmpty: { aspectRatio: 3 },
-  bannerG: { fontSize: 38, lineHeight: 44, fontWeight: '800', opacity: 0.35 },
   identity: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'center' },
   avatar: { width: 46, height: 46, borderRadius: 10, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   name: { flexGrow: 1, flexShrink: 1, flexBasis: 160, gap: 9 },

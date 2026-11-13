@@ -8,7 +8,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 
 import { ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
-import { ControlMotion } from '@/constants/design-system';
+import { ControlMotion, ControlStyles, IconSize, controlPresentation } from '@/constants/design-system';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
@@ -141,8 +141,10 @@ export function ReportSheet({
               <ThemedText type="subtitle">{t.report.title(reportedNickname)}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">{t.report.body}</ThemedText>
             </View>
-            <Pressable analyticsId="components_report-sheet.pressable.2" onPress={() => { play('selection'); close(); }} accessibilityRole="button" hitSlop={12} style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}>
-              <ThemedText type="smallBold" themeColor="textSecondary">{t.report.close}</ThemedText>
+            {/* The same X as every other sheet (QA E32-2). */}
+            <Pressable analyticsId="components_report-sheet.pressable.2" onPress={() => { play('selection'); close(); }} accessibilityRole="button" accessibilityLabel={t.report.close}
+              style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
+              <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={IconSize.inline} tintColor={theme.textSecondary} />
             </Pressable>
           </View>
 

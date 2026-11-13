@@ -24,7 +24,7 @@ export function LanguageCard({ compact = false }: { compact?: boolean } = {}) {
   ];
   const close = () => { play('selection'); setOpen(false); };
   const panel = <View style={styles.section}>
-    <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{t.language.title}</ThemedText>
+    <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={!compact && styles.title}>{t.language.title}</ThemedText>
     <View accessibilityRole="radiogroup" accessibilityLabel={t.language.title} style={clayBox ? undefined : [styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
       {clayBox && <ClayBoxFill kind="tile" />}
       <View style={clayBox ? styles.clayRows : undefined}>
@@ -41,7 +41,7 @@ export function LanguageCard({ compact = false }: { compact?: boolean } = {}) {
       </Pressable></View>)}
       </View>
     </View>
-    <ThemedText type="small" themeColor="textSecondary">{t.language.note}</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary" style={!compact && styles.inset}>{t.language.note}</ThemedText>
     {isSaving && <ThemedText type="small" accessibilityLiveRegion="polite">{t.language.saving}</ThemedText>}
     {failed && <ThemedText type="small" accessibilityRole="alert">{t.language.saveError}</ThemedText>}
   </View>;
@@ -74,6 +74,8 @@ export function LanguageCard({ compact = false }: { compact?: boolean } = {}) {
 const styles = StyleSheet.create({
   clayRows: { borderRadius: 16, overflow: 'hidden' },
   clayLine: { height: StyleSheet.hairlineWidth, marginHorizontal: Spacing.three },
+  // In Settings the title lines up with the other section titles there (settings.tsx sectionTitle, QA H43-4).
+  title: { marginTop: Spacing.three, marginLeft: Spacing.one }, inset: { marginLeft: Spacing.one },
   section: { gap: Spacing.two }, card: { borderWidth: 1, borderRadius: 16, overflow: 'hidden' },
   row: { minHeight: 48, paddingVertical: 12, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   label: { flex: 1, flexShrink: 1 },

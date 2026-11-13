@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
-import { DISCOVERY_CATEGORIES, discoveryPlace, mergeCityTop25 } from '../src/lib/discovery.ts';
+import { DISCOVERY_CATEGORIES, discoveryKind, discoveryPlace, mergeCityTop25 } from '../src/lib/discovery.ts';
 import * as maps from '../src/lib/post-maps.ts';
 
 const source = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
@@ -16,7 +16,7 @@ function render(item) {
     exports, require: () => ({ jsx, jsxs: jsx }), useTheme: () => ({}), useLanguage: () => ({ tr: value => value, locale: 'ko-KR' }),
     useContentTranslation: () => ({ display: { title: item.post?.title ?? item.title } }), visibleTranslationSource: () => ({}),
     postPublicAddress: maps.postPublicAddress, getPostImageSource: post => post.imageUris?.[0] ? { uri: post.imageUris[0] } : undefined,
-    DISCOVERY_CATEGORIES, hasAdLabel: () => false, located: value => value.latitude !== null && value.longitude !== null,
+    DISCOVERY_CATEGORIES, discoveryKind, hasAdLabel: () => false, located: value => value.latitude !== null && value.longitude !== null,
     eventTime: () => '오늘 18:00', eventPriceLabel: () => 'CA$25', styles: {}, StyleSheet: { absoluteFill: {} }, View: 'View', Pressable: 'Pressable', Image: 'Image', CityPlacePhoto: 'CityPlacePhoto', Top50Badge: 'Top50Badge', SymbolView: 'SymbolView', ThemedText: 'Text', PostAdLabel: 'AdLabel', TranslationControl: 'Translation',
   });
   return exports.render({ item, viewerScope: 'test', onOpen() {} });

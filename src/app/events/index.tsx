@@ -16,6 +16,7 @@ import { ControlMotion } from '@/constants/design-system';
 import { FeedAd } from '@/components/feed-ad';
 import { adsSupported } from '@/lib/ads';
 import { contentAdPosition } from '@/lib/content-ad-placement';
+import { sortEventList } from '@/lib/discovery-sort';
 import { useTheme } from '@/hooks/use-theme';
 import { useCommunityCity } from '@/lib/community-city';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -56,7 +57,7 @@ function EventListScreen() {
   const requestKey = `${city.id}:${category}:${date}:${page}:${attempt}`;
   const current = result?.key === requestKey ? result : null;
   const data = current?.data, error = current?.error ?? '';
-  const visibleEvents = (data?.events ?? []).filter(event => eventMatchesPriceFilter(event, priceFilter));
+  const visibleEvents = sortEventList((data?.events ?? []).filter(event => eventMatchesPriceFilter(event, priceFilter)));
   const filterCount = Number(category !== 'all') + Number(priceFilter !== 'all');
   const loading = supported && !current;
   const calendarKey = `${city.id}:${category}:${calendarMonth}`;

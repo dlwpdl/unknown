@@ -2,7 +2,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
 import { useRouter } from 'expo-router';
 import { SymbolView } from '@/components/symbol-view';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { ClayCoinFill, ClayIcon, ClayPhoto, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
@@ -22,10 +22,12 @@ export function ProfileAvatarButton({ enableBusinessSwitch = true, onBusinessSwi
   const { play } = useInteractionFeedback();
   const business = useChatIdentity();
   const clay = useClay();
+  // The name takes up to 45% of the screen (240 at most), so a 411pt phone shows 'Gling App Review' whole and a 320pt one still leaves the city its room (QA G38-1).
+  const nameWidth = Math.min(240, useWindowDimensions().width * 0.45);
   if (Platform.OS === 'web') return null;
   return (
     <View style={styles.row}>{business ? <Pressable analyticsId="components_profile-avatar-button.pressable.1" onPress={() => { play('selection'); router.push('/profile'); }} accessibilityRole="button" accessibilityLabel={tr('{0} 이름으로 쓰는 중', business.name)} accessibilityHint={t.tabs.profile}
-      style={({ pressed }) => [styles.business, { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
+      style={({ pressed }) => [styles.business, { maxWidth: nameWidth, backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement }]}>
       <SymbolView name={{ ios: 'storefront', android: 'storefront', web: 'storefront' }} size={16} tintColor={theme.accent} />
       <ThemedText type="smallBold" numberOfLines={1} style={styles.businessName}>{business.name}</ThemedText>
     </Pressable> : <View style={styles.glass}>
@@ -45,7 +47,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   glass: { borderRadius: ControlStyles.icon.borderRadius },
   button: ControlStyles.icon,
-  business: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, maxWidth: 150, borderRadius: 18, paddingHorizontal: 12 },
+  business: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, borderRadius: 18, paddingHorizontal: 12 },
   businessName: { flexShrink: 1 },
   avatar: { width: IconSize.avatar, height: IconSize.avatar, borderRadius: IconSize.avatar / 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
 });

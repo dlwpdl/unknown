@@ -48,7 +48,8 @@ export function LanguagePreferenceProvider({ children, initialLanguage }: PropsW
   }, []);
 
   useEffect(() => {
-    if (Platform.OS === 'web' && typeof document !== 'undefined') document.documentElement.lang = selection.language;
+    // A page written in one language (/en marks its <html data-fixed-lang>) keeps that lang whatever the visitor's UI language is.
+    if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.documentElement.dataset?.fixedLang) document.documentElement.lang = selection.language;
   }, [selection.language]);
 
   useEffect(() => {

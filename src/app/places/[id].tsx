@@ -46,7 +46,8 @@ import { CITIES } from '@/lib/mock';
 import { merchantMapsUrl, merchantPhoneUrl, safeMerchantSourceUrl } from '@/lib/merchant-source';
 import { useAuth } from '@/lib/auth';
 import { recordProductEvent } from '@/lib/product-analytics';
-import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, directionsUrl, placeCategory, placeMapRoute, priceSymbol } from '@/lib/discovery';
+import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, mapAppUrl, placeCategory, placeMapRoute, priceSymbol } from '@/lib/discovery';
+import { publicPlaceId } from '@/lib/public-seo';
 import { supabase } from '@/lib/supabase';
 import { INSTAGRAM_LINK_SVG, instagramPostLink } from '../../../supabase/functions/_shared/post-links';
 
@@ -80,7 +81,9 @@ export default function PlaceDetailScreen() {
   const theme = useTheme(), clay = useClay(), clayBox = useClayBox(), router = useRouter(), { play } = useInteractionFeedback();
   const reduced = useReducedMotion();
   let found: CityPlace | undefined;
-  try { if (city) found = getCityPlaces(city.id).find(item => item.id === id) ?? (typeof id === 'string' ? deliveryPartnerPlace(city.id, id) : undefined); } catch { /* Invalid/missing catalog stays an explicit missing-place state. */ }
+  // Links from the public place page carry its slug (node-123); the catalog keys the place osm:node:123.
+  const placeId = typeof id === 'string' ? publicPlaceId(id) : undefined;
+  try { if (city && placeId) found = getCityPlaces(city.id).find(item => item.id === placeId) ?? deliveryPartnerPlace(city.id, placeId); } catch { /* Invalid/missing catalog stays an explicit missing-place state. */ }
   const place = found, website = place?.website ? safeMerchantSourceUrl(place.website) : null;
   const phoneUrl = place?.phone ? merchantPhoneUrl(place.phone) : null, instagram = place?.instagram ? instagramPostLink(place.instagram) : null;
   const targetId = place?.id, loadedCityId = place?.cityId;
@@ -213,7 +216,7 @@ export default function PlaceDetailScreen() {
           {/* Business-linked places redirect to the company page, so only a booking-site website can show here. */}
           <ReservationButton website={place.website} />
         </View>
-        {mapsUrl && <PostMapLink url={mapsUrl} label={place.name} onOpened={() => record('place_directions')} />}
+        {mapsUrl && <PostMapLink url={mapsUrl} label={place.name} pin={place} onOpened={() => record('place_directions')} />}
         {/* The legacy analytics target distinguishes this shared action by its screen. 모임 is one list row now; the page's filled button is 글쓰기 below. */}
         {place.id.startsWith('osm:') && <ListCard>
           <ListRow analyticsId="ticketmaster.meetup.find" title={language === 'en' ? 'Find a meetup here' : '이곳에 갈 모임 보기'}
@@ -256,8 +259,8 @@ export default function PlaceDetailScreen() {
       ...(place.address ? [{ key: 'copy', analyticsId: 'post.share.copy', label: tr("주소 복사"), hint: place.address, icon: { ios: 'doc.on.doc', android: 'content_copy', web: 'content_copy' } as const,
         onPress: copyAddress }] : []),
       ...(Platform.OS === 'ios' ? [{ key: 'apple', analyticsId: 'company.location', label: tr("Apple 지도"), icon: { ios: 'map', android: 'map', web: 'map' } as const,
-        onPress: () => openMap(`https://maps.apple.com/?daddr=${place.latitude},${place.longitude}`) }] : []),
-      { key: 'google', analyticsId: 'discovery.google', label: tr("Google 지도"), icon: { ios: 'map', android: 'map', web: 'map' }, onPress: () => openMap(directionsUrl(place, 'google')) },
+        onPress: () => openMap(mapAppUrl({ cityId: place.cityId, latitude: place.latitude, longitude: place.longitude, place }, 'apple')) }] : []),
+      { key: 'google', analyticsId: 'discovery.google', label: tr("Google 지도"), icon: { ios: 'map', android: 'map', web: 'map' }, onPress: () => openMap(mapAppUrl({ cityId: place.cityId, latitude: place.latitude, longitude: place.longitude, place }, 'google')) },
     ]} />}
   </SafeAreaView></KeyboardScreen>;
 }

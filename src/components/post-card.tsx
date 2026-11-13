@@ -13,6 +13,7 @@ import { PostAdLabel } from '@/components/post-ad-label';
 import { PostBody } from '@/components/post-body';
 import { PostMapLink } from '@/components/post-map-link';
 import { PostAttachmentLink } from '@/components/post-attachment-link';
+import { dealLabel } from '@/lib/listing-details';
 import { postInfoParts } from '@/lib/post-info';
 import { CITIES } from '@/lib/mock';
 import { TranslationControl } from '@/components/content-translation';
@@ -81,7 +82,7 @@ export function PostCard({
   postDetail?: boolean; // 일반 글 상세: 장소·링크는 정보 카드, 본문은 문단, 출처는 접고, 반응은 하단 바로 옮긴다
   feed?: boolean; // 오늘 탭 목록 (owner 2026-11-03): 프로필 줄 → 짧은 글 → 장소 카드 → 넘기는 사진 → 공감·댓글·공유·저장(오른쪽 끝). ··· 은 남의 글 숨기기·신고, 내 글 고치기·삭제 (owner 2026-11-04)
 }) {
-  const { tr, t, locale: appLocale } = useLanguage();
+  const { tr, t, locale: appLocale, language } = useLanguage();
   const joinLabel = joinStatus === 'pending' ? tr('승인 대기') : joinStatus === 'approved' ? tr('참여 승인') : t.feed.joinRoom;
   const theme = useTheme(), router = useRouter();
   const clay = useClay(), clayBox = useClayBox();
@@ -118,6 +119,8 @@ export function PostCard({
   const [photoPage, setPhotoPage] = useState(0), [photoRowWidth, setPhotoRowWidth] = useState(0), [failedSlides, setFailedSlides] = useState<string[]>([]);
   const isMeetup = post.tag.kind === 'meetup';
   const isListing = post.kind === 'listing';
+  // 칸이 있는 글은 그 글의 종류(구인·렌트 내놓음·팝니다)로 적는다. '구해요·팔아요'로는 구인·렌트 글이 중고거래처럼 읽힌다(QA H43-7·B12-2). 피드 카드와 상세가 같은 이름을 쓴다.
+  const listingKind = post.listingDetails ? dealLabel(post.listingDetails, language) : t.detail.listingBadge;
   const viewerScope = isAuthed ? me.id : 'guest';
   const photoSource = getPostImageSource(post, viewerScope);
   const firstPhoto = photoSource?.uri;
@@ -230,7 +233,7 @@ export function PostCard({
     if (!isAuthed) return promptLogin(tr('글을 숨기려면 로그인이 필요해요'));
     try {
       await setPostHidden(supabase, me.id, post.id, hidden);
-      if (hidden) Alert.alert(tr('글을 숨겼어요'), undefined, [
+      if (hidden) Alert.alert(tr('글을 숨겼어요'), tr('이제 내 화면에 이 글이 안 보여요.'), [
         { text: tr('되돌리기'), onPress: () => { play('selection'); void hidePost(false); } },
         { text: tr('확인'), onPress: () => play('selection') },
       ]);
@@ -275,6 +278,20 @@ export function PostCard({
     </View>
   );
   const sheets = <>
+    {/* 남의 글(운영 캐릭터·비즈니스 글 포함)은 이 글 숨기기 → 신고. 피드 카드와 글 상세의 ··· 가 같은 메뉴다 (QA B9-1). */}
+    {menuOpen && <MeetupManageSheet visible title={tr('글 메뉴')} onClose={() => setMenuOpen(false)} actions={mine ? [
+      { key: 'edit', analyticsId: 'components_post-detail.pressable.14', label: tr(post.room ? '소개·사진 수정' : '글·사진 수정'), onPress: editPost,
+        icon: { ios: 'pencil', android: 'edit', web: 'edit' } },
+      { key: 'delete', analyticsId: 'post.manage.delete', label: tr('글 삭제'), danger: true, onPress: () => setDeleteOpen(true),
+        icon: { ios: 'trash', android: 'delete', web: 'delete' } },
+    ] : [{ key: 'hide', analyticsId: 'post.manage.hide', label: tr('이 글 숨기기'), hint: tr('내 화면에서만 사라지고, 신고는 가지 않아요.'), onPress: () => void hidePost(),
+      icon: { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' } },
+    { key: 'report', analyticsId: 'components_post-card.pressable.5', label: t.report.title(post.business?.name ?? post.author.nickname), danger: true,
+      icon: { ios: 'flag', android: 'flag', web: 'flag' }, onPress: () => { if (isAuthed) setReportOpen(true); else promptLogin(t.auth.reasonReport); } }]} />}
+    {deleteOpen && <MeetupManageSheet visible title={tr('이 글을 삭제할까요?')} onClose={() => setDeleteOpen(false)} actions={[
+      { key: 'delete-confirm', analyticsId: 'components_post-detail.pressable.15', label: tr('글 삭제'), hint: tr('삭제한 글은 되돌릴 수 없어요. 달린 댓글도 함께 보이지 않게 됩니다.'), danger: true,
+        icon: { ios: 'trash', android: 'delete', web: 'delete' }, onPress: () => void removePost() },
+    ]} />}
     {shareOpen && <PostShareSheet key={`${post.id}:${me.id}`} post={post} visible={shareOpen} onClose={() => setShareOpen(false)}
       onShared={() => { void recordPostShare(supabase, post.id).then(setShareCount).catch(() => {}); }} />}
     <ReportSheet
@@ -288,9 +305,11 @@ export function PostCard({
     />
   </>;
 
-  const listingLine = isListing && !beforeBody && (post.price != null || (post.listingStatus && post.listingStatus !== 'open')) && (
+  // 본문 첫 줄(옛 앱도 읽는 요약)이 이미 가격을 말하면 카드 아래에서 또 쓰지 않는다(QA B8-2).
+  const price = post.listingDetails?.lead && post.body.startsWith(post.listingDetails.lead) ? null : post.price;
+  const listingLine = isListing && !beforeBody && (price != null || (post.listingStatus && post.listingStatus !== 'open')) && (
     <View style={styles.listingLine}>
-      {post.price != null && <ThemedText style={styles.price}>{t.detail.price(post.price)}</ThemedText>}
+      {price != null && <ThemedText style={styles.price}>{t.detail.price(price)}</ThemedText>}
       {post.listingStatus && post.listingStatus !== 'open' && (
         <ThemedText type="small" themeColor="textSecondary">{t.detail.listingStatus[post.listingStatus]}</ThemedText>
       )}
@@ -299,7 +318,7 @@ export function PostCard({
 
   if (feed && !meetupDetail && !postDetail) {
     const name = post.business?.name ?? post.author.nickname;
-    const kind = post.business ? tr('비즈니스') : post.room ? tr('모임 호스트') : `${tr(post.tag.label)}${isListing ? ` · ${t.detail.listingBadge}` : ''}`;
+    const kind = post.business ? tr('비즈니스') : post.room ? tr('모임 호스트') : `${tr(post.tag.label)}${isListing ? ` · ${listingKind}` : ''}`;
     const time = `${post.createdAt ? relativeTime(post.createdAt, undefined, appLocale) : post.createdAtLabel ?? ''}${post.bumpedAt ? ` · ${t.detail.bumpedLabel}` : ''}`;
     const title = translation.display.title ?? post.title;
     const logo = post.business?.avatarUri && failedBusinessLogo !== post.business.avatarUri ? post.business.avatarUri : null;
@@ -411,20 +430,6 @@ export function PostCard({
             <ClayIcon clay={savedOn ? 'bookmark_on' : 'bookmark'} claySize={26} name={{ ios: savedOn ? 'bookmark.fill' : 'bookmark', android: savedOn ? 'bookmark_added' : 'bookmark', web: savedOn ? 'bookmark_added' : 'bookmark' }} size={IconSize.toolbar} tintColor={savedOn ? theme.accent : theme.textSecondary} />
           </Pressable>
         </View>
-        {/* 남의 글(운영 캐릭터·비즈니스 글 포함)은 이 글 숨기기 → 신고. 상세의 신고 버튼은 그대로다. */}
-        {menuOpen && <MeetupManageSheet visible title={tr('글 메뉴')} onClose={() => setMenuOpen(false)} actions={mine ? [
-          { key: 'edit', analyticsId: 'components_post-detail.pressable.14', label: tr(post.room ? '소개·사진 수정' : '글·사진 수정'), onPress: editPost,
-            icon: { ios: 'pencil', android: 'edit', web: 'edit' } },
-          { key: 'delete', analyticsId: 'post.manage.delete', label: tr('글 삭제'), danger: true, onPress: () => setDeleteOpen(true),
-            icon: { ios: 'trash', android: 'delete', web: 'delete' } },
-        ] : [{ key: 'hide', analyticsId: 'post.manage.hide', label: tr('이 글 숨기기'), hint: tr('내 화면에서만 사라지고, 신고는 가지 않아요.'), onPress: () => void hidePost(),
-          icon: { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' } },
-        { key: 'report', analyticsId: 'components_post-card.pressable.5', label: t.report.title(name), danger: true,
-          icon: { ios: 'flag', android: 'flag', web: 'flag' }, onPress: () => { if (isAuthed) setReportOpen(true); else promptLogin(t.auth.reasonReport); } }]} />}
-        {deleteOpen && <MeetupManageSheet visible title={tr('이 글을 삭제할까요?')} onClose={() => setDeleteOpen(false)} actions={[
-          { key: 'delete-confirm', analyticsId: 'components_post-detail.pressable.15', label: tr('글 삭제'), hint: tr('삭제한 글은 되돌릴 수 없어요. 달린 댓글도 함께 보이지 않게 됩니다.'), danger: true,
-            icon: { ios: 'trash', android: 'delete', web: 'delete' }, onPress: () => void removePost() },
-        ]} />}
         {sheets}
       </View>
     );
@@ -475,9 +480,9 @@ export function PostCard({
           </Pressable>
           {!mine && (
             <Pressable lens analyticsId="components_post-card.pressable.5"
-              onPress={() => { play('reaction'); if (isAuthed) setReportOpen(true); else promptLogin(t.auth.reasonReport); }}
+              onPress={() => { play('selection'); setMenuOpen(true); }}
               accessibilityRole="button"
-              accessibilityLabel={t.report.title(post.business?.name ?? post.author.nickname)}
+              accessibilityLabel={tr('글 메뉴')}
               style={({ pressed }) => [styles.more, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent', transform: [{ scale: pressed ? 0.88 : 1 }] }]}>
               <ClayIcon
                 clay="more"
@@ -500,7 +505,7 @@ export function PostCard({
           {meetupDetail ? meetupDetail.beforeTitle : <ThemedText
             type="smallBold"
             style={[styles.category, { color: isMeetup ? theme.accent : theme.textSecondary }]}>
-            {tr(post.tag.label)}{isListing ? ` · ${t.detail.listingBadge}` : ''}
+            {tr(post.tag.label)}{isListing ? ` · ${listingKind}` : ''}
           </ThemedText>}
           <ThemedText accessibilityRole={meetupDetail ? 'header' : undefined} style={[styles.title, flat && !onPress && styles.detailTitle, meetupDetail && Typography.sheetTitle]}>
             {translation.display.title}

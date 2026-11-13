@@ -9,6 +9,7 @@ import { uniqueHashtags } from '../src/lib/hashtags.ts';
 import { count, t } from '../src/i18n/ko.ts';
 import { googleMapsPin, googleMapsUrl, postLocationUrl, postMapBody } from '../src/lib/post-maps.ts';
 import { postInfoParts } from '../src/lib/post-info.ts';
+import { dealLabel } from '../src/lib/listing-details.ts';
 import { parseMeetupSections } from '../src/lib/meetup-sections.ts';
 import { translationSource } from './test-meetup-source-imports.mjs';
 import { photoCreditNames, splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
@@ -79,7 +80,7 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     '../../supabase/functions/_shared/post-links': postLinks,
     '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
     '@/components/post-attachment-link': { PostAttachmentLink: 'PostAttachmentLink' },
-    '@/lib/post-info': { postInfoParts }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' },
+    '@/lib/post-info': { postInfoParts }, '@/lib/listing-details': { dealLabel }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' },
     '@/lib/mock': { CITIES: [] },
     '@/components/post-pin-map': { PostPinMap: 'PostPinMap' },
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' },
@@ -340,7 +341,7 @@ test('Today card ··· 이 글 숨기기 on someone else\'s post: saves the hid
   assert.deepEqual(card.hiddenCalls, [['viewer-a', 'theirs-1', true]]);
   const [title, body, buttons] = card.alerts.at(-1);
   assert.equal(title, '글을 숨겼어요');
-  assert.equal(body, undefined);
+  assert.equal(body, '이제 내 화면에 이 글이 안 보여요.', 'a short line fills the alert (QA 안드로이드 B8-2)');
   assert.deepEqual(Array.from(buttons, button => button.text), ['되돌리기', '확인']);
   buttons[0].onPress(); await settle();
   assert.deepEqual(card.hiddenCalls.at(-1), ['viewer-a', 'theirs-1', false], '되돌리기 un-hides the same post');
@@ -364,6 +365,16 @@ test('Today card ··· 이 글 숨기기 on someone else\'s post: saves the hid
   hide().onPress(); await settle();
   assert.deepEqual(card.logins, ['글을 숨기려면 로그인이 필요해요']);
   assert.equal(card.hiddenCalls.length, calls, 'a guest is asked to sign in first');
+});
+
+test('Today card names a listing by its own kind, the same as the post page (QA B12-2)', () => {
+  const card = cardRenderer();
+  const textOf = node => [node?.props?.children].flat(Infinity).filter(child => typeof child === 'string').join('');
+  const header = listingDetails => nodes(card.render({ post: { id: 'rent-1', cityId: 'vancouver', kind: 'listing', title: '1베드 렌트', body: '12월 입주', author: { id: 'author', nickname: '수달' },
+    tag: { kind: 'post', label: '부동산' }, listingDetails, likes: 0, saves: 0, comments: 0, views: 0, createdAtLabel: '방금' }, feed: true, flat: true, onPress() {} }))
+    .filter(node => node.type === 'ThemedText').map(textOf);
+  assert.ok(header({ type: 'housing', deal: 'rent_offer' }).includes('· 부동산 · 렌트 내놓음 · 방금'));
+  assert.ok(header(undefined).includes(`· 부동산 · ${t.detail.listingBadge} · 방금`), 'an old post without the listing fields keeps the general name');
 });
 
 test('Today card: a post without photos stays a small text card, and 더 보기 shows only when the text is cut', () => {
@@ -569,7 +580,8 @@ test('profile logo/banner failures retain only the business fallback and recover
  assert.equal(bannerBox().aspectRatio,1.18,'a real banner keeps its tall frame');
  let images=nodes(render()).filter(n=>n.type==='Image');assert.equal(images.length,2);
  images.forEach(n=>n.props.onError());assert.equal(nodes(render()).filter(n=>n.type==='Image').length,0);
- assert.equal(bannerBox().aspectRatio,3,'the gling. placeholder is a short strip (QA Q09)');
+ assert.ok(!nodes(render()).some(n=>[n.props?.style].flat().some(s=>s?.aspectRatio)),'a missing banner leaves no empty gling. box (QA H43-6)');
+ assert.ok(!nodes(render()).some(n=>n.props?.children==='gling.'));
  assert.ok(nodes(render()).some(n=>n.type==='ThemedText'&&n.props.children==='지'));
  profile.avatarUri='new-logo';assert.equal(nodes(render()).find(n=>n.type==='Image').props.source.uri,'new-logo');
 });
@@ -619,4 +631,18 @@ test('a place picked from the Gling map while writing gets the place card in the
       assert.equal(tree.find(node => node.type === 'PostMapLink')?.props.url, moved);
     }
   } finally { pinPlaces = {}; }
+});
+
+test('글 상세 ··· 도 피드 카드처럼 이 글 숨기기 → 신고 메뉴를 연다 (QA B9-1)', () => {
+  const card = cardRenderer();
+  const props = { post: { id: 'detail-menu', title: '제목', body: '본문', cityId: 'vancouver',
+    author: { id: 'neighbor', nickname: '하늘' }, tag: { kind: 'post', label: '일상' }, likes: 0, saves: 0, comments: 0, views: 1 }, postDetail: true };
+  const more = nodes(card.render(props)).find(node => node.props?.accessibilityLabel === '글 메뉴');
+  assert.ok(more, 'the detail ··· is named as the post menu');
+  more.props.onPress();
+  const tree = nodes(card.render(props));
+  assert.equal(tree.find(node => node.type === 'ReportSheet').props.visible, false, 'the report form waits until 신고 is chosen');
+  const menu = tree.find(node => node.type === 'MeetupManageSheet');
+  assert.deepEqual(Array.from(menu.props.actions, action => action.label), ['이 글 숨기기', t.report.title('하늘')]);
+  assert.ok(card.feedback.includes('selection'));
 });

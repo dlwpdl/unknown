@@ -14,6 +14,8 @@ export type PostUploadJob = {
   photos: UploadPhoto[];
   // retry=true: 이전 시도가 서버에 닿았는지 모르는 채로 다시 보낸다. 글은 올라갔는데 덧붙인 일이 안 됐으면 그 한 줄(notice)을, 내 첫 글이면 first를 돌려준다.
   send: (retry: boolean) => Promise<{ notice?: string; first?: boolean } | void>;
+  // 실패 카드의 수정하기: 초안이 있는 글쓰기를 연다. 없으면 오늘 화면 글쓰기(장소 위 글쓰기만 넘긴다, QA B10-2).
+  edit?: () => void;
 };
 export type PostUpload = Omit<PostUploadJob, 'send'> & {
   key: number;

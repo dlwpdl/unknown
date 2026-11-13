@@ -83,6 +83,7 @@ export default function CompanyProfileRoute() {
   const orderOpen = orderMerchant === merchantId;
   const busy = actionBusy?.operation.key === key && actionBusy.operation.visibility === hidden && actionBusy.operation.active, canMessage = profile?.can_message && unavailableRecipient !== key;
   const phoneUrl = merchantPhoneUrl(profile?.public_phone ?? ''), mapsUrl = merchantMapsUrl(profile?.address ?? '');
+  // The header shows these once (QA H43-6: the same link sat in the header and again under the no-contact note), already filtered to safe pages.
   const publicLinks = profile?.links?.flatMap(link => { const url = safeMerchantSourceUrl(link.url); return url ? [{ ...link, url }] : []; }) ?? [];
   const currentPosts = postResult?.key === listKey ? postResult : null, postPage = currentPosts?.page;
   const visiblePosts = postPage?.posts.filter(post => !hidden('post', post.id, post.author.id));
@@ -249,7 +250,7 @@ export default function CompanyProfileRoute() {
     </View> : undefined} />
     <ScrollView ref={scroll} analyticsId="company.profile" contentContainerStyle={styles.content}>
       {profile ? <>
-        <MerchantProfileHeader profile={{ ...profile, services: '', address: '' }} ratings={profile.review_post_id ? ratings : NO_REVIEWS}
+        <MerchantProfileHeader profile={{ ...profile, services: '', address: '', links: publicLinks }} ratings={profile.review_post_id ? ratings : NO_REVIEWS}
           onReviewPress={openReviews} />
         {!!counts?.job_count && <Pressable analyticsId="company.hiring" accessibilityRole="button" style={styles.hiring}
           onPress={() => { selectTab('jobs'); scroll.current?.scrollTo({ y: tabsTop.current, animated: !reducedMotion }); }}>
@@ -270,7 +271,6 @@ export default function CompanyProfileRoute() {
           <ThemedText type="small" themeColor="textSecondary">{tr("앱에서 연결할 수 있는 담당자가 없어요.")}{!phoneUrl && !publicLinks.length ? tr(" 공개 연락처도 아직 등록되지 않았어요.") : tr(" 등록된 공개 연락처를 이용해 주세요.")}</ThemedText>
           <View style={styles.actions}>
             {!!phoneUrl && <Pressable analyticsId="company.contact.phone" accessibilityRole="link" accessibilityLabel={tr("비즈니스 공개 전화 {0}", (profile.public_phone))} style={[styles.button, clay && styles.clayPad]} onPress={() => void openContact(phoneUrl)}>{clay && <ClayPillFill kind="white" />}<ThemedText themeColor="accent">{tr("전화하기")}</ThemedText></Pressable>}
-            {publicLinks.map((link, index) => <Pressable key={link.url} analyticsId={`company.contact.source.${index}`} accessibilityRole="link" accessibilityLabel={tr("{0} 공개 링크 열기", (link.label))} style={[styles.button, clay && styles.clayPad]} onPress={() => void openContact(link.url)}>{clay && <ClayPillFill kind="white" />}<ThemedText themeColor="accent">{link.label} ›</ThemedText></Pressable>)}
           </View>
         </View>}
         {actionError?.key === key && <ThemedText type="small" accessibilityRole="alert" accessibilityLiveRegion="polite">{tr(actionError.message)}</ThemedText>}

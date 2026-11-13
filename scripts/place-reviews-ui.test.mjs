@@ -6,6 +6,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import { tr, setActiveLanguage } from '../src/i18n/index.ts';
 import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, priceSymbol } from '../src/lib/discovery.ts';
+import { publicPlaceId } from '../src/lib/public-seo.ts';
 
 const author = '11111111-1111-4111-8111-111111111111';
 const settle = () => new Promise(setImmediate);
@@ -81,6 +82,12 @@ test('a real half-point score must be explicitly selected before publishing a re
   assert.equal(find(tree, 'places.reviews.publish').props.disabled, false);
   find(tree, 'places.reviews.publish').props.onPress(); await settle();
   assert.equal(ui.calls.writes[0][3], 8.5);
+});
+
+test('QA C19-1: a place with no ratings says it once, in the empty review card', async () => {
+  const ui = view(); ui.render(); await settle(); const tree = ui.render();
+  assert.ok(!nodes(tree).some(n => n.type === 'MerchantRatingBar'), 'no empty 0-rating bar above the empty card');
+  assert.ok(nodes(tree).some(n => n.type === 'StateCard' && n.props.kind === 'empty'));
 });
 
 test('editing restores the member score and text while a rating outage preserves readable posts', async () => {
@@ -257,8 +264,9 @@ function detailViewport(mode = 'auto') {
     'react-native': { StyleSheet: { create: x => x }, View: 'View' },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     'react-native-reanimated': { __esModule: true, default: { View: 'ReanimatedView' }, FadeIn: { duration: () => 'fade' }, SlideInDown: { duration: () => 'slide' }, useReducedMotion: () => true },
-    '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, priceSymbol },
-    'expo-router': { useIsFocused: () => true, useLocalSearchParams: () => ({ cityId: 'toronto', id: 'osm:node:1' }), useRouter: () => ({}) },
+    '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, priceSymbol }, '@/lib/public-seo': { publicPlaceId },
+    // node-1 is how a public place page link names osm:node:1 (QA H40-1).
+    'expo-router': { useIsFocused: () => true, useLocalSearchParams: () => ({ cityId: 'toronto', id: 'node-1' }), useRouter: () => ({}) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/components/place-reviews': { PlaceReviews: 'PlaceReviews' },
     '@/hooks/use-language': { useLanguage: () => ({ tr, locale: 'en-CA' }) }, '@/i18n': { tr, getLocale: () => 'en-CA' },

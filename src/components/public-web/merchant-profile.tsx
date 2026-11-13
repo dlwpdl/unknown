@@ -277,7 +277,7 @@ function PublicProfilePosts({ merchantId, kind, onRead, onPosts }: {
 
 function ProfilePage({ merchantId }: { merchantId: string }) {
   const { play } = useInteractionFeedback();
-  const { language } = useLanguage(), ko = language === 'ko';
+  const { language, tr } = useLanguage(), ko = language === 'ko';
   const [result, setResult] = useState<{ key: string; profile: MerchantProfile | null; failed: boolean; attempt: number } | null>(null);
   const [retry, setRetry] = useState(0);
   const [broken, setBroken] = useState({ banner: false, avatar: false });
@@ -332,7 +332,7 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
       <header className="reader-company-identity"><div className="reader-company-business"><div className="reader-company-avatar">{profile.avatarUri && !broken.avatar
         ? <img src={profile.avatarUri} alt={ko ? `${profile.name} 로고` : `${profile.name} logo`} onError={() => setBroken((previous) => ({ ...previous, avatar: true }))} />
         : <span aria-hidden="true">{profile.name.slice(0, 1)}</span>}</div>
-        <div><p className="reader-kicker">{[profile.industry, profile.city_name].filter(Boolean).join(' · ')}</p><h1>{profile.name}</h1></div></div>
+        <div><p className="reader-kicker">{[profile.industry, profile.city_name].filter(Boolean).map(value => tr(value)).join(' · ')}</p><h1>{profile.name}</h1></div></div>
         <ProfileRatings key={`${merchantId}:${profile.review_post_id}`} merchantId={merchantId} postId={profile.review_post_id}
           selectedKind={tab === 'reviews' ? reviewKind : null} onSelect={selectKind} onRead={setReviewCounts} controls={panelId('reviews')} /></header>
       <div className="reader-company-blurb">{profile.services && <p>{profile.services}</p>}
@@ -341,7 +341,7 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
       {!!profile.links?.length && <nav className="reader-company-sources" aria-label={ko ? '비즈니스 외부 페이지' : 'Business links'}>{profile.links.map(link =>
         <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" aria-label={ko ? `${profile.name} ${link.label}, 새 창 열기` : `${profile.name} ${link.label}, opens in a new tab`}
           onClick={() => play('selection')}>{link.label} <span aria-hidden="true">↗</span></a>)}</nav>}
-      {webshop.shop && <div style={{ display: 'grid', gap: 16, paddingTop: 16 }}><WebshopBanner shop={webshop.shop} onPress={() => setOrderOpen(true)} /><WebshopOrderButton shop={webshop.shop} onPress={() => setOrderOpen(true)} /></div>}
+      {webshop.shop && <div style={{ display: 'grid', gap: 16, paddingTop: 16, alignContent: 'start' }}><WebshopBanner shop={webshop.shop} notice={false} onPress={() => setOrderOpen(true)} /><WebshopOrderButton shop={webshop.shop} onPress={() => setOrderOpen(true)} /></div>}
       {webshop.failed && <button type="button" onClick={() => { play('selection'); webshop.retry(); }}>{ko ? '배달/픽업 정보 다시 불러오기' : 'Reload ordering info'}</button>}
       <div className="reader-company-hero-actions"><a className="reader-company-app-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>{ko ? profile.can_message ? '앱에서 문의하기' : '앱에서 비즈니스 보기' : profile.can_message ? 'Message in the app' : 'View in the app'} <span aria-hidden="true">↗</span></a>
         <a className="reader-company-save-action" href={publicWebTarget('/company', merchantId)} onClick={() => play('selection')}>{ko ? '앱에서 저장' : 'Save in the app'} <span aria-hidden="true">↗</span></a></div>
@@ -369,14 +369,14 @@ function ProfilePage({ merchantId }: { merchantId: string }) {
             <div id="company-reviews"><PublicReviews key={`${merchantId}:${profile.review_post_id}:${reviewKind}`} merchantId={merchantId} postId={profile.review_post_id} kind={reviewKind} /></div>
           </> : <p className="reader-company-empty">{ko ? '아직 후기가 없어요.' : 'No reviews yet.'}</p>
             : <div id="company-intro" className="reader-company-intro"><h2>{ko ? '소개' : 'About'}</h2><p>{profile.services || (ko ? '등록된 소개가 없어요.' : 'No description yet.')}</p>
-              <dl><dt>{ko ? '업종' : 'Category'}</dt><dd>{profile.industry || (ko ? '등록된 업종이 없어요.' : 'No category listed.')}</dd><dt>{ko ? '지역' : 'Area'}</dt><dd>{profile.city_name}</dd>
+              <dl><dt>{ko ? '업종' : 'Category'}</dt><dd>{profile.industry ? tr(profile.industry) : ko ? '등록된 업종이 없어요.' : 'No category listed.'}</dd><dt>{ko ? '지역' : 'Area'}</dt><dd>{profile.city_name && tr(profile.city_name)}</dd>
                 {phone && <><dt>{ko ? '전화' : 'Phone'}</dt><dd><a href={phone} onClick={() => play('selection')}>{profile.public_phone}</a></dd></>}
                 {!!profile.business_hours && <><dt>{ko ? '영업시간' : 'Hours'}</dt><dd className="reader-company-hours">{profile.business_hours}</dd></>}
                 {profile.address && <><dt>{ko ? '주소' : 'Address'}</dt><dd>{profile.address}{directions && <a className="reader-company-directions" href={directions} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>{ko ? '길찾기 ↗' : 'Directions ↗'}</a>}</dd></>}
               </dl></div>)}
       </section>)}
       </div><aside className="reader-company-visit" aria-label={ko ? '방문 정보' : 'Visit info'}><h2>{ko ? '들르기 전에' : 'Before you go'}</h2>
-        {profile.city_name && <p className="reader-company-visit-city">{profile.city_name}</p>}
+        {profile.city_name && <p className="reader-company-visit-city">{tr(profile.city_name)}</p>}
         {profile.address && <div><h3>{ko ? '주소' : 'Address'}</h3><p>{profile.address}</p>{directions && <a href={directions} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>{ko ? '길찾기 ↗' : 'Directions ↗'}</a>}</div>}
         {profile.business_hours && <div><h3>{ko ? '영업시간' : 'Hours'}</h3><p className="reader-company-hours">{profile.business_hours}</p></div>}
         {phone && <div><h3>{ko ? '공개 전화' : 'Phone'}</h3><a href={phone} onClick={() => play('selection')}>{profile.public_phone}</a></div>}

@@ -4,12 +4,10 @@ import { Asset } from 'expo-asset';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import Head from 'expo-router/head';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useState, useSyncExternalStore, type CSSProperties } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { DiscoveryMap } from '@/components/discovery-map';
-import { WebNightColors } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
-import { useAuth } from '@/lib/auth';
 import { cityPlacesRevision, getCityPlaces, replaceCityPlacesCatalog, subscribeCityPlaces } from '@/lib/city-places';
 import { refreshCityPlaces } from '@/lib/city-place-refresh';
 import { placeMapRoute } from '@/lib/discovery';
@@ -18,14 +16,13 @@ import { CITIES } from '@/lib/mock';
 import { jsonLd, PUBLIC_SITE } from '@/lib/public-seo';
 import { publicWebClient } from '@/lib/public-web-client';
 import { useReaderAnalytics } from './analytics';
+import { PublicFooter, PublicHeader, readerPalette } from './public-header';
 
-const wordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark.png')).uri;
 const visitWordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark-light.png')).uri;
-const palette = Object.fromEntries(Object.entries(WebNightColors).map(([key, value]) => [`--${key}`, value])) as CSSProperties;
 const cities = CITIES.filter(city => city.state === 'open');
 
 export default function PublicVisited() {
-  const { language } = useLanguage(), { isAuthed } = useAuth();
+  const { language } = useLanguage();
   const ko = language === 'ko';
   const params = useLocalSearchParams<{ city?: string; placeId?: string }>();
   const router = useRouter(), { play } = useInteractionFeedback();
@@ -72,20 +69,13 @@ export default function PublicVisited() {
     '@type': 'ListItem', position: index + 1, item: { '@type': place.category === 'food' ? 'Restaurant' : place.category === 'cafe' ? 'CafeOrCoffeeShop' : 'Place', name: place.name,
       ...(place.address ? { address: place.address } : {}), geo: { '@type': 'GeoCoordinates', latitude: place.latitude, longitude: place.longitude }, ...(place.sourceUrl ? { sameAs: place.sourceUrl } : {}) } })) } : null;
 
-  return <div className="reader visited-page" style={palette} lang={language}>
+  return <div className="reader visited-page" style={readerPalette} lang={language}>
     <Head><title>{title}</title><meta name="description" content={ko ? `${city.name}에서 글링이 직접 다녀온 식당·카페·가 볼 곳을 주소와 지도로 모았어요. 마음에 드는 곳은 글링 앱 지도에서 바로 열어 볼 수 있어요.` : `See the places Gling has visited in ${cityName} on a map.`} />
       <link rel="canonical" href={canonical} />
       {schema && <script type="application/ld+json">{jsonLd(schema)}</script>}
     </Head>
     <a className="reader-skip" href="#visited-main" onClick={() => play('selection')}>{ko ? '본문으로 바로가기' : 'Skip to content'}</a>
-    <header className="reader-header">
-      <a href="/" aria-label={ko ? '글링 홈' : 'Gling home'} onClick={() => play('selection')}><img src={wordmark} alt="gling" width="96" /></a>
-      <nav aria-label={ko ? '주요 메뉴' : 'Main navigation'}><a href="/" onClick={() => play('selection')}>{ko ? '오늘' : 'Today'}</a><a href="/?tag=festival#stories" onClick={() => play('selection')}>{ko ? '페스티벌' : 'Festivals'}</a>
-        <a href="/meetups" onClick={() => play('selection')}>{ko ? '모임' : 'Meetups'}</a>
-        <a href="/visited" aria-current="page" onClick={() => play('selection')}>Gling Visited</a>
-      </nav>
-      <a className="reader-header-account" href="/merchant/" rel="nofollow" onClick={() => play('selection')}>{isAuthed ? ko ? '비즈니스 관리' : 'Manage business' : ko ? '비즈니스 로그인' : 'Business sign-in'}</a>
-    </header>
+    <PublicHeader cityId={city.id} current="visited" />
     <main id="visited-main" className="reader-main" tabIndex={-1}>
       <div className="visited-heading"><div><h1>{ko ? `${city.name} 한인이 가 본 곳` : `Places to go in ${cityName}`}</h1><p>{ko ? '글링이 직접 다녀온 곳. 다음에는 함께 가요.' : 'Places Gling has been to. Next time, come with us.'}</p></div>
         <form action="/visited" method="get" className="visited-city">
@@ -113,7 +103,7 @@ export default function PublicVisited() {
           </section>
           <div className="visited-map-column">
             <section className="visited-map" aria-label={ko ? `${city.name} 글링 방문 지도` : `Map of places Gling visited in ${cityName}`}>
-              {hydrated ? <DiscoveryMap cityName={city.englishName} markers={places.map(place => ({ id: place.id, latitude: place.latitude, longitude: place.longitude, color: '#CBB9FF', label: place.name.slice(0, 80) }))}
+              {hydrated ? <DiscoveryMap cityName={city.englishName} markers={places.map(place => ({ id: place.id, latitude: place.latitude, longitude: place.longitude, color: '#CBB9FF', label: place.name.slice(0, 80), icon: 'visited', featured: true }))}
                 selectedId={selected?.id ?? null} center={selected ? { latitude: selected.latitude, longitude: selected.longitude } : null} onSelect={select} />
                 : <p role="status">{ko ? '지도를 준비하고 있어요.' : 'Getting the map ready.'}</p>}
             </section>
@@ -141,8 +131,6 @@ export default function PublicVisited() {
         </section>
       </>}
     </main>
-    <footer className="reader-footer"><span>{ko ? 'gling · 같이 갈 사람, 같이 나눌 이야기' : 'gling · People to go with, stories to share'}</span><nav aria-label={ko ? '정책' : 'Policies'}>
-      <a href="/business" onClick={() => play('selection')}>{ko ? '비즈니스 등록·관리' : 'List or manage your business'}</a><a href="/terms" onClick={() => play('selection')}>{ko ? '이용약관' : 'Terms'}</a><a href="/privacy" onClick={() => play('selection')}>{ko ? '개인정보처리방침' : 'Privacy'}</a>
-    </nav></footer>
+    <PublicFooter />
   </div>;
 }

@@ -36,7 +36,7 @@ export function UberOrderNotice() {
     ? '주문 관련 문의·클레임은 Uber 고객지원을 통해 접수해주세요.' : 'For order questions or claims, contact Uber Support.'}</ThemedText>;
 }
 
-export function WebshopBanner({ shop, onPress }: { shop: Webshop; onPress: () => void }) {
+export function WebshopBanner({ shop, onPress, notice = true }: { shop: Webshop; onPress: () => void; notice?: boolean }) {
   const { language } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), clayBox = useClayBox();
   const { maximumPercent } = compareWebshopPrices(shop);
   return <View style={styles.offer}>
@@ -50,7 +50,7 @@ export function WebshopBanner({ shop, onPress }: { shop: Webshop; onPress: () =>
         <ThemedText type="small" themeColor="textSecondary">{shop.comparisons.length ? language === 'ko' ? '대표 메뉴 가격 비교 · 자세히 보기' : 'Compare selected menu prices' : language === 'ko' ? 'Uber에서 주문·결제해요' : 'Orders and payment handled by Uber'}</ThemedText>
       </View><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
     </Pressable>
-    <UberOrderNotice />
+    {notice && <UberOrderNotice />}
   </View>;
 }
 

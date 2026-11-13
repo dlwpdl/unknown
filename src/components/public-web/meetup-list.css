@@ -1,5 +1,5 @@
 .public-meetups{min-width:0;color:var(--text);font:500 var(--pm-body)/1.6 system-ui,sans-serif}
-.public-meetups-heading{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--pm-gap);padding:0 0 var(--pm-padding);border:0}
+.public-meetups-heading{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:var(--pm-gap);padding:var(--pm-padding) 0;border:0}
 .public-meetups-heading>div{flex:1 1 20rem;min-width:0}
 .public-meetups h2{font-size:var(--pm-heading);line-height:1.35;margin:0 0 var(--pm-small-gap);letter-spacing:-.02em}
 .public-meetups-heading p{margin:0;color:var(--textSecondary)}

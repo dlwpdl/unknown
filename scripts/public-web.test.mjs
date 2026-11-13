@@ -167,10 +167,11 @@ function readerMarkup(path, { mounted = false, search = '', directPost = false, 
   }
   const article = load('../src/components/public-web/shared-post-article.tsx');
   modules['./shared-post-article'] = article;
+  modules['./public-header'] = load('../src/components/public-web/public-header.tsx');
+  modules['./meetup-list'] = load('../src/components/public-web/meetup-list.tsx');
   const landing = load('../src/components/public-web/shared-post-landing.tsx');
   modules['./shared-post-landing'] = { __esModule: true, default: landing.default };
   modules['./app-store-choices'] = load('../src/components/public-web/app-store-choices.tsx');
-  modules['./meetup-list'] = load('../src/components/public-web/meetup-list.tsx');
   const component = articlePost ? article.SharedPostArticle : directPost ? landing.default : load('../src/components/public-web/reader.tsx').default;
   return renderToStaticMarkup(React.createElement(component, articlePost ? { post: articlePost } : undefined));
 }
@@ -186,6 +187,16 @@ test('legacy static 404 and initial client render agree before the exact post ha
     assert.ok(mounted.includes(`href="gling://post/${id}"`), 'Mounted legacy route preserves the original native post destination');
     assert.ok(mounted.includes(`https://gling.ej-entertainment.com/posts/${id}`), 'QR/copy canonical destination preserves that same post');
     assert.doesNotMatch(mounted, /Google로 로그인|카카오 로그인/);
+  }
+});
+
+test('the shared footer names the Naver blog in the page language, on reader and shared post pages alike', () => {
+  for (const [options, name] of [[{}, '네이버 블로그'], [{ language: 'en' }, 'Naver Blog']]) {
+    for (const markup of [readerMarkup('/vancouver', options), readerMarkup('/post', { ...options, search: `?id=${id}` })]) {
+      const footer = markup.match(/<footer class="reader-footer">[\s\S]*?<\/footer>/)?.[0] ?? '';
+      assert.ok(footer.includes(`>${name}</a>`), `${options.language ?? 'ko'} footer: ${name}`);
+      if (options.language === 'en') assert.doesNotMatch(footer, /[가-힣]/, 'no Korean left in the English footer');
+    }
   }
 });
 

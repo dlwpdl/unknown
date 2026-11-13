@@ -9,6 +9,7 @@ import { createRequire } from 'node:module';
 import ts from 'typescript';
 import * as product from '../src/lib/product-analytics.ts';
 import * as distance from '../src/lib/discovery-sort.ts';
+import { publicPlaceId } from '../src/lib/public-seo.ts';
 
 const root = new URL('../', import.meta.url);
 const citySource = readFileSync(new URL('src/lib/mock.ts', root), 'utf8').split('export const TAGS')[0];
@@ -512,6 +513,7 @@ function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = da
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16, four: 24 }, MaxContentWidth: 920 },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: v => feedback.push(v) }) },
     '@/lib/city-places': placeData, '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, placeMapRoute, priceSymbol }, '@/lib/post-maps': module('src/lib/post-maps.ts'),
+    '@/lib/public-seo': { publicPlaceId },
     '@/lib/merchant-source': module('src/lib/merchant-source.ts', {
       '../../supabase/functions/_shared/post-links.ts': { safePostLink: value => value },
     }),

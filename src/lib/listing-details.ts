@@ -271,6 +271,17 @@ export type MapBounds = { west: number; south: number; east: number; north: numb
 export const inBounds = (bounds: MapBounds, point: { latitude: number; longitude: number }) =>
   point.latitude >= bounds.south && point.latitude <= bounds.north && point.longitude >= bounds.west && point.longitude <= bounds.east;
 
+// Opening camera for a category map: the middle of every area, zoomed out from the city view (11) until all fit about 280pt across.
+export function listingMapFit(points: readonly { latitude: number; longitude: number }[]) {
+  if (!points.length) return null;
+  const lats = points.map(point => point.latitude), lons = points.map(point => point.longitude);
+  const south = Math.min(...lats), north = Math.max(...lats), west = Math.min(...lons), east = Math.max(...lons), middle = (south + north) / 2;
+  const span = Math.max(east - west, (north - south) / Math.cos(middle * Math.PI / 180), 1e-6); // latitude span in longitude degrees (Mercator)
+  // MapLibre draws the world 512px wide at zoom 0 (final QA: with 256 the rent map opened a step too close and hid both prices).
+  const zoom = Math.max(8, Math.min(11, Math.floor(Math.log2(280 * 360 / (512 * span)) * 4) / 4));
+  return { center: { latitude: middle, longitude: (west + east) / 2 }, zoom };
+}
+
 // ---- filters (shared by list and map) ----------------------------------------------------------
 // 부동산 렌트·매매: rent covers 렌트 내놓음/구함, sale covers 매매 판매/구매.
 export type HousingMarket = 'rent' | 'sale';
@@ -322,6 +333,17 @@ export const FREE_FOLDED_KEY = 'gling.listing.used.free-folded';
 export function freeBand<P extends Pick<Post, 'price' | 'listingDetails' | 'title'>>(posts: readonly P[]) {
   const free = posts.filter(isFreeListing);
   return { count: free.length, tiles: free.slice(0, 8), more: Math.max(0, free.length - 8), names: free.slice(0, 2).map(post => post.title), others: Math.max(0, free.length - 2) };
+}
+// Photo grids pair two tiles per row. An item that is not a tile (a used-goods story with no listing fields) gets a full row instead of half of one,
+// placed right after the row it interrupted fills up, so no tile row is left half empty mid-list (QA 2026-11-13 B13-1).
+export function pairTiles<T>(items: readonly T[], tile: (item: T) => boolean): (T | T[])[] {
+  const rows: (T | T[])[] = [];
+  let open: T[] | null = null, waiting: T[] = [];
+  for (const item of items) {
+    if (!tile(item)) { if (open) waiting.push(item); else rows.push(item); continue; }
+    if (open) { open.push(item); rows.push(...waiting); waiting = []; open = null; } else rows.push(open = [item]);
+  }
+  return [...rows, ...waiting];
 }
 // The loaded posts by neighborhood, the same grouping as the map, busiest first (ties keep feed order). Posts with no place come last.
 export function listingAreaRows<P extends Pick<Post, 'cityId' | 'body' | 'listingDetails' | 'price'>>(posts: readonly P[], language: AppLanguage) {

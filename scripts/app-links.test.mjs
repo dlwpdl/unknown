@@ -22,13 +22,15 @@ test('public site links open the matching app screen', () => {
     [`${site}/invite?code=abcd-efgh`, '/invite?code=ABCDEFGH'],
     [`${site}/meetup-join?postId=${id}`, `/meetup-join?postId=${lower}`],
     [`${site}/meetup-invite?token=${token}`, `/meetup-invite?token=${token}`],
+    [`${site}/vancouver/places/node-4976343547`, '/places/node-4976343547?cityId=vancouver'],
+    [`${site}/calgary/places/way-7/`, '/places/way-7?cityId=calgary'],
     [`${site}/checkin?s=${id}&c=${token.slice(0, 24).toUpperCase()}`, `/checkin?s=${lower}&c=${token.slice(0, 24)}`],
   ]) assert.equal(appPathForLink(link), route, link);
 });
 
 test('unknown or malformed site links land on home without throwing', () => {
   for (const link of [`${site}/`, `${site}/merchant/x`, `${site}/admin`, `${site}/terms`, `${site}/posts/not-a-uuid`, `${site}/post?id=${id}&id=${id}`,
-    `${site}/invite?code=bad`, `${site}/meetup-join?postId=x`, `${site}/meetup-invite?token=${token.toUpperCase()}`, `${site}/meetup-invite?token=${token}&token=${token}`, `${site}/%E0%A4%A`,
+    `${site}/invite?code=bad`, `${site}/meetup-join?postId=x`, `${site}/vancouver/places`, `${site}/vancouver/places/abc`, `${site}/vancouver/places/node-1/x`, `${site}/meetup-invite?token=${token.toUpperCase()}`, `${site}/meetup-invite?token=${token}&token=${token}`, `${site}/%E0%A4%A`,
     `${site}/checkin?s=${id}`, `${site}/checkin?s=x&c=${token.slice(0, 24)}`, `${site}/checkin?s=${id}&c=${token}`]) assert.equal(appPathForLink(link), '/', link);
 });
 

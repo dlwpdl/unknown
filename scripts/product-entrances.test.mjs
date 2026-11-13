@@ -1,5 +1,5 @@
 import { deliveryPartnerPlace } from '../src/lib/delivery-partners.ts';
-import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, directionsUrl, placeCategory, placeMapRoute, priceSymbol } from '../src/lib/discovery.ts';
+import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, mapAppUrl, placeCategory, placeMapRoute, priceSymbol } from '../src/lib/discovery.ts';
 import { withLanguageImports } from './test-language-imports.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -10,6 +10,7 @@ import * as product from '../src/lib/product-analytics.ts';
 import * as preferences from '../src/lib/notification-preferences.ts';
 import * as maps from '../src/lib/post-maps.ts';
 import { mapMessage } from '../src/lib/post-map-html.ts';
+import { publicPlaceId } from '../src/lib/public-seo.ts';
 import { merchantMapsUrl, merchantPhoneUrl, safeMerchantSourceUrl } from '../src/lib/merchant-source.ts';
 import * as postLinks from '../supabase/functions/_shared/post-links.ts';
 import { analyticsScreen } from '../src/lib/analytics.ts';
@@ -92,15 +93,15 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     '@/components/place-saves': { PlaceSavedBy: 'PlaceSavedBy', PlaceRelated: 'PlaceRelated', usePlaceSaves: () => null }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ error: '' }) },
     '@/lib/city-places': { getCityRecommendations: id => catalog.cities[id]?.places ?? [], CITY_PLACES_COLLECTED_AT: catalog.collectedAt, getCityPlaces: id => { if (ctx.catalogError) throw new Error('missing'); return ctx.places ?? catalog.cities[id]?.places ?? []; } },
     '@/lib/community-city': { useCommunityCity: () => ({ city, setCity() {} }) }, '@/lib/mock': { CITIES: [city] },
-    '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, directionsUrl, placeCategory, placeMapRoute, priceSymbol },
-    '@/lib/delivery-partners': { deliveryPartnerPlace },
+    '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, mapAppUrl, placeCategory, placeMapRoute, priceSymbol },
+    '@/lib/delivery-partners': { deliveryPartnerPlace }, '@/lib/public-seo': { publicPlaceId },
     '@/lib/webshops': { loadCityBusinessLinks: async () => ({}) },
     '@/lib/merchant-source': { merchantMapsUrl, merchantPhoneUrl, safeMerchantSourceUrl }, '@/lib/post-maps': maps,
     '../../../supabase/functions/_shared/post-links': postLinks,
     '@/lib/post-map-html': { mapMessage, mapHtml: () => '<html/>', mapPinScript: () => '', mapPreviews: new Map(), rememberMapPreview() {} },
-    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
+    '@/components/clay': { useClay: () => false, useDark: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) }, '@/hooks/use-theme': { useTheme: () => ({}) },
-    '@/constants/theme': { Depth: {}, Spacing: {} }, '@/lib/event-videos': { eventVideo: () => null }, '@/lib/feed-data': { relativeTime: () => '' },
+    '@/constants/theme': { Depth: {}, Spacing: {} }, '@/lib/event-videos': { eventVideo: () => null, eventIntro: text => text || null }, '@/lib/feed-data': { relativeTime: () => '' },
     '@/lib/behavior-analytics': ctx.realBehavior ? realBehavior : { configureBehavior: value => { transport = value; }, behavior() {}, behaviorScreen() {}, flushBehavior: async () => {}, isIdle: () => false, noteTouch() {} },
     '@/i18n/ko': { t: new Proxy({}, { get: () => new Proxy({}, { get: (_target, key) => String(key) }) }) },
   };
@@ -198,6 +199,7 @@ test('catalog place view needs focus, and website/source launches are distinguis
   ui.nodes().find(node => node.props?.analyticsId === 'places.detail.website').props.onPress(); await ui.settle();
   assert.deepEqual(ui.product().at(-1), payload('place_website', 'osm:node:652955238', 'vancouver'));
   const map = ui.nodes().find(node => node.type === 'PostMapLink'); assert.equal(typeof map.props.onOpened, 'function');
+  assert.equal(map.props.pin, ui.nodes().find(node => node.type === 'ShareCardSheet').props.target.place, 'the place link draws its map preview from the place pin (QA C19-2)');
   map.props.onOpened(); assert.deepEqual(ui.product().at(-1), payload('place_directions', 'osm:node:652955238', 'vancouver'));
   for (const options of [{ params: { id: 'osm:node:0' } }, { catalogError: true }]) {
     const missing = mount('app/places/[id].tsx', 'default', {}, options); t.after(missing.cleanup); assert.deepEqual(missing.product(), []);
@@ -224,9 +226,11 @@ test('P3/P4: 길찾기 offers address copy, Apple and Google maps; 전화·인�
   assert.deepEqual(ui.copied, [place.address]);
   assert.ok(ui.nodes().some(node => node.props?.children === '주소를 복사했어요.'));
   sheet.props.actions[1].onPress(); await ui.settle();
-  assert.equal(ui.opened.at(-1), `https://maps.apple.com/?daddr=${place.latitude},${place.longitude}`);
+  assert.equal(ui.opened.at(-1), mapAppUrl({ ...place, place }, 'apple'));
+  assert.ok(!/daddr|dirflg/.test(ui.opened.at(-1)), 'Apple Maps opens the place, not a route');
   sheet.props.actions[2].onPress(); await ui.settle();
-  assert.equal(ui.opened.at(-1), directionsUrl(place, 'google'));
+  assert.equal(ui.opened.at(-1), mapAppUrl({ ...place, place }, 'google'));
+  assert.ok(!/dir_action|\/maps\/dir/.test(ui.opened.at(-1)), 'Google Maps opens the place, not navigation (QA C19-1, #132)');
   assert.deepEqual(ui.product().at(-1), payload('place_directions', id, 'vancouver'));
   sheet.props.onClose(); ui.render(); assert.ok(!ui.nodes().some(node => node.type === 'MeetupManageSheet'));
   const directions = () => ui.nodes().some(node => node.props?.analyticsId === 'company.about.maps');
@@ -273,6 +277,15 @@ test('map-link callback runs only after launch success and map failures contain 
   assert.equal(opened, 1); assert.equal(ui.alerts.length, 1); assert.deepEqual(ui.product(), [payload('map_error')]);
   ui.render().props.onPress(); ui.ctx.auth = { ...ui.ctx.auth, me: { id: 'other' } }; ui.render(); reject(new Error('late'));
   await ui.settle(); assert.equal(ui.product().length, 1);
+});
+
+test('a name-and-address map link draws its preview from the pin it is given (QA C19-2)', t => {
+  const url = 'https://www.google.com/maps/search/?api=1&query=Caf%C3%A9%2C+123+Main+St';
+  const bare = mount('components/post-map-link.tsx', 'PostMapLink', { url, label: 'Café' }); t.after(bare.cleanup);
+  assert.ok(!bare.nodes().some(node => node.type === 'PostPinMap'), 'a search link alone has no coordinates to draw');
+  const ui = mount('components/post-map-link.tsx', 'PostMapLink', { url, label: 'Café', pin: { latitude: 49.28, longitude: -123.12 } }); t.after(ui.cleanup);
+  assert.deepEqual(ui.nodes().find(node => node.type === 'PostPinMap').props.pin, { latitude: 49.28, longitude: -123.12 });
+  assert.equal(ui.render().props.accessibilityRole, 'link');
 });
 
 test('native map error callbacks and bridge errors use the same fixed event and ignore stale callbacks', async t => {
