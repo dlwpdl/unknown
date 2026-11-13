@@ -185,7 +185,7 @@ export function BusinessDirectoryRow({ item, saving, onOpen, onSave }: { item: B
         <ThemedText style={[Typography.body, { fontWeight: '700' }]}>{item.name}</ThemedText>
         {!!item.services && <ThemedText type="small" themeColor="textSecondary" numberOfLines={fontScale > 1.2 ? undefined : 2}>{item.services}</ThemedText>}
         {!!item.address && <ThemedText type="small" themeColor="textSecondary" numberOfLines={fontScale > 1.2 ? undefined : 1}>{item.address}</ThemedText>}
-        {item.has_webshop && <ThemedText type="smallBold" themeColor="accent">{tr('웹샵 주문 가능')}</ThemedText>}
+        {item.has_webshop && <ThemedText type="smallBold" themeColor="accent">{tr('배달/픽업 주문 가능')}</ThemedText>}
       </View>
     </Pressable>
     <Pressable analyticsId="business.directory.save" accessibilityRole="button" accessibilityLabel={tr(item.saved ? '{0} 저장 취소' : '{0} 저장', item.name)}

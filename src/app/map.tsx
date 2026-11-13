@@ -583,7 +583,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
         {(selectedFilters.length > 0 || dateFilter !== 'all') && <View style={[styles.filterDot, { backgroundColor: theme.accent }]} />}
       </Pressable>
     </View>
-    {deliveryUnavailable && <StateCard kind="error" title={tr('웹샵 할인 정보를 불러오지 못했어요')} body={tr('연결을 확인하고 다시 시도해주세요. 가게의 기존 정보는 계속 볼 수 있어요.')} actionLabel={tr('다시 시도')} onAction={() => { play('selection'); refresh(); }} />}
+    {deliveryUnavailable && <StateCard kind="error" title={tr('배달/픽업 할인 정보를 불러오지 못했어요')} body={tr('연결을 확인하고 다시 시도해주세요. 가게의 기존 정보는 계속 볼 수 있어요.')} actionLabel={tr('다시 시도')} onAction={() => { play('selection'); refresh(); }} />}
     {!!locationError && <ThemedText accessibilityRole="alert" type="small" style={styles.notice}>{tr(locationError)}</ThemedText>}
     {!!current?.errors.length && <View style={styles.notice}><ThemedText type="small" accessibilityRole="alert">{current.errors.map(error => tr(error)).join(' ')} {tr("새로고침으로 다시 시도할 수 있어요.")}</ThemedText></View>}
     <View style={styles.content} onLayout={event => setContentHeight(event.nativeEvent.layout.height)}>
