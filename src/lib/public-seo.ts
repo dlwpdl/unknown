@@ -85,10 +85,20 @@ export const TOPIC_HUBS: Record<string, { slug: string; name: (city: string) => 
 export const MIN_TOPIC_HUB_POSTS = 5;
 export const CITY_PAGE_SIZE = 30;
 
-// Static subpages under a city: /vancouver/2 (older posts), /vancouver/rent (topic hub), /vancouver/meetups.
-export function publicCitySubpage(path: string, cityIds: string[]) {
-  const [, cityId, part] = path.replace(/\/$/, '').match(/^\/([a-z-]+)\/([a-z0-9-]+)$/) ?? [];
-  if (!cityId || !cityIds.includes(cityId)) return null;
+// Map place ids (osm:node:123) as the last part of a place page address (/vancouver/places/node-123), and back.
+export const publicPlaceSlug = (placeId: string) => placeId.replace(/^osm:(node|way|relation):([0-9]+)$/, '$1-$2');
+export const publicPlacePath = (cityId: string, placeId: string) => `/${cityId}/places/${publicPlaceSlug(placeId)}`;
+
+// Static subpages under a city: /vancouver/2 (older posts), /vancouver/rent (topic hub), /vancouver/meetups,
+// /vancouver/places (+ /2 …) and /vancouver/places/node-123 (one map place). Place pages exist for every catalog city, not only open ones.
+export function publicCitySubpage(path: string, cityIds: string[], placeCityIds = cityIds) {
+  const [, cityId, part, rest] = path.replace(/\/$/, '').match(/^\/([a-z-]+)\/([a-z0-9-]+)(?:\/((?:node|way|relation)-[0-9]+|[1-9][0-9]*))?$/) ?? [];
+  if (!cityId || !(part === 'places' ? placeCityIds : cityIds).includes(cityId)) return null;
+  if (part === 'places') {
+    if (!rest || /^[0-9]+$/.test(rest)) return rest === '1' ? null : { cityId, kind: 'places' as const, page: Number(rest ?? 1) };
+    return { cityId, kind: 'place' as const, placeId: `osm:${rest.replace('-', ':')}` };
+  }
+  if (rest) return null;
   if (part === 'meetups') return { cityId, kind: 'meetups' as const };
   if (/^[1-9][0-9]*$/.test(part) && part !== '1') return { cityId, kind: 'page' as const, page: Number(part) };
   const tagSlug = Object.keys(TOPIC_HUBS).find(key => TOPIC_HUBS[key].slug === part);
@@ -97,6 +107,11 @@ export function publicCitySubpage(path: string, cityIds: string[]) {
 
 // Title and description shared by the static page and the hydrated reader, so the head never changes after load.
 export function publicCitySubpageMeta(sub: NonNullable<ReturnType<typeof publicCitySubpage>>, city: string) {
+  // Place pages carry their own title and description (data-title on #gling-static-hub, scripts/prerender-public-places.mjs); this is the fallback.
+  if (sub.kind === 'places' || sub.kind === 'place') return {
+    title: `${city} 맛집·카페·가 볼 곳 | 글링`,
+    description: `${city}에서 글링 회원 글이나 소개가 있는 장소를 골랐어요. 맛집·카페·가 볼 곳마다 지도 링크가 있어요.`,
+  };
   if (sub.kind === 'meetups') return {
     title: `${city} 한인 모임 · 소모임·동행 | 글링`,
     description: `${city} 한인 소모임과 축제·공연 동행을 글링에서 찾아요. 일정과 참여 인원은 여기서 미리 보고, 신청과 대화는 글링 앱에서 해요.`,
