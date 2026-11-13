@@ -333,6 +333,24 @@ test('map loading capsule stays centered and lets touches reach the map', () => 
   }
 });
 
+test('coming back to the map refreshes quietly; only a view with nothing to show yet covers it (owner 2026-11-12)', async () => {
+  const view = mount();
+  const covered = tree => nodes(tree).some(node => node.type === 'GlingLoader' && node.props?.accessibilityLabel === '지도 결과 불러오는 중');
+  const emptyCard = tree => nodes(tree).find(node => node.type === 'FlatList').props.ListEmptyComponent;
+  let tree = view.render();
+  assert.ok(covered(tree), 'first entry waits under the loader');
+  view.readResults(); await new Promise(setImmediate); tree = view.render();
+  assert.ok(!covered(tree));
+  assert.ok(emptyCard(tree));
+  view.readResults(); tree = view.render();
+  assert.ok(!covered(tree), 'a refocus of the same view keeps the map uncovered while it refreshes');
+  assert.equal(emptyCard(tree), undefined, 'the empty card still waits for the refresh like before');
+  await new Promise(setImmediate); tree = view.render();
+  assert.ok(emptyCard(tree));
+  control(tree, '카페').props.onPress(); tree = view.render();
+  assert.ok(covered(tree), 'a new filter has nothing to show yet, so it waits under the loader');
+});
+
 test('approved distance appears on place cards and unknown locations do not show a made-up value', () => {
   const view = mount();
   const item = { id: 'place:sample', source: 'place', sourceId: 'sample', cityId: 'vancouver', title: 'Fixture cafe', category: 'dining', label: 'Fixture address', latitude: 49.25, longitude: -122.86, price: null };

@@ -69,7 +69,7 @@ function BusinessHome() {
       <ThemedText accessibilityRole="header" style={[styles.title, { flex: 1 }]}>{tr('내 가게')}</ThemedText>
       <ProfileAvatarButton />
     </View>
-    <MerchantScreen />
+    <MerchantScreen inTab />
   </SafeAreaView></TabContent>;
 }
 
