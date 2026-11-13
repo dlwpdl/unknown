@@ -40,7 +40,7 @@ function mount(file, name, data, props = {}, params = {}) {
     '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },
     '@/components/post-card': { PostCard: 'PostCard' }, '@/components/post-detail': { PostDetail: 'PostDetail' }, '@/components/post-zoom-link': { PostZoomLink: 'PostZoomLink' }, '@/lib/post-open': postOpen,
     '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: (target, visible) => { calls.push(['savedEntry', target, visible]); return { state: null, error: '', loading: false, busy: false, visible, onPress() {} }; } },
-    '@/components/manner-summary': { MannerSummary: 'MannerSummary' }, '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/rent-safety': { RentScamNote: 'RentScamNote', RentScamTipsSheet: 'RentScamTipsSheet' }, '@/components/drag-sheet': { DragSheet: 'DragSheet' },
+    '@/components/manner-summary': { MannerSummary: 'MannerSummary' }, '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/drag-sheet': { DragSheet: 'DragSheet' },
     '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/constants/theme': { Spacing: {}, Depth: { control: {} } }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/constants/design-system': { ControlStyles: {}, IconSize: {}, controlPresentation: () => ({ container: {} }) },

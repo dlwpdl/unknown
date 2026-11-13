@@ -888,7 +888,6 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                   mine: post.author.id === me.id,
                   listingId: post.kind === 'listing' ? post.id : undefined,
                   contextPostId: post.kind === 'listing' || post.room ? post.id : undefined,
-                  rentNotice: post.listingDetails?.type === 'housing' && post.listingDetails.deal === 'rent_offer',
                 });
               }}
             />}

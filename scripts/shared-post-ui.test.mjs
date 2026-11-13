@@ -99,7 +99,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
     '../../supabase/functions/_shared/post-links': postLinks, '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
     '@/components/post-attachment-link': { PostAttachmentLink: 'PostAttachmentLink' }, '@/lib/post-info': { postInfoParts }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' }, '@/lib/mock': { CITIES: [] },
-    '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/rent-safety': { RentScamNote: 'RentScamNote', RentScamTipsSheet: 'RentScamTipsSheet' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
+    '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/components/drag-sheet': { DragSheet: 'DragSheet' },
     '@/components/meetup-members': { MeetupWhoCard: 'MeetupWhoCard', MeetupInviteHost: 'MeetupInviteHost', MeetupInviteNote: 'MeetupInviteNote', useMeetupRoster: () => ({ roster: null, error: '', reload() {} }) },
     '@/components/manner-summary': { MannerSummary: 'MannerSummary' },
