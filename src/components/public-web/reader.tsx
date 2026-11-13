@@ -1,4 +1,5 @@
 import './reader.css';
+import './places.css';
 import SharedPostLanding from './shared-post-landing';
 import { PublicPostBody } from './shared-post-article';
 import { useReaderAnalytics } from './analytics';
@@ -95,12 +96,12 @@ function PostAuthor({ post }: { post: Post }) {
     {post.business.name} · {ko ? '비즈니스' : 'Business'}</a> : <>{post.author.nickname}</>;
 }
 
-function AppInvitation({ target }: { target: string }) {
+function AppInvitation({ target, body }: { target: string; body?: string }) {
   const { language } = useLanguage(), ko = language === 'ko';
   const { play } = useInteractionFeedback(), device = useDevice(), phone = device === 'ios' || device === 'android';
   return <section className="reader-invitation" aria-label={ko ? '앱에서 이어가기' : 'Continue in the app'}>
     <h2>{ko ? '글링에서 함께해요.' : 'Meet people on Gling.'}</h2>
-    <p>{ko ? `글을 쓰고, 모임에 참여하고, 대화를 이어가세요.${phone ? '' : ' 앱이 없다면 스토어를 선택하고 휴대폰으로 QR 코드를 읽어 주세요.'}` : `Write posts, join meetups and keep the conversation going.${phone ? '' : ' Choose a store and scan its QR code with your phone to get the app.'}`}</p>
+    <p>{ko ? `${body ?? '글을 쓰고, 모임에 참여하고, 대화를 이어가세요.'}${phone ? '' : ' 앱이 없다면 스토어를 선택하고 휴대폰으로 QR 코드를 읽어 주세요.'}` : `Write posts, join meetups and keep the conversation going.${phone ? '' : ' Choose a store and scan its QR code with your phone to get the app.'}`}</p>
     <AppStoreChoices />
     <a data-analytics="web_control_1" className="reader-secondary reader-open-app" href={target} onClick={() => play('selection')}>{ko ? '이미 앱이 있으면 앱에서 열기' : 'Already have the app? Open it'} ↗</a>
   </section>;
@@ -174,12 +175,16 @@ function ReaderContent() {
   // /vancouver, /toronto, /montreal are the indexable city hubs; `/?city=` canonicalizes to them.
   const cityPage = cities.find((item) => path === `/${item.id}`);
   // /vancouver/2, /vancouver/rent, /vancouver/meetups are build-time pages; the reader keeps their static copy in place.
-  const sub = publicCitySubpage(path, cities.map((item) => item.id));
-  const subCity = sub ? cities.find((item) => item.id === sub.cityId) : undefined;
-  const subMeta = sub && subCity ? publicCitySubpageMeta(sub, subCity.name) : null;
+  // Place pages (/calgary/places …) exist for every city in the place catalog, not only the open ones.
+  const sub = publicCitySubpage(path, cities.map((item) => item.id), CITIES.map((item) => item.id));
+  const subCity = sub ? CITIES.find((item) => item.id === sub.cityId) : undefined;
+  const placePage = sub?.kind === 'place' || sub?.kind === 'places';
+  // Place pages carry their own title from the build (the reader has no place catalog), so the head stays the same after load.
+  const placeHead = placePage ? globalThis.document?.getElementById?.('gling-static-hub')?.dataset : undefined;
+  const subMeta = sub && subCity ? placeHead?.title ? { title: placeHead.title, description: placeHead.description ?? '' } : publicCitySubpageMeta(sub, subCity.name) : null;
   const browse = path === '/' || path === '/meetups' || !!cityPage;
   const meetupPage = path === '/meetups';
-  const city = cityPage ?? subCity ?? cities.find((item) => item.id === readyParams.city) ?? cities[0];
+  const city = cityPage ?? (subCity?.state === 'open' ? subCity : undefined) ?? cities.find((item) => item.id === readyParams.city) ?? cities[0];
   const tag = TAGS.find((item) => item.slug === (path === '/meetups' ? 'meetup' : readyParams.tag));
   const key = `${path}:${postId}:${merchantId}:${city.id}:${tag?.id ?? ''}`;
   const [result, setResult] = useState<{ key: string; posts: Post[]; more: boolean; failed: boolean } | null>(null);
@@ -210,6 +215,23 @@ function ReaderContent() {
   const loading = (browse || Boolean(postId)) && !current;
   const target = publicWebTarget(path, (company ? merchantId : postId) ?? undefined, readyParams);
   useReaderAnalytics(detail ? 'post' : browse || sub ? 'feed' : 'app-invitation', key, hydrated);
+
+  useEffect(() => {
+    if (sub?.kind !== 'places') return;
+    // The build-time list's kind buttons (scripts/prerender-public-places.mjs) filter the cards already on the page.
+    const pick = (event: MouseEvent) => {
+      const chip = event.target instanceof Element ? event.target.closest('.place-chips button') : null;
+      if (!(chip instanceof HTMLElement)) return;
+      play('selection');
+      const kind = chip.dataset.cat, cards = [...document.querySelectorAll<HTMLElement>('.place-list .reader-card')];
+      document.querySelectorAll('.place-chips button').forEach((button) => button.setAttribute('aria-pressed', String(button === chip)));
+      cards.forEach((card) => { card.hidden = kind !== 'all' && card.dataset.cat !== kind; });
+      const note = document.getElementById('place-list-note');
+      if (note) note.textContent = kind === 'all' ? note.dataset.all ?? '' : `${note.dataset.page}쪽 ${cards.length}곳 중 ${chip.firstChild?.textContent ?? ''} ${cards.filter((card) => !card.hidden).length}곳을 보고 있어요.`;
+    };
+    document.addEventListener('click', pick);
+    return () => document.removeEventListener('click', pick);
+  }, [sub?.kind, play]);
 
   useEffect(() => {
     // The build-time home/city copy (scripts/finish-public-web.mjs) is for crawlers without JavaScript; drop it once the live feed is in.
@@ -277,6 +299,7 @@ function ReaderContent() {
         <a href={`/${city.id}`} aria-current={browse && !meetupPage && !tag ? 'page' : undefined} onClick={() => play('selection')}>{ko ? '오늘' : 'Today'}</a>
         <a data-analytics="web_control_7" href={`/meetups?city=${city.id}`} aria-current={meetupPage ? 'page' : undefined} onClick={() => play('selection')}>{ko ? '모임' : 'Meetups'}</a>
         <a data-analytics="web_control_6" href={`/?city=${city.id}&tag=festival#stories`} aria-current={tag?.slug === 'festival' ? 'page' : undefined} onClick={() => play('selection')}>{ko ? '페스티벌' : 'Festivals'}</a>
+        <a href={`/${(placePage && subCity ? subCity : city).id}/places`} aria-current={placePage ? 'page' : undefined} onClick={() => play('selection')}>{ko ? '장소' : 'Places'}</a>
         <a href="/visited" onClick={() => play('selection')}>Gling Visited</a>
       </nav>
       <a className="reader-header-account" href="/merchant/" rel="nofollow" onClick={() => play('selection')}>{isAuthed ? ko ? '비즈니스 관리' : 'Manage business' : ko ? '비즈니스 로그인' : 'Business sign-in'}</a>
@@ -333,7 +356,7 @@ function ReaderContent() {
         {!meetupPage && !loading && !current?.failed && (browse || detail) && !current?.posts.length && <div className="reader-notice">{detail ? <h1>{ko ? '글을 찾을 수 없어요' : 'Post not found'}</h1> : <h2>{ko ? '아직 공개된 이야기가 없어요' : 'No public stories yet'}</h2>}<p>{ko ? detail ? '삭제되었거나 공개되지 않은 글이에요.' : tag?.slug === 'festival' ? '위에서 Ticketmaster의 예정 페스티벌을 확인하거나, 다른 공개 이야기도 둘러보세요.' : '다른 도시나 주제의 이야기도 둘러보세요.'
           : detail ? 'This post was deleted or isn’t public.' : tag?.slug === 'festival' ? 'Check upcoming festivals from Ticketmaster above, or browse other public stories.' : 'Try another city or topic.'}</p>{browse && tag?.slug === 'festival' && <a className="reader-secondary" href="/#stories">{ko ? '전체 이야기 보기' : 'See all stories'}</a>}</div>}
       </div>
-      <aside id="app"><AppInvitation target={target} /></aside>
+      <aside id="app"><AppInvitation target={target} body={sub?.kind === 'place' ? '이 장소에 후기를 남기거나 같이 갈 모임을 찾으려면 앱에서 열어 주세요.' : undefined} /></aside>
     </main>
     <InstallBar />
     <footer className="reader-footer"><div className="reader-footer-brand"><span>{ko ? 'gling · 같이 갈 사람, 같이 나눌 이야기' : 'gling · People to go with, stories to share'}</span>

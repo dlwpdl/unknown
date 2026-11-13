@@ -9,7 +9,8 @@ import { useTheme } from '@/hooks/use-theme';
 import type { FeedSort } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
-export function FeedSortControl({ sort, title, onChange, action, children, style }: { sort: FeedSort; title: string; onChange: (sort: FeedSort) => void; action?: ReactNode; children?: ReactNode; style?: StyleProp<ViewStyle> }) {
+// byArea adds 동네별, 중고거래 only (owner 2026-11-13).
+export function FeedSortControl({ sort, title, onChange, action, children, style, byArea = false }: { sort: FeedSort; title: string; onChange: (sort: FeedSort) => void; action?: ReactNode; children?: ReactNode; style?: StyleProp<ViewStyle>; byArea?: boolean }) {
   const { tr } = useLanguage();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
@@ -18,11 +19,11 @@ export function FeedSortControl({ sort, title, onChange, action, children, style
     <View style={styles.row}>
       <ThemedText accessibilityRole="header" style={styles.title}>{title}</ThemedText>
       <View style={styles.options}>
-        {(['latest', 'popular'] as const).map(option => {
+        {(byArea ? ['latest', 'popular', 'area'] as const : ['latest', 'popular'] as const).map(option => {
           const selected = sort === option;
-          const label = tr(option === 'latest' ? '최신순' : '인기순');
+          const label = tr(option === 'latest' ? '최신순' : option === 'popular' ? '인기순' : '동네별');
           return <SelectionChip key={option} selected={selected} analyticsId="components_feed-sort-control.order"
-            accessibilityRole="button" accessibilityLabel={tr("{0}으로 정렬", (label))} accessibilityState={{ selected }} aria-pressed={selected}
+            accessibilityRole="button" accessibilityLabel={option === 'area' ? tr('동네별로 묶어 보기') : tr("{0}으로 정렬", (label))} accessibilityState={{ selected }} aria-pressed={selected}
             onPress={() => { play('selection'); onChange(option); }}
             style={styles.option}>
             <ThemedText type="smallBold" style={{ color: selected ? theme.accentInk : theme.textSecondary }}>{label}</ThemedText>
@@ -31,7 +32,7 @@ export function FeedSortControl({ sort, title, onChange, action, children, style
       </View>
     </View>
     <View style={styles.descriptionRow}><ThemedText type="small" themeColor="textSecondary" style={styles.description}>
-      {sort === 'latest' ? tr("새로 올라온 글부터") : tr("최근 7일 · 반응이 많은 글부터")}
+      {sort === 'latest' ? tr("새로 올라온 글부터") : sort === 'popular' ? tr("최근 7일 · 반응이 많은 글부터") : tr('글이 많은 동네부터')}
     </ThemedText>{action}</View>
     {children ? <View style={styles.extra}>{children}</View> : null}
   </View></View>;
