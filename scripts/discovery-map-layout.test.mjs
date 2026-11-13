@@ -67,7 +67,7 @@ function mount({ cities = [], routeParams = {}, light = false, reduced = false, 
     '@/lib/discovery': discovery, '@/lib/discovery-sort': discoverySort, '@/lib/post-maps': postMaps, '@/lib/city-places': { getCityDiscoveryPlaces: () => places }, '@/lib/city-top25': { cityTop25Recommendations: () => [] }, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 }, '@/lib/discovery-data': { loadDiscoveryPosts: async () => ({ items: [], cursor: null, hasMore: false }) }, '@/lib/feed-data': {},
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play }) }, '@/lib/location': location, '@/lib/supabase': { supabase: {} },
     '@/lib/ticketmaster': { EVENT_CITIES: { vancouver: {} }, loadTicketmasterEvents: async () => ({ events: [], hasMore: false }) }, '@/components/post-ad-label': {}, '@/lib/hashtags': { hasAdLabel: () => false },
-    '@/components/drag-sheet': { DragSheet: 'DragSheet' }, '@/components/city-picker': { CityPicker: 'CityPicker' }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: target => { savedEntry.targets.push(target); return { state: savedEntry.state }; } }, '@/components/map-list-sheet': { MapListSheet: 'MapListSheet' }, '@/components/map-scope': { FriendSavedLine: 'FriendSavedLine', MapScopeSheet: 'MapScopeSheet' }, '@/lib/profile-friends': { loadMapScope: (...args) => loadScope(...args), loadCityPlaceSaves: (...args) => loadSaves(...args) }, '@/components/place-hours': { PlaceHours: 'PlaceHours' },
+    '@/components/drag-sheet': { DragSheet: 'DragSheet' }, '@/components/price-sheet': { PriceSheet: 'PriceSheet' }, '@/components/city-picker': { CityPicker: 'CityPicker' }, '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: target => { savedEntry.targets.push(target); return { state: savedEntry.state }; } }, '@/components/map-list-sheet': { MapListSheet: 'MapListSheet' }, '@/components/map-scope': { FriendSavedLine: 'FriendSavedLine', MapScopeSheet: 'MapScopeSheet' }, '@/lib/profile-friends': { loadMapScope: (...args) => loadScope(...args), loadCityPlaceSaves: (...args) => loadSaves(...args) }, '@/components/place-hours': { PlaceHours: 'PlaceHours' },
     '@/components/reservation-button': { ReservationButton: 'ReservationButton' }, '@/components/place-badges': { GlingVisitedBadge: 'GlingVisitedBadge', Top50Badge: 'Top50Badge' }, '@/components/business-webshop': { WebshopComparisonSheet: 'WebshopComparisonSheet', WebshopOrderButton: 'WebshopOrderButton' }, '@/lib/opening-hours': openingHours,
     '@/hooks/use-place-compose': { usePlaceCompose: () => null },
     '@/lib/listing-details': { inBounds: (b, p) => p.latitude >= b.south && p.latitude <= b.north && p.longitude >= b.west && p.longitude <= b.east },
@@ -75,7 +75,7 @@ function mount({ cities = [], routeParams = {}, light = false, reduced = false, 
   const exports = {};
   const code = ts.transpileModule(source + '\nexports.CityMap = CityMap; exports.DiscoveryCard = DiscoveryCard; exports.GlingVisitedBadge = GlingVisitedBadge;', { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(code, { exports, Date, AbortController, setTimeout, clearTimeout, require: name => { if (name.startsWith('@/assets/')) return name; assert.ok(Object.hasOwn(imports, name), name); return imports[name]; } });
-  return { render() { index = 0; memoSlot = 0; memos = cityMemos; memoValues.length = 0; effects.length = 0; focusEffects.length = 0; return exports.CityMap({ city: imports['@/lib/community-city'].useCommunityCity().city, onClose }); }, renderCard(item, distance, saves) { index = 0; memoSlot = 0; memos = null; return exports.DiscoveryCard({ item, distance, saves, viewerScope: 'guest', onOpen() {} }); }, renderBadge(selected) { index = 0; memoSlot = 0; memos = null; return exports.GlingVisitedBadge({ selected }); }, get days() { return memoValues[0]; }, get registryDependencies() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).deps; }, readRegistry() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).fn(); }, readResults() { return focusEffects.find(fn => String(fn).includes('loadPage(null)'))(); }, readScope() { return effects.find(value => String(value.fn).includes('loadMapScope')).fn(); }, readMine() { return effects.find(value => String(value.fn).includes("'mine'")).fn(); }, readSaves() { return effects.find(value => String(value.fn).includes('loadCityPlaceSaves')).fn(); }, compass, savedEntry, setCity: id => { city = { ...city, id }; }, setViewer: id => { viewer = id; }, setFocused: value => { focused = value; }, feedback, alerts, routes, chosenCities };
+  return { render() { index = 0; memoSlot = 0; memos = cityMemos; memoValues.length = 0; effects.length = 0; focusEffects.length = 0; return exports.CityMap({ city: imports['@/lib/community-city'].useCommunityCity().city, onClose }); }, renderCard(item, distance, saves, status, savedBy) { index = 0; memoSlot = 0; memos = null; return exports.DiscoveryCard({ item, distance, saves, status, savedBy, viewerScope: 'guest', onOpen() {} }); }, renderBadge(selected) { index = 0; memoSlot = 0; memos = null; return exports.GlingVisitedBadge({ selected }); }, get days() { return memoValues[0]; }, get registryDependencies() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).deps; }, readRegistry() { return effects.find(value => String(value.fn).includes('loadCityWebshops')).fn(); }, readResults() { return focusEffects.find(fn => String(fn).includes('loadPage(null)'))(); }, readScope() { return effects.find(value => String(value.fn).includes('loadMapScope')).fn(); }, readMine() { return effects.find(value => String(value.fn).includes("'mine'")).fn(); }, readFriends() { return effects.find(value => String(value.fn).includes("'friends', city.id")).fn(); }, readSaves() { return effects.find(value => String(value.fn).includes('loadCityPlaceSaves')).fn(); }, compass, savedEntry, setCity: id => { city = { ...city, id }; }, setViewer: id => { viewer = id; }, setFocused: value => { focused = value; }, feedback, alerts, routes, chosenCities };
 }
 
 test('main categories toggle independently and event dates belong to the festival category', () => {
@@ -526,31 +526,37 @@ test('지금 영업 중 removes closed and unknown places from the map and keeps
   assert.deepEqual(view.feedback, ['selection', 'selection', 'selection']);
 });
 
-test('price chips select several levels, hide without price data, and an empty result offers 가격 필터 풀기', async () => {
+test('price chips show without a category once a place has a price, select several levels, and an empty result offers 가격 필터 풀기', async () => {
   const places = [fixturePlace(1, { name: 'Cheap lunch', priceLevel: 1, subcategories: ['lunch'] }), fixturePlace(2, { name: 'Date night', priceLevel: 3, subcategories: ['date', 'dinner'] }), fixturePlace(3, { name: 'No price' }),
     fixturePlace(4, { name: 'Cafe', category: 'cafe' })];
   const view = mount({ places }); let tree = view.render();
   const priceChip = tree => nodes(tree).some(node => /^가격( 필터| .+, 바꾸기)$/.test(node.props?.accessibilityLabel ?? ''));
-  assert.ok(!priceChip(tree), 'no price chip before a priced category is chosen');
+  const sheet = () => nodes(tree).find(node => node.type === 'PriceSheet');
+  const pick = levels => { control(tree, priceChipLabel(tree)).props.onPress(); tree = view.render(); sheet().props.onDraft(levels); tree = view.render(); sheet().props.onApply(sheet().props.draft); tree = view.render(); };
+  const priceChipLabel = tree => nodes(tree).find(node => /^가격( 필터| .+, 바꾸기)$/.test(node.props?.accessibilityLabel ?? '')).props.accessibilityLabel;
+  const header = () => text(nodes(tree).find(node => node.type === 'FlatList').props.ListHeaderComponent);
+  assert.ok(priceChip(tree), 'the price chip shows before any category once a place has a price (owner 2026-11-13)');
+  assert.equal(sheet().props.draft, null, 'the sheet starts closed');
+  assert.equal(sheet().props.analyticsId, 'discovery.price');
+  assert.ok(!header().includes('가격 정보가 있는 곳만 보여요'));
   control(tree, '레스토랑').props.onPress(); tree = view.render();
   view.readResults(); await new Promise(setImmediate); tree = view.render();
   assert.equal(nodes(tree).find(node => node.type === 'MapListSheet').props.snap, 'half');
   assert.ok(nodes(nodes(tree).find(node => node.props?.testID === 'map-filter-overlay')).some(node => node.props?.analyticsId === 'discovery.subcategory'), 'sub-filters sit right under the big chips, not only in the list (owner 2026-11-05)');
   assert.deepEqual(nodes(tree).filter(node => node.props?.analyticsId === 'discovery.subcategory' && node.props.accessibilityLabel).map(node => node.props.accessibilityLabel), ['점심', '저녁', '데이트'], 'only sub-filters some place has');
-  assert.ok(priceChip(tree), 'the price chip shows once a priced category is chosen');
+  assert.ok(priceChip(tree), 'and stays with a priced category');
   control(tree, '가격 필터').props.onPress(); tree = view.render();
-  assert.equal(nodes(tree).find(node => node.type === 'DragSheet').props.visible, true);
-  control(tree, '가격대 1단계').props.onPress(); tree = view.render();
-  control(tree, '가격대 2단계').props.onPress(); tree = view.render();
-  control(tree, '가격 적용').props.onPress(); tree = view.render();
-  assert.equal(nodes(tree).find(node => node.type === 'DragSheet').props.visible, false);
+  assert.deepEqual(Array.from(sheet().props.draft), [], 'the chip opens the sheet with the current levels');
+  assert.ok(view.feedback.includes('selection'));
+  sheet().props.onDraft([1, 2]); tree = view.render();
+  assert.deepEqual(listOf(tree), ['Cheap lunch', 'Date night', 'No price'], 'a draft changes nothing until it is applied');
+  sheet().props.onApply(sheet().props.draft); tree = view.render();
+  assert.equal(sheet().props.draft, null, 'applying closes the sheet');
   assert.ok(nodes(tree).some(node => node.props?.accessibilityLabel === '가격 $–$$, 바꾸기'));
   assert.deepEqual(listOf(tree), ['Cheap lunch'], 'places without a price leave while a price is chosen');
   assert.deepEqual(pinsOf(tree), ['Cheap lunch']);
-  control(tree, '가격 $–$$, 바꾸기').props.onPress(); tree = view.render();
-  control(tree, '가격대 1단계').props.onPress(); tree = view.render();
-  control(tree, '가격대 4단계').props.onPress(); tree = view.render();
-  control(tree, '가격 적용').props.onPress(); tree = view.render();
+  assert.ok(header().includes('가격 정보가 있는 곳만 보여요'), 'the list says why places without a price left');
+  pick([2, 4]);
   assert.deepEqual(listOf(tree), []);
   const empty = emptyCards(tree).find(node => node.props.actionLabel === '가격 필터 풀기');
   assert.ok(empty, 'an empty price result can be cleared in one tap');
@@ -770,7 +776,7 @@ test('M1: 뜨는 중·인기 show on the pin and the card and filter the list; a
   assert.ok(!pin(markers(), 'Place 1').sublabel.includes('·'));
   const chip = label => nodes(tree).find(node => node.props?.accessibilityLabel === label);
   assert.ok(chip('뜨는 중') && chip('인기'));
-  assert.equal(chip('인기').props.analyticsId, 'discovery.subcategory', 'a registered target, so old servers keep the analytics batch');
+  assert.equal(chip('인기').props.analyticsId, 'discovery.status', 'its own target, registered by the same migration as the state rule');
   assert.ok(chip('인기').props.style.flat().some(style => style?.minHeight === 44), 'a 44pt target');
   chip('인기').props.onPress(); tree = view.render();
   assert.deepEqual(listOf(tree), ['Place 2']);
@@ -781,7 +787,9 @@ test('M1: 뜨는 중·인기 show on the pin and the card and filter the list; a
   assert.equal(listOf(tree).length, 4, 'pressing it again clears it');
   chip('뜨는 중').props.onPress(); tree = view.render();
   assert.deepEqual(listOf(tree), ['Place 3']);
-  const card = view.renderCard(nodes(tree).find(node => node.type === 'FlatList').props.data[0], null, { saverCount: 12, status: 'popular' });
+  const card = view.renderCard(nodes(tree).find(node => node.type === 'FlatList').props.data[0], null, { saverCount: 12, status: 'popular' }, 'popular');
+  const listed = nodes(tree).find(node => node.type === 'FlatList').props;
+  assert.equal(nodes(listed.renderItem({ item: listed.data[0], index: 0 })).find(node => node.type?.name === 'DiscoveryCard').props.status, 'trending', 'the list hands each card its state');
   const line = nodes(card).find(node => node.props?.accessibilityLabel === '인기 · 저장 12명');
   assert.ok(line, 'the word and the total read as one line');
   assert.equal(nodes(line).find(node => node.type === 'View' && node !== line).props.style.flat().at(-1).backgroundColor, discovery.PLACE_STATUS.popular.color, 'the same colour as the pin');
@@ -820,6 +828,50 @@ test('M1: an empty result under a state filter offers to clear it, and the choic
   answer = new Map(); view.readSaves(); await new Promise(setImmediate); tree = view.render();
   assert.equal(chip('인기'), undefined);
   assert.equal(listOf(tree).length, 2, 'the place lost its state, so the filter stops counting instead of emptying the list');
+});
+
+test('새로 생김·친구가 저장·요즘 뜨는 곳 (owner 2026-11-13): opening and outside dates make the state, friends only for a member, and the source sits on the card', async () => {
+  const day = days => new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+  const hot = { since: day(5), sourceUrl: 'https://example.com/hot', sourceName: 'Fixture Daily' };
+  const places = [fixturePlace(1, { opened: { on: day(10), sourceUrl: 'https://example.com/open' } }), fixturePlace(2, { opened: { on: day(120), sourceUrl: 'https://example.com/old' } }),
+    fixturePlace(3, { hot }), fixturePlace(4, { hot: { ...hot, since: day(90) } }), fixturePlace(5)];
+  const reads = [], friend = { placeKey: 'osm:node:5', friendCount: 1, friends: [{ id: 'friend-1', nickname: 'Mina' }] };
+  const view = mount({ places, loadScope: async (_client, scope, cityId, userId) => { reads.push([scope, cityId, userId]); return scope === 'friends' ? { places: new Map([['osm:node:5', friend]]), friendCount: 1 } : { places: new Map(), friendCount: null }; } });
+  let tree = view.render();
+  const chip = label => nodes(tree).find(node => node.props?.accessibilityLabel === label);
+  const pin = label => Array.from(nodes(tree).find(node => node.type === 'DiscoveryMap').props.markers).find(marker => marker.label === label);
+  assert.equal(view.readFriends(), undefined, 'a signed-out visitor never reads friends');
+  assert.ok(chip('새로 생김') && chip('뜨는 중'));
+  assert.equal(chip('친구가 저장'), undefined);
+  assert.equal(pin('Place 1').statusColor, discovery.PLACE_STATUS.new.color);
+  assert.ok(pin('Place 1').sublabel.startsWith('새로 생김 · '));
+  assert.equal(pin('Place 2').statusColor, undefined, 'an opening over 90 days ago is not new');
+  assert.equal(pin('Place 3').statusColor, discovery.PLACE_STATUS.trending.color, 'an outside source alone makes it trending');
+  assert.equal(pin('Place 4').statusColor, undefined, 'an outside mention over 60 days ago lapses');
+  chip('새로 생김').props.onPress(); tree = view.render();
+  assert.deepEqual(listOf(tree), ['Place 1']);
+  chip('새로 생김').props.onPress(); tree = view.render();
+
+  const card = view.renderCard(nodes(tree).find(node => node.type === 'FlatList').props.data.find(item => item.title === 'Place 3'), null, undefined, 'trending');
+  const source = nodes(card).find(node => node.props?.accessibilityLabel === 'Place 3 요즘 뜨는 곳 소개 글 열기, 외부 사이트');
+  assert.ok(source, 'the card names where the place is called trending');
+  assert.equal(source.props.accessibilityRole, 'link');
+  assert.ok(text(source).includes('요즘 뜨는 곳 · Fixture Daily ↗'));
+  assert.ok(!nodes(view.renderCard(nodes(tree).find(node => node.type === 'FlatList').props.data.find(item => item.title === 'Place 4'), null)).some(node => node.props?.accessibilityRole === 'link' && /요즘 뜨는 곳/.test(node.props.accessibilityLabel ?? '')), 'a lapsed mention shows no link');
+
+  view.setViewer('member-1'); tree = view.render();
+  view.readFriends(); await new Promise(setImmediate); tree = view.render();
+  assert.deepEqual(reads, [['friends', 'vancouver', 'member-1']], 'the existing friends reader, which leaves out friends who stopped sharing');
+  assert.equal(pin('Place 5').statusColor, discovery.PLACE_STATUS.friends.color);
+  chip('친구가 저장').props.onPress(); tree = view.render();
+  assert.deepEqual(listOf(tree), ['Place 5']);
+  const listed = nodes(tree).find(node => node.type === 'FlatList').props;
+  const friendCard = nodes(listed.renderItem({ item: listed.data[0], index: 0 })).find(node => node.type?.name === 'DiscoveryCard').props;
+  assert.equal(friendCard.status, 'friends');
+  assert.equal(friendCard.savedBy, friend, 'the card names the friend');
+  assert.ok(!text(view.renderCard(listed.data[0], null, undefined, 'friends', friend)).includes('친구가 저장 ·'), 'the friend line already says it, so the state word is not repeated');
+  view.setViewer('member-2'); tree = view.render();
+  assert.equal(pin('Place 5').statusColor, undefined, 'another account never sees the last person\'s friends');
 });
 
 test('M7: the map view gets the compass only on screen after a location fix, and the screen itself never holds readings', async () => {

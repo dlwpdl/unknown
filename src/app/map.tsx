@@ -18,7 +18,6 @@ import Reanimated, { SlideInDown, SlideOutDown, useReducedMotion } from 'react-n
 import { FlatList, Pressable, ScrollView } from '@/components/analytics-controls';
 import { animateLayout } from '@/components/disclosure';
 import { DiscoveryMap } from '@/components/discovery-map';
-import { DragSheet } from '@/components/drag-sheet';
 import { LiveDock, LiveSheets, useKeepClearOfNotice, useLive, useLiveMarkers, useMeetupMarkers, type LiveOpen } from '@/components/live-bubbles';
 import { MapListSheet, type SheetSnap } from '@/components/map-list-sheet';
 import { FriendSavedLine, MapScopeSheet } from '@/components/map-scope';
@@ -32,6 +31,7 @@ import { SavedEntryButton, useSavedEntry } from '@/components/saved-entry';
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { GlingVisitedBadge as VisitedBadge, Top50Badge } from '@/components/place-badges';
 import { FeedAd } from '@/components/feed-ad';
+import { PriceSheet } from '@/components/price-sheet';
 import { SelectionChip } from '@/components/selection-chip';
 import { adsSupported } from '@/lib/ads';
 import { contentAdPosition } from '@/lib/content-ad-placement';
@@ -50,7 +50,7 @@ import { useCommunityCity } from '@/lib/community-city';
 import { bindBusinessPlaces, loadCityBusinessLinks, loadCityBusinessMapPhotos, loadCityWebshops, type BusinessMapPhotos, type Webshop } from '@/lib/webshops';
 import { DELIVERY_PARTNERS, deliveryPartnerPlace } from '@/lib/delivery-partners';
 import { discoveryDistanceKm, sortDiscoveryItems } from '@/lib/discovery-sort';
-import { DISCOVERY_CATEGORIES, PLACE_STATUS, PLACE_SUBCATEGORIES, PRICE_FILTERS, PRICE_LEVELS, TOP25_GOLD, discoveryDays, discoveryEvent, discoveryEventOnDays, discoveryMatches, discoveryPlace, discoveryRefines, mapAppUrl, mergeCityTop25, pinSubcategory, priceLabel, priceSymbol, type DiscoveryDate, type DiscoveryFilter, type DiscoveryItem } from '@/lib/discovery';
+import { DISCOVERY_CATEGORIES, PLACE_STATUS, PLACE_SUBCATEGORIES, TOP25_GOLD, discoveryDays, discoveryEvent, discoveryEventOnDays, discoveryMatches, discoveryPlace, discoveryRefines, mapAppUrl, mergeCityTop25, pinSubcategory, placeHot, placeStatuses, priceLabel, priceSymbol, type DiscoveryDate, type DiscoveryFilter, type DiscoveryItem, type MapPlaceStatus } from '@/lib/discovery';
 import type { DiscoveryBounds } from '@/lib/discovery-map-html';
 import { inBounds } from '@/lib/listing-details';
 import { cityClock, openState } from '@/lib/opening-hours';
@@ -64,7 +64,7 @@ import { isFreshLocation, type LocationFix } from '@/lib/location';
 import { loadLiveMap } from '@/lib/live-bubbles';
 import { mapCityCenter } from '@/lib/post-map-html';
 import { postPublicAddress, type PostPin } from '@/lib/post-maps';
-import { loadCityPlaceSaves, loadMapScope, type CityPlaceSave, type FriendSavedPlace, type MapScope, type MapScopePlaces, type PlaceStatus } from '@/lib/profile-friends';
+import { loadCityPlaceSaves, loadMapScope, type CityPlaceSave, type FriendSavedPlace, type MapScope, type MapScopePlaces } from '@/lib/profile-friends';
 import { supabase } from '@/lib/supabase';
 import { safeMerchantSourceUrl } from '@/lib/merchant-source';
 import { PUBLIC_SITE, publicCompanyUrl } from '@/lib/public-seo';
@@ -134,7 +134,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const [scope, setScope] = useState<MapScope>('all'), [scopeOpen, setScopeOpen] = useState(false);
   const [scopeResult, setScopeResult] = useState<{ key: string; value: MapScopePlaces | null } | null>(null);
   const [priceLevels, setPriceLevels] = useState<number[]>([]), [priceDraft, setPriceDraft] = useState<number[] | null>(null), [subcategories, setSubcategories] = useState<string[]>([]);
-  const [statusFilter, setStatusFilter] = useState<PlaceStatus | null>(null);
+  const [statusFilter, setStatusFilter] = useState<MapPlaceStatus | null>(null);
   // The last pressed category chip and a press count, so its icon plays its gesture once per press.
   const [bump, setBump] = useState({ id: '', n: 0 });
   const [moved, setMoved] = useState<{ bounds: DiscoveryBounds; zoom?: number } | null>(null), [region, setRegion] = useState<DiscoveryBounds | null>(null);
@@ -187,6 +187,15 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     void loadMapScope(supabase, 'mine', city.id, me.id).then(value => { if (active) setMineResult({ key: mineKey, places: value.places }); }, () => {});
     return () => { active = false; };
   }, [mineScope, isAuthed, isFocused, mineKey, city.id, me.id]);
+  // 친구가 저장 (M1, owner 2026-11-13): friends' shared saves mark their places in every scope; 친구가 저장한 곳 already holds that list, and a failed read just leaves pins plain.
+  const [friendsResult, setFriendsResult] = useState<{ key: string; places: MapScopePlaces['places'] } | null>(null);
+  const friendsScope = scope === 'friends';
+  useEffect(() => {
+    if (friendsScope || !isAuthed || !isFocused) return;
+    let active = true;
+    void loadMapScope(supabase, 'friends', city.id, me.id).then(value => { if (active) setFriendsResult({ key: mineKey, places: value.places }); }, () => {});
+    return () => { active = false; };
+  }, [friendsScope, isAuthed, isFocused, mineKey, city.id, me.id]);
   // M3 (owner 2026-11-05): saver totals for this city (CityMap remounts per city). An older server answers null and a failed read keeps what we had, so the map still works without them.
   const [placeSaves, setPlaceSaves] = useState<Map<string, CityPlaceSave> | null>(null);
   useEffect(() => {
@@ -309,17 +318,21 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   // A saved scope keeps only catalog places whose key someone saved; categories, open-now, price and sub-filters still apply inside it.
   const scopePlaces = scope === 'all' ? null : scopeData?.value?.places ?? NO_SAVED_PLACES;
   const savesOf = useCallback((item: DiscoveryItem) => item.source === 'place' ? placeSaves?.get(placeKey(item)) : undefined, [placeSaves]);
+  const friendSaved = friendsScope ? scopePlaces : friendsResult?.key === mineKey ? friendsResult.places : null;
+  const friendsOf = useCallback((item: DiscoveryItem) => item.source === 'place' ? friendSaved?.get(placeKey(item)) ?? undefined : undefined, [friendSaved]);
+  const statusesOf = useCallback((item: DiscoveryItem) => item.source === 'place' ? placeStatuses(item.place, savesOf(item)?.status, !!friendsOf(item), now) : [], [savesOf, friendsOf, now]);
   const { scopedItems, priceReady, subcategoryOptions, activePrices, activeSubcategories, statusOptions, activeStatus, shown, discountOrder, savesReady, savesOrder, order, items, unknownItems } = useMemo(() => {
     const scopedItems = scopePlaces ? cityItems.filter(item => item.source === 'place' && scopePlaces.has(placeKey(item))) : cityItems;
     const matches = scopedItems.filter(item => discoveryMatches(item, selectedFilters, query) && discoveryEventOnDays(item, days));
     // Price and sub-filter chips show only when some place here has the value, and a choice only counts while its chip shows.
-    const priceReady = selectedFilters.some(id => PRICE_FILTERS.includes(id)) && matches.some(item => !!item.place?.priceLevel);
+    // Price needs no category first (owner 2026-11-13 "장소찾을떄도 필터할수잇게? ... 가격별").
+    const priceReady = matches.some(item => !!item.place?.priceLevel);
     const subcategoryOptions = PLACE_SUBCATEGORIES.filter(option => selectedFilters.includes(option.filter) && matches.some(item => item.place?.subcategories?.includes(option.id)));
     const activePrices = priceReady ? priceLevels : [], activeSubcategories = subcategories.filter(id => subcategoryOptions.some(option => option.id === id));
-    // M1 (owner 2026-11-05): 뜨는 중·인기 follow the same rule, and an older server has no statuses, so no chips.
-    const statusOptions = (['trending', 'popular'] as const).filter(id => matches.some(item => savesOf(item)?.status === id));
+    // M1 (owner 2026-11-05): states follow the same rule; with no state anywhere (an older server, no data yet) there are no chips.
+    const statusOptions = (Object.keys(PLACE_STATUS) as MapPlaceStatus[]).filter(id => matches.some(item => statusesOf(item).includes(id)));
     const activeStatus = statusFilter && statusOptions.includes(statusFilter) ? statusFilter : null;
-    const refined = matches.filter(item => discoveryRefines(item, activePrices, activeSubcategories) && (!activeStatus || savesOf(item)?.status === activeStatus) && (!region || located(item) && inBounds(region, item)));
+    const refined = matches.filter(item => discoveryRefines(item, activePrices, activeSubcategories) && (!activeStatus || statusesOf(item).includes(activeStatus)) && (!region || located(item) && inBounds(region, item)));
     // 지금 영업 중 uses the city's own clock: closed places leave, places with unknown hours wait in the list's last row, and events and posts (no hours) leave too.
     const clock = cityClock(city.id, now), hours = (item: DiscoveryItem) => item.place ? openState(item.place.openingHours, clock) : 'unknown';
     const shown = openNow ? refined.filter(item => hours(item) === 'open') : refined;
@@ -330,7 +343,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     const items = sortDiscoveryItems(shown, userLocation, order, item => savesOf(item)?.saverCount ?? 0).slice(0, 500);
     const unknownItems = openNow ? sortDiscoveryItems(refined.filter(item => item.source === 'place' && hours(item) === 'unknown'), userLocation, 'near').slice(0, 500) : [];
     return { scopedItems, priceReady, subcategoryOptions, activePrices, activeSubcategories, statusOptions, activeStatus, shown, discountOrder, savesReady, savesOrder, order, items, unknownItems };
-  }, [cityItems, scopePlaces, selectedFilters, query, days, priceLevels, subcategories, statusFilter, savesOf, region, city.id, now, openNow, deliveryOnly, sortBy, userLocation]);
+  }, [cityItems, scopePlaces, selectedFilters, query, days, priceLevels, subcategories, statusFilter, savesOf, statusesOf, region, city.id, now, openNow, deliveryOnly, sortBy, userLocation]);
   const limited = !!current?.limited || shown.length > 500;
   const listData = useMemo(() => showUnknown && unknownItems.length ? [...items, ...unknownItems] : items, [showUnknown, unknownItems, items]);
   const hasVerifiedDiscount = items.some(item => Number.isFinite(item.webshopDiscount) && item.webshopDiscount! > 0 && item.webshopDiscount! <= 100);
@@ -347,12 +360,12 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     const category = DISCOVERY_CATEGORIES.find(value => value.id === item.category)!;
     // The second line leads with the place's state when it has one (M1), then the first kind of place or the category.
     const subcategory = pinSubcategory(item.place?.subcategories);
-    const state = savesOf(item)?.status, status = state ? PLACE_STATUS[state] : null;
+    const state = statusesOf(item)[0], status = state ? PLACE_STATUS[state] : null;
     return { id: item.id, latitude: item.latitude, longitude: item.longitude, color: category.color,
       label: `${hasAdLabel(item.post?.hashtags) ? 'AD · ' : ''}${item.title}`.slice(0,80), sublabel: `${status ? `${tr(status.label)} · ` : ''}${tr(subcategory?.label ?? category.label)}`.slice(0, 40), icon: category.art,
       ...(item.top25 || item.glingVisited ? { featured: true } : {}), ...(item.top25 ? { top25: true } : {}), ...(item.webshopDiscount ? { discount: item.webshopDiscount } : {}), ...(status ? { statusColor: status.color } : {}),
       ...(item.source === 'place' && (savedNow[`${viewerScope}:${placeKey(item)}`] ?? !!mySaved?.has(placeKey(item))) ? { saved: true } : {}) };
-  }), [pins, savesOf, tr, savedNow, viewerScope, mySaved]);
+  }), [pins, statusesOf, tr, savedNow, viewerScope, mySaved]);
   const liveMarkers = useLiveMarkers(liveOn ? live.map : null, now, showBubbles, city.id);
   const meetupMarkers = useMeetupMarkers(city.id, viewerScope, now, meetupsOn && showMeetups && isFocused);
   // The map takes at most 500 pins; bubbles and meetups come first so a full city never pushes them out.
@@ -512,10 +525,9 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     return artChip({ id: option.id, label: tr(option.label), selected: on, size: 32, analyticsId: 'discovery.subcategory',
       onPress: () => { play('selection'); setSubcategories(value => value.includes(option.id) ? value.filter(id => id !== option.id) : [...value, option.id]); } });
   };
-  // shortcut: reuses the registered 'discovery.subcategory' target since a new one must reach the server before the app; register 'discovery.status' when a migration ships.
-  const statusChip = (id: PlaceStatus) => {
+  const statusChip = (id: MapPlaceStatus) => {
     const on = activeStatus === id, label = tr(PLACE_STATUS[id].label);
-    return <SelectionChip key={id} selected={on} baseColor={theme.backgroundElement} analyticsId="discovery.subcategory" accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: on }}
+    return <SelectionChip key={id} selected={on} baseColor={theme.backgroundElement} analyticsId="discovery.status" accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: on }}
       onPress={() => { play('selection'); setStatusFilter(on ? null : id); }} style={[styles.chip, { borderColor: on ? theme.accent : theme.line }]}>
       <View style={[styles.dot, { backgroundColor: PLACE_STATUS[id].color }]} /><ThemedText type="smallBold" style={{ color: on ? theme.accentInk : theme.text }}>{label}</ThemedText>
     </SelectionChip>;
@@ -548,8 +560,8 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     <SymbolView name={showUnknown ? { ios: 'chevron.up', android: 'expand_less', web: 'expand_less' } : { ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={IconSize.inline} tintColor={theme.textSecondary} />
   </Pressable>, [openNow, unknownItems.length, showUnknown, theme, reduced, play, tr]);
   // One card renderer while the cards' inputs stay the same, so a pan or a layout pass does not redraw every mounted card (map lag 2026-11-11).
-  const renderCard = useCallback(({ item, index }: { item: DiscoveryItem; index: number }) => <>{showUnknown && index === items.length && unknownRow}<View style={[styles.listCard, clayBox ? styles.listCardClay : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}<DiscoveryCard item={item} now={now} distance={discoveryDistanceKm(item, userLocation)} externalInfo={!!onClose} translationVisible={visibleResultIds.has(item.id)} viewerScope={viewerScope} savedBy={scopePlaces?.get(placeKey(item))} saves={savesOf(item)} onOpen={() => open(item)} /><GlingVisitNote item={item} />{orderButton(item)}{located(item) && <Directions item={item} />}</View>{adsSupported && !loading && !current?.errors.length && !selectedFilters.includes('top25') && index === 3 && contentAdPosition(index, items.length) && <FeedAd key={`ad-after-${item.id}`} surface="map" />}</>,
-    [showUnknown, items.length, unknownRow, clayBox, theme, now, userLocation, onClose, visibleResultIds, viewerScope, scopePlaces, savesOf, open, orderButton, loading, current?.errors.length, selectedFilters]);
+  const renderCard = useCallback(({ item, index }: { item: DiscoveryItem; index: number }) => <>{showUnknown && index === items.length && unknownRow}<View style={[styles.listCard, clayBox ? styles.listCardClay : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}<DiscoveryCard item={item} now={now} distance={discoveryDistanceKm(item, userLocation)} externalInfo={!!onClose} translationVisible={visibleResultIds.has(item.id)} viewerScope={viewerScope} savedBy={friendsOf(item)} saves={savesOf(item)} status={statusesOf(item)[0]} onOpen={() => open(item)} /><GlingVisitNote item={item} />{orderButton(item)}{located(item) && <Directions item={item} />}</View>{adsSupported && !loading && !current?.errors.length && !selectedFilters.includes('top25') && index === 3 && contentAdPosition(index, items.length) && <FeedAd key={`ad-after-${item.id}`} surface="map" />}</>,
+    [showUnknown, items.length, unknownRow, clayBox, theme, now, userLocation, onClose, visibleResultIds, viewerScope, friendsOf, savesOf, statusesOf, open, orderButton, loading, current?.errors.length, selectedFilters]);
   const searchHere = !!moved && moved.bounds !== region && (moved.zoom ?? FAR_ZOOM) >= FAR_ZOOM && sheet !== 'full' && !cardShown;
   // As a tab there is no back button; the bottom edge already stops above the tab bar (iOS inset includes it, Android content ends at it).
   // The route opened from a list wears the shared round-back bar (owner 2026-11-04 "위쪽: 동그란 뒤로 + 가운데 제목"); the tab and the chat sheet keep their own row.
@@ -608,7 +620,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       {cardShown ? <Reanimated.View entering={reduced ? undefined : SlideInDown.duration(ControlMotion.expandMs)} exiting={reduced ? undefined : SlideOutDown.duration(ControlMotion.sheetCloseMs)}
         onLayout={event => setCardHeight(event.nativeEvent.layout.height)} style={[styles.selected, { backgroundColor: theme.card, borderColor: theme.line }]}>
           <ScrollView analyticsId="discovery.detail" accessibilityLabel={tr("선택한 장소 상세, 스크롤로 더 보기")} style={styles.selectedScroll} contentContainerStyle={styles.selectedContent}>
-            <View style={styles.cardRow}><View style={styles.flex}><DiscoveryCard item={selected} now={now} distance={discoveryDistanceKm(selected, userLocation)} externalInfo={!!onClose} viewerScope={viewerScope} savedBy={scopePlaces?.get(placeKey(selected))} saves={savesOf(selected)} onOpen={() => open(selected)} /></View><View>{saveButton}{composeButton}</View></View>
+            <View style={styles.cardRow}><View style={styles.flex}><DiscoveryCard item={selected} now={now} distance={discoveryDistanceKm(selected, userLocation)} externalInfo={!!onClose} viewerScope={viewerScope} savedBy={friendsOf(selected)} saves={savesOf(selected)} status={statusesOf(selected)[0]} onOpen={() => open(selected)} /></View><View>{saveButton}{composeButton}</View></View>
             {!!savedEntry.error && <ThemedText type="small" accessibilityRole="alert">{savedEntry.error}</ThemedText>}<Top25Note item={selected} /><GlingVisitNote item={selected} /></ScrollView>{orderButton(selected)}<Directions item={selected} reserveFromBusiness />
       </Reanimated.View>
         : sheet === 'closed' && !loading && !deliveryUnavailable && items.length === 0 && <View style={[styles.mapEmpty, { bottom: rowBottom }]}>{refineCard || <StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : visitedOnly ? visitedReady ? tr("조건에 맞는 글링 방문 장소가 없어요") : tr("아직 글링이 방문한 장소가 없어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 50 장소가 없어요") : tr("이 도시의 TOP 50을 준비하고 있어요") : deliveryOnly ? tr("아직 배달 할인 가게가 없어요") : tr("아직 표시할 공개 위치가 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : visitedOnly ? visitedReady ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : tr("직접 다녀온 장소만 모아 보여드려요. 다른 분류에서 먼저 둘러보세요.") : top25Only ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : deliveryOnly ? tr("가게가 직접 받는 주문 페이지를 준비하고 있어요.") : tr("직접 첨부한 핀과 위치가 확인된 행사만 지도에 표시해요.")} actionLabel={current?.errors.length ? tr("다시 시도") : visitedOnly ? tr("전체 장소 보기") : tr("리스트 보기")} onAction={current?.errors.length ? refresh : visitedOnly ? () => { setSelectedFilters([]); setRevealedFilter('all'); setDateFilter(null); setDate(''); } : () => showList('half')} />}</View>}
@@ -621,7 +633,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       <MapListSheet snap={cardShown ? 'closed' : sheet} positions={sheetStops} onSnap={setSheet} header={sheetHeader}>
         <FlatList analyticsId="discovery.list" refreshing={false} onRefresh={() => { play('selection'); refresh(); }} onViewableItemsChanged={trackTranslationResults} viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY} data={listData} keyExtractor={item => item.id}
           contentContainerStyle={[styles.list, { paddingBottom: 24 + Math.max(sheetStops[sheet] - sheetStops.full, 0) }]}
-          ListHeaderComponent={<ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr('지도 {0}개 · 목록 {1}개', pins.length, items.length)}{limited ? tr(" · 500개까지 표시") : ''}</ThemedText>}
+          ListHeaderComponent={<ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr('지도 {0}개 · 목록 {1}개', pins.length, items.length)}{limited ? tr(" · 500개까지 표시") : ''}{activePrices.length ? `\n${tr('가격 정보가 있는 곳만 보여요')}` : ''}</ThemedText>}
           renderItem={renderCard}
           ListEmptyComponent={loading || deliveryUnavailable ? undefined : refineCard || <StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : visitedOnly ? visitedReady ? tr("조건에 맞는 글링 방문 장소가 없어요") : tr("아직 글링이 방문한 장소가 없어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 50 장소가 없어요") : tr("이 도시의 TOP 50을 준비하고 있어요") : deliveryOnly ? tr("아직 배달 할인 가게가 없어요") : tr("조건에 맞는 항목이 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : visitedOnly ? visitedReady ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : tr("직접 다녀온 장소만 모아 보여드려요. 다른 분류에서 먼저 둘러보세요.") : deliveryOnly ? tr("가게가 직접 받는 주문 페이지를 준비하고 있어요.") : tr("다른 분류나 날짜를 선택해 보세요. 장소 위치는 글을 쓸 때 첨부할 수 있어요.")} actionLabel={current?.errors.length ? tr("다시 시도") : visitedOnly ? tr("전체 장소 보기") : undefined} onAction={current?.errors.length ? refresh : visitedOnly ? () => { setSelectedFilters([]); setRevealedFilter('all'); setDateFilter(null); setDate(''); } : undefined} />}
           ListFooterComponent={<>{!showUnknown && unknownRow}{more && <Pressable analyticsId="discovery.more" accessibilityRole="button" disabled={loading} onPress={() => { if (morePending.current || loading) return; morePending.current = true; play('selection'); loadPage(current); }} style={[styles.more, { borderColor: theme.line }]}><ThemedText themeColor="accent">{loading ? tr("불러오는 중…") : tr("더 보기")}</ThemedText></Pressable>}{limited && <ThemedText type="small" themeColor="textSecondary">{tr("500개까지 표시했어요. 검색어나 분류로 범위를 줄여 주세요.")}</ThemedText>}<ThemedText type="small" themeColor="textSecondary" style={styles.source}>{tr("글링 공개 위치 · 장소 자료: OpenStreetMap · 행사 정보: Ticketmaster")}{items.some(item => !located(item)) ? tr("\n위치 확인 전 항목은 지도 핀 없이 목록에 표시해요.") : ''}</ThemedText></>} />
@@ -655,25 +667,12 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     </Modal>
     {!onClose && <LiveSheets open={liveOpen} onChange={setLiveOpen} city={city} mapCenter={userLocation ?? { latitude: cityLatitude, longitude: cityLongitude }} now={now} />}
     <MapScopeSheet visible={scopeOpen} scope={scope} onClose={() => setScopeOpen(false)} onPick={value => { setScopeOpen(false); setSelectedId(null); setScope(value); }} />
-    <DragSheet visible={priceDraft !== null} onClose={() => setPriceDraft(null)} title={tr('가격')}>
-      <View style={styles.priceOptions}>{PRICE_LEVELS.map(level => {
-        const on = !!priceDraft?.includes(level);
-        return <SelectionChip key={level} selected={on} baseColor={theme.backgroundElement} analyticsId="discovery.price" accessibilityRole="button" accessibilityLabel={tr('가격대 {0}단계', level)} accessibilityState={{ selected: on }}
-          onPress={() => { play('selection'); setPriceDraft(value => value && (value.includes(level) ? value.filter(other => other !== level) : [...value, level])); }} style={[styles.priceOption, { borderColor: on ? theme.accent : theme.line }]}>
-          <ThemedText type="smallBold" style={{ color: on ? theme.accentInk : theme.text }}>{priceSymbol(level)}</ThemedText>
-        </SelectionChip>;
-      })}</View>
-      <ThemedText type="caption" themeColor="textSecondary">{tr('여러 개 같이 고를 수 있어요. 가격 정보가 있는 곳만 남아요.')}</ThemedText>
-      <View style={[styles.sheetActions, { borderColor: theme.line }]}>
-        <Pressable analyticsId="discovery.price" accessibilityRole="button" onPress={() => { play('selection'); setPriceDraft([]); }} style={styles.date}><ThemedText>{tr("초기화")}</ThemedText></Pressable>
-        <Pressable analyticsId="discovery.price" accessibilityRole="button" accessibilityLabel={tr('가격 적용')} onPress={() => { play('selection'); setPriceLevels(priceDraft ?? []); setPriceDraft(null); }} style={[styles.apply, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr("적용")}</ThemedText></Pressable>
-      </View>
-    </DragSheet>
+    <PriceSheet draft={priceDraft} onDraft={setPriceDraft} onApply={levels => { setPriceLevels(levels); setPriceDraft(null); }} analyticsId="discovery.price" />
   </SafeAreaView>;
 }
 
-function DiscoveryCard({ item, viewerScope, onOpen, translationVisible = true, externalInfo = false, distance = null, now, savedBy, saves }: { item: DiscoveryItem; distance?: number | null; viewerScope: string; onOpen: () => void; translationVisible?: boolean; externalInfo?: boolean; now?: number; savedBy?: FriendSavedPlace | null; saves?: CityPlaceSave }) {
-  const theme = useTheme();
+function DiscoveryCard({ item, viewerScope, onOpen, translationVisible = true, externalInfo = false, distance = null, now, savedBy, saves, status: state }: { item: DiscoveryItem; distance?: number | null; viewerScope: string; onOpen: () => void; translationVisible?: boolean; externalInfo?: boolean; now?: number; savedBy?: FriendSavedPlace | null; saves?: CityPlaceSave; status?: MapPlaceStatus }) {
+  const theme = useTheme(), { play } = useInteractionFeedback();
   const { tr, locale: appLocale } = useLanguage();
   const translatable = !!item.post && item.source === 'post';
   const source = item.post ? visibleTranslationSource('post', item.post.title, item.post.body, !!item.post.room) : { title: item.title, body: '' };
@@ -687,13 +686,19 @@ function DiscoveryCard({ item, viewerScope, onOpen, translationVisible = true, e
   const address = housing && item.post ? postPublicAddress(item.post.body) ?? tr('상세주소 미등록') : item.label;
   const distanceLabel = distance !== null && Number.isFinite(distance) && distance >= 0 ? distance < .1 ? tr('100m 이내') : tr('약 {0}km', distance.toFixed(1)) : null;
   const discountLabel = Number.isFinite(item.webshopDiscount) && item.webshopDiscount! > 0 && item.webshopDiscount! <= 100 ? tr('확인한 대표 메뉴 최대 할인 {0}%', item.webshopDiscount) : null;
-  const status = saves?.status ? PLACE_STATUS[saves.status] : null;
+  // The friends' line below already says who saved it, so the word is not repeated.
+  const status = state && !(state === 'friends' && savedBy) ? PLACE_STATUS[state] : null;
   const saveLine = [status ? tr(status.label) : '', saves?.saverCount ? tr('저장 {0}명', saves.saverCount.toLocaleString(appLocale)) : ''].filter(Boolean).join(' · ');
+  // An outside source's word that the place is hot (CityPlace.hot) always shows where it comes from.
+  const hot = placeHot(item.place, now ?? Date.now());
   return <View><Pressable analyticsId="discovery.card" accessibilityRole={externalInfo ? 'link' : 'button'} accessibilityLabel={`${hasAdLabel(item.post?.hashtags) ? tr("광고") + ", " : ""}${item.glingVisited ? tr("글링 직접 방문 장소, ") : ''}${item.top25 ? tr("TOP 50 선정 장소, ") : ''}${tr(category.label)}, ${headline}, ${housing ? `${displayTitle}, ` : ''}${address}, ${distanceLabel ? distanceLabel + ', ' : ''}${discountLabel ? discountLabel + ', ' : ''}${externalInfo ? tr('공개 정보, 외부 페이지 열기') : item.source === 'place' && !item.post && !item.place ? tr("선정 출처 열기") : tr("상세 보기")}`} onPress={onOpen} style={styles.cardBody}>
     <View style={[styles.thumbnail, { backgroundColor: theme.backgroundElement }]}>{item.place && (item.place.mapPhotoUri || !item.post && item.place.photo) ? <CityPlacePhoto place={item.place} style={StyleSheet.absoluteFill} /> : image ? <Image source={image} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} /> : <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} size={26} tintColor={category.color} />}</View>
     <View style={styles.cardText}>{discountLabel && <ThemedText type="smallBold" style={{ color: theme === Colors.light ? '#276B57' : '#8FD9C4' }}>{discountLabel}</ThemedText>}<View style={styles.badge}><PostAdLabel hashtags={item.post?.hashtags} /><View style={[styles.dot, { backgroundColor: category.color }]} /><ThemedText type="small" themeColor="textSecondary">{tr(category.label)}{item.place?.priceLevel ? ` · ${priceSymbol(item.place.priceLevel)}` : ''}{!located(item) ? tr(" · 위치 확인 전") : ''}</ThemedText>{item.glingVisited && <GlingVisitedBadge />}{item.top25 && <Top50Badge />}</View><ThemedText type="smallBold" numberOfLines={2} style={housing ? styles.housingPrice : undefined}>{headline}</ThemedText>{housing && <ThemedText type="small" numberOfLines={2}>{displayTitle}</ThemedText>}<ThemedText type="small" themeColor="textSecondary" numberOfLines={housing ? 2 : 1}>{address}</ThemedText>{distanceLabel && <ThemedText type="small" themeColor="accent">{distanceLabel}</ThemedText>}{item.event && <ThemedText type="small" themeColor="textSecondary" numberOfLines={2}>{eventTime(item.event, appLocale)}</ThemedText>}{!housing && !!price && <ThemedText type="smallBold" themeColor="accent">{price}</ThemedText>}</View>
     <ThemedText type={externalInfo ? 'small' : 'default'} themeColor="textSecondary">{externalInfo ? tr('공개 정보 ↗') : '›'}</ThemedText>
-  </Pressable>{!!saveLine && <View accessible accessibilityLabel={saveLine} style={styles.saveLine}>{!!status && <View style={[styles.dot, { backgroundColor: status.color }]} />}<ThemedText type="small" themeColor="textSecondary">{saveLine}</ThemedText></View>}{!!savedBy && <FriendSavedLine entry={savedBy} />}{!!item.place?.openingHours && <PlaceHours openingHours={item.place.openingHours} cityId={item.cityId} now={now} />}{translatable && <TranslationControl translation={translation} />}</View>;
+  </Pressable>{!!saveLine && <View accessible accessibilityLabel={saveLine} style={styles.saveLine}>{!!status && <View style={[styles.dot, { backgroundColor: status.color }]} />}<ThemedText type="small" themeColor="textSecondary">{saveLine}</ThemedText></View>}{!!hot && <Pressable analyticsId="discovery.card" accessibilityRole="link" accessibilityLabel={tr('{0} 요즘 뜨는 곳 소개 글 열기, 외부 사이트', item.title)}
+      onPress={() => { play('selection'); void Linking.openURL(hot.sourceUrl).catch(() => { play('warning'); Alert.alert(tr("링크를 열지 못했어요."), tr("잠시 후 다시 눌러주세요.")); }); }} style={styles.top25Source}>
+      <ThemedText type="small" themeColor="textSecondary">{tr('요즘 뜨는 곳 · {0} ↗', hot.sourceName)}</ThemedText>
+    </Pressable>}{!!savedBy && <FriendSavedLine entry={savedBy} />}{!!item.place?.openingHours && <PlaceHours openingHours={item.place.openingHours} cityId={item.cityId} now={now} />}{translatable && <TranslationControl translation={translation} />}</View>;
 }
 function Top25Note({ item }: { item: DiscoveryItem }) {
   const theme = useTheme(), { play } = useInteractionFeedback();
@@ -737,7 +742,6 @@ const styles = StyleSheet.create({
   sheetSummary: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 8, paddingBottom: 6 },
   unknownRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: 14 },
   searchHere: { position: 'absolute', alignSelf: 'center', minHeight: 44, paddingHorizontal: 16, borderRadius: 22, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  priceOptions: { flexDirection: 'row', gap: 8, paddingVertical: 8 }, priceOption: { flex: 1, minHeight: 48, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   screen: { flex: 1 }, header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 8 }, tabHeader: { paddingLeft: 16 }, headerActions: { flexDirection: 'row', alignItems: 'center' },
   icon: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }, heading: { flex: 1, gap: 2 },
   titleButtonClay: { paddingHorizontal: 18, gap: 6 }, titleTextClay: { fontSize: 16, lineHeight: 22, fontWeight: '700', letterSpacing: 0 },

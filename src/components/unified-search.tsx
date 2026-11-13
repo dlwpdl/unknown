@@ -11,6 +11,7 @@ import { ClayPillFill, useClay } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
 import { GlingLoader } from '@/components/gling-loader';
+import { PriceSheet } from '@/components/price-sheet';
 import { PostZoomLink } from '@/components/post-zoom-link';
 import { ThemedText } from '@/components/themed-text';
 import { ControlMotion, ControlStyles, IconSize, Typography } from '@/constants/design-system';
@@ -20,6 +21,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useRevealChip } from '@/hooks/use-reveal-chip';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
+import { priceLabel, priceSymbol } from '@/lib/discovery';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
@@ -30,8 +32,9 @@ const kinds: UnifiedSearchKind[] = ['all', 'business', 'place', 'person', 'post'
 const kindActions = { all: 'search.kind.all', business: 'search.kind.business', place: 'search.kind.place', person: 'search.kind.person', post: 'search.kind.post', meetup: 'search.kind.meetup' };
 const resultActions = { business: 'search.result.business', place: 'search.result.place', person: 'search.result.person', post: 'search.result.post', meetup: 'search.result.meetup' };
 const identity = (item: UnifiedSearchItem) => `${item.kind}:${item.cityId}:${item.id}`;
+const NO_PRICES: number[] = [];
 type ContextToken = readonly unknown[];
-type Result = { token: ContextToken; items: UnifiedSearchItem[]; hasMore: boolean; nextOffset: number; loadingMore: boolean; moreFailed: boolean };
+type Result = { token: ContextToken; items: UnifiedSearchItem[]; hasMore: boolean; nextOffset: number; priced?: boolean; loadingMore: boolean; moreFailed: boolean };
 type Scope = { token: ContextToken; active: boolean; controller: AbortController; morePending: boolean; result: Result | null };
 
 export function UnifiedSearch({ initialCityId, initialQuery = '', initialKind = 'all' }: { initialCityId: string; initialQuery?: string; initialKind?: UnifiedSearchKind }) {
@@ -40,8 +43,11 @@ export function UnifiedSearch({ initialCityId, initialQuery = '', initialKind = 
   const [query, setQuery] = useState(initialQuery), [kind, setKind] = useState<UnifiedSearchKind>(initialKind);
   const [cityId, setCityId] = useState<string | null>(initialCityId), [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState<Result | null>(null), [failure, setFailure] = useState<ContextToken | null>(null);
+  // Price narrows 장소 only (owner 2026-11-13 "장소찾을떄도 필터할수잇게? ... 가격별"), with the map's own price sheet.
+  const [priceLevels, setPriceLevels] = useState<number[]>([]), [priceDraft, setPriceDraft] = useState<number[] | null>(null);
+  const prices = kind === 'place' ? priceLevels : NO_PRICES, priceKey = prices.join(',');
   const needle = query.trim().replace(/^#/, '').trim(), viewer = me.id;
-  const token = useMemo(() => [query, cityId, kind, viewer, isAuthed, isAuthLoading, focused, attempt, hidden] as const, [query, cityId, kind, viewer, isAuthed, isAuthLoading, focused, attempt, hidden]);
+  const token = useMemo(() => [query, cityId, kind, viewer, isAuthed, isAuthLoading, focused, attempt, hidden, priceKey] as const, [query, cityId, kind, viewer, isAuthed, isAuthLoading, focused, attempt, hidden, priceKey]);
   const live = useRef<Scope | null>(null);
   const current = loaded?.token === token ? loaded : null;
   useLayoutEffect(() => {
@@ -58,12 +64,12 @@ export function UnifiedSearch({ initialCityId, initialQuery = '', initialKind = 
     if (!needle || isAuthLoading || !scope?.active || scope.token !== token) return;
     const timer = setTimeout(() => {
       if (!scope.active || live.current !== scope) return;
-      void loadUnifiedSearch(supabase, { query: needle, cityId, kind, offset: 0, signal: scope.controller.signal }).then(page => {
+      void loadUnifiedSearch(supabase, { query: needle, cityId, kind, offset: 0, priceLevels: prices, signal: scope.controller.signal }).then(page => {
         if (scope.active && live.current === scope) setLoaded({ token, ...page, loadingMore: false, moreFailed: false });
       }).catch(() => { if (scope.active && live.current === scope && !scope.controller.signal.aborted) setFailure(token); });
     }, 250);
     return () => clearTimeout(timer);
-  }, [cityId, isAuthLoading, kind, needle, token]);
+  }, [cityId, isAuthLoading, kind, needle, token, prices]);
   function open(item: UnifiedSearchItem, event?: GestureResponderEvent) {
     const scope = live.current;
     // Post and meetup rows navigate through PostZoomLink right after this; a stale or hidden row cancels it.
@@ -80,13 +86,13 @@ export function UnifiedSearch({ initialCityId, initialQuery = '', initialKind = 
     if (!isCurrent() || isAuthLoading || kind === 'all' || !current?.hasMore || scope?.result !== current || scope.morePending) return;
     scope.morePending = true; play('selection');
     setLoaded(previous => previous?.token === token ? { ...previous, loadingMore: true, moreFailed: false } : previous);
-    void loadUnifiedSearch(supabase, { query: needle, cityId, kind, offset: current.nextOffset, signal: scope.controller.signal }).then(page => {
+    void loadUnifiedSearch(supabase, { query: needle, cityId, kind, offset: current.nextOffset, priceLevels: prices, signal: scope.controller.signal }).then(page => {
       if (!scope.active || live.current !== scope) return;
       setLoaded(previous => {
         if (previous?.token !== token) return previous;
         const unique = new Map(previous.items.map(value => [identity(value), value]));
         page.items.forEach(value => unique.set(identity(value), value));
-        return { token, items: [...unique.values()], hasMore: page.hasMore, nextOffset: page.nextOffset, loadingMore: false, moreFailed: false };
+        return { token, items: [...unique.values()], hasMore: page.hasMore, nextOffset: page.nextOffset, priced: previous.priced, loadingMore: false, moreFailed: false };
       });
     }).catch(() => {
       if (scope.active && live.current === scope && !scope.controller.signal.aborted) {
@@ -96,7 +102,8 @@ export function UnifiedSearch({ initialCityId, initialQuery = '', initialKind = 
   }
   return <UnifiedSearchView query={query} kind={kind} cityId={cityId} currentCityId={initialCityId} items={current?.items.filter(visible) ?? []}
     loading={!!needle && (isAuthLoading || (!current && failure !== token))} failed={failure === token} hasMore={!!current?.hasMore && kind !== 'all'}
-    moreLoading={!!current?.loadingMore} moreFailed={!!current?.moreFailed}
+    moreLoading={!!current?.loadingMore} moreFailed={!!current?.moreFailed} priced={!!current?.priced} prices={prices} priceDraft={priceDraft}
+    onPriceDraft={value => { if (isCurrent()) setPriceDraft(value); }} onPrices={value => { if (!isCurrent()) return; setPriceLevels(value); setPriceDraft(null); }}
     onBack={() => { if (!isCurrent()) return; play('selection'); Keyboard.dismiss(); if (router.canGoBack()) router.back(); else router.replace('/'); }}
     onQuery={value => { if (!isCurrent()) return; setQuery(value.slice(0, 100)); if (value.trim().startsWith('#')) setKind('post'); }}
     onClear={() => { if (!isCurrent()) return; play('selection'); setQuery(''); }}
@@ -108,6 +115,8 @@ export function UnifiedSearch({ initialCityId, initialQuery = '', initialKind = 
 type ViewProps = {
   query: string; kind: UnifiedSearchKind; cityId: string | null; currentCityId: string; items: UnifiedSearchItem[];
   loading: boolean; failed: boolean; hasMore: boolean; moreLoading: boolean; moreFailed: boolean;
+  // 장소 price filter: priced says some matching place has a price; priceDraft null keeps the sheet closed.
+  priced: boolean; prices: number[]; priceDraft: number[] | null; onPriceDraft: (draft: number[] | null) => void; onPrices: (levels: number[]) => void;
   onBack: () => void; onQuery: (query: string) => void; onClear: () => void; onKind: (kind: UnifiedSearchKind) => void;
   onScope: (city: string | null) => void; onRetry: () => void; onMore: () => void; onOpen: (item: UnifiedSearchItem, event?: GestureResponderEvent) => void;
 };
@@ -126,6 +135,7 @@ export function UnifiedSearchView(props: ViewProps) {
   }) : props.items.map(item => ({ type: 'item', item }));
   const empty = props.loading ? <View style={styles.state}><GlingLoader /><ThemedText accessibilityLiveRegion="polite" themeColor="textSecondary">{ko ? '검색하고 있어요…' : 'Searching…'}</ThemedText></View>
     : props.failed ? <View style={styles.state}><StateCard kind="error" title={ko ? '검색 결과를 불러오지 못했어요' : 'Couldn’t load results'} body={ko ? '연결을 확인하고 다시 시도해 주세요.' : 'Check your connection and try again.'} actionLabel={ko ? '다시 시도' : 'Try again'} onAction={props.onRetry} /></View>
+    : props.prices.length && props.query.trim() ? <View style={styles.state}><StateCard kind="empty" title={tr('이 가격대에 맞는 곳이 없어요')} body={tr('필터를 풀면 다른 곳도 보여요.')} actionLabel={tr('가격 필터 풀기')} onAction={() => props.onPrices([])} /></View>
       : <View style={styles.state}><StateCard kind="empty" title={props.query.trim() ? ko ? '검색 결과가 없어요' : 'No results found' : ko ? '무엇을 찾고 계세요?' : 'What are you looking for?'}
         body={props.query.trim() ? ko ? props.cityId === null ? '검색어나 종류를 바꿔서 다시 찾아보세요.' : '검색어나 종류를 바꾸거나 캐나다 전체에서 찾아보세요.' : props.cityId === null ? 'Try another search term or result type.' : 'Try another search term, result type or the Canada-wide scope.' : ko ? '비즈니스, 장소, 이웃과 게시글·모임을 한 번에 찾아보세요.' : 'Find businesses, places, people, posts and meetups in one search.'} /></View>;
   return <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safe, { backgroundColor: theme.background }]}>
@@ -143,14 +153,21 @@ export function UnifiedSearchView(props: ViewProps) {
       </View>
       {/* One line that scrolls sideways: a sixth chip wrapping alone onto a second line looked broken (QA Q20). */}
       <ScrollView testID="search.kinds" {...kindRow.scroll} horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={styles.kindRow} contentContainerStyle={styles.kindChips} accessibilityRole="radiogroup" accessibilityLabel={ko ? '검색 종류' : 'Result type'}>{kinds.map(kind => <SelectionChip key={kind} onLayout={kindRow.chip(kind)} analyticsId={kindActions[kind]} selected={props.kind === kind} accessibilityRole="radio" accessibilityState={{ checked: props.kind === kind }} onPress={() => props.onKind(kind)} style={ControlStyles.pill} baseColor={clay ? 'transparent' : theme.backgroundElement}>{clay && props.kind !== kind && <ClayPillFill kind="white" />}<ThemedText type="label" style={{ color: props.kind === kind ? theme.accentInk : theme.text }}>{labels[kind]}</ThemedText></SelectionChip>)}</ScrollView>
+      {props.kind === 'place' && (props.priced || props.prices.length > 0) && <View style={styles.priceRow}>
+        <SelectionChip analyticsId="search.price" selected={props.prices.length > 0} accessibilityRole="button" accessibilityLabel={props.prices.length ? tr('가격 {0}, 바꾸기', priceLabel(props.prices)) : tr('가격 필터')}
+          accessibilityState={{ selected: props.prices.length > 0, expanded: props.priceDraft !== null }} onPress={() => { play('selection'); props.onPriceDraft(props.prices); }} style={ControlStyles.pill} baseColor={clay ? 'transparent' : theme.backgroundElement}>
+          {clay && !props.prices.length && <ClayPillFill kind="white" />}<ThemedText type="label" style={{ color: props.prices.length ? theme.accentInk : theme.text }}>{props.prices.length ? priceLabel(props.prices) : tr('가격')} ⌄</ThemedText></SelectionChip>
+        {props.prices.length > 0 && <ThemedText type="caption" themeColor="textSecondary">{tr('가격 정보가 있는 곳만 보여요')}</ThemedText>}
+      </View>}
       <FlatList analyticsId="search.results" data={rows} keyExtractor={row => row.type === 'heading' ? `heading:${row.kind}` : identity(row.item)} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.results}
         ListEmptyComponent={empty ?? undefined} renderItem={({ item: row }) => row.type === 'heading' ? <View style={styles.group}><ThemedText type="section" accessibilityRole="header" style={styles.groupTitle}>{labels[row.kind]}</ThemedText><Pressable analyticsId="search.group.more" accessibilityRole="button" accessibilityLabel={ko ? `${labels[row.kind]} 더 보기` : `More ${labels[row.kind].toLowerCase()}`} onPress={() => props.onKind(row.kind)} style={styles.groupMore}><ThemedText type="label" themeColor="accent">{ko ? '더 보기' : 'See more'}</ThemedText></Pressable></View>
-          : zoom(row.item, <Pressable analyticsId={resultActions[row.item.kind]} testID={`search.item.${identity(row.item)}`} accessibilityRole="button" accessibilityLabel={[labels[row.item.kind], row.item.title, row.item.subtitle, props.cityId === null ? cityName(row.item.cityId) : ''].filter(Boolean).join(', ')} onPress={event => props.onOpen(row.item, event)} style={StyleSheet.flatten([styles.result, { borderColor: theme.line, backgroundColor: theme.card }])}>
+          : zoom(row.item, <Pressable analyticsId={resultActions[row.item.kind]} testID={`search.item.${identity(row.item)}`} accessibilityRole="button" accessibilityLabel={[labels[row.item.kind], row.item.title, row.item.priceLevel ? tr('가격대 {0}단계', row.item.priceLevel) : '', row.item.subtitle, props.cityId === null ? cityName(row.item.cityId) : ''].filter(Boolean).join(', ')} onPress={event => props.onOpen(row.item, event)} style={StyleSheet.flatten([styles.result, { borderColor: theme.line, backgroundColor: theme.card }])}>
             {row.item.imageUri ? <Image source={{ uri: row.item.imageUri }} style={styles.image} contentFit="cover" transition={ControlMotion.settleMs} accessible={false} /> : <View style={[styles.image, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: row.item.kind === 'person' ? 'person.crop.circle' : row.item.kind === 'business' ? 'storefront' : row.item.kind === 'place' ? 'mappin.and.ellipse' : 'text.bubble', android: row.item.kind === 'person' ? 'person' : 'search', web: 'search' }} size={22} tintColor={theme.textSecondary} /></View>}
-            <View style={styles.resultText}><ThemedText type="menu" numberOfLines={2}>{row.item.title}</ThemedText>{!!row.item.subtitle && <ThemedText type="supporting" themeColor="textSecondary" numberOfLines={2}>{row.item.subtitle}</ThemedText>}{props.cityId === null && <ThemedText type="caption" themeColor="accent">{cityName(row.item.cityId)}</ThemedText>}</View><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={14} tintColor={theme.textSecondary} />
+            <View style={styles.resultText}><ThemedText type="menu" numberOfLines={2}>{row.item.title}</ThemedText>{!!(row.item.subtitle || row.item.priceLevel) && <ThemedText type="supporting" themeColor="textSecondary" numberOfLines={2}>{[row.item.priceLevel ? priceSymbol(row.item.priceLevel) : '', row.item.subtitle].filter(Boolean).join(' · ')}</ThemedText>}{props.cityId === null && <ThemedText type="caption" themeColor="accent">{cityName(row.item.cityId)}</ThemedText>}</View><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={14} tintColor={theme.textSecondary} />
           </Pressable>)}
         ListFooterComponent={props.hasMore ? <View style={styles.footer}>{props.moreFailed && <ThemedText accessibilityLiveRegion="polite" themeColor="textSecondary">{ko ? '다음 결과를 불러오지 못했어요. 다시 시도해 주세요.' : 'Couldn’t load more results. Try again.'}</ThemedText>}<Pressable analyticsId="search.more" accessibilityRole="button" disabled={props.moreLoading} onPress={props.onMore} style={[ControlStyles.action, clay && { overflow: 'visible', paddingHorizontal: 18 }, { borderWidth: 1, borderColor: clay ? 'transparent' : theme.line, opacity: props.moreLoading ? 0.6 : 1 }]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="menu" themeColor="accent">{props.moreLoading ? ko ? '불러오는 중…' : 'Loading…' : props.moreFailed ? ko ? '다시 불러오기' : 'Try again' : ko ? '더 보기' : 'Load more'}</ThemedText></Pressable></View> : undefined} />
     </View>
+    <PriceSheet draft={props.priceDraft} onDraft={props.onPriceDraft} onApply={props.onPrices} analyticsId="search.price" />
   </SafeAreaView>;
 }
 
@@ -162,6 +179,7 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, paddingHorizontal: Spacing.four, marginTop: Spacing.three },
   // The row clips sideways scrolling, so vertical padding keeps the clay chip shadow; the margin plus padding equals the wrapped row's gap.
   kindRow: { flexGrow: 0, flexShrink: 0, marginTop: Spacing.two }, kindChips: { gap: Spacing.two, paddingHorizontal: Spacing.four, paddingVertical: Spacing.two },
+  priceRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.four },
   results: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six, paddingTop: Spacing.two }, state: { paddingTop: Spacing.five, gap: Spacing.three },
   group: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginTop: Spacing.three }, groupTitle: { flex: 1, minWidth: 0 }, groupMore: { minHeight: 44, minWidth: 44, paddingHorizontal: Spacing.two, justifyContent: 'center' },
   result: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, padding: Spacing.three, borderWidth: 1, borderRadius: 16, marginTop: Spacing.two, minHeight: 72 },

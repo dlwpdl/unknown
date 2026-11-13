@@ -242,6 +242,24 @@ test('optional price level and sub-filter values download with the catalog while
   }
 });
 
+test('optional opening and outside-trending dates download with their source while malformed ones reject the catalog (owner 2026-11-13)', () => {
+  const api = data();
+  const next = (patch, time) => { const value = catalog(); value.collectedAt = new Date(time).toISOString(); Object.assign(value.cities.vancouver.places[0], patch); return value; };
+  const opened = { on: '2026-11-01', sourceUrl: 'https://example.com/opening' }, hot = { since: '2026-11-05', sourceUrl: 'https://example.com/hot', sourceName: 'Fixture Daily' };
+  assert.equal(api.replaceCityPlacesCatalog(next({ opened, hot }, fixtureTime), fixtureNow), true);
+  const place = api.getCityPlaces('vancouver').find(row => row.id === catalog().cities.vancouver.places[0].id);
+  assert.deepEqual({ ...place.opened }, opened);
+  assert.deepEqual({ ...place.hot }, hot);
+  assert.equal(api.getCityPlaces('vancouver').find(row => row.id === catalog().cities.vancouver.places[1].id).opened, undefined, 'a place without the field has none');
+  let time = fixtureTime;
+  for (const bad of [{ opened: '2026-11-01' }, { opened: { on: '2026-11-31', sourceUrl: opened.sourceUrl } }, { opened: { on: '2026/11/01', sourceUrl: opened.sourceUrl } }, { opened: { on: opened.on } },
+    { opened: { ...opened, sourceUrl: 'http://example.com/opening' } }, { opened: { ...opened, note: 'x' } }, { hot: { ...hot, sourceName: '' } }, { hot: { ...hot, sourceName: 'x'.repeat(81) } },
+    { hot: { ...hot, since: 'soon' } }, { hot: { since: hot.since, sourceUrl: hot.sourceUrl } }, { hot: [] }]) {
+    time += 1000;
+    assert.throws(() => api.replaceCityPlacesCatalog(next(bad, time), fixtureNow), /INVALID_PLACE_CATALOG/, JSON.stringify(bad));
+  }
+});
+
 test('reviewed Coquitlam-area records use the existing exact map and scoped search contracts', async () => {
   const seed = catalog(), api = data(), city = seed.cities.vancouver;
   assert.equal(Object.keys(seed.cities).length, 11);
