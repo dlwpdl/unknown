@@ -8,7 +8,7 @@ import { jsonLd } from '@/lib/public-seo';
 export default function RootHtml({ children, pathname }: PropsWithChildren<{ pathname: string }>) {
   const { htmlAttributes, bodyAttributes, headNodes, bodyNodes } = useServerDocumentContext();
   return (
-    <html {...htmlAttributes} lang={pathname === '/en' ? 'en' : 'ko'} style={{ ...htmlAttributes?.style, backgroundColor: WebNightColors.background, colorScheme: 'dark' }}>
+    <html {...htmlAttributes} lang={pathname === '/en' ? 'en' : 'ko'} data-fixed-lang={pathname === '/en' ? 'en' : undefined} style={{ ...htmlAttributes?.style, backgroundColor: WebNightColors.background, colorScheme: 'dark' }}>
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />

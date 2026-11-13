@@ -12,8 +12,10 @@ const id = '41000000-0000-4000-8000-000000000001';
 const meetup = (patch = {}) => ({ id, cityId: 'vancouver', title: 'Synthetic fixture meetup', body: 'PRIVATE_CONTACT_MUST_NOT_RENDER',
   imageThumbs: ['https://images.example.invalid/meetup.webp'], room: { id: 'room', title: 'Synthetic room', memberCount: 7, capacity: 12,
     eventKind: 'once', startsAt: '2099-01-10T20:00:00Z', endsAt: '2099-01-10T22:00:00Z', timezone: 'America/Vancouver', address: 'PRIVATE_ADDRESS_MUST_NOT_RENDER' }, ...patch });
-const elements = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(elements) : [tree, ...elements(tree.props?.children)];
-const text = tree => tree == null || typeof tree === 'boolean' ? '' : typeof tree !== 'object' ? String(tree) : Array.isArray(tree) ? tree.map(text).join(' ') : text(tree.props?.children);
+// Child components (MeetupDetails) render in place, as React would.
+const expand = tree => typeof tree?.type === 'function' ? tree.type(tree.props) : tree;
+const elements = tree => !tree || typeof tree !== 'object' ? [] : Array.isArray(tree) ? tree.flatMap(elements) : typeof tree.type === 'function' ? elements(expand(tree)) : [tree, ...elements(tree.props?.children)];
+const text = tree => tree == null || typeof tree === 'boolean' ? '' : typeof tree !== 'object' ? String(tree) : Array.isArray(tree) ? tree.map(text).join(' ') : typeof tree.type === 'function' ? text(expand(tree)) : text(tree.props?.children);
 function mount(file, name, initialProps = {}) {
   const slots = [], feedback = [], qrCalls = [];
   let cursor = 0, language = 'ko', props = initialProps, failQr = false, hydrated = false, entry = 'unknown';

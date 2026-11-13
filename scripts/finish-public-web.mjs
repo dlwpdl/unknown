@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CITIES, TAGS } from '../src/lib/mock.ts';
@@ -45,8 +45,8 @@ function factSentence(city, facts) {
   ].filter(Boolean).join(' ');
 }
 
-const pageList = (city, pages, current) => pages > 1
-  ? `<nav aria-label="쪽 넘김" style="margin:16px 0 0">${Array.from({ length: pages }, (_, index) => index + 1).map(page => page === current ? `<strong>${page}</strong>` : `<a href="/${city.id}${page === 1 ? '' : `/${page}`}" style="${LINK}">${page}</a>`).join(' ')}${current < pages ? ` <a href="/${city.id}/${current + 1}" rel="next" style="${LINK}">다음 ›</a>` : ''}</nav>` : '';
+const pageList = (city, pages, current, id = '') => pages > 1
+  ? `<nav${id ? ` id="${id}"` : ''} aria-label="쪽 넘김" style="margin:16px 0 0">${Array.from({ length: pages }, (_, index) => index + 1).map(page => page === current ? `<strong>${page}</strong>` : `<a href="/${city.id}${page === 1 ? '' : `/${page}`}" style="${LINK}">${page}</a>`).join(' ')}${current < pages ? ` <a href="/${city.id}/${current + 1}" rel="next" style="${LINK}">다음 ›</a>` : ''}</nav>` : '';
 
 const postItems = posts => `<ul style="margin:0;padding-left:20px">${posts.map(post => `<li><a href="/posts/${post.id}" style="${LINK}">${escapeHtml(post.title)}</a> <small>${escapeHtml([post.label, koreanDate(post.createdAt ?? post.lastmod), Number.isSafeInteger(post.commentCount) && `댓글 ${post.commentCount}개`].filter(Boolean).join(' · '))}</small></li>`).join('')}</ul>`;
 
@@ -59,7 +59,7 @@ function collectionSchema(url, name, description, posts, crumbs, lastReviewed) {
 }
 
 // Kept on the city page (the reader moves it next to the live feed) so the city's own facts and paths stay visible.
-function cityBlock(city, facts, hubs, pages, hasPlaces = false) {
+function cityBlock(city, facts, hubs, hasPlaces = false) {
   const own = [...hubs.values()].filter(hub => hub.cityId === city.id).sort((a, b) => b.count - a.count);
   const business = own.find(hub => hub.tagSlug === 'business');
   return `<section id="gling-static-city" lang="ko" style="${SECTION}">`
@@ -71,7 +71,6 @@ function cityBlock(city, facts, hubs, pages, hasPlaces = false) {
       business && `<a href="${business.path}" style="${LINK}">${escapeHtml(city.name)} 비즈니스 소식</a>`,
       hasPlaces && `<a href="/${city.id}/places" style="${LINK}">${escapeHtml(city.name)} 맛집·카페·가 볼 곳</a>`,
       `<a href="/visited${city.id === 'vancouver' ? '' : `?city=${city.id}`}" style="${LINK}">${escapeHtml(city.name)}에서 글링이 가 본 곳</a>`].filter(Boolean).join(' · ')}</p>`
-    + pageList(city, pages, 1)
     + '</section>';
 }
 
@@ -250,11 +249,13 @@ export function finishPublicWeb(directory = 'dist', posts = [], companies = [], 
     const target = join(directory, file);
     if (!existsSync(target)) continue;
     const own = city ? posts.filter(post => post.cityId === city.id) : [];
-    const kept = city ? cityBlock(city, cityFacts(city, posts, meetups, now), hubs, Math.ceil(own.length / CITY_PAGE_SIZE), shell && places.some(entry => entry.cityId === city.id)) : '';
+    const kept = city ? cityBlock(city, cityFacts(city, posts, meetups, now), hubs, shell && places.some(entry => entry.cityId === city.id)) : '';
+    // Page numbers come after the post list; the reader moves them under the live feed.
+    const pageNav = city ? pageList(city, Math.ceil(own.length / CITY_PAGE_SIZE), 1, 'gling-static-city-pages') : '';
     const schema = city ? ldScript(collectionSchema(`${PUBLIC_SITE}/${city.id}`, `${city.name} 한인 커뮤니티`, publicAboutGling, own.slice(0, CITY_PAGE_SIZE), [['글링', '/'], [city.name, `/${city.id}`]])) : '';
     const html = readFileSync(target, 'utf8')
       .replace('</head>', () => `${home}${city ? '' : languages}${schema}</head>`)
-      .replace(/<body[^>]*>/, match => `${match}${kept}${staticHub(cities, posts, city)}`);
+      .replace(/<body[^>]*>/, match => `${match}${kept}${staticHub(cities, posts, city)}${pageNav}`);
     writeFileSync(target, html);
     // /vancouver/ (with the slash) now hits the folder above; serve the same page there, canonical to /vancouver.
     if (city && existsSync(join(directory, city.id))) writeFileSync(join(directory, city.id, 'index.html'), html);
@@ -315,6 +316,13 @@ export function finishPublicWeb(directory = 'dist', posts = [], companies = [], 
     { title: publicImmigrationMeta.title, link: `${PUBLIC_SITE}/immigration`, description: publicImmigrationMeta.description, lastmod: publicImmigrationMeta.checked },
     ...posts.slice(0, 100).map(post => ({ title: post.title, link: publicPostUrl(post.id), description: post.preview || post.teaser || [post.city, post.label].filter(Boolean).join(' · '), lastmod: post.lastmod })),
   ].map(item).join('')}</channel></rss>\n`);
+  // GitHub Pages answers /profile with a 301 to /profile/ when only that folder exists, and 404.html strips the slash again (a loop):
+  // give each such page folder (profile/, auth/, place-only city folders) the app shell as its own page.
+  for (const name of readdirSync(directory)) {
+    const folder = join(directory, name);
+    if (statSync(folder).isDirectory() && !existsSync(`${folder}.html`) && !existsSync(join(folder, 'index.html'))
+      && readdirSync(folder).some(file => file.endsWith('.html'))) copyFileSync(join(directory, '+not-found.html'), `${folder}.html`);
+  }
   return { hubs, sitemap: paths.length + posts.length };
 }
 
