@@ -214,7 +214,9 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   }, [isFocused, isAuthed, onClose, me.id, city.id, cityLatitude, cityLongitude]);
   // A request notification opens /discover?bubbleRequest=<id>: show that request once it is in the loaded map.
   if (bubbleRequest && openedRequest !== bubbleRequest && live.map?.received.some(request => request.id === bubbleRequest)) { setOpenedRequest(bubbleRequest); setLiveOpen({ kind: 'received', requestId: bubbleRequest }); }
-  const loading = !current || pendingKey === key || selectedFilters.includes('delivery') && !registry.ready || scope !== 'all' && isAuthed && !scopeData;
+  // Only a view with nothing to show yet covers the map; coming back to the map refreshes the same results quietly (owner 2026-11-12).
+  const waiting = !current || selectedFilters.includes('delivery') && !registry.ready || scope !== 'all' && isAuthed && !scopeData;
+  const loading = waiting || pendingKey === key;
   const refresh = () => { morePending.current = false; setAttempt(value => value + 1); setNow(Date.now()); setRegion(null); setMoved(null); };
 
   useEffect(() => { const timer = setTimeout(() => setSearch(query.trim()), 300); return () => clearTimeout(timer); }, [query]);
@@ -232,7 +234,6 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     const controller = new AbortController();
     request.current = controller;
     const page = previous ? previous.page + 1 : 0, days = daysKey ? daysKey.split(',') : [];
-    if (!previous) setResult(null);
     setPendingKey(key);
     const showPosts = isAuthed && (!previous || previous.postMore);
     const showEvents = includeEvents && Object.hasOwn(EVENT_CITIES, city.id) && (!previous || previous.eventMore);
@@ -627,7 +628,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       </MapListSheet>
       {/* The sheet shows its open-failure line in place once closed; on the map that line floats as a capsule instead of pushing the map. */}
       {webshopOrder && <View pointerEvents="box-none" style={[styles.webshopError, { backgroundColor: theme.card }]}><WebshopComparisonSheet key={webshopOrder.shop.merchantId} client={supabase} shop={webshopOrder.shop} name={webshopOrder.name} origin="map" visible={webshopOrder.open} onClose={() => setWebshopOrder(value => value && { ...value, open: false })} /></View>}
-      {loading && <View pointerEvents="none" style={[styles.loading, styles.mapLoading]}><GlingLoader color={theme.accent} accessibilityLabel={tr("지도 결과 불러오는 중")} /></View>}
+      {waiting && <View pointerEvents="none" style={[styles.loading, styles.mapLoading]}><GlingLoader color={theme.accent} accessibilityLabel={tr("지도 결과 불러오는 중")} /></View>}
     </View>
     <Modal visible={filtersOpen} transparent animationType={reduced ? 'none' : 'fade'} onRequestClose={closeFilters}>
       <KeyboardAvoidingView behavior="padding" style={styles.overlay}>

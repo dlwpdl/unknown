@@ -3,10 +3,11 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CITIES, TAGS } from '../src/lib/mock.ts';
 import {
-  CITY_PAGE_SIZE, jsonLd, PUBLIC_SITE, publicSiteName, PUBLIC_SOURCE, publicAboutGling, publicAboutGlingEn, publicCitySubpageMeta, publicCompanyUrl, publicDisambiguation, publicImmigrationMeta, publicPostUrl, TOPIC_HUBS,
+  CITY_PAGE_SIZE, jsonLd, PUBLIC_SITE, publicSiteName, PUBLIC_SOURCE, publicAboutGling, publicAboutGlingEn, publicCitySubpageMeta, publicCompanyUrl, publicDisambiguation, publicImmigrationMeta, PUBLIC_PLAY_STORE, publicPostUrl, TOPIC_HUBS,
 } from '../src/lib/public-seo.ts';
-import { breadcrumbHtml, escapeHtml, isoDate, koreanDate, postCover, prerenderPublicPosts, redirectPage, withStaticPage, topicHubs } from './prerender-public-posts.mjs';
+import { breadcrumbHtml, escapeHtml, isoDate, koreanDate, loadPublicPosts, postCover, prerenderPublicPosts, redirectPage, withStaticPage, topicHubs } from './prerender-public-posts.mjs';
 import { prerenderPublicCompanies } from './prerender-public-companies.mjs';
+import { loadPlaceCatalog, loadPlaceRatings, publicPlaces, writePublicPlaces } from './prerender-public-places.mjs';
 
 const LINK = 'color:#CBB9FF';
 const SECTION = 'max-width:720px;margin:24px auto;padding:20px;color:#F6F3F0;font:16px/1.6 system-ui,sans-serif';
@@ -18,7 +19,7 @@ function staticHub(cities, posts, city) {
   const list = (city ? posts.filter(post => post.cityId === city.id) : posts).slice(0, 30);
   return `<section id="gling-static-home" lang="ko" style="${SECTION}">`
     + `<p style="margin:0">${escapeHtml(publicAboutGling)}</p>`
-    + `<p style="margin:12px 0 0">${cities.map(item => `<a href="/${item.id}" style="${LINK}">${escapeHtml(item.name)} 한인 커뮤니티</a>`).join(' · ')} · <a href="/meetups" style="${LINK}">한인 모임·소모임</a> · <a href="/immigration" style="${LINK}">캐나다 이민·유학 길잡이</a> · <a href="/faq" style="${LINK}">자주 묻는 질문</a> · <a href="https://apps.apple.com/ca/app/id6809273242" style="${LINK}">iPhone 앱 받기</a></p>`
+    + `<p style="margin:12px 0 0">${cities.map(item => `<a href="/${item.id}" style="${LINK}">${escapeHtml(item.name)} 한인 커뮤니티</a>`).join(' · ')} · <a href="/meetups" style="${LINK}">한인 모임·소모임</a> · <a href="/immigration" style="${LINK}">캐나다 이민·유학 길잡이</a> · <a href="/faq" style="${LINK}">자주 묻는 질문</a> · <a href="https://apps.apple.com/ca/app/id6809273242" style="${LINK}">iPhone 앱 받기</a> · <a href="${PUBLIC_PLAY_STORE}" style="${LINK}">Android 앱 받기</a></p>`
     + (list.length ? `<h2 style="margin:24px 0 8px;font-size:18px">${escapeHtml(city ? `${city.name} 한인 최근 이야기` : '최근 동네 이야기')}</h2><ul style="margin:0;padding-left:20px">${list.map(post => `<li><a href="/posts/${post.id}" style="${LINK}">${escapeHtml(post.title)}</a>${post.city || post.label ? ` <small>${escapeHtml([post.city, post.label].filter(Boolean).join(' · '))}</small>` : ''}</li>`).join('')}</ul>` : '')
     + '</section>';
 }
@@ -58,7 +59,7 @@ function collectionSchema(url, name, description, posts, crumbs, lastReviewed) {
 }
 
 // Kept on the city page (the reader moves it next to the live feed) so the city's own facts and paths stay visible.
-function cityBlock(city, facts, hubs, pages) {
+function cityBlock(city, facts, hubs, pages, hasPlaces = false) {
   const own = [...hubs.values()].filter(hub => hub.cityId === city.id).sort((a, b) => b.count - a.count);
   const business = own.find(hub => hub.tagSlug === 'business');
   return `<section id="gling-static-city" lang="ko" style="${SECTION}">`
@@ -68,6 +69,7 @@ function cityBlock(city, facts, hubs, pages) {
     + `<p style="margin:16px 0 0">${[`<a href="/${city.id}/meetups" style="${LINK}">${escapeHtml(city.name)} 모임·소모임</a>`,
       hubs.has(`${city.id}/settlement`) && `<a href="/${city.id}/settlement" style="${LINK}">${escapeHtml(city.name)} 정착 가이드</a>`,
       business && `<a href="${business.path}" style="${LINK}">${escapeHtml(city.name)} 비즈니스 소식</a>`,
+      hasPlaces && `<a href="/${city.id}/places" style="${LINK}">${escapeHtml(city.name)} 맛집·카페·가 볼 곳</a>`,
       `<a href="/visited${city.id === 'vancouver' ? '' : `?city=${city.id}`}" style="${LINK}">${escapeHtml(city.name)}에서 글링이 가 본 곳</a>`].filter(Boolean).join(' · ')}</p>`
     + pageList(city, pages, 1)
     + '</section>';
@@ -122,7 +124,7 @@ function hubFaq(city, hub, hasPosts = true) {
   const topic = label(hub.tagSlug);
   return [
     hasPosts && { question: `이 글들은 누가 썼어요?`, answer: `${city.name}에 사는 글링 이용자가 ${topic} 주제로 직접 올린 공개 글이에요. 미리보기는 누구나 볼 수 있고, 전체 글은 로그인하면 읽을 수 있어요.` },
-    { question: `${topic} 글은 어떻게 올려요?`, answer: `글링 앱에서 도시를 ${city.name}로 고르고 ${topic} 주제로 글을 쓰면 돼요. iPhone 앱은 App Store에서 무료로 받을 수 있고, Android는 비공개 테스트 중이에요.` },
+    { question: `${topic} 글은 어떻게 올려요?`, answer: `글링 앱에서 도시를 ${city.name}로 고르고 ${topic} 주제로 글을 쓰면 돼요. 앱은 App Store와 Google Play에서 무료로 받을 수 있어요.` },
   ].filter(Boolean);
 }
 
@@ -180,7 +182,7 @@ function meetupPage(template, city, list, hubs, cities) {
     + `<p style="margin:8px 0 0">${escapeHtml(`${city.name}에 사는 한인들이 운동이나 취미, 여행처럼 마음 맞는 사람끼리 모이는 소모임을 글링에서 열기도 하고 들어가기도 해요. 축제나 공연에 같이 갈 동행도 여기서 구해요.`)}</p>`
     + (list.length
       ? `<h2 style="margin:24px 0 8px;font-size:18px">${escapeHtml(`지금 신청받는 ${city.name} 모임 ${list.length}개`)}</h2><ul style="margin:0;padding-left:20px">${list.map(item => `<li id="m-${item.id}"><a href="/post?id=${item.id}&amp;invite=1" style="${LINK}" rel="nofollow">${escapeHtml(item.title)}</a> <small>${escapeHtml(when(item.room))}</small></li>`).join('')}</ul><p style="margin:8px 0 0">장소와 자세한 안내는 글링 앱에서 볼 수 있어요.</p>`
-      : `<div style="margin:20px 0 0;padding:16px;border:1px solid #343443;border-radius:12px"><h2 style="margin:0 0 6px;font-size:17px">${escapeHtml(`지금 신청받는 ${city.name} 모임은 없어요`)}</h2><p style="margin:0">${escapeHtml(`하고 싶은 모임이 있으면 글링 앱에서 직접 열면 돼요. 새 모임은 하루에 한 번 이 페이지에도 올라와요.`)}</p><p style="margin:10px 0 0"><a href="https://apps.apple.com/ca/app/id6809273242" style="${LINK}">iPhone 앱 받기</a></p></div>`)
+      : `<div style="margin:20px 0 0;padding:16px;border:1px solid #343443;border-radius:12px"><h2 style="margin:0 0 6px;font-size:17px">${escapeHtml(`지금 신청받는 ${city.name} 모임은 없어요`)}</h2><p style="margin:0">${escapeHtml(`하고 싶은 모임이 있으면 글링 앱에서 직접 열면 돼요. 새 모임은 하루에 한 번 이 페이지에도 올라와요.`)}</p><p style="margin:10px 0 0"><a href="https://apps.apple.com/ca/app/id6809273242" style="${LINK}">iPhone 앱 받기</a> · <a href="${PUBLIC_PLAY_STORE}" style="${LINK}">Android 앱 받기</a></p></div>`)
     + `<h2 style="margin:24px 0 8px;font-size:18px">글링 모임은 이렇게 해요</h2><ul style="margin:0;padding-left:20px;display:grid;gap:6px">`
     + `<li>한 번 만나고 끝나는 모임도 있고, 매주 토요일처럼 정해 둔 날마다 만나는 정기 모임도 있어요.</li>`
     + `<li>모임을 여는 사람이 날짜와 정원을 정하고, 신청이 오면 직접 보고 받아 주고, 그러면 앱에서 모임 대화에 같이 들어가요.</li>`
@@ -208,7 +210,7 @@ function meetupPage(template, city, list, hubs, cities) {
 // GitHub Pages serves 404.html (HTTP 404) for unknown paths: send old post links and trailing slashes to the real page.
 const LEGACY_REDIRECT = '<script>(function(l){var p=l.pathname,m=p.match(/^\\/(?:posts?|share)\\/([0-9a-fA-F-]{36})\\/?$/),t=m?"/posts/"+m[1].toLowerCase():p.length>1&&/\\/$/.test(p)?p.replace(/\\/+$/,""):null;if(t&&t!==p)l.replace(t+l.search+l.hash)})(location)</script>';
 
-export function finishPublicWeb(directory = 'dist', posts = [], companies = [], { meetups = [], now = Date.now() } = {}) {
+export function finishPublicWeb(directory = 'dist', posts = [], companies = [], { meetups = [], places = [], catalog = null, now = Date.now() } = {}) {
   // GitHub Pages serves this for app-only paths and existing /post/:id links.
   copyFileSync(join(directory, '+not-found.html'), join(directory, '404.html'));
   writeFileSync(join(directory, '404.html'), readFileSync(join(directory, '404.html'), 'utf8').replace(/<head[^>]*>/, match => `${match}${LEGACY_REDIRECT}`));
@@ -240,16 +242,18 @@ export function finishPublicWeb(directory = 'dist', posts = [], companies = [], 
       entries.push([`/${city.id}/meetups`, events.map(item => item.createdAt).filter(Boolean).sort().at(-1)]);
     }
   }
+  // Every catalog city's places with an intro, post, review or Gling visit (scripts/prerender-public-places.mjs).
+  if (shell) entries.push(...writePublicPlaces(directory, template, places, catalog));
   const home = `<meta name="naver-site-verification" content="3840dfdac2db5fd4f65e9c9160c31225d7e05db5"/><link rel="alternate" type="application/rss+xml" title="글링 새 글" href="${PUBLIC_SITE}/rss.xml"/>`;
   const languages = `<link rel="alternate" hreflang="ko" href="${PUBLIC_SITE}/"/><link rel="alternate" hreflang="en" href="${PUBLIC_SITE}/en"/><link rel="alternate" hreflang="x-default" href="${PUBLIC_SITE}/"/>`;
   for (const [file, city] of [['index.html', null], ...cities.map(city => [`${city.id}.html`, city])]) {
     const target = join(directory, file);
     if (!existsSync(target)) continue;
     const own = city ? posts.filter(post => post.cityId === city.id) : [];
-    const kept = city ? cityBlock(city, cityFacts(city, posts, meetups, now), hubs, Math.ceil(own.length / CITY_PAGE_SIZE)) : '';
+    const kept = city ? cityBlock(city, cityFacts(city, posts, meetups, now), hubs, Math.ceil(own.length / CITY_PAGE_SIZE), shell && places.some(entry => entry.cityId === city.id)) : '';
     const schema = city ? ldScript(collectionSchema(`${PUBLIC_SITE}/${city.id}`, `${city.name} 한인 커뮤니티`, publicAboutGling, own.slice(0, CITY_PAGE_SIZE), [['글링', '/'], [city.name, `/${city.id}`]])) : '';
     const html = readFileSync(target, 'utf8')
-      .replace('</head>', `${home}${city ? '' : languages}${schema}</head>`)
+      .replace('</head>', () => `${home}${city ? '' : languages}${schema}</head>`)
       .replace(/<body[^>]*>/, match => `${match}${kept}${staticHub(cities, posts, city)}`);
     writeFileSync(target, html);
     // /vancouver/ (with the slash) now hits the folder above; serve the same page there, canonical to /vancouver.
@@ -272,17 +276,20 @@ export function finishPublicWeb(directory = 'dist', posts = [], companies = [], 
   const paths = [...entries, ['/meetups', newest(meetups.map(item => ({ lastmod: item.createdAt })))], ['/visited'], ['/immigration', publicImmigrationMeta.checked], ['/faq'], ['/business'], ['/en'], ['/terms'], ['/privacy'], ['/account-deletion'], ['/child-safety']];
   writeFileSync(join(directory, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${paths.map(([path, lastmod]) => `<url><loc>${PUBLIC_SITE}${path}</loc>${day(lastmod)}</url>`).join('')}${posts.map(post => `<url><loc>${publicPostUrl(post.id)}</loc>${day(post.lastmod)}</url>`).join('')}${companies.map(company => `<url><loc>${publicCompanyUrl(company.id)}</loc></url>`).join('')}</urlset>\n`);
   const protectedPaths = ['/merchant/', '/auth/', '/admin', '/chat', '/compose', '/profile', '/notifications', '/user/', '/meetup-create', '/meetup-join', '/meetup-application', '/meetup-profile'];
-  writeFileSync(join(directory, 'robots.txt'), `User-agent: *\nAllow: /\n${protectedPaths.map(path => `Disallow: ${path}`).join('\n')}\n\nSitemap: ${PUBLIC_SITE}/sitemap.xml\n`);
+  // Owner 2026-11-13: block AI-training crawlers only; search and answer crawlers (Googlebot, Bingbot, Yeti, OAI-SearchBot, Claude-SearchBot, PerplexityBot, Google-Extended) stay allowed.
+  const trainingBots = ['GPTBot', 'ClaudeBot', 'CCBot', 'Applebot-Extended', 'meta-externalagent', 'Bytespider'];
+  writeFileSync(join(directory, 'robots.txt'), `${trainingBots.map(bot => `User-agent: ${bot}`).join('\n')}\nDisallow: /\n\nUser-agent: *\nAllow: /\n${protectedPaths.map(path => `Disallow: ${path}`).join('\n')}\n\nSitemap: ${PUBLIC_SITE}/sitemap.xml\n`);
   const recent = city => posts.filter(post => post.cityId === city.id).slice(0, 20)
     .map(post => `- [${String(post.title).replace(/[\\[\]\n\r]/g, ' ')}](${publicPostUrl(post.id)})${post.teaser ? `: ${String(post.teaser).replace(/[\n\r]/g, ' ')}` : ''}`).join('\n');
   const facts = [
     `- 열린 도시: ${cities.map(city => `${city.name}(${city.englishName})`).join(', ')}`,
     '- 할 수 있는 것: 동네 이야기, 맛집·가 볼 곳 지도, 렌트·구인·중고 거래, 축제·공연 동행, 소모임 만들기와 참여, 한국어↔영어 번역 보기',
     '- 요금: 무료, 일부 기능은 인앱 구매',
-    '- 앱: iPhone은 App Store에서 받을 수 있고, Android는 비공개 테스트 중',
+    '- 앱: iPhone은 App Store에서, Android는 Google Play에서 받을 수 있어요',
     `- 도시 페이지: ${cities.map(city => `[${city.name} 한인 커뮤니티](${PUBLIC_SITE}/${city.id})`).join(' · ')}`,
     `- 모임·소모임 페이지: ${cities.map(city => `[${city.name} 한인 모임·소모임](${PUBLIC_SITE}/${city.id}/meetups)`).join(' · ')}`,
     `- 이민·유학 길잡이: [${publicImmigrationMeta.heading}](${PUBLIC_SITE}/immigration) (IRCC·주정부 공식 페이지 링크 모음, 확인 날짜 ${publicImmigrationMeta.checked})`,
+    ...(shell && places.length ? [`- 장소 페이지(주소·영업시간·지도 링크): ${CITIES.filter(city => places.some(entry => entry.cityId === city.id)).map(city => `[${city.name} 맛집·카페·가 볼 곳](${PUBLIC_SITE}/${city.id}/places)`).join(' · ')}`] : []),
     ...(hubs.size ? [`- 주제별 페이지: ${[...hubs.values()].map(hub => `[${TOPIC_HUBS[hub.tagSlug].name(CITIES.find(city => city.id === hub.cityId).name)}](${PUBLIC_SITE}${hub.path})`).join(' · ')}`] : []),
     `- 비즈니스: 가게 프로필, 소식·채용 글, 영수증 인증 후기를 글링에서 관리할 수 있어요. 등록과 요금제는 ${PUBLIC_SITE}/business 에서 볼 수 있어요.`,
   ].join('\n');
@@ -294,7 +301,7 @@ export function finishPublicWeb(directory = 'dist', posts = [], companies = [], 
     ['글링은 무료인가요?', '무료로 쓸 수 있어요. 일부 기능은 인앱 구매가 있어요.'],
   ].map(([question, answer]) => `- **${question}** ${answer}`).join('\n');
   const updated = new Date(now).toISOString().slice(0, 10);
-  writeFileSync(join(directory, 'llms.txt'), `# 글링 Gling: 캐나다 한인 커뮤니티 (${cities.map(city => city.name).join('·')})\n\n마지막 갱신 ${updated}\n\n> ${publicAboutGlingEn}\n\n${publicDisambiguation}\n\n${publicAboutGling}\n\n${facts}\n\n## 자주 묻는 질문\n\n${faq}\n\n공개 미리보기는 작성자의 게시물 정보이며 글링의 공식 사실 확인이나 비즈니스 소유 인증을 뜻하지 않습니다. 게스트는 허용된 대표 이미지 한 장과 짧은 소개를 볼 수 있습니다. 로그인하거나 정상 가입을 마치면 현재 공개 상태와 열람 권한을 확인한 뒤 공개 글의 전체 본문을 웹에서 읽을 수 있습니다. 댓글 작성·대화·모임 참여는 앱에서 이용합니다. 아래 원문은 현재 공개 상태를 조회합니다. 삭제·비공개 글의 내용, 개인 대화와 계정 정보는 제공하지 않습니다. 공개 미리보기를 전체 원문으로 간주하지 마세요.\n\n## 공개 이야기\n\n- [글링 공개 게시판](${PUBLIC_SITE}/)\n${cities.map(city => `- [${city.name} 공개 미리보기 · 다음 페이지](${PUBLIC_SOURCE}?format=markdown&city=${city.id})`).join('\n')}\n${cities.map(city => recent(city) && `\n## ${city.name} 최근 글\n\n${recent(city)}\n`).filter(Boolean).join('')}\n## 이용 안내\n\n- [자주 묻는 질문](${PUBLIC_SITE}/faq)\n- [${publicImmigrationMeta.heading}](${PUBLIC_SITE}/immigration)\n- [비즈니스 등록·요금제](${PUBLIC_SITE}/business)\n- [English](${PUBLIC_SITE}/en)\n- [iPhone 앱](https://apps.apple.com/ca/app/id6809273242)\n- [이용약관](${PUBLIC_SITE}/terms)\n- [개인정보처리방침](${PUBLIC_SITE}/privacy)\n- [계정 삭제](${PUBLIC_SITE}/account-deletion)\n`);
+  writeFileSync(join(directory, 'llms.txt'), `# 글링 Gling: 캐나다 한인 커뮤니티 (${cities.map(city => city.name).join('·')})\n\n마지막 갱신 ${updated}\n\n> ${publicAboutGlingEn}\n\n${publicDisambiguation}\n\n${publicAboutGling}\n\n${facts}\n\n## 자주 묻는 질문\n\n${faq}\n\n공개 미리보기는 작성자의 게시물 정보이며 글링의 공식 사실 확인이나 비즈니스 소유 인증을 뜻하지 않습니다. 게스트는 허용된 대표 이미지 한 장과 짧은 소개를 볼 수 있습니다. 로그인하거나 정상 가입을 마치면 현재 공개 상태와 열람 권한을 확인한 뒤 공개 글의 전체 본문을 웹에서 읽을 수 있습니다. 댓글 작성·대화·모임 참여는 앱에서 이용합니다. 아래 원문은 현재 공개 상태를 조회합니다. 삭제·비공개 글의 내용, 개인 대화와 계정 정보는 제공하지 않습니다. 공개 미리보기를 전체 원문으로 간주하지 마세요.\n\n## 공개 이야기\n\n- [글링 공개 게시판](${PUBLIC_SITE}/)\n${cities.map(city => `- [${city.name} 공개 미리보기 · 다음 페이지](${PUBLIC_SOURCE}?format=markdown&city=${city.id})`).join('\n')}\n${cities.map(city => recent(city) && `\n## ${city.name} 최근 글\n\n${recent(city)}\n`).filter(Boolean).join('')}\n## 이용 안내\n\n- [자주 묻는 질문](${PUBLIC_SITE}/faq)\n- [${publicImmigrationMeta.heading}](${PUBLIC_SITE}/immigration)\n- [비즈니스 등록·요금제](${PUBLIC_SITE}/business)\n- [English](${PUBLIC_SITE}/en)\n- [iPhone 앱](https://apps.apple.com/ca/app/id6809273242)\n- [Android 앱](${PUBLIC_PLAY_STORE})\n- [이용약관](${PUBLIC_SITE}/terms)\n- [개인정보처리방침](${PUBLIC_SITE}/privacy)\n- [계정 삭제](${PUBLIC_SITE}/account-deletion)\n`);
   // Naver Search Advisor and other feed readers pick up new pages from this (post previews only, same as the post pages).
   const date = value => { const time = Date.parse(value); return Number.isFinite(time) ? `<pubDate>${new Date(time).toUTCString()}</pubDate>` : ''; };
   const item = ({ title, link, description, lastmod }) => `<item><title>${escapeHtml(title)}</title><link>${link}</link><guid isPermaLink="true">${link}</guid><description>${escapeHtml(description)}</description>${date(lastmod)}</item>`;
@@ -317,8 +324,14 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   // Only the Pages deploy prerenders (CI exports against a stub project); there a failed fetch fails the deploy and keeps the previous site live.
   const prerender = process.env.GLING_PRERENDER_POSTS === '1';
   if (prerender && (!url || !key)) throw new Error('Supabase public env is required to prerender public posts');
-  const { posts, meetups } = prerender ? await prerenderPublicPosts(directory, { url: url.replace(/\/+$/, ''), key, cities: CITIES.filter(city => city.state === 'open').map(city => city.id), searchToken: process.env.GLING_SEARCH_BUILD_TOKEN }) : { posts: [], meetups: [] };
-  const companies = prerender ? await prerenderPublicCompanies(directory, { url: url.replace(/\/+$/, ''), key, cities: CITIES.filter(city => city.state === 'open').map(city => city.id) }) : [];
-  const { hubs } = finishPublicWeb(directory, posts, companies, { meetups });
-  console.log(`Prerendered ${posts.length} public posts, ${hubs.size} topic hubs and ${companies.length} business profiles.`);
+  const options = prerender ? { url: url.replace(/\/+$/, ''), key, cities: CITIES.filter(city => city.state === 'open').map(city => city.id), searchToken: process.env.GLING_SEARCH_BUILD_TOKEN } : null;
+  const loaded = options ? await loadPublicPosts(options) : { posts: [], meetups: [] };
+  // Places first, so each post page can link the page of its place.
+  const catalog = options ? await loadPlaceCatalog(options) : null;
+  const places = catalog ? publicPlaces(catalog, loaded.posts, await loadPlaceRatings(catalog, options)) : [];
+  for (const entry of places) for (const post of entry.posts) post.placePath = entry.path;
+  const { posts, meetups } = options ? await prerenderPublicPosts(directory, options, loaded) : loaded;
+  const companies = options ? await prerenderPublicCompanies(directory, { ...options, posts }) : [];
+  const { hubs } = finishPublicWeb(directory, posts, companies, { meetups, places, catalog });
+  console.log(`Prerendered ${posts.length} public posts, ${hubs.size} topic hubs, ${places.length} place pages and ${companies.length} business profiles.`);
 }

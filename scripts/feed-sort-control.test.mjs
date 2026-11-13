@@ -5,7 +5,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-function control(sort) {
+function control(sort, byArea) {
   const exports = {}, events = [];
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/feed-sort-control.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
@@ -19,7 +19,7 @@ function control(sort) {
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: kind => events.push(kind) }) };
     throw new Error(`Unexpected import: ${name}`);
   }) });
-  return { tree: exports.FeedSortControl({ sort, title: '오늘 글', onChange: next => events.push(next) }), events };
+  return { tree: exports.FeedSortControl({ sort, title: '오늘 글', onChange: next => events.push(next), byArea }), events };
 }
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props.children].flat(Infinity).flatMap(nodes)];
 const text = tree => typeof tree === 'string' ? tree : tree && typeof tree === 'object' ? [tree.props.children].flat(Infinity).map(text).join('') : '';
@@ -53,4 +53,15 @@ test('sort buttons have 44px targets and the row wraps for enlarged text', () =>
     assert.equal(style.borderRadius, 999);
   }
   assert.ok(nodes(tree).some(node => [node.props.style].flat(Infinity).some(style => style?.flexWrap === 'wrap')));
+});
+
+test('중고거래 adds 동네별 as a third order with its own spoken name and description', () => {
+  const { tree, events } = control('area', true);
+  const buttons = nodes(tree).filter(node => node.type === 'SelectionChip');
+  assert.deepEqual(buttons.map(text), ['최신순', '인기순', '동네별']);
+  assert.equal(buttons[2].props.accessibilityState.selected, true);
+  assert.equal(buttons[2].props.accessibilityLabel, '동네별로 묶어 보기');
+  assert.match(text(tree), /글이 많은 동네부터/);
+  buttons[0].props.onPress();
+  assert.deepEqual(events, ['selection', 'latest']);
 });

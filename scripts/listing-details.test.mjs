@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  buildListingLead, emptyListingDraft, groupListingsByArea, listingExtras, listingFromDraft, listingPin, listingPriceLabel, matchesListingFilters,
+  buildListingLead, emptyListingDraft, freeBand, groupListingsByArea, isFreeListing, listingAreaRows, listingExtras, listingFromDraft, listingPin, listingPriceLabel, matchesListingFilters,
   NO_LISTING_FILTERS, parseListingDetails, parseListingView, stripListingLead, withListingLead,
 } from '../src/lib/listing-details.ts';
 import { coarseListingPin, findNeighborhood, NEIGHBORHOODS, neighborhoodGroups } from '../src/lib/neighborhoods.ts';
@@ -131,10 +131,33 @@ test('필터는 목록과 지도에 똑같이 걸린다', () => {
   assert.ok(matchesListingFilters({ ...housing, listingDetails: { ...housing.listingDetails, deal: 'buy' } }, { ...NO_LISTING_FILTERS, market: 'sale' }, today), '매매 includes 매매 구매');
 });
 
-test('중고거래 보기 선택은 목록이 기본이고 그리드만 기억한다', () => {
+test('중고거래 보기 선택은 목록이 기본이고 사진·큰 사진을 기억한다', () => {
   assert.equal(parseListingView(null), 'list');
   assert.equal(parseListingView('grid'), 'grid');
+  assert.equal(parseListingView('big'), 'big');
   assert.equal(parseListingView('{"x":1}'), 'list');
+});
+
+test('나눔 띠는 팝니다 0원 글만 8개까지 보이고, 접으면 두 이름 외 몇 개로 줄인다', () => {
+  const free = title => ({ title, price: 0, listingDetails: { type: 'used', deal: 'sell' } });
+  assert.ok(!isFreeListing({ price: 0, listingDetails: { type: 'used', deal: 'buy' } }), '0원 삽니다는 나눔이 아니다');
+  assert.ok(!isFreeListing({ price: null, listingDetails: { type: 'used', deal: 'sell' } }), '가격 없는 글은 나눔이 아니다');
+  assert.ok(!isFreeListing({ price: 0, listingDetails: undefined }));
+  assert.deepEqual(freeBand([{ title: '소파', price: 120, listingDetails: { type: 'used', deal: 'sell' } }]), { count: 0, tiles: [], more: 0, names: [], others: 0 }, '나눔이 없으면 띠가 없다');
+  const two = freeBand([free('원목 책상'), { title: '소파', price: 120, listingDetails: { type: 'used', deal: 'sell' } }, free('27인치 모니터')]);
+  assert.deepEqual([two.count, two.tiles.map(post => post.title), two.more, two.names, two.others], [2, ['원목 책상', '27인치 모니터'], 0, ['원목 책상', '27인치 모니터'], 0]);
+  const many = freeBand(Array.from({ length: 12 }, (_, index) => free(`나눔 ${index + 1}`)));
+  assert.deepEqual([many.count, many.tiles.length, many.tiles.at(-1).title, many.more, many.names, many.others], [12, 8, '나눔 8', 4, ['나눔 1', '나눔 2'], 10]);
+});
+
+test('동네별은 지도와 같은 동네로 묶고 글 많은 동네가 위, 동네 없는 글은 따로 남긴다', () => {
+  const post = (id, area) => ({ id, cityId: 'vancouver', body: '', price: 10, listingDetails: area === null ? undefined : { type: 'used', deal: 'sell', ...(area ? { area } : {}) } });
+  const posts = [post('a', 'burquitlam'), post('b', 'metrotown'), post('c', undefined), post('d', 'metrotown'), post('e', null), post('f', 'burquitlam'), post('g', 'metrotown')];
+  const { areas, rest } = listingAreaRows(posts, 'ko');
+  assert.deepEqual(areas.map(area => [area.id, area.name, area.posts.map(item => item.id)]), [
+    ['area:metrotown', '메트로타운', ['b', 'd', 'g']], ['area:burquitlam', '버퀴틀람', ['a', 'f']],
+  ]);
+  assert.deepEqual(rest.map(item => item.id), ['c', 'e'], '동네를 안 적은 글과 칸 없는 옛 글은 맨 아래');
 });
 
 test('칸이 없는 옛 글과 서버 마이그레이션 전에는 지금처럼 보인다', async () => {

@@ -307,9 +307,25 @@ export function matchesListingFilters(post: Pick<Post, 'price' | 'listingDetails
   return true;
 }
 
-// ---- 중고거래 list/grid choice, remembered per device ----------------------------------------
-export type ListingView = 'list' | 'grid';
+// ---- 중고거래 목록·사진·큰 사진 choice, remembered per device -------------------------------
+export type ListingView = 'list' | 'grid' | 'big';
 export const LISTING_VIEW_KEY = 'gling.listing.used.view';
 // Separate from 중고거래: photo-first goods and text-first business news are chosen independently.
 export const BUSINESS_VIEW_KEY = 'gling.business.view';
-export const parseListingView = (value: string | null): ListingView => value === 'grid' ? 'grid' : 'list';
+export const parseListingView = (value: string | null): ListingView => value === 'grid' || value === 'big' ? value : 'list';
+
+// ---- 중고거래 나눔 띠 and 동네별 (owner 2026-11-13) -------------------------------------------
+// 나눔 = a 팝니다 post at $0. The card badge and the band share this rule.
+export const isFreeListing = (post: Pick<Post, 'price' | 'listingDetails'>) => post.listingDetails?.type === 'used' && post.listingDetails.deal === 'sell' && post.price === 0;
+export const FREE_FOLDED_KEY = 'gling.listing.used.free-folded';
+// Up to 8 small tiles, the rest behind '+N 모두 보기'; folded, the first two names stand for the rest.
+export function freeBand<P extends Pick<Post, 'price' | 'listingDetails' | 'title'>>(posts: readonly P[]) {
+  const free = posts.filter(isFreeListing);
+  return { count: free.length, tiles: free.slice(0, 8), more: Math.max(0, free.length - 8), names: free.slice(0, 2).map(post => post.title), others: Math.max(0, free.length - 2) };
+}
+// The loaded posts by neighborhood, the same grouping as the map, busiest first (ties keep feed order). Posts with no place come last.
+export function listingAreaRows<P extends Pick<Post, 'cityId' | 'body' | 'listingDetails' | 'price'>>(posts: readonly P[], language: AppLanguage) {
+  const areas = groupListingsByArea(posts.filter(post => post.listingDetails), language).sort((a, b) => b.posts.length - a.posts.length);
+  const placed = new Set(areas.flatMap(area => area.posts));
+  return { areas, rest: posts.filter(post => !placed.has(post)) };
+}

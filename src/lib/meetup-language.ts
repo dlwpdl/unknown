@@ -36,6 +36,16 @@ export const meetupCategoryOf = (room?: Pick<RoomPreview, 'category' | 'language
 export const languagePairLabel = ({ languages: [first, second] }: LanguageExchange) =>
   `${MEETUP_LANGUAGE_NAMES[first]} ↔ ${MEETUP_LANGUAGE_NAMES[second]}`;
 
+/**
+ * The language line a link-only guest sees on the invitation and shop QR pages (owner 2026-11-13): the exchange pair, and on
+ * an English page "In Korean" when the host wrote the meetup in Korean. Meetups store no spoken language, so that is all we know.
+ */
+export function meetupLanguageNote(room: Pick<RoomPreview, 'languageExchange'> | null | undefined, text: string, language: 'ko' | 'en') {
+  const exchange = parseLanguageExchange(room);
+  if (exchange) return language === 'en' ? exchange.languages.map(item => MEETUP_LANGUAGE_ENGLISH_NAMES[item]).join(' ↔ ') : languagePairLabel(exchange);
+  return language === 'en' && /[가-힣]/.test(text) ? 'In Korean' : null;
+}
+
 // Mirrors private.meetup_language_seats: member seats exclude the host, round half up, and each side keeps one seat.
 export function languageSeats(exchange: LanguageExchange, capacity: number): [number, number] | null {
   const seats = capacity - 1;

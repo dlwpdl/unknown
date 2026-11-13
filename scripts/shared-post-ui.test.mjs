@@ -128,6 +128,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/lib/shared-link-preview': { loadSharedLinkPreview: (...args) => { calls.push(['preview', args[1], auth.me.id]); return data.preview?.(...args) ?? Promise.resolve(preview()); } },
     '@/lib/supabase': { supabase: client },
     '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.example' },
+    '@/lib/invites': { createInviteLink: async () => { calls.push(['invite-link']); return data.inviteCode ?? null; }, rememberInviteCode: async (_, code) => { calls.push(['remember-code', code]); return code ?? null; }, claimRememberedInvite: async () => { calls.push(['claim-code']); return null; } },
     ...data.imports,
   };
   const exports = {};
@@ -563,6 +564,17 @@ test('web OS sharing and link copy use only owned title/link metadata, never pri
     const outbound = JSON.stringify(call[1]); assert.equal(typeof call[1] === 'string' ? call[1] : call[1].url, gatewayLink); assert.ok(!outbound.includes('private-'));
     assert.equal(shared.length, 1);
   }
+});
+
+test('a meetup share carries the sharer invite code on the link; without a code the link is unchanged', async context => {
+  const { harness } = sheet(context, { inviteCode: 'HJKM2345' }); await harness.settle();
+  assert.equal(harness.calls.filter(call => call[0] === 'invite-link').length, 1, 'one code read per opened sheet');
+  control(harness, 'post.share.external').props.onPress(); await harness.settle();
+  const payload = harness.calls.find(call => call[0] === 'share')[1];
+  assert.equal(payload.url, `${gatewayLink}?c=HJKM2345`); assert.equal(payload.message.split('\n').at(-1), `${gatewayLink}?c=HJKM2345`);
+  const { harness: plain } = sheet(context); await plain.settle();
+  control(plain, 'post.share.external').props.onPress(); await plain.settle();
+  assert.equal(plain.calls.find(call => call[0] === 'share')[1].url, gatewayLink, 'no code (offline, rate limited) keeps the plain link');
 });
 
 test('host invites and closed meetups share a link while preserving join application and approval', async context => {

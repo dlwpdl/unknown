@@ -1,3 +1,4 @@
+import { normalizeInviteCode } from './invites.ts';
 import { decodeSharedUuid, encodeSharedUuid } from './shared-uuid.ts';
 import { tr } from '../i18n/index.ts';
 
@@ -22,7 +23,22 @@ export function buildSharedPostUrl(
   return site === appOrigin ? gatewayUrl : `${site}/post?id=${encodedId}`;
 }
 
+// The sharer's personal invite code rides on a meetup link so the existing invite reward follows it (owner 2026-11-13):
+// `c` on the short preview link, `code` on the app site.
+export function withInviteCode(url: string, code: string | null | undefined) {
+  const valid = normalizeInviteCode(code);
+  if (!valid) return url;
+  const parsed = new URL(url);
+  parsed.searchParams.set(parsed.origin === previewOrigin ? 'c' : 'code', valid);
+  return parsed.href;
+}
+
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+const linkCode = (url: URL, key: string): { code?: string } => {
+  const codes = url.searchParams.getAll(key);
+  const code = codes.length === 1 ? normalizeInviteCode(codes[0]) : null;
+  return code ? { code } : {};
+};
 export function sharedLinkTarget(input: string) {
   try {
     const url = new URL(input);
@@ -33,19 +49,19 @@ export function sharedLinkTarget(input: string) {
     const short = gateway && url.pathname.match(/^\/s\/([^/]+)\/?$/);
     if (short) {
       const id = decodeSharedUuid(short[1]);
-      return id ? { id, invite: url.searchParams.get('invite') === '1' } : null;
+      return id ? { id, invite: url.searchParams.get('invite') === '1', ...linkCode(url, 'c') } : null;
     }
     const id = url.pathname === '/post' && url.searchParams.getAll('id').length === 1 ? url.searchParams.get('id')
       : url.pathname.match(/^\/(?:share|posts?)\/([^/]+)\/?$/)?.[1];
-    return id && uuid.test(id) ? { id: id.toLowerCase(), invite: url.searchParams.get('invite') === '1' } : null;
+    return id && uuid.test(id) ? { id: id.toLowerCase(), invite: url.searchParams.get('invite') === '1', ...linkCode(url, 'code') } : null;
   } catch { return null; }
 }
 export function sharedLinkInMessage(body: string) {
   return body.match(/https:\/\/[^\s<>]+/g)?.find(url => sharedLinkTarget(url)) ?? null;
 }
 // place: the Gling map place the post is pinned to (mapPinPlace), on its own line under the title (owner 2026-11-11).
-export function sharedPostMessage(post: { id: string; title: string; room?: unknown; place?: string | null }) {
-  return `${post.room ? `${tr('같이 가요!')} ` : ''}${post.title}\n${post.place ? `${post.place}\n` : ''}${buildSharedPostUrl(post.id)}`;
+export function sharedPostMessage(post: { id: string; title: string; room?: unknown; place?: string | null }, inviteCode?: string | null) {
+  return `${post.room ? `${tr('같이 가요!')} ` : ''}${post.title}\n${post.place ? `${post.place}\n` : ''}${withInviteCode(buildSharedPostUrl(post.id), post.room ? inviteCode : null)}`;
 }
 
 // Invite meetup links (20261108120000): the token is the whole secret, so it never goes through the share preview.
@@ -70,7 +86,8 @@ export function sharedPostReturnPath(value: string | null) {
     const join = parsed.pathname === '/meetup-join', key = join ? 'postId' : 'id';
     const id = parsed.searchParams.get(key);
     if (parsed.origin !== 'https://gling.ej-entertainment.com' || (!join && parsed.pathname !== '/post') || parsed.searchParams.getAll(key).length !== 1 || !id || !uuid.test(id)) return '/';
-    if (join) return `/meetup-join?postId=${id.toLowerCase()}`;
-    return `/post?id=${id.toLowerCase()}${parsed.searchParams.get('invite') === '1' ? '&invite=1' : ''}`;
+    const code = linkCode(parsed, 'code').code, tail = code ? `&code=${code}` : '';
+    if (join) return `/meetup-join?postId=${id.toLowerCase()}${tail}`;
+    return `/post?id=${id.toLowerCase()}${parsed.searchParams.get('invite') === '1' ? '&invite=1' : ''}${tail}`;
   } catch { return '/'; }
 }

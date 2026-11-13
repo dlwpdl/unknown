@@ -15,7 +15,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { getPostImageSource, relativeTime } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { areaName, dealLabel, formatMoveIn, LISTING_LABELS, listingPriceLabel, listingStatusLabel, type ListingDetails } from '@/lib/listing-details';
+import { areaName, dealLabel, formatMoveIn, isFreeListing, LISTING_LABELS, listingPriceLabel, listingStatusLabel, type ListingDetails } from '@/lib/listing-details';
 import { CITIES } from '@/lib/mock';
 import { findNeighborhood } from '@/lib/neighborhoods';
 import { postLocationUrl } from '@/lib/post-maps';
@@ -61,32 +61,57 @@ export function useListingText(post: DetailedPost) {
 }
 
 // Feed card, direction A: badge + 동네·시간, title, price, chips, and a 72px photo (중고거래 puts the photo first).
-export function ListingCard({ post, onPress, variant = 'row' }: { post: DetailedPost; onPress: () => void; variant?: 'row' | 'tile' }) {
+// 중고거래 also has tile (사진 2칸, 동네별), big (큰 사진) and mini (나눔 띠), owner 2026-11-13.
+export function ListingCard({ post, onPress, variant = 'row' }: { post: DetailedPost; onPress: () => void; variant?: 'row' | 'tile' | 'big' | 'mini' }) {
   const theme = useTheme(), { tr } = useLanguage(), { play } = useInteractionFeedback();
   const { isAuthed, me } = useAuth(), { fontScale } = useWindowDimensions();
   const text = useListingText(post), { details, category } = text;
   const photo = getPostImageSource(post, isAuthed ? me.id : 'guest');
   const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const showPhoto = photo && failedPhoto !== photo.uri;
-  const free = details.type === 'used' && details.deal === 'sell' && post.price === 0;
+  const free = isFreeListing(post);
   const where = category === 'jobs' && post.business ? post.business.name : text.area;
   const label = [text.deal, post.title, text.price, where, text.closed ? text.status : null].filter(Boolean).join(', ');
   const press = () => { play('selection'); onPress(); };
-  const image = (style: object) => showPhoto ? <Image source={photo} contentFit="cover" style={style} accessible={false} onError={() => setFailedPhoto(photo.uri)} />
+  // Big photo boxes without a photo (e.g. business posts moved from the cafe) show the item's name instead of an empty box.
+  const image = (style: object, named = false) => showPhoto ? <Image source={photo} contentFit="cover" style={style} accessible={false} onError={() => setFailedPhoto(photo.uri)} />
     : <View style={[style, styles.fallback, { backgroundColor: theme.backgroundElement }]} accessible={false}>
-      {details.type === 'used' && details.deal === 'buy' ? <ThemedText type="label" themeColor="textSecondary">{text.deal}</ThemedText>
+      {named ? <>
+        <ThemedText numberOfLines={3} style={[styles.title, styles.named]}>{post.title}</ThemedText>
+        <ThemedText type="caption" themeColor="textSecondary">{details.type === 'used' && details.deal === 'buy' ? text.deal : tr('사진 없는 글')}</ThemedText>
+      </> : details.type === 'used' && details.deal === 'buy' ? <ThemedText type="label" themeColor="textSecondary">{text.deal}</ThemedText>
         : <SymbolView name={category === 'housing' ? { ios: 'house', android: 'home', web: 'home' } : { ios: 'shippingbox', android: 'inventory_2', web: 'inventory_2' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />}
     </View>;
+  const photoBadge = text.closed ? <Badge label={text.status} tone="done" /> : free ? <Badge label={tr('나눔')} tone="accent" /> : null;
 
   if (variant === 'tile') return <Pressable analyticsId="listing.card.tile" accessibilityRole="button" accessibilityLabel={label} onPress={press}
     style={({ pressed }) => [styles.tile, { opacity: pressed ? ControlMotion.pressedOpacity : text.closed ? 0.55 : 1 }]}>
     <View>
-      {image(styles.square)}
-      {(text.closed || free) && <View style={styles.tileBadge}><Badge label={text.closed ? text.status : tr('나눔')} tone={text.closed ? 'done' : 'accent'} /></View>}
+      {image(styles.square, true)}
+      {photoBadge && <View style={styles.tileBadge}>{photoBadge}</View>}
     </View>
     {text.price && <ThemedText style={styles.tilePrice}>{text.price}</ThemedText>}
     <ThemedText type="supporting" numberOfLines={fontScale > 1.2 ? 2 : 1}>{post.title}</ThemedText>
     <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>{[text.area, text.time].filter(Boolean).join(' · ')}</ThemedText>
+  </Pressable>;
+
+  if (variant === 'big') return <Pressable analyticsId="listing.card.used" accessibilityRole="button" accessibilityLabel={label} onPress={press}
+    style={({ pressed }) => [styles.big, { opacity: pressed ? ControlMotion.pressedOpacity : text.closed ? 0.55 : 1 }]}>
+    <View>
+      {image(styles.wide, true)}
+      {(photoBadge || (details.type === 'used' && details.deal === 'buy')) && <View style={styles.tileBadge}>{photoBadge ?? <Badge label={text.deal} tone="want" />}</View>}
+    </View>
+    <View style={styles.meta}>
+      {text.price && <ThemedText style={styles.price}>{text.price}</ThemedText>}
+      <ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.flex}>{[text.area, text.time].filter(Boolean).join(' · ')}</ThemedText>
+    </View>
+    <ThemedText numberOfLines={fontScale > 1.2 ? undefined : 2} style={styles.title}>{post.title}</ThemedText>
+    <Tags items={text.condition ? [text.condition] : []} />
+  </Pressable>;
+
+  if (variant === 'mini') return <Pressable analyticsId="listing.card.tile" accessibilityRole="button" accessibilityLabel={label} onPress={press} style={styles.mini}>
+    {image(styles.miniPhoto)}
+    <ThemedText type="caption" numberOfLines={1} style={styles.tagText}>{post.title}</ThemedText>
   </Pressable>;
 
   const meta = <View style={styles.meta}>
@@ -197,11 +222,16 @@ const styles = StyleSheet.create({
   tag: { minHeight: 24, paddingHorizontal: 8, borderRadius: 6, justifyContent: 'center' },
   tagText: { fontWeight: '600' },
   thumb: { width: 72, height: 72, borderRadius: 12 },
-  fallback: { alignItems: 'center', justifyContent: 'center' },
+  fallback: { alignItems: 'center', justifyContent: 'center', gap: 2, padding: Spacing.two },
+  named: { textAlign: 'center' },
   tile: { flex: 1, gap: 4, minWidth: 0 },
   square: { width: '100%', aspectRatio: 1, borderRadius: 12 },
   tileBadge: { position: 'absolute', left: 6, top: 6 },
   tilePrice: { ...Typography.body, fontWeight: '700' },
+  big: { gap: 6 },
+  wide: { width: '100%', aspectRatio: 4 / 3, borderRadius: 16 },
+  mini: { width: 58, gap: 4 },
+  miniPhoto: { width: 58, height: 58, borderRadius: 12 },
   info: { gap: Spacing.two, marginTop: Spacing.two },
   infoCard: { borderWidth: 1, borderRadius: 16, overflow: 'hidden' },
   clayRows: { borderRadius: 16, overflow: 'hidden' },
