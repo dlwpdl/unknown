@@ -381,7 +381,7 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
               : <Rise key={view}>
                 {!!inviter && (view === 'form' || view === 'noprofile') && <View style={[styles.invited, { backgroundColor: theme.backgroundSelected }]}>
                   <SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} size={18} tintColor={theme.accent} />
-                  <ThemedText type="smallBold" themeColor="accent" style={styles.flexShrink}>{tr('{0} 님 초대 링크로 들어왔어요', inviter)}</ThemedText>
+                  <ThemedText type="smallBold" themeColor="accent" style={styles.flexShrink}>{tr('{0}님 초대 링크로 들어왔어요', inviter)}</ThemedText>
                 </View>}
                 {view === 'guest' && guestHead()}
                 {view === 'own' && <>
@@ -397,6 +397,8 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
                     body={tr(status === 'approved' ? '모임 대화에서 집결 안내를 확인해 주세요.' : status === 'pending' ? availability === 'full' ? '내 신청은 대기 중이에요. 지금은 정원이 차서 호스트가 승인할 수 없어요. 신청만으로 자리가 잡히지는 않아요.' : '아직 참여가 확정되지 않았어요. 호스트가 승인하면 모임 대화에 들어갈 수 있어요.' : '현재 신청 상태를 다시 불러와 주세요.')}>
                     <JoinSteps steps={[{ label: tr('신청 보냄'), state: 'done' }, status === 'approved' ? { label: tr('호스트 승인'), state: 'done' } : { label: tr('호스트가 확인하는 중'), state: 'now' }, { label: tr('모임 대화 입장'), state: status === 'approved' ? 'now' : 'next' }]} />
                   </StateCard>
+                  {/* Web only (null in the app): the next step sits right under the status, above 신청 취소. */}
+                  <MeetupJoinHandoff postId={postId} host={post!.author.nickname} approved={status === 'approved'} />
                   {status === 'pending' && modern && !invite && <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr("승인되면 '누가 와요'에 내 이름, 한 줄 소개, 관심사가 나와요.")}</ThemedText>}
                   {meetCard()}
                   {status === 'approved' ? (!!post!.room!.fee || appRows) && <ListCard>
@@ -408,7 +410,6 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
                   </ListCard>}
                   {status === 'pending' && <Pressable analyticsId="app_meetup-join.pressable.12" accessibilityRole="button" disabled={sending} accessibilityState={{ disabled: sending, busy: sending }} onPress={confirmCancel} style={styles.button}><ThemedText style={[styles.support, styles.center]} themeColor="danger">{sending ? tr("취소 중…") : tr("신청 취소")}</ThemedText></Pressable>}
                   {!status && <RaisedActionButton analyticsId="app_meetup-join.pressable.9" tone="secondary" disabled={sending} onPress={() => { play('selection'); reload(); }} label={tr("다시 불러오기")} />}
-                  <MeetupJoinHandoff postId={postId} host={post!.author.nickname} />
                 </>}
                 {view === 'paused' && <>
                   <StateCard layout="start" kind="blocked" mark="minus" title={tr("지금은 새 신청을 받지 않아요")} body={tr("호스트가 모집을 다시 열면 신청할 수 있어요.")} />

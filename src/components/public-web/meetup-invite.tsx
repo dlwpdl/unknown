@@ -14,7 +14,7 @@ import { chillingAvailability, chillingKind, chillingSchedule, recommendedAgeLab
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { rememberInviteCode } from '@/lib/invites';
 import { loadMeetupInviteCard, seatsLeft, type MeetupInviteCard } from '@/lib/meetup-invite';
-import { meetupCategoryOf } from '@/lib/meetup-language';
+import { meetupCategoryOf, meetupLanguageNote } from '@/lib/meetup-language';
 import { meetupFeeAmount } from '@/lib/meetup-host-tools';
 import { CITIES } from '@/lib/mock';
 import { findNeighborhood, neighborhoodName } from '@/lib/neighborhoods';
@@ -26,7 +26,6 @@ import type { Post } from '@/lib/types';
 
 const wordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark.png')).uri;
 const lightWordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark-light.png')).uri;
-const COVER = '/share-covers/meetup.png';
 
 /**
  * The meetup web invitation (owner 2026-11-13): a link opens this before any login. It shows what the app's meetup detail
@@ -86,17 +85,20 @@ export function MeetupInvite({ postId, code, onMissing }: { postId: string; code
   }
 
   const { post, card } = current, room = post.room!;
-  const availability = chillingAvailability(room), open = availability === 'open';
+  // A host pause reads 모집 마감 here as on the app card and the shop QR list.
+  const base = chillingAvailability(room), availability = base === 'open' && room.recruitingClosed ? 'closed' : base, open = availability === 'open';
   const left = seatsLeft({ capacity: room.capacity ?? null, memberCount: room.memberCount ?? null });
   const city = CITIES.find(item => item.id === post.cityId), cityName = city ? ko ? city.name : city.englishName : '';
   const area = findNeighborhood(post.cityId, card.area);
   const category = meetupCategoryOf(room);
   const host = post.author.nickname;
-  const cover = !brokenCover && post.imageUris?.[0] ? post.imageUris[0] : COVER;
+  // Only the host's own photo gets the big slot; the share-preview default banner stays in link previews (owner 2026-11-13).
+  const photo = brokenCover ? null : post.imageUris?.[0] ?? null;
+  const spoken = meetupLanguageNote(room, `${post.title}\n${card.intro}`, language);
   const facts: [string, string, string | null][] = [
     [ko ? '언제' : 'When', chillingSchedule(room, locale), null],
     [ko ? '어디' : 'Where', area ? ko ? `${neighborhoodName(area, 'ko')} 근처` : `Near ${neighborhoodName(area, 'en')}` : cityName,
-      ko ? '집결지는 승인 후' : 'Exact spot once you’re in'],
+      tr('집결지는 승인 후')],
     [ko ? '인원' : 'Spots', room.capacity ? `${room.memberCount ?? 0} / ${room.capacity}${ko ? '명' : ''}` : ko ? `${room.memberCount ?? 0}명` : `${room.memberCount ?? 0} going`,
       room.capacity && left != null ? ko ? `${room.capacity}자리 중 ${left}자리 남았어요` : `${left} of ${room.capacity} spots left` : null],
     card.fee ? [ko ? '회비' : 'Fee', meetupFeeAmount(card.fee), null] : [ko ? '나이' : 'Ages', recommendedAgeLabel(room, locale), null],
@@ -113,7 +115,7 @@ export function MeetupInvite({ postId, code, onMissing }: { postId: string; code
       // Web sign-in can finish on /auth/callback; it returns to the application screen (sharedPostReturnPath keeps the code).
       window.sessionStorage.setItem(SHARED_POST_RETURN_KEY, joinPath);
       setWantsWeb(true); setSheet(false);
-      promptLogin(ko ? '로그인하면 이 모임에 바로 신청할 수 있어요.' : 'Sign in to request a spot in this meetup.');
+      promptLogin(ko ? '로그인하면 이 모임 신청서가 바로 열려요.' : 'Sign in to open this meetup’s request form.');
     } catch { setLoginError(ko ? '로그인 창을 열지 못했어요. 한 번 더 눌러 주세요.' : 'Couldn’t open sign-in. Tap once more.'); play('warning'); }
   }
 
@@ -122,11 +124,12 @@ export function MeetupInvite({ postId, code, onMissing }: { postId: string; code
     {brand}
     <main className="mi-page">
       {!!card.inviter && <p className="mi-from"><span className="mi-avatar" aria-hidden="true">{[...card.inviter][0]}</span>
-        {ko ? `${card.inviter} 님이 같이 가자고 보낸 모임이에요` : `${card.inviter} wants you to come along`}</p>}
-      <img className={cover === COVER ? 'mi-cover mi-cover-default' : 'mi-cover'} src={cover} alt="" referrerPolicy="no-referrer" onError={() => setBrokenCover(true)} />
+        {ko ? `${card.inviter}님이 같이 가자고 보낸 모임이에요` : `${card.inviter} wants you to come along`}</p>}
+      {!!photo && <img className="mi-cover" src={photo} alt="" referrerPolicy="no-referrer" onError={() => setBrokenCover(true)} />}
       <div className="mi-chips">
         <span className="mi-chip mi-on">{chillingKind(room) === 'once' ? tr('칠링') : tr('정기모임')}</span>
         {!!category && <span className="mi-chip">{tr(CHILLING_CATEGORY_LABELS[category])}</span>}
+        {!!spoken && <span className="mi-chip">{spoken}</span>}
         <span className="mi-chip">{tr({ open: '모집 중', full: '정원 마감', closed: '모집 마감', ended: '종료된 모임' }[availability])}</span>
       </div>
       <h1>{post.title}</h1>
@@ -137,12 +140,11 @@ export function MeetupInvite({ postId, code, onMissing }: { postId: string; code
         {!!note && <dd className="mi-note">{note}</dd>}
       </div>)}</dl>
       {!!card.intro && <section aria-labelledby="mi-intro"><h2 id="mi-intro">{ko ? '소개' : 'About'}</h2><p className="mi-intro">{card.intro}</p></section>}
-      <p className="mi-more">{ko ? '정확한 장소는 호스트가 수락하면 모임 대화에서 알려 줘요.' : 'Once the host accepts you, they’ll share the exact spot in the group chat.'}</p>
       <p className="mi-lock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
         <span>{ko ? '이 초대장은 링크를 받은 사람만 열 수 있고, 검색에는 나오지 않아요.' : 'Only people with the link can open this invite. It won’t show up in search.'}</span></p>
     </main>
     <footer className="mi-dock">
-      <p>{open ? ko ? '호스트가 신청을 보고 수락하면 자리가 확정돼요.' : 'Your spot is confirmed once the host accepts your request.' : state}</p>
+      <p>{open ? ko ? '호스트가 신청을 보고 승인하면 자리가 확정돼요.' : 'Your spot is confirmed once the host approves your request.' : state}</p>
       {open ? <button ref={opener} type="button" className="mi-primary" data-analytics="invite.web.apply" aria-haspopup="dialog" onClick={openSheet}>{ko ? '신청하기' : 'Request to join'}</button>
         : <a className="mi-secondary" data-analytics="invite.web.other_meetups" href={city ? `/${city.id}/meetups` : '/meetups'} onClick={() => play('selection')}>{ko ? '다른 모임 보기' : 'See other meetups'}</a>}
       {!!loginError && <p role="alert">{loginError}</p>}
@@ -156,7 +158,8 @@ export function MeetupInvite({ postId, code, onMissing }: { postId: string; code
           <span><b>{ko ? '글링 앱이 있어요' : 'I have the Gling app'}</b><span>{ko ? '앱에서 이 모임 신청 화면이 바로 열려요.' : 'This meetup’s request screen opens right in the app.'}</span></span></a>
         <button type="button" className="mi-option" data-analytics="invite.web.no_app" onClick={applyOnWeb}>
           <span className="mi-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></svg></span>
-          <span><b>{ko ? '앱이 아직 없어요' : 'I don’t have the app yet'}</b><span>{ko ? '로그인만 하면 여기서 바로 신청할 수 있고, 앱은 그다음에 받아도 늦지 않아요.' : 'Just sign in and apply right here. You can grab the app after.'}</span></span></button>
+          <span><b>{ko ? '앱이 아직 없어요' : 'I don’t have the app yet'}</b><span>{ko ? '로그인하고 한 줄 소개와 호스트 질문 답을 쓰면 여기서 바로 신청돼요. 앱은 그다음에 받아도 늦지 않아요.' : 'Sign in, add a one-line intro and answer the host’s question to apply right here. You can grab the app after.'}</span></span></button>
+        <p className="mi-sheet-note">{ko ? '카카오톡·Threads 안에서 앱이나 로그인 창이 열리지 않으면 Safari 또는 Chrome으로 이 링크를 열어 주세요.' : 'If the app or sign-in won’t open inside KakaoTalk or Threads, open this link in Safari or Chrome.'}</p>
         <button type="button" className="mi-ghost" onClick={closeSheet}>{ko ? '닫기' : 'Close'}</button>
       </div>
     </div>}
@@ -174,7 +177,6 @@ body:has(.meetup-invite){margin:0;overflow-y:auto!important}
 .mi-from{margin:6px 0 12px}.mi-host{min-height:var(--mi-touch);font-weight:700;color:var(--text)}.mi-host small{font-weight:500;color:var(--textSecondary);font-size:.8125rem}
 .mi-avatar{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:14px;background:var(--backgroundSelected);color:var(--text);font-size:.75rem;font-weight:700}
 .mi-cover{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:16px;background:var(--backgroundElement)}
-.mi-cover-default{aspect-ratio:1200/630}
 .mi-chips{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 6px}.mi-chip{font-size:.75rem;line-height:1.5;font-weight:700;border-radius:999px;padding:3px 10px;background:var(--backgroundElement);color:var(--textSecondary)}.mi-chip.mi-on{background:var(--backgroundSelected);color:var(--accent)}
 .meetup-invite h1{margin:4px 0 8px;font-size:var(--mi-title);line-height:1.3;letter-spacing:-.5px;word-break:keep-all}
 .meetup-invite h2{margin:0 0 6px;font-size:.8125rem;line-height:1.45;font-weight:700}
@@ -182,7 +184,7 @@ body:has(.meetup-invite){margin:0;overflow-y:auto!important}
 .mi-fact{padding:12px 14px;min-height:86px;min-width:0}.mi-fact:nth-child(2n){border-left:1px solid var(--line)}.mi-fact:nth-child(n+3){border-top:1px solid var(--line)}
 .mi-fact dt{font-size:.75rem;line-height:1.4;color:var(--textSecondary)}.mi-fact dd{margin:2px 0 0;font-weight:700;word-break:keep-all}.mi-fact .mi-note{font-size:.75rem;line-height:1.4;font-weight:500;color:var(--textSecondary)}
 .mi-seat{display:block;height:6px;border-radius:3px;background:var(--backgroundElement);margin-top:8px;overflow:hidden}.mi-seat i{display:block;height:100%;background:var(--accent);border-radius:3px}
-.mi-intro{white-space:pre-line;line-height:1.55;word-break:keep-all}.mi-more{margin:8px 0 16px!important;font-size:.75rem;line-height:1.45;color:var(--textSecondary)}
+.mi-intro{white-space:pre-line;line-height:1.55;word-break:keep-all;margin-bottom:16px!important}
 .mi-lock{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);font-size:.75rem;line-height:1.5;color:var(--textSecondary);word-break:keep-all}.mi-lock svg{flex:none;margin-top:2px}
 .mi-dock{position:fixed;left:0;right:0;bottom:0;padding-top:10px;padding-bottom:calc(16px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--background) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);display:grid;gap:8px}
 .mi-dock p{font-size:.75rem;line-height:1.45;color:var(--textSecondary);text-align:center}
@@ -194,6 +196,7 @@ body:has(.meetup-invite){margin:0;overflow-y:auto!important}
 .mi-sheet h2{font-size:1.25rem;line-height:1.4;letter-spacing:-.4px;margin:0 0 14px}
 .mi-option{display:flex;gap:12px;align-items:flex-start;width:100%;min-height:72px;margin-bottom:10px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--background);color:var(--text);text-align:left;text-decoration:none;font:inherit;cursor:pointer;transition:transform 90ms ease-out,opacity 90ms,border-color .15s}
 .mi-option b{display:block;font-size:1rem;line-height:1.5}.mi-option span span{display:block;font-size:.8125rem;line-height:1.45;color:var(--textSecondary);word-break:keep-all}
+.mi-sheet-note{margin:2px 4px 6px!important;font-size:.8125rem;line-height:1.45;color:var(--textSecondary);word-break:keep-all}
 .mi-icon{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--backgroundElement);color:var(--accent)}
 .meetup-invite a:active,.meetup-invite button:active{transform:scale(.97);opacity:.82}
 .meetup-invite a:focus-visible,.meetup-invite button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}

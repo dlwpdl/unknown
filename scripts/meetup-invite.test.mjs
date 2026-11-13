@@ -5,6 +5,7 @@ import test from 'node:test';
 import { appPathForLink } from '../src/lib/app-links.ts';
 import { claimRememberedInvite, INVITE_CODE_KEY, rememberInviteCode } from '../src/lib/invites.ts';
 import { loadBusinessInviteLanding, loadMeetupInviteCard, parseBusinessInviteLanding, parseMeetupInviteCard, seatsLeft } from '../src/lib/meetup-invite.ts';
+import { meetupLanguageNote } from '../src/lib/meetup-language.ts';
 import { NEIGHBORHOODS } from '../src/lib/neighborhoods.ts';
 import { publicWebFetch } from '../src/lib/public-web.ts';
 import { sharedLinkTarget, sharedPostMessage, sharedPostReturnPath, withInviteCode } from '../src/lib/sharing.ts';
@@ -37,6 +38,16 @@ test('the invitation card keeps only its narrow, well-formed fields', async () =
   await loadMeetupInviteCard(rpc, id, 'bad');
   assert.deepEqual(rpc.calls, [['get_meetup_invite_card', { p_post_id: id, p_code: 'HJKM2345' }], ['get_meetup_invite_card', { p_post_id: id }]], 'a malformed code is never sent');
   await assert.rejects(loadMeetupInviteCard(client({ data: null, error: { message: 'Failed to fetch' } }), id));
+});
+
+test('a guest sees the exchange pair, and on an English page that a Korean-written meetup is in Korean', () => {
+  const exchange = { languageExchange: { languages: ['ko', 'en'], share: 50 } };
+  assert.equal(meetupLanguageNote(exchange, '언어교환 밤', 'ko'), '한국어 ↔ English');
+  assert.equal(meetupLanguageNote(exchange, '언어교환 밤', 'en'), 'Korean ↔ English', 'English pages name both languages in English');
+  assert.equal(meetupLanguageNote({}, '보드게임 밤', 'en'), 'In Korean');
+  assert.equal(meetupLanguageNote({}, 'Board game night', 'en'), null);
+  assert.equal(meetupLanguageNote({}, '보드게임 밤', 'ko'), null, 'a Korean reader needs no language line');
+  assert.equal(meetupLanguageNote({ languageExchange: { languages: ['ko', 'ko'], share: 50 } }, '보드게임', 'en'), 'In Korean', 'a malformed pair is ignored');
 });
 
 test('a shop landing needs a valid code and lists at most five meetup ids', async () => {

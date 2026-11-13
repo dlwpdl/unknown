@@ -48,12 +48,15 @@ export default function InviteLandingPage() {
           <ThemedText type="small" themeColor="textSecondary">{tr('초대 코드')}</ThemedText>
           <ThemedText selectable style={styles.code}>{saved}</ThemedText>
         </View>
-        <RaisedActionButton analyticsId="invite.open_app" label={tr('앱에서 열기')} onPress={() => { play('selection'); window.location.href = inviteAppUrl(saved); }} />
-        <ThemedText type="small" themeColor="textSecondary">{tr('앱에서는 프로필 → 친구 초대에서 코드를 넣을 수 있어요.')}</ThemedText>
       </>}
       {saved === null && <ThemedText themeColor="textSecondary">{tr('링크를 보낸 분께 다시 받아 주세요.')}</ThemedText>}
       {/* Also in the static HTML (before the code is read) and for a bad code: installing never depends on the invite. */}
       <AppStoreChoices />
+      {/* Same place and weight as on the shop QR and web request pages: install first, then '앱에서 열기' (owner 2026-11-13). */}
+      {saved && !pending && <>
+        <RaisedActionButton analyticsId="invite.open_app" tone="secondary" label={tr('앱에서 열기')} onPress={() => { play('selection'); window.location.href = inviteAppUrl(saved); }} />
+        <ThemedText type="small" themeColor="textSecondary">{tr('앱에서는 프로필 → 친구 초대에서 코드를 넣을 수 있어요.')}</ThemedText>
+      </>}
       <AppStoreRating />
     </View>
   </ThemedView>;

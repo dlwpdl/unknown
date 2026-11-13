@@ -150,7 +150,7 @@ test('application shows the same global profile one tap away; the send button is
 test('a sharer code names who shared the link above the form; no code reads no card', async () => {
   const ui = mountParticipant('join', { code: 'HJKM2345', inviter: '지은' }); await ui.flush();
   assert.deepEqual(ui.calls.find(([name]) => name === 'invite-card'), ['invite-card', participantPost.id, 'HJKM2345']);
-  assert.ok(text(ui.tree).includes('지은 님 초대 링크로 들어왔어요')); ui.unmount();
+  assert.ok(text(ui.tree).includes('지은님 초대 링크로 들어왔어요')); ui.unmount();
   const plain = mountParticipant('join'); await plain.flush();
   assert.ok(!plain.calls.some(([name]) => name === 'invite-card') && !text(plain.tree).includes('초대 링크로 들어왔어요')); plain.unmount();
 });
@@ -159,7 +159,9 @@ test('a web request hands off to the app instead of routes the public web does n
   nodes(ui.tree).find(node => node.type === 'TextInput').props.onChangeText('함께 걷고 싶어요.'); await ui.flush();
   ui.ctx.request = { id: 'request', status: 'pending', created_at: '2030-01-01' };
   ui.control('app_meetup-join.pressable.8').props.onPress(); await ui.flush();
-  assert.equal(nodes(ui.tree).find(node => node.type === 'MeetupJoinHandoff')?.props.host, '소라');
+  const order = nodes(ui.tree), handoff = order.findIndex(node => node.type === 'MeetupJoinHandoff');
+  assert.deepEqual([order[handoff]?.props.host, order[handoff]?.props.approved], ['소라', false]);
+  assert.ok(handoff < order.findIndex(node => node.props?.analyticsId === 'app_meetup-join.pressable.12'), 'the next step comes before 신청 취소');
   assert.equal(ui.control('app_meetup-join.pressable.11'), undefined, 'no sent-profile row');
   assert.equal(ui.control('meetup.join.fill-profile'), undefined, 'no profile row');
   assert.equal(ui.control('app_meetup-join.pressable.3'), undefined, 'no app-tab button');
