@@ -42,7 +42,7 @@ export function AdminSectionView({ section, data, onUser, onLoadMore, loadingMor
       { id: 'reports', title: '미처리 신고', body: `${data.counts.openReports}건`, meta: `전체 ${data.counts.reports}건` },
       { id: 'alerts', title: '감시어 경보', body: `${data.counts.alertsOpen}건`, meta: '미처리' },
       { id: 'safety', title: 'AI 안전 검토', body: `고위험 ${data.counts.safetyHigh}건`, meta: `처리 대기 ${data.counts.safetyPending}건` },
-      { id: 'members', title: '전체 사용자', body: `${data.counts.profiles}명`, meta: `글 ${data.counts.posts}건 · 메시지 ${data.counts.messages}건` },
+      { id: 'members', title: '전체 계정(운영 캐릭터 포함)', body: `${data.counts.profiles}개`, meta: `글 ${data.counts.posts}건 · 메시지 ${data.counts.messages}건` },
     ];
   } else if (section === 'alerts') {
     title = '감시어 경보';

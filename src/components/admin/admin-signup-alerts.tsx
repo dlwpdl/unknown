@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { AppState, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { AppState, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Spacing } from '@/constants/theme';
 import { markNotificationsRead } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { buildSharedPostUrl } from '@/lib/sharing';
 import { supabase } from '@/lib/supabase';
 
-type SignupAlert = { id: string; body: string; target_id: string };
+type SignupAlert = { id: string; kind: string; body: string; target_id: string };
 
 export function AdminSignupAlerts({ userId, onUser }: { userId: string; onUser: (id: string) => void }) {
   const [alerts, setAlerts] = useState<SignupAlert[]>([]);
@@ -24,12 +25,13 @@ export function AdminSignupAlerts({ userId, onUser }: { userId: string; onUser: 
     const refresh = async () => {
       const version = ++revision.current;
       try {
-        const result = await supabase.from('user_notifications').select('id,body,target_id')
-          .eq('user_id', userId).eq('kind', 'admin_signup').is('read_at', null)
+        const result = await supabase.from('user_notifications').select('id,kind,body,target_id')
+          .eq('user_id', userId).in('kind', ['admin_signup', 'admin_first_post']).is('read_at', null)
           .order('created_at', { ascending: false }).limit(20);
         if (!active || version !== revision.current) return;
         if (result.error) throw result.error;
-        setAlerts((result.data ?? []) as SignupAlert[]);
+        // A newcomer's first post is waiting for a reply, so it comes before signups (sort is stable).
+        setAlerts(((result.data ?? []) as SignupAlert[]).sort((a, b) => Number(b.kind === 'admin_first_post') - Number(a.kind === 'admin_first_post')));
         setError(null);
       } catch {
         if (active && version === revision.current) setError('가입 알림을 불러오지 못했어요. 연결되면 다시 확인합니다.');
@@ -75,14 +77,20 @@ export function AdminSignupAlerts({ userId, onUser }: { userId: string; onUser: 
 
   const alert = alerts[0];
   if (!alert && !error) return null;
+  const firstPost = alert?.kind === 'admin_first_post';
+  const open = () => {
+    play('selection');
+    if (!firstPost) return onUser(alert.target_id);
+    Linking.openURL(buildSharedPostUrl(alert.target_id)).catch(() => { if (alive.current) setError('글을 열지 못했어요. 다시 눌러 주세요.'); });
+  };
   return (
     <View accessibilityLiveRegion="polite" style={styles.banner}>
       {!!alert && <>
         <ThemedText type="smallBold">가입 알림 · {alerts.length}{alerts.length === 20 ? '+' : ''}건 미확인</ThemedText>
         <ThemedText>{alert.body}</ThemedText>
         <View style={styles.actions}>
-          <Pressable accessibilityRole="button" accessibilityLabel="가입 회원 보기" onPress={() => { play('selection'); onUser(alert.target_id); }} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
-            <ThemedText type="smallBold">회원 보기</ThemedText>
+          <Pressable accessibilityRole="button" accessibilityLabel={firstPost ? '첫 글 보기' : '가입 회원 보기'} onPress={open} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
+            <ThemedText type="smallBold">{firstPost ? '글 보기 ↗' : '회원 보기'}</ThemedText>
           </Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel="가입 알림 확인" accessibilityState={{ busy, disabled: busy }} disabled={busy} onPress={() => confirm(alert.id)} style={({ pressed }) => [styles.button, (pressed || busy) && styles.pressed]}>
             <ThemedText type="smallBold">{busy ? '확인 중…' : '확인'}</ThemedText>
