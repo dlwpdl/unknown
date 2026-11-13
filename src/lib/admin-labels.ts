@@ -4,6 +4,7 @@ import type {
   AdminModerationAction,
   AdminPost,
   AdminProfile,
+  AdminRealPeople,
   AdminReport,
   AdminSafetyAlert,
 } from '@/lib/admin-data';
@@ -87,4 +88,32 @@ export function referencedUserIds(data: {
   for (const alert of data.alerts ?? []) { add(alert.author_id); add(alert.reviewed_by); }
   for (const action of data.actions ?? []) add(action.actor_id);
   return [...ids];
+}
+
+/** 분 → '42분', '1시간 35분', '1일 1시간'. 관리자 웹 진짜 사람 숫자 카드와 같은 표기. */
+export function waitText(minutes: number) {
+  if (minutes < 60) return `${minutes}분`;
+  if (minutes < 1440) return `${Math.floor(minutes / 60)}시간${minutes % 60 ? ` ${minutes % 60}분` : ''}`;
+  const hours = Math.floor(minutes / 60) % 24;
+  return `${Math.floor(minutes / 1440)}일${hours ? ` ${hours}시간` : ''}`;
+}
+
+type ReplyWeek = AdminRealPeople['replyWeeks'][number];
+
+// 진행 중인 주만 '아직'을 붙인다. 지난 주에 답이 없던 글은 곧 달릴 것처럼 읽히면 안 된다.
+export function replyTimeText(week: ReplyWeek | undefined, current = false) {
+  if (!week?.posts) return '글 없음';
+  return week.medianMinutes == null ? `${current ? '아직 ' : ''}답 없음` : waitText(week.medianMinutes);
+}
+
+export function lateReplyText(week: ReplyWeek | undefined) {
+  return week?.due ? `하루 지나도 답이 없던 글 ${week.due}건 중 ${week.unanswered}건` : '하루 지난 글 없음';
+}
+
+/** 첫 글 알림 아래 줄: 올린 지 얼마나 됐는지와, 글쓴이 말고 다른 사람이 단 댓글 수(모르면 생략). */
+export function firstPostStatus(createdAt: string, replies: number | undefined, now = Date.now()) {
+  const minutes = Math.max(0, Math.floor((now - Date.parse(createdAt)) / 60_000));
+  const posted = minutes < 1 ? '방금 올림' : `올린 지 ${waitText(minutes)}`;
+  if (replies === undefined) return posted;
+  return `${posted} · ${replies ? `댓글 ${replies}개` : '아직 댓글 없음'}`;
 }
