@@ -338,6 +338,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const band = listingCategory === 'used' && !byArea && !listingFiltersActive(listingFilters) ? freeBand(listingPosts) : null;
   const areaRows = byArea ? listingAreaRows(listingPosts, language) : null;
   // 중고거래·비즈니스 grid: two tiles per list row so the sticky header and paging keep working. 동네별: one row per neighborhood.
+  // Area rows are told apart from posts by their `area` key; Post has no `area` field.
   const feedRows: Exclude<FeedItem, null | 'free'>[] = areaRows ? [
     ...areaRows.areas.map(area => ({ area: area.id, name: area.name ?? tr('이 근처'), posts: area.posts })),
     ...areaRows.rest.length ? [{ area: 'rest', name: tr('그 밖의 글'), posts: areaRows.rest }, ...areaRows.rest] : [],
@@ -786,7 +787,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       if (revision === feedRevision.current) {
         setCity(draftCity);
         if (post && !meetupsOnly) setJustPosted({ post, at: Date.now(), viewer: viewerScope });
-        if (post && activeSort === 'latest') setPosts((prev) => [post, ...prev.filter(({ id }) => id !== created.id)]);
+        if (post && activeSort !== 'popular') setPosts((prev) => [post, ...prev.filter(({ id }) => id !== created.id)]);
         else if (draftCity.id === city.id && (meetupsOnly || tagFilter == null)) void refreshFeed().catch(() => {});
         setTagFilter(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null);
       }
