@@ -75,6 +75,9 @@ function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, cent
       return { state, script: discoveryMapScript(state, sessionId) };
     } catch { return null; }
   }, [selectedId, center, userLocation, heading, topInset, bottomInset, sessionId]);
+  // WebView/GPU startup can stall before the page's own timeout ever runs; the page's progress messages restart this wait, so a slow first download is not a failure.
+  const stall = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const watch = useCallback(() => { clearTimeout(stall.current); stall.current = setTimeout(() => setFailed(true), 15000); }, []);
   const sync = useCallback((forceMarkers = false) => {
     if (!update || !markerData) return;
     const includeMarkers = forceMarkers || sentMarkers.current?.sessionId !== sessionId || sentMarkers.current.key !== markerData.key;
@@ -94,20 +97,20 @@ function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, cent
     const message = discoveryMapMessage(raw, sessionId, markerData.markers, (JSON.parse(citiesKey) as DiscoveryCity[]).filter(city => city.open).map(city => city.id));
     if (!message) return;
     if (message.type === 'ready') { setReadyHtml(html); setFailed(false); sync(true); }
+    else if (message.type === 'progress') { if (active && !ready) watch(); }
     else if (message.type === 'error') setFailed(true);
     else if (message.type === 'select') onSelect(message.id);
     else if (message.type === 'feedback') play('selection');
     else if (message.type === 'credits') void Linking.openURL(message.url).catch(() => play('warning'));
     else if (message.type === 'moved') onMoved?.(message.bounds, message.zoom);
     else if (message.type === 'city') onCity?.(message.id);
-  }, [sessionId, html, update, markerData, sync, onSelect, onMoved, onCity, play, citiesKey]);
+  }, [sessionId, html, update, markerData, sync, onSelect, onMoved, onCity, play, citiesKey, active, ready, watch]);
   useEffect(() => { sync(); }, [sync]);
   useEffect(() => {
     if (!html || !active || ready) return;
-    // WebView/GPU startup can stall before the embedded timeout ever runs.
-    const timer = setTimeout(() => setFailed(true), 15000);
-    return () => clearTimeout(timer);
-  }, [html, active, ready]);
+    watch();
+    return () => clearTimeout(stall.current);
+  }, [html, active, ready, watch]);
   const broken = failed || !html || !update || !markerData;
   useEffect(() => {
     if (Platform.OS !== 'web') return;
