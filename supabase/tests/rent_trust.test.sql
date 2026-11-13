@@ -64,6 +64,9 @@ select is((select status from public.posts where id='f7110000-0000-4000-8000-000
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"f7100000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 select throws_ok($$update public.posts set status='published' where id='f7110000-0000-4000-8000-000000000001'$$,'P0001','POST_RESTORE_NOT_ALLOWED','the author cannot republish a held room');
+-- Nor change it while it waits: the admin reviews what the three people reported.
+select throws_ok($$update public.posts set title='멀쩡한 방', body='멀쩡한 방' where id='f7110000-0000-4000-8000-000000000001'$$,'P0001','POST_HELD','the author cannot rewrite a held room');
+select throws_ok($$update public.posts set listing_details='{}'::jsonb where id='f7110000-0000-4000-8000-000000000001'$$,'P0001','POST_HELD','or swap its listing card');
 select throws_ok($$select public.get_admin_held_listings()$$,'P0001','ADMIN_REQUIRED','members cannot list held posts');
 select throws_ok($$select public.resolve_held_listing('f7110000-0000-4000-8000-000000000001','restore')$$,'P0001','ADMIN_REQUIRED','members cannot resolve them');
 
@@ -76,6 +79,11 @@ select throws_ok($$select public.resolve_held_listing('f7110000-0000-4000-8000-0
 select lives_ok($$select public.resolve_held_listing('f7110000-0000-4000-8000-000000000001','restore')$$,'the admin restores it');
 reset role;
 select is((select status||':'||(held_at is null)::text from public.posts where id='f7110000-0000-4000-8000-000000000001'),'published:true','it is back for everyone');
+select is((select title from public.posts where id='f7110000-0000-4000-8000-000000000001'),(select title from public.posts where id='f7110000-0000-4000-8000-000000000001' and title<>'멀쩡한 방'),'the held text stayed as reported');
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"f7100000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select lives_ok($$update public.posts set body=body||' ' where id='f7110000-0000-4000-8000-000000000001'$$,'once restored, the author can edit it again');
+reset role;
 select is((select count(*)::int from public.reports where target_id='f7110000-0000-4000-8000-000000000001' and status='dismissed' and resolved_by='f7100000-0000-4000-8000-000000000006'),4,
   'and its reports are closed as dismissed');
 select ok(exists(select 1 from public.admin_access_logs where actor_id='f7100000-0000-4000-8000-000000000006' and scope='reports' and resource_id='f7110000-0000-4000-8000-000000000001'),
