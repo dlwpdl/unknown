@@ -1,3 +1,5 @@
+import { publicPostEvent } from './public-event.ts';
+
 export const PUBLIC_SITE = 'https://gling.ej-entertainment.com';
 export const PUBLIC_SOURCE = 'https://wjvahbdwmctzpkndqaxa.supabase.co/functions/v1/public-post';
 
@@ -145,6 +147,7 @@ export function publicPostDescription(post: PublicPostFacts) {
 // One shape for the prerendered page and the hydrated landing: the post, then 글링 › city › topic.
 export function publicPostSchema(post: PublicPostFacts, topicUrl?: string | null) {
   const url = publicPostUrl(post.id), cityUrl = post.cityId ? `${PUBLIC_SITE}/${post.cityId}` : null;
+  const event = publicPostEvent(post, url);
   const published = post.createdAt && Number.isFinite(Date.parse(post.createdAt)) ? new Date(post.createdAt).toISOString() : undefined;
   const crumbs = [
     { name: '글링', item: `${PUBLIC_SITE}/` },
@@ -162,6 +165,7 @@ export function publicPostSchema(post: PublicPostFacts, topicUrl?: string | null
         ...(cityUrl ? { isPartOf: { '@type': 'CollectionPage', '@id': cityUrl, url: cityUrl, name: `${post.city || post.cityId} 한인 커뮤니티` } } : {}),
       },
       { '@type': 'BreadcrumbList', itemListElement: crumbs.map((crumb, index) => ({ '@type': 'ListItem', position: index + 1, ...crumb })) },
+      ...(event ? [event] : []),
     ],
   };
 }

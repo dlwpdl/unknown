@@ -1,7 +1,8 @@
 import { Image, type ImageProps } from 'expo-image';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import type { SymbolViewProps } from 'expo-symbols';
 import { Image as NativeImage, Platform, StyleSheet, View, type ImageSourcePropType, type ViewStyle } from 'react-native';
 
+import { SymbolView } from '@/components/system-symbol';
 import { Colors } from '@/constants/theme';
 import { useDesign, useTheme } from '@/hooks/use-theme';
 

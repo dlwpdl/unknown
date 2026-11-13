@@ -273,7 +273,9 @@ export function finishPublicWeb(directory = 'dist', posts = [], companies = [], 
   const paths = [...entries, ['/meetups', newest(meetups.map(item => ({ lastmod: item.createdAt })))], ['/visited'], ['/immigration', publicImmigrationMeta.checked], ['/faq'], ['/business'], ['/en'], ['/terms'], ['/privacy'], ['/account-deletion'], ['/child-safety']];
   writeFileSync(join(directory, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${paths.map(([path, lastmod]) => `<url><loc>${PUBLIC_SITE}${path}</loc>${day(lastmod)}</url>`).join('')}${posts.map(post => `<url><loc>${publicPostUrl(post.id)}</loc>${day(post.lastmod)}</url>`).join('')}${companies.map(company => `<url><loc>${publicCompanyUrl(company.id)}</loc></url>`).join('')}</urlset>\n`);
   const protectedPaths = ['/merchant/', '/auth/', '/admin', '/chat', '/compose', '/profile', '/notifications', '/user/', '/meetup-create', '/meetup-join', '/meetup-application', '/meetup-profile'];
-  writeFileSync(join(directory, 'robots.txt'), `User-agent: *\nAllow: /\n${protectedPaths.map(path => `Disallow: ${path}`).join('\n')}\n\nSitemap: ${PUBLIC_SITE}/sitemap.xml\n`);
+  // Owner 2026-11-13: block AI-training crawlers only; search and answer crawlers (Googlebot, Bingbot, Yeti, OAI-SearchBot, Claude-SearchBot, PerplexityBot, Google-Extended) stay allowed.
+  const trainingBots = ['GPTBot', 'ClaudeBot', 'CCBot', 'Applebot-Extended', 'meta-externalagent', 'Bytespider'];
+  writeFileSync(join(directory, 'robots.txt'), `${trainingBots.map(bot => `User-agent: ${bot}`).join('\n')}\nDisallow: /\n\nUser-agent: *\nAllow: /\n${protectedPaths.map(path => `Disallow: ${path}`).join('\n')}\n\nSitemap: ${PUBLIC_SITE}/sitemap.xml\n`);
   const recent = city => posts.filter(post => post.cityId === city.id).slice(0, 20)
     .map(post => `- [${String(post.title).replace(/[\\[\]\n\r]/g, ' ')}](${publicPostUrl(post.id)})${post.teaser ? `: ${String(post.teaser).replace(/[\n\r]/g, ' ')}` : ''}`).join('\n');
   const facts = [

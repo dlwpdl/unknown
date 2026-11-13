@@ -27,7 +27,9 @@ test('기존 export는 공개 도시별 라이브 sitemap/AI 탐색과 보호 �
     }
     for (const path of ['/merchant/', '/auth/', '/admin', '/chat', '/profile']) assert.ok(robots.includes(`Disallow: ${path}`));
     assert.ok(robots.includes(`Sitemap: ${PUBLIC_SITE}/sitemap.xml`));
-    assert.ok(!robots.includes('User-agent: GPTBot'), 'AI 학습의 별도 정책을 임의로 바꾸지 않는다');
+    // Owner 2026-11-13: training crawlers are blocked as one group; everyone else keeps the normal rules.
+    assert.match(robots, /User-agent: GPTBot\nUser-agent: ClaudeBot\nUser-agent: CCBot\nUser-agent: Applebot-Extended\nUser-agent: meta-externalagent\nUser-agent: Bytespider\nDisallow: \/\n\nUser-agent: \*\nAllow: \/\n/);
+    for (const bot of ['OAI-SearchBot', 'Claude-SearchBot', 'PerplexityBot', 'Google-Extended', 'Googlebot', 'Bingbot', 'Yeti']) assert.ok(!robots.includes(`User-agent: ${bot}`), `${bot} is not blocked`);
     const sitemap = readFileSync(join(directory, 'sitemap.xml'), 'utf8');
     assert.ok(!sitemap.includes('/merchant'));
     assert.ok(!sitemap.includes('/admin'));
