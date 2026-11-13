@@ -4,6 +4,7 @@ import { Linking, Platform, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import WebView from 'react-native-webview';
 import { Pressable } from '@/components/analytics-controls';
+import { useDark } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -18,16 +19,17 @@ export function PostPinMap({ pin, cityName = '', preview = false, area = false, 
   onSelect?: (pin: PostPin, label?: string) => void; onReadyChange?: (ready: boolean) => void;
 }) {
   const { tr } = useLanguage();
-  const theme = useTheme(), { play } = useInteractionFeedback(), native = useRef<WebView<unknown>>(null), web = useRef<HTMLIFrameElement>(null);
+  const theme = useTheme(), dark = useDark() ? theme : undefined, { play } = useInteractionFeedback(), native = useRef<WebView<unknown>>(null), web = useRef<HTMLIFrameElement>(null);
   const { isAuthed, me } = useAuth(), userId = isAuthed ? me.id : null;
   const identity = useRef(userId);
   useLayoutEffect(() => { identity.current = userId; return () => { identity.current = null; }; }, [userId]);
   const mapStyle = [styles.map, preview && styles.preview];
   const [initialPin] = useState(pin);
-  const [failed, setFailed] = useState(false), [retry, setRetry] = useState(0), [image, setImage] = useState<string>();
-  const key = pin ? `${area ? 'area:' : ''}${googlePinUrl(pin)}` : '', cached = preview ? mapPreviews.get(key) ?? image : undefined;
+  const [failed, setFailed] = useState(false), [retry, setRetry] = useState(0), [image, setImage] = useState<{ key: string; uri: string }>();
+  // A light picture never stands in for the dark map, or the other way round.
+  const key = pin ? `${dark ? 'dark:' : ''}${area ? 'area:' : ''}${googlePinUrl(pin)}` : '', cached = preview ? mapPreviews.get(key) ?? (image?.key === key ? image.uri : undefined) : undefined;
   const seed = preview ? pin : initialPin;
-  const html = useMemo(() => mapHtml({ pin: seed, cityName, preview, accent: theme.accent, area, background: theme.card }), [seed, cityName, preview, theme.accent, area, theme.card]);
+  const html = useMemo(() => mapHtml({ pin: seed, cityName, preview, accent: theme.accent, area, background: theme.card, dark }), [seed, cityName, preview, theme.accent, area, theme.card, dark]);
   const fail = useCallback(() => {
     setFailed(true); onReadyChange?.(false);
     if (userId && identity.current === userId) void recordProductEvent(supabase, { kind: 'map_error', platform: Platform.OS }).catch(() => {});
@@ -46,7 +48,7 @@ export function PostPinMap({ pin, cityName = '', preview = false, area = false, 
       if (message.type === 'pick' && !preview) onSelect?.(message.pin, message.label);
       else if (message.type === 'ready') { setFailed(false); onReadyChange?.(true); }
       else if (message.type === 'error') fail();
-      else if (message.type === 'snapshot' && preview) { rememberMapPreview(key, message.uri); setImage(message.uri); }
+      else if (message.type === 'snapshot' && preview) { rememberMapPreview(key, message.uri); setImage({ key, uri: message.uri }); }
       else if (message.type === 'feedback') play('selection');
       else if (message.type === 'credit') { play('selection'); void Linking.openURL(message.url).catch(() => play('warning')); }
     };
@@ -69,7 +71,7 @@ export function PostPinMap({ pin, cityName = '', preview = false, area = false, 
           if (message.type === 'pick' && !preview) onSelect?.(message.pin, message.label);
           else if (message.type === 'ready') { setFailed(false); onReadyChange?.(true); }
           else if (message.type === 'error') fail();
-          else if (message.type === 'snapshot' && preview) { rememberMapPreview(key, message.uri); setImage(message.uri); }
+          else if (message.type === 'snapshot' && preview) { rememberMapPreview(key, message.uri); setImage({ key, uri: message.uri }); }
           else if (message.type === 'feedback') play('selection');
           else if (message.type === 'credit') { play('selection'); void Linking.openURL(message.url).catch(() => play('warning')); }
         }} />}

@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers } from '../src/lib/discovery-map-html.ts';
 import { MAP_PIN_ART } from '../src/lib/map-pin-art.ts';
+import { MAP_ZOOM_ART } from '../src/lib/map-zoom-art.ts';
 import { facingDegrees } from '../src/lib/location.ts';
 
 
@@ -31,7 +32,7 @@ test('native map startup has a bounded fallback, cancels after ready and rearms 
     'react-native': { Platform: { OS: 'ios' }, View: 'View', StyleSheet: { create: value => value } },
     'react-native-webview': { __esModule: true, default: 'WebView' },
     '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value }) },
-    '@/components/clay': { useClay: () => true }, '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/components/clay': { useClay: () => true, useDark: () => false }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
     '@/components/themed-text': { ThemedText: 'Text' },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
@@ -90,6 +91,20 @@ test('zoom buttons are clay only while 3D is on, and the picture pins stay eithe
   assert.doesNotMatch(page(false), /maplibregl-ctrl-zoom-in \.maplibregl-ctrl-icon\{background:url/);
   assert.match(page(false), /\.maplibregl-ctrl-group button\{width:44px;height:44px\}/);
   assert.equal(page(false).includes(Object.values(MAP_PIN_ART)[0]), page(true).includes(Object.values(MAP_PIN_ART)[0]));
+});
+
+test('the dark theme draws the free dark style, and the map own tags, counts, pills and zoom art in the dark palette', () => {
+  const dark = { background: '#0B0B12', card: '#171722', text: '#F6F3F0', textSecondary: '#B7B4C3', line: '#343443', backgroundSelected: '#343443' };
+  const light = discoveryMapHtml(options), night = discoveryMapHtml({ ...options, dark });
+  assert.ok(light.includes("style:'https://tiles.openfreemap.org/styles/positron'") && !light.includes('styles/dark'));
+  assert.ok(night.includes("style:'https://tiles.openfreemap.org/styles/dark'") && !night.includes('styles/positron'));
+  assert.ok(light.includes("namePaint={'text-color':'#302047'}") && light.includes("tx.fillStyle='rgba(255,255,255,0.95)'"));
+  assert.ok(night.includes("namePaint={'text-color':'#F6F3F0'}") && night.includes("tx.fillStyle='#171722f2'") && night.includes("'circle-color':'#171722','circle-stroke-color':'#9283ac'"));
+  assert.ok(night.includes('.city-pill{border-color:#343443;background:#171722;color:#F6F3F0}') && night.includes('html,body,#map{background:#0B0B12}'));
+  assert.ok(night.includes(`url(${MAP_ZOOM_ART.inDark})`) && !light.includes(MAP_ZOOM_ART.inDark));
+  assert.ok(discoveryMapHtml({ ...options, dark, clay: false }).includes('.maplibregl-ctrl-icon{filter:invert(1)}'));
+  assert.ok(night.includes('© OpenStreetMap</a>'));
+  assert.throws(() => discoveryMapHtml({ ...options, dark: { ...dark, card: '#fff' } }));
 });
 
 test('validates marker bounds, coordinates, unique identifiers and CSS colors', () => {
@@ -800,7 +815,7 @@ function mountedBridge(props, platform) {
     'react-native': { Platform: { OS: platform }, View: 'View', StyleSheet: { create: value => value }, Linking: { openURL() {} } },
     'react-native-webview': { __esModule: true, default: 'WebView' },
     '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value }) },
-    '@/components/clay': { useClay: () => true }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
+    '@/components/clay': { useClay: () => true, useDark: () => false }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/discovery-map-html': { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers },
     'expo-location': { watchHeadingAsync: async fn => { compass.watches.push(fn); return { remove() { compass.removed++; } }; } }, '@/lib/location': { facingDegrees },

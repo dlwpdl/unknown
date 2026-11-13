@@ -5,7 +5,7 @@ import WebView from 'react-native-webview';
 import * as Location from 'expo-location';
 import { Pressable } from '@/components/analytics-controls';
 import { GlingLoader } from '@/components/gling-loader';
-import { useClay } from '@/components/clay';
+import { useClay, useDark } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -37,7 +37,7 @@ export function DiscoveryMap(props: Props) {
 const NO_CITIES: DiscoveryCity[] = [];
 function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, center = null, userLocation = null, compass = false, topInset = 0, bottomInset = 0, zoom, active = true, loading = false, onSelect, onMoved, onCity }: Props) {
   const { language, tr } = useLanguage();
-  const theme = useTheme(), clay = useClay(), { play } = useInteractionFeedback();
+  const theme = useTheme(), clay = useClay(), dark = useDark() ? theme : undefined, { play } = useInteractionFeedback();
   const native = useRef<WebView<unknown>>(null), web = useRef<HTMLIFrameElement>(null), id = useId();
   const sentMarkers = useRef<{ sessionId: string; key: string } | null>(null);
   const [seed] = useState({ markers, cityName, selectedId, center, userLocation, topInset, bottomInset, zoom });
@@ -56,12 +56,12 @@ function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, cent
     return () => { active = false; clearTimeout(timer); watch?.remove(); setHeading(null); };
   }, [compass]);
   const parentOrigin = Platform.OS === 'web' && typeof window !== 'undefined' && window.location.protocol !== 'file:' ? window.location.origin : 'null';
-  // Pill names follow the language, so they rebuild the page like the language itself does; a new array with the same cities does not. The 2D·3D choice rebuilds it the same way.
+  // Pill names follow the language, so they rebuild the page like the language itself does; a new array with the same cities does not. The 2D·3D choice and the light·dark theme rebuild it the same way.
   const citiesKey = JSON.stringify(cities);
   const html = useMemo(() => {
-    try { return discoveryMapHtml({ ...seed, cities: JSON.parse(citiesKey), language, sessionId, parentOrigin, clay }); }
+    try { return discoveryMapHtml({ ...seed, cities: JSON.parse(citiesKey), language, sessionId, parentOrigin, clay, dark }); }
     catch { return null; }
-  }, [seed, citiesKey, language, sessionId, parentOrigin, clay]);
+  }, [seed, citiesKey, language, sessionId, parentOrigin, clay, dark]);
   const source = useMemo(() => ({ html: html ?? '' }), [html]);
   const ready = !!html && readyHtml === html;
   const markerData = useMemo(() => {
