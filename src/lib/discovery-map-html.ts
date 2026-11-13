@@ -15,7 +15,7 @@ type Center = { latitude: number; longitude: number; requestId?: number };
 type MapState = { markers: DiscoveryMarker[]; cities?: DiscoveryCity[]; selectedId?: string | null; center?: Center | null; userLocation?: { latitude: number; longitude: number } | null; heading?: number | null; bottomInset?: number; topInset?: number };
 type MapUpdate = Omit<MapState, 'markers' | 'cities'> & { markers?: DiscoveryMarker[] };
 export type DiscoveryBounds = { west: number; south: number; east: number; north: number };
-type DiscoveryMessage = { type: 'ready' | 'error' | 'feedback' } | { type: 'select'; id: string } | { type: 'credits'; url: string } | { type: 'moved'; bounds: DiscoveryBounds; zoom?: number } | { type: 'city'; id: string };
+type DiscoveryMessage = { type: 'ready' | 'error' | 'feedback' | 'progress' } | { type: 'select'; id: string } | { type: 'credits'; url: string } | { type: 'moved'; bounds: DiscoveryBounds; zoom?: number } | { type: 'city'; id: string };
 const credits = ['https://openfreemap.org/', 'https://www.openmaptiles.org/', 'https://www.openstreetmap.org/copyright'];
 const text = (value: unknown, length: number): value is string => typeof value === 'string' && value.length > 0 && value.length <= length && !/[\u0000-\u001f\u007f]/.test(value);
 const coordinate = (value: Center) => value && Number.isFinite(value.latitude) && Math.abs(value.latitude) <= 90 && Number.isFinite(value.longitude) && Math.abs(value.longitude) <= 180
@@ -64,7 +64,7 @@ export function discoveryMapMessage(raw: string, sessionId: string, markers: Dis
   try {
     const message = JSON.parse(raw);
     if (!message || message.sessionId !== sessionId) return null;
-    if (['ready', 'error', 'feedback'].includes(message.type)) return { type: message.type };
+    if (['ready', 'error', 'feedback', 'progress'].includes(message.type)) return { type: message.type };
     if (message.type === 'select' && text(message.id, 180) && markers.some(marker => marker.id === message.id)) return { type: 'select', id: message.id };
     if (message.type === 'credits' && credits.includes(message.url)) return { type: 'credits', url: message.url };
     if (message.type === 'moved' && Array.isArray(message.bounds) && message.bounds.length === 4 && message.bounds.every(Number.isFinite)) {
@@ -169,7 +169,11 @@ try{
  map=new maplibregl.Map({container:'map',style:'https://tiles.openfreemap.org/styles/positron',center:config.center?[config.center.longitude,config.center.latitude]:config.cityCenter,zoom:config.zoom,attributionControl:false,pixelRatio:Math.min(window.devicePixelRatio||1,2)});
  window.glingMap=map;map.on('movestart',()=>foldCredits(false));
  map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-left');
- const timer=setTimeout(fail,15000);
+ // A first open can take well past 15s while the base map and tiles download (owner 11-05 "로딩 중엔 안 떠야 함", corner check m00 11-13):
+ // only 15s without any download progress fails, and each step of progress tells the app the page is alive (at most every 2s).
+ let timer=setTimeout(fail,15000),grace=0,beat=0;
+ const progress=()=>{if(loaded)return;clearTimeout(timer);clearTimeout(grace);grace=0;timer=setTimeout(fail,15000);const now=Date.now();if(now-beat>2000){beat=now;send({type:'progress'})}};
+ map.on('dataloading',progress);map.on('data',progress);
  map.on('load',()=>{try{
   ensureBadges();
   // Every place name sits on its own white tag so it never runs into the map's street and shop names (owner 2026-11-04 "글이 백그라운드가없으니 지도에 뜨는 글과 겹쳐서").
@@ -246,8 +250,8 @@ try{
   clearTimeout(timer);loaded=true;failed=false;
   apply();loadPins();send({type:'ready'});
  }catch{fail()}});
- // A tile or glyph error while the map is still loading often passes; show the failure only if it still has not loaded 5s after the first one (owner b09e6df1).
- let grace=0;map.on('error',()=>{if(!loaded&&!grace)grace=setTimeout(()=>{if(!loaded)fail()},5000)});
+ // A tile or glyph error while the map is still loading often passes (owner b09e6df1): it fails only if 5s follow with no more progress.
+ map.on('error',()=>{if(!loaded&&!grace)grace=setTimeout(()=>{if(!loaded)fail()},5000)});
  map.on('click',e=>{if(!loaded)return;const hit=map.queryRenderedFeatures(e.point,{layers:hitLayers})[0];if(!hit)return;
   // A count opens to the zoom where it splits; new markers in between make its cluster id stale, so that answer is dropped and the map stays as it is.
   // shortcut: a mid gold count that opens at NEAR or later is drawn there by the wider close-up fold, so it goes one zoom further, where any pair it split (28px apart) is 56px apart; a crowded count may land one zoom deeper than needed.
