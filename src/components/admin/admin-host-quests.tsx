@@ -14,6 +14,14 @@ import { QUEST_PERSON_REASONS, QUEST_STEPS, dollars } from '@/lib/host-quests';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 
+// Members see one general reason for these; the operator sees which check matched.
+const ADMIN_ONLY_REASONS: Record<string, string> = {
+  same_person: '모임장과 이메일·전화번호·기기 중 하나가 겹침',
+  same_device: '다른 참석자와 이메일·전화번호·기기 중 하나가 겹침',
+  helper_limit: '30일 안에 다른 퀘스트 모임장 2명의 모임에서 이미 셈',
+  operated: '운영 캐릭터 계정',
+};
+
 const A = Colors.admin;
 const when = (value: string | null | undefined) => value ? new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : '—';
 const STATUS: Record<string, [string, AdminTone]> = { active: ['진행 중', 'accent'], paid: ['보냄', 'success'], converted: ['이용권으로 바꿈', 'neutral'], ended: ['끝남', 'neutral'] };
@@ -138,7 +146,7 @@ function QuestDetail({ questId, onUser, onChanged }: { questId: string; onUser: 
       {session.people.map(person => <View key={person.id} style={[styles.person, person.reason && styles.out]}>
         <ThemedText type="small" style={styles.grow}>{person.nickname}</ThemedText>
         <ThemedText type="small">{`QR ${person.qr ? '✓' : '—'} · 서로 확인 ${person.confirmed ? '✓' : '—'}`}</ThemedText>
-        {person.reason ? <AdminPill label={`제외 · ${QUEST_PERSON_REASONS[person.reason] ?? person.reason}`} tone="danger" />
+        {person.reason ? <AdminPill label={`제외 · ${ADMIN_ONLY_REASONS[person.reason] ?? QUEST_PERSON_REASONS[person.reason] ?? person.reason}`} tone="danger" />
           : person.otherQuestHosts > 0 ? <AdminPill label={`다른 퀘스트 모임장 ${person.otherQuestHosts}명`} tone="warning" /> : null}
       </View>)}
     </View>)}</View>
@@ -158,12 +166,12 @@ function QuestDetail({ questId, onUser, onChanged }: { questId: string; onUser: 
       <View style={styles.row}>
         <TextInput accessibilityLabel="사진 속 사람 수" value={people} onChangeText={setPeople} keyboardType="number-pad" maxLength={2} placeholder="사진 속 사람 수" placeholderTextColor={A.textSecondary} style={[styles.input, styles.small]} />
         <AdminButton label="사람 수 저장" disabled={busy || !(Number(people) >= 1)} onPress={() => void run(() => setAdminQuestPhotoPeople(supabase, quest.id, Number(people)), '사진 속 사람 수를 적었어요.')} />
-        {pay.photoPeople != null && pay.photoPeople < (quest.steps.find(row => row.step === 2)?.personIds.length ?? 0) + 1 && <AdminPill label="사진 속 사람이 센 사람보다 적어요" tone="warning" />}
+        {pay.photoPeople != null && pay.photoNeeded != null && pay.photoPeople < pay.photoNeeded && <AdminPill label={`사진 속 사람이 센 사람보다 적어요(모임장 포함 ${pay.photoNeeded}명 이상 필요)`} tone="warning" />}
       </View>
       {candidates.map(person => {
         const check = quest.checks.find(item => item.personId === person.id);
         return <View key={person.id} style={styles.row}>
-          <ThemedText type="small" style={styles.grow}>{`${person.nickname} · ${check ? `물어봄 ${when(check.askedAt)}` : '아직 안 물어봄'}${check?.answer ? ` · 답 ${check.answer === 'yes' ? '다녀왔어요' : check.answer === 'no' ? '안 갔어요' : '답 없음'}` : ''}`}</ThemedText>
+          <ThemedText type="small" style={styles.grow}>{`${person.nickname} · 가입 ${when(person.joinedAt)}${person.joinedAfterStart ? '(퀘스트 시작 뒤)' : ''} · 다른 모임장 모임 ${person.otherHostMeetups}번 · ${check ? `물어봄 ${when(check.askedAt)}` : '아직 안 물어봄'}${check?.answer ? ` · 답 ${check.answer === 'yes' ? '다녀왔어요' : check.answer === 'no' ? '안 갔어요' : '답 없음'}` : ''}`}</ThemedText>
           {!check ? <AdminButton label="다녀왔는지 묻기" disabled={busy} onPress={() => void run(() => askAdminQuestAttendee(supabase, quest.id, person.id), `${person.nickname}님께 메시지를 보냈어요.`)} />
             : <>{(['yes', 'no', 'none'] as const).map(answer => <AdminButton key={answer} label={answer === 'yes' ? '다녀왔어요' : answer === 'no' ? '안 갔어요' : '답 없음'} disabled={busy || check.answer === answer}
               onPress={() => void run(() => recordAdminQuestCheck(supabase, quest.id, person.id, answer), '답을 적었어요.')} />)}</>}

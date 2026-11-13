@@ -198,7 +198,9 @@ select throws_ok($$select public.request_host_quest_payout('h.ostg+again@gmail.c
 reset role;
 select pg_temp.act('z'); set local role authenticated;
 select throws_ok($$select public.settle_admin_host_quest_payout(pg_temp.quest('h'),'sent','9999',true)$$,'P0001','PHOTO_PEOPLE_REQUIRED','$50 filled, but no photo head count: cannot mark sent');
-select lives_ok($$select public.set_admin_host_quest_photo_people(pg_temp.quest('h'),2)$$,'Admin enters the photo head count');
+select lives_ok($$select public.set_admin_host_quest_photo_people(pg_temp.quest('h'),1)$$,'Admin enters a head count of 1');
+select throws_ok($$select public.settle_admin_host_quest_payout(pg_temp.quest('h'),'sent','9999',true)$$,'P0001','PHOTO_PEOPLE_TOO_FEW','A photo smaller than the counted attendees plus the host: cannot mark sent');
+select lives_ok($$select public.set_admin_host_quest_photo_people(pg_temp.quest('h'),9)$$,'Admin enters the photo head count');
 select throws_ok($$select public.settle_admin_host_quest_payout(pg_temp.quest('h'),'sent','9999',true)$$,'P0001','ATTENDEE_CHECKS_REQUIRED','$50 filled, but no attendee checks: cannot mark sent');
 select ok(public.ask_admin_host_quest_attendee(pg_temp.quest('h'),pg_temp.u('r1')) is not null,'Admin asks attendee r1');
 select lives_ok($$select public.record_admin_host_quest_check(pg_temp.quest('h'),pg_temp.u('r1'),'yes')$$,'r1 says yes');

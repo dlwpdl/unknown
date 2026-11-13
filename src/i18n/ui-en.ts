@@ -4711,15 +4711,10 @@ export const uiEnglish: Record<string, string> = {
   "운영팀 확인 중": "Gling team reviewing",
   "확정": "Confirmed",
   "탈퇴했거나 쉬고 있는 계정이라 안 셌어요": "Not counted: the account was deleted or is paused",
-  "운영팀 계정이라 안 셌어요": "Not counted: it’s a Gling team account",
   "QR로 체크인하지 않아서 안 셌어요": "Not counted: they didn’t check in with the QR",
   "나랑 서로 참석 확인이 안 돼서 안 셌어요": "Not counted: you and they didn’t both confirm attendance",
   "노쇼로 표시돼서 안 셌어요": "Not counted: marked as a no-show",
-  "나랑 이메일·전화번호·기기가 겹쳐서 안 셌어요": "Not counted: they share your email, phone number or device",
-  "다른 참석자와 이메일·전화번호·기기가 겹쳐서 안 셌어요": "Not counted: shares an email, phone number or device with another attendee",
-  "최근 30일 안에 이미 다른 퀘스트 모임장 2명의 모임에서 센 사람이라 안 셌어요": "Not counted: already counted at 2 other quest hosts’ meetups in the last 30 days",
   "가입은 했고 아직 모임 전이에요": "Signed up, hasn’t been to a meetup yet",
-  "다른 초대로 가입한 사람과 같은 사람이라 안 셌어요": "Not counted: same person as someone who joined through another invite",
   "10명이 다 차서 더 안 셌어요": "Not counted: the 10-person limit is full",
   "4시간이 넘는 모임이라 퀘스트에 안 쳐요.": "Meetups longer than 4 hours don’t count for the quest.",
   "초대받은 사람만 보는 모임이라 퀘스트에 안 쳐요.": "Invite-only meetups don’t count for the quest.",
@@ -4864,5 +4859,6 @@ export const uiEnglish: Record<string, string> = {
   "모임장 퀘스트": "Host quest",
   "운영팀에서 받은 코드로 시작해요": "Start with a code from the Gling team",
   "참석 확인됐어요": "Attendance confirmed",
-  "모임장 퀘스트를 보려면 로그인해 주세요.": "Log in to see your host quest."
+  "모임장 퀘스트를 보려면 로그인해 주세요.": "Log in to see your host quest.",
+  "퀘스트 조건에 맞지 않아서 안 셌어요": "Not counted: doesn’t meet the quest conditions"
 };

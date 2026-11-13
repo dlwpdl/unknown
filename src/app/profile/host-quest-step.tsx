@@ -60,7 +60,7 @@ export default function HostQuestStepScreen() {
 
           <SectionLabel>{step === 4 ? tr('이렇게 돼야 1명으로 쳐요') : tr('이렇게 돼야 이 단계를 깨요')}</SectionLabel>
           <ListCard>{meta.checks.map(line => <ListRow key={line} title={tr(line)} leading={check} />)}</ListCard>
-          {SESSION_STEPS.includes(step) && <InfoNote>{tr('4시간이 넘는 모임, 초대받은 사람만 보는 모임, 시작 24시간 안에 올린 모임은 퀘스트에 안 쳐요.')}</InfoNote>}
+          {(SESSION_STEPS.includes(step) || step === 4) && <InfoNote>{tr('4시간이 넘는 모임, 초대받은 사람만 보는 모임, 시작 24시간 안에 올린 모임은 퀘스트에 안 쳐요.')}</InfoNote>}
 
           {step === 3 && <>
             <SectionLabel>{tr('보낸 사진')}</SectionLabel>

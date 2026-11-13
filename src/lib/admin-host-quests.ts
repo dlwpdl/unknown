@@ -10,7 +10,7 @@ export type AdminQuestProgram = {
   codes: { code: string; recipientName: string | null; note: string | null; createdAt: string; usedAt: string | null; questId: string | null; nickname: string | null }[];
   quests: AdminQuestRow[];
 };
-export type AdminQuestPerson = { id: string; nickname: string; reason: string | null; qr: boolean; confirmed: boolean; otherQuestHosts: number };
+export type AdminQuestPerson = { id: string; nickname: string; reason: string | null; qr: boolean; confirmed: boolean; joinedAt: string; otherHostMeetups: number; otherQuestHosts: number };
 export type AdminQuest = {
   id: string; status: string; startedAt: string; endsAt: string; finishedAt: string | null; endNote: string | null; convertedDays: number; totals: Totals;
   host: { id: string; nickname: string; joinedAt: string }; code: { code: string; recipientName: string | null; note: string | null };
@@ -19,7 +19,7 @@ export type AdminQuest = {
   invitees: { id: string; nickname: string; joinedAt: string; sessionId: string | null; reason: string | null }[];
   photos: { id: string; path: string | null; status: string; sessionId: string; uploadedAt: string; reviewedAt: string | null; deleteAfter: string; deletedAt: string | null; sameFileElsewhere: number }[];
   reports: number;
-  payout: null | { status: string; email: string | null; legalName: string | null; requestedAt: string; photoPeople: number | null; sentAt: string | null; transferLast4: string | null; heldAt: string | null; heldNote: string | null; erasedAt: string | null; nameMatches: boolean; sameNameElsewhere: number };
+  payout: null | { status: string; email: string | null; legalName: string | null; requestedAt: string; photoPeople: number | null; photoNeeded: number | null; sentAt: string | null; transferLast4: string | null; heldAt: string | null; heldNote: string | null; erasedAt: string | null; nameMatches: boolean; sameNameElsewhere: number };
   checks: { personId: string; nickname: string | null; sessionId: string; conversationId: string; askedAt: string; answer: 'yes' | 'no' | 'none' | null; answeredAt: string | null }[];
 };
 
@@ -56,11 +56,16 @@ export async function adminQuestPhotoUrl(client: SupabaseClient, path: string) {
   return data.signedUrl;
 }
 
-/** People the operator can ask "were you there?": counted attendees of the meetups behind steps 2, 5 and 7. */
-export function questCheckCandidates(quest: Pick<AdminQuest, 'steps' | 'sessions'>) {
-  const names = new Map(quest.sessions.flatMap(session => session.people.map(person => [person.id, person.nickname] as const)));
+/** People the operator can ask "were you there?": counted attendees of the meetups behind steps 2, 5 and 7,
+ * least suspicious first (joined before the quest, then most meetups with other hosts). */
+export function questCheckCandidates(quest: Pick<AdminQuest, 'steps' | 'sessions' | 'startedAt'>) {
+  const people = new Map(quest.sessions.flatMap(session => session.people.map(person => [person.id, person] as const)));
   const ids = [...new Set(quest.steps.filter(step => [2, 5, 7].includes(step.step) && step.status !== 'cancelled').flatMap(step => step.personIds))];
-  return ids.map(id => ({ id, nickname: names.get(id) ?? id.slice(0, 8) }));
+  return ids.map(id => {
+    const person = people.get(id);
+    return { id, nickname: person?.nickname ?? id.slice(0, 8), joinedAt: person?.joinedAt ?? null, otherHostMeetups: person?.otherHostMeetups ?? 0,
+      joinedAfterStart: !person || Date.parse(person.joinedAt) >= Date.parse(quest.startedAt) };
+  }).sort((a, b) => Number(a.joinedAfterStart) - Number(b.joinedAfterStart) || b.otherHostMeetups - a.otherHostMeetups);
 }
 
 /** What still blocks "보냄", in the server's order, so the button explains itself before it is pressed. */
@@ -71,6 +76,7 @@ export function payoutBlockers(quest: Pick<AdminQuest, 'status' | 'totals' | 'pa
   if (quest.totals.confirmed < 5000) out.push('$50이 다 확정되지 않았어요');
   if (!pay.email || !pay.legalName) out.push('송금 정보가 지워졌어요');
   if (pay.photoPeople == null) out.push('사진 속 사람 수를 적어 주세요');
+  else if (pay.photoNeeded == null || pay.photoPeople < pay.photoNeeded) out.push('사진 속 사람이 센 사람보다 적어요');
   if (quest.checks.filter(check => check.answer === 'yes').length < 2) out.push('참석자 2명에게 다녀왔다는 답을 받아 주세요');
   if (!quest.code.recipientName?.trim()) out.push('코드 받은 사람 이름을 적어 주세요');
   else if (!pay.nameMatches) out.push('코드 받은 사람 이름과 은행 이름이 달라요');

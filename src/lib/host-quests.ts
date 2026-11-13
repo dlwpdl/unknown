@@ -24,19 +24,16 @@ export const QUEST_STEP_TAGS: Record<QuestStepStatus, string> = { todo: '', pend
 /** Why a person did not count, in one line (null: counted). */
 export const QUEST_PERSON_REASONS: Record<string, string> = {
   inactive: '탈퇴했거나 쉬고 있는 계정이라 안 셌어요',
-  operated: '운영팀 계정이라 안 셌어요',
   not_qr: 'QR로 체크인하지 않아서 안 셌어요',
   not_confirmed: '나랑 서로 참석 확인이 안 돼서 안 셌어요',
   no_show: '노쇼로 표시돼서 안 셌어요',
-  same_person: '나랑 이메일·전화번호·기기가 겹쳐서 안 셌어요',
-  same_device: '다른 참석자와 이메일·전화번호·기기가 겹쳐서 안 셌어요',
-  helper_limit: '최근 30일 안에 이미 다른 퀘스트 모임장 2명의 모임에서 센 사람이라 안 셌어요',
+  // The server folds identity, operator-account and cross-quest checks into one value; the detail stays in the admin view.
+  not_counted: '퀘스트 조건에 맞지 않아서 안 셌어요',
   waiting: '가입은 했고 아직 모임 전이에요',
-  duplicate: '다른 초대로 가입한 사람과 같은 사람이라 안 셌어요',
   over_limit: '10명이 다 차서 더 안 셌어요',
 };
-export type QuestPersonReason = null | 'inactive' | 'operated' | 'not_qr' | 'not_confirmed' | 'no_show' | 'same_person' | 'same_device' | 'helper_limit';
-export type QuestInviteeState = 'confirmed' | 'pending' | 'waiting' | 'inactive' | 'operated' | 'same_person' | 'duplicate' | 'over_limit';
+export type QuestPersonReason = null | 'inactive' | 'not_qr' | 'not_confirmed' | 'no_show' | 'not_counted';
+export type QuestInviteeState = 'confirmed' | 'pending' | 'waiting' | 'inactive' | 'not_counted' | 'over_limit';
 export type QuestSessionProblem = null | 'missing' | 'too_long' | 'invite_only' | 'late_notice' | 'outside_quest' | 'before_quest';
 export type QuestSession = { id: string; title: string; startsAt: string; endsAt: string; problem: QuestSessionProblem; people: { nickname: string; reason: QuestPersonReason }[] };
 export type QuestPayout = { status: 'requested' | 'sent' | 'held'; requestedAt: string; email: string | null; legalName: string | null; sentAt: string | null; transferLast4: string | null };

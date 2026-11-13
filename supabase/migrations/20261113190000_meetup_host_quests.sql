@@ -1,7 +1,8 @@
 -- 모임장 퀘스트(한 사람 평생 최대 $50). 운영팀이 만든 코드로 시작하고, 단계 판정·확정·송금 자격은 모두 서버가 정한다.
 -- 코드 값은 관리자 화면에서만 만든다. 이 파일과 저장소에는 코드가 없다.
--- 판정 규칙: 4단계 초대는 다른 모임장 모임에서 QR로 온 사람만, 공지된 4시간 이하 공개 모임만,
--- 15초마다 바뀌는 1회용 QR, 같은 사람·같은 기기 제외, 송금 전 사진 인원·참석자 2명 확인·은행 이름 대조.
+-- 판정 규칙: 모임장 모임과 4단계 초대 회원이 간 모임 모두 시작 24시간 전에 공지된 4시간 이하 공개 모임만,
+-- 4단계는 다른 모임장 모임에서 QR로 온 사람만, 15초마다 바뀌는 1회용 QR, 같은 사람·같은 기기 제외,
+-- 송금 전 사진 인원(그 모임에서 센 참석자 + 모임장 이상)·참석자 2명 확인·은행 이름 대조.
 -- 같은 사람 판별(메일 별칭 포함)은 초대 보상과 같은 private.invite_marks를 쓴다.
 
 -- 관리자 접근 기록에 퀘스트 범위를 더한다(다른 범위는 그대로 둔다).
@@ -44,6 +45,8 @@ create table private.host_quest_program(
   id boolean primary key default true check (id),
   accepting boolean not null default true,
   code_limit integer not null default 10 check (code_limit between 0 and 1000),
+  -- 프로그램을 끝낸 날(사장님 SQL: update private.host_quest_program set ended_at=now()). 새 시작을 막고, 1년 뒤 참여 기록을 지운다.
+  ended_at timestamptz,
   updated_at timestamptz not null default now(),
   updated_by uuid references auth.users(id) on delete set null);
 insert into private.host_quest_program(id) values (true);
@@ -117,7 +120,7 @@ create table private.host_quest_payouts(
   quest_id uuid primary key references private.host_quests(id) on delete cascade,
   email text check (char_length(email) between 3 and 254),
   legal_name text check (char_length(legal_name) between 2 and 80),
-  email_mark text not null unique,
+  email_mark text unique,
   status text not null default 'requested' check (status in ('requested','sent','held')),
   requested_at timestamptz not null default now(),
   photo_people integer check (photo_people between 0 and 100),
@@ -126,12 +129,13 @@ create table private.host_quest_payouts(
   sent_at timestamptz,
   sent_by uuid references auth.users(id) on delete set null,
   transfer_last4 text check (transfer_last4 ~ '^[A-Za-z0-9]{4}$'),
+  amount_cents integer check (amount_cents between 0 and 5000),
   held_at timestamptz,
   held_by uuid references auth.users(id) on delete set null,
   held_note text check (char_length(held_note) <= 300),
   erase_after timestamptz,
   erased_at timestamptz,
-  check (status <> 'sent' or (sent_at is not null and transfer_last4 is not null)));
+  check (status <> 'sent' or (sent_at is not null and transfer_last4 is not null and amount_cents is not null)));
 
 create table private.host_quest_payout_checks(
   quest_id uuid not null references private.host_quests(id) on delete cascade,
@@ -246,6 +250,14 @@ language sql stable security definer set search_path='' as $$
   select coalesce(array_agg(person_id order by person_id),'{}') from private.host_quest_session_people(p_quest,p_session) where reason is null;
 $$;
 
+-- 단체 사진 속 사람은 그 모임에서 퀘스트로 센 참석자와 모임장을 합친 수 이상이어야 한다.
+create function private.host_quest_photo_needed(p_quest uuid) returns integer
+language sql stable security definer set search_path='' as $$
+  select 1+cardinality(private.host_quest_counted(p_quest,st.session_ids[1]))
+  from private.host_quest_steps st where st.quest_id=p_quest and st.step=3 and st.status<>'cancelled' and st.session_ids[1] is not null
+  order by st.id desc limit 1;
+$$;
+
 -- 4단계(사장님 확정 Q1): 내 코드로 퀘스트 시작 뒤 가입한 사람이 **다른 모임장**의 글링 모임에서 QR로 체크인하고 그 모임장과 서로 참석 확인을 받았는지.
 -- 퀘스트 모임장 본인(같은 사람의 다른 계정 포함)이 연 모임은 세지 않는다.
 create function private.host_quest_invitee(p_quest uuid, p_invitee uuid)
@@ -272,6 +284,7 @@ begin
       and a.check_in_method='qr'
       and not exists(select 1 from private.meetup_absences x where x.session_id=ms.id and x.user_id=p_invitee)
       and ms.host_id<>q.user_id and not (private.invite_marks(ms.host_id) && host_marks)
+      and private.host_quest_session_problem(ms.id) is null
       and not (private.invite_marks(ms.host_id) && mine)
     order by a.confirmed_at, ms.id limit 1;
   if found_session is null then return query select null::uuid,'waiting'::text,null::timestamptz; return; end if;
@@ -322,7 +335,7 @@ declare q private.host_quests; first_id uuid; first_start timestamptz; first_peo
   ids uuid[]; people uuid[]; photo private.host_quest_photos; inv record; picked integer; rv record;
 begin
   -- 한 번에 하나씩 판정한다(품앗이 한도를 두 모임장이 동시에 넘지 않게).
-  perform pg_advisory_xact_lock(hashtextextended('host-quest-evaluate',0));
+  perform pg_advisory_xact_lock(hashtextextended('host-quest-evaluate:'||p_quest::text,0));
   select * into q from private.host_quests where id=p_quest for update;
   if q.id is null or q.status<>'active' then return; end if;
 
@@ -545,7 +558,7 @@ begin
   perform private.assert_active_account(u);
   perform private.enforce_rate_limit('host_quest_start',10,interval '1 day');
   if not coalesce(p_agreed,false) then raise exception 'QUEST_AGREEMENT_REQUIRED'; end if;
-  if not coalesce((select accepting from private.host_quest_program where id),false) then raise exception 'QUEST_PAUSED'; end if;
+  if not coalesce((select accepting and ended_at is null from private.host_quest_program where id),false) then raise exception 'QUEST_PAUSED'; end if;
   if private.is_operated_character(u) then raise exception 'QUEST_NOT_AVAILABLE'; end if;
   perform pg_advisory_xact_lock(hashtextextended('host-quest-start',0));
   marks:=private.invite_marks(u);
@@ -565,9 +578,10 @@ declare u uuid:=auth.uid(); q private.host_quests; totals jsonb; pay private.hos
 begin
   if u is null then raise exception 'AUTH_REQUIRED'; end if;
   perform private.assert_active_account(u);
+  perform private.enforce_rate_limit('host_quest_read',120,interval '1 hour');
   select * into q from private.host_quests where user_id=u;
   if q.id is null then
-    return jsonb_build_object('status','none','accepting',coalesce((select accepting from private.host_quest_program where id),false));
+    return jsonb_build_object('status','none','accepting',coalesce((select accepting and ended_at is null from private.host_quest_program where id),false));
   end if;
   if q.status='active' then perform private.evaluate_host_quest(q.id); end if;
   totals:=private.host_quest_totals(q.id);
@@ -581,7 +595,8 @@ begin
         'confirmAfter',(select max(st.confirm_after) from private.host_quest_steps st where st.quest_id=q.id and st.step=n and st.status='pending'))
       order by n) from generate_series(1,7) n),
     'invitees',(select coalesce(jsonb_agg(jsonb_build_object('nickname',p.nickname,
-        'state',case when st.status='confirmed' then 'confirmed' when st.status='pending' then 'pending' else coalesce(i.reason,'over_limit') end)
+        'state',case when st.status='confirmed' then 'confirmed' when st.status='pending' then 'pending'
+          when i.reason in ('operated','same_person','duplicate') then 'not_counted' else coalesce(i.reason,'over_limit') end)
         order by st.status nulls last, r.redeemed_at),'[]')
       from private.invite_redemptions r join private.invite_links l on l.id=r.link_id and l.merchant_id is null
       join public.profiles p on p.id=r.invitee_id
@@ -590,8 +605,10 @@ begin
       where r.inviter_id=q.user_id and r.redeemed_at>=q.started_at and p.created_at>=q.started_at),
     'sessions',(select coalesce(jsonb_agg(jsonb_build_object('id',s.id,'title',p.title,'startsAt',s.starts_at,'endsAt',s.ends_at,
         'problem',case when s.starts_at<q.started_at or s.starts_at>=q.ends_at then 'outside_quest' else private.host_quest_session_problem(s.id) end,
-        'people',(select coalesce(jsonb_agg(jsonb_build_object('nickname',pp.nickname,'reason',sp.reason) order by sp.reason nulls first, pp.nickname),'[]')
-          from private.host_quest_session_people(q.id,s.id) sp join public.profiles pp on pp.id=sp.person_id))
+        -- 같은 사람·운영 계정·다른 퀘스트 판별은 하나로 합친다. 자세한 이유는 관리자 화면에서만 본다.
+        'people',(select coalesce(jsonb_agg(jsonb_build_object('nickname',pp.nickname,'reason',r.reason) order by r.reason nulls first, pp.nickname),'[]')
+          from private.host_quest_session_people(q.id,s.id) sp join public.profiles pp on pp.id=sp.person_id
+          cross join lateral (select case when sp.reason in ('operated','same_person','same_device','helper_limit') then 'not_counted' else sp.reason end) r(reason)))
         order by s.starts_at),'[]')
       from private.meetup_sessions s join public.posts p on p.id=s.post_id
       where s.host_id=u and s.ends_at>q.started_at and s.starts_at<q.ends_at),
@@ -758,7 +775,9 @@ begin
     'sessions',(select coalesce(jsonb_agg(jsonb_build_object('id',s.id,'title',p.title,'startsAt',s.starts_at,'endsAt',s.ends_at,
         'problem',private.host_quest_session_problem(s.id),
         'people',(select coalesce(jsonb_agg(jsonb_build_object('id',sp.person_id,'nickname',pp.nickname,'reason',sp.reason,
-            'qr',a.check_in_method='qr','confirmed',a.confirmed_at is not null,
+            'qr',a.check_in_method='qr','confirmed',a.confirmed_at is not null,'joinedAt',pp.created_at,
+            'otherHostMeetups',(select count(distinct oa.session_id) from private.meetup_attendance oa join private.meetup_sessions os on os.id=oa.session_id
+              where oa.user_id=sp.person_id and oa.confirmed_at is not null and os.host_id<>q.user_id),
             'otherQuestHosts',(select count(distinct oq.user_id) from private.host_quest_steps st join private.host_quests oq on oq.id=st.quest_id
               where oq.id<>q.id and st.status<>'cancelled' and st.step in (2,5,7) and sp.person_id=any(st.person_ids)))
             order by sp.reason nulls first, pp.nickname),'[]')
@@ -780,7 +799,7 @@ begin
         order by ph.created_at desc),'[]') from private.host_quest_photos ph where ph.quest_id=q.id),
     'reports',(select count(*) from public.reports r where r.status<>'dismissed' and r.reported_user_id=q.user_id and r.created_at>=q.started_at),
     'payout',case when pay.quest_id is null then null else jsonb_build_object('status',pay.status,'email',pay.email,'legalName',pay.legal_name,
-      'requestedAt',pay.requested_at,'photoPeople',pay.photo_people,'sentAt',pay.sent_at,'transferLast4',pay.transfer_last4,
+      'requestedAt',pay.requested_at,'photoPeople',pay.photo_people,'photoNeeded',private.host_quest_photo_needed(q.id),'sentAt',pay.sent_at,'transferLast4',pay.transfer_last4,
       'heldAt',pay.held_at,'heldNote',pay.held_note,'erasedAt',pay.erased_at,
       'nameMatches',private.host_quest_name_key(pay.legal_name) is not null and private.host_quest_name_key(pay.legal_name)=private.host_quest_name_key(c.recipient_name),
       'sameNameElsewhere',(select count(*) from private.host_quest_payouts o where o.quest_id<>q.id
@@ -948,13 +967,14 @@ begin
     if (private.host_quest_totals(q.id)->>'confirmed')::int<5000 then raise exception 'PAYOUT_NOT_READY'; end if;
     if pay.email is null or pay.legal_name is null then raise exception 'PAYOUT_DETAILS_ERASED'; end if;
     if pay.photo_people is null then raise exception 'PHOTO_PEOPLE_REQUIRED'; end if;
+    if pay.photo_people<coalesce(private.host_quest_photo_needed(q.id),pay.photo_people+1) then raise exception 'PHOTO_PEOPLE_TOO_FEW'; end if;
     if (select count(*) from private.host_quest_payout_checks where quest_id=q.id and answer='yes')<2 then raise exception 'ATTENDEE_CHECKS_REQUIRED'; end if;
     select * into c from private.host_quest_codes where code=q.code;
     if private.host_quest_name_key(c.recipient_name) is null then raise exception 'RECIPIENT_NAME_REQUIRED'; end if;
     if private.host_quest_name_key(c.recipient_name)<>private.host_quest_name_key(pay.legal_name) then raise exception 'PAYOUT_NAME_MISMATCH'; end if;
     if not coalesce(p_bank_name_matched,false) then raise exception 'BANK_NAME_CHECK_REQUIRED'; end if;
     if coalesce(p_transfer_last4,'') !~ '^[A-Za-z0-9]{4}$' then raise exception 'INVALID_TRANSFER_REFERENCE'; end if;
-    update private.host_quest_payouts set status='sent', sent_at=now(), sent_by=auth.uid(), transfer_last4=p_transfer_last4,
+    update private.host_quest_payouts set status='sent', sent_at=now(), sent_by=auth.uid(), transfer_last4=p_transfer_last4, amount_cents=least((private.host_quest_totals(q.id)->>'confirmed')::int,5000),
       held_note=coalesce(note,held_note), erase_after=now()+interval '365 days' where quest_id=q.id;
     update private.host_quests set status='paid', finished_at=now() where id=q.id;
   end if;
@@ -965,7 +985,7 @@ end $$;
 revoke all on function private.mark_meetup_check_in_method(),
   private.host_quest_name_key(text), private.host_quest_session_problem(uuid), private.host_quest_session_ok(uuid,uuid),
   private.host_quest_session_people(uuid,uuid), private.host_quest_counted(uuid,uuid), private.host_quest_invitee(uuid,uuid),
-  private.host_quest_totals(uuid), private.host_quest_set_step(uuid,int,int,uuid[],uuid[],uuid,uuid), private.evaluate_host_quest(uuid),
+  private.host_quest_totals(uuid), private.host_quest_photo_needed(uuid), private.host_quest_set_step(uuid,int,int,uuid[],uuid[],uuid,uuid), private.evaluate_host_quest(uuid),
   private.convert_host_quest(uuid,text), private.settle_host_quest(uuid), private.run_host_quests(), private.purge_host_quest_account_data(uuid),
   private.can_upload_host_quest_photo(text), private.can_read_host_quest_photo(text), private.assert_host_quest_admin()
   from public, anon, authenticated, service_role;
@@ -991,9 +1011,36 @@ grant execute on function public.get_meetup_check_in_qr(uuid), public.check_in_m
   to authenticated;
 grant execute on function public.claim_host_quest_photo_cleanup(integer), public.finish_host_quest_photo_cleanup(uuid[]) to service_role;
 
+-- 보관 기간(하루 한 번). 송금 기록(송금일·금액·이체 번호 끝 4자리)은 세무 기록이라 송금한 해(밴쿠버 기준)가 끝나고 6년,
+-- 한 사람 확인용 해시와 참여 기록은 프로그램이 끝난 날부터 1년 뒤 지운다. 보관 중인 송금 기록이 붙은 퀘스트 줄만 남긴다.
+create function private.purge_host_quest_records() returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare ended timestamptz:=(select ended_at from private.host_quest_program where id); payouts integer; quests integer:=0;
+begin
+  delete from private.host_quest_payouts p where p.status='sent'
+    and now()>=(date_trunc('year',p.sent_at at time zone 'America/Vancouver')+interval '7 years') at time zone 'America/Vancouver';
+  get diagnostics payouts=row_count;
+  if ended is not null and now()>=ended+interval '1 year' then
+    delete from private.host_quest_people;
+    update private.meetup_attendance set check_in_device=null where check_in_device is not null;
+    delete from private.host_quest_photos where deleted_at is not null;
+    delete from private.host_quests q where not exists(select 1 from private.host_quest_payouts p where p.quest_id=q.id and p.status='sent');
+    get diagnostics quests=row_count;
+    delete from private.host_quest_steps;
+    delete from private.host_quest_payout_checks;
+    update private.host_quest_payouts set email=null, legal_name=null, email_mark=null, photo_people=null, held_note=null,
+      erased_at=coalesce(erased_at,now()) where email_mark is not null or email is not null or legal_name is not null;
+    delete from private.host_quest_codes c where not exists(select 1 from private.host_quests q where q.code=c.code);
+    update private.host_quest_codes set recipient_name=null, note=null where recipient_name is not null or note is not null;
+  end if;
+  return jsonb_build_object('payouts',payouts,'quests',quests);
+end $$;
+revoke all on function private.purge_host_quest_records() from public, anon, authenticated, service_role;
+
 -- 30분마다 판정·확정·60일 정리, 하루 한 번 사진 지우기(푸시 발송과 같은 예약 호출 비밀값을 쓴다).
 select cron.schedule('host-quests-settle','*/30 * * * *','select private.run_host_quests()');
 select cron.schedule('host-quest-photo-cleanup','40 10 * * *', $job$
+  select private.purge_host_quest_records();
   select net.http_post(
     url := (select decrypted_secret from vault.decrypted_secrets where name = 'gling_push_project_url') || '/functions/v1/quest-photo-cleanup',
     headers := jsonb_build_object('Content-Type', 'application/json',

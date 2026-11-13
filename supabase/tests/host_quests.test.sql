@@ -188,12 +188,27 @@ select pg_temp.meetup(23,23,now()-interval '12 hours',2,array[40,41,43]);
 select private.evaluate_host_quest(pg_temp.quest(1));
 select is((private.host_quest_totals(pg_temp.quest(1))->>'invitees')::int,2,'Two invitees qualify (the one on the host''s device does not)');
 select is((select reason from private.host_quest_invitee(pg_temp.quest(1),pg_temp.u(43))),'same_person','An invitee on the host''s device is the same person');
+-- 회원 화면: 같은 사람·운영 계정·다른 퀘스트 판별은 한 값으로만 보이고, 출석 방식 이유는 그대로 보인다. 자세한 이유는 관리자 화면에만.
+select pg_temp.act(1); set local role authenticated;
+select is((select string_agg(distinct p->>'reason',',' order by p->>'reason') from jsonb_array_elements(public.get_my_host_quest()->'sessions') s, jsonb_array_elements(s->'people') p),
+  'not_counted,not_qr','The host sees only the general reason and the check-in reason');
+select is((select string_agg(distinct i->>'state',',') from jsonb_array_elements(public.get_my_host_quest()->'invitees') i
+  where i->>'state' in ('operated','same_person','duplicate','not_counted')),'not_counted','The host sees one general reason for invitees');
+reset role;
+select pg_temp.act(90); set local role authenticated;
+select is((select string_agg(distinct p->>'reason',',' order by p->>'reason') from jsonb_array_elements(public.get_admin_host_quest(pg_temp.quest(1))->'sessions') s,
+  jsonb_array_elements(s->'people') p),'helper_limit,not_qr,operated,same_device,same_person','The operator still sees every reason');
+reset role;
 select is((private.host_quest_totals(pg_temp.quest(1))->>'pending')::int,100+500+1000+1500+400,'Two invitees add nothing yet');
 -- 사장님 확정 Q1: 초대한 모임장 본인 모임에서만 참석 확인된 사람은 4단계에 안 센다.
 select pg_temp.meetup(1,1,now()-interval '6 hours',2,array[42]);
 select private.evaluate_host_quest(pg_temp.quest(1));
 select is((select reason from private.host_quest_invitee(pg_temp.quest(1),pg_temp.u(42))),'waiting','Q1 an invitee confirmed only at the host''s own meetup does not count');
 select is((private.host_quest_totals(pg_temp.quest(1))->>'pending')::int,100+500+1000+1500+400,'Q1 the host''s own meetup adds nothing to step 4');
+-- 4단계 초대도 퀘스트 모임 규칙(4시간 이하, 공개, 24시간 전 공지)을 지킨 다른 모임장 모임만 센다.
+select pg_temp.meetup(23,24,now()-interval '30 hours',6,array[42]);
+select private.evaluate_host_quest(pg_temp.quest(1));
+select is((select reason from private.host_quest_invitee(pg_temp.quest(1),pg_temp.u(42))),'waiting','An invitee at another host''s 6-hour meetup does not count');
 -- 다른 모임장 모임이어도 버튼 체크인은 안 센다(퀘스트는 QR만).
 select pg_temp.meetup(23,24,now()-interval '5 hours',2,array[42],'button');
 select private.evaluate_host_quest(pg_temp.quest(1));
@@ -318,7 +333,10 @@ select is(public.get_my_host_quest()->'payout'->>'legalName','Haneul Kim','Host 
 reset role;
 select pg_temp.act(90); set local role authenticated;
 select throws_ok($$select public.settle_admin_host_quest_payout(pg_temp.quest(22),'sent','1234',true)$$,'P0001','PHOTO_PEOPLE_REQUIRED','Sent needs the photo head count first');
-select lives_ok($$select public.set_admin_host_quest_photo_people(pg_temp.quest(22),4)$$,'Admin enters the photo head count');
+select lives_ok($$select public.set_admin_host_quest_photo_people(pg_temp.quest(22),2)$$,'Admin enters a photo head count');
+select throws_ok($$select public.settle_admin_host_quest_payout(pg_temp.quest(22),'sent','1234',true)$$,'P0001','PHOTO_PEOPLE_TOO_FEW','Fewer people in the photo than counted attendees plus the host blocks sending');
+select is((public.get_admin_host_quest(pg_temp.quest(22))->'payout'->>'photoNeeded')::int,4,'The admin card shows how many people the photo needs');
+select lives_ok($$select public.set_admin_host_quest_photo_people(pg_temp.quest(22),4)$$,'Admin corrects the photo head count');
 select throws_ok($$select public.settle_admin_host_quest_payout(pg_temp.quest(22),'sent','1234',true)$$,'P0001','ATTENDEE_CHECKS_REQUIRED','Sent needs two attendee answers');
 select throws_ok($$select public.ask_admin_host_quest_attendee(pg_temp.quest(22),pg_temp.u(14))$$,'P0001','INVALID_ATTENDEE','Admin can only ask counted attendees');
 select ok(public.ask_admin_host_quest_attendee(pg_temp.quest(22),pg_temp.u(3)) is not null,'Admin messages attendee 3');
@@ -348,6 +366,33 @@ select is((select coalesce(email,'')||coalesce(legal_name,'')||status from priva
 select private.purge_host_quest_account_data(pg_temp.u(1));
 select is((select status from private.host_quests where user_id=pg_temp.u(1)),'ended','Deleting the account ends an active quest');
 select is((select count(*)::int from private.host_quest_steps where quest_id=pg_temp.quest(1) and status='pending'),0,'No pending amounts survive account deletion');
+
+-- 보관 기간: 하루 한 번 정리 작업이 지운다. 송금 기록은 송금한 해(밴쿠버 기준)가 끝나고 6년, 나머지는 프로그램이 끝나고 1년.
+select ok(strpos((select command from cron.job where jobname='host-quest-photo-cleanup'),'select private.purge_host_quest_records();')>0,'The daily cleanup job runs the retention purge');
+select is((select amount_cents||':'||transfer_last4 from private.host_quest_payouts where quest_id=pg_temp.quest(22)),'5000:A1b2','A sent payout records its amount and last 4');
+select private.purge_host_quest_records();
+select ok((select count(*) from private.host_quest_people)>0 and (select count(*) from private.host_quests)>1,'Nothing is purged while the program runs');
+update private.host_quest_program set ended_at=now()-interval '11 months', accepting=true;
+select pg_temp.act(23); set local role authenticated;
+select throws_ok($$select public.start_host_quest('ZZZZZZZZ',true)$$,'P0001','QUEST_PAUSED','No quest starts after the program ends');
+reset role;
+select private.purge_host_quest_records();
+select ok((select count(*) from private.host_quest_people)>0,'Identity marks stay until a year after the program ends');
+update private.host_quest_program set ended_at=now()-interval '1 year 1 day';
+select private.purge_host_quest_records();
+select is((select count(*)::int from private.host_quest_people),0,'A year after the program ends the identity marks are gone');
+select is((select count(*)::int from private.host_quests),1,'Only the quest behind a kept tax record remains');
+select is((select count(*)::int from private.host_quest_steps)+(select count(*)::int from private.host_quest_payout_checks),0,'Steps and attendee checks are gone');
+select is((select count(*)::int from private.meetup_attendance where check_in_device is not null),0,'Check-in device hashes are gone');
+select is((select coalesce(email_mark,'-')||coalesce(email,'-')||':'||amount_cents||':'||transfer_last4 from private.host_quest_payouts where quest_id=pg_temp.quest(22)),
+  '--:5000:A1b2','The tax record keeps only the date, amount and last 4');
+select is((select count(*)::int from private.host_quest_codes where recipient_name is not null or note is not null),0,'Code recipient names are gone');
+update private.host_quest_payouts set sent_at=(date_trunc('year',now() at time zone 'America/Vancouver')-interval '5 years'-interval '1 hour') at time zone 'America/Vancouver';
+select private.purge_host_quest_records();
+select is((select count(*)::int from private.host_quest_payouts),1,'A payout from six years ago is kept until that year ends plus six years');
+update private.host_quest_payouts set sent_at=(date_trunc('year',now() at time zone 'America/Vancouver')-interval '6 years'-interval '1 hour') at time zone 'America/Vancouver';
+select private.purge_host_quest_records();
+select is((select count(*)::int from private.host_quest_payouts),0,'A payout from the last hour of seven years ago (Vancouver time) is deleted');
 
 select * from finish();
 rollback;

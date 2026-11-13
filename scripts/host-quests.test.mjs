@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { toQR } from 'toqr';
+import { payoutBlockers, questCheckCandidates } from '../src/lib/admin-host-quests.ts';
 import { parseCheckInLink } from '../src/lib/app-links.ts';
 import { inviteDollars, normalizeQuestCode, qrRuns, questError, questPhotoPath } from '../src/lib/host-quests.ts';
 
@@ -40,4 +41,20 @@ test('QR runs redraw exactly the encoder modules', () => {
 
 test('photo paths match the storage policy shape', () => {
   assert.match(questPhotoPath(session, session, session), /^[0-9a-f-]{36}\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.webp$/);
+});
+
+test('the payout waits until the photo shows everyone counted plus the host', () => {
+  const quest = { status: 'active', totals: { confirmed: 5000 }, code: { recipientName: 'Kim' }, checks: [{ answer: 'yes' }, { answer: 'yes' }],
+    payout: { status: 'requested', email: 'a@b.c', legalName: 'Kim', photoPeople: 3, photoNeeded: 4, nameMatches: true } };
+  assert.deepEqual(payoutBlockers(quest, true, 'A1B2'), ['사진 속 사람이 센 사람보다 적어요']);
+  assert.deepEqual(payoutBlockers({ ...quest, payout: { ...quest.payout, photoPeople: 4 } }, true, 'A1B2'), []);
+});
+
+test('attendees to ask come least suspicious first', () => {
+  const person = (id, joinedAt, otherHostMeetups) => ({ id, nickname: id, reason: null, qr: true, confirmed: true, joinedAt, otherHostMeetups, otherQuestHosts: 0 });
+  const quest = { startedAt: '2026-10-01T00:00:00+00:00', steps: [{ step: 2, status: 'confirmed', personIds: ['new', 'old', 'busy'] }],
+    sessions: [{ people: [person('new', '2026-10-05T00:00:00+00:00', 9), person('old', '2025-01-01T00:00:00+00:00', 0), person('busy', '2025-06-01T00:00:00+00:00', 4)] }] };
+  const list = questCheckCandidates(quest);
+  assert.deepEqual(list.map(item => item.id), ['busy', 'old', 'new']);
+  assert.equal(list.at(-1).joinedAfterStart, true);
 });
