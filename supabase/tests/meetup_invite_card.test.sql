@@ -39,6 +39,8 @@ insert into public.posts(id,author_id,city_id,tag_id,title,body,room_preview,pos
   E'장소는 모임 대화에서 정해요.',jsonb_build_object('eventKind','group','cadence','매주','capacity',6,'memberCount',1,'access','public'),current_date),
  ('9e100000-0000-4000-8000-000000000006','9e000000-0000-4000-8000-000000000001','vancouver',(select id from public.tags where kind='meetup' limit 1),'먼 곳 모임',
   E'멀리 가요.\n\n장소: Far away\n장소 정보: https://www.openstreetmap.org/node/9003',jsonb_build_object('eventKind','group','cadence','매주','capacity',6,'memberCount',1,'access','public'),current_date);
+-- The shop night is posted under the business name.
+update public.posts set business_author_id='9e200000-0000-4000-8000-000000000001' where id='9e100000-0000-4000-8000-000000000004';
 set local session_replication_role=origin;
 
 -- A verified owner gives the shop a public profile before its first post (20261018037000).
@@ -50,7 +52,10 @@ insert into private.webshop_place_links(place_key,merchant_id,city_id) values('o
 insert into private.invite_links(code,owner_id,merchant_id) values
  ('JEUNK234','9e000000-0000-4000-8000-000000000002',null),
  ('SHPQ2345','9e000000-0000-4000-8000-000000000004','9e200000-0000-4000-8000-000000000001'),
- ('HDDE2345','9e000000-0000-4000-8000-000000000004','9e200000-0000-4000-8000-000000000002');
+ ('HDDE2345','9e000000-0000-4000-8000-000000000004','9e200000-0000-4000-8000-000000000002'),
+ ('HSTQ2345','9e000000-0000-4000-8000-000000000001',null),
+ ('PRTN2345','9e000000-0000-4000-8000-000000000004',null);
+insert into private.merchant_operators(merchant_id,user_id) values('9e200000-0000-4000-8000-000000000001','9e000000-0000-4000-8000-000000000004');
 
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 set local role anon;
@@ -66,6 +71,9 @@ select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000001','
 select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000001','SHPQ2345')->>'inviter',null,'a shop code never names its owner');
 select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000001','jeunk234')->>'inviter',null,'codes are matched exactly');
 select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000001','NQPE2345')->>'inviter',null,'an unknown code names nobody');
+select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000001','HSTQ2345')->>'inviter',null,'the host sharing their own meetup is not named');
+select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000004','PRTN2345')->>'inviter',null,'an operator sharing their business''s meetup is not named');
+select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000001','PRTN2345')->>'inviter','초대검사4','the same person sharing someone else''s meetup is');
 select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000002'),null::jsonb,'invite-only meetups have no public card');
 select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000003'),null::jsonb,'stories have no meetup card');
 select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000005')->>'area',null,'no picked place means no neighborhood');
