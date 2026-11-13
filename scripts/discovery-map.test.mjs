@@ -239,7 +239,7 @@ test('M1: a state colour crosses the map boundary only as a hex value and draws 
   assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.statusColor), ['', '#E0559A'], 'a new read moves the dot without a reload');
   c.window.glingDiscoveryUpdate(sessionId, { markers: [marker, { ...marker, id: 'place:2', statusColor: 'url(x)' }] });
   assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.statusColor), ['', '#E0559A'], 'the page refuses a bad colour too');
-  assert.ok(c.html.includes('주황색 점은 요즘 뜨는 곳, 분홍색 점은 인기 있는 곳이에요.'), 'the map label says what the colours mean');
+  assert.ok(c.html.includes('초록색 점은 새로 생긴 곳, 주황색 점은 요즘 뜨는 곳, 분홍색 점은 인기 있는 곳, 파란색 점은 친구가 저장한 곳이에요.'), 'the map label says what each colour means');
 });
 
 test('M5: a saved flag crosses the map boundary only as a boolean and draws the bookmark mark above the pins', () => {

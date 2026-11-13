@@ -103,6 +103,16 @@ def build_catalog(seed, elements, now):
             if 'priceLevel' in original:  # optional 1-4 ($-$$$$) from a cited source; older apps ignore it
                 if original['priceLevel'] not in [1, 2, 3, 4] or isinstance(original['priceLevel'], bool): raise ValueError('INVALID_PLACE_PRICE')
                 p['priceLevel'] = original['priceLevel']
+            # optional map states from a cited source (CityPlace.opened / .hot in src/lib/city-places.ts); older apps ignore them
+            for state, date_key, names in [('opened', 'on', []), ('hot', 'since', ['sourceName'])]:
+                if state not in original: continue
+                value = original[state]
+                if not isinstance(value, dict) or set(value) != {date_key, 'sourceUrl', *names} or not https(value['sourceUrl']) \
+                        or not isinstance(value[date_key], str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', value[date_key]) \
+                        or any(not isinstance(value[k], str) or not value[k].strip() or len(value[k]) > 80 or re.search(r'[\x00-\x1f\x7f]', value[k]) for k in names): raise ValueError('INVALID_PLACE_' + state.upper())
+                try: datetime.strptime(value[date_key], '%Y-%m-%d')
+                except ValueError: raise ValueError('INVALID_PLACE_' + state.upper())
+                p[state] = dict(value)
             if 'subcategories' in original:  # optional map sub-filters, see PLACE_SUBCATEGORIES in src/lib/discovery.ts
                 values = original['subcategories']
                 if not isinstance(values, list) or len(values) > 12 or len(set(values)) != len(values) or any(not isinstance(v, str) or not 0 < len(v) <= 40 or re.search(r'[\x00-\x1f\x7f]', v) for v in values): raise ValueError('INVALID_PLACE_SUBCATEGORIES')
