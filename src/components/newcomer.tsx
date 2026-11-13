@@ -130,7 +130,7 @@ const FIRST_STEPS: { id: string; title: string; body: string; label: string; url
     label: '정부 안내 ↗', url: 'https://www.canada.ca/en/employment-social-development/services/sin/apply.html' },
   { id: 'bank', paperwork: true, title: '은행 계좌', body: '신분증 원본을 두 개 챙겨 가요. 하나뿐이면 그 은행에 계좌가 있는 지인이 신원을 확인해 주는 방법도 있어요.',
     label: '정부 안내 ↗', url: 'https://www.canada.ca/en/financial-consumer-agency/services/banking/opening-bank-account.html' },
-  { id: 'msp', paperwork: true, title: 'MSP 신청', body: '도착하자마자 신청해도 그달 남은 날에 두 달을 더 기다려야 시작돼요. 그동안 쓸 보험은 따로 들어 둬요. 유학생은 MSP 비용으로 한 달에 $75를 내요.',
+  { id: 'msp', paperwork: true, title: 'MSP 신청', body: '도착하자마자 신청해도 도착한 달이 끝나고 두 달을 더 기다려야 시작돼요. 그동안 쓸 보험은 따로 들어 둬요. 유학생은 MSP 비용으로 한 달에 $75를 내요.',
     label: 'BC 정부 ↗', url: 'https://www2.gov.bc.ca/gov/content/health/health-drug-coverage/msp/bc-residents/eligibility-and-enrolment/are-you-eligible' },
   { id: 'room', title: '방 구하기', body: '보러 가기 전에 돈부터 달라는 집은 거르세요. 동네별 렌트는 부동산에 모여 있어요.', label: '부동산 ›', open: 'housing' },
   { id: 'job', title: '일 구하기', body: 'BC 최저시급은 2026년 6월부터 $18.25예요. 유학생은 학기 중엔 주 24시간까지 일할 수 있어요.', label: '구인구직 ›', open: 'jobs' },

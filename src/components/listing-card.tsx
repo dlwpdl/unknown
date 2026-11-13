@@ -189,7 +189,7 @@ export function ListingInfo({ post }: { post: DetailedPost }) {
     <View style={styles.meta}>
       <Badge label={text.deal} tone={wanting(details) ? 'want' : 'accent'} />
       <Badge label={text.status} tone={text.closed ? 'done' : 'accent'} />
-      {post.photoCheckedAt && <Badge checked label={tr('글쓴이가 방 안에 있었음 · {0}', checkedDay(post.photoCheckedAt, language))} tone="accent" />}
+      {post.photoCheckedAt && <Badge checked label={tr('방 안 인증샷 · {0}', checkedDay(post.photoCheckedAt, language))} tone="accent" />}
     </View>
     {text.price && <View>
       <ThemedText style={styles.detailPrice}>{text.price}</ThemedText>

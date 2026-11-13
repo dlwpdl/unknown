@@ -1482,7 +1482,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   <ThemedText type="small" themeColor="textSecondary" style={styles.meetupNote}>{t.write.listingNote}</ThemedText>
                 </>}
                 {rentOffer && <View style={[styles.aiCard, { borderColor: theme.line }]}>
-                  <ThemedText type="small" themeColor="textSecondary">{tr("방 안에서 찍은 사진을 세 장 이상 올려 주세요. 종이에 닉네임이랑 오늘 날짜를 적어 방 안에서 한 장 더 찍어 올리면, 운영팀이 보고 글에 '글쓴이가 방 안에 있었음' 표시를 달아 드려요.")}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">{tr("방 안에서 찍은 사진을 세 장 이상 올려 주세요. 종이에 닉네임이랑 오늘 날짜를 적어 방 안에서 한 장 더 찍어 올리면, 운영팀이 보고 글에 '방 안 인증샷' 표시를 달아 드려요.")}</ThemedText>
                   <View style={styles.photoGrid}>
                     {checkPhoto ? <View style={styles.photoTile}>
                       <Image source={{ uri: checkPhoto.uri }} style={styles.photoTileImage} contentFit="cover" accessibilityLabel={tr('확인 사진')} />

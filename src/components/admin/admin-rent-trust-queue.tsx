@@ -34,7 +34,7 @@ function Queue({ onUser, localPreview = false }: Props) {
     const tracker = request, token = ++tracker.current;
     void Promise.all([loadAdminHeldListings(supabase), loadAdminListingPhotoChecks(supabase)])
       .then(([nextHeld, nextChecks]) => { if (token === tracker.current) { setHeld({ rows: nextHeld, loadedAt: Date.now() }); setChecks(nextChecks); } })
-      .catch(() => { if (token === tracker.current) setError('숨김된 글과 확인 사진을 불러오지 못했어요. 권한과 연결 상태를 확인해 주세요.'); });
+      .catch(() => { if (token === tracker.current) setError('내려간 글과 확인 사진을 불러오지 못했어요. 권한과 연결 상태를 확인해 주세요.'); });
     return () => { tracker.current++; };
   }, [localPreview, revision]);
 
@@ -60,10 +60,10 @@ function Queue({ onUser, localPreview = false }: Props) {
     {notice ? <ThemedText type="small" accessibilityLiveRegion="polite">{notice}</ThemedText> : null}
     {localPreview && <ThemedText type="small">미리보기에서는 운영 글을 조회하지 않아요.</ThemedText>}
     <View style={styles.split}>
-      <AdminCard icon="!" tone="danger" title="일단 숨김된 글" count={held?.rows.length} style={styles.half}
+      <AdminCard icon="!" tone="danger" title="신고로 내려간 글" count={held?.rows.length} style={styles.half}
         info={['가입 7일이 넘은 서로 다른 세 사람이 7일 안에 신고한 부동산·구인구직·중고거래 글은 모두에게서 바로 내려가요.', '24시간 안에 되살리거나 내림을 확정해 주세요. 사기로 세 번 확정된 계정은 부동산 글을 쓸 수 없어요.']}
-        action={<AdminButton label="새로고침" accessibilityLabel="숨김된 글 새로고침" disabled={!!busy || localPreview} onPress={() => setRevision(value => value + 1)} />}>
-        {held && !held.rows.length && <ThemedText type="small" style={{ color: A.textSecondary }}>지금 숨김된 글이 없어요.</ThemedText>}
+        action={<AdminButton label="새로고침" accessibilityLabel="내려간 글 새로고침" disabled={!!busy || localPreview} onPress={() => setRevision(value => value + 1)} />}>
+        {held && !held.rows.length && <ThemedText type="small" style={{ color: A.textSecondary }}>지금 내려간 글이 없어요.</ThemedText>}
         {held?.rows.map(row => {
           const late = held.loadedAt - new Date(row.heldAt).getTime() > 24 * 3600_000;
           return <View key={row.id} style={styles.item}>
@@ -90,7 +90,7 @@ function Queue({ onUser, localPreview = false }: Props) {
         })}
       </AdminCard>
       <AdminCard icon="✓" tone="warning" title="렌트 확인 사진" count={checks?.length} style={styles.half}
-        info={['작성자가 닉네임과 날짜를 적은 종이를 방 안에서 찍은 사진이에요. 글에는 붙지 않고 작성자와 관리자만 열 수 있어요.', '사진을 열 때마다 기록이 남아요. 확인하면 글에 ‘글쓴이가 방 안에 있었음 · 날짜’가 붙어요.']}>
+        info={['작성자가 닉네임과 날짜를 적은 종이를 방 안에서 찍은 사진이에요. 글에는 붙지 않고 작성자와 관리자만 열 수 있어요.', '사진을 열 때마다 기록이 남아요. 확인하면 글에 ‘방 안 인증샷 · 날짜’가 붙어요.']}>
         {checks && !checks.length && <ThemedText type="small" style={{ color: A.textSecondary }}>확인할 사진이 없어요.</ThemedText>}
         {checks?.map(row => <View key={row.postId} style={styles.item}>
           <ThemedText type="smallBold" numberOfLines={2}>{row.title}</ThemedText>
