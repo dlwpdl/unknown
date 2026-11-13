@@ -77,6 +77,7 @@ import { useCommunityLocation } from '@/lib/location-provider';
 import { isShortNote, MAX_AI_IMAGES, parseAiDraftResponse, withDraftFields, type DraftField } from '@/lib/ai-draft';
 import {
   createCommunityPost,
+  submitListingPhotoCheck,
   loadListingQuota,
   getCommunityActionError,
   isContentRejected,
@@ -187,6 +188,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const writerListingResult = writerListing && writerListingDraft ? listingFromDraft(writerListing, writerListingDraft, { title: title.trim(), cityId: draftCity.id }, language) : null;
   const [hashtagInput, setHashtagInput] = useState('');
   const [draftImages, setDraftImages] = useState<PreparedImage[]>([]);
+  // 렌트 내놓음의 확인 사진. 글 사진과 따로 두고, 글이 올라간 뒤 비공개 칸으로만 보낸다.
+  const [checkPhoto, setCheckPhoto] = useState<PreparedImage | null>(null);
+  const rentOffer = writerListing === 'housing' && writerListingDraft?.deal === 'rent_offer';
   // 공식 SNS 소개 동의 칸(사진을 붙였을 때만 보인다). null: 아직 모르거나 구서버라 칸을 숨긴다.
   const [photoConsent, setPhotoConsent] = useState<boolean | null>(null);
   const [creatingDraft, setCreatingDraft] = useState(false);
@@ -652,6 +656,23 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     }
   };
 
+  const pickCheckPhoto = async () => {
+    try {
+      if (Platform.OS !== 'web' && !(await ImagePicker.requestCameraPermissionsAsync()).granted) {
+        Alert.alert(t.write.photoPermissionTitle, t.write.photoPermissionBody);
+        return;
+      }
+      const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 1, preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible };
+      const result = Platform.OS === 'web' ? await ImagePicker.launchImageLibraryAsync(options) : await ImagePicker.launchCameraAsync(options);
+      const asset = result.canceled ? null : result.assets?.[0];
+      if (!asset?.uri) return;
+      if (!isSupportedImage(asset.mimeType ?? 'image/jpeg')) { Alert.alert(t.write.photoErrorTitle, t.write.photoUnsupported); return; }
+      setCheckPhoto(await preparePostImage(asset));
+    } catch (cause) {
+      Alert.alert(t.write.photoErrorTitle, cause instanceof Error && cause.message === 'IMAGE_TOO_LARGE' ? t.write.photoTooLarge : t.write.photoErrorBody);
+    }
+  };
+
   const createAiDraft = async () => {
     const titleHint = title.trim();
     const mapped = postMapBody(body);
@@ -765,6 +786,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       price: writerListingResult ? writerListingResult.price : postKind === 'listing' && priceInput.trim() ? Number(priceInput.replace(/[^0-9.]/g, '')) : null,
       listingDetails: writerListingResult?.details,
     };
+    const check = rentOffer ? checkPhoto : null;
     // 글쓰기 창은 바로 닫히고 위 카드가 이 일을 끝까지 보여 준다. 초안은 다 올라간 뒤에만 비운다.
     const send = async (retry: boolean) => {
       let created: { id: string | null; post: Post | null } = { id: null, post: null };
@@ -798,6 +820,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       setPollDraft(null);
       setHashtagInput('');
       setDraftImages([]);
+      setCheckPhoto(null);
       setAiDraftReady(false);
       setAiFields([]);
       setAiNote(null);
@@ -810,6 +833,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       const first = !post?.room && await Promise.race([isFirstPost(supabase, input.userId).catch(() => false), new Promise<boolean>(done => setTimeout(() => done(false), 3000))]);
       // 글은 이미 올라갔다. 동의가 저장되지 않으면 실패로 돌리지 않고 다 올라간 카드에 한 줄로만 알린다.
       if (consent && !(created.id && await savePostPhotoConsent(supabase, created.id))) return { notice: tr('SNS에 소개해도 된다는 체크만 저장이 안 됐어요'), first };
+      if (check && !(created.id && await submitListingPhotoCheck(supabase, input.userId, created.id, check).then(() => true, () => false))) return { notice: tr('확인 사진만 올리지 못했어요'), first };
       return { first };
     };
     // 위 카드로 날아갈 앞의 세 장이 지금 화면 어디 있는지 잰다. 못 재면 날지 않고 카드에만 쌓인다.
@@ -1029,7 +1053,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               {/* 이번 주 많이 읽은 글(탑10)은 카테고리 바로 아래, 다른 섹션보다 먼저 (owner 2026-10-30). */}
               {!feedLoading && weeklyRanking}
               {!meetupsOnly && <StartGuide cityName={city.name} cityPicks={cityPicks} onPickCity={() => setCityPicker(true)} onOpenMeetups={() => router.navigate('/meetups')} />}
-              {!meetupsOnly && isAuthed && <NewcomerProgressCard />}
+              {!meetupsOnly && isAuthed && <NewcomerProgressCard cityId={city.id} onOpenCategory={slug => changeTagFilter(TAGS.find(item => item.slug === slug)?.id ?? null)} />}
               {meetupsOnly && <>
                 <MyMeetups onOpen={async (postId) => {
                   const post = await loadPublicPost(supabase, postId);
@@ -1457,6 +1481,23 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                     style={[styles.hashtagInput, { color: theme.text, borderBottomColor: theme.line }]} />
                   <ThemedText type="small" themeColor="textSecondary" style={styles.meetupNote}>{t.write.listingNote}</ThemedText>
                 </>}
+                {rentOffer && <View style={[styles.aiCard, { borderColor: theme.line }]}>
+                  <ThemedText type="small" themeColor="textSecondary">{tr("방 안에서 찍은 사진을 세 장 이상 올려 주세요. 종이에 닉네임이랑 오늘 날짜를 적어 방 안에서 한 장 더 찍어 올리면, 운영팀이 보고 글에 '방 안 인증샷' 표시를 달아 드려요.")}</ThemedText>
+                  <View style={styles.photoGrid}>
+                    {checkPhoto ? <View style={styles.photoTile}>
+                      <Image source={{ uri: checkPhoto.uri }} style={styles.photoTileImage} contentFit="cover" accessibilityLabel={tr('확인 사진')} />
+                      <Pressable analyticsId="compose.rent-check-photo.remove" onPress={() => { play('selection'); setCheckPhoto(null); }} disabled={submitting}
+                        accessibilityRole="button" accessibilityLabel={tr('확인 사진 삭제')} style={[styles.photoRemove, { backgroundColor: theme.card }]}>
+                        <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={14} tintColor={theme.text} />
+                      </Pressable>
+                    </View> : <Pressable analyticsId="compose.rent-check-photo" onPress={() => { play('selection'); void pickCheckPhoto(); }} disabled={submitting || creatingDraft}
+                      accessibilityRole="button" accessibilityLabel={tr('확인 사진 찍기')}
+                      style={({ pressed }) => [styles.photoTile, styles.checkSlot, { borderColor: theme.accent, backgroundColor: theme.card, opacity: pressed ? ControlMotion.pressedOpacity : 1 }]}>
+                      <SymbolView name={{ ios: 'camera', android: 'photo_camera', web: 'photo_camera' }} size={IconSize.toolbar} tintColor={theme.accent} />
+                      <ThemedText type="smallBold" themeColor="accent">{tr('확인 사진')}</ThemedText>
+                    </Pressable>}
+                  </View>
+                </View>}
                 {draftImages.length > 0 && <View style={[styles.aiCard, { borderColor: theme.line }]}>
                   {draftImages.length > 0 && (
                     <View style={styles.photoGrid}>
@@ -1801,6 +1842,7 @@ const styles = StyleSheet.create({
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   photoTile: { width: '31%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden' },
   photoTileImage: { width: '100%', height: '100%' },
+  checkSlot: { borderWidth: 1.5, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 2 },
   photoConsent: { minHeight: 44, justifyContent: 'center', gap: 2 },
   photoLaunched: { opacity: 0 },
   photoAiBadge: { position: 'absolute', left: 6, bottom: 6, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },

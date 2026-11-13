@@ -20,6 +20,8 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 
 const REASONS: ReportReason[] = ['spam', 'harassment', 'hate', 'sexual', 'privacy', 'other'];
+// 부동산·구인구직·중고거래 글에서만 맨 위에 '허위 매물·사기'를 둔다.
+const LISTING_REASONS: ReportReason[] = ['scam', ...REASONS];
 
 export function ReportSheet({
   visible,
@@ -29,6 +31,7 @@ export function ReportSheet({
   reportedBusinessId,
   reportedNickname = '비즈니스 답변',
   businessConversation,
+  listing = false,
   onClose,
 }: {
   visible: boolean;
@@ -38,6 +41,7 @@ export function ReportSheet({
   reportedBusinessId?: string;
   reportedNickname?: string;
   businessConversation?: ConversationPreview;
+  listing?: boolean;
   onClose: () => void;
 }) {
   const { tr, t } = useLanguage();
@@ -149,7 +153,7 @@ export function ReportSheet({
           <ScrollView style={styles.formScroll} contentContainerStyle={styles.formContent}
             keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
           <View style={styles.reasons} accessibilityRole="radiogroup">
-            {REASONS.map((item) => {
+            {(listing ? LISTING_REASONS : REASONS).map((item) => {
               const selected = reason === item;
               return (
                 <Pressable lens analyticsId="components_report-sheet.pressable.3"

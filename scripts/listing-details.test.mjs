@@ -175,6 +175,10 @@ test('칸이 없는 옛 글과 서버 마이그레이션 전에는 지금처럼 
   const mismatched = await hydratePublicPosts({ rpc: async name => name === 'get_public_post_listing_details'
     ? { data: [{ post_id: post.id, details: { type: 'housing', deal: 'rent_offer' } }], error: null } : { data: [], error: null } }, [post]);
   assert.equal(mismatched[0].listingDetails, undefined, 'fields from another category are ignored');
+  const checked = await hydratePublicPosts({ rpc: async name => name === 'get_public_post_listing_details'
+    ? { data: [{ post_id: post.id, details: { type: 'used', deal: 'sell', lead: '팝니다 · $40' }, photo_checked_at: '2026-11-12T20:00:00Z' }], error: null } : { data: [], error: null } }, [post]);
+  assert.equal(checked[0].photoCheckedAt, '2026-11-12T20:00:00Z', '사진 확인 날짜만 온다');
+  assert.equal(after[0].photoCheckedAt, undefined, 'and only when the team checked it');
   const noListings = [];
   await hydratePublicPosts({ rpc: async name => { noListings.push(name); return { data: [], error: null }; } }, [story]);
   assert.deepEqual(noListings, ['get_public_post_businesses']);

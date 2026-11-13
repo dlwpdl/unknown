@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { chillingAvailability } from './chilling.ts';
 import { hideContent, showContent } from './content-visibility.ts';
 import { isThumbPath, MAX_IMAGE_BYTES, MAX_POST_IMAGES, thumbPathFor } from './image-upload.ts';
+import { merchantEventId } from './merchant-source.ts';
 import { normalizePoll, type PollDraft } from './post-polls.ts';
 import { chatImagePaths } from './chat-details.ts';
 import { mapBusinessConversation } from './business-chat.ts';
@@ -29,13 +30,13 @@ export function isContentRejected(error: unknown) {
 
 export function getCommunityActionError(error: unknown) {
   const message = typeof error === 'object' && error !== null && 'message' in error ? String(error.message) : '';
-  return (['MEETUP_HOST_CAPACITY_LIMIT', 'MEETUP_JOIN_RESTRICTED', 'MEETUP_HOST_RESTRICTED', 'CHILLING_CREATE_LIMIT', 'REQUESTER_MEETUP_LIMIT_REACHED', 'MEETUP_LIMIT_REACHED', 'MEETUP_CLOSED', 'DAILY_CONVERSATION_LIMIT_REACHED', 'OTHER_CONVERSATION_LIMIT_REACHED', 'CONVERSATION_LIMIT_REACHED', 'REQUEST_COOLDOWN', 'PENDING_REQUEST_LIMIT', 'REQUEST_EXPIRED', 'CONVERSATION_NOT_ACTIVE', 'REQUEST_ALREADY_RESOLVED', 'RATE_LIMITED', 'LISTING_LIMIT_REACHED', 'DUPLICATE_LISTING', 'DUPLICATE_POST', 'BUSINESS_BUMP_COOLDOWN', 'BUSINESS_MONTHLY_LIMIT_REACHED', 'DUPLICATE_PROMOTION', 'BUMP_COOLDOWN', 'LISTING_NOT_OPEN', 'BUSINESS_TAG_RESERVED'] as const)
+  return (['MEETUP_HOST_CAPACITY_LIMIT', 'MEETUP_JOIN_RESTRICTED', 'MEETUP_HOST_RESTRICTED', 'CHILLING_CREATE_LIMIT', 'REQUESTER_MEETUP_LIMIT_REACHED', 'MEETUP_LIMIT_REACHED', 'MEETUP_CLOSED', 'DAILY_CONVERSATION_LIMIT_REACHED', 'OTHER_CONVERSATION_LIMIT_REACHED', 'CONVERSATION_LIMIT_REACHED', 'REQUEST_COOLDOWN', 'PENDING_REQUEST_LIMIT', 'REQUEST_EXPIRED', 'CONVERSATION_NOT_ACTIVE', 'REQUEST_ALREADY_RESOLVED', 'RATE_LIMITED', 'LISTING_LIMIT_REACHED', 'DUPLICATE_LISTING', 'DUPLICATE_POST', 'BUSINESS_BUMP_COOLDOWN', 'BUSINESS_MONTHLY_LIMIT_REACHED', 'DUPLICATE_PROMOTION', 'BUMP_COOLDOWN', 'LISTING_NOT_OPEN', 'BUSINESS_TAG_RESERVED', 'RENT_POSTING_BLOCKED'] as const)
     .find((code) => message.includes(code)) ?? null;
 }
 
 export type PostDraftImage = { base64: string; mimeType: string; thumbBase64?: string; width?: number; height?: number };
 export type ReportTarget = 'user' | 'post' | 'comment' | 'message' | 'merchant_review' | 'merchant_review_reply' | 'meetup_review' | 'live_bubble';
-export type ReportReason = 'spam' | 'harassment' | 'hate' | 'sexual' | 'privacy' | 'other';
+export type ReportReason = 'spam' | 'harassment' | 'hate' | 'sexual' | 'privacy' | 'other' | 'scam';
 
 export type ConversationPreview = {
   id: string;
@@ -168,6 +169,20 @@ export async function uploadPostMedia(client: SupabaseClient, uploads: PostUploa
     if (uploaded.length) await client.storage.from('post-images').remove(uploaded).catch(() => {});
     throw error;
   }
+}
+
+// 사진 확인: the note photo goes to the private bucket under the author's own folder and is linked to the 렌트 post.
+// Only the author and an MFA admin can open it; the post itself only ever learns the review date.
+export async function submitListingPhotoCheck(client: SupabaseClient, userId: string, postId: string, image: { base64: string; mimeType: string }) {
+  if (image.mimeType !== 'image/webp') throw new Error('IMAGE_UNSUPPORTED');
+  const bytes = Uint8Array.from(atob(image.base64), (character) => character.charCodeAt(0)).buffer;
+  if (!bytes.byteLength || bytes.byteLength > MAX_IMAGE_BYTES) throw new Error('IMAGE_TOO_LARGE');
+  const path = `${userId}/${merchantEventId()}.webp`;
+  const bucket = client.storage.from('listing-checks');
+  const uploaded = await bucket.upload(path, bytes, { contentType: 'image/webp', upsert: false });
+  if (uploaded.error) throw new Error(uploaded.error.message);
+  const linked = await client.rpc('submit_listing_photo_check', { p_post_id: postId, p_path: path });
+  if (linked.error) { await bucket.remove([path]).catch(() => undefined); throw new Error(linked.error.message); }
 }
 
 export async function uploadPostImages(client: SupabaseClient, userId: string, images: PostDraftImage[]) {

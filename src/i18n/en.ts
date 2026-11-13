@@ -106,6 +106,7 @@ export const en: Translations = {
     BUSINESS_BUMP_COOLDOWN: { title: 'You can bump again soon', body: 'Bumps are shared across all your business posts: once every 5 days on Free, every 2 days on Plus, daily on Pro and every 12 hours on Premium. Switching accounts or AI tools doesn’t change this.', membership: false },
     BUSINESS_MONTHLY_LIMIT_REACHED: { title: 'You’ve used this month’s business allowance', body: 'Check your new post and bump usage. Anything done through our managed service counts toward the total.', membership: true },
     BUSINESS_TAG_RESERVED: { title: 'Business posts come from business profiles', body: 'Pick another category. To post news for your business, switch to its business profile first.', membership: false },
+    RENT_POSTING_BLOCKED: { title: 'You can’t post in Housing anymore', body: 'Our team confirmed three of this account’s housing posts as scams. You can still post in other categories.', membership: false },
     DUPLICATE_PROMOTION: { title: 'This promo post already exists', body: 'Edit or bump the existing post. Changing just the title or photo order doesn’t make it a new post.', membership: false },
     LISTING_NOT_OPEN: { title: 'This listing is closed', body: 'Reopening it uses 1 active listing slot.', membership: false },
   },
@@ -183,7 +184,7 @@ export const en: Translations = {
     doneBlocked: 'Reported and blocked. You won’t see this person’s content anymore.', doneButBlockFailed: 'We got your report, but couldn’t block this person. Try again in a moment.',
     errorTitle: 'Couldn’t send your report', errorBody: 'You may have already reported this, or the connection failed. Try again in a moment.', short: 'Report', userAction: 'Report or block',
     block: (nickname) => `Block ${nickname}`, blockBody: 'You won’t see their posts, comments or messages, and you can’t interact with each other. Our moderation team is notified, and original records are kept under our retention policy.',
-    reasons: { spam: 'Spam', harassment: 'Harassment or threats', hate: 'Hate speech', sexual: 'Sexual content', privacy: 'Privacy violation', other: 'Other' },
+    reasons: { spam: 'Spam', harassment: 'Harassment or threats', hate: 'Hate speech', sexual: 'Sexual content', privacy: 'Privacy violation', other: 'Other', scam: 'Fake listing or scam' },
   },
   profileSheet: {
     chatRequest: 'Start a chat', pending: 'Requested · Tap to cancel', pendingCancelTitle: 'Cancel this chat request?',

@@ -8,6 +8,7 @@ import './admin-section.css';
 import { AdminFilterBar, AdminMultiFilter, AdminSelect, AdminSearch, AdminFilterReset, AdminTableSummary } from '@/components/admin/admin-table-controls';
 import { AdminButton, AdminCard, AdminDock, AdminFacts, AdminInfo, AdminMoreMenu, AdminTrace, type AdminTone } from '@/components/admin/admin-ui';
 import { AdminReportQueue } from '@/components/admin/admin-report-queue';
+import { AdminRentTrustQueue } from '@/components/admin/admin-rent-trust-queue';
 import { AdminMerchantReviewContent } from '@/components/admin/admin-merchant-review-content';
 import { AdminMerchantReviewReplyContent } from '@/components/admin/admin-merchant-review-reply-content';
 import { AdminTrendingPanel } from '@/components/admin/admin-trending-panel';
@@ -278,7 +279,7 @@ export function AdminSectionView({
   }
 
   if (section === 'reports') {
-    return <View style={styles.section}><SectionHeading title="신고 관리" description={`전체 ${data.counts.reports}건 · 미처리 ${data.counts.openReports}건`} /><AdminReportQueue reports={data.reports} profiles={profiles} actions={data.moderationActions} resolving={resolving} onUser={onUser} onResolve={onResolve} localPreview={localPreview} /><LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} /></View>;
+    return <View style={styles.section}><SectionHeading title="신고 관리" description={`전체 ${data.counts.reports}건 · 미처리 ${data.counts.openReports}건`} /><AdminRentTrustQueue onUser={onUser} localPreview={localPreview} /><AdminReportQueue reports={data.reports} profiles={profiles} actions={data.moderationActions} resolving={resolving} onUser={onUser} onResolve={onResolve} localPreview={localPreview} /><LoadMore loading={loadingMore} noMore={noMore} onPress={onLoadMore} /></View>;
   }
 
   const search = <TextInput value={query} onChangeText={setQuery} placeholder="닉네임, 제목, 내용 또는 ID 검색" placeholderTextColor={Colors.admin.textSecondary} accessibilityRole="search" accessibilityLabel="관리 데이터 검색" returnKeyType="search" style={styles.search} />;
