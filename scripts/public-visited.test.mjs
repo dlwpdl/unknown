@@ -140,6 +140,16 @@ test('initial static export never starts the web map and preserves an honest emp
   for (const forbidden of ['getCurrentPosition', 'requestForegroundPermissions', 'getSession', 'loadDiscoveryPosts', 'create_meetup_with_post']) assert.ok(!source.includes(forbidden), forbidden);
 });
 
+test('the static export lists each visit with its video and OpenStreetMap source, without the loading line', () => {
+  const tree = app({ hydrated: false }).render();
+  assert.ok(!text(tree).includes('최신 장소 정보를 확인하고 있어요'));
+  const sources = nodes(tree).find(node => node.props?.className === 'visited-sources');
+  const links = nodes(sources).filter(node => node.type === 'a').map(node => node.props.href);
+  assert.deepEqual(links, [visit.glingVisited.sourceUrl, visit.sourceUrl, 'https://www.openstreetmap.org/copyright']);
+  assert.ok(text(sources).includes(visit.name) && text(sources).includes('© OpenStreetMap contributors'));
+  assert.ok(text(app().render()).includes('최신 장소 정보를 확인하고 있어요'), 'a running page still says it is checking');
+});
+
 test('catalog refresh uses the public client and passes untrusted data through the existing validator', async () => {
   const ui = app(); ui.render();
   const cleanup = ui.effects[0]();
