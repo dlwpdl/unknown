@@ -243,9 +243,9 @@ try{
    const number={id,type:'symbol',source,minzoom:14,filter:['>', ['get','discount'],0],layout:{'icon-image':['concat','discount-',['to-string',['get','discount']]],'icon-anchor':'right','icon-offset':[-20,10],'icon-allow-overlap':selection,'icon-ignore-placement':selection}};
    if(selection){add(dot);add(number)}else{both(dot,true,false);both(number,true,false)}
   }
-  // Names are placed before the counts under them, so each count circle gets an invisible box in the top layer, placed first, and a name that would cover it steps aside (QA C17-1).
-  const countRoom=(source,stage)=>add({id:source+'-room',type:'symbol',source,filter:['has','point_count'],...stage,layout:{'icon-image':'saved-mark','icon-size':['step',['get','point_count'],1.4,10,1.7,50,2],'icon-allow-overlap':true},paint:{'icon-opacity':0}});
-  countRoom('discovery-grouped',{});countRoom('discovery-top',{maxzoom:NEAR});countRoom('discovery-top-near',{minzoom:NEAR});
+  // Names are placed before the counts under them, so up close each count circle gets an invisible box in the top layer, placed first, and a name that would cover it steps aside (QA C17-1).
+  // Only from NEAR: further out the mid picture pins collide too, and a box there would drop them back to dots.
+  for(const source of ['discovery-grouped','discovery-top-near'])add({id:source+'-room',type:'symbol',source,minzoom:NEAR,filter:['has','point_count'],layout:{'icon-image':'saved-mark','icon-size':['step',['get','point_count'],1.4,10,1.7,50,2],'icon-allow-overlap':true},paint:{'icon-opacity':0}});
   for(const c of config.cities){
    const el=document.createElement('button');el.className='city-pill';el.type='button';el.disabled=!c.open;el.textContent=c.open?c.name:c.name+' · ${language === 'en' ? 'Coming soon' : '준비 중'}';
    el.setAttribute('data-city',c.id);el.setAttribute('aria-label',c.open?${language === 'en' ? "'Open the '+c.name+' map'" : "c.name+' 지도로 가기'"}:c.name+', ${language === 'en' ? 'coming soon' : '준비 중'}');

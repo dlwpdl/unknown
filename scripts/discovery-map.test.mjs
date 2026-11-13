@@ -395,7 +395,7 @@ test('crowded TOP 50 places fold only among themselves into a gold count with no
     assert.ok(index('discovery-counts') < index(source + '-clusters') && index(source + '-counts') < index('discovery-pins-grouped'), 'gold counts sit above grey ones and under the places');
   }
   // Only the circle, its number, the tap area and its invisible room draw a folded count: a gold count carries no name tag.
-  assert.deepEqual(Array.from(c.layers.filter(value => tops.includes(value.source) && !JSON.stringify(value.filter ?? null).includes('["!",["has","point_count"]]')).map(value => value.id)), ['discovery-top-clusters', 'discovery-top-counts', 'discovery-top-near-clusters', 'discovery-top-near-counts', 'discovery-hit-top', 'discovery-hit-top-near', 'discovery-top-room', 'discovery-top-near-room']);
+  assert.deepEqual(Array.from(c.layers.filter(value => tops.includes(value.source) && !JSON.stringify(value.filter ?? null).includes('["!",["has","point_count"]]')).map(value => value.id)), ['discovery-top-clusters', 'discovery-top-counts', 'discovery-top-near-clusters', 'discovery-top-near-counts', 'discovery-hit-top', 'discovery-hit-top-near', 'discovery-top-near-room']);
   // Every mark a single TOP 50 place has comes from its copy on the source of each stage the mark shows at; saved and discount marks never fold, so they have none.
   // Circles (dot, ring, state dot) are drawn by both copies at every zoom and fade by stage, so the tile on screen while crossing 13 still holds them; names and mid picture pins keep their own zoom range, as before.
   const stage = (value, mid) => { const v = value ?? 1, [m, n] = Array.isArray(v) && v[0] === 'step' ? [v[2], v[4]] : [v, v]; return JSON.stringify(mid ? ['step', ['zoom'], m, 13, 0] : ['step', ['zoom'], 0, 13, n]); };
@@ -600,11 +600,13 @@ test('a place name gives way to a count circle instead of covering it (QA C17-1)
   const c = canvas([marker, { ...marker, id: 'place:2' }]), index = id => c.layers.findIndex(layer => layer.id === id);
   const names = c.layers.filter(layer => layer.type === 'symbol' && layer.layout['text-field'] && !layer.id.startsWith('discovery-selected')).map(layer => layer.id);
   assert.ok(names.includes('discovery-labels') && names.includes('discovery-art-featured-labels'));
-  for (const [source, zoom] of [['discovery-grouped', [8, undefined]], ['discovery-top', [8, 13]], ['discovery-top-near', [13, undefined]]]) {
+  // Further out the mid picture pins (icon-allow-overlap false) would collide with a room and drop back to dots, so the rooms start at NEAR.
+  assert.equal(index('discovery-top-room'), -1, 'no room for the mid gold count');
+  for (const source of ['discovery-grouped', 'discovery-top-near']) {
     const room = c.layers[index(source + '-room')];
-    assert.ok(room, source + ': every count has a room');
+    assert.ok(room, source + ': every close-up count has a room');
     assert.equal(JSON.stringify(room.filter), '["has","point_count"]');
-    assert.deepEqual([room.minzoom, room.maxzoom], zoom, source + ': only at the stage its count shows');
+    assert.deepEqual([room.minzoom, room.maxzoom], [13, undefined], source + ': up close only');
     assert.equal(room.layout['icon-allow-overlap'], true, 'the count is always drawn, so its box always counts');
     assert.notEqual(room.layout['icon-ignore-placement'], true, 'its box is kept for the names placed after it');
     assert.equal(room.paint['icon-opacity'], 0);
