@@ -3887,7 +3887,7 @@ export const uiEnglish: Record<string, string> = {
   "아래 지도 탭": "Map tab at the bottom",
   "집 매물, 중고 물건, 가볼 만한 곳, 행사가 지도 한 장에 다 나와요. 보고 싶은 것만 지도 위쪽에서 골라도 돼요.": "Homes, used items, places to visit and events all show up on one map. Pick just what you want from the top of the map.",
   "'+ 글쓰기' 버튼": "“+ Write” button",
-  "홈 오른쪽 아래에 떠 있어요. 안 보이면 화면을 아래로 내렸다가 살짝 올려 보세요. 궁금한 걸 묻거나 집·일자리·중고 글을 올려요. 주제를 고르면 맞는 칸이 나와요.": "It floats at the bottom right of Home. If you can’t see it, scroll down, then back up a little. Ask a question, or post about a home, job or used item. Pick a topic and the right fields appear.",
+  "홈 오른쪽 아래에 떠 있어요. 글을 내려 읽는 동안엔 잠깐 숨고, 위로 올리면 다시 나와요. 궁금한 걸 묻거나 집·일자리·중고 글을 올려요. 주제를 고르면 맞는 칸이 나와요.": "It floats at the bottom right of Home. It hides while you scroll down and comes back when you scroll up. Ask a question, or post about a home, job or used item. Pick a topic and the right fields appear.",
   // 홈 작은 변경 (owner 2026-10-30)
   "{0}에서 집·일자리·중고 찾기": "Search homes, jobs & more in {0}",
   "검색 화면이 열려요": "Opens search",
