@@ -176,21 +176,52 @@ language plpgsql stable security definer set search_path='' as $$ declare uid uu
   order by f.created_at desc,f.id limit 10) x);
 end $$;
 
+-- 4) "내 폴더로 저장": copies the places a friend's folder shows right now into a new folder of the caller's.
+-- It is a copy: the friend's later edits never reach it. It starts private, because the picks are the friend's.
+-- The copied places are saved into the caller's library too (a folder only holds saved items); places already
+-- saved keep their saved time. Up to 100 places per copy, the newest first; one the app cannot show is skipped.
+create function public.copy_saved_folder(p_folder_id uuid) returns jsonb
+language plpgsql security definer set search_path='' as $$ declare uid uuid:=private.saved_owner(true); f private.saved_folders;
+ item private.saved_folders; v_role text; v_suffix text; v_total integer; v_copied integer:=0; x record; begin
+ v_role:=private.saved_folder_role(uid,p_folder_id);
+ if v_role is null or v_role='owner' then raise exception 'FOLDER_UNAVAILABLE'; end if;
+ if (select count(*) from private.saved_folders where user_id=uid)>=100 then raise exception 'SAVED_FOLDER_LIMIT'; end if;
+ perform private.enforce_rate_limit('saved_folder_copy',20,interval '1 day');
+ select * into f from private.saved_folders where id=p_folder_id;
+ select ' · '||left(coalesce(nullif(btrim(p.nickname),''),'친구'),30) into v_suffix from public.profiles p where p.id=f.user_id;
+ insert into private.saved_folders(user_id,name,visibility) values(uid,btrim(left(f.name,80-char_length(v_suffix)))||v_suffix,'private') returning * into item;
+ select count(*) into v_total from private.saved_folder_places(p_folder_id);
+ for x in select * from private.saved_folder_places(p_folder_id) order by added_at desc,coalesce(merchant_id::text,place_key) limit 100 loop
+  continue when private.saved_card(case when x.merchant_id is not null then private.saved_ref('merchant',x.merchant_id::text,null)
+   else private.saved_ref('place',x.place_key,x.city_id) end) is null;
+  if x.merchant_id is not null then
+   insert into private.saved_merchants(user_id,merchant_id) values(uid,x.merchant_id) on conflict do nothing;
+   insert into private.saved_folder_items(user_id,folder_id,merchant_id) values(uid,item.id,x.merchant_id) on conflict do nothing;
+  else
+   insert into private.saved_places(user_id,city_id,place_key) values(uid,x.city_id,x.place_key) on conflict do nothing;
+   insert into private.saved_folder_items(user_id,folder_id,place_city_id,place_key) values(uid,item.id,x.city_id,x.place_key) on conflict do nothing;
+  end if;
+  v_copied:=v_copied+1;
+ end loop;
+ return private.saved_folder_json(item)||jsonb_build_object('copied',v_copied,'total',v_total);
+end $$;
+
 do $$ declare signature text; begin
  foreach signature in array array['private.saved_folder_places(uuid)','private.saved_folder_role(uuid,uuid)','private.saved_folder_json(private.saved_folders)',
   'public.save_saved_folder(uuid,text,text,text)','public.set_saved_folder_cover(uuid,text,text)','public.get_saved_folder(uuid)','public.get_friend_saved_folders(uuid)',
-  'public.set_saved_note(text,text,text,text)','public.get_place_friend_folders(text,text)'] loop
+  'public.set_saved_note(text,text,text,text)','public.get_place_friend_folders(text,text)',
+  'public.copy_saved_folder(uuid)'] loop
   execute 'alter function '||signature||' owner to postgres';
   execute 'revoke all on function '||signature||' from public,anon,authenticated,service_role';
  end loop;
 end $$;
 grant execute on function public.save_saved_folder(uuid,text,text,text),public.set_saved_folder_cover(uuid,text,text),public.get_saved_folder(uuid),public.get_friend_saved_folders(uuid),
- public.set_saved_note(text,text,text,text),public.get_place_friend_folders(text,text) to authenticated;
+ public.set_saved_note(text,text,text,text),public.get_place_friend_folders(text,text),public.copy_saved_folder(uuid) to authenticated;
 
 -- An unknown target rejects the whole analytics batch, so these must reach production before the app build.
 insert into private.behavior_targets(id) values
  ('saved.editor.visibility.on'),('saved.editor.visibility.off'),('saved.folder.open'),('folder.scroll'),('folder.place.open'),('user.folder.open'),
  ('folder.cover.open'),('folder.cover.scroll'),('folder.cover.pick'),
- ('saved.note'),('saved.note.close'),('saved.note.submit'),('saved.note.delete'),('places.friend-folder.open')
+ ('saved.note'),('saved.note.close'),('saved.note.submit'),('saved.note.delete'),('places.friend-folder.open'),('folder.copy'),('folder.copy.open')
 on conflict (id) do nothing;
 notify pgrst,'reload schema';

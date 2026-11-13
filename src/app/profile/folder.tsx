@@ -19,7 +19,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { loadSavedFolder, setSavedFolderCover, type FolderCover as Cover, type FolderDetail } from '@/lib/saved-items';
+import { copySavedFolder, loadSavedFolder, setSavedFolderCover, type FolderCopy, type FolderCover as Cover, type FolderDetail } from '@/lib/saved-items';
 import { supabase } from '@/lib/supabase';
 
 // One saved folder as the server lets this member see it: the owner's own, or a friend's folder shown to friends.
@@ -30,6 +30,7 @@ export default function SavedFolderScreen() {
   const { isAuthed, isAuthLoading, me } = useAuth(), { play } = useInteractionFeedback();
   const [revision, setRevision] = useState(0);
   const [picking, setPicking] = useState(false), [coverBusy, setCoverBusy] = useState(false), [coverError, setCoverError] = useState('');
+  const [copyBusy, setCopyBusy] = useState(false), [copied, setCopied] = useState<FolderCopy | null>(null), [copyError, setCopyError] = useState('');
   const folderId = typeof id === 'string' ? id : '';
   const key = `${isAuthed ? me.id : 'guest'}:${folderId}:${revision}`;
   const [state, setState] = useState<{ key: string; folder: FolderDetail | null; failed: boolean } | null>(null);
@@ -53,6 +54,17 @@ export default function SavedFolderScreen() {
     try { await setSavedFolderCover(supabase, folder.id, value); play('success'); setPicking(false); setRevision(previous => previous + 1); }
     catch { play('warning'); setCoverError(tr('표지를 바꾸지 못했어요. 다시 시도해 주세요.')); }
     finally { setCoverBusy(false); }
+  };
+  const copyFolder = async () => {
+    if (!folder || copyBusy) return;
+    setCopyBusy(true); setCopyError('');
+    try { setCopied(await copySavedFolder(supabase, folder.id)); play('success'); }
+    catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      play('warning');
+      setCopyError(message.includes('SAVED_FOLDER_LIMIT') ? tr('폴더는 100개까지 만들 수 있어요. 안 쓰는 폴더를 지우고 다시 해 주세요.')
+        : message.includes('RATE_LIMITED') ? tr('오늘은 더 저장할 수 없어요. 내일 다시 해 주세요.') : tr('저장하지 못했어요. 다시 시도해 주세요.'));
+    } finally { setCopyBusy(false); }
   };
   return <ThemedView style={styles.root}><SafeAreaView edges={['bottom']} style={styles.safe}>
     <Stack.Screen options={{ title: folder?.name ?? tr('폴더') }} />
@@ -80,6 +92,16 @@ export default function SavedFolderScreen() {
             {folder.role === 'owner' && photos.length > 1 && <View style={styles.actions}>
               <SavedLibraryButton analyticsId="folder.cover.open" label={tr('표지 바꾸기')} onPress={() => { setCoverError(''); setPicking(true); }} />
             </View>}
+            {/* A friend keeps a copy of what is here now; the friend's later edits never reach it. */}
+            {folder.role !== 'owner' && rows.length > 0 && (copied ? <View style={styles.copy}>
+              <ThemedText type="supporting" accessibilityRole="alert">{tr('내 폴더 「{0}」에 장소 {1}곳을 저장했어요.', copied.folder.name, copied.copied.toLocaleString(locale))}
+                {copied.copied < copied.total ? ` ${tr('한 번에 100곳까지, 지금 열 수 있는 곳만 저장돼요.')}` : ''}</ThemedText>
+              <View style={styles.actions}><SavedLibraryButton analyticsId="folder.copy.open" label={tr('내 폴더 보기')} onPress={() => router.push({ pathname: '/profile/folder', params: { id: copied.folder.id } })} /></View>
+            </View> : <View style={styles.copy}>
+              <View style={styles.actions}><SavedLibraryButton analyticsId="folder.copy" primary label={copyBusy ? tr('저장 중…') : tr('내 폴더로 저장')} disabled={copyBusy} onPress={() => void copyFolder()} /></View>
+              <ThemedText type="supporting" themeColor="textSecondary">{tr('지금 들어 있는 장소를 나만 보는 새 폴더로 복사해요. 친구가 나중에 바꿔도 내 폴더는 그대로예요.')}</ThemedText>
+              {!!copyError && <ThemedText type="supporting" accessibilityRole="alert">{copyError}</ThemedText>}
+            </View>)}
           </View>
           {rows.length ? <ListCard>{rows.map(row => <ListRow key={row.merchantId ?? `${row.cityId}:${row.placeKey}`} analyticsId="folder.place.open" title={row.title} detail={row.subtitle || undefined}
             leading={row.place ? <CityPlacePhoto place={row.place} style={styles.thumb} />
@@ -113,6 +135,7 @@ const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0, gap: Spacing.one },
   cover: { width: 88, height: 88, borderRadius: 16 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  copy: { gap: Spacing.two },
   sheet: { gap: Spacing.three, paddingBottom: Spacing.two },
   picker: { maxHeight: 420 },
   thumb: { width: 44, height: 44, borderRadius: 10 },

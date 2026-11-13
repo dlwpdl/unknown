@@ -4698,5 +4698,12 @@ export const uiEnglish: Record<string, string> = {
   "표지를 바꾸지 못했어요. 다시 시도해 주세요.": "Couldn't change the cover. Please try again.",
   "이 폴더에 넣은 장소 사진 중에서 골라요. 고르지 않으면 가장 최근에 저장한 장소가 표지가 돼요.": "Pick from photos of the places in this folder. If you don't pick one, the place you saved most recently is the cover.",
   "{0}, 지금 표지": "{0}, current cover",
-  "이 장소를 넣은 친구 폴더": "Friend folders with this place"
+  "이 장소를 넣은 친구 폴더": "Friend folders with this place",
+  "폴더는 100개까지 만들 수 있어요. 안 쓰는 폴더를 지우고 다시 해 주세요.": "You can have up to 100 folders. Delete one you don't use and try again.",
+  "오늘은 더 저장할 수 없어요. 내일 다시 해 주세요.": "You can't save more today. Try again tomorrow.",
+  "내 폴더 「{0}」에 장소 {1}곳을 저장했어요.": "Saved {1} places to your folder “{0}”.",
+  "한 번에 100곳까지, 지금 열 수 있는 곳만 저장돼요.": "Up to 100 places at a time, and only ones that can be opened now.",
+  "내 폴더 보기": "View my folder",
+  "내 폴더로 저장": "Save to my folders",
+  "지금 들어 있는 장소를 나만 보는 새 폴더로 복사해요. 친구가 나중에 바꿔도 내 폴더는 그대로예요.": "Copies the places in it now to a new folder only you can see. Your copy stays the same even if your friend changes theirs."
 };

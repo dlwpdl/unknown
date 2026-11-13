@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { loadSavedItems, loadSavedItemState, loadSavedPlaceState, setSavedPlaceState, setSavedItem, loadSavedFolders, saveSavedFolder, loadSavedFolder, loadFriendFolders, setSavedFolderCover, setSavedNote, loadPlaceFriendFolders, deleteSavedFolder, setSavedItemFolders } from '../src/lib/saved-items.ts';
+import { loadSavedItems, loadSavedItemState, loadSavedPlaceState, setSavedPlaceState, setSavedItem, loadSavedFolders, saveSavedFolder, loadSavedFolder, loadFriendFolders, setSavedFolderCover, setSavedNote, loadPlaceFriendFolders, copySavedFolder, deleteSavedFolder, setSavedItemFolders } from '../src/lib/saved-items.ts';
 
 const merchant = 'e2310000-0000-4000-8000-000000000001';
 const person = 'e2300000-0000-4000-8000-000000000002';
@@ -150,4 +150,16 @@ test('friend folders on a place carry their owner, at most ten, and a bad place 
   for (const bad of [[{ ...row, owner: null }], Array(11).fill(row)]) await assert.rejects(loadPlaceFriendFolders(client(bad), 'vancouver', 'osm:node:42'), /INVALID_SAVED_RESPONSE/);
   await assert.rejects(loadPlaceFriendFolders(c, 'vancouver', 'osm:node:0'), /INVALID_SAVED_TARGET/);
   assert.equal(c.calls.length, 1);
+});
+
+test('a copy is a new private folder of mine, and counts the server sends are checked', async () => {
+  const mine = 'e2320000-0000-4000-8000-000000000002';
+  const reply = { id: mine, name: 'Food · 친구', visibility: 'private', description: null, cover: null, placeCount: 2, copied: 2, total: 3 };
+  const c = client(reply);
+  assert.deepEqual(await copySavedFolder(c, folder), { folder: { id: mine, name: 'Food · 친구', visibility: 'private', description: null }, copied: 2, total: 3 });
+  assert.deepEqual(c.calls[0], ['copy_saved_folder', { p_folder_id: folder }]);
+  for (const bad of [{ ...reply, id: folder }, { ...reply, visibility: 'friends' }, { ...reply, copied: 4 }, { ...reply, copied: 101, total: 200 }, { ...reply, total: undefined }]) {
+    await assert.rejects(copySavedFolder(client(bad), folder), /INVALID_SAVED_RESPONSE/);
+  }
+  await assert.rejects(copySavedFolder(c, 'not-a-folder'), /INVALID_SAVED_FOLDER/);
 });

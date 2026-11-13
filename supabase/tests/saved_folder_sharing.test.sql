@@ -2,6 +2,11 @@ begin;
 set local search_path=public,extensions;
 select no_plan();
 insert into public.cities values('sfs-test','Folder test','BC','America/Vancouver',true);
+-- The test city's places in the app catalog, so saved cards (and copies, which skip what the app cannot show) resolve.
+insert into private.city_place_catalog(payload,refreshed_on) values(jsonb_build_object('collectedAt','2026-11-13','cities',jsonb_build_object('sfs-test',jsonb_build_object('places',
+ (select jsonb_agg(jsonb_build_object('id','osm:node:'||n,'cityId','sfs-test','category','cafe','name','시험 카페 '||n,'address','1 Test St',
+   'latitude',49.28,'longitude',-123.12,'sourceUrl','https://www.openstreetmap.org/node/'||n)) from unnest(array[830001,830002,830003]) n)))),current_date)
+on conflict(id) do update set payload=jsonb_set(private.city_place_catalog.payload,'{cities,sfs-test}',excluded.payload->'cities'->'sfs-test');
 insert into auth.users(id,email) values
  ('e5170000-0000-4000-8000-000000000001','sfs-owner@example.test'),
  ('e5170000-0000-4000-8000-000000000002','sfs-friend@example.test'),
@@ -68,6 +73,7 @@ select is(public.get_saved_folder('e5180000-0000-4000-8000-000000000002')->'cove
 select is(public.set_saved_folder_cover('e5180000-0000-4000-8000-000000000002','sfs-test','osm:node:830002')->'cover'->>'placeKey','osm:node:830002','the owner picks a place in the folder as the cover');
 select throws_ok($$select public.set_saved_folder_cover('e5180000-0000-4000-8000-000000000002','sfs-test','osm:node:830003')$$,'P0001','FOLDER_COVER_UNAVAILABLE','a saved place outside the folder cannot be the cover');
 select throws_ok($$select public.set_saved_folder_cover('e5180000-0000-4000-8000-000000000002','sfs-test',null)$$,'P0001','INVALID_SAVED_FOLDER_COVER','a half cover is refused');
+select throws_ok($$select public.copy_saved_folder('e5180000-0000-4000-8000-000000000002')$$,'P0001','FOLDER_UNAVAILABLE','the owner does not copy their own folder');
 select is(public.set_saved_note('place','osm:node:830001','  창가 자리가 좋아요  ','sfs-test')->>'note','창가 자리가 좋아요','the owner writes a memo on a saved place');
 -- This test city has no place catalog rows, so the list shows the saved person; a memo rides on any saved card the same way.
 select is(public.set_saved_note('user','e5170000-0000-4000-8000-000000000003','동네 모임에서 만남',null)->>'note','동네 모임에서 만남','a memo on a saved person');
@@ -95,6 +101,12 @@ select throws_ok($$select public.set_saved_note('place','osm:node:830001','덮�
 select ok(strpos(public.get_saved_items()::text,'창가')=0,'and the friend''s own list has no memo of the owner''s');
 select is((public.get_friend_saved_folders('e5170000-0000-4000-8000-000000000001')->0)->'cover'->>'placeKey','osm:node:830002','and sees the picked cover on the profile');
 select throws_ok($$select public.set_saved_folder_cover('e5180000-0000-4000-8000-000000000002',null,null)$$,'P0001','FOLDER_UNAVAILABLE','a friend cannot change the cover');
+select set_config('sfs.copy',public.copy_saved_folder('e5180000-0000-4000-8000-000000000002')::text,true) is not null;
+select is((select jsonb_build_array(c->>'name',c->>'visibility',c->'copied',c->'total') from (select current_setting('sfs.copy')::jsonb c) x),
+ '["같이 볼 곳 · 폴더주인","private",2,2]'::jsonb,'a friend copies the folder''s places into a private folder named after the owner');
+select is(jsonb_array_length(public.get_saved_items('places')->'items'),2,'and the copied places are saved in the friend''s own list');
+select throws_ok($$select public.copy_saved_folder('e5180000-0000-4000-8000-000000000001')$$,'P0001','FOLDER_UNAVAILABLE','a private folder cannot be copied');
+select throws_ok($$select public.copy_saved_folder((current_setting('sfs.copy')::jsonb->>'id')::uuid)$$,'P0001','FOLDER_UNAVAILABLE','the copy is the friend''s own, not something to copy again');
 select throws_ok($$select public.get_saved_folder('e5180000-0000-4000-8000-000000000001')$$,'P0001','FOLDER_UNAVAILABLE','a friend cannot open a private folder');
 select throws_ok($$select public.get_saved_folder('e5180000-0000-4000-8000-000000000005')$$,'P0001','FOLDER_UNAVAILABLE','a folder of someone who hides saved places stays hidden');
 select is((select jsonb_agg(x->>'name') from jsonb_array_elements(public.get_friend_saved_folders('e5170000-0000-4000-8000-000000000001')) x),'["같이 볼 곳"]'::jsonb,
@@ -106,17 +118,26 @@ select throws_ok($$select public.save_saved_folder(null,' ','friends',null)$$,'P
 select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000003","role":"authenticated"}',true);
 select throws_ok($$select public.get_saved_folder('e5180000-0000-4000-8000-000000000002')$$,'P0001','FOLDER_UNAVAILABLE','someone who is not a friend cannot open it');
 select is(public.get_place_friend_folders('sfs-test','osm:node:830001'),'[]'::jsonb,'nor find it from the place screen');
+select throws_ok($$select public.copy_saved_folder('e5180000-0000-4000-8000-000000000002')$$,'P0001','FOLDER_UNAVAILABLE','nor copy it');
 select is(public.get_friend_saved_folders('e5170000-0000-4000-8000-000000000001'),'[]'::jsonb,'nor see the folder list');
 
 select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000004","role":"authenticated"}',true);
 select throws_ok($$select public.get_saved_folder('e5180000-0000-4000-8000-000000000002')$$,'P0001','FOLDER_UNAVAILABLE','a blocked pair cannot open it');
 select is(public.get_place_friend_folders('sfs-test','osm:node:830001'),'[]'::jsonb,'nor find it from the place screen');
+select throws_ok($$select public.copy_saved_folder('e5180000-0000-4000-8000-000000000002')$$,'P0001','FOLDER_UNAVAILABLE','nor copy it');
 select is(public.get_friend_saved_folders('e5170000-0000-4000-8000-000000000001'),'[]'::jsonb,'nor see the folder list');
 
 reset role;
 delete from private.saved_folder_items where folder_id='e5180000-0000-4000-8000-000000000002' and place_key='osm:node:830002';
 select is((select private.saved_folder_json(f)->'cover'->>'placeKey' from private.saved_folders f where id='e5180000-0000-4000-8000-000000000002'),'osm:node:830001',
  'once the picked place leaves the folder, the newest place is the cover again');
+select is((select count(*)::integer from private.saved_folder_items where folder_id=(current_setting('sfs.copy')::jsonb->>'id')::uuid),2,
+ 'the friend''s copy keeps both places after the owner takes one out');
+insert into private.saved_folders(user_id,name) select 'e5170000-0000-4000-8000-000000000002','채우기 '||n from generate_series(1,99) n;
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select throws_ok($$select public.copy_saved_folder('e5180000-0000-4000-8000-000000000002')$$,'P0001','SAVED_FOLDER_LIMIT','a copy past 100 folders is refused');
+reset role;
 
 
 -- An unsaved item's memo goes away the next time the owner writes one.

@@ -206,6 +206,16 @@ export async function loadPlaceFriendFolders(client: SupabaseClient, cityId: str
     return { ...card, owner: { id: row.owner.id.toLowerCase(), nickname: row.owner.nickname } };
   });
 }
+export type FolderCopy = { folder: SavedFolder; copied: number; total: number };
+// Copies the places a friend's folder shows now into a new private folder of this member's. At most 100 per copy.
+export async function copySavedFolder(client: SupabaseClient, id: string): Promise<FolderCopy> {
+  const value = await call(client, 'copy_saved_folder', { p_folder_id: folderId(id) });
+  const card = folderCard(value);
+  if (!object(value) || card.id === id.toLowerCase() || card.visibility !== 'private') invalid();
+  const copied = count(value.copied), total = count(value.total);
+  if (copied > 100 || copied > total) invalid();
+  return { folder: { id: card.id, name: card.name, visibility: card.visibility, description: card.description }, copied, total };
+}
 export async function deleteSavedFolder(client: SupabaseClient, id: string): Promise<void> {
   if (await call(client, 'delete_saved_folder', { p_folder_id: folderId(id) }) !== true) throw new Error('FOLDER_DELETE_NOT_VERIFIED');
 }
