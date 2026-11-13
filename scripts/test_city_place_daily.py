@@ -218,6 +218,17 @@ class DailyPlaces(unittest.TestCase):
         removed = m.build_catalog(seed, closed, now)['cities']['vancouver']
         self.assertEqual((removed['morePlaces'], removed['moreRecommendations'], removed['morePhotos']), ([], [], []))
 
+    def test_osm_phone_and_instagram_reach_the_catalog_only_in_the_app_shape(self):
+        m = implementation(); seed, osm, now = self.fixture()
+        osm[0]['tags'].update({'phone': '+1 604-555-0100;+1 604-555-0199', 'contact:instagram': 'https://www.instagram.com/Verified.Cafe/?hl=en'})
+        place = m.build_catalog(seed, osm, now)['cities']['vancouver']['places'][0]
+        self.assertEqual((place['phone'], place['instagram']), ('+1 604-555-0100', 'https://www.instagram.com/verified.cafe/'))
+        self.assertEqual([m.osm_instagram(v) for v in ['@cafe_1', 'cafe_1', 'instagram.com/reel', 'https://evil.example/cafe', 'a..b', None]],
+                         ['https://www.instagram.com/cafe_1/', 'https://www.instagram.com/cafe_1/', None, None, None, None])
+        self.assertEqual([m.osm_phone(v) for v in ['604-555-0100', '12345', 'call us', 'x' * 41]], ['604-555-0100', None, None, None])
+        osm[0]['tags'] = dict(name='Verified Cafe', amenity='cafe')
+        self.assertNotIn('phone', m.build_catalog(seed, osm, now)['cities']['vancouver']['places'][0])
+
     def fixture(self):
         now = '2026-10-18T01:00:00+00:00'
         place = dict(id='osm:node:1', cityId='vancouver', name='Verified Cafe', category='cafe', latitude=49.28, longitude=-123.12, address='Address', sourceUrl='https://www.openstreetmap.org/node/1')

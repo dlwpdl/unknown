@@ -674,6 +674,21 @@ test('native detail searches Google maps by name, available address and Canadian
   assert.equal(header.props.analyticsId, 'places.detail.back');
   assert.deepEqual(JSON.parse(JSON.stringify(header.props.fallback)), { pathname: '/places', params: { cityId: 'toronto' } });
 });
+test('a place photo opens full screen with its credit and closes again; a guest gets no 정보가 달라요 row', () => {
+  const p = data().getCityPlaces('toronto').find(place => place.photo);
+  const ui = screen('src/app/places/[id].tsx', { cityId: 'toronto', id: p.id });
+  const viewer = tree => nodes(tree).find(n => n.type === 'CityPlacePhoto' && n.props?.contentFit === 'contain');
+  let tree = ui.render();
+  assert.equal(viewer(tree), undefined);
+  assert.equal(nodes(tree).some(n => n.type === 'PlaceCorrection'), false, 'only signed-in members can send corrections');
+  nodes(tree).find(n => n.props?.analyticsId === 'post.photo.open').props.onPress();
+  tree = ui.render();
+  assert.ok(viewer(tree), 'the tapped photo shows whole on the full-screen stage');
+  assert.ok(nodes(tree).filter(n => n.type === 'PostPhotoCredits').length >= 2, 'the credit stays reachable full screen');
+  nodes(tree).find(n => n.props?.analyticsId === 'post.photo.close').props.onPress();
+  assert.equal(viewer(ui.render()), undefined);
+  assert.deepEqual(ui.feedback.slice(-2), ['selection', 'selection']);
+});
 test('places without street addresses still search their names in the correct city, including French and Saint John NB', () => {
   for (const cityId of ['toronto', 'montreal', 'saint-john']) {
     const city = cities.find(c => c.id === cityId), place = data().getCityPlaces(cityId).find(p => !p.address);
@@ -1263,16 +1278,20 @@ test('G2 place saves: friends by name, similar places named from the catalog, li
     '@/hooks/use-language': { useLanguage: () => ({ tr, language: 'ko', locale: 'ko-KR' }) }, '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/city-places': { getCityPlaces: () => catalogPlaces }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: v => feedback.push(v) }) },
     '@/lib/profile-friends': { loadPlaceSaves: async () => null }, '@/lib/supabase': { supabase: {} },
+    '@/lib/feed-data': { relativeTime: (value, _now, locale) => `${value.slice(0, 10)}:${locale}` }, '@/lib/discovery': { placeCategory: () => 'cafe' },
   });
   const nodes = tree => { const out = []; const walk = n => { if (Array.isArray(n)) n.forEach(walk); else if (n && typeof n === 'object') { out.push(n); walk(n.props?.children); } }; walk(tree); return out; };
   const text = tree => nodes(tree).filter(n => n.type === 'ThemedText').map(n => [n.props.children].flat().join('')).join(' | ');
   const place = { id: 'osm:node:1', cityId: 'vancouver', name: 'First', category: 'food', recommendation: { placeId: 'osm:node:1' }, glingVisited: { sourceUrl: 'https://gling.ca' },
     intro: { vibe: '조용해요', when: '평일 저녁', sourceUrl: 'https://example.ca/menu' } };
   const saves = { saverCount: 12, weekCount: 2, firstIsMe: true, friends: [{ id: 'u1', nickname: '민지', savedAt: '2026-11-04T00:00:00Z', first: true }],
-    similar: [{ placeKey: 'osm:node:9', saverCount: 9, weekCount: 0 }, { placeKey: 'osm:node:2', saverCount: 5, weekCount: 1 }, { placeKey: 'osm:node:3', saverCount: 3, weekCount: 0 }] };
+    similar: [{ placeKey: 'osm:node:9', saverCount: 9, weekCount: 0 }, { placeKey: 'osm:node:2', saverCount: 5, weekCount: 1 }, { placeKey: 'osm:node:3', saverCount: 3, weekCount: 0 }],
+    kinds: { beenCount: 4, wantCount: 8 }, rank: null };
   const top = ui.PlaceSavedBy({ place, saves }), top_text = text(top);
   assert.match(top_text, /저장한 사람 12명 · 이번 주 \+2/);
-  assert.match(top_text, /민지님이 처음 저장/, 'G5: a sharing friend who saved it first is marked');
+  assert.match(top_text, /가 봤어요 4명 · 가 보고 싶어요 8명/, 'the savers split into been and want to go');
+  assert.match(top_text, /민지님이 처음 저장 · 2026-11-04:ko-KR/, 'G5: a sharing friend who saved it first is marked, with when they saved it');
+  assert.ok(!text(ui.PlaceSavedBy({ place, saves: { ...saves, kinds: null } })).includes('가 봤어요'), 'an older server shows the total only');
   assert.match(top_text, /내가 처음 저장했어요/);
   assert.match(top_text, /분위기 \| 조용해요 \| 언제 갈까 \| 평일 저녁/, 'a missing line is left out, never guessed');
   assert.ok(!top_text.includes('뭘 시킬까'));

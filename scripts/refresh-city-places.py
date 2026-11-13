@@ -23,6 +23,24 @@ def https(value):
     u = urlsplit(value)
     return u.scheme == 'https' and bool(u.hostname) and not u.username and not u.password
 
+# Same paths the app's instagramPostLink refuses (supabase/functions/_shared/post-links.ts).
+IG_RESERVED = {'accounts','oauth','redirect','linkshim','p','reel','reels','stories','explore','direct','tv','about','developer','developers','legal','privacy','terms','login','challenge','web','api'}
+
+def osm_phone(value):
+    """First number of an OSM phone tag, in the shape merchantPhoneUrl (src/lib/merchant-source.ts) accepts."""
+    if not isinstance(value, str): return None
+    phone = value.split(';')[0].strip()
+    return phone if len(phone) <= 40 and re.fullmatch(r'\+?[0-9(). -]+', phone) and 7 <= len(re.sub(r'\D', '', phone)) <= 15 else None
+
+def osm_instagram(value):
+    """An OSM contact:instagram tag (URL, @handle or handle) as the profile URL the app shows."""
+    if not isinstance(value, str) or len(value) > 200: return None
+    v = value.strip()
+    m = re.fullmatch(r'(?:https?://)?(?:www\.)?instagram\.com/([A-Za-z0-9_.]+)/?(?:\?[^\s]*)?', v) or re.fullmatch(r'@?([A-Za-z0-9_.]+)', v)
+    handle = m.group(1).lower() if m else None
+    if not handle or '..' in handle or handle in IG_RESERVED or not re.fullmatch(r'[a-z0-9_](?:[a-z0-9_.]{0,28}[a-z0-9_])?', handle): return None
+    return f'https://www.instagram.com/{handle}/'
+
 def instant(value):
     return datetime.fromisoformat(value.replace('Z', '+00:00'))
 
@@ -120,6 +138,10 @@ def build_catalog(seed, elements, now):
                 website = tags.get('website', tags.get('contact:website'))
                 # Regional links were reviewed by hand; an OSM website can point at a lapsed or hijacked domain.
                 if https(website) and ident in own_ids: p['website'] = website
+                # 장소 화면 전화·인스타 버튼 (owner 2026-11-05 P3): only the city's own places, like the website above; the app hides the button when absent.
+                phone, instagram = osm_phone(tags.get('phone', tags.get('contact:phone'))), osm_instagram(tags.get('contact:instagram'))
+                if phone and ident in own_ids: p['phone'] = phone
+                if instagram and ident in own_ids: p['instagram'] = instagram
                 street, number = tags.get('addr:street'), tags.get('addr:housenumber')
                 if ident in own_ids and all(isinstance(v, str) and 0 < len(v) <= 300 and not re.search(r'[\x00-\x1f\x7f]', v) for v in [street, number]):
                     p['address'] = (number+' '+street)[:1000]
