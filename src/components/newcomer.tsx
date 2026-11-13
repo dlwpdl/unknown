@@ -216,7 +216,7 @@ export function NewcomerProgressCard({ cityId, onOpenCategory }: { cityId: strin
           return <View key={step.id} style={[styles.firstStep, index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.line }]}>
             <Pressable analyticsId="today.newcomer.step" accessibilityRole="checkbox" accessibilityState={{ checked: done }} accessibilityLabel={`${tr(step.title)}, ${tr(step.body)}`}
               onPress={() => toggleStep(step.id)} style={styles.firstStepCheck}>
-              <View style={[styles.tick, done ? { backgroundColor: theme.accent, borderColor: theme.accent } : { borderColor: theme.line }]}>
+              <View style={[styles.tick, done ? { backgroundColor: theme.accent, borderColor: theme.accent } : { borderColor: theme.textSecondary }]}>
                 {done && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={14} tintColor={theme.accentInk} />}
               </View>
               <View style={styles.flex}>
