@@ -6,12 +6,14 @@ select no_plan();
 -- 08..11 F G I J more invitees of A (cap) · 12 K shares B's device · 13 L shares A's device
 -- 14 X business owner · 15 Y invited business owner · 16 Q paid premium inviter · 17 R invitee of Q
 -- 18 S invitee of Q on a Gmail alias of Q · 19 T invitee of Q on a Gmail alias of F (already rewarded)
-create temporary table ids as select n, ('e1000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid id from generate_series(1,19) n;
+-- 20 M host on another Gmail · 21 N invitee of Q on a Gmail alias of M · 22 O invitee of Q on an Outlook plus alias of R
+create temporary table ids as select n, ('e1000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid id from generate_series(1,22) n;
 create function pg_temp.u(n int) returns uuid language sql as $$ select ('e1000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid $$;
 insert into public.cities(id,name,province,timezone) values('invite-test','Invite test','BC','America/Vancouver') on conflict do nothing;
 insert into public.tags(id,slug,label,kind) values(31996,'invite-test','Invite test','meetup') on conflict do nothing;
 insert into auth.users(id,email,raw_app_meta_data) select id,case n when 16 then 'Inv.Q16@gmail.com' when 8 then 'inv.f8@gmail.com'
-    when 18 then 'invq16+promo@googlemail.com' when 19 then 'i.n.v.f8+x@gmail.com' else 'invite-'||n||'@example.invalid' end,
+    when 18 then 'invq16+promo@googlemail.com' when 19 then 'i.n.v.f8+x@gmail.com' when 17 then 'friend.r17@outlook.com'
+    when 20 then 'same.host20@gmail.com' when 21 then 'samehost20+2@gmail.com' when 22 then 'Friend.R17+promo@Outlook.com' else 'invite-'||n||'@example.invalid' end,
   case when n in (14,15) then '{"merchant_enabled":true}'::jsonb else '{}'::jsonb end from ids;
 insert into public.profiles(id,nickname,city_id,terms_accepted_at,privacy_accepted_at,ai_safety_consent_at,consent_version,created_at)
 select id,'Inv'||n,'invite-test',now(),now(),now(),'test',
@@ -56,7 +58,7 @@ do $$ declare n int; begin
     perform public.claim_invite_code((select code from codes where owner=1)); execute 'reset role';
   end loop;
   perform pg_temp.act(7); execute 'set local role authenticated'; perform public.claim_invite_code((select code from codes where owner=6)); execute 'reset role';
-  foreach n in array array[17,18,19] loop
+  foreach n in array array[17,18,19,21,22] loop
     perform pg_temp.act(n); execute 'set local role authenticated'; perform public.claim_invite_code((select code from codes where owner=16)); execute 'reset role';
   end loop;
 end $$;
@@ -115,6 +117,15 @@ insert into private.meetup_attendance(session_id,user_id,confirmed_at,confirmati
 select is((select outcome from private.invite_redemptions where invitee_id=pg_temp.u(18)),'self','A Gmail alias of the inviter is a self-invite');
 select is((select outcome from private.invite_redemptions where invitee_id=pg_temp.u(19)),'duplicate','A Gmail alias of a rewarded member counts once');
 select is((select count(*)::int from private.invite_rewards where invitee_id in (pg_temp.u(18),pg_temp.u(19))),0,'Aliases get no reward');
+insert into private.meetup_attendance(session_id,user_id,confirmed_at,confirmation_source) values ('e1200000-0000-4000-8000-000000000001',pg_temp.u(22),now(),'admin');
+select is((select outcome from private.invite_redemptions where invitee_id=pg_temp.u(22)),'duplicate','A plus alias on any mail service counts once');
+-- A meetup hosted under another account of the same person does not count; the invite keeps waiting.
+insert into public.posts(id,author_id,city_id,tag_id,title,body,posted_on,room_preview) values
+ ('e1100000-0000-4000-8000-000000000003',pg_temp.u(20),'invite-test',31996,'Host M walk','Synthetic local test',current_date,'{"eventKind":"group","cadence":"weekly","capacity":8,"memberCount":1}');
+insert into private.meetup_sessions(id,post_id,host_id,starts_at,ends_at) values
+ ('e1200000-0000-4000-8000-000000000003','e1100000-0000-4000-8000-000000000003',pg_temp.u(20),now()-interval '1 day',now()-interval '22 hours');
+insert into private.meetup_attendance(session_id,user_id,confirmed_at,confirmation_source) values ('e1200000-0000-4000-8000-000000000003',pg_temp.u(21),now(),'admin');
+select is((select outcome from private.invite_redemptions where invitee_id=pg_temp.u(21)),null,'A meetup hosted by the invitee''s own other account does not count');
 
 -- Summary for the member: counts only.
 select pg_temp.act(1); set local role authenticated;
