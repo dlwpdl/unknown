@@ -39,3 +39,9 @@ export function preferVisitedPlaces<T extends { place: { id: string; glingVisite
   const rank = ({ place }: T) => { const index = signalIds.indexOf(place.id); return index >= 0 ? index : place.glingVisited ? signalIds.length : signalIds.length + 1; };
   return [...rows].sort((a, b) => rank(a) - rank(b));
 }
+
+// Event lists (QA C22-3): one row per event id even when loaded pages overlap, then the city's own day and start time; an event with no time yet goes last on its day, ties keep load order.
+export function sortEventList<T extends { id: string; localDate?: string | null; startsAt?: string | null }>(events: readonly T[]): T[] {
+  const seen = new Set<string>(), day = (event: T) => event.localDate ?? '9999-12-31', time = (event: T) => Date.parse(event.startsAt ?? '') || Infinity;
+  return events.filter(event => !seen.has(event.id) && !!seen.add(event.id)).sort((a, b) => day(a).localeCompare(day(b)) || time(a) - time(b) || 0);
+}
