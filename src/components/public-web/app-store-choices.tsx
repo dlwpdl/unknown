@@ -11,8 +11,6 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { webEntrySource } from './analytics';
 
 const stores = { ios: 'https://apps.apple.com/ca/app/id6809273242', android: 'https://play.google.com/store/apps/details?id=com.dlwpdl.gling' };
-// Android is closed testing; testers are added by Google account, so ask for the Gmail address up front.
-const androidTester = `mailto:gling@ej-entertainment.com?subject=${encodeURIComponent('Android 테스트 참여 신청')}&body=${encodeURIComponent('Google Play에서 쓰는 Gmail 주소: ')}`;
 // The tab's first tagged entry (instagram, naver…); an untagged visit still counts as coming from the website.
 const storeSource = () => { const source = webEntrySource(); return source === 'unknown' ? 'website' : source; };
 // Google Play hands this to the install referrer, which the Android app reads on its first launch (app-activity.tsx).
@@ -31,12 +29,12 @@ export function useDevice() {
   return useSyncExternalStore(noDeviceChange, readDevice, () => null);
 }
 
-/** One tap to the right install path: App Store on iPhone, tester request on Android, QR choice on a computer. */
+/** One tap to the right install path: App Store on iPhone, Google Play on Android, QR choice on a computer. */
 export function InstallAction({ className, onPress }: { className?: string; onPress?: () => void }) {
   const { language } = useLanguage(), ko = language === 'ko';
   const device = useDevice();
   return device === 'ios' ? <a data-analytics="web.install.ios" className={className} href={appStoreUrl()} onClick={onPress}>{ko ? 'App Store에서 무료로 받기' : 'Get it free on the App Store'}</a>
-    : device === 'android' ? <a data-analytics="web.install.android" className={className} href={androidTester} onClick={onPress}>{ko ? 'Android 테스트 참여 신청' : 'Ask to join the Android test'}</a>
+    : device === 'android' ? <a data-analytics="web.install.android" className={className} href={playUrl()} onClick={onPress}>{ko ? 'Google Play에서 받기' : 'Get it on Google Play'}</a>
       : <a data-analytics="web.install.desktop" className={className} href="#app" onClick={onPress}>{ko ? '휴대폰에 앱 받기' : 'Get the app on your phone'}</a>;
 }
 
@@ -68,10 +66,6 @@ export function AppStoreChoices() {
   if (device === 'ios' || device === 'android') return <section className="public-app-stores" style={style} aria-label={ko ? '글링 앱 설치 안내' : 'Get the Gling app'}>
     <div className="public-app-store-result">
       <InstallAction className="public-app-store-primary" onPress={() => play('selection')} />
-      {device === 'android' && <>
-        <p>{ko ? 'Android는 비공개 테스트 중이에요. 신청 메일을 보내 주시면 테스트에 추가해 드려요. 이미 테스트에 참여했다면 Google Play에서 바로 받을 수 있어요.' : 'Android is in private testing. Email us and we’ll add you as a tester. Already a tester? Get it on Google Play.'}</p>
-        <a data-analytics="web.store.android.open" href={playUrl()} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>{ko ? 'Google Play에서 확인' : 'View on Google Play'} <span aria-hidden="true">↗</span></a>
-      </>}
     </div>
   </section>;
   return <section className="public-app-stores" style={style} aria-label={ko ? '글링 앱 설치 안내' : 'Get the Gling app'}>
@@ -84,16 +78,13 @@ export function AppStoreChoices() {
       {qr && <svg role="img" aria-label={`${store === 'ios' ? 'App Store' : 'Google Play'} ${ko ? '설치 안내 QR 코드' : 'download QR code'}`} viewBox={`0 0 ${qr.extent} ${qr.extent}`} width={180} height={180} shapeRendering="crispEdges">
         <rect width={qr.extent} height={qr.extent} fill="#fff" /><path d={qr.path} fill="#000" /></svg>}
       {store === 'ios' ? <a data-analytics="web.store.ios.open" href={url} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>{ko ? 'App Store에서 받기' : 'Get it on the App Store'} <span aria-hidden="true">↗</span></a>
-        : <a data-analytics="web.store.android.open" href={url} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>{ko ? 'Google Play에서 확인' : 'View on Google Play'} <span aria-hidden="true">↗</span></a>}
+        : <a data-analytics="web.store.android.open" href={url} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>{ko ? 'Google Play에서 받기' : 'Get it on Google Play'} <span aria-hidden="true">↗</span></a>}
       {!qr && <p>{ko ? 'QR 코드 대신 위 스토어 링크를 이용해 주세요.' : 'Use the store link above if the QR code is unavailable.'}</p>}
       <p>{ko ? '설치 후 이 페이지로 돌아와 앱에서 이어가세요.' : 'After installing, return to this page and open the meetup or story in the app.'}</p>
-      {store === 'android' && <><p>{ko ? 'Android는 비공개 테스트 중이며 공개 출시를 준비하고 있어요. 테스트 참여 대상만 설치할 수 있어요.' : 'Android is in private testing, with a public release on the way. For now, only eligible testers can install it.'}</p>
-        <a data-analytics="web.install.android" href={androidTester} onClick={() => play('selection')}>{ko ? 'Android 테스트 참여 신청' : 'Ask to join the Android test'}</a></>}
     </div>}
     <noscript><div className="public-app-store-result">
       <a href={stores.ios} target="_blank" rel="noopener noreferrer">{ko ? 'App Store에서 받기' : 'Get it on the App Store'}</a>
-      <a href={stores.android} target="_blank" rel="noopener noreferrer">{ko ? 'Google Play에서 확인' : 'View on Google Play'}</a>
-      <p>{ko ? 'Android는 비공개 테스트 중이며 테스트 참여 대상만 설치할 수 있어요.' : 'Android is in private testing. Only eligible testers can install it.'}</p>
+      <a href={stores.android} target="_blank" rel="noopener noreferrer">{ko ? 'Google Play에서 받기' : 'Get it on Google Play'}</a>
     </div></noscript>
   </section>;
 }

@@ -2,8 +2,8 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { businessMediaUrl } from '../src/lib/business-media.ts';
 import { jsonLd, publicCompanyUrl, publicSiteName, PUBLIC_SITE } from '../src/lib/public-seo.ts';
-import { safeMerchantSourceUrl } from '../src/lib/merchant-source.ts';
-import { escapeHtml, rpc, withStaticPage } from './prerender-public-posts.mjs';
+import { merchantPhoneUrl, safeMerchantSourceUrl } from '../src/lib/merchant-source.ts';
+import { escapeHtml, koreanDate, rpc, withStaticPage } from './prerender-public-posts.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -31,7 +31,8 @@ export async function loadPublicCompanies({ url, key, cities, fetcher = fetch })
   return companies.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
 }
 
-export function renderPublicCompany(template, company) {
+// `posts`: this business's own posts from the sitemap list, newest first.
+export function renderPublicCompany(template, company, posts = []) {
   const url = publicCompanyUrl(company.id), title = `${company.name} | ${company.city_name} 한인 비즈니스 · 글링`;
   const intro = String(company.services ?? '').trim();
   const base = [`${company.city_name} · ${company.industry}`, intro.slice(0, 140) || '글링 비즈니스 프로필에서 소식과 영수증 인증 후기를 확인하세요.'].join('. ');
@@ -68,23 +69,28 @@ export function renderPublicCompany(template, company) {
   ].join('');
   const link = 'color:#CBB9FF';
   // Removed by the public profile once the live profile has rendered.
+  // Same check the live profile uses before it shows the number as a tap-to-call link.
+  const tel = merchantPhoneUrl(String(company.public_phone ?? ''));
   const body = `<article id="gling-static-company" lang="ko" style="max-width:640px;margin:24px auto;padding:20px;color:#F6F3F0;font:16px/1.6 system-ui,sans-serif">`
+    + (logo ? `<img src="${escapeHtml(logo)}" alt="${escapeHtml(`${company.name} 로고`)}" width="72" height="72" style="display:block;margin:0 0 12px;border-radius:16px;object-fit:cover"/>` : '')
     + `<p style="margin:0 0 8px;color:#CBB9FF;font-size:13px;font-weight:700">${escapeHtml([company.industry, company.city_name].filter(Boolean).join(' · '))}</p>`
     + `<h1 style="margin:0;font-size:24px;line-height:1.35">${escapeHtml(company.name)}</h1>`
     + (intro ? `<p style="margin:16px 0 0;white-space:pre-line">${escapeHtml(intro)}</p>` : '')
     + (company.address ? `<p style="margin:12px 0 0">주소: ${escapeHtml(company.address)}</p>` : '')
     + (company.business_hours ? `<p style="margin:12px 0 0;white-space:pre-line">영업시간: ${escapeHtml(company.business_hours)}</p>` : '')
+    + (tel ? `<p style="margin:12px 0 0">전화: <a href="${escapeHtml(tel)}" style="${link}">${escapeHtml(company.public_phone.trim())}</a></p>` : '')
     + (company.reviewCount > 0 && company.ratingAverage ? `<p style="margin:12px 0 0">영수증 인증 후기 ${company.reviewCount}개 · ${(Math.round(company.ratingAverage * 10) / 10).toFixed(1)} / 10</p>` : '')
+    + (posts.length ? `<h2 style="margin:24px 0 8px;font-size:18px">최근에 올린 글</h2><ul style="margin:0;padding-left:20px">${posts.slice(0, 5).map(post => `<li><a href="/posts/${post.id}" style="${link}">${escapeHtml(post.title)}</a> <small>${escapeHtml([post.label, koreanDate(post.createdAt ?? post.lastmod)].filter(Boolean).join(' · '))}</small></li>`).join('')}</ul>` : '')
     + `<p style="margin:16px 0 0"><a href="/${escapeHtml(company.city_id)}" style="${link}">${escapeHtml(company.city_name)} 동네 이야기 더 보기</a> · <a href="/business" style="${link}">글링에 비즈니스 등록하기</a></p>`
     + '</article>';
   return withStaticPage(template, head, body);
 }
 
-export async function prerenderPublicCompanies(directory, options) {
+export async function prerenderPublicCompanies(directory, { posts = [], ...options }) {
   const companies = await loadPublicCompanies(options);
   // Same 404 shell the posts use; the client reader already renders /company/:id from the path.
   const template = readFileSync(join(directory, '+not-found.html'), 'utf8');
   mkdirSync(join(directory, 'company'), { recursive: true });
-  for (const company of companies) writeFileSync(join(directory, 'company', `${company.id}.html`), renderPublicCompany(template, company));
+  for (const company of companies) writeFileSync(join(directory, 'company', `${company.id}.html`), renderPublicCompany(template, company, posts.filter(post => post.businessId === company.id)));
   return companies;
 }
