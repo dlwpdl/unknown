@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  buildListingLead, emptyListingDraft, freeBand, groupListingsByArea, isFreeListing, listingAreaRows, listingExtras, listingFromDraft, listingPin, listingPriceLabel, matchesListingFilters,
+  buildListingLead, emptyListingDraft, freeBand, groupListingsByArea, isFreeListing, listingAreaRows, listingExtras, listingFromDraft, listingMapFit, listingPin, listingPriceLabel, matchesListingFilters,
   NO_LISTING_FILTERS, pairTiles, parseListingDetails, parseListingView, stripListingLead, withListingLead,
 } from '../src/lib/listing-details.ts';
 import { coarseListingPin, findNeighborhood, NEIGHBORHOODS, neighborhoodGroups } from '../src/lib/neighborhoods.ts';
@@ -262,4 +262,17 @@ test('the photo grid pairs listings and gives a story without listing fields its
   assert.deepEqual(pairTiles(['x', 'A', 'y', 'z', 'B'], tile), ['x', ['A', 'B'], 'y', 'z']);
   assert.deepEqual(pairTiles(['A', 'x'], tile), [['A'], 'x'], 'a last tile alone still ends its row');
   assert.deepEqual(pairTiles([], tile), []);
+});
+
+test('카테고리 지도는 모든 동네가 들어오게 열린다 (QA B13-2)', () => {
+  assert.equal(listingMapFit([]), null);
+  const one = listingMapFit([{ latitude: 49.28, longitude: -123.12 }]);
+  assert.deepEqual(one.center, { latitude: 49.28, longitude: -123.12 });
+  assert.equal(one.zoom, 11, 'one area keeps the city view');
+  const coquitlam = { latitude: 49.2838, longitude: -122.7932 }, edmonds = { latitude: 49.2120, longitude: -122.9590 };
+  const two = listingMapFit([coquitlam, edmonds]);
+  assert.ok(Math.abs(two.center.longitude - (-122.8761)) < 1e-4);
+  const halfWidth = 215 * 360 / (256 * 2 ** two.zoom); // half of a 430pt-wide phone map, in degrees
+  assert.ok(Math.abs(coquitlam.longitude - two.center.longitude) < halfWidth && Math.abs(edmonds.longitude - two.center.longitude) < halfWidth, 'both areas on the first screen');
+  assert.equal(listingMapFit([{ latitude: 49.28, longitude: -123.3 }, { latitude: 49.1, longitude: -122.3 }]).zoom < 11, true, 'far apart areas zoom out');
 });
