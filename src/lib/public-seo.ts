@@ -1,3 +1,5 @@
+import { publicPostEvent } from './public-event.ts';
+
 export const PUBLIC_SITE = 'https://gling.ej-entertainment.com';
 // The Play listing without a referrer, for static pages, llms.txt and the app schema (public since 2026-11-12).
 export const PUBLIC_PLAY_STORE = 'https://play.google.com/store/apps/details?id=com.dlwpdl.gling';
@@ -147,6 +149,7 @@ export function publicPostDescription(post: PublicPostFacts) {
 // One shape for the prerendered page and the hydrated landing: the post, then 글링 › city › topic.
 export function publicPostSchema(post: PublicPostFacts, topicUrl?: string | null) {
   const url = publicPostUrl(post.id), cityUrl = post.cityId ? `${PUBLIC_SITE}/${post.cityId}` : null;
+  const event = publicPostEvent(post, url);
   const published = post.createdAt && Number.isFinite(Date.parse(post.createdAt)) ? new Date(post.createdAt).toISOString() : undefined;
   const crumbs = [
     { name: '글링', item: `${PUBLIC_SITE}/` },
@@ -164,6 +167,7 @@ export function publicPostSchema(post: PublicPostFacts, topicUrl?: string | null
         ...(cityUrl ? { isPartOf: { '@type': 'CollectionPage', '@id': cityUrl, url: cityUrl, name: `${post.city || post.cityId} 한인 커뮤니티` } } : {}),
       },
       { '@type': 'BreadcrumbList', itemListElement: crumbs.map((crumb, index) => ({ '@type': 'ListItem', position: index + 1, ...crumb })) },
+      ...(event ? [event] : []),
     ],
   };
 }
