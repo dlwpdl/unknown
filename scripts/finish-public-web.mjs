@@ -7,6 +7,7 @@ import {
 } from '../src/lib/public-seo.ts';
 import { breadcrumbHtml, escapeHtml, isoDate, koreanDate, postCover, prerenderPublicPosts, redirectPage, withStaticPage, topicHubs } from './prerender-public-posts.mjs';
 import { prerenderPublicCompanies } from './prerender-public-companies.mjs';
+import { prerenderEnglishPosts } from './english-posts.mjs';
 
 const LINK = 'color:#CBB9FF';
 const SECTION = 'max-width:720px;margin:24px auto;padding:20px;color:#F6F3F0;font:16px/1.6 system-ui,sans-serif';
@@ -320,5 +321,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const { posts, meetups } = prerender ? await prerenderPublicPosts(directory, { url: url.replace(/\/+$/, ''), key, cities: CITIES.filter(city => city.state === 'open').map(city => city.id), searchToken: process.env.GLING_SEARCH_BUILD_TOKEN }) : { posts: [], meetups: [] };
   const companies = prerender ? await prerenderPublicCompanies(directory, { url: url.replace(/\/+$/, ''), key, cities: CITIES.filter(city => city.state === 'open').map(city => city.id) }) : [];
   const { hubs } = finishPublicWeb(directory, posts, companies, { meetups });
-  console.log(`Prerendered ${posts.length} public posts, ${hubs.size} topic hubs and ${companies.length} business profiles.`);
+  const english = prerender ? await prerenderEnglishPosts(directory, posts, { url: url.replace(/\/+$/, ''), key, searchToken: process.env.GLING_SEARCH_BUILD_TOKEN }, { hubs }) : [];
+  console.log(`Prerendered ${posts.length} public posts (${english.length} in English), ${hubs.size} topic hubs and ${companies.length} business profiles.`);
 }
