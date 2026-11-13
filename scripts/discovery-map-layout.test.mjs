@@ -429,7 +429,7 @@ test('delivery registry pending, failure and retry are distinct from a successfu
   assert.ok(!emptyCards(tree).some(node => node.props.title === '아직 배달 할인 가게가 없어요'));
   const stopRead = view.readRegistry(); await new Promise(setImmediate); tree = view.render();
   const error = nodes(tree).find(node => node.type === 'StateCard' && node.props.kind === 'error');
-  assert.equal(error.props.title, '웹샵 할인 정보를 불러오지 못했어요');
+  assert.equal(error.props.title, '배달/픽업 할인 정보를 불러오지 못했어요');
   assert.equal(error.props.actionLabel, '다시 시도');
   assert.ok(!emptyCards(tree).some(node => node.props.title === '아직 배달 할인 가게가 없어요'));
   const attempt = view.registryDependencies[1], feedback = view.feedback.length;

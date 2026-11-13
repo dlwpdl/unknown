@@ -46,7 +46,7 @@ export function WebshopBanner({ shop, onPress }: { shop: Webshop; onPress: () =>
       <View style={styles.grow}>
         <ThemedText type="section" style={{ color: theme === Colors.dark ? '#8FD9C4' : '#276B57' }}>{maximumPercent > 0
           ? language === 'ko' ? `최대 ${maximumPercent}% 할인` : `Save up to ${maximumPercent}%`
-          : language === 'ko' ? '가게 웹샵에서 주문하기' : 'Order from the store’s webshop'}</ThemedText>
+          : language === 'ko' ? '가게에 배달/픽업 주문하기' : 'Order delivery or pickup from the store'}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">{shop.comparisons.length ? language === 'ko' ? '대표 메뉴 가격 비교 · 자세히 보기' : 'Compare selected menu prices' : language === 'ko' ? 'Uber에서 주문·결제해요' : 'Orders and payment handled by Uber'}</ThemedText>
       </View><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
     </Pressable>
@@ -58,7 +58,7 @@ export function WebshopBanner({ shop, onPress }: { shop: Webshop; onPress: () =>
 export function WebshopOrderButton({ shop, onPress, notice = true }: { shop: Webshop; onPress: () => void; notice?: boolean }) {
   const theme = useTheme(), { language } = useLanguage(), { play } = useInteractionFeedback(), clay = useClay();
   const { maximumPercent } = compareWebshopPrices(shop), ko = language === 'ko';
-  const label = maximumPercent > 0 ? ko ? `웹샵 주문 · 최대 ${maximumPercent}% 할인` : `Order from webshop · Save up to ${maximumPercent}%` : ko ? '웹샵 주문' : 'Order from webshop';
+  const label = maximumPercent > 0 ? ko ? `배달/픽업 주문 · 최대 ${maximumPercent}% 할인` : `Order delivery or pickup · Save up to ${maximumPercent}%` : ko ? '배달/픽업 주문' : 'Order delivery or pickup';
   return <View style={styles.offer}><Pressable analyticsId="webshop.order-preview" accessibilityRole="button" accessibilityLabel={`${label}, ${ko ? '가격 비교 열기' : 'opens the price comparison'}`}
     style={({ pressed }) => [ControlStyles.action, clay && styles.ctaClay, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: pressed ? 0.82 : 1 }]}
     onPress={() => { play('selection'); onPress(); }}>{clay && <ClayPillFill kind="cta" />}<ThemedText type="menu" style={{ color: theme.accentInk, textAlign: 'center' }}>{label} ↗</ThemedText></Pressable>
@@ -83,7 +83,7 @@ export function WebshopComparisonSheet({ client, shop, name, visible, onClose, o
   }, [client, origin, platform, shop.merchantId, visible]);
   const fail = () => {
     if (!active.current) return;
-    setBusy(false); setError(ko ? '웹샵을 열지 못했어요. 연결을 확인하고 다시 시도해주세요.' : 'Couldn’t open the webshop. Check your connection and try again.'); play('warning');
+    setBusy(false); setError(ko ? '가게 주문 페이지를 열지 못했어요. 연결을 확인하고 다시 시도해주세요.' : 'Couldn’t open the order page. Check your connection and try again.'); play('warning');
   };
   async function launch(url: string) {
     try { await WebBrowser.openBrowserAsync(url, { presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET }); }
@@ -117,24 +117,24 @@ export function WebshopComparisonSheet({ client, shop, name, visible, onClose, o
         <SafeAreaView edges={['bottom']} style={[styles.sheet, { backgroundColor: theme.background }]} accessibilityViewIsModal>
           <View style={styles.handle} accessible={false} />
           <View style={styles.heading}><View style={styles.grow}><ThemedText type="small" themeColor="textSecondary">{name}</ThemedText>
-            <ThemedText type="sheetTitle" accessibilityRole="header">{summary.savingCents > 0 ? ko ? `${money(summary.savingCents)} 아낄 수 있어요` : `Save ${money(summary.savingCents)}` : ko ? '웹샵 가격을 확인해보세요' : 'Check webshop prices'}</ThemedText></View>
+            <ThemedText type="sheetTitle" accessibilityRole="header">{summary.savingCents > 0 ? ko ? `${money(summary.savingCents)} 아낄 수 있어요` : `Save ${money(summary.savingCents)}` : ko ? '배달/픽업 가격을 확인해보세요' : 'Check delivery and pickup prices'}</ThemedText></View>
             <Pressable analyticsId="webshop.close" accessibilityRole="button" accessibilityLabel={ko ? '닫기' : 'Close'} onPress={close} style={ControlStyles.icon}>{clay ? <ClayIcon clay="close" size={20} /> : <ThemedText>×</ThemedText>}</Pressable></View>
           <ScrollView analyticsId="webshop.comparison" contentContainerStyle={styles.details}>
             <ThemedText type="small" themeColor="textSecondary">{summary.kind === 'checkout'
               ? `${quote!.basketLabel} · ${ko ? quote!.fulfillment === 'delivery' ? '배달 견적' : '픽업 견적' : quote!.fulfillment === 'delivery' ? 'Delivery quote' : 'Pickup quote'}`
-              : items.length ? ko ? `대표 메뉴 ${items.length}개를 함께 주문할 때의 메뉴 금액이에요.` : `Menu subtotal for these ${items.length} selected items.` : ko ? '가게의 Uber 웹샵에서 메뉴와 가격을 확인해주세요.' : 'Check menus and prices on the store’s Uber webshop.'}</ThemedText>
+              : items.length ? ko ? `대표 메뉴 ${items.length}개를 함께 주문할 때의 메뉴 금액이에요.` : `Menu subtotal for these ${items.length} selected items.` : ko ? '가게 주문 페이지에서 메뉴와 가격을 확인해주세요.' : 'Check menus and prices on the store’s order page.'}</ThemedText>
             {!!items.length && <View style={[styles.table, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.card }]}>
               {clayBox && <ClayBoxFill kind="tile" />}
-              <View style={styles.row}><ThemedText type="caption" themeColor="textSecondary" style={styles.grow}>{ko ? '대표 메뉴' : 'Selected items'}</ThemedText><ThemedText type="caption" themeColor="textSecondary" style={styles.amount}>Uber Eats</ThemedText><ThemedText type="caption" themeColor="accent" style={styles.amount}>{ko ? '글링 웹샵' : 'Via Gling'}</ThemedText></View>
+              <View style={styles.row}><ThemedText type="caption" themeColor="textSecondary" style={styles.grow}>{ko ? '대표 메뉴' : 'Selected items'}</ThemedText><ThemedText type="caption" themeColor="textSecondary" style={styles.amount}>Uber Eats</ThemedText><ThemedText type="caption" themeColor="accent" style={styles.amount}>{ko ? '글링에서 주문' : 'Via Gling'}</ThemedText></View>
               {items.map(item => <View key={item.id} style={[styles.row, { borderTopWidth: 1, borderTopColor: theme.line }]}><View style={styles.grow}><ThemedText type="smallBold">{item.name}</ThemedText>{item.savingCents > 0 && <ThemedText type="caption" themeColor="accent">{item.percent}% · {money(item.savingCents)} {ko ? '절약' : 'less'}</ThemedText>}</View>
                 <ThemedText type="small" style={styles.amount}>{money(item.uberCents)}</ThemedText><ThemedText type="smallBold" themeColor="accent" style={styles.amount}>{money(item.webCents)}</ThemedText></View>)}
             </View>}
             {quote && <View style={[styles.table, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}{feeRows.map(([korean, english, field]) => <View style={styles.row} key={field}><ThemedText type="small" style={styles.grow}>{ko ? korean : english}</ThemedText><ThemedText type="small" style={styles.amount}>{field === 'discountCents' ? '−' : ''}{money(quote.uber[field])}</ThemedText><ThemedText type="small" style={styles.amount}>{field === 'discountCents' ? '−' : ''}{money(quote.webshop[field])}</ThemedText></View>)}</View>}
             {(items.length > 0 || quote) && <View style={[styles.totals, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}<View style={styles.row}><ThemedText type="small" style={styles.grow}>{ko ? 'Uber Eats 주문 시' : 'On Uber Eats'}</ThemedText><ThemedText>{money(summary.uberCents)}</ThemedText></View>
-              <View style={styles.row}><ThemedText type="menu" themeColor="accent" style={styles.grow}>{ko ? '글링에서 웹샵 주문 시' : 'Webshop via Gling'}</ThemedText><ThemedText type="section" themeColor="accent">{money(summary.webCents)}</ThemedText></View>
+              <View style={styles.row}><ThemedText type="menu" themeColor="accent" style={styles.grow}>{ko ? '글링에서 배달/픽업 주문 시' : 'Ordering through Gling'}</ThemedText><ThemedText type="section" themeColor="accent">{money(summary.webCents)}</ThemedText></View>
               <ThemedText type="caption" themeColor="textSecondary">{summary.kind === 'menu' ? ko ? '메뉴 합계 기준 · 배달비·수수료·세금·팁 제외' : 'Menu subtotal only · excludes delivery, fees, tax and tip' : ko ? '동일 조건에서 확인한 결제 견적 기준' : 'Based on checkout quotes taken under the same conditions'}</ThemedText></View>}
             {maximumPercent > 0 && <ThemedText type="small" themeColor="textSecondary">{ko ? `최대 ${maximumPercent}%는 위 대표 메뉴 중 가장 큰 할인율이에요. 주문 전체에 일괄 적용되는 할인율은 아니에요.` : `Up to ${maximumPercent}% is the biggest saving among the items above. It doesn’t apply to your whole order.`}</ThemedText>}
-            <ThemedText type="caption" themeColor="textSecondary">{ko ? '메뉴·옵션·주소·프로모션에 따라 가격이 달라질 수 있어요. 최종 금액은 Uber 웹샵에서 확인해주세요.' : 'Prices vary with items, options, address and promotions. Confirm the final amount on the Uber webshop.'}{shop.verifiedAt ? `\n${ko ? '메뉴 가격 확인' : 'Menu prices checked'} ${new Date(shop.verifiedAt).toLocaleDateString(locale)}` : ''}{quote ? `\n${ko ? '결제 견적 확인' : 'Checkout quotes checked'} ${new Date(quote.verifiedAt).toLocaleDateString(locale)}` : ''}</ThemedText>
+            <ThemedText type="caption" themeColor="textSecondary">{ko ? '메뉴·옵션·주소·프로모션에 따라 가격이 달라질 수 있어요. 최종 금액은 가게 주문 페이지에서 확인해주세요.' : 'Prices vary with items, options, address and promotions. Confirm the final amount on the order page.'}{shop.verifiedAt ? `\n${ko ? '메뉴 가격 확인' : 'Menu prices checked'} ${new Date(shop.verifiedAt).toLocaleDateString(locale)}` : ''}{quote ? `\n${ko ? '결제 견적 확인' : 'Checkout quotes checked'} ${new Date(quote.verifiedAt).toLocaleDateString(locale)}` : ''}</ThemedText>
             {shop.promoCode && <Pressable analyticsId="webshop.copy-code" accessibilityRole="button" style={[ControlStyles.action, clay && styles.ctaClay, { borderWidth: 1, borderColor: clay ? 'transparent' : theme.line }]} onPress={() => {
               play('selection');
               const operation = platform === 'web' ? navigator.clipboard.writeText(shop.promoCode!) : Share.share({ message: shop.promoCode! });
@@ -143,7 +143,7 @@ export function WebshopComparisonSheet({ client, shop, name, visible, onClose, o
           </ScrollView>
           {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
           <View style={styles.offer}><Pressable analyticsId="webshop.order" accessibilityRole="button" disabled={busy} accessibilityState={{ busy, disabled: busy }} onPress={order}
-            style={({ pressed }) => [ControlStyles.action, clay && styles.ctaClay, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: busy ? 0.45 : pressed ? 0.82 : 1 }]}>{clay && <ClayPillFill kind="cta" />}<ThemedText type="menu" style={{ color: theme.accentInk }}>{busy ? ko ? '여는 중…' : 'Opening…' : ko ? maximumPercent > 0 ? '할인받고 주문하러 가기 ↗' : '웹샵에서 주문하러 가기 ↗' : 'Order from webshop ↗'}</ThemedText></Pressable><UberOrderNotice /></View>
+            style={({ pressed }) => [ControlStyles.action, clay && styles.ctaClay, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: busy ? 0.45 : pressed ? 0.82 : 1 }]}>{clay && <ClayPillFill kind="cta" />}<ThemedText type="menu" style={{ color: theme.accentInk }}>{busy ? ko ? '여는 중…' : 'Opening…' : ko ? maximumPercent > 0 ? '할인받고 주문하러 가기 ↗' : '배달/픽업 주문하러 가기 ↗' : 'Order delivery or pickup ↗'}</ThemedText></Pressable><UberOrderNotice /></View>
         </SafeAreaView>
       </SafeAreaView></SafeAreaProvider>
     </Modal>
