@@ -12,9 +12,11 @@ function control(sort, byArea, extra = {}) {
   }).outputText;
   vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
-    if (name === 'react-native') return { View: 'View', ScrollView: 'ScrollView', StyleSheet: { create: x => x, hairlineWidth: 1 } };
+    if (name === 'react-native') return { Platform: { OS: 'android' }, View: 'View', ScrollView: 'ScrollView', StyleSheet: { create: x => x, hairlineWidth: 1 } };
     if (name === '@/constants/theme') return { Spacing: { two: 8, four: 24 } };
     if (name === '@/components/selection-chip') return { SelectionChip: 'SelectionChip' };
+    if (name === 'react-native-reanimated') return { useReducedMotion: () => false };
+    if (name === '@/hooks/use-reveal-chip') return { useRevealChip: (selected, animated, fade) => ({ scroll: { revealing: selected, animated, fade }, chip: key => `layout:${key}` }) };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
     if (name === '@/hooks/use-theme') return { useTheme: () => ({ background: 'background', backgroundElement: 'element', backgroundSelected: 'selected', accent: 'accent', accentInk: 'accent-ink', textSecondary: 'sub', line: 'line' }) };
     if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () => ({ play: kind => events.push(kind) }) };
@@ -76,7 +78,12 @@ test('a short screen folds the title and description into one sideways row of or
   const row = all.find(node => node.type === 'ScrollView');
   assert.equal(row.props.horizontal, true, 'one line that scrolls sideways instead of wrapping into two');
   assert.deepEqual(nodes(row).filter(node => node.type === 'SelectionChip').map(text), ['최신순', '인기순', '동네별']);
-  assert.ok(nodes(row).includes(action), 'the view switch shares the line');
+  // QA N-sort-row: scrolled together, the chosen view and 지도 started cut off at the right edge.
+  const line = all.find(node => [node.props?.children].flat().includes(row));
+  assert.ok([line.props.children].flat().includes(action) && !nodes(row).includes(action), 'the view switch shares the line, pinned beside the scrolling orders');
+  assert.deepEqual([row.props.revealing, row.props.fade], ['latest', true], 'the chosen order is scrolled into view and only an end with more orders past it fades');
+  assert.deepEqual(nodes(row).filter(node => node.type === 'SelectionChip').map(node => node.props.onLayout), ['layout:latest', 'layout:popular', 'layout:area']);
+  assert.equal(nodes(control('area', true, { compact: true, action }).tree).find(node => node.type === 'ScrollView').props.revealing, 'area', '동네별 chosen: that chip is brought into view');
   assert.ok(all.includes(filters), 'filters stay under it');
   nodes(row).find(node => node.type === 'SelectionChip').props.onPress();
   assert.deepEqual(events, ['selection', 'latest']);

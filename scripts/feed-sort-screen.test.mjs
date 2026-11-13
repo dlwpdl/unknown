@@ -22,7 +22,7 @@ const glowModule = imports => {
   vm.runInNewContext(source, { exports, require: name => imports[name] });
   return exports;
 };
-function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = false, writeRequest, width = 390, height, fontScale = 1, adPosition = index => index >= 3 && (index - 3) % 4 === 0, photoConsent = null, consentSaves = [] } = {}) {
+function screen({ createdPost, deferPublish = false, clay = false, os = 'web', meetupsOnly = false, writeRequest, width = 390, height, fontScale = 1, adPosition = index => index >= 3 && (index - 3) % 4 === 0, photoConsent = null, consentSaves = [] } = {}) {
   const slots = [], effects = [], calls = [], writes = [], drafts = [], routes = [], feedback = [], params = {}, consents = [], alerts = [], reopened = [], cityChanges = [];
   let viewer = 'viewer', authLoading = false;
   let at = 0;
@@ -36,8 +36,8 @@ function screen({ createdPost, deferPublish = false, os = 'web', meetupsOnly = f
     'expo-router': { useLocalSearchParams: () => params, useRouter: () => ({ push: path => routes.push(path), navigate: path => routes.push(path), setParams: next => Object.assign(params, next) }), useScrollToTop() {} },
     'react-native-reanimated': { default: { View: 'ReanimatedView' }, useReducedMotion: () => true },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', SafeAreaProvider: 'SafeAreaProvider', useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) },
-    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
-    '@/hooks/use-theme': { useTheme: () => theme }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false }, '@/hooks/use-reveal-chip': { useRevealChip: selected => ({ scroll: { revealing: selected }, chip: key => `layout:${key}` }) },
+    '@/components/clay': { useClay: () => clay, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
+    '@/hooks/use-theme': { useTheme: () => theme }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false }, '@/hooks/use-reveal-chip': { useRevealChip: (selected, _animated, fade) => ({ scroll: { revealing: selected, fade }, chip: key => `layout:${key}` }) },
     '@/components/daily-chip': { todayLabel: () => '10월 12일 월요일' },
     '@/components/chilling-host-profile': { useMyOpenMeetupRequests: () => ({}) },
     '@/lib/image-upload': { canAddPostImage: () => true, MAX_POST_IMAGES: 10 },
@@ -490,6 +490,11 @@ test('Home search is a magnifier next to the profile that still says what it fin
     native.list().onScroll({ nativeEvent: { contentOffset: { y: 20 } } });
     assert.equal(shown(), true, 'back up, it is there again');
   }
+  // 3D: a pill's two end caps met in a lemon with a seam on the square button, under a pencil (QA new-fab-shape); the 만들기 coin and + instead.
+  const clayWrite = nodes(screen({ os: 'ios', clay: true }).render()).find(node => node.props?.analyticsId === 'feed.write');
+  const parts = nodes(clayWrite).map(node => node.type?.name ?? node.type);
+  assert.ok(parts.includes('ClayCoinFill') && !parts.includes('ClayPillFill'), 'a round clay coin, not pill caps');
+  assert.equal(nodes(clayWrite).find(node => node.type?.name === 'ClayIcon').props.clay, 'plus');
 });
 
 test('the SNS photo box shows only with a photo, starts from the setting, and its save never fails the post', async () => {
@@ -531,7 +536,10 @@ test('the home category row scrolls the chosen chip into view (QA Q07)', () => {
   const app = screen();
   const row = () => nodes(app.render()).find(n => n.props?.analyticsId === 'components_feed-screen.scrollview.1');
   assert.equal(row().props.revealing, 'all');
-  assert.ok(row().props.fadingEdgeLength > 0, 'on Android the last chip fades into the round end instead of being cut straight (QA B7-1)');
+  // QA B7-1 faded the cut end on Android; a fixed fadingEdgeLength also dimmed 전체 before any scroll (QA new-left-fade), so the hook fades only an end with more past it.
+  const android = nodes(screen({ os: 'android' }).render()).find(n => n.props?.analyticsId === 'components_feed-screen.scrollview.1');
+  assert.deepEqual([android.props.fade, android.props.fadingEdgeLength], [true, undefined], 'Android: no fixed fade on both ends');
+  assert.equal(row().props.fade, false, 'the prop is Android only');
   const chips = nodes(row()).filter(n => typeof n.props?.onLayout === 'string').map(n => n.props.onLayout);
   assert.ok(chips.includes('layout:all') && chips.includes(`layout:${TAGS.find(tag => tag.slug === 'festival').id}`), 'every chip reports where it sits');
   nodes(row()).find(n => n.props?.analyticsId === 'components_feed-screen.pressable.3' && n.props.selected === false).props.onPress();

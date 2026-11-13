@@ -53,7 +53,7 @@ import { BusinessWriter } from '@/components/business-writer';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { openPlaceWriter, PLACE_WRITE_EVENT } from '@/hooks/use-place-compose';
 import { RaisedActionButton } from '@/components/raised-action-button';
-import { ClayBoxFill, ClayIcon, ClayPillFill, useClay, useClayBox, type ClayName } from '@/components/clay';
+import { ClayBoxFill, ClayCoinFill, ClayIcon, ClayPillFill, useClay, useClayBox, type ClayName } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
 import { StartGuide } from '@/components/start-guide';
@@ -210,7 +210,7 @@ export default function FeedScreen({ meetupsOnly = false, writeRequest }: { meet
   };
   const [pendingPostId, setPendingPostId] = useState<string | null>(null); // 로그인 후 이어서 열 글
   const [tagFilter, setTagFilter] = useState<number | null>(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null); // 카테고리 칩
-  const categoryRow = useRevealChip(String(tagFilter ?? 'all'), !reducedMotion);
+  const categoryRow = useRevealChip(String(tagFilter ?? 'all'), !reducedMotion, Platform.OS === 'android');
   const [feedSort, setFeedSort] = useState<FeedSort>('latest');
   const activeSort = meetupsOnly ? 'latest' : feedSort;
   const [categoryLoading, setCategoryLoading] = useState(false);
@@ -959,7 +959,7 @@ export default function FeedScreen({ meetupsOnly = false, writeRequest }: { meet
         </View>
         {cityOpen && !meetupsOnly && (
           <View style={styles.categoryHead}>
-            <GlassSurface tone="control" clay="tray" style={styles.chipGlass}>{/* 안드로이드 가로 스크롤은 둥근 모서리로 자르지 않아 끝 칩이 세로로 잘린다(QA B7-1): 감싼 View가 자르고, 더 넘길 칩이 있는 끝은 안드로이드가 흐리게 지운다. */}<View style={clay && styles.chipClip}><ScrollView analyticsId="components_feed-screen.scrollview.1" {...categoryRow.scroll} horizontal showsHorizontalScrollIndicator={false} fadingEdgeLength={Spacing.four} contentContainerStyle={styles.chipBar}>
+            <GlassSurface tone="control" clay="tray" style={styles.chipGlass}>{/* 안드로이드 가로 스크롤은 둥근 모서리로 자르지 않아 끝 칩이 세로로 잘린다(QA B7-1): 감싼 View가 자르고, 더 넘길 칩이 있는 끝만 안드로이드가 흐리게 지운다(categoryRow.scroll, QA new-left-fade). */}<View style={clay && styles.chipClip}><ScrollView analyticsId="components_feed-screen.scrollview.1" {...categoryRow.scroll} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
               {/* 처음 보이는 칩: PRIMARY_TAGS (owner 2026-11-01 순서); 나머지는 '더보기' 시트. */}
               {[...PRIMARY_TAGS, ...(tagFilter != null && !PRIMARY_TAGS.includes(tagFilter) ? [tagFilter] : [])].map((id) => {
                 const label = id == null ? t.feed.filterAll : tr(TAGS.find((tg) => tg.id === id)!.label);
@@ -1132,8 +1132,9 @@ export default function FeedScreen({ meetupsOnly = false, writeRequest }: { meet
         {writeFab && !writeFabAside && !writeFabAway && <Reanimated.View entering={reducedMotion ? undefined : FadeIn.duration(ControlMotion.settleMs)} exiting={reducedMotion ? undefined : FadeOut.duration(ControlMotion.pressMs)}
           style={[styles.writeFabDock, { bottom: (Platform.OS === 'ios' ? insets.bottom : 0) + Spacing.three }]}><Pressable analyticsId="feed.write" accessibilityRole="button" accessibilityLabel={t.tabs.write} onPress={() => openWriter()}
           style={({ pressed }) => [ControlStyles.pill, styles.writeFab, controlPresentation(theme, { tone: 'primary', clay, pressed, reducedMotion }).container]}>
-          {clay && <ClayPillFill kind="cta" />}
-          <ClayIcon clay="pencil" claySize={24} name={{ ios: 'plus', android: 'add', web: 'add' }} size={IconSize.toolbar} tintColor={theme.accentInk} />
+          {/* A pill's two end caps meet in a lemon with a seam on a square button (QA new-fab-shape): 3D draws the round coin and + of the meetups tab's 만들기 instead. */}
+          {clay && <ClayCoinFill me />}
+          <ClayIcon clay="plus" claySize={24} name={{ ios: 'plus', android: 'add', web: 'add' }} size={IconSize.toolbar} tintColor={theme.accentInk} />
         </Pressable></Reanimated.View>}
       </View></SafeAreaView>}
 

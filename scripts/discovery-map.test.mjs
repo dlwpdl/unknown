@@ -394,8 +394,8 @@ test('crowded TOP 50 places fold only among themselves into a gold count with no
     assert.equal(count.paint['text-color'], '#6F5129');
     assert.ok(index('discovery-counts') < index(source + '-clusters') && index(source + '-counts') < index('discovery-pins-grouped'), 'gold counts sit above grey ones and under the places');
   }
-  // Only the circle, its number and the tap area draw a folded count: a gold count carries no name tag.
-  assert.deepEqual(Array.from(c.layers.filter(value => tops.includes(value.source) && !JSON.stringify(value.filter ?? null).includes('["!",["has","point_count"]]')).map(value => value.id)), ['discovery-top-clusters', 'discovery-top-counts', 'discovery-top-near-clusters', 'discovery-top-near-counts', 'discovery-hit-top', 'discovery-hit-top-near']);
+  // Only the circle, its number, the tap area and its invisible room draw a folded count: a gold count carries no name tag.
+  assert.deepEqual(Array.from(c.layers.filter(value => tops.includes(value.source) && !JSON.stringify(value.filter ?? null).includes('["!",["has","point_count"]]')).map(value => value.id)), ['discovery-top-clusters', 'discovery-top-counts', 'discovery-top-near-clusters', 'discovery-top-near-counts', 'discovery-hit-top', 'discovery-hit-top-near', 'discovery-top-room', 'discovery-top-near-room']);
   // Every mark a single TOP 50 place has comes from its copy on the source of each stage the mark shows at; saved and discount marks never fold, so they have none.
   // Circles (dot, ring, state dot) are drawn by both copies at every zoom and fade by stage, so the tile on screen while crossing 13 still holds them; names and mid picture pins keep their own zoom range, as before.
   const stage = (value, mid) => { const v = value ?? 1, [m, n] = Array.isArray(v) && v[0] === 'step' ? [v[2], v[4]] : [v, v]; return JSON.stringify(mid ? ['step', ['zoom'], m, 13, 0] : ['step', ['zoom'], 0, 13, n]); };
@@ -583,6 +583,37 @@ test('credits fold into an ⓘ on the floating row and close when the map moves 
   c.listeners.movestart();
   assert.equal(c.credits['credits-links'].hidden, true);
   assert.equal(c.credits['credits-toggle']['aria-expanded'], 'false');
+});
+
+test('a strip too short for the zoom buttons over the ⓘ moves the ⓘ beside them (QA new-map-attrib-over-zoom)', () => {
+  const c = canvas([marker], undefined, { bottomInset: 120 });
+  assert.ok(c.html.includes('#credits{position:absolute;left:var(--map-credits-left,10px);'));
+  assert.equal(c.rootVars['--map-credits-left'], '10px', '400px map, 120px under the list row: the ⓘ stays in the corner under the buttons');
+  // The festival list sheet half open: chips 100px on top, the sheet 200px from the bottom leave a 100px strip.
+  c.window.glingDiscoveryUpdate(sessionId, { markers: [marker], topInset: 100, bottomInset: 200 });
+  assert.equal(c.rootVars['--map-credits-left'], '66px', 'beside the 44px buttons at 12px, not on top of +');
+  c.window.glingDiscoveryUpdate(sessionId, { markers: [marker], topInset: 100, bottomInset: 0 });
+  assert.equal(c.rootVars['--map-credits-left'], '10px', 'the sheet closed: back to the corner');
+});
+
+test('a place name gives way to a count circle instead of covering it (QA C17-1)', () => {
+  const c = canvas([marker, { ...marker, id: 'place:2' }]), index = id => c.layers.findIndex(layer => layer.id === id);
+  const names = c.layers.filter(layer => layer.type === 'symbol' && layer.layout['text-field'] && !layer.id.startsWith('discovery-selected')).map(layer => layer.id);
+  assert.ok(names.includes('discovery-labels') && names.includes('discovery-art-featured-labels'));
+  for (const [source, zoom] of [['discovery-grouped', [8, undefined]], ['discovery-top', [8, 13]], ['discovery-top-near', [13, undefined]]]) {
+    const room = c.layers[index(source + '-room')];
+    assert.ok(room, source + ': every count has a room');
+    assert.equal(JSON.stringify(room.filter), '["has","point_count"]');
+    assert.deepEqual([room.minzoom, room.maxzoom], zoom, source + ': only at the stage its count shows');
+    assert.equal(room.layout['icon-allow-overlap'], true, 'the count is always drawn, so its box always counts');
+    assert.notEqual(room.layout['icon-ignore-placement'], true, 'its box is kept for the names placed after it');
+    assert.equal(room.paint['icon-opacity'], 0);
+    // saved-mark is 18px; with the 2px icon padding the box covers the 12/15/18px circle and its stroke.
+    assert.equal(JSON.stringify(room.layout['icon-size']), '["step",["get","point_count"],1.4,10,1.7,50,2]');
+    for (const [size, radius] of [[1.4, 12], [1.7, 15], [2, 18]]) assert.ok(18 * size + 4 >= 2 * radius + 2, source + ': box covers a ' + radius + 'px count');
+    // MapLibre places the top layer first: the room has to sit above every name.
+    for (const id of names) assert.ok(index(source + '-room') > index(id), source + '-room above ' + id);
+  }
 });
 
 test('keeps bundled CSP and attribution, and rejects invalid explicit centers', () => {
