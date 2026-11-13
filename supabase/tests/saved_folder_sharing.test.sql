@@ -200,6 +200,49 @@ select is(public.set_saved_note('place','osm:node:830002','  ','sfs-test')->'not
 reset role;
 select is((select array_agg(saved_key order by saved_key) from private.saved_item_notes where user_id='e5170000-0000-4000-8000-000000000001'),
  array['place:sfs-test:osm:node:830001','user:sfs-test:e5170000-0000-4000-8000-000000000003'],'only memos on still-saved items are left');
+-- ADR-0001: words friends can read go to the safety review and the watch-term scan; private folders and memos do not.
+select ok(not has_function_privilege('anon','public.get_saved_folder_safety_content(uuid)','execute')
+ and not has_function_privilege('authenticated','public.get_saved_folder_safety_content(uuid)','execute')
+ and not has_function_privilege('authenticated','private.saved_folder_safety_content(uuid)','execute')
+ and has_function_privilege('service_role','public.get_saved_folder_safety_content(uuid)','execute'),'only the safety monitor reads a folder''s words');
+select ok(not has_function_privilege('anon','public.get_admin_saved_folder_content(uuid)','execute'),'visitors cannot open the admin copy');
+select ok((select bool_and(pg_get_constraintdef(oid) like '%saved_folder%') from pg_constraint
+ where conname in ('safety_review_queue_target_type_check','safety_alerts_target_type_check','notifications_target_type_check'))
+ and pg_get_functiondef('public.export_admin_safety_evidence(bigint)'::regprocedure) like '%saved_folder_safety_content(a.target_id)%','the queue, alerts, admin bell and evidence export know folders');
+select is((select count(*)::integer from pg_trigger where tgrelid='private.saved_item_notes'::regclass and not tgisinternal),0,'memos are never sent: nobody else reads them');
+insert into private.watch_terms(term,category,severity) values('폴더감시시험어','fraud','high') on conflict do nothing;
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select set_config('sfs.watch_friends',public.save_saved_folder(null,'안전 검사 폴더','friends','주말 산책')->>'id',true);
+select set_config('sfs.watch_private',public.save_saved_folder(null,'나만 보는 안전 폴더','private','폴더감시시험어')->>'id',true);
+reset role;
+select is((select count(*)::integer from public.safety_review_queue where target_type='saved_folder' and target_id=current_setting('sfs.watch_friends')::uuid),1,'a new folder friends can see enters the safety review queue');
+select is((select count(*)::integer from public.safety_review_queue where target_type='saved_folder' and target_id=current_setting('sfs.watch_private')::uuid),0,'a private folder stays out of the queue');
+select is((select count(*)::integer from public.safety_alerts where target_type='saved_folder' and target_id=current_setting('sfs.watch_private')::uuid),0,'and out of the watch-term scan');
+update public.safety_review_queue set status='reviewed',reviewed_at=now() where target_type='saved_folder' and target_id=current_setting('sfs.watch_friends')::uuid;
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select lives_ok($$select public.save_saved_folder(current_setting('sfs.watch_friends')::uuid,'안전 검사 폴더','friends','주말 산책')$$,'the owner saves the same words again');
+reset role;
+select is((select count(*)||':'||min(status) from public.safety_review_queue where target_type='saved_folder' and target_id=current_setting('sfs.watch_friends')::uuid),'1:reviewed','the same words are not sent again');
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select lives_ok($$select public.save_saved_folder(current_setting('sfs.watch_private')::uuid,'나만 보는 안전 폴더','friends','폴더감시시험어')$$,'the owner shows the private folder to friends');
+select lives_ok($$select public.save_saved_folder(current_setting('sfs.watch_friends')::uuid,'새 이름','friends','주말 산책')$$,'and renames the friends folder');
+reset role;
+select is((select count(*)::integer from public.safety_review_queue where target_type='saved_folder' and target_id=current_setting('sfs.watch_private')::uuid),1,'turning a folder to friends sends the words written while it was private');
+select is((select status from public.safety_review_queue where target_type='saved_folder' and target_id=current_setting('sfs.watch_friends')::uuid),'pending','new words go back to review');
+select is((select author_id from public.safety_alerts where target_type='saved_folder' and target_id=current_setting('sfs.watch_private')::uuid),'e5170000-0000-4000-8000-000000000001'::uuid,
+ 'a watch term in a folder friends can see raises an alert on its owner');
+set local role service_role;
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+select is(public.get_saved_folder_safety_content(current_setting('sfs.watch_friends')::uuid)->>'text',E'저장 폴더 · 보는 사람: 친구\n새 이름\n주말 산책','the safety monitor reads the name and description');
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select throws_ok($$select public.get_saved_folder_safety_content(current_setting('sfs.watch_friends')::uuid)$$,'42501',null,'a member cannot call the safety read');
+select throws_ok($$select public.get_admin_saved_folder_content(current_setting('sfs.watch_friends')::uuid)$$,'P0001','ADMIN_REQUIRED','a member cannot open the admin copy');
+reset role;
 -- Unfriending ends a folder made together; deleting the account takes the places the member put in.
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);

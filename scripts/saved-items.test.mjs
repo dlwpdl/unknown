@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import { loadSavedItems, loadSavedItemState, loadSavedPlaceState, setSavedPlaceState, setSavedItem, loadSavedFolders, saveSavedFolder, loadSavedFolder, loadFriendFolders, setSavedFolderCover, setSavedNote, loadPlaceFriendFolders, copySavedFolder, inviteFolderMember, acceptFolderInvite, removeFolderMember, loadSharedFolders, setFolderPlace, deleteSavedFolder, setSavedItemFolders } from '../src/lib/saved-items.ts';
 
 const merchant = 'e2310000-0000-4000-8000-000000000001';
@@ -198,4 +199,16 @@ test('folders made together: only the owner sees members, and every answer the s
   assert.deepEqual((await loadSavedFolder(client(detail), folder)).members, [{ id: person, nickname: '친구', accepted: false }]);
   assert.equal((await loadSavedFolder(client({ ...detail, role: 'editor', members: undefined }), folder)).role, 'editor');
   await assert.rejects(loadSavedFolder(client({ ...detail, role: 'editor' }), folder), /INVALID_SAVED_RESPONSE/, 'only the owner gets the member list');
+});
+
+test('the safety monitor reads a friends folder through its service-only function (ADR-0001)', async () => {
+  const [{ default: ts }, vm] = await Promise.all([import('typescript'), import('node:vm')]);
+  const exports = {};
+  vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../supabase/functions/safety-monitor/index.ts', import.meta.url), 'utf8') + '\nexports.loadContent = loadContent;', {
+    compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, { exports, Deno: { serve() {} }, require: () => ({}) });
+  const calls = [];
+  const content = await exports.loadContent({ rpc: async (name, args) => { calls.push([name, { ...args }]); return { data: { authorId: 'a', text: '저장 폴더 · 보는 사람: 친구\n주말 카페' }, error: null }; } }, 'saved_folder', folder);
+  assert.deepEqual(calls, [['get_saved_folder_safety_content', { p_target_id: folder }]]);
+  assert.equal(content.authorId, 'a');
+  await assert.rejects(exports.loadContent({ rpc: async () => ({ error: new Error('SERVICE_ROLE_REQUIRED') }) }, 'saved_folder', folder), /SERVICE_ROLE_REQUIRED/);
 });
