@@ -59,6 +59,7 @@ test('compiled shared Web adapter retains the original or captured UUID and fixe
   context.after(() => { for (const [key, value] of Object.entries(before)) if (value === undefined) delete process.env[key]; else process.env[key] = value; });
   let calls = 0;
   context.mock.method(globalThis, 'fetch', async (url, init) => {
+    if (String(url).endsWith('/get_meetup_invite_card')) return Response.json(null);
     calls++; assert.equal(url, `${env.SUPABASE_URL}/rest/v1/rpc/get_shared_link_preview`);
     assert.deepEqual(JSON.parse(init.body), { p_post_id: id });
     assert.equal(init.headers.Authorization, undefined); assert.equal(init.headers.Cookie, undefined);
@@ -80,9 +81,14 @@ test('compiled shared Web adapter retains the original or captured UUID and fixe
   assert.ok(crossHtml.includes(`${env.APP_URL}/post?id=${id}&amp;shared=1&amp;invite=1`));
   assert.ok(crossHtml.includes(`${env.APP_URL}/share-redirect.js`));
   assert.doesNotMatch(crossHtml, /forged\.example/);
+  // Vercel merges the caller query into the rewrite: only one valid sharer code survives it.
+  const coded = await (await handler(new Request(`${env.APP_URL}${mapped.dest}&c=HJKM2345&next=https://evil.example`))).text();
+  assert.ok(coded.includes(`${env.APP_URL}/post?id=${id}&amp;shared=1&amp;invite=1&amp;code=HJKM2345`));
+  assert.doesNotMatch(coded, /evil\.example/);
+  for (const query of ['&c=bad', '&c=HJKM2345&c=HJKM2345']) assert.doesNotMatch(await (await handler(new Request(`${env.APP_URL}${mapped.dest}${query}`))).text(), /code=/, query);
   assert.equal((await handler(new Request(`${env.APP_URL}/_gling-share-preview?__gling_share_id=${id}&__gling_share_id=wrong`))).status, 404);
   assert.equal((await handler(new Request(`${env.APP_URL}/share/${id}`, { method: 'POST' }))).status, 405);
-  assert.equal(calls, 3);
+  assert.equal(calls, 6);
 });
 
 test('native Node HTTP adapter preserves HTML, HEAD,405 and request privacy', async context => {
@@ -96,6 +102,7 @@ test('native Node HTTP adapter preserves HTML, HEAD,405 and request privacy', as
   context.after(() => { for (const [key, value] of Object.entries(before)) if (value === undefined) delete process.env[key]; else process.env[key] = value; });
   let calls = 0;
   context.mock.method(globalThis, 'fetch', async (url, init) => {
+    if (String(url).endsWith('/get_meetup_invite_card')) return Response.json(null);
     calls++; assert.equal(url, `${env.SUPABASE_URL}/rest/v1/rpc/get_shared_link_preview`);
     assert.equal(init.redirect, 'error'); assert.ok(init.signal instanceof AbortSignal);
     assert.deepEqual(Object.keys(init.headers).sort(), ['Content-Type', 'apikey']);

@@ -36,7 +36,7 @@ export function mountParticipant(screen, options = {}) {
   };
   class Value { constructor(value) { this.value = value; } setValue(value) { this.value = value; } interpolate() { return 1; } stopAnimation() {} }
   const animated = { Value, View: 'View', timing: () => ({ start: fn => fn?.() }), spring: () => ({ start: fn => fn?.() }), parallel: () => ({ start: fn => fn?.() }) };
-  const native = { StyleSheet: { create: value => value, hairlineWidth: 1 }, View: 'View', TextInput: 'TextInput', RefreshControl: 'RefreshControl', KeyboardAvoidingView: 'View', Modal: 'Modal', Animated: animated, Easing: { out: value => value }, Keyboard: { dismiss() {} }, LayoutAnimation: { configureNext() {}, Presets: { easeInEaseOut: {} } }, Platform: { OS: 'ios' }, useWindowDimensions: () => ({ width: ctx.width ?? 390, height: 844, fontScale: ctx.fontScale ?? 1 }), Alert: { alert: (...args) => alerts.push(args) }, AppState: { addEventListener: () => ({ remove() {} }) }, DeviceEventEmitter: { addListener: () => ({ remove() {} }), emit: value => calls.push(['emit', value]) } };
+  const native = { StyleSheet: { create: value => value, hairlineWidth: 1 }, View: 'View', TextInput: 'TextInput', RefreshControl: 'RefreshControl', KeyboardAvoidingView: 'View', Modal: 'Modal', Animated: animated, Easing: { out: value => value }, Keyboard: { dismiss() {} }, LayoutAnimation: { configureNext() {}, Presets: { easeInEaseOut: {} } }, Platform: { OS: ctx.os ?? 'ios' }, useWindowDimensions: () => ({ width: ctx.width ?? 390, height: 844, fontScale: ctx.fontScale ?? 1 }), Alert: { alert: (...args) => alerts.push(args) }, AppState: { addEventListener: () => ({ remove() {} }) }, DeviceEventEmitter: { addListener: () => ({ remove() {} }), emit: value => calls.push(['emit', value]) } };
   const imports = {
     react, 'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }), Fragment: 'Fragment' }, 'react-native': native,
     'expo-router': { useFocusEffect: fn => effect(fn, [fn]), usePreventRemove: (active, fn) => { ctx.preventRemove = active ? fn : null; }, useRouter: () => ({ push: route => calls.push(['push', JSON.parse(JSON.stringify(route))]), replace: route => calls.push(['replace', JSON.parse(JSON.stringify(route))]), back: () => calls.push(['back']), canGoBack: () => !!ctx.canGoBack, setParams: value => calls.push(['params', value]) }) },
@@ -50,7 +50,9 @@ export function mountParticipant(screen, options = {}) {
     '@/lib/membership-provider': { useMembership: () => ({ membership: {}, refresh: noop }) }, '@/components/relationship-slot-card': { relationshipSlotData: () => null },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: value => calls.push(['feedback', value]) }) },
     '@/lib/push-prompt': { requestPushPrompt: reason => calls.push(['push-prompt', reason]) },
-    '@/lib/shared-link-preview': { loadSharedLinkPost: async () => { calls.push(['guest-read']); return ctx.guestPost ?? ctx.post; } }, '@/lib/sharing': { SHARED_POST_RETURN_KEY: 'gling.sharedPostReturn' }, 'expo-image': { Image: 'Image' },
+    '@/lib/shared-link-preview': { loadSharedLinkPost: async () => { calls.push(['guest-read']); return ctx.guestPost ?? ctx.post; } },
+    '@/lib/invites': { normalizeInviteCode: value => value ?? null, rememberInviteCode: async () => null, claimRememberedInvite: async () => null },
+    '@/lib/meetup-invite': { loadMeetupInviteCard: async (_, postId, code) => { calls.push(['invite-card', postId, code]); return ctx.inviter ? { inviter: ctx.inviter } : null; } }, '@/lib/sharing': { SHARED_POST_RETURN_KEY: 'gling.sharedPostReturn' }, 'expo-image': { Image: 'Image' },
     '@/lib/supabase': { supabase: { rpc: async name => name === 'get_meetup_fee_payments' && ctx.payments === 'error' ? { error: { message: 'offline' } } : { data: name === 'get_meetup_fee_payments' ? ctx.payments ?? [] : name === 'get_meetup_languages' ? ctx.languages ?? null : null, error: null } } }, '@/lib/meetup-host-tools': hostTools, '@/lib/personal-info': { ageForMeetupRecommendation: () => null },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 12, four: 16, six: 24 }, Depth: { control: {}, card: {} }, MaxContentWidth: 640, TabBarHeight: 60 }, '@/constants/design-system': designSystem,
     '@/lib/newcomer': newcomer, '@/components/newcomer': { useNewcomerStatus: () => ({ status: ctx.newcomerStatus ?? null, loading: false, refresh: noop }) },
@@ -72,7 +74,7 @@ export function mountParticipant(screen, options = {}) {
     if (name.startsWith('@/components/')) return new Proxy({}, { get: (_, key) => key });
     throw new Error(`Unexpected import ${name}`);
   }, Date, Intl, JSON, setTimeout: () => 0, clearTimeout() {}, requestAnimationFrame: fn => fn() });
-  const render = () => { dirty = false; cursor = 0; tree = exports[exportName](screen === 'discovery' ? { destination: ctx.destination, sourceInvalid: ctx.sourceInvalid, routedMine: ctx.routedMine } : screen === 'mine' ? { onOpen: noop } : { postId: ctx.post.id }); effects.splice(0).forEach(fn => fn()); return tree; };
+  const render = () => { dirty = false; cursor = 0; tree = exports[exportName](screen === 'discovery' ? { destination: ctx.destination, sourceInvalid: ctx.sourceInvalid, routedMine: ctx.routedMine } : screen === 'mine' ? { onOpen: noop } : { postId: ctx.post.id, code: ctx.code }); effects.splice(0).forEach(fn => fn()); return tree; };
   const flush = async () => { for (let i = 0; i < 15; i++) { if (dirty && mounted) render(); await new Promise(resolve => setImmediate(resolve)); if (!dirty || !mounted) return tree; } throw new Error('component did not settle'); };
   return { ctx, calls, alerts, get tree() { return tree; }, render, flush, control: id => nodes(tree).find(node => node.props?.analyticsId === id), unmountLayout() { mounted = false; hooks.filter(hook => hook?.phase === 'layout').forEach(hook => hook.cleanup?.()); }, unmount() { mounted = false; hooks.forEach(hook => hook?.cleanup?.()); }, rerender() { dirty = true; } };
 }
@@ -144,6 +146,28 @@ test('application shows the same global profile one tap away; the send button is
   sheet().props.onDismissed(); assert.equal(ui.calls.filter(([name]) => name === 'push').length, 1, 'closing it again does not reopen the editor');
   ui.control('app_meetup-join.pressable.8').props.onPress(); await ui.flush(); assert.equal(ui.calls.find(([name]) => name === 'join')[4], 'profile-r1');
   assert.ok(nodes(ui.tree).some(node => node.type === 'StateCard' && node.props.kind === 'pending')); ui.unmount();
+});
+test('a sharer code names who shared the link above the form; no code reads no card', async () => {
+  const ui = mountParticipant('join', { code: 'HJKM2345', inviter: '지은' }); await ui.flush();
+  assert.deepEqual(ui.calls.find(([name]) => name === 'invite-card'), ['invite-card', participantPost.id, 'HJKM2345']);
+  assert.ok(text(ui.tree).includes('지은님 초대 링크로 들어왔어요')); ui.unmount();
+  const plain = mountParticipant('join'); await plain.flush();
+  assert.ok(!plain.calls.some(([name]) => name === 'invite-card') && !text(plain.tree).includes('초대 링크로 들어왔어요')); plain.unmount();
+});
+test('a web request hands off to the app instead of routes the public web does not have', async () => {
+  const ui = mountParticipant('join', { os: 'web' }); await ui.flush();
+  nodes(ui.tree).find(node => node.type === 'TextInput').props.onChangeText('함께 걷고 싶어요.'); await ui.flush();
+  ui.ctx.request = { id: 'request', status: 'pending', created_at: '2030-01-01' };
+  ui.control('app_meetup-join.pressable.8').props.onPress(); await ui.flush();
+  const order = nodes(ui.tree), handoff = order.findIndex(node => node.type === 'MeetupJoinHandoff');
+  assert.deepEqual([order[handoff]?.props.host, order[handoff]?.props.approved], ['소라', false]);
+  assert.ok(handoff < order.findIndex(node => node.props?.analyticsId === 'app_meetup-join.pressable.12'), 'the next step comes before 신청 취소');
+  assert.equal(ui.control('app_meetup-join.pressable.11'), undefined, 'no sent-profile row');
+  assert.equal(ui.control('meetup.join.fill-profile'), undefined, 'no profile row');
+  assert.equal(ui.control('app_meetup-join.pressable.3'), undefined, 'no app-tab button');
+  ui.unmount();
+  const app = mountParticipant('join', { request: { id: 'request', status: 'pending', created_at: '2030-01-01' } }); await app.flush();
+  assert.ok(app.control('app_meetup-join.pressable.3') && app.control('app_meetup-join.pressable.11'), 'the app keeps its rows'); app.unmount();
 });
 test('the footer says what is left, and leaving asks first only while an unsent answer exists', async () => {
   const ui = mountParticipant('join'); await ui.flush();

@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalS
 // shortcut: toqr is locked through Expo CLI; recheck this import when upgrading Expo.
 import { toQR } from 'toqr';
 
+import { MeetupInvite } from './meetup-invite';
 import { SharedPostArticle } from './shared-post-article';
 import { useReaderAnalytics } from './analytics';
 import { ControlMetrics, Typography } from '@/constants/design-system';
@@ -42,6 +43,11 @@ export default function SharedPostLanding() {
   const { isAuthed, isAuthLoading, me, promptLogin } = useAuth(), hidden = useContentVisibility();
   const { language } = useLanguage(), { play } = useInteractionFeedback();
   const target = sharedLinkTarget(PUBLIC_SITE + path), postId = target?.id ?? null;
+  // A meetup invitation link (invite=1) opens the web invitation first (owner 2026-11-13); a story or a gone post keeps this landing.
+  // Only a link someone sent (the share gateway adds shared=1) or a code opens it; the public city list keeps this landing (§6-23).
+  const sent = /[?&]shared=1(?:&|$)/.test(path) || !!target?.code;
+  const [missing, setMissing] = useState<string | null>(null);
+  const inviting = !!target?.invite && sent && missing !== postId;
   const viewer = me.id;
   const authenticated = isAuthed && !isAuthLoading, owner = authenticated ? viewer : 'guest';
   const [revision, setRevision] = useState(0), [loginError, setLoginError] = useState('');
@@ -58,14 +64,14 @@ export default function SharedPostLanding() {
     && !(current.post.business && hidden('user', current.post.business.id)) ? current.post : null;
   useReaderAnalytics('post', `shared:${postId ?? 'invalid'}`, hydrated);
   useEffect(() => {
-    if (!hydrated || !postId) return;
+    if (!hydrated || !postId || inviting) return;
     let active = true;
     const read = authenticated ? loadSharedLinkPost(supabase, postId).then(value => ({ post: value?.id === postId ? value : null, preview: null }))
       : loadSharedLinkPreview(publicWebClient, postId).then(value => ({ preview: value?.id === postId ? value : null, post: null }));
     void read.then(value => { if (active && scope.current.active && scope.current.key === scopeKey) setResult({ key, ...value, failed: false }); })
       .catch(() => { if (active && scope.current.active && scope.current.key === scopeKey) setResult({ key, post: null, preview: null, failed: true }); });
     return () => { active = false; };
-  }, [authenticated, hydrated, key, postId, scopeKey]);
+  }, [authenticated, hydrated, inviting, key, postId, scopeKey]);
   useEffect(() => {
     const refresh = () => setRevision(value => value + 1);
     const visible = () => { if (document.visibilityState === 'visible') refresh(); };
@@ -84,6 +90,7 @@ export default function SharedPostLanding() {
       setLoginError(language === 'ko' ? '로그인을 준비하지 못했어요. 다시 시도해 주세요.' : 'Couldn’t start sign-in. Try again.'); play('warning');
     }
   }
+  if (inviting) return <MeetupInvite postId={postId!} code={target?.code ?? null} onMissing={setMissing} />;
   return <SharedPostLandingContent key={`${postId}:${owner}`} postId={postId} preview={authenticated ? null : current?.preview ?? null} post={post}
     authenticated={authenticated} authPending={isAuthLoading} status={status} invite={target?.invite} onLogin={login} loginError={loginError} onRetry={() => setRevision(value => value + 1)} />;
 }

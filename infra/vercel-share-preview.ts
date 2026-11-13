@@ -9,7 +9,9 @@ export default function sharePreview(request: Request): Promise<Response> {
     const ids = url.searchParams.getAll('__gling_share_id');
     url.pathname = ids.length !== 1 ? '/share/invalid' : decodeSharedUuid(ids[0]) ? `/s/${ids[0]}`
       : /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(ids[0]) ? `/share/${ids[0]}` : '/share/invalid';
-    url.search = '';
+    // Only the sharer's invite code survives the internal rewrite; the handler validates it again.
+    const codes = url.searchParams.getAll('c');
+    url.search = codes.length === 1 && /^[A-HJ-NP-Z2-9]{8}$/.test(codes[0]) ? `?c=${codes[0]}` : '';
     request = new Request(url, request);
   }
   return handleSharePreview(request, {
