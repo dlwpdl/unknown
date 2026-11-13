@@ -1,5 +1,6 @@
 -- 저장 폴더 묶음 (owner 2026-11-13): a folder can be shown to friends, and friends see it on the profile.
--- notifications takes a short exclusive lock in section 5: give up fast instead of queueing app requests (apply off-peak).
+-- notifications (sections 5 and 7) and the safety tables (section 7) take a short exclusive lock: give up fast instead of
+-- queueing app requests (apply off-peak).
 set local lock_timeout = '5s';
 
 -- 1) Each folder is 'friends' or 'private'. Folders made before this stay private: the app told their owners
@@ -366,13 +367,77 @@ do $$ declare definition text; anchor constant text:='when ''message_reaction'' 
  execute replace(definition,anchor,'when ''saved_folder_invite'' then ''direct_requests'' '||anchor);
 end $$;
 
+-- 7) ADR-0001: once friends can read a folder, its name and description go through the safety review queue and the
+-- watch-term scan like posts and live bubbles. Private folders and memos stay out: nobody else reads them.
+create function private.saved_folder_safety_content(p_id uuid) returns jsonb
+language sql stable security definer set search_path='' as $$
+ select jsonb_build_object('authorId',f.user_id,'visibility',f.visibility,'createdAt',f.created_at,
+  'text',concat_ws(E'\n','저장 폴더 · 보는 사람: '||case f.visibility when 'friends' then '친구' else '나만' end,f.name,f.description))
+ from private.saved_folders f where f.id=p_id
+$$;
+create function public.get_saved_folder_safety_content(p_target_id uuid) returns jsonb
+language plpgsql stable security definer set search_path='' as $$
+begin
+ if auth.role() is distinct from 'service_role' then raise exception 'SERVICE_ROLE_REQUIRED'; end if;
+ return private.saved_folder_safety_content(p_target_id);
+end $$;
+create function public.get_admin_saved_folder_content(p_target_id uuid) returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare content jsonb;
+begin
+ if not private.is_admin() then raise exception 'ADMIN_REQUIRED'; end if;
+ content:=private.saved_folder_safety_content(p_target_id);
+ if content is null then raise exception 'TARGET_NOT_FOUND'; end if;
+ perform public.log_admin_access('safety',(content->>'authorId')::uuid,p_target_id);
+ return content;
+end $$;
+
+-- Each anchor opens a case list, away from the lines other migrations add, and must occur exactly once.
+do $$
+declare tbl text; definition text; item record;
+begin
+ foreach tbl in array array['safety_review_queue','safety_alerts','notifications'] loop
+  select pg_get_constraintdef(oid) into definition from pg_constraint where conrelid=('public.'||tbl)::regclass and conname=tbl||'_target_type_check';
+  if definition is null or left(definition,7)<>'CHECK (' or definition like '%saved_folder%' then raise exception 'SAVED_FOLDER_TARGET_CONSTRAINT_CHANGED: %',tbl; end if;
+  execute format('alter table public.%I drop constraint %I',tbl,tbl||'_target_type_check');
+  execute format('alter table public.%I add constraint %I check ((%s) or target_type=''saved_folder'')',tbl,tbl||'_target_type_check',substring(definition from 8 for char_length(definition)-8));
+ end loop;
+ for item in select * from (values
+  ('private.enqueue_safety_review()',$a$kind text := case tg_table_name$a$,$r$kind text := case tg_table_name when 'saved_folders' then 'saved_folder'$r$),
+  ('private.enqueue_safety_review()',$a$content := case tg_table_name$a$,$r$content := case tg_table_name when 'saved_folders' then private.saved_folder_safety_content(new.id)->>'text'$r$),
+  ('private.scan_watch_terms()',$a$target text := case tg_table_name$a$,$r$target text := case tg_table_name when 'saved_folders' then 'saved_folder'$r$),
+  ('private.scan_watch_terms()',$a$content text := concat_ws(' ', $a$,$r$content text := concat_ws(' ', case when tg_table_name='saved_folders' then concat_ws(' ',row_json->>'name',row_json->>'description') end, $r$),
+  ('private.scan_watch_terms()',$a$case when tg_table_name='chilling_profiles' then new.id end$a$,$r$case when tg_table_name='chilling_profiles' then new.id when tg_table_name='saved_folders' then (row_json->>'user_id')::uuid end$r$),
+  ('private.notification_target_visible(uuid,text,uuid)',$a$case p_target_type$a$,$r$case p_target_type when 'saved_folder' then private.is_admin_id(p_user_id)$r$),
+  ('public.export_admin_safety_evidence(bigint)',$a$content := case a.target_type$a$,$r$content := case a.target_type when 'saved_folder' then private.saved_folder_safety_content(a.target_id)$r$)
+ ) v(signature,anchor,replacement) loop
+  definition:=pg_get_functiondef(item.signature::regprocedure);
+  if array_length(string_to_array(definition,item.anchor),1)<>2 then raise exception 'SAVED_FOLDER_SAFETY_CHANGED %',item.signature; end if;
+  execute replace(definition,item.anchor,item.replacement);
+ end loop;
+end $$;
+
+-- Sent when a friends folder is made or its words change, and when a private folder turns to friends (its earlier
+-- words with it). The same words are not sent again: the trigger skips them and the queue keeps one row per folder.
+create trigger saved_folders_safety_review after insert on private.saved_folders
+ for each row when (new.visibility='friends') execute function private.enqueue_safety_review();
+create trigger saved_folders_safety_review_change after update of name,description,visibility on private.saved_folders
+ for each row when (new.visibility='friends' and (old.visibility<>'friends' or old.name is distinct from new.name or old.description is distinct from new.description))
+ execute function private.enqueue_safety_review();
+create trigger saved_folders_watch_terms after insert on private.saved_folders
+ for each row when (new.visibility='friends') execute function private.scan_watch_terms();
+create trigger saved_folders_watch_terms_change after update of name,description,visibility on private.saved_folders
+ for each row when (new.visibility='friends' and (old.visibility<>'friends' or old.name is distinct from new.name or old.description is distinct from new.description))
+ execute function private.scan_watch_terms();
+
 do $$ declare signature text; begin
  foreach signature in array array['private.saved_folder_places(uuid)','private.saved_folder_role(uuid,uuid)','private.saved_folder_json(private.saved_folders)',
   'public.save_saved_folder(uuid,text,text,text)','public.set_saved_folder_cover(uuid,text,text)','public.get_saved_folder(uuid)','public.get_friend_saved_folders(uuid)',
   'public.set_saved_note(text,text,text,text)','public.get_place_friend_folders(text,text)',
   'public.copy_saved_folder(uuid)','private.saved_folder_members_json(uuid)','public.invite_saved_folder_member(uuid,uuid)',
   'public.accept_saved_folder_invite(uuid)','public.remove_saved_folder_member(uuid,uuid)','public.get_shared_saved_folders()',
-  'public.set_saved_folder_place(uuid,text,text,boolean,text)','private.end_saved_folder_members()'] loop
+  'public.set_saved_folder_place(uuid,text,text,boolean,text)','private.end_saved_folder_members()',
+  'private.saved_folder_safety_content(uuid)','public.get_saved_folder_safety_content(uuid)','public.get_admin_saved_folder_content(uuid)'] loop
   execute 'alter function '||signature||' owner to postgres';
   execute 'revoke all on function '||signature||' from public,anon,authenticated,service_role';
  end loop;
@@ -380,7 +445,8 @@ end $$;
 grant execute on function public.save_saved_folder(uuid,text,text,text),public.set_saved_folder_cover(uuid,text,text),public.get_saved_folder(uuid),public.get_friend_saved_folders(uuid),
  public.set_saved_note(text,text,text,text),public.get_place_friend_folders(text,text),public.copy_saved_folder(uuid),
  public.invite_saved_folder_member(uuid,uuid),public.accept_saved_folder_invite(uuid),public.remove_saved_folder_member(uuid,uuid),
- public.get_shared_saved_folders(),public.set_saved_folder_place(uuid,text,text,boolean,text) to authenticated;
+ public.get_shared_saved_folders(),public.set_saved_folder_place(uuid,text,text,boolean,text),public.get_admin_saved_folder_content(uuid) to authenticated;
+grant execute on function public.get_saved_folder_safety_content(uuid) to service_role;
 
 -- An unknown target rejects the whole analytics batch, so these must reach production before the app build.
 insert into private.behavior_targets(id) values
