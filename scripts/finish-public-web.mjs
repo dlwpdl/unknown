@@ -7,6 +7,7 @@ import {
 } from '../src/lib/public-seo.ts';
 import { breadcrumbHtml, escapeHtml, isoDate, koreanDate, loadPublicPosts, postCover, prerenderPublicPosts, redirectPage, withStaticPage, topicHubs } from './prerender-public-posts.mjs';
 import { prerenderPublicCompanies } from './prerender-public-companies.mjs';
+import { prerenderEnglishPosts } from './english-posts.mjs';
 import { loadPlaceCatalog, loadPlaceRatings, publicPlaces, writePublicPlaces } from './prerender-public-places.mjs';
 
 const LINK = 'color:#CBB9FF';
@@ -333,5 +334,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const { posts, meetups } = options ? await prerenderPublicPosts(directory, options, loaded) : loaded;
   const companies = options ? await prerenderPublicCompanies(directory, { ...options, posts }) : [];
   const { hubs } = finishPublicWeb(directory, posts, companies, { meetups, places, catalog });
-  console.log(`Prerendered ${posts.length} public posts, ${hubs.size} topic hubs, ${places.length} place pages and ${companies.length} business profiles.`);
+  const english = options ? await prerenderEnglishPosts(directory, posts, options, { hubs, businesses: companies }) : [];
+  console.log(`Prerendered ${posts.length} public posts (${english.length} in English), ${hubs.size} topic hubs, ${places.length} place pages and ${companies.length} business profiles.`);
 }

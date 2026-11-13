@@ -3,6 +3,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkMerchantWeb } from './check-merchant-web.mjs';
 import { checkWebChunks } from './check-web-chunks.mjs';
+import { languagePairProblems } from './english-posts.mjs';
 
 const directory = process.argv[2] ?? 'dist';
 assert.ok(existsSync(join(directory, 'index.html')), 'Public web export is missing');
@@ -36,6 +37,12 @@ if (process.env.GLING_PRERENDER_POSTS === '1') {
   assert.ok(companies.length > 0 && sitemap.includes('https://gling.ej-entertainment.com/company/'), 'Public business profiles were not prerendered');
   const company = readFileSync(join(directory, 'company', companies[0]), 'utf8');
   assert.ok(company.includes(`rel="canonical" href="https://gling.ej-entertainment.com/company/${companies[0].replace(/\.html$/, '')}"`) && company.includes('"LocalBusiness"') && company.includes('id="gling-static-company"') && !/noindex/.test(company), 'Prerendered business profile must be indexable with its own canonical');
+  // English copies of business posts (scripts/english-posts.mjs, off until the owner's start date) must pair with their Korean page.
+  for (const file of existsSync(join(directory, 'en', 'posts')) ? readdirSync(join(directory, 'en', 'posts')) : []) {
+    const id = file.replace(/\.html$/, '');
+    assert.deepEqual(languagePairProblems(readFileSync(join(directory, 'posts', file), 'utf8'), readFileSync(join(directory, 'en', 'posts', file), 'utf8'), id), [], `English post ${id} is not paired with its Korean page`);
+    assert.ok(sitemap.includes(`https://gling.ej-entertainment.com/en/posts/${id}<`), `English post ${id} is missing from the sitemap`);
+  }
 }
 assert.ok(robots.includes('Disallow: /merchant/') && robots.includes('Disallow: /admin'), 'Private surfaces must remain outside public discovery');
 assert.ok(readFileSync(join(directory, 'index.html'), 'utf8').includes('application/ld+json'), 'Public home structured data is missing');
