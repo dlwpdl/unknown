@@ -57,6 +57,11 @@ select ok(exists(select 1 from pg_class where oid='private.saved_item_notes'::re
  'memos have row level security and no direct read grant');
 select ok(not has_function_privilege('anon','public.set_saved_note(text,text,text,text)','execute'),'visitors cannot write memos');
 select ok(not has_function_privilege('anon','public.get_place_friend_folders(text,text)','execute'),'visitors cannot list friend folders on a place');
+select ok((select bool_and(c.relrowsecurity) from pg_class c where c.oid in ('private.saved_folder_members'::regclass,'private.saved_folder_shared_places'::regclass))
+ and not has_table_privilege('authenticated','private.saved_folder_members','select') and not has_table_privilege('authenticated','private.saved_folder_shared_places','select'),
+ 'folder members and editors'' places have row level security and no direct read grant');
+select ok(not has_function_privilege('anon','public.invite_saved_folder_member(uuid,uuid)','execute') and not has_function_privilege('anon','public.set_saved_folder_place(uuid,text,text,boolean,text)','execute'),
+ 'visitors cannot invite or edit');
 
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);
@@ -127,6 +132,52 @@ select is(public.get_place_friend_folders('sfs-test','osm:node:830001'),'[]'::js
 select throws_ok($$select public.copy_saved_folder('e5180000-0000-4000-8000-000000000002')$$,'P0001','FOLDER_UNAVAILABLE','nor copy it');
 select is(public.get_friend_saved_folders('e5170000-0000-4000-8000-000000000001'),'[]'::jsonb,'nor see the folder list');
 
+-- 5) Folders made together.
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select throws_ok($$select public.invite_saved_folder_member('e5180000-0000-4000-8000-000000000001','e5170000-0000-4000-8000-000000000003')$$,'P0001','FOLDER_MEMBER_NOT_FRIEND','only a friend can be invited');
+select throws_ok($$select public.invite_saved_folder_member('e5180000-0000-4000-8000-000000000001','e5170000-0000-4000-8000-000000000004')$$,'P0001','FOLDER_MEMBER_NOT_FRIEND','not a friend in a blocked pair');
+select throws_ok($$select public.invite_saved_folder_member('e5180000-0000-4000-8000-000000000001','e5170000-0000-4000-8000-000000000001')$$,'P0001','FOLDER_MEMBER_NOT_FRIEND','not the owner themselves');
+select is(public.invite_saved_folder_member('e5180000-0000-4000-8000-000000000001','e5170000-0000-4000-8000-000000000002'),'[{"id":"e5170000-0000-4000-8000-000000000002","accepted":false,"nickname":"친구"}]'::jsonb,'the owner invites a friend to a private folder');
+select lives_ok($$select public.invite_saved_folder_member('e5180000-0000-4000-8000-000000000001','e5170000-0000-4000-8000-000000000002')$$,'inviting again is harmless');
+reset role;
+select is((select count(*)::integer from public.notifications where user_id='e5170000-0000-4000-8000-000000000002' and kind='saved_folder_invite' and actor_id='e5170000-0000-4000-8000-000000000001'),1,'the friend gets one invite in the bell');
+select is(private.notification_category('saved_folder_invite','user'),'direct_requests','under the same setting as friend requests');
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select throws_ok($$select public.get_saved_folder('e5180000-0000-4000-8000-000000000001')$$,'P0001','FOLDER_UNAVAILABLE','an invite alone does not open a private folder');
+select throws_ok($$select public.set_saved_folder_place('e5180000-0000-4000-8000-000000000001','place','osm:node:830002',true,'sfs-test')$$,'P0001','FOLDER_UNAVAILABLE','nor lets the invitee add places');
+select is((public.get_shared_saved_folders()->'invites'->0)->>'name','예전 폴더','the invite shows in the friend''s saved list');
+select is(public.accept_saved_folder_invite('e5180000-0000-4000-8000-000000000001')->>'id','e5180000-0000-4000-8000-000000000001','the friend accepts');
+select is(public.get_saved_folder('e5180000-0000-4000-8000-000000000001')->>'role','editor','and now edits the folder');
+select ok(not (public.get_saved_folder('e5180000-0000-4000-8000-000000000001') ? 'members'),'an editor does not get the member list');
+select is((public.get_shared_saved_folders()->'folders'->0)->>'name','예전 폴더','it shows as a folder made together');
+select ok(public.set_saved_folder_place('e5180000-0000-4000-8000-000000000001','place','osm:node:830002',true,'sfs-test'),'the editor puts in a place they saved');
+select throws_ok($$select public.set_saved_folder_place('e5180000-0000-4000-8000-000000000001','place','osm:node:830003',true,'sfs-test')$$,'P0001','SAVED_TARGET_UNAVAILABLE','but not a place they have not saved');
+select throws_ok($$select public.set_saved_folder_place('e5180000-0000-4000-8000-000000000001','post','e5170000-0000-4000-8000-000000000003',true,null)$$,'P0001','INVALID_SAVED_TARGET','and only places or businesses');
+select is(jsonb_array_length(public.get_saved_folder('e5180000-0000-4000-8000-000000000001')->'places'),2,'the folder shows the owner''s place and the editor''s');
+select throws_ok($$select public.save_saved_folder('e5180000-0000-4000-8000-000000000001','바꿈','friends',null)$$,'P0001','FOLDER_UNAVAILABLE','an editor cannot rename or change who sees it');
+select throws_ok($$select public.set_saved_folder_cover('e5180000-0000-4000-8000-000000000001','sfs-test','osm:node:830002')$$,'P0001','FOLDER_UNAVAILABLE','nor pick the cover');
+select throws_ok($$select public.delete_saved_folder('e5180000-0000-4000-8000-000000000001')$$,'P0001','FOLDER_UNAVAILABLE','nor delete it');
+select throws_ok($$select public.invite_saved_folder_member('e5180000-0000-4000-8000-000000000001','e5170000-0000-4000-8000-000000000002')$$,'P0001','FOLDER_UNAVAILABLE','nor invite others');
+select ok(public.set_saved_folder_place('e5180000-0000-4000-8000-000000000001','place','osm:node:830001',false,'sfs-test'),'an editor takes out a place the owner put in');
+select is((select jsonb_agg(x->>'placeKey') from jsonb_array_elements(public.get_saved_folder('e5180000-0000-4000-8000-000000000001')->'places') x),'["osm:node:830002"]'::jsonb,'only the editor''s place is left');
+reset role;
+select ok(exists(select 1 from private.saved_places where user_id='e5170000-0000-4000-8000-000000000001' and place_key='osm:node:830001'),'the owner''s saved place itself stays saved');
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select is(public.get_saved_folder('e5180000-0000-4000-8000-000000000001')->'members','[{"id":"e5170000-0000-4000-8000-000000000002","accepted":true,"nickname":"친구"}]'::jsonb,'the owner sees who edits');
+select is((select jsonb_agg(x->>'placeKey') from jsonb_array_elements(public.get_saved_folder('e5180000-0000-4000-8000-000000000001')->'places') x),'["osm:node:830002"]'::jsonb,'and the place the editor put in');
+select throws_ok($$select public.set_saved_folder_place('e5180000-0000-4000-8000-000000000001','place','osm:node:830003',true,'sfs-test')$$,'P0001','FOLDER_OWNER_USES_LIBRARY','the owner adds through the saved list instead');
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000003","role":"authenticated"}',true);
+select throws_ok($$select public.set_saved_folder_place('e5180000-0000-4000-8000-000000000001','place','osm:node:830002',false,'sfs-test')$$,'P0001','FOLDER_UNAVAILABLE','a stranger cannot take places out');
+select throws_ok($$select public.remove_saved_folder_member('e5180000-0000-4000-8000-000000000001','e5170000-0000-4000-8000-000000000002')$$,'P0001','FOLDER_UNAVAILABLE','nor remove an editor');
+select throws_ok($$select public.accept_saved_folder_invite('e5180000-0000-4000-8000-000000000001')$$,'P0001','FOLDER_UNAVAILABLE','nor accept an invite they never got');
+select is(public.get_shared_saved_folders(),'{"invites":[],"folders":[]}'::jsonb,'and has no folders made together');
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select throws_ok($$select public.set_saved_folder_place('e5180000-0000-4000-8000-000000000002','place','osm:node:830002',true,'sfs-test')$$,'P0001','FOLDER_UNAVAILABLE','a friend who only views a folder cannot add to it');
+select ok(public.remove_saved_folder_member('e5180000-0000-4000-8000-000000000001','e5170000-0000-4000-8000-000000000002'),'the editor leaves');
+select throws_ok($$select public.get_saved_folder('e5180000-0000-4000-8000-000000000001')$$,'P0001','FOLDER_UNAVAILABLE','and can no longer open the private folder');
+
 reset role;
 delete from private.saved_folder_items where folder_id='e5180000-0000-4000-8000-000000000002' and place_key='osm:node:830002';
 select is((select private.saved_folder_json(f)->'cover'->>'placeKey' from private.saved_folders f where id='e5180000-0000-4000-8000-000000000002'),'osm:node:830001',
@@ -149,6 +200,20 @@ select is(public.set_saved_note('place','osm:node:830002','  ','sfs-test')->'not
 reset role;
 select is((select array_agg(saved_key order by saved_key) from private.saved_item_notes where user_id='e5170000-0000-4000-8000-000000000001'),
  array['place:sfs-test:osm:node:830001','user:sfs-test:e5170000-0000-4000-8000-000000000003'],'only memos on still-saved items are left');
+-- Unfriending ends a folder made together; deleting the account takes the places the member put in.
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select lives_ok($$select public.invite_saved_folder_member('e5180000-0000-4000-8000-000000000001','e5170000-0000-4000-8000-000000000002')$$,'the owner invites the friend again');
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select lives_ok($$select public.accept_saved_folder_invite('e5180000-0000-4000-8000-000000000001')$$,'the friend accepts again');
+select ok(public.set_saved_folder_place('e5180000-0000-4000-8000-000000000001','place','osm:node:830001',true,'sfs-test'),'and puts a place in');
+reset role;
+delete from private.friendships where user_low_id='e5170000-0000-4000-8000-000000000001' and user_high_id='e5170000-0000-4000-8000-000000000002';
+select is((select count(*)::integer from private.saved_folder_members where folder_id='e5180000-0000-4000-8000-000000000001'),0,'unfriending ends the editing');
+insert into private.saved_folder_members(folder_id,user_id,accepted_at) values('e5180000-0000-4000-8000-000000000002','e5170000-0000-4000-8000-000000000002',now());
+update public.profiles set account_status='deleted' where id='e5170000-0000-4000-8000-000000000002';
+select is((select count(*)::integer from private.saved_folder_members where user_id='e5170000-0000-4000-8000-000000000002')+(select count(*)::integer from private.saved_folder_shared_places where added_by='e5170000-0000-4000-8000-000000000002'),0,
+ 'deleting the account erases its memberships and the places it put in friends'' folders');
 update public.profiles set account_status='deleted' where id='e5170000-0000-4000-8000-000000000001';
 select is((select count(*)::integer from private.saved_item_notes where user_id='e5170000-0000-4000-8000-000000000001'),0,'deleting the account erases its memos');
 

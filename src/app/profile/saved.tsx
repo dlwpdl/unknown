@@ -6,6 +6,7 @@ import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable } from '@/components/analytics-controls';
 import { ClayBoxFill, useClayBox } from '@/components/clay';
+import { SharedFolders } from '@/components/folder-together';
 import { WebshopComparisonSheet } from '@/components/business-webshop';
 import { GlingLoader } from '@/components/gling-loader';
 import { LoginPanel } from '@/components/login-panel';
@@ -223,6 +224,7 @@ export default function SavedScreen() {
           {!!search && <Pressable analyticsId="saved.search.clear" accessibilityRole="button" accessibilityLabel={ko ? '검색어 지우기' : 'Clear search'} disabled={busy} style={ControlStyles.icon} onPress={() => { play('selection'); closeTransient(); setSearch(''); setQuery(''); }}><ThemedText accessible={false}>×</ThemedText></Pressable>}
         </View>
         <View style={styles.wrap}>{filters.map(([kind, label]) => <SavedLibraryButton key={kind} analyticsId={`saved.filter.${kind}`} label={label} selected={filter === kind} disabled={busy} onPress={() => { closeTransient(); setFilter(kind); }} />)}</View>
+        <SharedFolders disabled={busy} />
         <View style={styles.folders}><ThemedText type="label" themeColor="textSecondary">{ko ? '내 폴더' : 'My folders'}</ThemedText>
           <View style={styles.wrap}><SavedLibraryButton analyticsId="saved.folder.all" label={ko ? '전체 저장' : 'All saved'} selected={!folderId} disabled={busy} onPress={() => { closeTransient(); setFolderId(null); }} />
             {folders.map(folder => <SavedLibraryButton key={folder.id} analyticsId="saved.folder.select" testID={`saved.folder.${folder.id}`} label={folder.name} selected={folderId === folder.id} disabled={busy} onPress={() => { closeTransient(); setFolderId(folder.id); }} />)}

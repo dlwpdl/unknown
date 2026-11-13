@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { loadSavedItems, loadSavedItemState, loadSavedPlaceState, setSavedPlaceState, setSavedItem, loadSavedFolders, saveSavedFolder, loadSavedFolder, loadFriendFolders, setSavedFolderCover, setSavedNote, loadPlaceFriendFolders, copySavedFolder, deleteSavedFolder, setSavedItemFolders } from '../src/lib/saved-items.ts';
+import { loadSavedItems, loadSavedItemState, loadSavedPlaceState, setSavedPlaceState, setSavedItem, loadSavedFolders, saveSavedFolder, loadSavedFolder, loadFriendFolders, setSavedFolderCover, setSavedNote, loadPlaceFriendFolders, copySavedFolder, inviteFolderMember, acceptFolderInvite, removeFolderMember, loadSharedFolders, setFolderPlace, deleteSavedFolder, setSavedItemFolders } from '../src/lib/saved-items.ts';
 
 const merchant = 'e2310000-0000-4000-8000-000000000001';
 const person = 'e2300000-0000-4000-8000-000000000002';
@@ -162,4 +162,40 @@ test('a copy is a new private folder of mine, and counts the server sends are ch
     await assert.rejects(copySavedFolder(client(bad), folder), /INVALID_SAVED_RESPONSE/);
   }
   await assert.rejects(copySavedFolder(c, 'not-a-folder'), /INVALID_SAVED_FOLDER/);
+});
+
+test('folders made together: only the owner sees members, and every answer the server sends is checked', async () => {
+  const owner = 'e2300000-0000-4000-8000-000000000009';
+  const member = { id: person.toUpperCase(), nickname: '친구', accepted: false };
+  const invited = client([member]);
+  assert.deepEqual(await inviteFolderMember(invited, folder, person), [{ id: person, nickname: '친구', accepted: false }]);
+  assert.deepEqual(invited.calls[0], ['invite_saved_folder_member', { p_folder_id: folder, p_user_id: person }]);
+  for (const bad of [[], [{ ...member, accepted: 'yes' }], Array(11).fill(member)]) await assert.rejects(inviteFolderMember(client(bad), folder, person), /INVALID_SAVED_RESPONSE/);
+  await assert.rejects(inviteFolderMember(invited, folder, 'me'), /INVALID_PROFILE/);
+  const card = { id: folder, name: 'Food', visibility: 'private', description: null, cover: null, placeCount: 0 };
+  const accepted = client(card);
+  assert.deepEqual(await acceptFolderInvite(accepted, folder), card);
+  assert.deepEqual(accepted.calls[0], ['accept_saved_folder_invite', { p_folder_id: folder }]);
+  await assert.rejects(acceptFolderInvite(client({ ...card, id: merchant }), folder), /INVALID_SAVED_RESPONSE/);
+  const removed = client(true);
+  await removeFolderMember(removed, folder, person);
+  assert.deepEqual(removed.calls[0], ['remove_saved_folder_member', { p_folder_id: folder, p_user_id: person }]);
+  await assert.rejects(removeFolderMember(client(null), folder, person), /INVALID_SAVED_RESPONSE/);
+  const invite = { id: folder, name: 'Food', owner: { id: owner, nickname: '친구' }, invitedAt: stamp };
+  const shared = client({ invites: [invite], folders: [{ ...card, owner: { id: owner, nickname: '친구' } }] });
+  assert.deepEqual(await loadSharedFolders(shared), { invites: [invite], folders: [{ ...card, owner: { id: owner, nickname: '친구' } }] });
+  assert.deepEqual(shared.calls[0], ['get_shared_saved_folders', {}]);
+  for (const bad of [{ invites: [{ ...invite, name: ' ' }], folders: [] }, { invites: [], folders: [card] }, { invites: Array(21).fill(invite), folders: [] }, { invites: [] }]) {
+    await assert.rejects(loadSharedFolders(client(bad)), /INVALID_SAVED_RESPONSE/);
+  }
+  const placed = client(true);
+  await setFolderPlace(placed, folder, place, true);
+  assert.deepEqual(placed.calls[0], ['set_saved_folder_place', { p_folder_id: folder, p_kind: 'place', p_id: place.id, p_city_id: 'vancouver', p_in: true }]);
+  await assert.rejects(setFolderPlace(client(false), folder, target, false), /FOLDER_PLACE_NOT_VERIFIED/);
+  await assert.rejects(setFolderPlace(placed, folder, { kind: 'user', id: person }, true), /INVALID_SAVED_TARGET/);
+  assert.equal(placed.calls.length, 1, 'a person never goes into a folder');
+  const detail = { ...card, role: 'owner', owner: { id: owner, nickname: '나' }, places: [], members: [member] };
+  assert.deepEqual((await loadSavedFolder(client(detail), folder)).members, [{ id: person, nickname: '친구', accepted: false }]);
+  assert.equal((await loadSavedFolder(client({ ...detail, role: 'editor', members: undefined }), folder)).role, 'editor');
+  await assert.rejects(loadSavedFolder(client({ ...detail, role: 'editor' }), folder), /INVALID_SAVED_RESPONSE/, 'only the owner gets the member list');
 });

@@ -34,7 +34,7 @@ function screen(overrides = {}) {
     'expo-router': { useRouter: () => ({ push: route => routes.push(JSON.parse(JSON.stringify(route))) }), useLocalSearchParams: () => ({}), useIsFocused: () => focused, useFocusEffect: fn => hooks.useEffect(() => focused ? fn() : undefined, [fn, focused]) },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/login-panel': { LoginPanel: 'Login' }, '@/components/gling-loader': { GlingLoader: 'Loader' }, '@/components/state-card': { StateCard: 'StateCard' }, '@/components/themed-text': { ThemedText: 'Text' }, '@/components/themed-view': { ThemedView: 'View' },
     '@/components/saved-library': { SavedItemCard: 'SavedItemCard', SavedFolderSheet: 'SavedFolderSheet', SavedNoteSheet: 'SavedNoteSheet', SavedLibraryButton: 'SavedLibraryButton' },
-    '@/components/business-webshop': { WebshopComparisonSheet: 'WebshopComparisonSheet' },
+    '@/components/business-webshop': { WebshopComparisonSheet: 'WebshopComparisonSheet' }, '@/components/folder-together': { SharedFolders: 'SharedFolders' },
     '@/components/share-card': { ShareCardSheet: 'ShareCardSheet' }, '@/lib/city-places': { getCityPlaces: () => [] },
     '@/lib/share-card': { savedListPlaces: rows => rows.filter(row => row.target.kind === 'place') },
     '@/constants/theme': { Depth: {}, Spacing: { one: 4, two: 8, three: 16, four: 24, five: 32 }, MaxContentWidth: 800 }, '@/constants/design-system': { ControlStyles: { icon: {}, pill: {}, field: {} }, IconSize: { toolbar: 21, chevron: 14 }, controlPresentation: () => ({ container: {}, text: {} }) },

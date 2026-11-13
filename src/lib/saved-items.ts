@@ -14,9 +14,11 @@ export type SavedFolder = { id: string; name: string; visibility?: FolderVisibil
 export type FolderPlace = { cityId: string; placeKey: string | null; merchantId: string | null; name: string | null; address: string | null };
 export type FolderCover = { cityId: string; placeKey: string };
 export type FolderCard = { id: string; name: string; visibility: FolderVisibility; description: string | null; cover: FolderCover | null; placeCount: number };
-export type FolderRole = 'owner' | 'viewer';
+export type FolderRole = 'owner' | 'editor' | 'viewer';
 export type PlaceFolder = FolderCard & { owner: { id: string; nickname: string } };
-export type FolderDetail = FolderCard & { role: FolderRole; owner: { id: string; nickname: string }; places: FolderPlace[] };
+export type FolderMember = { id: string; nickname: string; accepted: boolean };
+/** members comes only to the owner. */
+export type FolderDetail = FolderCard & { role: FolderRole; owner: { id: string; nickname: string }; places: FolderPlace[]; members?: FolderMember[] };
 export type SavedItem = {
   key: string; target: SavedTarget; savedAt: string; title: string; subtitle: string;
   imageUrl?: string | null; cityId?: string | null; address?: string | null;
@@ -177,9 +179,11 @@ export async function setSavedFolderCover(client: SupabaseClient, id: string, va
 export async function loadSavedFolder(client: SupabaseClient, id: string): Promise<FolderDetail> {
   const value = await call(client, 'get_saved_folder', { p_folder_id: folderId(id) });
   const card = folderCard(value);
-  if (!object(value) || card.id !== id.toLowerCase() || (value.role !== 'owner' && value.role !== 'viewer') || !object(value.owner)
-    || typeof value.owner.id !== 'string' || !UUID.test(value.owner.id) || !text(value.owner.nickname, 200) || !Array.isArray(value.places) || value.places.length > 300) invalid();
-  return { ...card, role: value.role, owner: { id: value.owner.id.toLowerCase(), nickname: value.owner.nickname }, places: value.places.map(folderPlace) };
+  if (!object(value) || card.id !== id.toLowerCase() || !['owner', 'editor', 'viewer'].includes(value.role as string) || !object(value.owner)
+    || typeof value.owner.id !== 'string' || !UUID.test(value.owner.id) || !text(value.owner.nickname, 200) || !Array.isArray(value.places) || value.places.length > 300
+    || (value.members !== undefined && value.role !== 'owner')) invalid();
+  return { ...card, role: value.role as FolderRole, owner: { id: value.owner.id.toLowerCase(), nickname: value.owner.nickname }, places: value.places.map(folderPlace),
+    ...(value.members !== undefined ? { members: members(value.members) } : {}) };
 }
 // A friend's folders that have a place to show; the server leaves out everything this member may not see.
 export async function loadFriendFolders(client: SupabaseClient, userId: string): Promise<FolderCard[]> {
@@ -215,6 +219,50 @@ export async function copySavedFolder(client: SupabaseClient, id: string): Promi
   const copied = count(value.copied), total = count(value.total);
   if (copied > 100 || copied > total) invalid();
   return { folder: { id: card.id, name: card.name, visibility: card.visibility, description: card.description }, copied, total };
+}
+export type FolderInvite = { id: string; name: string; owner: { id: string; nickname: string }; invitedAt: string };
+function owner(value: unknown) {
+  if (!object(value) || typeof value.id !== 'string' || !UUID.test(value.id) || !text(value.nickname, 200)) invalid();
+  return { id: value.id.toLowerCase(), nickname: value.nickname };
+}
+function members(value: unknown): FolderMember[] {
+  if (!Array.isArray(value) || value.length > 10) invalid();
+  return value.map(row => {
+    if (!object(row) || typeof row.accepted !== 'boolean') invalid();
+    return { ...owner(row), accepted: row.accepted };
+  });
+}
+function userId(id: string) { if (typeof id !== 'string' || !UUID.test(id)) throw new Error('INVALID_PROFILE'); return id; }
+// The owner invites a friend to edit; the server sends the invite and answers with who is in now.
+export async function inviteFolderMember(client: SupabaseClient, folder: string, user: string): Promise<FolderMember[]> {
+  const list = members(await call(client, 'invite_saved_folder_member', { p_folder_id: folderId(folder), p_user_id: userId(user) }));
+  if (!list.some(member => member.id === user.toLowerCase())) invalid();
+  return list;
+}
+export async function acceptFolderInvite(client: SupabaseClient, folder: string): Promise<FolderCard> {
+  const card = folderCard(await call(client, 'accept_saved_folder_invite', { p_folder_id: folderId(folder) }));
+  if (card.id !== folder.toLowerCase()) invalid();
+  return card;
+}
+// The owner takes someone out, or a member declines or leaves (user = themselves).
+export async function removeFolderMember(client: SupabaseClient, folder: string, user: string): Promise<void> {
+  if (typeof await call(client, 'remove_saved_folder_member', { p_folder_id: folderId(folder), p_user_id: userId(user) }) !== 'boolean') invalid();
+}
+export async function loadSharedFolders(client: SupabaseClient): Promise<{ invites: FolderInvite[]; folders: PlaceFolder[] }> {
+  const value = await call(client, 'get_shared_saved_folders');
+  if (!object(value) || !Array.isArray(value.invites) || value.invites.length > 20 || !Array.isArray(value.folders) || value.folders.length > 100) invalid();
+  return {
+    invites: value.invites.map(row => {
+      if (!object(row) || typeof row.id !== 'string' || !UUID.test(row.id) || !text(row.name, 80) || !row.name.trim() || !timestamp(row.invitedAt)) invalid();
+      return { id: row.id.toLowerCase(), name: row.name, owner: owner(row.owner), invitedAt: row.invitedAt };
+    }),
+    folders: value.folders.map(row => ({ ...folderCard(row), owner: owner(object(row) ? row.owner : null) })),
+  };
+}
+// An editor puts one of their saved places in; the owner or an editor takes a place out.
+export async function setFolderPlace(client: SupabaseClient, folder: string, value: SavedTarget, inFolder: boolean): Promise<void> {
+  if (typeof inFolder !== 'boolean') throw new Error('INVALID_SAVED_TARGET');
+  if (await call(client, 'set_saved_folder_place', { p_folder_id: folderId(folder), ...args(placeTarget(value)), p_in: inFolder }) !== true) throw new Error('FOLDER_PLACE_NOT_VERIFIED');
 }
 export async function deleteSavedFolder(client: SupabaseClient, id: string): Promise<void> {
   if (await call(client, 'delete_saved_folder', { p_folder_id: folderId(id) }) !== true) throw new Error('FOLDER_DELETE_NOT_VERIFIED');

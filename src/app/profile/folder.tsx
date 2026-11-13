@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScrollView } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { DragSheet } from '@/components/drag-sheet';
+import { FolderAddSheet, FolderMembers, RemoveButton } from '@/components/folder-together';
 import { FolderCover, folderPlaces } from '@/components/friend-folders';
 import { ListCard, ListLoading, ListRow } from '@/components/list-card';
 import { SavedLibraryButton } from '@/components/saved-library';
@@ -19,11 +20,13 @@ import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { copySavedFolder, loadSavedFolder, setSavedFolderCover, type FolderCopy, type FolderCover as Cover, type FolderDetail } from '@/lib/saved-items';
+import {
+  copySavedFolder, loadSavedFolder, removeFolderMember, setFolderPlace, setSavedFolderCover, type FolderCopy, type FolderCover as Cover, type FolderDetail,
+} from '@/lib/saved-items';
 import { supabase } from '@/lib/supabase';
 
-// One saved folder as the server lets this member see it: the owner's own, or a friend's folder shown to friends.
-// Only places and businesses come back, so this is also how friends see the owner's folder.
+// One saved folder as the server lets this member see it: the owner's own, one made together, or a friend's folder
+// shown to friends. Only places and businesses come back, so this is also how friends see the owner's folder.
 export default function SavedFolderScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { tr, locale } = useLanguage(), theme = useTheme(), router = useRouter(), hidden = useContentVisibility();
@@ -32,16 +35,19 @@ export default function SavedFolderScreen() {
   const [picking, setPicking] = useState(false), [coverBusy, setCoverBusy] = useState(false), [coverError, setCoverError] = useState('');
   const [copyBusy, setCopyBusy] = useState(false), [copied, setCopied] = useState<FolderCopy | null>(null), [copyError, setCopyError] = useState('');
   const folderId = typeof id === 'string' ? id : '';
-  const key = `${isAuthed ? me.id : 'guest'}:${folderId}:${revision}`;
-  const [state, setState] = useState<{ key: string; folder: FolderDetail | null; failed: boolean } | null>(null);
+  const [adding, setAdding] = useState(false), [removing, setRemoving] = useState(false), [editBusy, setEditBusy] = useState(false), [editError, setEditError] = useState('');
+  // A reload after an edit keeps the folder on screen; only another account or folder starts blank.
+  const base = `${isAuthed ? me.id : 'guest'}:${folderId}`;
+  const [state, setState] = useState<{ base: string; folder: FolderDetail | null; failed: boolean } | null>(null);
   useEffect(() => {
     if (!isAuthed || isAuthLoading || !folderId) return;
     let active = true;
-    void loadSavedFolder(supabase, folderId).then(folder => { if (active) setState({ key, folder, failed: false }); })
-      .catch((error: unknown) => { if (active) setState({ key, folder: null, failed: !(error instanceof Error && error.message.includes('FOLDER_UNAVAILABLE')) }); });
+    void loadSavedFolder(supabase, folderId).then(folder => { if (active) setState({ base, folder, failed: false }); })
+      .catch((error: unknown) => { if (active) setState({ base, folder: null, failed: !(error instanceof Error && error.message.includes('FOLDER_UNAVAILABLE')) }); });
     return () => { active = false; };
-  }, [key, isAuthed, isAuthLoading, folderId]);
-  const current = state?.key === key ? state : null;
+  }, [base, revision, isAuthed, isAuthLoading, folderId]);
+  const current = state?.base === base ? state : null;
+  const reload = () => setRevision(value => value + 1);
   const folder = current?.folder && !hidden('user', current.folder.owner.id) ? current.folder : null;
   const rows = folder ? folderPlaces(folder.places) : [];
   const loading = isAuthed && !!folderId && !current;
@@ -51,7 +57,7 @@ export default function SavedFolderScreen() {
   const pickCover = async (value: Cover) => {
     if (!folder || coverBusy) return;
     setCoverBusy(true); setCoverError('');
-    try { await setSavedFolderCover(supabase, folder.id, value); play('success'); setPicking(false); setRevision(previous => previous + 1); }
+    try { await setSavedFolderCover(supabase, folder.id, value); play('success'); setPicking(false); reload(); }
     catch { play('warning'); setCoverError(tr('표지를 바꾸지 못했어요. 다시 시도해 주세요.')); }
     finally { setCoverBusy(false); }
   };
@@ -66,6 +72,15 @@ export default function SavedFolderScreen() {
         : message.includes('RATE_LIMITED') ? tr('오늘은 더 저장할 수 없어요. 내일 다시 해 주세요.') : tr('저장하지 못했어요. 다시 시도해 주세요.'));
     } finally { setCopyBusy(false); }
   };
+  // The owner and editors take places out here; an editor also leaves here.
+  const edit = async (work: () => Promise<unknown>, done?: () => void) => {
+    if (!folder || editBusy) return;
+    setEditBusy(true); setEditError('');
+    try { await work(); play('success'); if (done) done(); else reload(); }
+    catch { play('warning'); setEditError(tr('바꾸지 못했어요. 다시 시도해 주세요.')); }
+    finally { setEditBusy(false); }
+  };
+  const editing = folder?.role === 'owner' || folder?.role === 'editor';
   return <ThemedView style={styles.root}><SafeAreaView edges={['bottom']} style={styles.safe}>
     <Stack.Screen options={{ title: folder?.name ?? tr('폴더') }} />
     <ScrollView analyticsId="folder.scroll" contentContainerStyle={styles.content}>
@@ -81,6 +96,7 @@ export default function SavedFolderScreen() {
                 <ThemedText type="section" accessibilityRole="header">{folder.name}</ThemedText>
                 <ThemedText type="supporting" themeColor="textSecondary">{[
                   folder.role === 'owner' ? null : tr('{0}님이 만든 폴더', folder.owner.nickname),
+                  folder.role === 'editor' ? tr('같이 만드는 중') : null,
                   tr('장소 {0}곳', rows.length.toLocaleString(locale)),
                   folder.visibility === 'friends' ? tr('친구에게 보여요') : tr('나만 보기'),
                 ].filter(Boolean).join(' · ')}</ThemedText>
@@ -89,9 +105,16 @@ export default function SavedFolderScreen() {
             {!!folder.description && <ThemedText>{folder.description}</ThemedText>}
             {folder.role === 'owner' && <ThemedText type="supporting" themeColor="textSecondary">{folder.visibility === 'friends'
               ? tr('친구에게는 이 화면처럼 장소와 비즈니스만 보여요.') : tr('나만 보는 폴더예요. 저장함의 폴더 관리에서 친구에게 보이게 바꿀 수 있어요.')}</ThemedText>}
-            {folder.role === 'owner' && photos.length > 1 && <View style={styles.actions}>
-              <SavedLibraryButton analyticsId="folder.cover.open" label={tr('표지 바꾸기')} onPress={() => { setCoverError(''); setPicking(true); }} />
+            {folder.role === 'editor' && <ThemedText type="supporting" themeColor="textSecondary">{tr('장소를 넣고 뺄 수 있어요. 폴더 이름과 공개 범위는 {0}님이 정해요.', folder.owner.nickname)}</ThemedText>}
+            {editing && <View style={styles.actions}>
+              {folder.role === 'owner' && photos.length > 1 && <SavedLibraryButton analyticsId="folder.cover.open" label={tr('표지 바꾸기')} onPress={() => { setCoverError(''); setPicking(true); }} />}
+              {folder.role === 'editor' && <SavedLibraryButton analyticsId="folder.place.add.open" label={tr('장소 넣기')} disabled={editBusy} onPress={() => { setEditError(''); setAdding(true); }} />}
+              {rows.length > 0 && <SavedLibraryButton analyticsId="folder.place.edit" label={removing ? tr('다 했어요') : tr('장소 빼기')} selected={removing} disabled={editBusy}
+                onPress={() => { setEditError(''); setRemoving(value => !value); }} />}
+              {folder.role === 'editor' && <SavedLibraryButton analyticsId="folder.leave" label={tr('같이 만들기 그만두기')} disabled={editBusy}
+                onPress={() => void edit(() => removeFolderMember(supabase, folder.id, me.id), () => { if (router.canGoBack()) router.back(); else router.replace('/profile/saved'); })} />}
             </View>}
+            {!!editError && <ThemedText type="supporting" accessibilityRole="alert">{editError}</ThemedText>}
             {/* A friend keeps a copy of what is here now; the friend's later edits never reach it. */}
             {folder.role !== 'owner' && rows.length > 0 && (copied ? <View style={styles.copy}>
               <ThemedText type="supporting" accessibilityRole="alert">{tr('내 폴더 「{0}」에 장소 {1}곳을 저장했어요.', copied.folder.name, copied.copied.toLocaleString(locale))}
@@ -106,11 +129,16 @@ export default function SavedFolderScreen() {
           {rows.length ? <ListCard>{rows.map(row => <ListRow key={row.merchantId ?? `${row.cityId}:${row.placeKey}`} analyticsId="folder.place.open" title={row.title} detail={row.subtitle || undefined}
             leading={row.place ? <CityPlacePhoto place={row.place} style={styles.thumb} />
               : <View style={[styles.thumb, styles.icon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'building.2', android: 'storefront', web: 'storefront' }} size={20} tintColor={theme.textSecondary} accessible={false} /></View>}
-            onPress={() => row.merchantId ? router.push({ pathname: '/company/[id]', params: { id: row.merchantId } })
+            trailing={removing && editing ? <RemoveButton analyticsId="folder.place.remove" label={tr('{0} 빼기', row.title)} disabled={editBusy}
+              onPress={() => void edit(() => setFolderPlace(supabase, folder.id, row.merchantId ? { kind: 'merchant', id: row.merchantId, cityId: row.cityId } : { kind: 'place', id: row.placeKey!, cityId: row.cityId }, false))} /> : undefined}
+            onPress={removing && editing ? undefined : () => row.merchantId ? router.push({ pathname: '/company/[id]', params: { id: row.merchantId } })
               : router.push({ pathname: '/places/[id]', params: { id: row.placeKey!, cityId: row.cityId } })} />)}</ListCard>
-            : <StateCard kind="empty" title={tr('아직 장소가 없어요')} body={folder.role === 'owner' ? tr('저장함에서 장소 카드의 ··· 를 누르면 이 폴더에 넣을 수 있어요.') : tr('친구가 장소를 넣으면 여기에 보여요.')} />}
+            : <StateCard kind="empty" title={tr('아직 장소가 없어요')} body={folder.role === 'owner' ? tr('저장함에서 장소 카드의 ··· 를 누르면 이 폴더에 넣을 수 있어요.')
+              : folder.role === 'editor' ? tr('장소 넣기를 누르면 내가 저장한 곳을 넣을 수 있어요.') : tr('친구가 장소를 넣으면 여기에 보여요.')} />}
+          {folder.role === 'owner' && <FolderMembers folder={folder} onChanged={reload} />}
         </>}
     </ScrollView>
+    {folder?.role === 'editor' && <FolderAddSheet folder={folder} visible={adding} onClose={() => setAdding(false)} onAdded={reload} />}
     <DragSheet visible={picking && !!folder} onClose={() => setPicking(false)} dismissible={!coverBusy} title={tr('표지 고르기')}>
       <View style={styles.sheet}>
         <ThemedText type="supporting" themeColor="textSecondary">{tr('이 폴더에 넣은 장소 사진 중에서 골라요. 고르지 않으면 가장 최근에 저장한 장소가 표지가 돼요.')}</ThemedText>

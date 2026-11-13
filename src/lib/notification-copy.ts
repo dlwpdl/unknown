@@ -32,6 +32,8 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
   post_like: [[/^(.+)님이 내 글에 공감했어요\.$/, m => `${m[1]} liked your post.`]],
   friend_request: [[/^(.+)님이 친구 요청을 보냈어요\.$/, m => `${m[1]} sent you a friend request.`]],
   friend_accepted: [[/^(.+)님과 친구가 됐어요\.$/, m => `You and ${m[1]} are now friends.`]],
+  // 같이 만드는 저장 폴더 (20261114020000).
+  saved_folder_invite: [[/^(.+?)님이 「(.+)」 폴더를 같이 만들자고 했어요\.$/, m => `${m[1]} invited you to build “${m[2]}” together.`]],
   // 동네 말풍선 지도 (20261105030000).
   live_bubble_request: [
     [/^(.+)님이 말풍선을 보고 대화를 신청했어요\.$/, m => `${m[1]} saw your bubble and asked to chat.`],

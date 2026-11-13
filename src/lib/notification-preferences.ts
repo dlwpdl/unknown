@@ -80,13 +80,14 @@ export function notificationRoute(value: unknown, notification?: { kind?: unknow
   if (new RegExp(`^/profile/merchant\\?merchant=${uuid}$`, 'i').test(value)) return value;
   // 동네 말풍선 지도: a chat request or wave reply opens that request on the map; the ten-minute warning opens the map.
   if (value === '/discover' || new RegExp(`^/discover\\?bubbleRequest=${uuid}$`, 'i').test(value)) return value;
+  // A folder invite opens the saved list (/profile/saved, in the last pattern), where it waits for an answer.
   // Friend requests and acceptances open the other person's profile.
   if (new RegExp(`^/user/${uuid}$`, 'i').test(value)) return value;
   // A member's suggested place that went on the map (place_suggestion_added).
   if (/^\/places\/(?:osm:(?:node|way|relation):[1-9][0-9]{0,19}|partner:[a-z0-9]+(?:-[a-z0-9]+)*)\?cityId=[a-z][a-z0-9-]{0,63}$/.test(value)) return value;
   // 관리자 알림 경로는 외부 대시보드 URL로 바꾸기 전에 검증한다.
   if (new RegExp(`^/admin(?:\\?(?:section=(?:alerts|analytics|conversations|errors|overview|posts|reports|safety|trending|users)|(?:safety|alert)=(?:${uuid}|[1-9][0-9]*)))?$`, 'i').test(value)) return value;
-  return new RegExp(`^(?:/post/${uuid}(?:\\?commentId=${uuid})?|/chat(?:\\?(?:conversationId=${uuid}(?:&view=requests)?|view=requests))?|/profile/(?:guidelines|settings|meetup-reviews)|/notifications|/meetup-profile)$`, 'i').test(value) ? value : null;
+  return new RegExp(`^(?:/post/${uuid}(?:\\?commentId=${uuid})?|/chat(?:\\?(?:conversationId=${uuid}(?:&view=requests)?|view=requests))?|/profile/(?:guidelines|settings|meetup-reviews|saved)|/notifications|/meetup-profile)$`, 'i').test(value) ? value : null;
 }
 
 export { englishNotificationBody, koreanNotificationBody } from './notification-copy.ts';
