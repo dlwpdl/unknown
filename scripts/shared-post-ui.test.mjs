@@ -28,7 +28,7 @@ const id = '9f100000-0000-4000-8000-000000000001';
 const otherId = '9f100000-0000-4000-8000-000000000002';
 const link = `https://gling.ej-entertainment.com/post?id=${id}`;
 const legacyGatewayLink = `https://gling-share-preview.vercel.app/share/${id}`;
-const gatewayLink = 'https://gling-share-preview.vercel.app/s/nxAAAAAAQACAAAAAAAAAAQ';
+const gatewayLink = 'https://share.gling.ej-entertainment.com/s/nxAAAAAAQACAAAAAAAAAAQ';
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
@@ -591,7 +591,7 @@ test('host invites and closed meetups share a link while preserving join applica
 
 
 test('web chat preview opens the hosted flat post route and keeps the invitation flag', async context => {
-  for (const url of [link, gatewayLink, legacyGatewayLink]) {
+  for (const url of [link, gatewayLink, legacyGatewayLink, 'https://gling-share-preview.vercel.app/s/nxAAAAAAQACAAAAAAAAAAQ']) {
     const harness = mount('../src/components/shared-link-card.tsx', 'SharedLinkCard', { os: 'web' }, { url }); context.after(() => harness.unmount()); await harness.settle();
     control(harness, 'chat.shared-link.open').props.onPress();
     assert.equal(harness.calls.find(call => call[0] === 'navigate')[1], `/post?id=${id}&invite=1`);
