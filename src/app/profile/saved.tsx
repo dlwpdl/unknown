@@ -23,8 +23,8 @@ import { useAuth } from '@/lib/auth';
 import { getCityPlaces } from '@/lib/city-places';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import {
-  createSavedFolder, deleteSavedFolder, loadSavedFolders, loadSavedItems, renameSavedFolder,
-  setSavedItem, setSavedItemFolders, type SavedFilter, type SavedFolder, type SavedItem, type SavedPage,
+  deleteSavedFolder, loadSavedFolders, loadSavedItems, saveSavedFolder,
+  setSavedItem, setSavedItemFolders, type FolderVisibility, type SavedFilter, type SavedFolder, type SavedItem, type SavedPage,
 } from '@/lib/saved-items';
 import { savedListPlaces } from '@/lib/share-card';
 import { supabase } from '@/lib/supabase';
@@ -136,11 +136,11 @@ export default function SavedScreen() {
       if (operation.active && request.current === operation) update(page => ({ ...page, items: page.items.filter(row => row.key !== item.key) }));
     }, ko ? '저장을 해제하지 못했어요. 항목은 그대로 남아 있어요. 다시 눌러주세요.' : 'Couldn’t remove this item. It’s still saved. Try again.', false);
   };
-  const saveFolder = (name: string) => {
+  const saveFolder = (name: string, visibility: FolderVisibility) => {
     if (!activeEditor || !['create', 'rename'].includes(activeEditor.kind)) return;
     const editing = activeEditor;
     void perform(async operation => {
-      const folder = editing.kind === 'rename' ? await renameSavedFolder(supabase, editing.folder.id, name) : await createSavedFolder(supabase, name);
+      const folder = await saveSavedFolder(supabase, editing.kind === 'rename' ? editing.folder.id : null, name, visibility);
       if (!operation.active || request.current !== operation) return;
       update(page => page, folders => editing.kind === 'rename' ? folders.map(row => row.id === folder.id ? folder : row) : [...folders, folder]);
       setEditor(editing.kind === 'create' && editing.returnItem ? { key, visibility: hidden, value: { kind: 'item', item: { ...editing.returnItem, folderIds: [...editing.returnItem.folderIds, folder.id] } } } : null);
@@ -195,7 +195,7 @@ export default function SavedScreen() {
       refreshing={loading && !busy} onRefresh={reload}
       ListHeaderComponent={<View style={styles.header}>
         <View style={styles.intro}><ThemedText type="section">{ko ? '다시 보고 싶은 것들' : 'Worth coming back to'}</ThemedText>
-          <ThemedText type="supporting" themeColor="textSecondary">{ko ? '저장한 장소는 친구에게도 보여요. 설정에서 끌 수 있고, 나머지는 나만 볼 수 있어요.' : 'Friends can see your saved places unless you turn it off in Settings. Everything else stays private.'}</ThemedText></View>
+          <ThemedText type="supporting" themeColor="textSecondary">{ko ? '저장한 장소와 친구에게 보이게 둔 폴더는 친구도 볼 수 있어요. 설정에서 한 번에 끌 수 있고, 나머지는 나만 봐요.' : 'Friends can see your saved places and the folders you share with them. Turn it all off in Settings. Everything else stays private.'}</ThemedText></View>
         {/* Owner 2026-11-04 "가져오기: 검색창 위 한 줄로": its own row, so it never reads as a folder. */}
         <Pressable analyticsId="saved.import" accessibilityRole="button" accessibilityLabel={ko ? '다른 앱에서 가져오기' : 'Import from other apps'} disabled={busy}
           onPress={() => { play('selection'); closeTransient(); router.push('/profile/import'); }}
@@ -217,10 +217,12 @@ export default function SavedScreen() {
             {folders.map(folder => <SavedLibraryButton key={folder.id} analyticsId="saved.folder.select" testID={`saved.folder.${folder.id}`} label={folder.name} selected={folderId === folder.id} disabled={busy} onPress={() => { closeTransient(); setFolderId(folder.id); }} />)}
             <SavedLibraryButton analyticsId="saved.folder.new" label={ko ? '+ 새 폴더' : '+ New folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'create' } }); }} />
             {!!selectedFolder && <SavedLibraryButton analyticsId="saved.folder.manage" label={ko ? '폴더 관리' : 'Manage folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'rename', folder: selectedFolder } }); }} />}
+            {/* The folder page shows it the way friends see it: places only. */}
+            {!!selectedFolder && <SavedLibraryButton analyticsId="saved.folder.open" label={ko ? '폴더 페이지' : 'Folder page'} disabled={busy} onPress={() => { closeTransient(); router.push({ pathname: '/profile/folder', params: { id: selectedFolder.id } }); }} />}
             {/* Filters and search drop places from the list, so sharing waits until the whole folder shows. */}
             {!!selectedFolder && !query && (filter === 'all' || filter === 'places') && <SavedLibraryButton analyticsId="saved.folder.share" label={ko ? '목록 공유' : 'Share list'} disabled={busy || loading} onPress={() => { closeTransient(); setSharingList(true); }} />}</View>
         </View>
-        <View style={styles.summary}><ThemedText type="supporting" themeColor="textSecondary">{selectedFolder?.name ?? (ko ? '전체 저장' : 'All saved')}{current && !current.failed ? ko ? ` · ${rows.length}개 표시 중` : ` · ${rows.length} shown` : ''}</ThemedText>
+        <View style={styles.summary}><ThemedText type="supporting" themeColor="textSecondary">{selectedFolder?.name ?? (ko ? '전체 저장' : 'All saved')}{selectedFolder?.visibility === 'friends' ? ko ? ' · 친구에게 보여요' : ' · Friends can see it' : selectedFolder ? ko ? ' · 나만 보기' : ' · Only you' : ''}{current && !current.failed ? ko ? ` · ${rows.length}개 표시 중` : ` · ${rows.length} shown` : ''}</ThemedText>
           <ThemedText type="supporting" themeColor="textSecondary">{ko ? '최근 저장순' : 'Recently saved'}</ThemedText></View>
         {!!error && !activeEditor && <ThemedText accessibilityRole="alert">{error}</ThemedText>}
       </View>}

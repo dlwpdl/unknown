@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { ClayBoxFill, ClayControlFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
-import { Pressable } from '@/components/analytics-controls';
+import { Pressable, Switch } from '@/components/analytics-controls';
 import { UberOrderNotice } from '@/components/business-webshop';
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { DragSheet } from '@/components/drag-sheet';
@@ -17,7 +17,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { getCityPlaces } from '@/lib/city-places';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import type { SavedFolder, SavedItem } from '@/lib/saved-items';
+import type { FolderVisibility, SavedFolder, SavedItem } from '@/lib/saved-items';
 
 const KIND_SYMBOL = { merchant: ['building.2', 'storefront'], place: ['mappin.and.ellipse', 'place'], post: ['doc.text', 'article'], user: ['person', 'person'] } as const;
 function savedPlace(item: SavedItem) {
@@ -93,12 +93,14 @@ export type SavedFolderEditor = { kind: 'create'; returnItem?: SavedItem }
 
 export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCreate, onRename, onDelete, onAssign, onCreateForItem, onRequestDelete }: {
   editor: SavedFolderEditor; folders: SavedFolder[]; busy: boolean; error: string | null;
-  onClose: () => void; onCreate: (name: string) => void; onRename: (name: string) => void; onDelete: () => void;
+  onClose: () => void; onCreate: (name: string, visibility: FolderVisibility) => void; onRename: (name: string, visibility: FolderVisibility) => void; onDelete: () => void;
   onAssign: (ids: string[]) => void; onCreateForItem: (ids: string[]) => void; onRequestDelete: () => void;
 }) {
   const theme = useTheme(), { language } = useLanguage(), { play } = useInteractionFeedback(), ko = language === 'ko';
   const clay = useClay();
   const [name, setName] = useState(editor.kind === 'rename' ? editor.folder.name : '');
+  // New folders start shown to friends, like saved places; a folder from before keeps what it was.
+  const [visibility, setVisibility] = useState<FolderVisibility>(editor.kind === 'rename' ? editor.folder.visibility ?? 'private' : 'friends');
   const [ids, setIds] = useState(editor.kind === 'item' ? editor.item.folderIds : []);
   // Closing slides the sheet down first; the parent unmounts it once DragSheet reports it is gone.
   const [open, setOpen] = useState(true);
@@ -110,11 +112,23 @@ export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCrea
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.sheetContent}>
           <View style={styles.heading}><ThemedText type="sheetTitle" style={styles.grow}>{title}</ThemedText>
             <SavedLibraryButton analyticsId="saved.editor.close" label={ko ? '닫기' : 'Close'} onPress={() => setOpen(false)} disabled={busy} /></View>
-          <ThemedText type="supporting" themeColor="textSecondary">{ko ? '폴더는 나만 볼 수 있어요. 폴더를 삭제해도 저장한 항목은 남아요.' : 'Folders are private. Deleting a folder keeps your saved items.'}</ThemedText>
-          {(editor.kind === 'create' || editor.kind === 'rename') && <TextInput value={name} onChangeText={setName} maxLength={80} editable={!busy} autoFocus
-            accessibilityLabel={ko ? '폴더 이름' : 'Folder name'} placeholder={ko ? '폴더 이름' : 'Folder name'} placeholderTextColor={theme.textSecondary}
-            style={[ControlStyles.field, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]}
-            returnKeyType="done" onSubmitEditing={() => { if (!busy && !invalid) { play('selection'); if (editor.kind === 'create') onCreate(name.trim()); else onRename(name.trim()); } }} />}
+          <ThemedText type="supporting" themeColor="textSecondary">{ko ? '폴더를 지워도 저장한 항목은 그대로 남아요.' : 'Deleting a folder keeps your saved items.'}</ThemedText>
+          {(editor.kind === 'create' || editor.kind === 'rename') && <>
+            <TextInput value={name} onChangeText={setName} maxLength={80} editable={!busy} autoFocus
+              accessibilityLabel={ko ? '폴더 이름' : 'Folder name'} placeholder={ko ? '폴더 이름' : 'Folder name'} placeholderTextColor={theme.textSecondary}
+              style={[ControlStyles.field, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]}
+              returnKeyType="done" onSubmitEditing={() => { if (!busy && !invalid) { play('selection'); if (editor.kind === 'create') onCreate(name.trim(), visibility); else onRename(name.trim(), visibility); } }} />
+            <View style={styles.toggle}>
+              <View style={styles.grow}>
+                <ThemedText type="menu">{ko ? '친구에게 보여요' : 'Friends can see it'}</ThemedText>
+                <ThemedText type="supporting" themeColor="textSecondary">{visibility === 'friends'
+                  ? ko ? '친구는 이 폴더에 든 장소와 비즈니스만 볼 수 있어요. 저장한 글과 사람은 나만 봐요.' : 'Friends see only the places and businesses in it. Saved posts and people stay private.'
+                  : ko ? '끄면 나만 볼 수 있어요.' : 'Off: only you can see it.'}</ThemedText>
+              </View>
+              <Switch analyticsId="saved.editor.visibility" value={visibility === 'friends'} disabled={busy} accessibilityLabel={ko ? '친구에게 보여요' : 'Friends can see it'}
+                onValueChange={on => { play('selection'); setVisibility(on ? 'friends' : 'private'); }} />
+            </View>
+          </>}
           {editor.kind === 'delete' && <ThemedText type="menu">{editor.folder.name}</ThemedText>}
           {editor.kind === 'item' && <>
             <ThemedText type="menu">{editor.item.title}</ThemedText>
@@ -124,7 +138,8 @@ export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCrea
               onPress={() => { play('selection'); setIds(previous => previous.includes(folder.id) ? previous.filter(id => id !== folder.id) : [...previous, folder.id]); }}
               style={({ pressed }) => [styles.check, clay && styles.clayPad, controlPresentation(theme, { pressed, selected: ids.includes(folder.id), disabled: busy, clay }).container]}>
               <ClayControlFill selected={ids.includes(folder.id)} />
-              <ThemedText style={[styles.grow, controlPresentation(theme, { selected: ids.includes(folder.id) }).text]}>{folder.name}</ThemedText>
+              <View style={styles.grow}><ThemedText style={controlPresentation(theme, { selected: ids.includes(folder.id) }).text}>{folder.name}</ThemedText>
+                {folder.visibility === 'friends' && <ThemedText type="supporting" style={controlPresentation(theme, { selected: ids.includes(folder.id) }).text}>{ko ? '친구에게 보여요' : 'Friends can see it'}</ThemedText>}</View>
               <ThemedText accessible={false} style={controlPresentation(theme, { selected: ids.includes(folder.id) }).text}>{ids.includes(folder.id) ? '✓' : '○'}</ThemedText>
             </Pressable>)}
             <SavedLibraryButton analyticsId="saved.editor.new" label={ko ? '새 폴더 만들기' : 'Create a folder'} disabled={busy} onPress={() => onCreateForItem(ids)} />
@@ -132,7 +147,7 @@ export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCrea
           {!!error && <ThemedText accessibilityRole="alert">{error}</ThemedText>}
           <SavedLibraryButton analyticsId="saved.editor.submit" primary disabled={busy || ((editor.kind === 'create' || editor.kind === 'rename') && invalid)}
             label={busy ? ko ? '저장 중…' : 'Saving…' : editor.kind === 'delete' ? ko ? '폴더 삭제' : 'Delete folder' : ko ? '완료' : 'Done'}
-            onPress={() => { if (editor.kind === 'item') onAssign(ids); else if (editor.kind === 'create') onCreate(name.trim()); else if (editor.kind === 'rename') onRename(name.trim()); else onDelete(); }} />
+            onPress={() => { if (editor.kind === 'item') onAssign(ids); else if (editor.kind === 'create') onCreate(name.trim(), visibility); else if (editor.kind === 'rename') onRename(name.trim(), visibility); else onDelete(); }} />
           {editor.kind === 'rename' && <SavedLibraryButton analyticsId="saved.editor.delete" label={ko ? '폴더 삭제' : 'Delete folder'} disabled={busy} onPress={onRequestDelete} />}
         </ScrollView>
   </DragSheet>;
@@ -149,4 +164,5 @@ const styles = StyleSheet.create({
   offer: { borderTopWidth: 1, paddingTop: Spacing.two, gap: Spacing.two },
   sheetContent: { padding: Spacing.three, gap: Spacing.three }, heading: { flexDirection: 'row', alignItems: 'flex-start', flexWrap: 'wrap', gap: Spacing.two },
   check: { minHeight: 48, borderWidth: 1, borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  toggle: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 44 },
 });

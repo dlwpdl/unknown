@@ -7,7 +7,14 @@ export type SavedCursor = { savedAt: string; key: string };
 // G1: a saved place is 가 보고 싶음 ('want') or 가 봤음 ('been'). Undefined means the server predates it, so the button stays a plain toggle.
 export type SavedPlaceStatus = 'want' | 'been';
 export type SavedState = { target: SavedTarget; saved: boolean; available: boolean; savedAt: string | null; folderIds: string[]; status?: SavedPlaceStatus | null };
-export type SavedFolder = { id: string; name: string };
+// 'friends': friends see its places (owner 2026-11-13). Undefined is an older server, where every folder is private.
+export type FolderVisibility = 'friends' | 'private';
+export type SavedFolder = { id: string; name: string; visibility?: FolderVisibility };
+// A folder as someone else may see it: places and consented businesses only. The app names places from its catalog.
+export type FolderPlace = { cityId: string; placeKey: string | null; merchantId: string | null; name: string | null; address: string | null };
+export type FolderCard = { id: string; name: string; visibility: FolderVisibility; placeCount: number };
+export type FolderRole = 'owner' | 'viewer';
+export type FolderDetail = FolderCard & { role: FolderRole; owner: { id: string; nickname: string }; places: FolderPlace[] };
 export type SavedItem = {
   key: string; target: SavedTarget; savedAt: string; title: string; subtitle: string;
   imageUrl?: string | null; cityId?: string | null; address?: string | null;
@@ -59,8 +66,24 @@ async function call(client: SupabaseClient, name: string, values: Record<string,
   return result.data;
 }
 function folder(value: unknown): SavedFolder {
-  if (!object(value) || typeof value.id !== 'string' || !UUID.test(value.id) || !text(value.name, 80) || !value.name.trim()) invalid();
-  return { id: value.id, name: value.name };
+  if (!object(value) || typeof value.id !== 'string' || !UUID.test(value.id) || !text(value.name, 80) || !value.name.trim()
+    || (value.visibility !== undefined && value.visibility !== 'friends' && value.visibility !== 'private')) invalid();
+  return { id: value.id, name: value.name, ...(value.visibility !== undefined ? { visibility: value.visibility as FolderVisibility } : {}) };
+}
+const count = (value: unknown) => typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : invalid();
+function folderCard(value: unknown): FolderCard {
+  const base = folder(value);
+  if (!base.visibility || !object(value)) invalid();
+  return { id: base.id, name: base.name, visibility: base.visibility, placeCount: count(value.placeCount) };
+}
+function folderPlace(value: unknown): FolderPlace {
+  if (!object(value) || typeof value.cityId !== 'string' || !CITY.test(value.cityId)
+    || (value.placeKey !== null && (typeof value.placeKey !== 'string' || !PLACE.test(value.placeKey)))
+    || (value.merchantId !== null && (typeof value.merchantId !== 'string' || !UUID.test(value.merchantId)))
+    || (value.placeKey === null && value.merchantId === null)
+    || (value.name !== null && !text(value.name, 300)) || (value.address !== null && !text(value.address, 1000))) invalid();
+  return { cityId: value.cityId, placeKey: value.placeKey as string | null, merchantId: value.merchantId === null ? null : (value.merchantId as string).toLowerCase(),
+    name: value.name as string | null, address: value.address as string | null };
 }
 function folderId(id: string) { if (!UUID.test(id)) throw new Error('INVALID_SAVED_FOLDER'); return id; }
 function folderName(name: string) {
@@ -118,13 +141,26 @@ export async function loadSavedFolders(client: SupabaseClient): Promise<SavedFol
   if (new Set(rows.map(row => row.id)).size !== rows.length) invalid();
   return rows;
 }
-export async function createSavedFolder(client: SupabaseClient, name: string): Promise<SavedFolder> {
-  return folder(await call(client, 'create_saved_folder', { p_name: folderName(name) }));
+// Creates a folder (id null) or edits one of the member's own.
+export async function saveSavedFolder(client: SupabaseClient, id: string | null, name: string, visibility: FolderVisibility): Promise<SavedFolder> {
+  if (visibility !== 'friends' && visibility !== 'private') throw new Error('INVALID_SAVED_FOLDER');
+  const result = folderCard(await call(client, 'save_saved_folder', { p_folder_id: id === null ? null : folderId(id), p_name: folderName(name), p_visibility: visibility }));
+  if ((id !== null && result.id !== id) || result.visibility !== visibility) invalid();
+  return { id: result.id, name: result.name, visibility: result.visibility };
 }
-export async function renameSavedFolder(client: SupabaseClient, id: string, name: string): Promise<SavedFolder> {
-  const result = folder(await call(client, 'rename_saved_folder', { p_folder_id: folderId(id), p_name: folderName(name) }));
-  if (result.id !== id) invalid();
-  return result;
+export async function loadSavedFolder(client: SupabaseClient, id: string): Promise<FolderDetail> {
+  const value = await call(client, 'get_saved_folder', { p_folder_id: folderId(id) });
+  const card = folderCard(value);
+  if (!object(value) || card.id !== id.toLowerCase() || (value.role !== 'owner' && value.role !== 'viewer') || !object(value.owner)
+    || typeof value.owner.id !== 'string' || !UUID.test(value.owner.id) || !text(value.owner.nickname, 200) || !Array.isArray(value.places) || value.places.length > 300) invalid();
+  return { ...card, role: value.role, owner: { id: value.owner.id.toLowerCase(), nickname: value.owner.nickname }, places: value.places.map(folderPlace) };
+}
+// A friend's folders that have a place to show; the server leaves out everything this member may not see.
+export async function loadFriendFolders(client: SupabaseClient, userId: string): Promise<FolderCard[]> {
+  if (!UUID.test(userId)) throw new Error('INVALID_PROFILE');
+  const value = await call(client, 'get_friend_saved_folders', { p_user_id: userId });
+  if (!Array.isArray(value) || value.length > 100) invalid();
+  return value.map(folderCard);
 }
 export async function deleteSavedFolder(client: SupabaseClient, id: string): Promise<void> {
   if (await call(client, 'delete_saved_folder', { p_folder_id: folderId(id) }) !== true) throw new Error('FOLDER_DELETE_NOT_VERIFIED');

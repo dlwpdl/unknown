@@ -1,0 +1,106 @@
+-- 저장 폴더 묶음 (owner 2026-11-13): a folder can be shown to friends, and friends see it on the profile.
+
+-- 1) Each folder is 'friends' or 'private'. Folders made before this stay private: the app told their owners
+-- "폴더는 나만 볼 수 있어요". Only save_saved_folder (new apps) starts one as 'friends', like saved places. An old
+-- app's create_saved_folder still makes a private folder, because that app still says folders are private.
+alter table private.saved_folders add column visibility text not null default 'private' check(visibility in ('private','friends'));
+
+-- What anyone but the owner sees in a folder: its catalog places and consented businesses, the profile map's rule
+-- (private.profile_saved_places). Saved posts and people never leave the owner. The app names places from its catalog.
+create function private.saved_folder_places(p_folder uuid) returns table(city_id text,place_key text,merchant_id uuid,added_at timestamptz)
+language sql stable security definer set search_path='' as $$
+ select distinct on (coalesce(x.merchant_id::text,x.city_id||':'||x.place_key)) x.city_id,x.place_key,x.merchant_id,x.added_at from (
+  select i.place_city_id city_id,i.place_key,m.id merchant_id,s.created_at added_at
+  from private.saved_folder_items i
+  join private.saved_places s on s.user_id=i.user_id and s.city_id=i.place_city_id and s.place_key=i.place_key
+  left join private.webshop_place_links l on l.place_key=i.place_key and l.city_id=i.place_city_id
+  left join private.merchants m on m.id=l.merchant_id and m.city_id=l.city_id and m.record_kind='business'
+   and m.deleted_at is null and m.status<>'paused' and m.consent='granted'
+  where i.folder_id=p_folder and i.place_key is not null
+  union all
+  select m.city_id,l.place_key,m.id,sm.created_at
+  from private.saved_folder_items i
+  join private.saved_merchants sm on sm.user_id=i.user_id and sm.merchant_id=i.merchant_id
+  join private.merchants m on m.id=i.merchant_id and m.record_kind='business' and m.deleted_at is null and m.status<>'paused' and m.consent='granted'
+  left join private.webshop_place_links l on l.merchant_id=m.id and l.city_id=m.city_id
+  where i.folder_id=p_folder and i.merchant_id is not null
+ ) x order by coalesce(x.merchant_id::text,x.city_id||':'||x.place_key),x.added_at desc
+$$;
+
+-- 'owner'; 'viewer' for an accepted friend who passes friend_pair_ok (blocks, reports, operated characters and
+-- inactive accounts drop out) while the folder is 'friends' and the owner shares saved places; otherwise null.
+create function private.saved_folder_role(p_viewer uuid,p_folder uuid) returns text
+language sql stable security definer set search_path='' as $$
+ select case when f.user_id=p_viewer then 'owner'
+  when private.are_friends(p_viewer,f.user_id) and private.friend_pair_ok(p_viewer,f.user_id)
+   and f.visibility='friends' and coalesce((select s.saved_places_to_friends from private.profile_sharing s where s.user_id=f.user_id),true) then 'viewer'
+  end
+ from private.saved_folders f where f.id=p_folder and p_viewer is not null
+$$;
+
+create function private.saved_folder_json(p_folder private.saved_folders) returns jsonb
+language sql stable security definer set search_path='' as $$
+ select jsonb_build_object('id',p_folder.id,'name',p_folder.name,'visibility',p_folder.visibility,
+  'placeCount',(select count(*)::integer from private.saved_folder_places(p_folder.id)))
+$$;
+
+-- Old apps read id and name; the extra fields ride along.
+create or replace function public.get_saved_folders() returns jsonb
+language plpgsql stable security definer set search_path='' as $$ declare uid uuid:=private.saved_owner(); begin
+ return (select coalesce(jsonb_agg(jsonb_build_object('id',id,'name',name,'visibility',visibility) order by created_at,id),'[]'::jsonb)
+  from private.saved_folders where user_id=uid);
+end $$;
+
+-- Creates (p_folder_id null) or edits one of the caller's folders.
+create function public.save_saved_folder(p_folder_id uuid,p_name text,p_visibility text) returns jsonb
+language plpgsql security definer set search_path='' as $$ declare uid uuid:=private.saved_owner(true); item private.saved_folders; begin
+ if p_name is null or length(btrim(p_name)) not between 1 and 80 or p_name ~ '[[:cntrl:]]' or p_visibility is null or p_visibility not in ('private','friends')
+  then raise exception 'INVALID_SAVED_FOLDER'; end if;
+ if p_folder_id is null then
+  if (select count(*) from private.saved_folders where user_id=uid)>=100 then raise exception 'SAVED_FOLDER_LIMIT'; end if;
+  insert into private.saved_folders(user_id,name,visibility) values(uid,btrim(p_name),p_visibility) returning * into item;
+ else
+  update private.saved_folders set name=btrim(p_name),visibility=p_visibility where user_id=uid and id=p_folder_id returning * into item;
+  if not found then raise exception 'FOLDER_UNAVAILABLE'; end if;
+ end if;
+ return private.saved_folder_json(item);
+end $$;
+
+-- One folder as the viewer may see it. No access and no such folder give the same FOLDER_UNAVAILABLE.
+create function public.get_saved_folder(p_folder_id uuid) returns jsonb
+language plpgsql stable security definer set search_path='' as $$ declare uid uuid:=private.saved_owner(); f private.saved_folders; v_role text; begin
+ v_role:=private.saved_folder_role(uid,p_folder_id);
+ if v_role is null then raise exception 'FOLDER_UNAVAILABLE'; end if;
+ select * into f from private.saved_folders where id=p_folder_id;
+ return private.saved_folder_json(f)||jsonb_build_object('role',v_role,
+  'owner',(select jsonb_build_object('id',p.id,'nickname',p.nickname) from public.profiles p where p.id=f.user_id),
+  'places',(select coalesce(jsonb_agg(jsonb_build_object('cityId',x.city_id,'placeKey',x.place_key,'merchantId',x.merchant_id,'name',m.name,'address',m.address)
+    order by x.added_at desc,coalesce(x.merchant_id::text,x.place_key)),'[]'::jsonb)
+   from (select * from private.saved_folder_places(p_folder_id) order by added_at desc limit 300) x left join private.merchants m on m.id=x.merchant_id));
+end $$;
+
+-- A friend's folders on their profile. A folder with no place to show stays hidden, so a folder of saved posts never
+-- shows its name.
+create function public.get_friend_saved_folders(p_user_id uuid) returns jsonb
+language plpgsql stable security definer set search_path='' as $$ declare uid uuid:=private.saved_owner(); begin
+ if p_user_id is null then raise exception 'INVALID_PROFILE'; end if;
+ return (select coalesce(jsonb_agg(x.item order by x.created_at desc,x.id),'[]'::jsonb) from (
+  select f.id,f.created_at,private.saved_folder_json(f) item from private.saved_folders f
+  where f.user_id=p_user_id and f.user_id<>uid and private.saved_folder_role(uid,f.id) is not null) x
+  where (x.item->>'placeCount')::integer>0);
+end $$;
+
+do $$ declare signature text; begin
+ foreach signature in array array['private.saved_folder_places(uuid)','private.saved_folder_role(uuid,uuid)','private.saved_folder_json(private.saved_folders)',
+  'public.save_saved_folder(uuid,text,text)','public.get_saved_folder(uuid)','public.get_friend_saved_folders(uuid)'] loop
+  execute 'alter function '||signature||' owner to postgres';
+  execute 'revoke all on function '||signature||' from public,anon,authenticated,service_role';
+ end loop;
+end $$;
+grant execute on function public.save_saved_folder(uuid,text,text),public.get_saved_folder(uuid),public.get_friend_saved_folders(uuid) to authenticated;
+
+-- An unknown target rejects the whole analytics batch, so these must reach production before the app build.
+insert into private.behavior_targets(id) values
+ ('saved.editor.visibility.on'),('saved.editor.visibility.off'),('saved.folder.open'),('folder.scroll'),('folder.place.open'),('user.folder.open')
+on conflict (id) do nothing;
+notify pgrst,'reload schema';

@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PostCard } from '@/components/post-card';
 import { DragSheet } from '@/components/drag-sheet';
 import { FriendButton, ProfileRecordTiles, ProfileSavedMap } from '@/components/profile-overview';
+import { FriendFolders } from '@/components/friend-folders';
 import { ReportSheet } from '@/components/report-sheet';
 import { MannerSummary } from '@/components/manner-summary';
 import { TrustBadge } from '@/components/trust-badge';
@@ -166,6 +167,7 @@ export default function AuthorPostsRoute() {
               <MannerSummary summary={publicProfile.manner} />
               {publicProfile.completedCount > 0 && <ThemedText type="small" themeColor="textSecondary">{tr('거래 완료 {0}건', count(publicProfile.completedCount))}</ThemedText>}
               {shownOverview && <ProfileRecordTiles overview={shownOverview} />}
+              {shownOverview?.friendship === 'friends' && <FriendFolders key={overviewKey} userId={authorId} nickname={publicProfile.nickname} />}
               <ThemedText type="small" themeColor="textSecondary">{tr("공개한 글 이력이에요. 거래 완료는 작성자가 표시한 상태이며 실제 거래·신원 인증을 보장하지 않아요.")}</ThemedText>
         <View style={[styles.segments, { borderBottomColor: theme.line }]} accessibilityRole="tablist" onLayout={event => setSegmentWidth(event.nativeEvent.layout.width)}>
           {segmentWidth > 0 && <Animated.View pointerEvents="none" style={[styles.segmentIndicator, Depth.control, { width: segmentWidth / 2, backgroundColor: theme.backgroundElement, borderBottomColor: theme.accent, transform: [{ translateX: segmentPosition.interpolate({ inputRange: [0, 1], outputRange: [0, segmentWidth / 2] }) }] }]} />}

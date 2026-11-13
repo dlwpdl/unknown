@@ -25,7 +25,7 @@ function screen(overrides = {}) {
     useEffect(fn, deps) { const slot = index++; if (!state[slot] || deps.some((value, i) => value !== state[slot][i])) { state[slot] = deps; const run = () => { if (state[slot] !== deps) return; cleanups[slot]?.(); cleanups[slot] = fn(); }; if (deferPassive) passive.push(run); else run(); } },
     useLayoutEffect(fn, deps) { const slot = index++; if (!state[slot] || deps.some((value, i) => value !== state[slot][i])) { cleanups[slot]?.(); state[slot] = deps; cleanups[slot] = fn(); } },
   };
-  const actions = { loadSavedItems: async () => page(), loadSavedFolders: async () => [folder], setSavedItem: async (_client, target, saved) => ({ target, saved, available: true, savedAt: item.savedAt, folderIds: [] }), createSavedFolder: async (_client, name) => ({ ...folder, name }), renameSavedFolder: async (_client, id, name) => ({ id, name }), deleteSavedFolder: async () => {}, setSavedItemFolders: async () => {}, ...overrides };
+  const actions = { loadSavedItems: async () => page(), loadSavedFolders: async () => [folder], setSavedItem: async (_client, target, saved) => ({ target, saved, available: true, savedAt: item.savedAt, folderIds: [] }), saveSavedFolder: async (_client, id, name, visibility) => ({ id: id ?? folder.id, name, visibility }), deleteSavedFolder: async () => {}, setSavedItemFolders: async () => {}, ...overrides };
   const api = Object.fromEntries(Object.entries(actions).map(([name, fn]) => [name, (...args) => { calls.push({ name, args: args.slice(1) }); return fn(...args); }]));
   const modules = {
     react: hooks, 'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) },
@@ -195,7 +195,7 @@ test('saved telemetry carries fixed action identifiers without target or folder 
   const sheet=library('SavedFolderSheet',{...editorProps(),editor:{kind:'item',item}}).render();assert.equal(control(sheet,`saved.editor.folder.${folder.id}`).props.analyticsId,'saved.editor.select');
 });
 
-const writeNames = new Set(['setSavedItem','createSavedFolder','renameSavedFolder','deleteSavedFolder','setSavedItemFolders']);
+const writeNames = new Set(['setSavedItem','saveSavedFolder','deleteSavedFolder','setSavedItemFolders']);
 async function retainedActions(view) {
   view.render();await settle();control(view.render(),`saved.folder.${folder.id}`).props.onPress();view.render();await settle();
   const row=list(view.render()).props.renderItem({item});const retained={remove:row.props.onRemove,compare:row.props.onCompare};
