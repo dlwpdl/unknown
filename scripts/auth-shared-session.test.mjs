@@ -16,6 +16,7 @@ const session = id => ({ access_token: `token-${id}`, user: { id, last_sign_in_a
 const profile = (id, patch = {}) => ({ id, nickname: `${id} 이웃`, city_id: 'vancouver', avatar_path: null, verification_level: 1,
   account_status: 'active', ai_safety_consent_at: '2026-10-11T18:00:00Z', ...patch });
 
+const signOuts = [];
 // Run AuthProvider's real restore/profile effects with controllable network ordering.
 function mount(initialSession = session('member')) {
   const state = [], reads = [], storage = new Map(); let index = 0, effects = [], tree, currentSession = initialSession, onAuthChange, authExpired;
@@ -39,7 +40,7 @@ function mount(initialSession = session('member')) {
     rpc: async (name, args) => name === 'change_profile_nickname' ? { data: { id: args.p_user_id, nickname: args.p_nickname }, error: null } : { error: null },
     auth: { getSession: async () => ({ data: { session: currentSession } }),
       onAuthStateChange(callback) { onAuthChange = callback; return { data: { subscription: { unsubscribe() {} } } }; },
-      startAutoRefresh() {}, stopAutoRefresh() {}, signOut: async () => { currentSession = null; onAuthChange('SIGNED_OUT', null); return {}; } },
+      startAutoRefresh() {}, stopAutoRefresh() {}, signOut: async options => { signOuts.push(options); currentSession = null; onAuthChange('SIGNED_OUT', null); return {}; } },
   };
   const jsx = (type, props, key) => ({ type, props, key }), play = () => {};
   const imports = {
@@ -195,4 +196,11 @@ test('"로그인이 풀렸어요" is only for a session that really dropped, not
   auth.expectSignOut(true); deleting.expire(); assert.equal(loginReason(deleting), undefined, 'account deletion invalidates its own session');
   const failed = mount(); context.after(() => failed.unmount()); auth = await failed.settle();
   auth.expectSignOut(true); auth.expectSignOut(false); failed.expire(); assert.equal(loginReason(failed), '세션 만료', 'deletion failed, the member is still signed in');
+});
+
+test('logging out ends only this device session, not the member\'s other phones or the web', async context => {
+  const harness = mount(); context.after(() => harness.unmount()); const auth = await harness.settle();
+  signOuts.length = 0;
+  await auth.signOut();
+  assert.deepEqual(JSON.parse(JSON.stringify(signOuts)), [{ scope: 'local' }]);
 });

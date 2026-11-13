@@ -117,14 +117,15 @@ async function shareText(text: string) {
   else await Share.share({ message: text });
 }
 
-function Action({ label, onPress, disabled, selected, primary = false, role = 'button' }: { label: string; onPress: () => void; disabled?: boolean; selected?: boolean; primary?: boolean; role?: 'button' | 'tab' }) {
+function Action({ label, onPress, disabled, selected, primary = false, role = 'button', back = false }: { label: string; onPress: () => void; disabled?: boolean; selected?: boolean; primary?: boolean; role?: 'button' | 'tab'; back?: boolean }) {
 
   const theme = useTheme(); const { play } = useInteractionFeedback(); const clay = useClay();
   const press = () => { play('selection'); onPress(); };
   if (primary) return <RaisedActionButton analyticsId="merchant.primary" label={label} onPress={press} disabled={disabled} />;
   return <Pressable lens analyticsId="merchant.action" accessibilityRole={role} accessibilityLabel={label} accessibilityState={{ disabled: !!disabled, selected: !!selected }} aria-selected={role === 'tab' ? !!selected : undefined} disabled={disabled} onPress={press}
-    style={[styles.action, clay && styles.clayPad, clay ? { borderColor: 'transparent', backgroundColor: 'transparent', opacity: disabled ? 0.5 : 1 } : { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.backgroundSelected : theme.backgroundElement, opacity: disabled ? 0.5 : 1 }]}>
+    style={[styles.action, back && styles.backAction, clay && styles.clayPad, clay ? { borderColor: 'transparent', backgroundColor: 'transparent', opacity: disabled ? 0.5 : 1 } : { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.backgroundSelected : theme.backgroundElement, opacity: disabled ? 0.5 : 1 }]}>
     {clay && <ClayPillFill kind={selected ? 'on' : 'white'} />}
+    {back && <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={14} tintColor={theme.text} />}
     <ThemedText type="smallBold" style={clay && { color: selected ? theme.accentInk : theme.text }}>{label}</ThemedText>
   </Pressable>;
 }
@@ -628,7 +629,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     <View style={[sidebar ? wideNav ? merchantShellStyles.shell : merchantShellStyles.stacked : styles.workspace, checking && { display: 'none', pointerEvents: 'none' }]} accessibilityElementsHidden={checking} importantForAccessibility={checking ? 'no-hide-descendants' : 'auto'} {...(Platform.OS === 'web' ? { inert: checking } : {})}>
     {sidebar && <MerchantSidebar items={navItems} active={activeTab} onSelect={selectNav} disabled={busy} wide={wideNav} />}
     <View style={sidebar ? merchantShellStyles.main : merchantShellStyles.plain}>
-    {sidebar || activeTab === 'overview' ? null : <View style={styles.businessHeader}><Action label={tr("비즈니스 관리")} disabled={busy} onPress={() => { setNotice(''); setTab('overview'); }} /><ThemedText type="small" themeColor="textSecondary" style={styles.toolText}>{data.merchant.name}</ThemedText></View>}
+    {sidebar || activeTab === 'overview' ? null : <View style={styles.businessHeader}><Action back label={tr("비즈니스 관리")} disabled={busy} onPress={() => { setNotice(''); setTab('overview'); }} /><ThemedText type="small" themeColor="textSecondary" style={styles.toolText}>{data.merchant.name}</ThemedText></View>}
     {sidebar && activeTab !== 'overview' && pageCopy[activeTab] && <MerchantPageHeader title={pageCopy[activeTab]![0]} subtitle={pageCopy[activeTab]![1]} action={newLabel ? <RaisedActionButton compact analyticsId="merchant.primary" label={newLabel} disabled={busy} onPress={() => { play('selection'); void openDraft(undefined, activeTab === 'posts' || !aiAllowed); }} /> : undefined} />}
     {error && <><ThemedText accessibilityRole="alert">{tr(error)}</ThemedText><Action label={tr("자료 새로 확인")} disabled={busy} onPress={() => { setError(''); setRevision((v) => v + 1); }} />{error === errorText(new Error('BUSINESS_MONTHLY_LIMIT_REACHED')) && <Action label={tr("요금제 보기")} onPress={openPricing} />}</>}{notice && <ThemedText accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
     {activeTab === 'overview' && sidebar && <MerchantHome name={data.merchant.name} place={`${tr(data.merchant.city_name)} · ${data.merchant.owner_verified_at ? tr('비즈니스 소유 확인됨') : tr('비즈니스 소유 확인 대기')}`} onChoose={onChoose}
@@ -874,7 +875,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
               : <ThemedText type="small">{tr("이번 달 새 글 {0}편 · 기존 약정 유지", businessMembership.postsUsed)}</ThemedText>}
             {businessMembership.bumpLimit != null ? <MerchantMeter label={tr("끌어올리기")} value={businessMembership.bumpsUsed} max={businessMembership.bumpLimit} />
               : <ThemedText type="small">{tr("끌어올리기 {0}회 · 한도 없음", businessMembership.bumpsUsed)}</ThemedText>}
-            <ThemedText type="small" themeColor="textSecondary">{tr("{0}에 초기화돼요. 직원·AI도 같은 한도를 써요.", new Date(businessMembership.resetsAt).toLocaleDateString(appLocale))}</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">{tr("{0}에 초기화돼요. 직원·AI도 같은 한도를 써요.", new Date(businessMembership.resetsAt).toLocaleDateString(appLocale, { timeZone: 'UTC' }))}</ThemedText>
             {businessMembership.tier === 'premium' && <ThemedText type="small" themeColor="textSecondary">{tr("프리미엄은 한 달 새 글 10편을 모두 직접 올려요. 글을 대신 맡기려면 글링 관리로 문의해 주세요.")}</ThemedText>}
             <Action label={tr("요금제 보기")} onPress={openPricing} />
           </> : <ThemedText type="small">{tr("멤버십 사용량을 확인하지 못했어요. 비즈니스 연결 상태를 확인하고 다시 열어 주세요.")}</ThemedText>}
@@ -910,6 +911,8 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
   clayPad: { overflow: 'visible', paddingHorizontal: 18 },
   action: { minHeight: 44, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, justifyContent: 'center', maxWidth: '100%' },
+  // A back arrow, so the pill and the business name beside it read as "back to overview · this business", not two tabs (QA G38-3).
+  backAction: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   field: { gap: 6 }, input: { minHeight: 48, minWidth: 0, borderWidth: 1, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, fontSize: 15, lineHeight: 22 },
   multiline: { minHeight: 160, textAlignVertical: 'top' },
   draftRow: { flexDirection: 'row', gap: 8, alignItems: 'center' }, checkbox: { minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'center' },

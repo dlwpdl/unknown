@@ -354,7 +354,8 @@ export function AuthProvider({ children, publicPage = false }: { children: React
       setAuthError(sourceCopy.auth.signOutError);
       return;
     }
-    const { error } = await supabase.auth.signOut();
+    // Only this device: the member's other phones and the web stay signed in.
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
     if (error) {
       memberSession.current = wasMember;
       setAuthError(sourceCopy.auth.signOutError);

@@ -988,6 +988,7 @@ export const uiEnglish: Record<string, string> = {
   "지금은 {0} 이름으로 쓰는 중": "Currently posting as {0}",
   "{0} 이름으로 쓰는 중": "Posting as {0}",
   "개인으로 바꾸기": "Switch to personal",
+  "개인으로 돌아가기": "Back to personal",
   "누구로 쓸까요?": "Post as",
   "비즈니스로 바꾸면 글과 대화가 가게 이름으로 올라가요. 모임은 개인으로만 열고 참여할 수 있어요.": "As a business, your posts and chats go out under its name. Meetups are for personal profiles only.",
   "댓글은 개인 프로필로 달려요": "Comments post from your personal profile",

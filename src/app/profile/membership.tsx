@@ -197,7 +197,8 @@ export default function MembershipScreen() {
               </View>)}
             </View>}
           </View>
-          <InfoNote>{kind === 'general' ? tr("모든 등급 공통 · 오늘 글 무제한 · 1:1 대화 바로 시작") : business ? tr("{0}에 글 수가 다시 채워져요", new Date(business.resetsAt).toLocaleDateString(appLocale, { month: 'long', day: 'numeric' })) : tr("매달 1일에 글 수가 다시 채워져요")}</InfoNote>
+          {/* The server counts business posts per UTC calendar month; read resetsAt in UTC so it shows the 1st, not the day before west of UTC. */}
+          <InfoNote>{kind === 'general' ? tr("모든 등급 공통 · 오늘 글 무제한 · 1:1 대화 바로 시작") : business ? tr("{0}에 글 수가 다시 채워져요", new Date(business.resetsAt).toLocaleDateString(appLocale, { month: 'long', day: 'numeric', timeZone: 'UTC' })) : tr("매달 1일에 글 수가 다시 채워져요")}</InfoNote>
 
           {(error || notice || pendingApproval) && <View style={styles.feedback}>
             {error && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{tr(error)}</ThemedText>}

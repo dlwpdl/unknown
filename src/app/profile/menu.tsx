@@ -16,6 +16,8 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useMembership } from '@/lib/membership-provider';
+import { useChatIdentity } from '@/hooks/use-chat-identity';
+import { selectChatBusiness } from '@/lib/chat-identity';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useUnreadCount } from '@/hooks/use-unread-count';
 import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
@@ -24,17 +26,18 @@ import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 export default function ProfileMenuScreen() {
   const { tr, t } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox(), router = useRouter(), { play } = useInteractionFeedback();
-  const { trustLevel, signOut } = useAuth(), { membership } = useMembership();
+  const { trustLevel, signOut, me } = useAuth(), { membership } = useMembership(), business = useChatIdentity();
   const unread = useUnreadCount('other');
   const membershipLabel = membership ? tr(({ free: '베이직', plus: '플러스', pro: '프로', premium: '프리미엄', admin: '관리자' } as const)[membership.tier]) : null;
   const unreadLabel = unread > 0 ? tr('새 소식 {0}', unread) : tr('새 소식 없음');
-  const row = (id: string, symbol: ComponentProps<typeof SymbolView>['name'], title: string, sub: string, path: Parameters<typeof router.push>[0]) =>
+  // A function instead of a path is an in-place action, so it gets no chevron.
+  const row = (id: string, symbol: ComponentProps<typeof SymbolView>['name'], title: string, sub: string, path: Parameters<typeof router.push>[0] | (() => void)) =>
     <Pressable key={id} analyticsId={id} accessibilityRole="button" accessibilityLabel={title}
-      onPress={() => { play('selection'); router.push(path); }}
+      onPress={() => { play('selection'); if (typeof path === 'function') path(); else router.push(path); }}
       style={({ pressed }) => [styles.accountRow, { backgroundColor: pressed ? theme.backgroundSelected : clayBox ? 'transparent' : theme.card }]}>
       <View style={[styles.accountIcon, { backgroundColor: theme.backgroundElement }]}><SymbolView name={symbol} size={22} tintColor={theme.navy} /></View>
       <View style={styles.accountText}><ThemedText type="smallBold">{title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{sub}</ThemedText></View>
-      <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
+      {typeof path !== 'function' && <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />}
     </Pressable>;
 
   return (
@@ -67,6 +70,8 @@ export default function ProfileMenuScreen() {
             {row('profile.meetup-profile', { ios: 'person.crop.rectangle', android: 'badge', web: 'badge' }, tr('모임 프로필 관리'), tr('모임 사진·소개·공개 범위를 따로 설정해요'), '/meetup-profile')}
             {row('profile.meetup-reviews', { ios: 'person.2', android: 'group', web: 'group' }, tr('모임 후기 · 매너 평가'), tr('내 후기와 매너 평가 관리'), '/profile/meetup-reviews')}
             {row('profile.invite', { ios: 'gift', android: 'redeem', web: 'redeem' }, tr('친구 초대'), tr('친구가 첫 모임에 다녀오면 2주 이용권'), '/profile/invite')}
+            {/* Writing as a business: the way back sits next to the business entry (QA G38-2). Same store as the chat and meetup switches. */}
+            {business && row('chat.identity.personal', { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }, tr('개인으로 돌아가기'), tr('지금은 {0} 이름으로 쓰는 중', business.name), () => selectChatBusiness(me.id, null))}
             <MerchantAccountEntry />
             <LinkedAccountEntry />
             </View>

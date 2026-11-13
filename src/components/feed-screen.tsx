@@ -130,11 +130,12 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const reducedMotion = useReducedMotion();
   const { fontScale, width: viewportWidth } = useWindowDimensions();
   const [hasBusinessSwitch, setHasBusinessSwitch] = useState(false);
-  const expandedHeader = fontScale > 1.2 || (hasBusinessSwitch && viewportWidth < 380);
   const router = useRouter();
   const { compose, hashtag, place: placeParam, placeCity } = useLocalSearchParams<{ compose?: string; hashtag?: string; place?: string; placeCity?: string }>();
   const { isAuthed, isAuthLoading, promptLogin, me, isAdmin } = useAuth();
   const business = useChatIdentity();
+  // The business-name pill (up to 150 + its ⌄) leaves the city about 40pt on a 411pt phone, so the header takes two lines below 500 (QA G38-1).
+  const expandedHeader = fontScale > 1.2 || (hasBusinessSwitch && viewportWidth < 380) || (!!business && viewportWidth < 500);
   const [businessWriting, setBusinessWriting] = useState(false);
   const { play } = useInteractionFeedback();
   const insets = useSafeAreaInsets();
