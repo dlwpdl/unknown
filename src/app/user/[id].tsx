@@ -9,6 +9,7 @@ import { Alert, Animated, DeviceEventEmitter, Easing, FlatList, StyleSheet, View
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ClayPhoto } from '@/components/clay';
 import { PostCard } from '@/components/post-card';
 import { DragSheet } from '@/components/drag-sheet';
 import { FriendButton, ProfileRecordTiles, ProfileSavedMap } from '@/components/profile-overview';
@@ -61,6 +62,8 @@ export default function AuthorPostsRoute() {
   }, [kind, reducedMotion, segmentPosition]);
   const [more, setMore] = useState(false), pending = useRef(false);
   const [failed, setFailed] = useState<string | null>(null);
+  // The public profile has no photo of its own; their posts carry the same signed photo the feed shows (QA E32-3).
+  const [photo, setPhoto] = useState<{ key: string; url: string } | null>(null), [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const [detail, setDetail] = useState<{ key: string; post: Post } | null>(null);
   const [overview, setOverview] = useState<{ key: string; value: ProfileOverview | null } | null>(null), [overviewRevision, setOverviewRevision] = useState(0);
   const [menu, setMenu] = useState<'open' | 'report' | null>(null), afterMenu = useRef<(() => void) | null>(null);
@@ -79,7 +82,12 @@ export default function AuthorPostsRoute() {
     if (!authorId) return;
     let active = true;
     void Promise.all([loadPublicUserActivity(supabase, authorId, kind, null, viewerScope), loadPublicUserProfile(supabase, authorId)])
-      .then(([posts, value]) => { if (active) { setState({ key: requestKey, posts, hasMore: posts.length === 30 }); setProfile({ key: requestKey, value }); } })
+      .then(([posts, value]) => {
+        if (!active) return;
+        setState({ key: requestKey, posts, hasMore: posts.length === 30 }); setProfile({ key: requestKey, value });
+        const url = posts.find(post => post.author.id === authorId)?.author.avatarUrl;
+        if (url) setPhoto({ key: `${authorId}:${viewerScope}`, url });
+      })
       .catch(() => { if (active) setFailed(requestKey); });
     return () => { active = false; };
   }, [authorId, kind, requestKey, viewerScope, hidden]);
@@ -116,6 +124,7 @@ export default function AuthorPostsRoute() {
   const publicProfile = profile?.key === requestKey && !hidden('user', authorId) ? profile.value : null;
   const saved = useSavedEntry({ kind: 'user', id: authorId }, !!publicProfile);
   const shownOverview = publicProfile && overview?.key === overviewKey ? overview.value : null;
+  const avatarUrl = photo?.key === `${authorId}:${viewerScope}` && photo.url !== failedPhoto ? photo.url : undefined;
   const closeMenu = (then?: () => void) => { afterMenu.current = then ?? null; setMenu(null); };
   const confirmBlock = () => {
     if (!publicProfile || !isAuthed) return;
@@ -137,7 +146,6 @@ export default function AuthorPostsRoute() {
           style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
           <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={IconSize.toolbar} tintColor={theme.text} />
         </Pressable> : undefined} />
-        {current && <ThemedText type="small" themeColor="textSecondary" style={styles.count}>{t.authorPosts.count(count(posts.length))}</ThemedText>}
         {!!saved.error && <ThemedText type="small" accessibilityRole="alert" style={styles.saveError}>{saved.error}</ThemedText>}
 
 
@@ -155,7 +163,9 @@ export default function AuthorPostsRoute() {
             ListHeaderComponent={publicProfile ? <View style={styles.profile}>
               {shownOverview && <ProfileSavedMap overview={shownOverview} homeCityId={publicProfile.cityId} />}
               <View style={styles.identity}>
-                <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle" style={{ color: theme.accent }}>{publicProfile.nickname[0]}</ThemedText></View>
+                <View style={[styles.avatar, { backgroundColor: avatarUrl ? 'transparent' : theme.backgroundElement }]}>
+                  {avatarUrl ? <ClayPhoto uri={avatarUrl} size={64} onError={() => setFailedPhoto(avatarUrl)} /> : <ThemedText type="subtitle" style={{ color: theme.accent }}>{publicProfile.nickname[0]}</ThemedText>}
+                </View>
                 <View style={{ flex: 1, minWidth: 0, gap: 4 }}><View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}><ThemedText type="subtitle" style={{ flexShrink: 1 }}>{publicProfile.nickname}</ThemedText><TrustBadge verified={publicProfile.verificationLevel >= 2} trustLevel={publicProfile.verificationLevel === 3 ? 3 : publicProfile.verificationLevel === 2 ? 2 : undefined} /></View><ThemedText type="small" themeColor="textSecondary">{publicProfile.neighborhood ?? tr(CITIES.find(city => city.id === publicProfile.cityId)?.name ?? publicProfile.cityId)}{" " + tr("· 가입") + " "}{new Date(publicProfile.memberSince).toLocaleDateString(appLocale)}</ThemedText></View>
               </View>
               <View style={[styles.stats, { borderColor: theme.line }]}>
@@ -224,7 +234,6 @@ export default function AuthorPostsRoute() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  count: { paddingHorizontal: 16, paddingBottom: 8, textAlign: 'center' },
   saveError: { paddingHorizontal: 16, paddingBottom: 8 },
   list: { paddingHorizontal: 16, paddingBottom: 32, gap: 12 },
   profile: { gap: 16, marginBottom: 16 },

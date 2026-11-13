@@ -8,8 +8,8 @@ import ts from 'typescript';
 function rating({ score, reviewKind = 'usage', reduced = false, label, scheme = 'dark' }) {
   const animations = [], values = [], cleanups = [];
   const theme = scheme === 'dark'
-    ? { accent: '#CBB9FF', line: '#222', background: '#0B0B12', card: '#171722' }
-    : { accent: '#6E4AA2', line: '#DFDAE9', background: '#F7F7FB', card: '#FFFFFF' };
+    ? { accent: '#CBB9FF', line: '#222', background: '#0B0B12', card: '#171722', textSecondary: '#B7B4C3' }
+    : { accent: '#6E4AA2', line: '#DFDAE9', background: '#F7F7FB', card: '#FFFFFF', textSecondary: '#625C70' };
   class Value {
     constructor(value) { this.value = value; values.push(this); }
     setValue(value) { this.value = value; }
@@ -105,5 +105,23 @@ test('higher ratings glow brighter in both themes while every mark stays visible
     }
     assert.ok(marks.at(-1).props.style[1].textShadowRadius > marks[0].props.style[1].textShadowRadius);
     for (const score of [null, NaN, Infinity, 0, 11]) assert.equal(icon({ score }).props.style[1].color, theme.line);
+  }
+});
+
+test('empty marks stay visible on a white light-mode card and keep the line colour in dark mode (QA H43-6)', () => {
+  const channel = value => { const c = value / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  const luminance = rgb => rgb.map(channel).reduce((sum, c, index) => sum + c * [0.2126, 0.7152, 0.0722][index], 0);
+  const hex = (color, at) => parseInt(color.slice(at, at + 2), 16);
+  for (const reviewKind of ['usage', 'employment']) {
+    const light = rating({ score: null, reviewKind, scheme: 'light' });
+    const empties = light.tree.props.children.map(unit => unit.props.children[0]);
+    const colors = empties.map(node => reviewKind === 'usage' ? node.props.style[1].color : node.props.style[1].backgroundColor);
+    assert.equal(new Set(colors).size, 1);
+    const color = colors[0], alpha = hex(color, 7) / 255;
+    const mixed = [1, 3, 5].map(at => hex(color, at) * alpha + hex(light.theme.card, at) * (1 - alpha));
+    assert.ok(1.05 / (luminance(mixed) + 0.05) >= 3, `${reviewKind} empty mark ${color} needs 3:1 on white`);
+    const dark = rating({ score: null, reviewKind, scheme: 'dark' });
+    const darkEmpty = dark.tree.props.children[0].props.children[0].props.style[1];
+    assert.equal(reviewKind === 'usage' ? darkEmpty.color : darkEmpty.backgroundColor, dark.theme.line);
   }
 });

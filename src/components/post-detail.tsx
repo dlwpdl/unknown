@@ -890,6 +890,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                 setSheetUser({
                   id: post.author.id,
                   nickname: post.author.nickname,
+                  avatarUrl: post.author.avatarUrl,
                   neighborhood: post.author.neighborhood,
                   verified: post.author.verified,
                   trustLevel: post.author.trustLevel,

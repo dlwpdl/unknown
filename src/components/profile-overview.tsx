@@ -98,7 +98,7 @@ export function ProfileRecordTiles({ overview }: { overview: ProfileOverview }) 
     { id: 'meetups', value: count(overview.meetupCount), label: tr('연 모임') },
   ];
   return <ScrollView analyticsId="profile.records" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tiles}>
-    {tiles.map((tile, index) => <Reanimated.View key={tile.id} entering={reduced ? FadeIn.duration(150) : FadeInDown.delay(index * 60).duration(250)}>
+    {tiles.map((tile, index) => <Reanimated.View key={tile.id} style={styles.tileSlot} entering={reduced ? FadeIn.duration(150) : FadeInDown.delay(index * 60).duration(250)}>
       <Pressable analyticsId={`profile.record.${tile.id}`} accessibilityRole={tile.open ? 'button' : 'text'} disabled={!tile.open}
         accessibilityLabel={`${tile.label} ${tile.value}`} onPress={() => { if (!tile.open) return; play('selection'); tile.open(); }}
         style={({ pressed }) => [styles.tile, clayBox ? [styles.clayCard, { opacity: pressed && tile.open ? 0.8 : 1 }] : { backgroundColor: pressed && tile.open ? theme.backgroundSelected : theme.backgroundElement }]}>
@@ -241,7 +241,9 @@ const styles = StyleSheet.create({
   center: { textAlign: 'center' },
   chips: { gap: Spacing.two },
   border: { borderWidth: 1 },
-  tiles: { gap: Spacing.two },
+  // The tiles share the full row like the buttons above (QA H43-5); with large text they keep their width and the row scrolls.
+  tiles: { flexGrow: 1, gap: Spacing.two },
+  tileSlot: { flexGrow: 1 },
   tile: { minWidth: 104, minHeight: 76, borderRadius: 14, paddingHorizontal: Spacing.three, paddingVertical: 12, gap: 2, justifyContent: 'center' },
   tileValue: { fontVariant: ['tabular-nums'] },
   friend: { gap: Spacing.two },

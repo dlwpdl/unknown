@@ -192,14 +192,14 @@ export const en: Translations = {
     verifiedL2: 'ID and selfie matched', verifiedL3: 'Trusted host · ID verified, with a solid meetup record', self: 'This is your profile',
   },
   authorPosts: {
-    back: 'Back', open: 'View posts', title: (nickname) => `Posts by ${nickname}`, fallbackTitle: 'Neighbour’s posts', count: (posts) => `${posts} ${posts === '1' ? 'post' : 'posts'}`,
+    back: 'Back', open: 'View posts', title: (nickname) => `Posts by ${nickname}`, fallbackTitle: 'Neighbour’s posts',
     loading: 'Loading posts', emptyTitle: 'No posts yet', emptyBody: 'Posts from this neighbour will show up here.', errorTitle: 'Couldn’t load posts', errorBody: 'Try again in a moment.',
   },
   profile: {
     saved: 'Saved', savedEmpty: 'No saved posts or meetups yet.', savedLoading: 'Loading saved items', savedError: 'Couldn’t load your saved items.', verifyBadge: 'Verified',
     location: (city, neighbourhood) => [city, neighbourhood].filter(Boolean).join(' · ') || 'No city set', changePhoto: 'Change profile photo',
     photoErrorTitle: 'Couldn’t load the photo', photoErrorBody: 'Try again in a moment.', stats: (posts, likes, rooms) => `${count(posts)} ${posts === 1 ? 'post' : 'posts'} · ${count(likes)} ${likes === 1 ? 'like' : 'likes'} received · ${count(rooms)} ${rooms === 1 ? 'meetup' : 'meetups'}`,
-    settings: 'Settings', appearance: 'Appearance', darkMode: 'Dark mode', lightMode: 'Light mode', appearancePreview: 'Pick the look that suits you',
+    repliesTab: 'Replies', settings: 'Settings', appearance: 'Appearance', darkMode: 'Dark mode',
     darkModeNote: 'On for dark, off for light.', darkModeHint: 'Switches between dark and light mode',
     clayDesign: '3D design', clayDesignNote: 'On for 3D, off for flat.', clayDesignHint: 'Switches between 3D and flat design',
     appearanceSaveErrorTitle: 'Couldn’t save your appearance setting', appearanceSaveErrorBody: 'It’s applied for now. Choose it again to save it.',

@@ -466,7 +466,6 @@ export const t = {
     open: '쓴 글 보기',
     title: (nickname: string) => `${nickname}님이 쓴 글`,
     fallbackTitle: '이웃이 쓴 글',
-    count: (posts: string) => `글 ${posts}개`,
     loading: '쓴 글 불러오는 중',
     emptyTitle: '아직 쓴 글이 없어요',
     emptyBody: '이 이웃이 글을 쓰면 여기에 모여요.',
@@ -487,11 +486,11 @@ export const t = {
     photoErrorBody: '잠시 후 다시 시도해주세요.',
     stats: (posts: number, likes: number, rooms: number) =>
       `쓴 글 ${count(posts)} · 받은 공감 ${count(likes)} · 모임 ${count(rooms)}`,
+    // 내 프로필 탭 이름. 영어는 명사형 Replies(글 아래 '답글' 버튼은 Reply 그대로).
+    repliesTab: '답글',
     settings: '설정',
     appearance: '화면 모드',
     darkMode: '다크 모드',
-    lightMode: '라이트 모드',
-    appearancePreview: '편한 화면으로 바꿔보세요',
     darkModeNote: '켜면 다크, 끄면 라이트.',
     darkModeHint: '켜면 다크 모드, 끄면 라이트 모드로 바뀝니다',
     clayDesign: '3D 디자인',
