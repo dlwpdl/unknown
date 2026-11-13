@@ -107,5 +107,18 @@ select set_config('request.jwt.claims','{"role":"anon"}',true);
 select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000001','JEUNK234')->>'inviter',null,'a deleted inviter is not named');
 reset role;
 
+-- A business that has not consented yet keeps its name and city on the landing but not its map places.
+-- Its profile is public only through an admin's own copy linked as the business (20261103100000), so the host becomes that admin.
+update auth.users set raw_app_meta_data='{"role":"admin"}' where id='9e000000-0000-4000-8000-000000000001';
+set local session_replication_role=replica;
+insert into private.merchant_posts(post_id,merchant_id,original_url,published_as_business)
+values('9e100000-0000-4000-8000-000000000004','9e200000-0000-4000-8000-000000000001','https://example.invalid/shop',true);
+set local session_replication_role=origin;
+update private.merchants set consent='pending' where id='9e200000-0000-4000-8000-000000000001';
+set local role anon;
+select is(public.get_business_invite_landing('SHPQ2345')->>'name','Invite shop','a pending business still has its landing');
+select is(public.get_business_invite_landing('SHPQ2345')->'meetups','[]'::jsonb,'a pending business''s map places do not pick meetups');
+reset role;
+
 select * from finish();
 rollback;

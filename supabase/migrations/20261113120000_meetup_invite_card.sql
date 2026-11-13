@@ -106,6 +106,8 @@ language sql stable security definer set search_path='' as $$
         and not private.has_reported(auth.uid(),'user',p.author_id)
         and exists(select 1 from private.webshop_place_links w where w.merchant_id=l.merchant_id
           and w.city_id=p.city_id and w.place_key=private.meetup_place_key(p.body))
+        -- A pending business's profile is public, its map places are not (20261103100000; security review on PR #171).
+        and exists(select 1 from private.merchants c where c.id=l.merchant_id and c.consent='granted')
       order by p.created_at desc,p.id limit 5) x),'[]'::jsonb))
   from private.invite_links l cross join lateral (select public.get_merchant_profile(l.merchant_id) profile) b
   where p_code ~ '^[A-HJ-NP-Z2-9]{8}$' and l.code=p_code and l.merchant_id is not null and b.profile is not null;
