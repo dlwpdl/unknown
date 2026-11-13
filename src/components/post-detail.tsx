@@ -67,7 +67,8 @@ import { loadPublicPost } from '@/lib/feed-data';
 import { MAX_POST_IMAGES } from '@/lib/image-upload';
 import { CITIES } from '@/lib/mock';
 import { postMapBody, postPublicAddress } from '@/lib/post-maps';
-import { stripListingLead } from '@/lib/listing-details';
+import { editedListingBody, listingDraftFromDetails, listingFromDraft, stripListingLead, type ListingDetails, type ListingDraft } from '@/lib/listing-details';
+import { ListingFields } from '@/components/listing-fields';
 import { ListingInfo, type DetailedPost } from '@/components/listing-card';
 import { splitPostPhotoCredits } from '@/lib/post-photo-credits';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
@@ -157,12 +158,23 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const [commentTotal, setCommentTotal] = useState(post.comments);
   const [viewCount, setViewCount] = useState(post.views);
   const photosLoaded = () => (post.imagePaths?.length ?? 0) === (post.imageUris?.filter(Boolean).length ?? 0);
-  const draftOf = () => ({ title: post.title, body: post.room ? visibleMeetupBody(post.body) : post.body });
+  // 글 수정 shows the 글쓰기 card fields to the author (the official account included). A business manager who is not the
+  // author keeps the text-only edit: the card is written by the author's own update.
+  const listingEditable = !management && !!post.listingDetails;
+  const draftOf = () => ({ title: post.title, body: post.room ? visibleMeetupBody(post.body) : listingEditable ? stripListingLead(post.body, post.listingDetails) : post.body });
+  const listingDraftOf = () => listingEditable ? listingDraftFromDetails(post.listingDetails!, post.price) : null;
   const imagesOf = () => (post.imagePaths ?? []).map((path, index) => ({ path, uri: post.imageUris![index] }));
   // 오늘 카드 ··· 의 고치기는 수정 화면으로 바로 연다 (owner 2026-11-04). 사진을 다 못 받았으면 보통 화면으로 열린다.
   const editFirst = () => !!editOnOpen && canManagePost && photosLoaded();
   const [postDraft, setPostDraft] = useState<{ title: string; body: string } | null>(() => editFirst() ? draftOf() : null);
   const [postImages, setPostImages] = useState<EditablePostImage[] | null>(() => editFirst() ? imagesOf() : null);
+  const [listingDraft, setListingDraft] = useState<ListingDraft | null>(() => editFirst() ? listingDraftOf() : null);
+  const [listingTried, setListingTried] = useState(false);
+  const listingInput = { title: postDraft?.title.trim() ?? '', cityId: post.cityId };
+  const listingEdit = listingDraft && post.listingDetails ? listingFromDraft(post.listingDetails.type, listingDraft, listingInput, language) : null;
+  // Only a field this edit emptied blocks saving; one the post never had (a value the source did not give) stays optional.
+  const listingMissing = listingEdit && post.listingDetails ? listingEdit.missing.filter(key =>
+    !listingFromDraft(post.listingDetails!.type, listingDraftFromDetails(post.listingDetails!, post.price), listingInput, language).missing.includes(key)) : [];
   const [postMenuOpen, setPostMenuOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [deletePostOpen, setDeletePostOpen] = useState(false);
@@ -334,6 +346,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     setPostMenuOpen(false);
     setPostImages(imagesOf());
     setPostDraft(draftOf());
+    setListingDraft(listingDraftOf()); setListingTried(false);
     scrollRef.current?.scrollToOffset({ offset: 0, animated: false });
   };
   const pickPostImages = async (replace = false) => {
@@ -373,17 +386,25 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const savePost = async () => {
     if (!postDraft || postEditBusy.current) return;
     const title = postDraft.title.trim();
-    const body = postDraft.body.trim() + linkedEventDetails;
+    let body = postDraft.body.trim() + linkedEventDetails;
+    let listing: { listingDetails: ListingDetails; price?: number | null } | undefined;
+    if (listingEdit && post.listingDetails) {
+      if (listingMissing.length) { play('warning'); setListingTried(true); return Alert.alert(tr('빠진 항목이 있어요'), tr('표시된 항목을 채워 주세요.')); }
+      // The first line counts toward the server's body limit (1,000, or an older post's own length).
+      try { body = editedListingBody(listingEdit.details, postDraft.body, post.listingDetails.area, post.cityId, language); if ([...body].length > Math.max(1000, [...post.body].length)) throw new Error('POST_BODY_TOO_LONG'); }
+      catch { play('warning'); return Alert.alert(t.write.validationTitle, t.write.bodyTooLong); }
+      listing = { listingDetails: listingEdit.details, ...(listingEdit.price !== (post.price ?? null) ? { price: listingEdit.price } : {}) };
+    }
     if (!title || !body) { play('warning'); return Alert.alert(tr("제목과 내용을 모두 적어주세요.")); }
     postEditBusy.current = true;
     setSavingPost(true);
     try {
       const replacement = postImages ? { userId: me.id, images: postImages } : undefined;
       if (management) await management.edit(post.id, { title, body }, replacement);
-      else await editPost(supabase, post.id, { title, body }, replacement);
+      else await editPost(supabase, post.id, { title, body, ...listing }, replacement);
       if (!active.current) return;
-      setPost((current) => ({ ...current, title, body }));
-      setPostDraft(null); setPostImages(null); play('selection');
+      setPost((current) => ({ ...current, title, body, ...(listing && { listingDetails: listing.listingDetails }), ...(listing?.price !== undefined && { price: listing.price }) }));
+      setPostDraft(null); setPostImages(null); setListingDraft(null); play('selection');
       try {
         const saved = await loadPublicPost(supabase, post.id);
         if (!saved) throw new Error('POST_READBACK_UNAVAILABLE');
@@ -818,7 +839,9 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                   placeholder={tr("제목")} placeholderTextColor={theme.textSecondary} maxLength={100} editable={!savingPost}
                   accessibilityLabel={tr("글 제목 수정")}
                   style={[styles.postEditInput, { color: theme.text, borderColor: theme.line }]} />
-                <PostBodyEditor value={postDraft.body} cityName={CITIES.find(city => city.id === post.cityId)?.englishName} allowLocation={!post.room} onChangeText={(text) => setPostDraft((current) => current && { ...current, body: text })}
+                {listingDraft && post.listingDetails && <ListingFields category={post.listingDetails.type} cityId={post.cityId} value={listingDraft} onChange={setListingDraft}
+                  missing={listingTried ? listingMissing : []} disabled={savingPost} lead={listingEdit?.details.lead} />}
+                <PostBodyEditor value={postDraft.body} cityName={CITIES.find(city => city.id === post.cityId)?.englishName} allowLocation={!post.room && !listingDraft} onChangeText={(text) => setPostDraft((current) => current && { ...current, body: text })}
                   placeholder={tr("내용")} placeholderTextColor={theme.textSecondary} maxLength={Math.max(1000 - linkedEventDetails.length, [...(post.body ?? '')].length)} multiline editable={!savingPost}
                   accessibilityLabel={tr("글 내용 수정")}
                   style={[styles.postEditInput, styles.postEditBody, { color: theme.text, borderColor: theme.line }]} />
@@ -836,7 +859,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                   </Pressable>
                 </View>
                 <View style={styles.postActions}>
-                  <Pressable analyticsId="components_post-detail.pressable.12" onPress={() => { play('selection'); setPostDraft(null); setPostImages(null); }} disabled={savingPost || pickingPostImages} accessibilityRole="button"
+                  <Pressable analyticsId="components_post-detail.pressable.12" onPress={() => { play('selection'); setPostDraft(null); setPostImages(null); setListingDraft(null); }} disabled={savingPost || pickingPostImages} accessibilityRole="button"
                     accessibilityState={{ disabled: savingPost || pickingPostImages }} style={({ pressed }) => [styles.postAction, clay && styles.clayPad, !clay && Depth.control, { backgroundColor: clay ? 'transparent' : theme.backgroundElement }]}>
                     {clay && <ClayPillFill kind="white" />}
                     <ThemedText type="smallBold" themeColor="textSecondary">{t.write.cancel}</ThemedText>

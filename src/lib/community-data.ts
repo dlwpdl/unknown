@@ -977,7 +977,8 @@ export async function editComment(client: SupabaseClient, commentId: string, bod
 
 // 제목·본문·선택한 사진만 고친다. 정렬 시각·조회수·해시태그는 컬럼 권한이 없어 클라이언트에서 닿지 않으므로
 // 수정해도 피드에서 끌어올려지지 않는다.
-export async function editPost(client: SupabaseClient, postId: string, patch: { title: string; body: string },
+// listingDetails rewrites the card together with the body that carries its first line; price is sent only when it changed.
+export async function editPost(client: SupabaseClient, postId: string, patch: { title: string; body: string; listingDetails?: ListingDetails; price?: number | null },
   replacement?: { userId: string; images: (PostDraftImage | { path: string })[] }, merchantId?: string) {
   if (replacement && replacement.images.length > MAX_POST_IMAGES) throw new Error('TOO_MANY_IMAGES');
   if (replacement?.images.some(image => 'path' in image && ((!merchantId && !image.path.startsWith(`${replacement.userId}/`))
@@ -989,7 +990,8 @@ export async function editPost(client: SupabaseClient, postId: string, patch: { 
     p_merchant_id: merchantId, p_post_id: postId, p_title: patch.title.trim(), p_body: patch.body.trim(),
     ...(imagePaths ? { p_image_paths: imagePaths } : {}),
   }) : await client.from('posts')
-    .update({ title: patch.title.trim(), body: patch.body.trim(), ...(imagePaths ? { image_paths: imagePaths } : {}) })
+    .update({ title: patch.title.trim(), body: patch.body.trim(), ...(imagePaths ? { image_paths: imagePaths } : {}),
+      ...(patch.listingDetails ? { listing_details: patch.listingDetails } : {}), ...(patch.price !== undefined ? { price: patch.price } : {}) })
     .eq('id', postId).select('id').single();
   if (result.error) {
     // Only a definite server rejection permits deleting the newly uploaded files.

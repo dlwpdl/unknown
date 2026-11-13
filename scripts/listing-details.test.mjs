@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  buildListingLead, emptyListingDraft, freeBand, groupListingsByArea, isFreeListing, listingAreaRows, listingExtras, listingFromDraft, listingPin, listingPriceLabel, matchesListingFilters,
+  buildListingLead, editedListingBody, emptyListingDraft, freeBand, groupListingsByArea, isFreeListing, listingAreaRows, listingDraftFromDetails, listingExtras, listingFromDraft, listingPin, listingPriceLabel, matchesListingFilters,
   NO_LISTING_FILTERS, parseListingDetails, parseListingView, stripListingLead, withListingLead,
 } from '../src/lib/listing-details.ts';
 import { coarseListingPin, findNeighborhood, NEIGHBORHOODS, neighborhoodGroups } from '../src/lib/neighborhoods.ts';
@@ -253,4 +253,49 @@ test('Vancouver job areas are grouped so every neighborhood sits in exactly one 
   const ids = neighborhoodGroups('vancouver').flatMap(group => group.items.map(item => item.id));
   assert.deepEqual([...ids].sort(), NEIGHBORHOODS.vancouver.map(item => item.id).sort());
   assert.equal(neighborhoodGroups('toronto'), null, 'a short list stays flat');
+});
+
+test('인스위트 세탁기는 포함 옵션으로 첫 줄·카드에 들어가고, 모르는 값은 건너뛴다 (owner 2026-11-13)', () => {
+  const { details } = listingFromDraft('housing', draft('housing', { rooms: '1b', price: '2100', area: 'metrotown', includes: ['furnished', 'laundry', 'parking'] }),
+    { title: '1베드', cityId: 'vancouver' }, 'ko');
+  assert.equal(details.lead, '렌트 내놓음 · 1베드 · $2,100/월 · 메트로타운 · 가구 포함, 주차, 인스위트 세탁기');
+  assert.deepEqual(details.includes, ['furnished', 'parking', 'laundry']);
+  assert.equal(buildListingLead({ type: 'housing', deal: 'rent_offer', includes: ['laundry'] }, { title: '', price: null, cityId: 'vancouver' }, 'en'), 'For rent · In-suite laundry');
+  const body = withListingLead(details.lead, '연락 주세요');
+  assert.deepEqual(parseListingDetails({ ...details, includes: ['laundry', 'sauna', 'pets'] }, body).includes, ['pets', 'laundry'], 'a value this app does not know is skipped, the card still reads');
+  assert.deepEqual(listingExtras(['인스위트 세탁기', 'In-suite laundry', '식기세척기']), ['식기세척기'], 'the preset is not added again as the author\'s own item');
+});
+
+test('글 수정은 저장된 카드를 같은 칸으로 되살리고, 그대로 저장하면 같은 카드가 된다', () => {
+  const input = { title: '홀 서버', cityId: 'vancouver' };
+  for (const [category, patch] of [
+    ['housing', { rooms: '2b', price: '2,400', moveIn: '2026-12-01', area: 'metrotown', includes: ['laundry', 'pets'], extras: ['식기세척기'] }],
+    ['housing', { deal: 'rent_wanted', rooms: 'studio', area: 'downtown' }],
+    ['jobs', { price: '18.5', jobTypes: ['part'], area: 'downtown', hours: '주말', duties: '서빙', apply: ['chat', 'phone'] }],
+    ['jobs', { deal: 'seeking', payUnit: 'negotiable' }],
+    ['used', { price: '40', condition: 'like_new', area: 'joyce', offers: true }],
+    ['used', { free: true, condition: 'used', area: 'joyce' }],
+    ['used', { deal: 'buy', area: 'joyce' }],
+  ]) {
+    const saved = listingFromDraft(category, draft(category, patch), input, 'ko');
+    const again = listingFromDraft(category, listingDraftFromDetails(saved.details, saved.price), input, 'ko');
+    assert.deepEqual(again.details, saved.details, `${category} ${JSON.stringify(patch)}`);
+    assert.equal(again.price, saved.price);
+    assert.deepEqual(again.missing, saved.missing);
+  }
+  // Business job posts keep the pay only in the card.
+  assert.equal(listingDraftFromDetails({ type: 'jobs', deal: 'hiring', payUnit: 'hour', pay: 19 }, null).price, '19');
+});
+
+test('글 수정 본문은 새 첫 줄을 붙이고, 동네가 바뀔 때만 지도 줄을 그 동네 중심으로 옮긴다', () => {
+  const address = 'https://www.google.com/maps/search/?api=1&query=49.2259,-123.0004';
+  const text = withPostMap('뷰잉은 연락 주세요.', address, '6000 McKay Ave');
+  const kept = listingFromDraft('housing', draft('housing', { rooms: '1b', price: '2100', area: 'metrotown', includes: ['laundry'] }), { title: 't', cityId: 'vancouver' }, 'ko').details;
+  const body = editedListingBody(kept, text, 'metrotown', 'vancouver', 'ko');
+  assert.equal(body, `${kept.lead}\n\n${text}`, 'the published listing address stays');
+  assert.equal(stripListingLead(body, parseListingDetails(kept, body)), text);
+  const moved = listingFromDraft('housing', draft('housing', { rooms: '1b', price: '2100', area: 'downtown' }), { title: 't', cityId: 'vancouver' }, 'ko').details;
+  const area = findNeighborhood('vancouver', 'downtown');
+  assert.equal(editedListingBody(moved, text, 'metrotown', 'vancouver', 'ko'), withPostMap(`${moved.lead}\n\n뷰잉은 연락 주세요.`, googlePinUrl(area), '다운타운'));
+  assert.throws(() => editedListingBody(moved, 'ㄱ'.repeat(1000), 'metrotown', 'vancouver', 'ko'), /POST_BODY_TOO_LONG/);
 });

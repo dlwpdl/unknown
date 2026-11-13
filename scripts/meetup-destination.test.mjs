@@ -81,7 +81,7 @@ test('editing an invitation preserves the exact canonical tail through the actua
   const original = { id: 'post-1', cityId: place.cityId, body: 'Old invitation' + tail }, writes = [], exports = {};
   vm.runInNewContext(ts.transpileModule(save + '\nexports.save=savePost;', { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, {
     exports, postDraft: { title: ' New title ', body: 'Edited invitation' }, postEditBusy: { current: false }, linkedEventDetails: a.splitPlaceMeetupBody(original.body, place.cityId).details,
-    post: original, postImages: null, management: null, me: { id: 'host' }, active: { current: true }, supabase: {},
+    post: original, postImages: null, management: null, me: { id: 'host' }, active: { current: true }, supabase: {}, listingEdit: null, setListingDraft() {},
     editPost: async (_client, id, patch) => writes.push({ id, ...patch }), loadPublicPost: async () => ({ ...original, ...writes[0] }),
     setSavingPost() {}, setPost() {}, setPostDraft() {}, setPostImages() {}, play() {}, onPostChanged() {}, Alert: { alert: () => assert.fail('Unexpected edit error') }, tr: value => value,
   });

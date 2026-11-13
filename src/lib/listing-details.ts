@@ -1,7 +1,7 @@
 import { translateUi } from '../i18n/index.ts';
 import type { AppLanguage } from '../i18n/language.ts';
 import { coarseListingPin, findNeighborhood, neighborhoodName } from './neighborhoods.ts';
-import { googleMapsPin, postMapBody } from './post-maps.ts';
+import { googleMapsPin, googlePinUrl, postMapBody, withPostMap } from './post-maps.ts';
 import type { ListingStatus, Post } from './types.ts';
 
 // Category fields for 부동산·구인구직·중고거래 (owner-approved mockup 2026-10-27, direction A).
@@ -13,7 +13,8 @@ export const isListingCategory = (slug: string | null | undefined): slug is List
 
 export const HOUSING_DEALS = ['rent_offer', 'rent_wanted', 'sale', 'buy'] as const;
 export const ROOMS = ['room', 'studio', '1b', '1b_den', '2b', '2b2b', '3b', 'basement'] as const;
-export const HOUSING_INCLUDES = ['furnished', 'utilities', 'parking', 'pets'] as const;
+// Append only: older apps keep the values they know and skip the rest (parseListingDetails).
+export const HOUSING_INCLUDES = ['furnished', 'utilities', 'parking', 'pets', 'laundry'] as const;
 export const JOB_DEALS = ['hiring', 'seeking'] as const;
 export const PAY_UNITS = ['hour', 'month', 'year', 'negotiable'] as const;
 export const JOB_TYPES = ['full', 'part', 'weekend', 'contract'] as const;
@@ -45,7 +46,7 @@ export const LISTING_LABELS = {
   jobs: { hiring: '구인', seeking: '구직' } satisfies Record<JobDeal, string>,
   used: { sell: '팝니다', buy: '삽니다' } satisfies Record<UsedDeal, string>,
   rooms: { room: '방 한 칸', studio: '스튜디오', '1b': '1베드', '1b_den': '1+덴', '2b': '2베드', '2b2b': '2베드 2배스', '3b': '3베드 이상', basement: '베이스먼트' } satisfies Record<Room, string>,
-  includes: { furnished: '가구 포함', utilities: '유틸 포함', parking: '주차', pets: '반려동물 가능' } satisfies Record<HousingInclude, string>,
+  includes: { furnished: '가구 포함', utilities: '유틸 포함', parking: '주차', pets: '반려동물 가능', laundry: '인스위트 세탁기' } satisfies Record<HousingInclude, string>,
   payUnit: { hour: '시급', month: '월급', year: '연봉', negotiable: '협의' } satisfies Record<PayUnit, string>,
   jobTypes: { full: '풀타임', part: '파트타임', weekend: '주말만', contract: '계약직' } satisfies Record<JobType, string>,
   apply: { chat: '글링 대화', email: '이메일', phone: '전화', visit: '직접 방문' } satisfies Record<ApplyWay, string>,
@@ -95,7 +96,7 @@ export function listingPriceLabel(details: ListingDetails, price: number | null 
 function includesText(includes: readonly HousingInclude[], language: AppLanguage) {
   if (language === 'en') return includes.map(item => translateUi('en', LISTING_LABELS.includes[item])).join(', ');
   const covered = includes.filter(item => item === 'furnished' || item === 'utilities').map(item => item === 'furnished' ? '가구' : '유틸');
-  return [covered.length ? `${covered.join('·')} 포함` : '', ...includes.filter(item => item === 'parking' || item === 'pets').map(item => LISTING_LABELS.includes[item])].filter(Boolean).join(', ');
+  return [covered.length ? `${covered.join('·')} 포함` : '', ...includes.filter(item => item !== 'furnished' && item !== 'utilities').map(item => LISTING_LABELS.includes[item])].filter(Boolean).join(', ');
 }
 
 // The first line(s) written into the body. Old app versions read only this text.
@@ -125,6 +126,14 @@ export function buildListingLead(details: ListingDetails, input: { title: string
 
 export const withListingLead = (lead: string, body: string) => body.trim() ? `${lead}\n\n${body.trim()}` : lead;
 
+// 글 수정: the new first line on the edited text. The map line stays unless the neighborhood changed (it may be a listing
+// address the business published); a new neighborhood moves it to that neighborhood's centre, as a new post does.
+export function editedListingBody(details: ListingDetails, text: string, previousArea: string | undefined, cityId: string, language: AppLanguage) {
+  const body = withListingLead(details.lead!, text);
+  const area = details.area !== previousArea ? findNeighborhood(cityId, details.area) : null;
+  return area ? withPostMap(body, googlePinUrl(area), neighborhoodName(area, language)) : body;
+}
+
 // New apps show the fields, so the lead is dropped once. An edited lead no longer matches and stays visible.
 export function stripListingLead(body: string, details: ListingDetails | null | undefined) {
   if (!details?.lead || !body.startsWith(details.lead)) return body;
@@ -143,6 +152,18 @@ export const emptyListingDraft = (category: ListingCategory): ListingDraft => ({
   condition: null, offers: false, free: false, price: '',
 });
 export type ListingMissing = 'deal' | 'rooms' | 'area' | 'price' | 'condition';
+// 글 수정: the saved card back into the composer's draft. listingFromDraft on the result gives the same card.
+export function listingDraftFromDetails(details: ListingDetails, price: number | null | undefined): ListingDraft {
+  const draft = emptyListingDraft(details.type);
+  const amount = details.type === 'jobs' ? price ?? details.pay : price;
+  draft.deal = details.deal;
+  draft.area = details.area ?? null;
+  draft.price = amount == null ? '' : String(amount);
+  if (details.type === 'housing') Object.assign(draft, { rooms: details.rooms ?? null, moveIn: details.moveIn ?? null, includes: details.includes ?? [], extras: details.extras ?? [] });
+  else if (details.type === 'jobs') Object.assign(draft, { payUnit: details.payUnit ?? 'hour', jobTypes: details.jobTypes ?? [], hours: details.hours ?? '', duties: details.duties ?? '', apply: details.apply ?? [] });
+  else Object.assign(draft, { condition: details.condition ?? null, offers: details.offers === true, free: details.deal === 'sell' && price === 0, price: details.deal === 'sell' && price === 0 ? '' : draft.price });
+  return draft;
+}
 
 const clean = (value: string, max: number) => value.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 export const MAX_LISTING_EXTRAS = 5;

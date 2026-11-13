@@ -132,7 +132,7 @@ export function ListingFields({ category, cityId, value, onChange, missing = [],
           {extra == null && value.extras.length < MAX_LISTING_EXTRAS && <Chip action label={tr('+ 직접 추가')} selected={false} disabled={disabled} onPress={() => setExtra('')} />}
         </View>
         {extra != null && <View style={styles.extraRow}>
-          <View style={styles.flex}><Field label={tr('직접 추가할 항목')} value={extra} onChange={setExtra} placeholder={tr('예: 세탁기')} disabled={disabled} maxLength={20} onSubmit={addExtra} /></View>
+          <View style={styles.flex}><Field label={tr('직접 추가할 항목')} value={extra} onChange={setExtra} placeholder={tr('예: 식기세척기')} disabled={disabled} maxLength={20} onSubmit={addExtra} /></View>
           <RaisedActionButton compact analyticsId="listing.fields.extra-add" label={tr('추가')} disabled={disabled || !canAddExtra} onPress={addExtra} />
         </View>}
         {extra != null && <ThemedText type="caption" themeColor="textSecondary">{tr('20자까지, {0}개까지 넣을 수 있어요.', MAX_LISTING_EXTRAS)}</ThemedText>}
