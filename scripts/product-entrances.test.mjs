@@ -10,6 +10,7 @@ import * as product from '../src/lib/product-analytics.ts';
 import * as preferences from '../src/lib/notification-preferences.ts';
 import * as maps from '../src/lib/post-maps.ts';
 import { mapMessage } from '../src/lib/post-map-html.ts';
+import { publicPlaceId } from '../src/lib/public-seo.ts';
 import { merchantMapsUrl, merchantPhoneUrl, safeMerchantSourceUrl } from '../src/lib/merchant-source.ts';
 import * as postLinks from '../supabase/functions/_shared/post-links.ts';
 import { analyticsScreen } from '../src/lib/analytics.ts';
@@ -93,7 +94,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     '@/lib/city-places': { getCityRecommendations: id => catalog.cities[id]?.places ?? [], CITY_PLACES_COLLECTED_AT: catalog.collectedAt, getCityPlaces: id => { if (ctx.catalogError) throw new Error('missing'); return ctx.places ?? catalog.cities[id]?.places ?? []; } },
     '@/lib/community-city': { useCommunityCity: () => ({ city, setCity() {} }) }, '@/lib/mock': { CITIES: [city] },
     '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, directionsUrl, placeCategory, placeMapRoute, priceSymbol },
-    '@/lib/delivery-partners': { deliveryPartnerPlace },
+    '@/lib/delivery-partners': { deliveryPartnerPlace }, '@/lib/public-seo': { publicPlaceId },
     '@/lib/webshops': { loadCityBusinessLinks: async () => ({}) },
     '@/lib/merchant-source': { merchantMapsUrl, merchantPhoneUrl, safeMerchantSourceUrl }, '@/lib/post-maps': maps,
     '../../../supabase/functions/_shared/post-links': postLinks,

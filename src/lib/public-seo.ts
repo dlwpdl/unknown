@@ -87,6 +87,7 @@ export const CITY_PAGE_SIZE = 30;
 
 // Map place ids (osm:node:123) as the last part of a place page address (/vancouver/places/node-123), and back.
 export const publicPlaceSlug = (placeId: string) => placeId.replace(/^osm:(node|way|relation):([0-9]+)$/, '$1-$2');
+export const publicPlaceId = (slug: string) => slug.replace(/^(node|way|relation)-([0-9]+)$/, 'osm:$1:$2');
 export const publicPlacePath = (cityId: string, placeId: string) => `/${cityId}/places/${publicPlaceSlug(placeId)}`;
 
 // Static subpages under a city: /vancouver/2 (older posts), /vancouver/rent (topic hub), /vancouver/meetups,
@@ -96,7 +97,7 @@ export function publicCitySubpage(path: string, cityIds: string[], placeCityIds 
   if (!cityId || !(part === 'places' ? placeCityIds : cityIds).includes(cityId)) return null;
   if (part === 'places') {
     if (!rest || /^[0-9]+$/.test(rest)) return rest === '1' ? null : { cityId, kind: 'places' as const, page: Number(rest ?? 1) };
-    return { cityId, kind: 'place' as const, placeId: `osm:${rest.replace('-', ':')}` };
+    return { cityId, kind: 'place' as const, placeId: publicPlaceId(rest) };
   }
   if (rest) return null;
   if (part === 'meetups') return { cityId, kind: 'meetups' as const };

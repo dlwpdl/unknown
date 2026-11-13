@@ -47,6 +47,7 @@ import { merchantMapsUrl, merchantPhoneUrl, safeMerchantSourceUrl } from '@/lib/
 import { useAuth } from '@/lib/auth';
 import { recordProductEvent } from '@/lib/product-analytics';
 import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, directionsUrl, placeCategory, placeMapRoute, priceSymbol } from '@/lib/discovery';
+import { publicPlaceId } from '@/lib/public-seo';
 import { supabase } from '@/lib/supabase';
 import { INSTAGRAM_LINK_SVG, instagramPostLink } from '../../../supabase/functions/_shared/post-links';
 
@@ -80,7 +81,9 @@ export default function PlaceDetailScreen() {
   const theme = useTheme(), clay = useClay(), clayBox = useClayBox(), router = useRouter(), { play } = useInteractionFeedback();
   const reduced = useReducedMotion();
   let found: CityPlace | undefined;
-  try { if (city) found = getCityPlaces(city.id).find(item => item.id === id) ?? (typeof id === 'string' ? deliveryPartnerPlace(city.id, id) : undefined); } catch { /* Invalid/missing catalog stays an explicit missing-place state. */ }
+  // Links from the public place page carry its slug (node-123); the catalog keys the place osm:node:123.
+  const placeId = typeof id === 'string' ? publicPlaceId(id) : undefined;
+  try { if (city && placeId) found = getCityPlaces(city.id).find(item => item.id === placeId) ?? deliveryPartnerPlace(city.id, placeId); } catch { /* Invalid/missing catalog stays an explicit missing-place state. */ }
   const place = found, website = place?.website ? safeMerchantSourceUrl(place.website) : null;
   const phoneUrl = place?.phone ? merchantPhoneUrl(place.phone) : null, instagram = place?.instagram ? instagramPostLink(place.instagram) : null;
   const targetId = place?.id, loadedCityId = place?.cityId;
