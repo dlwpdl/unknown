@@ -79,13 +79,14 @@ language sql stable security definer set search_path='' as $$
     'fee',case when jsonb_typeof(p.room_preview->'fee'->'amount')='number' then p.room_preview->'fee'->'amount' end,
     'intro',private.public_post_opening(split_part(split_part(coalesce(p.body,''),E'\n\n장소:',1),E'\n\n행사 ID:',1),p.title),
     'area',private.meetup_invite_area(p.body,p.city_id),
-    -- No sender name when the code is the host's own or belongs to an operator of the business that posted it:
+    -- No sender name when the code is the host's own or belongs to the owner or an operator of the business that posted it:
     -- that would tie the host name or business to a personal account (security review on PR #171).
     'inviter',(select o.nickname from private.invite_links l join public.profiles o on o.id=l.owner_id
       where p_code ~ '^[A-HJ-NP-Z2-9]{8}$' and l.code=p_code and l.merchant_id is null and o.account_status='active'
         and l.owner_id<>p.author_id
-        and not exists(select 1 from public.posts x join private.merchant_operators m on m.merchant_id=x.business_author_id
-          where x.id=p.id and m.user_id=l.owner_id)
+        and not exists(select 1 from public.posts x join private.merchants mm on mm.id=x.business_author_id
+          where x.id=p.id and (mm.owner_id=l.owner_id
+            or exists(select 1 from private.merchant_operators m where m.merchant_id=mm.id and m.user_id=l.owner_id)))
         and not private.is_blocked_between(auth.uid(),o.id) and not private.has_reported(auth.uid(),'user',o.id)))
   from private.business_public_posts p join public.profiles a on a.id=p.author_id
   where p.id=p_post_id and p.status='published' and p.room_preview is not null and a.account_status='active'

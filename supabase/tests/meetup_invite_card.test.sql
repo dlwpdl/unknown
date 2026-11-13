@@ -9,7 +9,8 @@ insert into auth.users(id,email) values
  ('9e000000-0000-4000-8000-000000000001','invite-host@example.invalid'),
  ('9e000000-0000-4000-8000-000000000002','invite-friend@example.invalid'),
  ('9e000000-0000-4000-8000-000000000003','invite-viewer@example.invalid'),
- ('9e000000-0000-4000-8000-000000000004','invite-shop@example.invalid');
+ ('9e000000-0000-4000-8000-000000000004','invite-shop@example.invalid'),
+ ('9e000000-0000-4000-8000-000000000005','invite-operator@example.invalid');
 insert into public.profiles(id,nickname,city_id,terms_accepted_at,privacy_accepted_at,ai_safety_consent_at,consent_version)
 select id,'초대검사'||right(id::text,1),'vancouver',now(),now(),now(),'test' from auth.users where id::text like '9e000000-%';
 update public.profiles set nickname='지은' where id='9e000000-0000-4000-8000-000000000002';
@@ -54,8 +55,10 @@ insert into private.invite_links(code,owner_id,merchant_id) values
  ('SHPQ2345','9e000000-0000-4000-8000-000000000004','9e200000-0000-4000-8000-000000000001'),
  ('HDDE2345','9e000000-0000-4000-8000-000000000004','9e200000-0000-4000-8000-000000000002'),
  ('HSTQ2345','9e000000-0000-4000-8000-000000000001',null),
- ('PRTN2345','9e000000-0000-4000-8000-000000000004',null);
-insert into private.merchant_operators(merchant_id,user_id) values('9e200000-0000-4000-8000-000000000001','9e000000-0000-4000-8000-000000000004');
+ ('PRTN2345','9e000000-0000-4000-8000-000000000004',null),
+ ('KPRT2345','9e000000-0000-4000-8000-000000000005',null);
+-- The owner lives only in merchants.owner_id; a co-operator is a different member (0143 refuses the owner as an operator).
+insert into private.merchant_operators(merchant_id,user_id) values('9e200000-0000-4000-8000-000000000001','9e000000-0000-4000-8000-000000000005');
 
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 set local role anon;
@@ -72,7 +75,9 @@ select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000001','
 select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000001','jeunk234')->>'inviter',null,'codes are matched exactly');
 select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000001','NQPE2345')->>'inviter',null,'an unknown code names nobody');
 select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000001','HSTQ2345')->>'inviter',null,'the host sharing their own meetup is not named');
-select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000004','PRTN2345')->>'inviter',null,'an operator sharing their business''s meetup is not named');
+select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000004','PRTN2345')->>'inviter',null,'the owner sharing their business''s meetup is not named');
+select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000004','KPRT2345')->>'inviter',null,'a co-operator sharing their business''s meetup is not named');
+select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000001','KPRT2345')->>'inviter','초대검사5','the co-operator sharing someone else''s meetup is');
 select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000001','PRTN2345')->>'inviter','초대검사4','the same person sharing someone else''s meetup is');
 select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000002'),null::jsonb,'invite-only meetups have no public card');
 select is(public.get_meetup_invite_card('9e100000-0000-4000-8000-000000000003'),null::jsonb,'stories have no meetup card');
