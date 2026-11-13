@@ -49,7 +49,7 @@ test('Home, full list and detail map controls preserve the canonical city/place 
       assert.equal(marker.place.id, route.params.placeId);
       assert.equal(marker.latitude, place.latitude);
       assert.equal(marker.longitude, place.longitude);
-      assert.equal(new URL(discovery.directionsUrl(marker, 'google')).searchParams.get('destination'), `${place.latitude},${place.longitude}`);
+      assert.equal(discovery.mapAppUrl(marker, 'google'), discovery.mapAppUrl({ cityId: place.cityId, latitude: place.latitude, longitude: place.longitude, place }, 'google'), 'the map pin and the place screen open the same Google Maps place');
     }
   }
 });

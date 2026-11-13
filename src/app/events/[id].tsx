@@ -18,7 +18,7 @@ import { ControlMotion } from '@/constants/design-system';
 import { Depth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { eventVideo } from '@/lib/event-videos';
+import { eventIntro, eventVideo } from '@/lib/event-videos';
 import { useAuth } from '@/lib/auth';
 import { recordProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
@@ -100,7 +100,7 @@ export default function EventDetailScreen() {
         <ThemedText type="subtitle" accessibilityRole="header">{event.name}</ThemedText>
         <View style={[styles.facts, clayBox ? styles.clayCard : { backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="smallBold" themeColor="accent">{eventTime(event, appLocale)}</ThemedText><ThemedText>{event.venue || tr("장소 확인 필요")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{event.city}</ThemedText><ThemedText type="smallBold" themeColor={event.price ? 'accent' : 'textSecondary'}>{eventPriceLabel(event, appLocale)}</ThemedText></View>
         {!!eventNotice(event, appLocale) && <ThemedText accessibilityRole="alert" themeColor="accent">{eventNotice(event, appLocale)}</ThemedText>}
-        <View style={styles.description}><ThemedText type="smallBold" accessibilityRole="header">{tr("행사 소개")}</ThemedText><ThemedText type="small" themeColor="textSecondary" numberOfLines={3}>{event.description || tr("자세한 소개는 티켓에서 확인해 주세요.")}</ThemedText></View>
+        <View style={styles.description}><ThemedText type="smallBold" accessibilityRole="header">{tr("행사 소개")}</ThemedText><ThemedText type="small" themeColor="textSecondary" numberOfLines={3}>{eventIntro(event.description) ?? tr("자세한 소개는 티켓에서 확인해 주세요.")}</ThemedText></View>
         <Pressable analyticsId="ticketmaster.meetup.find" accessibilityRole="button" accessibilityState={{ disabled: !meetupAllowed(event) }} disabled={!meetupAllowed(event)} onPress={findMeetups} style={({ pressed }) => [styles.button, clay ? styles.clayButton : [Depth.control, { borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card }], { opacity: !meetupAllowed(event) ? 0.4 : 1, }]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold">{tr("함께 갈 모임 찾기")}</ThemedText></Pressable>
         <RaisedActionButton analyticsId="ticketmaster.meetup.create" label={tr("함께 갈 모임 만들기")} disabled={!meetupAllowed(event)} onPress={create} />
         <Pressable analyticsId="ticketmaster.purchase" accessibilityRole="link" accessibilityState={{ disabled: !event.ticketUrl }} disabled={!event.ticketUrl} onPress={openTicket} style={({ pressed }) => [styles.button, clay ? styles.clayButton : [Depth.control, { borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card }], { opacity: !event.ticketUrl ? 0.4 : 1, }]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold">{tr("티켓 확인하기")}</ThemedText></Pressable>

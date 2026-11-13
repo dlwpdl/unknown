@@ -6,13 +6,14 @@ import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { googleMapsPin, googleMapsUrl } from '@/lib/post-maps';
+import { googleMapsPin, googleMapsUrl, type PostPin } from '@/lib/post-maps';
 import { PostPinMap } from '@/components/post-pin-map';
 import { useAuth } from '@/lib/auth';
 import { recordProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
 
-export function PostMapLink({ url, label, onOpened }: { url: string; label?: string; onOpened?: () => void }) {
+/** `pin` draws the preview for a link that searches by name and address, which carries no coordinates of its own (QA C19-2). */
+export function PostMapLink({ url, label, pin: knownPin, onOpened }: { url: string; label?: string; pin?: PostPin; onOpened?: () => void }) {
   const { t } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const { isAuthed, me } = useAuth(), userId = isAuthed ? me.id : null;
@@ -20,7 +21,7 @@ export function PostMapLink({ url, label, onOpened }: { url: string; label?: str
   useLayoutEffect(() => { identity.current = userId; return () => { identity.current = null; }; }, [userId]);
   const target = googleMapsUrl(url);
   if (!target) return null;
-  const pin = googleMapsPin(target);
+  const pin = knownPin ?? googleMapsPin(target);
   return <Pressable analyticsId="components_post-map-link.pressable.1"
     accessibilityRole="link" accessibilityLabel={`${label ? `${label} · ` : ''}${t.map.openLabel}`}
     style={({ pressed }) => [styles.link, { borderColor: theme.line, opacity: pressed ? 0.6 : 1 }]}

@@ -83,6 +83,12 @@ test('a real half-point score must be explicitly selected before publishing a re
   assert.equal(ui.calls.writes[0][3], 8.5);
 });
 
+test('QA C19-1: a place with no ratings says it once, in the empty review card', async () => {
+  const ui = view(); ui.render(); await settle(); const tree = ui.render();
+  assert.ok(!nodes(tree).some(n => n.type === 'MerchantRatingBar'), 'no empty 0-rating bar above the empty card');
+  assert.ok(nodes(tree).some(n => n.type === 'StateCard' && n.props.kind === 'empty'));
+});
+
 test('editing restores the member score and text while a rating outage preserves readable posts', async () => {
   const ui = view({ ratings: async () => ({ average: 7.5, count: 1, scores: { mine: 7.5 }, myReview: { id: 'mine', score: 7.5, body: '기존 경험', status: 'published' } }) });
   ui.render(); await settle(); let tree = ui.render();
