@@ -12,7 +12,10 @@ export function appPathForLink(input: string): string {
   // Only https links on the public site are claimed by associated domains; scheme links (gling://, OAuth) stay untouched.
   if (url.origin !== SITE || !/^(https:\/\/|\/)/i.test(input)) return input;
   const post = sharedLinkTarget(url.href);
-  if (post) return `/post/${post.id}${post.invite ? '?invite=1' : ''}`;
+  if (post) {
+    const query = [post.invite ? 'invite=1' : '', post.code ? `code=${post.code}` : ''].filter(Boolean).join('&');
+    return `/post/${post.id}${query ? `?${query}` : ''}`;
+  }
   const path = url.pathname.replace(/\/+$/, '') || '/';
   const fullUrl = /^https:/i.test(input);
   if (path === '/company' || path.startsWith('/company/')) {
@@ -33,7 +36,8 @@ export function appPathForLink(input: string): string {
   }
   if (path === '/meetup-join') {
     const postId = url.searchParams.get('postId');
-    return postId && UUID.test(postId) ? `/meetup-join?postId=${postId.toLowerCase()}` : '/';
+    const code = url.searchParams.getAll('code').length === 1 ? normalizeInviteCode(url.searchParams.get('code')) : null;
+    return postId && UUID.test(postId) ? `/meetup-join?postId=${postId.toLowerCase()}${code ? `&code=${code}` : ''}` : '/';
   }
   // A full site URL we cannot open lands on home instead of an unmatched route; bare in-app paths keep their meaning.
   return fullUrl ? '/' : input;

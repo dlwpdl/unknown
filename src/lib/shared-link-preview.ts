@@ -42,10 +42,11 @@ export async function loadSharedLinkPost(client: SupabaseClient, postId: string)
   const row = data[0] as PublicFeedRow;
   const room = row.room_preview;
   const [post] = mapPublicFeed([{ ...row, image_paths: row.image_paths?.slice(0, 1) ?? [],
-    // Meetup destinations, contacts and application details stay in the app.
+    // Meetup destinations, contacts and application details stay in the app. The language pair and a paused recruitment are
+    // on the app's public meetup card too; the invitation and shop QR pages show them (owner 2026-11-13).
     ...(room ? { body: '', room_preview: {
       id: room.id, title: room.title, memberCount: room.memberCount, verifiedOnly: room.verifiedOnly,
-      capacity: room.capacity, closed: room.closed, eventKind: room.eventKind,
+      capacity: room.capacity, closed: room.closed, recruitingClosed: room.recruitingClosed, eventKind: room.eventKind, languageExchange: room.languageExchange,
       startsAt: room.startsAt, endsAt: room.endsAt, timezone: room.timezone, cadence: room.cadence,
       category: room.category, recommendedAgeMin: room.recommendedAgeMin, recommendedAgeMax: room.recommendedAgeMax,
       // For meetup rows the server already puts the host's meetup name (not the account nickname) in author_nickname.

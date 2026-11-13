@@ -1,3 +1,5 @@
+import { normalizeInviteCode } from '../src/lib/invites.ts';
+import { findNeighborhood } from '../src/lib/neighborhoods.ts';
 import { decodeSharedUuid } from '../src/lib/shared-uuid.ts';
 import { previewImageCover } from '../supabase/functions/_shared/preview-image.ts';
 
@@ -71,7 +73,9 @@ function coverUrl(path: unknown, id: string, kind: Kind, city: string, app: stri
 export async function handleSharePreview(request: Request, env: SharePreviewEnv, fetcher: typeof fetch = fetch): Promise<Response> {
   const head = request.method === 'HEAD';
   if (request.method !== 'GET' && !head) return unavailable(405);
-  const route = new URL(request.url).pathname.match(/^\/(share|s)\/([^/]+)\/?$/);
+  const requestUrl = new URL(request.url), route = requestUrl.pathname.match(/^\/(share|s)\/([^/]+)\/?$/);
+  // The sharer's personal invite code (sharing.ts withInviteCode) continues to the invitation; nothing else from the query does.
+  const codes = requestUrl.searchParams.getAll('c'), code = codes.length === 1 && /^[A-HJ-NP-Z2-9]{8}$/.test(codes[0]) ? normalizeInviteCode(codes[0]) : null;
   const id = route?.[1] === 's' ? decodeSharedUuid(route[2]) : route && UUID.test(route[2]) ? route[2].toLowerCase() : null;
   if (!route || !id) return unavailable(404, head);
   let stage = 'APP_ORIGIN';
@@ -108,12 +112,28 @@ export async function handleSharePreview(request: Request, env: SharePreviewEnv,
       ? Array.from(preview.teaser.replace(/\s+/gu, ' ').trim()).slice(0, 120).join('') : '';
     // The Gling map place a post is pinned to (20261111210000); meetups never send one.
     const place = kind !== 'meetup' ? text(preview.place, 300) : '';
+    // An open meetup's second line leads with seats left and the neighborhood (20261113120000); the older line stays if that read fails.
+    let seats = '', area = '';
+    if (kind === 'meetup' && !closed) {
+      stage = 'CARD_FETCH';
+      try {
+        const reply = await fetcher(`${supabase}/rest/v1/rpc/get_meetup_invite_card`, { method: 'POST', headers: auth, body: JSON.stringify({ p_post_id: id }), redirect: 'error', signal });
+        const card = reply.ok ? await reply.json() as Record<string, unknown> | null : null;
+        if (card && typeof card === 'object' && card.id === id) {
+          const left = typeof card.capacity === 'number' && typeof card.memberCount === 'number' ? card.capacity - card.memberCount : 0;
+          if (Number.isInteger(left) && left > 0) seats = `${left}자리 남았어요`;
+          const neighborhood = Object.hasOwn(cityCovers, city) && typeof card.area === 'string' ? findNeighborhood(cityCovers[city], card.area) : null;
+          if (neighborhood) area = `${city} ${neighborhood.ko} 근처`;
+        }
+      } catch { /* the older invitation line stays */ }
+      stage = 'PREVIEW_HTML';
+    }
     const cardTitle = kind === 'meetup' ? `${closed ? '모집 마감' : '글링 모임 초대'} · ${title}` : title;
     const description = kind === 'meetup'
-      ? [closed ? '모집이 마감된 모임이에요.' : '함께할 모임에 초대됐어요!', city, schedule].filter(Boolean).join(' · ')
+      ? [closed ? '모집이 마감된 모임이에요.' : seats || (area ? '' : '함께할 모임에 초대됐어요!'), area || city, schedule].filter(Boolean).join(' · ')
       : [place, teaser || [kinds[kind], city, schedule, '로그인한 뒤 자세한 내용을 볼 수 있어요.'].filter(Boolean).join(' · ')].filter(Boolean).join(' · ');
     const canonical = `${share}/${route[1]}/${route[1] === 's' ? route[2] : id}`;
-    const destination = `${app}/post?id=${id}&shared=1${kind === 'meetup' ? '&invite=1' : ''}`;
+    const destination = `${app}/post?id=${id}&shared=1${kind === 'meetup' ? `&invite=1${code ? `&code=${code}` : ''}` : ''}`;
     const cover = coverUrl(preview.imagePath, id, kind, city, app);
     const image = cover ?? `${supabase}/functions/v1/public-post?format=preview-image&id=${id}`;
     const safeTitle = escapeHtml(title);

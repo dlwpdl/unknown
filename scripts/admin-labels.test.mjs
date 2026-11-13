@@ -63,3 +63,20 @@ test('표시 중인 행에서 이름을 찾을 사용자 ID만 모은다', () =>
   });
   assert.deepEqual([...ids].sort(), ['a1', 'a2', 'c1', 'm1', 'p1', 'r1', 'r2', 'x1']);
 });
+
+test('기다린 시간과 첫 답 줄은 쉬운 말로 쓰고, 지난 주에는 "아직"을 붙이지 않는다', async () => {
+  const { firstPostStatus, lateReplyText, replyTimeText, waitText } = await import('../src/lib/admin-labels.ts');
+  assert.deepEqual([5, 60, 95, 1440, 1530, 3000].map(waitText), ['5분', '1시간', '1시간 35분', '1일', '1일 1시간', '2일 2시간']);
+  const week = (posts, medianMinutes, due = 0, unanswered = 0) => ({ week: '2026-11-09', posts, replied: medianMinutes == null ? 0 : posts, medianMinutes, due, unanswered });
+  assert.equal(replyTimeText(week(3, 42), true), '42분');
+  assert.equal(replyTimeText(week(2, null), true), '아직 답 없음');
+  assert.equal(replyTimeText(week(2, null)), '답 없음');
+  assert.equal(replyTimeText(week(0, null), true), '글 없음');
+  assert.equal(replyTimeText(undefined), '글 없음');
+  assert.equal(lateReplyText(week(4, 95, 4, 1)), '하루 지나도 답이 없던 글 4건 중 1건');
+  assert.equal(lateReplyText(week(1, 5)), '하루 지난 글 없음');
+  const now = Date.parse('2026-11-13T20:00:00Z');
+  assert.equal(firstPostStatus('2026-11-13T19:59:40Z', 0, now), '방금 올림 · 아직 댓글 없음');
+  assert.equal(firstPostStatus('2026-11-13T18:25:00Z', 2, now), '올린 지 1시간 35분 · 댓글 2개');
+  assert.equal(firstPostStatus('2026-11-13T19:18:00Z', undefined, now), '올린 지 42분');
+});
