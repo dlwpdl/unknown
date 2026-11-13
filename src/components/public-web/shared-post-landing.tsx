@@ -18,7 +18,7 @@ import { jsonLd, publicPostDescription, publicPostSchema, publicSiteName, PUBLIC
 import { CITIES, TAGS } from '@/lib/mock';
 import { adoptStatic } from './static-slot';
 import { MeetupDetails } from './meetup-list';
-import { PublicHeader, readerPalette } from './public-header';
+import { PublicFooter, PublicHeader, readerPalette } from './public-header';
 import { loadSharedLinkPost, loadSharedLinkPreview, type SharedLinkPreview } from '@/lib/shared-link-preview';
 import { sharedLinkTarget, SHARED_POST_RETURN_KEY } from '@/lib/sharing';
 import { supabase } from '@/lib/supabase';
@@ -91,7 +91,7 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
   postId: string | null; preview: SharedLinkPreview | null; post?: Post | null; authenticated?: boolean; authPending?: boolean; status: Status;
   onRetry: () => void; onLogin: () => void; loginError?: string; invite?: boolean;
 }) {
-  const { language } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), ko = language === 'ko';
+  const { language, tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), ko = language === 'ko';
   const id = postId && UUID.test(postId) ? postId.toLowerCase() : null;
   const ready = status === 'ready' && !!id && (authenticated ? post?.id === id : preview?.id === id);
   const canonical = id ? `${PUBLIC_SITE}/posts/${id}${invite ? '?invite=1' : ''}` : null;
@@ -136,6 +136,8 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
     : ko ? '로그인하거나 가입하면 웹에서 전체 글을 읽을 수 있어요.' : 'Sign in or sign up to read the full post on the web.';
   const title = authenticated ? post?.title : preview?.title;
   const cityId = CITIES.find(item => item.name === preview?.city)?.id ?? null;
+  // The server sends the Korean city and topic names; on screen they follow the visitor's language (the meetup topic reads like the Meetups menu).
+  const city = preview ? tr(preview.city) : '', topic = preview?.kind === 'meetup' && !ko ? 'Meetups' : preview?.label ? tr(preview.label) : '';
   const facts = preview ? { ...preview, cityId, tagSlug: TAGS.find(item => item.label === preview.label)?.slug ?? null, text: preview.preview || preview.teaser || '' } : null;
   const published = preview?.createdAt && Number.isFinite(Date.parse(preview.createdAt)) ? preview.createdAt : null;
   const palette = { ...Object.fromEntries(Object.entries(theme).map(([name, value]) => [`--${name}`, value])),
@@ -160,16 +162,16 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
       <div className="shared-story">
         {/* 글링 › city › topic: the prerendered page's own trail (it links the topic hub) or the same three steps built here. */}
         {prerendered ? <div className="shared-crumbs" ref={adoptStatic('gling-static-crumbs')} /> : ready && !!preview && <nav className="shared-crumbs" aria-label={ko ? '경로' : 'Breadcrumb'}>
-          <a href="/" onClick={() => play('selection')}>{ko ? '글링' : 'Gling'}</a>{cityId && <> › <a href={`/${cityId}`} onClick={() => play('selection')}>{preview.city}</a></>}{!!preview.label && <> › <a href={cityId ? `/${cityId}` : '/'} onClick={() => play('selection')}>{preview.label}</a></>}</nav>}
+          <a href="/" onClick={() => play('selection')}>{ko ? '글링' : 'Gling'}</a>{cityId && <> › <a href={`/${cityId}`} onClick={() => play('selection')}>{city}</a></>}{!!topic && <> › <a href={cityId ? `/${cityId}` : '/'} onClick={() => play('selection')}>{topic}</a></>}</nav>}
         {ready ? authenticated && post ? <SharedPostArticle post={post} /> : <section className="shared-preview" aria-label={ko ? '공개 미리보기' : 'Public preview'}>
           {!!preview!.imageUrl && preview!.imageUrl !== failedImage && <img className="shared-cover" src={preview!.imageUrl} alt="" referrerPolicy="no-referrer" onError={() => setFailedImage(preview!.imageUrl!)} />}
-          <div className="shared-preview-copy"><p className="shared-kicker">{[preview!.city, preview!.label].filter(Boolean).join(' · ')}{preview!.closed ? ko ? ' · 모집 마감' : ' · Closed' : ''}</p>
+          <div className="shared-preview-copy"><p className="shared-kicker">{[city, topic].filter(Boolean).join(' · ')}{preview!.closed ? ko ? ' · 모집 마감' : ' · Closed' : ''}</p>
             <h1>{preview!.title}</h1>
             {(published || Number.isSafeInteger(preview!.commentCount) || !!preview!.author) && <p className="shared-meta">{[
               published && <time key="date" dateTime={new Date(published).toISOString()}>{preview!.kind === 'meetup' ? ko ? '올린 날 ' : 'Posted ' : ''}{new Date(published).toLocaleDateString(ko ? 'ko-KR' : 'en-CA', { year: 'numeric', month: 'long', day: 'numeric' })}</time>,
               Number.isSafeInteger(preview!.commentCount) && (ko ? `댓글 ${preview!.commentCount}개` : `${preview!.commentCount} comments`), preview!.author,
             ].filter(Boolean).flatMap((item, index) => index ? [' · ', item] : [item])}</p>}
-            {preview!.kind === 'meetup' && <div className="shared-meetup"><MeetupDetails room={{ ...preview!.schedule, ...(guestRoom?.id === id ? guestRoom.room : null) }} city={preview!.city} /></div>}
+            {preview!.kind === 'meetup' && <div className="shared-meetup"><MeetupDetails room={{ ...preview!.schedule, ...(guestRoom?.id === id ? guestRoom.room : null) }} city={city} /></div>}
             {preview!.kind !== 'meetup' && !!(preview!.preview || preview!.teaser) && <p className="shared-teaser">{preview!.preview || preview!.teaser}</p>}
           </div></section>
           : <section className={id ? 'shared-state' : 'shared-state shared-invalid'} aria-live="polite" aria-busy={status === 'loading'}>
@@ -203,6 +205,7 @@ export function SharedPostLandingContent({ postId, preview, post = null, authent
           <p className="shared-copy-status" role="status" aria-live="polite">{copyMessage}</p><a className="shared-same-post" data-analytics="shared.web.same_post" href={canonical!} onClick={() => play('selection')}>{canonical}</a></div>
       </aside>}
     </main>
+    <div className="reader" style={readerPalette}><PublicFooter /></div>
   </div>;
 }
 

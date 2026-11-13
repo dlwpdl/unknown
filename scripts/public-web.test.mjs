@@ -188,6 +188,16 @@ test('legacy static 404 and initial client render agree before the exact post ha
   }
 });
 
+test('the shared footer names the Naver blog in the page language, on reader and shared post pages alike', () => {
+  for (const [options, name] of [[{}, '네이버 블로그'], [{ language: 'en' }, 'Naver Blog']]) {
+    for (const markup of [readerMarkup('/vancouver', options), readerMarkup('/post', { ...options, search: `?id=${id}` })]) {
+      const footer = markup.match(/<footer class="reader-footer">[\s\S]*?<\/footer>/)?.[0] ?? '';
+      assert.ok(footer.includes(`>${name}</a>`), `${options.language ?? 'ko'} footer: ${name}`);
+      if (options.language === 'en') assert.doesNotMatch(footer, /[가-힣]/, 'no Korean left in the English footer');
+    }
+  }
+});
+
 test('canonical post document retains its direct landing SSR and mounted post destination', () => {
   const options = { search: `?id=${id}` };
   assert.equal(readerMarkup('/post', options), readerMarkup('/post', { ...options, directPost: true }));
