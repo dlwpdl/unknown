@@ -5,6 +5,12 @@ import { MEETUP_INVITE_TOKEN, sharedLinkTarget } from './sharing.ts';
 const SITE = 'https://gling.ej-entertainment.com';
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
+/** The host's rotating check-in QR link: a session id and a one-time code the server checks. Lives here so the public page stays free of app RPCs. */
+export function parseCheckInLink(params: { s?: unknown; c?: unknown }) {
+  const s = typeof params.s === 'string' ? params.s.toLowerCase() : '', c = typeof params.c === 'string' ? params.c.toLowerCase() : '';
+  return UUID.test(s) && /^[0-9a-f]{24}$/.test(c) ? { sessionId: s, code: c } : null;
+}
+
 /** Maps an incoming universal/app link on the public site to the app route; other system paths pass through. */
 export function appPathForLink(input: string): string {
   let url: URL;
@@ -33,6 +39,10 @@ export function appPathForLink(input: string): string {
   if (path === '/meetup-invite') {
     const token = url.searchParams.getAll('token');
     return token.length === 1 && MEETUP_INVITE_TOKEN.test(token[0]) ? `/meetup-invite?token=${token[0]}` : '/';
+  }
+  if (path === '/checkin') {
+    const link = parseCheckInLink({ s: url.searchParams.get('s'), c: url.searchParams.get('c') });
+    return link ? `/checkin?s=${link.sessionId}&c=${link.code}` : '/';
   }
   if (path === '/meetup-join') {
     const postId = url.searchParams.get('postId');

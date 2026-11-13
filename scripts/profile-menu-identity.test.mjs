@@ -14,6 +14,9 @@ function menu() {
   const jsx = (type, props) => ({ type, props });
   const imports = {
     'react/jsx-runtime': { jsx, jsxs: jsx },
+    // The host quest row (#174) loads after mount; this test only needs it absent.
+    react: { useState: value => [value, () => {}], useEffect() {} },
+    '@/lib/host-quests': { loadMyHostQuest: async () => null, showQuestEntry: () => false }, '@/lib/supabase': { supabase: {} },
     'expo-router': { useRouter: () => ({ push: route => routes.push(route), canGoBack: () => true, back() {}, replace() {} }) },
     'react-native': { Alert: { alert() {} }, StyleSheet: { create: value => value }, View: 'View' },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },

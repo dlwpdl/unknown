@@ -95,6 +95,10 @@ verify_jwt = false
 [functions.push-notifications]
 verify_jwt = false
 
+# Scheduled photo cleanup authenticates x-push-secret before claiming any file to delete.
+[functions.quest-photo-cleanup]
+verify_jwt = false
+
 # Public event discovery is read-only with bounded input and a shared upstream request budget.
 [functions.ticketmaster-events]
 verify_jwt = false

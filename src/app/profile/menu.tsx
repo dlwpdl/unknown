@@ -6,7 +6,7 @@ import { LinkedAccountEntry } from '@/components/linked-account-entry';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { SymbolView } from '@/components/symbol-view';
 import { useRouter } from 'expo-router';
-import type { ComponentProps } from 'react';
+import { useEffect, useState, type ComponentProps } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,6 +15,8 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
+import { loadMyHostQuest, showQuestEntry, type HostQuest } from '@/lib/host-quests';
+import { supabase } from '@/lib/supabase';
 import { useMembership } from '@/lib/membership-provider';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { selectChatBusiness } from '@/lib/chat-identity';
@@ -26,7 +28,13 @@ import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 export default function ProfileMenuScreen() {
   const { tr, t } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox(), router = useRouter(), { play } = useInteractionFeedback();
-  const { trustLevel, signOut, me } = useAuth(), { membership } = useMembership(), business = useChatIdentity();
+  const { trustLevel, signOut, isAuthed, me } = useAuth(), { membership } = useMembership(), business = useChatIdentity();
+  const [quest, setQuest] = useState<{ userId: string; value: HostQuest } | null>(null);
+  useEffect(() => {
+    if (!isAuthed) return;
+    const userId = me.id;
+    loadMyHostQuest(supabase).then(value => setQuest({ userId, value }), () => setQuest(null));
+  }, [isAuthed, me.id]);
   const unread = useUnreadCount('other');
   const membershipLabel = membership ? tr(({ free: '베이직', plus: '플러스', pro: '프로', premium: '프리미엄', admin: '관리자' } as const)[membership.tier]) : null;
   const unreadLabel = unread > 0 ? tr('새 소식 {0}', unread) : tr('새 소식 없음');
@@ -72,6 +80,7 @@ export default function ProfileMenuScreen() {
             {row('profile.invite', { ios: 'gift', android: 'redeem', web: 'redeem' }, tr('친구 초대'), tr('친구가 첫 모임에 다녀오면 2주 이용권'), '/profile/invite')}
             {/* Writing as a business: the way back sits next to the business entry (QA G38-2). Same store as the chat and meetup switches. */}
             {business && row('chat.identity.personal', { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }, tr('개인으로 돌아가기'), tr('지금은 {0} 이름으로 쓰는 중', business.name), () => selectChatBusiness(me.id, null))}
+            {showQuestEntry(quest?.userId === me.id ? quest.value : null) && row('profile.host-quest', { ios: 'flag', android: 'flag', web: 'flag' }, tr('모임장 퀘스트'), tr('운영팀에서 받은 코드로 시작해요'), '/profile/host-quest')}
             <MerchantAccountEntry />
             <LinkedAccountEntry />
             </View>
