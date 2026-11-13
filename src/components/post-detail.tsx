@@ -1096,8 +1096,9 @@ const styles = StyleSheet.create({
 });
 
 
-// 언제·어디·인원·나이(회비) 네 칸. 로그인 전 참여 신청 화면(meetup-join)도 같은 칸을 쓴다.
-export function MeetupFacts({ post, canEnterChat, own }: { post: Post; canEnterChat: boolean; own: boolean }) {
+// 언제·어디·인원·나이(회비) 네 칸. 참여 신청 화면(meetup-join)도 로그인 전후 모두 같은 칸을 쓴다.
+// zone: the join screen has no 참여 전에 알아둘 것, so its 언제·나이 cells carry the time zone and age note for everyone (like the web invite).
+export function MeetupFacts({ post, canEnterChat, own, zone = false }: { post: Post; canEnterChat: boolean; own: boolean; zone?: boolean }) {
   const { tr, locale: appLocale } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox();
   const stacked = useWindowDimensions().fontScale >= 1.3;
@@ -1105,11 +1106,11 @@ export function MeetupFacts({ post, canEnterChat, own }: { post: Post; canEnterC
   if (!room) return null;
   const facts: [string, string, string?][] = [
     // Members and the host don't get 참여 전에 알아둘 것, so its time zone line moves here for them.
-    [tr('언제'), chillingSchedule(room, appLocale), (canEnterChat || own) && room.timezone ? tr('{0} 기준', chillingTimezoneLabel(room, appLocale)) : undefined],
+    [tr('언제'), chillingSchedule(room, appLocale), (canEnterChat || own || zone) && room.timezone ? tr('{0} 기준', chillingTimezoneLabel(room, appLocale)) : undefined],
     [tr('어디'), tr(CITIES.find(city => city.id === post.cityId)?.name ?? post.cityId), canEnterChat ? tr('집결지는 모임 대화에서') : own ? tr('집결지는 모임 대화에서 알려요') : tr('집결지는 승인 후')],
     [tr('인원'), tr(room.capacity ? '{0} / {1}명' : '{0}명', room.memberCount, room.capacity)],
     room.fee ? [tr('회비'), meetupFeeAmount(room.fee.amount), room.fee.dueOn ? tr('{0}까지', meetupFeeDue(room.fee.dueOn, appLocale)) : room.fee.note]
-      : [tr('나이'), recommendedAgeLabel(room, appLocale)],
+      : [tr('나이'), recommendedAgeLabel(room, appLocale), zone && room.recommendedAgeMin != null ? tr('나이가 달라도 신청할 수 있어요') : undefined],
   ];
   return (
     <View style={[styles.facts, clayBox ? styles.clayCard : { borderColor: theme.line }]}>
