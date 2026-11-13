@@ -3,7 +3,9 @@ import { decodeSharedUuid, encodeSharedUuid } from './shared-uuid.ts';
 import { tr } from '../i18n/index.ts';
 
 const appOrigin = 'https://gling.ej-entertainment.com';
-const previewOrigin = 'https://gling-share-preview.vercel.app';
+// New links use the Gling domain (owner 2026-11-13); links already sent on the old Vercel alias keep opening.
+const previewOrigin = 'https://share.gling.ej-entertainment.com';
+const previewOrigins = [previewOrigin, 'https://gling-share-preview.vercel.app'];
 
 export function buildSharedPostUrl(
   postId: string,
@@ -16,7 +18,7 @@ export function buildSharedPostUrl(
   // The preview gateway serves per-post metadata; authentication stays on the app site.
   if (shareUrl && !/^https:\/\/[^/]+\.supabase\.co\/functions\/v1\/public-post(?:[/?#]|$)/i.test(shareUrl)) {
     const base = shareUrl.replace(/\/+$/, '');
-    if (base === `${previewOrigin}/share` || base === `${previewOrigin}/s`) return gatewayUrl;
+    if (previewOrigins.some(gateway => base === `${gateway}/share` || base === `${gateway}/s`)) return gatewayUrl;
     return `${base}?id=${encodedId}`;
   }
   const site = (appUrl || appOrigin).replace(/\/+$/, '');
@@ -29,7 +31,7 @@ export function withInviteCode(url: string, code: string | null | undefined) {
   const valid = normalizeInviteCode(code);
   if (!valid) return url;
   const parsed = new URL(url);
-  parsed.searchParams.set(parsed.origin === previewOrigin ? 'c' : 'code', valid);
+  parsed.searchParams.set(previewOrigins.includes(parsed.origin) ? 'c' : 'code', valid);
   return parsed.href;
 }
 
@@ -43,7 +45,7 @@ export function sharedLinkTarget(input: string) {
   try {
     const url = new URL(input);
     const origin = new URL(process.env.EXPO_PUBLIC_APP_URL || appOrigin).origin;
-    const gateway = url.origin === previewOrigin;
+    const gateway = previewOrigins.includes(url.origin);
     if (url.protocol !== 'https:' || (url.origin !== origin && !gateway) || url.username || url.password) return null;
     if (gateway && !/^\/(?:share|s)\/[^/]+\/?$/.test(url.pathname)) return null;
     const short = gateway && url.pathname.match(/^\/s\/([^/]+)\/?$/);
