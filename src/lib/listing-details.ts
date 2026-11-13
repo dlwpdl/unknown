@@ -271,6 +271,16 @@ export type MapBounds = { west: number; south: number; east: number; north: numb
 export const inBounds = (bounds: MapBounds, point: { latitude: number; longitude: number }) =>
   point.latitude >= bounds.south && point.latitude <= bounds.north && point.longitude >= bounds.west && point.longitude <= bounds.east;
 
+// Opening camera for a category map: the middle of every area, zoomed out from the city view (11) until all fit about 280pt across.
+export function listingMapFit(points: readonly { latitude: number; longitude: number }[]) {
+  if (!points.length) return null;
+  const lats = points.map(point => point.latitude), lons = points.map(point => point.longitude);
+  const south = Math.min(...lats), north = Math.max(...lats), west = Math.min(...lons), east = Math.max(...lons), middle = (south + north) / 2;
+  const span = Math.max(east - west, (north - south) / Math.cos(middle * Math.PI / 180), 1e-6); // latitude span in longitude degrees (Mercator)
+  const zoom = Math.max(8, Math.min(11, Math.floor(Math.log2(280 * 360 / (256 * span)) * 4) / 4));
+  return { center: { latitude: middle, longitude: (west + east) / 2 }, zoom };
+}
+
 // ---- filters (shared by list and map) ----------------------------------------------------------
 // 부동산 렌트·매매: rent covers 렌트 내놓음/구함, sale covers 매매 판매/구매.
 export type HousingMarket = 'rent' | 'sale';
