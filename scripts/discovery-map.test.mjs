@@ -602,6 +602,13 @@ test('pins and selected pins show tappable labels with the live style glyph font
   }
   assert.ok(c.images['name-tag'].options.stretchX, 'the tag stretches around the name');
   assert.equal(c.layers.find(layer => layer.id === 'discovery-art-featured').layout['text-field'], undefined, 'the picture pin keeps its own image');
+  // MapLibre places the higher name layer before the pin: the name's left edge (tag padding 6 + icon padding 2) must clear the pin's right edge, or the pin is dropped (QA W6-3).
+  for (const [pinId, tagId, pinSize] of [['discovery-art-featured', 'discovery-art-featured-labels', 36 * 0.75], ['discovery-art', 'discovery-labels', 36]]) {
+    const pin = c.layers.find(layer => layer.id === pinId).layout, tag = c.layers.find(layer => layer.id === tagId).layout;
+    const offset = tag['text-offset'][0] === 'case' ? tag['text-offset'][2][1][0] : tag['text-offset'][0], size = tag['text-size'];
+    assert.equal(pin['icon-size'] ?? 1, pinSize / 36);
+    assert.ok(offset * size - 8 > pinSize / 2 + 2, `${tagId} clears its ${pinSize}px pin`);
+  }
   await c.listeners.click({ point: { x: 0, y: 0 } });
   assert.ok(c.map.queryOptions.layers.includes('discovery-labels'));
   assert.ok(c.map.queryOptions.layers.includes('discovery-selected-label'));

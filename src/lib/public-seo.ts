@@ -27,7 +27,7 @@ export function publicCompanyUrl(id: string) {
 export const PUBLIC_CHANNELS = [
   { name: 'Instagram', url: 'https://www.instagram.com/gling.app/' },
   { name: 'Threads', url: 'https://www.threads.com/@gling.app' },
-  { name: '네이버 블로그', url: 'https://blog.naver.com/glingapp' },
+  { name: '네이버 블로그', englishName: 'Naver Blog', url: 'https://blog.naver.com/glingapp' },
 ] as const;
 
 // Business plans and the 글링 관리 contact, linked from the merchant web where a limit or paid feature comes up.

@@ -220,7 +220,8 @@ try{
   withTop({id:'discovery-top25',type:'circle',source:'discovery',filter:['==',['get','top25'],true],paint:{'circle-radius':step(7,15),'circle-opacity':0,'circle-stroke-color':'#9C7637','circle-stroke-width':step(1.5,2),'circle-stroke-opacity':step(1,dot)}});
   // Pins are placed before their names: a pin that collides drops back to its dot, and its name (the tag layer after it) only shows where it fits. The pin also covers the small TOP 50 ring under it.
   withTop({id:'discovery-art-featured',type:'symbol',source:'discovery',maxzoom:NEAR,filter:midArt,layout:{...artPin,'icon-size':0.75,'icon-allow-overlap':false,'icon-ignore-placement':false}});
-  withTop({id:'discovery-art-featured-labels',type:'symbol',source:'discovery',maxzoom:NEAR,filter:midArt,layout:{...nameFont,'text-field':['get','label'],'text-size':11,'text-offset':[1.8,0],'text-padding':6},paint:namePaint});
+  // MapLibre places the higher layer (this name) first, so the name must clear the 27px pin or the pin drops back to its dot (QA W6-3): 2.4em, as up close.
+  withTop({id:'discovery-art-featured-labels',type:'symbol',source:'discovery',maxzoom:NEAR,filter:midArt,layout:{...nameFont,'text-field':['get','label'],'text-size':11,'text-offset':[2.4,0],'text-padding':6},paint:namePaint});
   add({id:'discovery-selected',type:'circle',source:'discovery-selection',paint:{'circle-radius':['case',art,21,17],'circle-color':'#ffffff','circle-stroke-color':'${accent}','circle-stroke-width':4}});
   add({id:'discovery-selected-pin',type:'circle',source:'discovery-selection',paint:{'circle-radius':11,'circle-color':['get','color'],'circle-stroke-color':'#ffffff','circle-stroke-width':2,'circle-opacity':dot,'circle-stroke-opacity':dot}});
   add({id:'discovery-selected-art',type:'symbol',source:'discovery-selection',filter:art,layout:artPin});
