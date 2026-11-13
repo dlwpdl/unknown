@@ -31,9 +31,9 @@ const START_ERRORS: Record<string, string> = {
   RATE_LIMITED: '너무 여러 번 넣었어요. 내일 다시 해 주세요.',
 };
 const RULES = [
-  '한 사람당 평생 한 번, 최대 $50이에요. 다른 계정으로 이미 했다면 이 계정으로는 못 해요.',
-  '$50이 다 확정되면 Interac e-Transfer로 한 번에 보내 드려요.',
-  '시작한 날부터 60일 안에 $50을 채워야 해요. 못 채우면 모은 만큼 멤버십 이용권으로 바뀌어요.',
+  '한 사람당 평생 한 번, 최대 $20이에요. 다른 계정으로 이미 했다면 이 계정으로는 못 해요.',
+  '$20이 다 확정되면 Interac e-Transfer로 한 번에 보내 드려요.',
+  '시작한 날부터 60일 안에 $20을 채워야 해요. 못 채우면 모은 만큼 멤버십 이용권으로 바뀌어요.',
   '부정행위가 확인되면 적립이 취소돼요. 퀘스트는 운영팀이 언제든 끝낼 수 있어요.',
   '현금은 캐나다에 사는 분만 받을 수 있어요.',
 ];
@@ -113,17 +113,17 @@ function QuestHome({ quest, accent }: { quest: Extract<HostQuest, { startedAt: s
   const counted = quest.invitees.filter(item => item.state === 'confirmed' || item.state === 'pending').length;
   const ended = quest.status !== 'active';
   return <View style={styles.stack}>
-    {quest.status === 'paid' && <StateCard layout="start" mark="check" title={tr('$50을 보냈어요')} body={tr('퀘스트를 끝까지 해 주셔서 고마워요.')} />}
+    {quest.status === 'paid' && <StateCard layout="start" mark="check" title={tr('$20을 보냈어요')} body={tr('퀘스트를 끝까지 해 주셔서 고마워요.')} />}
     {quest.status === 'converted' && <StateCard layout="start" title={tr('퀘스트가 끝났어요')} body={quest.convertedDays > 0 ? tr('모은 금액을 멤버십 이용권 {0}일로 바꿨어요.', quest.convertedDays) : tr('확정된 금액이 없어 이용권으로 바꿀 게 없었어요.')} />}
     {quest.status === 'ended' && <StateCard layout="start" title={tr('퀘스트가 끝났어요')} body={tr('궁금한 점은 운영팀 메시지로 물어봐 주세요.')} />}
     <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
-      <View accessible accessibilityLabel={tr('$50 중 {0} 모였어요', dollars(total))} style={styles.money}>
+      <View accessible accessibilityLabel={tr('$20 중 {0} 모였어요', dollars(total))} style={styles.money}>
         <ThemedText style={Typography.display}>{dollars(total)}</ThemedText>
-        <ThemedText themeColor="textSecondary" style={Typography.menu}>/ $50</ThemedText>
+        <ThemedText themeColor="textSecondary" style={Typography.menu}>/ $20</ThemedText>
       </View>
       <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.bar, { backgroundColor: theme.backgroundElement }]}>
-        <View style={[styles.barPart, { width: `${quest.confirmed / 50}%`, backgroundColor: accent }]} />
-        <View style={[styles.barPart, styles.pendingPart, { width: `${quest.pending / 50}%`, backgroundColor: accent }]} />
+        <View style={[styles.barPart, { width: `${quest.confirmed / 20}%`, backgroundColor: accent }]} />
+        <View style={[styles.barPart, styles.pendingPart, { width: `${quest.pending / 20}%`, backgroundColor: accent }]} />
       </View>
       <View style={styles.legend}>
         <ThemedText style={Typography.supporting}>{tr('확정 {0}', dollars(quest.confirmed))}</ThemedText>
@@ -134,7 +134,7 @@ function QuestHome({ quest, accent }: { quest: Extract<HostQuest, { startedAt: s
     <SectionLabel>{tr('단계')}</SectionLabel>
     <ListCard>{QUEST_STEPS.map((step, index) => {
       const status = quest.steps.find(item => item.step === index + 1)?.status ?? 'todo';
-      const amount = index === 3 ? (counted ? `+$${inviteDollars(counted)}/$10` : '+$10') : `+$${QUEST_STEP_AMOUNTS[index]}`;
+      const amount = index === 3 ? (counted ? `+$${inviteDollars(counted)}/$3` : '+$3') : `+$${QUEST_STEP_AMOUNTS[index]}`;
       return <ListRow key={step.name} analyticsId="host-quest.step" title={tr('{0}단계 · {1}', index + 1, tr(step.name))} detail={tr(step.home)}
         leading={<View style={[styles.num, { backgroundColor: status === 'confirmed' ? accent : theme.backgroundElement }]}>
           {status === 'confirmed' ? <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={13} tintColor={theme.accentInk} /> : <ThemedText style={Typography.label}>{index + 1}</ThemedText>}
@@ -143,8 +143,8 @@ function QuestHome({ quest, accent }: { quest: Extract<HostQuest, { startedAt: s
         onPress={() => router.push({ pathname: '/profile/host-quest-step', params: { step: String(index + 1) } })} />;
     })}</ListCard>
     {!ended && <View style={styles.cash}>
-      <RaisedActionButton analyticsId="host-quest.payout" label={quest.payout ? tr('송금 진행 상황') : tr('$50 받기')} disabled={!quest.payout && !quest.canRequestPayout} onPress={() => router.push('/profile/host-quest-payout')} />
-      {!quest.payout && !quest.canRequestPayout && <ThemedText themeColor="textSecondary" style={[Typography.supporting, styles.center]}>{tr('$50이 다 확정되면 받을 수 있어요')}</ThemedText>}
+      <RaisedActionButton analyticsId="host-quest.payout" label={quest.payout ? tr('송금 진행 상황') : tr('$20 받기')} disabled={!quest.payout && !quest.canRequestPayout} onPress={() => router.push('/profile/host-quest-payout')} />
+      {!quest.payout && !quest.canRequestPayout && <ThemedText themeColor="textSecondary" style={[Typography.supporting, styles.center]}>{tr('$20이 다 확정되면 받을 수 있어요')}</ThemedText>}
     </View>}
     <InfoNote>{tr('확인 중인 돈은 14일 동안 신고·노쇼·탈퇴·참석 취소가 없으면 확정돼요.')}</InfoNote>
   </View>;

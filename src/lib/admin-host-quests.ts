@@ -73,7 +73,7 @@ export function payoutBlockers(quest: Pick<AdminQuest, 'status' | 'totals' | 'pa
   const pay = quest.payout, out: string[] = [];
   if (!pay || pay.status === 'sent') return pay ? ['이미 보냈어요'] : ['송금 요청이 없어요'];
   if (quest.status !== 'active') out.push('끝난 퀘스트예요');
-  if (quest.totals.confirmed < 5000) out.push('$50이 다 확정되지 않았어요');
+  if (quest.totals.confirmed < 2000) out.push('$20이 다 확정되지 않았어요');
   if (!pay.email || !pay.legalName) out.push('송금 정보가 지워졌어요');
   if (pay.photoPeople == null) out.push('사진 속 사람 수를 적어 주세요');
   else if (pay.photoNeeded == null || pay.photoPeople < pay.photoNeeded) out.push('사진 속 사람이 센 사람보다 적어요');

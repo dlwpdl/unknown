@@ -6,7 +6,7 @@ import { LinkedAccountEntry } from '@/components/linked-account-entry';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { SymbolView } from '@/components/symbol-view';
 import { useRouter } from 'expo-router';
-import type { ComponentProps } from 'react';
+import { useEffect, useState, type ComponentProps } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,6 +15,8 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
+import { loadMyHostQuest, showQuestEntry, type HostQuest } from '@/lib/host-quests';
+import { supabase } from '@/lib/supabase';
 import { useMembership } from '@/lib/membership-provider';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useUnreadCount } from '@/hooks/use-unread-count';
@@ -24,7 +26,13 @@ import { PROMOTIONS_PREVIEW_ENABLED } from '@/lib/promotions';
 export default function ProfileMenuScreen() {
   const { tr, t } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox(), router = useRouter(), { play } = useInteractionFeedback();
-  const { trustLevel, signOut } = useAuth(), { membership } = useMembership();
+  const { trustLevel, signOut, isAuthed, me } = useAuth(), { membership } = useMembership();
+  const [quest, setQuest] = useState<{ userId: string; value: HostQuest } | null>(null);
+  useEffect(() => {
+    if (!isAuthed) return;
+    const userId = me.id;
+    loadMyHostQuest(supabase).then(value => setQuest({ userId, value }), () => setQuest(null));
+  }, [isAuthed, me.id]);
   const unread = useUnreadCount('other');
   const membershipLabel = membership ? tr(({ free: '베이직', plus: '플러스', pro: '프로', premium: '프리미엄', admin: '관리자' } as const)[membership.tier]) : null;
   const unreadLabel = unread > 0 ? tr('새 소식 {0}', unread) : tr('새 소식 없음');
@@ -67,7 +75,7 @@ export default function ProfileMenuScreen() {
             {row('profile.meetup-profile', { ios: 'person.crop.rectangle', android: 'badge', web: 'badge' }, tr('모임 프로필 관리'), tr('모임 사진·소개·공개 범위를 따로 설정해요'), '/meetup-profile')}
             {row('profile.meetup-reviews', { ios: 'person.2', android: 'group', web: 'group' }, tr('모임 후기 · 매너 평가'), tr('내 후기와 매너 평가 관리'), '/profile/meetup-reviews')}
             {row('profile.invite', { ios: 'gift', android: 'redeem', web: 'redeem' }, tr('친구 초대'), tr('친구가 첫 모임에 다녀오면 2주 이용권'), '/profile/invite')}
-            {row('profile.host-quest', { ios: 'flag', android: 'flag', web: 'flag' }, tr('모임장 퀘스트'), tr('운영팀에서 받은 코드로 시작해요'), '/profile/host-quest')}
+            {showQuestEntry(quest?.userId === me.id ? quest.value : null) && row('profile.host-quest', { ios: 'flag', android: 'flag', web: 'flag' }, tr('모임장 퀘스트'), tr('운영팀에서 받은 코드로 시작해요'), '/profile/host-quest')}
             <MerchantAccountEntry />
             <LinkedAccountEntry />
             </View>

@@ -3,7 +3,7 @@ import test from 'node:test';
 import { toQR } from 'toqr';
 import { payoutBlockers, questCheckCandidates } from '../src/lib/admin-host-quests.ts';
 import { parseCheckInLink } from '../src/lib/app-links.ts';
-import { inviteDollars, normalizeQuestCode, qrRuns, questError, questPhotoPath } from '../src/lib/host-quests.ts';
+import { QUEST_STEP_AMOUNTS, inviteDollars, normalizeQuestCode, showQuestEntry, qrRuns, questError, questPhotoPath } from '../src/lib/host-quests.ts';
 
 const session = 'ac200000-0000-4000-8000-000000000001', code = 'a1b2c3d4e5f6a1b2c3d4e5f6';
 
@@ -12,8 +12,19 @@ test('quest codes accept spaces and dashes, never look-alike letters', () => {
   for (const bad of ['GL7K2M9', 'GL7K2M9QX', 'GL7K2M0Q', 'GL7K2MIQ', '', null]) assert.equal(normalizeQuestCode(bad), null);
 });
 
-test('invitees pay nothing until 3, then a dollar each up to 10', () => {
-  assert.deepEqual([0, 1, 2, 3, 4, 10, 12].map(inviteDollars), [0, 0, 0, 3, 4, 10, 10]);
+test('invitees pay nothing until 3, then $3 and no more', () => {
+  assert.deepEqual([0, 1, 2, 3, 4, 10].map(inviteDollars), [0, 0, 0, 3, 3, 3]);
+});
+
+test('the menu hides the quest while it is switched off, except for people who already started', () => {
+  assert.equal(showQuestEntry(null), false);
+  assert.equal(showQuestEntry({ status: 'none', accepting: false }), false);
+  assert.equal(showQuestEntry({ status: 'none', accepting: true }), true);
+  for (const status of ['active', 'paid', 'converted', 'ended']) assert.equal(showQuestEntry({ status }), true);
+});
+
+test('the step amounts add up to the $20 quest', () => {
+  assert.equal(QUEST_STEP_AMOUNTS.reduce((sum, value) => sum + value, 0), 20);
 });
 
 test('check-in links need a session id and a 24-hex one-time code', () => {
@@ -44,7 +55,7 @@ test('photo paths match the storage policy shape', () => {
 });
 
 test('the payout waits until the photo shows everyone counted plus the host', () => {
-  const quest = { status: 'active', totals: { confirmed: 5000 }, code: { recipientName: 'Kim' }, checks: [{ answer: 'yes' }, { answer: 'yes' }],
+  const quest = { status: 'active', totals: { confirmed: 2000 }, code: { recipientName: 'Kim' }, checks: [{ answer: 'yes' }, { answer: 'yes' }],
     payout: { status: 'requested', email: 'a@b.c', legalName: 'Kim', photoPeople: 3, photoNeeded: 4, nameMatches: true } };
   assert.deepEqual(payoutBlockers(quest, true, 'A1B2'), ['사진 속 사람이 센 사람보다 적어요']);
   assert.deepEqual(payoutBlockers({ ...quest, payout: { ...quest.payout, photoPeople: 4 } }, true, 'A1B2'), []);

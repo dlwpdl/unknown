@@ -62,10 +62,10 @@ export function AdminHostQuestsView({ refreshSignal, onUser, localPreview = fals
     <ThemedText type="title" accessibilityRole="header">모임장 퀘스트</ThemedText>
     {!!error && <ThemedText type="small" accessibilityRole="alert" style={{ color: A.danger }}>{error}</ThemedText>}
     {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite">{notice}</ThemedText>}
-    {program && <AdminCard icon="$" tone="accent" title="코드와 예산" info={['코드는 이 화면에서만 만들고 보여요. 저장소에는 넣지 않아요.', '코드 하나에 최대 $50이에요. 상한을 올리려면 사장님 DB 명령이 필요해요.']}
-      action={<AdminButton label={program.accepting ? '새 시작 멈추기' : '새 시작 다시 받기'} kind={program.accepting ? 'danger' : 'secondary'} disabled={busy}
-        onPress={() => void run(() => setAdminQuestAccepting(supabase, !program.accepting), program.accepting ? '새 시작을 멈췄어요.' : '새 시작을 다시 받아요.')} />}>
-      <AdminFacts items={[{ label: '새 시작', value: program.accepting ? '받는 중' : '멈춤', tone: program.accepting ? 'success' : 'warning' }, { label: '코드 상한', value: `${program.codeLimit}개 · 최대 $${program.codeLimit * 50}` },
+    {program && <AdminCard icon="$" tone="accent" title="코드와 예산" info={['코드는 이 화면에서만 만들고 보여요. 저장소에는 넣지 않아요.', '코드 하나에 최대 $20이에요. 상한을 올리려면 사장님 DB 명령이 필요해요.']}
+      action={<AdminButton label={program.accepting ? '퀘스트 끄기' : '퀘스트 켜기'} kind={program.accepting ? 'danger' : 'secondary'} disabled={busy}
+        onPress={() => void run(() => setAdminQuestAccepting(supabase, !program.accepting), program.accepting ? '퀘스트를 껐어요. 새로 시작할 수 없어요. 이미 시작한 퀘스트는 그대로 진행돼요.' : '퀘스트를 켰어요. 코드를 받은 사람이 시작할 수 있어요.')} />}>
+      <AdminFacts items={[{ label: '퀘스트', value: program.accepting ? '켜짐' : '꺼짐', tone: program.accepting ? 'success' : 'warning' }, { label: '코드 상한', value: `${program.codeLimit}개 · 최대 $${program.codeLimit * 20}` },
         { label: '만든 코드', value: `${program.codesMade}개` }, { label: '남은 코드', value: `${program.remaining}개` }]} />
       <View style={styles.row}>
         <TextInput accessibilityLabel="만들 코드 수" value={count} onChangeText={setCount} keyboardType="number-pad" maxLength={2} style={[styles.input, styles.small]} />
@@ -131,7 +131,7 @@ function QuestDetail({ questId, onUser, onChanged }: { questId: string; onUser: 
     action={<View style={styles.pills}>{excluded > 0 && <AdminPill label={`제외 ${excluded}명`} tone="warning" />}{helpers > 0 && <AdminPill label={`다른 퀘스트에도 나감 ${helpers}명`} tone="warning" />}</View>}>
     <ThemedText type="small" style={{ color: A.textSecondary }}>{[pay ? `${when(pay.requestedAt)} 요청` : null, pay?.legalName ? `받는 이름 ${pay.legalName}` : null, pay?.email, `코드 받은 사람 ${quest.code.recipientName ?? '—'}`, `시작 ${when(quest.startedAt)}`].filter(Boolean).join(' · ')}</ThemedText>
     <AdminButton kind="text" label="회원 보기" onPress={() => onUser(quest.host.id)} />
-    <AdminFacts items={[{ label: '확정', value: dollars(quest.totals.confirmed), tone: quest.totals.confirmed >= 5000 ? 'success' : undefined }, { label: '확인 중', value: dollars(quest.totals.pending) },
+    <AdminFacts items={[{ label: '확정', value: dollars(quest.totals.confirmed), tone: quest.totals.confirmed >= 2000 ? 'success' : undefined }, { label: '확인 중', value: dollars(quest.totals.pending) },
       { label: '초대 셈', value: `${quest.totals.invitees}명` }, { label: '신고', value: `${quest.reports}건`, tone: quest.reports ? 'danger' : undefined }]} />
     <ThemedText type="smallBold" accessibilityRole="header">단계</ThemedText>
     {quest.steps.filter(row => row.status !== 'cancelled').map(row => <View key={row.id} style={styles.row}>

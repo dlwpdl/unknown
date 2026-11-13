@@ -134,7 +134,7 @@ export function MeetupQuestPhoto({ sessionId }: { sessionId: string }) {
   if (!quest || quest.status !== 'active') return <StateCard kind="blocked" title={tr('진행 중인 퀘스트가 없어요')} body={tr('모임장 퀘스트를 하는 동안에만 인증샷을 보내요.')} />;
   const previous = quest.photo;
   if (sent || (previous && previous.status !== 'rejected')) return <StateCard layout="start" mark="check" title={tr('사진을 보냈어요')}
-    body={previous?.status === 'approved' && !sent ? tr('운영팀이 확인했어요. 사진은 확인이 끝난 날부터 30일 뒤에 지워요.') : tr('운영팀이 보고 나면 $5가 쌓여요. 사진은 확인이 끝난 날부터 30일 뒤에 지워요.')}>
+    body={previous?.status === 'approved' && !sent ? tr('운영팀이 확인했어요. 사진은 확인이 끝난 날부터 30일 뒤에 지워요.') : tr('운영팀이 보고 나면 $2가 쌓여요. 사진은 확인이 끝난 날부터 30일 뒤에 지워요.')}>
     <View><Tag label={previous?.status === 'approved' && !sent ? tr('확정') : tr('운영팀 확인 중')} /></View>
   </StateCard>;
   if (Platform.OS === 'web') return <StateCard kind="blocked" title={tr('인증샷은 앱에서 찍어 주세요')} body={tr('모임 시간 안에 앱 카메라로 찍은 단체 사진 1장만 받아요. 갤러리 사진은 안 돼요.')} />;

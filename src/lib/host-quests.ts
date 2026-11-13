@@ -5,14 +5,14 @@ import { newDraftKey } from './meetup-convenience.ts';
 // Host quests. The server decides every step, amount and payout; the app only shows them and sends the host's input.
 const CODE = /^[A-HJ-NP-Z2-9]{8}$/;
 export const QUEST_PHOTO_BUCKET = 'meetup-quest-photos';
-/** Dollars per step; step 4 is the most it can reach (10 people). */
-export const QUEST_STEP_AMOUNTS = [1, 5, 5, 10, 10, 4, 15] as const;
+/** Dollars per step; step 4 is the most it can reach (3 people). */
+export const QUEST_STEP_AMOUNTS = [1, 3, 2, 3, 4, 1, 6] as const;
 
 /** Step names and conditions shown in the app (Korean source strings; screens pass them through tr). The server rules are the source of truth. */
 export const QUEST_STEPS = [
   { name: '첫 모임 열기', home: '날짜·장소가 있는 모임 글', checks: ['날짜·장소가 있는 모임 글을 올려요', '그 모임에서 2단계를 깨면 $1도 같이 쌓여요'] },
   { name: '첫 모임 진행', home: '나 말고 3명 이상 참석 확인', checks: ['모임 시간에 나 말고 3명 이상이 QR로 체크인해요', '모임이 끝나면 나랑 서로 참석을 확인해요', '나랑 이메일·전화번호·기기가 겹치지 않는 사람만 쳐요'] },
-  { name: '모임 인증샷', home: '모임 시간 안에 앱 카메라로 1장', checks: ['모임 시간 안에 앱 카메라로 단체 사진 1장을 찍어요', '갤러리 사진은 안 돼요', '운영팀이 보고 나면 $5가 쌓여요'] },
+  { name: '모임 인증샷', home: '모임 시간 안에 앱 카메라로 1장', checks: ['모임 시간 안에 앱 카메라로 단체 사진 1장을 찍어요', '갤러리 사진은 안 돼요', '운영팀이 보고 나면 $2가 쌓여요'] },
   { name: '친구 초대', home: '내 코드로 온 사람', checks: ['내 초대 코드로 가입했어요', '다른 모임장이 연 글링 모임에 와서 QR로 체크인하고 참석 확인까지 됐어요. 내가 연 모임은 안 쳐요', '나랑 이메일·전화번호·기기가 겹치지 않아요'] },
   { name: '두 번째 모임', home: '첫 모임 7일 뒤부터 · 4명 이상', checks: ['첫 모임 7일 뒤부터 열어요', '4명 이상 참석 확인돼요', '그중 1명 이상은 첫 모임에도 온 사람이에요'] },
   { name: '모임 후기 2개', home: '참석 확인된 사람의 모임 후기', checks: ['참석 확인된 사람 2명이 모임 후기를 남겨요'] },
@@ -30,7 +30,7 @@ export const QUEST_PERSON_REASONS: Record<string, string> = {
   // The server folds identity, operator-account and cross-quest checks into one value; the detail stays in the admin view.
   not_counted: '퀘스트 조건에 맞지 않아서 안 셌어요',
   waiting: '가입은 했고 아직 모임 전이에요',
-  over_limit: '10명이 다 차서 더 안 셌어요',
+  over_limit: '3명이 다 차서 더 안 셌어요',
 };
 export type QuestPersonReason = null | 'inactive' | 'not_qr' | 'not_confirmed' | 'no_show' | 'not_counted';
 export type QuestInviteeState = 'confirmed' | 'pending' | 'waiting' | 'inactive' | 'not_counted' | 'over_limit';
@@ -60,8 +60,8 @@ export function questError(error: unknown, codes: readonly string[]) {
   return codes.find(code => message.includes(code)) ?? null;
 }
 
-/** How many invitees count toward money: nothing below 3, then one dollar each up to 10. */
-export const inviteDollars = (counted: number) => counted >= 3 ? Math.min(counted, 10) : 0;
+/** Invitee money: nothing below 3, then $3 once, and no more after that. */
+export const inviteDollars = (counted: number) => counted >= 3 ? 3 : 0;
 
 /** Reads the session and one-time code from a scanned check-in link (https or gling://). */
 /** QR modules as horizontal runs per row, so the code draws with plain Views (no SVG or camera module). */
@@ -84,6 +84,8 @@ export function qrRuns(text: string) {
 }
 
 export const dollars = (cents: number) => `$${Math.floor(cents / 100)}`;
+/** The menu row shows while new starts are on, and stays for anyone who already has a quest. */
+export const showQuestEntry = (quest: HostQuest | null) => !!quest && (quest.status !== 'none' || quest.accepting);
 export const daysLeft = (endsAt: string, now: number) => Math.max(0, Math.ceil((Date.parse(endsAt) - now) / 86400000));
 
 export const questPhotoPath = (userId: string, sessionId: string, id: string) => `${userId}/${sessionId}/${id}.webp`;

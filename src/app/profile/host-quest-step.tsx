@@ -46,10 +46,10 @@ export default function HostQuestStepScreen() {
         {live && <>
           <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
             {step === 4 ? <>
-              <View style={styles.money}><ThemedText style={Typography.display}>{counted}</ThemedText><ThemedText themeColor="textSecondary" style={Typography.menu}>{tr('/ 10명')}</ThemedText></View>
-              <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.bar, { backgroundColor: theme.backgroundElement }]}><View style={[styles.barFill, { width: `${Math.min(counted, 10) * 10}%`, backgroundColor: theme.accent }]} /></View>
-              <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('3명이 참석 확인되면 $3, 그다음부터 1명에 $1씩, 최대 $10이에요.')}</ThemedText>
-              {counted > 0 && <ThemedText style={Typography.supporting}>{counted < 3 ? tr('{0}명 더 오면 돈이 쌓이기 시작해요.', 3 - counted) : tr('지금 {0}이 쌓였어요.', `$${inviteDollars(counted)}`)}</ThemedText>}
+              <View style={styles.money}><ThemedText style={Typography.display}>{counted}</ThemedText><ThemedText themeColor="textSecondary" style={Typography.menu}>{tr('/ 3명')}</ThemedText></View>
+              <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.bar, { backgroundColor: theme.backgroundElement }]}><View style={[styles.barFill, { width: `${(Math.min(counted, 3) / 3) * 100}%`, backgroundColor: theme.accent }]} /></View>
+              <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('3명이 참석 확인되면 $3이 쌓여요. 그 뒤로는 더 안 쌓여요.')}</ThemedText>
+              {counted > 0 && <ThemedText style={Typography.supporting}>{counted < 3 ? tr('{0}명 더 오면 $3이 쌓여요.', 3 - counted) : tr('지금 {0}이 쌓였어요.', `$${inviteDollars(counted)}`)}</ThemedText>}
             </> : <View style={styles.amount}>
               <ThemedText style={Typography.display}>{`+$${QUEST_STEP_AMOUNTS[step - 1]}`}</ThemedText>
               {status && status.status !== 'todo' && <Tag label={tr(QUEST_STEP_TAGS[status.status])} tone={status.status === 'confirmed' ? 'accent' : 'quiet'} />}

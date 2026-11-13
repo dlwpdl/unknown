@@ -1,4 +1,4 @@
--- 모임장 퀘스트(한 사람 평생 최대 $50). 운영팀이 만든 코드로 시작하고, 단계 판정·확정·송금 자격은 모두 서버가 정한다.
+-- 모임장 퀘스트(한 사람 평생 최대 $20). 운영팀이 만든 코드로 시작하고, 단계 판정·확정·송금 자격은 모두 서버가 정한다.
 -- 코드 값은 관리자 화면에서만 만든다. 이 파일과 저장소에는 코드가 없다.
 -- 판정 규칙: 모임장 모임과 4단계 초대 회원이 간 모임 모두 시작 24시간 전에 공지된 4시간 이하 공개 모임만,
 -- 4단계는 다른 모임장 모임에서 QR로 온 사람만, 15초마다 바뀌는 1회용 QR, 같은 사람·같은 기기 제외,
@@ -43,7 +43,8 @@ create index meetup_qr_codes_session on private.meetup_qr_codes(session_id, issu
 
 create table private.host_quest_program(
   id boolean primary key default true check (id),
-  accepting boolean not null default true,
+  -- 합치고 올려도 꺼진 채로 둔다. 켜는 건 사장님 지시가 있을 때 관리자 화면이나 SQL로만.
+  accepting boolean not null default false,
   code_limit integer not null default 10 check (code_limit between 0 and 1000),
   -- 프로그램을 끝낸 날(사장님 SQL: update private.host_quest_program set ended_at=now()). 새 시작을 막고, 1년 뒤 참여 기록을 지운다.
   ended_at timestamptz,
@@ -67,7 +68,7 @@ create table private.host_quests(
   ends_at timestamptz not null,
   status text not null default 'active' check (status in ('active','paid','converted','ended')),
   finished_at timestamptz,
-  converted_days integer check (converted_days between 0 and 70),
+  converted_days integer check (converted_days between 0 and 28),
   end_note text check (char_length(end_note) <= 300),
   check (ends_at > started_at));
 
@@ -98,7 +99,7 @@ create table private.host_quest_steps(
   id bigint generated always as identity primary key,
   quest_id uuid not null references private.host_quests(id) on delete cascade,
   step smallint not null check (step between 1 and 7),
-  amount_cents integer not null check (amount_cents between 0 and 1500),
+  amount_cents integer not null check (amount_cents between 0 and 600),
   status text not null default 'pending' check (status in ('pending','confirmed','cancelled')),
   session_ids uuid[] not null default '{}',
   person_ids uuid[] not null default '{}',
@@ -129,7 +130,7 @@ create table private.host_quest_payouts(
   sent_at timestamptz,
   sent_by uuid references auth.users(id) on delete set null,
   transfer_last4 text check (transfer_last4 ~ '^[A-Za-z0-9]{4}$'),
-  amount_cents integer check (amount_cents between 0 and 5000),
+  amount_cents integer check (amount_cents between 0 and 2000),
   held_at timestamptz,
   held_by uuid references auth.users(id) on delete set null,
   held_note text check (char_length(held_note) <= 300),
@@ -177,7 +178,7 @@ alter table private.invite_rewards add constraint invite_rewards_reason_check
   check (reason in ('attended','business_inviter','business_invitee','quest'));
 alter table private.invite_rewards drop constraint invite_rewards_days_check;
 alter table private.invite_rewards add constraint invite_rewards_days_check
-  check (days between 1 and 14 or (reason = 'quest' and kind = 'general' and days between 1 and 70));
+  check (days between 1 and 14 or (reason = 'quest' and kind = 'general' and days between 1 and 28));
 do $$
 declare definition text; anchor text;
 begin
@@ -297,9 +298,9 @@ language sql stable security definer set search_path='' as $$
   inv as (select count(*) total, count(*) filter (where status='confirmed') done from s where step=4)
   select jsonb_build_object(
     'confirmed', coalesce((select sum(amount_cents) from s where step<>4 and status='confirmed'),0)
-      + (select case when done>=3 then least(done,10)*100 else 0 end from inv),
+      + (select case when done>=3 then least(done,3)*100 else 0 end from inv),
     'pending', coalesce((select sum(amount_cents) from s where step<>4 and status='pending'),0)
-      + (select case when total>=3 then least(total,10)*100 else 0 end - case when done>=3 then least(done,10)*100 else 0 end from inv),
+      + (select case when total>=3 then least(total,3)*100 else 0 end - case when done>=3 then least(done,3)*100 else 0 end from inv),
     'invitees', (select total from inv));
 $$;
 
@@ -350,7 +351,7 @@ begin
   end if;
   select starts_at into first_start from private.meetup_sessions where id=first_id;
   ids:=case when first_id is not null then array[first_id] end;
-  perform private.host_quest_set_step(q.id,2,500,ids,first_people);
+  perform private.host_quest_set_step(q.id,2,300,ids,first_people);
   perform private.host_quest_set_step(q.id,1,100,ids,first_people);
 
   -- 5단계: 첫 모임 7일 뒤부터, 4명 이상, 그중 1명 이상은 첫 모임에도 온 사람.
@@ -363,7 +364,7 @@ begin
       order by s.starts_at, s.id limit 1;
   end if;
   people:=case when second_id is not null then private.host_quest_counted(q.id,second_id) end;
-  perform private.host_quest_set_step(q.id,5,1000,case when second_id is not null then array[second_id] end,people);
+  perform private.host_quest_set_step(q.id,5,400,case when second_id is not null then array[second_id] end,people);
 
   -- 7단계: 첫 모임·두 번째 모임과 다른 모임, 퀘스트 시작 30일 안, 4명 이상.
   select session_ids[1] into third_id from private.host_quest_steps where quest_id=q.id and step=7 and status='confirmed';
@@ -375,15 +376,15 @@ begin
       order by s.starts_at, s.id limit 1;
   end if;
   people:=case when third_id is not null then private.host_quest_counted(q.id,third_id) end;
-  perform private.host_quest_set_step(q.id,7,1500,case when third_id is not null then array[third_id] end,people);
+  perform private.host_quest_set_step(q.id,7,600,case when third_id is not null then array[third_id] end,people);
 
   -- 3단계: 운영팀이 승인한 단체 사진.
   select p.* into photo from private.host_quest_photos p
     where p.quest_id=q.id and p.status='approved' and private.host_quest_session_ok(q.id,p.session_id)
     order by p.reviewed_at, p.id limit 1;
-  perform private.host_quest_set_step(q.id,3,500,case when photo.id is not null then array[photo.session_id] end,'{}',null,photo.id);
+  perform private.host_quest_set_step(q.id,3,200,case when photo.id is not null then array[photo.session_id] end,'{}',null,photo.id);
 
-  -- 4단계: 초대한 사람 최대 10명(먼저 참석 확인된 순서).
+  -- 4단계: 초대한 사람 3명(먼저 참석 확인된 순서). 3명이 되면 $3이고 그 뒤로는 쌓이지 않는다.
   select count(*) into picked from private.host_quest_steps where quest_id=q.id and step=4 and status='confirmed';
   for inv in
     select r.invitee_id, i.session_id, i.reason,
@@ -395,7 +396,7 @@ begin
     order by i.confirmed_at nulls last, r.redeemed_at, r.invitee_id
   loop
     if inv.done then continue; end if;
-    if inv.reason is null and picked<10 then
+    if inv.reason is null and picked<3 then
       perform private.host_quest_set_step(q.id,4,100,array[inv.session_id],array[inv.invitee_id],inv.invitee_id);
       picked:=picked+1;
     else
@@ -414,7 +415,7 @@ begin
       where tr.kind='meetup' and tr.status in ('pending','published') and s.host_id=q.user_id and s.ends_at<=now()
         and private.host_quest_session_ok(q.id,s.id) and tr.author_id=any(private.host_quest_counted(q.id,s.id))
       order by tr.author_id, tr.created_at) x;
-  perform private.host_quest_set_step(q.id,6,400,
+  perform private.host_quest_set_step(q.id,6,100,
     case when cardinality(rv.authors)>=2 then rv.sessions[1:2] end,
     case when cardinality(rv.authors)>=2 then rv.authors[1:2] end);
 end $$;
@@ -428,7 +429,7 @@ begin
   if q.id is null or q.status<>'active' then return 0; end if;
   update private.host_quest_steps set status='cancelled', cancel_reason='quest_ended', decided_at=now() where quest_id=q.id and status='pending';
   cents:=(private.host_quest_totals(q.id)->>'confirmed')::int;
-  v_days:=least(70,floor(cents*14/1000.0)::int);
+  v_days:=least(28,floor(cents*14/1000.0)::int);
   v_tier:=case when exists(select 1 from private.host_quest_steps where quest_id=q.id and step=2 and status='confirmed') then 'pro' else 'plus' end;
   if v_days>0 and private.is_active_account(q.user_id) then
     perform pg_advisory_xact_lock(hashtextextended('invite-reward:'||q.user_id::text,0));
@@ -616,7 +617,7 @@ begin
       from private.host_quest_photos ph where ph.quest_id=q.id order by ph.created_at desc limit 1),
     'payout',case when pay.quest_id is null then null else jsonb_build_object('status',pay.status,'requestedAt',pay.requested_at,
       'email',pay.email,'legalName',pay.legal_name,'sentAt',pay.sent_at,'transferLast4',pay.transfer_last4) end,
-    'canRequestPayout',q.status='active' and (totals->>'confirmed')::int>=5000 and (pay.quest_id is null or pay.status='requested'));
+    'canRequestPayout',q.status='active' and (totals->>'confirmed')::int>=2000 and (pay.quest_id is null or pay.status='requested'));
 end $$;
 
 create function public.request_host_quest_payout(p_email text, p_legal_name text) returns jsonb
@@ -634,7 +635,7 @@ begin
   perform private.evaluate_host_quest(v_quest);
   select * into q from private.host_quests where id=v_quest for update;
   if q.status<>'active' then raise exception 'QUEST_ENDED'; end if;
-  if (private.host_quest_totals(q.id)->>'confirmed')::int<5000 then raise exception 'PAYOUT_NOT_READY'; end if;
+  if (private.host_quest_totals(q.id)->>'confirmed')::int<2000 then raise exception 'PAYOUT_NOT_READY'; end if;
   mark:=encode(extensions.digest('payout-email:'||email,'sha256'),'hex');
   if exists(select 1 from private.host_quest_payouts where email_mark=mark and quest_id<>q.id) then raise exception 'PAYOUT_EMAIL_USED'; end if;
   select * into existing from private.host_quest_payouts where quest_id=q.id for update;
@@ -964,7 +965,7 @@ begin
       where quest_id=q.id;
   else
     if q.status<>'active' then raise exception 'QUEST_ENDED'; end if;
-    if (private.host_quest_totals(q.id)->>'confirmed')::int<5000 then raise exception 'PAYOUT_NOT_READY'; end if;
+    if (private.host_quest_totals(q.id)->>'confirmed')::int<2000 then raise exception 'PAYOUT_NOT_READY'; end if;
     if pay.email is null or pay.legal_name is null then raise exception 'PAYOUT_DETAILS_ERASED'; end if;
     if pay.photo_people is null then raise exception 'PHOTO_PEOPLE_REQUIRED'; end if;
     if pay.photo_people<coalesce(private.host_quest_photo_needed(q.id),pay.photo_people+1) then raise exception 'PHOTO_PEOPLE_TOO_FEW'; end if;
@@ -974,7 +975,7 @@ begin
     if private.host_quest_name_key(c.recipient_name)<>private.host_quest_name_key(pay.legal_name) then raise exception 'PAYOUT_NAME_MISMATCH'; end if;
     if not coalesce(p_bank_name_matched,false) then raise exception 'BANK_NAME_CHECK_REQUIRED'; end if;
     if coalesce(p_transfer_last4,'') !~ '^[A-Za-z0-9]{4}$' then raise exception 'INVALID_TRANSFER_REFERENCE'; end if;
-    update private.host_quest_payouts set status='sent', sent_at=now(), sent_by=auth.uid(), transfer_last4=p_transfer_last4, amount_cents=least((private.host_quest_totals(q.id)->>'confirmed')::int,5000),
+    update private.host_quest_payouts set status='sent', sent_at=now(), sent_by=auth.uid(), transfer_last4=p_transfer_last4, amount_cents=least((private.host_quest_totals(q.id)->>'confirmed')::int,2000),
       held_note=coalesce(note,held_note), erase_after=now()+interval '365 days' where quest_id=q.id;
     update private.host_quests set status='paid', finished_at=now() where id=q.id;
   end if;

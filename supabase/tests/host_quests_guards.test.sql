@@ -47,7 +47,8 @@ do $$ declare r record; begin
   end loop;
 end $$;
 
--- 퀘스트 시작
+-- 퀘스트 시작(프로그램은 꺼진 채로 들어오므로 먼저 켠다)
+update private.host_quest_program set accepting=true;
 select pg_temp.act('z'); set local role authenticated;
 insert into ctx select 'code'||row_number() over (), c from unnest(public.create_admin_host_quest_codes(3)) c;
 reset role;
@@ -181,27 +182,27 @@ select private.evaluate_host_quest(pg_temp.quest('h'));
 select is((select count(*)::int from private.host_quest_steps where quest_id=pg_temp.quest('h') and status<>'cancelled'
   and 'ab200000-0000-4000-8000-000000000003'::uuid=any(session_ids)),0,'Four people in an unannounced session earn nothing');
 
--- $50이 다 차도 사진 속 사람 수와 참석자 2명 확인 전에는 "보냄"이 안 된다. 두 번 눌러도 한 번만 보낸다.
+-- $20이 다 차도 사진 속 사람 수와 참석자 2명 확인 전에는 "보냄"이 안 된다. 두 번 눌러도 한 번만 보낸다.
 delete from private.host_quest_steps where quest_id=pg_temp.quest('h');
 insert into private.host_quest_steps(quest_id,step,amount_cents,status,session_ids,person_ids,person_id)
   select pg_temp.quest('h'),x.step,x.amount,'confirmed',array['ab200000-0000-4000-8000-000000000001'::uuid],
     case when x.step=2 then array[pg_temp.u('r1'),pg_temp.u('r2'),pg_temp.u('r3')] else '{}' end,null
-  from (values (1,100),(2,500),(3,500),(5,1000),(6,400),(7,1500)) x(step,amount);
+  from (values (1,100),(2,300),(3,200),(5,400),(6,100),(7,600)) x(step,amount);
 insert into private.host_quest_steps(quest_id,step,amount_cents,status,person_id)
   select pg_temp.quest('h'),4,100,'confirmed',gen_random_uuid() from generate_series(1,10);
 update private.host_quest_codes set recipient_name='Host Kim' where code=(select v from ctx where k='code1');
 select pg_temp.act('h'); set local role authenticated;
-select lives_ok($$select public.request_host_quest_payout('hostg@gmail.com','Host Kim')$$,'Host requests $50');
+select lives_ok($$select public.request_host_quest_payout('hostg@gmail.com','Host Kim')$$,'Host requests $20');
 reset role;
 select pg_temp.act('b'); set local role authenticated;
 select throws_ok($$select public.request_host_quest_payout('h.ostg+again@gmail.com','Host Kim')$$,'P0001','QUEST_NOT_FOUND','An alias account has no quest to cash out');
 reset role;
 select pg_temp.act('z'); set local role authenticated;
-select throws_ok($$select public.settle_admin_host_quest_payout(pg_temp.quest('h'),'sent','9999',true)$$,'P0001','PHOTO_PEOPLE_REQUIRED','$50 filled, but no photo head count: cannot mark sent');
+select throws_ok($$select public.settle_admin_host_quest_payout(pg_temp.quest('h'),'sent','9999',true)$$,'P0001','PHOTO_PEOPLE_REQUIRED','$20 filled, but no photo head count: cannot mark sent');
 select lives_ok($$select public.set_admin_host_quest_photo_people(pg_temp.quest('h'),1)$$,'Admin enters a head count of 1');
 select throws_ok($$select public.settle_admin_host_quest_payout(pg_temp.quest('h'),'sent','9999',true)$$,'P0001','PHOTO_PEOPLE_TOO_FEW','A photo smaller than the counted attendees plus the host: cannot mark sent');
 select lives_ok($$select public.set_admin_host_quest_photo_people(pg_temp.quest('h'),9)$$,'Admin enters the photo head count');
-select throws_ok($$select public.settle_admin_host_quest_payout(pg_temp.quest('h'),'sent','9999',true)$$,'P0001','ATTENDEE_CHECKS_REQUIRED','$50 filled, but no attendee checks: cannot mark sent');
+select throws_ok($$select public.settle_admin_host_quest_payout(pg_temp.quest('h'),'sent','9999',true)$$,'P0001','ATTENDEE_CHECKS_REQUIRED','$20 filled, but no attendee checks: cannot mark sent');
 select ok(public.ask_admin_host_quest_attendee(pg_temp.quest('h'),pg_temp.u('r1')) is not null,'Admin asks attendee r1');
 select lives_ok($$select public.record_admin_host_quest_check(pg_temp.quest('h'),pg_temp.u('r1'),'yes')$$,'r1 says yes');
 select throws_ok($$select public.settle_admin_host_quest_payout(pg_temp.quest('h'),'sent','9999',true)$$,'P0001','ATTENDEE_CHECKS_REQUIRED','One check is not enough');

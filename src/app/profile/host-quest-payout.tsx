@@ -23,14 +23,14 @@ import { supabase } from '@/lib/supabase';
 const ERRORS: Record<string, string> = {
   INVALID_EMAIL: '이메일 주소가 맞는지 한 번 더 봐 주세요.',
   INVALID_NAME: '은행에 등록된 이름을 2자 이상 적어 주세요.',
-  PAYOUT_NOT_READY: '$50이 다 확정되면 받을 수 있어요',
+  PAYOUT_NOT_READY: '$20이 다 확정되면 받을 수 있어요',
   PAYOUT_EMAIL_USED: '이 이메일로는 이미 다른 퀘스트 돈을 받았어요.',
   PAYOUT_LOCKED: '이미 보냈거나 보류된 요청이라 바꿀 수 없어요.',
   QUEST_ENDED: '끝난 퀘스트예요.',
   RATE_LIMITED: '너무 여러 번 보냈어요. 내일 다시 해 주세요.',
 };
 
-/** $50 payout: e-mail and bank name once everything is confirmed, then where the transfer is. */
+/** $20 payout: e-mail and bank name once everything is confirmed, then where the transfer is. */
 export default function HostQuestPayoutScreen() {
   const { tr, locale } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback();
@@ -60,7 +60,7 @@ export default function HostQuestPayoutScreen() {
         {live && <>
           <View style={[styles.card, styles.row, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
             <ThemedText style={Typography.display}>{`$${Math.floor(live.confirmed / 100)}`}</ThemedText>
-            {live.confirmed >= 5000 && <Tag label={tr('다 확정됐어요')} />}
+            {live.confirmed >= 2000 && <Tag label={tr('다 확정됐어요')} />}
           </View>
           {!payout && (live.canRequestPayout ? <View style={styles.form}>
             <ThemedText style={Typography.label}>{tr('송금 받을 이메일')}</ThemedText>
@@ -72,11 +72,11 @@ export default function HostQuestPayoutScreen() {
             <ThemedText themeColor="textSecondary" style={[Typography.supporting, styles.gapTop]}>{tr('Interac e-Transfer로 보내요. 송금 전에 은행에 등록된 이름을 확인하고, 여기 적은 이름과 다르면 보내지 않아요. 이메일과 이름은 송금에만 써요.')}</ThemedText>
             <View style={styles.gapTop}><RaisedActionButton analyticsId="host-quest-payout.request" label={tr('송금 요청')} busy={busy} disabled={!email.trim() || name.trim().length < 2} onPress={() => void send()} /></View>
             {!!note && <ThemedText type="small" accessibilityRole="alert">{tr(note)}</ThemedText>}
-          </View> : <StateCard layout="start" title={tr('$50이 다 확정되면 받을 수 있어요')} body={tr('확인 중인 돈은 14일 동안 신고·노쇼·탈퇴·참석 취소가 없으면 확정돼요.')} />)}
+          </View> : <StateCard layout="start" title={tr('$20이 다 확정되면 받을 수 있어요')} body={tr('확인 중인 돈은 14일 동안 신고·노쇼·탈퇴·참석 취소가 없으면 확정돼요.')} />)}
           {payout && <>
             <SectionLabel>{tr('진행 상황')}</SectionLabel>
             <ListCard>
-              <ListRow title={tr('확정 $50')} detail={tr('14일 동안 신고·노쇼 같은 문제가 없었어요')} leading={dot('done')} />
+              <ListRow title={tr('확정 $20')} detail={tr('14일 동안 신고·노쇼 같은 문제가 없었어요')} leading={dot('done')} />
               <ListRow title={tr('송금 요청')} detail={[date(payout.requestedAt), payout.email].filter(Boolean).join(' · ')} leading={dot('done')} />
               {payout.status === 'held'
                 ? <ListRow title={tr('보류')} detail={tr('운영팀이 확인할 게 있어서 잠시 멈췄어요. 운영팀 메시지를 봐 주세요.')} leading={dot('now')} />

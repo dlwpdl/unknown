@@ -66,7 +66,7 @@ def race(first, second):
     return results['a'], results['b']
 
 
-# Committed fixture for the races: one admin, a quest host at $50 with every gate filled, a live meetup with a QR code.
+# Committed fixture for the races: one admin, a quest host at $20 with every gate filled, a live meetup with a QR code.
 RACE_FIXTURE = r"""
 insert into auth.users(id,email,raw_app_meta_data,created_at) select ('ac000000-0000-4000-8000-00000000000'||n)::uuid,
   'race-'||n||'@example.invalid',case when n=9 then '{"role":"admin"}'::jsonb else '{}'::jsonb end,now()-interval '100 days' from generate_series(1,9) n;
@@ -75,6 +75,7 @@ insert into public.profiles(id,nickname,city_id,terms_accepted_at,privacy_accept
 insert into auth.sessions(id,user_id,aal) select ('ac900000-0000-4000-8000-00000000000'||n)::uuid,('ac000000-0000-4000-8000-00000000000'||n)::uuid,
   (case when n=9 then 'aal2' else 'aal1' end)::auth.aal_level from generate_series(1,9) n;
 update private.account_security_sessions set device_hash=encode(extensions.digest(session_id::text,'sha256'),'hex') where session_id::text like 'ac900000-%';
+update private.host_quest_program set accepting=true;
 insert into private.host_quest_codes(code,recipient_name) values ('RACEAAAA','Race Host'),('RACEBBBB',null);
 insert into private.host_quests(id,user_id,code,started_at,ends_at) values
   ('ac300000-0000-4000-8000-000000000001','ac000000-0000-4000-8000-000000000001','RACEAAAA',now()-interval '40 days',now()+interval '20 days');
@@ -88,7 +89,7 @@ insert into private.meetup_sessions(id,post_id,host_id,starts_at,ends_at,created
 insert into private.meetup_qr_codes(code,session_id,issued_at) values ('aaaaaaaaaaaaaaaaaaaaaaaa','ac200000-0000-4000-8000-000000000001',now());
 insert into private.host_quest_steps(quest_id,step,amount_cents,status,session_ids,person_ids,person_id)
   select 'ac300000-0000-4000-8000-000000000001',x.step,x.amount,'confirmed',array['ac200000-0000-4000-8000-000000000001'::uuid],'{}',null
-  from (values (1,100),(2,500),(3,500),(5,1000),(6,400),(7,1500)) x(step,amount);
+  from (values (1,100),(2,300),(3,200),(5,400),(6,100),(7,600)) x(step,amount);
 insert into private.host_quest_steps(quest_id,step,amount_cents,status,person_id)
   select 'ac300000-0000-4000-8000-000000000001',4,100,'confirmed',gen_random_uuid() from generate_series(1,10);
 insert into private.host_quest_payouts(quest_id,email,legal_name,email_mark,photo_people) values
