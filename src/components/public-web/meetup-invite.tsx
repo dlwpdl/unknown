@@ -123,7 +123,7 @@ export function MeetupInvite({ postId, code, onMissing }: { postId: string; code
     <main className="mi-page">
       {!!card.inviter && <p className="mi-from"><span className="mi-avatar" aria-hidden="true">{[...card.inviter][0]}</span>
         {ko ? `${card.inviter} 님이 같이 가자고 보낸 모임이에요` : `${card.inviter} wants you to come along`}</p>}
-      <img className="mi-cover" src={cover} alt="" referrerPolicy="no-referrer" onError={() => setBrokenCover(true)} />
+      <img className={cover === COVER ? 'mi-cover mi-cover-default' : 'mi-cover'} src={cover} alt="" referrerPolicy="no-referrer" onError={() => setBrokenCover(true)} />
       <div className="mi-chips">
         <span className="mi-chip mi-on">{chillingKind(room) === 'once' ? tr('칠링') : tr('정기모임')}</span>
         {!!category && <span className="mi-chip">{tr(CHILLING_CATEGORY_LABELS[category])}</span>}
@@ -164,6 +164,7 @@ export function MeetupInvite({ postId, code, onMissing }: { postId: string; code
 }
 
 const styles = `
+body:has(.meetup-invite){margin:0;overflow-y:auto!important}
 .meetup-invite{min-height:100vh;background:var(--background);color:var(--text);font:1rem/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;overflow-wrap:anywhere}
 .meetup-invite *{box-sizing:border-box}.meetup-invite p{margin:0}
 .mi-bar,.mi-page,.mi-state,.mi-dock{width:min(100%,560px);margin:0 auto;padding-left:16px;padding-right:16px}
@@ -173,6 +174,7 @@ const styles = `
 .mi-from{margin:6px 0 12px}.mi-host{min-height:var(--mi-touch);font-weight:700;color:var(--text)}.mi-host small{font-weight:500;color:var(--textSecondary);font-size:.8125rem}
 .mi-avatar{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:14px;background:var(--backgroundSelected);color:var(--text);font-size:.75rem;font-weight:700}
 .mi-cover{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:16px;background:var(--backgroundElement)}
+.mi-cover-default{aspect-ratio:1200/630}
 .mi-chips{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 6px}.mi-chip{font-size:.75rem;line-height:1.5;font-weight:700;border-radius:999px;padding:3px 10px;background:var(--backgroundElement);color:var(--textSecondary)}.mi-chip.mi-on{background:var(--backgroundSelected);color:var(--accent)}
 .meetup-invite h1{margin:4px 0 8px;font-size:var(--mi-title);line-height:1.3;letter-spacing:-.5px;word-break:keep-all}
 .meetup-invite h2{margin:0 0 6px;font-size:.8125rem;line-height:1.45;font-weight:700}
@@ -181,7 +183,7 @@ const styles = `
 .mi-fact dt{font-size:.75rem;line-height:1.4;color:var(--textSecondary)}.mi-fact dd{margin:2px 0 0;font-weight:700;word-break:keep-all}.mi-fact .mi-note{font-size:.75rem;line-height:1.4;font-weight:500;color:var(--textSecondary)}
 .mi-seat{display:block;height:6px;border-radius:3px;background:var(--backgroundElement);margin-top:8px;overflow:hidden}.mi-seat i{display:block;height:100%;background:var(--accent);border-radius:3px}
 .mi-intro{white-space:pre-line;line-height:1.55;word-break:keep-all}.mi-more{margin:8px 0 16px!important;font-size:.75rem;line-height:1.45;color:var(--textSecondary)}
-.mi-lock{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);font-size:.75rem;line-height:1.5;color:var(--textSecondary)}.mi-lock svg{flex:none;margin-top:2px}
+.mi-lock{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);font-size:.75rem;line-height:1.5;color:var(--textSecondary);word-break:keep-all}.mi-lock svg{flex:none;margin-top:2px}
 .mi-dock{position:fixed;left:0;right:0;bottom:0;padding-top:10px;padding-bottom:calc(16px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--background) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);display:grid;gap:8px}
 .mi-dock p{font-size:.75rem;line-height:1.45;color:var(--textSecondary);text-align:center}
 .mi-primary,.mi-secondary,.mi-ghost{display:flex;align-items:center;justify-content:center;width:100%;min-height:var(--mi-action);border-radius:14px;border:1px solid var(--accent);background:var(--accent);color:var(--accentInk);font:700 1rem/1.4 inherit;font-family:inherit;text-decoration:none;cursor:pointer;transition:transform 90ms ease-out,opacity 90ms}

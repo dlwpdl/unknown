@@ -53,7 +53,8 @@ export function ShopInviteLanding({ code, landing }: { code: string; landing: Bu
     const left = room.capacity ? Math.max(0, room.capacity - (room.memberCount ?? 0)) : null;
     const detail = [chillingSchedule(room, locale), left != null && (ko ? `${left}자리 남음` : `${left} ${left === 1 ? 'spot' : 'spots'} left`)].filter(Boolean).join(' · ');
     return <a key={post.id} className="si-item" data-analytics="invite.shop.meetup" href={`/post?id=${post.id}&invite=1&code=${code}`} onClick={() => play('selection')}>
-      <img src={post.imageUris?.[0] || COVER} alt="" width={64} height={64} referrerPolicy="no-referrer" onError={event => { event.currentTarget.src = COVER; }} />
+      <img src={post.imageUris?.[0] || COVER} className={post.imageUris?.[0] ? undefined : 'si-default'} alt="" width={64} height={64} referrerPolicy="no-referrer"
+        onError={event => { event.currentTarget.src = COVER; event.currentTarget.className = 'si-default'; }} />
       <span><b>{post.title}</b><small>{detail}</small></span></a>;
   };
 
@@ -79,6 +80,7 @@ export function ShopInviteLanding({ code, landing }: { code: string; landing: Bu
 }
 
 const styles = `
+body:has(.shop-invite){margin:0;overflow-y:auto!important}
 .shop-invite{min-height:100vh;background:var(--background);color:var(--text);font:1rem/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;overflow-wrap:anywhere}
 .shop-invite *{box-sizing:border-box}.shop-invite main{width:min(100%,560px);margin:0 auto;padding:16px 16px 48px}.shop-invite p{margin:0}
 .si-from{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:var(--backgroundSelected);color:var(--accent);font-size:.875rem;font-weight:700;margin-bottom:20px!important}
@@ -86,6 +88,7 @@ const styles = `
 .si-list{display:grid;gap:10px}.si-note{color:var(--textSecondary);font-size:.875rem}
 .si-item{display:flex;gap:12px;align-items:center;min-height:84px;padding:10px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--text);text-decoration:none;transition:transform 90ms ease-out,opacity 90ms}
 .si-item img{flex:none;width:64px;height:64px;border-radius:12px;object-fit:cover;background:var(--backgroundElement)}
+.si-item img.si-default{object-position:84% 50%}
 .si-item b{display:block;font-size:.9375rem;line-height:1.4;word-break:keep-all}.si-item small{display:block;margin-top:2px;font-size:.75rem;line-height:1.4;color:var(--textSecondary)}
 .si-more{display:inline-flex;align-items:center;gap:6px;min-height:var(--si-touch);margin-top:8px;color:var(--accent);font-weight:700;text-decoration:none}
 .si-app{display:grid;gap:12px;margin-top:24px;padding-top:20px;border-top:1px solid var(--line)}
