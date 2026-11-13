@@ -41,7 +41,10 @@ export function preferVisitedPlaces<T extends { place: { id: string; glingVisite
 }
 
 // Event lists (QA C22-3): one row per event id even when loaded pages overlap, then the city's own day and start time; an event with no time yet goes last on its day, ties keep load order.
-export function sortEventList<T extends { id: string; localDate?: string | null; startsAt?: string | null }>(events: readonly T[]): T[] {
+// The venue's own clock comes first because that is what each row shows: the feed tags some Vancouver venues with Los Angeles
+// time, so their startsAt is an hour late now that BC stays on UTC-7 (tz 2026b, final QA C22-3).
+export function sortEventList<T extends { id: string; localDate?: string | null; localTime?: string | null; startsAt?: string | null }>(events: readonly T[]): T[] {
   const seen = new Set<string>(), day = (event: T) => event.localDate ?? '9999-12-31', time = (event: T) => Date.parse(event.startsAt ?? '') || Infinity;
-  return events.filter(event => !seen.has(event.id) && !!seen.add(event.id)).sort((a, b) => day(a).localeCompare(day(b)) || time(a) - time(b) || 0);
+  const clock = (event: T) => /^\d{2}:\d{2}/.test(event.localTime ?? '') ? event.localTime!.slice(0, 5) : '99:99';
+  return events.filter(event => !seen.has(event.id) && !!seen.add(event.id)).sort((a, b) => day(a).localeCompare(day(b)) || clock(a).localeCompare(clock(b)) || time(a) - time(b) || 0);
 }

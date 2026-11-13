@@ -93,6 +93,7 @@ test('missing counts and schedule stay unavailable, while a genuinely supplied z
   const ui = mount('meetup-list.tsx', 'PublicMeetupList', props({ posts: [meetup({ room: { id: 'room', eventKind: 'once' } })] })); ui.language('en');
   assert.match(text(ui.render()), /Schedule needs confirmation/); assert.match(text(ui.render()), /Attendance unavailable/); assert.doesNotMatch(text(ui.render()), /0 members/);
   const zero = ui.render(props({ posts: [meetup({ room: { ...meetup().room, memberCount: 0 } })] })); assert.match(text(zero), /0 members/);
+  const one = ui.render(props({ posts: [meetup({ room: { ...meetup().room, memberCount: 1 } })] })); assert.match(text(one), /1 member\b/); assert.doesNotMatch(text(one), /1 members/);
 });
 
 test('loading, failure and empty states hide old cards and retry plays feedback once', () => {

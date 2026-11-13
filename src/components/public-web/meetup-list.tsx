@@ -18,7 +18,7 @@ export function MeetupDetails({ room, city }: { room: ChillingSchedule & { membe
   const capacity = Number.isSafeInteger(room.capacity) && room.capacity! > 0 ? room.capacity! : null;
   return <dl className="public-meetup-details"><div><dt>{ko ? '일정' : 'When'}</dt><dd>{chillingSchedule(room, locale)}</dd></div>
     <div><dt>{ko ? '도시' : 'City'}</dt><dd>{city}</dd></div>
-    <div><dt>{ko ? '참여' : 'Members'}</dt><dd>{memberCount === null ? ko ? '참여 현황 확인 필요' : 'Attendance unavailable' : ko ? `${memberCount.toLocaleString(locale)}명 참여` : `${memberCount.toLocaleString(locale)} members`}
+    <div><dt>{ko ? '참여' : 'Members'}</dt><dd>{memberCount === null ? ko ? '참여 현황 확인 필요' : 'Attendance unavailable' : ko ? `${memberCount.toLocaleString(locale)}명 참여` : `${memberCount.toLocaleString(locale)} member${memberCount === 1 ? '' : 's'}`}
       {capacity !== null && (ko ? ` · 정원 ${capacity.toLocaleString(locale)}명` : ` · Capacity ${capacity.toLocaleString(locale)}`)}</dd></div></dl>;
 }
 

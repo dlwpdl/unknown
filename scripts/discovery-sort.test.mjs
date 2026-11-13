@@ -70,3 +70,12 @@ test('QA C22-3: two loaded event pages read as one list in city day and start or
   assert.deepEqual(list.filter(item => item.name.startsWith('ALLEYCVT')).map(item => item.name), ['ALLEYCVT', 'ALLEYCVT w/ Cyclops'], 'different ids with a similar name both stay');
   assert.equal(loaded.length, 9, 'the loaded pages are left as they came');
 });
+
+test('final QA C22-3: rows follow the venue clock they show, even when the feed tags a Vancouver venue with Los Angeles time', () => {
+  // Real feed rows, Nov 13: BOYNEXTDOOR 19:30 tagged Vancouver (UTC-7) and ALLEYCVT w/ Cyclops 18:30 tagged Los Angeles (UTC-8) share one startsAt.
+  const event = (id, localTime, startsAt) => ({ id, localDate: '2026-11-13', localTime, startsAt });
+  const list = sortEventList([event('boy', '19:30:00', '2026-11-14T02:30:00Z'), event('cyclops', '18:30:00', '2026-11-14T02:30:00Z'),
+    event('sassy-la', '19:00:00', '2026-11-14T03:00:00Z'), event('wolf', '20:00:00', '2026-11-14T03:00:00Z'), event('luzia', '19:30:00', '2026-11-14T03:30:00Z'),
+    event('tba', null, null), event('canucks', '19:00:00', '2026-11-14T02:00:00Z')]);
+  assert.deepEqual(list.map(item => item.id), ['cyclops', 'canucks', 'sassy-la', 'boy', 'luzia', 'wolf', 'tba']);
+});

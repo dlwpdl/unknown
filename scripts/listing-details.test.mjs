@@ -272,7 +272,7 @@ test('카테고리 지도는 모든 동네가 들어오게 열린다 (QA B13-2)'
   const coquitlam = { latitude: 49.2838, longitude: -122.7932 }, edmonds = { latitude: 49.2120, longitude: -122.9590 };
   const two = listingMapFit([coquitlam, edmonds]);
   assert.ok(Math.abs(two.center.longitude - (-122.8761)) < 1e-4);
-  const halfWidth = 215 * 360 / (256 * 2 ** two.zoom); // half of a 430pt-wide phone map, in degrees
+  const halfWidth = 215 * 360 / (512 * 2 ** two.zoom); // half of a 430pt-wide phone map in degrees, 512px world at zoom 0 like MapLibre
   assert.ok(Math.abs(coquitlam.longitude - two.center.longitude) < halfWidth && Math.abs(edmonds.longitude - two.center.longitude) < halfWidth, 'both areas on the first screen');
   assert.equal(listingMapFit([{ latitude: 49.28, longitude: -123.3 }, { latitude: 49.1, longitude: -122.3 }]).zoom < 11, true, 'far apart areas zoom out');
 });

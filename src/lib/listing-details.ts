@@ -277,7 +277,8 @@ export function listingMapFit(points: readonly { latitude: number; longitude: nu
   const lats = points.map(point => point.latitude), lons = points.map(point => point.longitude);
   const south = Math.min(...lats), north = Math.max(...lats), west = Math.min(...lons), east = Math.max(...lons), middle = (south + north) / 2;
   const span = Math.max(east - west, (north - south) / Math.cos(middle * Math.PI / 180), 1e-6); // latitude span in longitude degrees (Mercator)
-  const zoom = Math.max(8, Math.min(11, Math.floor(Math.log2(280 * 360 / (256 * span)) * 4) / 4));
+  // MapLibre draws the world 512px wide at zoom 0 (final QA: with 256 the rent map opened a step too close and hid both prices).
+  const zoom = Math.max(8, Math.min(11, Math.floor(Math.log2(280 * 360 / (512 * span)) * 4) / 4));
   return { center: { latitude: middle, longitude: (west + east) / 2 }, zoom };
 }
 
