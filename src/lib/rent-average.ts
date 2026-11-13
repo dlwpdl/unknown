@@ -41,7 +41,7 @@ export function rentAverage(cityId: string, details: { deal: string; rooms?: Roo
     amount,
     line: t('{0} {1} 평균 {2} · CMHC 2025년 10월', area, rooms, formatMoney(amount)),
     cheap: price != null && price > 0 && price < amount * 0.7
-      ? t('{0} {1} 평균은 {2}인데 이 집은 {3}이에요. 비슷한 집보다 많이 싼 건 BC 경찰이 사기 신호로 꼽는 거예요.', area, rooms, formatMoney(amount), formatMoney(price))
+      ? t('{0} {1} 평균은 {2}인데 이 집은 {3}이에요. 주변 시세보다 이렇게 싼 집은 BC 경찰이 사기 신호로 꼽아요.', area, rooms, formatMoney(amount), formatMoney(price))
       : null,
   };
 }

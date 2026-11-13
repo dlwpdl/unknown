@@ -193,7 +193,7 @@ export function NewcomerProgressCard({ cityId, onOpenCategory }: { cityId: strin
   const remaining = steps.filter(([, done]) => !done).length;
   return <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
     <View style={styles.cardHead}>
-      <ThemedText accessibilityRole="header" type="smallBold" themeColor="accent" style={styles.flex}>{newcomerDaysLeft(status) === 1 ? tr('새로 온 멤버 · 하루 남음') : tr('새로 온 멤버 · {0}일 남음', newcomerDaysLeft(status))}</ThemedText>
+      <ThemedText accessibilityRole="header" type="smallBold" themeColor="accent" style={styles.flex}>{newcomerDaysLeft(status) === 1 ? tr('새로 온 멤버 · 이 안내는 오늘까지예요') : tr('새로 온 멤버 · 이 안내는 {0}일 더 보여요', newcomerDaysLeft(status))}</ThemedText>
       <Pressable analyticsId="today.newcomer.hide" accessibilityRole="button" accessibilityLabel={tr('새로 온 멤버 카드 숨기기')} style={styles.link}
         onPress={() => { play('selection'); setStored(current => current && { ...current, hidden: true }); void AsyncStorage.setItem(hiddenKey(me.id), '1').catch(() => {}); }}>
         <ThemedText type="small" themeColor="textSecondary">{tr('숨기기')}</ThemedText>
