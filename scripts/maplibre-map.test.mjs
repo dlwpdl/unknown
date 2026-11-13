@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mapMessage, mapHtml, mapPinScript, mapPreviews, rememberMapPreview } from '../src/lib/post-map-html.ts';
+import { MAP_STYLES, mapMessage, mapHtml, mapPinScript, mapPreviews, rememberMapPreview } from '../src/lib/post-map-html.ts';
 import { LEGAL_DOCUMENTS } from '../src/lib/legal-documents.ts';
 
 test('지도 브리지에서 잘못된 형식·좌표·과도한 데이터와 임의 링크를 거부한다', () => {
@@ -30,6 +30,19 @@ test('숫자 핀만 스크립트에 들어가고 지도 코드는 로컬 번들�
   assert.throws(() => mapPinScript({ latitude: NaN, longitude: 0 }));
   assert.ok(mapPinScript({ latitude: 49.2, longitude: -123.1 }).includes('49.2'));
   assert.ok(!mapHtml({ pin: null, cityName: '</script>', accent: '#CBB9FF' }).includes('cityName":"</script>'));
+});
+
+test('다크 테마면 같은 무료 지도 서버의 어두운 스타일과 어두운 버튼·출처 표기를 쓴다', () => {
+  const dark = { background: '#0B0B12', card: '#171722', text: '#F6F3F0', textSecondary: '#B7B4C3', line: '#343443', backgroundSelected: '#343443', accent: '#CBB9FF' };
+  const light = mapHtml({ pin: null }), night = mapHtml({ pin: null, background: dark.card, dark });
+  assert.ok(light.includes(MAP_STYLES.light) && !light.includes(MAP_STYLES.dark) && !light.includes('filter:invert(1)'));
+  assert.ok(night.includes(`style:'${MAP_STYLES.dark}'`) && !night.includes(MAP_STYLES.light));
+  assert.equal(MAP_STYLES.dark, 'https://tiles.openfreemap.org/styles/dark');
+  assert.ok(night.includes('connect-src https://tiles.openfreemap.org;'), 'no new map host');
+  assert.ok(night.includes('#credits{background:#171722f0;color:#F6F3F0}') && night.includes('OpenStreetMap</a>'));
+  // Still hidden until its first complete drawing, so no box flashes while the dark tiles load.
+  assert.ok(night.includes('#map{opacity:0}#map.drawn{opacity:1'));
+  assert.throws(() => mapHtml({ pin: null, dark: { ...dark, text: 'red}</style>' } }));
 });
 
 test('미리보기 이미지는 메모리에24개까지만 유지하고 외부 이미지 주소를 저장하지 않는다', () => {
