@@ -243,6 +243,32 @@ select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-00000000
 select throws_ok($$select public.get_saved_folder_safety_content(current_setting('sfs.watch_friends')::uuid)$$,'42501',null,'a member cannot call the safety read');
 select throws_ok($$select public.get_admin_saved_folder_content(current_setting('sfs.watch_friends')::uuid)$$,'P0001','ADMIN_REQUIRED','a member cannot open the admin copy');
 reset role;
+-- A folder made together: the invite carries its name and the friend sees its words, whatever its visibility.
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select set_config('sfs.together',public.save_saved_folder(null,'같이 고르는 곳','private','둘이 갈 곳')->>'id',true);
+reset role;
+select is((select count(*)::integer from public.safety_review_queue where target_type='saved_folder' and target_id=current_setting('sfs.together')::uuid),0,'a private folder nobody is invited to stays out of the queue');
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select lives_ok($$select public.invite_saved_folder_member(current_setting('sfs.together')::uuid,'e5170000-0000-4000-8000-000000000002')$$,'the owner invites a friend to the private folder');
+reset role;
+select is((select count(*)::integer from public.safety_review_queue where target_type='saved_folder' and target_id=current_setting('sfs.together')::uuid),1,'sending an invite puts the folder words in the safety review queue');
+update public.safety_review_queue set status='reviewed',reviewed_at=now() where target_type='saved_folder' and target_id=current_setting('sfs.together')::uuid;
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select lives_ok($$select public.invite_saved_folder_member(current_setting('sfs.together')::uuid,'e5170000-0000-4000-8000-000000000002')$$,'the owner invites the same friend again');
+reset role;
+insert into private.saved_folder_members(folder_id,user_id) values(current_setting('sfs.together')::uuid,'e5170000-0000-4000-8000-000000000005');
+select is((select count(*)||':'||min(status) from public.safety_review_queue where target_type='saved_folder' and target_id=current_setting('sfs.together')::uuid),'1:reviewed','another invite with the same words is not sent again');
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select lives_ok($$select public.accept_saved_folder_invite(current_setting('sfs.together')::uuid)$$,'the friend accepts');
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select lives_ok($$select public.save_saved_folder(current_setting('sfs.together')::uuid,'같이 고르는 곳','private','둘이 갈 맛집')$$,'the owner changes the description while they make it together');
+reset role;
+select is((select count(*)||':'||min(status) from public.safety_review_queue where target_type='saved_folder' and target_id=current_setting('sfs.together')::uuid),'1:pending','the new description goes back to review on the same row');
 -- Unfriending ends a folder made together; deleting the account takes the places the member put in.
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"e5170000-0000-4000-8000-000000000001","role":"authenticated"}',true);
