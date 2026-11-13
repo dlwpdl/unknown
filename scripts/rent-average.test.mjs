@@ -5,10 +5,11 @@ import { rentAverage } from '../src/lib/rent-average.ts';
 
 const room = (patch) => ({ deal: 'rent_offer', rooms: '1b', area: 'kitsilano', ...patch });
 
-test('렌트 내놓음 가격 아래 동네 평균과 30% 넘게 싼 글 경고', () => {
+test('렌트 내놓음 가격 아래 동네 평균, 30% 넘게 싼 글엔 짧은 한마디만', () => {
   const cheap = rentAverage('vancouver', room({}), 1250, 'ko');
   assert.equal(cheap.line, '킷실라노 1베드 평균 $1,915 · CMHC 2025년 10월');
-  assert.equal(cheap.cheap, '킷실라노 1베드 평균은 $1,915인데 이 집은 $1,250이에요. 주변 시세보다 이렇게 싼 집은 BC 경찰이 사기 신호로 꼽아요.');
+  assert.equal(cheap.cheap, '시세보다 싸요', '사기라고 하지 않는다');
+  assert.equal(rentAverage('vancouver', room({}), 1250, 'en').cheap, 'Below market rate');
   assert.equal(rentAverage('vancouver', room({}), 1341, 'ko').cheap, null, '30% 이하로 싼 건 평균만 보여 준다');
   assert.equal(rentAverage('vancouver', room({}), 1340, 'ko').cheap !== null, true);
   assert.equal(rentAverage('vancouver', room({}), null, 'ko').cheap, null, '가격이 없으면 경고도 없다');

@@ -40,9 +40,9 @@ export function RentScamNote({ onTips }: { onTips: () => void }) {
   </View>;
 }
 
-export function RentScamTipsSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export function RentScamTipsSheet({ visible, onClose, onDismissed }: { visible: boolean; onClose: () => void; onDismissed?: () => void }) {
   const theme = useTheme(), { tr } = useLanguage(), { play } = useInteractionFeedback();
-  return <DragSheet visible={visible} onClose={onClose} title={tr('렌트 사기 피하는 법')}>
+  return <DragSheet visible={visible} onClose={onClose} onDismissed={onDismissed} title={tr('렌트 사기 피하는 법')}>
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       {TIPS.map((tip, index) => <View key={tip} style={styles.tip}>
         <View style={[styles.number, { backgroundColor: theme.backgroundSelected }]}><ThemedText type="micro" themeColor="accent" style={styles.numberText}>{index + 1}</ThemedText></View>

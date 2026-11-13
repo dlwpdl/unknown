@@ -90,7 +90,7 @@ function Queue({ onUser, localPreview = false }: Props) {
         })}
       </AdminCard>
       <AdminCard icon="✓" tone="warning" title="렌트 확인 사진" count={checks?.length} style={styles.half}
-        info={['작성자가 닉네임과 날짜를 적은 종이를 방 안에서 찍은 사진이에요. 글에는 붙지 않고 작성자와 관리자만 열 수 있어요.', '사진을 열 때마다 기록이 남아요. 확인하면 글에 ‘사진 확인 · 날짜’가 붙어요.']}>
+        info={['작성자가 닉네임과 날짜를 적은 종이를 방 안에서 찍은 사진이에요. 글에는 붙지 않고 작성자와 관리자만 열 수 있어요.', '사진을 열 때마다 기록이 남아요. 확인하면 글에 ‘글쓴이가 방 안에 있었음 · 날짜’가 붙어요.']}>
         {checks && !checks.length && <ThemedText type="small" style={{ color: A.textSecondary }}>확인할 사진이 없어요.</ThemedText>}
         {checks?.map(row => <View key={row.postId} style={styles.item}>
           <ThemedText type="smallBold" numberOfLines={2}>{row.title}</ThemedText>

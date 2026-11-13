@@ -28,7 +28,8 @@ const COLUMNS: Partial<Record<Room, readonly [number, Room]>> = { studio: [0, 's
 
 export type RentAverage = { amount: number; line: string; cheap: string | null };
 
-// The line under a 렌트 내놓음 price, and the warning when the asking rent is more than 30% below it.
+// The line under a 렌트 내놓음 price, and a short "below market" note when the asking rent is more than 30% below it.
+// Only that note: a cheap room can be a share or a family rental, so the app does not call it a scam (owner 2026-11-13).
 // Takes the saved details or the composer draft, which keeps unset fields as null.
 export function rentAverage(cityId: string, details: { deal: string; rooms?: Room | null; area?: string | null }, price: number | null | undefined, language: AppLanguage): RentAverage | null {
   const column = details.rooms ? COLUMNS[details.rooms] : undefined;
@@ -41,7 +42,7 @@ export function rentAverage(cityId: string, details: { deal: string; rooms?: Roo
     amount,
     line: t('{0} {1} 평균 {2} · CMHC 2025년 10월', area, rooms, formatMoney(amount)),
     cheap: price != null && price > 0 && price < amount * 0.7
-      ? t('{0} {1} 평균은 {2}인데 이 집은 {3}이에요. 주변 시세보다 이렇게 싼 집은 BC 경찰이 사기 신호로 꼽아요.', area, rooms, formatMoney(amount), formatMoney(price))
+      ? t('시세보다 싸요')
       : null,
   };
 }

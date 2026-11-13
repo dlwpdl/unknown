@@ -66,6 +66,8 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
   if (user !== shownUser) { setShownUser(user); if (user) setOpen(true); }
   const afterClose = useRef<(() => void) | null>(null);
   const close = (then?: () => void) => { afterClose.current = then ?? null; setOpen(false); };
+  // 사기 피하는 법 steps aside without telling the parent, so closing the tips brings this sheet back.
+  const toTips = useRef(false);
 
   // 대화 기반 거래 이력과 현장 참석 확인은 서로 다른 신호다.
   const userId = user?.id;
@@ -132,7 +134,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
 
   return (
     <>
-      <DragSheet visible={!!user && open} onClose={() => close()} onDismissed={() => { const then = afterClose.current; afterClose.current = null; onClose(); then?.(); }}>
+      <DragSheet visible={!!user && open} onClose={() => close()} onDismissed={() => { const then = afterClose.current; afterClose.current = null; if (!toTips.current) onClose(); then?.(); }}>
         <View style={styles.sheetTools}>
           <ThemedText type="small" themeColor="textSecondary">{tr('이웃 프로필')}</ThemedText>
           <View style={styles.tools}>
@@ -171,13 +173,13 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
               <View style={styles.identityCopy}><ThemedText type="smallBold">{tr('공개한 글 보기')}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('오늘·구해요·팔아요')}</ThemedText></View><ThemedText themeColor="textSecondary">›</ThemedText>
             </Pressable>}
           </ScrollView>
-          {!user.mine && user.id && <View style={styles.actionArea}>{user.rentNotice && <RentScamNote onTips={() => close(() => setTips(true))} />}<RaisedActionButton analyticsId="components_user-sheet.pressable.4" onPress={() => void requestChat(user)} disabled={requesting} busy={requesting} label={requesting ? t.chat.joinSending : t.profileSheet.chatRequest} /></View>}
+          {!user.mine && user.id && <View style={styles.actionArea}>{user.rentNotice && <RentScamNote onTips={() => { toTips.current = true; close(() => setTips(true)); }} />}<RaisedActionButton analyticsId="components_user-sheet.pressable.4" onPress={() => void requestChat(user)} disabled={requesting} busy={requesting} label={requesting ? t.chat.joinSending : t.profileSheet.chatRequest} /></View>}
         </>}
       </DragSheet>
       {reporting?.id && (
         <ReportSheet visible targetType="user" targetId={reporting.id} reportedUserId={reporting.id} reportedNickname={reporting.nickname} onClose={() => setReporting(null)} />
       )}
-      <RentScamTipsSheet visible={tips} onClose={() => setTips(false)} />
+      <RentScamTipsSheet visible={tips} onClose={() => setTips(false)} onDismissed={() => { if (toTips.current) { toTips.current = false; setOpen(true); } }} />
     </>
   );
 }

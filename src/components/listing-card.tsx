@@ -35,22 +35,16 @@ function Badge({ label, tone, checked }: { label: string; tone: 'accent' | 'want
   </View>;
 }
 
-// A 렌트 내놓음 post: when the team checked the room photo, and where the rent sits against the CMHC average.
+// A 렌트 내놓음 post: where the rent sits against the CMHC average, with "시세보다 싸요" in front when it is far below.
 function RentFacts({ post }: { post: DetailedPost }) {
-  const theme = useTheme(), { tr, language } = useLanguage();
+  const { language } = useLanguage();
   if (post.listingDetails.type !== 'housing') return null;
   const average = rentAverage(post.cityId, post.listingDetails, post.price, language);
   if (!average) return null;
-  return <>
-    <ThemedText type="small" themeColor="textSecondary" style={styles.average}>{average.line}</ThemedText>
-    {average.cheap && <View accessibilityRole="alert" style={[styles.warn, { backgroundColor: `${theme.danger}17`, borderColor: `${theme.danger}47` }]}>
-      <SymbolView name={{ ios: 'exclamationmark.triangle', android: 'warning', web: 'warning' }} size={IconSize.inline} tintColor={theme.danger} />
-      <View style={styles.flex}>
-        <ThemedText type="small">{average.cheap}</ThemedText>
-        <ThemedText type="caption" themeColor="textSecondary">{tr('평균은 CMHC 2025년 10월 임대 아파트 기준이에요.')}</ThemedText>
-      </View>
-    </View>}
-  </>;
+  return <ThemedText type="small" themeColor="textSecondary" style={styles.average}>
+    {average.cheap && <ThemedText type="smallBold">{`${average.cheap} · `}</ThemedText>}
+    {average.line}
+  </ThemedText>;
 }
 
 const checkedDay = (value: string, language: AppLanguage) => {
@@ -195,7 +189,7 @@ export function ListingInfo({ post }: { post: DetailedPost }) {
     <View style={styles.meta}>
       <Badge label={text.deal} tone={wanting(details) ? 'want' : 'accent'} />
       <Badge label={text.status} tone={text.closed ? 'done' : 'accent'} />
-      {post.photoCheckedAt && <Badge checked label={tr('사진 확인 · {0}', checkedDay(post.photoCheckedAt, language))} tone="accent" />}
+      {post.photoCheckedAt && <Badge checked label={tr('글쓴이가 방 안에 있었음 · {0}', checkedDay(post.photoCheckedAt, language))} tone="accent" />}
     </View>
     {text.price && <View>
       <ThemedText style={styles.detailPrice}>{text.price}</ThemedText>
@@ -250,7 +244,6 @@ const styles = StyleSheet.create({
   badgeText: { letterSpacing: 0 },
   checkedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   average: { marginTop: 2 },
-  warn: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two, marginTop: Spacing.two, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, borderWidth: 1 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   tag: { minHeight: 24, paddingHorizontal: 8, borderRadius: 6, justifyContent: 'center' },
   tagText: { fontWeight: '600' },

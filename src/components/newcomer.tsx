@@ -1,11 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from '@/components/symbol-view';
-import { useCallback, useEffect, useState } from 'react';
-import { DeviceEventEmitter, Linking, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { DeviceEventEmitter, Linking, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Pressable, Switch } from '@/components/analytics-controls';
 import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
+import { DragSheet } from '@/components/drag-sheet';
 import { SelectionChip } from '@/components/selection-chip';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles, IconSize, Typography } from '@/constants/design-system';
@@ -15,7 +16,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { MEETUPS_CHANGED_EVENT } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { MEETUP_LABEL_TEXT, loadNewcomerStatus, meetupLabels, newcomerDaysLeft, type MeetupLabel, type NewcomerStatus } from '@/lib/newcomer';
+import { MEETUP_LABEL_TEXT, firstStepsFor, loadNewcomerStatus, meetupLabels, newcomerDaysLeft, type Arrival, type MeetupLabel, type NewcomerStatus } from '@/lib/newcomer';
 import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
 
@@ -117,17 +118,19 @@ const celebratedKey = (userId: string) => `gling.newcomer-card.celebrated:${user
 // 캐나다 온 지 and the 처음 할 일 checks stay on this phone only, like hiding the card.
 const arrivalKey = (userId: string) => `gling.newcomer-card.arrival:${userId}`;
 const stepsKey = (userId: string) => `gling.newcomer-card.steps:${userId}`;
-const ARRIVALS = [['new', '3개월 안 됐어요'], ['year', '1년 안 됐어요'], ['old', '1년 넘었어요']] as const;
-type Arrival = typeof ARRIVALS[number][0];
+const listHiddenKey = (userId: string) => `gling.newcomer-card.steps-hidden:${userId}`;
+const ARRIVALS: readonly (readonly [Arrival, string, string])[] = [
+  ['new', '3개월 안 됐어요', '캐나다 온 지 3개월 안 됐어요'], ['year', '1년 안 됐어요', '캐나다 온 지 1년 안 됐어요'], ['old', '1년 넘었어요', '캐나다 온 지 1년 넘었어요'],
+];
 // BC facts checked 2026-11-13 (minimum wage, MSP wait and fee, Compass deposit); recheck once a year. Vancouver only.
-const FIRST_STEPS: { id: string; title: string; body: string; label: string; url?: string; open?: 'housing' | 'jobs' | 'meetups' }[] = [
-  { id: 'compass', title: '교통카드', body: '컴퍼스 카드는 $6 내고 만드는데 카드를 돌려주면 그 돈도 돌려받아요. 어른 요금이면 신용카드나 폰을 바로 찍어도 되고요.',
+const FIRST_STEPS: { id: string; title: string; body: string; label: string; url?: string; open?: 'housing' | 'jobs' | 'meetups'; paperwork?: boolean }[] = [
+  { id: 'compass', paperwork: true, title: '교통카드', body: '컴퍼스 카드는 $6 내고 만드는데 카드를 돌려주면 그 돈도 돌려받아요. 어른 요금이면 신용카드나 폰을 바로 찍어도 되고요.',
     label: 'TransLink ↗', url: 'https://www.translink.ca/transit-fares/compass-card' },
-  { id: 'sin', title: 'SIN 신청', body: '일하려면 이 번호부터 있어야 해요. 돈은 안 들고, 서비스 캐나다에 직접 가면 서류가 맞을 때 그 자리에서 받아요.',
+  { id: 'sin', paperwork: true, title: 'SIN 신청', body: '일하려면 이 번호부터 있어야 해요. 돈은 안 들고, 서비스 캐나다에 직접 가면 서류가 맞을 때 그 자리에서 받아요.',
     label: '정부 안내 ↗', url: 'https://www.canada.ca/en/employment-social-development/services/sin/apply.html' },
-  { id: 'bank', title: '은행 계좌', body: '신분증 원본을 두 개 챙겨 가요. 하나뿐이면 그 은행에 계좌가 있는 지인이 신원을 확인해 주는 방법도 있어요.',
+  { id: 'bank', paperwork: true, title: '은행 계좌', body: '신분증 원본을 두 개 챙겨 가요. 하나뿐이면 그 은행에 계좌가 있는 지인이 신원을 확인해 주는 방법도 있어요.',
     label: '정부 안내 ↗', url: 'https://www.canada.ca/en/financial-consumer-agency/services/banking/opening-bank-account.html' },
-  { id: 'msp', title: 'MSP 신청', body: '도착하자마자 신청해도 그달 남은 날에 두 달을 더 기다려야 시작돼요. 그동안 쓸 보험은 따로 들어 둬요. 유학생은 MSP 비용으로 한 달에 $75를 내요.',
+  { id: 'msp', paperwork: true, title: 'MSP 신청', body: '도착하자마자 신청해도 그달 남은 날에 두 달을 더 기다려야 시작돼요. 그동안 쓸 보험은 따로 들어 둬요. 유학생은 MSP 비용으로 한 달에 $75를 내요.',
     label: 'BC 정부 ↗', url: 'https://www2.gov.bc.ca/gov/content/health/health-drug-coverage/msp/bc-residents/eligibility-and-enrolment/are-you-eligible' },
   { id: 'room', title: '방 구하기', body: '보러 가기 전에 돈부터 달라는 집은 거르세요. 동네별 렌트는 부동산에 모여 있어요.', label: '부동산 ›', open: 'housing' },
   { id: 'job', title: '일 구하기', body: 'BC 최저시급은 2026년 6월부터 $18.25예요. 유학생은 학기 중엔 주 24시간까지 일할 수 있어요.', label: '구인구직 ›', open: 'jobs' },
@@ -141,18 +144,20 @@ export function NewcomerProgressCard({ cityId, onOpenCategory }: { cityId: strin
   const { me, isAuthed } = useAuth();
   const { play } = useInteractionFeedback();
   const { status, refresh } = useNewcomerStatus(isAuthed);
-  const [stored, setStored] = useState<{ hidden: boolean; celebrated: boolean; arrival: Arrival | null; done: string[] } | null>(null);
+  const [stored, setStored] = useState<{ hidden: boolean; celebrated: boolean; arrival: Arrival | null; done: string[]; listHidden: boolean } | null>(null);
+  const [asking, setAsking] = useState(false), [listOpen, setListOpen] = useState(false);
+  const afterList = useRef<(() => void) | null>(null);
   useFocusEffect(useCallback(() => { refresh(); }, [])); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!isAuthed) return;
     let active = true;
-    AsyncStorage.multiGet([hiddenKey(me.id), celebratedKey(me.id), arrivalKey(me.id), stepsKey(me.id)])
-      .then(([[, hidden], [, celebrated], [, arrival], [, steps]]) => {
+    AsyncStorage.multiGet([hiddenKey(me.id), celebratedKey(me.id), arrivalKey(me.id), stepsKey(me.id), listHiddenKey(me.id)])
+      .then(([[, hidden], [, celebrated], [, arrival], [, steps], [, listHidden]]) => {
         let done: string[] = [];
         try { const parsed: unknown = JSON.parse(steps ?? '[]'); if (Array.isArray(parsed)) done = parsed.filter(id => FIRST_STEPS.some(step => step.id === id)); } catch { /* a broken value starts the list over */ }
-        if (active) setStored({ hidden: hidden === '1', celebrated: celebrated === '1', arrival: ARRIVALS.find(([id]) => id === arrival)?.[0] ?? null, done });
+        if (active) setStored({ hidden: hidden === '1', celebrated: celebrated === '1', arrival: ARRIVALS.find(([id]) => id === arrival)?.[0] ?? null, done, listHidden: listHidden === '1' });
       })
-      .catch(() => { if (active) setStored({ hidden: false, celebrated: false, arrival: null, done: [] }); });
+      .catch(() => { if (active) setStored({ hidden: false, celebrated: false, arrival: null, done: [], listHidden: false }); });
     return () => { active = false; };
   }, [isAuthed, me.id]);
   const celebrate = !!status?.newcomer && status.attended && stored?.celebrated === false;
@@ -172,9 +177,11 @@ export function NewcomerProgressCard({ cityId, onOpenCategory }: { cityId: strin
     <ThemedText type="small" themeColor="textSecondary">{tr('다음 모임도 마음 가는 대로 골라 보세요.')}</ThemedText>
     {link(tr('모임 보기 ›'))}
   </View>;
-  const vancouver = cityId === 'vancouver';
+  // A hidden 처음 할 일 list leaves the card as it was before: the first meetup steps only.
+  const vancouver = cityId === 'vancouver' && !stored.listHidden;
   const answer = (arrival: Arrival) => {
     play('selection');
+    setAsking(false);
     setStored(current => current && { ...current, arrival });
     void AsyncStorage.setItem(arrivalKey(me.id), arrival).catch(() => {});
   };
@@ -189,6 +196,36 @@ export function NewcomerProgressCard({ cityId, onOpenCategory }: { cityId: strin
     else if (step.open === 'meetups') openMeetups();
     else if (step.open) onOpenCategory(step.open);
   };
+  // From the sheet, an in-app step waits until the sheet is gone so it never stays over the next screen.
+  const closeList = (then?: () => void) => { afterList.current = then ?? null; setListOpen(false); };
+  const hideList = () => {
+    play('selection');
+    closeList(() => {
+      setStored(current => current && { ...current, listHidden: true });
+      void AsyncStorage.setItem(listHiddenKey(me.id), '1').catch(() => {});
+    });
+  };
+  const arrival = ARRIVALS.find(([id]) => id === stored.arrival);
+  const list = stored.arrival ? firstStepsFor(FIRST_STEPS, stored.arrival, stored.done) : null;
+  const listTitle = tr(stored.arrival === 'new' ? '막 왔을 때 다들 하는 것' : '방·일·친구 찾기');
+  const stepRow = (step: typeof FIRST_STEPS[number], index: number, compact: boolean) => {
+    const done = stored.done.includes(step.id);
+    return <View key={step.id} style={[compact ? styles.stepCompact : styles.firstStep, index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.line }]}>
+      <Pressable analyticsId="today.newcomer.step" accessibilityRole="checkbox" accessibilityState={{ checked: done }} accessibilityLabel={compact ? tr(step.title) : `${tr(step.title)}, ${tr(step.body)}`}
+        onPress={() => toggleStep(step.id)} style={[styles.firstStepCheck, compact && styles.checkCompact]}>
+        <View style={[styles.tick, done ? { backgroundColor: theme.accent, borderColor: theme.accent } : { borderColor: theme.textSecondary }]}>
+          {done && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={14} tintColor={theme.accentInk} />}
+        </View>
+        <View style={styles.flex}>
+          <ThemedText type="smallBold" themeColor={done ? 'textSecondary' : 'text'} style={done && styles.struck}>{tr(step.title)}</ThemedText>
+          {!compact && <ThemedText type="small" themeColor="textSecondary">{tr(step.body)}</ThemedText>}
+        </View>
+      </Pressable>
+      <Pressable analyticsId="today.newcomer.step-link" accessibilityRole="link" onPress={() => compact || step.url ? openStep(step) : closeList(() => openStep(step))} style={compact ? styles.link : styles.stepLink}>
+        <ThemedText type="smallBold" themeColor="accent">{tr(step.label)}</ThemedText>
+      </Pressable>
+    </View>;
+  };
   const steps = [['가입', true], ['프로필', true], ['첫 참여 신청', status.requested], ['첫 모임 참석', false]] as const;
   const remaining = steps.filter(([, done]) => !done).length;
   return <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
@@ -199,38 +236,38 @@ export function NewcomerProgressCard({ cityId, onOpenCategory }: { cityId: strin
         <ThemedText type="small" themeColor="textSecondary">{tr('숨기기')}</ThemedText>
       </Pressable>
     </View>
-    {vancouver && !stored.arrival && <View style={styles.arrival}>
+    {vancouver && (!arrival || asking) && <View style={styles.arrival}>
       <ThemedText accessibilityRole="header" type="smallBold">{tr('캐나다 온 지 얼마나 됐어요?')}</ThemedText>
       <View accessibilityRole="radiogroup" accessibilityLabel={tr('캐나다 온 지 얼마나 됐어요?')} style={styles.arrivalChips}>
-        {ARRIVALS.map(([id, label]) => <SelectionChip key={id} analyticsId="today.newcomer.arrival" selected={false} label={tr(label)}
-          accessibilityRole="radio" accessibilityState={{ checked: false }} onPress={() => answer(id)} />)}
+        {ARRIVALS.map(([id, label]) => <SelectionChip key={id} analyticsId="today.newcomer.arrival" selected={stored.arrival === id} label={tr(label)}
+          accessibilityRole="radio" accessibilityState={{ checked: stored.arrival === id }} onPress={() => answer(id)} />)}
       </View>
       <ThemedText type="caption" themeColor="textSecondary">{tr('고르면 거기에 맞는 할 일을 보여 드려요. 다른 사람한테는 안 보여요.')}</ThemedText>
     </View>}
-    {vancouver && stored.arrival === 'new' && <View style={styles.arrival}>
-      <ThemedText accessibilityRole="header" type="smallBold">{tr('처음 2주에 다들 하는 것')}</ThemedText>
-      <ThemedText type="caption" themeColor="textSecondary">{tr('위에서부터 하나씩 끝내면 돼요. 끝낸 건 누르면 지워져요.')}</ThemedText>
-      <View accessibilityRole="list">
-        {FIRST_STEPS.map((step, index) => {
-          const done = stored.done.includes(step.id);
-          return <View key={step.id} style={[styles.firstStep, index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.line }]}>
-            <Pressable analyticsId="today.newcomer.step" accessibilityRole="checkbox" accessibilityState={{ checked: done }} accessibilityLabel={`${tr(step.title)}, ${tr(step.body)}`}
-              onPress={() => toggleStep(step.id)} style={styles.firstStepCheck}>
-              <View style={[styles.tick, done ? { backgroundColor: theme.accent, borderColor: theme.accent } : { borderColor: theme.textSecondary }]}>
-                {done && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={14} tintColor={theme.accentInk} />}
-              </View>
-              <View style={styles.flex}>
-                <ThemedText type="smallBold" themeColor={done ? 'textSecondary' : 'text'} style={done && styles.struck}>{tr(step.title)}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">{tr(step.body)}</ThemedText>
-              </View>
-            </Pressable>
-            <Pressable analyticsId="today.newcomer.step-link" accessibilityRole="link" onPress={() => openStep(step)} style={styles.stepLink}>
-              <ThemedText type="smallBold" themeColor="accent">{tr(step.label)}</ThemedText>
-            </Pressable>
-          </View>;
-        })}
+    {/* 바꾸기·전체 보기·목록 숨기기 reuse the registered arrival/step-link/hide analytics ids; a new id needs a behavior_targets migration line. */}
+    {vancouver && arrival && list && !asking && <View style={styles.arrival}>
+      <View>
+        <ThemedText accessibilityRole="header" type="smallBold">{listTitle}</ThemedText>
+        <Pressable analyticsId="today.newcomer.arrival" accessibilityRole="button" accessibilityLabel={`${tr(arrival[2])}, ${tr('바꾸기')}`}
+          onPress={() => { play('selection'); setAsking(true); }} style={styles.link}>
+          <ThemedText type="small" themeColor="textSecondary">{tr(arrival[2])} · <ThemedText type="smallBold" themeColor="accent">{tr('바꾸기')}</ThemedText></ThemedText>
+        </Pressable>
       </View>
+      {list.next.length > 0 && <View accessibilityRole="list">{list.next.map((step, index) => stepRow(step, index, true))}</View>}
+      <Pressable analyticsId="today.newcomer.step-link" accessibilityRole="button" onPress={() => { play('selection'); setListOpen(true); }} style={styles.allRow}>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.flex}>{tr('{0}개 중 {1}개 끝냈어요', list.shown.length, list.finished)}</ThemedText>
+        <ThemedText type="smallBold" themeColor="accent">{tr('전체 보기 ›')}</ThemedText>
+      </Pressable>
     </View>}
+    {list && <DragSheet visible={listOpen} onClose={() => closeList()} onDismissed={() => { const then = afterList.current; afterList.current = null; then?.(); }} title={listTitle}>
+      <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
+        <ThemedText type="caption" themeColor="textSecondary">{tr('끝낸 건 체크해 두면 홈 카드에서 빠져요. 이 폰에만 저장돼요.')}</ThemedText>
+        <View accessibilityRole="list">{list.shown.map((step, index) => stepRow(step, index, false))}</View>
+        <Pressable analyticsId="today.newcomer.hide" accessibilityRole="button" onPress={hideList} style={styles.link}>
+          <ThemedText type="small" themeColor="textSecondary">{tr('이 목록 숨기기')}</ThemedText>
+        </Pressable>
+      </ScrollView>
+    </DragSheet>}
     <View style={styles.steps} accessibilityRole="list">
       {steps.map(([label, done], index) => <View key={label} style={styles.step} accessible accessibilityLabel={`${tr(label)}, ${done ? tr('완료') : tr('아직')}`}>
         <View style={[styles.dot, done ? { backgroundColor: theme.accent } : { borderWidth: 1, borderColor: theme.textSecondary }]}>
@@ -274,7 +311,13 @@ const styles = StyleSheet.create({
   arrivalChips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   firstStep: { paddingVertical: Spacing.one },
   firstStepCheck: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingTop: Spacing.one },
-  tick: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  stepCompact: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  checkCompact: { flex: 1, minHeight: 44, alignItems: 'center', paddingTop: 0 },
+  // A rounded square, so a 처음 할 일 check never looks like the round first-meetup step dots below it.
+  tick: { width: 24, height: 24, borderRadius: 6, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   struck: { textDecorationLine: 'line-through' },
   stepLink: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start', marginLeft: 34 },
+  allRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44 },
+  sheetScroll: { flexShrink: 1 },
+  sheetContent: { gap: Spacing.two, paddingBottom: Spacing.two },
 });
