@@ -55,9 +55,11 @@ export async function handleMerchantMcpRequest(request: Request, config: Config,
   try { actor = validateMerchantMcpClaims(await verifySignedClaims(bearer), config.resource); } catch { return unauthorized(); }
   try {
     // Even discovery and notifications use live grants, never just a valid signature.
-    const context = await dispatch(actor, '_context', {}) as { allow_drafts?: unknown; allow_publish?: unknown };
+    const context = await dispatch(actor, '_context', {}) as { allow_drafts?: unknown; allow_publish?: unknown; business?: unknown; personal_posts?: unknown };
     if (!context || typeof context.allow_drafts !== 'boolean' || typeof context.allow_publish !== 'boolean') throw new Error('MCP_REQUEST_FAILED');
-    const response = await merchantMcpResponse(packet, { allow_drafts: context.allow_drafts, allow_publish: context.allow_publish }, (name, args) => dispatch(actor, name, args));
+    const personal = context.personal_posts === 'drafts' || context.personal_posts === 'publish' ? context.personal_posts : null;
+    const response = await merchantMcpResponse(packet, { allow_drafts: context.allow_drafts, allow_publish: context.allow_publish, business: context.business !== false,
+      personal_posts: personal }, (name, args) => dispatch(actor, name, args));
     return response === null ? new Response(null, { status: 202, headers }) : json(response);
   } catch (error) {
     const code = merchantMcpError(error);
