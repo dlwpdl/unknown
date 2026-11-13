@@ -19,6 +19,8 @@ export type SharedLinkPreview = {
   preview?: string | null; createdAt?: string | null; commentCount?: number | null; author?: string | null; authorIsBusiness?: boolean;
   // From 20261111210000_shared_preview_post_place: the Gling map place a post is pinned to; absent until that migration is applied.
   place?: string | null;
+  // From 20261112200000_business_editor_full_preview: present on business and 글링 에디터 posts, true when `preview` is the whole public body.
+  previewFull?: boolean;
   schedule: ChillingSchedule | null; imagePath: string | null; imageUrl?: string; closed: boolean;
 };
 export async function loadSharedLinkPreview(client: SupabaseClient, postId: string): Promise<SharedLinkPreview | null> {

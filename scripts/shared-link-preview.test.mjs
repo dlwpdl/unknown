@@ -112,3 +112,17 @@ test('the share preview names a pinned Gling map place only for non-meetup posts
   assert.match(sql, /raise exception 'shared preview projection changed/, 'stops when the live projection is not the expected one');
   assert.doesNotMatch(sql, /alter table|linked_place_key/i, 'posts stay unchanged (map collection is the next step)');
 });
+
+test('business and 글링 에디터 posts get their whole filtered body as the preview, appended after every other field (20261112200000)', () => {
+  const sql = readFileSync(new URL('../supabase/migrations/20261112200000_business_editor_full_preview.sql', import.meta.url), 'utf8');
+  // The full body is a copy of the live opening filter with only its limits changed, so contact, link and HTML lines stay out.
+  assert.match(sql, /pg_get_functiondef\('private\.public_post_preview\(text,text\)'::regprocedure\)/);
+  assert.match(sql, /\['where before<300', 'where before<4000'\]/);
+  assert.match(sql, /\['char_length\(joined\)>500 then left\(joined,499\)', 'char_length\(joined\)>2000 then left\(joined,1999\)'\]/);
+  assert.match(sql, /revoke all on function private\.public_post_full\(text,text\) from public,anon,authenticated,service_role;/);
+  // Other posts: '{}' leaves their object exactly as it was; meetups never get a body.
+  assert.match(sql, /\|\|case when p\.room_preview is null and t\.kind<>'meetup'\s+and \(p\.business_author_id is not null or p\.author_id='c55f864e-ff96-40d1-93a3-39b9ef5ce939'::uuid\)/);
+  assert.match(sql, /jsonb_build_object\('preview',private\.public_post_full\(p\.body,p\.title\),'previewFull',char_length\(p\.body\)<=2000\)\s+else '\{\}'::jsonb end/);
+  assert.equal(sql.match(/raise exception/g).length, 3, 'stops when the filter or the projection is not the expected one, or on a second run');
+  assert.doesNotMatch(sql, /alter table|security definer|grant /i);
+});

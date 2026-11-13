@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { jsonLd, MIN_TOPIC_HUB_POSTS, publicPostDescription, publicPostSchema, publicPostUrl, publicSiteName, PUBLIC_SITE, TOPIC_HUBS } from '../src/lib/public-seo.ts';
+import { publicJobPosting } from '../src/lib/public-job-posting.ts';
 import { previewImage } from '../src/lib/shared-link-preview.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -30,23 +31,33 @@ export async function loadPublicPosts({ url, key, cities, searchToken, fetcher =
         // Guests get only the schedule/headcount fields of a meetup (login_required_post_content), never its place or body.
         if (row.room_preview) { meetups.set(row.id, { id: row.id, cityId: city, title: row.title, host: row.author_nickname ?? null, createdAt: row.created_at, room: row.room_preview }); continue; }
         rows.set(row.id, { id: row.id, cityId: city, lastmod: row.sort_at ?? row.created_at, createdAt: row.created_at ?? null, commentCount: row.comment_count ?? null,
-          author: row.author_nickname ?? null, tagSlug: row.tag_slug ?? null, neighborhood: row.author_neighborhood ?? null });
+          author: row.author_nickname ?? null, tagSlug: row.tag_slug ?? null, neighborhood: row.author_neighborhood ?? null,
+          listingStatus: row.listing_status ?? null, expiresAt: row.expires_at ?? null });
       }
       if (page.length < 30 || rows.size >= 45000) break;
       const last = page.at(-1); before = last.sort_at ?? last.created_at; beforeId = last.id;
     }
   }
-  const ids = [...rows.keys()], business = new Set();
+  const ids = [...rows.keys()], business = new Map();
   // The feed already shows the business name for official business posts; this only tells the schema it is an Organization (50 ids per call, the RPC limit).
   for (let index = 0; index < ids.length; index += 50) {
-    for (const item of await rpc(url, key, 'get_public_post_businesses', { p_post_ids: ids.slice(index, index + 50) }, fetcher) ?? []) business.add(String(item.post_id).toLowerCase());
+    for (const item of await rpc(url, key, 'get_public_post_businesses', { p_post_ids: ids.slice(index, index + 50) }, fetcher) ?? []) business.set(String(item.post_id).toLowerCase(), item.business_id);
   }
+  // A job posting names its business address, so business job posts read the public business profile (once per business).
+  const addresses = new Map();
+  const businessAddress = id => {
+    if (!addresses.has(id)) addresses.set(id, rpc(url, key, 'get_merchant_profile', { p_merchant_id: id }, fetcher).then(profile => profile?.id === id ? profile.address ?? null : null));
+    return addresses.get(id);
+  };
   const posts = [], queue = [...rows.values()];
   await Promise.all(Array.from({ length: 8 }, async () => {
     for (let row = queue.shift(); row; row = queue.shift()) {
       const preview = await rpc(url, key, 'get_shared_link_preview', { p_post_id: row.id }, fetcher);
       // Meetup destinations and invites stay app-only, matching the guest landing's indexable rule.
-      if (preview?.id?.toLowerCase() === row.id && preview.kind !== 'meetup') posts.push({ ...row, ...preview, id: row.id, author: row.author, authorIsBusiness: business.has(row.id),
+      if (preview?.id?.toLowerCase() !== row.id || preview.kind === 'meetup') continue;
+      const businessId = business.get(row.id) ?? null;
+      posts.push({ ...row, ...preview, id: row.id, author: row.author, authorIsBusiness: !!businessId, businessId,
+        businessAddress: businessId && row.tagSlug === 'jobs' ? await businessAddress(businessId) : null,
         createdAt: row.createdAt ?? preview.createdAt ?? null, commentCount: row.commentCount ?? preview.commentCount ?? null,
         imageUrl: preview.imagePath ? previewImage(row.id) : undefined });
     }
@@ -83,6 +94,8 @@ export function renderPublicPost(template, post, related = [], hub = null) {
   const text = post.preview || post.teaser || '';
   const description = publicPostDescription({ ...post, text });
   const schema = publicPostSchema({ ...post, text }, hub ? `${PUBLIC_SITE}${hub.path}` : null);
+  const job = publicJobPosting(post);
+  if (job) schema['@graph'].push(job);
   const head = [
     `<title data-rh="true">${escapeHtml(title)}</title>`,
     `<meta name="description" content="${escapeHtml(description)}" data-rh="true"/>`,
