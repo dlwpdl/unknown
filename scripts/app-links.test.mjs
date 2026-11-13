@@ -22,12 +22,14 @@ test('public site links open the matching app screen', () => {
     [`${site}/invite?code=abcd-efgh`, '/invite?code=ABCDEFGH'],
     [`${site}/meetup-join?postId=${id}`, `/meetup-join?postId=${lower}`],
     [`${site}/meetup-invite?token=${token}`, `/meetup-invite?token=${token}`],
+    [`${site}/checkin?s=${id}&c=${token.slice(0, 24).toUpperCase()}`, `/checkin?s=${lower}&c=${token.slice(0, 24)}`],
   ]) assert.equal(appPathForLink(link), route, link);
 });
 
 test('unknown or malformed site links land on home without throwing', () => {
   for (const link of [`${site}/`, `${site}/merchant/x`, `${site}/admin`, `${site}/terms`, `${site}/posts/not-a-uuid`, `${site}/post?id=${id}&id=${id}`,
-    `${site}/invite?code=bad`, `${site}/meetup-join?postId=x`, `${site}/meetup-invite?token=${token.toUpperCase()}`, `${site}/meetup-invite?token=${token}&token=${token}`, `${site}/%E0%A4%A`]) assert.equal(appPathForLink(link), '/', link);
+    `${site}/invite?code=bad`, `${site}/meetup-join?postId=x`, `${site}/meetup-invite?token=${token.toUpperCase()}`, `${site}/meetup-invite?token=${token}&token=${token}`, `${site}/%E0%A4%A`,
+    `${site}/checkin?s=${id}`, `${site}/checkin?s=x&c=${token.slice(0, 24)}`, `${site}/checkin?s=${id}&c=${token}`]) assert.equal(appPathForLink(link), '/', link);
 });
 
 test('scheme links, other hosts and in-app paths pass through unchanged', () => {
@@ -64,7 +66,7 @@ test('association files claim only paths the app maps, for the release identitie
   assert.ok(filter.data.every(entry => entry.scheme === 'https' && entry.host === 'gling.ej-entertainment.com'));
   // Native mapping must agree with the URLs both platforms claim.
   for (const entry of filter.data) {
-    const sample = `${site}${entry.path ? `${entry.path}?id=${id}&code=ABCDEFGH&postId=${id}&token=${token}` : `${entry.pathPrefix}${id}`}`;
+    const sample = `${site}${entry.path ? `${entry.path}?id=${id}&code=ABCDEFGH&postId=${id}&token=${token}&s=${id}&c=${token.slice(0, 24)}` : `${entry.pathPrefix}${id}`}`;
     assert.notEqual(appPathForLink(sample), '/', sample);
   }
 });

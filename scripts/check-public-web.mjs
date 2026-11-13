@@ -50,6 +50,9 @@ assert.ok(/name="robots"[^>]*content="noindex/.test(invite) && invite.includes('
 // /get forwards profile links to the stores: present, never in search, still an install link without JS.
 const getApp = readFileSync(join(directory, 'get.html'), 'utf8');
 assert.ok(/name="robots"[^>]*content="noindex/.test(getApp) && getApp.includes('https://apps.apple.com/ca/app/id6809273242') && !sitemap.includes('gling.ej-entertainment.com/get<'), 'Store forward page needs noindex, an install link and no sitemap entry');
+// /checkin carries a one-time meetup code from the host's QR: present, never in search, and it still offers the app.
+const checkIn = readFileSync(join(directory, 'checkin.html'), 'utf8');
+assert.ok(/name="robots"[^>]*content="noindex/.test(checkIn) && !sitemap.includes('gling.ej-entertainment.com/checkin<'), 'Check-in page needs noindex and no sitemap entry');
 // Event pages are reached only from a DM or a private link: present, and never in search.
 for (const page of ['apply.html', 'partner.html', 'report.html']) assert.ok(existsSync(join(directory, page)) && /name="robots"[^>]*content="noindex/.test(readFileSync(join(directory, page), 'utf8')), `Event page missing or indexable: ${page}`);
 const english = readFileSync(join(directory, 'en.html'), 'utf8');

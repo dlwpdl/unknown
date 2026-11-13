@@ -204,6 +204,11 @@
               "scheme": "https",
               "host": "gling.ej-entertainment.com",
               "path": "/meetup-invite"
+            },
+            {
+              "scheme": "https",
+              "host": "gling.ej-entertainment.com",
+              "path": "/checkin"
             }
           ],
           "category": [
