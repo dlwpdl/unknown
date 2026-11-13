@@ -51,3 +51,7 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+      # Tell IndexNow search engines about pages changed in the last two days; the site is already live, so a failure here only warns.
+      - name: Notify IndexNow
+        continue-on-error: true
+        run: node --experimental-strip-types scripts/indexnow.mjs dist
