@@ -64,7 +64,7 @@ import { TabContent } from '@/components/tab-content';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors, Depth, MaxContentWidth, Spacing, TabBarHeight } from '@/constants/theme';
-import { ControlMetrics, ControlMotion, ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
+import { ControlMetrics, ControlMotion, ControlStyles, IconSize, MiniCard, Typography, controlPresentation } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useRevealChip } from '@/hooks/use-reveal-chip';
@@ -97,7 +97,7 @@ import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/po
 import { googleMapsPin, googlePinUrl, postMapBody, withPlacePin, withPostMap } from '@/lib/post-maps';
 import { composePlace, type CityPlace } from '@/lib/city-places';
 import {
-  BUSINESS_VIEW_KEY, emptyListingDraft, isListingCategory, LISTING_VIEW_KEY, listingFiltersActive, listingFromDraft, matchesListingFilters, NO_LISTING_FILTERS, parseListingView, withListingLead,
+  BUSINESS_VIEW_KEY, emptyListingDraft, FREE_FOLDED_KEY, freeBand, isListingCategory, LISTING_VIEW_KEY, listingAreaRows, listingFiltersActive, listingFromDraft, matchesListingFilters, NO_LISTING_FILTERS, parseListingView, withListingLead,
   type ListingCategory, type ListingDraft, type ListingFilters, type ListingView,
 } from '@/lib/listing-details';
 import { findNeighborhood, neighborhoodName } from '@/lib/neighborhoods';
@@ -107,6 +107,11 @@ import { applyPostChange, handOffPost, POST_CHANGED_EVENT, type PostChange } fro
 import { splitPostAttachments, withPostAttachments } from '../../supabase/functions/_shared/post-links';
 
 
+
+// Feed list items: the intro and sort bar (null), a post, a grid row, a 중고거래 동네별 row, or the 나눔 band.
+// The 'rest' area row is only the heading over posts with no neighborhood; those posts follow as list items.
+type AreaRow = { area: string; name: string; posts: Post[] };
+type FeedItem = Post | Post[] | AreaRow | 'free' | null;
 
 // 전체 · 라이프 · 맛집 · 비즈니스 · 페스티벌 · 부동산 · 정착, the rest in 더보기 (owner 2026-11-01).
 const PRIMARY_TAGS: (number | null)[] = [null, 1, 4, 17, 16, 14, 12];
@@ -145,8 +150,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [justPosted, setJustPosted] = useState<JustPosted<Post> | null>(null);
   const [visibleFeedIds, setVisibleFeedIds] = useTranslationVisibleIds();
   const [visibleSearchIds, setVisibleSearchIds] = useTranslationVisibleIds();
-  const trackTranslationFeed = useCallback(({ viewableItems }: { viewableItems: { item: Post | Post[] | null }[] }) =>
-    setVisibleFeedIds(viewableItems.flatMap(({ item }) => Array.isArray(item) ? item.map(post => post.id) : item ? [item.id] : [])), [setVisibleFeedIds]);
+  const trackTranslationFeed = useCallback(({ viewableItems }: { viewableItems: { item: FeedItem }[] }) =>
+    setVisibleFeedIds(viewableItems.flatMap(({ item }) => Array.isArray(item) ? item.map(post => post.id) : !item || item === 'free' ? [] : 'area' in item ? item.posts.map(post => post.id) : [item.id])), [setVisibleFeedIds]);
   const trackTranslationSearch = useCallback(({ viewableItems }: { viewableItems: { item: Post }[] }) =>
     setVisibleSearchIds(viewableItems.map(({ item }) => item.id)), [setVisibleSearchIds]);
   const { city, setCity } = useCommunityCity();
@@ -170,6 +175,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [listingView, setListingView] = useState<ListingView>('list');
   const [businessView, setBusinessView] = useState<ListingView>('list');
   const [listingMap, setListingMap] = useState(false);
+  const [freeFolded, setFreeFolded] = useState(false);
   const [listingQuota, setListingQuota] = useState<DailyQuota | null>(null);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -205,7 +211,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const [feedOpacity] = useState(() => new Animated.Value(1));
   const [chipLift] = useState(() => new Animated.Value(1));
   const [categorySheet, setCategorySheet] = useState(false);
-  const feedListRef = useRef<NativeFlatList<Post | Post[] | null>>(null);
+  const feedListRef = useRef<NativeFlatList<FeedItem>>(null);
   const feedIntroHeight = useRef(0);
   const feedOffset = useRef(0);
   const [sortStuck, setSortStuck] = useState(false);
@@ -323,12 +329,23 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     const now = new Date(), today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     return feedData.filter(post => matchesListingFilters(post, listingFilters, today));
   }, [feedData, listingCategory, listingFilters]);
-  const usedGrid = listingCategory === 'used' && listingView === 'grid';
+  const byArea = listingCategory === 'used' && activeSort === 'area';
+  const usedGrid = listingCategory === 'used' && !byArea && listingView === 'grid';
+  const usedBig = listingCategory === 'used' && !byArea && listingView === 'big';
   const businessGrid = businessCategory && businessView === 'grid';
-  // 중고거래·비즈니스 grid: two tiles per list row so the sticky header and paging keep working.
-  const feedRows: (Post | Post[])[] = usedGrid || businessGrid
+  // 나눔 띠 over 최신순·인기순 when no filter is on (with 무료만 on the whole list is 나눔). Like the filters, it counts the loaded pages:
+  // shortcut: no public feed read filters by price, so an exact city-wide count needs a server function first.
+  const band = listingCategory === 'used' && !byArea && !listingFiltersActive(listingFilters) ? freeBand(listingPosts) : null;
+  const areaRows = byArea ? listingAreaRows(listingPosts, language) : null;
+  // 중고거래·비즈니스 grid: two tiles per list row so the sticky header and paging keep working. 동네별: one row per neighborhood.
+  // Area rows are told apart from posts by their `area` key; Post has no `area` field.
+  const feedRows: Exclude<FeedItem, null | 'free'>[] = areaRows ? [
+    ...areaRows.areas.map(area => ({ area: area.id, name: area.name ?? tr('이 근처'), posts: area.posts })),
+    ...areaRows.rest.length ? [{ area: 'rest', name: tr('그 밖의 글'), posts: areaRows.rest }, ...areaRows.rest] : [],
+  ] : usedGrid || businessGrid
     ? listingPosts.reduce<Post[][]>((rows, post, index) => (index % 2 ? rows[rows.length - 1].push(post) : rows.push([post]), rows), [])
     : listingPosts;
+  const firstRow = (showFeedSort ? 2 : 1) + (band?.count ? 1 : 0);
   const feedLoading = categoryLoading || loadedFeedKey !== feedKey;
   const cityLoading = cityOpen && !meetupsOnly && loadedFeedCityId !== city.id;
   // Places and festivals take turns between posts in '전체' (owner 2026-11-03, 11-04), so the city cover no longer waits for them.
@@ -433,6 +450,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     setCategoryLoading(true);
     setListingFilters(NO_LISTING_FILTERS);
     setListingMap(false);
+    if (feedSort === 'area') setFeedSort('latest'); // 동네별 is 중고거래 only
     setTagFilter(next);
   };
   const changeFeedSort = (next: FeedSort) => {
@@ -450,6 +468,14 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     setListingView(next);
     AsyncStorage.setItem(LISTING_VIEW_KEY, next).catch(() => {});
   };
+  const toggleFreeBand = () => {
+    play('selection');
+    animateLayout();
+    setFreeFolded(!freeFolded);
+    AsyncStorage.setItem(FREE_FOLDED_KEY, freeFolded ? '0' : '1').catch(() => {});
+  };
+  // '모두 보기' turns on the existing 팝니다 + 무료만 filters, which match exactly the 나눔 rule.
+  const showAllFree = () => { play('selection'); setListingFilters({ ...NO_LISTING_FILTERS, deal: 'sell', maxPrice: 0 }); };
   const changeBusinessView = (next: ListingView) => {
     setBusinessView(next);
     AsyncStorage.setItem(BUSINESS_VIEW_KEY, next).catch(() => {});
@@ -458,6 +484,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     let active = true;
     AsyncStorage.getItem(LISTING_VIEW_KEY).then(value => { if (active) setListingView(parseListingView(value)); }).catch(() => {});
     AsyncStorage.getItem(BUSINESS_VIEW_KEY).then(value => { if (active) setBusinessView(parseListingView(value)); }).catch(() => {});
+    AsyncStorage.getItem(FREE_FOLDED_KEY).then(value => { if (active) setFreeFolded(value === '1'); }).catch(() => {});
     return () => { active = false; };
   }, []);
 
@@ -760,7 +787,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       if (revision === feedRevision.current) {
         setCity(draftCity);
         if (post && !meetupsOnly) setJustPosted({ post, at: Date.now(), viewer: viewerScope });
-        if (post && activeSort === 'latest') setPosts((prev) => [post, ...prev.filter(({ id }) => id !== created.id)]);
+        if (post && activeSort !== 'popular') setPosts((prev) => [post, ...prev.filter(({ id }) => id !== created.id)]);
         else if (draftCity.id === city.id && (meetupsOnly || tagFilter == null)) void refreshFeed().catch(() => {});
         setTagFilter(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null);
       }
@@ -947,7 +974,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           accessibilityElementsHidden={loadingCover != null} importantForAccessibility={loadingCover ? 'no-hide-descendants' : 'auto'}
           onViewableItemsChanged={trackTranslationFeed}
           viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY}
-          data={[null, ...(showFeedSort ? [null] : []), ...(feedLoading ? [] : feedRows)]}
+          data={[null, ...(showFeedSort ? [null] : []), ...(feedLoading ? [] : [...(band?.count ? ['free' as const] : []), ...feedRows])]}
           stickyHeaderIndices={showFeedSort ? [1] : undefined}
           onContentSizeChange={() => {
             if (!feedLoading && scrollToResults.current) {
@@ -963,9 +990,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             setRankingRefresh((current) => current + 1);
             void refreshFeed().catch(() => Alert.alert(t.feed.refreshErrorTitle, t.feed.refreshErrorBody)).finally(() => setRefreshing(false));
           }}
-          keyExtractor={(p, index) => Array.isArray(p) ? `grid:${p[0].id}` : p?.id ?? (index === 0 ? 'journal-intro' : 'feed-sort')}
+          keyExtractor={(p, index) => Array.isArray(p) ? `grid:${p[0].id}` : p === 'free' ? 'free-band' : p && 'area' in p ? `area:${p.area}` : p?.id ?? (index === 0 ? 'journal-intro' : 'feed-sort')}
           contentContainerStyle={[styles.listContent, { paddingBottom: bottomClear + Spacing.three + (writeFab ? ControlMetrics.action + Spacing.three : 0) }]}
-          ItemSeparatorComponent={({ leadingItem }) => leadingItem == null ? null : <View style={{ height: (businessCategory && !businessGrid) || (listingCategory && !usedGrid) ? 0 : Spacing.four }} />}
+          ItemSeparatorComponent={({ leadingItem }: { leadingItem: FeedItem }) => leadingItem == null ? null : <View style={{ height: leadingItem === 'free' ? Spacing.two
+            : Array.isArray(leadingItem) ? Spacing.four : 'area' in leadingItem ? leadingItem.area === 'rest' ? 0 : Spacing.four
+            : (businessCategory || listingCategory) && !usedBig ? 0 : Spacing.four }} />}
           ListFooterComponent={loadingMore ? <ThemedText type="small" themeColor="textSecondary" style={styles.loadingMore}>{t.feed.loadingMore}</ThemedText>
             : !feedLoading && showTodaySections && !feedRows.length ? <>{feedState}{todayRows(-1)}</> : feedState ?? undefined}
           renderItem={({ item, index }) => item == null && index === 1 && showFeedSort ? (
@@ -978,9 +1007,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 <SymbolView name={{ ios: 'storefront', android: 'storefront', web: 'storefront' }} size={IconSize.inline} tintColor={theme.accent} />
                 <ThemedText type="smallBold" themeColor="accent">{tr('비즈니스 찾기')}</ThemedText>
                 <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={IconSize.chevron} tintColor={theme.accent} />
-              </Pressable> : listingCategory && listingCategory !== 'jobs' ? <ListingModeSwitch mode="list" onChange={mode => setListingMap(mode === 'map')} /> : undefined}>
-              {listingCategory && <ListingFilterBar category={listingCategory} cityId={city.id} filters={listingFilters} onChange={setListingFilters}
-                view={listingView} onView={changeListingView} />}
+              </Pressable> : listingCategory === 'used' ? <ListingViewSwitch view={listingView} onView={changeListingView} onMap={() => setListingMap(true)} disabled={byArea} />
+              : listingCategory === 'housing' ? <ListingModeSwitch mode="list" onChange={mode => setListingMap(mode === 'map')} /> : undefined}
+              byArea={listingCategory === 'used'}>
+              {listingCategory && <ListingFilterBar category={listingCategory} cityId={city.id} filters={listingFilters} onChange={setListingFilters} />}
               {businessCategory && <ListingViewSwitch view={businessView} onView={changeBusinessView} />}
             </FeedSortControl>
           ) : item == null ? (
@@ -1009,7 +1039,35 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 {cityOpen && <ThemedText accessibilityRole="header" style={styles.sectionTitle}>{t.meetup.discover}</ThemedText>}
               </>}
             </View>
-          ) : (
+          ) : item === 'free' ? band && <Animated.View style={[styles.freeBand, clayBox ? styles.freeBandClay : { borderColor: theme.line, backgroundColor: theme.card }, { opacity: feedOpacity }]}>
+            {clayBox && <ClayBoxFill kind="tile" />}
+            {/* 나눔 먼저, small so many giveaways keep the band one row high (owner 2026-11-13 "더 작게 볼수잇게… 많아질수도잇잖아"). */}
+            <View style={styles.freeHead}>
+              <ThemedText accessibilityRole="header" type="label" themeColor="accent">{tr('무료 나눔 {0}', band.count)}</ThemedText>
+              {freeFolded ? <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1} style={styles.flexText}>
+                {`· ${band.others ? tr('{0} 외 {1}개', band.names.join(', '), band.others) : band.names.join(', ')}`}</ThemedText> : <View style={styles.flexText} />}
+              {/* Registered targets: a new id needs a DB row first or the whole analytics batch is rejected. */}
+              <Pressable analyticsId="listing.filter.price" accessibilityRole="button" accessibilityLabel={freeFolded ? tr('무료 나눔 펼치기') : tr('무료 나눔 접기')} accessibilityState={{ expanded: !freeFolded }}
+                onPress={toggleFreeBand} style={({ pressed }) => [ControlStyles.pill, styles.freeAction, clay && styles.clayPad, controlPresentation(theme, { tone: 'ghost', pressed, clay }).container]}>
+                {clay && <ClayPillFill kind="white" />}
+                <ThemedText type="label" themeColor="textSecondary">{freeFolded ? tr('펼치기') : tr('접기')}</ThemedText>
+                <SymbolView name={{ ios: freeFolded ? 'chevron.down' : 'chevron.up', android: freeFolded ? 'expand_more' : 'expand_less', web: freeFolded ? 'expand_more' : 'expand_less' }} size={IconSize.chevron} tintColor={theme.textSecondary} />
+              </Pressable>
+              {!freeFolded && <Pressable analyticsId="listing.filter.option" accessibilityRole="button" accessibilityLabel={tr('무료 나눔 {0}개 모두 보기', band.count)} onPress={showAllFree}
+                style={({ pressed }) => [ControlStyles.pill, styles.freeAction, clay && styles.clayPad, controlPresentation(theme, { tone: 'ghost', pressed, clay }).container]}>
+                {clay && <ClayPillFill kind="white" />}
+                <ThemedText type="label" themeColor="accent">{tr('모두 보기')}</ThemedText>
+                <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={IconSize.chevron} tintColor={theme.accent} />
+              </Pressable>}
+            </View>
+            {!freeFolded && <ScrollView analyticsId="listing.filters" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.freeTiles}>
+              {band.tiles.map(post => zoomCard(post, <ListingCard key={post.id} variant="mini" post={post as DetailedPost} onPress={() => pressCard(post)} />))}
+              {band.more > 0 && <Pressable analyticsId="listing.filter.option" accessibilityRole="button" accessibilityLabel={tr('무료 나눔 {0}개 모두 보기', band.count)} onPress={showAllFree} style={styles.freeMore}>
+                <View style={[styles.freeMoreBox, { backgroundColor: theme.backgroundElement }]}><ThemedText type="label" themeColor="textSecondary">{`+${band.more}`}</ThemedText></View>
+                <ThemedText type="caption" themeColor="accent" numberOfLines={1}>{tr('모두 보기')}</ThemedText>
+              </Pressable>}
+            </ScrollView>}
+          </Animated.View> : (
             Array.isArray(item) ? <Animated.View style={[styles.listingGrid, { opacity: feedOpacity }]}>
               {item.map(post => businessGrid ? zoomCard(post, <BusinessNewsCard key={post.id} variant="tile" post={post} onPress={() => pressCard(post)} onAuthor={() => openAuthor(post)}
                 translationVisible={visibleFeedIds.has(post.id) && !searching && !writing} />)
@@ -1017,8 +1075,14 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 : <View key={post.id} style={styles.flexText}>{zoomCard(post, <PostCard flat post={post} onPress={() => pressCard(post)} onJoin={() => void onJoin(post)} joinStatus={myRequests[post.id]} onHashtag={openSearch} onAuthor={() => openAuthor(post)} />)}</View>)}
               {item.length === 1 && <View style={styles.flexText} />}
             </Animated.View> :
+            'area' in item ? <Animated.View style={[styles.areaRow, { opacity: feedOpacity }]}>
+              <ThemedText accessibilityRole="header" type="label">{`${item.name} · ${tr('{0}개', item.posts.length)}`}</ThemedText>
+              {item.area !== 'rest' && <ScrollView analyticsId="listing.filters" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.areaTiles}>
+                {item.posts.map(post => <View key={post.id} style={styles.areaTile}>{zoomCard(post, <ListingCard variant="tile" post={post as DetailedPost} onPress={() => pressCard(post)} />)}</View>)}
+              </ScrollView>}
+            </Animated.View> :
             <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: feedOpacity }}>{zoomCard(item, listingCategory && item.listingDetails ? <ListingCard
-              post={item as DetailedPost} onPress={() => pressCard(item)} /> : businessCategory ? <BusinessNewsCard
+              variant={usedBig ? 'big' : 'row'} post={item as DetailedPost} onPress={() => pressCard(item)} /> : businessCategory ? <BusinessNewsCard
               post={item} onPress={() => pressCard(item)} onAuthor={() => openAuthor(item)}
               translationVisible={visibleFeedIds.has(item.id) && !searching && !writing} /> : <PostCard
               flat
@@ -1030,8 +1094,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               joinStatus={myRequests[item.id]}
               onHashtag={openSearch}
               onAuthor={() => openAuthor(item)}
-            />)}{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !writing && !searching)) && feedAdPosition(index - (showFeedSort ? 2 : 1), feedRows.length) && <FeedAd key={`ad-after-${item.id}`} />}
-              {todayRows(index - (showFeedSort ? 2 : 1))}</Animated.View></Reanimated.View>
+            />)}{!meetupsOnly && adsSupported && (Platform.OS !== 'web' || (!isAuthed && !feedError && !writing && !searching)) && feedAdPosition(index - firstRow, feedRows.length) && <FeedAd key={`ad-after-${item.id}`} />}
+              {todayRows(index - firstRow)}</Animated.View></Reanimated.View>
           )}
         />
         {/* 덮개가 아래 회색 자리표시와 이전 글을 가리고, 다 불러오면 서서히 걷힌다. 첫 화면은 덮개째 바로 그린다. */}
@@ -1748,6 +1812,16 @@ const styles = StyleSheet.create({
   aiUndo: { minHeight: 44, justifyContent: 'center' },
   flexText: { flex: 1 },
   listingGrid: { flexDirection: 'row', gap: Spacing.three },
+  freeBand: { marginTop: Spacing.two, borderWidth: 1, borderRadius: 16, paddingHorizontal: Spacing.two, paddingVertical: Spacing.one, gap: Spacing.one },
+  freeBandClay: { borderWidth: 0, overflow: 'visible' },
+  freeHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.one, paddingLeft: Spacing.one },
+  freeAction: { flexDirection: 'row', gap: 2, paddingHorizontal: Spacing.two },
+  freeTiles: { gap: Spacing.two, paddingHorizontal: Spacing.one, paddingBottom: Spacing.two },
+  freeMore: { width: 58, gap: 4 },
+  freeMoreBox: { width: 58, height: 58, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  areaRow: { gap: Spacing.two, paddingTop: Spacing.two },
+  areaTiles: { gap: Spacing.three },
+  areaTile: { width: MiniCard.width },
   photoRemove: { position: 'absolute', top: 0, right: 0, width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   secondaryButton: {
     minHeight: 44,
