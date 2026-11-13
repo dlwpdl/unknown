@@ -4,6 +4,8 @@
 body > .place-page { max-width: 760px; margin: 24px auto; padding: 20px; color: #ECE8E5; font: 16px/1.6 system-ui, -apple-system, "Apple SD Gothic Neo", sans-serif; }
 
 .place-crumbs { font-size: 13px; color: var(--textSecondary); margin: 0; }
+/* `.reader nav` is a flex row with a 28px gap, which spread the links and "›" apart but left the last, plain-text crumb tight; keep the plain line the page has before the reader loads. */
+.reader nav.place-crumbs { display: block; }
 .place-crumbs a { color: var(--link); text-decoration: none; display: inline-flex; align-items: center; min-height: 44px; }
 .place-crumbs a:active { opacity: .82; }
 .place-page .place-kicker { color: var(--link); font-size: 13px; font-weight: 700; margin: 0; }
