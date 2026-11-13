@@ -40,6 +40,10 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadPublicPost } from '@/lib/feed-data';
 import { loadSharedLinkPost } from '@/lib/shared-link-preview';
 import { SHARED_POST_RETURN_KEY } from '@/lib/sharing';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MeetupJoinHandoff } from '@/components/meetup-join-handoff';
+import { claimRememberedInvite, normalizeInviteCode, rememberInviteCode } from '@/lib/invites';
+import { loadMeetupInviteCard } from '@/lib/meetup-invite';
 import { loadMeetupFeePayments, meetupFeeAmount, meetupFeeDue } from '@/lib/meetup-host-tools';
 import { CITIES } from '@/lib/mock';
 import { supabase } from '@/lib/supabase';
@@ -74,11 +78,15 @@ function JoinSteps({ steps }: { steps: { label: string; state: 'done' | 'now' | 
 
 export default function MeetupJoinRoute() {
 
-  const { postId } = useLocalSearchParams<{ postId: string }>();
+  const params = useLocalSearchParams<{ postId: string; code?: string }>(), postId = params.postId, code = normalizeInviteCode(params.code);
   const { me, isAuthed } = useAuth();
-  return <JoinForm key={`${postId}:${isAuthed ? me.id : 'guest'}`} postId={postId} />;
+  // The sharer's code on a meetup link (owner 2026-11-13): kept for sign-up, and linked now when already signed in.
+  useEffect(() => {
+    void rememberInviteCode(AsyncStorage, code).then(saved => saved && isAuthed ? claimRememberedInvite(supabase, AsyncStorage) : null).catch(() => {});
+  }, [code, isAuthed]);
+  return <JoinForm key={`${postId}:${code}:${isAuthed ? me.id : 'guest'}`} postId={postId} code={code} />;
 }
-function JoinForm({ postId }: { postId: string }) {
+function JoinForm({ postId, code = null }: { postId: string; code?: string | null }) {
   const { fontScale } = useWindowDimensions();
   const { tr, t, language, locale: appLocale } = useLanguage();
   const theme = useTheme(), router = useRouter(), hidden = useContentVisibility(), clay = useClay();
@@ -103,6 +111,14 @@ function JoinForm({ postId }: { postId: string }) {
   const invite = post?.room?.access === 'invite';
   const who = useMeetupRoster(postId, isAuthed && post?.room?.membersVisible === true && !invite);
   const [now, setNow] = useState(() => Date.now());
+  // Who shared the link, from the same narrow card the web invitation reads; nothing shows without a valid code.
+  const [inviter, setInviter] = useState<string | null>(null);
+  useEffect(() => {
+    if (!code) return;
+    let live = true;
+    void loadMeetupInviteCard(supabase, postId, code).then(card => { if (live) setInviter(card?.inviter ?? null); }, () => {});
+    return () => { live = false; };
+  }, [postId, code]);
   const busy = useRef(false);
   const focusedScope = useRef<object | null>(null);
   // Invalidate retained native Alert actions during commit, before passive focus cleanup.
@@ -313,7 +329,7 @@ function JoinForm({ postId }: { postId: string }) {
   const login = () => {
     play('selection');
     // Web sign-in can finish on /auth/callback; bring it back to this meetup instead of home.
-    if (Platform.OS === 'web') { try { window.sessionStorage.setItem(SHARED_POST_RETURN_KEY, `/meetup-join?postId=${postId}`); } catch {} }
+    if (Platform.OS === 'web') { try { window.sessionStorage.setItem(SHARED_POST_RETURN_KEY, `/meetup-join?postId=${postId}${code ? `&code=${code}` : ''}`); } catch {} }
     promptLogin('참여하려면 로그인해 주세요.');
   };
   const guestHead = () => {
@@ -347,6 +363,8 @@ function JoinForm({ postId }: { postId: string }) {
     </View>;
   };
   const askingProfile = view === 'noprofile' && !profileError;
+  // The sent-profile and profile screens are app-only; on the web the result hands off to the app instead (MeetupJoinHandoff).
+  const appRows = modern && !!participation && Platform.OS !== 'web';
   const sendHint = askingProfile && !introReady && !answered ? tr('한 줄 소개와 답변을 쓰면 보낼 수 있어요') : askingProfile && !introReady ? tr('한 줄 소개를 쓰면 보낼 수 있어요') : !answered ? tr('답변을 쓰면 보낼 수 있어요') : askingProfile && !nameReady ? tr('이름을 쓰면 보낼 수 있어요') : modern ? tr('답변은 호스트만 봐요.') : tr('호스트에게만 보내요');
   const pullable = view === 'result' || view === 'paused' || view === 'locked' || view === 'full' || view === 'cooling' || view === 'inactive';
   return <ThemedView style={styles.fill}><SafeAreaView style={styles.fill}>
@@ -361,6 +379,10 @@ function JoinForm({ postId }: { postId: string }) {
             : view === 'failed' ? <StateCard kind="error" title={tr("신청 정보를 불러오지 못했어요")} body={tr(error)} actionLabel={tr("다시 불러오기")} onAction={reload} />
             : view === 'unavailable' ? <StateCard kind={error ? 'error' : 'blocked'} title={error ? tr('모임 정보를 불러오지 못했어요') : tr("이 모임을 볼 수 없어요")} body={tr(error || "삭제됐거나 현재 열람할 수 없는 모임이에요.")} actionLabel={error ? tr('다시 불러오기') : undefined} onAction={error ? reload : undefined} />
               : <Rise key={view}>
+                {!!inviter && (view === 'form' || view === 'noprofile') && <View style={[styles.invited, { backgroundColor: theme.backgroundSelected }]}>
+                  <SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} size={18} tintColor={theme.accent} />
+                  <ThemedText type="smallBold" themeColor="accent" style={styles.flexShrink}>{tr('{0} 님 초대 링크로 들어왔어요', inviter)}</ThemedText>
+                </View>}
                 {view === 'guest' && guestHead()}
                 {view === 'own' && <>
                   {meetCard()}
@@ -377,15 +399,16 @@ function JoinForm({ postId }: { postId: string }) {
                   </StateCard>
                   {status === 'pending' && modern && !invite && <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr("승인되면 '누가 와요'에 내 이름, 한 줄 소개, 관심사가 나와요.")}</ThemedText>}
                   {meetCard()}
-                  {status === 'approved' ? (!!post!.room!.fee || (modern && !!participation)) && <ListCard>
+                  {status === 'approved' ? (!!post!.room!.fee || appRows) && <ListCard>
                     {!!post!.room!.fee && <ListRow title={tr('회비 {0}', meetupFeeAmount(post!.room!.fee.amount))} detail={[post!.room!.fee.note, post!.room!.fee.dueOn && tr('{0}까지', meetupFeeDue(post!.room!.fee.dueOn, appLocale)), feePaid == null ? '' : feePaid ? tr('냈음') : tr('아직 안 냈어요')].filter(Boolean).join(' · ') || undefined} />}
-                    {modern && !!participation && sentRow()}
-                  </ListCard> : modern && !!participation && <ListCard>
+                    {appRows && sentRow()}
+                  </ListCard> : appRows && <ListCard>
                     {sentRow(tr('호스트가 보는 그대로예요'))}
                     {!profile?.photoPaths?.length && !profile?.interests?.length && <ListRow analyticsId="meetup.join.fill-profile" title={tr('프로필 더 채우기')} detail={tr('사진과 취향은 나중에 넣어도 돼요')} onPress={() => { play('selection'); router.push('/meetup-profile'); }} />}
                   </ListCard>}
                   {status === 'pending' && <Pressable analyticsId="app_meetup-join.pressable.12" accessibilityRole="button" disabled={sending} accessibilityState={{ disabled: sending, busy: sending }} onPress={confirmCancel} style={styles.button}><ThemedText style={[styles.support, styles.center]} themeColor="danger">{sending ? tr("취소 중…") : tr("신청 취소")}</ThemedText></Pressable>}
                   {!status && <RaisedActionButton analyticsId="app_meetup-join.pressable.9" tone="secondary" disabled={sending} onPress={() => { play('selection'); reload(); }} label={tr("다시 불러오기")} />}
+                  <MeetupJoinHandoff postId={postId} host={post!.author.nickname} />
                 </>}
                 {view === 'paused' && <>
                   <StateCard layout="start" kind="blocked" mark="minus" title={tr("지금은 새 신청을 받지 않아요")} body={tr("호스트가 모집을 다시 열면 신청할 수 있어요.")} />
@@ -441,7 +464,7 @@ function JoinForm({ postId }: { postId: string }) {
           <Pressable analyticsId="app_meetup-join.pressable.9" onPress={() => { play('selection'); reload(); }} accessibilityRole="button" style={styles.button}><ThemedText style={styles.body}>{tr("다시 불러오기")}</ThemedText></Pressable></>}
       </ScrollView>
       {view === 'guest' && guestBar()}
-      {view !== 'guest' && view !== 'loading' && view !== 'failed' && view !== 'unavailable' && <View style={[styles.footer, { backgroundColor: theme.background, borderColor: theme.line }]}>
+      {view !== 'guest' && view !== 'loading' && view !== 'failed' && view !== 'unavailable' && !(view === 'result' && Platform.OS === 'web') && <View style={[styles.footer, { backgroundColor: theme.background, borderColor: theme.line }]}>
         {view !== 'own' && view !== 'inactive' && view !== 'result' && footerError}
         {view === 'own' && <RaisedActionButton analyticsId="app_meetup-join.pressable.3" onPress={() => { play('selection'); router.push({ pathname: '/chat', params: { view: 'requests' } }); }} label={tr("참여 신청자 검토하기")} />}
         {view === 'result' && <RaisedActionButton analyticsId="app_meetup-join.pressable.3" onPress={() => { play('selection'); if (status === 'approved') router.replace({ pathname: '/chat', params: { view: 'group' } }); else router.replace({ pathname: '/(tabs)/meetups', params: { view: 'mine' } }); }} label={status === 'approved' ? tr("모임 대화 보기") : tr("내 모임에서 보기")} />}
@@ -499,7 +522,8 @@ const styles = StyleSheet.create({
   sheetBody: { gap: Spacing.three, paddingBottom: Spacing.two },
   // 로그인 전 머리·막대: post-detail.tsx의 host·meetupBar 값과 같다.
   photo: { width: '100%', aspectRatio: 16 / 9, borderRadius: 16 },
-  host: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44 }, flexShrink: { flexShrink: 1 },
+  host: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44 },
+  invited: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, borderRadius: 12 }, flexShrink: { flexShrink: 1 },
   hostAvatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   guestBar: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.three, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, borderTopWidth: 1 },
   guestMeta: { flexGrow: 1, flexShrink: 1, flexBasis: 160, minWidth: 0 },

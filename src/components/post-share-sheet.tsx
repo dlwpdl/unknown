@@ -22,7 +22,8 @@ import { appendUniquePosts, getPostImageSource } from '@/lib/feed-data';
 import { chillingSchedule } from '@/lib/chilling';
 import { mapPinPlace } from '@/lib/place-reviews';
 import { postMapBody } from '@/lib/post-maps';
-import { buildSharedPostUrl, sharedPostMessage } from '@/lib/sharing';
+import { createInviteLink } from '@/lib/invites';
+import { buildSharedPostUrl, sharedPostMessage, withInviteCode } from '@/lib/sharing';
 import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
 
@@ -52,9 +53,18 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
       .finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
   }, [visible, isAuthed, me.id, retry, asBusinessId]);
-  const url = buildSharedPostUrl(post.id), image = getPostImageSource(post, me.id);
-  const message = useMemo(() => sharedPostMessage({ ...post, place: post.room ? null : mapPinPlace(post.cityId, postMapBody(post.body).url)?.name }), [post]);
-  const invite = Boolean(post.room), label = invite ? me.id === post.author.id ? '내 모임에 초대하기' : '모임 같이 가요' : post.tag.slug === 'festival' ? '페스티벌 같이 가요' : '게시물 공유';
+  const invite = Boolean(post.room);
+  // The sharer's personal invite code rides on a meetup link (owner 2026-11-13); the link works the same without it.
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  useEffect(() => {
+    if (!visible || !invite) return;
+    let live = true;
+    void createInviteLink(supabase).then(code => { if (live) setInviteCode(code); }, () => {});
+    return () => { live = false; };
+  }, [visible, invite]);
+  const url = withInviteCode(buildSharedPostUrl(post.id), invite ? inviteCode : null), image = getPostImageSource(post, me.id);
+  const message = useMemo(() => sharedPostMessage({ ...post, place: post.room ? null : mapPinPlace(post.cityId, postMapBody(post.body).url)?.name }, inviteCode), [post, inviteCode]);
+  const label = invite ? me.id === post.author.id ? '내 모임에 초대하기' : '모임 같이 가요' : post.tag.slug === 'festival' ? '페스티벌 같이 가요' : '게시물 공유';
   const control = [styles.button, clay && styles.buttonClay, { backgroundColor: clay ? 'transparent' : theme.backgroundElement, borderColor: clay ? 'transparent' : theme.line }];
   const requesting = busy || Boolean(loading && inbox);
   const dismiss = () => { if (!pending.current) { play('selection'); onClose(); } };

@@ -186,6 +186,7 @@ test('shared posts remain escapable during loading, failure and absence, and nev
     '@/components/shared-link-card': { SharedPreviewContent: 'SharedPreviewContent' },
     '@/lib/shared-link-preview': { loadSharedLinkPreview: () => { throw new Error('Authenticated navigation must not load a guest preview'); } },
     '@/lib/sharing': { SHARED_POST_RETURN_KEY: 'return', buildSharedPostUrl: postId => `/post?id=${postId}` },
+    '@/lib/invites': { rememberInviteCode: async () => null, claimRememberedInvite: async () => null },
     '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
     '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/themed-view': { ThemedView: 'View' },

@@ -21,6 +21,7 @@ import { loadPublicPost } from '@/lib/feed-data';
 import { supabase } from '@/lib/supabase';
 import { PUBLIC_SITE } from '@/lib/public-seo';
 import { loadSharedLinkPreview, type SharedLinkPreview } from '@/lib/shared-link-preview';
+import { claimRememberedInvite, rememberInviteCode } from '@/lib/invites';
 import { SHARED_POST_RETURN_KEY, buildSharedPostUrl } from '@/lib/sharing';
 import { clearSharedPostReturn, rememberSharedPostReturn } from '@/lib/shared-post-return';
 import { forgetHandedOffPost, handedOffPost, POST_CHANGED_EVENT, type PostChange } from '@/lib/post-open';
@@ -34,7 +35,7 @@ const announceRemoved = (id: string) => announce({ id, removed: true });
 const announceChanged = (post: Post) => announce({ id: post.id, post });
 export default function SharedPostRoute() {
   const { tr, language } = useLanguage();
-  const { id, commentId, invite, edit } = useLocalSearchParams<{ id: string; commentId?: string; invite?: string; edit?: string }>();
+  const { id, commentId, invite, edit, code } = useLocalSearchParams<{ id: string; commentId?: string; invite?: string; edit?: string; code?: string }>();
   const postId = typeof id === 'string' ? id : Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.pathname.match(/^\/(?:post|share)\/([0-9a-f-]+)\/?$/i)?.[1] ?? '' : '';
   const targetCommentId = typeof commentId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(commentId) ? commentId.toLowerCase() : undefined;
   const { isAuthed, me, isAuthLoading, promptLogin } = useAuth();
@@ -52,6 +53,11 @@ export default function SharedPostRoute() {
   });
   const handedKey = useRef(result?.id);
   useEffect(() => { forgetHandedOffPost(postId); }, [postId]);
+  // A meetup link can carry the sharer's invite code (owner 2026-11-13): kept like an invite link, linked once signed up.
+  useEffect(() => {
+    void rememberInviteCode(AsyncStorage, typeof code === 'string' ? code : null)
+      .then(saved => saved && isAuthed ? claimRememberedInvite(supabase, AsyncStorage) : null).catch(() => {});
+  }, [code, isAuthed]);
   const [preview, setPreview] = useState<{ key: string; value: SharedLinkPreview | null; failed: boolean } | null>(null);
   const [savingReturn, setSavingReturn] = useState(false);
   const [returnError, setReturnError] = useState<string | null>(null);
