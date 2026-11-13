@@ -46,7 +46,7 @@ import { CITIES } from '@/lib/mock';
 import { merchantMapsUrl, merchantPhoneUrl, safeMerchantSourceUrl } from '@/lib/merchant-source';
 import { useAuth } from '@/lib/auth';
 import { recordProductEvent } from '@/lib/product-analytics';
-import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, directionsUrl, placeCategory, placeMapRoute, priceSymbol } from '@/lib/discovery';
+import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, mapAppUrl, placeCategory, placeMapRoute, priceSymbol } from '@/lib/discovery';
 import { publicPlaceId } from '@/lib/public-seo';
 import { supabase } from '@/lib/supabase';
 import { INSTAGRAM_LINK_SVG, instagramPostLink } from '../../../supabase/functions/_shared/post-links';
@@ -216,7 +216,7 @@ export default function PlaceDetailScreen() {
           {/* Business-linked places redirect to the company page, so only a booking-site website can show here. */}
           <ReservationButton website={place.website} />
         </View>
-        {mapsUrl && <PostMapLink url={mapsUrl} label={place.name} onOpened={() => record('place_directions')} />}
+        {mapsUrl && <PostMapLink url={mapsUrl} label={place.name} pin={place} onOpened={() => record('place_directions')} />}
         {/* The legacy analytics target distinguishes this shared action by its screen. 모임 is one list row now; the page's filled button is 글쓰기 below. */}
         {place.id.startsWith('osm:') && <ListCard>
           <ListRow analyticsId="ticketmaster.meetup.find" title={language === 'en' ? 'Find a meetup here' : '이곳에 갈 모임 보기'}
@@ -260,7 +260,7 @@ export default function PlaceDetailScreen() {
         onPress: copyAddress }] : []),
       ...(Platform.OS === 'ios' ? [{ key: 'apple', analyticsId: 'company.location', label: tr("Apple 지도"), icon: { ios: 'map', android: 'map', web: 'map' } as const,
         onPress: () => openMap(`https://maps.apple.com/?daddr=${place.latitude},${place.longitude}`) }] : []),
-      { key: 'google', analyticsId: 'discovery.google', label: tr("Google 지도"), icon: { ios: 'map', android: 'map', web: 'map' }, onPress: () => openMap(directionsUrl(place, 'google')) },
+      { key: 'google', analyticsId: 'discovery.google', label: tr("Google 지도"), icon: { ios: 'map', android: 'map', web: 'map' }, onPress: () => openMap(mapAppUrl({ cityId: place.cityId, latitude: place.latitude, longitude: place.longitude, place }, 'google')) },
     ]} />}
   </SafeAreaView></KeyboardScreen>;
 }

@@ -56,7 +56,9 @@ function EventListScreen() {
   const requestKey = `${city.id}:${category}:${date}:${page}:${attempt}`;
   const current = result?.key === requestKey ? result : null;
   const data = current?.data, error = current?.error ?? '';
-  const visibleEvents = (data?.events ?? []).filter(event => eventMatchesPriceFilter(event, priceFilter));
+  // A page can come back out of start order (QA C22-3): by the city's own day, then start time; an event with no time yet goes last on its day, ties keep the page order.
+  const day = (event: EventList['events'][number]) => event.localDate ?? '9999-12-31', time = (event: EventList['events'][number]) => Date.parse(event.startsAt ?? '') || Infinity;
+  const visibleEvents = (data?.events ?? []).filter(event => eventMatchesPriceFilter(event, priceFilter)).sort((a, b) => day(a).localeCompare(day(b)) || time(a) - time(b) || 0);
   const filterCount = Number(category !== 'all') + Number(priceFilter !== 'all');
   const loading = supported && !current;
   const calendarKey = `${city.id}:${category}:${calendarMonth}`;

@@ -12,7 +12,7 @@ const marker = { id: 'place:1', latitude: 49.28, longitude: -123.12, color: '#d8
 const sessionId = 'canvas-1';
 const options = { markers: [marker], cityName: 'Vancouver', sessionId, parentOrigin: 'https://gling.app' };
 
-test('native map startup has a bounded fallback, cancels after ready and rearms on retry', () => {
+test('native map startup has a bounded fallback, cancels after ready and rearms on retry; loading and failure never show together (QA C14-1)', () => {
   const slots = [], timers = new Map();
   let index = 0, nextTimer = 0, effects = [];
   const react = {
@@ -32,7 +32,7 @@ test('native map startup has a bounded fallback, cancels after ready and rearms 
     'react-native-webview': { __esModule: true, default: 'WebView' },
     '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value }) },
     '@/components/clay': { useClay: () => true }, '@/hooks/use-theme': { useTheme: () => ({}) },
-    '@/components/analytics-controls': { Pressable: 'Pressable' },
+    '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
     '@/components/themed-text': { ThemedText: 'Text' },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/discovery-map-html': { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers },
@@ -51,12 +51,19 @@ test('native map startup has a bounded fallback, cancels after ready and rearms 
   const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
   const render = () => { index = 0; effects = []; const tree = Canvas(props); effects.forEach(fn => fn()); return nodes(tree); };
   const failed = tree => tree.some(node => node.props?.accessibilityLiveRegion === 'polite');
+  const loader = tree => tree.find(node => node.type === 'GlingLoader')?.props.accessibilityLabel;
+  props.active = false;
   let tree = render();
+  assert.equal(timers.size, 0, 'a map tab mounted in the background does not count its slow start as a failure');
+  assert.equal(loader(tree), '지도 불러오는 중');
+  props.active = true;
+  tree = render();
   assert.equal(failed(tree), false);
+  assert.equal(loader(tree), '지도 불러오는 중', 'the first load shows the logo, not the failure card');
   assert.equal(timers.size, 1, 'native startup cannot rely on JavaScript inside a stalled WebView');
   assert.equal([...timers.values()][0].delay, 15000);
   [...timers.values()][0].fn();
-  tree = render(); assert.equal(failed(tree), true);
+  tree = render(); assert.equal(failed(tree), true); assert.equal(loader(tree), undefined, 'no logo on top of the failure');
   tree.find(node => node.props?.analyticsId === 'discovery.map.retry').props.onPress();
   tree = render(); assert.equal(failed(tree), false); assert.equal(timers.size, 1);
   const web = tree.find(node => node.type === 'WebView');
@@ -65,7 +72,13 @@ test('native map startup has a bounded fallback, cancels after ready and rearms 
   web.props.onMessage({ nativeEvent: { data: JSON.stringify({ type: 'ready', sessionId: 'native-canvas.0' }) } });
   render(); assert.equal(timers.size, 1, 'old map readiness cannot cancel the new attempt');
   web.props.onMessage({ nativeEvent: { data: JSON.stringify({ type: 'ready', sessionId: 'native-canvas.1' }) } });
-  tree = render(); assert.equal(failed(tree), false); assert.equal(timers.size, 0);
+  tree = render(); assert.equal(failed(tree), false); assert.equal(timers.size, 0); assert.equal(loader(tree), undefined);
+  props.loading = true;
+  tree = render(); assert.equal(loader(tree), '지도 결과 불러오는 중', 'results loading shows over the drawn map');
+  const cover = tree.find(node => [node.props?.children].flat().some(child => child?.type === 'GlingLoader'));
+  assert.equal(cover.props.pointerEvents, 'none');
+  assert.ok(![cover.props.style].flat().some(style => style && 'backgroundColor' in style), 'a drawn map stays visible under the results loader');
+  props.loading = false;
   props.markers = [{ ...marker, label: 'updated' }];
   render(); assert.equal(timers.size, 0, 'ordinary marker updates do not restart a loaded map');
   slots.forEach(slot => slot?.cleanup?.());
@@ -780,7 +793,7 @@ function mountedBridge(props, platform) {
     'react-native': { Platform: { OS: platform }, View: 'View', StyleSheet: { create: value => value }, Linking: { openURL() {} } },
     'react-native-webview': { __esModule: true, default: 'WebView' },
     '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value }) },
-    '@/components/clay': { useClay: () => true }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/components/analytics-controls': { Pressable: 'Pressable' },
+    '@/components/clay': { useClay: () => true }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/discovery-map-html': { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers },
     'expo-location': { watchHeadingAsync: async fn => { compass.watches.push(fn); return { remove() { compass.removed++; } }; } }, '@/lib/location': { facingDegrees },

@@ -96,6 +96,10 @@ export function placeMapRoute(place: Pick<CityPlace, 'id' | 'cityId' | 'glingVis
     placeRequest: Date.now().toString(36) + '-' + (++placeMapRequestId).toString(36) } };
 }
 
+/** The kind a card or pin names; a game in the festival row says 스포츠 so it never reads as a festival (QA C22-2). */
+export const discoveryKind = (item: Pick<DiscoveryItem, 'category' | 'event'>) =>
+  item.event?.segment === 'Sports' ? '스포츠' : DISCOVERY_CATEGORIES.find(value => value.id === item.category)!.label;
+
 /** The map category a place is filed under; the place screen names it the same way (owner 2026-11-11). */
 export const placeCategory = (place: Pick<CityPlace, 'nightlife' | 'category'>) =>
   place.nightlife ? 'nightlife' : place.category === 'food' ? 'dining' : place.category === 'cafe' ? 'cafe' : 'place';
@@ -185,15 +189,8 @@ export function discoveryEvent(event: TicketmasterEvent, cityId: string, now = D
     latitude: pin?.latitude ?? null, longitude: pin?.longitude ?? null, price: event.price?.min ?? null,
     imageUri: event.image ?? undefined, startsAt: event.startsAt, endsAt: event.endsAt, localDate: event.localDate, event };
 }
-export function directionsUrl(pin: PostPin, app: 'google' | 'waze') {
-  googlePinUrl(pin);
-  const coordinate = `${pin.latitude},${pin.longitude}`;
-  return app === 'google'
-    ? `https://www.google.com/maps/dir/?${new URLSearchParams({ api: '1', destination: coordinate, dir_action: 'navigate' })}`
-    : `https://waze.com/ul?${new URLSearchParams({ ll: coordinate, navigate: 'yes' })}`;
-}
-// Owner 2026-11-09: the map's Google Maps/Waze buttons open the place first; that app's own directions button starts navigation.
-export function mapAppUrl(item: DiscoveryItem & PostPin, app: 'google' | 'waze') {
+// Owner 2026-11-09: the map's and the place screen's Google Maps/Waze buttons open the place first; that app's own directions button starts navigation.
+export function mapAppUrl(item: Pick<DiscoveryItem, 'cityId' | 'place'> & PostPin, app: 'google' | 'waze') {
   const pinUrl = googlePinUrl(item);
   if (app === 'waze') return `https://waze.com/ul?${new URLSearchParams({ ll: `${item.latitude},${item.longitude}` })}`;
   // Google search has no location bias, so only a street address pins the right branch; anything else opens the exact pin.
