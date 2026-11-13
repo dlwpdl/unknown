@@ -59,7 +59,8 @@ export const commentBusiness = (row: PublicCommentRow) => row.business_id
   ? { id: row.business_id, name: row.author_nickname, avatarUri: row.business_avatar_path?.startsWith(`business-profile/${row.business_id}/avatar/`) ? businessMediaUrl(row.business_avatar_path) : null }
   : undefined;
 
-export type FeedSort = 'latest' | 'popular';
+// 'area' (중고거래 동네별) loads like 'latest'; the app groups the loaded posts by neighborhood.
+export type FeedSort = 'latest' | 'popular' | 'area';
 export type FeedCursor = { createdAt: string; id: string; sortAt?: string; popularityScore?: number; rankingAsOf?: string };
 
 type SignedImage = { url: string; expiresAt: number };

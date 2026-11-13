@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
-import { Modal, PanResponder, StyleSheet, View } from 'react-native';
+import { Modal, PanResponder, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import type { SymbolViewProps } from 'expo-symbols';
 import { SymbolView } from '@/components/symbol-view';
@@ -12,7 +12,7 @@ import { DiscoveryMap } from '@/components/discovery-map';
 import { ListingCard, type DetailedPost } from '@/components/listing-card';
 import { SelectionChip } from '@/components/selection-chip';
 import { ThemedText } from '@/components/themed-text';
-import { ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
+import { ControlMotion, ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
 import { Spacing } from '@/constants/theme';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
@@ -34,17 +34,19 @@ const THUMB = 28;
 const PRICES = { housing: [1500, 2000, 2500, 3000, 4000], sale: [500000, 800000, 1000000, 1500000, 2000000], used: [0, 20, 50, 100, 300], jobs: [] as number[] };
 const MARKETS = { rent: '렌트', sale: '매매' } as const;
 
-function Segment({ options, value, onChange, label }: { options: { key: string; label: string; icon?: SymbolViewProps['name'] }[]; value: string; onChange: (key: string) => void; label: string }) {
+// `short` is the word shown beside an icon when there is room; `label` is always what is read out.
+function Segment({ options, value, onChange, label, disabled = false }: { options: { key: string; label: string; short?: string; icon?: SymbolViewProps['name'] }[]; value: string; onChange: (key: string) => void; label: string; disabled?: boolean }) {
   const theme = useTheme(), { play } = useInteractionFeedback(), clay = useClay();
-  return <View accessibilityRole="tablist" accessibilityLabel={label} style={[styles.segment, { backgroundColor: theme.backgroundElement }]}>
+  return <View accessibilityRole="tablist" accessibilityLabel={label} style={[styles.segment, { backgroundColor: theme.backgroundElement, opacity: disabled ? ControlMotion.disabledOpacity : 1 }]}>
     {options.map(option => {
-      const selected = option.key === value;
-      return <Pressable key={option.key} analyticsId={`listing.segment.${option.key}`} accessibilityRole="tab" accessibilityLabel={option.label} accessibilityState={{ selected }}
+      const selected = option.key === value, color = selected ? clay ? theme.accentInk : theme.accent : theme.textSecondary;
+      // shortcut: 큰 사진 shares the registered photo-grid target until a listing.segment.big row is added with a migration.
+      return <Pressable key={option.key} analyticsId={`listing.segment.${option.key === 'big' ? 'grid' : option.key}`} accessibilityRole="tab" accessibilityLabel={option.label} accessibilityState={{ selected, disabled }} disabled={disabled}
         onPress={() => { play('selection'); if (!selected) onChange(option.key); }}
-        style={({ pressed }) => [styles.segmentItem, clay && { overflow: 'visible' }, { backgroundColor: selected && !clay ? theme.card : 'transparent', opacity: pressed ? 0.82 : 1 }]}>
+        style={({ pressed }) => [styles.segmentItem, option.short && styles.segmentLabeled, clay && { overflow: 'visible' }, { backgroundColor: selected && !clay ? theme.card : 'transparent', opacity: pressed ? 0.82 : 1 }]}>
         {clay && selected && <ClayPillFill kind="on" />}
-        {option.icon ? <SymbolView name={option.icon} size={IconSize.inline + 2} tintColor={selected ? clay ? theme.accentInk : theme.accent : theme.textSecondary} />
-          : <ThemedText type="label" style={{ color: selected ? clay ? theme.accentInk : theme.accent : theme.textSecondary }}>{option.label}</ThemedText>}
+        {option.icon && <SymbolView name={option.icon} size={IconSize.inline + 2} tintColor={color} />}
+        {(!option.icon || option.short) && <ThemedText type="label" numberOfLines={1} style={{ color }}>{option.short ?? option.label}</ThemedText>}
       </Pressable>;
     })}
   </View>;
@@ -56,18 +58,24 @@ export function ListingModeSwitch({ mode, onChange }: { mode: 'list' | 'map'; on
   return <Segment label={tr('보기 방식')} value={mode} onChange={key => onChange(key as 'list' | 'map')} options={[{ key: 'list', label: tr('목록') }, { key: 'map', label: tr('지도') }]} />;
 }
 
-// 목록 | 사진 그리드, used by 중고거래 and the 비즈니스 feed.
-export function ListingViewSwitch({ view, onView }: { view: ListingView; onView: (view: ListingView) => void }) {
-  const { tr } = useLanguage();
-  return <Segment label={tr('목록 모양')} value={view} onChange={key => onView(key as ListingView)} options={[
-    { key: 'list', label: tr('목록으로 보기'), icon: { ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' } },
-    { key: 'grid', label: tr('사진 그리드로 보기'), icon: { ios: 'square.grid.2x2', android: 'grid_view', web: 'grid_view' } },
+// 목록 | 사진 그리드 for the 비즈니스 feed. With onMap it is 중고거래's one switch (owner 2026-11-13): 목록 · 사진 · 큰 사진 · 지도,
+// icon and word side by side on wide phones at normal text size, icons only otherwise. 지도 opens the map screen.
+export function ListingViewSwitch({ view, onView, onMap, disabled }: { view: ListingView; onView: (view: ListingView) => void; onMap?: () => void; disabled?: boolean }) {
+  const { tr } = useLanguage(), { width, fontScale } = useWindowDimensions();
+  const words = !!onMap && width >= 428 && fontScale <= 1;
+  return <Segment label={tr('목록 모양')} value={view} disabled={disabled} onChange={key => key === 'map' ? onMap?.() : onView(key as ListingView)} options={[
+    { key: 'list', label: tr('목록으로 보기'), short: words ? tr('목록') : undefined, icon: { ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' } },
+    { key: 'grid', label: tr('사진 그리드로 보기'), short: words ? tr('사진') : undefined, icon: { ios: 'square.grid.2x2', android: 'grid_view', web: 'grid_view' } },
+    ...onMap ? [
+      { key: 'big', label: tr('큰 사진으로 보기'), short: words ? tr('큰 사진') : undefined, icon: { ios: 'photo', android: 'image', web: 'image' } } as const,
+      { key: 'map', label: tr('지도로 보기'), short: words ? tr('지도') : undefined, icon: { ios: 'map', android: 'map', web: 'map' } } as const,
+    ] : [],
   ]} />;
 }
 
-// Filter chips shared by the list and the map, plus the 중고거래 list/grid toggle.
-export function ListingFilterBar({ category, cityId, filters, onChange, view, onView }: {
-  category: ListingCategory; cityId: string; filters: ListingFilters; onChange: (next: ListingFilters) => void; view?: ListingView; onView?: (view: ListingView) => void;
+// Filter chips shared by the list and the map.
+export function ListingFilterBar({ category, cityId, filters, onChange }: {
+  category: ListingCategory; cityId: string; filters: ListingFilters; onChange: (next: ListingFilters) => void;
 }) {
   const theme = useTheme(), { tr, language } = useLanguage(), { play } = useInteractionFeedback(), clay = useClay(), clayBox = useClayBox();
   const [open, setOpen] = useState<FilterKey | null>(null), [openGroups, setOpenGroups] = useState<string[]>([]);
@@ -123,7 +131,6 @@ export function ListingFilterBar({ category, cityId, filters, onChange, view, on
           </Pressable>;
         })}
       </ScrollView>
-      {category === 'used' && view && onView && <ListingViewSwitch view={view} onView={onView} />}
     </View>
     {open && <View style={[styles.panel, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.backgroundElement }]}>
       {clayBox && <ClayBoxFill kind="tile" />}
@@ -286,6 +293,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   segment: { flexDirection: 'row', borderRadius: 12, padding: 3, gap: 2, alignSelf: 'flex-start' },
   segmentItem: { minWidth: 44, minHeight: 38, borderRadius: 9, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
+  segmentLabeled: { flexDirection: 'row', gap: 4, paddingHorizontal: 10 },
   filterWrap: { gap: Spacing.two },
   filterRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   filterChips: { flexDirection: 'row', gap: Spacing.two },
