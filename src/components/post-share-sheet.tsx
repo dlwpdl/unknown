@@ -8,7 +8,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { StateCard } from '@/components/state-card';
-import { ClayPillFill, useClay } from '@/components/clay';
+import { ClayPhoto, ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { chatBusinessIdentity } from '@/lib/chat-identity';
@@ -133,6 +133,8 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
               onPress={() => void send(conversation)} style={({ pressed }) => [styles.conversation, { backgroundColor: pressed ? theme.backgroundElement : 'transparent', opacity: requesting ? 0.6 : 1 }]}>
               <View accessible={false} style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}>{conversation.kind === 'group'
                 ? <SymbolView name={{ ios: 'person.2', android: 'groups', web: 'groups' }} size={20} tintColor={theme.textSecondary} accessible={false} />
+                // The same photo or business logo the chat list shows (QA D28-2); the initial is the fallback.
+                : conversation.otherIdentity?.avatarUri ? <ClayPhoto uri={conversation.otherIdentity.avatarUri} size={44} />
                 : <ThemedText type="smallBold" themeColor="navy">{Array.from(conversation.title.trim())[0] || '?'}</ThemedText>}</View>
               <View style={styles.conversationText}><ThemedText type="smallBold" style={styles.conversationTitle} numberOfLines={2}>{conversation.title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr(conversation.kind === 'group' ? tr("모임 대화") : tr("1:1 대화"))}</ThemedText></View>
               <View style={[styles.sendMarker, clay && styles.sendMarkerClay, { backgroundColor: done || unconfirmed || clay ? 'transparent' : theme.backgroundElement }]}>{clay && !(done || unconfirmed) && <ClayPillFill kind="white" />}<ThemedText type="small" themeColor={done ? 'accent' : 'textSecondary'}>{tr(done ? tr("✓ 보냈어요") : unconfirmed ? tr("확인 필요") : tr("보내기"))}</ThemedText></View>

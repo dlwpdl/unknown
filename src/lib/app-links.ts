@@ -20,6 +20,9 @@ export function appPathForLink(input: string): string {
     return id ? `/company/${id}` : '/businesses';
   }
   if (path === '/meetups') return '/meetups';
+  // Place pages (/vancouver/places/node-123) keep the web slug; the place screen reads it back as osm:node:123.
+  const place = path.match(/^\/([a-z-]+)\/places\/((?:node|way|relation)-[0-9]+)$/);
+  if (place) return `/places/${place[2]}?cityId=${place[1]}`;
   if (path === '/invite') {
     const code = normalizeInviteCode(url.searchParams.get('code'));
     return code ? `/invite?code=${code}` : '/';

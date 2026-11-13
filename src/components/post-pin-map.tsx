@@ -27,7 +27,7 @@ export function PostPinMap({ pin, cityName = '', preview = false, area = false, 
   const [failed, setFailed] = useState(false), [retry, setRetry] = useState(0), [image, setImage] = useState<string>();
   const key = pin ? `${area ? 'area:' : ''}${googlePinUrl(pin)}` : '', cached = preview ? mapPreviews.get(key) ?? image : undefined;
   const seed = preview ? pin : initialPin;
-  const html = useMemo(() => mapHtml({ pin: seed, cityName, preview, accent: theme.accent, area }), [seed, cityName, preview, theme.accent, area]);
+  const html = useMemo(() => mapHtml({ pin: seed, cityName, preview, accent: theme.accent, area, background: theme.card }), [seed, cityName, preview, theme.accent, area, theme.card]);
   const fail = useCallback(() => {
     setFailed(true); onReadyChange?.(false);
     if (userId && identity.current === userId) void recordProductEvent(supabase, { kind: 'map_error', platform: Platform.OS }).catch(() => {});
@@ -61,7 +61,7 @@ export function PostPinMap({ pin, cityName = '', preview = false, area = false, 
       onLoad={() => { setFailed(false); web.current?.contentWindow?.postMessage({ type: 'move', pin, bottomInset }, '*'); }}
       style={{ border: 0, width: '100%', height: '100%', minHeight: preview ? 0 : 140, flex: 1 }} />
       : <WebView<unknown> key={retry} ref={native} source={{ html }} originWhitelist={['*']} applicationNameForUserAgent="GlingMap/1.0"
-        style={mapStyle} scrollEnabled={false} sharedCookiesEnabled={false} thirdPartyCookiesEnabled={false}
+        style={[mapStyle, { backgroundColor: theme.card }]} scrollEnabled={false} sharedCookiesEnabled={false} thirdPartyCookiesEnabled={false}
         onShouldStartLoadWithRequest={request => request.url === 'about:blank'} setSupportMultipleWindows={false}
         onLoadStart={() => { setFailed(false); onReadyChange?.(false); }} onLoadEnd={() => { if (!preview) native.current?.injectJavaScript(mapPinScript(pin, bottomInset)); }} onError={fail}
         onMessage={event => {

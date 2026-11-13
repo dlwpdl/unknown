@@ -276,6 +276,20 @@ export function PostCard({
     </View>
   );
   const sheets = <>
+    {/* 남의 글(운영 캐릭터·비즈니스 글 포함)은 이 글 숨기기 → 신고. 피드 카드와 글 상세의 ··· 가 같은 메뉴다 (QA B9-1). */}
+    {menuOpen && <MeetupManageSheet visible title={tr('글 메뉴')} onClose={() => setMenuOpen(false)} actions={mine ? [
+      { key: 'edit', analyticsId: 'components_post-detail.pressable.14', label: tr(post.room ? '소개·사진 수정' : '글·사진 수정'), onPress: editPost,
+        icon: { ios: 'pencil', android: 'edit', web: 'edit' } },
+      { key: 'delete', analyticsId: 'post.manage.delete', label: tr('글 삭제'), danger: true, onPress: () => setDeleteOpen(true),
+        icon: { ios: 'trash', android: 'delete', web: 'delete' } },
+    ] : [{ key: 'hide', analyticsId: 'post.manage.hide', label: tr('이 글 숨기기'), hint: tr('내 화면에서만 사라지고, 신고는 가지 않아요.'), onPress: () => void hidePost(),
+      icon: { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' } },
+    { key: 'report', analyticsId: 'components_post-card.pressable.5', label: t.report.title(post.business?.name ?? post.author.nickname), danger: true,
+      icon: { ios: 'flag', android: 'flag', web: 'flag' }, onPress: () => { if (isAuthed) setReportOpen(true); else promptLogin(t.auth.reasonReport); } }]} />}
+    {deleteOpen && <MeetupManageSheet visible title={tr('이 글을 삭제할까요?')} onClose={() => setDeleteOpen(false)} actions={[
+      { key: 'delete-confirm', analyticsId: 'components_post-detail.pressable.15', label: tr('글 삭제'), hint: tr('삭제한 글은 되돌릴 수 없어요. 달린 댓글도 함께 보이지 않게 됩니다.'), danger: true,
+        icon: { ios: 'trash', android: 'delete', web: 'delete' }, onPress: () => void removePost() },
+    ]} />}
     {shareOpen && <PostShareSheet key={`${post.id}:${me.id}`} post={post} visible={shareOpen} onClose={() => setShareOpen(false)}
       onShared={() => { void recordPostShare(supabase, post.id).then(setShareCount).catch(() => {}); }} />}
     <ReportSheet
@@ -414,20 +428,6 @@ export function PostCard({
             <ClayIcon clay={savedOn ? 'bookmark_on' : 'bookmark'} claySize={26} name={{ ios: savedOn ? 'bookmark.fill' : 'bookmark', android: savedOn ? 'bookmark_added' : 'bookmark', web: savedOn ? 'bookmark_added' : 'bookmark' }} size={IconSize.toolbar} tintColor={savedOn ? theme.accent : theme.textSecondary} />
           </Pressable>
         </View>
-        {/* 남의 글(운영 캐릭터·비즈니스 글 포함)은 이 글 숨기기 → 신고. 상세의 신고 버튼은 그대로다. */}
-        {menuOpen && <MeetupManageSheet visible title={tr('글 메뉴')} onClose={() => setMenuOpen(false)} actions={mine ? [
-          { key: 'edit', analyticsId: 'components_post-detail.pressable.14', label: tr(post.room ? '소개·사진 수정' : '글·사진 수정'), onPress: editPost,
-            icon: { ios: 'pencil', android: 'edit', web: 'edit' } },
-          { key: 'delete', analyticsId: 'post.manage.delete', label: tr('글 삭제'), danger: true, onPress: () => setDeleteOpen(true),
-            icon: { ios: 'trash', android: 'delete', web: 'delete' } },
-        ] : [{ key: 'hide', analyticsId: 'post.manage.hide', label: tr('이 글 숨기기'), hint: tr('내 화면에서만 사라지고, 신고는 가지 않아요.'), onPress: () => void hidePost(),
-          icon: { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' } },
-        { key: 'report', analyticsId: 'components_post-card.pressable.5', label: t.report.title(name), danger: true,
-          icon: { ios: 'flag', android: 'flag', web: 'flag' }, onPress: () => { if (isAuthed) setReportOpen(true); else promptLogin(t.auth.reasonReport); } }]} />}
-        {deleteOpen && <MeetupManageSheet visible title={tr('이 글을 삭제할까요?')} onClose={() => setDeleteOpen(false)} actions={[
-          { key: 'delete-confirm', analyticsId: 'components_post-detail.pressable.15', label: tr('글 삭제'), hint: tr('삭제한 글은 되돌릴 수 없어요. 달린 댓글도 함께 보이지 않게 됩니다.'), danger: true,
-            icon: { ios: 'trash', android: 'delete', web: 'delete' }, onPress: () => void removePost() },
-        ]} />}
         {sheets}
       </View>
     );
@@ -478,9 +478,9 @@ export function PostCard({
           </Pressable>
           {!mine && (
             <Pressable lens analyticsId="components_post-card.pressable.5"
-              onPress={() => { play('reaction'); if (isAuthed) setReportOpen(true); else promptLogin(t.auth.reasonReport); }}
+              onPress={() => { play('selection'); setMenuOpen(true); }}
               accessibilityRole="button"
-              accessibilityLabel={t.report.title(post.business?.name ?? post.author.nickname)}
+              accessibilityLabel={tr('글 메뉴')}
               style={({ pressed }) => [styles.more, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent', transform: [{ scale: pressed ? 0.88 : 1 }] }]}>
               <ClayIcon
                 clay="more"

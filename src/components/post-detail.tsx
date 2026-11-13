@@ -7,6 +7,7 @@ import { SymbolView } from '@/components/symbol-view';
 import {
   Alert,
   DeviceEventEmitter,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -148,6 +149,13 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const [contextRetry, setContextRetry] = useState(0);
   const [draft, setDraft] = useState('');
   const [keyboardOffset, setKeyboardOffset] = useState(0);
+  // The keyboard covers the home-indicator area, so the comment bar drops that inset while it is up, as the chat composer does (QA H41-1).
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const shown = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
+    const hidden = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
+    return () => { shown.remove(); hidden.remove(); };
+  }, []);
   const [editing, setEditing] = useState<PostComment | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
   const [sheetUser, setSheetUser] = useState<SheetUser | null>(null);
@@ -915,7 +923,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
             {
               borderTopColor: theme.line,
               backgroundColor: theme.card,
-              paddingBottom: Math.max(insets.bottom, Spacing.two) + Spacing.one,
+              paddingBottom: keyboardOpen ? Spacing.one : Math.max(insets.bottom, Spacing.two) + Spacing.one,
             },
           ]}>
           {editing && <View style={styles.replyContext}>

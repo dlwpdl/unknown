@@ -56,13 +56,14 @@ const ICONS_DARK: Partial<Record<keyof typeof ICONS, number>> = {
   copy: require('@/assets/images/ui-3d/copy_d.png'), number: require('@/assets/images/ui-3d/number_d.png'), id_card: require('@/assets/images/ui-3d/id_card_d.png'), indent: require('@/assets/images/ui-3d/indent_d.png'),
 };
 
-// Three slices stretch the same on iOS and Android. cap = end width ÷ art height; drop = the shadow hanging below the control.
+// Three slices stretch the same on iOS and Android. end = end width ÷ art height; drop = the shadow hanging below the control.
+// The middle starts where an end's image stops and the end's last columns repeat the middle, so the half-clear shadow rows meet at one pixel edge: an end overlapping the middle left a thin vertical line in the shadow on Android (QA D24-1).
 const PILLS = {
-  on: { l: require('@/assets/images/ui-3d/pill_on_l.png'), m: require('@/assets/images/ui-3d/pill_on_m.png'), r: require('@/assets/images/ui-3d/pill_on_r.png'), dark: { l: require('@/assets/images/ui-3d/pill_on_d_l.png'), m: require('@/assets/images/ui-3d/pill_on_d_m.png'), r: require('@/assets/images/ui-3d/pill_on_d_r.png') }, cap: 0.7204, end: 0.7366, drop: '-5.7%' },
-  white: { l: require('@/assets/images/ui-3d/pill_white_l.png'), m: require('@/assets/images/ui-3d/pill_white_m.png'), r: require('@/assets/images/ui-3d/pill_white_r.png'), dark: { l: require('@/assets/images/ui-3d/pill_white_d_l.png'), m: require('@/assets/images/ui-3d/pill_white_d_m.png'), r: require('@/assets/images/ui-3d/pill_white_d_r.png') }, cap: 0.7283, end: 0.7446, drop: '-6.4%' },
-  cta: { l: require('@/assets/images/ui-3d/pill_cta_l.png'), m: require('@/assets/images/ui-3d/pill_cta_m.png'), r: require('@/assets/images/ui-3d/pill_cta_r.png'), dark: { l: require('@/assets/images/ui-3d/pill_cta_d_l.png'), m: require('@/assets/images/ui-3d/pill_cta_d_m.png'), r: require('@/assets/images/ui-3d/pill_cta_d_r.png') }, cap: 0.7047, end: 0.7202, drop: '-6.1%' },
-  tray: { l: require('@/assets/images/ui-3d/pill_tray_l.png'), m: require('@/assets/images/ui-3d/pill_tray_m.png'), r: require('@/assets/images/ui-3d/pill_tray_r.png'), dark: { l: require('@/assets/images/ui-3d/pill_tray_d_l.png'), m: require('@/assets/images/ui-3d/pill_tray_d_m.png'), r: require('@/assets/images/ui-3d/pill_tray_d_r.png') }, cap: 0.7125, end: 0.7312, drop: '-6%' },
-  line: { l: require('@/assets/images/ui-3d/pill_line_l.png'), m: require('@/assets/images/ui-3d/pill_line_m.png'), r: require('@/assets/images/ui-3d/pill_line_r.png'), dark: { l: require('@/assets/images/ui-3d/pill_line_d_l.png'), m: require('@/assets/images/ui-3d/pill_line_d_m.png'), r: require('@/assets/images/ui-3d/pill_line_d_r.png') }, cap: 0.6813, end: 0.6978, drop: '-12.4%' },
+  on: { l: require('@/assets/images/ui-3d/pill_on_l.png'), m: require('@/assets/images/ui-3d/pill_on_m.png'), r: require('@/assets/images/ui-3d/pill_on_r.png'), dark: { l: require('@/assets/images/ui-3d/pill_on_d_l.png'), m: require('@/assets/images/ui-3d/pill_on_d_m.png'), r: require('@/assets/images/ui-3d/pill_on_d_r.png') }, end: 0.7366, drop: '-5.7%' },
+  white: { l: require('@/assets/images/ui-3d/pill_white_l.png'), m: require('@/assets/images/ui-3d/pill_white_m.png'), r: require('@/assets/images/ui-3d/pill_white_r.png'), dark: { l: require('@/assets/images/ui-3d/pill_white_d_l.png'), m: require('@/assets/images/ui-3d/pill_white_d_m.png'), r: require('@/assets/images/ui-3d/pill_white_d_r.png') }, end: 0.7446, drop: '-6.4%' },
+  cta: { l: require('@/assets/images/ui-3d/pill_cta_l.png'), m: require('@/assets/images/ui-3d/pill_cta_m.png'), r: require('@/assets/images/ui-3d/pill_cta_r.png'), dark: { l: require('@/assets/images/ui-3d/pill_cta_d_l.png'), m: require('@/assets/images/ui-3d/pill_cta_d_m.png'), r: require('@/assets/images/ui-3d/pill_cta_d_r.png') }, end: 0.7202, drop: '-6.1%' },
+  tray: { l: require('@/assets/images/ui-3d/pill_tray_l.png'), m: require('@/assets/images/ui-3d/pill_tray_m.png'), r: require('@/assets/images/ui-3d/pill_tray_r.png'), dark: { l: require('@/assets/images/ui-3d/pill_tray_d_l.png'), m: require('@/assets/images/ui-3d/pill_tray_d_m.png'), r: require('@/assets/images/ui-3d/pill_tray_d_r.png') }, end: 0.7312, drop: '-6%' },
+  line: { l: require('@/assets/images/ui-3d/pill_line_l.png'), m: require('@/assets/images/ui-3d/pill_line_m.png'), r: require('@/assets/images/ui-3d/pill_line_r.png'), dark: { l: require('@/assets/images/ui-3d/pill_line_d_l.png'), m: require('@/assets/images/ui-3d/pill_line_d_m.png'), r: require('@/assets/images/ui-3d/pill_line_d_r.png') }, end: 0.6978, drop: '-12.4%' },
 } as const;
 
 // capInsets are in points of the @3x art and only iOS honours them, so Android keeps the flat box.
@@ -130,12 +131,12 @@ export function ClayIcon({ clay, claySize, name, size = 21, tintColor }: { clay:
 
 /** Stretched behind a control's content. The caller clears the control's own background. */
 export function ClayPillFill({ kind }: { kind: ClayPillKind }) {
-  const { cap, end, drop, dark, ...light } = PILLS[kind], { l, m, r } = useDark() ? dark : light;
+  const { end, drop, dark, ...light } = PILLS[kind], { l, m, r } = useDark() ? dark : light;
   // Android fades a dimmed (disabled) control's children one by one, so the slices' overlap would show as two vertical lines; the layer fades them as one.
   return <View pointerEvents="none" renderToHardwareTextureAndroid style={[styles.pill, { bottom: drop as ViewStyle['bottom'] }]}>
-    <View style={{ height: '100%', aspectRatio: cap }} />
+    <View style={{ height: '100%', aspectRatio: end }} />
     <Image source={m} style={styles.middle} contentFit="fill" accessible={false} />
-    <View style={{ height: '100%', aspectRatio: cap }} />
+    <View style={{ height: '100%', aspectRatio: end }} />
     {/* Each end is cut at the centre line: on a 44pt round button the two would overlap and their flat tops poke past each other's curve. A % maxWidth does not work here: Yoga resolves it against the text width. */}
     <View style={styles.leftHalf}><Image source={l} style={{ height: '100%', aspectRatio: end }} contentFit="fill" accessible={false} /></View>
     <View style={styles.rightHalf}><Image source={r} style={[styles.rightEnd, { aspectRatio: end }]} contentFit="fill" accessible={false} /></View>

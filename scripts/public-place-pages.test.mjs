@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { finishPublicWeb } from './finish-public-web.mjs';
 import { prerenderPublicPosts, withStaticPage } from './prerender-public-posts.mjs';
 import { hoursText, loadPlaceCatalog, loadPlaceRatings, publicPlaces } from './prerender-public-places.mjs';
-import { PUBLIC_SITE, publicCitySubpage, publicPlacePath } from '../src/lib/public-seo.ts';
+import { PUBLIC_SITE, publicCitySubpage, publicPlaceId, publicPlacePath, publicPlaceSlug } from '../src/lib/public-seo.ts';
 
 const SHELL = '<html><head><meta charSet="utf-8"/><title data-rh="true">글링 | 앱에서 이어가기</title><meta name="robots" content="noindex, nofollow" data-rh="true"/></head><body><div id="root"><section class="reader-hero"><h1>앱에서 이어가세요.</h1></section></div></body></html>';
 const NOW = Date.parse('2026-11-12T12:00:00Z');
@@ -157,6 +157,9 @@ test('장소 페이지는 11개 도시에서 소개·글·후기·직접 방문�
 test('장소 주소는 지도 장소 번호로 오가고, 영업시간은 읽을 수 있는 것만 바꾸고, 후기 수는 공개 요약에서 25곳씩 읽는다', async () => {
   const ids = ['vancouver', 'toronto'], all = [...ids, 'calgary'];
   assert.equal(publicPlacePath('vancouver', 'osm:node:4976343547'), '/vancouver/places/node-4976343547');
+  // The app opens a place page link by turning its slug back into the map id; other ids pass through.
+  for (const id of ['osm:node:4976343547', 'osm:way:7', 'osm:relation:12']) assert.equal(publicPlaceId(publicPlaceSlug(id)), id);
+  for (const id of ['osm:node:4976343547', 'partner:jimoco', 'node-', 'node-1x', 'tag-1']) assert.equal(publicPlaceId(id), id);
   assert.deepEqual(publicCitySubpage('/vancouver/places/node-4976343547', ids, all), { cityId: 'vancouver', kind: 'place', placeId: 'osm:node:4976343547' });
   assert.deepEqual(publicCitySubpage('/toronto/places/', ids, all), { cityId: 'toronto', kind: 'places', page: 1 });
   assert.deepEqual(publicCitySubpage('/calgary/places/3', ids, all), { cityId: 'calgary', kind: 'places', page: 3 });
