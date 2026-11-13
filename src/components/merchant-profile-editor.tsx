@@ -179,7 +179,7 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
     if (uploads.current.size) void supabase.storage.from('merchant-profile-images').remove([...uploads.current]).catch(() => {});
     contactDraft.current = null; setContact(null); introDraft.current = null; setIntro(null); change(null); reload();
   };
-  const name = (kind: keyof Photos) => kind === 'banner' ? tr("채널 배너") : kind === 'avatar' ? tr("가게 로고") : tr("지도 대표 사진");
+  const name = (kind: keyof Photos) => kind === 'banner' ? tr("채널 배너") : kind === 'avatar' ? tr("가게 로고") : tr("지도에 뜨는 사진");
   const short = (kind: keyof Photos) => kind === 'banner' ? tr('배너') : kind === 'avatar' ? tr('로고') : tr('지도 사진');
   const card = [styles.card, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.card }];
   // Public profile fields guests see; [label, fillable on this screen].
@@ -210,16 +210,16 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
               const photo = photos[kind], has = !!(photo.uri || photo.path || photo.image);
               return <View key={kind} style={styles.tile}>
                 <ThemedText type="smallBold">{name(kind)}</ThemedText>
-                {photo.uri ? <Image source={{ uri: photo.uri }} style={[styles.thumb, { backgroundColor: theme.backgroundElement }, kind === 'avatar' && styles.logo]} contentFit="cover"
-                  accessibilityLabel={kind === 'banner' ? tr("채널 배너 미리보기") : kind === 'avatar' ? tr("가게 로고 미리보기") : tr("지도 대표 사진 미리보기")}
+                {photo.uri ? <Image source={{ uri: photo.uri }} style={[styles.thumb, { backgroundColor: theme.backgroundElement }, kind === 'avatar' && styles.logo, kind === 'map' && styles.mapCard]} contentFit="cover"
+                  accessibilityLabel={kind === 'banner' ? tr("채널 배너 미리보기") : kind === 'avatar' ? tr("가게 로고 미리보기") : tr("지도에 뜨는 사진 미리보기")}
                   onError={kind !== 'map' ? undefined : () => { if (!draft.current || draft.current.map.uri !== photos.map.uri) return;
                     setProfile(current => current ? { ...current, imageLoadFailed: true } : current); change({ ...draft.current, map: { ...draft.current.map, uri: null } }); }} />
                   : <Pressable analyticsId="merchant.profile.action" accessibilityRole="button" accessibilityLabel={tr("{0} {1}", short(kind), has ? tr('교체') : tr('선택'))} accessibilityState={{ disabled: busy }}
                     disabled={busy} onPress={() => { play('selection'); void choose(kind); }}
-                    style={({ pressed }) => [styles.thumb, styles.empty, { borderColor: theme.line, opacity: busy ? 0.45 : pressed ? 0.7 : 1 }, kind === 'avatar' && styles.logo]}>
+                    style={({ pressed }) => [styles.thumb, styles.empty, { borderColor: theme.line, opacity: busy ? 0.45 : pressed ? 0.7 : 1 }, kind === 'avatar' && styles.logo, kind === 'map' && styles.mapCard]}>
                     <ThemedText type="smallBold" themeColor="accent">{tr("+ 추가")}</ThemedText>
                   </Pressable>}
-                <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{kind === 'banner' ? tr("가로 · 가운데 기준") : kind === 'avatar' ? tr("원형으로 보여요") : tr("없으면 장소 사진을 써요")}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{kind === 'banner' ? tr("가로 · 가운데 기준") : kind === 'avatar' ? tr("원형으로 보여요") : tr("지도에서 가게를 누르면 보여요")}</ThemedText>
                 <View style={styles.actions}>
                   <ProfileAction label={tr("{0} {1}", short(kind), has ? tr('교체') : tr('선택'))} onPress={() => { void choose(kind); }} disabled={busy} />
                   {has && <ProfileAction label={tr("{0} 제거", short(kind))} onPress={() => change({ ...photos, [kind]: { path: null, uri: null } })} disabled={busy} />}
@@ -281,7 +281,7 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
     {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
     {!loading && !profile && <ProfileAction label={tr("다시 불러오기")} onPress={reload} disabled={busy} />}
     {!!notice && <ThemedText type="small" themeColor="accent" accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
-    {profile?.can_edit && <MerchantHelp items={[tr("저장 전 미리보기에서 확인해 주세요."), tr("지도 대표 사진은 연결된 장소 카드에 표시돼요. 사진을 제거하면 기존 장소 사진을 사용해요.")]} />}
+    {profile?.can_edit && <MerchantHelp items={[tr("저장 전 미리보기에서 확인해 주세요."), tr("손님이 지도에서 가게를 누르면 뜨는 카드에 이 사진이 작게 나와요. 사진을 빼면 원래 장소 사진이 보여요.")]} />}
   </View>;
 }
 
@@ -296,6 +296,8 @@ const styles = StyleSheet.create({
   tile: { flexGrow: 1, flexBasis: 200, minWidth: 0, gap: 8 },
   thumb: { width: '100%', height: 96, borderRadius: 10 },
   logo: { width: 96, borderRadius: 48 },
+  // The map card's thumbnail frame (map.tsx styles.thumbnail), so the preview crops the photo the way the map does.
+  mapCard: { width: 72, height: 84, borderRadius: 12 },
   empty: { borderWidth: 1, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
   button: { minHeight: 44, minWidth: 44, paddingHorizontal: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderRadius: 10 },
   title: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: 8 },

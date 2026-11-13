@@ -192,7 +192,7 @@ test('focus entry starts at page zero and cancels the request on blur', () => {
 test('a refresh replaces cached pages without advancing the old cursor', async () => {
   const ui = requests(); ui.load(null); await tick();
   assert.equal(ui.calls[0][4], null);
-  assert.equal(ui.results[0], null);
+  assert.ok(!ui.results.includes(null), 'what is on the map stays until the new page arrives');
   assert.equal(ui.results.at(-1).page, 0);
   assert.deepEqual(Array.from(ui.results.at(-1).items, item => item.id), ['post:new']);
 });
