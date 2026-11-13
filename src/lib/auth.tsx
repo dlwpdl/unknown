@@ -61,7 +61,7 @@ type AuthValue = {
   signInDev: (email: string, password: string) => Promise<void>;
   signInReview: (email: string, password: string) => Promise<void>;
   signInAdmin: (email: string, password: string) => Promise<void>;
-  signOut: (scope?: 'local' | 'global') => Promise<void>; // 기본은 이 기기만, 'global'은 계정의 모든 기기
+  signOut: (scope?: 'local' | 'global') => Promise<boolean>; // 기본은 이 기기만, 'global'은 계정의 모든 기기. 실패하면 false
   expectSignOut: (expected: boolean) => void; // 탈퇴처럼 곧 스스로 나가는 동안: 실패한 요청을 세션 끊김으로 안내하지 않는다
   setProfilePhoto: (uri: string | null, base64?: string) => Promise<void>;
   setProfileCity: (cityId: string) => Promise<void>;
@@ -352,19 +352,20 @@ export function AuthProvider({ children, publicPage = false }: { children: React
     } catch {
       memberSession.current = wasMember;
       setAuthError(sourceCopy.auth.signOutError);
-      return;
+      return false;
     }
     // Members sign out this device only; admin, business web and "sign out everywhere" revoke every session.
     const { error } = await supabase.auth.signOut({ scope });
     if (error) {
       memberSession.current = wasMember;
       setAuthError(sourceCopy.auth.signOutError);
-      return;
+      return false;
     }
     setProfilePhotoUri(null);
     setProfile(null);
     setMissingProfileUserId(null);
     setProfileCheckedUserId(null);
+    return true;
   }, []);
   const signInAdmin = useCallback(async (email: string, password: string) => {
     if (!beginSignIn()) return;
@@ -554,7 +555,7 @@ export function AuthProvider({ children, publicPage = false }: { children: React
           <AccountLockedPanel
             status={lockedStatus}
             note={activeProfile?.account_status_note}
-            onSignOut={signOut}
+            onSignOut={async () => { await signOut(); }}
           />
         )}
       </Modal>

@@ -17,6 +17,7 @@ const profile = (id, patch = {}) => ({ id, nickname: `${id} 이웃`, city_id: 'v
   account_status: 'active', ai_safety_consent_at: '2026-10-11T18:00:00Z', ...patch });
 
 const signOuts = [];
+let signOutFails = false;
 // Run AuthProvider's real restore/profile effects with controllable network ordering.
 function mount(initialSession = session('member')) {
   const state = [], reads = [], storage = new Map(); let index = 0, effects = [], tree, currentSession = initialSession, onAuthChange, authExpired;
@@ -40,7 +41,7 @@ function mount(initialSession = session('member')) {
     rpc: async (name, args) => name === 'change_profile_nickname' ? { data: { id: args.p_user_id, nickname: args.p_nickname }, error: null } : { error: null },
     auth: { getSession: async () => ({ data: { session: currentSession } }),
       onAuthStateChange(callback) { onAuthChange = callback; return { data: { subscription: { unsubscribe() {} } } }; },
-      startAutoRefresh() {}, stopAutoRefresh() {}, signOut: async options => { signOuts.push(options); currentSession = null; onAuthChange('SIGNED_OUT', null); return {}; } },
+      startAutoRefresh() {}, stopAutoRefresh() {}, signOut: async options => { signOuts.push(options); if (signOutFails) return { error: new Error('offline') }; currentSession = null; onAuthChange('SIGNED_OUT', null); return {}; } },
   };
   const jsx = (type, props, key) => ({ type, props, key }), play = () => {};
   const imports = {
@@ -208,9 +209,12 @@ test('logging out ends only this device session, not the member\'s other phones 
 test('sign out everywhere, the admin dashboard and the business web revoke every session of the account', async context => {
   const harness = mount(); context.after(() => harness.unmount()); const auth = await harness.settle();
   signOuts.length = 0;
-  await auth.signOut('global');
-  assert.deepEqual(JSON.parse(JSON.stringify(signOuts)), [{ scope: 'global' }]);
+  // A failed revoke reports false, so settings stays and says so instead of leaving as if every session ended.
+  signOutFails = true;
+  try { assert.equal(await auth.signOut('global'), false); } finally { signOutFails = false; }
+  assert.equal(await auth.signOut('global'), true);
+  assert.deepEqual(JSON.parse(JSON.stringify(signOuts)), [{ scope: 'global' }, { scope: 'global' }]);
   const read = path => readFileSync(new URL(`../src/${path}`, import.meta.url), 'utf8');
   for (const path of ['components/admin/admin-screen.tsx', 'components/admin/admin-mfa-gate.tsx', 'merchant-web/index.tsx']) assert.match(read(path), /signOut\('global'\)/, path);
-  assert.match(read('app/profile/settings.tsx'), /signOut\('global'\)/, 'settings offers sign out on all devices');
+  assert.match(read('app/profile/settings.tsx'), /if \(!\(await signOut\('global'\)\)\)/, 'settings leaves only after every session is revoked');
 });

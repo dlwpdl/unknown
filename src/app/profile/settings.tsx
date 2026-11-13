@@ -77,9 +77,10 @@ export default function SettingsScreen() {
       {
         text: t.profile.signOutAll,
         style: 'destructive',
-        onPress: () => {
+        onPress: async () => {
           play('warning');
-          void signOut('global');
+          // Leave only once every session is revoked; a failed revoke stays here and says so, so a stolen session is never thought ended.
+          if (!(await signOut('global'))) { Alert.alert(t.profile.signOutAll, t.auth.signOutError); return; }
           if (router.canGoBack()) router.back();
           else router.replace('/');
         },
