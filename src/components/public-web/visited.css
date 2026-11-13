@@ -10,3 +10,4 @@
 @media(prefers-reduced-motion:reduce){.visited-page *{scroll-behavior:auto}}
 
 .visited-card .visited-label{padding:4px 6px;border-radius:6px;background:#CBB9FF;color:#171123}
+.visited-sources{margin-top:40px;padding-top:24px;border-top:1px solid var(--line);max-width:720px}.visited-sources h2{font-size:15px;line-height:1.5;margin:0 0 8px}.visited-sources ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}.visited-sources li{display:flex;flex-wrap:wrap;align-items:center;column-gap:16px;font-size:14px;line-height:1.6}.visited-sources li span{display:flex;flex-wrap:wrap;column-gap:16px}.visited-sources a{display:inline-flex;align-items:center;min-height:44px;color:#CBB9FF}.visited-sources p{font-size:12px;line-height:1.6;color:var(--textSecondary);margin:4px 0 0}.visited-sources p a{color:var(--textSecondary)}

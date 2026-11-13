@@ -10,7 +10,7 @@ const profile = { id: merchant, name: '가게', can_edit: true, updated_at: '202
 const settle = () => new Promise(setImmediate);
 const nodes = root => !root || typeof root !== 'object' ? [] : [root, ...Object.values(root).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 const action = (root, label) => nodes(root).find(node => node.props?.label === label);
-const mapPreview = root => nodes(root).find(node => node.type === 'Image' && node.props.accessibilityLabel === '지도 대표 사진 미리보기');
+const mapPreview = root => nodes(root).find(node => node.type === 'Image' && node.props.accessibilityLabel === '지도에 뜨는 사진 미리보기');
 const input = (root, label) => nodes(root).find(node => node.type === 'TextInput' && node.props.accessibilityLabel === label);
 
 function editor({ fail = false, sessionUser = user, initialProfile = profile, photoFail = false } = {}) {
@@ -84,6 +84,10 @@ test('map photo selection reuses picker/upload, preserves logo and banner, and c
   assert.deepEqual(JSON.parse(JSON.stringify(view.photoCalls[1][2])), { avatarPath: profile.avatar_path, bannerPath: null, mapPhotoPath: 'new-map-path', updatedAt: profile.updated_at });
   assert.ok(view.feedback.includes('success'));
   const oldPreview = mapPreview(view.render());
+  // The preview uses the map card's thumbnail frame, so the owner sees the same crop and corners the map shows.
+  const frame = Object.assign({}, ...oldPreview.props.style.filter(Boolean));
+  const mapThumb = /thumbnail: \{ width: (\d+), height: (\d+), borderRadius: (\d+)/.exec(readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8'));
+  assert.deepEqual([frame.width, frame.height, frame.borderRadius], mapThumb.slice(1).map(Number));
   action(view.render(), '지도 사진 제거').props.onPress();
   action(view.render(), '프로필 사진 저장').props.onPress(); await settle();
   assert.equal(view.photoCalls.at(-1)[2].mapPhotoPath, null);

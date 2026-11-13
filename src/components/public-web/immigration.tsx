@@ -1,6 +1,6 @@
 import './business.css';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { publicImmigrationMeta } from '@/lib/public-seo';
+import { PUBLIC_PLAY_STORE, publicImmigrationMeta } from '@/lib/public-seo';
 import { IMMIGRATION_SECTIONS } from './metadata';
 
 const CITY_GUIDES = [['vancouver', '밴쿠버'], ['toronto', '토론토'], ['montreal', '몬트리올']] as const;
@@ -20,7 +20,7 @@ export default function PublicImmigration() {
       <section aria-labelledby="im-arrive"><h2 id="im-arrive">캐나다에 도착하면</h2>
         <p>의료보험이나 운전면허는 주마다 달라서, 도착하고 바로 챙길 것들은 도시별 정착 가이드에 따로 모았어요.</p>
         <ul className="biz-examples">{CITY_GUIDES.map(([id, name]) => <li key={id}><a href={`/${id}/settlement`} onClick={tap}><strong>{name} 정착 가이드</strong><span>{name}에 와서 먼저 챙길 것</span></a></li>)}</ul>
-        <p style={{ marginTop: 16 }}>먼저 와서 지내는 한인들한테 직접 묻고 싶은 건 글링 앱에 올리면 돼요. <a href="https://apps.apple.com/ca/app/id6809273242" onClick={tap}>iPhone 앱 받기</a></p>
+        <p style={{ marginTop: 16 }}>먼저 와서 지내는 한인들한테 직접 묻고 싶은 건 글링 앱에 올리면 돼요. <a href="https://apps.apple.com/ca/app/id6809273242" onClick={tap}>iPhone 앱 받기</a> · <a href={PUBLIC_PLAY_STORE} onClick={tap}>Android 앱 받기</a></p>
       </section>
       <p className="biz-note" style={{ marginTop: 40 }}>확인 날짜 {publicImmigrationMeta.checked}. 이 페이지는 정부 공식 페이지로 가는 길잡이고 법률 조언이 아니에요. 내 상황에 맞는지는 신청 전에 공식 페이지나 등록된 전문가에게 확인해 주세요.</p>
       <p className="biz-footer"><a href="/" onClick={tap}>글링 공개 게시판</a> · <a href="/meetups" onClick={tap}>한인 모임·소모임</a> · <a href="/faq" onClick={tap}>자주 묻는 질문</a></p>

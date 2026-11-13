@@ -212,6 +212,8 @@ test('the personal business-profile route stays in business mode without the adm
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'expo-router': { useFocusEffect() {}, useLocalSearchParams: () => ({}) },
     'react-native': {},
+    'react-native-safe-area-context': { useSafeAreaInsets: () => ({ bottom: 34 }) },
+    '@/constants/theme': { TabBarHeight: 49 },
     '@/components/analytics-controls': { ScrollView: 'ScrollView' },
     '@/components/keyboard-screen': { KeyboardScreen: 'KeyboardScreen' },
     '@/components/admin/admin-mfa-gate': { AdminMfaGate: 'AdminMfaGate' },
@@ -221,10 +223,13 @@ test('the personal business-profile route stays in business mode without the adm
     '@/hooks/use-chat-identity': { useChatIdentity: () => ({ id: 'merchant-b', name: '두 번째 가게' }) },
   };
   vm.runInNewContext(code, { exports, require: name => { assert.ok(imports[name], name); return imports[name]; } });
-  const tree = exports.default();
+  const tree = exports.default({});
   assert.ok(!nodes(tree).some(n => n.type === 'AdminMfaGate'));
   assert.equal(nodes(tree).find(n => n.type === 'MerchantWorkspace')?.props.assignedOnly, true);
   assert.equal(nodes(tree).find(n => n.type === 'MerchantWorkspace')?.props.initialMerchantId, 'merchant-b', 'Re-entering the business page reopens the business the member switched to.');
+  const bottom = tree => nodes(tree).find(n => n.type === 'ScrollView').props.contentContainerStyle.paddingBottom;
+  assert.equal(bottom(tree), 40 + 34, 'from the profile only the home indicator is in the way');
+  assert.equal(bottom(exports.default({ inTab: true })), 40 + 34 + 49, "as the '내 가게' tab the last card also clears the tab bar");
 });
 
 test('the business web sidebar shows the home composer and only the tools the account may use', async () => {

@@ -54,13 +54,12 @@ test('flat controls preserve meaningful thin outlines and text-tab underlines', 
 
 test('flat controls forward native refs, accessibility, disabled state, callbacks and function children without an extra layout container', () => {
   const exports = {}, flatten = value => Array.isArray(value) ? Object.assign({}, ...value.map(flatten)) : value || {};
-  vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/components/flat-pressable.tsx', import.meta.url), 'utf8'), {
+  vm.runInNewContext(ts.transpileModule(readFileSync(new URL('../src/components/flat-pressable.web.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText, { exports, require(name) {
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }) };
     if (name === 'react') return {};
     if (name === 'react-native') return { Pressable: 'NativePressable', Platform: { OS: 'web' }, StyleSheet: { flatten } };
-    if (name === 'react-native-reanimated') return {};
     if (name === '@/constants/design-system') return designSystem;
     if (name === '@/lib/flat-control') return { flatControlStyle };
     throw new Error(name);
