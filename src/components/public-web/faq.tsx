@@ -1,8 +1,11 @@
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { PUBLIC_PLAY_STORE } from '@/lib/public-seo';
 import { FAQ_ITEMS } from './metadata';
 import { useReaderAnalytics } from './analytics';
 
 export default function PublicFaq() {
   useReaderAnalytics('faq', 'faq');
+  const { play } = useInteractionFeedback();
   return (
     <div style={{ backgroundColor: '#0D0C10', color: '#F6F3F0', minHeight: '100%' }}>
       <main style={{ maxWidth: 640, margin: '0 auto', padding: '32px 20px 48px', font: '16px/1.7 system-ui, sans-serif' }}>
@@ -21,6 +24,8 @@ export default function PublicFaq() {
           <a href="/business" style={{ color: '#CBB9FF' }}>비즈니스 등록·요금제</a>
           {' · '}
           <a href="https://apps.apple.com/ca/app/id6809273242" style={{ color: '#CBB9FF' }}>iPhone 앱 다운로드</a>
+          {' · '}
+          <a href={PUBLIC_PLAY_STORE} style={{ color: '#CBB9FF' }} onClick={() => play('selection')}>Android 앱 다운로드</a>
         </p>
       </main>
     </div>

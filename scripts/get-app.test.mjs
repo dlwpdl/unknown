@@ -21,7 +21,7 @@ async function open(device) {
       if (name === '@/hooks/use-language') return { useLanguage: () => ({ language: 'ko' }) };
       if (name === '@/lib/behavior-analytics') return { behavior: (...args) => events.push(args), flushBehavior: async () => {} };
       if (name === './analytics') return { useReaderAnalytics() {} };
-      if (name === './app-store-choices') return { AppStoreChoices: 'AppStoreChoices', AppStoreRating: 'AppStoreRating', appStoreUrl: () => 'https://apps.apple.com/campaign', useDevice: () => device };
+      if (name === './app-store-choices') return { AppStoreChoices: 'AppStoreChoices', AppStoreRating: 'AppStoreRating', appStoreUrl: () => 'https://apps.apple.com/campaign', playUrl: () => 'https://play.google.com/referrer', useDevice: () => device };
       return {};
     },
   });
@@ -39,8 +39,14 @@ test('/get sends an iPhone straight to the App Store campaign link', async () =>
   assert.deepEqual(page.replaced, ['https://apps.apple.com/campaign']);
 });
 
-test('/get keeps Android on the store choices with the tester request instead of forwarding to Play', async () => {
-  for (const device of ['android', 'desktop', null]) {
+test('/get sends an Android phone straight to Google Play with the referrer', async () => {
+  const page = await open('android');
+  assert.deepEqual(page.events, [['press', 'web.store.android.open']]);
+  assert.deepEqual(page.replaced, ['https://play.google.com/referrer']);
+});
+
+test('/get keeps computers and the static render on the store choices', async () => {
+  for (const device of ['desktop', null]) {
     const page = await open(device);
     assert.equal(page.events.length, 0, `${device}: no store-open event`);
     assert.equal(page.replaced.length, 0, `${device}: stays on the page`);

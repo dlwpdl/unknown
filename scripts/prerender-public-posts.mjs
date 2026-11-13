@@ -36,10 +36,10 @@ export async function loadPublicPosts({ url, key, cities, searchToken, fetcher =
       const last = page.at(-1); before = last.sort_at ?? last.created_at; beforeId = last.id;
     }
   }
-  const ids = [...rows.keys()], business = new Set();
+  const ids = [...rows.keys()], business = new Map();
   // The feed already shows the business name for official business posts; this only tells the schema it is an Organization (50 ids per call, the RPC limit).
   for (let index = 0; index < ids.length; index += 50) {
-    for (const item of await rpc(url, key, 'get_public_post_businesses', { p_post_ids: ids.slice(index, index + 50) }, fetcher) ?? []) business.add(String(item.post_id).toLowerCase());
+    for (const item of await rpc(url, key, 'get_public_post_businesses', { p_post_ids: ids.slice(index, index + 50) }, fetcher) ?? []) business.set(String(item.post_id).toLowerCase(), String(item.business_id ?? '').toLowerCase());
   }
   const posts = [], queue = [...rows.values()];
   await Promise.all(Array.from({ length: 8 }, async () => {
@@ -51,6 +51,8 @@ export async function loadPublicPosts({ url, key, cities, searchToken, fetcher =
         imageUrl: preview.imagePath ? previewImage(row.id) : undefined });
     }
   }));
+  // The business profile lists its own posts (prerender-public-companies.mjs), only ones that made it into the sitemap.
+  for (const post of posts) post.businessId = business.get(post.id) || null;
   posts.sort((a, b) => String(b.lastmod).localeCompare(String(a.lastmod)));
   return { posts, meetups: [...meetups.values()] };
 }

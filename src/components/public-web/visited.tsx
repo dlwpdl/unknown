@@ -62,6 +62,7 @@ export default function PublicVisited() {
     // This route belongs to the public export, whose routes differ from the native app.
     router.push(route(placeId) as Href);
   };
+  const fromOsm = (place: (typeof places)[number]) => place.sourceUrl.startsWith('https://www.openstreetmap.org/');
   const appMap = selected ? `gling://map?${new URLSearchParams({ cityId: city.id, placeId: selected.id, category: 'visited' })}` : null;
   const cityName = ko ? city.name : city.englishName;
   const title = ko ? `${city.name} 한인이 가 본 곳 | 글링` : `Places to go in ${cityName} | Gling`;
@@ -93,7 +94,8 @@ export default function PublicVisited() {
           </select><button type="submit" onClick={() => play('selection')}>{ko ? '보기' : 'Show'}</button>
         </form>
       </div>
-      {catalogState !== 'ready' && <p role="status" className="visited-catalog-status">{catalogState === 'loading'
+      {/* The static export has not checked the catalog yet, so only a running page says it is checking. */}
+      {hydrated && catalogState !== 'ready' && <p role="status" className="visited-catalog-status">{catalogState === 'loading'
         ? ko ? '최신 장소 정보를 확인하고 있어요.' : 'Checking for the latest places.'
         : ko ? '최신 장소 정보를 불러오지 못했어요. 저장된 장소로 계속 둘러볼 수 있어요.' : 'Couldn’t load the latest places. You can keep browsing the saved ones.'}</p>}
       {!places.length ? <section className="visited-empty"><h2>{ko ? '아직 등록된 방문 장소가 없어요' : 'No visited places yet'}</h2><p>{ko ? `${city.name}의 다른 이야기와 모임을 둘러보세요.` : `Browse other stories and meetups in ${cityName}.`}</p>
@@ -129,6 +131,14 @@ export default function PublicVisited() {
             </section>}
           </div>
         </div>
+        {/* Plain links, so the static page also carries each visit's video and where the place details come from. */}
+        <section className="visited-sources" aria-labelledby="visited-sources-title">
+          <h2 id="visited-sources-title">{ko ? '방문 영상과 장소 정보' : 'Visit videos and place details'}</h2>
+          <ul>{places.map(place => <li key={place.id}><strong>{place.name}</strong>
+            <span><a href={place.glingVisited!.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>{ko ? '글링 방문 영상 ↗' : 'Watch the Gling visit ↗'}</a>
+              <a href={place.sourceUrl} target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>{fromOsm(place) ? ko ? 'OpenStreetMap에서 장소 정보 보기 ↗' : 'View on OpenStreetMap ↗' : ko ? '장소 정보 보기 ↗' : 'View place details ↗'}</a></span></li>)}</ul>
+          {places.some(fromOsm) && <p>{ko ? '장소 이름과 주소는 OpenStreetMap에서 가져왔어요. ' : 'Place names and addresses come from OpenStreetMap. '}<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" onClick={() => play('selection')}>© OpenStreetMap contributors</a></p>}
+        </section>
       </>}
     </main>
     <footer className="reader-footer"><span>{ko ? 'gling · 같이 갈 사람, 같이 나눌 이야기' : 'gling · People to go with, stories to share'}</span><nav aria-label={ko ? '정책' : 'Policies'}>

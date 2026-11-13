@@ -32,7 +32,9 @@ test('each public business gets its own indexable page with LocalBusiness data a
   };
   try {
     writeFileSync(join(directory, '+not-found.html'), '<html><head><title data-rh="true">old</title><meta name="robots" content="noindex, nofollow" data-rh="true"/></head><body><div id="root">app</div></body></html>');
-    const companies = await prerenderPublicCompanies(directory, { url: 'https://db.example', key: 'anon', cities: ['vancouver', 'toronto', 'montreal'], fetcher });
+    const own = '44444444-4444-4444-8444-444444444444', other = '55555555-5555-4555-8555-555555555555';
+    const posts = [{ id: own, title: '파스타 <신메뉴>', label: '비즈니스', createdAt: '2026-11-10T20:00:00Z', businessId: rated }, { id: other, title: '남의 글', businessId: plain }];
+    const companies = await prerenderPublicCompanies(directory, { url: 'https://db.example', key: 'anon', cities: ['vancouver', 'toronto', 'montreal'], fetcher, posts });
     assert.deepEqual(companies.map(company => company.id), [rated, plain]);
     assert.ok(calls.every(([, key]) => key === 'anon'));
 
@@ -40,6 +42,11 @@ test('each public business gets its own indexable page with LocalBusiness data a
     assert.ok(!page.includes('noindex') && !page.includes('>old<') && page.includes('<div id="root">app</div>'));
     assert.ok(page.includes(`<link rel="canonical" href="${PUBLIC_SITE}/company/${rated}"`));
     assert.ok(page.includes('id="gling-static-company"') && page.includes('지모코 &#60;카페&#62;') && !page.includes('<카페>'));
+    // The crawler copy carries the phone, the logo with its alt text and this business's own sitemap posts only.
+    const copy = page.match(/<article id="gling-static-company"[\s\S]*?<\/article>/)[0];
+    assert.match(copy, /전화: <a href="tel:6040000000"[^>]*>604-000-0000<\/a>/);
+    assert.match(copy, /<img src="[^"]*format=business-image[^"]*kind=avatar[^"]*" alt="지모코 &#60;카페&#62; 로고"/);
+    assert.ok(copy.includes(`<a href="/posts/${own}"`) && copy.includes('파스타 &#60;신메뉴&#62;') && copy.includes('2026년 11월 10일') && !copy.includes(other));
     const schema = ld(page);
     assert.equal(schema['@type'], 'LocalBusiness');
     assert.equal(schema.url, `${PUBLIC_SITE}/company/${rated}`);
@@ -51,6 +58,8 @@ test('each public business gets its own indexable page with LocalBusiness data a
     assert.deepEqual(schema.aggregateRating, { '@type': 'AggregateRating', ratingValue: 8.7, bestRating: 10, worstRating: 1, reviewCount: 3 });
     assert.match(page, /property="og:image" content="[^"]*format=business-image[^"]*kind=avatar/);
 
+    const plainPage = readFileSync(join(directory, 'company', `${plain}.html`), 'utf8');
+    assert.ok(!plainPage.includes('전화:') && !plainPage.includes('<img') && plainPage.includes(`/posts/${other}`) && !plainPage.includes(own));
     const bare = ld(readFileSync(join(directory, 'company', `${plain}.html`), 'utf8'));
     assert.equal(bare.aggregateRating, undefined, 'no rating without verified reviews');
     assert.equal(bare.telephone, undefined);
