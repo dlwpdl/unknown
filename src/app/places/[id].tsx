@@ -60,6 +60,8 @@ export default function PlaceDetailScreen() {
   const scroll = useRef<ScrollViewInstance>(null), reviewsY = useRef(0);
   // The fixed buttons step aside while a review is being typed, so they never sit on the keyboard.
   const [typing, setTyping] = useState(false);
+  // …and while the review editor is open, so the score and 후기 게시 are the only actions on screen (QA A-place-02).
+  const [reviewing, setReviewing] = useState(false);
   useEffect(() => {
     // iOS announces the keyboard before it rises; Android only once it is up.
     const [show, hide] = Platform.OS === 'ios' ? ['keyboardWillShow', 'keyboardWillHide'] as const : ['keyboardDidShow', 'keyboardDidHide'] as const;
@@ -125,6 +127,8 @@ export default function PlaceDetailScreen() {
   const pill = ({ pressed }: { pressed: boolean }) => [ControlStyles.pill, styles.pill, clay && styles.clayPill, controlPresentation(theme, { pressed, clay }).container];
   const tile = [styles.tile, clayBox ? styles.clayCard : { backgroundColor: theme.card }];
   const top50 = !!place && place.recommendation?.placeId === place.id;
+  const hasPhoto = !!(place?.mapPhotoUri || place?.photo);
+  const badges = (top50 || !!place?.glingVisited) ? <>{top50 && <Top50Badge />}{!!place?.glingVisited && <GlingVisitedBadge />}</> : null;
   // Openverse's own note belongs with the photo's other credits (A안: 사진 출처 창 안).
   const credits = place?.photo ? [
     place.photo.title && tr(place.photo.title), `${language === 'en' ? 'Photo' : '사진'}: ${place.photo.artist && tr(place.photo.artist)}`, place.photo.sourceUrl,
@@ -149,13 +153,15 @@ export default function PlaceDetailScreen() {
       onLayout={({ nativeEvent: { layout: { height } } }) => setViewport(previous => previous.height === height ? previous : { ...previous, height })}
       onScroll={trackViewport ? ({ nativeEvent }) => setViewport({ y: nativeEvent.contentOffset.y, height: nativeEvent.layoutMeasurement.height }) : undefined}>
       {!place || !city ? <StateCard kind="error" title={tr("장소를 찾지 못했어요")} body={tr("선택한 도시의 장소 목록에서 다시 열어 주세요.")} /> : <>
-        <View>
+        {/* Without a photo the name and kinds lead the page instead of an empty frame (QA A-place-01). */}
+        {hasPhoto && <View>
           <CityPlacePhoto place={place} style={styles.photo} />
-          {(top50 || !!place.glingVisited) && <View style={styles.badges}>{top50 && <Top50Badge />}{!!place.glingVisited && <GlingVisitedBadge />}</View>}
+          {badges && <View style={styles.badges}>{badges}</View>}
           {!!credits && <View style={styles.credit}><PostPhotoCredits credits={credits} variant="photo" /></View>}
-        </View>
+        </View>}
         <View style={styles.head}>
-          <ThemedText type="small" themeColor="textSecondary">{tr(city.name)}{" " + tr("· 지도 등록 장소")}</ThemedText>
+          {!hasPhoto && badges && <View style={styles.inlineBadges}>{badges}</View>}
+          <ThemedText type="small" themeColor="textSecondary">{tr(city.name)}</ThemedText>
           <ThemedText accessibilityRole="header" style={styles.title}>{place.name}</ThemedText>
           {/* Named like the map card (owner 2026-11-11): the map category, then the place's kinds in the map's own order. */}
           <ThemedText type="small" themeColor="textSecondary">{kinds.join(' · ')}</ThemedText>
@@ -190,13 +196,7 @@ export default function PlaceDetailScreen() {
         </View>
         {copied && <ThemedText type="small" themeColor="textSecondary" accessibilityRole="alert" accessibilityLiveRegion="polite">{tr("주소를 복사했어요.")}</ThemedText>}
         {/* P3: 전화·인스타그램·예약 only when the place has them. These reuse IDs already in the server allowlist. */}
-        <View style={styles.actions}>
-          <Pressable analyticsId="places.open" accessibilityRole="button" accessibilityLabel={`${place.name} · ${tr('글링 지도에서 보기')}`}
-            onPress={() => { play('selection'); router.navigate(placeMapRoute(place)); }} style={pill}>
-            {clay && <ClayControlFill />}
-            <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={IconSize.inline} tintColor={theme.accent} accessible={false} />
-            <ThemedText type="smallBold">{tr('글링 지도에서 보기')}</ThemedText>
-          </Pressable>
+        {(!!website || !!phoneUrl || !!instagram || !!place.website) && <View style={styles.actions}>
           {!!website && <Pressable analyticsId="places.detail.website" accessibilityRole="link" accessibilityLabel={tr("{0} 웹사이트 열기", (place.name))} onPress={() => openSource(website, 'place_website')} style={pill}>
             {clay && <ClayControlFill />}
             <SymbolView name={{ ios: 'globe', android: 'language', web: 'language' }} size={IconSize.inline} tintColor={theme.accent} accessible={false} />
@@ -215,8 +215,10 @@ export default function PlaceDetailScreen() {
           </Pressable>}
           {/* Business-linked places redirect to the company page, so only a booking-site website can show here. */}
           <ReservationButton website={place.website} />
-        </View>
-        {mapsUrl && <PostMapLink url={mapsUrl} label={place.name} pin={place} onOpened={() => record('place_directions')} />}
+        </View>}
+        {/* One map entry: the card opens the Gling map; 길찾기 below is the way out to other map apps (QA A-place-01). */}
+        {mapsUrl && <PostMapLink url={mapsUrl} label={place.name} pin={place} analyticsId="places.open" actionLabel={tr('글링 지도에서 보기')}
+          onPress={() => { play('selection'); router.navigate(placeMapRoute(place)); }} />}
         {/* The legacy analytics target distinguishes this shared action by its screen. 모임 is one list row now; the page's filled button is 글쓰기 below. */}
         {place.id.startsWith('osm:') && <ListCard>
           <ListRow analyticsId="ticketmaster.meetup.find" title={language === 'en' ? 'Find a meetup here' : '이곳에 갈 모임 보기'}
@@ -226,13 +228,12 @@ export default function PlaceDetailScreen() {
         </ListCard>}
         <PlaceSavedBy place={place} saves={saves} />
         {place.id.startsWith('osm:') && <View style={styles.section} onLayout={event => { reviewsY.current = event.nativeEvent.layout.y; if (reviewPending.current) { reviewPending.current = false; openReview(); } }}>
-          <ThemedText type="subtitle" accessibilityRole="header">{tr('후기')}</ThemedText>
-          <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} writeRequest={reviewRequest} />
+          <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} writeRequest={reviewRequest} onEditingChange={setReviewing} />
           <PlaceExternalRatings key={`${city.id}:${place.id}`} cityId={city.id} placeId={place.id} />
         </View>}
         <PlaceRelated place={place} saves={saves} />
-        {/* OSM attribution has to show without a tap, so it rides in the folded title. */}
-        <Disclosure analyticsId="places.detail.attribution" title={tr('출처·이용 조건 · © OpenStreetMap')}>
+        {/* OSM attribution has to show without a tap: the map card prints it, otherwise it rides in the folded title (QA A-place-01). */}
+        <Disclosure analyticsId="places.detail.attribution" title={tr(mapsUrl ? '출처·이용 조건' : '출처·이용 조건 · © OpenStreetMap')}>
           {!!place.recommendation && <Pressable analyticsId="places.detail.source" accessibilityRole="link" accessibilityLabel={tr("사진 명소 선정 출처 보기")} onPress={() => openSource(place.recommendation!.sourceUrl)} style={styles.link}>
             <ThemedText type="smallBold" themeColor="accent">{tr("사진 명소 선정 출처 보기")}</ThemedText>
           </Pressable>}
@@ -248,7 +249,7 @@ export default function PlaceDetailScreen() {
       </>}
     </ScrollView>
     {/* A안: 길찾기 and 글쓰기 stay at the bottom however far the page scrolls. */}
-    {place && city && !typing && <Reanimated.View entering={reduced ? FadeIn.duration(ControlMotion.settleMs) : SlideInDown.duration(ControlMotion.expandMs)} style={[styles.footer, { backgroundColor: theme.background, borderTopColor: theme.line }]}>
+    {place && city && !typing && !reviewing && <Reanimated.View entering={reduced ? FadeIn.duration(ControlMotion.settleMs) : SlideInDown.duration(ControlMotion.expandMs)} style={[styles.footer, { backgroundColor: theme.background, borderTopColor: theme.line }]}>
       <View style={styles.footerRow}>
         <View style={styles.grow}><RaisedActionButton analyticsId="company.about.maps" tone={compose ? 'secondary' : 'primary'} label={tr("길찾기")} onPress={openDirections} /></View>
         {compose && <View style={styles.grow}><RaisedActionButton analyticsId="places.detail.compose" label={tr('이 장소로 글쓰기')} onPress={compose} /></View>}
@@ -272,6 +273,7 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   photo: { width: '100%', aspectRatio: 4 / 3, borderRadius: 16 },
   badges: { position: 'absolute', top: Spacing.two, left: Spacing.two, flexDirection: 'row', gap: Spacing.one },
+  inlineBadges: { flexDirection: 'row', gap: Spacing.one, marginBottom: Spacing.one },
   credit: { position: 'absolute', right: Spacing.one, bottom: Spacing.one },
   head: { gap: Spacing.one },
   title: { fontSize: 26, lineHeight: 36, fontWeight: '700' },

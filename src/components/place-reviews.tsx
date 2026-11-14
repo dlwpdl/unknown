@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { StyleSheet, TextInput, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
-import { GlingRatingIcon, MerchantRatingBar } from '@/components/merchant-rating-bar';
+import { GlingRatingIcon, MerchantRatingBar, RatingScorePicker } from '@/components/merchant-rating-bar';
 import { PostCard } from '@/components/post-card';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { StateCard } from '@/components/state-card';
@@ -21,9 +21,8 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadPlaceRatingState, loadPlaceReviews, placeReviewText, PLACE_REVIEW_MAX_LENGTH, writeRatedPlaceReview, type PlaceRatingState, type PlaceReviewPage } from '@/lib/place-reviews';
 import { supabase } from '@/lib/supabase';
 
-// writeRequest: each new value opens the editor, used after saving a place as 가 봤음 (G1).
-type Props = { cityId: string; placeId: string; viewport?: { y: number; height: number }; writeRequest?: number };
-const SCORES = Array.from({ length: 19 }, (_, index) => 1 + index / 2);
+// writeRequest: each new value opens the editor, used after saving a place as 가 봤음 (G1). onEditingChange lets the screen hide its fixed buttons meanwhile.
+type Props = { cityId: string; placeId: string; viewport?: { y: number; height: number }; writeRequest?: number; onEditingChange?: (editing: boolean) => void };
 
 export function PlaceReviews(props: Props) {
   const { tr } = useLanguage();
@@ -35,7 +34,7 @@ export function PlaceReviews(props: Props) {
   return <ScopedPlaceReviews key={`${me.id}:${props.cityId}:${props.placeId}`} {...props} userId={me.id} />;
 }
 
-function ScopedPlaceReviews({ cityId, placeId, userId, viewport, writeRequest = 0 }: Props & { userId: string }) {
+function ScopedPlaceReviews({ cityId, placeId, userId, viewport, writeRequest = 0, onEditingChange }: Props & { userId: string }) {
   const { tr } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox(), router = useRouter(), hidden = useContentVisibility();
   const { play } = useInteractionFeedback();
@@ -76,6 +75,8 @@ function ScopedPlaceReviews({ cityId, placeId, userId, viewport, writeRequest = 
     }
   }, [cityId, placeId, userId]);
 
+  useEffect(() => { onEditingChange?.(editing); }, [editing, onEditingChange]);
+  useEffect(() => () => onEditingChange?.(false), [onEditingChange]);
   useEffect(() => {
     const lifetime = { active: true };
     lifecycle.current = lifetime;
@@ -123,12 +124,14 @@ function ScopedPlaceReviews({ cityId, placeId, userId, viewport, writeRequest = 
   });
   return <View testID="places.reviews.section" onLayout={({ nativeEvent }) => setSectionY(nativeEvent.layout.y)}
     style={[styles.section, { borderTopColor: theme.line }]}>
+    {/* One title and one action: the screen's own 후기 heading and the refresh text button are gone (QA A-place-01). */}
     <View style={styles.header}>
-      <ThemedText type="smallBold" accessibilityRole="header">{tr('글링 회원 후기')}</ThemedText>
-      <Pressable analyticsId="places.reviews.refresh" accessibilityRole="button" disabled={loading || saving} accessibilityState={{ disabled: loading || saving }}
-        onPress={() => { play('selection'); void read(); }} style={styles.action}>
-        <ThemedText type="smallBold" themeColor="accent">{tr('새로고침')}</ThemedText>
-      </Pressable>
+      <ThemedText type="subtitle" accessibilityRole="header">{tr('후기')}</ThemedText>
+      {!editing && <Pressable analyticsId="places.reviews.write" accessibilityRole="button"
+        disabled={writeDisabled} accessibilityState={{ disabled: writeDisabled }}
+        onPress={() => { play('selection'); startWriting(); }} style={[styles.action, styles.write, { borderColor: theme.line, opacity: writeDisabled ? 0.5 : 1 }]}>
+        <ThemedText type="smallBold" themeColor="accent">{tr(rating?.myReview ? '내 리뷰 수정' : '후기 남기기')}</ThemedText>
+      </Pressable>}
     </View>
     {/* With no rating yet the empty review card below says so once (QA C19-1). */}
     {!!rating?.count && <View style={styles.rating}>
@@ -136,31 +139,24 @@ function ScopedPlaceReviews({ cityId, placeId, userId, viewport, writeRequest = 
       <ThemedText type="smallBold">{rating.average == null ? tr('아직 글링 평점이 없어요') : tr('{0}점 / 10점', rating.average.toFixed(1))}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">{tr('글링 {0}개 평가', rating.count)}</ThemedText>
     </View>}
-    {ratingError && <ThemedText testID="places.reviews.rating-error" type="small" themeColor="textSecondary" accessibilityRole="alert">
-      {tr('평점을 불러오지 못했어요. 새로고침으로 다시 시도해 주세요.')}
-    </ThemedText>}
+    {ratingError && <View style={styles.retryRow}>
+      <ThemedText testID="places.reviews.rating-error" type="small" themeColor="textSecondary" accessibilityRole="alert" style={styles.grow}>{tr('평점을 불러오지 못했어요.')}</ThemedText>
+      <Pressable analyticsId="places.reviews.refresh" accessibilityRole="button" disabled={loading || saving} accessibilityState={{ disabled: loading || saving }}
+        onPress={() => { play('selection'); void read(); }} style={styles.action}>
+        <ThemedText type="smallBold" themeColor="accent">{tr('다시 시도')}</ThemedText>
+      </Pressable>
+    </View>}
     {rating?.myReview?.status === 'removed' && <ThemedText type="small" themeColor="textSecondary" accessibilityRole="alert">
       {tr('삭제되거나 숨겨진 리뷰는 수정할 수 없어요.')}
     </ThemedText>}
     <ThemedText type="small" themeColor="textSecondary">{tr('회원들이 남긴 글이에요. 실제 방문 여부를 인증한 후기는 아니에요.')}</ThemedText>
     {saved && <ThemedText type="small" themeColor="accent" accessibilityLiveRegion="polite">{tr('후기를 게시했어요. 도시 커뮤니티에서도 볼 수 있어요.')}</ThemedText>}
-    {!editing ? <Pressable analyticsId="places.reviews.write" accessibilityRole="button"
-      disabled={writeDisabled} accessibilityState={{ disabled: writeDisabled }}
-      onPress={() => { play('selection'); startWriting(); }} style={[styles.action, styles.write, { borderColor: theme.line, opacity: writeDisabled ? 0.5 : 1 }]}>
-      <ThemedText type="smallBold" themeColor="accent">{tr(rating?.myReview ? '내 리뷰 수정' : '후기 남기기')}</ThemedText>
-    </Pressable> : <View style={[styles.editor, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>
+    {editing && <View style={[styles.editor, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>
       {clayBox && <ClayBoxFill kind="tile" />}
       <ThemedText type="small">{tr('게시하면 이 장소의 후기와 도시 커뮤니티에 일반 글로 표시돼요. 장소 링크와 지도는 자동으로 붙어요.')}</ThemedText>
       <ThemedText type="smallBold">{score == null ? tr('점수를 선택해 주세요') : tr('{0}점 / 10점', score.toFixed(1))}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{tr('최저 1점 · 최고 10점 · 0.5점 단위')}</ThemedText>
-      <View style={styles.scores} accessibilityRole="radiogroup" accessibilityLabel={tr('장소 후기 점수')}>
-        {SCORES.map(value => <Pressable key={value} analyticsId="places.reviews.score" testID={`places.reviews.score.${value}`}
-          accessibilityRole="radio" accessibilityLabel={tr('{0}점', value)} aria-checked={value === score} accessibilityState={{ checked: value === score, disabled: saving }} disabled={saving}
-          onPress={() => { play('selection'); setScore(value); }}
-          style={[styles.score, { borderColor: value === score ? theme.accent : theme.line, backgroundColor: value === score ? theme.accent : theme.background }]}>
-          <ThemedText type="smallBold" style={{ color: value === score ? theme.accentInk : theme.text }}>{value}</ThemedText>
-        </Pressable>)}
-      </View>
+      <RatingScorePicker analyticsId="places.reviews.score" testID="places.reviews.score" value={score} onChange={setScore} label={tr('장소 후기 점수')} disabled={saving} />
+      <ThemedText type="small" themeColor="textSecondary">{tr('✦ 하나가 2점이에요. 같은 ✦를 또 누르면 반 개가 되고, − +로 0.5점씩 맞춰요.')}</ThemedText>
       <TextInput testID="places.reviews.body" accessibilityLabel={tr('장소 후기 내용')} multiline textAlignVertical="top"
         value={body} onChangeText={setBody} onFocus={() => play('selection')} editable={!saving} maxLength={PLACE_REVIEW_MAX_LENGTH}
         placeholder={tr('직접 겪은 경험을 적어 주세요. 개인 연락처 등 민감한 정보는 쓰지 마세요.')} placeholderTextColor={theme.textSecondary}
@@ -214,7 +210,7 @@ const styles = StyleSheet.create({
   clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   editor: { borderWidth: 1, borderRadius: 16, padding: Spacing.three, gap: Spacing.two },
   rating: { gap: Spacing.one },
-  scores: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  score: { minWidth: 44, minHeight: 44, paddingHorizontal: Spacing.two, borderWidth: 1, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  retryRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  grow: { flex: 1, minWidth: 0 },
   input: { minHeight: 132, borderWidth: 1, borderRadius: 12, padding: Spacing.three, fontSize: 16, lineHeight: 24 },
 });

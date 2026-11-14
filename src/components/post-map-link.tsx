@@ -12,8 +12,11 @@ import { useAuth } from '@/lib/auth';
 import { recordProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
 
-/** `pin` draws the preview for a link that searches by name and address, which carries no coordinates of its own (QA C19-2). */
-export function PostMapLink({ url, label, pin: knownPin, onOpened }: { url: string; label?: string; pin?: PostPin; onOpened?: () => void }) {
+/** `pin` draws the preview for a link that searches by name and address, which carries no coordinates of its own (QA C19-2).
+ * `onPress` with `actionLabel` turns the card into an in-app map entry for screens whose own directions button already opens outside maps (QA A-place-01). */
+export function PostMapLink({ url, label, pin: knownPin, onOpened, onPress, actionLabel, analyticsId }: {
+  url: string; label?: string; pin?: PostPin; onOpened?: () => void; onPress?: () => void; actionLabel?: string; analyticsId?: string;
+}) {
   const { t } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const { isAuthed, me } = useAuth(), userId = isAuthed ? me.id : null;
@@ -22,10 +25,13 @@ export function PostMapLink({ url, label, pin: knownPin, onOpened }: { url: stri
   const target = googleMapsUrl(url);
   if (!target) return null;
   const pin = knownPin ?? googleMapsPin(target);
-  return <Pressable analyticsId="components_post-map-link.pressable.1"
-    accessibilityRole="link" accessibilityLabel={`${label ? `${label} · ` : ''}${t.map.openLabel}`}
+  const inApp = !!onPress && !!actionLabel;
+  // A screen whose map entry this card is keeps its own analytics target (places.open).
+  return <Pressable analyticsId="components_post-map-link.pressable.1" {...(analyticsId ? { analyticsId } : {})}
+    accessibilityRole={inApp ? 'button' : 'link'} accessibilityLabel={`${label ? `${label} · ` : ''}${inApp ? actionLabel : t.map.openLabel}`}
     style={({ pressed }) => [styles.link, { borderColor: theme.line, opacity: pressed ? 0.6 : 1 }]}
     onPress={() => {
+      if (inApp) { onPress(); return; }
       play('selection');
       void Linking.openURL(target).then(() => onOpened?.(), () => {
         if (userId && identity.current === userId) void recordProductEvent(supabase, { kind: 'map_error', platform: Platform.OS }).catch(() => {});
@@ -36,8 +42,8 @@ export function PostMapLink({ url, label, pin: knownPin, onOpened }: { url: stri
       : <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={24} tintColor={theme.accent} />}
     <View style={styles.caption}>
     {label && <ThemedText type="smallBold" style={[styles.label, styles.name]}>{label}</ThemedText>}
-    <View style={styles.action}><ThemedText type="smallBold" themeColor="accent" style={styles.label}>{t.map.open}</ThemedText>
-    <SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} size={14} tintColor={theme.accent} />
+    <View style={styles.action}><ThemedText type="smallBold" themeColor="accent" style={styles.label}>{inApp ? actionLabel : t.map.open}</ThemedText>
+    <SymbolView name={inApp ? { ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } : { ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} size={14} tintColor={theme.accent} />
     </View>
     </View>
     </View>{pin && <ThemedText type="small" themeColor="textSecondary" style={styles.credits}>OpenFreeMap © OpenMapTiles · © OpenStreetMap</ThemedText>}

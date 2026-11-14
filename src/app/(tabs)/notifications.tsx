@@ -268,7 +268,7 @@ export default function NotificationsScreen() {
 
   const renderRow = (item: InboxItem<AppNotification>) => {
     const row = item.lead, admin = activeTab === 'admin', unread = itemUnread(item);
-    const body = textOf(item), title = row.title ? tr(row.title) : null;
+    const body = textOf(item), title = item.kind === 'signin' && item.rows.length > 1 ? tr('로그인 알림 {0}개', item.rows.length) : row.title ? tr(row.title) : null;
     const snippet = row.target_id && extras?.token === cache ? extras.snippets.get(row.target_id) : undefined;
     const time = relativeTime(row.created_at, undefined, appLocale);
     const tag = activeTab === 'city' ? tr(row.kind === 'trending_hashtag' ? '지금 뜨는 주제' : row.kind === 'trending_meetup' ? '지금 뜨는 모임' : CITY_LABELS[row.category] ?? '글링 안내') : null;

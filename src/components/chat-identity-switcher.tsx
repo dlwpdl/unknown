@@ -18,25 +18,36 @@ import { supabase } from '@/lib/supabase';
 import { businessMediaUrl } from '@/lib/business-media';
 import { ControlMotion, ControlStyles, Typography, controlPresentation } from '@/constants/design-system';
 
+// With no business ready to chat, the chat picker still names the account's businesses and why they wait (QA A-chat-02); a failed side read just leaves them out.
+// shortcut: a business that waits beside one that is ready is not listed, read both lists every time if owners run several.
+async function loadProfiles(userId: string, target: 'chat' | 'business') {
+  const next = await loadMyMerchantConnections(supabase, userId, true);
+  const all = target === 'chat' && !next.merchants.length ? await loadMyMerchantConnections(supabase, userId).catch(() => null) : null;
+  return { next, waiting: { userId, rows: all?.user_id === userId ? all.merchants.filter(row => row.role !== 'admin') : [] } };
+}
+
 export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilityChange }: { onChanged?: () => void; target?: 'chat' | 'business'; onAvailabilityChange?: (available: boolean) => void }) {
   const { me, isAuthed } = useAuth(), business = useChatIdentity(), router = useRouter();
   const { tr } = useLanguage(), theme = useTheme(), { play } = useInteractionFeedback(), clayBox = useClayBox();
   const [openedFor, setOpenedFor] = useState<string | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [result, setResult] = useState<MyMerchantConnections | null>(null);
+  // Businesses the account runs that the server does not let chat yet (consent or owner check pending), shown greyed in the chat picker (QA A-chat-02).
+  const [waiting, setWaiting] = useState<{ userId: string; rows: MyMerchantConnections['merchants'] } | null>(null);
   const user = useRef(me.id), serial = useRef(0), pending = useRef(false);
   useLayoutEffect(() => {
     user.current = isAuthed ? me.id : ''; serial.current++; pending.current = false;
     return () => { user.current = ''; setBusy(false); setError(''); setOpenedFor(null); };
   }, [me.id, isAuthed]);
   useFocusEffect(useCallback(() => {
-    if (!isAuthed || target !== 'business') return;
+    // The chat card also needs the list up front: with nothing to switch to it stays hidden (QA A-chat-02).
+    if (!isAuthed) return;
     let active = true;
     const refresh = async () => {
       if (pending.current) return;
       const request = ++serial.current;
       try {
-        const next = await loadMyMerchantConnections(supabase, me.id, true);
-        if (active && user.current === me.id && request === serial.current) setResult(next);
+        const next = await loadProfiles(me.id, target);
+        if (active && user.current === me.id && request === serial.current) { setResult(next.next); setWaiting(next.waiting); }
       } catch {
         if (active && user.current === me.id && request === serial.current) { setResult(null); setOpenedFor(null); }
       }
@@ -51,7 +62,9 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
     return () => onAvailabilityChange?.(false);
   }, [onAvailabilityChange, target, rows.length]);
   if (!isAuthed) return null;
-  if (target === 'business' && !rows.length && openedFor !== me.id) return null;
+  const waitingRows = target === 'chat' && waiting?.userId === me.id ? waiting.rows : [];
+  // Nothing to switch to: no card and no one-option sheet (QA A-chat-02).
+  if (!rows.length && !waitingRows.length && openedFor !== me.id && (target === 'business' || !business)) return null;
   const name = business?.name ?? me.nickname;
   // DragSheet plays its own close haptic before onClose; the X button plays here.
   function dismiss() { serial.current++; pending.current = false; setBusy(false); setOpenedFor(null); }
@@ -62,8 +75,8 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
     play('selection'); pending.current = true; setBusy(true); setError(''); setResult(null); setOpenedFor(me.id);
     const request = ++serial.current;
     try {
-      const next = await loadMyMerchantConnections(supabase, me.id, true);
-      if (user.current === me.id && request === serial.current) setResult(next);
+      const next = await loadProfiles(me.id, target);
+      if (user.current === me.id && request === serial.current) { setResult(next.next); setWaiting(next.waiting); }
     } catch {
       if (user.current === me.id && request === serial.current) { setError('연결을 확인하지 못했어요. 현재 프로필은 유지돼요.'); play('warning'); }
     } finally {
@@ -107,7 +120,8 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
       onPress={() => { void open(); }} style={({ pressed }) => [styles.current, { borderColor: clayBox ? 'transparent' : theme.line, backgroundColor: clayBox ? 'transparent' : pressed ? theme.backgroundSelected : theme.card, opacity: clayBox && pressed ? 0.82 : 1 }]}>
       {clayBox && <ClayBoxFill kind="tile" />}
       <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><SymbolView name={business ? { ios: 'storefront', android: 'storefront', web: 'storefront' } : { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} size={22} tintColor={theme.accent} /></View>
-      <View style={styles.identity}><ThemedText style={styles.name} numberOfLines={1}>{name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr(business ? '비즈니스 대화함' : '개인 대화함')}</ThemedText></View>
+      {/* The header already shows whose name this is, so the card names only the inbox (QA A-chat-01). */}
+      <View style={styles.identity}><ThemedText style={styles.name} numberOfLines={1}>{tr(business ? '비즈니스 대화함' : '개인 대화함')}</ThemedText></View>
       <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={14} tintColor={theme.textSecondary} />
     </Pressable>}
     <DragSheet visible={openedFor === me.id} onClose={dismiss}>
@@ -124,6 +138,11 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
             {photo(typeof row.avatar_path === 'string' && row.avatar_path.startsWith(`business-profile/${row.id}/avatar/`) ? businessMediaUrl(row.avatar_path) : null)}
             <View style={styles.identity}><ThemedText style={styles.name}>{row.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('비즈니스')}{target === 'business' ? ` · ${tr(row.role === 'owner' ? '소유자' : '운영 담당자')}` : ''}</ThemedText></View>{row.id === business?.id && <SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} size={22} tintColor={theme.accent} />}
           </Pressable>)}
+          {waitingRows.map(row => <View key={row.id} accessible accessibilityRole="radio" accessibilityState={{ disabled: true }} style={[optionStyle(false), styles.waiting]}>
+            {clayBox && <ClayBoxFill kind="tile" />}
+            {photo(null)}
+            <View style={styles.identity}><ThemedText style={styles.name}>{row.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr('비즈니스 확인이 끝나면 대화할 수 있어요')}</ThemedText></View>
+          </View>)}
           {busy && <ThemedText accessibilityLiveRegion="polite" type="small">{tr('현재 연결 확인 중…')}</ThemedText>}
           {!!error && <ThemedText accessibilityRole="alert" type="small">{tr(error)}</ThemedText>}
           {target === 'business' && <ThemedText type="small" themeColor="textSecondary">{tr('비즈니스로 바꾸면 글과 대화가 가게 이름으로 올라가요. 모임은 개인으로만 열고 참여할 수 있어요.')}</ThemedText>}
@@ -134,7 +153,7 @@ export function ChatIdentitySwitcher({ onChanged, target = 'chat', onAvailabilit
 }
 
 const styles = StyleSheet.create({
-  current: { flexShrink: 0, minHeight: 72, marginBottom: 16, borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  current: { flexShrink: 0, minHeight: 56, marginBottom: 16, borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: { width: 40, height: 40, borderRadius: 20, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   identity: { flex: 1, minWidth: 0, gap: 2 },
   name: { fontWeight: '700' },
@@ -143,4 +162,5 @@ const styles = StyleSheet.create({
   sheetTitle: { flex: 1, fontSize: 20, lineHeight: 28, fontWeight: '700' },
   close: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   option: { minHeight: 72, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16 },
+  waiting: { opacity: 0.5 },
 });

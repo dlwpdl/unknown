@@ -4,6 +4,10 @@ import { Animated, StyleSheet, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useTheme } from '@/hooks/use-theme';
 import { Colors } from '@/constants/theme';
+import { Pressable } from '@/components/analytics-controls';
+import { SymbolView } from '@/components/symbol-view';
+import { ControlStyles, controlPresentation } from '@/constants/design-system';
+import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import type { MerchantReviewKind } from '@/lib/merchant-reviews';
 
 const IRIS = {
@@ -57,7 +61,49 @@ export function MerchantRatingBar({ score, reviewKind = 'usage', label }: { scor
   </View>;
 }
 
+/** Next score for RatingScorePicker: a mark is worth two points and a second tap on a full mark takes one off; a step moves 0.5 within 1–10. */
+export function ratingPickerNext(current: number | null, action: { mark: number } | { step: 1 | -1 }): number | null {
+  if ('mark' in action) { const full = action.mark * 2; return current === full ? full - 1 : full; }
+  if (current == null) return action.step > 0 ? 1 : null;
+  return Math.min(10, Math.max(1, current + action.step / 2));
+}
+
+/** Picks a 1–10 score in 0.5 steps with the same five ✦ marks the score bar shows (QA A-place-02). Screen readers get one adjustable control. */
+export function RatingScorePicker({ value, onChange, label, analyticsId, disabled = false, testID }: { value: number | null; onChange: (score: number) => void; label: string; analyticsId: string; disabled?: boolean; testID?: string }) {
+  const { tr } = useLanguage();
+  const theme = useTheme(), { play } = useInteractionFeedback();
+  const dark = theme.background === Colors.dark.background, iris = dark ? IRIS.dark : IRIS.light;
+  const empty = dark ? theme.line : `${theme.textSecondary}B3`;
+  const pick = (next: number | null) => { if (disabled || next == null || next === value) return; play('selection'); onChange(next); };
+  const step = (direction: 1 | -1, edge: boolean) => <Pressable analyticsId={analyticsId} testID={testID && `${testID}.${direction > 0 ? 'up' : 'down'}`}
+    accessibilityRole="button" accessibilityLabel={tr(direction > 0 ? '0.5점 올리기' : '0.5점 내리기')} disabled={disabled || edge} onPress={() => pick(ratingPickerNext(value, { step: direction }))}
+    style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed, disabled: disabled || edge }).container, { opacity: disabled || edge ? 0.4 : 1 }]}>
+    <SymbolView name={direction > 0 ? { ios: 'plus', android: 'add', web: 'add' } : { ios: 'minus', android: 'remove', web: 'remove' }} size={18} tintColor={theme.text} />
+  </Pressable>;
+  return <View testID={testID} style={styles.picker} accessible accessibilityRole="adjustable" accessibilityLabel={label}
+    accessibilityState={{ disabled }} accessibilityValue={{ min: 1, max: 10, now: value ?? undefined, text: value == null ? tr('점수를 선택해 주세요') : tr('{0}점 / 10점', value.toFixed(1)) }}
+    accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+    onAccessibilityAction={({ nativeEvent }) => pick(ratingPickerNext(value, { step: nativeEvent.actionName === 'increment' ? 1 : -1 }))}>
+    {step(-1, value == null || value <= 1)}
+    <View style={styles.marks}>{[1, 2, 3, 4, 5].map(mark => <Pressable key={mark} analyticsId={analyticsId} testID={testID && `${testID}.mark.${mark}`}
+      accessibilityRole="button" accessibilityLabel={tr('{0}점', mark * 2)} disabled={disabled} onPress={() => pick(ratingPickerNext(value, { mark }))} style={styles.mark}>
+      <View style={styles.markGlyph}>
+        <Text style={[styles.bigSparkle, { color: empty }]} accessible={false}>✦</Text>
+        <View style={[StyleSheet.absoluteFill, { width: `${value == null ? 0 : Math.max(0, Math.min(100, Math.round((value / 2 - (mark - 1)) * 100)))}%`, overflow: 'hidden' }]}>
+          <Text style={[styles.bigSparkle, { color: iris[mark * 2 - 1] }]} accessible={false}>✦</Text>
+        </View>
+      </View>
+    </Pressable>)}</View>
+    {step(1, value != null && value >= 10)}
+  </View>;
+}
+
 const styles = StyleSheet.create({
+  picker: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  marks: { flexDirection: 'row' },
+  mark: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  markGlyph: { width: 30, height: 34 },
+  bigSparkle: { width: 30, fontSize: 30, lineHeight: 34, textAlign: 'center', includeFontPadding: false },
   bar: { flexDirection: 'row', gap: 2, width: 58, height: 14 },
   unit: { width: 10, height: 14 },
   inlineSparkle: { fontSize: 14 },

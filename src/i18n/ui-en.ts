@@ -670,9 +670,8 @@ export const uiEnglish: Record<string, string> = {
   "분류와 날짜": "Categories and dates",
   "목록 {0}곳": "List · {0} places",
   "행사 날짜": "Event date",
-  "{0} 현지 날짜로 입력해 주세요.": "Enter the date in {0} local time.",
-  "행사 날짜 연도-월-일": "Event date, year-month-day",
-  "오늘부터 1년 안의 날짜를 YYYY-MM-DD로 입력해 주세요.": "Enter a date within the next year as YYYY-MM-DD.",
+  "{0} 현지 날짜": "{0} local date",
+  "오늘부터 1년 안에서 골라 주세요.": "Pick a date within the next year.",
   "나눔": "Free",
   "TOP 25 선정 장소, ": "TOP 25 place, ",
   "TOP 50 선정 장소, ": "TOP 50 place, ",
@@ -2198,7 +2197,7 @@ export const uiEnglish: Record<string, string> = {
   "24h 잠금": "24h lock",
   "현재 한도보다 많은 자리를 사용하고 있어요. 기존 관계는 유지돼요.": "You’re using more slots than your plan allows. Your existing connections will stay.",
   "멤버십과 모임 자리 보기": "View membership and meetup slots",
-  "운영팀에 신고를 전달했어요. 활동 내역을 검토하겠습니다.": "We’ve sent your report to our team. We’ll review the activity.",
+  "운영팀에 신고를 전달했어요. 활동 내역을 검토할게요.": "We’ve sent your report to our team. We’ll review the activity.",
   "페스티벌 같이 가요": "Let’s go to a festival together",
   "글링에서": "On Gling",
   "모임 확인하기": "View meetup",
@@ -4867,5 +4866,16 @@ export const uiEnglish: Record<string, string> = {
   "운영팀에서 받은 코드로 시작해요": "Start with a code from the Gling team",
   "참석 확인됐어요": "Attendance confirmed",
   "모임장 퀘스트를 보려면 로그인해 주세요.": "Log in to see your host quest.",
-  "퀘스트 조건에 맞지 않아서 안 셌어요": "Not counted: doesn’t meet the quest conditions"
+  "퀘스트 조건에 맞지 않아서 안 셌어요": "Not counted: doesn’t meet the quest conditions",
+  // redesign-mapchat (2026-11-14)
+  "아직 손님 문의가 없어요": "No customer inquiries yet",
+  "손님이 비즈니스 페이지에서 문의하기를 누르면 대화가 여기로 와요.": "When a customer taps Contact on your business page, the conversation shows up here.",
+  "비즈니스 확인이 끝나면 대화할 수 있어요": "You can chat once the business is confirmed",
+  "로그인 알림 {0}개": "{0} sign-in alerts",
+  "출처·이용 조건": "Sources and terms",
+  "평점을 불러오지 못했어요.": "Couldn’t load the rating.",
+  "✦ 하나가 2점이에요. 같은 ✦를 또 누르면 반 개가 되고, − +로 0.5점씩 맞춰요.": "Each ✦ is 2 points. Tap the same ✦ again for half, or use − + to adjust by 0.5.",
+  "설정에서 위치 켜기": "Turn on location in Settings",
+  "설정에서 켜기": "Turn on in Settings",
+  "분류": "Categories"
 };

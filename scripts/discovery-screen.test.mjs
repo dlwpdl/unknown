@@ -36,8 +36,8 @@ function gps({ granted = true, fix, defer = false } = {}) {
   const changes = { center: null, userLocation: null }, calls = [], locationRevision = { current: 0 }, AppState = { currentState: 'active' }, exports = {};
   let finish;
   const value = fix ?? { coords: { latitude: 49.28, longitude: -123.12, accuracy: 10 }, timestamp: Date.now() };
-  const fixCheck = ts.createSourceFile('map.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX).statements.find(statement =>
-    ts.isVariableStatement(statement) && statement.declarationList.declarations.some(item => item.name.getText() === 'freshMapFix'))?.getText() ?? '';
+  const fixCheck = ts.createSourceFile('map.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX).statements.filter(statement =>
+    ts.isVariableStatement(statement) && statement.declarationList.declarations.some(item => ['freshMapFix', 'LOCATION_OFF'].includes(item.name.getText()))).map(statement => statement.getText()).join('\n');
   vm.runInNewContext(compile(fixCheck + '\n' + source.slice(start, end) + '\nexports.locate = locate;'), {
     exports, locating: false, locationRevision, AppState, isFreshLocation, Date,
     Location: { Accuracy: { Balanced: 3 }, requestForegroundPermissionsAsync: async () => { calls.push('permission'); return { granted }; },

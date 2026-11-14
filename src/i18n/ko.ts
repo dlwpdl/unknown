@@ -420,13 +420,13 @@ export const t = {
 
   report: {
     title: (nickname: string) => `${nickname} 신고하기`,
-    body: '운영팀이 내용과 관련 활동을 함께 확인합니다.',
+    body: '운영팀이 내용과 관련 활동을 함께 확인해요.',
     close: '닫기',
     details: '상세 내용을 알려주세요 (선택)',
     submit: '신고 접수',
     submitting: '접수 중…',
     doneTitle: '신고가 접수됐어요',
-    doneBody: '운영팀에 신고를 전달했어요. 신고한 콘텐츠는 내 화면에서 숨겨져요. 위반이 확인되면 전체 공개를 중단합니다.',
+    doneBody: '운영팀에 신고를 전달했어요. 신고한 콘텐츠는 내 화면에서 숨겨져요. 위반이 확인되면 전체 공개를 중단해요.',
     doneBlocked: '운영팀에 신고를 전달하고 차단했어요. 이 사용자의 콘텐츠는 내 화면에 표시되지 않아요.',
     doneButBlockFailed: '신고는 접수됐지만 차단은 완료하지 못했어요. 잠시 후 다시 시도해주세요.',
     errorTitle: '신고하지 못했어요',
@@ -434,7 +434,7 @@ export const t = {
     short: '신고',
     userAction: '신고 또는 차단',
     block: (nickname: string) => `${nickname} 차단하기`,
-    blockBody: '이 사용자의 글·댓글·메시지를 내 화면에서 숨기고 상호작용을 막아요. 운영팀에 전달되며 원본 기록은 보존 정책에 따라 보관됩니다.',
+    blockBody: '이 사용자의 글·댓글·메시지를 내 화면에서 숨기고 상호작용을 막아요. 운영팀에 전달되고 원본 기록은 보존 정책에 따라 보관돼요.',
     reasons: {
       spam: '스팸·도배',
       harassment: '괴롭힘·위협',

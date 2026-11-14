@@ -186,3 +186,37 @@ test('the friend sharing notice shows once while sharing is on, and 숨기고 �
   assert.deepEqual(failing.feedback, ['selection', 'warning']);
   assert.equal(failing.storage.size, 0);
 });
+
+test('QA A-prof-01: saved-place pins are named, framed per city without zoom buttons, and open the place itself', async () => {
+  const { readFileSync } = await import('node:fs'), vm = (await import('node:vm')).default, ts = (await import('typescript')).default;
+  const { tr } = await import('../src/i18n/index.ts'), discovery = await import('../src/lib/discovery.ts'), { CITIES } = await import('../src/lib/mock.ts');
+  const merchant = '5b0e7f1c-7a7e-4c33-9d0a-3f3a7b6b2d11', routes = [];
+  const places = { vancouver: [{ id: 'osm:node:1', cityId: 'vancouver', name: 'Stanley Park', latitude: 49.30, longitude: -123.14, category: 'park' },
+    { id: 'osm:node:2', cityId: 'vancouver', name: 'Cafe', latitude: 49.28, longitude: -123.12, category: 'cafe' }],
+  toronto: [{ id: 'osm:node:3', cityId: 'toronto', name: 'Toronto Cafe', latitude: 43.65, longitude: -79.38, category: 'cafe' }] };
+  const imports = {
+    react: { useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}], useRef: value => ({ current: value }), useMemo: fn => fn(), useEffect() {} },
+    'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }), Fragment: 'Fragment' },
+    'expo-router': { useRouter: () => ({ push: route => routes.push(route) }) },
+    '@/hooks/use-language': { useLanguage: () => ({ tr }) }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/i18n': { count: value => String(value) },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayBoxFill: () => null, ClayPillFill: () => null },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+    '@/lib/city-places': { getCityPlaces: cityId => places[cityId] ?? [] }, '@/lib/delivery-partners': { deliveryPartnerPlace: () => undefined },
+    '@/lib/discovery': discovery, '@/lib/mock': { CITIES }, '@/lib/profile-friends': { savedPlaceCities },
+    '@/constants/design-system': { ControlStyles: {}, controlPresentation: () => ({ container: {}, text: {} }) },
+    'react-native': { StyleSheet: { create: value => value }, View: 'View', Alert: {} },
+  };
+  const exports = {};
+  const code = ts.transpileModule(readFileSync(new URL('../src/components/profile-overview.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
+  vm.runInNewContext(code, { exports, require: name => imports[name] ?? new Proxy({}, { get: (_target, key) => key === '__esModule' ? true : String(key) }) });
+  const walk = node => !node || typeof node !== 'object' ? [] : [node, ...[node.props?.children].flat(Infinity).flatMap(walk)];
+  const savedPlaces = [{ cityId: 'vancouver', placeKey: 'osm:node:1', merchantId: null }, { cityId: 'vancouver', placeKey: 'osm:node:2', merchantId: merchant }, { cityId: 'toronto', placeKey: 'osm:node:3', merchantId: null }];
+  const map = own => walk(exports.ProfileSavedMap({ overview: { own, savedPlaces }, homeCityId: 'vancouver' })).find(node => node.type === 'DiscoveryMap');
+  const mine = map(true);
+  assert.equal(mine.props.preview, true);
+  assert.deepEqual(mine.props.markers.map(marker => marker.label), ['Stanley Park', 'Cafe'], 'only the chosen city, so the frame fits every pin');
+  assert.ok(mine.props.markers.every(marker => marker.featured && marker.saved && marker.icon), 'named pins drawn as my saved bookmarks');
+  mine.props.onSelect(mine.props.markers[0].id); mine.props.onSelect(mine.props.markers[1].id);
+  assert.deepEqual(JSON.parse(JSON.stringify(routes)), [{ pathname: '/places/[id]', params: { id: 'osm:node:1', cityId: 'vancouver' } }, { pathname: '/company/[id]', params: { id: merchant } }]);
+  assert.ok(map(false).props.markers.every(marker => !marker.saved), "someone else's saved places are not my bookmarks");
+});
