@@ -368,11 +368,13 @@ do $$ declare definition text; anchor constant text:='when ''message_reaction'' 
 end $$;
 
 -- 7) ADR-0001: once friends can read a folder, its name and description go through the safety review queue and the
--- watch-term scan like posts and live bubbles. Private folders and memos stay out: nobody else reads them.
+-- watch-term scan like posts and live bubbles. A folder made together goes to the same review (7b). Other private
+-- folders and memos stay out: nobody else reads them.
 create function private.saved_folder_safety_content(p_id uuid) returns jsonb
 language sql stable security definer set search_path='' as $$
  select jsonb_build_object('authorId',f.user_id,'visibility',f.visibility,'createdAt',f.created_at,
-  'text',concat_ws(E'\n','저장 폴더 · 보는 사람: '||case f.visibility when 'friends' then '친구' else '나만' end,f.name,f.description))
+  'text',concat_ws(E'\n','저장 폴더 · 보는 사람: '||case when f.visibility='friends' then '친구'
+   when exists(select 1 from private.saved_folder_members m where m.folder_id=f.id) then '같이 만드는 친구' else '나만' end,f.name,f.description))
  from private.saved_folders f where f.id=p_id
 $$;
 create function public.get_saved_folder_safety_content(p_target_id uuid) returns jsonb
@@ -430,6 +432,31 @@ create trigger saved_folders_watch_terms_change after update of name,description
  for each row when (new.visibility='friends' and (old.visibility<>'friends' or old.name is distinct from new.name or old.description is distinct from new.description))
  execute function private.scan_watch_terms();
 
+-- 7b) An invite carries the folder name and an invited friend sees the name and description whatever the folder's
+-- visibility, so each invite and each word change of a folder made together queue it too: same row, same hash rule.
+create function private.queue_saved_folder_safety(p_folder uuid) returns void
+language plpgsql security definer set search_path='' as $$
+declare v_hash text:=encode(extensions.digest(convert_to(private.saved_folder_safety_content(p_folder)->>'text','UTF8'),'sha256'),'hex');
+begin
+ insert into public.safety_review_queue(target_type,target_id,content_hash) values('saved_folder',p_folder,v_hash)
+ on conflict(target_type,target_id) do update set status='pending',content_hash=excluded.content_hash,risk_score=null,risk_level=null,
+  risk_reasons='[]'::jsonb,attempts=0,last_error=null,next_attempt_at=null,reviewed_at=null,updated_at=now()
+ where public.safety_review_queue.content_hash is distinct from excluded.content_hash;
+end $$;
+create function private.saved_folder_together_safety() returns trigger
+language plpgsql security definer set search_path='' as $$ begin
+ if tg_table_name='saved_folder_members' then perform private.queue_saved_folder_safety(new.folder_id);
+ elsif exists(select 1 from private.saved_folder_members m where m.folder_id=new.id) then perform private.queue_saved_folder_safety(new.id);
+ end if;
+ return null;
+end $$;
+create trigger saved_folder_members_safety_review after insert on private.saved_folder_members
+ for each row execute function private.saved_folder_together_safety();
+-- Friends folders already go through 7; this covers the private ones that have someone invited.
+create trigger saved_folders_together_safety_review after update of name,description on private.saved_folders
+ for each row when (new.visibility<>'friends' and (old.name is distinct from new.name or old.description is distinct from new.description))
+ execute function private.saved_folder_together_safety();
+
 do $$ declare signature text; begin
  foreach signature in array array['private.saved_folder_places(uuid)','private.saved_folder_role(uuid,uuid)','private.saved_folder_json(private.saved_folders)',
   'public.save_saved_folder(uuid,text,text,text)','public.set_saved_folder_cover(uuid,text,text)','public.get_saved_folder(uuid)','public.get_friend_saved_folders(uuid)',
@@ -437,7 +464,8 @@ do $$ declare signature text; begin
   'public.copy_saved_folder(uuid)','private.saved_folder_members_json(uuid)','public.invite_saved_folder_member(uuid,uuid)',
   'public.accept_saved_folder_invite(uuid)','public.remove_saved_folder_member(uuid,uuid)','public.get_shared_saved_folders()',
   'public.set_saved_folder_place(uuid,text,text,boolean,text)','private.end_saved_folder_members()',
-  'private.saved_folder_safety_content(uuid)','public.get_saved_folder_safety_content(uuid)','public.get_admin_saved_folder_content(uuid)'] loop
+  'private.saved_folder_safety_content(uuid)','public.get_saved_folder_safety_content(uuid)','public.get_admin_saved_folder_content(uuid)',
+  'private.queue_saved_folder_safety(uuid)','private.saved_folder_together_safety()'] loop
   execute 'alter function '||signature||' owner to postgres';
   execute 'revoke all on function '||signature||' from public,anon,authenticated,service_role';
  end loop;
