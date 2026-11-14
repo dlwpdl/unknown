@@ -8,6 +8,8 @@ import { supabase } from '@/lib/supabase';
 type SharedFix = LocationFix & { userId: string };
 type LocationValue = {
   enabled: boolean; ready: boolean; busy: boolean; message: string; cityId: string | null;
+  // The device refused location: the card offers the device settings instead of asking again.
+  permissionOff?: boolean;
   capture: (ask?: boolean) => Promise<SharedFix | null>;
   disable: () => Promise<void>;
   record: (fix: SharedFix | null, postId?: string) => Promise<void>;
@@ -29,8 +31,13 @@ export function CommunityLocationProvider({ userId, loginKey, children }: {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [cityId, setCityId] = useState<string | null>(null);
+  const [permissionOff, setPermissionOffState] = useState(false);
+  const off = useRef(false);
+  const setPermissionOff = useCallback((value: boolean) => { off.current = value; setPermissionOffState(value); }, []);
   const [owner, setOwner] = useState<string | null>(null);
   const generation = useRef({});
+  // Android's permission dialog sends the app to the background; that must not drop the answer it is waiting for (QA A-set-03).
+  const asking = useRef(false);
   const inFlight = useRef<object | null>(null);
   const allowed = useRef(false);
   const loginAttempted = useRef<string | null>(null);
@@ -56,10 +63,12 @@ export function CommunityLocationProvider({ userId, loginKey, children }: {
 
   useEffect(() => {
     const listener = AppState.addEventListener('change', (state) => {
-      if (state === 'background') generation.current = {};
+      if (state === 'background' && !asking.current) generation.current = {};
+      // Back from the device settings: clear the settings link once location is allowed there.
+      if (state === 'active' && off.current) void Location.getForegroundPermissionsAsync().then(({ granted }) => { if (granted) setPermissionOff(false); }, () => {});
     });
     return () => listener.remove();
-  }, []);
+  }, [setPermissionOff]);
 
   const record = useCallback(async (fix: SharedFix | null, postId?: string) => {
     if (!fix || !allowed.current || fix.userId !== userId || !isFreshLocation(fix)) return;
@@ -86,8 +95,10 @@ export function CommunityLocationProvider({ userId, loginKey, children }: {
         if (preference.error) throw preference.error;
         if (!preference.data?.enabled) { allowed.current = false; setEnabled(false); setCityId(null); return null; }
       }
-      const permission = ask ? await Location.requestForegroundPermissionsAsync() : await Location.getForegroundPermissionsAsync();
+      asking.current = ask;
+      const permission = await (ask ? Location.requestForegroundPermissionsAsync() : Location.getForegroundPermissionsAsync()).finally(() => { asking.current = false; });
       if (revision !== generation.current) return null;
+      setPermissionOff(!permission.granted);
       if (!permission.granted) {
         setMessage('위치 권한이 꺼져 있어요. 기기 설정에서 허용하거나 도시를 직접 선택해 주세요.');
         return null;
@@ -122,7 +133,7 @@ export function CommunityLocationProvider({ userId, loginKey, children }: {
       if (timer) clearTimeout(timer);
       if (inFlight.current === operation) { inFlight.current = null; setBusy(false); }
     }
-  }, [userId, loginKey, preferenceKey, record]);
+  }, [userId, loginKey, preferenceKey, record, setPermissionOff]);
 
   useEffect(() => {
     if (owner !== preferenceKey || busy || !ready || !enabled || !loginKey || Date.now() - Date.parse(loginKey) >= 600000 || loginAttempted.current === preferenceKey) return;
@@ -145,5 +156,6 @@ export function CommunityLocationProvider({ userId, loginKey, children }: {
 
   return <LocationContext.Provider value={{ enabled: owner === preferenceKey && enabled, ready: owner === preferenceKey && ready,
     busy: owner === preferenceKey && busy, message: owner === preferenceKey ? message : '', cityId: owner === preferenceKey ? cityId : null,
+    permissionOff: owner === preferenceKey && permissionOff,
     capture, disable, record }}>{children}</LocationContext.Provider>;
 }

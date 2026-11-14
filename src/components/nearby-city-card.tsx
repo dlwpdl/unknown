@@ -1,6 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Pressable } from '@/components/analytics-controls';
-import { StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
+import { ConfirmSheet } from '@/components/confirm-sheet';
 import { useEffect, useRef, useState } from 'react';
 import { SymbolView } from '@/components/symbol-view';
 import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
@@ -26,6 +27,7 @@ export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false
   const reducedMotion = useReducedMotion();
   const location = useCommunityLocation();
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [confirmOff, setConfirmOff] = useState(false);
   const active = useRef(true);
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   const recommended = CITIES.find((city) => city.id === location.cityId);
@@ -57,22 +59,28 @@ export function NearbyCityCard({ onSelect, onChooseCity, onFix, settings = false
       <Pressable analyticsId="components_nearby-city-card.pressable.3" accessibilityRole="button" disabled={disabled} accessibilityState={{ disabled, busy: location.busy }}
         onPress={() => {
           play('selection');
+          if (location.permissionOff) { void Linking.openSettings().catch(() => {}); return; }
           if (!location.enabled && !detailsOpen) { animateLayout(reducedMotion); setDetailsOpen(true); return; }
           void location.capture(true).then((fix) => { if (active.current) onFix?.(fix); });
         }}
         style={({ pressed }) => [styles.primary, clay && styles.clayButton, { backgroundColor: clay ? 'transparent' : theme.backgroundElement, opacity: disabled ? 0.5 : 1 }, pressed && styles.pressed]}>
         {clay && <ClayPillFill kind="cta" />}
-        <ThemedText type="smallBold" style={{ color: clay ? theme.accentInk : theme.accent }}>{location.busy ? tr("위치 확인 중…") : location.enabled ? tr("위치 다시 확인") : detailsOpen ? tr("동의하고 찾기") : tr("내 위치로 찾기")}</ThemedText>
+        <ThemedText type="smallBold" style={{ color: clay ? theme.accentInk : theme.accent }}>{location.busy ? tr("위치 확인 중…") : location.permissionOff ? tr("기기 설정 열기") : location.enabled ? tr("위치 다시 확인") : detailsOpen ? tr("동의하고 찾기") : tr("내 위치로 찾기")}</ThemedText>
       </Pressable>
       {onChooseCity && <Pressable analyticsId="components_nearby-city-card.pressable.4" accessibilityRole="button" onPress={() => { play('selection'); onChooseCity(); }} style={({ pressed }) => [styles.button, clay && styles.clayButton, pressed && styles.pressed]}>
         {clay && <ClayPillFill kind="white" />}
         <ThemedText type="smallBold" themeColor={clay ? undefined : 'textSecondary'}>{tr("직접 선택")}</ThemedText>
       </Pressable>}
     </View>
-    {settings && location.enabled && <Pressable analyticsId="components_nearby-city-card.pressable.5" accessibilityRole="button" disabled={location.busy} onPress={() => { play('selection'); void location.disable(); }} style={[styles.button, clay && styles.clayButton]}>
-      {clay && <ClayPillFill kind="white" />}
-      <ThemedText type="smallBold">{tr("위치 공유 끄고 기록 삭제")}</ThemedText>
+    {/* Deleting the history cannot be undone, so it reads as a danger action and asks first (QA A-set-02). */}
+    {settings && location.enabled && <Pressable analyticsId="components_nearby-city-card.pressable.5" accessibilityRole="button" disabled={location.busy} accessibilityState={{ disabled: location.busy }}
+      onPress={() => { play('selection'); setConfirmOff(true); }} style={({ pressed }) => [styles.button, styles.dangerButton, pressed && styles.pressed]}>
+      <ThemedText type="smallBold" style={{ color: theme.danger }}>{tr("위치 공유 끄고 기록 삭제")}</ThemedText>
     </Pressable>}
+    {settings && <ConfirmSheet visible={confirmOff} onClose={() => setConfirmOff(false)} title={tr("위치 공유를 끄고 기록을 지울까요?")}
+      body={tr("저장된 위치 기록을 지우면 되돌릴 수 없어요. 도시는 계속 직접 고를 수 있어요.")}
+      confirmId="components_nearby-city-card.pressable.5" confirmLabel={tr("끄고 지우기")} busy={location.busy}
+      onConfirm={() => { play('warning'); void location.disable().finally(() => { if (active.current) setConfirmOff(false); }); }} />}
   </View>;
 }
 const styles = StyleSheet.create({
@@ -85,4 +93,5 @@ const styles = StyleSheet.create({
   actions: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: Spacing.three },
   primary: { minHeight: 44, borderRadius: 8, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, justifyContent: 'center' },
   clayButton: { overflow: 'visible', paddingHorizontal: 18 }, button: { minHeight: 44, justifyContent: 'center' }, pressed: { opacity: 0.65 },
+  dangerButton: { alignSelf: 'flex-start' },
 });

@@ -11,7 +11,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { AppUpdateGate } from '@/components/app-update-gate';
 import { AppActivity } from '@/components/app-activity';
 import { AppBadgeSync } from '@/components/app-badge-sync';
-import { ErrorBoundary } from '@/components/error-boundary';
+import { ErrorBoundary, ScreenErrorFallback } from '@/components/error-boundary';
 import { LIVE_ACCESSORY, LiveBubbleBar, LiveNotice } from '@/components/live-bubble-bar';
 import { NotificationObserver } from '@/components/notification-observer';
 import { PushInvite } from '@/components/push-invite';
@@ -31,6 +31,9 @@ void SplashScreen.preventAutoHideAsync().catch(() => {});
 SplashScreen.setOptions({ fade: false });
 // 렌더 트리 밖에서 난 예외도 잡으려면 화면이 뜨기 전에 걸어야 한다.
 installErrorReporting();
+
+// A screen that fails to draw keeps the tabs and offers retry or a way back; the root boundary below is the last resort.
+export const unstable_settings = { screenErrorBoundary: ScreenErrorFallback };
 
 export default function TabLayout() {
   // The share-intent provider sits outside the others, as the package asks; the web layout has no share sheet.

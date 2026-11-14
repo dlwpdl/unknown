@@ -7,10 +7,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, AppState, DeviceEventEmitter, Linking, Platform, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
+import { ClayBoxFill, useClayBox } from '@/components/clay';
+import { RaisedActionButton } from '@/components/raised-action-button';
+import { SelectionChip } from '@/components/selection-chip';
 import { ThemedText } from '@/components/themed-text';
-import { ControlMotion } from '@/constants/design-system';
-import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { parseHashtags } from '@/lib/hashtags';
@@ -30,7 +31,7 @@ export default function NotificationSettingsScreen() {
 
 function NotificationSettings({ userId, cityName }: { userId: string; cityName: string }) {
   const { tr } = useLanguage();
-  const clay = useClay(), clayBox = useClayBox();
+  const clayBox = useClayBox();
   const theme = useTheme();
   const { play } = useInteractionFeedback();
   const { fontScale } = useWindowDimensions();
@@ -102,7 +103,7 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
   return <KeyboardScreen><SafeAreaView key={fontScale} style={styles.container} edges={['bottom']}>
     <ScrollView analyticsId="app_profile_notifications.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       <ThemedText type="small" themeColor="textSecondary">{tr("종류마다 앱 알림 목록과 휴대폰 푸시를 따로 켜고 끌 수 있어요.")}</ThemedText>
-      {saveError && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">{tr("설정을 저장하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.")}</ThemedText>}
+      {saveError && <ThemedText accessibilityRole="alert" type="small" themeColor="danger">{tr("설정을 저장하지 못했어요. 연결 상태를 확인하고 다시 시도해 주세요.")}</ThemedText>}
       <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ToggleRow label={tr("휴대폰 푸시 알림")} value={preferences.push_enabled} onChange={value => void save({ push_enabled: value })} disabled={busy || (!pushConfigured && !preferences.push_enabled)} />
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{!pushSupported ? tr("휴대폰 앱에서 푸시 알림을 켤 수 있어요.")
@@ -111,8 +112,11 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
         {pushSupported && <Pressable analyticsId="app_profile_notifications.pressable.2" accessibilityRole="button" style={styles.button} onPress={() => { play('selection'); void Linking.openSettings(); }}><ThemedText type="smallBold" themeColor="accent">{tr("기기 알림 설정")}</ThemedText></Pressable>}
       </View>
       {NOTIFICATION_SETTING_GROUPS.map(group => <View key={group.id} style={styles.group}>
+        {/* One column head per group names the two switches below it (QA A-noti-01); the title starts on the same line as every other heading. */}
         <View style={styles.groupHead}>
           <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.label}>{group.id === 'mine' ? tr("나한테 온 것") : group.id === 'city' ? tr("{0} 소식", tr(cityName)) : tr("계정")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.column} accessible={false}>{tr("앱")}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.column} accessible={false}>{tr("푸시")}</ThemedText>
         </View>
         <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
           {group.rows.map(row => {
@@ -132,54 +136,39 @@ function NotificationSettings({ userId, cityName }: { userId: string; cityName: 
         <ThemedText type="small" themeColor="textSecondary" style={styles.note}>{tr("변경 후 발송되는 푸시부터 적용돼요.")}</ThemedText>
       </View>
       <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary">{tr("관심 태그")}</ThemedText>
-      <View style={styles.tags}>{TAGS.map(tag => <Pressable analyticsId="app_profile_notifications.pressable.3" key={tag.id} accessibilityRole="checkbox" accessibilityState={{ checked: tagIds.includes(tag.id), disabled: busy }}
-        aria-checked={tagIds.includes(tag.id)}
-        disabled={busy} onPress={() => { play('selection'); setTagIds(current => current.includes(tag.id) ? current.filter(id => id !== tag.id) : [...current, tag.id].sort((a, b) => a - b)); }}
-        style={({ pressed }) => [styles.tag, clay ? styles.clayPad : Depth.control, clay ? { backgroundColor: 'transparent' } : { backgroundColor: tagIds.includes(tag.id) ? theme.accent : theme.backgroundElement, borderBottomColor: tagIds.includes(tag.id) ? theme.accentDepth : theme.line, borderBottomWidth: 3, }]}>
-        {clay && <ClayPillFill kind={tagIds.includes(tag.id) ? 'on' : 'white'} />}
-        <ThemedText type="smallBold" style={{ color: tagIds.includes(tag.id) ? theme.accentInk : clay ? theme.text : theme.textSecondary }}>{tr(tag.label)}</ThemedText>
-      </Pressable>)}</View>
+      {/* The shared chip (QA A-noti-02): the same selected look as every other chip group. */}
+      <View style={styles.tags}>{TAGS.map(tag => <SelectionChip analyticsId="app_profile_notifications.pressable.3" key={tag.id} selected={tagIds.includes(tag.id)} label={tr(tag.label)}
+        accessibilityRole="checkbox" accessibilityLabel={tr(tag.label)} accessibilityState={{ checked: tagIds.includes(tag.id), disabled: busy }} aria-checked={tagIds.includes(tag.id)}
+        disabled={busy} onPress={() => { play('selection'); setTagIds(current => current.includes(tag.id) ? current.filter(id => id !== tag.id) : [...current, tag.id].sort((a, b) => a - b)); }} />)}</View>
       <TextInput accessibilityLabel={tr("관심 해시태그")} value={hashtags} onChangeText={setHashtags} editable={!busy}
         placeholder={tr("#러닝 #맛집 #워홀")} placeholderTextColor={theme.textSecondary} maxLength={1000} autoCapitalize="none" autoCorrect={false}
         style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]} />
       <ThemedText type="small" themeColor="textSecondary">{tr("카테고리나 해시태그를 골라주세요. 해시태그는 최대 20개까지, 공백으로 나눠 적을 수 있어요.")}</ThemedText>
-      {invalidHashtags && <ThemedText accessibilityRole="alert" type="small" themeColor="accent">{tr("해시태그는 20개까지, 각각 50자 이내로 적어주세요.")}</ThemedText>}
-      <Pressable analyticsId="app_profile_notifications.pressable.4" accessibilityRole="button" disabled={busy || !interestsChanged || invalidHashtags} accessibilityState={{ disabled: busy || !interestsChanged || invalidHashtags, busy }}
-        aria-busy={busy}
-        style={({ pressed }) => [styles.save, clay ? styles.clayWide : Depth.control, { backgroundColor: clay ? 'transparent' : theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: clay ? 0 : 3, opacity: busy || !interestsChanged || invalidHashtags ? 0.45 : 1, }]}
-        onPress={() => { play('selection'); void save({ interest_tag_ids: tagIds, interest_hashtags: parsedHashtags }); }}>
-        {clay && <ClayPillFill kind="cta" />}
-        <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr("관심 태그 저장")}</ThemedText>
-      </Pressable>
-      <ThemedText type="small" themeColor="textSecondary">{tr("안전·계정 이용에 꼭 필요한 안내는 앱의 알림 목록에 남습니다.")}</ThemedText>
+      {invalidHashtags && <ThemedText accessibilityRole="alert" type="small" themeColor="danger">{tr("해시태그는 20개까지, 각각 50자 이내로 적어주세요.")}</ThemedText>}
+      <RaisedActionButton analyticsId="app_profile_notifications.pressable.4" label={busy ? tr("저장 중…") : tr("관심 태그 저장")} busy={busy} disabled={!interestsChanged || invalidHashtags}
+        onPress={() => { play('selection'); void save({ interest_tag_ids: tagIds, interest_hashtags: parsedHashtags }); }} />
+      <ThemedText type="small" themeColor="textSecondary">{tr("안전·계정 이용에 꼭 필요한 안내는 앱의 알림 목록에 남아요.")}</ThemedText>
     </ScrollView>
   </SafeAreaView></KeyboardScreen>;
 }
 
 // One category row: 앱 controls the in-app list (and push), 푸시 only the phone alert. Locked rows stay on.
+// The two switches sit under the group's 앱 · 푸시 column head (QA A-noti-01); each still says its own name to a screen reader.
 function CategoryRow({ label, description, app, push, pushDisabled, locked, disabled, onApp, onPush }: { label: string; description?: string; app: boolean; push: boolean; pushDisabled: boolean; locked: boolean; disabled: boolean; onApp: (next: boolean) => void; onPush: (next: boolean) => void }) {
   const { tr } = useLanguage();
+  const { play } = useInteractionFeedback();
+  const toggle = (text: string, value: boolean, off: boolean, change: (next: boolean) => void) => <View style={styles.column}>
+    <Switch analyticsId="app_profile_notifications.switch.1" accessibilityLabel={text} hitSlop={{ top: 8, bottom: 8 }} style={styles.switch}
+      value={value} disabled={off} accessibilityState={{ checked: value, disabled: off }} onValueChange={next => { play('selection'); change(next); }} />
+  </View>;
   return <View style={styles.row}>
     <View style={styles.label}>
       <ThemedText type="smallBold">{label}</ThemedText>
       {description && <ThemedText type="small" themeColor="textSecondary">{description}</ThemedText>}
     </View>
-    <Pill text={tr("앱")} label={tr("{0} 앱 알림", label)} value={app} disabled={disabled || locked} locked={locked} onChange={onApp} />
-    <Pill text={tr("푸시")} label={tr("{0} 푸시 알림", label)} value={push} disabled={disabled || pushDisabled} locked={locked} onChange={onPush} />
+    {toggle(tr("{0} 앱 알림", label), app, disabled || locked, onApp)}
+    {toggle(tr("{0} 푸시 알림", label), push, disabled || pushDisabled, onPush)}
   </View>;
-}
-
-function Pill({ text, label, value, disabled, locked, onChange }: { text: string; label: string; value: boolean; disabled: boolean; locked: boolean; onChange: (next: boolean) => void }) {
-  const theme = useTheme();
-  const clay = useClay();
-  const { play } = useInteractionFeedback();
-  return <Pressable analyticsId="app_profile_notifications.pressable.5" accessibilityRole="switch" accessibilityLabel={label} accessibilityState={{ checked: value, disabled }} aria-checked={value}
-    disabled={disabled} hitSlop={{ top: 8, bottom: 8 }} onPress={() => { play('selection'); onChange(!value); }}
-    style={({ pressed }) => [styles.pill, clay && { overflow: 'visible' }, { backgroundColor: clay ? 'transparent' : value ? theme.accent : theme.backgroundSelected,
-      opacity: locked ? 0.55 : disabled ? ControlMotion.disabledOpacity : pressed ? ControlMotion.pressedOpacity : 1 }]}>
-    {clay && <ClayPillFill kind={value ? 'on' : 'white'} />}
-    <ThemedText type="smallBold" style={{ color: value ? theme.accentInk : clay ? theme.text : theme.textSecondary }}>{text}</ThemedText>
-  </Pressable>;
 }
 
 function ToggleRow({ label, value, onChange, disabled }: { label: string; value: boolean; onChange: (next: boolean) => void; disabled: boolean }) {
@@ -199,12 +188,10 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 56, paddingVertical: Spacing.two },
   switch: { minHeight: Platform.OS === 'web' ? 44 : undefined, minWidth: 44 },
   label: { flex: 1, minWidth: 0 }, note: { paddingBottom: Spacing.two }, button: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
-  group: { gap: Spacing.two }, groupHead: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.two, paddingHorizontal: Spacing.three },
-  pill: { width: 44, minHeight: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, tag: { minHeight: 44, borderRadius: 22, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two, justifyContent: 'center' },
+  // The right padding matches the card's, so 앱 · 푸시 stand over their switches.
+  group: { gap: Spacing.two }, groupHead: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.three, paddingRight: Spacing.three },
+  column: { width: 56, alignItems: 'center', textAlign: 'center' },
+  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
-  clayPad: { overflow: 'visible', paddingHorizontal: 18 },
-  clayWide: { overflow: 'visible', paddingHorizontal: 24 },
   input: { minHeight: 48, borderWidth: 1, borderRadius: 10, padding: Spacing.three, fontSize: 16 },
-  save: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 12, padding: Spacing.two },
 });
