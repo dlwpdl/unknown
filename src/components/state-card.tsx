@@ -65,6 +65,8 @@ export function StateCard({ kind = 'empty', title, body, actionLabel, onAction, 
       {clay && <ClayPillFill kind="cta" />}
       <ThemedText type="smallBold" style={[Typography.menu, { color: theme.accentInk }]}>{actionLabel}</ThemedText>
     </Pressable>}
+    {/* A second, quieter way on (뒤로 가기, 전체 보기) sits under the main action. */}
+    {children}
   </View>;
 }
 

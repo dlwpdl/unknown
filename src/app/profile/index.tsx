@@ -194,8 +194,8 @@ export default function ProfileScreen() {
             {clay && <ClayPillFill kind="cta" />}
             <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr('친구 초대')}</ThemedText>
           </Pressable>
-          <Pressable analyticsId="profile.edit" accessibilityRole="button" accessibilityLabel={tr('프로필 수정')} accessibilityHint={tr('닉네임, 활동 지역, 화면 모드를 바꿔요')}
-            onPress={() => { play('selection'); router.push('/profile/settings'); }}
+          <Pressable analyticsId="profile.edit" accessibilityRole="button" accessibilityLabel={tr('프로필 수정')} accessibilityHint={tr('닉네임과 비공개 계정 정보를 바꿔요')}
+            onPress={() => { play('selection'); router.push('/profile/account'); }}
             style={({ pressed }) => [ControlStyles.action, styles.heroAction, controlPresentation(theme, { pressed, clay }).container]}>
             {clay && <ClayPillFill kind="white" />}
             <ThemedText type="smallBold">{tr('프로필 수정')}</ThemedText>

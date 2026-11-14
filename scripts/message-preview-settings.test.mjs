@@ -90,7 +90,8 @@ test('pending preview saves disable controls and late results do not emit after 
   assert.ok(!screen.calls.some(call => call[0] === 'emit'));
 });
 
-const pills = row => nodes(row.type(row.props)).filter(node => node.type?.name === 'Pill');
+// QA A-noti-01: each category row is two plain switches under one 앱·푸시 column header.
+const pills = row => nodes(row.type(row.props)).filter(node => node.type === 'Switch');
 const categoryRow = (tree, label) => nodes(tree).find(node => node.type?.name === 'CategoryRow' && node.props.label === label);
 
 test('city food and place app pills save independently with feedback and preserve chat and other city settings', async () => {
@@ -100,8 +101,8 @@ test('city food and place app pills save independently with feedback and preserv
     assert.ok(row, `${label} control is missing`);
     assert.equal(row.props.app, true);
     const [app, push] = pills(row);
-    assert.equal(app.props.label, `${label} 앱 알림`); assert.equal(push.props.label, `${label} 푸시 알림`);
-    nodes(app.type(app.props)).find(node => node.type === 'Pressable').props.onPress(); await settle();
+    assert.equal(app.props.accessibilityLabel, `${label} 앱 알림`); assert.equal(push.props.accessibilityLabel, `${label} 푸시 알림`);
+    app.props.onValueChange(false); await settle();
     assert.equal(categoryRow(screen.render(), label).props.app, false);
     assert.equal(categoryRow(screen.render(), label).props.pushDisabled, true, 'push follows the app switch off');
     const saved = screen.calls.find(call => call[0] === 'rpc' && call[1] === 'update_notification_preferences');

@@ -12,6 +12,8 @@ import { LoginPanel } from '@/components/auth-panels';
 import { relationshipSlotData } from '@/components/relationship-slot-card';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
 import { InfoNote, WhoSees } from '@/components/notice-blocks';
+import { RaisedActionButton } from '@/components/raised-action-button';
+import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
@@ -85,6 +87,8 @@ export default function MembershipScreen() {
     return () => { active = false; };
   }, [auth.isAuthed, auth.me.id, kind, merchantId, membership]);
   const [open, setOpen] = useState<{ compare: boolean; rules: boolean; picker: boolean }>({ compare: false, rules: false, picker: false });
+  // After 구매 복원 its result shows beside the button, not at the top of the screen (QA A-mem-02).
+  const [restoreAsked, setRestoreAsked] = useState(false);
   const [periodWidth, setPeriodWidth] = useState(0);
   const [openedAt] = useState(() => Date.now());
   const [periodPosition] = useState(() => new Animated.Value(0));
@@ -111,6 +115,9 @@ export default function MembershipScreen() {
   const period = selectedOffer?.period ?? selection.period;
   const tierPrice = (value: 'month' | 'year') => familyOffers.find((offer) => offer.tier === selection.tier && offer.period === value)?.price;
   const yearSaving = yearlySavings(tierPrice('month') ?? '', tierPrice('year') ?? '');
+  // The store sent no plans for this family: one error box with a retry instead of 준비 중 on every price (QA A-mem-01).
+  const offersFailed = !loading && !offersLoading && !purchaseUnavailableReason && familyOffers.length === 0;
+  const nearRestore = restoreAsked && !pendingApproval;
   const periods = (['year', 'month'] as const).filter((value) => familyOffers.some((offer) => offer.tier === selection.tier && offer.period === value));
   const currentProduct = !!activeMembership && activeMembership.tier !== 'free' && !!selectedOffer && selectedOffer.productId === activeMembership.productId;
   const otherBusiness = kind === 'business' && !!membership?.businessSubscription?.merchantId && membership.businessSubscription.merchantId !== merchantId;
@@ -153,6 +160,8 @@ export default function MembershipScreen() {
       { label: tr("이번 달 글"), value: business.postLimit == null ? tr("제한 없음") : `${business.postsUsed} / ${business.postLimit}`, ratio: business.postLimit ? Math.min(1, business.postsUsed / business.postLimit) : undefined },
       { label: tr("다음 끌올"), value: !bumpsLeft ? tr("다음 달") : nextBump == null ? tr("지금 가능") : nextBump < 86_400_000 ? tr("{0}시간 뒤", Math.ceil(nextBump / 3_600_000)) : tr("{0}일 뒤", Math.ceil(nextBump / 86_400_000)) },
     ] : [];
+  const checkoutLabel = currentProduct ? tr("현재 이용 중인 구독") : selectedOffer ? tr("{0} {1} 구독하기", tr(tierNames[selectedOffer.tier]), selectedOffer.period === 'year' ? tr("연간") : tr("월간"))
+    : offersFailed ? tr("가격을 불러오지 못했어요") : tr("구독 준비 중");
   const monthlyOf = (tier: MembershipOffer['tier']) => familyOffers.find((item) => item.tier === tier && item.period === 'month');
 
   return (
@@ -200,8 +209,8 @@ export default function MembershipScreen() {
           {/* The server counts business posts per UTC calendar month; read resetsAt in UTC so it shows the 1st, not the day before west of UTC. */}
           <InfoNote>{kind === 'general' ? tr("모든 등급 공통 · 오늘 글 무제한 · 1:1 대화 바로 시작") : business ? tr("{0}에 글 수가 다시 채워져요", new Date(business.resetsAt).toLocaleDateString(appLocale, { month: 'long', day: 'numeric', timeZone: 'UTC' })) : tr("매달 1일에 글 수가 다시 채워져요")}</InfoNote>
 
-          {(error || notice || pendingApproval) && <View style={styles.feedback}>
-            {error && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{tr(error)}</ThemedText>}
+          {((error && !offersFailed) || notice || pendingApproval) && !nearRestore && <View style={styles.feedback}>
+            {error && !offersFailed && <ThemedText type="small" themeColor="danger" accessibilityRole="alert">{tr(error)}</ThemedText>}
             {notice && <ThemedText type="small" accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
             <Pressable analyticsId="app_profile_membership.pressable.1" onPress={() => { play('selection'); void refresh(); }} accessibilityRole="button" disabled={busy || loading} accessibilityState={{ disabled: busy || loading }} style={({ pressed }) => [styles.textButton, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="smallBold" themeColor="accent">{tr("다시 확인하기")}</ThemedText></Pressable>
             {pendingApproval && <>
@@ -210,6 +219,11 @@ export default function MembershipScreen() {
               <Pressable analyticsId="membership.pending.confirm_cancellation" onPress={confirmStoreCancellation} accessibilityRole="button" accessibilityHint={tr("스토어의 취소 또는 거절을 확인한 경우에만 구매 대기를 해제해요.")} disabled={busy || loading} accessibilityState={{ disabled: busy || loading, busy }} style={styles.textButton}><ThemedText type="smallBold" themeColor="accent">{tr("스토어에서 대기 구매 취소·거절을 확인했어요")}</ThemedText></Pressable>
             </>}
           </View>}
+
+          {offersFailed && <StateCard layout="start" mark="alert" title={tr("가격을 불러오지 못했어요")} body={tr(error ?? "스토어에서 구독 상품을 받지 못했어요. 잠시 후 다시 확인해 주세요.")}>
+            <View style={styles.retry}><RaisedActionButton compact tone="secondary" analyticsId="app_profile_membership.pressable.1" label={tr("다시 확인하기")} busy={busy || loading}
+              onPress={() => { play('selection'); setRestoreAsked(false); void refresh(); }} /></View>
+          </StateCard>}
 
           {/* 연간이 먼저(기본 선택), 월간으로 바꿀 수 있다. 상점에 두 기간이 다 있을 때만 보인다. */}
           {periods.length > 1 && <View onLayout={event => setPeriodWidth(event.nativeEvent.layout.width)} style={[styles.periods, { backgroundColor: clay ? 'transparent' : theme.backgroundElement }]}>
@@ -241,14 +255,14 @@ export default function MembershipScreen() {
                   {selected && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={12} tintColor={theme.accentInk} />}
                 </View>
               </View>
-              <View style={styles.priceRow}>
-                <ThemedText style={styles.price}>{offer ? `${offer.price} / ${periodNames[offer.period]}` : offersLoading ? tr("가격 확인 중") : tr("준비 중")}</ThemedText>
+              {(offer || offersLoading) && <View style={styles.priceRow}>
+                <ThemedText style={styles.price}>{offer ? `${offer.price} / ${periodNames[offer.period]}` : tr("가격 확인 중")}</ThemedText>
                 {listPrice && <ThemedText type="small" themeColor="textSecondary" style={styles.reference}>{listPrice}</ThemedText>}
-              </View>
+              </View>}
               <View style={[styles.facts, { borderColor: theme.line }]}>
                 {planFacts(plan.tier).map(([label, value], index) => <View key={label} style={[styles.fact, index > 0 && { borderLeftWidth: 1, borderLeftColor: theme.line }]}>
                   <ThemedText type="small" themeColor="textSecondary" style={styles.center}>{label}</ThemedText>
-                  <ThemedText type="smallBold" themeColor={kind === 'business' && index < 2 ? 'accent' : undefined} style={styles.center}>{value}</ThemedText>
+                  <ThemedText type="smallBold" style={styles.center}>{value}</ThemedText>
                 </View>)}
               </View>
               {kind === 'general' && <ThemedText type="small" themeColor="textSecondary">{tr("모임 도구")} · {MEETUP_TOOL_PERKS[plan.tier].map(perk => tr(perk)).join(' · ')}</ThemedText>}
@@ -322,23 +336,23 @@ export default function MembershipScreen() {
           </View>
 
           <View style={styles.links}>
-            <Pressable analyticsId="app_profile_membership.pressable.8" onPress={() => { play('selection'); void restore(); }} accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={styles.textButton}><ThemedText type="small" themeColor="textSecondary">{tr("구매 복원")}</ThemedText></Pressable>
+            <Pressable analyticsId="app_profile_membership.pressable.8" onPress={() => { play('selection'); setRestoreAsked(true); void restore(); }} accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy, busy: busy && restoreAsked }} style={styles.textButton}><ThemedText type="small" themeColor="textSecondary">{busy && restoreAsked ? tr("복원 확인 중…") : tr("구매 복원")}</ThemedText></Pressable>
             <Pressable analyticsId="app_profile_membership.pressable.9" onPress={() => { play('selection'); void manage(kind); }} accessibilityRole="button" disabled={busy} accessibilityState={{ disabled: busy }} style={styles.textButton}><ThemedText type="small" themeColor="textSecondary">{tr("구독 관리")}</ThemedText></Pressable>
             <Pressable analyticsId="app_profile_membership.pressable.10" onPress={() => openLegal('terms')} accessibilityRole="link" style={styles.textButton}><ThemedText type="small" themeColor="textSecondary">{tr("이용약관")}</ThemedText></Pressable>
             <Pressable analyticsId="app_profile_membership.pressable.11" onPress={() => openLegal('privacy')} accessibilityRole="link" style={styles.textButton}><ThemedText type="small" themeColor="textSecondary">{tr("개인정보처리방침")}</ThemedText></Pressable>
           </View>
+          {nearRestore && !busy && (error || notice) && <ThemedText type="small" themeColor={error ? 'danger' : 'textSecondary'} style={styles.center}
+            accessibilityRole={error ? 'alert' : undefined} accessibilityLiveRegion="polite">{tr(error ?? notice ?? '')}</ThemedText>}
         </ScrollView>
 
         {/* 구독 버튼은 화면 아래에 고정하고, 고른 등급·기간·가격을 바로 위에 보여준다. */}
         <View style={[styles.checkout, { backgroundColor: theme.background, borderTopColor: theme.line }]}>
           {purchaseUnavailableReason && <ThemedText type="small" themeColor="textSecondary" style={styles.center} accessibilityLiveRegion="polite">{purchaseUnavailableReason}</ThemedText>}
-          <Pressable analyticsId="app_profile_membership.pressable.6" accessibilityRole="button" disabled={purchaseDisabled} accessibilityState={{ disabled: purchaseDisabled, busy }}
-            onPress={() => { play('selection'); if (businessBlockedReason) Alert.alert(tr(businessBlockedReason)); else if (selectedOffer) void purchase(selectedOffer, kind === 'business' && merchantId ? merchantId : undefined); }}
+          <Pressable analyticsId="app_profile_membership.pressable.6" accessibilityRole="button" accessibilityLabel={busy ? tr("구독 처리 중") : checkoutLabel} disabled={purchaseDisabled} accessibilityState={{ disabled: purchaseDisabled, busy }}
+            onPress={() => { play('selection'); setRestoreAsked(false); if (businessBlockedReason) Alert.alert(tr(businessBlockedReason)); else if (selectedOffer) void purchase(selectedOffer, kind === 'business' && merchantId ? merchantId : undefined); }}
             style={({ pressed }) => [styles.purchase, clay ? styles.clayWide : Depth.control, { backgroundColor: clay ? 'transparent' : theme.accent, borderBottomColor: theme.accentDepth, borderBottomWidth: clay ? 0 : 3, opacity: purchaseDisabled ? 0.5 : pressed ? 0.85 : 1 }]}>
             {clay && <ClayPillFill kind="cta" />}
-            {busy ? <GlingLoader color={theme.accentInk} accessibilityLabel={tr("구독 처리 중")} /> : <ThemedText type="smallBold" style={{ color: theme.accentInk }}>
-              {currentProduct ? tr("현재 이용 중인 구독") : selectedOffer ? tr("{0} {1} 구독하기", tr(tierNames[selectedOffer.tier]), selectedOffer.period === 'year' ? tr("연간") : tr("월간")) : tr("구독 준비 중")}
-            </ThemedText>}
+            {busy ? <GlingLoader color={theme.accentInk} accessibilityLabel={tr("구독 처리 중")} /> : <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{checkoutLabel}</ThemedText>}
           </Pressable>
           {selectedOffer && <ThemedText type="small" themeColor="textSecondary" style={styles.center}>{tr(selectedOffer.period === 'month' ? '매월 {0} · 자동 갱신 · 결제한 스토어에서 언제든 해지' : '매년 {0} · 자동 갱신 · 결제한 스토어에서 언제든 해지', selectedOffer.price)}</ThemedText>}
         </View>
@@ -410,4 +424,5 @@ const styles = StyleSheet.create({
   links: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: Spacing.two },
   center: { textAlign: 'center' },
   feedback: { gap: Spacing.one },
+  retry: { alignSelf: 'flex-start', marginTop: Spacing.two },
 });

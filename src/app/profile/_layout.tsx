@@ -48,6 +48,7 @@ export default function ProfileLayout() {
       <Stack.Screen name="import" options={{ title: tr('가져오기') }} />
       <Stack.Screen name="promotions" options={{ title: tr(PROMOTIONS_PREVIEW_ENABLED ? '홍보 크레딧' : ''), headerShown: PROMOTIONS_PREVIEW_ENABLED }} />
       <Stack.Screen name="settings" options={{ title: t.profile.settings }} />
+      <Stack.Screen name="account" options={{ title: tr('닉네임·계정 정보') }} />
       <Stack.Screen name="menu" options={{ title: tr('더보기') }} />
       <Stack.Screen name="friends" options={{ title: tr('친구') }} />
       <Stack.Screen name="notifications" options={{ title: tr('알림 설정') }} />

@@ -1,6 +1,6 @@
 import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { FlatList, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from '@/components/symbol-view';
 
@@ -189,6 +189,9 @@ export default function SavedScreen() {
   }
   if (!auth.isAuthed) return <LoginPanel reason={ko ? '저장한 항목을 보려면 로그인해 주세요.' : 'Sign in to see your saved items.'} onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
   const selectedFolder = folders.find(folder => folder.id === folderId);
+  const emptyKind: Record<SavedFilter, string> = ko
+    ? { all: '아직 저장한 항목이 없어요', places: '저장한 장소·비즈니스가 없어요', posts: '저장한 글·모임이 없어요', jobs: '저장한 채용 정보가 없어요', users: '저장한 사람이 없어요' }
+    : { all: 'No saved items here yet', places: 'No saved places or businesses', posts: 'No saved posts or meetups', jobs: 'No saved jobs', users: 'No saved people' };
   const filters: [SavedFilter, string][] = [['all', ko ? '전체' : 'All'], ['places', ko ? '장소·비즈니스' : 'Places & businesses'], ['posts', ko ? '글·모임' : 'Posts & meetups'], ['jobs', ko ? '채용' : 'Jobs'], ['users', ko ? '사람' : 'People']];
   return <ThemedView style={styles.root}><SafeAreaView edges={['bottom']} style={styles.safeArea}>
     <FlatList<SavedItem> data={rows} keyExtractor={item => item.key} contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled"
@@ -211,23 +214,33 @@ export default function SavedScreen() {
             style={[styles.input, { color: theme.text }]} returnKeyType="search" onChangeText={value => { closeTransient(); setSearch(value); }} onSubmitEditing={() => { play('selection'); setQuery(search.trim()); }} />
           {!!search && <Pressable analyticsId="saved.search.clear" accessibilityRole="button" accessibilityLabel={ko ? '검색어 지우기' : 'Clear search'} disabled={busy} style={ControlStyles.icon} onPress={() => { play('selection'); closeTransient(); setSearch(''); setQuery(''); }}><ThemedText accessible={false}>×</ThemedText></Pressable>}
         </View>
-        <View style={styles.wrap}>{filters.map(([kind, label]) => <SavedLibraryButton key={kind} analyticsId={`saved.filter.${kind}`} label={label} selected={filter === kind} disabled={busy} onPress={() => { closeTransient(); setFilter(kind); }} />)}</View>
-        <View style={styles.folders}><ThemedText type="label" themeColor="textSecondary">{ko ? '내 폴더' : 'My folders'}</ThemedText>
-          <View style={styles.wrap}><SavedLibraryButton analyticsId="saved.folder.all" label={ko ? '전체 저장' : 'All saved'} selected={!folderId} disabled={busy} onPress={() => { closeTransient(); setFolderId(null); }} />
-            {folders.map(folder => <SavedLibraryButton key={folder.id} analyticsId="saved.folder.select" testID={`saved.folder.${folder.id}`} label={folder.name} selected={folderId === folder.id} disabled={busy} onPress={() => { closeTransient(); setFolderId(folder.id); }} />)}
-            <SavedLibraryButton analyticsId="saved.folder.new" label={ko ? '+ 새 폴더' : '+ New folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'create' } }); }} />
-            {!!selectedFolder && <SavedLibraryButton analyticsId="saved.folder.manage" label={ko ? '폴더 관리' : 'Manage folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'rename', folder: selectedFolder } }); }} />}
+        {/* QA A-saved-01: kinds and folders share one sideways line, so the first saved items show without scrolling.
+            Tapping the chosen folder again goes back to everything saved. */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={styles.chipLine} contentContainerStyle={styles.chips}
+          accessibilityLabel={ko ? '종류와 폴더' : 'Kinds and folders'}>
+          {filters.map(([kind, label]) => <SavedLibraryButton key={kind} analyticsId={`saved.filter.${kind}`} label={label} selected={filter === kind} disabled={busy} onPress={() => { closeTransient(); setFilter(kind); }} />)}
+          <View style={[styles.chipDivider, { backgroundColor: theme.line }]} />
+          {folders.map(folder => <SavedLibraryButton key={folder.id} analyticsId={folderId === folder.id ? 'saved.folder.all' : 'saved.folder.select'} testID={`saved.folder.${folder.id}`} label={folder.name} selected={folderId === folder.id} disabled={busy}
+            onPress={() => { closeTransient(); setFolderId(folderId === folder.id ? null : folder.id); }} />)}
+          <SavedLibraryButton analyticsId="saved.folder.new" label={ko ? '+ 새 폴더' : '+ New folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'create' } }); }} />
+        </ScrollView>
+        <View style={styles.summary}><ThemedText type="supporting" themeColor="textSecondary" style={styles.summaryText}>{selectedFolder?.name ?? (ko ? '전체 저장' : 'All saved')}{current && !current.failed ? ko ? ` · ${rows.length}개 표시 중` : ` · ${rows.length} shown` : ''}</ThemedText>
+          {selectedFolder ? <View style={styles.wrap}>
+            <SavedLibraryButton analyticsId="saved.folder.manage" label={ko ? '폴더 관리' : 'Manage folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'rename', folder: selectedFolder } }); }} />
             {/* Filters and search drop places from the list, so sharing waits until the whole folder shows. */}
-            {!!selectedFolder && !query && (filter === 'all' || filter === 'places') && <SavedLibraryButton analyticsId="saved.folder.share" label={ko ? '목록 공유' : 'Share list'} disabled={busy || loading} onPress={() => { closeTransient(); setSharingList(true); }} />}</View>
-        </View>
-        <View style={styles.summary}><ThemedText type="supporting" themeColor="textSecondary">{selectedFolder?.name ?? (ko ? '전체 저장' : 'All saved')}{current && !current.failed ? ko ? ` · ${rows.length}개 표시 중` : ` · ${rows.length} shown` : ''}</ThemedText>
-          <ThemedText type="supporting" themeColor="textSecondary">{ko ? '최근 저장순' : 'Recently saved'}</ThemedText></View>
+            {!query && (filter === 'all' || filter === 'places') && <SavedLibraryButton analyticsId="saved.folder.share" label={ko ? '목록 공유' : 'Share list'} disabled={busy || loading} onPress={() => { closeTransient(); setSharingList(true); }} />}
+          </View> : <ThemedText type="supporting" themeColor="textSecondary">{ko ? '최근 저장순' : 'Recently saved'}</ThemedText>}</View>
         {!!error && !activeEditor && <ThemedText accessibilityRole="alert">{error}</ThemedText>}
       </View>}
       ListEmptyComponent={loading ? <GlingLoader color={theme.accent} accessibilityLabel={ko ? '저장 목록 불러오는 중' : 'Loading saved items'} style={styles.state} />
-        : <View style={styles.state}><StateCard kind={current?.failed ? 'error' : 'empty'} title={current?.failed ? ko ? '저장 목록을 불러오지 못했어요' : 'Couldn’t load saved items' : query ? ko ? '검색 결과가 없어요' : 'No matching saved items' : ko ? '아직 저장한 항목이 없어요' : 'No saved items here yet'}
-          body={current?.failed ? ko ? '연결을 확인하고 다시 시도해 주세요.' : 'Check your connection and try again.' : query || folderId || filter !== 'all' ? ko ? '검색어나 필터, 폴더를 바꿔 보세요.' : 'Try another search, filter or folder.' : ko ? '마음에 드는 장소, 글, 채용 정보나 사람을 저장해 보세요. 폴더 정리는 나중에 해도 돼요.' : 'Save places, posts, jobs or people. Organize them in folders whenever you like.'}
-          actionLabel={current?.failed ? ko ? '다시 시도' : 'Try again' : undefined} onAction={current?.failed ? retry : undefined} /></View>}
+        : <View style={styles.state}>{current?.failed
+          ? <StateCard kind="error" title={ko ? '저장 목록을 불러오지 못했어요' : 'Couldn’t load saved items'} body={ko ? '연결을 확인하고 다시 시도해 주세요.' : 'Check your connection and try again.'}
+            actionLabel={ko ? '다시 시도' : 'Try again'} onAction={retry} />
+          // QA A-saved-02: an empty kind says which kind is empty and offers the whole list, instead of "nothing saved yet".
+          : !query && !folderId && filter !== 'all' ? <StateCard kind="empty" title={emptyKind[filter]} body={ko ? '다른 종류는 ‘전체’에서 볼 수 있어요.' : 'Everything else you saved is under All.'}
+            actionLabel={ko ? '전체 보기' : 'Show all'} onAction={() => { closeTransient(); setFilter('all'); }} analyticsId="saved.filter.all" />
+          : <StateCard kind="empty" title={query ? ko ? '검색 결과가 없어요' : 'No matching saved items' : ko ? '아직 저장한 항목이 없어요' : 'No saved items here yet'}
+            body={query || folderId ? ko ? '검색어나 폴더를 바꿔 보세요.' : 'Try another search or folder.' : ko ? '마음에 드는 장소, 글, 채용 정보나 사람을 저장해 보세요. 폴더 정리는 나중에 해도 돼요.' : 'Save places, posts, jobs or people. Organize them in folders whenever you like.'} />}</View>}
       ListFooterComponent={<View style={styles.footer}>
         {loading && !!rows.length && <GlingLoader color={theme.accent} accessibilityLabel={ko ? '불러오는 중' : 'Loading'} />}
         {current?.failed && !!rows.length && <><ThemedText type="supporting" accessibilityRole="alert">{ko ? '목록을 불러오지 못했어요. 앞서 불러온 항목은 유지돼요.' : 'Couldn’t load the list. Items you already loaded are still here.'}</ThemedText><SavedLibraryButton analyticsId="saved.retry" label={ko ? '다시 시도' : 'Try again'} disabled={busy || loading} onPress={retry} /></>}
@@ -251,7 +264,10 @@ const styles = StyleSheet.create({
   list: { flexGrow: 1, paddingHorizontal: Spacing.three, paddingBottom: Spacing.five }, header: { paddingTop: Spacing.three, paddingBottom: Spacing.three, gap: Spacing.three },
   intro: { gap: Spacing.one }, import: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 56, borderWidth: 1, borderRadius: 14, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
   importText: { flex: 1, minWidth: 0, gap: 2 }, search: { flexDirection: 'row', alignItems: 'center' }, input: { flex: 1, minWidth: 0, minHeight: 48, fontSize: 16, paddingVertical: Spacing.two },
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, folders: { gap: Spacing.two },
-  summary: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: Spacing.two },
+  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  // The chip line bleeds to the screen edge so a half-shown chip says there is more to swipe.
+  chipLine: { marginHorizontal: -Spacing.three }, chips: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three },
+  chipDivider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', marginVertical: Spacing.two },
+  summary: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two }, summaryText: { flexShrink: 1 },
   separator: { height: Spacing.two }, state: { marginTop: Spacing.three }, footer: { gap: Spacing.two, paddingVertical: Spacing.three },
 });

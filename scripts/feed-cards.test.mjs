@@ -121,6 +121,7 @@ test('location collection requires the visible disclosure and a separate consent
     '@/lib/location-provider': { useCommunityLocation: () => location },
     '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버' }] },
     '@/components/disclosure': { animateLayout() {} }, 'react-native-reanimated': { useReducedMotion: () => true },
+    '@/components/confirm-sheet': { ConfirmSheet: 'ConfirmSheet' },
   });
   const render = () => NearbyCityCard({ onSelect: id => { selected = id; }, onChooseCity: () => { manual++; }, onFix: value => { received = value; } });
   const button = (tree, label) => nodes(tree).find(node => node.type === 'Pressable' && text(node) === label);

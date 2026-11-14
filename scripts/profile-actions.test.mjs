@@ -57,7 +57,7 @@ test('own profile keeps one ··· for settings, puts the switcher by the name a
   nodes(tree).find(n => n.props?.analyticsId === 'app_profile_index.invite').props.onPress();
   assert.equal(app.routes.at(-1), '/profile/invite', 'The invite button opens the invite page with the personal link and passes.');
   nodes(tree).find(n => n.props?.analyticsId === 'profile.edit').props.onPress();
-  assert.equal(app.routes.at(-1), '/profile/settings');
+  assert.equal(app.routes.at(-1), '/profile/account');
   for (const moved of ['MerchantAccountEntry', 'LinkedAccountEntry']) assert.equal(nodes(tree).some(n => n.type === moved), false, `${moved} moved to the ··· screen`);
   assert.equal(nodes(tree).filter(n => n.type === 'ScrollView').length, 1);
   app.signOut();

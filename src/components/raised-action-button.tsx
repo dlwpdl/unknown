@@ -13,21 +13,23 @@ type Props = {
   disabled?: boolean;
   busy?: boolean;
   compact?: boolean;
-  tone?: 'primary' | 'secondary';
+  // danger: an outlined red action for what cannot be undone (delete, block, end, sign out everywhere).
+  tone?: 'primary' | 'secondary' | 'danger';
 };
 
 export function RaisedActionButton({ analyticsId, label, onPress, disabled = false, busy = false, compact = false, tone = 'primary' }: Props) {
   const theme = useTheme();
   const clay = useClay();
   const blocked = disabled || busy;
+  const danger = tone === 'danger';
 
   return <View style={[styles.base, compact ? styles.compact : styles.wide, { backgroundColor: 'transparent' }]}>
     <View style={compact ? styles.compact : styles.wide}>
       <Pressable analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: blocked, busy }} disabled={blocked}
         onPress={() => { if (!blocked) onPress(); }}
-        style={({ pressed }) => [styles.touch, compact ? styles.compactTouch : styles.wideTouch, clay && (compact ? styles.compactClay : styles.wideClay), controlPresentation(theme, { tone, clay, pressed, disabled, busy }).container, tone === 'secondary' && { backgroundColor: 'transparent' }]}>
+        style={({ pressed }) => [styles.touch, compact ? styles.compactTouch : styles.wideTouch, clay && (compact ? styles.compactClay : styles.wideClay), controlPresentation(theme, { tone: danger ? 'secondary' : tone, clay, pressed, disabled, busy }).container, tone !== 'primary' && { backgroundColor: 'transparent' }, danger && !clay && { borderColor: theme.danger }]}>
         {clay && <ClayPillFill kind={tone === 'primary' ? 'cta' : 'white'} />}
-        <ThemedText type="smallBold" style={[styles.label, clay && compact && styles.compactClayLabel, !compact && styles.wideLabel, { color: tone === 'primary' ? theme.accentInk : theme.text }]}>{label}</ThemedText>
+        <ThemedText type="smallBold" style={[styles.label, clay && compact && styles.compactClayLabel, !compact && styles.wideLabel, { color: tone === 'primary' ? theme.accentInk : danger ? theme.danger : theme.text }]}>{label}</ThemedText>
       </Pressable>
     </View>
   </View>;

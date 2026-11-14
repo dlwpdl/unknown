@@ -210,7 +210,8 @@ for(const action of ['remove','create','assign','rename','delete'])test(`retaine
 for(const boundary of ['filter','folder','visibility','focus','pending-search'])test(`retained mutations reject the old ${boundary} scope before RPC dispatch`,async()=>{
   const view=screen();const retained=await retainedActions(view);
   if(boundary==='filter')control(view.render(),'saved.filter.jobs').props.onPress();
-  else if(boundary==='folder')control(view.render(),'saved.folder.all').props.onPress();
+  // Tapping the chosen folder again goes back to everything saved (QA A-saved-01).
+  else if(boundary==='folder')control(view.render(),`saved.folder.${folder.id}`).props.onPress();
   else if(boundary==='visibility')view.hide(post.target.id);
   else if(boundary==='focus'){view.focus(false);view.render();view.focus(true);}
   else nodes(view.render()).find(node=>node.type==='TextInput').props.onChangeText('다른 검색');
@@ -221,4 +222,16 @@ test('layout scope invalidates retained writes and reads before passive focus cl
   const view=screen();const retained=await retainedActions(view);view.account('other-account');view.render({deferEffects:true});
   for(const action of ['remove','create','assign','rename','delete','compare']){retained[action]();await settle();assert.equal(view.calls.some(call=>writeNames.has(call.name)||call.name==='loadPublicWebshop'),false,action);}
   view.flushPassive();await settle();view.render();assert.equal(view.feedback.includes('success'),false);view.unmount();
+});
+
+test('an empty kind names that kind and offers the whole list (QA A-saved-02)', async () => {
+  const view=screen({loadSavedItems:async()=>page([])});view.render();await settle();
+  control(view.render(),'saved.filter.users').props.onPress();view.render();await settle();
+  const empty=()=>nodes(view.render()).find(node=>node.type==='StateCard');
+  assert.equal(empty().props.title,'저장한 사람이 없어요');
+  assert.equal(empty().props.analyticsId,'saved.filter.all');
+  empty().props.onAction();view.render();await settle();
+  assert.equal(view.calls.filter(call=>call.name==='loadSavedItems').at(-1).args[0].filter,'all');
+  assert.equal(empty().props.title,'아직 저장한 항목이 없어요');
+  view.unmount();
 });
