@@ -153,7 +153,7 @@ function readerMarkup(path, { mounted = false, search = '', directPost = false, 
     '@/lib/sharing': { sharedLinkTarget },
     '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.ej-entertainment.com', PUBLIC_CHANNELS, jsonLd: JSON.stringify, publicSiteName, publicCitySubpage, publicCitySubpageMeta, publicPostDescription, publicPostSchema },
     '@/lib/contact': { CONTACT_EMAIL },
-    './static-slot': { adoptStatic: () => () => {} }, './metadata': { publicHomeSchema: { '@type': 'WebSite' } },
+    './static-slot': { adoptStatic: () => () => {}, revealStatic() {} }, './metadata': { publicHomeSchema: { '@type': 'WebSite' } },
     '@/lib/public-web-client': { publicWebClient: {} },
     './analytics': { useReaderAnalytics() {} },
   };

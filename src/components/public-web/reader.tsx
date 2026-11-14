@@ -30,7 +30,7 @@ import { buildSharedPostUrl } from '@/lib/sharing';
 import { publicWebClient } from '@/lib/public-web-client';
 import { jsonLd, postSeo, publicCitySubpage, publicCitySubpageMeta, publicCompanyUrl, publicMeetupsMeta, publicSiteName, PUBLIC_CHANNELS, PUBLIC_SITE } from '@/lib/public-seo';
 import { CONTACT_EMAIL } from '@/lib/contact';
-import { adoptStatic } from './static-slot';
+import { adoptStatic, revealStatic } from './static-slot';
 import { publicHomeSchema } from './metadata';
 import { InteractionFeedbackProvider, useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadMerchantSource, merchantSourceActionLabel, trackPublicMerchantSourceClick, type MerchantSource } from '@/lib/merchant-source';
@@ -235,7 +235,8 @@ function ReaderContent() {
 
   useEffect(() => {
     // The build-time home/city copy (scripts/finish-public-web.mjs) is for crawlers without JavaScript; drop it once the live feed is in.
-    if (current && !current.failed) globalThis.document?.getElementById?.('gling-static-home')?.remove();
+    // The reader stays hidden until then, so swapping copy for feed moves nothing on screen. A failed feed keeps the copy above it.
+    if (current) revealStatic(current.failed ? [] : ['gling-static-home']);
   }, [current]);
 
   useEffect(() => {

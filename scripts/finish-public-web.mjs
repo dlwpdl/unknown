@@ -11,6 +11,9 @@ import { loadPlaceCatalog, loadPlaceRatings, publicPlaces, writePublicPlaces } f
 
 const LINK = 'color:#CBB9FF';
 const SECTION = 'max-width:720px;margin:24px auto;padding:20px;color:#F6F3F0;font:16px/1.6 system-ui,sans-serif';
+// Pages that swap this copy for the live feed keep the reader hidden until then (src/components/public-web/static-slot.ts),
+// so the swap is one change instead of the whole reader jumping up from below the copy.
+const WAIT = '<style id="gling-static-wait">#root{display:none}</style>';
 const label = slug => TAGS.find(tag => tag.slug === slug)?.label ?? slug;
 const ldScript = value => `<script type="application/ld+json">${jsonLd(value)}</script>`;
 
@@ -253,7 +256,7 @@ export function finishPublicWeb(directory = 'dist', posts = [], companies = [], 
     const kept = city ? cityBlock(city, cityFacts(city, posts, meetups, now), hubs, Math.ceil(own.length / CITY_PAGE_SIZE), shell && places.some(entry => entry.cityId === city.id)) : '';
     const schema = city ? ldScript(collectionSchema(`${PUBLIC_SITE}/${city.id}`, `${city.name} 한인 커뮤니티`, publicAboutGling, own.slice(0, CITY_PAGE_SIZE), [['글링', '/'], [city.name, `/${city.id}`]])) : '';
     const html = readFileSync(target, 'utf8')
-      .replace('</head>', () => `${home}${city ? '' : languages}${schema}</head>`)
+      .replace('</head>', () => `${home}${city ? '' : languages}${schema}${WAIT}</head>`)
       .replace(/<body[^>]*>/, match => `${match}${kept}${staticHub(cities, posts, city)}`);
     writeFileSync(target, html);
     // /vancouver/ (with the slash) now hits the folder above; serve the same page there, canonical to /vancouver.
@@ -269,7 +272,7 @@ export function finishPublicWeb(directory = 'dist', posts = [], companies = [], 
     const copy = `<section id="gling-static-home" lang="ko" style="${SECTION}"><p style="margin:0">밴쿠버·토론토·몬트리올 한인들이 글링에서 연 모임과 소모임을 도시별로 모았어요. 취미가 맞는 사람끼리 만나는 소모임도 있고, 축제·공연에 같이 갈 사람을 구하는 글도 있어요. 마음에 드는 모임이 있으면 글링 앱에서 신청하면 돼요.</p>${cities.map(city => [city, cityMeetups.get(city.id)]).map(([city, list]) => `<h2 style="margin:20px 0 8px;font-size:18px"><a href="/${city.id}/meetups" style="${LINK}">${escapeHtml(`${city.name} 한인 모임·소모임`)}</a></h2>${list.length
       ? `<ul style="margin:0;padding-left:20px">${list.slice(0, 10).map(item => `<li>${escapeHtml(item.title)} <small>${escapeHtml(koreanDate(item.room.startsAt) || String(item.room.cadence ?? '').trim())}</small></li>`).join('')}</ul>`
       : `<p style="margin:0">${escapeHtml(`지금 신청받는 ${city.name} 모임은 없어요. 하고 싶은 모임이 있으면 글링 앱에서 직접 열면 돼요.`)}</p>`}`).join('')}</section>`;
-    writeFileSync(meetupsFile, readFileSync(meetupsFile, 'utf8').replace(/<body[^>]*>/, match => `${match}${copy}`));
+    writeFileSync(meetupsFile, readFileSync(meetupsFile, 'utf8').replace('</head>', `${WAIT}</head>`).replace(/<body[^>]*>/, match => `${match}${copy}`));
   }
   const day = value => { const time = Date.parse(value); return Number.isFinite(time) ? `<lastmod>${new Date(time).toISOString().slice(0, 10)}</lastmod>` : ''; };
   // `/?city=` pages canonicalize to `/`, so only distinct pages are listed. /visited canonicalizes to itself for the first city.
