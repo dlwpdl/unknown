@@ -9,7 +9,8 @@ const merchant = '11111111-1111-4111-8111-111111111111', user = '22222222-2222-4
 const profile = { id: merchant, name: '가게', can_edit: true, updated_at: '2026-10-09T18:00:00Z', public_phone: '+1 604 555 0101', business_hours: '월–금 09:00–18:00', avatar_path: 'saved-logo', banner_path: null, avatarUri: 'saved-logo-url', bannerUri: null, services: '', address: '' };
 const settle = () => new Promise(setImmediate);
 const nodes = root => !root || typeof root !== 'object' ? [] : [root, ...Object.values(root).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
-const action = (root, label) => nodes(root).find(node => node.props?.label === label);
+// Photo boxes are pressable themselves (QA A-biz-05), so a control is found by its button label or its spoken name.
+const action = (root, label) => nodes(root).find(node => node.props?.label === label || node.type === 'Pressable' && node.props?.accessibilityLabel === label);
 const mapPreview = root => nodes(root).find(node => node.type === 'Image' && node.props.accessibilityLabel === '지도에 뜨는 사진 미리보기');
 const input = (root, label) => nodes(root).find(node => node.type === 'TextInput' && node.props.accessibilityLabel === label);
 
@@ -31,6 +32,7 @@ function editor({ fail = false, sessionUser = user, initialProfile = profile, ph
     '@/lib/post-image-picker': { isSupportedImage: () => true, preparePostImage: async () => ({ uri: 'prepared-photo' }) },
     '@/lib/merchant-profile-editor': { loadMyMerchantProfile: async () => initialProfile,
       uploadMerchantProfileImage: async (_client, userId, merchantId, image) => { photoCalls.push(['upload', userId, merchantId, image]); return 'new-map-path'; },
+      saveMyMerchantProfile: async (_client, merchantId, patch) => { photoCalls.push(['profile', merchantId, patch]); return { ...initialProfile, avatar_path: patch.avatarPath, updated_at: '2026-10-24T20:00:00Z' }; },
       saveMyMerchantProfilePhotos: async (_client, merchantId, patch) => { photoCalls.push(['save', merchantId, patch]); if (photoFail) throw Error('MERCHANT_PROFILE_CHANGED'); return { ...initialProfile, map_photo_path: patch.mapPhotoPath, mapPhotoUri: patch.mapPhotoPath ? 'saved-map-url' : null, updated_at: '2026-10-24T20:00:00Z' }; } },
     '@/lib/merchant-conveniences': { saveMerchantContact: async (_client, ...args) => { calls.push(args); if (fail) throw Error('MERCHANT_PROFILE_CHANGED'); return { ...profile, public_phone: args[1], business_hours: args[2], updated_at: '2026-10-09T18:01:00Z' }; } },
     '@/lib/supabase': { supabase: { storage: { from: () => ({ remove: async paths => { removed.push(...paths); } }) }, auth: { getSession: async () => ({ data: { session: { user: { id: sessionUser } } } }) } } },
@@ -41,24 +43,27 @@ function editor({ fail = false, sessionUser = user, initialProfile = profile, ph
   return { calls, photoCalls, removed, feedback, dirty, render(props = {}) { index = 0; return exports.Editor({ merchantId: merchant, onDirty, ...props }); } };
 }
 
-test('contact save preserves a separately edited logo and uses current server revision', async () => {
+test('one save writes the logo, then the contact against the revision the logo save returned (QA A-biz-05)', async () => {
   const view = editor(); view.render(); await settle();
   let root = view.render();
   assert.equal(input(root, '비즈니스 공개 전화번호')?.props.value, profile.public_phone);
+  assert.equal(nodes(root).filter(node => node.props?.label === '저장').length, 1, 'one save button for the whole page');
   action(root, '로고 교체').props.onPress(); await settle(); root = view.render();
+  assert.equal(nodes(root).find(node => node.type === 'ProfileHeader').props.profile.avatarUri, 'prepared-photo');
   input(root, '비즈니스 공개 전화번호').props.onChangeText('+1 604 555 0202');
   input(view.render(), '비즈니스 영업시간').props.onChangeText('월–토 10:00–18:00');
-  action(view.render(), '연락 정보 저장').props.onPress(); await settle(); root = view.render();
-  assert.deepEqual(view.calls, [[merchant, '+1 604 555 0202', '월–토 10:00–18:00', profile.updated_at]]);
-  assert.equal(nodes(root).find(node => node.type === 'ProfileHeader').props.profile.avatarUri, 'prepared-photo');
-  assert.ok(view.feedback.includes('success'));
+  action(view.render(), '저장').props.onPress(); await settle(); root = view.render();
+  assert.deepEqual(view.photoCalls.map(call => call[0]), ['upload', 'profile']);
+  assert.deepEqual(view.calls, [[merchant, '+1 604 555 0202', '월–토 10:00–18:00', '2026-10-24T20:00:00Z']]);
+  assert.deepEqual(view.feedback.filter(kind => kind === 'success'), ['success'], 'one success sound for one save');
+  assert.match(JSON.stringify(root), /바꾼 내용을 모두 저장했어요/);
 });
 
 test('contact conflict preserves entered phone/hours and signals an unsaved profile', async () => {
   const view = editor({ fail: true }); view.render(); await settle();
   assert.ok(input(view.render(), '비즈니스 공개 전화번호'));
   input(view.render(), '비즈니스 공개 전화번호').props.onChangeText('+1 604 555 0202');
-  action(view.render(), '연락 정보 저장').props.onPress(); await settle();
+  action(view.render(), '저장').props.onPress(); await settle();
   const root = view.render();
   assert.equal(input(root, '비즈니스 공개 전화번호').props.value, '+1 604 555 0202');
   assert.ok(view.feedback.includes('warning'));
@@ -69,7 +74,7 @@ test('contact editor rejects an account switch before sending a write', async ()
   const view = editor({ sessionUser: 'other' }); view.render(); await settle();
   assert.ok(input(view.render(), '비즈니스 공개 전화번호'));
   input(view.render(), '비즈니스 공개 전화번호').props.onChangeText('+1 604 555 0202');
-  action(view.render(), '연락 정보 저장').props.onPress(); await settle();
+  action(view.render(), '저장').props.onPress(); await settle();
   assert.equal(view.calls.length, 0);
   assert.equal(input(view.render(), '비즈니스 공개 전화번호').props.value, '+1 604 555 0202');
 });
@@ -77,8 +82,8 @@ test('contact editor rejects an account switch before sending a write', async ()
 test('map photo selection reuses picker/upload, preserves logo and banner, and can be removed', async () => {
   const view = editor(); view.render(); await settle();
   action(view.render(), '지도 사진 선택').props.onPress(); await settle();
-  assert.equal(action(view.render(), '프로필 사진 저장').props.disabled, false);
-  action(view.render(), '프로필 사진 저장').props.onPress(); await settle();
+  assert.equal(action(view.render(), '저장').props.disabled, false);
+  action(view.render(), '저장').props.onPress(); await settle();
   assert.equal(view.photoCalls[0][0], 'upload');
   assert.deepEqual(view.photoCalls[1].slice(0, 2), ['save', merchant]);
   assert.deepEqual(JSON.parse(JSON.stringify(view.photoCalls[1][2])), { avatarPath: profile.avatar_path, bannerPath: null, mapPhotoPath: 'new-map-path', updatedAt: profile.updated_at });
@@ -89,11 +94,11 @@ test('map photo selection reuses picker/upload, preserves logo and banner, and c
   const mapThumb = /thumbnail: \{ width: (\d+), height: (\d+), borderRadius: (\d+)/.exec(readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8'));
   assert.deepEqual([frame.width, frame.height, frame.borderRadius], mapThumb.slice(1).map(Number));
   action(view.render(), '지도 사진 제거').props.onPress();
-  action(view.render(), '프로필 사진 저장').props.onPress(); await settle();
+  action(view.render(), '저장').props.onPress(); await settle();
   assert.equal(view.photoCalls.at(-1)[2].mapPhotoPath, null);
   assert.equal(view.photoCalls.at(-1)[2].updatedAt, '2026-10-24T20:00:00Z');
   oldPreview.props.onError();
-  assert.equal(action(view.render(), '프로필 사진 저장').props.disabled, true, 'late preview failure cannot restore the previous saved revision');
+  assert.equal(action(view.render(), '저장').props.disabled, true, 'late preview failure cannot restore the previous saved revision');
 });
 
 test('failed map photo save retains uploaded draft for retry and map preview failure retains its saved path', async () => {
@@ -101,16 +106,16 @@ test('failed map photo save retains uploaded draft for retry and map preview fai
   action(view.render(), '지도 사진 선택').props.onPress(); await settle();
   mapPreview(view.render()).props.onError();
   assert.ok(action(view.render(), '지도 사진 제거'), 'a failed local preview can still be removed');
-  action(view.render(), '프로필 사진 저장').props.onPress(); await settle();
+  action(view.render(), '저장').props.onPress(); await settle();
   assert.equal(view.dirty.at(-1), true);
   assert.ok(action(view.render(), '지도 사진 제거'));
-  action(view.render(), '프로필 사진 저장').props.onPress(); await settle();
+  action(view.render(), '저장').props.onPress(); await settle();
   assert.equal(view.photoCalls.filter(call => call[0] === 'upload').length, 1, 'retry uses the immutable uploaded draft');
   const saved = editor({ initialProfile: { ...profile, map_photo_path: 'saved-map', mapPhotoUri: 'saved-url' } }); saved.render(); await settle();
   mapPreview(saved.render()).props.onError();
   assert.ok(action(saved.render(), '지도 사진 제거'));
   assert.ok(action(saved.render(), '사진 다시 확인'));
-  assert.equal(action(saved.render(), '프로필 사진 저장').props.disabled, true, 'load failure cannot clear the saved image');
+  assert.equal(action(saved.render(), '저장').props.disabled, true, 'load failure cannot clear the saved image');
 });
 
 test('bare mode hides the editor title but keeps the public profile link', async () => {

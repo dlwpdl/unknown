@@ -66,14 +66,15 @@ test('each sparkle and each employment cell covers two points', () => {
   assert.deepEqual(work.map(node => node.props.style.width), ['100%', '50%', '0%', '0%', '0%']);
 });
 
-test('empty and invalid means never look like a scored review; work uses a bar and usage sparkles', () => {
+test('empty and invalid means never look like a scored review; both kinds use the same sparkles (QA A-company-01)', () => {
   for (const score of [null, NaN, Infinity, 0, 11]) {
     const { tree, animations } = rating({ score });
     assert.match(tree.props.accessibilityLabel, /점수 없음/);
     assert.equal(animations.length, 0);
   }
   assert.ok(nodes(rating({ score: 9 }).tree).some(node => node.props?.children === '✦'));
-  assert.ok(nodes(rating({ score: 9, reviewKind: 'employment' }).tree).some(node => node.props?.testID === 'merchant-rating-segment'));
+  assert.ok(nodes(rating({ score: 9, reviewKind: 'employment' }).tree).some(node => node.props?.children === '✦'));
+  assert.ok(!nodes(rating({ score: 9, reviewKind: 'employment' }).tree).some(node => node.props?.testID === 'merchant-rating-segment'));
 });
 
 test('rating motion is finite, stops on unmount, and skips movement with reduced motion', () => {
@@ -115,13 +116,13 @@ test('empty marks stay visible on a white light-mode card and keep the line colo
   for (const reviewKind of ['usage', 'employment']) {
     const light = rating({ score: null, reviewKind, scheme: 'light' });
     const empties = light.tree.props.children.map(unit => unit.props.children[0]);
-    const colors = empties.map(node => reviewKind === 'usage' ? node.props.style[1].color : node.props.style[1].backgroundColor);
+    const colors = empties.map(node => node.props.style[1].color);
     assert.equal(new Set(colors).size, 1);
     const color = colors[0], alpha = hex(color, 7) / 255;
     const mixed = [1, 3, 5].map(at => hex(color, at) * alpha + hex(light.theme.card, at) * (1 - alpha));
     assert.ok(1.05 / (luminance(mixed) + 0.05) >= 3, `${reviewKind} empty mark ${color} needs 3:1 on white`);
     const dark = rating({ score: null, reviewKind, scheme: 'dark' });
     const darkEmpty = dark.tree.props.children[0].props.children[0].props.style[1];
-    assert.equal(reviewKind === 'usage' ? darkEmpty.color : darkEmpty.backgroundColor, dark.theme.line);
+    assert.equal(darkEmpty.color, dark.theme.line);
   }
 });

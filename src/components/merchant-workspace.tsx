@@ -48,6 +48,7 @@ import { PUBLIC_BUSINESS_PRICING } from '@/lib/public-seo';
 
 const openPricing = () => { void Linking.openURL(PUBLIC_BUSINESS_PRICING).catch(() => {}); };
 
+
 const errorText = (error: unknown) => ({
   MERCHANT_ACCESS_REQUIRED: '이 비즈니스를 관리할 권한이 없어요.', ADMIN_REQUIRED: '관리자 2단계 인증을 다시 확인해 주세요.',
   MERCHANT_ACCOUNT_REQUIRED: '현재 계정의 비즈니스 관리 권한을 다시 확인해 주세요.',
@@ -140,7 +141,7 @@ function Field({ label, value, onChange, placeholder, numeric = false, signed = 
 function Section({ title, children }: { title: string; children: ReactNode }) {
 
   const theme = useTheme(), clayBox = useClayBox();
-  return <View style={[styles.section, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="subtitle">{title}</ThemedText>{children}</View>;
+  return <View style={[styles.section, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="section" accessibilityRole="header">{title}</ThemedText>{children}</View>;
 }
 function ToolRow({ title, detail, onPress, disabled }: { title: string; detail: string; onPress: () => void; disabled?: boolean }) {
   const theme = useTheme(); const { play } = useInteractionFeedback();
@@ -177,7 +178,8 @@ function parseCostMenus(stored: string | null): CostMenu[] {
 }
 const tileIcon = (ios: string, material: string) => ({ ios, android: material, web: material }) as SymbolViewProps['name'];
 
-type WorkspaceProps = { merchantId?: string; refreshSignal?: number; initialMerchantId?: string; initialTab?: MerchantTab; assignedOnly?: boolean; onBusinessesChanged?: () => void; onCityChange?: (cityId: string) => void; layout?: 'sidebar' };
+// nativeBack: the screen has its own header back button, which already returns a tool to the business home (usePreventRemove below).
+type WorkspaceProps = { merchantId?: string; refreshSignal?: number; initialMerchantId?: string; initialTab?: MerchantTab; assignedOnly?: boolean; onBusinessesChanged?: () => void; onCityChange?: (cityId: string) => void; layout?: 'sidebar'; nativeBack?: boolean };
 export function MerchantWorkspace(props: WorkspaceProps) {
 
   const [connectionRevision, setConnectionRevision] = useState(0);
@@ -185,7 +187,7 @@ export function MerchantWorkspace(props: WorkspaceProps) {
   return <>{!props.merchantId && <MerchantAccountInvitations refreshSignal={refreshSignal} onChanged={() => { setConnectionRevision(v => v + 1); props.onBusinessesChanged?.(); }} />}
     <MerchantAccessGate businessOnly={props.assignedOnly} refreshSignal={refreshSignal}><MerchantWorkspaceContent {...props} refreshSignal={refreshSignal} /></MerchantAccessGate></>;
 }
-function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMerchantId, initialTab, assignedOnly = false, onBusinessesChanged, onCityChange, layout }: WorkspaceProps) {
+function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMerchantId, initialTab, assignedOnly = false, onBusinessesChanged, onCityChange, layout, nativeBack }: WorkspaceProps) {
   const { tr } = useLanguage();
   const { me, isAuthed, isAdmin } = useAuth();
   const [response, setResponse] = useState<{ user: string; rows: BusinessMerchant[]; revision: number; refreshSignal: number } | null>(null);
@@ -212,7 +214,7 @@ function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMercha
     return () => { active = false; };
   }, [isAuthed, me.id, merchantId, revision, refreshSignal, assignedOnly]);
   if (!isAuthed) return <ThemedText>{tr("로그인한 뒤 비즈니스 도구를 이용해 주세요.")}</ThemedText>;
-  if (merchantId) return <MerchantTools businessOnly={assignedOnly} layout={layout} key={`${me.id}:${merchantId}`} id={merchantId} initialTab={initialTab} refreshSignal={refreshSignal} onDirty={() => {}} />;
+  if (merchantId) return <MerchantTools businessOnly={assignedOnly} layout={layout} nativeBack={nativeBack} key={`${me.id}:${merchantId}`} id={merchantId} initialTab={initialTab} refreshSignal={refreshSignal} onDirty={() => {}} />;
   async function choose(id: string | null) {
     if (busyRef.current) return;
     if (id !== selected && dirty && !await confirmAction('저장하지 않은 초안', '다른 비즈니스를 열면 저장하지 않은 수정 내용이 사라져요.')) return;
@@ -261,12 +263,12 @@ function MerchantWorkspaceContent({ merchantId, refreshSignal = 0, initialMercha
       <Action label={tr("비즈니스 등록 취소")} disabled={busy} onPress={() => { setRegistering(false); setChoosing(true); }} />
     </Section>}
     {!registering && selected && rows?.some(row => row.id === selected) && <View style={{ display: choosing ? 'none' : 'flex' }}>
-      <MerchantTools businessOnly={assignedOnly} layout={layout} key={`${me.id}:${selected}`} id={selected} initialTab={initialTab} refreshSignal={refreshSignal + revision} accessChecking={checking} onChoose={() => setChoosing(true)} onDirty={setDirty} onConnectionsChanged={() => setRevision(v => v + 1)} />
+      <MerchantTools businessOnly={assignedOnly} layout={layout} nativeBack={nativeBack} key={`${me.id}:${selected}`} id={selected} initialTab={initialTab} refreshSignal={refreshSignal + revision} accessChecking={checking} onChoose={() => setChoosing(true)} onDirty={setDirty} onConnectionsChanged={() => setRevision(v => v + 1)} />
     </View>}
   </View>;
 }
 
-function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onChoose, accessChecking = false, businessOnly = false, initialTab = 'overview', layout }: { layout?: 'sidebar'; id: string; refreshSignal: number; onDirty: (dirty: boolean) => void; onConnectionsChanged?: () => void; onChoose?: () => void; accessChecking?: boolean; businessOnly?: boolean; initialTab?: MerchantTab }) {
+function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onChoose, accessChecking = false, businessOnly = false, initialTab = 'overview', layout, nativeBack = false }: { layout?: 'sidebar'; nativeBack?: boolean; id: string; refreshSignal: number; onDirty: (dirty: boolean) => void; onConnectionsChanged?: () => void; onChoose?: () => void; accessChecking?: boolean; businessOnly?: boolean; initialTab?: MerchantTab }) {
   const clay = useClay();
   const { tr, language, locale: appLocale } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox();
@@ -290,6 +292,8 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
   const sidebar = layout === 'sidebar', wideNav = useMerchantSidebar();
   // In the app the tools are tabs inside one screen, so back returns to the business home instead of leaving it.
   usePreventRemove(!sidebar && tab !== 'overview', () => { setNotice(''); setTab('overview'); });
+  // The app shows its own business plans (store purchase) instead of leaving for the web price page (QA A-biz-07); the web keeps the page.
+  const showPlans = () => { if (Platform.OS === 'web') openPricing(); else router.push({ pathname: '/profile/membership', params: { kind: 'business', merchant: id } }); };
   const [channels, setChannels] = useState({ gling: true, naver: false, daum: false });
   const [preparedChannels, setPreparedChannels] = useState<{ naver: boolean; daum: boolean } | null>(null);
   const [openedDraft, setOpenedDraft] = useState<MerchantDraft | null>(null);
@@ -513,8 +517,8 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     { key: 'profile', label: tr('프로필'), icon: { ios: 'storefront', android: 'storefront', web: 'storefront' } },
     ...aiOwner ? [{ key: 'ai', label: tr('AI 연결'), icon: { ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' } } as const] : [],
     ...fullAccess ? ([
-      ['channels', tr('채널 연결'), 'link', 'link'], ['cost', tr('원가 계산'), 'percent', 'calculate'], ['stock', tr('재고'), 'shippingbox', 'inventory_2'],
-      ['membership', tr('성과·멤버십'), 'chart.bar', 'bar_chart'], ['accounts', tr('계정 관리'), 'person.2', 'group'],
+      ['channels', tr('채널 연결'), 'link', 'link'], ['cost', tr('원가 계산'), 'number', 'calculate'], ['stock', tr('재고'), 'shippingbox', 'inventory_2'],
+      ['membership', tr('성과·멤버십'), 'trophy.fill', 'emoji_events'], ['accounts', tr('계정 관리'), 'person.badge.plus', 'group_add'],
     ] as const).map(([key, label, ios, web]) => ({ key, label, icon: { ios, android: web, web }, group: 'tools' as const })) : [],
   ];
   function selectNav(key: string) {
@@ -629,9 +633,10 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     <View style={[sidebar ? wideNav ? merchantShellStyles.shell : merchantShellStyles.stacked : styles.workspace, checking && { display: 'none', pointerEvents: 'none' }]} accessibilityElementsHidden={checking} importantForAccessibility={checking ? 'no-hide-descendants' : 'auto'} {...(Platform.OS === 'web' ? { inert: checking } : {})}>
     {sidebar && <MerchantSidebar items={navItems} active={activeTab} onSelect={selectNav} disabled={busy} wide={wideNav} />}
     <View style={sidebar ? merchantShellStyles.main : merchantShellStyles.plain}>
-    {sidebar || activeTab === 'overview' ? null : <View style={styles.businessHeader}><Action back label={tr("비즈니스 관리")} disabled={busy} onPress={() => { setNotice(''); setTab('overview'); }} /><ThemedText type="small" themeColor="textSecondary" style={styles.toolText}>{data.merchant.name}</ThemedText></View>}
+    {/* One way back (QA A-biz-04): under a header back button only the business name stays, as small text. */}
+    {sidebar || activeTab === 'overview' ? null : <View style={styles.businessHeader}>{!nativeBack && <Action back label={tr("비즈니스 관리")} disabled={busy} onPress={() => { setNotice(''); setTab('overview'); }} />}<ThemedText type="small" themeColor="textSecondary" style={styles.toolText}>{data.merchant.name}</ThemedText></View>}
     {sidebar && activeTab !== 'overview' && pageCopy[activeTab] && <MerchantPageHeader title={pageCopy[activeTab]![0]} subtitle={pageCopy[activeTab]![1]} action={newLabel ? <RaisedActionButton compact analyticsId="merchant.primary" label={newLabel} disabled={busy} onPress={() => { play('selection'); void openDraft(undefined, activeTab === 'posts' || !aiAllowed); }} /> : undefined} />}
-    {error && <><ThemedText accessibilityRole="alert">{tr(error)}</ThemedText><Action label={tr("자료 새로 확인")} disabled={busy} onPress={() => { setError(''); setRevision((v) => v + 1); }} />{error === errorText(new Error('BUSINESS_MONTHLY_LIMIT_REACHED')) && <Action label={tr("요금제 보기")} onPress={openPricing} />}</>}{notice && <ThemedText accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
+    {error && <><ThemedText accessibilityRole="alert">{tr(error)}</ThemedText><Action label={tr("자료 새로 확인")} disabled={busy} onPress={() => { setError(''); setRevision((v) => v + 1); }} />{error === errorText(new Error('BUSINESS_MONTHLY_LIMIT_REACHED')) && <Action label={tr("요금제 보기")} onPress={showPlans} />}</>}{notice && <ThemedText accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
     {activeTab === 'overview' && sidebar && <MerchantHome name={data.merchant.name} place={`${tr(data.merchant.city_name)} · ${data.merchant.owner_verified_at ? tr('비즈니스 소유 확인됨') : tr('비즈니스 소유 확인 대기')}`} onChoose={onChoose}
       purposes={draftPurposes} purpose={purpose} onPurpose={value => setPurpose(value as (typeof draftPurposes)[number])} facts={facts} onFacts={setFacts}
       onGenerate={() => { void startHomeDraft(true); }} onWrite={() => { void openDraft(undefined, true); }} resume={dirty ? () => { setDraftView('composer'); setTab('drafts'); } : undefined}
@@ -640,7 +645,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       <View style={[styles.storeCard, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <View style={styles.businessHeader}>
           <View style={[styles.storeLogo, { backgroundColor: theme.backgroundSelected }]}><SymbolView name={tileIcon('storefront', 'storefront')} size={26} tintColor={theme.accent} /></View>
-          <View style={styles.toolText}><ThemedText type="subtitle">{data.merchant.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr(data.merchant.city_name)} · {data.merchant.owner_verified_at ? tr("비즈니스 소유 확인됨") : tr("비즈니스 소유 확인 대기")}</ThemedText></View>
+          <View style={styles.storeName}><ThemedText type="subtitle">{data.merchant.name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr(data.merchant.city_name)} · {data.merchant.owner_verified_at ? tr("비즈니스 소유 확인됨") : tr("비즈니스 소유 확인 대기")}</ThemedText></View>
           {onChoose && <Action label={tr("비즈니스 변경")} disabled={busy} onPress={onChoose} />}
         </View>
         {data.metrics && <>
@@ -649,11 +654,11 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
           <ThemedText type="small" themeColor="textSecondary">{tr("최근 14일 기준이에요.")}</ThemedText>
         </>}
       </View>
-      <Action primary label={tr("소식 쓰기")} disabled={busy} onPress={() => { void openDraft(undefined, true); }} />
+      <Action primary label={tr("홍보글 쓰기")} disabled={busy} onPress={() => { void openDraft(undefined, true); }} />
       {dirty && <Action label={tr("작성 중인 초안 이어쓰기")} disabled={busy} onPress={() => { setDraftView('composer'); setTab('drafts'); }} />}
       {([
         [tr("알리기"), <>
-          <ToolTile title={tr("소식·초안")} detail={tr("쓰고 있는 글과 저장한 초안")} icon={tileIcon('square.and.pencil', 'edit_note')} badge={openDrafts ? tr("작성 중 {0}", openDrafts) : undefined} disabled={busy} onPress={() => goTool('drafts')} />
+          <ToolTile title={tr("홍보글")} detail={tr("쓰고 있는 글과 저장한 초안")} icon={tileIcon('square.and.pencil', 'edit_note')} badge={openDrafts ? tr("작성 중 {0}", openDrafts) : undefined} disabled={busy} onPress={() => goTool('drafts')} />
           <ToolTile title={tr("게시한 글")} detail={tr("올린 글을 고치거나 내려요")} icon={tileIcon('doc.text', 'description')} disabled={busy} onPress={() => goTool('posts')} />
           {fullAccess && <ToolTile title={tr("채널 연결")} detail={tr("네이버 카페·SNS에도 올려요")} icon={tileIcon('link', 'link')} disabled={busy} onPress={() => goTool('channels')} />}
         </>, true],
@@ -662,13 +667,13 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
           {fullAccess && <ToolTile title={tr("이용 후기")} detail={tr("후기를 보고 답글을 달아요")} icon={tileIcon('star', 'star')} disabled={busy} onPress={() => goTool('reviews')} />}
         </>, inboxAllowed || fullAccess],
         [tr("가게 운영"), <>
-          <ToolTile title={tr("원가 계산")} detail={tr("하나 팔면 얼마 남는지")} icon={tileIcon('percent', 'calculate')} disabled={busy} onPress={() => goTool('cost')} />
+          <ToolTile title={tr("원가 계산")} detail={tr("하나 팔면 얼마 남는지")} icon={tileIcon('number', 'calculate')} disabled={busy} onPress={() => goTool('cost')} />
           <ToolTile title={tr("재고")} detail={tr("품목 {0}개", data.items.length)} icon={tileIcon('shippingbox', 'inventory_2')} badge={lowItems.length ? tr("부족 {0}", lowItems.length) : undefined} warn disabled={busy} onPress={() => goTool('stock')} />
         </>, fullAccess],
         [tr("가게 설정"), <>
           <ToolTile title={tr("프로필·사진")} detail={tr("손님에게 보이는 가게 정보")} icon={tileIcon('storefront', 'storefront')} disabled={busy} onPress={() => goTool('profile')} />
-          {fullAccess && <ToolTile title={tr("계정·권한")} detail={tr("함께 운영하는 사람")} icon={tileIcon('person.2', 'group')} disabled={busy} onPress={() => goTool('accounts')} />}
-          {fullAccess && <ToolTile title={tr("성과·멤버십")} detail={tr("최근 성과와 이용 등급")} icon={tileIcon('chart.bar', 'bar_chart')} disabled={busy} onPress={() => goTool('membership')} />}
+          {fullAccess && <ToolTile title={tr("계정·권한")} detail={tr("함께 운영하는 사람")} icon={tileIcon('person.badge.plus', 'group_add')} disabled={busy} onPress={() => goTool('accounts')} />}
+          {fullAccess && <ToolTile title={tr("성과·멤버십")} detail={tr("최근 성과와 이용 등급")} icon={tileIcon('trophy.fill', 'emoji_events')} disabled={busy} onPress={() => goTool('membership')} />}
         </>, true],
       ] as const).filter(([, , shown]) => shown).map(([title, tiles]) => <View key={title} style={styles.tileGroup}>
         <ThemedText type="smallBold" themeColor="textSecondary" accessibilityRole="header">{title}</ThemedText><View style={styles.tiles}>{tiles}</View>
@@ -771,17 +776,13 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       </Section>}
     </>}
     {activeTab === 'cost' && <>
-      <View style={styles.chips}>
+      {costMenus.length > 0 && <View style={styles.chips}>
         {costMenus.map(menu => { const on = sameCost(menu.values); return <Pressable key={menu.name} analyticsId="merchant.cost.menu" accessibilityRole="button" accessibilityLabel={tr("{0} 계산 불러오기", menu.name)} accessibilityHint={tr("길게 누르면 지울 수 있어요.")} accessibilityState={{ selected: on }}
           onPress={() => { play('selection'); setCost({ ...menu.values }); }} onLongPress={() => { play('selection'); void deleteCostMenu(menu); }}
           style={({ pressed }) => [styles.chip, clay && styles.clayPad, clay ? { backgroundColor: 'transparent', borderColor: 'transparent', opacity: pressed ? 0.7 : 1 } : { backgroundColor: on ? theme.text : theme.card, borderColor: theme.line, opacity: pressed ? 0.7 : 1 }]}>
           {clay && <ClayPillFill kind={on ? 'on' : 'white'} />}
           <ThemedText type="smallBold" style={{ color: clay ? on ? theme.accentInk : theme.text : on ? theme.background : theme.text }}>{menu.name}</ThemedText></Pressable>; })}
-        <Action label={tr("메뉴로 저장")} disabled={busy || !calculated} onPress={askCostMenuName} />
-        {costKeys.some(key => cost[key]) && <Action label={tr("새로 계산")} disabled={busy} onPress={() => setCost(emptyCost())} />}
-      </View>
-      {menuName !== null && <View style={styles.row2}><View style={styles.half}><Field label={tr("메뉴 이름")} value={menuName} maxLength={30} placeholder={tr("예: 단호박 라떼")} onChange={setMenuName} /></View>
-        <Action label={tr("저장")} disabled={!menuName.trim()} onPress={() => saveCostMenu(menuName)} /><Action label={tr("취소")} onPress={() => setMenuName(null)} /></View>}
+      </View>}
       <View style={[styles.storeCard, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         {calculated ? <>
           <ThemedText type="small" themeColor="textSecondary">{tr("하나 팔면 남는 돈")}</ThemedText>
@@ -799,11 +800,15 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       <Section title={tr("만드는 데 드는 돈")}>
         <ThemedText type="small" themeColor="textSecondary">{tr("한 번 만드는 묶음 기준으로 넣어요. 금액은 CAD예요.")}</ThemedText>
         <View style={styles.row2}><View style={styles.half}><Field label={tr("묶음 전체 재료비")} value={cost.batchCost} numeric placeholder="0.00" onChange={(value) => setCost({ ...cost, batchCost: value })} /></View><View style={styles.half}><Field label={tr("나오는 개수")} value={cost.yield} numeric placeholder="1" onChange={(value) => setCost({ ...cost, yield: value })} /></View></View>
-        <View style={styles.row2}><View style={styles.half}><Field label={tr("개당 포장비")} value={cost.packaging} numeric placeholder="0.00" onChange={(value) => setCost({ ...cost, packaging: value })} /></View><View style={styles.half}><Field label={tr("개당 기타비")} value={cost.other} numeric placeholder={tr("없으면 비워 두세요")} onChange={(value) => setCost({ ...cost, other: value })} /></View></View>
+        <View style={styles.row2}><View style={styles.half}><Field label={tr("개당 포장비")} value={cost.packaging} numeric placeholder="0.00" onChange={(value) => setCost({ ...cost, packaging: value })} /></View><View style={styles.half}><Field label={tr("개당 기타비")} value={cost.other} numeric placeholder="0.00" onChange={(value) => setCost({ ...cost, other: value })} /></View></View>
       </Section>
       <Section title={tr("파는 값")}>
         <View style={styles.row2}><View style={styles.half}><Field label={tr("개당 판매가")} value={cost.price} numeric placeholder="0.00" onChange={(value) => setCost({ ...cost, price: value })} /></View><View style={styles.half}><Field label={tr("결제·판매 수수료율 (%)")} value={cost.feePercent} numeric placeholder="0" onChange={(value) => setCost({ ...cost, feePercent: value })} /></View></View>
       </Section>
+      {menuName !== null ? <View style={styles.row2}><View style={styles.half}><Field label={tr("메뉴 이름")} value={menuName} maxLength={30} placeholder={tr("예: 단호박 라떼")} onChange={setMenuName} /></View>
+        <Action label={tr("저장")} disabled={!menuName.trim()} onPress={() => saveCostMenu(menuName)} /><Action label={tr("취소")} onPress={() => setMenuName(null)} /></View>
+        : <View style={styles.actions}><Action label={tr("메뉴로 저장")} disabled={busy || !calculated} onPress={askCostMenuName} />
+          {costKeys.some(key => cost[key]) && <Action label={tr("새로 계산")} disabled={busy} onPress={() => setCost(emptyCost())} />}</View>}
       <ThemedText type="small" themeColor="textSecondary">{tr("임대료·인건비·세금 전 금액이라 순이익과 달라요.")}</ThemedText>
       <MerchantHelp items={[tr("공헌이익은 판매가에서 입력한 변동 비용을 뺀 금액이에요."), tr("저장한 메뉴는 이 기기에만 남아요. 길게 누르면 지울 수 있어요.")]} />
       <Action label={tr("계산 내역 복사·공유")} disabled={!calculated || busy} onPress={() => { if (calculated) void run(() => shareText(`${data.merchant.name} 원가 계산\n전체 재료비 ${money(costInput.batchCost)} / 수량 ${costInput.yield}\n개당 포장비 ${money(costInput.packaging)} · 기타비 ${money(costInput.other)}\n판매가 ${money(costInput.price)} · 수수료 ${costInput.feePercent}%\n개당 변동 원가 ${money(calculated.unitCost)}\n개당 공헌이익 ${money(calculated.contribution)} (고정비·세금 반영 전)`), '계산 내역을 준비했어요.', false); }} />
@@ -859,7 +864,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       <MerchantHelp items={[tr("입고는 ＋, 출고는 −로 입력해요."), tr("소수점은 세 자리까지 넣을 수 있어요.")]} />
     </>}
     {activeTab === 'accounts' && <MerchantAccountManagement bare={sidebar} merchantName={data.merchant.name} merchantId={id} refreshSignal={refreshSignal + revision} onChanged={() => { setRevision(v => v + 1); onConnectionsChanged?.(); }} />}
-    {activeTab === 'accounts' && data.merchant.owner_id === me.id && !!data.merchant.owner_verified_at && <MerchantOperatorInvites merchantId={id} refreshSignal={refreshSignal + revision} onChanged={() => setRevision(v => v + 1)} />}
+    {activeTab === 'accounts' && data.merchant.owner_id === me.id && !!data.merchant.owner_verified_at && <MerchantOperatorInvites merchantId={id} refreshSignal={refreshSignal + revision} onChanged={() => setRevision(v => v + 1)} onPlans={showPlans} />}
     {activeTab === 'accounts' && data.merchant.owner_id === me.id && !!data.merchant.owner_verified_at && <BusinessInviteCard merchantId={id} />}
     {activeTab === 'membership' && (data.metrics ? <>
       <MerchantStats>
@@ -877,7 +882,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
               : <ThemedText type="small">{tr("끌어올리기 {0}회 · 한도 없음", businessMembership.bumpsUsed)}</ThemedText>}
             <ThemedText type="small" themeColor="textSecondary">{tr("{0}에 초기화돼요. 직원·AI도 같은 한도를 써요.", new Date(businessMembership.resetsAt).toLocaleDateString(appLocale, { timeZone: 'UTC' }))}</ThemedText>
             {businessMembership.tier === 'premium' && <ThemedText type="small" themeColor="textSecondary">{tr("프리미엄은 한 달 새 글 10편을 모두 직접 올려요. 글을 대신 맡기려면 글링 관리로 문의해 주세요.")}</ThemedText>}
-            <Action label={tr("요금제 보기")} onPress={openPricing} />
+            <Action label={tr("요금제 보기")} onPress={showPlans} />
           </> : <ThemedText type="small">{tr("멤버십 사용량을 확인하지 못했어요. 비즈니스 연결 상태를 확인하고 다시 열어 주세요.")}</ThemedText>}
         </Section></View>
         <View style={styles.column}><Section title={tr("이용 상태")}>
@@ -920,6 +925,8 @@ const styles = StyleSheet.create({
   businessHeader: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'center' },
   toolRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   toolText: { flex: 1, minWidth: 0, gap: 4 },
+  // Wide enough that a short business name keeps one line; the switch button wraps underneath instead (QA A-biz-03).
+  storeName: { flex: 1, minWidth: 180, gap: 4 },
   stockRow: { gap: 8, paddingVertical: 8 }, result: { gap: 8, paddingVertical: 8 },
   columns: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, alignItems: 'flex-start' }, column: { flexGrow: 1, flexBasis: 300, minWidth: 0 },
   storeCard: { gap: 12, padding: 16, borderWidth: 1, borderRadius: 20, borderCurve: 'continuous' },

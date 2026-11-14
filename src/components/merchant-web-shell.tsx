@@ -135,12 +135,11 @@ export function MerchantHome({ name, place, onChoose, purposes, purpose, onPurpo
   </View>;
 }
 
-// Channel hub for "채널 연결": automated channels first, coming-soon SNS next, manual copy last.
+// Channel hub for "채널 연결": coming-soon SNS first, manual copy last. Naver Cafe has its own card below with its live status (QA A-biz-02).
 export function MerchantChannelList() {
   const { tr } = useLanguage();
   const theme = useTheme();
   const channels: { key: string; mark: string; markColor: string; markInk: string; name: string; detail: string; badge: string; live: boolean }[] = [
-    { key: 'naver', mark: 'N', markColor: '#03C75A', markInk: '#FFFFFF', name: tr('네이버 카페'), detail: tr('자동 발행'), badge: tr('사용 가능'), live: true },
     { key: 'threads', mark: '@', markColor: '#000000', markInk: '#FFFFFF', name: 'Threads', detail: tr('게시할 때 함께 올려요'), badge: tr('곧 지원'), live: false },
     { key: 'instagram', mark: 'IG', markColor: '#C13584', markInk: '#FFFFFF', name: 'Instagram', detail: tr('비즈니스 계정 연결'), badge: tr('곧 지원'), live: false },
     { key: 'daum', mark: 'D', markColor: '#1D6AF2', markInk: '#FFFFFF', name: tr('다음 카페'), detail: tr('원고를 복사해 직접 올려요'), badge: tr('복사'), live: true },
@@ -149,7 +148,7 @@ export function MerchantChannelList() {
     accessible accessibilityLabel={`${channel.name}, ${channel.detail}, ${channel.badge}`}>
     <View style={[styles.channelMark, { backgroundColor: channel.markColor, borderColor: theme.line }]}><ThemedText type="smallBold" style={{ color: channel.markInk }}>{channel.mark}</ThemedText></View>
     <View style={styles.grow}><ThemedText type="smallBold">{channel.name}</ThemedText><ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{channel.detail}</ThemedText></View>
-    <View style={[styles.tag, { backgroundColor: theme.backgroundElement }]}><ThemedText type="small" themeColor={channel.key === 'naver' ? 'accent' : 'textSecondary'}>{channel.badge}</ThemedText></View>
+    <View style={[styles.tag, { backgroundColor: theme.backgroundElement }]}><ThemedText type="small" themeColor="textSecondary">{channel.badge}</ThemedText></View>
   </View>)}</View>;
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform, Share, StyleSheet, View } from 'react-native';
 
 import { Pressable } from '@/components/analytics-controls';
+import { SymbolView } from '@/components/symbol-view';
 import { MerchantBadge } from '@/components/merchant-ui';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ClayBoxFill, useClayBox } from '@/components/clay';
@@ -19,7 +20,8 @@ const errors: Record<string, string> = {
 };
 
 // Owner-only card under 계정 관리: seats come from the server, the token is shown once at creation.
-export function MerchantOperatorInvites({ merchantId, refreshSignal, onChanged }: { merchantId: string; refreshSignal: number; onChanged?: () => void }) {
+// onPlans: a plan without seats shows a lock and the plans button instead of a sentence alone (QA A-biz-06).
+export function MerchantOperatorInvites({ merchantId, refreshSignal, onChanged, onPlans }: { merchantId: string; refreshSignal: number; onChanged?: () => void; onPlans?: () => void }) {
   const { tr } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback();
   const [state, setState] = useState<{ key: string; value: MerchantOperatorLinks } | null>(null);
@@ -29,7 +31,7 @@ export function MerchantOperatorInvites({ merchantId, refreshSignal, onChanged }
   useEffect(() => {
     let active = true;
     void loadMerchantOperatorLinks(supabase, merchantId).then(value => { if (active) { setState({ key, value }); setError(''); } })
-      .catch(failure => { if (active) setError(errors[failure instanceof Error ? failure.message : ''] ?? '초대 정보를 불러오지 못했어요. 잠시 후 다시 열어 주세요.'); });
+      .catch(failure => { if (active) setError(errors[failure instanceof Error ? failure.message : ''] ?? '초대 정보를 불러오지 못했어요.'); });
     return () => { active = false; };
   }, [merchantId, key]);
   async function run(operation: () => Promise<void>) {
@@ -48,11 +50,16 @@ export function MerchantOperatorInvites({ merchantId, refreshSignal, onChanged }
   const used = value ? value.operators + value.links.length : 0;
   return <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
     <View style={styles.row}>
-      <ThemedText type="subtitle" accessibilityRole="header" style={styles.grow}>{tr('공동 관리자 초대')}</ThemedText>
+      <ThemedText type="section" accessibilityRole="header" style={styles.grow}>{tr('공동 관리자 초대')}</ThemedText>
+      {value && value.limit === 0 && <SymbolView name={{ ios: 'lock', android: 'lock', web: 'lock' }} size={18} tintColor={theme.textSecondary} accessibilityLabel={tr('잠김')} />}
       {value && value.limit > 0 && <MerchantBadge label={tr('{0} / {1}명', used, value.limit)} tone={used >= value.limit ? 'warn' : 'accent'} />}
     </View>
     {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
-    {value && value.limit === 0 && <ThemedText type="small" themeColor="textSecondary">{tr('공동 관리자 초대는 유료 비즈니스 멤버십(플러스 이상)에서 쓸 수 있어요.')}</ThemedText>}
+    {!!error && !value && <View style={styles.row}><SmallButton label={tr('다시 시도')} disabled={busy} onPress={() => { setError(''); setRevision(v => v + 1); }} /></View>}
+    {value && value.limit === 0 && <>
+      <ThemedText type="small" themeColor="textSecondary">{tr('공동 관리자 초대는 유료 비즈니스 멤버십(플러스 이상)에서 쓸 수 있어요.')}</ThemedText>
+      {onPlans && <View style={styles.row}><SmallButton label={tr('요금제 보기')} disabled={busy} onPress={onPlans} /></View>}
+    </>}
     {value && value.limit > 0 && <>
       <ThemedText type="small" themeColor="textSecondary">{tr('링크를 받은 사람이 글링에 로그인해 열면 공동 관리자가 돼요. 7일 동안 한 번만 쓸 수 있어요.')}</ThemedText>
       {fresh && <View style={[styles.link, { borderColor: theme.line, backgroundColor: theme.background }]}>

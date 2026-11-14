@@ -19,7 +19,7 @@ import { supabase } from '@/lib/supabase';
 
 const errors: Record<string, string> = {
   MERCHANT_ACCESS_REQUIRED: '현재 계정에 비즈니스 관리 권한이 없어요.', MERCHANT_OWNER_VERIFICATION_REQUIRED: '확인된 비즈니스 소유자만 네이버 계정을 연결할 수 있어요.',
-  NAVER_NOT_CONFIGURED: '네이버 개발자 앱 설정이 아직 준비되지 않았어요.', NAVER_STATUS_UNAVAILABLE: '네이버 연결 상태를 확인하지 못했어요. 연결 설정과 서버 배포를 확인해 주세요.',
+  NAVER_NOT_CONFIGURED: '네이버 카페 연결은 아직 준비 중이에요.', NAVER_STATUS_UNAVAILABLE: '네이버 연결 상태를 확인하지 못했어요. 잠시 후 다시 확인해 주세요.',
   INVALID_NAVER_STATE: '로그인 계정이 다르거나 연결 요청이 만료됐어요. 다시 연결해 주세요.', NAVER_RECONNECT_REQUIRED: '네이버 계정을 다시 연결해 주세요.',
   INVALID_NAVER_BOARD_URL: '카페의 게시판 주소를 붙여넣어 주세요. 카페 홈 주소만으로는 게시판을 선택할 수 없어요.',
   MERCHANT_DRAFT_CHANGED: '원고가 바뀌었어요. 최신 저장본과 사진 순서를 다시 확인하고 승인해 주세요.', MERCHANT_DRAFT_APPROVAL_REQUIRED: '최신 저장 원고를 먼저 승인해 주세요.',
@@ -171,21 +171,22 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
 
   return <View style={[styles.section, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
     <View style={styles.titleRow}>
-      <ThemedText type="subtitle">{tr("네이버 카페")}</ThemedText>
-      {status ? <MerchantBadge label={!status.configured ? tr("설정 필요") : status.connection ? tr("연결됨") : tr("연결 안 됨")} tone={!status.configured ? 'warn' : status.connection ? 'ok' : 'neutral'} />
+      <ThemedText type="section" accessibilityRole="header">{tr("네이버 카페")}</ThemedText>
+      {status ? <MerchantBadge label={!status.configured ? tr("준비 중") : status.connection ? tr("연결됨") : tr("연결 안 됨")} tone={status.configured && status.connection ? 'ok' : 'neutral'} />
         : <MerchantBadge label={tr("연결 상태 확인 중")} />}
     </View>
-    {status && !status.configured && <ThemedText themeColor="textSecondary" type="small">{tr("네이버 개발자 앱과 서버 연결 설정이 필요해요.")}</ThemedText>}
+    {/* Not set up on Gling's side yet: nothing the business can do here, so one line and no dead buttons (QA A-biz-02). */}
+    {status && !status.configured && <ThemedText themeColor="textSecondary" type="small">{tr("열리면 여기서 바로 연결할 수 있어요.")}</ThemedText>}
     {status?.configured && !status.connection && <ThemedText themeColor="textSecondary" type="small">{tr("본인 네이버 계정으로 연결해 주세요.")}</ThemedText>}
-    <View style={styles.actions}>
+    {!(status && !status.configured) && <View style={styles.actions}>
       <CafeAction label={tr("상태 다시 확인")} disabled={busy} onPress={() => { void run(refreshStatus); }} />
-      <CafeAction label={status?.connection ? tr("네이버 다시 연결") : tr("네이버 계정 연결")} disabled={busy || !status?.configured} onPress={() => { void run(async () => {
+      {status?.configured && <CafeAction label={status.connection ? tr("네이버 다시 연결") : tr("네이버 계정 연결")} disabled={busy} onPress={() => { void run(async () => {
         if (Platform.OS !== 'web') { setNotice("비즈니스용 웹에서 네이버 계정을 연결해 주세요."); return; }
         const next = await startMerchantNaverCafe(supabase, merchantId);
         const target = new URL(next.authorizationUrl);
         if (target.protocol !== 'https:' || target.hostname !== 'nid.naver.com' || target.pathname !== '/oauth2.0/authorize') throw new Error('INVALID_NAVER_STATE');
         if (contextRef.current === context) window.location.assign(target.href);
-      }); }} />
+      }); }} />}
       {status?.connection && <CafeAction label={tr("연결 해제")} disabled={busy} onPress={() => { void run(async () => {
         if (!await confirm('네이버 연결 해제', '새 게시를 중단하고 글링에 저장한 연결 토큰을 삭제해요. 이미 카페에 올린 글은 유지돼요.')) return;
         play('selection'); const result = await disconnectMerchantNaverCafe(supabase, merchantId);
@@ -193,7 +194,7 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
         setStatus(await loadMerchantNaverCafe(supabase, merchantId)); play('success');
         setNotice(result.providerRevoked ? "네이버 연결을 해제했어요." : "글링 연결은 해제했어요. 네이버의 연결된 서비스에서도 권한 해제를 확인해 주세요.");
       }); }} />}
-    </View>
+    </View>}
     {error ? <ThemedText accessibilityRole="alert" type="small" themeColor="danger">{tr(error)}</ThemedText> : null}
     {notice ? <ThemedText accessibilityLiveRegion="polite" type="small">{typeof notice === 'string' ? tr(notice) : tr('네이버가 게시를 거절했어요 ({0}). 카페 권한과 사진을 확인해 주세요.', notice.errorCode || tr('권한 확인'))}</ThemedText> : null}
     {preparation && <CafeAction label={tr("이전 발행 준비 취소")} disabled={busy} onPress={() => { void run(async () => {
@@ -268,8 +269,7 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
       {['in_flight', 'uncertain'].includes(request.status) && <ThemedText type="small" themeColor="textSecondary">{tr("중복을 막기 위해 재발행하지 않아요. 실제 카페 글을 확인한 뒤 운영자에게 결과 확인을 요청해 주세요.")}</ThemedText>}
       {request.status === 'failed' && request.error_code !== 'NAVER_PREPARATION_CANCELLED' && <ThemedText type="small" themeColor="textSecondary">{tr("{0} · 카페 가입·게시 권한과 사진을 확인한 뒤 원고를 다시 저장·승인해 주세요.", request.error_code || tr("권한 확인"))}</ThemedText>}
     </View>)}
-    <MerchantHelp items={[tr("카페 가입·등업과 게시판 쓰기 권한은 카페에서 직접 받아 주세요."), tr("발행 전에 저장된 원고와 사진을 표시된 순서대로 확인해요."),
-      tr("네이버에서 저장 사진 형식이 지원되는지는 실제 연결 계정으로 확인이 필요해요. 사진이 거절되면 게시 완료로 표시하지 않아요.")]} />
+    {status?.configured && <MerchantHelp items={[tr("카페 가입·등업과 게시판 쓰기 권한은 카페에서 직접 받아 주세요."), tr("발행 전에 저장된 원고와 사진을 표시된 순서대로 확인해요.")]} />}
   </View>;
 }
 const styles = StyleSheet.create({

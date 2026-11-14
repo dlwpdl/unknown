@@ -34,7 +34,7 @@ test('membership keeps stories and direct chat free while preserving meetup and 
       if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial;
       return [states[index], next => { states[index] = typeof next === 'function' ? next(states[index]) : next; }];
     } };
-    if (name === 'expo-router') return { useFocusEffect() {}, useRouter: () => ({ canGoBack: () => false, replace() {} }),
+    if (name === 'expo-router') return { useFocusEffect() {}, useLocalSearchParams: () => ({}), useRouter: () => ({ canGoBack: () => false, replace() {} }),
       useNavigation: () => ({ getState: () => ({ index: profileStack.index }), dispatch: action => profileStack.actions.push(action) }) };
     if (name === '@/lib/link-open') return { onLinkOpen: fn => { linkOpen = fn; return () => {}; } };
     if (name === 'expo-symbols' || name === '@/components/symbol-view') return { SymbolView: 'SymbolView' };
