@@ -88,18 +88,20 @@ export function useSavedEntry(target: SavedTarget | null, visible: boolean) {
     busy: current?.saving ?? false, visible: enabled, onPress, choose };
 }
 
-export function SavedEntryButton({ entry, kind, analyticsId, onBeen }: { entry: ReturnType<typeof useSavedEntry>; kind: 'place' | 'user'; analyticsId: 'save.place' | 'save.user' | 'company.save'; onBeen?: () => void }) {
+// business: a business profile saves like a place (가 보고 싶어요/가 봤어요) but is called a business on screen (QA I-company-03).
+export function SavedEntryButton({ entry, kind, analyticsId, onBeen }: { entry: ReturnType<typeof useSavedEntry>; kind: 'place' | 'business' | 'user'; analyticsId: 'save.place' | 'save.user' | 'company.save'; onBeen?: () => void }) {
   const theme = useTheme(), { language } = useLanguage(), ko = language === 'ko', { play } = useInteractionFeedback();
   const [menu, setMenu] = useState(false);
   if (!entry.visible || entry.state && !entry.state.available && !entry.state.saved) return null;
   const saved = entry.state?.saved ?? false, retry = !entry.state && !!entry.error, busy = entry.loading || entry.busy;
   const status = entry.state?.status, been = status === 'been';
+  const noun = kind === 'business' ? ko ? '비즈니스' : 'business' : ko ? '장소' : 'place';
   const label = busy ? ko ? '저장 상태 확인 중' : 'Checking saved status' : retry ? ko ? '저장 상태 다시 확인' : 'Check saved status again'
-    : kind === 'place' ? status !== undefined ? saved ? been ? ko ? '가 봤어요로 저장됨 · 바꾸기' : 'Saved as been · change' : ko ? '가 보고 싶어요로 저장됨 · 바꾸기' : 'Saved as want to go · change' : ko ? '장소 저장' : 'Save place'
-      : saved ? ko ? '장소 저장 취소' : 'Unsave place' : ko ? '장소 저장' : 'Save place'
+    : kind !== 'user' ? status !== undefined ? saved ? been ? ko ? '가 봤어요로 저장됨 · 바꾸기' : 'Saved as been · change' : ko ? '가 보고 싶어요로 저장됨 · 바꾸기' : 'Saved as want to go · change' : ko ? `${noun} 저장` : `Save ${noun}`
+      : saved ? ko ? `${noun} 저장 취소` : `Unsave ${noun}` : ko ? `${noun} 저장` : `Save ${noun}`
       : saved ? ko ? '프로필 저장 취소' : 'Unsave profile' : ko ? '프로필 저장' : 'Save profile';
   // A server with save kinds opens the 가 보고 싶음/가 봤음 choice; an older one keeps the one-tap toggle.
-  const choice = kind === 'place' && status !== undefined;
+  const choice = kind !== 'user' && status !== undefined;
   return <>
     <Pressable analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={label}
       accessibilityState={{ selected: saved, busy, disabled: busy }} disabled={busy} onPress={choice ? () => { play('selection'); setMenu(true); } : entry.onPress}
@@ -109,7 +111,7 @@ export function SavedEntryButton({ entry, kind, analyticsId, onBeen }: { entry: 
         : been ? { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }
         : { ios: saved ? 'bookmark.fill' : 'bookmark', android: saved ? 'bookmark' : 'bookmark_border', web: saved ? 'bookmark' : 'bookmark_border' }} size={IconSize.toolbar} tintColor={theme.accent} />}
     </Pressable>
-    {menu && <MeetupManageSheet visible title={ko ? '이 장소 저장' : 'Save this place'} onClose={() => setMenu(false)} actions={[
+    {menu && <MeetupManageSheet visible title={ko ? `이 ${noun} 저장` : `Save this ${noun}`} onClose={() => setMenu(false)} actions={[
       { key: 'want', analyticsId: 'save.place.want', label: ko ? '가 보고 싶어요' : 'Want to go', hint: status === 'want' ? ko ? '지금 이걸로 저장돼 있어요' : 'Saved this way now' : ko ? '나중에 가 볼 곳에 넣어 둬요' : 'Keep it for later',
         icon: { ios: 'bookmark', android: 'bookmark_border', web: 'bookmark_border' }, onPress: () => { void entry.choose('want'); } },
       { key: 'been', analyticsId: 'save.place.been', label: ko ? '가 봤어요' : 'Been here', hint: been ? ko ? '지금 이걸로 저장돼 있어요' : 'Saved this way now' : ko ? '저장하고 바로 후기를 남겨요' : 'Save it and leave a review',

@@ -17,14 +17,14 @@ export function BusinessInviteCard({ merchantId }: { merchantId: string }) {
   const { tr, locale } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback(), share = useInviteShare();
   const [state, setState] = useState<{ id: string; value: InviteSummary } | null>(null);
-  const [error, setError] = useState(''), [busy, setBusy] = useState(false);
+  const [error, setError] = useState(''), [busy, setBusy] = useState(false), [retry, setRetry] = useState(0);
   const working = useRef(false);
   useEffect(() => {
     let active = true;
     loadBusinessInvite(supabase, merchantId).then(value => { if (active) { setState({ id: merchantId, value }); setError(''); } },
-      () => { if (active) setError('초대 정보를 불러오지 못했어요. 잠시 후 다시 열어 주세요.'); });
+      () => { if (active) setError('초대 정보를 불러오지 못했어요.'); });
     return () => { active = false; };
-  }, [merchantId]);
+  }, [merchantId, retry]);
   const summary = state?.id === merchantId ? state.value : null;
   const sendLink = (code: string) => share(tr('글링에 우리 비즈니스도 같이 올려요. 이 링크로 가입하고 첫 글을 올리면 두 비즈니스 모두 비즈니스 2주 이용권을 받아요.'), inviteUrl(code));
   const date = (value: string) => new Date(value).toLocaleDateString(locale, { month: 'long', day: 'numeric' });
@@ -32,14 +32,16 @@ export function BusinessInviteCard({ merchantId }: { merchantId: string }) {
   return <View style={[styles.card, clayBox ? { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' } : { backgroundColor: theme.card, borderColor: theme.line }]}>
     {clayBox && <ClayBoxFill kind="tile" />}
     <View style={styles.row}>
-      <ThemedText type="subtitle" accessibilityRole="header" style={styles.grow}>{tr('비즈니스 초대')}</ThemedText>
+      <ThemedText type="section" accessibilityRole="header" style={styles.grow}>{tr('비즈니스 초대')}</ThemedText>
       {summary && <MerchantBadge label={tr('{0} / 8주', rewardWeeks(summary.grantedDays))} tone="accent" />}
     </View>
-    <ThemedText type="small">{tr('내가 초대한 비즈니스가 글링에 첫 글을 올리면, 초대한 비즈니스와 초대받은 비즈니스 모두 비즈니스 2주 이용권을 받아요.')}</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary">{tr('링크는 비즈니스마다 하나예요. QR로 계산대에 붙여 두면 이 링크로 몇 명이 가입했는지 볼 수 있어요.')}</ThemedText>
+    {/* One line up top; the QR tip sits by the QR it is about (QA A-biz-06). */}
+    <ThemedText type="small">{tr('초대한 비즈니스가 첫 글을 올리면 두 곳 모두 비즈니스 2주 이용권을 받아요.')}</ThemedText>
     {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
+    {!!error && !summary && <View style={styles.row}><RaisedActionButton compact tone="secondary" analyticsId="merchant.connection.action" label={tr('다시 시도')} onPress={() => { play('selection'); setError(''); setRetry(v => v + 1); }} /></View>}
     {summary && (summary.code ? <>
       <InviteQr url={inviteUrl(summary.code)} />
+      <ThemedText type="small" themeColor="textSecondary" style={styles.center}>{tr('QR을 계산대에 붙여 두면 그걸 찍고 가입한 사람 수가 아래에 나와요.')}</ThemedText>
       <ThemedText selectable type="small" style={styles.center}>{inviteUrl(summary.code)}</ThemedText>
       <View style={styles.row}><RaisedActionButton compact analyticsId="business.invite.share" label={tr('링크 보내기')} onPress={() => { play('selection'); void sendLink(summary.code!); }} /></View>
       <InviteStats nested items={[[tr('가입한 사람'), summary.joined], [tr('이용권 받은 초대'), summary.rewarded]]} />

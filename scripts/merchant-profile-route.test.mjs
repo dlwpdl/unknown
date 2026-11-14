@@ -51,6 +51,7 @@ function screen({ business = null, webshop = null, merchantSaves = async () => n
     '@/lib/chat-identity': { chatBusinessIdentity: () => business },
     '@/lib/auth': { useAuth: () => ({ isAuthed: !!account, isAuthLoading: false, me: { id: account ?? 'guest' }, promptLogin: reason => login.push(reason) }) },
     '@/lib/merchant-conveniences': conveniences,
+    '@/components/state-card': { StateCard: 'StateCard' },
     '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: (...args) => { savedTargets.push(args); return entry; } },
     '@/lib/merchant-source': { safeMerchantSourceUrl }, '@/lib/translation-source': translationSource,
     '@/lib/merchant-profile': { loadMerchantProfile: async (...args) => loadProfile(...args),
@@ -74,7 +75,8 @@ function screen({ business = null, webshop = null, merchantSaves = async () => n
 const control = (root, id) => nodes(root).find(node => node.props?.analyticsId === id);
 // Every post row shares the fixed 'company.post' analytics id; the row key tells them apart.
 const postRows = (root, id) => nodes(root).filter(node => node.key === id && node.props?.analyticsId === 'company.post');
-const text = root => nodes(root).flatMap(node => [node.props?.children].flat().filter(value => typeof value === 'string' || typeof value === 'number')).join(' ');
+// StateCard (QA I-company-02) carries its words as props.
+const text = root => nodes(root).flatMap(node => [node.props?.children, node.props?.title, node.props?.body, node.props?.actionLabel].flat().filter(value => typeof value === 'string' || typeof value === 'number')).join(' ');
 
 test('company tabs show real counts, select hiring and open a real post detail', async () => {
   const view = screen(); view.render(); await settle(); view.render(); await settle();
@@ -266,7 +268,7 @@ test('B1: the sole company bookmark is the place save sheet for this business, a
   view.render(); await settle(); let root = view.render();
   const buttons = nodes(root).filter(node => node.props?.analyticsId === 'company.save');
   assert.equal(buttons.length, 1); assert.equal(buttons[0].type, 'SavedEntryButton');
-  assert.equal(buttons[0].props.kind, 'place', '가 보고 싶어요·가 봤어요, not a one-tap toggle');
+  assert.equal(buttons[0].props.kind, 'business', '가 보고 싶어요·가 봤어요, not a one-tap toggle, worded as a business (QA I-company-03)');
   assert.deepEqual(JSON.parse(JSON.stringify(view.savedTargets.at(-1))), [{ kind: 'merchant', id: company }, true]);
   assert.equal(control(root, 'company.notifications').props.accessibilityState.selected, false);
   buttons[0].props.onBeen(); root = view.render();
@@ -422,4 +424,39 @@ test('the business profile shows real saves, its own intro lines and opens its G
   assert.doesNotMatch(text(root), /저장한 사람|같이 저장된 곳|분위기/, 'sections without data stay hidden');
   control(root, 'company.location').props.onPress(); await settle();
   assert.equal(empty.links.length, 1, 'an unlinked business still opens its registered address');
+});
+
+test('redesign-business: empty lists share one state card, unreviewed businesses drop the repeated rating rows, Gling posts get a small mark', async () => {
+  const proxyPost = { ...post, body: '오픈 행사를 해요\n업체의 허락을 받아 글링에서 대신 게시한 안내입니다.' };
+  const listed = screen({ loadPosts: async (_, __, kind) => ({ ...content, kind, posts: [proxyPost] }) });
+  listed.render(); await settle(); listed.render(); await settle();
+  let root = listed.render();
+  assert.match(text(root), /최근 게시글/);
+  assert.match(text(root), /글링이 비즈니스 허락을 받고 대신 올렸어요/, 'QA I-company-07: a small mark instead of the disclosure line');
+  assert.doesNotMatch(text(root), /대신 게시한 안내입니다/);
+  assert.equal(typeof nodes(root).find(node => node.type === 'ProfileHeader').props.onReviewPress, 'function', 'scored businesses keep their rating rows');
+
+  const empty = screen({ loadPosts: async (_, __, kind) => ({ ...content, kind, post_count: 0, job_count: 0, posts: [], nextOffset: 0 }),
+    loadReviews: async (_, __, ___, kind) => ({ review_kind: kind, rating_average: null, review_count: 0 }) });
+  empty.render(); await settle(); empty.render(); await settle();
+  root = empty.render();
+  assert.doesNotMatch(text(root), /최근 게시글|최신순/, 'QA I-company-02: no list title or sort over an empty list');
+  const card = nodes(root).find(node => node.type === 'StateCard' && node.props.analyticsId === 'company.posts.about');
+  assert.ok(card, 'the empty list is one StateCard');
+  card.props.onAction(); root = empty.render();
+  assert.equal(control(root, 'company.tab.about').props.accessibilityState.selected, true);
+  assert.equal(nodes(root).find(node => node.type === 'ProfileHeader').props.onReviewPress, undefined, 'QA A-company-01: no reviews means the 후기 tab says it once');
+  control(root, 'company.tab.posts').props.onPress(); root = empty.render();
+  assert.equal(control(root, 'company.tab.about').props.accessibilityState.selected, false);
+  // The services link reuses the registered about id, so it is found as the non-card control with that id.
+  nodes(root).find(node => node.props?.analyticsId === 'company.posts.about' && node.type !== 'StateCard').props.onPress(); root = empty.render();
+  assert.equal(control(root, 'company.tab.about').props.accessibilityState.selected, true, '소개 더 보기 opens the about tab');
+});
+
+test('redesign-business: with no app contact, calling is the one bottom action (QA I-company-05)', async () => {
+  const view = screen({ loadProfile: async () => ({ ...profile, can_message: false }) });
+  view.render(); await settle(); const root = view.render();
+  assert.equal(nodes(root).filter(node => node.props?.analyticsId === 'company.contact.phone').length, 1);
+  assert.equal(control(root, 'company.inquiry'), undefined);
+  assert.ok(control(root, 'company.location'));
 });

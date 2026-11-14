@@ -1,7 +1,7 @@
 import { useLanguage } from '@/hooks/use-language';
 import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
-import { useFocusEffect, useNavigation } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { SymbolView } from '@/components/symbol-view';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Animated, LayoutAnimation, Linking, Platform, StyleSheet, UIManager, View } from 'react-native';
@@ -53,9 +53,11 @@ export default function MembershipScreen() {
     if ((navigation.getState()?.index ?? 0) > 0) navigation.dispatch({ type: 'POP_TO_TOP' });
   }), [navigation]);
   const [selection, setSelection] = useState<{ tier: MembershipOffer['tier']; period: MembershipOffer['period'] }>({ tier: 'premium', period: 'year' });
-  const [kind, setKind] = useState<MembershipKind>('general');
+  // The business tools open the business plans of the business being managed (QA A-biz-07); the picker below still checks it is one of the member's own.
+  const params = useLocalSearchParams<{ kind?: string; merchant?: string }>();
+  const [kind, setKind] = useState<MembershipKind>(params.kind === 'business' ? 'business' : 'general');
   const [merchants, setMerchants] = useState<{ userId: string; values: BusinessMerchant[] } | null>(null);
-  const [merchantId, setMerchantId] = useState<string | null>(null);
+  const [merchantId, setMerchantId] = useState<string | null>(typeof params.merchant === 'string' ? params.merchant : null);
   const [businessState, setBusiness] = useState<{ userId: string; value: BusinessMembershipSnapshot } | null>(null);
   const [businessError, setBusinessError] = useState<string | null>(null);
   const companies = merchants?.userId === auth.me.id ? merchants.values : [];

@@ -10,7 +10,7 @@ import * as controls from '../src/constants/design-system.ts';
 import * as media from '../src/lib/business-media.ts';
 
 function app(component = 'MerchantAccountEntry') {
-  const states = [], refs = [], effects = [], calls = [], pending = [], routes = [], navigated = [], feedback = [];
+  const states = [], refs = [], effects = [], calls = [], pending = [], routes = [], navigated = [], feedback = [], announced = [];
   let stateIndex = 0, refIndex = 0, effectIndex = 0, auth = { me: { id: 'user-a', nickname: '개인 이름' }, isAuthed: true, isAdmin: false }, foreground, focusEffect, focusCleanup;
   const client = { rpc: (name, args) => {
     calls.push({ name, args }); return new Promise(resolve => pending.push(data => resolve({ data, error: null })));
@@ -33,7 +33,7 @@ function app(component = 'MerchantAccountEntry') {
     if (name === 'expo-image') return { Image: 'Image' };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     if (name === 'expo-router') return { useRouter: () => ({ push: path => routes.push(path), navigate: path => { navigated.push(path); routes.push(path); } }), useFocusEffect: fn => { focusEffect = fn; recordEffect(() => { focusCleanup = fn(); return focusCleanup; }, fn.deps); } };
-    if (name === 'react-native') return { Platform: { OS: 'web' }, View: 'View', Modal: 'Modal', StyleSheet: { create: value => value }, AppState: { addEventListener(name, fn) { foreground = fn; return { remove() {} }; } } };
+    if (name === 'react-native') return { AccessibilityInfo: { announceForAccessibility: value => announced.push(value) }, Platform: { OS: 'web' }, View: 'View', Modal: 'Modal', StyleSheet: { create: value => value }, AppState: { addEventListener(name, fn) { foreground = fn; return { remove() {} }; } } };
     if (name === 'react-native-safe-area-context') return { SafeAreaView: 'SafeAreaView' };
     if (name === '@/components/analytics-controls') return { Pressable: 'Pressable', ScrollView: 'ScrollView' };
     if (name === '@/components/drag-sheet') return { DragSheet: 'DragSheet' };
@@ -52,7 +52,7 @@ function app(component = 'MerchantAccountEntry') {
     throw new Error('Unexpected import ' + name);
   }) });
   let props = { refreshSignal: 0, onChanged: () => {}, merchantId: 'company-a' };
-  return { calls, pending, routes, navigated, feedback,
+  return { calls, pending, routes, navigated, feedback, announced,
     auth(value) { auth = { ...auth, ...value }; }, props(value) { props = { ...props, ...value }; },
     foreground() { foreground('active'); },
     blur() { focusCleanup?.(); }, focus() { focusCleanup = focusEffect?.(); },
@@ -65,6 +65,7 @@ function app(component = 'MerchantAccountEntry') {
   };
 }
 const context = (user = 'user-a', merchants = [{ id: 'company-a', name: '업체 A', role: 'owner', city_name: '밴쿠버' }], invitations = []) => ({ user_id: user, merchants, invitations });
+const SWITCH_LABEL = '비즈니스로 바꾸고 글쓰기, 바꾸면 글과 대화가 업체 A 이름으로 올라가요. 개인으로 돌아갈 때도 여기서 하면 돼요.';
 const flush = async () => { for (let i = 0; i < 10; i++) await Promise.resolve(); };
 function nodes(node) { return !node || typeof node !== 'object' ? [] : [node, ...[node.props?.children].flat(Infinity).flatMap(nodes)]; }
 function text(node) { return node == null || typeof node === 'boolean' ? '' : typeof node !== 'object' ? String(node) : [node.props?.children].flat(Infinity).map(text).join(' '); }
@@ -76,7 +77,7 @@ test('admin profiles can switch to a connected business after current access is 
   assert.equal(view.calls.length, 1);
   assert.equal(view.calls[0].name, 'get_my_business_chat_profiles');
   view.pending.shift()(context()); await flush();
-  assert.equal(view.render().props.accessibilityLabel, '업체 A로 글쓰기', 'read the same name the row shows (QA Q11)');
+  assert.equal(view.render().props.accessibilityLabel, SWITCH_LABEL, 'read the same words the row shows (QA Q11)');
   view.foreground();
   assert.equal(view.calls.length, 2);
   view.pending.shift()(context()); await flush();
@@ -103,7 +104,7 @@ test('connected business owners and operators still switch to their business dra
     chatIdentity.resetChatIdentity();
     const view = app(), data = context('user-a', [{ id: 'company-a', name: '업체 A', role, city_name: '밴쿠버' }]);
     view.render(); view.pending.shift()(data); await flush();
-    const entry = view.render(); assert.equal(entry.props.accessibilityLabel, '업체 A로 글쓰기');
+    const entry = view.render(); assert.equal(entry.props.accessibilityLabel, SWITCH_LABEL);
     entry.props.onPress(); view.pending.shift()(data); await flush();
     assert.deepEqual(JSON.parse(JSON.stringify(view.routes)), [{ pathname: '/profile/merchant', params: { merchant: 'company-a', tab: 'drafts' } }]);
     assert.deepEqual(view.feedback, ['selection']);
@@ -111,11 +112,23 @@ test('connected business owners and operators still switch to their business dra
   }
   chatIdentity.resetChatIdentity();
 });
+test('the menu row says the app switches before the tap, then reads as writing once already switched (QA A-menu-01)', async t => {
+  chatIdentity.resetChatIdentity(); t.after(chatIdentity.resetChatIdentity);
+  const view = app(); view.render(); view.pending.shift()(context()); await flush();
+  assert.match(text(view.render()), /비즈니스로 바꾸고 글쓰기/); assert.match(text(view.render()), /개인으로 돌아갈 때도 여기서 하면 돼요/);
+  view.render().props.onPress(); view.pending.shift()(context()); await flush();
+  assert.deepEqual(view.announced, ['이제 업체 A 이름으로 써요']);
+  const after = view.render();
+  assert.match(text(after), /홍보글 쓰기/); assert.doesNotMatch(text(after), /바꾸고/);
+  after.props.onPress(); view.pending.shift()(context()); await flush();
+  assert.equal(view.announced.length, 1, 'an unchanged profile is not announced again');
+  assert.equal(view.routes.length, 2, 'both taps still open the business drafts');
+});
 test('last connection removal hides the entry and a revoked click never navigates', async () => {
   const view = app();
   assert.equal(view.render(), null);
   view.pending.shift()(context()); await flush();
-  const entry = view.render(); assert.match(text(entry), /업체 A로 글쓰기/);
+  const entry = view.render(); assert.match(text(entry), /비즈니스로 바꾸고 글쓰기/);
   entry.props.onPress();
   assert.equal(view.calls.length, 2, 'every switch rechecks the current server connection');
   view.pending.shift()(context('user-a', [])); await flush();

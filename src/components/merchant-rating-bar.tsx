@@ -28,7 +28,7 @@ export function MerchantRatingBar({ score, reviewKind = 'usage', label }: { scor
   // Dark keeps line: a brighter grey there would read like the lowest filled iris colour.
   const empty = dark ? theme.line : `${theme.textSecondary}B3`;
   const employment = reviewKind === 'employment';
-  // Both kinds use five marks worth two points each; employment draws cells instead of sparkles.
+  // Both kinds draw the same five sparkles worth two points each, so one score reads one way everywhere (QA A-company-01).
   const pointsPerUnit = 2, unitCount = 5;
   const [progress] = useState(() => Array.from({ length: 5 }, () => new Animated.Value(1)));
   const rounded = score != null && Number.isFinite(score) && score >= 1 && score <= 10 ? Math.round(score * 10) / 10 : null;
@@ -41,15 +41,13 @@ export function MerchantRatingBar({ score, reviewKind = 'usage', label }: { scor
     animation.start();
     return () => { animation.stop(); values.forEach(value => value.setValue(1)); };
   }, [rounded, pointsPerUnit, unitCount, reducedMotion, progress]);
-  const shape = (color: string) => employment
-    ? <View testID="merchant-rating-segment" style={[styles.segment, { backgroundColor: color }]} />
-    : <Text style={[styles.sparkle, { color }]} accessible={false}>✦</Text>;
-  return <View style={[styles.bar, employment && styles.employmentBar]} accessible accessibilityLabel={tr("{0} {1}", (label ?? (employment ? tr('직원 후기') : tr('상품·서비스 후기'))), (rounded == null ? tr('점수 없음') : tr("평균 {0}점, 10점 만점", rounded.toFixed(1))))}>
-    {progress.slice(0, unitCount).map((value, index) => <View key={index} style={[styles.unit, employment && styles.employmentUnit]} accessible={false}>
+  const shape = (color: string) => <Text style={[styles.sparkle, { color }]} accessible={false}>✦</Text>;
+  return <View style={styles.bar} accessible accessibilityLabel={tr("{0} {1}", (label ?? (employment ? tr('직원 후기') : tr('상품·서비스 후기'))), (rounded == null ? tr('점수 없음') : tr("평균 {0}점, 10점 만점", rounded.toFixed(1))))}>
+    {progress.slice(0, unitCount).map((value, index) => <View key={index} style={styles.unit} accessible={false}>
       {shape(empty)}
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.25, 1] }),
         transform: [{ translateY: value.interpolate({ inputRange: [0, 1], outputRange: [2, 0] }) }] }]}>
-        <View testID={`merchant-rating-fill-${index}`} style={{ width: `${rounded == null ? 0 : Math.max(0, Math.min(100, Math.round((rounded / pointsPerUnit - index) * 100)))}%`, overflow: 'hidden', height: employment ? 10 : 14 }}>
+        <View testID={`merchant-rating-fill-${index}`} style={{ width: `${rounded == null ? 0 : Math.max(0, Math.min(100, Math.round((rounded / pointsPerUnit - index) * 100)))}%`, overflow: 'hidden', height: 14 }}>
           {shape(iris[(index + 1) * pointsPerUnit - 1])}
         </View>
       </Animated.View>
@@ -62,7 +60,4 @@ const styles = StyleSheet.create({
   unit: { width: 10, height: 14 },
   inlineSparkle: { fontSize: 14 },
   sparkle: { width: 10, fontSize: 14, lineHeight: 14, textAlign: 'center', includeFontPadding: false },
-  employmentBar: { alignItems: 'center' },
-  employmentUnit: { height: 10 },
-  segment: { width: 10, height: 10, borderRadius: 2 },
 });

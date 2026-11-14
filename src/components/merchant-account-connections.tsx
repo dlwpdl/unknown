@@ -3,7 +3,7 @@ import { tr } from '@/i18n';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from '@/components/symbol-view';
-import { Alert, AppState, Platform, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Alert, AppState, Platform, StyleSheet, View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
 import { MerchantBadge } from '@/components/merchant-ui';
 import { ThemedText } from '@/components/themed-text';
@@ -18,15 +18,17 @@ import {
 } from '@/lib/merchant-connections';
 import { supabase } from '@/lib/supabase';
 import { selectChatBusiness } from '@/lib/chat-identity';
+import { useChatIdentity } from '@/hooks/use-chat-identity';
 
-function AccountAction({ label, onPress, disabled, primary = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean }) {
+// danger: a removal (연결 해제) reads apart from the other buttons (QA A-biz-06).
+function AccountAction({ label, onPress, disabled, primary = false, danger = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean; danger?: boolean }) {
 
   const theme = useTheme(), { play } = useInteractionFeedback(), clay = useClay();
   return <Pressable lens analyticsId="merchant.connection.action" accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!disabled }}
     disabled={disabled} onPress={() => { play('selection'); onPress(); }}
-    style={({ pressed }) => [styles.action, clay && { overflow: 'visible', paddingHorizontal: 18 }, clay ? { borderColor: 'transparent', backgroundColor: 'transparent', opacity: disabled ? 0.45 : pressed ? 0.7 : 1 } : { borderColor: theme.line, backgroundColor: primary ? theme.accent : theme.backgroundElement, opacity: disabled ? 0.45 : pressed ? 0.7 : 1 }]}>
+    style={({ pressed }) => [styles.action, clay && { overflow: 'visible', paddingHorizontal: 18 }, clay ? { borderColor: 'transparent', backgroundColor: 'transparent', opacity: disabled ? 0.45 : pressed ? 0.7 : 1 } : { borderColor: danger ? theme.danger : theme.line, backgroundColor: primary ? theme.accent : theme.backgroundElement, opacity: disabled ? 0.45 : pressed ? 0.7 : 1 }]}>
     {clay && <ClayPillFill kind={primary ? 'cta' : 'white'} />}
-    <ThemedText type="smallBold" style={primary ? { color: clay ? theme.accentInk : theme.background } : undefined}>{label}</ThemedText>
+    <ThemedText type="smallBold" style={primary ? { color: clay ? theme.accentInk : theme.background } : danger ? { color: theme.danger } : undefined}>{label}</ThemedText>
   </Pressable>;
 }
 async function confirmConnection(message: string) {
@@ -38,7 +40,7 @@ async function confirmConnection(message: string) {
 
 export function MerchantAccountEntry() {
   const { tr } = useLanguage();
-  const { me, isAuthed, isAdmin } = useAuth(), theme = useTheme(), clay = useClay(), router = useRouter(), { play } = useInteractionFeedback();
+  const { me, isAuthed, isAdmin } = useAuth(), theme = useTheme(), clay = useClay(), router = useRouter(), { play } = useInteractionFeedback(), acting = useChatIdentity();
   const [response, setResponse] = useState<MyMerchantConnections | null>(null), [busy, setBusy] = useState(false);
   const current = useRef(me.id), serial = useRef(0), opening = useRef(false);
   useLayoutEffect(() => { current.current = me.id; return () => { current.current = ''; }; }, [me.id]);
@@ -64,6 +66,8 @@ export function MerchantAccountEntry() {
       if (current.current !== me.id || serial.current !== request) return;
       setResponse(next);
       if (next.merchants.length === 1 && next.merchants[0].role !== 'admin') {
+        // The row says it switches the whole app (QA A-menu-01); screen readers hear the switch too.
+        if (acting?.id !== next.merchants[0].id) AccessibilityInfo.announceForAccessibility(tr('이제 {0} 이름으로 써요', next.merchants[0].name));
         selectChatBusiness(me.id, next.merchants[0]);
         router.push({ pathname: '/profile/merchant', params: { merchant: next.merchants[0].id, tab: 'drafts' } });
       }
@@ -72,15 +76,19 @@ export function MerchantAccountEntry() {
     finally { opening.current = false; if (current.current === me.id) setBusy(false); }
   }
   const invitationOnly = !data?.merchants.length && !!data?.invitations.length;
-  // VoiceOver and Voice Control use the same name the row shows.
-  const title = invitationOnly ? tr("비즈니스 계정 초대") : data?.merchants.length === 1 ? tr('{0}로 글쓰기', data.merchants[0].name) : tr("비즈니스");
-  return <Pressable analyticsId="app_profile_index.merchant" accessibilityRole="button" accessibilityLabel={title} disabled={busy}
+  const only = data?.merchants.length === 1 ? data.merchants[0] : null, already = !!only && acting?.id === only.id;
+  // One business: the row says before the tap that the whole app switches, and where the way back is (QA A-menu-01).
+  const title = invitationOnly ? tr("비즈니스 계정 초대") : already ? tr('홍보글 쓰기') : only ? tr('비즈니스로 바꾸고 글쓰기') : tr("비즈니스");
+  const detail = busy ? tr("현재 연결 확인 중…") : invitationOnly ? tr("초대한 비즈니스와 권한을 확인해 주세요.") : already ? tr('{0} 이름으로 올라가요', only.name)
+    : only ? tr('바꾸면 글과 대화가 {0} 이름으로 올라가요. 개인으로 돌아갈 때도 여기서 하면 돼요.', only.name) : tr('{0}개 비즈니스 · 프로필 전환', data?.merchants.length ?? 0);
+  // VoiceOver and Voice Control use the same words the row shows.
+  return <Pressable analyticsId="app_profile_index.merchant" accessibilityRole="button" accessibilityLabel={only && !busy ? `${title}, ${detail}` : title} disabled={busy}
     accessibilityState={{ disabled: busy }} onPress={() => { void open(); }} style={({ pressed }) => [styles.entry, clay && { borderTopWidth: 0 }, { backgroundColor: pressed ? theme.backgroundSelected : clay ? 'transparent' : theme.card, borderColor: theme.line }]}>
     <View style={[styles.entryIcon, { backgroundColor: theme.backgroundElement }]}>
       <SymbolView name={{ ios: 'storefront', android: 'storefront', web: 'storefront' }} size={22} tintColor={theme.navy} />
     </View>
     <View style={{ flex: 1, gap: 4 }}><ThemedText type="smallBold">{title}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{busy ? tr("현재 연결 확인 중…") : invitationOnly ? tr("초대한 비즈니스와 권한을 확인해 주세요.") : data?.merchants.length === 1 ? tr('비즈니스 프로필 · 개인 닉네임은 유지돼요.') : tr('{0}개 비즈니스 · 프로필 전환', data?.merchants.length ?? 0)}</ThemedText></View>
+      <ThemedText type="small" themeColor="textSecondary">{detail}</ThemedText></View>
     <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
   </Pressable>;
 }
@@ -155,14 +163,13 @@ export function MerchantAccountManagement({ merchantId, merchantName, refreshSig
   }
   const avatar = (nickname: string) => <View aria-hidden style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="smallBold">{Array.from(nickname.trim())[0]?.toUpperCase() ?? '?'}</ThemedText></View>;
   return <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
-    {!bare && <ThemedText type="subtitle" accessibilityRole="header">{tr("계정 관리")}</ThemedText>}
+    {!bare && <ThemedText type="section" accessibilityRole="header">{tr("계정 관리")}</ThemedText>}
     {error && <ThemedText accessibilityRole="alert">{tr(error)}</ThemedText>}
     {!data ? <AccountAction label={tr("연결 다시 확인")} disabled={busy} onPress={() => setRetry(v => v + 1)} /> : <>
       {[...(data.owner ? [data.owner] : []), ...data.operators].map(connection => <View key={connection.user_id + connection.role} style={styles.row}>
         {avatar(connection.nickname)}
-        <View style={styles.member}><View style={styles.name}><ThemedText type="smallBold" numberOfLines={1} style={styles.shrink}>{connection.nickname}</ThemedText><MerchantBadge label={tr(MERCHANT_ACCOUNT_ROLES[connection.role])} tone={connection.role === 'owner' ? 'accent' : 'neutral'} /></View>
-          <ThemedText type="small" themeColor="textSecondary">ID {connection.user_id.slice(-6)}</ThemedText></View>
-        {(connection.role === 'operator' || connection.user_id === me.id || isAdmin) && <AccountAction label={tr("연결 해제")} disabled={busy} onPress={() => { void revoke(
+        <View style={styles.member}><View style={styles.name}><ThemedText type="smallBold" numberOfLines={1} style={styles.shrink}>{connection.nickname}</ThemedText><MerchantBadge label={tr(MERCHANT_ACCOUNT_ROLES[connection.role])} tone={connection.role === 'owner' ? 'accent' : 'neutral'} /></View></View>
+        {(connection.role === 'operator' || connection.user_id === me.id || isAdmin) && <AccountAction danger label={tr("연결 해제")} disabled={busy} onPress={() => { void revoke(
           () => disconnectMerchantAccount(supabase, merchantId, connection, data.updated_at, '비즈니스 소유자가 계정 연결을 해제함'),
           connection.nickname + ' · ' + MERCHANT_ACCOUNT_ROLES[connection.role] + '\n\n' + (connection.role === 'owner' ? '소유자와 운영 담당자 연결, 대기 중인 초대를 모두 해제해요. ' : '') + '비즈니스와 저장한 글은 보존돼요.',
         ); }} />}
