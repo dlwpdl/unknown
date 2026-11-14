@@ -1036,3 +1036,14 @@ test('up close a place with 3D art is drawn as a white picture pin once the art 
   assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-top25').paint['circle-stroke-opacity']), JSON.stringify(['step', ['zoom'], 1, 13, ['case', ['==', ['get', 'art'], true], 0, 1]]));
   assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-pins').paint['circle-opacity'].at(-1)), JSON.stringify(['case', ['==', ['get', 'art'], true], 0, 1]));
 });
+
+test('QA A-prof-01: a preview map drops its zoom buttons and opens framed on every starting pin', () => {
+  const pins = [{ ...marker, id: 'a', latitude: 49.30, longitude: -123.14 }, { ...marker, id: 'b', latitude: 49.27, longitude: -123.10 }];
+  const framed = canvas(pins, undefined, { controls: false, fit: true });
+  assert.deepEqual(JSON.parse(JSON.stringify(framed.map.config.bounds)), [[-123.14, 49.27], [-123.10, 49.30]]);
+  assert.deepEqual(JSON.parse(JSON.stringify(framed.map.config.fitBoundsOptions)), { padding: 40, maxZoom: 14 });
+  assert.ok(framed.html.includes('"controls":false'), 'no zoom buttons on the small map');
+  const full = canvas(pins);
+  assert.equal(full.map.config.bounds, undefined, 'the full map still opens on its city');
+  assert.ok(full.html.includes('"controls":true'));
+});

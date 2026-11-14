@@ -198,9 +198,11 @@ test('catalog place view needs focus, and website/source launches are distinguis
   ui.nodes().find(node => node.props?.analyticsId === 'places.detail.source').props.onPress(); await ui.settle(); assert.equal(ui.product().length, 1);
   ui.nodes().find(node => node.props?.analyticsId === 'places.detail.website').props.onPress(); await ui.settle();
   assert.deepEqual(ui.product().at(-1), payload('place_website', 'osm:node:652955238', 'vancouver'));
-  const map = ui.nodes().find(node => node.type === 'PostMapLink'); assert.equal(typeof map.props.onOpened, 'function');
+  const map = ui.nodes().find(node => node.type === 'PostMapLink');
   assert.equal(map.props.pin, ui.nodes().find(node => node.type === 'ShareCardSheet').props.target.place, 'the place link draws its map preview from the place pin (QA C19-2)');
-  map.props.onOpened(); assert.deepEqual(ui.product().at(-1), payload('place_directions', 'osm:node:652955238', 'vancouver'));
+  // QA A-place-01: the card is the one Gling-map entry; leaving for another map app (place_directions) stays with 길찾기.
+  assert.equal(map.props.analyticsId, 'places.open'); assert.equal(map.props.onOpened, undefined);
+  const before = ui.product().length; map.props.onPress(); await ui.settle(); assert.equal(ui.product().length, before);
   for (const options of [{ params: { id: 'osm:node:0' } }, { catalogError: true }]) {
     const missing = mount('app/places/[id].tsx', 'default', {}, options); t.after(missing.cleanup); assert.deepEqual(missing.product(), []);
   }
@@ -255,16 +257,27 @@ test('P3/P4: 길찾기 offers address copy, Apple and Google maps; 전화·인�
   assert.ok(!unsafe.nodes().some(node => ['company.about.phone', 'post.attachment.open'].includes(node.props?.analyticsId)), 'unusable values hide the buttons');
 });
 
+test('QA A-place-01: a place without a photo leads with its name, and the map card is the one Gling-map entry', t => {
+  const id = 'osm:node:652955238', place = catalog.cities.vancouver.places.find(item => item.id === id);
+  const bare = mount('app/places/[id].tsx', 'default', {}, { params: { id, cityId: 'vancouver' }, places: [{ ...place, photo: null, mapPhotoUri: undefined }] });
+  t.after(bare.cleanup);
+  assert.ok(!bare.nodes().some(node => node.type === 'CityPlacePhoto'), 'no empty photo frame');
+  assert.ok(!JSON.stringify(plain(bare.nodes().map(node => node.props?.children).filter(value => typeof value === 'string'))).includes('지도 등록 장소'));
+  assert.equal(bare.nodes().filter(node => node.props?.analyticsId === 'places.open').length, 1);
+  assert.equal(bare.nodes().find(node => node.type === 'Disclosure').props.title, '출처·이용 조건', 'the map card already prints the OpenStreetMap credit');
+});
+
 test('place launches that fail or outlive the account never claim success', async t => {
   let resolve;
   const ui = mount('app/places/[id].tsx', 'default', {}, { params: { id: 'osm:node:652955238', cityId: 'vancouver' }, openURL: async () => { throw new Error('cancelled'); } });
   t.after(ui.cleanup);
   const website = () => ui.nodes().find(node => node.props?.analyticsId === 'places.detail.website');
   website().props.onPress(); await ui.settle(); assert.equal(ui.product().length, 1); assert.equal(ui.alerts.length, 1);
-  ui.ctx.openURL = () => new Promise(yes => { resolve = yes; }); website().props.onPress();
-  const map = ui.nodes().find(node => node.type === 'PostMapLink');
+  ui.ctx.openURL = () => new Promise(yes => { resolve = yes; });
+  ui.nodes().find(node => node.props?.analyticsId === 'company.about.maps').props.onPress(); ui.render();
+  ui.nodes().find(node => node.type === 'MeetupManageSheet').props.actions.find(action => action.key === 'google').onPress();
   ui.ctx.auth = { ...ui.ctx.auth, me: { id: 'other' } }; ui.render(); const count = ui.product().length;
-  resolve(); map.props.onOpened(); await ui.settle(); assert.equal(ui.product().length, count);
+  resolve(); await ui.settle(); assert.equal(ui.product().length, count);
 });
 
 test('map-link callback runs only after launch success and map failures contain no URL/error', async t => {

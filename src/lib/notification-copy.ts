@@ -110,8 +110,8 @@ const SERVER_CLOCK = /^(.+)(\d{2}):(\d{2})(에 시작해요\. \(모임 (?:장소
 const FESTIVAL_CLOCK = /^(.+(?:공연이에요|경기예요|행사예요)\. \d{1,2}월 \d{1,2}일 )(\d{2}):(\d{2})(, .+)$/;
 // The server wrote a sign-in on an unknown device two ways (new_login / new_device in private.flush_account_security_logins)
 // until 20261113210000 made them one sentence (QA E31-1). Rows stored before keep the old text, so the inbox still shows it as one alert; ui-en gives both the same English.
-const NEW_SIGN_IN = '새 기기 또는 브라우저에서 로그인했어요. 본인이 아니라면 계정 설정을 확인해 주세요.';
-const OTHER_SIGN_IN = '새 로그인이 확인됐어요. 본인이 아니라면 계정 설정을 확인해 주세요.';
+export const NEW_SIGN_IN = '새 기기 또는 브라우저에서 로그인했어요. 본인이 아니라면 계정 설정을 확인해 주세요.';
+export const OTHER_SIGN_IN = '새 로그인이 확인됐어요. 본인이 아니라면 계정 설정을 확인해 주세요.';
 export function koreanNotificationBody(item: { kind: string; body: string }) {
   if (item.kind === 'account_security' && item.body === OTHER_SIGN_IN) return NEW_SIGN_IN;
   // A member's own words (chat previews, host notices) are never rewritten.

@@ -30,6 +30,13 @@ test('likes and like summaries fold into one row per target; other kinds stay se
   assert.equal(summaryFirst[0].lead.id, 'l', 'an individual like leads the group over the summary');
 });
 
+test('QA A-noti-03: every sign-in alert folds into one row; other security alerts stay single', () => {
+  const signIn = (id, body = '새 기기 또는 브라우저에서 로그인했어요. 본인이 아니라면 계정 설정을 확인해 주세요.') => row(id, 'account_security', { category: 'account_security', route: '/profile/settings', body });
+  const items = groupInbox([signIn('s1'), row('n2', 'comment'), signIn('s3', '새 로그인이 확인됐어요. 본인이 아니라면 계정 설정을 확인해 주세요.'), signIn('s4', '계정 비밀번호가 변경됐어요. 본인이 아니라면 계정 설정을 확인해 주세요.'), signIn('s5')]);
+  assert.deepEqual(items.map(item => [item.kind, item.rows.map(({ id }) => id)]), [['signin', ['s1', 's3', 's5']], ['single', ['n2']], ['single', ['s4']]]);
+  assert.equal(items[0].lead.id, 's1', 'the newest sign-in leads');
+});
+
 test('trending hashtags group by tag from the route or the legacy body', () => {
   const a = row('h1', 'trending_hashtag', { category: 'trending', route: '/?hashtag=' + encodeURIComponent('워홀') });
   const b = row('h2', 'trending_hashtag', { category: 'trending', route: '/notifications', body: '요즘 관심이 모이는 주제예요 #워홀' });

@@ -28,6 +28,8 @@ type Props = {
   active?: boolean;
   /** The caller's results are loading; the map shows its logo (never over a failure) instead of the caller drawing a second one. */
   loading?: boolean;
+  /** A small preview: no zoom buttons, and it opens framed on its first markers (QA A-prof-01). */
+  preview?: boolean;
 };
 
 export function DiscoveryMap(props: Props) {
@@ -35,12 +37,12 @@ export function DiscoveryMap(props: Props) {
 }
 
 const NO_CITIES: DiscoveryCity[] = [];
-function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, center = null, userLocation = null, compass = false, topInset = 0, bottomInset = 0, zoom, active = true, loading = false, onSelect, onMoved, onCity }: Props) {
+function Canvas({ markers, cityName, cities = NO_CITIES, selectedId = null, center = null, userLocation = null, compass = false, topInset = 0, bottomInset = 0, zoom, active = true, loading = false, preview = false, onSelect, onMoved, onCity }: Props) {
   const { language, tr } = useLanguage();
   const theme = useTheme(), clay = useClay(), dark = useDark() ? theme : undefined, { play } = useInteractionFeedback();
   const native = useRef<WebView<unknown>>(null), web = useRef<HTMLIFrameElement>(null), id = useId();
   const sentMarkers = useRef<{ sessionId: string; key: string } | null>(null);
-  const [seed] = useState({ markers, cityName, selectedId, center, userLocation, topInset, bottomInset, zoom });
+  const [seed] = useState({ markers, cityName, selectedId, center, userLocation, topInset, bottomInset, zoom, controls: !preview, fit: preview });
   const [failed, setFailed] = useState(false), [retry, setRetry] = useState(0);
   // The page this map last heard 'ready' from; a new page (retry, language, 2D·3D) loads under the cover again.
   const [readyHtml, setReadyHtml] = useState<string | null>(null);

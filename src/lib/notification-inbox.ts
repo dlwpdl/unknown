@@ -1,10 +1,12 @@
 // Pure helpers for the bell list: tab split, grouping, sections and paging. No React/Supabase imports so node tests load it directly.
+import { NEW_SIGN_IN, OTHER_SIGN_IN } from './notification-copy.ts';
+
 export type InboxRow = {
   id: string; kind: string; category: string; body: string; title?: string | null; route: string | null;
   read_at: string | null; created_at: string; actor_id?: string | null; target_type?: string | null; target_id?: string | null;
 };
 export type InboxTab = 'mine' | 'city' | 'admin';
-export type InboxItem<T extends InboxRow = InboxRow> = { key: string; kind: 'single' | 'likes' | 'hashtag'; lead: T; rows: T[] };
+export type InboxItem<T extends InboxRow = InboxRow> = { key: string; kind: 'single' | 'likes' | 'hashtag' | 'signin'; lead: T; rows: T[] };
 
 export const NOTIFICATION_PAGE_SIZE = 50;
 const CITY_CATEGORIES = new Set(['trending', 'weekly_ranking', 'city_food', 'city_places', 'interests', 'nearby']);
@@ -30,11 +32,13 @@ export function hashtagOf(row: Pick<InboxRow, 'kind' | 'route' | 'body'>): strin
 
 const groupKey = (row: InboxRow) => {
   if (LIKE_KINDS.has(row.kind)) return `likes:${row.target_type ?? ''}:${row.target_id ?? row.route ?? row.id}`;
+  // Sign-in alerts on a shared or often re-signed account filled the list (QA A-noti-03); email and password changes stay one row each.
+  if (row.kind === 'account_security' && (row.body === NEW_SIGN_IN || row.body === OTHER_SIGN_IN)) return 'signin';
   const tag = hashtagOf(row);
   return tag ? `hashtag:${tag}` : null;
 };
 
-/** One row per liked target (likes + like_summary) and per trending hashtag; rows keep their newest-first order. */
+/** One row per liked target (likes + like_summary), per trending hashtag and for all sign-in alerts; rows keep their newest-first order. */
 export function groupInbox<T extends InboxRow>(rows: T[]): InboxItem<T>[] {
   const items: InboxItem<T>[] = [], groups = new Map<string, InboxItem<T>>();
   for (const row of rows) {
@@ -46,7 +50,7 @@ export function groupInbox<T extends InboxRow>(rows: T[]): InboxItem<T>[] {
       if (group.lead.kind === 'like_summary' && row.kind !== 'like_summary') group.lead = row;
       continue;
     }
-    const item: InboxItem<T> = { key, kind: key.startsWith('likes:') ? 'likes' : 'hashtag', lead: row, rows: [row] };
+    const item: InboxItem<T> = { key, kind: key === 'signin' ? 'signin' : key.startsWith('likes:') ? 'likes' : 'hashtag', lead: row, rows: [row] };
     groups.set(key, item); items.push(item);
   }
   return items;

@@ -3,7 +3,6 @@ import { useIsFocused } from 'expo-router';
 import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable } from '@/components/analytics-controls';
-import { GlingLoader } from '@/components/gling-loader';
 import { MeetupManageSheet } from '@/components/meetup-manage-sheet';
 import { ControlStyles, IconSize, controlPresentation } from '@/constants/design-system';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
@@ -106,7 +105,8 @@ export function SavedEntryButton({ entry, kind, analyticsId, onBeen }: { entry: 
     <Pressable analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={label}
       accessibilityState={{ selected: saved, busy, disabled: busy }} disabled={busy} onPress={choice ? () => { play('selection'); setMenu(true); } : entry.onPress}
       style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', selected: saved, pressed, busy }).container]}>
-      {busy ? <GlingLoader size={14} accessibilityLabel={label} /> : <SymbolView name={retry
+      {/* While the state loads the slot keeps a faint bookmark: a 14pt logo read as a stray word there (QA A-map-01). */}
+      {busy ? <SymbolView name={{ ios: 'bookmark', android: 'bookmark_border', web: 'bookmark_border' }} size={IconSize.toolbar} tintColor={`${theme.textSecondary}80`} /> : <SymbolView name={retry
         ? { ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }
         : been ? { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }
         : { ios: saved ? 'bookmark.fill' : 'bookmark', android: saved ? 'bookmark' : 'bookmark_border', web: saved ? 'bookmark' : 'bookmark_border' }} size={IconSize.toolbar} tintColor={theme.accent} />}

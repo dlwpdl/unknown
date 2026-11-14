@@ -6,7 +6,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 function rating({ score, reviewKind = 'usage', reduced = false, label, scheme = 'dark' }) {
-  const animations = [], values = [], cleanups = [];
+  const animations = [], values = [], cleanups = [], played = [];
   const theme = scheme === 'dark'
     ? { accent: '#CBB9FF', line: '#222', background: '#0B0B12', card: '#171722', textSecondary: '#B7B4C3' }
     : { accent: '#6E4AA2', line: '#DFDAE9', background: '#F7F7FB', card: '#FFFFFF', textSecondary: '#625C70' };
@@ -24,11 +24,13 @@ function rating({ score, reviewKind = 'usage', reduced = false, label, scheme = 
     'react-native-reanimated': { useReducedMotion: () => reduced },
     '@/hooks/use-theme': { useTheme: () => theme },
     '@/constants/theme': { Colors: { dark: { background: '#0B0B12' } } },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => played.push(kind) }) },
+    '@/constants/design-system': { ControlStyles: { icon: {} }, controlPresentation: () => ({ container: {} }) },
   };
   const exports = {}, url = new URL('../src/components/merchant-rating-bar.tsx', import.meta.url);
   const source = ts.transpileModule(readFileSync(url, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(source, { exports, require: withLanguageImports(name => imports[name] ?? {}) });
-  return { tree: exports.MerchantRatingBar({ score, reviewKind, label }), icon: exports.GlingRatingIcon, theme, animations, values, cleanups };
+  return { tree: exports.MerchantRatingBar({ score, reviewKind, label }), icon: exports.GlingRatingIcon, exports, played, theme, animations, values, cleanups };
 }
 const nodes = root => !root || typeof root !== 'object' ? [] : [root, ...Object.values(root).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
 
@@ -125,4 +127,29 @@ test('empty marks stay visible on a white light-mode card and keep the line colo
     const darkEmpty = dark.tree.props.children[0].props.children[0].props.style[1];
     assert.equal(darkEmpty.color, dark.theme.line);
   }
+});
+
+test('QA A-place-02: the ✦ picker reaches every 0.5 step from 1 to 10 and stays one adjustable control', () => {
+  const { exports, played } = rating({ score: null });
+  const next = exports.ratingPickerNext;
+  assert.equal(next(null, { mark: 4 }), 8); assert.equal(next(8, { mark: 4 }), 7, 'a second tap on a full mark takes one point off');
+  assert.equal(next(7, { mark: 4 }), 8); assert.equal(next(7.5, { mark: 4 }), 8);
+  assert.equal(next(null, { step: 1 }), 1); assert.equal(next(null, { step: -1 }), null);
+  assert.equal(next(10, { step: 1 }), 10); assert.equal(next(1, { step: -1 }), 1); assert.equal(next(8, { step: 1 }), 8.5);
+  const reachable = new Set();
+  for (let mark = 1; mark <= 5; mark++) for (const start of [null, mark * 2]) { const base = next(start, { mark }); reachable.add(base); reachable.add(next(base, { step: 1 })); reachable.add(next(base, { step: -1 })); }
+  assert.deepEqual([...reachable].sort((a, b) => a - b), Array.from({ length: 19 }, (_, index) => 1 + index / 2));
+  const picked = [];
+  const picker = exports.RatingScorePicker({ value: 8.5, onChange: value => picked.push(value), label: '장소 후기 점수', testID: 'score' });
+  assert.equal(picker.props.accessibilityRole, 'adjustable');
+  assert.equal(picker.props.accessibilityValue.now, 8.5);
+  picker.props.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } });
+  const fourth = nodes(picker).find(node => node.props?.testID === 'score.mark.4'), fifth = nodes(picker).find(node => node.props?.testID === 'score.mark.5');
+  fourth.props.onPress();
+  const fill = mark => nodes(mark).find(node => typeof node.props?.style?.[1]?.width === 'string').props.style[1].width;
+  assert.equal(fill(fourth), '100%'); assert.equal(fill(fifth), '25%');
+  assert.deepEqual(picked, [9, 8]); assert.deepEqual(played, ['selection', 'selection']);
+  const locked = exports.RatingScorePicker({ value: 10, onChange: value => picked.push(value), label: 'x', testID: 'score', disabled: true });
+  nodes(locked).find(node => node.props?.testID === 'score.mark.1').props.onPress();
+  assert.deepEqual(picked, [9, 8], 'a disabled picker changes nothing');
 });

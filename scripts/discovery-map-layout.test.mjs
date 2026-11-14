@@ -13,6 +13,7 @@ import * as location from '../src/lib/location.ts';
 import { tr } from '../src/i18n/index.ts';
 import { contentAdPosition } from '../src/lib/content-ad-placement.ts';
 import * as openingHours from '../src/lib/opening-hours.ts';
+import * as chillingDate from '../src/lib/chilling-date.ts';
 
 const source = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
 // The list sheet's header (summary, sub-filters, sort) is a prop, so it is walked like children.
@@ -49,7 +50,8 @@ function mount({ cities = [], routeParams = {}, light = false, reduced = false, 
     '@/lib/mock': { CITIES: cities },
     '@/constants/theme': { Colors: { dark: { ...theme, card: '#171722' }, light: theme } }, '@/constants/design-system': designSystem, '@/hooks/use-language': { useLanguage: () => ({ tr }) },
     '@/components/analytics-controls': { FlatList: 'FlatList', ScrollView: 'ScrollView', Pressable: 'Pressable' }, '@/components/page-header': { PageHeader: 'PageHeader' },
-    '@/components/selection-chip': { SelectionChip: 'Pressable' }, '@/components/disclosure': { animateLayout() {} },
+    '@/components/selection-chip': { SelectionChip: 'Pressable' }, '@/components/disclosure': { animateLayout() {}, Disclosure: 'Disclosure' },
+    '@/components/chilling-date-input': { ChillingDateInput: 'ChillingDateInput' }, '@/lib/chilling-date': chillingDate,
     '@/lib/delivery-partners': { DELIVERY_PARTNERS: [], deliveryPartnerPlace: () => undefined },
     '@/lib/webshops': { bindBusinessPlaces: (...args) => bindBusinessPlaces(...args).map(item => ({ ...item, ...business[item.sourceId] })), loadCityBusinessLinks: loadLinks, loadCityBusinessMapPhotos: loadPhotos, loadCityWebshops: loadWebshops },
     '@/components/live-bubbles': { useLive: () => ({ status: 'idle', map: null }), useLiveMarkers: () => noMarkers, useMeetupMarkers: () => noMarkers, useKeepClearOfNotice: () => ({ current: null }), LiveDock: 'LiveDock', LiveSheets: 'LiveSheets' },
@@ -84,6 +86,9 @@ test('main categories toggle independently and event dates belong to the festiva
   assert.ok(!nodes(tree).some(node => text(node).trim() === '전체 날짜'));
   control(tree, '분류와 날짜 필터 열기').props.onPress(); tree = view.render();
   assert.ok(nodes(tree).some(node => node.type === 'Modal' && node.props.visible));
+  // QA A-map-03: the sheet is named for what it shows, and the TOP 50 note opens in place instead of a system dialog.
+  assert.ok(nodes(tree).some(node => node.props?.accessibilityRole === 'header' && node.props.children === '분류'));
+  assert.equal(nodes(tree).find(node => node.type === 'Disclosure')?.props.title, 'TOP 50 선정 배지 안내');
   control(tree, '나이트라이프').props.onPress(); tree = view.render();
   control(tree, '카페').props.onPress(); tree = view.render();
   assert.equal(control(tree, '나이트라이프').props.accessibilityState.selected, true);
@@ -187,12 +192,16 @@ test('custom dates validate before closing and reset clears both category and da
   control(tree, '페스티벌').props.onPress(); tree = view.render();
   control(tree, '분류와 날짜 필터 열기').props.onPress(); tree = view.render();
   control(tree, '날짜 지정').props.onPress(); tree = view.render();
-  control(tree, '행사 날짜 연도-월-일').props.onChangeText('2026-02-30'); tree = view.render();
+  // QA A-map-03: the day comes from the calendar, and the one-year bound still holds before the sheet closes.
+  const picker = () => nodes(tree).find(node => node.type === 'ChillingDateInput');
+  assert.ok(!nodes(tree).some(node => node.type === 'TextInput' && node.props.accessibilityLabel === '행사 날짜 연도-월-일'), 'no typed date field');
+  const tomorrow = discovery.discoveryDays('today', 'vancouver')[0];
+  const farAway = new Date(Date.parse(`${tomorrow}T12:00:00Z`) + 400 * 86400000).toISOString().slice(0, 10);
+  picker().props.onChange(chillingDate.parseLocalDay(farAway)); tree = view.render();
   modalControl(tree, '지도 보기').props.onPress(); tree = view.render();
   assert.ok(nodes(tree).some(node => node.props?.accessibilityRole === 'alert'));
   assert.ok(nodes(tree).some(node => node.type === 'Modal'));
-  const tomorrow = discovery.discoveryDays('today', 'vancouver')[0];
-  control(tree, '행사 날짜 연도-월-일').props.onChangeText(tomorrow); tree = view.render();
+  picker().props.onChange(chillingDate.parseLocalDay(tomorrow)); tree = view.render();
   modalControl(tree, '지도 보기').props.onPress(); tree = view.render();
   assert.ok(!nodes(tree).some(node => node.type === 'Modal'));
   control(tree, '분류와 날짜 필터 열기').props.onPress(); tree = view.render();
@@ -201,7 +210,7 @@ test('custom dates validate before closing and reset clears both category and da
   assert.deepEqual(Array.from(view.days), []);
   assert.ok(!nodes(tree).some(node => node.props?.analyticsId === 'discovery.date'));
   assert.ok(!nodes(tree).some(node => node.props?.accessibilityRole === 'alert'));
-  assert.ok(!nodes(tree).some(node => node.type === 'TextInput' && node.props.accessibilityLabel === '행사 날짜 연도-월-일'));
+  assert.ok(!nodes(tree).some(node => node.type === 'ChillingDateInput'));
 });
 
 test('list and map navigation remain available after compacting the header', () => {
@@ -600,6 +609,7 @@ test('search this area narrows to the moved map, hides when zoomed out to cities
   nodes(tree).find(node => node.type === 'DiscoveryMap').props.onMoved({ west: -123, south: 49.2, east: -122.8, north: 49.3 }, 12); tree = view.render();
   const pill = nodes(tree).find(node => node.props?.analyticsId === 'discovery.search-here');
   assert.match(text(pill), /이 지역에서 다시 찾기/);
+  assert.ok(!nodes(tree).some(node => node.props?.accessibilityLabel === '지도 결과 새로고침'), 'one reload button at a time (QA A-map-01)');
   pill.props.onPress(); tree = view.render();
   assert.deepEqual(pinsOf(tree), ['Inside']);
   assert.ok(!nodes(tree).some(node => node.props?.analyticsId === 'discovery.search-here'));
@@ -918,4 +928,15 @@ test('map lag 2026-11-11: the list sheet draws its cards on first opening and a 
   const closed = body('closed');
   assert.equal(closed.props.open, false, 'the cards stay mounted after closing');
   assert.equal(closed.type.same(opened.props, closed.props), true, 'a closed sheet skips redrawing them');
+});
+
+test('QA A-map-02: a list card names a place once and leaves map-app buttons to the open card', () => {
+  const view = mount({ places: [fixturePlace(1, { name: 'Stanley Park' })] });
+  const tree = view.render(), list = nodes(tree).find(node => node.type === 'FlatList'), item = list.props.data[0];
+  const named = card => nodes(card).filter(node => node.type === 'Text' && node.props.children === item.title).length;
+  assert.equal(named(view.renderCard({ ...item, label: item.title }, null)), 1);
+  assert.equal(named(view.renderCard({ ...item, label: 'Somewhere else' }, null)), 1);
+  const row = nodes(list.props.renderItem({ item, index: 0 }));
+  assert.ok(!row.some(node => ['discovery.google', 'discovery.waze'].includes(node.props?.analyticsId)));
+  assert.ok(row.some(node => node.type === 'ReservationButton'), 'a booking link still shows when the place has one');
 });

@@ -1167,6 +1167,23 @@ test('legacy personal deep links clear business mode, while revoked business lin
   assert.ok(revoked.nodes().some(node => node.props?.accessibilityRole === 'alert'));
 });
 
+test('QA A-chat-01: a failed business inbox shows one error card with retry, and an empty one speaks to customers', async context => {
+  let fail = true, reads = 0;
+  const data = { businessIdentity: { id: businessId, name: '공개 비즈니스' },
+    loadConversations: async () => { reads++; if (fail) throw new Error('MERCHANT_ACCESS_REQUIRED'); return { conversations: [], selectedConversation: null, pendingCount: 0, cursor: null }; } };
+  const harness = mount('../src/app/(tabs)/chat.tsx', 'default', data);
+  context.after(() => harness.cleanup()); await harness.settle();
+  const cards = () => harness.nodes().filter(node => node.type === 'StateCard');
+  assert.equal(cards().length, 1); assert.equal(cards()[0].props.kind, 'error');
+  assert.equal(cards()[0].props.title, '대화를 불러오지 못했어요');
+  assert.ok(!harness.nodes().some(node => node.props?.accessibilityRole === 'alert'), 'no second error line above the card');
+  assert.ok(!harness.nodes().some(node => node.type === 'ProfileAvatarButton' && node.props.enableBusinessSwitch !== false), 'the header does not repeat the inbox switcher');
+  fail = false; cards()[0].props.onAction(); await harness.settle();
+  assert.ok(reads >= 2);
+  assert.equal(cards().length, 1); assert.equal(cards()[0].props.kind ?? 'empty', 'empty');
+  assert.equal(cards()[0].props.title, '아직 손님 문의가 없어요');
+});
+
 test('business notifications use actual connected admin scope without an admin-wide lookup', async context => {
   const lookups = [], reads = [];
   const data = {

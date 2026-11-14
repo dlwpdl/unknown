@@ -17,7 +17,7 @@ import { count } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { getCityPlaces } from '@/lib/city-places';
 import { deliveryPartnerPlace } from '@/lib/delivery-partners';
-import { placeMapRoute } from '@/lib/discovery';
+import { DISCOVERY_CATEGORIES, placeCategory } from '@/lib/discovery';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 import { friendErrorMessage, loadProfileOverview, savedPlaceCities, setFriendship, setProfileSharing, type FriendAction, type FriendshipResult, type ProfileOverview } from '@/lib/profile-friends';
@@ -40,12 +40,17 @@ export function ProfileSavedMap({ overview, homeCityId }: { overview: ProfileOve
       if (!places) { try { places = getCityPlaces(pin.cityId); } catch { places = []; } byCity.set(pin.cityId, places); }
       const place = places.find(item => item.id === pin.placeKey) ?? deliveryPartnerPlace(pin.cityId, pin.placeKey);
       if (!place || !Number.isFinite(place.latitude) || !Number.isFinite(place.longitude)) return [];
-      return [{ id: `${pin.cityId}|${pin.placeKey}`, latitude: place.latitude, longitude: place.longitude, color: pin.merchantId ? theme.accent : theme.navy, label: place.name }];
+      // Drawn like the big map's pins with the name always on (featured), and as my saved bookmark on my own profile, which the map's description promises (QA A-prof-01).
+      const category = DISCOVERY_CATEGORIES.find(item => item.id === placeCategory(place))!;
+      return [{ id: `${pin.cityId}|${pin.placeKey}|${pin.merchantId ?? ''}`, latitude: place.latitude, longitude: place.longitude, color: category.color, icon: category.art,
+        label: place.name.slice(0, 80), featured: true, ...(overview.own ? { saved: true } : {}) }];
     });
-  }, [pins, theme.accent, theme.navy]);
+  }, [pins, overview.own]);
   const [picked, setPicked] = useState<string | null>(null);
   const cityId = cities.some(city => city.cityId === picked) ? picked! : cities.find(city => city.cityId === homeCityId)?.cityId ?? cities[0]?.cityId ?? null;
   const city = cityOf(cityId);
+  // Only this city's pins, so the preview frames all of them (QA A-prof-01).
+  const shown = useMemo(() => markers.filter(marker => marker.id.startsWith(`${cityId}|`)), [markers, cityId]);
   if (!pins || !markers.length || !city) {
     const own = overview.own, locked = overview.mapHiddenReason === 'not_friends';
     const title = own ? tr('첫 장소 저장하기') : locked ? tr('친구가 되면 저장한 곳이 보여요')
@@ -66,9 +71,11 @@ export function ProfileSavedMap({ overview, homeCityId }: { overview: ProfileOve
   }
   return <View style={styles.mapBlock}>
     <View style={[styles.map, { borderColor: theme.line }]}>
-      <DiscoveryMap markers={markers} cityName={city.englishName} onSelect={id => {
-        const [pinCity, placeKey] = id.split('|');
-        if (pinCity && placeKey) router.push(placeMapRoute({ id: placeKey, cityId: pinCity }));
+      {/* A pin opens that place's own page: the business page for a business, otherwise the place page (QA A-prof-01). */}
+      <DiscoveryMap preview markers={shown} cityName={city.englishName} onSelect={id => {
+        const [pinCity, placeKey, merchantId] = id.split('|');
+        if (merchantId) router.push({ pathname: '/company/[id]', params: { id: merchantId } });
+        else if (pinCity && placeKey) router.push({ pathname: '/places/[id]', params: { id: placeKey, cityId: pinCity } });
       }} />
     </View>
     {cities.length > 1 && <ScrollView analyticsId="profile.map.cities" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>

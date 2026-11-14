@@ -82,13 +82,17 @@ export function discoveryMapScript(update: MapUpdate, sessionId: string) {
   return `window.glingDiscoveryUpdate?.(${json(sessionId)},${json(state(update))});true;`;
 }
 
-export function discoveryMapHtml({ markers, cities = [], cityName, sessionId, selectedId = null, center = null, userLocation = null, bottomInset = 0, topInset = 0, accent = '#CBB9FF', parentOrigin = 'null', language = 'ko', zoom = 11, clay = true, dark }: MapState & {
+export function discoveryMapHtml({ markers, cities = [], cityName, sessionId, selectedId = null, center = null, userLocation = null, bottomInset = 0, topInset = 0, accent = '#CBB9FF', parentOrigin = 'null', language = 'ko', zoom = 11, clay = true, dark, controls = true, fit = false }: MapState & {
   cityName: string; sessionId: string; accent?: string; parentOrigin?: string; language?: 'ko' | 'en';
   /** Off draws MapLibre's own flat zoom buttons (the member's 2D choice and the web). The picture pins stay: they predate the 3D design. */
   clay?: boolean;
   /** Starting zoom; a small preview opens close enough (NEAR) to show the 3D art. */
   zoom?: number;
   dark?: MapDarkColors;
+  /** Off leaves out the zoom buttons, for a small preview map that is pinched or tapped through (QA A-prof-01). */
+  controls?: boolean;
+  /** Opens framed on the starting markers instead of the city centre, so none sits cut off at an edge (QA A-prof-01). */
+  fit?: boolean;
 }) {
   if (!Number.isFinite(zoom) || zoom < 1 || zoom > 18) throw new Error('INVALID_DISCOVERY_ZOOM');
   if (!text(sessionId, 180) || !['ko', 'en'].includes(language) || !/^#[a-f\d]{6}$/i.test(accent)) throw new Error('INVALID_DISCOVERY_CONFIG');
@@ -96,7 +100,11 @@ export function discoveryMapHtml({ markers, cities = [], cityName, sessionId, se
   if (parentOrigin !== 'null' && (!/^https?:\/\//.test(parentOrigin) || new URL(parentOrigin).origin !== parentOrigin)) throw new Error('INVALID_DISCOVERY_ORIGIN');
   // The map's own tags, counts and buttons: the light values were set against positron; dark takes the app's dark palette.
   const night = mapDarkColors(dark), ink = night ? { tag: night.card + 'f2', tagLine: night.line, text: night.text, sub: night.textSecondary, count: night.card } : { tag: 'rgba(255,255,255,0.95)', tagLine: 'rgba(48,32,71,0.16)', text: '#302047', sub: '#6b6280', count: '#f8f6fc' };
-  const config = json({ ...state({ markers, selectedId, center, userLocation, bottomInset, topInset }), cities: cityPills(cities, cityName), cityCenter: mapCityCenter(cityName), sessionId, parentOrigin, credits, art: MAP_PIN_ART, zoom });
+  const initial = state({ markers, selectedId, center, userLocation, bottomInset, topInset });
+  const placed = initial.markers ?? [];
+  const frame = fit && placed.length ? [[Math.min(...placed.map(m => m.longitude)), Math.min(...placed.map(m => m.latitude))],
+    [Math.max(...placed.map(m => m.longitude)), Math.max(...placed.map(m => m.latitude))]] : null;
+  const config = json({ ...initial, cities: cityPills(cities, cityName), cityCenter: mapCityCenter(cityName), sessionId, parentOrigin, credits, art: MAP_PIN_ART, zoom, controls: controls !== false, frame });
   return `<!doctype html><html lang="${language}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-gling-map' blob:; style-src 'unsafe-inline'; worker-src blob:; connect-src https://tiles.openfreemap.org; img-src data: blob: https://tiles.openfreemap.org; base-uri 'none'; form-action 'none'; object-src 'none'"><style>${assets.css}
 html,body,#map{margin:0;width:100%;height:100%;overflow:hidden;background:#efeee9}${clay ? `.maplibregl-ctrl button.maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon{background:url(${MAP_ZOOM_ART.in}) center/22px no-repeat}.maplibregl-ctrl button.maplibregl-ctrl-zoom-out .maplibregl-ctrl-icon{background:url(${MAP_ZOOM_ART.out}) center/22px no-repeat}` : ''}.maplibregl-ctrl-top-left{top:calc(var(--map-top-inset,0px) + 12px);left:12px}.maplibregl-ctrl-group{border-radius:14px;overflow:hidden;box-shadow:0 2px 12px #3020471a}.maplibregl-ctrl-group button{width:44px;height:44px}.maplibregl-ctrl-group button:active{background:#ebe5f6}.maplibregl-ctrl-group button:focus-visible,#credits a:focus-visible{outline:3px solid ${accent};outline-offset:-3px}#credits{position:absolute;left:var(--map-credits-left,10px);bottom:calc(var(--map-bottom-inset,0px) + 6px);display:flex;flex-direction:column-reverse;align-items:flex-start;gap:4px;font:11px/1.3 system-ui;color:#333;z-index:4}#credits-toggle{width:44px;height:44px;padding:0;border:0;background:none;display:grid;place-items:center;cursor:pointer}#credits-toggle span{width:24px;height:24px;border-radius:12px;background:#fffffff2;box-shadow:0 1px 6px #3020472e;color:#5f566e;font:italic 700 13px/24px Georgia,serif;text-align:center}#credits-toggle:focus-visible{outline:3px solid ${accent};outline-offset:-3px;border-radius:22px}#credits-links{display:flex;flex-wrap:wrap;max-width:calc(100vw - var(--map-credits-left,10px) - 10px);background:#fffffff5;border-radius:14px;box-shadow:0 2px 10px #30204726;padding:0 4px}#credits-links[hidden]{display:none}#credits a{color:#333;min-height:44px;display:inline-flex;align-items:center;padding:0 6px;box-sizing:border-box}#credits a:active{background:#ebe5f6}
 .city-pill{min-height:44px;padding:0 16px;border-radius:22px;border:1px solid #d9d3e6;background:#fff;color:#302047;font:700 14px/1.2 system-ui;box-shadow:0 2px 10px #30204726;cursor:pointer}.city-pill:active{background:#ebe5f6}.city-pill:disabled{color:#7a7287;background:#f6f4f9;box-shadow:none;cursor:default}.city-pill:focus-visible{outline:3px solid ${accent};outline-offset:2px}.city-pill[hidden]{display:none}
@@ -171,9 +179,9 @@ const foldCredits=open=>{const links=document.getElementById('credits-links'),to
 document.addEventListener('click',e=>{const a=e.target.closest?.('#credits a'),pill=e.target.closest?.('.city-pill');if(e.target.closest?.('#credits-toggle')){send({type:'feedback'});foldCredits(document.getElementById('credits-links')?.hidden)}else if(pill){const c=config.cities.find(c=>c.id===pill.getAttribute('data-city'));if(c&&c.open){send({type:'feedback'});if(c.current)move({center:c.center,zoom:11});else send({type:'city',id:c.id})}}else if(a){e.preventDefault();if(config.credits.includes(a.href)){send({type:'feedback'});send({type:'credits',url:a.href})}}else if(e.target.closest?.('.maplibregl-ctrl-group button'))send({type:'feedback'})});
 try{
  // Map lag 2026-11-11 (owner "지도 화질 2배"): at most 2 canvas pixels per point; a 3x phone otherwise draws 2.25 times the pixels on every frame.
- map=new maplibregl.Map({container:'map',style:'${night ? MAP_STYLES.dark : MAP_STYLES.light}',center:config.center?[config.center.longitude,config.center.latitude]:config.cityCenter,zoom:config.zoom,attributionControl:false,pixelRatio:Math.min(window.devicePixelRatio||1,2)});
+ map=new maplibregl.Map({container:'map',style:'${night ? MAP_STYLES.dark : MAP_STYLES.light}',center:config.center?[config.center.longitude,config.center.latitude]:config.cityCenter,zoom:config.zoom,...(config.frame?{bounds:config.frame,fitBoundsOptions:{padding:40,maxZoom:14}}:{}),attributionControl:false,pixelRatio:Math.min(window.devicePixelRatio||1,2)});
  window.glingMap=map;map.on('movestart',()=>foldCredits(false));
- map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-left');
+ if(config.controls)map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-left');
  // A first open can take well past 15s while the base map and tiles download (owner 11-05 "로딩 중엔 안 떠야 함", corner check m00 11-13):
  // only 15s without any download progress fails, and each step of progress tells the app the page is alive (at most every 2s).
  let timer=setTimeout(fail,15000),grace=0,beat=0;

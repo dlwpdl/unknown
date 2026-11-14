@@ -163,15 +163,21 @@ test('invitations cannot display another account cache or accept changed busines
 });
 
 const action = (tree, id) => { const button = nodes(tree).find(n => n.props?.analyticsId === id); assert.ok(button, id); return button; };
+// The inbox card reads the chat-ready list on focus and stays hidden until there is something to switch to (QA A-chat-02).
+async function inboxCard(view, data = context()) {
+  assert.equal(view.render(), null, 'no card before the account is known');
+  view.pending.shift()(data); await flush();
+  return view.render();
+}
 
 test('inbox profile selection checks the current connection twice and returns to personal without sending anything', async context => {
   chatIdentity.resetChatIdentity(); context.after(chatIdentity.resetChatIdentity);
   const view = app('ChatIdentitySwitcher');
-  const open = action(view.render(), 'chat.identity.open');
-  open.props.onPress(); open.props.onPress(); assert.equal(view.calls.length, 1);
+  const open = action(await inboxCard(view), 'chat.identity.open');
+  open.props.onPress(); open.props.onPress(); assert.equal(view.calls.length, 2);
   view.pending.shift()(contextData()); await flush();
   action(view.render(), 'chat.identity.business').props.onPress();
-  assert.equal(view.calls.length, 2, 'a cached business row is not authorization');
+  assert.equal(view.calls.length, 3, 'a cached business row is not authorization');
   view.pending.shift()(contextData()); await flush();
   assert.deepEqual(chatIdentity.chatBusinessIdentity('user-a'), { id: 'company-a', name: '업체 A' });
   assert.match(text(view.render()), /업체 A/);
@@ -186,7 +192,7 @@ test('inbox profile selection checks the current connection twice and returns to
 test('a revoked business selection stays in the current profile and exposes a recoverable error', async context => {
   chatIdentity.resetChatIdentity(); context.after(chatIdentity.resetChatIdentity);
   const view = app('ChatIdentitySwitcher');
-  action(view.render(), 'chat.identity.open').props.onPress(); view.pending.shift()(contextData()); await flush();
+  action(await inboxCard(view), 'chat.identity.open').props.onPress(); view.pending.shift()(contextData()); await flush();
   action(view.render(), 'chat.identity.business').props.onPress();
   view.pending.shift()(contextData('user-a', [])); await flush();
   assert.equal(chatIdentity.chatBusinessIdentity('user-a'), null);
@@ -196,7 +202,7 @@ test('a revoked business selection stays in the current profile and exposes a re
 test('an outstanding profile selection cannot switch a different signed-in account', async context => {
   chatIdentity.resetChatIdentity(); context.after(chatIdentity.resetChatIdentity);
   const view = app('ChatIdentitySwitcher');
-  action(view.render(), 'chat.identity.open').props.onPress(); view.pending.shift()(contextData()); await flush();
+  action(await inboxCard(view), 'chat.identity.open').props.onPress(); view.pending.shift()(contextData()); await flush();
   action(view.render(), 'chat.identity.business').props.onPress();
   view.auth({ me: { id: 'user-b', nickname: '다른 이웃' } }); view.render();
   view.pending.shift()(contextData()); await flush();
@@ -206,10 +212,31 @@ test('an outstanding profile selection cannot switch a different signed-in accou
 
 const contextData = (...args) => context(...args);
 
+test('QA A-chat-02: a personal-only inbox shows no picker, and a business still under review is listed but cannot be chosen', async context => {
+  chatIdentity.resetChatIdentity(); context.after(chatIdentity.resetChatIdentity);
+  const personal = app('ChatIdentitySwitcher');
+  personal.render(); personal.pending.shift()(contextData('user-a', [])); await flush();
+  assert.equal(personal.calls[1]?.name, 'get_my_merchant_connections', 'no chat-ready business: read the account list once to explain why');
+  personal.pending.shift()(contextData('user-a', [])); await flush();
+  assert.equal(personal.render(), null, 'one profile is nothing to choose');
+
+  const waiting = app('ChatIdentitySwitcher');
+  waiting.render(); waiting.pending.shift()(contextData('user-a', [])); await flush();
+  waiting.pending.shift()(contextData('user-a', [{ id: 'company-a', name: '업체 A', role: 'owner', city_name: '밴쿠버' }, { id: 'review-only', name: '관리 전용 업체', role: 'admin', city_name: '밴쿠버' }])); await flush();
+  action(waiting.render(), 'chat.identity.open').props.onPress();
+  waiting.pending.shift()(contextData('user-a', [])); await flush();
+  waiting.pending.shift()(contextData('user-a', [{ id: 'company-a', name: '업체 A', role: 'owner', city_name: '밴쿠버' }])); await flush();
+  const sheet = waiting.render(), shown = text(sheet);
+  assert.match(shown, /업체 A/); assert.match(shown, /비즈니스 확인이 끝나면 대화할 수 있어요/);
+  assert.doesNotMatch(shown, /관리 전용 업체/, 'admin review access is never offered as a profile');
+  assert.ok(!nodes(sheet).some(n => n.props?.analyticsId === 'chat.identity.business'), 'a waiting business has no select action');
+  assert.equal(chatIdentity.chatBusinessIdentity('user-a'), null);
+});
+
 test('admins can choose their actual connected business without receiving an admin-wide switch', async context => {
   chatIdentity.resetChatIdentity(); context.after(chatIdentity.resetChatIdentity);
   const view = app('ChatIdentitySwitcher'); view.auth({ isAdmin: true });
-  action(view.render(), 'chat.identity.open').props.onPress();
+  action(await inboxCard(view), 'chat.identity.open').props.onPress();
   assert.equal(view.calls[0].name, 'get_my_business_chat_profiles');
   view.pending.shift()(contextData()); await flush();
   action(view.render(), 'chat.identity.business').props.onPress();
