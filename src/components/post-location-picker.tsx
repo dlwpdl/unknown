@@ -19,6 +19,7 @@ import { DISCOVERY_CATEGORIES, discoveryPlace, pinSubcategory } from '@/lib/disc
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { isFreshLocation } from '@/lib/location';
 import { CITIES } from '@/lib/mock';
+import { nearestNeighborhood, neighborhoodName } from '@/lib/neighborhoods';
 import { googlePinUrl, type PostPin } from '@/lib/post-maps';
 
 // The revision is part of the cache key: one city's places change only when a refreshed catalog lands.
@@ -30,7 +31,7 @@ const discoveryPlaces = (cityId: string | undefined, _revision: number): CityPla
 export function PostLocationPicker({ visible, initialPin, initialLabel = '', cityName = '', onClose, onConfirm }: {
   visible: boolean; initialPin: PostPin | null; initialLabel?: string; cityName?: string; onClose: () => void; onConfirm: (pin: PostPin, label: string) => void;
 }) {
-  const { tr } = useLanguage();
+  const { tr, language } = useLanguage();
   const theme = useTheme(), clay = useClay(), { play } = useInteractionFeedback(), insets = useSafeAreaInsets(), reduced = useReducedMotion();
   const [pin, setPin] = useState<PostPin | null>(initialPin), [label, setLabel] = useState(initialLabel);
   const [query, setQuery] = useState(''), [busy, setBusy] = useState(false), [message, setMessage] = useState('');
@@ -49,6 +50,7 @@ export function PostLocationPicker({ visible, initialPin, initialLabel = '', cit
   const places = useMemo(() => discoveryPlaces(cityId, catalog), [cityId, catalog]);
   const free = dropping || !places.length, mapReady = free ? ready : true;
   const chosen = pin && places.find(place => place.latitude === pin.latitude && place.longitude === pin.longitude), accent = theme.accent;
+  const area = pin && cityId ? nearestNeighborhood(cityId, pin) : null;
   const markers = useMemo(() => {
     // Same fields as the map tab's place pins (src/app/map.tsx): category colour and 3D art, the kind of place on the second line, TOP 50 and visited places named from further out.
     const list = places.flatMap((place): DiscoveryMarker[] => {
@@ -107,7 +109,7 @@ export function PostLocationPicker({ visible, initialPin, initialLabel = '', cit
     <SafeAreaProvider style={[styles.backdrop, { backgroundColor: theme.background }]}>
     <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: theme.background, paddingBottom: Math.max(insets.bottom, 12) }]}>
       <View style={styles.header}><Pressable analyticsId="post.location.cancel" accessibilityRole="button" accessibilityLabel={tr("위치 선택 취소")} onPress={() => { play('selection'); close(); }}
-        style={({ pressed }) => [ControlStyles.icon, styles.back, controlPresentation(theme, { pressed, clay }).container]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={IconSize.toolbar} tintColor={theme.text} /></Pressable><ThemedText type="smallBold">{tr("위치 공유")}</ThemedText><View style={styles.control} /></View>
+        style={({ pressed }) => [ControlStyles.icon, styles.back, controlPresentation(theme, { pressed, clay }).container]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={IconSize.toolbar} tintColor={theme.text} /></Pressable><ThemedText type="smallBold" accessibilityRole="header">{tr("장소 붙이기")}</ThemedText><View style={styles.control} /></View>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.canvas}>
         {visible && (free ? <PostPinMap pin={pin} label={label} cityName={cityName} onSelect={select} onReadyChange={setReady} bottomInset={cardHeight + 24} />
           : <DiscoveryMap markers={markers} cityName={cityName} selectedId={chosen ? chosen.id : pin ? 'chosen' : null} center={center} zoom={center ? 15 : undefined} topInset={74} bottomInset={cardHeight + 100}
@@ -134,6 +136,8 @@ export function PostLocationPicker({ visible, initialPin, initialLabel = '', cit
           {pin ? <TextInput value={label} onChangeText={value => { revision.current++; setBusy(false); setLabel(value.replace(/[\u0000-\u001f\u007f]/g, ' ')); }} maxLength={100} accessibilityLabel={tr("첨부할 위치 이름")} placeholder={tr("선택한 위치")} placeholderTextColor={theme.textSecondary}
             onFocus={() => play('selection')} style={[styles.name, { color: theme.text, borderColor: theme.line }]} /> : <ThemedText type="smallBold">{tr("지도에서 위치를 선택해 주세요.")}</ThemedText>}
           {!pin && <ThemedText type="small" themeColor="textSecondary">{free ? tr("가게를 누르거나, 원하는 지점으로 핀을 옮겨보세요.") : tr("지도의 장소를 누르거나 이름으로 찾아보세요.")}</ThemedText>}
+          {/* A spot without a name still says roughly where it is (QA I-compose-08). */}
+          {!!area && <ThemedText type="small" themeColor="textSecondary">{tr('{0} 근처', neighborhoodName(area, language))}</ThemedText>}
           {pin && <ThemedText type="small" themeColor="textSecondary">{tr("글을 게시하면 글과 통합 지도에 이 위치가 공개돼요.")}</ThemedText>}
           {!!message && <ThemedText type="small" accessibilityRole="alert">{tr(message)}</ThemedText>}
           <Pressable analyticsId="post.location.confirm" accessibilityRole="button" disabled={!mapReady || !pin || busy} onPress={() => { if (!mapReady || !pin || busy) return; revision.current++; play('selection'); onConfirm(pin, label.trim() || '선택한 위치'); }}

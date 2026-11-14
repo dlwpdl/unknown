@@ -8,7 +8,7 @@ import { getPostImageSource } from '../src/lib/feed-data.ts';
 import { uniqueHashtags } from '../src/lib/hashtags.ts';
 import { count, t } from '../src/i18n/ko.ts';
 import { googleMapsPin, googleMapsUrl, postLocationUrl, postMapBody } from '../src/lib/post-maps.ts';
-import { postInfoParts } from '../src/lib/post-info.ts';
+import { englishTail, isPastEvent, postInfoParts } from '../src/lib/post-info.ts';
 import { dealLabel } from '../src/lib/listing-details.ts';
 import { parseMeetupSections } from '../src/lib/meetup-sections.ts';
 import { translationSource } from './test-meetup-source-imports.mjs';
@@ -80,7 +80,7 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     '../../supabase/functions/_shared/post-links': postLinks,
     '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
     '@/components/post-attachment-link': { PostAttachmentLink: 'PostAttachmentLink' },
-    '@/lib/post-info': { postInfoParts }, '@/lib/listing-details': { dealLabel }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' },
+    '@/lib/post-info': { postInfoParts, isPastEvent, englishTail }, '@/lib/city-places': { getCityPlaces: () => [] }, '@/lib/webshops': { loadCityBusinessLinks: async () => ({}) }, '@/lib/listing-details': { dealLabel }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' },
     '@/lib/mock': { CITIES: [] },
     '@/components/post-pin-map': { PostPinMap: 'PostPinMap' },
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' },
@@ -283,7 +283,7 @@ test('Today card: author row, short text, place card, swipeable photos, then lik
     const menu = nodes(card.render(props)).find(node => node.type === 'MeetupManageSheet');
     assert.equal(menu.props.title, '글 메뉴');
     assert.deepEqual(Array.from(menu.props.actions, action => `${action.analyticsId} ${action.label}`),
-      ['post.manage.hide 이 글 숨기기', `components_post-card.pressable.5 ${t.report.title('하늘')}`], 'hide sits above report on someone else\'s post');
+      ['post.manage.hide 이 글 숨기기', `components_post-card.pressable.5 ${t.report.postTitle}`], 'hide sits above report on someone else\'s post');
     assert.ok(card.feedback.includes('selection'));
   } finally { feedPlace = null; }
 });
@@ -643,6 +643,6 @@ test('글 상세 ··· 도 피드 카드처럼 이 글 숨기기 → 신고 메
   const tree = nodes(card.render(props));
   assert.equal(tree.find(node => node.type === 'ReportSheet').props.visible, false, 'the report form waits until 신고 is chosen');
   const menu = tree.find(node => node.type === 'MeetupManageSheet');
-  assert.deepEqual(Array.from(menu.props.actions, action => action.label), ['이 글 숨기기', t.report.title('하늘')]);
+  assert.deepEqual(Array.from(menu.props.actions, action => action.label), ['이 글 숨기기', t.report.postTitle]);
   assert.ok(card.feedback.includes('selection'));
 });

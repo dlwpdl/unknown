@@ -15,7 +15,7 @@ import { hideContent, subscribeVisibility, visibilityRevision } from '../src/lib
 import { count, t } from '../src/i18n/ko.ts';
 import { uniqueHashtags } from '../src/lib/hashtags.ts';
 import { postLocationUrl, postMapBody } from '../src/lib/post-maps.ts';
-import { postInfoParts } from '../src/lib/post-info.ts';
+import { englishTail, isPastEvent, postInfoParts } from '../src/lib/post-info.ts';
 import { dealLabel, stripListingLead } from '../src/lib/listing-details.ts';
 import { parseMeetupSections } from '../src/lib/meetup-sections.ts';
 import { translationSource } from './test-meetup-source-imports.mjs';
@@ -98,7 +98,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/lib/post-reactions': postReactions,
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
     '../../supabase/functions/_shared/post-links': postLinks, '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
-    '@/components/post-attachment-link': { PostAttachmentLink: 'PostAttachmentLink' }, '@/lib/post-info': { postInfoParts }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' }, '@/lib/mock': { CITIES: [] },
+    '@/components/post-attachment-link': { PostAttachmentLink: 'PostAttachmentLink' }, '@/lib/post-info': { postInfoParts, isPastEvent, englishTail }, '@/lib/city-places': { getCityPlaces: () => [] }, '@/lib/webshops': { loadCityBusinessLinks: async () => ({}) }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' }, '@/lib/mock': { CITIES: [] },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/components/drag-sheet': { DragSheet: 'DragSheet' },
     '@/components/meetup-members': { MeetupWhoCard: 'MeetupWhoCard', MeetupInviteHost: 'MeetupInviteHost', MeetupInviteNote: 'MeetupInviteNote', useMeetupRoster: () => ({ roster: null, error: '', reload() {} }) },
@@ -619,4 +619,25 @@ test('a detail card names a listing by its own kind, so a job or rent post never
     const harness = mount('../src/components/post-card.tsx', 'PostCard', {}, { post: item, flat: true, postDetail: true }); context.after(() => harness.unmount());
     assert.equal([control(harness, 'components_post-card.pressable.2').props.children[0].props.children].flat().join(''), label);
   }
+});
+
+test('a business post detail opens the business on the Gling map and folds its English copy (QA I-post-06)', async context => {
+  const korean = '지모코에서 점심 2인 세트를 시작했어요. 메인 두 개와 음료 두 잔이 함께 나와요.';
+  const english = 'Jimoco now has a lunch set for two. It comes with two mains and two drinks.';
+  const item = { ...post(), room: undefined, tag: { slug: 'business', label: '비즈니스' }, business: { id: 'merchant-1', name: '지모코' }, cityId: 'vancouver',
+    body: `${korean}\n\n${english}\n\n📍 1046A Austin Ave, Coquitlam`, author: { id: 'other', nickname: '지모코' }, likes: 0, saves: 0, comments: 0, createdAtLabel: '방금' };
+  const place = { id: 'osm:node:7', cityId: 'vancouver', name: 'Jimoco' };
+  const harness = mount('../src/components/post-card.tsx', 'PostCard', { imports: {
+    '@/lib/webshops': { loadCityBusinessLinks: async (_client, cityId) => cityId === 'vancouver' ? { 'osm:node:7': 'merchant-1' } : {} },
+    '@/lib/city-places': { getCityPlaces: () => [place] },
+  } }, { post: item, flat: true, postDetail: true }); context.after(() => harness.unmount());
+  assert.ok(harness.nodes().some(node => node.type === 'PostMapLink'), 'the address link shows until the place is known');
+  await harness.settle();
+  assert.equal(harness.nodes().find(node => node.type === 'PostPlaceCard')?.props.place, place);
+  assert.ok(!harness.nodes().some(node => node.type === 'PostMapLink'));
+  const body = () => harness.nodes().find(node => Array.isArray(node.props?.paragraphs)).props.paragraphs;
+  assert.deepEqual(body(), [korean]);
+  const toggle = harness.nodes().find(node => node.props?.analyticsId === 'components_post-card.pressable.1' && node.props.accessibilityState);
+  toggle.props.onPress(); harness.render();
+  assert.deepEqual(body(), [korean, english]);
 });

@@ -65,7 +65,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
   }, [visible, invite, asBusinessId]);
   const url = withInviteCode(buildSharedPostUrl(post.id), invite && !asBusinessId ? inviteCode : null), image = getPostImageSource(post, me.id);
   const message = useMemo(() => sharedPostMessage({ ...post, place: post.room ? null : mapPinPlace(post.cityId, postMapBody(post.body).url)?.name }, asBusinessId ? null : inviteCode), [post, inviteCode, asBusinessId]);
-  const label = invite ? me.id === post.author.id ? '내 모임에 초대하기' : '모임 같이 가요' : post.tag.slug === 'festival' ? '페스티벌 같이 가요' : '게시물 공유';
+  const label = invite ? me.id === post.author.id ? '내 모임에 초대하기' : '모임 같이 가요' : post.tag.slug === 'festival' ? '페스티벌 같이 가요' : '글 공유';
   const control = [styles.button, clay && styles.buttonClay, { backgroundColor: clay ? 'transparent' : theme.backgroundElement, borderColor: clay ? 'transparent' : theme.line }];
   const requesting = busy || Boolean(loading && inbox);
   const dismiss = () => { if (!pending.current) { play('selection'); onClose(); } };
@@ -156,7 +156,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
         </ScrollView>
         <View style={[styles.footer, { borderColor: theme.line }]}>
           {!!notice && <ThemedText type="small" accessibilityLiveRegion="polite" themeColor="textSecondary">{typeof notice === 'string' ? tr(notice) : tr('{0} 대화로 보냈어요.', notice.conversationTitle)}</ThemedText>}
-          <ThemedText type="small" themeColor="textSecondary">{tr(invite ? tr("초대받은 사람도 로그인 후 참여 신청과 호스트 승인이 필요해요. 상세 집결 정보는 승인된 모임 대화에서만 확인해요.") : tr("글링에서 로그인 후 전체 내용을 확인해요."))}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{tr(invite ? tr("초대받은 사람도 로그인 후 참여 신청과 호스트 승인이 필요해요. 상세 집결 정보는 승인된 모임 대화에서만 확인해요.") : tr("받는 사람은 글링에 로그인하면 전체 글을 볼 수 있어요."))}</ThemedText>
           <Pressable analyticsId="post.share.external" accessibilityRole="button" accessibilityLabel={tr(invite ? tr("초대 링크 공유") : tr("다른 앱으로 공유"))} disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => void external()}
             style={[styles.button, styles.external, clay && styles.externalClay, { backgroundColor: clay ? 'transparent' : theme.accent, borderColor: clay ? 'transparent' : theme.accent }]}>{clay && <ClayPillFill kind="cta" />}<SymbolView name={{ ios: 'square.and.arrow.up', android: 'ios_share', web: 'ios_share' }} size={20} tintColor={theme.accentInk} accessible={false} /><ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr(invite ? tr("초대 링크 공유") : tr("다른 앱으로 공유"))}</ThemedText></Pressable>
           {Platform.OS === 'web' && <Pressable analyticsId="post.share.copy" accessibilityRole="button" disabled={requesting} accessibilityState={{ disabled: requesting }} onPress={() => void external(true)} style={control}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold">{tr("링크 복사")}</ThemedText></Pressable>}

@@ -10,7 +10,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { animateLayout } from '@/components/disclosure';
-import { PopIn } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
 import { Spacing } from '@/constants/theme';
@@ -88,39 +87,35 @@ export function StartGuide({ cityName, cityPicks = 0, onPickCity, onOpenMeetups 
       icon: { ios: 'person.2', android: 'groups', web: 'groups' }, run: () => { onOpenMeetups(); complete('meetup'); } },
   ];
 
+  // One line instead of three explained rows (QA I-home-01): the steps left are chips that run the step, done steps drop out.
+  // The step's longer description stays in its accessibility label.
+  const left = steps.filter(step => !state.done.includes(step.id));
   return (
     <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>
       {clayBox && <ClayBoxFill kind="tile" />}
       <View style={styles.head}>
-        <View style={styles.flex}>
-          <ThemedText accessibilityRole="header" style={Typography.section}>{tr('처음이세요? 여기서부터 시작해요')}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{tr('{0}/3 완료', state.done.length)}</ThemedText>
-        </View>
+        <ThemedText accessibilityRole="header" style={Typography.section}>{tr('시작하기')}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.flex}>{tr('{0}/3 완료', state.done.length)}</ThemedText>
+        <Pressable analyticsId="start-guide.hide" accessibilityRole="button" accessibilityLabel={tr('더 이상 안 보기')} accessibilityHint={tr('설정에서 다시 볼 수 있어요')}
+          onPress={() => { play('selection'); save({ ...state, hidden: true }); }}
+          style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
+          <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={IconSize.inline} tintColor={theme.textSecondary} />
+        </Pressable>
       </View>
-      {steps.map(step => {
-        const done = state.done.includes(step.id);
-        return (
-          <Pressable key={step.id} analyticsId={`start-guide.${step.id}`} accessibilityRole="button" accessibilityState={{ checked: done }}
-            accessibilityLabel={`${step.title}. ${step.body}`}
+      <View accessible={false} style={[styles.track, { backgroundColor: theme.backgroundElement }]}>
+        <View style={[styles.fill, { width: `${(state.done.length / steps.length) * 100}%`, backgroundColor: theme.accent }]} />
+      </View>
+      <View style={styles.chips}>
+        {left.map(step => (
+          <Pressable key={step.id} analyticsId={`start-guide.${step.id}`} accessibilityRole="button" accessibilityLabel={`${step.title}. ${step.body}`}
             onPress={() => { play('selection'); step.run(); }}
-            style={({ pressed }) => [styles.step, { borderColor: theme.line }, pressed && { backgroundColor: theme.backgroundSelected }]}>
-            <View style={[styles.stepIcon, { backgroundColor: done ? theme.accent : theme.backgroundElement }]}>
-              {done ? <PopIn><SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={IconSize.inline} tintColor={theme.accentInk} /></PopIn>
-                : <SymbolView name={step.icon} size={IconSize.inline} tintColor={theme.accent} />}
-            </View>
-            <View style={styles.flex}>
-              <ThemedText type="smallBold" style={done && { color: theme.textSecondary }}>{step.title}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">{step.body}</ThemedText>
-            </View>
-            <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={IconSize.chevron} tintColor={theme.textSecondary} />
+            style={({ pressed }) => [ControlStyles.pill, styles.chip, clay && styles.clayChip, controlPresentation(theme, { pressed, clay }).container]}>
+            {clay && <ClayPillFill kind="white" />}
+            <SymbolView name={step.icon} size={IconSize.inline} tintColor={theme.accent} />
+            <ThemedText type="label">{step.title}</ThemedText>
           </Pressable>
-        );
-      })}
-      <Pressable analyticsId="start-guide.hide" accessibilityRole="button" accessibilityHint={tr('설정에서 다시 볼 수 있어요')}
-        onPress={() => { play('selection'); save({ ...state, hidden: true }); }}
-        style={({ pressed }) => [ControlStyles.pill, styles.hide, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
-        <ThemedText type="small" themeColor="textSecondary">{tr('더 이상 안 보기 · 설정에서 다시 볼 수 있어요')}</ThemedText>
-      </Pressable>
+        ))}
+      </View>
 
       <Modal visible={touring} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { play('selection'); setTouring(false); complete('tour'); }}>
         <SafeAreaView style={[styles.flex, { backgroundColor: theme.background }]}>
@@ -155,10 +150,13 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   clayCard: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' },
   card: { borderWidth: 1, borderRadius: 20, padding: Spacing.three, gap: Spacing.two, marginTop: Spacing.three },
-  head: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two, marginBottom: Spacing.one },
-  step: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: Spacing.three, minHeight: 44 },
+  head: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginRight: -Spacing.two },
+  track: { height: 4, borderRadius: 2, overflow: 'hidden' },
+  fill: { height: 4, borderRadius: 2 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  chip: { flexDirection: 'row', gap: Spacing.one + Spacing.half, borderWidth: 1 },
+  clayChip: { overflow: 'visible', paddingHorizontal: 18 },
   stepIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  hide: { alignSelf: 'center', borderWidth: 0 },
   tour: { padding: Spacing.four, gap: Spacing.three },
   tourRow: { flexDirection: 'row', gap: Spacing.three, alignItems: 'flex-start' },
   tourDone: { marginTop: Spacing.three, borderWidth: 1 },

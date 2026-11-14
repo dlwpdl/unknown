@@ -11,7 +11,7 @@ import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
-type StateKind = 'empty' | 'error' | 'blocked' | 'update' | 'pending' | 'success';
+type StateKind = 'empty' | 'error' | 'blocked' | 'update' | 'pending' | 'success' | 'search';
 
 // 빈 화면·오류·권한 없음이 화면마다 다른 모양이면 사용자는 "고장"과 "비어 있음"을 구분하지 못한다.
 const glyphs = {
@@ -21,6 +21,8 @@ const glyphs = {
   update: { ios: 'arrow.triangle.2.circlepath', android: 'update', web: 'update' },
   pending: { ios: 'clock', android: 'schedule', web: 'schedule' },
   success: { ios: 'checkmark.circle', android: 'check_circle', web: 'check_circle' },
+  // A search screen before anything is typed: a magnifier, not an empty inbox (QA I-search-01).
+  search: { ios: 'magnifyingglass', android: 'search', web: 'search' },
 } as const;
 
 const marks = {
@@ -54,7 +56,8 @@ export function StateCard({ kind = 'empty', title, body, actionLabel, onAction, 
   </View>;
   return <View style={[styles.card, clayBox ? styles.clayCard : [Depth.card, { borderColor: theme.line, backgroundColor: theme.card }]]}>
     {clayBox && <ClayBoxFill kind="tile" />}
-    {clay && kind === 'empty' ? <ClayIcon clay="empty" claySize={60} size={60} /> : <View style={[styles.glyph, { backgroundColor: theme.backgroundElement }]}>
+    {/* The glyph is decoration; a screen reader reads the title, not the icon's name. */}
+    {clay && kind === 'empty' ? <ClayIcon clay="empty" claySize={60} size={60} /> : <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.glyph, { backgroundColor: theme.backgroundElement }]}>
       <SymbolView name={glyphs[kind]} size={22} tintColor={kind === 'error' ? theme.accent : theme.textSecondary} />
     </View>}
     <ThemedText type="smallBold" style={styles.title}>{title}</ThemedText>
@@ -65,6 +68,8 @@ export function StateCard({ kind = 'empty', title, body, actionLabel, onAction, 
       {clay && <ClayPillFill kind="cta" />}
       <ThemedText type="smallBold" style={[Typography.menu, { color: theme.accentInk }]}>{actionLabel}</ThemedText>
     </Pressable>}
+    {/* A second, quieter way on (뒤로 가기, 전체 보기) sits under the main action. */}
+    {children}
   </View>;
 }
 

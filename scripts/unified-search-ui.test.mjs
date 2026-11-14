@@ -12,6 +12,7 @@ const settle = () => new Promise(setImmediate);
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree,...Object.values(tree).flatMap(value=>Array.isArray(value)?value.flatMap(nodes):nodes(value))];
 const text = tree => tree==null||typeof tree==='boolean'?'':typeof tree==='string'||typeof tree==='number'?String(tree):Array.isArray(tree)?tree.map(text).join(' '):text(tree.props?.children);
 const control = (tree,id) => nodes(tree).find(node=>node.props?.testID===id||node.props?.analyticsId===id);
+const catalog=[{id:'osm:node:9',cityId:'vancouver',name:'Café Lumière',latitude:49.28,longitude:-123.12}];
 function screen({load=async()=>page(),initialQuery='',initialKind='all'}={}) {
   const file=new URL('../src/components/unified-search.tsx',import.meta.url);assert(existsSync(file),'Unified search UI is not implemented');
   const slots=[],cleanups=[],passive=[],timers=[],calls=[],routes=[],feedback=[];
@@ -34,6 +35,8 @@ function screen({load=async()=>page(),initialQuery='',initialKind='all'}={}) {
     '@/lib/auth':{useAuth:()=>({isAuthed:!!account,isAuthLoading:loading,me:{id:account??'guest'}})},'@/lib/mock':{CITIES:[city,{id:'toronto',name:'토론토',englishName:'Toronto'}]},
     '@/lib/supabase':{supabase:{}},'@/lib/interaction-feedback':{useInteractionFeedback:()=>({play:value=>feedback.push(value)})},
     '@/lib/unified-search':{loadUnifiedSearch:(_client,options)=>{calls.push(options);return load(options);}},
+    '@/components/city-place-photo':{CityPlacePhoto:'CityPlacePhoto'},'@/lib/city-places':{getCityPlaces:cityId=>cityId===city.id?catalog:[]},
+    '@/lib/neighborhoods':{nearestNeighborhood:(cityId,pin)=>cityId==='vancouver'&&pin.latitude===49.28?{nameKo:'개스타운'}:null,neighborhoodName:area=>area.nameKo},
   };
   const exports={},code=ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
   vm.runInNewContext(code,{exports,AbortController,Symbol,Map,Set,setTimeout:fn=>{const timer={fn,active:true};timers.push(timer);return timer;},clearTimeout:timer=>{timer.active=false;},require:name=>{assert(name in modules,name);return modules[name];}});
@@ -150,4 +153,29 @@ test('result type chips sit on one sideways-scrolling line instead of wrapping (
   assert.equal(row.props.style.flexGrow,0,'the row keeps its own height beside the result list');
   assert.equal(row.props.contentContainerStyle.flexWrap,undefined);
   assert.deepEqual(nodes(row).filter(node=>node.props?.analyticsId?.startsWith('search.kind.')).map(node=>node.props.analyticsId),['search.kind.all','search.kind.business','search.kind.place','search.kind.person','search.kind.post','search.kind.meetup']);
+});
+
+test('rows show what they have: a place photo with its neighbourhood, a person initial, and more only for a full group (QA I-search-02·04)',async()=>{
+  const place=item('place','osm:node:9',{placeId:'osm:node:9',title:'Café Lumière',subtitle:'103-42 Sixth Street, Vancouver, BC, Canada'});
+  const people=[item('person',ids[1],{title:'포근한수달',subtitle:''}),item('person',ids[2],{title:'하늘',subtitle:''})];
+  const app=screen({initialQuery:'카페',load:async()=>page([place,...people])});app.render();await app.flush();const view=app.render();
+  const rows=view.rows.flatMap(nodes);
+  assert.ok(rows.some(node=>node.type==='CityPlacePhoto'&&node.props.place===catalog[0]),'the catalog photo, not a grey pin');
+  assert.match(text(view.rows),/개스타운 · 103-42 Sixth Street/);
+  assert.ok(rows.some(node=>node.props?.children==='포'),'a person without a photo gets their first letter');
+  assert.equal(rows.filter(node=>node.props?.analyticsId==='search.group.more').length,0,'two people and one place: nothing more to see');
+  app.unmount();
+});
+
+test('no results offers the wider search as buttons; before typing it shows a search glyph (QA I-search-01·03)',async()=>{
+  const app=screen({initialQuery:'없는말',initialKind:'business',load:async()=>page([])});app.render();await app.flush();let view=app.render();
+  const state=nodes(view.empty).find(node=>node.type==='StateCard');
+  assert.equal(state.props.analyticsId,'search.scope.canada');assert.equal(state.props.actionLabel,'캐나다 전체에서 찾기');
+  state.props.onAction();app.render();await app.flush();assert.equal(app.calls.at(-1).cityId,null);
+  view=app.render();const kinds=nodes(view.empty).find(node=>node.props?.analyticsId==='search.kind.all');
+  assert.equal(nodes(view.empty).find(node=>node.type==='StateCard').props.actionLabel,undefined,'already Canada-wide');
+  kinds.props.onPress();app.render();await app.flush();assert.equal(app.calls.at(-1).kind,'all');
+  app.unmount();
+  const blank=screen();const idle=nodes(blank.render().empty).find(node=>node.type==='StateCard');
+  assert.equal(idle.props.kind,'search');assert.doesNotMatch(idle.props.title,/찾고 계세요/);blank.unmount();
 });

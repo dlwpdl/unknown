@@ -190,7 +190,12 @@ test('city picker searches Canadian cities and keeps upcoming cities and the US 
     nodes(render()).find(node => node.type === 'TextInput').props.onChangeText(search);
     assert.deepEqual(Array.from(list().sections).flatMap(section => section.data.map(city => city.id)), ids);
   }
-  assert.equal(text(list().ListEmptyComponent), '일치하는 도시가 없어요.');
+  assert.equal(text(list().ListEmptyComponent), '일치하는 도시가 없어요.밴쿠버토론토몬트리올검색 지우기', 'no match offers the open cities and clearing the search (QA I-home-02)');
+  const emptyCity = nodes(list().ListEmptyComponent).find(node => node.props?.accessibilityLabel === '토론토');
+  await emptyCity.props.onPress();
+  assert.equal(selected, 'toronto');
+  assert.equal(closed, 1);
+  selected = null; closed = 0;
   nodes(render()).find(node => node.props?.accessibilityLabel === '도시 검색 지우기').props.onPress();
   assert.equal(query, '');
   assert.equal(cityRow(renderCityRow(list(), CITIES[0])).props.accessibilityState.selected, true);
@@ -351,4 +356,28 @@ test('a sideways row fades only an end with more chips past it (QA new-left-fade
   assert.deepEqual(scrollEdges(510, 390, 900), { start: true, end: false }, 'at the end the last chip stays clear');
   assert.deepEqual(scrollEdges(0, 390, 300), { start: false, end: false }, 'a row that fits fades nowhere');
   assert.deepEqual(scrollEdges(0.5, 390, 390.6), { start: false, end: false }, 'sub-pixel rounding is no scroll');
+});
+
+test('listing cards drop what they do not have: an empty pay line, a photo-less thumbnail, a repeated title (QA I-home-08·09)', async () => {
+  const details = await import('../src/lib/listing-details.ts');
+  const { ListingCard } = load('listing-card', {
+    react: { useState: value => [value, () => {}] },
+    'expo-image': { Image: 'Image' },
+    '@/components/post-pin-map': { PostPinMap: 'PostPinMap' },
+    '@/constants/design-system': { ControlMotion: { pressedOpacity: 0.7 }, IconSize: { toolbar: 21, inline: 16 }, Typography: { menu: {} } },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: 'me' } }) },
+    '@/lib/feed-data': { getPostImageSource: post => post.imageUris?.[0] ? { uri: post.imageUris[0] } : null, relativeTime: () => '1시간 전' },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+    '@/lib/listing-details': details, '@/lib/mock': { CITIES }, '@/lib/neighborhoods': { findNeighborhood: () => null }, '@/lib/post-maps': { postLocationUrl: () => null },
+  });
+  const base = { id: 'p', cityId: 'vancouver', title: '버나비 스시 롤맨 구인', body: '', comments: 0, createdAtLabel: '1시간 전', listingStatus: 'open', tag: { slug: 'jobs' } };
+  const job = ListingCard({ post: { ...base, listingDetails: { type: 'jobs', deal: 'hiring' } }, onPress() {} });
+  assert.equal(nodes(job).filter(n => n.props?.themeColor === 'accent' && n.props?.type === 'smallBold').length, 0, 'no empty accent line');
+  const used = { ...base, title: '소파 팔아요', tag: { slug: 'used' }, listingDetails: { type: 'used', deal: 'sell' }, price: 40 };
+  assert.ok(!nodes(ListingCard({ post: used, onPress() {} })).some(n => n.type === 'SymbolView'), 'no empty box in the row');
+  const big = ListingCard({ post: used, onPress() {}, variant: 'big' });
+  assert.equal(big.props.analyticsId, 'listing.card.used');
+  assert.ok(!nodes(big).some(n => n.props?.children === '사진 없는 글'), 'a big card without a photo falls back to the row');
+  const tile = ListingCard({ post: used, onPress() {}, variant: 'tile' });
+  assert.equal(nodes(tile).filter(n => n.props?.children === '소파 팔아요').length, 1, 'the title shows once');
 });

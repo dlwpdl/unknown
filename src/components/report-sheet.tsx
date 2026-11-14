@@ -41,6 +41,9 @@ export function ReportSheet({
   onClose: () => void;
 }) {
   const { tr, t } = useLanguage();
+  // A post or comment report names what is reported, with its author under it (QA I-post-04).
+  const byline = targetType === 'post' || targetType === 'comment';
+  const title = targetType === 'post' ? t.report.postTitle : targetType === 'comment' ? t.report.commentTitle : t.report.title(reportedNickname);
   const theme = useTheme();
   const clay = useClay();
   const insets = useSafeAreaInsets();
@@ -134,11 +137,12 @@ export function ReportSheet({
         />
         <Animated.View
           accessibilityViewIsModal
-          accessibilityLabel={t.report.title(reportedNickname)}
+          accessibilityLabel={title}
           style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.three), transform: [{ translateY: sheetOffset }] }]}>
           <View style={styles.header}>
             <View style={styles.copy}>
-              <ThemedText type="subtitle">{t.report.title(reportedNickname)}</ThemedText>
+              <ThemedText type="subtitle">{title}</ThemedText>
+              {byline && <ThemedText type="small" themeColor="textSecondary">{t.report.author(reportedNickname)}</ThemedText>}
               <ThemedText type="small" themeColor="textSecondary">{t.report.body}</ThemedText>
             </View>
             {/* The same X as every other sheet (QA E32-2). */}

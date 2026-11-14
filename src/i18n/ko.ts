@@ -5,6 +5,13 @@
 export const count = (value: number) =>
   `${Math.trunc(value) || 0}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
+/** A Korean word with 로/으로 after it: 예일타운으로, 버나비로 (ㄹ 받침 takes 로). A non-Korean ending keeps (으)로. */
+export const withRo = (word: string) => {
+  const syllable = word.trim().charCodeAt(word.trim().length - 1) - 0xac00;
+  if (!(syllable >= 0 && syllable <= 11171)) return `${word}(으)로`;
+  return `${word}${syllable % 28 === 0 || syllable % 28 === 8 ? '로' : '으로'}`;
+};
+
 export const t = {
   appName: '글링',
 
@@ -59,7 +66,7 @@ export const t = {
     cityVancouver: '밴쿠버',
     cityPickerTitle: '지역 선택',
     cityPickerBody: '선호하는 지역을 선택해 주세요.',
-    cityPickerNote: '로그인한 회원은 선택한 지역이 프로필에 저장됩니다. 기기 위치 권한은 필요하지 않아요.',
+    cityPickerNote: '목록에서 직접 고르면 위치 권한이 없어도 돼요. 로그인했다면 고른 도시가 프로필에 저장돼요.',
     citySoon: '준비 중',
     citySelected: '선택됨',
     citySearch: '도시·주 검색',
@@ -105,8 +112,8 @@ export const t = {
     postCityNote: '이 글을 나눌 도시를 골라주세요. 프로필의 선호 지역은 그대로 유지돼요.',
     category: '카테고리',
     bodyLabel: '본문',
-    placeAdd: '위치 공유',
-    placeChange: '위치 변경',
+    placeAdd: '장소 붙이기',
+    placeChange: '장소 바꾸기',
     placeRemove: '위치 삭제',
     placePlaceholder: '장소명·주소 또는 Google Maps 링크',
     placeNote: '이 장소가 글과 함께 공유돼요. 추가하기 전에 지도에서 위치를 확인해 주세요.',
@@ -116,7 +123,7 @@ export const t = {
     bodyTooLong: '지도 링크를 포함한 본문은 4,000자까지 올릴 수 있어요. 내용을 조금 줄여주세요.',
     hashtags: '해시태그',
     meetupLimitNote: '모임 자리는 멤버십 한도에 따라 사용해요',
-    listingLimitNote: '살아있는 구해요·팔아요 글 수에 한도가 있어요',
+    listingLimitNote: '한 번에 올려 둘 수 있는 글 수에 한도가 있어요',
     pickTag: '어떤 이야기인가요?',
     titlePlaceholder: '제목',
     hashtagPlaceholder: '해시태그 최대 5개 (예: 워홀 핫딜)',
@@ -158,18 +165,18 @@ export const t = {
     kindListingHint: '구인구직, 렌트·룸메, 중고거래, 차량',
     pricePlaceholder: '금액 (선택, CAD)',
     listingNote: '구해요·팔아요 글은 살아있는 글 수에 따라 제한돼요. 14일 뒤 자동 마감되고, 베이직은 48시간·플러스는 36시간·프로는 30시간·프리미엄은 24시간 간격으로 끌어올릴 수 있어요. 계정과 같은 글에 함께 적용돼요. 기존 구독 혜택은 유지돼요.',
-    listingRemaining: (used: number, max: number) => `살아있는 글 ${used} / ${max}`,
+    listingRemaining: (used: number, max: number) => `지금 올려 둔 글 ${used}/${max}개`,
     listingBodyPlaceholder: '구하는 것이나 내놓는 것을 자세히 적어주세요',
     bodyPlaceholder: {
-      life: '오늘의 일상이나 궁금한 이야기를 나눠보세요',
-      festival: '가보고 싶은 페스티벌이나 공연 이야기를 나눠보세요',
+      life: '오늘 있었던 일이나 궁금한 것, 뭐든 좋아요',
+      festival: '가 보고 싶은 공연이나 행사를 알려주세요',
       food: '숨겨둔 맛집을 소개해주세요',
-      travel: '여행지나 나들이 경험을 나눠주세요',
-      shopping: '쇼핑 정보나 핫딜, 중고 이야기를 나눠주세요',
-      settlement: '이민·유학·워홀 정착 경험을 나눠주세요',
-      housing: '부동산·렌트·룸메 이야기를 나눠주세요',
-      education: '학교·학원·어학 정보를 나눠주세요',
-      business: '비즈니스 소개나 창업·사업 정보를 나눠주세요',
+      travel: '다녀온 근교나 여행지 후기를 남겨주세요',
+      shopping: '세일이나 핫딜 소식을 알려주세요',
+      settlement: '이민·유학·워홀로 와서 정착한 이야기를 적어주세요',
+      housing: '렌트·룸메 정보나 집 구한 이야기를 적어주세요',
+      education: '학교·학원·어학 정보를 알려주세요',
+      business: '비즈니스 소개나 창업 이야기를 들려주세요',
       meetup: '어떤 모임인지, 몇 명이 좋을지 알려주세요',
       jobs: '모집 조건·근무 지역·급여나 찾는 일을 적어주세요',
       used: '물건 상태·금액·거래 지역을 적어주세요',
@@ -420,21 +427,24 @@ export const t = {
 
   report: {
     title: (nickname: string) => `${nickname} 신고하기`,
-    body: '운영팀이 내용과 관련 활동을 함께 확인합니다.',
+    body: '운영팀이 내용과 관련 활동을 함께 확인해요.',
     close: '닫기',
     details: '상세 내용을 알려주세요 (선택)',
     submit: '신고 접수',
     submitting: '접수 중…',
     doneTitle: '신고가 접수됐어요',
-    doneBody: '운영팀에 신고를 전달했어요. 신고한 콘텐츠는 내 화면에서 숨겨져요. 위반이 확인되면 전체 공개를 중단합니다.',
+    doneBody: '운영팀에 신고를 전달했어요. 신고한 콘텐츠는 내 화면에서 숨겨져요. 위반이 확인되면 다른 회원에게도 보이지 않게 해요.',
     doneBlocked: '운영팀에 신고를 전달하고 차단했어요. 이 사용자의 콘텐츠는 내 화면에 표시되지 않아요.',
     doneButBlockFailed: '신고는 접수됐지만 차단은 완료하지 못했어요. 잠시 후 다시 시도해주세요.',
     errorTitle: '신고하지 못했어요',
     errorBody: '이미 신고했거나 연결에 문제가 있어요. 잠시 후 다시 시도해주세요.',
     short: '신고',
+    postTitle: '이 글 신고하기',
+    commentTitle: '이 댓글 신고하기',
+    author: (nickname: string) => `작성자 ${nickname}`,
     userAction: '신고 또는 차단',
     block: (nickname: string) => `${nickname} 차단하기`,
-    blockBody: '이 사용자의 글·댓글·메시지를 내 화면에서 숨기고 상호작용을 막아요. 운영팀에 전달되며 원본 기록은 보존 정책에 따라 보관됩니다.',
+    blockBody: '이 사용자의 글·댓글·메시지를 내 화면에서 숨기고 상호작용을 막아요. 운영팀에도 전달되고, 원본 기록은 보존 정책에 따라 보관돼요.',
     reasons: {
       spam: '스팸·도배',
       harassment: '괴롭힘·위협',

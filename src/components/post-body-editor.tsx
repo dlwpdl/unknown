@@ -22,7 +22,7 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
   const theme = useTheme(), clay = useClay();
   const { play } = useInteractionFeedback();
   const insets = useSafeAreaInsets();
-  const [stage, setStage] = useState<'choices' | 'sns' | 'instagram' | 'url' | 'location' | null>(null);
+  const [stage, setStage] = useState<'choices' | 'instagram' | 'url' | 'location' | null>(null);
   const [input, setInput] = useState('');
   const inputRef = useRef<TextInputInstance>(null);
   const mapped = postMapBody(value, { preserveWhitespace: true });
@@ -102,18 +102,18 @@ export function PostBodyEditor({ value = '', onChangeText, editable = true, maxL
       <KeyboardAvoidingView behavior="padding" style={styles.overlay}>
         <Pressable analyticsId="post.attachment.backdrop" accessibilityRole="button" accessibilityLabel={tr("첨부 취소")} onPress={close} style={StyleSheet.absoluteFill} />
         <View accessibilityViewIsModal style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(16, insets.bottom) }]}>
-          <View style={styles.header}>
-            {stage === 'choices' ? <View style={styles.iconButton} /> : <Pressable analyticsId="post.attachment.back" accessibilityRole="button" accessibilityLabel={tr("이전 단계")}
-              onPress={() => choose(stage === 'instagram' ? 'sns' : 'choices')} style={styles.iconButton}>{clay ? <ClayIcon clay="chevron_left" size={20} /> : <ThemedText>‹</ThemedText>}</Pressable>}
-            <ThemedText type="smallBold">{stage === 'instagram' ? tr("Instagram 프로필") : stage === 'url' ? tr("URL 링크") : stage === 'sns' ? 'SNS' : tr("첨부")}</ThemedText>
-            <Pressable analyticsId="post.attachment.close" accessibilityRole="button" accessibilityLabel={tr("첨부 창 닫기")} onPress={close} style={styles.iconButton}>{clay ? <ClayIcon clay="close" size={20} /> : <ThemedText>×</ThemedText>}</Pressable>
+          {/* The same head as the writer's 더보기 sheet: title on the left, X on the right, a back arrow inside a step (QA I-compose-09). */}
+          <View style={[styles.header, { borderBottomColor: theme.line }]}>
+            {stage !== 'choices' && <Pressable analyticsId="post.attachment.back" accessibilityRole="button" accessibilityLabel={tr("이전 단계")}
+              onPress={() => choose('choices')} style={styles.iconButton}><ClayIcon clay="chevron_left" name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={20} tintColor={theme.textSecondary} /></Pressable>}
+            <ThemedText type="smallBold" accessibilityRole="header" style={styles.title}>{stage === 'instagram' ? tr("Instagram 프로필") : stage === 'url' ? tr("URL 링크") : tr("첨부")}</ThemedText>
+            <Pressable analyticsId="post.attachment.close" accessibilityRole="button" accessibilityLabel={tr("첨부 창 닫기")} onPress={close} style={styles.iconButton}><ClayIcon clay="close" name={{ ios: 'xmark', android: 'close', web: 'close' }} size={20} tintColor={theme.textSecondary} /></Pressable>
           </View>
           <ScrollView analyticsId="post.attachment.sheet" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-            {stage === 'choices' && <>
-              <Pressable analyticsId="post.attachment.url" accessibilityRole="button" accessibilityLabel={tr("URL 링크")} onPress={() => choose('url')} style={[styles.choice, clay && styles.choiceClay]}>{clay && <ClayPillFill kind="white" />}<ThemedText>{tr("URL 링크")}</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText></Pressable>
-              <Pressable analyticsId="post.attachment.sns" accessibilityRole="button" accessibilityLabel="SNS" onPress={() => choose('sns')} style={[styles.choice, clay && styles.choiceClay]}>{clay && <ClayPillFill kind="white" />}<ThemedText>SNS</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText></Pressable>
-            </>}
-            {stage === 'sns' && <Pressable analyticsId="post.attachment.instagram" accessibilityRole="button" accessibilityLabel="Instagram" onPress={() => choose('instagram')} style={[styles.choice, clay && styles.choiceClay]}>{clay && <ClayPillFill kind="white" />}<ThemedText>Instagram</ThemedText><ThemedText themeColor="textSecondary">›</ThemedText></Pressable>}
+            {/* Both kinds of link are one tap away; there was only Instagram behind an SNS step. */}
+            {stage === 'choices' && ([['url', 'post.attachment.url', tr("URL 링크")], ['instagram', 'post.attachment.instagram', tr("Instagram 프로필")]] as const).map(([next, id, label]) =>
+              <Pressable key={next} analyticsId={id} accessibilityRole="button" accessibilityLabel={label} onPress={() => choose(next)} style={[styles.choice, clay && styles.choiceClay]}>{clay && <ClayPillFill kind="white" />}
+                <ThemedText>{label}</ThemedText><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={14} tintColor={theme.textSecondary} /></Pressable>)}
             {(stage === 'url' || stage === 'instagram') && <>
               <ThemedText type="small" themeColor="textSecondary">{stage === 'instagram' ? tr("Instagram 프로필 주소를 넣어주세요.") : tr("첨부할 HTTPS 주소를 넣어주세요.")}</ThemedText>
               <TextInput ref={inputRef} value={input} onChangeText={setInput} onFocus={() => play('selection')}
@@ -150,7 +150,8 @@ const styles = StyleSheet.create({
   iconButton: { minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
   overlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#0009' },
   sheet: { width: '100%', maxWidth: 520, maxHeight: '85%', alignSelf: 'center', borderTopLeftRadius: 24, borderTopRightRadius: 24 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 8 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, marginBottom: 12 },
+  title: { flex: 1 },
   content: { paddingHorizontal: 20, gap: 12 },
   choice: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   urlInput: { minHeight: 48, padding: 12, borderWidth: 1, borderRadius: 12 },

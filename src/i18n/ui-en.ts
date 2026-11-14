@@ -4867,5 +4867,24 @@ export const uiEnglish: Record<string, string> = {
   "운영팀에서 받은 코드로 시작해요": "Start with a code from the Gling team",
   "참석 확인됐어요": "Attendance confirmed",
   "모임장 퀘스트를 보려면 로그인해 주세요.": "Log in to see your host quest.",
-  "퀘스트 조건에 맞지 않아서 안 셌어요": "Not counted: doesn’t meet the quest conditions"
+  "퀘스트 조건에 맞지 않아서 안 셌어요": "Not counted: doesn’t meet the quest conditions",
+  // redesign-home (2026-11-14)
+  "시작하기": "Get started",
+  "더 이상 안 보기": "Don’t show again",
+  "검색 지우기": "Clear search",
+  "지난 행사": "Past event",
+  "보고 싶은 주제를 골라요. 자주 보는 6개는 위 줄에도 있어요.": "Pick a topic to browse. The six people use most are also in the row above.",
+  "모든 주제를 한 번에": "Every topic at once",
+  "글 공유": "Share post",
+  "받는 사람은 글링에 로그인하면 전체 글을 볼 수 있어요.": "They can read the whole post once they log in to Gling.",
+  "영어로도 보기": "Show the English too",
+  "영어 접기": "Hide the English",
+  "한 줄만 적어도 돼요. 예) {0}": "One line is enough. e.g. {0}",
+  "한 줄만 적어도 돼요.": "One line is enough.",
+  "이케아 책상 팔아요 40불": "Selling an IKEA desk, $40",
+  "버나비 카페 주말 알바 구해요": "Burnaby café hiring for weekends",
+  "다운타운 원룸 렌트 내놔요 월 2100불": "Downtown studio for rent, $2,100/month",
+  "사람 구해요·일 찾아요": "Hiring · Looking for work",
+  "모임 만들기 화면으로 넘어가요": "Opens the meetup setup screen",
+  "장소 붙이기": "Add a place"
 };

@@ -7,7 +7,7 @@ import { Pressable } from '@/components/analytics-controls';
 import { ThemedText } from '@/components/themed-text';
 import { PostAdLabel } from '@/components/post-ad-label';
 import { TranslationControl } from '@/components/content-translation';
-import { ControlMotion, Typography } from '@/constants/design-system';
+import { ControlMotion, IconSize, Typography } from '@/constants/design-system';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useLanguage } from '@/hooks/use-language';
@@ -29,18 +29,22 @@ export function BusinessNewsCard({ post, onPress, onAuthor, translationVisible =
   const source = visibleTranslationSource('post', post.title, post.body, !!post.room);
   const translation = useContentTranslation('post', post.id, source, translationVisible);
   const name = post.business?.name ?? post.author.nickname;
+  // One empty-photo look in both views (QA I-home-05): the photo, else the business logo, else the store symbol.
+  const logo = post.business?.avatarUri ? { uri: post.business.avatarUri } : null;
+  const image = [photo, logo].find(item => item && !failed.includes(item.uri)) ?? null;
+  const store = <SymbolView name={{ ios: 'storefront', android: 'storefront', web: 'storefront' }} size={variant === 'tile' ? IconSize.toolbar : 22} tintColor={theme.textSecondary} />;
   // Grid tile: one tap target opens the post like the row; the profile stays one tap away in the detail.
   if (variant === 'tile') {
-    const logo = post.business?.avatarUri ? { uri: post.business.avatarUri } : null;
-    const tileImage = [photo, logo].find(item => item && !failed.includes(item.uri)) ?? null;
+    // Without any picture the box carries the title, so the grid never opens on empty boxes and the title is not said twice.
     return <Pressable analyticsId="business.news.post" accessibilityRole="button" accessibilityLabel={`${name}, ${tr('{0} 글 보기', translation.display.title)}`}
       onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.tile, { opacity: pressed ? ControlMotion.pressedOpacity : 1 }]}>
-      {tileImage ? <Image source={tileImage} contentFit="cover" style={styles.square} accessible={false} onError={() => fail(tileImage.uri)} />
-        : <View style={[styles.square, styles.fallback, { backgroundColor: theme.backgroundElement }]} accessible={false}>
-          <SymbolView name={{ ios: 'storefront', android: 'storefront', web: 'storefront' }} size={28} tintColor={theme.textSecondary} />
+      {image ? <Image source={image} contentFit="cover" style={styles.square} accessible={false} onError={() => fail(image.uri)} />
+        : <View style={[styles.square, styles.textTile, { backgroundColor: theme.backgroundElement }]} accessible={false}>
+          {store}
+          <ThemedText type="supporting" numberOfLines={fontScale > 1.2 ? 5 : 4} style={styles.tileTitle}>{translation.display.title}</ThemedText>
         </View>}
       <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>{name}</ThemedText>
-      <ThemedText type="supporting" numberOfLines={fontScale > 1.2 ? 3 : 2} style={styles.tileTitle}>{translation.display.title}</ThemedText>
+      {image && <ThemedText type="supporting" numberOfLines={fontScale > 1.2 ? 3 : 2} style={styles.tileTitle}>{translation.display.title}</ThemedText>}
     </Pressable>;
   }
   // collapsable={false}: PostZoomLink's zoom source needs one native root (post-zoom-link.tsx); without it the list rows drew empty (2026-11-08).
@@ -62,10 +66,8 @@ export function BusinessNewsCard({ post, onPress, onAuthor, translationVisible =
           <ThemedText type="small" themeColor="textSecondary">{tr('조회 {0}', post.views)}</ThemedText>
         </View>
       </View>
-      {photo && !failed.includes(photo.uri) ? <Image source={photo} contentFit="cover" style={styles.photo} accessible={false}
-        onError={() => fail(photo.uri)} /> : <View style={[styles.photo, styles.fallback, { backgroundColor: theme.backgroundElement }]} accessible={false}>
-        <SymbolView name={{ ios: 'text.bubble', android: 'article', web: 'article' }} size={22} tintColor={theme.textSecondary} />
-      </View>}
+      {image ? <Image source={image} contentFit="cover" style={styles.photo} accessible={false}
+        onError={() => fail(image.uri)} /> : <View style={[styles.photo, styles.fallback, { backgroundColor: theme.backgroundElement }]} accessible={false}>{store}</View>}
     </Pressable>
     <TranslationControl translation={translation} />
   </View>;
@@ -86,4 +88,5 @@ const styles = StyleSheet.create({
   tile: { flex: 1, gap: 4, minWidth: 0 },
   square: { width: '100%', aspectRatio: 1, borderRadius: 12 },
   tileTitle: { fontWeight: '700' },
+  textTile: { justifyContent: 'space-between', padding: Spacing.three },
 });

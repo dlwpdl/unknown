@@ -47,6 +47,12 @@ export function CityPicker({ onClose, onPicked, draft, title }: { onClose: () =>
     }
     void location.capture(true);
   };
+  const pick = async (item: City) => {
+    if ((!draft && saving) || item.state !== 'open') return;
+    play('selection');
+    if (draft) { draft.onSelect(item); onClose(); }
+    else if (await selectCity(item)) { onPicked?.(); onClose(); }
+  };
   const normalize = (value: string) => value.toLowerCase().replace(/[\s.'’-]/g, '');
   const needle = normalize(query);
   const provinceQuery = PICKER_CITIES.some(item => item.province.toLowerCase() === needle);
@@ -99,7 +105,21 @@ export function CityPicker({ onClose, onPicked, draft, title }: { onClose: () =>
           <ThemedText type="small" themeColor="textSecondary">{tr("좌표·정확도·측정 시각은 안전 운영을 위해 30일 보관하며 권한 있는 관리자만 조회해요. 설정에서 공유를 끄고 기록을 삭제할 수 있어요.")}</ThemedText>
         </View>}
       </GlassSurface>}
-      ListEmptyComponent={<ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite" style={styles.empty}>{t.feed.cityNoResults}</ThemedText>}
+      // A dead end gets a way out (QA I-home-02): the open cities one tap away, or the search cleared.
+      ListEmptyComponent={<View style={styles.empty}>
+        <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{t.feed.cityNoResults}</ThemedText>
+        <View style={styles.emptyActions}>
+          {PICKER_CITIES.filter(item => item.state === 'open').map(item => <Pressable key={item.id} analyticsId="components_city-picker.pressable.6" accessibilityRole="button"
+            accessibilityLabel={tr(item.name)} disabled={!draft && saving} accessibilityState={{ disabled: !draft && saving }} onPress={() => pick(item)}
+            style={({ pressed }) => [ControlStyles.pill, styles.emptyCity, controlPresentation(theme, { pressed, disabled: !draft && saving, reducedMotion }).container]}>
+            <ThemedText type="label">{tr(item.name)}</ThemedText>
+          </Pressable>)}
+          <Pressable analyticsId="components_city-picker.pressable.4" accessibilityRole="button" onPress={() => { play('selection'); setQuery(''); }}
+            style={({ pressed }) => [ControlStyles.pill, controlPresentation(theme, { tone: 'ghost', pressed, reducedMotion }).container]}>
+            <ThemedText type="label" themeColor="accent">{tr('검색 지우기')}</ThemedText>
+          </Pressable>
+        </View>
+      </View>}
       ListFooterComponent={<ThemedText type="small" themeColor="textSecondary" style={styles.note}>{draft ? t.write.postCityNote : t.feed.cityPickerNote}</ThemedText>}
       renderSectionHeader={({ section }) => <ThemedText accessibilityRole="header" type="smallBold" themeColor="textSecondary" style={styles.sectionTitle}>{section.title}</ThemedText>}
       renderItem={({ item, index, section }) => {
@@ -109,12 +129,7 @@ export function CityPicker({ onClose, onPicked, draft, title }: { onClose: () =>
         const disabled = busy || !open;
         return <View style={[styles.rowGlass, { backgroundColor: clayBox ? 'transparent' : theme.card }, clayBox && styles.rowClay, !clayBox && index === 0 && styles.firstRow, !clayBox && index === section.data.length - 1 && styles.lastRow]}><Pressable analyticsId="components_city-picker.pressable.6" disabled={disabled} accessibilityRole="button" accessibilityState={{ selected, disabled, busy }}
           accessibilityLabel={[tr(item.name), language === 'ko' && item.englishName, item.province, !open && t.feed.citySoon, selected && t.feed.citySelected].filter(Boolean).join(', ')}
-          onPress={async () => {
-            if (disabled) return;
-            play('selection');
-            if (draft) { draft.onSelect(item); onClose(); }
-            else if (await selectCity(item)) { onPicked?.(); onClose(); }
-          }}
+          onPress={() => pick(item)}
           style={({ pressed }) => [styles.row, controlPresentation(theme, { tone: 'ghost', selected, pressed, disabled, busy, reducedMotion, clay: clayBox }).container]}>
           {clayBox && <ClayBoxFill kind="tile" />}
           <View style={styles.name}>
@@ -140,7 +155,8 @@ const styles = StyleSheet.create({
   rowGlass: { overflow: 'hidden' }, rowClay: { overflow: 'visible', marginBottom: Spacing.two }, firstRow: { borderTopLeftRadius: ControlMetrics.radius.field, borderTopRightRadius: ControlMetrics.radius.field }, lastRow: { borderBottomLeftRadius: ControlMetrics.radius.field, borderBottomRightRadius: ControlMetrics.radius.field },
   row: { minHeight: 72, borderRadius: ControlMetrics.radius.field, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
   name: { flex: 1, gap: Spacing.one }, rowTitle: Typography.menu,
-  note: { marginTop: Spacing.four }, empty: { paddingTop: Spacing.four },
+  note: { marginTop: Spacing.four }, empty: { paddingTop: Spacing.four, gap: Spacing.three },
+  emptyActions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, emptyCity: { borderWidth: 1 },
   locationRow: { marginTop: Spacing.two, borderRadius: ControlMetrics.radius.field },
   locationMain: { minHeight: ControlMetrics.field, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
   locationDetails: { borderTopWidth: StyleSheet.hairlineWidth, padding: Spacing.three, gap: Spacing.two },
