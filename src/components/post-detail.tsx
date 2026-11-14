@@ -1,5 +1,5 @@
 import { useLanguage } from '@/hooks/use-language';
-import { Pressable, FlatList } from '@/components/analytics-controls';
+import { Pressable, FlatList, ScrollView } from '@/components/analytics-controls';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -32,7 +32,7 @@ import { MeetupManageSheet } from '@/components/meetup-manage-sheet';
 import { DragSheet } from '@/components/drag-sheet';
 import { meetupHostActions } from '@/components/meetup-room-summary';
 import { MeetupWaitlist } from '@/components/meetup-host-tools';
-import { SeatBar } from '@/components/chilling-event';
+import { SeatBar, meetupMenuActions, useHideMeetup } from '@/components/chilling-event';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { GlingLoader } from '@/components/gling-loader';
 import { ListCard, ListRow } from '@/components/list-card';
@@ -1144,6 +1144,7 @@ function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavi
   const { isAuthed, promptLogin } = useAuth(), theme = useTheme(), router = useRouter(), clay = useClay(), clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const [profile, setProfile] = useState<ChillingProfile | null>(null), [loading, setLoading] = useState(false), [error, setError] = useState(''), [report, setReport] = useState(false);
+  const [menu, setMenu] = useState(false), hide = useHideMeetup(post.id);
   const room = post.room;
   const invite = room?.access === 'invite';
   // '누가 와요' takes over the host's profile: same person, same screen (signed-in only, like the profile).
@@ -1169,23 +1170,25 @@ function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavi
       <View style={[styles.hostAvatar, !clay && { backgroundColor: theme.backgroundSelected }]}>{clay && <ClayCoinFill />}<ThemedText type="smallBold">{post.author.nickname[0]}</ThemedText></View>
       <View style={styles.hostName}><ThemedText type="smallBold" style={styles.hostNameText}>{post.author.nickname}</ThemedText><TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} /></View>
       {!showWho && <Pressable analyticsId="components_chilling-host-profile.pressable.1" accessibilityRole="button" accessibilityLabel={tr('{0} 모임 프로필', post.author.nickname)}
-        accessibilityState={room.eventKind ? { expanded: !!profile, busy: loading } : undefined} style={[styles.hostLink, clay && styles.clayPad]}
+        accessibilityState={room.eventKind ? { busy: loading } : undefined} style={[styles.hostLink, clay && styles.clayPad]}
         onPress={() => {
           play('selection');
-          // Event meetups expand the host's shared profile in place; legacy rooms keep the profile route.
+          // Event meetups open the host's shared profile in a sheet, so 언제·어디 stay where they are; legacy rooms keep the profile route.
           if (!room.eventKind) { onClose(); router.push({ pathname: '/meetup-profile', params: { postId: post.id } }); }
-          else if (profile) setProfile(null); else void load();
+          else void load();
         }}>
         {clay && <ClayPillFill kind="white" />}
-        <ThemedText type="smallBold" themeColor="accent">{profile ? tr('접기') : tr('프로필')}</ThemedText>
+        <ThemedText type="smallBold" themeColor="accent">{tr('프로필')}</ThemedText>
       </Pressable>}
-      {!own && <Pressable analyticsId="meetup.detail.report" accessibilityRole="button" accessibilityLabel={t.report.title(post.author.nickname)} style={styles.hostLink}
-        onPress={() => { play('selection'); if (isAuthed) setReport(true); else promptLogin(t.auth.reasonReport); }}>
+      {!own && <Pressable analyticsId="meetup.detail.report" accessibilityRole="button" accessibilityLabel={tr('모임 메뉴')} style={styles.hostLink}
+        onPress={() => { play('selection'); setMenu(true); }}>
         <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={21} tintColor={theme.textSecondary} />
       </Pressable>}
     </View>
     {loading && <GlingLoader color={theme.accent} />}
-    {isAuthed && profile && <ChillingProfileCard profile={profile} />}
+    <DragSheet visible={isAuthed && !!profile} onClose={() => setProfile(null)} title={tr('호스트 모임 프로필')}>
+      {!!profile && <ScrollView analyticsId="app_meetup-profile.scrollview.1"><ChillingProfileCard profile={profile} fallbackName={post.author.nickname} /></ScrollView>}
+    </DragSheet>
     {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
     <MeetupFacts post={post} canEnterChat={canEnterChat} own={own} />
     {showWho && <MeetupWhoCard roster={who.roster} error={who.error} onRetry={who.reload} />}
@@ -1197,7 +1200,9 @@ function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavi
       {!!tools && <ListRow analyticsId="meetup.detail.tools" title={tools} onPress={() => { onBeforeNavigate?.(); router.push({ pathname: '/meetup-tools', params: { postId: post.id, kind: room.eventKind ?? 'group', host: own ? '1' : '0' } }); }} />}
       {canEnterChat && <ListRow analyticsId="meetup.detail.my-request" title={tr('내 신청 보기')} onPress={() => { onBeforeNavigate?.(); router.push({ pathname: '/meetup-join', params: { postId: post.id } }); }} />}
     </ListCard>}
-    {report && <ReportSheet visible targetType="post" targetId={post.id} reportedUserId={post.business ? undefined : post.author.id} reportedBusinessId={post.business?.id}
+    {menu && <MeetupManageSheet visible title={tr('모임 메뉴')} onClose={() => setMenu(false)} actions={meetupMenuActions({ tr, onHide: () => void hide(),
+      onReport: () => { if (isAuthed) setReport(true); else promptLogin(t.auth.reasonReport); } })} />}
+    {report && <ReportSheet visible title={tr('이 모임 신고하기')} targetType="post" targetId={post.id} reportedUserId={post.business ? undefined : post.author.id} reportedBusinessId={post.business?.id}
       reportedNickname={post.business?.name ?? post.author.nickname} onClose={() => setReport(false)} />}
   </View>;
 }

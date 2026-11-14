@@ -13,6 +13,9 @@ export function MannerSummary({ summary }: { summary: Summary }) {
   const theme = useTheme(), clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const [criteriaOpen, setCriteriaOpen] = useState(false);
+  const ratings = (['meeting', 'chat'] as const).map(key => summary[key].rating ?? { participants: 0, score: null });
+  // Two cells of "no rating yet" said the same thing twice; until one side has a score it is one line.
+  const reviews = ratings.every(rating => rating.participants < 5 || rating.score == null) ? ratings.reduce((sum, rating) => sum + rating.participants, 0) : null;
   return <View style={{ alignSelf: 'stretch', gap: 8 }}>
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
       <ThemedText type="smallBold" style={{ flexShrink: 1 }}>{tr('이웃이 남긴 리뷰')}</ThemedText>
@@ -20,7 +23,8 @@ export function MannerSummary({ summary }: { summary: Summary }) {
     </View>
     <View style={{ flexDirection: 'row', padding: 16, borderRadius: 16, backgroundColor: clayBox ? 'transparent' : theme.backgroundElement }}>
       {clayBox && <ClayBoxFill kind="tile" />}
-      {([['meeting', tr('만남')], ['chat', tr('대화')]] as const).map(([key, label], index) => {
+      {reviews != null ? <ThemedText type="small" themeColor="textSecondary" style={{ flex: 1 }}>{reviews ? tr('리뷰 {0}개가 모였어요 · 서로 다른 5명이 남기면 평점이 보여요', reviews.toLocaleString(appLocale)) : tr('아직 리뷰가 없어요 · 서로 다른 5명이 남기면 평점이 보여요')}</ThemedText>
+      : ([['meeting', tr('만남')], ['chat', tr('대화')]] as const).map(([key, label], index) => {
         const rating = summary[key].rating ?? { participants: 0, score: null };
         const score = rating.participants >= 5 ? rating.score : null;
         return <View key={key} style={{ flex: 1, minWidth: 0, gap: 8, paddingRight: index === 0 ? 12 : 0, paddingLeft: index === 1 ? 16 : 0, borderRightWidth: index === 0 ? 1 : 0, borderRightColor: theme.line }}>

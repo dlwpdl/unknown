@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { normalizeChillingEvent, type ChillingEventDraft } from './chilling.ts';
-import { getLocale, t, tr } from '../i18n/index.ts';
+import { getLocale, t, tr, translateUi } from '../i18n/index.ts';
 import { meetupRestrictionError } from './meetup-policy.ts';
 import { removePostImages, uploadPostImage, type PostDraftImage } from './community-data.ts';
 import { loadMeetupProfilePhoto } from './chilling-profile-media.ts';
@@ -10,6 +10,17 @@ export const CHILLING_PROMPTS = {
   meet: '나랑 만나면 주로…', weekend: '내가 좋아하는 주말은', comfort: '내가 편해지는 순간은',
   join: '이런 모임이면 바로 신청해요', learn: '함께 배워보고 싶은 것은', ritual: '같이 해보고 싶은 작은 습관은',
 } as const;
+// The answers offered on the meetup profile. A pick is saved as the words on screen, in either app language.
+export const CHILLING_ANSWER_CHOICES = {
+  intro: ['처음엔 조용하지만 금방 편해져요', '먼저 말을 거는 편이에요', '함께 활동하는 걸 좋아해요'],
+  promptOne: ['페스티벌 같이 가기', '라이브 공연 보기', '조용한 카페에서 수다', '가볍게 걷기', '맛집 원정', '보드게임', '맥주 한잔'],
+  promptTwo: ['공연 취향이 맞는 사람들', '소규모(4명 이하)', '주말 낮', '처음 보는 사람과도 편한 분위기'],
+} as const;
+/** The offered choice (its Korean source) a saved answer was picked from, whichever language it was saved in; null for a written answer. */
+export function chillingAnswerChoice(field: keyof typeof CHILLING_ANSWER_CHOICES, answer: string): string | null {
+  const text = answer.trim();
+  return text ? CHILLING_ANSWER_CHOICES[field].find(choice => choice === text || translateUi('en', choice) === text) ?? null : null;
+}
 export type ChillingProfile = {
   intro: string; interests: string[]; promptOne: string; promptTwo: string;
   version?: 2; revision?: string; displayName?: string; cityId?: string; photoPaths?: string[]; publicPhotoPath?: string | null;

@@ -90,7 +90,7 @@ export function form({ params = {}, sourceEvent, catalogReady = true, membership
     '@/components/relationship-slot-card': { relationshipSlotData: () => ({ available: 3, active: 0, limit: 3 }) },
     '@/components/disclosure': { Disclosure: 'Disclosure', animateLayout() {} },
     '@/lib/ai-draft': aiDraft, '@/lib/meetup-ai': { splitEventMeetupBody },
-    '@/lib/meetup-destination': destinations, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
+    '@/lib/meetup-destination': destinations, '@/lib/event-videos': { eventPhoto: event => event.image ?? null }, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
     '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }, { id: 'toronto', name: '토론토', state: 'open' }] },
     '@/constants/theme': { Depth: { control: {} }, Spacing: { two: 8, three: 16, five: 32 } },
     '@/constants/design-system': designSystem,

@@ -131,7 +131,9 @@ test('the saved fee is read from the public meetup row and formatted in CAD', as
   assert.deepEqual(await loadMeetupFee(query({ amount: 15.5 }), post), { amount: 15.5 });
   assert.equal(await loadMeetupFee(query(null), post), null);
   assert.equal(meetupFeeAmount(15.5), '$15.50');
-  assert.equal(meetupFeeAmount(10000), '$10000.00');
+  assert.equal(meetupFeeAmount(10000), '$10000');
+  assert.equal(meetupFeeAmount(15), '$15');
+  assert.equal(meetupFeeAmount(14.999), '$15');
   assert.equal(meetupFeeDue('2031-11-01', 'ko-KR'), '11월 1일');
   assert.equal(meetupFeeDue('2031-11-01', 'en-CA'), 'November 1');
   assert.equal(meetupFeeDueOn(meetupFeeDueIso('2031-11-01')), '2031-11-01');

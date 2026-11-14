@@ -17,11 +17,12 @@ import { DragSheet } from '@/components/drag-sheet';
 import { InitialAvatar, ListCard, ListRow } from '@/components/list-card';
 import { SelectionChip } from '@/components/selection-chip';
 import { Depth, Spacing } from '@/constants/theme';
-import { ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
+import { ControlMotion, ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
 import { useCityPlacesRevision } from '@/hooks/use-city-places';
 import { CITIES } from '@/lib/mock';
 import { eventMeetupDraft, isFestivalEvent, loadTicketmasterEvent, meetupAllowed, type TicketmasterEvent } from '@/lib/ticketmaster';
 import { ChillingDateInput } from '@/components/chilling-date-input';
+import { eventPhoto } from '@/lib/event-videos';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
 import { MeetupCoverPicker, type MeetupCover } from '@/components/meetup-cover-picker';
 import { MeetupAiDraftPreview } from '@/components/meetup-ai-draft-preview';
@@ -241,7 +242,8 @@ function MeetupCreateForm() {
       setEventDetails(details); setSourceEvent(source);
       if (!sourceEdited.current) {
         setTitle(draft.title); setBody(intro);
-        setEvent(current => ({ ...current, kind: 'once', category: isFestivalEvent(source) ? 'festival' : 'hobby', startsAt: draft.startsAt, endsAt: draft.endsAt }));
+        // A game is 스포츠; a concert, circus or play is closest to 페스티벌 (was 취미 for every non-festival show, QA I-event-08).
+        setEvent(current => ({ ...current, kind: 'once', category: /sport/i.test(source.segment ?? '') ? 'sports' : 'festival', startsAt: draft.startsAt, endsAt: draft.endsAt }));
       }
       loadedEvent.current = ticketmasterEventId; setEventReady(true);
     }).catch(cause => { if (active) setEventError(cause.message); });
@@ -421,7 +423,9 @@ function MeetupCreateForm() {
       </ListCard></View> : <StateCard layout="start" title={tr('모임 프로필을 확인해 주세요')} body={aiCopy('모임 프로필은 한 번 저장하고 다음 모임에도 다시 사용해요.', 'Save one meetup profile and reuse it for future meetups.')}>
         <View style={styles.stateAction}><RaisedActionButton analyticsId="meetup-create.profile-edit" tone="secondary" disabled={saving} label={aiCopy('내 모임 프로필 확인', 'Review your meetup profile')} onPress={() => { play('selection'); setHostConsent(false); router.push('/meetup-profile'); }} /></View>
       </StateCard>}
-      {ticketmasterEventId && (!isAuthed ? <StateCard kind="blocked" title={tr("로그인 후 모임을 열 수 있어요")} body={tr("로그인하면 행사 정보를 불러와요.")} actionLabel={tr("로그인")} analyticsId="meetup.create.event_login" onAction={() => askLogin('행사 모임을 열려면 로그인해 주세요.')} /> : !eventReady ? <StateCard kind={eventError ? 'error' : 'empty'} title={eventError ? tr("행사를 확인하지 못했어요") : tr("행사 정보를 확인하고 있어요")} body={eventError ? tr(eventError) : tr('확인 후 제목과 일정을 채워드려요.')} actionLabel={eventError ? tr('다시 시도') : undefined} onAction={eventError ? () => setEventAttempt(n => n + 1) : undefined} /> : sourceEvent && <View style={styles.eventHero} accessibilityRole="summary"><View style={styles.eventHeroText}><ThemedText type="smallBold" style={[styles.label, styles.eventHeroLabel]}>{isFestivalEvent(sourceEvent) ? tr("함께 가고 싶은 페스티벌") : tr("함께 갈 행사")}</ThemedText><ThemedText type="smallBold" numberOfLines={2} style={[styles.label, styles.eventHeroTitle]}>{sourceEvent.name}</ThemedText><ThemedText type="small" numberOfLines={1} style={[styles.helper, styles.eventHeroPlace]}>{sourceEvent.venue}{sourceEvent.venue && sourceEvent.city ? ' · ' : ''}{sourceEvent.city}</ThemedText></View><Image source={require('@/assets/images/festival-glass-orbs.webp')} style={styles.eventHeroArt} contentFit="contain" accessible={false} /></View>)}
+      {ticketmasterEventId && (!isAuthed ? <StateCard kind="blocked" title={tr("로그인 후 모임을 열 수 있어요")} body={tr("로그인하면 행사 정보를 불러와요.")} actionLabel={tr("로그인")} analyticsId="meetup.create.event_login" onAction={() => askLogin('행사 모임을 열려면 로그인해 주세요.')} /> : !eventReady ? <StateCard kind={eventError ? 'error' : 'empty'} title={eventError ? tr("행사를 확인하지 못했어요") : tr("행사 정보를 확인하고 있어요")} body={eventError ? tr(eventError) : tr('확인 후 제목과 일정을 채워드려요.')} actionLabel={eventError ? tr('다시 시도') : undefined} onAction={eventError ? () => setEventAttempt(n => n + 1) : undefined} /> : sourceEvent && <View style={styles.eventHero} accessibilityRole="summary"><View style={styles.eventHeroText}><ThemedText type="smallBold" style={[styles.label, styles.eventHeroLabel]}>{isFestivalEvent(sourceEvent) ? tr("함께 가고 싶은 페스티벌") : tr("함께 갈 행사")}</ThemedText><ThemedText type="smallBold" numberOfLines={2} style={[styles.label, styles.eventHeroTitle]}>{sourceEvent.name}</ThemedText><ThemedText type="small" numberOfLines={2} style={[styles.helper, styles.eventHeroPlace]}>{/* 'Under the Big Top - Vancouver · Vancouver': the city once. */}{[sourceEvent.venue, sourceEvent.city].filter(Boolean).filter((part, index, parts) => index === 0 || !parts[0].includes(part)).join(' · ')}</ThemedText></View>
+        {/* The event's own photo, not a decoration; without one the text takes the card (the seller's stand-in photos repeat across events). */}
+        {!!eventPhoto(sourceEvent) && <Image source={{ uri: eventPhoto(sourceEvent)! }} style={styles.eventHeroPhoto} contentFit="cover" transition={ControlMotion.settleMs} accessible={false} />}</View>)}
       <View onLayout={event => { cardY.current.what = event.nativeEvent.layout.y; }} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <ThemedText accessibilityRole="header" style={styles.cardTitle}>{aiCopy('어떤 모임인가요?', 'What are we doing?')}</ThemedText>
       {!ticketmasterEventId && <View onLayout={event => { fieldY.current.kind = event.nativeEvent.layout.y; }} style={styles.field}>
@@ -468,7 +472,7 @@ function MeetupCreateForm() {
       </View>
       <View onLayout={event => { cardY.current.when = event.nativeEvent.layout.y; }} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.line }]}>
         <ThemedText accessibilityRole="header" style={styles.cardTitle}>{aiCopy('언제, 어디서 만나요?', 'When and where?')}</ThemedText>
-      {!kindChosen ? null : event.kind === 'group' ? field('meetup.create.cadence', tr("활동 주기"), event.cadence, cadence => setEvent({ ...event, cadence }), tr("예: 매주 토요일 오전"), 80) : <View onLayout={event => { fieldY.current.schedule = event.nativeEvent.layout.y; }} style={styles.field}>
+      {!kindChosen ? <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{aiCopy('위에서 칠링이나 정기모임을 고르면 날짜 칸이 나와요.', 'Pick a one-time meetup or a group above to set the date.')}</ThemedText> : event.kind === 'group' ? field('meetup.create.cadence', tr("활동 주기"), event.cadence, cadence => setEvent({ ...event, cadence }), tr("예: 매주 토요일 오전"), 80) : <View onLayout={event => { fieldY.current.schedule = event.nativeEvent.layout.y; }} style={styles.field}>
         <ChillingDateInput analyticsId="meetup.create.schedule.start" label={tr("시작")} value={event.startsAt} zone={event.timezone} minimumDate={new Date()} onChange={startsAt => { sourceEdited.current = true; setTouched(true); if (errorField === 'schedule') { setError(''); setErrorField(null); } setEvent(current => ({ ...current, ...shiftChillingSchedule(current, startsAt) })); }} disabled={saving || !eventReady} />
         <ChillingDateInput analyticsId="meetup.create.schedule.end" label={tr("종료")} value={event.endsAt} zone={event.timezone} minimumDate={new Date()} onChange={endsAt => { sourceEdited.current = true; setTouched(true); if (errorField === 'schedule') { setError(''); setErrorField(null); } setEvent(current => ({ ...current, endsAt })); }} disabled={saving || !eventReady} />
         {errorField === 'schedule' && !!error && <ThemedText accessibilityRole="alert" themeColor="danger" style={styles.bodyText}>{tr(error)}</ThemedText>}
@@ -532,10 +536,10 @@ const styles = StyleSheet.create({
   card: { borderWidth: 1, borderRadius: 16, padding: Spacing.three, gap: Spacing.three }, cardTitle: { ...Typography.section },
   label: { ...Typography.menu }, helper: { ...Typography.supporting }, bodyText: { ...Typography.body }, disclosure: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two }, field: { gap: Spacing.two },
   input: { borderWidth: 1, borderRadius: 10, minHeight: 48, padding: 12, fontSize: 16, lineHeight: 24 }, multiline: { minHeight: 110, textAlignVertical: 'top' },
-  eventHero: { minHeight: 132, overflow: 'hidden', borderRadius: 16, backgroundColor: '#26203D', padding: Spacing.three, justifyContent: 'center' },
-  eventHeroText: { maxWidth: '66%', gap: Spacing.two, zIndex: 1 },
+  eventHero: { minHeight: 132, overflow: 'hidden', borderRadius: 16, backgroundColor: '#26203D', padding: Spacing.three, flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  eventHeroText: { flex: 1, minWidth: 0, gap: Spacing.two },
   eventHeroLabel: { color: '#E8DDFB', fontSize: 12 }, eventHeroTitle: { color: '#FFFFFF', fontSize: 16, lineHeight: 22 }, eventHeroPlace: { color: '#D8D0E4', fontSize: 12 },
-  eventHeroArt: { position: 'absolute', right: -22, top: -2, width: 190, height: 136 },
+  eventHeroPhoto: { width: 96, height: 96, borderRadius: 12 },
   clayPill: { overflow: 'visible', paddingHorizontal: 18 },
   aiButton: { alignSelf: 'flex-start', minHeight: 44, borderRadius: 22, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   categories: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },

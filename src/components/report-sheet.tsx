@@ -28,6 +28,7 @@ export function ReportSheet({
   reportedUserId,
   reportedBusinessId,
   reportedNickname = '비즈니스 답변',
+  title,
   businessConversation,
   onClose,
 }: {
@@ -37,6 +38,8 @@ export function ReportSheet({
   reportedUserId?: string;
   reportedBusinessId?: string;
   reportedNickname?: string;
+  /** What is being reported when it isn't the person, e.g. 이 모임 신고하기. Blocking still names the person. */
+  title?: string;
   businessConversation?: ConversationPreview;
   onClose: () => void;
 }) {
@@ -134,11 +137,11 @@ export function ReportSheet({
         />
         <Animated.View
           accessibilityViewIsModal
-          accessibilityLabel={t.report.title(reportedNickname)}
+          accessibilityLabel={title ?? t.report.title(reportedNickname)}
           style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.three), transform: [{ translateY: sheetOffset }] }]}>
           <View style={styles.header}>
             <View style={styles.copy}>
-              <ThemedText type="subtitle">{t.report.title(reportedNickname)}</ThemedText>
+              <ThemedText type="subtitle">{title ?? t.report.title(reportedNickname)}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">{t.report.body}</ThemedText>
             </View>
             {/* The same X as every other sheet (QA E32-2). */}

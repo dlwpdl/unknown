@@ -398,7 +398,7 @@ test('applicants see the fee on the meetup card and approved members see their o
 test('the meetup card, schedule and fee line render the compact CAD fee in both languages', () => {
   const source = readFileSync(new URL('../src/components/chilling-event.tsx', import.meta.url), 'utf8');
   // English copy comes from the shared i18n table; here it only needs the CAD amount and a localized date.
-  for (const [language, expected, status] of [['ko', /^회비 \$15\.50 · e-Transfer · 11월 1일까지$/, /^회비 \$20\.00 · 아직 안 냈어요$/], ['en', /\$15\.50 · e-Transfer · .*November 1/, /\$20\.00 · /]]) {
+  for (const [language, expected, status] of [['ko', /^회비 \$15\.50 · e-Transfer · 11월 1일까지$/, /^회비 \$20 · 아직 안 냈어요$/], ['en', /\$15\.50 · e-Transfer · .*November 1/, /\$20 · /]]) {
     const exports = {}, imports = {
       react: { memo: value => value, useState: value => [value, () => {}] }, 'react/jsx-runtime': { jsx: (type, props) => typeof type === 'function' ? type(props) : { type, props }, jsxs: (type, props) => typeof type === 'function' ? type(props) : { type, props }, Fragment: 'Fragment' },
       'react-native': { StyleSheet: { create: value => value, hairlineWidth: 1 }, View: 'View' }, 'expo-image': { Image: 'Image' }, '@/constants/design-system': { ControlMotion: { settleMs: 180 } },

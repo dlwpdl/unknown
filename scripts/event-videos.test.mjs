@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { eventIntro, eventVideo } from '../src/lib/event-videos.ts';
+import { eventIntro, eventPhoto, eventVideo } from '../src/lib/event-videos.ts';
 
 test('shows only videos linked in the event data and leaves other events on their poster', () => {
   assert.equal(eventVideo({ id: '1AoZkfNGkeJ_MYK' }), null);
@@ -16,4 +16,11 @@ test('QA C22-2: a seller purchase notice is not shown as the event introduction'
   assert.equal(eventIntro('  Cirque du Soleil returns with LUZIA, a waking dream of Mexico.  '), 'Cirque du Soleil returns with LUZIA, a waking dream of Mexico.');
   assert.equal(eventIntro(''), null);
   assert.equal(eventIntro(undefined), null);
+});
+
+test('drops the category stand-in photo but keeps an event’s own art', () => {
+  assert.equal(eventPhoto({ image: 'https://s1.ticketm.net/dam/c/8cf/a6653880_RETINA_PORTRAIT_16_9.jpg' }), null);
+  assert.equal(eventPhoto({ image: 'https://s1.ticketm.net/dam/a/1d1/47cc9b10_RETINA_PORTRAIT_16_9.jpg' }), 'https://s1.ticketm.net/dam/a/1d1/47cc9b10_RETINA_PORTRAIT_16_9.jpg');
+  assert.equal(eventPhoto({ image: null }), null);
+  assert.equal(eventPhoto({}), null);
 });

@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ClayPhoto } from '@/components/clay';
 import { PostCard } from '@/components/post-card';
 import { DragSheet } from '@/components/drag-sheet';
-import { FriendButton, ProfileRecordTiles, ProfileSavedMap } from '@/components/profile-overview';
+import { FriendButton, ProfileSavedMap } from '@/components/profile-overview';
 import { ReportSheet } from '@/components/report-sheet';
 import { MannerSummary } from '@/components/manner-summary';
 import { TrustBadge } from '@/components/trust-badge';
@@ -72,6 +72,8 @@ export default function AuthorPostsRoute() {
     setVisiblePostIds(viewableItems.map(({ item }) => item.id)), [setVisiblePostIds]);
 
   const requestKey = `${authorId}:${viewerScope}:${kind}:${retry}`;
+  // The header outlives a tab switch: keyed without the tab, so switching tabs keeps the list (and its scroll) mounted.
+  const profileKey = `${authorId}:${viewerScope}:${retry}`;
   const current = state?.key === requestKey ? state : null;
   const hasMore = current?.hasMore ?? false;
   const loading = Boolean(authorId) && !current && failed !== requestKey;
@@ -84,13 +86,13 @@ export default function AuthorPostsRoute() {
     void Promise.all([loadPublicUserActivity(supabase, authorId, kind, null, viewerScope), loadPublicUserProfile(supabase, authorId)])
       .then(([posts, value]) => {
         if (!active) return;
-        setState({ key: requestKey, posts, hasMore: posts.length === 30 }); setProfile({ key: requestKey, value });
+        setState({ key: requestKey, posts, hasMore: posts.length === 30 }); setProfile({ key: profileKey, value });
         const url = posts.find(post => post.author.id === authorId)?.author.avatarUrl;
         if (url) setPhoto({ key: `${authorId}:${viewerScope}`, url });
       })
       .catch(() => { if (active) setFailed(requestKey); });
     return () => { active = false; };
-  }, [authorId, kind, requestKey, viewerScope, hidden]);
+  }, [authorId, kind, requestKey, profileKey, viewerScope, hidden]);
 
   // Map, counts and the friend button. A failed read leaves them out without hiding the posts.
   const overviewKey = `${authorId}:${viewerScope}:${overviewRevision}`;
@@ -121,9 +123,12 @@ export default function AuthorPostsRoute() {
   }, []);
 
   const posts = (current?.posts ?? []).filter(post => !hidden('post', post.id, post.author.id));
-  const publicProfile = profile?.key === requestKey && !hidden('user', authorId) ? profile.value : null;
+  const publicProfile = profile?.key === profileKey && !hidden('user', authorId) ? profile.value : null;
   const saved = useSavedEntry({ kind: 'user', id: authorId }, !!publicProfile);
   const shownOverview = publicProfile && overview?.key === overviewKey ? overview.value : null;
+  // Someone else's map with nothing to show is one line under the friend button, not a big empty box above the name.
+  const mapNote = shownOverview && !shownOverview.own && !shownOverview.savedPlaces?.length ? shownOverview.mapHiddenReason === 'not_friends' ? tr('친구가 되면 저장한 곳이 보여요')
+    : shownOverview.mapHiddenReason === 'not_shared' ? tr('저장한 곳을 아직 친구에게 보여 주지 않았어요') : '' : null;
   const avatarUrl = photo?.key === `${authorId}:${viewerScope}` && photo.url !== failedPhoto ? photo.url : undefined;
   const closeMenu = (then?: () => void) => { afterMenu.current = then ?? null; setMenu(null); };
   const confirmBlock = () => {
@@ -149,7 +154,7 @@ export default function AuthorPostsRoute() {
         {!!saved.error && <ThemedText type="small" accessibilityRole="alert" style={styles.saveError}>{saved.error}</ThemedText>}
 
 
-        {loading ? (
+        {loading && !publicProfile ? (
           <View style={styles.center}>
             <GlingLoader color={theme.accent} accessibilityLabel={t.authorPosts.loading} />
           </View>
@@ -161,27 +166,27 @@ export default function AuthorPostsRoute() {
             keyExtractor={(post) => post.id}
             contentContainerStyle={styles.list}
             ListHeaderComponent={publicProfile ? <View style={styles.profile}>
-              {shownOverview && <ProfileSavedMap overview={shownOverview} homeCityId={publicProfile.cityId} />}
               <View style={styles.identity}>
                 <View style={[styles.avatar, { backgroundColor: avatarUrl ? 'transparent' : theme.backgroundElement }]}>
                   {avatarUrl ? <ClayPhoto uri={avatarUrl} size={64} onError={() => setFailedPhoto(avatarUrl)} /> : <ThemedText type="subtitle" style={{ color: theme.accent }}>{publicProfile.nickname[0]}</ThemedText>}
                 </View>
                 <View style={{ flex: 1, minWidth: 0, gap: 4 }}><View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}><ThemedText type="subtitle" style={{ flexShrink: 1 }}>{publicProfile.nickname}</ThemedText><TrustBadge verified={publicProfile.verificationLevel >= 2} trustLevel={publicProfile.verificationLevel === 3 ? 3 : publicProfile.verificationLevel === 2 ? 2 : undefined} /></View><ThemedText type="small" themeColor="textSecondary">{publicProfile.neighborhood ?? tr(CITIES.find(city => city.id === publicProfile.cityId)?.name ?? publicProfile.cityId)}{" " + tr("· 가입") + " "}{new Date(publicProfile.memberSince).toLocaleDateString(appLocale)}</ThemedText></View>
               </View>
+              {/* 연 모임 joins the counts here instead of a card of its own. */}
               <View style={[styles.stats, { borderColor: theme.line }]}>
-                {([...(shownOverview?.savedCount === null ? [] : [[shownOverview?.savedCount, tr('저장한 곳')] as const]), [shownOverview?.friendCount, tr('친구')], [publicProfile.storyCount + publicProfile.listingCount, tr('쓴 글')]] as const).map(([value, label]) => <View key={label} style={styles.stat}><ThemedText type="subtitle">{value == null ? '–' : count(value)}</ThemedText><ThemedText type="small" themeColor="textSecondary">{label}</ThemedText></View>)}
+                {([...(shownOverview?.savedCount === null ? [] : [[shownOverview?.savedCount, tr('저장한 곳')] as const]), ...(shownOverview?.savedWeekStreak ? [[tr('{0}주', count(shownOverview.savedWeekStreak)), tr('연속 저장')] as const] : []), [shownOverview?.friendCount, tr('친구')], [publicProfile.storyCount + publicProfile.listingCount, tr('쓴 글')], [shownOverview?.meetupCount, tr('연 모임')]] as const).map(([value, label]) => <View key={label} style={styles.stat}><ThemedText type="subtitle">{typeof value === 'string' ? value : value == null ? '–' : count(value)}</ThemedText><ThemedText type="small" themeColor="textSecondary">{label}</ThemedText></View>)}
               </View>
               {shownOverview && <FriendButton overview={shownOverview} nickname={publicProfile.nickname}
                 onChanged={next => setOverview(previous => previous?.key === overviewKey && previous.value ? { ...previous, value: { ...previous.value, ...next } } : previous)} />}
+              {shownOverview && mapNote === null && <ProfileSavedMap overview={shownOverview} homeCityId={publicProfile.cityId} />}
+              {!!mapNote && <View style={styles.mapNote}><SymbolView name={{ ios: 'lock', android: 'lock', web: 'lock' }} size={IconSize.inline} tintColor={theme.textSecondary} /><ThemedText type="small" themeColor="textSecondary" style={styles.mapNoteText}>{mapNote}</ThemedText></View>}
               <MannerSummary summary={publicProfile.manner} />
-              {publicProfile.completedCount > 0 && <ThemedText type="small" themeColor="textSecondary">{tr('거래 완료 {0}건', count(publicProfile.completedCount))}</ThemedText>}
-              {shownOverview && <ProfileRecordTiles overview={shownOverview} />}
-              <ThemedText type="small" themeColor="textSecondary">{tr("공개한 글 이력이에요. 거래 완료는 작성자가 표시한 상태이며 실제 거래·신원 인증을 보장하지 않아요.")}</ThemedText>
+              {publicProfile.completedCount > 0 && <ThemedText type="small" themeColor="textSecondary">{tr('거래 완료 {0}건 · 글쓴이가 직접 표시한 거라 실제 거래나 신원을 확인한 건 아니에요', count(publicProfile.completedCount))}</ThemedText>}
         <View style={[styles.segments, { borderBottomColor: theme.line }]} accessibilityRole="tablist" onLayout={event => setSegmentWidth(event.nativeEvent.layout.width)}>
           {segmentWidth > 0 && <Animated.View pointerEvents="none" style={[styles.segmentIndicator, Depth.control, { width: segmentWidth / 2, backgroundColor: theme.backgroundElement, borderBottomColor: theme.accent, transform: [{ translateX: segmentPosition.interpolate({ inputRange: [0, 1], outputRange: [0, segmentWidth / 2] }) }] }]} />}
           {(['story', 'listing'] as const).map(value => <Pressable analyticsId={`user.activity.${value}`} key={value} accessibilityRole="tab" accessibilityState={{ selected: kind === value }}
             onPress={() => { play('selection'); setKind(value); setDetail(null); }} style={styles.segment}>
-            <ThemedText type={kind === value ? 'smallBold' : 'small'} themeColor={kind === value ? undefined : 'textSecondary'}>{value === 'story' ? tr("오늘") : tr("구해요·팔아요")}</ThemedText>
+            <ThemedText type={kind === value ? 'smallBold' : 'small'} themeColor={kind === value ? undefined : 'textSecondary'}>{value === 'story' ? tr("일상 글") : tr("구해요·팔아요")}</ThemedText>
           </Pressable>)}
         </View>
             </View> : undefined}
@@ -189,7 +194,7 @@ export default function AuthorPostsRoute() {
             // Signed in, the card grows the post out of itself (owner 2026-11-02); guests keep the in-place login gate.
             renderItem={({ item }) => isAuthed ? <PostZoomLink id={item.id} post={item}><PostCard post={item} translationVisible={visiblePostIds.has(item.id)} /></PostZoomLink>
               : <PostCard post={item} translationVisible={visiblePostIds.has(item.id) && !detail} onPress={() => setDetail({ key: requestKey, post: item })} />}
-            ListEmptyComponent={(
+            ListEmptyComponent={loading ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={t.authorPosts.loading} /></View> : (
               <View style={styles.message}>
                 <ThemedText type="subtitle">{failed === requestKey ? t.authorPosts.errorTitle : t.authorPosts.emptyTitle}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
@@ -241,6 +246,7 @@ const styles = StyleSheet.create({
   avatar: { width: 64, height: 64, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   stats: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 16 },
   stat: { flex: 1, minWidth: 0, alignItems: 'center', gap: 4 },
+  mapNote: { flexDirection: 'row', alignItems: 'center', gap: 6 }, mapNoteText: { flex: 1, minWidth: 0 },
   segments: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
   segmentIndicator: { position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: 10, borderBottomWidth: 2 },
   segment: { flex: 1, minHeight: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },

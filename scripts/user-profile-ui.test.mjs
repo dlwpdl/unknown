@@ -302,7 +302,9 @@ test('someone else\'s profile shows the friend button and keeps save, report and
   context.after(() => harness.cleanup()); await harness.settle();
   const header = nodes(list(harness).props.ListHeaderComponent);
   assert.equal(header.find(node => node.type === 'FriendButton')?.props.overview, overview);
-  assert.equal(header.find(node => node.type === 'ProfileSavedMap')?.props.overview, overview, 'the locked map explains friends see saved places');
+  assert.equal(header.some(node => node.type === 'ProfileSavedMap'), false, 'a locked map is not a big empty box');
+  assert.ok(header.some(node => node.props?.children === '친구가 되면 저장한 곳이 보여요'), 'one line still says friends see saved places');
+  assert.ok(header.findIndex(node => node.type === 'FriendButton') < header.findIndex(node => node.props?.children === '친구가 되면 저장한 곳이 보여요'), 'name and friend button come first');
   const sheet = () => harness.nodes().find(node => node.type === 'DragSheet');
   assert.equal(sheet().props.visible, false);
   control(harness, 'user.more').props.onPress(); harness.render();

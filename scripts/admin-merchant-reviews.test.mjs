@@ -205,6 +205,8 @@ test('member summary shows ten-point reviews and suppresses legacy ratios and sm
   assert.ok(nodes(tree).some(n => n.props?.children === '5명이 남긴 리뷰'));
   assert.ok(!nodes(tree).some(n => typeof n.props?.children === 'string' && n.props.children.includes('9.5')));
   assert.ok(!nodes(tree).some(n => typeof n.props?.children === 'string' && n.props.children.includes('/100')));
+  const gathering = component.render({ summary: { meeting: { participants: 3, score: null, rating: { participants: 3, score: null } }, chat: { participants: 1, score: null, rating: { participants: 1, score: null } } } });
+  assert.ok(nodes(gathering).some(n => n.props?.children === '리뷰 4개가 모였어요 · 서로 다른 5명이 남기면 평점이 보여요'));
 });
 
 test('member review criteria expand on demand with feedback', () => {
@@ -217,6 +219,8 @@ test('member review criteria expand on demand with feedback', () => {
     },
   });
   let tree = component.render(props);
+  assert.ok(nodes(tree).some(node => node.props?.children === '아직 리뷰가 없어요 · 서로 다른 5명이 남기면 평점이 보여요'), 'two empty cells fold into one line');
+  assert.ok(!nodes(tree).some(node => node.props?.children === '만남'));
   let criteria = nodes(tree).find(node => node.props?.analyticsId === 'user.manner.criteria'); assert.ok(criteria);
   assert.equal(criteria.props.accessibilityState.expanded, false);
   criteria.props.onPress(); tree = component.render(props);
