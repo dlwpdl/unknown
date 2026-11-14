@@ -101,7 +101,8 @@ export function meetupFeeInput(amount: string, note = '', dueOn = ''): MeetupFee
   if ([...memo].length > 200) throw new Error('INVALID_MEETUP_FEE_NOTE');
   return { amount: value, ...(memo ? { note: memo } : {}), ...(dueOn ? { dueOn } : {}) };
 }
-export const meetupFeeAmount = (amount: number) => `$${Number(amount).toFixed(2)}`;
+// Whole dollars drop the .00 ($15, $15.50) so the card reads like the other prices in the app.
+export const meetupFeeAmount = (amount: number) => { const cents = Math.round(Number(amount) * 100); return `$${cents % 100 ? (cents / 100).toFixed(2) : cents / 100}`; };
 const feeDay = (dueOn: string) => { const [year, month, day] = dueOn.split('-').map(Number); return new Date(year, month - 1, day, 12); };
 export const meetupFeeDue = (dueOn: string, locale?: string) => feeDay(dueOn).toLocaleDateString(locale, { month: 'long', day: 'numeric' });
 export const meetupFeeDueIso = (dueOn: string) => feeDay(dueOn).toISOString();

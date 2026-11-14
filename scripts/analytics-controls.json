@@ -267,7 +267,6 @@
   "ticketmaster.price.select": "src/app/events/index.tsx",
   "ticketmaster.events": "src/app/events/index.tsx",
   "ticketmaster.event.open": "src/app/events/index.tsx",
-  "ticketmaster.previous": "src/app/events/index.tsx",
   "ticketmaster.next": "src/app/events/index.tsx",
   "ticketmaster.detail.back": "src/app/events/[id].tsx",
   "ticketmaster.detail": "src/app/events/[id].tsx",

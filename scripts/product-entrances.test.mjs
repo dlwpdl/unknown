@@ -101,7 +101,7 @@ function mount(file, exportName = 'default', props = {}, options = {}) {
     '@/lib/post-map-html': { mapMessage, mapHtml: () => '<html/>', mapPinScript: () => '', mapPreviews: new Map(), rememberMapPreview() {} },
     '@/components/clay': { useClay: () => false, useDark: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) }, '@/hooks/use-theme': { useTheme: () => ({}) },
-    '@/constants/theme': { Depth: {}, Spacing: {} }, '@/lib/event-videos': { eventVideo: () => null, eventIntro: text => text || null }, '@/lib/feed-data': { relativeTime: () => '' },
+    '@/constants/theme': { Depth: {}, Spacing: {} }, '@/lib/event-videos': { eventVideo: () => null, eventPhoto: event => event.image ?? null, eventIntro: text => text || null }, '@/lib/feed-data': { relativeTime: () => '' },
     '@/lib/behavior-analytics': ctx.realBehavior ? realBehavior : { configureBehavior: value => { transport = value; }, behavior() {}, behaviorScreen() {}, flushBehavior: async () => {}, isIdle: () => false, noteTouch() {} },
     '@/i18n/ko': { t: new Proxy({}, { get: () => new Proxy({}, { get: (_target, key) => String(key) }) }) },
   };

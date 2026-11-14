@@ -111,7 +111,7 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
   const [savedOnly, setSavedOnly] = useState(false);
   const insets = useSafeAreaInsets(), reducedMotion = useReducedMotion();
   const [errorCode, setErrorCode] = useState<string | null>(null), [profileError, setProfileError] = useState('');
-  const [sheetOpen, setSheetOpen] = useState(false), [whoOpen, setWhoOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false), [whoOpen, setWhoOpen] = useState(false), [rulesOpen, setRulesOpen] = useState(false);
   const editAfterSheet = useRef(false);
   // Invite meetups never list members; public ones show who's coming once the server switched them on.
   const invite = post?.room?.access === 'invite';
@@ -311,20 +311,25 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
       {INTRO_EXAMPLES.map(example => <SelectionChip key={example} analyticsId="meetup.join.intro-example" label={example} selected={draft?.intro === example} disabled={sending} accessibilityState={{ selected: draft?.intro === example, disabled: sending }} onPress={() => { play('selection'); setDraft(current => current && { ...current, intro: current.intro === example ? '' : example }); }} />)}
     </ScrollView>
   </View>;
+  // What sending agrees to stays above the button; the full table opens in a sheet so it never covers the answer field.
   const whoSees = (lead: string) => <>
     <ThemedText style={Typography.supporting} themeColor="textSecondary">{lead}</ThemedText>
-    <Disclosure analyticsId="meetup.join.policy" title={copy('누가 무엇을 보나요', 'Who sees what')}>
+    <Pressable analyticsId="meetup.join.policy" accessibilityRole="button" accessibilityLabel={copy('누가 무엇을 보나요', 'Who sees what')} onPress={() => { play('selection'); Keyboard.dismiss(); setRulesOpen(true); }} style={styles.rulesLink}>
+      <ThemedText type="smallBold" themeColor="accent">{copy('누가 무엇을 보나요 ›', 'Who sees what ›')}</ThemedText>
+    </Pressable>
+  </>;
+  const whoSeesDetails = () => <>
       <View style={styles.who}>
         {([[tr('신청받는 호스트'), tr('모임 이름 · 사진 · 소개 · 신청 답변')], [tr('승인된 멤버'), profile?.shareWithMembers ? tr('모임 이름 · 한 줄 소개 · 관심사, 그리고 사진') : tr('모임 이름 · 한 줄 소개 · 관심사')], ...invite ? [] : [[tr('신청하려는 사람'), tr('승인된 뒤 이름 · 한 줄 소개 · 관심사')]], [tr('승인 전'), tr('호스트만 봐요')]] as [string, string][])
           .map(([viewer, what]) => <ThemedText key={viewer} style={Typography.supporting} themeColor="textSecondary"><ThemedText style={Typography.supporting}>{viewer}</ThemedText>{` ${what}`}</ThemedText>)}
         <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr("프로필을 고쳐도 이미 보낸 신청은 그대로예요.")}</ThemedText>
-        <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('승인 전에는 호스트 말고는 아무도 못 봐요. 모임에서 나가거나 차단하면 그 뒤로는 안 보이지만, 이미 본 내용은 되돌릴 수 없어요.')}</ThemedText>
+        {/* '승인 전 · 호스트만 봐요' is the row above, so this line only adds what happens after. */}
+        <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('모임에서 나가거나 차단하면 그 뒤로는 안 보이지만, 이미 본 내용은 되돌릴 수 없어요.')}</ThemedText>
       </View>
       {/* Operator review is one more "who sees", so it sits in here and keeps the fixed bar short. */}
       <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.')}</ThemedText>
       <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('승인 전까지는 자리가 잡히지 않아요. 신청은 호스트가 답하기 전까지 이 화면에서 취소할 수 있어요. 취소하거나 거절되면 24시간 뒤에 다시 신청할 수 있어요.')}</ThemedText>
       <MeetupPolicyNotice mode="join" />
-    </Disclosure>
   </>;
   const sentRow = (detail?: string) => <ListRow analyticsId="app_meetup-join.pressable.11" title={tr('보낸 프로필과 답변')} detail={detail} onPress={() => router.push({ pathname: '/meetup-application', params: { requestId: participation!.id } })} />;
   const footerError = !!error && !!post && <>
@@ -492,10 +497,13 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
         <RaisedActionButton analyticsId="app_meetup-join.pressable.6" tone="secondary" onPress={() => { play('selection'); editAfterSheet.current = true; setSheetOpen(false); }} label={tr("프로필 수정")} />
       </ScrollView>}
     </DragSheet>
+    <DragSheet visible={rulesOpen} onClose={() => setRulesOpen(false)} title={copy('누가 무엇을 보나요', 'Who sees what')}>
+      <ScrollView analyticsId="app_meetup-join.scrollview.1" contentContainerStyle={styles.sheetBody}>{whoSeesDetails()}</ScrollView>
+    </DragSheet>
   </SafeAreaView></ThemedView>;
 }
 const styles = StyleSheet.create({
-  fill: { flex: 1 }, flex: { flex: 1, minWidth: 0 }, stack: { gap: Spacing.three },
+  fill: { flex: 1 }, flex: { flex: 1, minWidth: 0 }, stack: { gap: Spacing.three }, rulesLink: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   // The first load sits in the middle of the screen, like the other loading screens.
   loading: { flexGrow: 1, justifyContent: 'center' },
   content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', paddingHorizontal: Spacing.three, paddingTop: Spacing.one, paddingBottom: Spacing.four, gap: Spacing.three },

@@ -26,7 +26,7 @@ function detail({ authed = true, focused = true, loaded = true, offline = false,
     '@/components/raised-action-button': { RaisedActionButton: 'Action' },
     '@/constants/theme': { Depth: {} }, '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
-    '@/lib/event-videos': { eventVideo: () => null, eventIntro: text => text || null }, '@/lib/community-city': { useCommunityCity: () => ({}) },
+    '@/lib/event-videos': { eventVideo: () => null, eventPhoto: event => event.image ?? null, eventIntro: text => text || null }, '@/lib/community-city': { useCommunityCity: () => ({}) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: authed, me: { id: 'member' } }) }, '@/lib/mock': { CITIES: [] },
     '@/lib/product-analytics': product,
     '@/lib/supabase': { supabase: { rpc: async () => ({ data: false, error: null }) } },
@@ -59,19 +59,19 @@ test('event details show local date, city, short description and approximate pri
   visit(ui.tree);
   const text = nodes.filter(node => node.type === 'Text').map(node => node.props.children).filter(value => typeof value === 'string');
   assert.deepEqual(text, ['행사 정보', 'Real Festival', eventTime(ui.event), 'Park', 'Vancouver', '약 CA$34부터', '행사 소개', 'An evening of live music.', '함께 갈 모임 찾기', '티켓 확인하기']);
-  assert.equal(nodes.find(node => node.props?.children === 'An evening of live music.').props.numberOfLines, 3);
+  // The whole introduction shows: the feed already caps it at 280 characters.
+  assert.equal(nodes.find(node => node.props?.children === 'An evening of live music.').props.numberOfLines, undefined);
   assert.equal(nodes.find(node => node.type === 'Action').props.label, '함께 갈 모임 만들기');
   const buttons = nodes.filter(node => node.type === 'Pressable');
   assert.deepEqual(buttons.map(node => node.props.analyticsId), ['ticketmaster.detail.back', 'ticketmaster.meetup.find', 'ticketmaster.purchase']);
   assert.equal(buttons.at(-1).props.accessibilityRole, 'link');
 });
 
-test('missing introduction or price is shown honestly without guessing free admission', () => {
+test('a missing introduction or price drops its line instead of a placeholder, and never guesses free admission', () => {
   const ui = detail({ description: null, price: null });
   const visible = JSON.stringify(ui.tree);
-  assert.ok(visible.includes('가격 정보 없음'));
-  assert.ok(visible.includes('자세한 소개는 티켓에서 확인해 주세요.'));
-  assert.ok(!visible.includes('무료'));
+  for (const placeholder of ['가격 정보 없음', '자세한 소개는 티켓에서 확인해 주세요.', '행사 소개', '무료']) assert.ok(!visible.includes(placeholder), placeholder);
+  assert.ok(visible.includes('티켓 확인하기'));
 });
 
 test('guest, background and unsuccessful detail loads do not count as member clicks', async () => {

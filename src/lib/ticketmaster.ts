@@ -15,9 +15,10 @@ export function eventTime(event: TicketmasterEvent, locale = getLocale()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: timezone, month: 'long', day: 'numeric', weekday: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date(event.startsAt));
 }
 export function eventPriceLabel(event: TicketmasterEvent, locale = getLocale()) {
+  // The seller's price note sits in the event list's filter and footer, so a free listing reads as just 무료 (QA I-event-01).
+  if (event.price?.min === 0) return locale === 'ko-KR' ? '무료' : 'Free';
   if (locale === 'ko-KR') return koreanEventPriceLabel(event);
   if (!event.price) return 'Price unavailable';
-  if (event.price.min === 0) return 'Listed from free · Check seller';
   return koreanEventPriceLabel(event).replace(/^약 /, 'From approx. ').replace(/부터$/, '');
 }
 export const EVENT_CATEGORY_LABELS = { all: '전체', music: '음악', sports: '스포츠', arts: '공연·예술' } as const;

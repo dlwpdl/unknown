@@ -18,7 +18,7 @@ import { ControlMotion } from '@/constants/design-system';
 import { Depth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { eventIntro, eventVideo } from '@/lib/event-videos';
+import { eventIntro, eventPhoto, eventVideo } from '@/lib/event-videos';
 import { useAuth } from '@/lib/auth';
 import { recordProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
@@ -43,7 +43,7 @@ export default function EventDetailScreen() {
   const requestKey = `${cityId}:${id}:${attempt}`;
   const current = result?.key === requestKey ? result : null;
   const event = current?.event, error = current?.error ?? '', loading = !current;
-  const promo = event ? eventVideo(event) : null;
+  const promo = event ? eventVideo(event) : null, photo = event ? eventPhoto(event) : null, intro = eventIntro(event?.description);
   useEffect(() => {
     let active = true;
     const show = (event: TicketmasterEvent | null, error: string) => {
@@ -89,8 +89,8 @@ export default function EventDetailScreen() {
     <View style={[styles.header, { backgroundColor: theme.background }]}><Pressable analyticsId="ticketmaster.detail.back" accessibilityRole="button" accessibilityLabel={tr("뒤로가기")} onPress={() => { play('selection'); if (router.canGoBack()) router.back(); else router.replace('/events'); }} style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable><ThemedText accessibilityRole="header" style={styles.headerTitle}>{tr("행사 정보")}</ThemedText><View style={styles.back} /></View>
     <ScrollView analyticsId="ticketmaster.detail" style={styles.scroll} contentContainerStyle={[styles.content, loading && styles.loadingContent]}>
       {loading ? <GlingLoader color={theme.accent} accessibilityLabel={tr("행사 불러오는 중")} /> : error ? <StateCard kind="error" title={tr("행사를 확인하지 못했어요")} body={error} actionLabel={tr("다시 시도")} onAction={() => { play('selection'); setAttempt(n => n + 1); }} /> : event && <>
-        {(event.image || promo) && <View style={[styles.hero, { backgroundColor: theme.card }]}>
-          {event.image && <Image source={{ uri: event.image }} style={styles.heroImage} contentFit="cover" transition={ControlMotion.settleMs} accessibilityLabel={event.name} />}
+        {(photo || promo) && <View style={[styles.hero, { backgroundColor: theme.card }]}>
+          {photo && <Image source={{ uri: photo }} style={styles.heroImage} contentFit="cover" transition={ControlMotion.settleMs} accessibilityLabel={event.name} />}
           {promo && videoOpen && isFocused && <FestivalVideo youtubeId={promo.youtubeId} muted onError={() => { setVideoOpen(false); setVideoError('영상을 재생하지 못했어요. 다시 시도해 주세요.'); }} />}
           {promo && !videoOpen && <GlassSurface colorScheme="dark" interactive style={styles.playVideo}><Pressable analyticsId="ticketmaster.detail.video.play" accessibilityRole="button" accessibilityLabel={tr("{0} 보기", (promo.label))} onPress={() => { play('selection'); setVideoError(''); setVideoOpen(true); }} style={({ pressed }) => [styles.videoTouch, { opacity: pressed ? 0.65 : 1 }]}><SymbolView name={{ ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' }} size={16} tintColor="#F6F3F0" /><ThemedText style={styles.playVideoText}>{tr("영상 보기")}</ThemedText></Pressable></GlassSurface>}
           {promo && videoOpen && <GlassSurface colorScheme="dark" interactive style={styles.closeVideo}><Pressable analyticsId="ticketmaster.detail.video.close" accessibilityRole="button" accessibilityLabel={tr("영상 닫기")} onPress={() => { play('selection'); setVideoOpen(false); }} style={({ pressed }) => [styles.closeTouch, { opacity: pressed ? 0.65 : 1 }]}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={20} tintColor="#F6F3F0" /></Pressable></GlassSurface>}
@@ -98,11 +98,14 @@ export default function EventDetailScreen() {
         {promo && <ThemedText type="small" themeColor="textSecondary">{promo.label} · YouTube{videoOpen ? tr(" · 음소거 자동 재생") : ''}</ThemedText>}
         {!!videoError && <ThemedText accessibilityRole="alert" themeColor="accent">{tr(videoError)}</ThemedText>}
         <ThemedText type="subtitle" accessibilityRole="header">{event.name}</ThemedText>
-        <View style={[styles.facts, clayBox ? styles.clayCard : { backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="smallBold" themeColor="accent">{eventTime(event, appLocale)}</ThemedText><ThemedText>{event.venue || tr("장소 확인 필요")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{event.city}</ThemedText><ThemedText type="smallBold" themeColor={event.price ? 'accent' : 'textSecondary'}>{eventPriceLabel(event, appLocale)}</ThemedText></View>
+        <View style={[styles.facts, clayBox ? styles.clayCard : { backgroundColor: theme.card }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="smallBold" themeColor="accent">{eventTime(event, appLocale)}</ThemedText>{!!event.venue && <ThemedText>{event.venue}</ThemedText>}<ThemedText type="small" themeColor="textSecondary">{event.city}</ThemedText>{!!event.price && <ThemedText type="smallBold" themeColor="accent">{eventPriceLabel(event, appLocale)}</ThemedText>}</View>
         {!!eventNotice(event, appLocale) && <ThemedText accessibilityRole="alert" themeColor="accent">{eventNotice(event, appLocale)}</ThemedText>}
-        <View style={styles.description}><ThemedText type="smallBold" accessibilityRole="header">{tr("행사 소개")}</ThemedText><ThemedText type="small" themeColor="textSecondary" numberOfLines={3}>{eventIntro(event.description) ?? tr("자세한 소개는 티켓에서 확인해 주세요.")}</ThemedText></View>
-        <Pressable analyticsId="ticketmaster.meetup.find" accessibilityRole="button" accessibilityState={{ disabled: !meetupAllowed(event) }} disabled={!meetupAllowed(event)} onPress={findMeetups} style={({ pressed }) => [styles.button, clay ? styles.clayButton : [Depth.control, { borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card }], { opacity: !meetupAllowed(event) ? 0.4 : 1, }]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold">{tr("함께 갈 모임 찾기")}</ThemedText></Pressable>
-        <RaisedActionButton analyticsId="ticketmaster.meetup.create" label={tr("함께 갈 모임 만들기")} disabled={!meetupAllowed(event)} onPress={create} />
+        {/* The feed caps the introduction at 280 characters, so it shows whole instead of cut at 3 lines with no way to open it (QA I-event-04). No introduction, no section. */}
+        {!!intro && <View style={styles.description}><ThemedText type="smallBold" accessibilityRole="header">{tr("행사 소개")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{intro}</ThemedText></View>}
+        {/* A started, cancelled or unconfirmed event can't take a meetup: the notice above says why, and one way on replaces two greyed-out buttons. */}
+        {meetupAllowed(event) ? <><Pressable analyticsId="ticketmaster.meetup.find" accessibilityRole="button" onPress={findMeetups} style={[styles.button, clay ? styles.clayButton : [Depth.control, { borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card }]]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold">{tr("함께 갈 모임 찾기")}</ThemedText></Pressable>
+        <RaisedActionButton analyticsId="ticketmaster.meetup.create" label={tr("함께 갈 모임 만들기")} onPress={create} /></>
+          : <RaisedActionButton analyticsId="ticketmaster.discover" tone="secondary" label={tr("다른 행사 보기")} onPress={() => { play('selection'); router.dismissTo('/events'); }} />}
         <Pressable analyticsId="ticketmaster.purchase" accessibilityRole="link" accessibilityState={{ disabled: !event.ticketUrl }} disabled={!event.ticketUrl} onPress={openTicket} style={({ pressed }) => [styles.button, clay ? styles.clayButton : [Depth.control, { borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card }], { opacity: !event.ticketUrl ? 0.4 : 1, }]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold">{tr("티켓 확인하기")}</ThemedText></Pressable>
         {!!linkError && <ThemedText accessibilityRole="alert" themeColor="accent">{tr(linkError)}</ThemedText>}
       </>}

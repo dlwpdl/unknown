@@ -65,7 +65,7 @@ function ShareSheetContent({ post, visible, onClose, onShared }: ShareSheetProps
   }, [visible, invite, asBusinessId]);
   const url = withInviteCode(buildSharedPostUrl(post.id), invite && !asBusinessId ? inviteCode : null), image = getPostImageSource(post, me.id);
   const message = useMemo(() => sharedPostMessage({ ...post, place: post.room ? null : mapPinPlace(post.cityId, postMapBody(post.body).url)?.name }, asBusinessId ? null : inviteCode), [post, inviteCode, asBusinessId]);
-  const label = invite ? me.id === post.author.id ? '내 모임에 초대하기' : '모임 같이 가요' : post.tag.slug === 'festival' ? '페스티벌 같이 가요' : '게시물 공유';
+  const label = invite ? me.id === post.author.id ? '내 모임에 초대하기' : '이 모임에 초대하기' : post.tag.slug === 'festival' ? '페스티벌 같이 가요' : '게시물 공유';
   const control = [styles.button, clay && styles.buttonClay, { backgroundColor: clay ? 'transparent' : theme.backgroundElement, borderColor: clay ? 'transparent' : theme.line }];
   const requesting = busy || Boolean(loading && inbox);
   const dismiss = () => { if (!pending.current) { play('selection'); onClose(); } };

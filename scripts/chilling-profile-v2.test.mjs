@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { normalizeChillingProfile, chillingProfilePreview, loadChillingProfile, loadChillingApplication, requestChillingJoin } from '../src/lib/chilling-data.ts';
+import { normalizeChillingProfile, chillingProfilePreview, loadChillingProfile, loadChillingApplication, requestChillingJoin, chillingAnswerChoice } from '../src/lib/chilling-data.ts';
 
 const owner = '00000000-0000-4000-8000-000000000001';
 const profile = {
@@ -78,4 +78,13 @@ test('new application consent is bound to the displayed server revision', async 
   await assert.rejects(requestChillingJoin(client, 'post', '같이 걸어요', true, 'opaque-server-revision'), /CHILLING_PROFILE_CHANGED/);
   assert.equal(writes, 1);
   assert.equal(normalizeChillingProfile({ ...profile, revision: 'opaque-server-revision' }).revision, undefined);
+});
+
+test('a picked answer is the same choice whether it was saved in Korean or English', () => {
+  assert.equal(chillingAnswerChoice('promptOne', '조용한 카페에서 수다'), '조용한 카페에서 수다');
+  assert.equal(chillingAnswerChoice('promptOne', ' Chat at a quiet café '), '조용한 카페에서 수다');
+  assert.equal(chillingAnswerChoice('promptTwo', 'Small groups of up to 4'), '소규모(4명 이하)');
+  assert.equal(chillingAnswerChoice('promptOne', '소규모(4명 이하)'), null, 'a choice from the other question is not this one');
+  assert.equal(chillingAnswerChoice('promptOne', '같이 산책해요'), null, 'a written answer stays as written');
+  assert.equal(chillingAnswerChoice('intro', ''), null);
 });

@@ -70,5 +70,6 @@ const styles = StyleSheet.create({
   glass: { flex: 1, borderRadius: 12 },
   row: { flex: 1, flexDirection: 'row', padding: 4, gap: 4, borderRadius: 12 },
   selection: { position: 'absolute', top: 4, bottom: 4, left: 4, borderRadius: 9 },
-  tab: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', padding: 4 },
+  // Equal thirds whatever the label length, with room around the longest one (정기모임).
+  tab: { flex: 1, flexBasis: 0, minWidth: 0, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingVertical: 4, paddingHorizontal: 8 },
 });

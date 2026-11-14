@@ -13,6 +13,7 @@ import { ListCard } from '@/components/list-card';
 import { ThemedText } from '@/components/themed-text';
 import { PostShareSheet } from '@/components/post-share-sheet';
 import { StateCard } from '@/components/state-card';
+import { RaisedActionButton } from '@/components/raised-action-button';
 import { MeetupManageSheet } from '@/components/meetup-manage-sheet';
 import { meetupHostActions } from '@/components/meetup-room-summary';
 import { MeetupPolicyNotice } from '@/components/meetup-policy-notice';
@@ -32,13 +33,14 @@ import { supabase } from '@/lib/supabase';
 import type { Post } from '@/lib/types';
 
 // summaryRows: the caller's own rows, shown with the cancellation notice in one card under the meetups.
-type MyMeetupsProps = { onOpen: (postId: string) => Promise<void>; showLoadingIndicator?: boolean; hideTitle?: boolean; summaryRows?: ReactNode[] };
+// onBrowse/onCreate: with nothing here yet, the empty card offers both instead of a lone line of text.
+type MyMeetupsProps = { onOpen: (postId: string) => Promise<void>; showLoadingIndicator?: boolean; hideTitle?: boolean; summaryRows?: ReactNode[]; onBrowse?: () => void; onCreate?: () => void };
 export function MyMeetups(props: MyMeetupsProps) {
 
   const { isAuthed, me } = useAuth();
   return <MyMeetupsContent key={isAuthed ? me.id : 'guest'} {...props} />;
 }
-function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = false, summaryRows = [] }: MyMeetupsProps) {
+function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = false, summaryRows = [], onBrowse, onCreate }: MyMeetupsProps) {
   const { tr, t, language, locale: appLocale } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox(), clay = useClay(), reduced = useReducedMotion();
   const hidden = useContentVisibility();
@@ -160,7 +162,9 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = fal
     </Pressable> : <>
       {loading && items.length === 0 && showLoadingIndicator && <GlingLoader color={theme.accent} accessibilityLabel={tr("내 모임 불러오는 중")} />}
       {error && <StateCard kind="error" title={tr('모임을 불러오지 못했어요')} body={tr('연결이 잠시 끊겼어요. 다시 시도해 주세요.')} actionLabel={tr('다시 불러오기')} onAction={() => void refresh()} />}
-      {!loading && !error && items.length === 0 && <ThemedText type="small" style={styles.support} themeColor="textSecondary">{t.meetup.empty}</ThemedText>}
+      {!loading && !error && items.length === 0 && (onBrowse ? <StateCard title={tr('아직 내 모임이 없어요')} body={t.meetup.empty} actionLabel={tr('모임 둘러보기')} onAction={onBrowse}>
+        {!!onCreate && <RaisedActionButton compact tone="secondary" analyticsId="app_tabs_meetups.pressable.3" label={tr('직접 모임 열기')} onPress={() => { play('selection'); onCreate(); }} />}
+      </StateCard> : <ThemedText type="small" style={styles.support} themeColor="textSecondary">{t.meetup.empty}</ThemedText>)}
       {/* 내가 연 모임 → 참여 중 → 신청 내역 순서. 종료·나가기 같은 되돌릴 수 없는 동작은 ⋯ 메뉴 안에만 둔다. */}
       {([['host', tr('내가 연 모임')], ['approved', tr('참여 중')], ['other', tr('신청 내역')], ['closed', tr('지난 모임')]] as const).map(([group, heading]) => {
         const list = items.filter(item => group === 'other' ? item.role === 'pending' || item.role === 'rejected' || item.role === 'cancelled' : item.role === group);
