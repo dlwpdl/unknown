@@ -107,6 +107,8 @@ test('검색용 글·허브·옛 주소 페이지는 H1 하나, 70자 이상 설
     const vancouver = readFileSync(join(directory, 'vancouver.html'), 'utf8');
     assert.equal(h1s(vancouver), 1);
     assert.match(vancouver, /id="gling-static-city"/);
+    assert.match(vancouver, /<style id="gling-static-wait">#root\{display:none\}<\/style><\/head>/, 'the reader stays hidden until the live feed replaces the copy');
+    assert.doesNotMatch(readFileSync(join(directory, 'vancouver', '2.html'), 'utf8'), /gling-static-wait/, 'build-only pages never wait for a feed');
     assert.match(vancouver, /최근 30일 동안 밴쿠버 한인들이 글링에 올린 공개 글은 40개예요/);
     assert.match(vancouver, /라이프, 부동산, 구인구직 이야기가 많이 올라와요/);
     assert.match(vancouver, /버나비·써리|써리·버나비/);
