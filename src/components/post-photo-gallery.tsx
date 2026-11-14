@@ -106,6 +106,10 @@ export function PostPhotoGallery({ post }: { post: Post }) {
     play('selection'); move(direction.x * viewport.width / 2, direction.y * viewport.height / 2);
   };
   if (!photos.length) return null;
+  // A lone photo sets the frame to its own shape, kept between 4:5 and 16:9, so no grey bands sit beside it (QA I-post-05).
+  // Several photos keep the fixed 4:3 frame so swiping never changes the height.
+  const loneRatio = photos.length === 1 ? aspectRatios[`${post.id}:${photos[0]}`] : undefined;
+  const frameRatio = post.room || !loneRatio ? 4 / 3 : Math.min(16 / 9, Math.max(4 / 5, loneRatio));
 
   return <View style={styles.root} onLayout={onLayout}>
     <View style={styles.stage}>
@@ -119,7 +123,7 @@ export function PostPhotoGallery({ post }: { post: Post }) {
           <Image
             key={`${post.id}-${position}:${uri}`}
             source={Math.abs(position - index) <= 1 ? sources[position] : null}
-            style={{ width, aspectRatio: 4 / 3, maxHeight: Math.min(520, screen.height * 0.55), backgroundColor: theme.backgroundElement }}
+            style={{ width, aspectRatio: frameRatio, maxHeight: Math.min(520, screen.height * 0.55), backgroundColor: theme.backgroundElement }}
             // Meetup photos fill the frame (QA Q18); post photos stay whole so text in them is not cut. Tapping opens the original either way.
             contentFit={post.room ? 'cover' : 'contain'}
             onLoad={({ source: { width: photoWidth, height: photoHeight } }) => {

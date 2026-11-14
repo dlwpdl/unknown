@@ -24,7 +24,7 @@ export const en: Translations = {
     emptyTitle: 'Be the first to share a story', emptyBody: 'Share a moment from your day or ask your neighbours something.',
     postImage: 'Photo', hashtagFilter: (hashtag) => `Filter by #${hashtag}`, cityVancouver: 'Vancouver',
     cityPickerTitle: 'Choose a city', cityPickerBody: 'Which city do you want to explore?',
-    cityPickerNote: 'When you’re signed in, we save your city to your profile. No location access needed.',
+    cityPickerNote: 'Picking from the list doesn’t need location access. If you’re signed in, we save your city to your profile.',
     citySoon: 'Coming soon', citySelected: 'Selected',
     citySearch: 'Search by city, province or state', citySearchClear: 'Clear search', cityOpenSection: 'Available now',
     cityNoResults: 'No cities found.', soonTitle: (name) => `${name} is coming soon`,
@@ -40,7 +40,7 @@ export const en: Translations = {
   write: {
     title: 'Write', postCity: 'City', backToDraft: 'Back to your draft',
     postCityNote: 'Choose a city for this post. Your profile city won’t change.', category: 'Category', bodyLabel: 'Post text',
-    placeAdd: 'Add location', placeChange: 'Change location', placeRemove: 'Remove location', placePlaceholder: 'Place, address or Google Maps link',
+    placeAdd: 'Add a place', placeChange: 'Change place', placeRemove: 'Remove location', placePlaceholder: 'Place, address or Google Maps link',
     placeNote: 'This location will be shared with your post. Check it on the map first.',
     placeInvalid: 'Enter a place or address, or paste a Google Maps share link.', mapPlaceholder: 'Google Maps share link (optional)',
     mapInvalid: 'In Google Maps, copy the place’s share link and paste it here.', bodyTooLong: 'Posts can be up to 4,000 characters, including the map link. Try shortening yours.',
@@ -64,7 +64,7 @@ export const en: Translations = {
     listingBodyPlaceholder: 'Describe what you’re looking for or offering.',
     bodyPlaceholder: {
       life: 'Share a moment from your day or ask a question', festival: 'Talk about a festival or show you want to see', food: 'Share a hidden-gem spot you love',
-      travel: 'Share a trip or a day out', shopping: 'Share shopping tips, deals or secondhand finds', settlement: 'Share how you settled in: immigration, study or working holiday',
+      travel: 'Share a trip or a day out', shopping: 'Share a sale or a hot deal', settlement: 'Share how you settled in: immigration, study or working holiday',
       housing: 'Talk about real estate, rentals or roommates', education: 'Share tips on schools, classes or learning a language',
       business: 'Introduce your business or share tips on running one', meetup: 'What’s the meetup, and how many people are you looking for?',
       jobs: 'Add the requirements, location and pay, or describe the work you’re looking for', used: 'Add the condition, price and pickup area',
@@ -177,7 +177,7 @@ export const en: Translations = {
     price: (value) => `$${value.toLocaleString('en-CA', { maximumFractionDigits: 0 })}`, expiresIn: (days) => days <= 0 ? 'Closes today' : `Closes in ${days} ${days === 1 ? 'day' : 'days'}`,
   },
   report: {
-    title: (nickname) => `Report ${nickname}`, body: 'Our moderation team will review the content and related activity.', close: 'Close', details: 'Tell us more (optional)',
+    title: (nickname) => `Report ${nickname}`, postTitle: 'Report this post', commentTitle: 'Report this comment', author: (nickname) => `Posted by ${nickname}`, body: 'Our moderation team will review the content and related activity.', close: 'Close', details: 'Tell us more (optional)',
     submit: 'Submit report', submitting: 'Submitting…', doneTitle: 'Report received',
     doneBody: 'We’ve sent your report to our moderation team. You won’t see the reported content anymore. If it breaks the rules, it’ll be hidden from everyone.',
     doneBlocked: 'Reported and blocked. You won’t see this person’s content anymore.', doneButBlockFailed: 'We got your report, but couldn’t block this person. Try again in a moment.',

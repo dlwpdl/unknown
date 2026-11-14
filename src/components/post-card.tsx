@@ -14,7 +14,9 @@ import { PostBody } from '@/components/post-body';
 import { PostMapLink } from '@/components/post-map-link';
 import { PostAttachmentLink } from '@/components/post-attachment-link';
 import { dealLabel } from '@/lib/listing-details';
-import { postInfoParts } from '@/lib/post-info';
+import { englishTail, isPastEvent, postInfoParts } from '@/lib/post-info';
+import { getCityPlaces, type CityPlace } from '@/lib/city-places';
+import { loadCityBusinessLinks } from '@/lib/webshops';
 import { CITIES } from '@/lib/mock';
 import { TranslationControl } from '@/components/content-translation';
 import { useContentTranslation } from '@/hooks/use-content-translation';
@@ -113,6 +115,23 @@ export function PostCard({
   const [loadedPhoto, setLoadedPhoto] = useState<{ key: string; aspectRatio: number } | null>(null);
   const [introLines, setIntroLines] = useState<{ body: string; lines: number } | null>(null), [introOpen, setIntroOpen] = useState(false);
   const [creditsOpen, setCreditsOpen] = useState(false);
+  const [englishOpen, setEnglishOpen] = useState(false);
+  // A business post's address opens the business's own Gling place when it has one, like its profile's 위치 보기 (QA I-post-06).
+  // Merchant web has no /map route, so there the address keeps its outside map link.
+  const businessPlaceKey = postDetail && post.business && Platform.OS !== 'web' ? `${post.cityId}:${post.business.id}` : null;
+  const [businessPlace, setBusinessPlace] = useState<{ key: string; place: CityPlace | null } | null>(null);
+  useEffect(() => {
+    if (!businessPlaceKey) return;
+    const [cityId, merchantId] = businessPlaceKey.split(':');
+    let active = true;
+    void loadCityBusinessLinks(supabase, cityId).then(links => {
+      const placeKey = Object.entries(links).find(([, id]) => id === merchantId)?.[0];
+      let place: CityPlace | null = null;
+      try { place = placeKey ? getCityPlaces(cityId).find(item => item.id === placeKey) ?? null : null; } catch { /* unknown city: keep the outside link */ }
+      if (active) setBusinessPlace({ key: businessPlaceKey, place });
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [businessPlaceKey]);
   const { width: windowWidth } = useWindowDimensions();
   const [menuOpen, setMenuOpen] = useState(false), [deleteOpen, setDeleteOpen] = useState(false);
   const [textLines, setTextLines] = useState<{ text: string; lines: number } | null>(null), [textOpen, setTextOpen] = useState(false);
@@ -172,9 +191,11 @@ export function PostCard({
   const feedText = splitPostPhotoCredits(shown.body).body;
   const textKey = `${translation.display.title}\n${feedText}`;
   const textLong = textLines?.text === textKey && textLines.lines > 3;
+  // Korean readers get the Korean part first; the same text in English folds under one line (QA I-post-06).
+  const english = info && language === 'ko' ? englishTail(info.paragraphs) : null;
   const bodyText = <PostBody
     themeColor={meetupDetail || info ? 'text' : 'textSecondary'}
-    paragraphs={info?.paragraphs}
+    paragraphs={english && !englishOpen ? english.main : info?.paragraphs}
     style={[styles.body, post.room && flat && styles.meetupBody, info && styles.detailBody]}
     numberOfLines={onPress ? 3 : introLong && !introOpen ? 4 : undefined}
     onTextLayout={meetupDetail && measuredLines == null ? (event) => setIntroLines({ body: displayBody, lines: event.nativeEvent.lines.length }) : undefined}
@@ -286,7 +307,7 @@ export function PostCard({
         icon: { ios: 'trash', android: 'delete', web: 'delete' } },
     ] : [{ key: 'hide', analyticsId: 'post.manage.hide', label: tr('이 글 숨기기'), hint: tr('내 화면에서만 사라지고, 신고는 가지 않아요.'), onPress: () => void hidePost(),
       icon: { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' } },
-    { key: 'report', analyticsId: 'components_post-card.pressable.5', label: t.report.title(post.business?.name ?? post.author.nickname), danger: true,
+    { key: 'report', analyticsId: 'components_post-card.pressable.5', label: t.report.postTitle, danger: true,
       icon: { ios: 'flag', android: 'flag', web: 'flag' }, onPress: () => { if (isAuthed) setReportOpen(true); else promptLogin(t.auth.reasonReport); } }]} />}
     {deleteOpen && <MeetupManageSheet visible title={tr('이 글을 삭제할까요?')} onClose={() => setDeleteOpen(false)} actions={[
       { key: 'delete-confirm', analyticsId: 'components_post-detail.pressable.15', label: tr('글 삭제'), hint: tr('삭제한 글은 되돌릴 수 없어요. 달린 댓글도 함께 보이지 않게 됩니다.'), danger: true,
@@ -320,6 +341,8 @@ export function PostCard({
     const name = post.business?.name ?? post.author.nickname;
     const kind = post.business ? tr('비즈니스') : post.room ? tr('모임 호스트') : `${tr(post.tag.label)}${isListing ? ` · ${listingKind}` : ''}`;
     const time = `${post.createdAt ? relativeTime(post.createdAt, undefined, appLocale) : post.createdAtLabel ?? ''}${post.bumpedAt ? ` · ${t.detail.bumpedLabel}` : ''}`;
+    // A festival whose last day has passed says so in its byline (QA I-home-06); the feed order stays the server's.
+    const pastEvent = isPastEvent(post);
     const title = translation.display.title ?? post.title;
     const logo = post.business?.avatarUri && failedBusinessLogo !== post.business.avatarUri ? post.business.avatarUri : null;
     const openAuthor = () => { play('reaction'); onAuthor?.(); };
@@ -354,6 +377,7 @@ export function PostCard({
                 </Pressable>
                 <ThemedText type="small" themeColor="textSecondary">{[kind, time].filter(Boolean).map(part => `· ${part}`).join(' ')}</ThemedText>
                 <PostAdLabel hashtags={post.hashtags} />
+                {pastEvent && <ThemedText type="smallBold" themeColor="textSecondary">{tr('지난 행사')}</ThemedText>}
                 {mine && <ThemedText type="smallBold" style={{ color: theme.accent }}>{t.feed.mineBadge}</ThemedText>}
               </View>
               <Pressable analyticsId="post.manage.open" accessibilityRole="button" accessibilityLabel={tr('글 메뉴')}
@@ -549,13 +573,20 @@ export function PostCard({
             </View>}
           </View>}
           {info && (infoPlace?.url || infoLinks.length > 0) && <View style={styles.info}>
-            {infoPlace?.url && (linkedPlace ? <PostPlaceCard place={linkedPlace} /> : <PostMapLink url={infoPlace.url} label={infoPlace.label} />)}
+            {infoPlace?.url && (linkedPlace ? <PostPlaceCard place={linkedPlace} />
+              : businessPlace?.key === businessPlaceKey && businessPlace?.place ? <PostPlaceCard place={businessPlace.place} />
+              : <PostMapLink url={infoPlace.url} label={infoPlace.label} />)}
             {infoLinks.length > 0 && <View style={[styles.infoLinks, { borderColor: theme.line }]}>
               {infoLinks.map((url, index) => <View key={url} style={index > 0 && [styles.infoDivider, { borderTopColor: theme.line }]}><PostAttachmentLink url={url} row /></View>)}
             </View>}
           </View>}
           {beforeBody}
-          {!meetupDetail && (info ? <View style={styles.detailBodyWrap}>{bodyText}</View> : bodyText)}
+          {!meetupDetail && (info ? <View style={styles.detailBodyWrap}>{bodyText}
+            {english && <Pressable analyticsId="components_post-card.pressable.1" accessibilityRole="button" accessibilityState={{ expanded: englishOpen }}
+              onPress={() => { play('selection'); setEnglishOpen(open => !open); }} style={styles.moreText}>
+              <ThemedText type="smallBold" themeColor="textSecondary">{englishOpen ? tr('영어 접기') : tr('영어로도 보기')}</ThemedText>
+            </Pressable>}
+          </View> : bodyText)}
           {listingLine}
         </Pressable>
         {meetupDetail && <>

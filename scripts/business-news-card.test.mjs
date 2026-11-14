@@ -14,7 +14,7 @@ function card({ fontScale = 1 } = {}) {
     'react-native': { View: 'View', StyleSheet: { create: value => value, hairlineWidth: 1 }, useWindowDimensions: () => ({ fontScale }) },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'ThemedText' },
     '@/components/post-ad-label': { PostAdLabel: 'PostAdLabel' }, '@/components/content-translation': { TranslationControl: 'TranslationControl' },
-    '@/constants/design-system': { Typography: { body: { fontSize: 15, lineHeight: 22 }, supporting: {} }, ControlMotion: { pressedOpacity: .82 } },
+    '@/constants/design-system': { Typography: { body: { fontSize: 15, lineHeight: 22 }, supporting: {} }, ControlMotion: { pressedOpacity: .82 }, IconSize: { toolbar: 21 } },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16 } }, '@/hooks/use-theme': { useTheme: () => ({ line: '#343443', backgroundElement: '#222231' }) },
     '@/hooks/use-language': { useLanguage: () => ({ tr: (text, ...args) => args.reduce((s, a, i) => s.replace(`{${i}}`, String(a)), text), locale: 'ko-KR' }) },
     '@/hooks/use-content-translation': { useContentTranslation: (_kind, _id, source) => ({ display: source }) },
@@ -71,4 +71,11 @@ test('grid tile opens the post, shows business name and title, and falls back ph
   assert.equal(all.find(n => n.type === 'Image').props.source.uri, 'https://example.invalid/logo.png');
   all.find(n => n.type === 'Image').props.onError(); tree = app.render(props); all = nodes(tree);
   assert.ok(!all.some(n => n.type === 'Image') && all.some(n => n.type === 'SymbolView'));
+  // No picture at all: the box carries the title instead of standing empty, and the title is not repeated under it (QA I-home-05).
+  assert.equal(all.filter(n => n.props?.children === post.title).length, 1);
+});
+test('a row without a photo shows the business logo, the same fallback as the grid', () => {
+  const app = card();
+  const tree = app.render({ post: { ...post, imageUris: [], business: { id: 'b', name: '실제 비즈니스', avatarUri: 'https://example.invalid/logo.png' } }, onPress() {}, onAuthor() {} });
+  assert.equal(nodes(tree).find(n => n.type === 'Image').props.source.uri, 'https://example.invalid/logo.png');
 });

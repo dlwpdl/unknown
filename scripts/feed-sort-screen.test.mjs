@@ -96,7 +96,10 @@ test('business remains a news board; only its explicit directory action opens bu
   const card = nodes(app.list().renderItem({ item: post('business-news', { tag: TAGS.find(t => t.slug === 'business') }), index: 2 })).find(n => n.type === 'BusinessNewsCard');
   assert.equal(card.props.post.id, 'business-news');
   assert.ok(card.props.onPress && card.props.onAuthor, 'existing detail and profile navigation remain available');
-  app.sort().action.props.onPress();
+  // The list/grid switch shares the directory action's row (QA I-home-05).
+  const action = nodes(app.sort().action);
+  assert.ok(action.some(n => n.type === 'ListingViewSwitch'));
+  action.find(n => n.props?.analyticsId === 'business.directory.open').props.onPress();
   assert.equal(app.routes.at(-1), '/businesses');
 });
 

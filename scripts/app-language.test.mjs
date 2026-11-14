@@ -184,3 +184,13 @@ test('web fetches the English UI dictionary only on demand and translates once i
   assert.equal(exports.translateUi('en', '설정'), 'Settings');
   assert.equal(exports.uiEnglishPending(), null);
 });
+
+test('동네 이름 뒤 조사는 받침에 맞춰 붙는다 (QA I-compose-06)', async () => {
+  const { withRo } = await import('../src/i18n/ko.ts');
+  assert.equal(withRo('예일타운'), '예일타운으로');
+  assert.equal(withRo('버나비'), '버나비로');
+  assert.equal(withRo('롭슨'), '롭슨으로');
+  assert.equal(withRo('밴쿠버 서쪽'), '밴쿠버 서쪽으로');
+  assert.equal(withRo('노스 밴쿠버'), '노스 밴쿠버로');
+  assert.equal(withRo('Yaletown'), 'Yaletown(으)로');
+});

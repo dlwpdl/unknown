@@ -315,6 +315,19 @@ test('report then block stops when its sheet, account, profile or target changes
   }
 });
 
+test('a post or comment report says what is reported and who wrote it; a person report keeps the name (QA I-post-04)', () => {
+  const data = { native: { Animated: { Value: class { interpolate() { return this; } }, View: 'AnimatedView' }, Easing: {}, Alert: { alert() {} } } };
+  const header = props => {
+    const harness = mount('../src/components/report-sheet.tsx', 'ReportSheet', data, { visible: true, targetId: 'target', reportedUserId: 'author', reportedNickname: '포근한수달', onClose() {}, ...props });
+    const texts = harness.nodes().filter(node => node.props?.type === 'subtitle' || node.props?.type === 'small').map(node => node.props.children).slice(0, 2);
+    harness.cleanup();
+    return texts;
+  };
+  assert.deepEqual(header({ targetType: 'post' }), ['이 글 신고하기', '작성자 포근한수달']);
+  assert.deepEqual(header({ targetType: 'comment' }), ['이 댓글 신고하기', '작성자 포근한수달']);
+  assert.deepEqual(header({ targetType: 'user' }), ['포근한수달 신고하기', '운영팀이 내용과 관련 활동을 함께 확인해요.']);
+});
+
 test('suggested sends retry with the same identity and preserve the typed draft', async context => {
   const calls = [];
   const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', {

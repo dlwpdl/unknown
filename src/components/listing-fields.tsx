@@ -22,6 +22,7 @@ import {
   type ListingCategory, type ListingDraft, type ListingMissing,
 } from '@/lib/listing-details';
 import { CITIES } from '@/lib/mock';
+import { withRo } from '@/i18n/ko';
 import { findNeighborhood, nearestNeighborhood, neighborhoodName, neighborhoodsFor } from '@/lib/neighborhoods';
 
 const DEALS = { housing: HOUSING_DEALS, jobs: JOB_DEALS, used: USED_DEALS } as const;
@@ -213,13 +214,17 @@ export function NeighborhoodPicker({ visible, cityId, initial, onClose, onConfir
         {visible && <DiscoveryMap markers={markers} cityName={city?.englishName ?? ''} selectedId={selected} center={center} bottomInset={0}
           onSelect={id => choose(id, false)}
           onMoved={bounds => { const next = nearestNeighborhood(cityId, { latitude: (bounds.south + bounds.north) / 2, longitude: (bounds.west + bounds.east) / 2 }, 4); if (next) setSelected(next.id); }} />}
+        {/* The centre the picker reads, drawn from the first frame (QA I-compose-06). */}
+        <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.centerPin}>
+          <SymbolView name={{ ios: 'mappin', android: 'location_on', web: 'location_on' }} size={CENTER_PIN} tintColor={theme.accent} />
+        </View>
       </View>
       <View style={[styles.sheet, { backgroundColor: theme.background, borderTopColor: theme.line }]}>
         <ScrollView analyticsId="listing.area.list" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
           {items.map(item => <Chip key={item.id} label={neighborhoodName(item, language)} selected={selected === item.id} onPress={() => choose(item.id)} />)}
         </ScrollView>
         <ThemedText type="caption" themeColor="textSecondary">{tr('지도를 움직이면 가운데 동네가 골라져요. 누른 지점은 저장하지 않고, 동네 이름과 동네 중심만 저장해요.')}</ThemedText>
-        <RaisedActionButton analyticsId="listing.area.confirm" disabled={!current} label={current ? tr('{0}(으)로 정하기', neighborhoodName(current, language)) : tr('동네를 골라 주세요')}
+        <RaisedActionButton analyticsId="listing.area.confirm" disabled={!current} label={current ? language === 'ko' ? `${withRo(neighborhoodName(current, language))} 정하기` : tr('{0}(으)로 정하기', neighborhoodName(current, language)) : tr('동네를 골라 주세요')}
           onPress={() => { if (current) { play('selection'); onConfirm(current.id); } }} />
       </View>
     </SafeAreaView>
@@ -227,7 +232,10 @@ export function NeighborhoodPicker({ visible, cityId, initial, onClose, onConfir
   </Modal>;
 }
 
+const CENTER_PIN = 32;
 const styles = StyleSheet.create({
+  // The pin's tip sits on the map centre.
+  centerPin: { position: 'absolute', left: '50%', top: '50%', marginLeft: -CENTER_PIN / 2, marginTop: -CENTER_PIN },
   root: { gap: Spacing.three, marginTop: Spacing.two },
   section: { gap: Spacing.two },
   sectionHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: Spacing.two },

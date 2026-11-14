@@ -91,11 +91,13 @@ export function ListingCard({ post, onPress, variant = 'row' }: { post: Detailed
       {photoBadge && <View style={styles.tileBadge}>{photoBadge}</View>}
     </View>
     {text.price && <ThemedText style={styles.tilePrice}>{text.price}</ThemedText>}
-    <ThemedText type="supporting" numberOfLines={fontScale > 1.2 ? 2 : 1}>{post.title}</ThemedText>
+    {/* Without a photo the box already shows the title (QA I-home-09). */}
+    {showPhoto && <ThemedText type="supporting" numberOfLines={fontScale > 1.2 ? 2 : 1}>{post.title}</ThemedText>}
     <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>{[text.area, text.time].filter(Boolean).join(' · ')}</ThemedText>
   </Pressable>;
 
-  if (variant === 'big') return <Pressable analyticsId="listing.card.used" accessibilityRole="button" accessibilityLabel={label} onPress={press}
+  // A big card with no photo reads as the list row instead of a screen-wide grey box (QA I-home-09).
+  if (variant === 'big' && showPhoto) return <Pressable analyticsId="listing.card.used" accessibilityRole="button" accessibilityLabel={label} onPress={press}
     style={({ pressed }) => [styles.big, { opacity: pressed ? ControlMotion.pressedOpacity : text.closed ? 0.55 : 1 }]}>
     <View>
       {image(styles.wide, true)}
@@ -114,19 +116,21 @@ export function ListingCard({ post, onPress, variant = 'row' }: { post: Detailed
     <ThemedText type="caption" numberOfLines={1} style={styles.tagText}>{post.title}</ThemedText>
   </Pressable>;
 
+  const jobLine = [text.price, text.jobTypes.join(', '), post.business ? text.area : null].filter(Boolean).join(' · ');
   const meta = <View style={styles.meta}>
     <Badge label={text.closed ? text.status : text.deal} tone={text.closed ? 'done' : wanting(details) ? 'want' : 'accent'} />
     <ThemedText type="small" themeColor="textSecondary" style={styles.flex} numberOfLines={1}>{[where, text.time].filter(Boolean).join(' · ')}</ThemedText>
   </View>;
   return <Pressable analyticsId={`listing.card.${category}`} accessibilityRole="button" accessibilityLabel={label} onPress={press}
     style={({ pressed }) => [styles.row, { borderBottomColor: theme.line, opacity: pressed ? ControlMotion.pressedOpacity : text.closed ? 0.55 : 1 }]}>
-    {category === 'used' && image(styles.thumb)}
+    {category === 'used' && showPhoto && image(styles.thumb)}
     <View style={styles.copy}>
       {category !== 'used' && meta}
       <ThemedText numberOfLines={fontScale > 1.2 ? undefined : 2} style={[styles.title, category === 'jobs' && Typography.menu]}>{post.title}</ThemedText>
       {category === 'used' && <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{[text.area, text.time].filter(Boolean).join(' · ')}</ThemedText>}
+      {/* No pay or work type: the line drops out instead of leaving a gap (QA I-home-08). */}
       {category === 'jobs'
-        ? <ThemedText type="smallBold" themeColor="accent">{[text.price, text.jobTypes.join(', '), post.business ? text.area : null].filter(Boolean).join(' · ')}</ThemedText>
+        ? !!jobLine && <ThemedText type="smallBold" themeColor="accent">{jobLine}</ThemedText>
         : text.price && <View style={styles.meta}><ThemedText style={styles.price}>{text.price}</ThemedText>
           {category === 'used' && text.closed && <Badge label={text.status} tone="done" />}
           {category === 'used' && !text.closed && details.type === 'used' && details.deal === 'buy' && <Badge label={text.deal} tone="want" />}</View>}

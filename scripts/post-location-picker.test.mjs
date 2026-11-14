@@ -8,6 +8,7 @@ import * as discovery from '../src/lib/discovery.ts';
 import { discoveryMarkers } from '../src/lib/discovery-map-html.ts';
 import { CITIES } from '../src/lib/mock.ts';
 import * as maps from '../src/lib/post-maps.ts';
+import * as neighborhoods from '../src/lib/neighborhoods.ts';
 
 const root = new URL('../', import.meta.url);
 const json = path => JSON.parse(readFileSync(new URL(path, root), 'utf8'));
@@ -41,7 +42,7 @@ function picker({ cityName = 'Vancouver', initialPin = null, initialLabel = '', 
     '@/components/clay': { useClay: () => false, ClayIcon: () => null, ClayPillFill: () => null },
     '@/hooks/use-city-places': { useCityPlacesRevision: () => catalog.revision }, '@/hooks/use-theme': { useTheme: () => ({ accent: '#6E4AA2' }) },
     '@/lib/city-places': places, '@/lib/discovery': discovery, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
-    '@/lib/location': { isFreshLocation: () => true }, '@/lib/mock': { CITIES }, '@/lib/post-maps': maps, 'expo-location': location,
+    '@/lib/location': { isFreshLocation: () => true }, '@/lib/mock': { CITIES }, '@/lib/neighborhoods': neighborhoods, '@/lib/post-maps': maps, 'expo-location': location,
   });
   const render = () => { at = 0; return nodes(ui.PostLocationPicker({ visible: true, initialPin, initialLabel, cityName, onClose() {}, onConfirm: (pin, label) => confirmed.push({ pin, label }) })); };
   const find = (tree, id) => tree.find(node => node.props?.analyticsId === id);
@@ -132,4 +133,12 @@ test('a search the address lookup only answers with the city itself pins nothing
   assert.equal(app.render().find(node => node.type === 'DiscoveryMap').props.selectedId, top.id);
   field().props.onChangeText(top.name.slice(0, 3));
   assert.ok(shown('글링 지도에 있는 곳'), 'typing again opens the list again');
+});
+
+test('a picked spot without a name says which neighbourhood it is near (QA I-compose-08)', () => {
+  const [area] = neighborhoods.neighborhoodsFor('vancouver');
+  const tree = picker({ initialPin: { latitude: area.latitude, longitude: area.longitude } }).render();
+  assert.ok(tree.some(node => node.props?.children === `${neighborhoods.neighborhoodName(area, 'ko')} 근처`));
+  assert.ok(tree.some(node => node.props?.accessibilityRole === 'header' && node.props.children === '장소 붙이기'), 'the screen is named like its toolbar button');
+  assert.ok(!picker().render().some(node => typeof node.props?.children === 'string' && node.props.children.endsWith(' 근처')), 'nothing before a spot is picked');
 });

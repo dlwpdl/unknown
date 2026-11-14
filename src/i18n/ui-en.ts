@@ -4881,4 +4881,23 @@ export const uiEnglish: Record<string, string> = {
   "아직 리뷰가 없어요 · 서로 다른 5명이 남기면 평점이 보여요": "No reviews yet · A rating shows once 5 different people leave one",
   "리뷰 {0}개가 모였어요 · 서로 다른 5명이 남기면 평점이 보여요": "{0} reviews so far · A rating shows once 5 different people leave one",
   "일상 글": "Posts",
+  // redesign-home (2026-11-14)
+  "시작하기": "Get started",
+  "더 이상 안 보기": "Don’t show again",
+  "검색 지우기": "Clear search",
+  "지난 행사": "Past event",
+  "보고 싶은 주제를 골라요. 자주 보는 6개는 위 줄에도 있어요.": "Pick a topic to browse. The six people use most are also in the row above.",
+  "모든 주제를 한 번에": "Every topic at once",
+  "글 공유": "Share post",
+  "받는 사람은 글링에 로그인하면 전체 글을 볼 수 있어요.": "They can read the whole post once they log in to Gling.",
+  "영어로도 보기": "Show the English too",
+  "영어 접기": "Hide the English",
+  "한 줄만 적어도 돼요. 예) {0}": "One line is enough. e.g. {0}",
+  "한 줄만 적어도 돼요.": "One line is enough.",
+  "이케아 책상 팔아요 40불": "Selling an IKEA desk, $40",
+  "버나비 카페 주말 알바 구해요": "Burnaby café hiring for weekends",
+  "다운타운 원룸 렌트 내놔요 월 2100불": "Downtown studio for rent, $2,100/month",
+  "사람 구해요·일 찾아요": "Hiring · Looking for work",
+  "모임 만들기 화면으로 넘어가요": "Opens the meetup setup screen",
+  "장소 붙이기": "Add a place"
 };

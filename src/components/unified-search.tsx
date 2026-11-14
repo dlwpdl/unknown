@@ -7,6 +7,7 @@ import { Image } from 'expo-image';
 import { SymbolView } from '@/components/symbol-view';
 
 import { FlatList, Pressable } from '@/components/analytics-controls';
+import { CityPlacePhoto } from '@/components/city-place-photo';
 import { ClayPillFill, useClay } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
@@ -21,7 +22,9 @@ import { useRevealChip } from '@/hooks/use-reveal-chip';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
+import { getCityPlaces, type CityPlace } from '@/lib/city-places';
 import { CITIES } from '@/lib/mock';
+import { nearestNeighborhood, neighborhoodName } from '@/lib/neighborhoods';
 import { supabase } from '@/lib/supabase';
 import { loadUnifiedSearch, type UnifiedSearchItem, type UnifiedSearchKind } from '@/lib/unified-search';
 
@@ -111,30 +114,59 @@ type ViewProps = {
   onBack: () => void; onQuery: (query: string) => void; onClear: () => void; onKind: (kind: UnifiedSearchKind) => void;
   onScope: (city: string | null) => void; onRetry: () => void; onMore: () => void; onOpen: (item: UnifiedSearchItem, event?: GestureResponderEvent) => void;
 };
-type Row = { type: 'heading'; kind: Kind } | { type: 'item'; item: UnifiedSearchItem };
+type Row = { type: 'heading'; kind: Kind; full: boolean } | { type: 'item'; item: UnifiedSearchItem };
 export function UnifiedSearchView(props: ViewProps) {
   const theme = useTheme(), { language, tr } = useLanguage(), { play } = useInteractionFeedback(), ko = language === 'ko', clay = useClay();
   const kindRow = useRevealChip(props.kind, !useReducedMotion());
-  const labels = ko ? { all: '전체', business: '비즈니스', place: '장소', person: '사람', post: '게시글', meetup: '모임' }
+  // '글' as everywhere else in the app (QA A-search-01).
+  const labels = ko ? { all: '전체', business: '비즈니스', place: '장소', person: '사람', post: '글', meetup: '모임' }
     : { all: 'All', business: 'Businesses', place: 'Places', person: 'People', post: 'Posts', meetup: 'Meetups' };
   const cityName = (id: string) => tr(CITIES.find(value => value.id === id)?.name ?? id);
+  // A catalog place shows its photo and 'neighbourhood · street' instead of a grey pin and an address in whatever form it came (QA I-search-02).
+  const catalogPlace = (item: UnifiedSearchItem): CityPlace | null => {
+    if (item.kind !== 'place' || !item.placeId) return null;
+    try { return getCityPlaces(item.cityId).find(place => place.id === item.placeId) ?? null; } catch { return null; }
+  };
+  const placeLine = (item: UnifiedSearchItem, place: CityPlace | null) => {
+    const area = place && nearestNeighborhood(place.cityId, place);
+    return area ? [neighborhoodName(area, language), item.subtitle.split(',')[0].trim()].filter(Boolean).join(' · ') : item.subtitle;
+  };
   // Posts and meetups grow out of the pressed row (owner 2026-11-02); the row's object style survives the link's Slot.
   const zoom = (item: UnifiedSearchItem, row: React.ReactElement<{ onPress?: (event?: GestureResponderEvent) => void }>) => item.kind === 'post' || item.kind === 'meetup' ? <PostZoomLink id={item.id}>{row}</PostZoomLink> : row;
   const rows: Row[] = props.kind === 'all' ? (kinds.filter(value => value !== 'all') as Kind[]).flatMap(kind => {
     const values = props.items.filter(item => item.kind === kind).slice(0, 3);
-    return values.length ? [{ type: 'heading' as const, kind }, ...values.map(item => ({ type: 'item' as const, item }))] : [];
+    return values.length ? [{ type: 'heading' as const, kind, full: values.length === 3 }, ...values.map(item => ({ type: 'item' as const, item }))] : [];
   }) : props.items.map(item => ({ type: 'item', item }));
   const empty = props.loading ? <View style={styles.state}><GlingLoader /><ThemedText accessibilityLiveRegion="polite" themeColor="textSecondary">{ko ? '검색하고 있어요…' : 'Searching…'}</ThemedText></View>
     : props.failed ? <View style={styles.state}><StateCard kind="error" title={ko ? '검색 결과를 불러오지 못했어요' : 'Couldn’t load results'} body={ko ? '연결을 확인하고 다시 시도해 주세요.' : 'Check your connection and try again.'} actionLabel={ko ? '다시 시도' : 'Try again'} onAction={props.onRetry} /></View>
-      : <View style={styles.state}><StateCard kind="empty" title={props.query.trim() ? ko ? '검색 결과가 없어요' : 'No results found' : ko ? '무엇을 찾고 계세요?' : 'What are you looking for?'}
-        body={props.query.trim() ? ko ? props.cityId === null ? '검색어나 종류를 바꿔서 다시 찾아보세요.' : '검색어나 종류를 바꾸거나 캐나다 전체에서 찾아보세요.' : props.cityId === null ? 'Try another search term or result type.' : 'Try another search term, result type or the Canada-wide scope.' : ko ? '비즈니스, 장소, 이웃과 게시글·모임을 한 번에 찾아보세요.' : 'Find businesses, places, people, posts and meetups in one search.'} /></View>;
+      // No results offers the wider search as buttons, not only as advice (QA I-search-03); before typing, a search glyph and plain words (QA I-search-01).
+      : props.query.trim() ? <View style={styles.state}><StateCard kind="empty" title={ko ? '검색 결과가 없어요' : 'No results found'}
+        body={ko ? '검색어를 바꾸거나 더 넓게 찾아봐요.' : 'Try another search term or a wider search.'}
+        {...props.cityId !== null ? { analyticsId: 'search.scope.canada', actionLabel: ko ? '캐나다 전체에서 찾기' : 'Search all of Canada', onAction: () => props.onScope(null) } : {}}>
+        {props.kind !== 'all' && <Pressable analyticsId="search.kind.all" accessibilityRole="button" onPress={() => props.onKind('all')}
+          style={({ pressed }) => [ControlStyles.pill, styles.wider, clay && { overflow: 'visible', paddingHorizontal: 18 }, { borderColor: clay ? 'transparent' : theme.line, opacity: pressed ? 0.8 : 1 }]}>
+          {clay && <ClayPillFill kind="white" />}<ThemedText type="label" themeColor="accent">{ko ? '모든 종류로 보기' : 'Show every type'}</ThemedText></Pressable>}
+      </StateCard></View>
+      : <View style={styles.state}><StateCard kind="search" title={ko ? '이름이나 궁금한 걸 적어 봐요' : 'Type a name or what you’re curious about'}
+        body={ko ? '비즈니스, 장소, 이웃, 글과 모임이 한 번에 나와요.' : 'Businesses, places, people, posts and meetups show up together.'} /></View>;
+  const resultRow = (item: UnifiedSearchItem) => {
+    const row = { item }, place = catalogPlace(item), subtitle = item.kind === 'place' ? placeLine(item, place) : item.subtitle;
+    return zoom(row.item, <Pressable analyticsId={resultActions[row.item.kind]} testID={`search.item.${identity(row.item)}`} accessibilityRole="button" accessibilityLabel={[labels[row.item.kind], row.item.title, row.item.subtitle, props.cityId === null ? cityName(row.item.cityId) : ''].filter(Boolean).join(', ')} onPress={event => props.onOpen(row.item, event)} style={StyleSheet.flatten([styles.result, { borderColor: theme.line, backgroundColor: theme.card }])}>
+            {row.item.imageUri ? <Image source={{ uri: row.item.imageUri }} style={styles.image} contentFit="cover" transition={ControlMotion.settleMs} accessible={false} />
+              : place ? <CityPlacePhoto place={place} style={styles.image} />
+              // A person without a photo gets the first letter of their name, like everywhere else in the app (QA I-search-04).
+              : row.item.kind === 'person' ? <View style={[styles.image, { backgroundColor: theme.backgroundSelected }]}><ThemedText style={Typography.label}>{[...row.item.title][0] ?? ''}</ThemedText></View>
+              : <View style={[styles.image, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: row.item.kind === 'business' ? 'storefront' : row.item.kind === 'place' ? 'mappin.and.ellipse' : 'text.bubble', android: 'search', web: 'search' }} size={22} tintColor={theme.textSecondary} /></View>}
+            <View style={styles.resultText}><ThemedText type="menu" numberOfLines={2}>{row.item.title}</ThemedText>{!!subtitle && <ThemedText type="supporting" themeColor="textSecondary" numberOfLines={2}>{subtitle}</ThemedText>}{props.cityId === null && <ThemedText type="caption" themeColor="accent">{cityName(row.item.cityId)}</ThemedText>}</View><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={14} tintColor={theme.textSecondary} />
+          </Pressable>);
+  };
   return <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={[styles.safe, { backgroundColor: theme.background }]}>
     <View style={styles.content}>
       <View style={styles.header}><Pressable analyticsId="search.back" accessibilityRole="button" accessibilityLabel={ko ? '이전 화면으로' : 'Go back'} onPress={props.onBack} style={ControlStyles.icon}>
         <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={IconSize.toolbar} tintColor={theme.text} /></Pressable><ThemedText type="sheetTitle" accessibilityRole="header" style={styles.heading}>{ko ? '통합검색' : 'Search'}</ThemedText></View>
       <View style={[styles.field, ControlStyles.field, { borderColor: theme.line, backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
         <TextInput value={props.query} onChangeText={props.onQuery} onFocus={() => play('selection')} onSubmitEditing={() => { play('selection'); Keyboard.dismiss(); }}
-          placeholder={ko ? '이름, 장소, 이야기 검색' : 'Search names, places and stories'} accessibilityLabel={ko ? '통합검색어' : 'Search query'} placeholderTextColor={theme.textSecondary} maxLength={100} autoFocus returnKeyType="search" autoCorrect={false} style={[styles.input, { color: theme.text }]} />
+          placeholder={ko ? '비즈니스·장소·사람·이야기 검색' : 'Search businesses, places and people'} accessibilityLabel={ko ? '통합검색어' : 'Search query'} placeholderTextColor={theme.textSecondary} maxLength={100} autoFocus returnKeyType="search" autoCorrect={false} style={[styles.input, { color: theme.text }]} />
         {!!props.query && <Pressable analyticsId="search.input.clear" accessibilityRole="button" accessibilityLabel={ko ? '검색어 지우기' : 'Clear search'} onPress={props.onClear} style={ControlStyles.icon}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={16} tintColor={theme.textSecondary} /></Pressable>}
       </View>
       <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel={ko ? '검색 지역' : 'Search area'}>
@@ -144,11 +176,8 @@ export function UnifiedSearchView(props: ViewProps) {
       {/* One line that scrolls sideways: a sixth chip wrapping alone onto a second line looked broken (QA Q20). */}
       <ScrollView testID="search.kinds" {...kindRow.scroll} horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={styles.kindRow} contentContainerStyle={styles.kindChips} accessibilityRole="radiogroup" accessibilityLabel={ko ? '검색 종류' : 'Result type'}>{kinds.map(kind => <SelectionChip key={kind} onLayout={kindRow.chip(kind)} analyticsId={kindActions[kind]} selected={props.kind === kind} accessibilityRole="radio" accessibilityState={{ checked: props.kind === kind }} onPress={() => props.onKind(kind)} style={ControlStyles.pill} baseColor={clay ? 'transparent' : theme.backgroundElement}>{clay && props.kind !== kind && <ClayPillFill kind="white" />}<ThemedText type="label" style={{ color: props.kind === kind ? theme.accentInk : theme.text }}>{labels[kind]}</ThemedText></SelectionChip>)}</ScrollView>
       <FlatList analyticsId="search.results" data={rows} keyExtractor={row => row.type === 'heading' ? `heading:${row.kind}` : identity(row.item)} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.results}
-        ListEmptyComponent={empty ?? undefined} renderItem={({ item: row }) => row.type === 'heading' ? <View style={styles.group}><ThemedText type="section" accessibilityRole="header" style={styles.groupTitle}>{labels[row.kind]}</ThemedText><Pressable analyticsId="search.group.more" accessibilityRole="button" accessibilityLabel={ko ? `${labels[row.kind]} 더 보기` : `More ${labels[row.kind].toLowerCase()}`} onPress={() => props.onKind(row.kind)} style={styles.groupMore}><ThemedText type="label" themeColor="accent">{ko ? '더 보기' : 'See more'}</ThemedText></Pressable></View>
-          : zoom(row.item, <Pressable analyticsId={resultActions[row.item.kind]} testID={`search.item.${identity(row.item)}`} accessibilityRole="button" accessibilityLabel={[labels[row.item.kind], row.item.title, row.item.subtitle, props.cityId === null ? cityName(row.item.cityId) : ''].filter(Boolean).join(', ')} onPress={event => props.onOpen(row.item, event)} style={StyleSheet.flatten([styles.result, { borderColor: theme.line, backgroundColor: theme.card }])}>
-            {row.item.imageUri ? <Image source={{ uri: row.item.imageUri }} style={styles.image} contentFit="cover" transition={ControlMotion.settleMs} accessible={false} /> : <View style={[styles.image, { backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: row.item.kind === 'person' ? 'person.crop.circle' : row.item.kind === 'business' ? 'storefront' : row.item.kind === 'place' ? 'mappin.and.ellipse' : 'text.bubble', android: row.item.kind === 'person' ? 'person' : 'search', web: 'search' }} size={22} tintColor={theme.textSecondary} /></View>}
-            <View style={styles.resultText}><ThemedText type="menu" numberOfLines={2}>{row.item.title}</ThemedText>{!!row.item.subtitle && <ThemedText type="supporting" themeColor="textSecondary" numberOfLines={2}>{row.item.subtitle}</ThemedText>}{props.cityId === null && <ThemedText type="caption" themeColor="accent">{cityName(row.item.cityId)}</ThemedText>}</View><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={14} tintColor={theme.textSecondary} />
-          </Pressable>)}
+        ListEmptyComponent={empty ?? undefined} renderItem={({ item: row }) => row.type === 'heading' ? <View style={styles.group}><ThemedText type="section" accessibilityRole="header" style={styles.groupTitle}>{labels[row.kind]}</ThemedText>{/* All shows up to three per kind, so fewer than three means there is nothing more (QA I-search-04). */}{row.full && <Pressable analyticsId="search.group.more" accessibilityRole="button" accessibilityLabel={ko ? `${labels[row.kind]} 더 보기` : `More ${labels[row.kind].toLowerCase()}`} onPress={() => props.onKind(row.kind)} style={styles.groupMore}><ThemedText type="label" themeColor="accent">{ko ? '더 보기' : 'See more'}</ThemedText></Pressable>}</View>
+          : resultRow(row.item)}
         ListFooterComponent={props.hasMore ? <View style={styles.footer}>{props.moreFailed && <ThemedText accessibilityLiveRegion="polite" themeColor="textSecondary">{ko ? '다음 결과를 불러오지 못했어요. 다시 시도해 주세요.' : 'Couldn’t load more results. Try again.'}</ThemedText>}<Pressable analyticsId="search.more" accessibilityRole="button" disabled={props.moreLoading} onPress={props.onMore} style={[ControlStyles.action, clay && { overflow: 'visible', paddingHorizontal: 18 }, { borderWidth: 1, borderColor: clay ? 'transparent' : theme.line, opacity: props.moreLoading ? 0.6 : 1 }]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="menu" themeColor="accent">{props.moreLoading ? ko ? '불러오는 중…' : 'Loading…' : props.moreFailed ? ko ? '다시 불러오기' : 'Try again' : ko ? '더 보기' : 'Load more'}</ThemedText></Pressable></View> : undefined} />
     </View>
   </SafeAreaView>;
@@ -165,5 +194,5 @@ const styles = StyleSheet.create({
   results: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six, paddingTop: Spacing.two }, state: { paddingTop: Spacing.five, gap: Spacing.three },
   group: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginTop: Spacing.three }, groupTitle: { flex: 1, minWidth: 0 }, groupMore: { minHeight: 44, minWidth: 44, paddingHorizontal: Spacing.two, justifyContent: 'center' },
   result: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, padding: Spacing.three, borderWidth: 1, borderRadius: 16, marginTop: Spacing.two, minHeight: 72 },
-  image: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }, resultText: { flex: 1, minWidth: 0, gap: Spacing.one }, footer: { paddingVertical: Spacing.four, gap: Spacing.three },
+  image: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, wider: { borderWidth: 1 }, resultText: { flex: 1, minWidth: 0, gap: Spacing.one }, footer: { paddingVertical: Spacing.four, gap: Spacing.three },
 });
