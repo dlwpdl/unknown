@@ -411,7 +411,7 @@ test('listing cards drop what they do not have: an empty pay line, a photo-less 
   const { ListingCard } = load('listing-card', {
     react: { useState: value => [value, () => {}] },
     'expo-image': { Image: 'Image' },
-    '@/components/post-pin-map': { PostPinMap: 'PostPinMap' },
+    '@/components/post-pin-map': { PostPinMap: 'PostPinMap' }, '@/components/fact-grid': { FactGrid: 'FactGrid' },
     '@/constants/design-system': { ControlMotion: { pressedOpacity: 0.7 }, IconSize: { toolbar: 21, inline: 16 }, Typography: { menu: {} } },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: 'me' } }) },
     '@/lib/feed-data': { getPostImageSource: post => post.imageUris?.[0] ? { uri: post.imageUris[0] } : null, relativeTime: () => '1시간 전' },

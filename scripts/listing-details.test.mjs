@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 
 import {
-  buildListingLead, emptyListingDraft, freeBand, groupListingsByArea, isFreeListing, listingAreaRows, listingExtras, listingFromDraft, listingMapFit, listingPin, listingPriceLabel, matchesListingFilters,
+  buildListingLead, dialNumber, emptyListingDraft, freeBand, listingContacts, loadApplyContactEnabled, groupListingsByArea, isFreeListing, listingAreaRows, listingExtras, listingFromDraft, listingMapFit, listingPin, listingPriceLabel, matchesListingFilters,
   NO_LISTING_FILTERS, pairTiles, parseListingDetails, parseListingView, stripListingLead, withListingLead,
 } from '../src/lib/listing-details.ts';
 import { coarseListingPin, findNeighborhood, NEIGHBORHOODS, neighborhoodGroups } from '../src/lib/neighborhoods.ts';
@@ -195,11 +196,12 @@ test('비즈니스 구인글은 posts.price 없이도 시급을 보여 준다', 
 // already be in the body that the content filter and safety review read.
 test('저장하는 칸의 글자는 모두 본문 안에 있다 (서버 트리거와 같은 규칙)', () => {
   const keys = { housing: ['type', 'deal', 'rooms', 'moveIn', 'area', 'includes', 'extras', 'lead'],
-    jobs: ['type', 'deal', 'payUnit', 'pay', 'jobTypes', 'area', 'hours', 'duties', 'apply', 'lead'], used: ['type', 'deal', 'offers', 'condition', 'area', 'lead'] };
+    jobs: ['type', 'deal', 'payUnit', 'pay', 'jobTypes', 'area', 'hours', 'duties', 'apply', 'phone', 'email', 'link', 'lead'], used: ['type', 'deal', 'offers', 'condition', 'area', 'lead'] };
   const cases = [
     ['housing', draft('housing', { rooms: '2b2b', price: '3200', moveIn: 'now', area: 'metrotown', includes: ['pets'], extras: [' 세탁기 ', '헬스장\t이용'] }), '방 사진은 대화로 보내 드려요'],
     ['jobs', draft('jobs', { price: '20', jobTypes: ['full'], area: 'downtown', hours: '평일 9–6시\n야간 없음', duties: '  재고 정리,\t계산  ', apply: ['email', 'phone'] }), ''],
     ['jobs', draft('jobs', { deal: 'seeking', payUnit: 'negotiable', hours: '주말', duties: '바리스타 경력 3년' }), '연락 주세요'],
+    ['jobs', draft('jobs', { price: '18', area: 'downtown', apply: ['phone'], phone: ' 250-961-5431 ', email: 'jobs@ocean.ca', link: 'https://ocean.ca/apply' }), ''],
     ['used', draft('used', { price: '15', offers: true, condition: 'used', area: 'joyce' }), '직거래만'],
   ];
   for (const language of ['ko', 'en']) for (const [category, item, written] of cases) {
@@ -207,7 +209,7 @@ test('저장하는 칸의 글자는 모두 본문 안에 있다 (서버 트리�
     const body = withPostMap(withListingLead(details.lead, written), details.area ? googlePinUrl(findNeighborhood('vancouver', details.area)) : '', '동네');
     assert.deepEqual(Object.keys(details).filter(key => !keys[category].includes(key)), []);
     assert.ok(body.startsWith(details.lead));
-    for (const key of ['hours', 'duties']) if (details[key]) assert.ok(body.includes(details[key]), `${category}.${key}`);
+    for (const key of ['hours', 'duties', 'phone', 'email', 'link']) if (details[key]) assert.ok(body.includes(details[key]), `${category}.${key}`);
     for (const extra of details.extras ?? []) assert.ok(body.includes(extra), extra);
     assert.deepEqual(parseListingDetails(details, body), details);
   }
@@ -275,4 +277,46 @@ test('카테고리 지도는 모든 동네가 들어오게 열린다 (QA B13-2)'
   const halfWidth = 215 * 360 / (512 * 2 ** two.zoom); // half of a 430pt-wide phone map in degrees, 512px world at zoom 0 like MapLibre
   assert.ok(Math.abs(coquitlam.longitude - two.center.longitude) < halfWidth && Math.abs(edmonds.longitude - two.center.longitude) < halfWidth, 'both areas on the first screen');
   assert.equal(listingMapFit([{ latitude: 49.28, longitude: -123.3 }, { latitude: 49.1, longitude: -122.3 }]).zoom < 11, true, 'far apart areas zoom out');
+});
+
+test('구인 연락처: 쓴 사람이 적은 것만 본문 첫 줄에 넣고, 모양이 틀리면 올리지 않는다', () => {
+  const base = { price: '18', area: 'downtown' }, input = { title: '롤맨', cityId: 'vancouver' };
+  const typed = listingFromDraft('jobs', draft('jobs', { ...base, phone: '250-961-5431', email: 'jobs@ocean.ca' }), input, 'ko');
+  assert.deepEqual(typed.missing, []);
+  assert.ok(typed.details.lead.endsWith('\n연락처: 250-961-5431 · jobs@ocean.ca'), typed.details.lead);
+  assert.equal(typed.details.link, undefined);
+  for (const bad of [{ phone: '12' }, { email: 'jobs@' }, { link: 'http://ocean.ca' }, { link: 'https://bit.ly/x' }]) {
+    assert.deepEqual(listingFromDraft('jobs', draft('jobs', { ...base, ...bad }), input, 'ko').missing, ['contact'], JSON.stringify(bad));
+  }
+  // 일 찾아요 posts never carry the hiring contact fields.
+  assert.equal(listingFromDraft('jobs', draft('jobs', { deal: 'seeking', phone: '250-961-5431' }), input, 'ko').details.phone, undefined);
+  const body = withListingLead(typed.details.lead, '편하게 연락 주세요.');
+  assert.equal(parseListingDetails(typed.details, body).phone, '250-961-5431');
+  assert.equal(parseListingDetails({ ...typed.details, phone: '604-000-1111' }, body).phone, undefined, 'a number missing from the body is dropped');
+  assert.equal(parseListingDetails({ type: 'jobs', deal: 'hiring', email: 'not an email' }, 'not an email').email, undefined);
+});
+
+test('지원하기 창: 적은 연락처가 없으면 본문 속 번호·이메일을 쓰고, 가격·시간은 번호로 잡지 않는다', () => {
+  const body = '시급 $17.85, 11-19시, 2026-11-14 시작.\n문자 (604) 555-0123 또는 250.961.5431, 이력서는 Jobs.Ocean@gmail.com 으로.\n한국 번호 010-1234-5678도 돼요. 세 번째 604-555-9999';
+  assert.deepEqual(listingContacts({ type: 'jobs', deal: 'hiring' }, body), { phones: ['(604) 555-0123', '250.961.5431'], emails: ['Jobs.Ocean@gmail.com'], links: [] });
+  assert.deepEqual(listingContacts({ type: 'jobs', deal: 'hiring', email: 'hr@ocean.ca', link: 'https://ocean.ca/apply' }, body),
+    { phones: [], emails: ['hr@ocean.ca'], links: ['https://ocean.ca/apply'] }, 'typed contacts replace the body');
+  assert.deepEqual(listingContacts(null, '연락은 대화로 주세요.'), { phones: [], emails: [], links: [] });
+  assert.equal(dialNumber('+1 (604) 555-0123'), '+16045550123');
+});
+
+test('연락처 칸은 서버가 받을 때만 켠다 (20261114182000 이전 운영 DB에서는 꺼짐)', async () => {
+  assert.equal(await loadApplyContactEnabled({ rpc: async () => ({ data: null, error: { code: 'PGRST202' } }) }), false);
+  assert.equal(await loadApplyContactEnabled({ rpc: async () => { throw new Error('offline'); } }), false);
+  assert.equal(await loadApplyContactEnabled({ rpc: async () => ({ data: 'yes', error: null }) }), false);
+  assert.equal(await loadApplyContactEnabled({ rpc: async name => ({ data: name === 'listing_apply_contact_enabled', error: null }) }), true);
+});
+
+// The server guard (20261114182000) checks the same shapes as the app, so nothing the app sends is rejected there.
+test('연락처 마이그레이션은 앱과 같은 모양만 받고 본문에 있는지 확인한다', () => {
+  const sql = readFileSync(new URL('../supabase/migrations/20261114182000_job_post_apply_contact.sql', import.meta.url), 'utf8');
+  assert.match(sql, /'apply','phone','email','link','lead'/);
+  assert.match(sql, /in \('hours','duties','phone','email','link'\) then in_body := in_body and strpos/);
+  assert.match(sql, /when 'lead' then 900/);
+  assert.match(sql, /revoke all on function public\.listing_apply_contact_enabled\(\) from public, anon;/);
 });

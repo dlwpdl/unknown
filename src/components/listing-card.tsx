@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { Linking, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
-import type { SymbolViewProps } from 'expo-symbols';
 import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable } from '@/components/analytics-controls';
-import { ClayBoxFill, useClayBox } from '@/components/clay';
+import { FactGrid, type Fact } from '@/components/fact-grid';
 import { PostPinMap } from '@/components/post-pin-map';
 import { ThemedText } from '@/components/themed-text';
 import { ControlMotion, IconSize, Typography } from '@/constants/design-system';
@@ -142,46 +141,31 @@ export function ListingCard({ post, onPress, variant = 'row' }: { post: Detailed
   </Pressable>;
 }
 
-function Row({ icon, label, value }: { icon: SymbolViewProps['name']; label: string; value: string }) {
-  const theme = useTheme(), clayBox = useClayBox();
-  return <View style={[styles.infoRow, clayBox && styles.clayInfoRow, { borderTopColor: theme.line }]} accessible accessibilityLabel={`${label}, ${value}`}>
-    <SymbolView name={icon} size={IconSize.inline} tintColor={theme.textSecondary} />
-    <ThemedText type="small" themeColor="textSecondary" style={styles.infoLabel}>{label}</ThemedText>
-    <ThemedText type="small" style={styles.flex}>{value}</ThemedText>
-  </View>;
-}
-
-// Detail, direction A: one info card under the title, then the neighborhood circle map.
+// Detail, 시안 A (I-post-01): the status, the price (부동산·사고팔기 only; a job's pay is a cell), one four-cell card, then the neighborhood circle map.
+// The category line above already names the deal, so it is not repeated as a badge.
 export function ListingInfo({ post }: { post: DetailedPost }) {
-  const theme = useTheme(), clayBox = useClayBox(), { tr, language } = useLanguage();
+  const { tr, language } = useLanguage();
   const text = useListingText(post), { details } = text;
-  const rows: { icon: SymbolViewProps['name']; label: string; value: string | null }[] = details.type === 'housing' ? [
-    { icon: { ios: 'house', android: 'home', web: 'home' }, label: tr('방 구성'), value: text.rooms },
-    { icon: { ios: 'calendar', android: 'calendar_today', web: 'calendar_today' }, label: tr(wanting(details) ? '입주 희망일' : '입주 가능일'), value: details.moveIn ? details.moveIn === 'now' ? tr('바로 입주') : tr('{0}부터', formatMoveIn(details.moveIn, language)) : null },
-    { icon: { ios: 'mappin', android: 'location_on', web: 'location_on' }, label: tr('동네'), value: text.area },
+  const seeking = details.deal === 'seeking';
+  const facts: Fact[] = details.type === 'housing' ? [
+    { label: tr('방 구성'), value: text.rooms },
+    { label: tr(wanting(details) ? '입주 희망일' : '입주 가능일'), value: details.moveIn ? details.moveIn === 'now' ? tr('바로 입주') : tr('{0}부터', formatMoveIn(details.moveIn, language)) : null },
+    { label: tr('동네'), value: text.area },
+    { label: tr('포함된 것'), value: text.includes.join(', ') || null },
   ] : details.type === 'jobs' ? [
-    { icon: { ios: 'mappin', android: 'location_on', web: 'location_on' }, label: tr('근무지'), value: text.area },
-    { icon: { ios: 'clock', android: 'schedule', web: 'schedule' }, label: tr('근무 시간'), value: details.hours ?? null },
-    { icon: { ios: 'list.bullet', android: 'list', web: 'list' }, label: tr('하는 일'), value: details.duties ?? null },
-    { icon: { ios: 'envelope', android: 'mail', web: 'mail' }, label: tr('지원 방법'), value: details.apply?.length ? details.apply.map(item => tr(LISTING_LABELS.apply[item])).join(', ') : null },
+    { label: tr(seeking ? '희망 급여' : '급여'), value: details.payUnit === 'negotiable' ? tr('협의') : text.price },
+    { label: tr(seeking ? '일하고 싶은 동네' : '근무지'), value: text.area },
+    { label: tr(seeking ? '가능한 시간' : '근무 시간'), value: details.hours ?? (text.jobTypes.join(' · ') || null), note: details.hours && text.jobTypes.length ? text.jobTypes.join(' · ') : null },
+    { label: tr(seeking ? '해 본 일' : '하는 일'), value: details.duties ?? null },
   ] : [
-    { icon: { ios: 'shippingbox', android: 'inventory_2', web: 'inventory_2' }, label: tr('물건 상태'), value: text.condition },
-    { icon: { ios: 'mappin', android: 'location_on', web: 'location_on' }, label: tr('만날 곳'), value: text.area },
+    { label: tr('물건 상태'), value: text.condition },
+    { label: tr('만날 곳'), value: text.area },
   ];
-  const chips = details.type === 'housing' ? text.includes : details.type === 'jobs' ? text.jobTypes : details.type === 'used' && details.offers ? [tr('가격 제안 받아요')] : [];
   return <View style={styles.info}>
-    <View style={styles.meta}>
-      <Badge label={text.deal} tone={wanting(details) ? 'want' : 'accent'} />
-      <Badge label={text.status} tone={text.closed ? 'done' : 'accent'} />
-    </View>
-    {text.price && <ThemedText style={styles.detailPrice}>{text.price}</ThemedText>}
-    {rows.some(row => row.value) && <View style={clayBox ? undefined : [styles.infoCard, { borderColor: theme.line, backgroundColor: theme.card }]}>
-      {clayBox && <ClayBoxFill kind="tile" />}
-      <View style={clayBox && styles.clayRows}>
-        {rows.filter((row): row is typeof row & { value: string } => !!row.value).map((row, index) => <View key={row.label} style={index === 0 && styles.firstRow}><Row icon={row.icon} label={row.label} value={row.value} /></View>)}
-      </View>
-    </View>}
-    <Tags items={chips} />
+    <View style={styles.meta}><Badge label={text.status} tone={text.closed ? 'done' : 'accent'} /></View>
+    {details.type !== 'jobs' && text.price && <ThemedText style={styles.detailPrice}>{text.price}</ThemedText>}
+    <FactGrid facts={facts} />
+    <Tags items={details.type === 'used' && details.offers ? [tr('가격 제안 받아요')] : []} />
     {details.type !== 'jobs' && <ListingAreaMap post={post} />}
   </View>;
 }
@@ -237,12 +221,6 @@ const styles = StyleSheet.create({
   mini: { width: 58, gap: 4 },
   miniPhoto: { width: 58, height: 58, borderRadius: 12 },
   info: { gap: Spacing.two, marginTop: Spacing.two },
-  infoCard: { borderWidth: 1, borderRadius: 16, overflow: 'hidden' },
-  clayRows: { borderRadius: 16, overflow: 'hidden' },
-  clayInfoRow: { marginHorizontal: Spacing.three, paddingHorizontal: 0 },
-  firstRow: { marginTop: -StyleSheet.hairlineWidth },
-  infoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two, paddingHorizontal: 14, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth },
-  infoLabel: { width: 84 },
   areaWrap: { gap: 6, marginTop: Spacing.one },
   area: { borderWidth: 1, borderRadius: 14, overflow: 'hidden' },
   areaMap: { height: 150 },

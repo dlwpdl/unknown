@@ -4,6 +4,7 @@ import { Keyboard, ScrollView, StyleSheet, TextInput, View, type GestureResponde
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useIsFocused, useRouter } from 'expo-router';
 import { Image } from 'expo-image';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SymbolView } from '@/components/symbol-view';
 
 import { FlatList, Pressable } from '@/components/analytics-controls';
@@ -27,6 +28,7 @@ import { CITIES } from '@/lib/mock';
 import { nearestNeighborhood, neighborhoodName } from '@/lib/neighborhoods';
 import { supabase } from '@/lib/supabase';
 import { loadUnifiedSearch, type UnifiedSearchItem, type UnifiedSearchKind } from '@/lib/unified-search';
+import { addRecentSearch, parseRecentSearches, recentSearchKey, removeRecentSearch } from '@/lib/recent-searches';
 
 type Kind = Exclude<UnifiedSearchKind, 'all'>;
 const kinds: UnifiedSearchKind[] = ['all', 'business', 'place', 'person', 'post', 'meetup'];
@@ -54,6 +56,19 @@ export function UnifiedSearch({ initialCityId, initialQuery = '', initialKind = 
   }, [focused, token]);
   useLayoutEffect(() => { if (live.current?.token === token) live.current.result = current; }, [current, token]);
   const isCurrent = () => live.current?.token === token && live.current.active;
+  // 최근 검색어: this phone only, per account.
+  const recentKey = recentSearchKey(isAuthed ? viewer : null);
+  const [recent, setRecent] = useState<{ key: string; items: string[] } | null>(null);
+  useEffect(() => {
+    let active = true;
+    void AsyncStorage.getItem(recentKey).then(raw => { if (active) setRecent({ key: recentKey, items: parseRecentSearches(raw) }); }).catch(() => {});
+    return () => { active = false; };
+  }, [recentKey]);
+  const recentItems = recent?.key === recentKey ? recent.items : [];
+  const saveRecent = (items: string[]) => {
+    setRecent({ key: recentKey, items });
+    void AsyncStorage.setItem(recentKey, JSON.stringify(items)).catch(() => {});
+  };
   const visible = (item: UnifiedSearchItem) => item.kind === 'post' || item.kind === 'meetup' ? !hidden('post', item.id)
     : item.kind === 'person' ? !hidden('user', item.id) : item.kind === 'business' ? !hidden('user', item.merchantId ?? item.id) : !item.merchantId || !hidden('user', item.merchantId);
   useEffect(() => {
@@ -73,7 +88,7 @@ export function UnifiedSearch({ initialCityId, initialQuery = '', initialKind = 
     if (!isCurrent() || isAuthLoading || !scope?.result || scope.result.token !== token) return event?.preventDefault();
     const target = scope.result.items.find(value => identity(value) === identity(item));
     if (!target || !visible(target)) return event?.preventDefault();
-    play('selection'); Keyboard.dismiss();
+    play('selection'); Keyboard.dismiss(); saveRecent(addRecentSearch(recentItems, query));
     if (target.kind === 'business' || (target.kind === 'place' && target.merchantId)) router.push({ pathname: '/company/[id]', params: { id: target.merchantId ?? target.id } });
     else if (target.kind === 'person') router.push({ pathname: '/user/[id]', params: { id: target.id } });
     else if (target.kind === 'place') router.push({ pathname: '/map', params: { cityId: target.cityId, placeId: target.placeId ?? target.id } });
@@ -105,7 +120,11 @@ export function UnifiedSearch({ initialCityId, initialQuery = '', initialKind = 
     onClear={() => { if (!isCurrent()) return; play('selection'); setQuery(''); }}
     onKind={value => { if (!isCurrent() || !kinds.includes(value)) return; play('selection'); setKind(value); }}
     onScope={value => { if (!isCurrent() || (value !== null && value !== initialCityId)) return; play('selection'); setCityId(value); }}
-    onRetry={() => { if (isCurrent()) setAttempt(value => value + 1); }} onMore={more} onOpen={open} />;
+    onRetry={() => { if (isCurrent()) setAttempt(value => value + 1); }} onMore={more} onOpen={open}
+    onSubmit={() => { if (isCurrent()) saveRecent(addRecentSearch(recentItems, query)); }} recent={recentItems}
+    onRecent={value => { if (!isCurrent()) return; play('selection'); setQuery(value); if (value.startsWith('#')) setKind('post'); }}
+    onRemoveRecent={value => { if (!isCurrent()) return; play('selection'); saveRecent(removeRecentSearch(recentItems, value)); }}
+    onClearRecent={() => { if (!isCurrent()) return; play('selection'); saveRecent([]); }} />;
 }
 
 type ViewProps = {
@@ -113,6 +132,7 @@ type ViewProps = {
   loading: boolean; failed: boolean; hasMore: boolean; moreLoading: boolean; moreFailed: boolean;
   onBack: () => void; onQuery: (query: string) => void; onClear: () => void; onKind: (kind: UnifiedSearchKind) => void;
   onScope: (city: string | null) => void; onRetry: () => void; onMore: () => void; onOpen: (item: UnifiedSearchItem, event?: GestureResponderEvent) => void;
+  recent?: string[]; onSubmit?: () => void; onRecent?: (query: string) => void; onRemoveRecent?: (query: string) => void; onClearRecent?: () => void;
 };
 type Row = { type: 'heading'; kind: Kind; full: boolean } | { type: 'item'; item: UnifiedSearchItem };
 export function UnifiedSearchView(props: ViewProps) {
@@ -147,6 +167,19 @@ export function UnifiedSearchView(props: ViewProps) {
           style={({ pressed }) => [ControlStyles.pill, styles.wider, clay && { overflow: 'visible', paddingHorizontal: 18 }, { borderColor: clay ? 'transparent' : theme.line, opacity: pressed ? 0.8 : 1 }]}>
           {clay && <ClayPillFill kind="white" />}<ThemedText type="label" themeColor="accent">{ko ? '모든 종류로 보기' : 'Show every type'}</ThemedText></Pressable>}
       </StateCard></View>
+      : props.recent?.length ? <View style={styles.recent}>
+        <View style={styles.group}><ThemedText type="section" accessibilityRole="header" style={styles.groupTitle}>{ko ? '최근 검색어' : 'Recent searches'}</ThemedText>
+          <Pressable analyticsId="search.recent.clear" accessibilityRole="button" onPress={props.onClearRecent} style={styles.groupMore}><ThemedText type="label" themeColor="accent">{ko ? '모두 지우기' : 'Clear all'}</ThemedText></Pressable></View>
+        {props.recent.map(value => <View key={value} style={[styles.recentRow, { borderBottomColor: theme.line }]}>
+          <Pressable analyticsId="search.recent.open" accessibilityRole="button" accessibilityLabel={ko ? `${value} 검색` : `Search ${value}`} onPress={() => props.onRecent?.(value)} style={styles.recentOpen}>
+            <SymbolView name={{ ios: 'clock', android: 'schedule', web: 'schedule' }} size={16} tintColor={theme.textSecondary} />
+            <ThemedText type="menu" numberOfLines={1} style={styles.groupTitle}>{value}</ThemedText>
+          </Pressable>
+          <Pressable analyticsId="search.recent.remove" accessibilityRole="button" accessibilityLabel={ko ? `${value} 지우기` : `Remove ${value}`} onPress={() => props.onRemoveRecent?.(value)} style={ControlStyles.icon}>
+            <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={14} tintColor={theme.textSecondary} />
+          </Pressable>
+        </View>)}
+      </View>
       : <View style={styles.state}><StateCard kind="search" title={ko ? '이름이나 궁금한 걸 적어 봐요' : 'Type a name or what you’re curious about'}
         body={ko ? '비즈니스, 장소, 이웃, 글과 모임이 한 번에 나와요.' : 'Businesses, places, people, posts and meetups show up together.'} /></View>;
   const resultRow = (item: UnifiedSearchItem) => {
@@ -165,7 +198,7 @@ export function UnifiedSearchView(props: ViewProps) {
       <View style={styles.header}><Pressable analyticsId="search.back" accessibilityRole="button" accessibilityLabel={ko ? '이전 화면으로' : 'Go back'} onPress={props.onBack} style={ControlStyles.icon}>
         <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={IconSize.toolbar} tintColor={theme.text} /></Pressable><ThemedText type="sheetTitle" accessibilityRole="header" style={styles.heading}>{ko ? '통합검색' : 'Search'}</ThemedText></View>
       <View style={[styles.field, ControlStyles.field, { borderColor: theme.line, backgroundColor: theme.backgroundElement }]}><SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
-        <TextInput value={props.query} onChangeText={props.onQuery} onFocus={() => play('selection')} onSubmitEditing={() => { play('selection'); Keyboard.dismiss(); }}
+        <TextInput value={props.query} onChangeText={props.onQuery} onFocus={() => play('selection')} onSubmitEditing={() => { play('selection'); Keyboard.dismiss(); props.onSubmit?.(); }}
           placeholder={ko ? '비즈니스·장소·사람·이야기 검색' : 'Search businesses, places and people'} accessibilityLabel={ko ? '통합검색어' : 'Search query'} placeholderTextColor={theme.textSecondary} maxLength={100} autoFocus returnKeyType="search" autoCorrect={false} style={[styles.input, { color: theme.text }]} />
         {!!props.query && <Pressable analyticsId="search.input.clear" accessibilityRole="button" accessibilityLabel={ko ? '검색어 지우기' : 'Clear search'} onPress={props.onClear} style={ControlStyles.icon}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={16} tintColor={theme.textSecondary} /></Pressable>}
       </View>
@@ -193,6 +226,9 @@ const styles = StyleSheet.create({
   kindRow: { flexGrow: 0, flexShrink: 0, marginTop: Spacing.two }, kindChips: { gap: Spacing.two, paddingHorizontal: Spacing.four, paddingVertical: Spacing.two },
   results: { paddingHorizontal: Spacing.four, paddingBottom: Spacing.six, paddingTop: Spacing.two }, state: { paddingTop: Spacing.five, gap: Spacing.three },
   group: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, marginTop: Spacing.three }, groupTitle: { flex: 1, minWidth: 0 }, groupMore: { minHeight: 44, minWidth: 44, paddingHorizontal: Spacing.two, justifyContent: 'center' },
+  recent: { paddingTop: Spacing.two },
+  recentRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, borderBottomWidth: StyleSheet.hairlineWidth },
+  recentOpen: { flex: 1, minWidth: 0, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   result: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, padding: Spacing.three, borderWidth: 1, borderRadius: 16, marginTop: Spacing.two, minHeight: 72 },
   image: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, wider: { borderWidth: 1 }, resultText: { flex: 1, minWidth: 0, gap: Spacing.one }, footer: { paddingVertical: Spacing.four, gap: Spacing.three },
 });

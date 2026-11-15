@@ -4932,4 +4932,17 @@ export const uiEnglish: Record<string, string> = {
   "건너뛰기": "Skip",
   "다 봤어요": "Done",
   "{1}개 중 {0}번째": "{0} of {1}",
+  // mock-post (2026-11-14)
+  "연락처": "Contact",
+  "이메일 주소": "Email address",
+  "지원 링크": "Application link",
+  "번호나 주소가 맞는지 확인해 주세요": "Check the number and addresses",
+  "적어 둔 연락처는 이 글을 연 멤버에게 보여요.": "Members who open this post can see the contact details you add.",
+  "자세한 내용": "Details",
+  "지원하기": "Apply",
+  "문자 보내기": "Send a text",
+  "전화 걸기": "Call",
+  "이메일 보내기": "Send an email",
+  "글링 대화로 물어보기": "Ask in a Gling chat",
+  "{0}님에게": "To {0}",
 };
