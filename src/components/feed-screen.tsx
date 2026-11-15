@@ -98,7 +98,7 @@ import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/po
 import { googleMapsPin, googlePinUrl, postMapBody, withPlacePin, withPostMap } from '@/lib/post-maps';
 import { composePlace, type CityPlace } from '@/lib/city-places';
 import {
-  BUSINESS_VIEW_KEY, emptyListingDraft, FREE_FOLDED_KEY, freeBand, isListingCategory, LISTING_VIEW_KEY, listingAreaRows, listingFiltersActive, listingFromDraft, matchesListingFilters, NO_LISTING_FILTERS, pairTiles, parseListingView, withListingLead,
+  BUSINESS_VIEW_KEY, emptyListingDraft, FREE_FOLDED_KEY, freeBand, isListingCategory, LISTING_VIEW_KEY, listingAreaRows, listingFiltersActive, listingFromDraft, loadApplyContactEnabled, matchesListingFilters, NO_LISTING_FILTERS, pairTiles, parseListingView, withListingLead,
   type ListingCategory, type ListingDraft, type ListingFilters, type ListingView,
 } from '@/lib/listing-details';
 import { findNeighborhood, neighborhoodName } from '@/lib/neighborhoods';
@@ -199,6 +199,11 @@ export default function FeedScreen({ meetupsOnly = false, writeRequest }: { meet
   const [draftImages, setDraftImages] = useState<PreparedImage[]>([]);
   // 공식 SNS 소개 동의 칸(사진을 붙였을 때만 보인다). null: 아직 모르거나 구서버라 칸을 숨긴다.
   const [photoConsent, setPhotoConsent] = useState<boolean | null>(null);
+  // 구인 글 연락처 칸: hidden until the server accepts those keys (20261114182000), so an older server never drops the card.
+  const [applyContact, setApplyContact] = useState(false);
+  useEffect(() => {
+    if (writerListing === 'jobs' && !applyContact) void loadApplyContactEnabled(supabase).then(on => { if (on) setApplyContact(true); });
+  }, [writerListing, applyContact]);
   const [creatingDraft, setCreatingDraft] = useState(false);
   const [aiDraftReady, setAiDraftReady] = useState(false);
   const [aiFields, setAiFields] = useState<DraftField[]>([]);
@@ -1466,7 +1471,7 @@ export default function FeedScreen({ meetupsOnly = false, writeRequest }: { meet
                   style={[styles.titleInput, { color: theme.text, borderBottomColor: theme.line }]} />
                 {writerListing && writerListingDraft && <View style={styles.writerAttachments}><ListingFields category={writerListing} cityId={draftCity.id} value={writerListingDraft}
                   onChange={draft => setListingDraft({ category: writerListing, draft })} missing={listingTried ? writerListingResult?.missing : []}
-                  disabled={submitting || creatingDraft} lead={writerListingResult?.details.lead} /></View>}
+                  disabled={submitting || creatingDraft} lead={writerListingResult?.details.lead} contact={applyContact} /></View>}
                 {input}
                 <View style={styles.writerAttachments}>{attachments}</View>
                 {tag.kind !== 'meetup' && postKind === 'story' && pollDraft && <View style={styles.writerAttachments}><PollDraftFields poll={pollDraft} onChange={setPollDraft} disabled={submitting || creatingDraft} /></View>}

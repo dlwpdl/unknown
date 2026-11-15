@@ -80,7 +80,7 @@ function cardRenderer(component = 'PostCard', persistReaction = async () => {}) 
     '../../supabase/functions/_shared/post-links': postLinks,
     '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
     '@/components/post-attachment-link': { PostAttachmentLink: 'PostAttachmentLink' },
-    '@/lib/post-info': { postInfoParts, isPastEvent, englishTail }, '@/lib/city-places': { getCityPlaces: () => [] }, '@/lib/webshops': { loadCityBusinessLinks: async () => ({}) }, '@/lib/listing-details': { dealLabel }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' },
+    '@/lib/post-info': { postInfoParts, isPastEvent, englishTail }, '@/lib/city-places': { getCityPlaces: () => [] }, '@/lib/webshops': { loadCityBusinessLinks: async () => ({}) }, '@/lib/delivery-partners': { deliveryPartnerPlace: () => undefined }, '@/components/list-card': { SectionLabel: 'SectionLabel' }, '@/lib/listing-details': { dealLabel }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' },
     '@/lib/mock': { CITIES: [] },
     '@/components/post-pin-map': { PostPinMap: 'PostPinMap' },
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' },

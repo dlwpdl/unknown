@@ -1,4 +1,6 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { translateUi } from '../i18n/index.ts';
+import { safePostLink } from '../../supabase/functions/_shared/post-links.ts';
 import type { AppLanguage } from '../i18n/language.ts';
 import { coarseListingPin, findNeighborhood, neighborhoodName } from './neighborhoods.ts';
 import { googleMapsPin, postMapBody } from './post-maps.ts';
@@ -35,7 +37,9 @@ export type Condition = typeof CONDITIONS[number];
 // extras: the author's own 포함된 것 items (≤5, ≤20 chars), shown only while they are in the body.
 export type HousingDetails = { type: 'housing'; deal: HousingDeal; rooms?: Room; moveIn?: string; area?: string; includes?: HousingInclude[]; extras?: string[]; lead?: string };
 // pay repeats posts.price for business job posts, which are published without a price.
-export type JobsDetails = { type: 'jobs'; deal: JobDeal; payUnit?: PayUnit; pay?: number; jobTypes?: JobType[]; area?: string; hours?: string; duties?: string; apply?: ApplyWay[]; lead?: string };
+// phone·email·link: the author's own 지원 방법 contacts (server 20261114182000), kept only while they are in the body like hours.
+export type JobsDetails = { type: 'jobs'; deal: JobDeal; payUnit?: PayUnit; pay?: number; jobTypes?: JobType[]; area?: string; hours?: string; duties?: string; apply?: ApplyWay[];
+  phone?: string; email?: string; link?: string; lead?: string };
 export type UsedDetails = { type: 'used'; deal: UsedDeal; offers?: boolean; condition?: Condition; area?: string; lead?: string };
 export type ListingDetails = HousingDetails | JobsDetails | UsedDetails;
 
@@ -117,6 +121,8 @@ export function buildListingLead(details: ListingDetails, input: { title: string
     parts.push(input.title.trim(), pay, details.jobTypes?.map(item => t(LISTING_LABELS.jobTypes[item])).join(', '), area, details.hours);
     if (details.duties) extra.push(`${t('하는 일')}: ${details.duties}`);
     if (details.apply?.length) extra.push(`${t('지원 방법')}: ${details.apply.map(item => t(LISTING_LABELS.apply[item])).join(', ')}`);
+    const contacts = [details.phone, details.email, details.link].filter(Boolean);
+    if (contacts.length) extra.push(`${t('연락처')}: ${contacts.join(' · ')}`);
   } else {
     parts.push(listingPriceLabel(details, input.price, language), details.condition && t(LISTING_LABELS.condition[details.condition]), area, details.offers ? t('가격 제안 받아요') : null);
   }
@@ -134,15 +140,15 @@ export function stripListingLead(body: string, details: ListingDetails | null | 
 // ---- composer draft ---------------------------------------------------------------------------
 export type ListingDraft = {
   deal: string; rooms: Room | null; moveIn: string | null; area: string | null; includes: HousingInclude[]; extras: string[];
-  payUnit: PayUnit; jobTypes: JobType[]; hours: string; duties: string; apply: ApplyWay[];
+  payUnit: PayUnit; jobTypes: JobType[]; hours: string; duties: string; apply: ApplyWay[]; phone: string; email: string; link: string;
   condition: Condition | null; offers: boolean; free: boolean; price: string;
 };
 export const emptyListingDraft = (category: ListingCategory): ListingDraft => ({
   deal: category === 'housing' ? 'rent_offer' : category === 'jobs' ? 'hiring' : 'sell',
-  rooms: null, moveIn: null, area: null, includes: [], extras: [], payUnit: 'hour', jobTypes: [], hours: '', duties: '', apply: [],
+  rooms: null, moveIn: null, area: null, includes: [], extras: [], payUnit: 'hour', jobTypes: [], hours: '', duties: '', apply: [], phone: '', email: '', link: '',
   condition: null, offers: false, free: false, price: '',
 });
-export type ListingMissing = 'deal' | 'rooms' | 'area' | 'price' | 'condition';
+export type ListingMissing = 'deal' | 'rooms' | 'area' | 'price' | 'condition' | 'contact';
 
 const clean = (value: string, max: number) => value.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 export const MAX_LISTING_EXTRAS = 5;
@@ -159,6 +165,41 @@ export function listingExtras(list: readonly unknown[]): string[] {
 }
 const pick = <T extends string>(values: readonly T[], value: unknown): T | undefined => values.includes(value as T) ? value as T : undefined;
 const pickAll = <T extends string>(values: readonly T[], list: unknown) => Array.isArray(list) ? values.filter(value => list.includes(value)) : [];
+// 지원 방법 contacts. The server guard (20261114182000) checks the same shapes, so a value the app accepts is never rejected there.
+const PHONE = /^\+?[0-9][0-9 ().-]{5,22}[0-9]$/;
+const EMAIL = /^[^\s@<>()",;:]{1,64}@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}$/i;
+const LINK = /^https:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}(?:\/\S*)?$/i;
+export const validPhone = (value: string) => PHONE.test(value) && (value.match(/\d/g)?.length ?? 0) >= 7 && (value.match(/\d/g)?.length ?? 0) <= 15;
+export const validEmail = (value: string) => value.length <= 80 && EMAIL.test(value);
+export const validLink = (value: string) => value.length <= 160 && LINK.test(value) && safePostLink(value) !== null;
+// Phone numbers (North American, or Korean with separators) and emails written in a job post body. Prices, dates and times never match.
+const BODY_PHONE = /(^|[^\d$.,:])((?:\+?1[ .-]?)?(?:\(\d{3}\)|\d{3})[ .-]?\d{3}[ .-]?\d{4}|0\d{1,2}[ .-]\d{3,4}[ .-]\d{4})(?![\d])/g;
+const BODY_EMAIL = /[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}/gi;
+const firstTwo = (items: string[]) => [...new Set(items)].slice(0, 2);
+// What 지원하기 offers: the author's own fields when the post has them, otherwise the numbers and emails in the body.
+export function listingContacts(details: ListingDetails | null | undefined, body: string) {
+  const jobs = details?.type === 'jobs' ? details : null;
+  const typed = !!(jobs?.phone || jobs?.email || jobs?.link);
+  return {
+    phones: typed ? jobs?.phone ? [jobs.phone] : [] : firstTwo([...body.matchAll(BODY_PHONE)].map(match => match[2])),
+    emails: typed ? jobs?.email ? [jobs.email] : [] : firstTwo(body.match(BODY_EMAIL) ?? []),
+    links: jobs?.link ? [jobs.link] : [],
+  };
+}
+// tel:/sms: take digits and a leading plus only.
+export const dialNumber = (phone: string) => phone.replace(/(?!^\+)[^\d]/g, '');
+
+// The 연락처 fields need the server guard that accepts them. Before 20261114182000 this call is missing (PGRST202),
+// and on any error the composer keeps hiding the fields, so a post never loses its card to a rejected key.
+export async function loadApplyContactEnabled(client: Pick<SupabaseClient, 'rpc'>) {
+  try {
+    const result = await client.rpc('listing_apply_contact_enabled');
+    return !result.error && result.data === true;
+  } catch {
+    return false;
+  }
+}
+
 export function parsePrice(text: string): number | null {
   const value = text.replace(/[,\s$]/g, '');
   if (!/^\d{1,8}(?:\.\d{1,2})?$/.test(value)) return null;
@@ -180,8 +221,11 @@ export function listingFromDraft(category: ListingCategory, draft: ListingDraft,
     if (!area) missing.push('area');
   } else if (category === 'jobs') {
     const deal = pick(JOB_DEALS, draft.deal) ?? 'hiring';
+    const contact = deal === 'hiring' ? { phone: clean(draft.phone, 24), email: clean(draft.email, 80), link: clean(draft.link, 160) } : { phone: '', email: '', link: '' };
+    if ((contact.phone && !validPhone(contact.phone)) || (contact.email && !validEmail(contact.email)) || (contact.link && !validLink(contact.link))) missing.push('contact');
     details = { type: 'jobs', deal, payUnit: draft.payUnit, jobTypes: pickAll(JOB_TYPES, draft.jobTypes), area,
-      hours: clean(draft.hours, 40) || undefined, duties: clean(draft.duties, 200) || undefined, apply: deal === 'hiring' ? pickAll(APPLY_WAYS, draft.apply) : [] };
+      hours: clean(draft.hours, 40) || undefined, duties: clean(draft.duties, 200) || undefined, apply: deal === 'hiring' ? pickAll(APPLY_WAYS, draft.apply) : [],
+      phone: contact.phone || undefined, email: contact.email || undefined, link: contact.link || undefined };
     if (draft.payUnit === 'negotiable') price = null;
     else if (deal === 'hiring' && price == null && !missing.includes('price')) missing.push('price');
     details.pay = price ?? undefined;
@@ -209,7 +253,8 @@ export function parseListingDetails(raw: unknown, body: string): ListingDetails 
   const area = typeof value.area === 'string' && /^[a-z0-9-]{1,40}$/.test(value.area) ? value.area : undefined;
   // Free text is shown only while the same words are in the body, which the safety monitoring reads.
   const text = (field: unknown, max: number) => typeof field === 'string' && field.length <= max && !/[\u0000-\u001f\u007f]/.test(field) && field.trim() && body.includes(field) ? field : undefined;
-  const lead = typeof value.lead === 'string' && value.lead.length <= 600 && body.startsWith(value.lead) ? value.lead : undefined;
+  // 900 since 20261114182000 (the 연락처 line); older servers stop at 600.
+  const lead = typeof value.lead === 'string' && value.lead.length <= 900 && body.startsWith(value.lead) ? value.lead : undefined;
   let details: ListingDetails;
   if (value.type === 'housing') {
     const deal = pick(HOUSING_DEALS, value.deal);
@@ -221,8 +266,10 @@ export function parseListingDetails(raw: unknown, body: string): ListingDetails 
     const deal = pick(JOB_DEALS, value.deal);
     if (!deal) return null;
     const pay = typeof value.pay === 'number' && Number.isFinite(value.pay) && value.pay >= 0 && value.pay < 1e8 ? value.pay : undefined;
+    const contact = (field: unknown, valid: (value: string) => boolean) => { const kept = text(field, 160); return kept && valid(kept) ? kept : undefined; };
     details = { type: 'jobs', deal, payUnit: pick(PAY_UNITS, value.payUnit), pay, jobTypes: pickAll(JOB_TYPES, value.jobTypes), area,
-      hours: text(value.hours, 40), duties: text(value.duties, 200), apply: pickAll(APPLY_WAYS, value.apply) };
+      hours: text(value.hours, 40), duties: text(value.duties, 200), apply: pickAll(APPLY_WAYS, value.apply),
+      phone: contact(value.phone, validPhone), email: contact(value.email, validEmail), link: contact(value.link, validLink) };
   } else if (value.type === 'used') {
     const deal = pick(USED_DEALS, value.deal);
     if (!deal) return null;

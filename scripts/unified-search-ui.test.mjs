@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import * as recentSearches from '../src/lib/recent-searches.ts';
 
 const ids = ['10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000003'];
 const city = { id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver' };
@@ -15,7 +16,7 @@ const control = (tree,id) => nodes(tree).find(node=>node.props?.testID===id||nod
 const catalog=[{id:'osm:node:9',cityId:'vancouver',name:'Café Lumière',latitude:49.28,longitude:-123.12}];
 function screen({load=async()=>page(),initialQuery='',initialKind='all'}={}) {
   const file=new URL('../src/components/unified-search.tsx',import.meta.url);assert(existsSync(file),'Unified search UI is not implemented');
-  const slots=[],cleanups=[],passive=[],timers=[],calls=[],routes=[],feedback=[];
+  const slots=[],cleanups=[],passive=[],timers=[],calls=[],routes=[],feedback=[],stored=new Map();
   let at=0,defer=false,focused=true,account='viewer',loading=false,hidden=()=>false;
   const hooks={
     useState(initial){const i=at++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;return[slots[i],value=>{slots[i]=typeof value==='function'?value(slots[i]):value;}];},
@@ -36,11 +37,12 @@ function screen({load=async()=>page(),initialQuery='',initialKind='all'}={}) {
     '@/lib/supabase':{supabase:{}},'@/lib/interaction-feedback':{useInteractionFeedback:()=>({play:value=>feedback.push(value)})},
     '@/lib/unified-search':{loadUnifiedSearch:(_client,options)=>{calls.push(options);return load(options);}},
     '@/components/city-place-photo':{CityPlacePhoto:'CityPlacePhoto'},'@/lib/city-places':{getCityPlaces:cityId=>cityId===city.id?catalog:[]},
+    '@react-native-async-storage/async-storage':{__esModule:true,default:{getItem:async key=>stored.get(key)??null,setItem:async(key,value)=>{stored.set(key,value);}}},'@/lib/recent-searches':recentSearches,
     '@/lib/neighborhoods':{nearestNeighborhood:(cityId,pin)=>cityId==='vancouver'&&pin.latitude===49.28?{nameKo:'개스타운'}:null,neighborhoodName:area=>area.nameKo},
   };
   const exports={},code=ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
   vm.runInNewContext(code,{exports,AbortController,Symbol,Map,Set,setTimeout:fn=>{const timer={fn,active:true};timers.push(timer);return timer;},clearTimeout:timer=>{timer.active=false;},require:name=>{assert(name in modules,name);return modules[name];}});
-  return{calls,routes,feedback,account(value){account=value;},focus(value){focused=value;},loading(value){loading=value;},hide(fn){hidden=fn;},defer(value){defer=value;},flushPassive(){passive.splice(0).forEach(fn=>fn());},async flush(){timers.splice(0).filter(timer=>timer.active).forEach(timer=>timer.fn());await settle();},
+  return{calls,routes,feedback,stored,account(value){account=value;},focus(value){focused=value;},loading(value){loading=value;},hide(fn){hidden=fn;},defer(value){defer=value;},flushPassive(){passive.splice(0).forEach(fn=>fn());},async flush(){timers.splice(0).filter(timer=>timer.active).forEach(timer=>timer.fn());await settle();},
     render(){at=0;let tree=exports.UnifiedSearch({initialCityId:city.id,initialQuery,initialKind});if(typeof tree.type==='function')tree=tree.type(tree.props);const list=nodes(tree).find(node=>node.type==='FlatList');return{tree,list,rows:list?.props.data.map((item,index)=>list.props.renderItem({item,index}))??[],empty:list?.props.ListEmptyComponent,footer:list?.props.ListFooterComponent};},
     unmount(){cleanups.forEach(fn=>fn?.());timers.forEach(timer=>{timer.active=false;});},
   };
@@ -178,4 +180,29 @@ test('no results offers the wider search as buttons; before typing it shows a se
   app.unmount();
   const blank=screen();const idle=nodes(blank.render().empty).find(node=>node.type==='StateCard');
   assert.equal(idle.props.kind,'search');assert.doesNotMatch(idle.props.title,/찾고 계세요/);blank.unmount();
+});
+
+test('recent searches stay on this phone for each account: saved on search, reopened, removed one at a time or all',async()=>{
+  const app=screen();let view=app.render();await settle();view=app.render();
+  assert.equal(nodes(view.empty).find(node=>node.type==='StateCard').props.kind,'search','no recent searches yet');
+  const input=()=>nodes(app.render().tree).find(node=>node.type==='TextInput');
+  input().props.onChangeText('  지모코 ');input().props.onSubmitEditing();
+  input().props.onChangeText('#파스타');input().props.onSubmitEditing();
+  input().props.onChangeText('지모코');input().props.onSubmitEditing();await settle();
+  assert.deepEqual(JSON.parse(app.stored.get('gling.search.recent:viewer')),['지모코','#파스타'],'newest first, no repeats');
+  control(app.render().tree,'search.input.clear').props.onPress();view=app.render();
+  assert.match(text(view.empty),/최근 검색어/);assert.ok(!nodes(view.empty).some(node=>node.type==='StateCard'));
+  nodes(view.empty).find(node=>node.props?.analyticsId==='search.recent.open'&&node.props.accessibilityLabel==='#파스타 검색').props.onPress();
+  assert.equal(input().props.value,'#파스타');assert.ok(control(app.render().tree,'search.kind.post').props.selected,'a hashtag opens posts');
+  control(app.render().tree,'search.input.clear').props.onPress();view=app.render();
+  nodes(view.empty).find(node=>node.props?.accessibilityLabel==='지모코 지우기').props.onPress();await settle();
+  assert.deepEqual(JSON.parse(app.stored.get('gling.search.recent:viewer')),['#파스타']);
+  app.account('other');app.render();await settle();view=app.render();
+  assert.ok(!text(view.empty).includes('#파스타'),'another account on the same phone sees its own list');
+  app.account('viewer');app.render();await settle();view=app.render();
+  nodes(view.empty).find(node=>node.props?.analyticsId==='search.recent.clear').props.onPress();await settle();view=app.render();
+  assert.equal(app.stored.get('gling.search.recent:viewer'),'[]');assert.equal(nodes(view.empty).find(node=>node.type==='StateCard').props.kind,'search');
+  assert.deepEqual(recentSearches.parseRecentSearches('{"bad":1}'),[]);assert.deepEqual(recentSearches.parseRecentSearches('not json'),[]);
+  assert.equal(recentSearches.addRecentSearch(Array.from({length:10},(_,n)=>`q${n}`),'new').length,10);
+  app.unmount();
 });

@@ -1,6 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { Pressable, FlatList, ScrollView } from '@/components/analytics-controls';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from '@/components/symbol-view';
@@ -9,11 +9,11 @@ import {
   DeviceEventEmitter,
   Keyboard,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   StyleSheet,
   UIManager,
   TextInput,
-  useWindowDimensions,
   View,
   type FlatList as NativeFlatList,
   type TextInputInstance,
@@ -36,6 +36,7 @@ import { SeatBar, meetupMenuActions, useHideMeetup } from '@/components/chilling
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { GlingLoader } from '@/components/gling-loader';
 import { ListCard, ListRow } from '@/components/list-card';
+import { FactGrid } from '@/components/fact-grid';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ClayBoxFill, ClayCoinFill, ClayControlFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { PostCard, PostReactionToggle } from '@/components/post-card';
@@ -68,7 +69,8 @@ import { loadPublicPost } from '@/lib/feed-data';
 import { MAX_POST_IMAGES } from '@/lib/image-upload';
 import { CITIES } from '@/lib/mock';
 import { postMapBody, postPublicAddress } from '@/lib/post-maps';
-import { stripListingLead } from '@/lib/listing-details';
+import { dialNumber, LISTING_LABELS, listingContacts, stripListingLead } from '@/lib/listing-details';
+import { PostAttachmentLink } from '@/components/post-attachment-link';
 import { ListingInfo, type DetailedPost } from '@/components/listing-card';
 import { splitPostPhotoCredits } from '@/lib/post-photo-credits';
 import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
@@ -178,6 +180,12 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const [savingPost, setSavingPost] = useState(false);
   // Meetups swap the action bar for the composer only while asking, replying or editing.
   const [composing, setComposing] = useState(false);
+  // 부동산·구인구직·중고거래 (I-post-01): 지원하기 for a job opening, otherwise 글링 대화로 물어보기, in the same bar as a meetup's.
+  // Never on my own or a closed post, which keep the comment composer.
+  const listingAction = !post.room && post.listingDetails && !canManagePost && post.listingStatus !== 'closed'
+    ? post.listingDetails.type === 'jobs' && post.listingDetails.deal === 'hiring' ? 'apply' : 'ask' : null;
+  const [applyOpen, setApplyOpen] = useState(false);
+  const afterApply = useRef<(() => void) | null>(null);
   const meetupStatus = useMeetupParticipation(post);
   const [meetupMenuOpen, setMeetupMenuOpen] = useState(false), [openingChat, setOpeningChat] = useState(false);
   const [pendingRequests, setPendingRequests] = useState(0), [requestsRevision, setRequestsRevision] = useState(0);
@@ -729,6 +737,45 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
     </View>;
   };
 
+  const openPostAuthor = () => {
+    if (post.business) { onClose(); router.push({ pathname: '/company/[id]', params: { id: post.business.id } }); return; }
+    if (post.room) { onClose(); router.push({ pathname: '/meetup-profile', params: { postId: post.id } }); return; }
+    setSheetUser({
+      id: post.author.id,
+      nickname: post.author.nickname,
+      avatarUrl: post.author.avatarUrl,
+      neighborhood: post.author.neighborhood,
+      verified: post.author.verified,
+      trustLevel: post.author.trustLevel,
+      mine: post.author.id === me.id,
+      listingId: post.kind === 'listing' ? post.id : undefined,
+      contextPostId: post.kind === 'listing' || post.room ? post.id : undefined,
+    });
+  };
+  // Only what the post has: the author's own contacts, or the numbers and emails written in the body, then a Gling chat.
+  const applySheet = () => {
+    if (listingAction !== 'apply' || !post.listingDetails) return null;
+    const contacts = listingContacts(post.listingDetails, photoCredits.body);
+    const ways = post.listingDetails.type === 'jobs' ? (post.listingDetails.apply ?? []).map(item => tr(LISTING_LABELS.apply[item])).join(', ') : '';
+    const open = (url: string) => { void Linking.openURL(url).catch(() => { play('warning'); Alert.alert(tr('연결을 열지 못했어요. 이 기기의 전화 앱이나 브라우저를 확인해 주세요.')); }); };
+    const icon = (name: ComponentProps<typeof SymbolView>['name']) => <SymbolView name={name} size={20} tintColor={theme.accent} />;
+    return <DragSheet visible={applyOpen} onClose={() => setApplyOpen(false)} title={tr('지원하기')}
+      onDismissed={() => { const next = afterApply.current; afterApply.current = null; next?.(); }}>
+      {!!ways && <ThemedText type="supporting" themeColor="textSecondary" style={styles.applyWays}>{`${tr('지원 방법')}: ${ways}`}</ThemedText>}
+      <ListCard>
+        {contacts.phones.flatMap(phone => [
+          <ListRow key={`sms:${phone}`} analyticsId="post.apply.sms" title={tr('문자 보내기')} detail={phone} leading={icon({ ios: 'text.bubble', android: 'sms', web: 'sms' })} onPress={() => open(`sms:${dialNumber(phone)}`)} />,
+          <ListRow key={`tel:${phone}`} analyticsId="post.apply.call" title={tr('전화 걸기')} detail={phone} leading={icon({ ios: 'phone', android: 'call', web: 'call' })} onPress={() => open(`tel:${dialNumber(phone)}`)} />,
+        ])}
+        {contacts.emails.map(email => <ListRow key={email} analyticsId="post.apply.email" title={tr('이메일 보내기')} detail={email} leading={icon({ ios: 'envelope', android: 'mail', web: 'mail' })} onPress={() => open(`mailto:${email}`)} />)}
+        {contacts.links.map(link => <View key={link} style={styles.applyLink}><PostAttachmentLink url={link} row /></View>)}
+        {/* The same chat as tapping the author: their profile sheet (or a business's page) with this post attached. */}
+        <ListRow analyticsId="post.apply.chat" title={tr('글링 대화로 물어보기')} detail={post.business?.name ?? tr('{0}님에게', post.author.nickname)} leading={icon({ ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' })}
+          onPress={() => { afterApply.current = openPostAuthor; setApplyOpen(false); }} />
+      </ListCard>
+    </DragSheet>;
+  };
+
   if (postHidden) return null;
   return (
     <ThemedView style={{ flex: 1, width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center' }}
@@ -884,21 +931,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
                 {linkedPlace && <Pressable analyticsId="components_post-map-link.pressable.1" accessibilityRole="button" accessibilityLabel={placeSourceLabel} onPress={() => { play('selection'); onClose(); router.navigate(placeMapRoute(linkedPlace.place)); }} style={({ pressed }) => [ControlStyles.action, controlPresentation(theme, { pressed, clay }).container, { borderWidth: 1 }, clay && styles.clayPad]}>{clay && <ClayControlFill />}<ThemedText type="smallBold" style={controlPresentation(theme).text}>{placeSourceLabel}</ThemedText></Pressable>}
               </>}
               onJoin={onJoin ?? (() => isAuthed ? router.push({ pathname: '/meetup-join', params: { postId: post.id } }) : promptLogin('이 모임에 참여하려면 가입하거나 로그인해 주세요.'))}
-              onAuthor={() => {
-                if (post.business) { onClose(); router.push({ pathname: '/company/[id]', params: { id: post.business.id } }); return; }
-                if (post.room) { onClose(); router.push({ pathname: '/meetup-profile', params: { postId: post.id } }); return; }
-                setSheetUser({
-                  id: post.author.id,
-                  nickname: post.author.nickname,
-                  avatarUrl: post.author.avatarUrl,
-                  neighborhood: post.author.neighborhood,
-                  verified: post.author.verified,
-                  trustLevel: post.author.trustLevel,
-                  mine: post.author.id === me.id,
-                  listingId: post.kind === 'listing' ? post.id : undefined,
-                  contextPostId: post.kind === 'listing' || post.room ? post.id : undefined,
-                });
-              }}
+              onAuthor={openPostAuthor}
+              foldBody={!!post.listingDetails && !post.room}
             />}
             {!postDraft && post.kind === 'story' && !post.room && <PostPoll postId={post.id} />}
             {!postDraft && post.room && post.room.eventKind !== 'once' && Platform.OS !== 'web' && <View style={[styles.meetupSection, { borderTopColor: theme.line }]}>
@@ -906,9 +940,9 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
               <MeetupReviews postId={post.id} kind="group" reviewsOnly onBeforeNavigate={onClose} />
             </View>}
             {!postDraft && post.room && Platform.OS !== 'web' && <View style={[styles.meetupSection, { borderTopColor: theme.line }]}><MeetupFollowEncore post={post} /></View>}
-            {!postDraft && post.room && <View style={[styles.meetupSection, styles.meetupSectionRow, { borderTopColor: theme.line }]}>
+            {!postDraft && (post.room || listingAction) && <View style={[styles.meetupSection, styles.meetupSectionRow, { borderTopColor: theme.line }]}>
               <ThemedText accessibilityRole="header" style={[Typography.section, styles.flexText]}>{tr("질문·댓글")} <ThemedText themeColor="textSecondary" style={Typography.section}>{commentTotal}</ThemedText></ThemedText>
-              <Pressable analyticsId="meetup.detail.ask" accessibilityRole="button" onPress={() => { play('selection'); setComposing(true); inputRef.current?.focus(); }} style={[styles.askBtn, clay && styles.clayPad]}>
+              <Pressable analyticsId={post.room ? 'meetup.detail.ask' : 'post.detail.ask'} accessibilityRole="button" onPress={() => { play('selection'); setComposing(true); inputRef.current?.focus(); }} style={[styles.askBtn, clay && styles.clayPad]}>
                 {clay && <ClayPillFill kind="white" />}
                 <ThemedText type="smallBold" themeColor="accent">{tr("질문 남기기")}</ThemedText>
               </Pressable>
@@ -918,7 +952,16 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
         />
 
         {!postDraft && post.room && !composing && !replyTo && !editing && meetupBar()}
-        {!postDraft && (!post.room || composing || !!replyTo || !!editing) && <View
+        {!postDraft && listingAction && !composing && !replyTo && !editing && <View style={[styles.composer, { borderTopColor: theme.line, backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>
+          <View style={styles.composerRow}>
+            <PostReactionToggle post={post} kind="like" showCount /><PostReactionToggle post={post} kind="save" showCount />
+            <View style={styles.flexText}>
+              <RaisedActionButton analyticsId={listingAction === 'apply' ? 'post.detail.apply' : 'post.detail.ask-author'} label={tr(listingAction === 'apply' ? '지원하기' : '글링 대화로 물어보기')}
+                onPress={() => { play('selection'); if (listingAction === 'apply') setApplyOpen(true); else openPostAuthor(); }} />
+            </View>
+          </View>
+        </View>}
+        {!postDraft && ((!post.room && !listingAction) || composing || !!replyTo || !!editing) && <View
           style={[
             styles.composer,
             {
@@ -943,12 +986,12 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           </View>}
           {sendError && <ThemedText type="small" themeColor="accent" accessibilityRole="alert" style={{ paddingHorizontal: Spacing.two, paddingBottom: Spacing.two }}>{sendError}</ThemedText>}
           <View style={styles.composerRow}>
-            {!post.room && !replyTo && !editing && <><PostReactionToggle post={post} kind="like" showCount /><PostReactionToggle post={post} kind="save" showCount /></>}
+            {!post.room && !listingAction && !replyTo && !editing && <><PostReactionToggle post={post} kind="like" showCount /><PostReactionToggle post={post} kind="save" showCount /></>}
             <TextInput
               ref={inputRef}
               value={draft}
               onChangeText={(value) => { setDraft(value); setSendError(null); }}
-              autoFocus={!!post.room}
+              autoFocus={!!post.room || !!listingAction}
               onBlur={() => { if (!draft.trim() && !replyTo && !editing) setComposing(false); }}
               editable={!sending}
               multiline
@@ -973,6 +1016,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
         </View>}
       </KeyboardAvoidingView>
 
+      {applySheet()}
       <UserSheet user={sheetUser} onClose={() => setSheetUser(null)} onBeforeNavigate={onClose} />
       {reportSelection && (
         <ReportSheet
@@ -1008,17 +1052,12 @@ const styles = StyleSheet.create({
   clayPad: { overflow: 'visible', paddingHorizontal: 18 },
   clayLoadMore: { alignSelf: 'center', overflow: 'visible', paddingHorizontal: 18, paddingVertical: 0, justifyContent: 'center' },
   hostLink: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.one },
-  facts: { flexDirection: 'row', flexWrap: 'wrap', borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
-  fact: { padding: Spacing.three, gap: 2 },
-  factTop: { borderTopWidth: 1 },
-  factLeft: { borderLeftWidth: 1 },
-  factLineTop: { position: 'absolute', top: 0, left: Spacing.three, right: Spacing.three, height: StyleSheet.hairlineWidth },
-  factLineLeft: { position: 'absolute', left: 0, top: Spacing.three, bottom: Spacing.three, width: StyleSheet.hairlineWidth },
-  factValue: { fontSize: 16, lineHeight: 24, fontWeight: '600' },
   statusNote: { borderRadius: 16, padding: Spacing.three },
   meetupSection: { gap: Spacing.two, paddingTop: Spacing.three, borderTopWidth: StyleSheet.hairlineWidth },
   meetupSectionRow: { flexDirection: 'row', alignItems: 'center' },
   flexText: { flex: 1 },
+  applyWays: { paddingHorizontal: Spacing.two, paddingBottom: Spacing.two },
+  applyLink: { paddingHorizontal: Spacing.three },
   askBtn: { minHeight: 44, justifyContent: 'center', paddingHorizontal: Spacing.two },
   shareBtn: { minHeight: 44, minWidth: 44, paddingHorizontal: Spacing.two, borderRadius: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one },
   closeBtn: {
@@ -1109,33 +1148,16 @@ const styles = StyleSheet.create({
 // zone: the join screen has no 참여 전에 알아둘 것, so its 언제·나이 cells carry the time zone and age note for everyone (like the web invite).
 export function MeetupFacts({ post, canEnterChat, own, zone = false }: { post: Post; canEnterChat: boolean; own: boolean; zone?: boolean }) {
   const { tr, locale: appLocale } = useLanguage();
-  const theme = useTheme(), clayBox = useClayBox();
-  const stacked = useWindowDimensions().fontScale >= 1.3;
   const room = post.room;
   if (!room) return null;
-  const facts: [string, string, string?][] = [
+  return <FactGrid facts={[
     // Members and the host don't get 참여 전에 알아둘 것, so its time zone line moves here for them.
-    [tr('언제'), chillingSchedule(room, appLocale), (canEnterChat || own || zone) && room.timezone ? tr('{0} 기준', chillingTimezoneLabel(room, appLocale)) : undefined],
-    [tr('어디'), tr(CITIES.find(city => city.id === post.cityId)?.name ?? post.cityId), canEnterChat ? tr('집결지는 모임 대화에서') : own ? tr('집결지는 모임 대화에서 알려요') : tr('집결지는 승인 후')],
-    [tr('인원'), tr(room.capacity ? '{0} / {1}명' : '{0}명', room.memberCount, room.capacity)],
-    room.fee ? [tr('회비'), meetupFeeAmount(room.fee.amount), room.fee.dueOn ? tr('{0}까지', meetupFeeDue(room.fee.dueOn, appLocale)) : room.fee.note]
-      : [tr('나이'), recommendedAgeLabel(room, appLocale), zone && room.recommendedAgeMin != null ? tr('나이가 달라도 신청할 수 있어요') : undefined],
-  ];
-  return (
-    <View style={[styles.facts, clayBox ? styles.clayCard : { borderColor: theme.line }]}>
-      {clayBox && <ClayBoxFill kind="tile" />}
-      {facts.map(([label, value, note], index) => <View key={label} style={[styles.fact, { width: stacked ? '100%' : '50%', backgroundColor: clayBox ? 'transparent' : theme.card, borderColor: theme.line },
-        !clayBox && index >= (stacked ? 1 : 2) && styles.factTop, !clayBox && !stacked && index % 2 === 1 && styles.factLeft]}>
-        {/* Inset on clay, so a line never cuts through the card's raised edge. */}
-        {clayBox && index >= (stacked ? 1 : 2) && <View style={[styles.factLineTop, { backgroundColor: theme.line }]} />}
-        {clayBox && !stacked && index % 2 === 1 && <View style={[styles.factLineLeft, { backgroundColor: theme.line }]} />}
-        <ThemedText type="small" themeColor="textSecondary">{label}</ThemedText>
-        <ThemedText style={styles.factValue}>{value}</ThemedText>
-        {!!note && <ThemedText type="small" themeColor="textSecondary">{note}</ThemedText>}
-        {index === 2 && <SeatBar room={room} />}
-      </View>)}
-    </View>
-  );
+    { label: tr('언제'), value: chillingSchedule(room, appLocale), note: (canEnterChat || own || zone) && room.timezone ? tr('{0} 기준', chillingTimezoneLabel(room, appLocale)) : undefined },
+    { label: tr('어디'), value: tr(CITIES.find(city => city.id === post.cityId)?.name ?? post.cityId), note: canEnterChat ? tr('집결지는 모임 대화에서') : own ? tr('집결지는 모임 대화에서 알려요') : tr('집결지는 승인 후') },
+    { label: tr('인원'), value: tr(room.capacity ? '{0} / {1}명' : '{0}명', room.memberCount, room.capacity), extra: <SeatBar room={room} /> },
+    room.fee ? { label: tr('회비'), value: meetupFeeAmount(room.fee.amount), note: room.fee.dueOn ? tr('{0}까지', meetupFeeDue(room.fee.dueOn, appLocale)) : room.fee.note }
+      : { label: tr('나이'), value: recommendedAgeLabel(room, appLocale), note: zone && room.recommendedAgeMin != null ? tr('나이가 달라도 신청할 수 있어요') : undefined },
+  ]} />;
 }
 
 // 모임 상세의 호스트 줄·사실 표와 그 바로 밑의 '내가 할 일'. 정원 찬 사람의 대기 명단은 맨 아래 버튼이 맡는다.

@@ -16,6 +16,8 @@ import { PostAttachmentLink } from '@/components/post-attachment-link';
 import { dealLabel } from '@/lib/listing-details';
 import { englishTail, isPastEvent, postInfoParts } from '@/lib/post-info';
 import { getCityPlaces, type CityPlace } from '@/lib/city-places';
+import { deliveryPartnerPlace } from '@/lib/delivery-partners';
+import { SectionLabel } from '@/components/list-card';
 import { loadCityBusinessLinks } from '@/lib/webshops';
 import { CITIES } from '@/lib/mock';
 import { TranslationControl } from '@/components/content-translation';
@@ -66,6 +68,7 @@ export function PostCard({
   translationVisible = true,
   meetupDetail,
   postDetail = false,
+  foldBody = false,
   feed = false,
 }: {
   post: Post;
@@ -82,6 +85,7 @@ export function PostCard({
   translationVisible?: boolean;
   meetupDetail?: { beforeTitle: ReactNode; afterTitle: ReactNode }; // 모임 상세: 작성자 줄·분류·반응 줄 대신 요약을 끼운다
   postDetail?: boolean; // 일반 글 상세: 장소·링크는 정보 카드, 본문은 문단, 출처는 접고, 반응은 하단 바로 옮긴다
+  foldBody?: boolean; // 부동산·구인구직·중고거래 상세 (I-post-01): 본문은 '자세한 내용' 아래 세 줄까지, 더 보기로 편다
   feed?: boolean; // 오늘 탭 목록 (owner 2026-11-03): 프로필 줄 → 짧은 글 → 장소 카드 → 넘기는 사진 → 공감·댓글·공유·저장(오른쪽 끝). ··· 은 남의 글 숨기기·신고, 내 글 고치기·삭제 (owner 2026-11-04)
 }) {
   const { tr, t, locale: appLocale, language } = useLanguage();
@@ -127,7 +131,8 @@ export function PostCard({
     void loadCityBusinessLinks(supabase, cityId).then(links => {
       const placeKey = Object.entries(links).find(([, id]) => id === merchantId)?.[0];
       let place: CityPlace | null = null;
-      try { place = placeKey ? getCityPlaces(cityId).find(item => item.id === placeKey) ?? null : null; } catch { /* unknown city: keep the outside link */ }
+      // A delivery partner's place (partner:…) is not in the city list but opens on the map the same way, as on the business profile.
+      try { place = placeKey ? getCityPlaces(cityId).find(item => item.id === placeKey) ?? deliveryPartnerPlace(cityId, placeKey) ?? null : null; } catch { /* unknown city: keep the outside link */ }
       if (active) setBusinessPlace({ key: businessPlaceKey, place });
     }).catch(() => {});
     return () => { active = false; };
@@ -201,6 +206,32 @@ export function PostCard({
     onTextLayout={meetupDetail && measuredLines == null ? (event) => setIntroLines({ body: displayBody, lines: event.nativeEvent.lines.length }) : undefined}
     linksEnabled={!onPress}
     body={displayBody} />;
+  // Native only: web cannot count lines. A hidden full copy counts them, so 더 보기 shows only when the text is cut.
+  const foldParagraphs = foldBody && info && Platform.OS !== 'web' ? english && !englishOpen ? english.main : info.paragraphs : null;
+  const foldText = foldParagraphs?.join('\n') ?? '';
+  const foldCut = !!foldText && !textOpen && (textLines?.text !== foldText || textLines.lines > 3);
+  const foldLong = textLines?.text === foldText && textLines.lines > 3;
+  const detailBody = !foldText ? <View style={styles.detailBodyWrap}>{bodyText}
+    {english && <Pressable analyticsId="components_post-card.pressable.1" accessibilityRole="button" accessibilityState={{ expanded: englishOpen }}
+      onPress={() => { play('selection'); setEnglishOpen(open => !open); }} style={styles.moreText}>
+      <ThemedText type="smallBold" themeColor="textSecondary">{englishOpen ? tr('영어 접기') : tr('영어로도 보기')}</ThemedText>
+    </Pressable>}
+  </View> : <View>
+    <SectionLabel>{tr('자세한 내용')}</SectionLabel>
+    {foldCut ? <PostBody themeColor="text" style={[styles.body, styles.detailBody]} numberOfLines={3} linksEnabled body={foldText} /> : bodyText}
+    {!textOpen && <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.measure}>
+      <PostBody themeColor="text" style={[styles.body, styles.detailBody]} linksEnabled={false} body={foldText}
+        onTextLayout={({ nativeEvent: { lines } }) => { if (textLines?.text !== foldText || textLines.lines !== lines.length) setTextLines({ text: foldText, lines: lines.length }); }} />
+    </View>}
+    {foldLong && <Pressable analyticsId="post.detail.body-more" accessibilityRole="button" accessibilityState={{ expanded: textOpen }}
+      onPress={() => { play('selection'); setTextOpen(open => !open); }} style={styles.moreText}>
+      <ThemedText type="smallBold" themeColor="accent">{textOpen ? tr('접기') : tr('더 보기')}</ThemedText>
+    </Pressable>}
+    {english && !foldCut && <Pressable analyticsId="components_post-card.pressable.1" accessibilityRole="button" accessibilityState={{ expanded: englishOpen }}
+      onPress={() => { play('selection'); setEnglishOpen(open => !open); }} style={styles.moreText}>
+      <ThemedText type="smallBold" themeColor="textSecondary">{englishOpen ? tr('영어 접기') : tr('영어로도 보기')}</ThemedText>
+    </Pressable>}
+  </View>;
 
   const toggleLike = async () => {
     if (!isAuthed) return promptLogin(t.auth.reasonLike);
@@ -581,12 +612,7 @@ export function PostCard({
             </View>}
           </View>}
           {beforeBody}
-          {!meetupDetail && (info ? <View style={styles.detailBodyWrap}>{bodyText}
-            {english && <Pressable analyticsId="components_post-card.pressable.1" accessibilityRole="button" accessibilityState={{ expanded: englishOpen }}
-              onPress={() => { play('selection'); setEnglishOpen(open => !open); }} style={styles.moreText}>
-              <ThemedText type="smallBold" themeColor="textSecondary">{englishOpen ? tr('영어 접기') : tr('영어로도 보기')}</ThemedText>
-            </Pressable>}
-          </View> : bodyText)}
+          {!meetupDetail && (info ? detailBody : bodyText)}
           {listingLine}
         </Pressable>
         {meetupDetail && <>

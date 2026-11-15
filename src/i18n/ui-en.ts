@@ -4927,5 +4927,18 @@ export const uiEnglish: Record<string, string> = {
   "스토어에서 구독 상품을 받지 못했어요. 잠시 후 다시 확인해 주세요.": "The store didn’t send the subscription options. Check again in a moment.",
   "복원 확인 중…": "Checking purchases…",
   "구매를 복원하지 못했어요. 연결 상태를 확인하고 잠시 후 다시 해 주세요.": "Couldn’t restore purchases. Check your connection and try again in a moment.",
-  "Lv2 다음": "After Lv2"
+  "Lv2 다음": "After Lv2",
+  // mock-post (2026-11-14)
+  "연락처": "Contact",
+  "이메일 주소": "Email address",
+  "지원 링크": "Application link",
+  "번호나 주소가 맞는지 확인해 주세요": "Check the number and addresses",
+  "적어 둔 연락처는 이 글을 연 멤버에게 보여요.": "Members who open this post can see the contact details you add.",
+  "자세한 내용": "Details",
+  "지원하기": "Apply",
+  "문자 보내기": "Send a text",
+  "전화 걸기": "Call",
+  "이메일 보내기": "Send an email",
+  "글링 대화로 물어보기": "Ask in a Gling chat",
+  "{0}님에게": "To {0}"
 };

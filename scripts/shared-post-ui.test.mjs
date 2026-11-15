@@ -23,6 +23,7 @@ import { photoCreditNames, splitPostPhotoCredits } from '../src/lib/post-photo-c
 import * as postLinks from '../supabase/functions/_shared/post-links.ts';
 import * as postReactions from '../src/lib/post-reactions.ts';
 import * as postOpen from '../src/lib/post-open.ts';
+import { deliveryPartnerPlace } from '../src/lib/delivery-partners.ts';
 
 const id = '9f100000-0000-4000-8000-000000000001';
 const otherId = '9f100000-0000-4000-8000-000000000002';
@@ -110,6 +111,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/components/meetup-manage-sheet': { MeetupManageSheet: 'MeetupManageSheet' }, '@/components/post-place-card': { PostPlaceCard: 'PostPlaceCard' },
     '@/lib/meetup-destination': { splitPlaceMeetupBody: () => null }, '@/lib/place-reviews': { placeReviewPlace: () => null, placeReviewText: body => body, mapPinPlace: () => null },
     '@/lib/listing-details': { dealLabel, stripListingLead }, '@/components/listing-card': { ListingInfo: 'ListingInfo' },
+    '@/lib/delivery-partners': { deliveryPartnerPlace: () => undefined }, '@/components/list-card': { SectionLabel: 'SectionLabel', ListCard: 'ListCard', ListRow: 'ListRow' }, '@/components/fact-grid': { FactGrid: 'FactGrid' },
     '@/lib/hashtags': { uniqueHashtags }, '@/lib/post-maps': { postLocationUrl, postMapBody }, '@/lib/meetup-ai': { visibleMeetupBody: body => body },
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' }, '@/components/post-detail': { PostDetail: 'PostDetail' }, '@/components/shared-link-card': { SharedPreviewContent: 'SharedPreviewContent' },
     '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
@@ -640,4 +642,37 @@ test('a business post detail opens the business on the Gling map and folds its E
   const toggle = harness.nodes().find(node => node.props?.analyticsId === 'components_post-card.pressable.1' && node.props.accessibilityState);
   toggle.props.onPress(); harness.render();
   assert.deepEqual(body(), [korean, english]);
+});
+
+test('a business linked to a delivery partner place opens that place on the Gling map, not Google (QA I-post-06)', async context => {
+  const item = { ...post(), room: undefined, tag: { slug: 'business', label: '비즈니스' }, business: { id: 'merchant-1', name: '지모코' }, cityId: 'vancouver',
+    body: '점심 세트를 시작했어요.\n\n📍 1046A Austin Ave, Coquitlam', author: { id: 'other', nickname: '지모코' }, likes: 0, saves: 0, comments: 0, createdAtLabel: '방금' };
+  const harness = mount('../src/components/post-card.tsx', 'PostCard', { imports: {
+    '@/lib/webshops': { loadCityBusinessLinks: async () => ({ 'partner:jimoco-coquitlam': 'merchant-1' }) },
+    '@/lib/city-places': { getCityPlaces: () => [] }, '@/lib/delivery-partners': { deliveryPartnerPlace },
+  } }, { post: item, flat: true, postDetail: true }); context.after(() => harness.unmount());
+  await harness.settle();
+  assert.equal(harness.nodes().find(node => node.type === 'PostPlaceCard')?.props.place.id, 'partner:jimoco-coquitlam');
+  assert.ok(!harness.nodes().some(node => node.type === 'PostMapLink'));
+});
+
+test('a listing detail folds its body under 자세한 내용 after three lines, and only when the text is cut (I-post-01)', async context => {
+  const paragraphs = ['다운타운에서 15분 거리예요.', '· 직무: 핫푸드, 주방보조', '· 시간: 풀타임과 파트타임', '· 지원: 문자로 보내 주세요.'];
+  const item = { ...post(), room: undefined, kind: 'listing', tag: { slug: 'jobs', label: '구인구직' }, body: paragraphs.join('\n\n'), author: { id: 'other', nickname: '수달' }, likes: 0, saves: 0, comments: 0, createdAtLabel: '방금' };
+  for (const [lines, cut] of [[5, true], [2, false]]) {
+    const harness = mount('../src/components/post-card.tsx', 'PostCard', {}, { post: item, flat: true, postDetail: true, foldBody: true }); context.after(() => harness.unmount());
+    assert.ok(harness.nodes().some(node => node.type === 'SectionLabel' && node.props.children === '자세한 내용'));
+    const measure = () => harness.nodes().find(node => node.type === 'PostBody' && node.props.onTextLayout);
+    measure().props.onTextLayout({ nativeEvent: { lines: Array.from({ length: lines }) } }); harness.render();
+    const clamped = () => harness.nodes().find(node => node.type === 'PostBody' && node.props.numberOfLines === 3);
+    const more = () => harness.nodes().find(node => node.props?.analyticsId === 'post.detail.body-more');
+    assert.equal(!!clamped(), cut); assert.equal(!!more(), cut);
+    if (!cut) { assert.deepEqual(harness.nodes().find(node => Array.isArray(node.props?.paragraphs)).props.paragraphs, paragraphs); continue; }
+    more().props.onPress(); harness.render();
+    assert.ok(!clamped()); assert.equal(more().props.accessibilityState.expanded, true);
+    assert.deepEqual(harness.nodes().find(node => Array.isArray(node.props?.paragraphs)).props.paragraphs, paragraphs);
+    assert.ok(harness.calls.some(call => call[0] === 'feedback' && call[1] === 'selection'));
+  }
+  const web = mount('../src/components/post-card.tsx', 'PostCard', { os: 'web' }, { post: item, flat: true, postDetail: true, foldBody: true }); context.after(() => web.unmount());
+  assert.ok(!web.nodes().some(node => node.type === 'SectionLabel'), 'web cannot count lines and keeps the whole body');
 });
