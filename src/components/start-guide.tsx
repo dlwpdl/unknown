@@ -2,13 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
 import type { SymbolViewProps } from 'expo-symbols';
 import { SymbolView } from '@/components/symbol-view';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Modal, Platform, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import { Platform, StyleSheet, View, type ViewInstance } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
-import { Pressable, ScrollView } from '@/components/analytics-controls';
+import { Pressable } from '@/components/analytics-controls';
+import { CoachMarks, tabTarget, type CoachStep } from '@/components/coach-marks';
 import { animateLayout } from '@/components/disclosure';
 import { ThemedText } from '@/components/themed-text';
 import { ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
@@ -22,40 +22,39 @@ type Step = 'city' | 'tour' | 'meetup';
 type GuideState = { hidden: boolean; done: Step[] };
 const EMPTY: GuideState = { hidden: false, done: [] };
 
-/** Settings uses this to bring the guide back after "더 이상 안 보기". */
+let replayTour = false;
+/** Settings' "처음 안내 다시 보기": the guide comes back after "더 이상 안 보기", and the tour opens on Home (I-home-03). */
 export function resetStartGuide() {
-  return AsyncStorage.setItem(START_GUIDE_KEY, JSON.stringify(EMPTY));
+  return AsyncStorage.setItem(START_GUIDE_KEY, JSON.stringify(EMPTY)).then(() => { replayTour = true; });
 }
 
+/** Home's real buttons the tour lights up, measured where they are. */
+export type TourTargets = Record<'city' | 'search' | 'chips' | 'write', RefObject<ViewInstance | null>>;
 type Icon = SymbolViewProps['name'];
 const WEB = Platform.OS === 'web';
-// 앱은 지도 탭·떠 있는 글쓰기 버튼(owner 2026-11-01 A안), 웹은 아래 탭에 글쓰기가 그대로이고 지도 탭이 없어요.
-// 떠 있는 버튼은 글자 없는 둥근 버튼이라 이름에 '+ 글쓰기' 글자를 쓰지 않아요(사장님 2026-11-13, QA B8-1).
-const TOUR: { icon: Icon; title: string; body: string }[] = [
-  { icon: { ios: 'location', android: 'location_on', web: 'location_on' }, title: '위쪽 도시 이름', body: '눌러서 사는 도시로 바꿀 수 있어요. 글·모임·장소가 모두 그 도시 기준으로 바뀌어요.' },
-  { icon: { ios: 'magnifyingglass', android: 'search', web: 'search' }, title: '맨 위 돋보기', body: '프로필 옆에 있어요. 글·모임·장소·비즈니스를 한 번에 찾아요. "원베드", "알바"처럼 짧게 쳐 보세요.' },
-  { icon: { ios: 'line.3.horizontal.decrease', android: 'filter_list', web: 'filter_list' }, title: '카테고리 줄', body: "도시 이름 바로 아래 줄이에요. 부동산·맛집처럼 주제별로 골라 볼 수 있어요. 나머지 주제는 맨 끝 '더보기'에 있어요." },
-  ...(WEB ? [] : [{ icon: { ios: 'map', android: 'map', web: 'map' }, title: '아래 지도 탭', body: '집 매물, 중고 물건, 가볼 만한 곳, 행사가 지도 한 장에 다 나와요. 보고 싶은 것만 지도 위쪽에서 골라도 돼요.' } as const]),
-  { icon: { ios: 'person.2', android: 'groups', web: 'groups' }, title: '아래 모임 탭', body: '이번 주 열리는 모임을 보고 바로 신청해요. 직접 모임을 열 수도 있어요.' },
-  WEB
-    ? { icon: { ios: 'square.and.pencil', android: 'edit_square', web: 'edit_square' }, title: '아래 글쓰기 탭', body: '궁금한 걸 묻거나 집·일자리·중고 글을 올려요. 주제를 고르면 맞는 칸이 나와요.' }
-    : { icon: { ios: 'plus', android: 'add', web: 'add' }, title: '둥근 글쓰기 버튼', body: '홈 오른쪽 아래에 떠 있어요. 글을 내려 읽는 동안엔 잠깐 숨고, 위로 올리면 다시 나와요. 궁금한 걸 묻거나 집·일자리·중고 글을 올려요. 주제를 고르면 맞는 칸이 나와요.' },
-  { icon: { ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' }, title: '채팅 · 알림', body: '채팅은 1:1 대화와 모임 단톡방, 알림은 내 글에 달린 댓글과 모임 소식이에요.' },
-];
+// app-tabs.web.tsx: a 53pt button (padding, icon, label line) with 8pt above and below.
+const WEB_TAB_BAR = 69;
 
-export function StartGuide({ cityName, cityPicks = 0, onPickCity, onOpenMeetups }: { cityName: string; cityPicks?: number; onPickCity: () => void; onOpenMeetups: () => void }) {
+// Home owns `touring` so its floating + stays on screen while the tour points at it.
+export function StartGuide({ cityName, cityPicks = 0, onPickCity, onOpenMeetups, touring, onTouring, targets }: {
+  cityName: string; cityPicks?: number; onPickCity: () => void; onOpenMeetups: () => void; touring: boolean; onTouring: (open: boolean) => void; targets: TourTargets;
+}) {
   const { tr } = useLanguage();
   const theme = useTheme();
   const clay = useClay(), clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const reducedMotion = useReducedMotion();
   const [state, setState] = useState<GuideState | null>(null);
-  const [touring, setTouring] = useState(false);
 
-  // Re-read on focus so "처음 안내 다시 보기" in settings shows it again on return.
+  // Re-read on focus so "처음 안내 다시 보기" in settings shows it again on return, and opens the tour.
   useFocusEffect(useCallback(() => {
     void AsyncStorage.getItem(START_GUIDE_KEY).then(raw => setState(raw ? { ...EMPTY, ...JSON.parse(raw) } : EMPTY)).catch(() => setState(EMPTY));
-  }, []));
+    if (!replayTour) return;
+    replayTour = false;
+    // After the settings screen has slid away, so the buttons are measured where they rest.
+    const timer = setTimeout(() => onTouring(true), 500);
+    return () => clearTimeout(timer);
+  }, [onTouring]));
 
   const save = (next: GuideState) => {
     animateLayout(reducedMotion);
@@ -82,9 +81,19 @@ export function StartGuide({ cityName, cityPicks = 0, onPickCity, onOpenMeetups 
     { id: 'city', title: tr('내 도시 고르기'), body: tr('지금은 {0} 글을 보고 있어요. 사는 도시로 바꾸면 그 동네 글과 모임만 보여요.', tr(cityName)),
       icon: { ios: 'location', android: 'location_on', web: 'location_on' }, run: () => { onPickCity(); complete('city'); } },
     { id: 'tour', title: tr('화면 둘러보기'), body: tr('카테고리, 검색, 지도, 글쓰기가 어디 있고 무엇을 하는지 알려 드려요.'),
-      icon: { ios: 'hand.point.up.left', android: 'touch_app', web: 'touch_app' }, run: () => setTouring(true) },
+      icon: { ios: 'hand.point.up.left', android: 'touch_app', web: 'touch_app' }, run: () => onTouring(true) },
     { id: 'meetup', title: tr('모임 구경하기'), body: tr('이번 주 열리는 모임을 보고, 마음에 들면 바로 신청할 수 있어요.'),
       icon: { ios: 'person.2', android: 'groups', web: 'groups' }, run: () => { onOpenMeetups(); complete('meetup'); } },
+  ];
+
+  // Home's real buttons one at a time, one line each (I-home-03 A). Chat and notifications are left out: their tab names say enough.
+  // The map is the middle of five native tabs (app-tabs.tsx). The web has no map tab or floating +, so its last step points at its 글쓰기 tab, also the middle of five.
+  const tour: CoachStep[] = [
+    { targets: [targets.city], title: tr('여기서 도시를 바꿔요'), body: tr('고른 도시의 글·모임·장소가 나와요.') },
+    { targets: [targets.search], title: tr('글·모임·비즈니스를 한 번에 찾아요'), body: tr("'원베드', '알바'처럼 짧게 쳐 보세요.") },
+    { targets: [targets.chips], title: tr('보고 싶은 주제만 골라요'), body: tr("나머지 주제는 맨 끝 '더보기'에 있어요.") },
+    WEB ? { targets: [tabTarget(2, 5, WEB_TAB_BAR, 0)], title: tr('글쓰기는 아래에 있어요'), body: tr('궁금한 걸 묻거나 집·일자리·중고 글을 올려요. 주제를 고르면 맞는 칸이 나와요.') }
+      : { targets: [tabTarget(2, 5), targets.write], title: tr('지도와 글쓰기는 아래에 있어요'), body: tr('지도에는 집·중고 물건·행사가 한 장에 나와요. 묻고 싶은 게 생기면 +를 눌러요.') },
   ];
 
   // One line instead of three explained rows (QA I-home-01): the steps left are chips that run the step, done steps drop out.
@@ -117,31 +126,8 @@ export function StartGuide({ cityName, cityPicks = 0, onPickCity, onOpenMeetups 
         ))}
       </View>
 
-      <Modal visible={touring} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { play('selection'); setTouring(false); complete('tour'); }}>
-        <SafeAreaView style={[styles.flex, { backgroundColor: theme.background }]}>
-          <ScrollView analyticsId="start-guide.tour" contentContainerStyle={styles.tour}>
-            <ThemedText accessibilityRole="header" style={Typography.sheetTitle}>{tr('글링은 이렇게 생겼어요')}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">{tr('홈 화면 맨 위부터 차례로 보면 돼요.')}</ThemedText>
-            {TOUR.map(item => (
-              <View key={item.title} style={styles.tourRow}>
-                <View style={[styles.stepIcon, { backgroundColor: theme.backgroundElement }]}>
-                  <SymbolView name={item.icon} size={IconSize.inline} tintColor={theme.accent} />
-                </View>
-                <View style={styles.flex}>
-                  <ThemedText type="smallBold">{tr(item.title)}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">{tr(item.body)}</ThemedText>
-                </View>
-              </View>
-            ))}
-            <Pressable analyticsId="start-guide.tour.done" accessibilityRole="button"
-              onPress={() => { play('selection'); setTouring(false); complete('tour'); }}
-              style={({ pressed }) => [ControlStyles.action, styles.tourDone, controlPresentation(theme, { tone: 'primary', pressed, clay }).container]}>
-              {clay && <ClayPillFill kind="cta" />}
-              <ThemedText type="smallBold" style={{ color: theme.accentInk }}>{tr('알겠어요')}</ThemedText>
-            </Pressable>
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+      {/* Seen to the end or skipped, the tour counts as done, as before. */}
+      <CoachMarks visible={touring} steps={tour} analyticsIds={{ next: 'start-guide.tour.done', skip: 'sheet.close' }} onClose={() => { onTouring(false); complete('tour'); }} />
     </View>
   );
 }
@@ -156,8 +142,4 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   chip: { flexDirection: 'row', gap: Spacing.one + Spacing.half, borderWidth: 1 },
   clayChip: { overflow: 'visible', paddingHorizontal: 18 },
-  stepIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  tour: { padding: Spacing.four, gap: Spacing.three },
-  tourRow: { flexDirection: 'row', gap: Spacing.three, alignItems: 'flex-start' },
-  tourDone: { marginTop: Spacing.three, borderWidth: 1 },
 });
