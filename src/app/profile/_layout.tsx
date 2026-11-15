@@ -38,7 +38,7 @@ export default function ProfileLayout() {
       <Stack.Screen name="guidelines" options={{ title: t.profile.guidelines }} />
       <Stack.Screen name="membership" options={{ title: tr('멤버십'), presentation: 'modal', animation: reducedMotion ? 'none' : 'slide_from_bottom' }} />
       <Stack.Screen name="merchant" options={{ title: tr('내 가게') }} />
-      <Stack.Screen name="meetup-reviews" options={{ title: tr('모임 후기') }} />
+      <Stack.Screen name="meetup-reviews" options={{ title: tr('모임 후기 · 매너 평가') }} />
       <Stack.Screen name="invite" options={{ title: tr('친구 초대') }} />
       <Stack.Screen name="host-quest" options={{ title: tr('모임장 퀘스트') }} />
       <Stack.Screen name="host-quest-step" options={{ title: tr('모임장 퀘스트') }} />

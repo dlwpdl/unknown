@@ -64,3 +64,34 @@ test('the chat upcoming read uses its own ordered RPC while attendance history k
   client.rpc = async () => ({ data: null, error: { message: 'MEETUP_ACCESS_REQUIRED' } });
   await assert.rejects(api.loadMeetupUpcomingSessions(client, session), /MEETUP_ACCESS_REQUIRED/);
 });
+
+test('the review screen reads the session queue and falls back to the meetup list on servers without it', async () => {
+  const api = await import('../src/lib/meetup-reviews.ts');
+  const calls = [], meetups = [{ postId: session, title: '맛집 탐방 모임', kind: 'group' }];
+  let queue = { error: { code: 'PGRST202', message: 'Could not find the function public.get_my_meetup_review_queue' } };
+  const client = { rpc: async name => { calls.push(name); return name === 'get_my_meetup_review_queue' ? queue : { data: meetups, error: null }; } };
+  assert.deepEqual(await api.loadMyMeetupReviewQueue(client), { meetups });
+  assert.deepEqual(calls, ['get_my_meetup_review_queue', 'get_my_meetup_review_inbox']);
+  queue = { error: { code: '42883', message: 'function does not exist' } };
+  assert.deepEqual(await api.loadMyMeetupReviewQueue(client), { meetups });
+  queue = { data: [], error: null }; calls.length = 0;
+  assert.deepEqual(await api.loadMyMeetupReviewQueue(client), { sessions: [] });
+  assert.deepEqual(calls, ['get_my_meetup_review_queue'], 'with the migration the older list is not read');
+  queue = { error: { code: 'P0001', message: 'AUTH_REQUIRED' } };
+  await assert.rejects(api.loadMyMeetupReviewQueue(client), /AUTH_REQUIRED/, 'other failures stay visible instead of showing the old list');
+});
+
+test('the top card is the review that closes first, with days left counted in the meetup zone', async () => {
+  const { nextReview, reviewDaysLeft, reviewDue } = await import('../src/lib/meetup-reviews.ts');
+  const row = (id, reviewUntil, extra = {}) => ({ sessionId: id, postId: session, title: '모임', kind: 'group', timezone: 'America/Toronto', cityId: 'toronto',
+    startsAt: '2026-11-08T23:00:00Z', endsAt: '2026-11-09T01:00:00Z', reviewUntil, isHost: false, verified: true, canReview: true, reviewStatus: null, ...extra });
+  const late = row('late', '2026-11-20T01:00:00Z'), soon = row('soon', '2026-11-16T01:00:00Z');
+  assert.equal(nextReview([late, soon, row('done', '2026-11-15T01:00:00Z', { reviewStatus: 'pending' }), row('closed', '2026-11-15T01:00:00Z', { canReview: false })]), soon);
+  assert.equal(nextReview([row('done', '2026-11-15T01:00:00Z', { reviewStatus: 'published' })]), null);
+  assert.equal(reviewDue(row('host', '2026-11-15T01:00:00Z', { canReview: false, isHost: true })), false);
+  // Nov 16 01:00 UTC is Nov 15 20:00 in Toronto.
+  assert.equal(reviewDaysLeft(soon, Date.parse('2026-11-15T15:00:00Z')), 0);
+  assert.equal(reviewDaysLeft(soon, Date.parse('2026-11-14T15:00:00Z')), 1);
+  assert.equal(reviewDaysLeft(soon, Date.parse('2026-11-13T15:00:00Z')), 2);
+  assert.equal(reviewDaysLeft(soon, Date.parse('2026-11-16T03:00:00Z')), 0, 'never below zero');
+});
