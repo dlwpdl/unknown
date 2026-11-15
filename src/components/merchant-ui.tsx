@@ -85,7 +85,7 @@ export function MerchantSegments<T extends string>({ items, value, onChange, dis
   </View>;
 }
 
-// Where the owner is in a multi-step flow (e.g. 내용 → 원고 확인 → 게시할 곳).
+// Where the owner is in a multi-step flow (e.g. 쓰기 → 올릴 곳).
 export function MerchantSteps({ steps, current }: { steps: string[]; current: number }) {
   const theme = useTheme();
   return <View style={styles.steps} accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: steps.length, now: current + 1 }}>

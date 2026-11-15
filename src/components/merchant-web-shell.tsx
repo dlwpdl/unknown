@@ -142,7 +142,7 @@ export function MerchantChannelList() {
   const channels: { key: string; mark: string; markColor: string; markInk: string; name: string; detail: string; badge: string; live: boolean }[] = [
     { key: 'threads', mark: '@', markColor: '#000000', markInk: '#FFFFFF', name: 'Threads', detail: tr('게시할 때 함께 올려요'), badge: tr('곧 지원'), live: false },
     { key: 'instagram', mark: 'IG', markColor: '#C13584', markInk: '#FFFFFF', name: 'Instagram', detail: tr('비즈니스 계정 연결'), badge: tr('곧 지원'), live: false },
-    { key: 'daum', mark: 'D', markColor: '#1D6AF2', markInk: '#FFFFFF', name: tr('다음 카페'), detail: tr('원고를 복사해 직접 올려요'), badge: tr('복사'), live: true },
+    { key: 'daum', mark: 'D', markColor: '#1D6AF2', markInk: '#FFFFFF', name: tr('다음 카페'), detail: tr('글을 복사해 직접 올려요'), badge: tr('복사'), live: true },
   ];
   return <View style={styles.channels}>{channels.map(channel => <View key={channel.key} style={[styles.channel, { backgroundColor: theme.card, borderColor: theme.line, opacity: channel.live ? 1 : 0.75 }]}
     accessible accessibilityLabel={`${channel.name}, ${channel.detail}, ${channel.badge}`}>

@@ -17,6 +17,7 @@ import { BusinessInviteCard } from '@/components/business-invite-card';
 import { MerchantWebPosts } from '@/components/merchant-web-posts';
 import { MerchantBadge, merchantToneColor, MerchantHelp, MerchantMeter, MerchantPageHeader, MerchantSegments, MerchantStat, MerchantStats, MerchantSteps } from '@/components/merchant-ui';
 import { MerchantChannelList, MerchantHome, MerchantSidebar, merchantShellStyles, useMerchantSidebar, type MerchantNavItem, type MerchantRecentItem } from '@/components/merchant-web-shell';
+import { Disclosure } from '@/components/disclosure';
 import { PostPhotoEditor, type EditablePostImage } from '@/components/post-photo-editor';
 import { PostBodyEditor } from '@/components/post-body-editor';
 import { MerchantReviewInbox } from '@/components/merchant-review-inbox';
@@ -58,14 +59,14 @@ const errorText = (error: unknown) => ({
   MERCHANT_STOCK_NEGATIVE: '출고할 수량이 현재 재고보다 많아요.', MERCHANT_REQUEST_CONFLICT: '이전 입출고 요청과 내용이 달라요. 기록을 새로 확인한 뒤 다시 입력해 주세요.',
   MERCHANT_STOCK_STORAGE_REQUIRED: '이전 입출고 요청을 안전하게 저장·확인하지 못했어요. 저장 공간을 확인한 뒤 같은 요청을 다시 확인해 주세요.',
   MERCHANT_STOCK_PENDING_RESTORED: '결과를 확인하지 못한 이전 입출고 요청을 복구했어요. 아래에서 같은 요청을 다시 확인해 주세요.',
-  MERCHANT_DRAFT_APPROVAL_REQUIRED: '저장된 최신 초안을 먼저 승인해 주세요.', MERCHANT_DRAFT_PUBLISHED: '이미 게시한 원고예요. 새 초안으로 복제해 주세요.',
-  MERCHANT_DRAFT_CHANGED: '최신 저장본이 바뀌었어요. 입력은 그대로 두었으니 목록에서 해당 원고를 다시 열어 확인해 주세요.',
+  MERCHANT_DRAFT_APPROVAL_REQUIRED: '저장된 최신 초안을 먼저 승인해 주세요.', MERCHANT_DRAFT_PUBLISHED: '이미 올린 소식이에요. 새 초안으로 복제해 주세요.',
+  MERCHANT_DRAFT_CHANGED: '최신 저장본이 바뀌었어요. 입력은 그대로 두었으니 목록에서 그 소식을 다시 열어 확인해 주세요.',
   INVALID_MERCHANT_CAFE_URL: '직접 올린 다음·네이버 카페 게시글의 HTTPS 주소를 넣어주세요.',
   INVALID_ORIGINAL_URL: '원문 주소는 공개된 HTTPS 링크여야 해요.', ACCOUNT_CHANGED: '계정이 바뀌었어요. 현재 계정으로 다시 열어주세요.',
   INVALID_COST_INPUT: '금액은 0 이상, 수량은 0 초과, 수수료율은 100 미만으로 입력해 주세요.',
   CONTENT_REJECTED: '게시 기준에 맞지 않는 내용이에요. 초안을 확인해 주세요.', RATE_LIMITED: '요청이 많아요. 잠시 후 다시 시도해 주세요.',
-  IMAGE_TOO_LARGE: '사진 용량이 커요. 다른 사진으로 다시 시도해 주세요.', INVALID_IMAGE_PATH: '현재 계정의 원고 사진을 다시 확인해 주세요.',
-  MERCHANT_PHOTOS_UNAVAILABLE: '사진을 모두 불러오지 못했어요. 원고를 다시 열어주세요.', INVALID_IMAGE_COUNT: `사진은 최대 ${MAX_POST_IMAGES}장까지 추가할 수 있어요.`,
+  IMAGE_TOO_LARGE: '사진 용량이 커요. 다른 사진으로 다시 시도해 주세요.', INVALID_IMAGE_PATH: '현재 계정의 소식 사진을 다시 확인해 주세요.',
+  MERCHANT_PHOTOS_UNAVAILABLE: '사진을 모두 불러오지 못했어요. 소식을 다시 열어 주세요.', INVALID_IMAGE_COUNT: `사진은 최대 ${MAX_POST_IMAGES}장까지 추가할 수 있어요.`,
   IMAGE_UNSUPPORTED: 'JPEG, PNG, WebP 사진을 선택해 주세요.',
   BUSINESS_MONTHLY_LIMIT_REACHED: '이번 달에 올릴 수 있는 글을 다 썼어요. 다음 달에 다시 채워지고, 멤버십을 올리면 더 올릴 수 있어요.',
   DUPLICATE_PROMOTION: '최근에 올린 글과 내용이 거의 같아요. 내용을 조금 바꿔서 올려 주세요.',
@@ -105,11 +106,11 @@ async function readStockRequest(key: string): Promise<StockRequest | null> {
   } catch { throw new Error('MERCHANT_STOCK_STORAGE_REQUIRED'); }
 }
 
-async function confirmAction(title: string, message: string) {
+async function confirmAction(title: string, message: string, confirm = tr("계속")) {
   if (Platform.OS === 'web') return window.confirm(`${title}\n\n${message}`);
   return new Promise<boolean>((resolve) => Alert.alert(title, message, [
     { text: tr("취소"), style: 'cancel', onPress: () => resolve(false) },
-    { text: tr("계속"), onPress: () => resolve(true) },
+    { text: confirm, onPress: () => resolve(true) },
   ], { cancelable: true, onDismiss: () => resolve(false) }));
 }
 async function shareText(text: string) {
@@ -284,14 +285,22 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
   const [editor, setEditor] = useState(emptyDraft), [dirty, setDirty] = useState(false), [selection, setSelection] = useState<string[]>([]);
   const [profileDirty, setProfileDirty] = useState(false);
   const [replyDirty, setReplyDirty] = useState(false);
-  const [draftStep, setDraftStep] = useState<'idea' | 'edit' | 'channels'>('idea');
+  // Mockup A-biz-01 A: two steps, 쓰기 then 올릴 곳; AI drafting sits at the top of 쓰기 instead of being a step of its own.
+  const [draftStep, setDraftStep] = useState<'edit' | 'channels'>('edit');
   const [draftView, setDraftView] = useState<'list' | 'composer'>('list');
   const [facts, setFacts] = useState(''), [purpose, setPurpose] = useState<(typeof draftPurposes)[number]>('가게 소식');
   const [aiDraftReady, setAiDraftReady] = useState(false);
-  const [draftOptions, setDraftOptions] = useState(false);
   const sidebar = layout === 'sidebar', wideNav = useMerchantSidebar();
+  // One way back (mockup A-biz-01 A): 올릴 곳 → 쓰기 → the news list → the business home.
+  const composing = tab === 'drafts' && draftView === 'composer';
+  function goBack() {
+    setNotice('');
+    if (composing && draftStep === 'channels') setDraftStep('edit');
+    else if (composing) setDraftView('list');
+    else setTab('overview');
+  }
   // In the app the tools are tabs inside one screen, so back returns to the business home instead of leaving it.
-  usePreventRemove(!sidebar && tab !== 'overview', () => { setNotice(''); setTab('overview'); });
+  usePreventRemove(!sidebar && tab !== 'overview', goBack);
   // The app shows its own business plans (store purchase) instead of leaving for the web price page (QA A-biz-07); the web keeps the page.
   const showPlans = () => { if (Platform.OS === 'web') openPricing(); else router.push({ pathname: '/profile/membership', params: { kind: 'business', merchant: id } }); };
   const [channels, setChannels] = useState({ gling: true, naver: false, daum: false });
@@ -315,7 +324,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     setResponse(null); setMembership(null); setEditor(emptyDraft()); setOpenedDraft(null); setDraftPhotos([]); editorReload.current = null;
     setSelection([]); setChanges({}); setStockNote(''); setItem({ id: merchantEventId(), name: '', unit: '개', unit_cost: '0', low_stock: '0' });
     setDirty(false); setProfileDirty(false); setReplyDirty(false); setFacts(''); setAiDraftReady(false); setPreparedChannels(null); setExternalUrl('');
-    setDraftStep('idea'); setDraftView('list'); setDraftOptions(false); setDraftFilter('open'); setPurpose('가게 소식'); setChannels({ gling: true, naver: false, daum: false }); setTab('overview'); setNotice('');
+    setDraftStep('edit'); setDraftView('list'); setDraftFilter('open'); setPurpose('가게 소식'); setChannels({ gling: true, naver: false, daum: false }); setTab('overview'); setNotice('');
     setCost(emptyCost()); setCostMenus([]); setMenuName(null); setItemOpen(false);
     stockRequest.current = null; setStockPending(false); setStockReady(false); setStockRestoreError(true);
   }
@@ -421,15 +430,16 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       setDraftPhotos(draftPhotos.map((photo, index) => ({ path: paths[index], uri: photo.uri })));
       editorReload.current = savedDraft; setEditor(savedDraft); setDirty(false);
       if (nextStep) setDraftStep(nextStep);
-    }, '초안을 저장했어요. 아직 게시되지 않았어요.');
+    }, '저장했어요. 아직 아무 데도 안 올라갔어요.');
   }
   async function confirmChannels() {
     if (!saved || !draftReady || busyRef.current || published || (!channels.gling && !channels.naver && !channels.daum)) return;
     const source = saved, chosen = { ...channels };
-    const places = [chosen.gling && tr('글링 · {0}', tr(data!.merchant.city_name)), chosen.naver && tr('네이버 카페 · 원고 복사 후 직접 등록'), chosen.daum && tr('다음 카페 · 원고 복사 후 직접 등록')].filter(Boolean).join('\n');
-    if (!await confirmAction(tr('게시 전 확인'), tr('「{0}」\n\n{1}\n\n위에서 확인한 저장 원고를 사용해요. 카페에는 자동으로 게시되지 않아요.', source.title, places)) || !mounted.current) return;
+    const cafe = chosen.naver || chosen.daum;
+    const where = [chosen.gling && tr('올리면 {0} 글링에 바로 보여요.', tr(data!.merchant.city_name)), cafe && tr('카페에는 저절로 안 올라가요.')].filter(Boolean).join(' ');
+    if (!await confirmAction(tr('올리기 전에 한 번 더 봐 주세요'), tr('「{0}」\n\n{1}', source.title, where), chosen.gling ? tr('올리기') : tr('계속')) || !mounted.current) return;
     setPreparedChannels({ naver: chosen.naver, daum: chosen.daum });
-    if (!chosen.gling) { setNotice('원고를 준비했어요. 선택한 카페에서 직접 등록해 주세요.'); return; }
+    if (!chosen.gling) { setNotice('글을 준비했어요. 고른 카페에 직접 올려 주세요.'); return; }
     await run(async () => {
       editorReload.current = editor;
       try {
@@ -444,14 +454,14 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
         if (!mounted.current || session.data.session?.user.id !== me.id) throw new Error('ACCOUNT_CHANGED');
         await publishMerchantDraft(supabase, id, source.id, reviewedAt);
       } catch (failure) { if (mounted.current) setRevision((v) => v + 1); throw failure; }
-    }, chosen.naver || chosen.daum ? '글링에 게시했어요. 카페는 원고 복사 후 직접 등록해 주세요.' : '글링에 게시했어요.');
+    }, cafe ? '글링에 올렸어요. 카페에는 글을 복사해서 직접 올려 주세요.' : '글링에 올렸어요.');
   }
-  async function openDraft(draft?: MerchantDraft, direct = false) {
+  async function openDraft(draft?: MerchantDraft) {
     if (busyRef.current) return false;
     let opened = false;
     busyRef.current = true; setBusy(true);
     try {
-      if (dirty && !await confirmAction('저장하지 않은 초안', '다른 원고를 열면 저장하지 않은 수정 내용이 사라져요.')) return;
+      if (dirty && !await confirmAction('저장하지 않은 초안', '다른 소식을 열면 저장하지 않은 수정 내용이 사라져요.')) return;
       const paths = draft?.image_paths ?? [];
       const nextPhotos: EditablePostImage[] = [];
       if (paths.length) {
@@ -465,7 +475,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
       if (!mounted.current) return;
       setEditor(draft ? { ...draft, original_url: draft.original_url ?? '', image_paths: paths } : emptyDraft());
       setDraftPhotos(nextPhotos); setOpenedDraft(draft ?? null); editorReload.current = null;
-      setDraftStep(draft || direct ? 'edit' : 'idea'); setFacts(''); setAiDraftReady(false); setDraftOptions(false);
+      setDraftStep('edit'); setFacts(''); setAiDraftReady(false);
       setChannels({ gling: true, naver: false, daum: false }); setPreparedChannels(null);
       setDirty(false); setExternalUrl(draft?.external_url ?? ''); setError('');
       setDraftView('composer'); setTab('drafts'); opened = true;
@@ -512,7 +522,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
   const navItems: MerchantNavItem[] = [
     { key: 'overview', label: tr('홈'), icon: { ios: 'house', android: 'home', web: 'home' } },
     { key: 'posts', label: tr('글·사진'), icon: { ios: 'doc.text', android: 'description', web: 'description' } },
-    { key: 'drafts', label: tr('홍보글'), icon: { ios: 'square.and.pencil', android: 'edit_note', web: 'edit_note' } },
+    { key: 'drafts', label: tr('소식'), icon: { ios: 'square.and.pencil', android: 'edit_note', web: 'edit_note' } },
     ...fullAccess ? [{ key: 'reviews', label: tr('이용 후기'), icon: { ios: 'star', android: 'star', web: 'star' } } as const] : [],
     { key: 'profile', label: tr('프로필'), icon: { ios: 'storefront', android: 'storefront', web: 'storefront' } },
     ...aiOwner ? [{ key: 'ai', label: tr('AI 연결'), icon: { ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' } } as const] : [],
@@ -526,8 +536,8 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     setNotice(''); if (key === 'drafts') setDraftView('list'); setTab(key as MerchantTab);
   }
   const pageCopy: Partial<Record<MerchantTab, [string, string]>> = {
-    posts: [tr('글·사진'), tr('게시한 글을 열어 고치거나 내릴 수 있어요.')],
-    drafts: [tr('홍보글'), tr('초안을 쓰고, 확인한 원고만 게시해요.')],
+    posts: [tr('글·사진'), tr('올린 소식을 열어 고치거나 내릴 수 있어요.')],
+    drafts: [tr('소식'), tr('초안을 쓰고, 확인한 글만 올려요.')],
     reviews: [tr('이용 후기'), tr('후기에 답글을 달면 비즈니스 프로필에 함께 보여요.')],
     profile: [tr('프로필'), tr('손님에게 보이는 비즈니스 정보예요.')],
     channels: [tr('채널 연결'), tr('글링 글을 네이버 카페·SNS에도 함께 올려요.')],
@@ -536,7 +546,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     membership: [tr('성과·멤버십'), tr('최근 14일 성과와 이번 달 사용량이에요.')],
     accounts: [tr('계정 관리'), tr('이 비즈니스를 함께 관리하는 계정이에요.')],
   };
-  const newLabel = activeTab === 'posts' ? tr('새 글 쓰기') : activeTab === 'drafts' && draftView === 'list' ? tr('새 초안') : '';
+  const newLabel = activeTab === 'posts' ? tr('새 글 쓰기') : activeTab === 'drafts' && draftView === 'list' ? tr('새 소식 쓰기') : '';
   const draftMatches = (d: MerchantDraft, filter: typeof draftFilter) => filter === 'archived' ? !!d.archived_at
     : !d.archived_at && (filter === 'published') === !!(d.published_at || d.external_url);
   const stockStep = (itemId: string, delta: number) => setChanges(current => {
@@ -545,7 +555,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
   });
   async function startHomeDraft(generate: boolean) {
     const notes = facts, kind = purpose;
-    if (!await openDraft(undefined, !generate) || !generate || !mounted.current) return;
+    if (!await openDraft() || !generate || !mounted.current) return;
     setFacts(notes); setPurpose(kind);
     await generateDraft({ facts: notes, purpose: kind });
   }
@@ -587,6 +597,9 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
   const openDrafts = data.drafts.filter(d => draftMatches(d, 'open')).length;
   const inboxAllowed = (!isAdmin || businessOnly) && !!data.merchant.owner_verified_at;
   const planEnds = data.merchant.plan === 'trial' ? data.merchant.trial_ends_at : data.merchant.workspace_until;
+  // Published as the business, the server files these under 비즈니스 or 구인구직 only.
+  const draftKindChoice = <MerchantSegments value={editor.kind === 'listing' ? 'listing' : 'story'} disabled={busy || published} items={[{ key: 'story', label: tr("비즈니스 안내") }, { key: 'listing', label: tr("구인구직") }]}
+    onChange={(kind) => changeDraft(kind === 'listing' ? { kind: 'listing', tag_slug: 'jobs' } : { kind: 'story', tag_slug: 'business' })} />;
   const goTool = (key: MerchantTab) => { setNotice(''); if (key === 'drafts') setDraftView('list'); setTab(key); };
   const shownItems = stockFilter === 'low' ? lowItems : data.items;
   const stockChanges = data.items.filter((i) => (changes[i.id] ?? '').trim()).map((i) => ({ item_id: i.id, delta: amount(changes[i.id]), note: stockNote.trim() }));
@@ -634,12 +647,12 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     {sidebar && <MerchantSidebar items={navItems} active={activeTab} onSelect={selectNav} disabled={busy} wide={wideNav} />}
     <View style={sidebar ? merchantShellStyles.main : merchantShellStyles.plain}>
     {/* One way back (QA A-biz-04): under a header back button only the business name stays, as small text. */}
-    {sidebar || activeTab === 'overview' ? null : <View style={styles.businessHeader}>{!nativeBack && <Action back label={tr("비즈니스 관리")} disabled={busy} onPress={() => { setNotice(''); setTab('overview'); }} />}<ThemedText type="small" themeColor="textSecondary" style={styles.toolText}>{data.merchant.name}</ThemedText></View>}
-    {sidebar && activeTab !== 'overview' && pageCopy[activeTab] && <MerchantPageHeader title={pageCopy[activeTab]![0]} subtitle={pageCopy[activeTab]![1]} action={newLabel ? <RaisedActionButton compact analyticsId="merchant.primary" label={newLabel} disabled={busy} onPress={() => { play('selection'); void openDraft(undefined, activeTab === 'posts' || !aiAllowed); }} /> : undefined} />}
+    {activeTab === 'overview' || sidebar && !composing ? null : <View style={styles.businessHeader}>{(!nativeBack || sidebar) && <Action back label={composing ? draftStep === 'channels' ? tr('쓰기') : tr('소식 목록') : tr("비즈니스 관리")} disabled={busy} onPress={goBack} />}{!sidebar && <ThemedText type="small" themeColor="textSecondary" style={styles.toolText}>{data.merchant.name}</ThemedText>}</View>}
+    {sidebar && activeTab !== 'overview' && pageCopy[activeTab] && <MerchantPageHeader title={pageCopy[activeTab]![0]} subtitle={pageCopy[activeTab]![1]} action={newLabel ? <RaisedActionButton compact analyticsId="merchant.primary" label={newLabel} disabled={busy} onPress={() => { play('selection'); void openDraft(); }} /> : undefined} />}
     {error && <><ThemedText accessibilityRole="alert">{tr(error)}</ThemedText><Action label={tr("자료 새로 확인")} disabled={busy} onPress={() => { setError(''); setRevision((v) => v + 1); }} />{error === errorText(new Error('BUSINESS_MONTHLY_LIMIT_REACHED')) && <Action label={tr("요금제 보기")} onPress={showPlans} />}</>}{notice && <ThemedText accessibilityLiveRegion="polite">{tr(notice)}</ThemedText>}
     {activeTab === 'overview' && sidebar && <MerchantHome name={data.merchant.name} place={`${tr(data.merchant.city_name)} · ${data.merchant.owner_verified_at ? tr('비즈니스 소유 확인됨') : tr('비즈니스 소유 확인 대기')}`} onChoose={onChoose}
       purposes={draftPurposes} purpose={purpose} onPurpose={value => setPurpose(value as (typeof draftPurposes)[number])} facts={facts} onFacts={setFacts}
-      onGenerate={() => { void startHomeDraft(true); }} onWrite={() => { void openDraft(undefined, true); }} resume={dirty ? () => { setDraftView('composer'); setTab('drafts'); } : undefined}
+      onGenerate={() => { void startHomeDraft(true); }} onWrite={() => { void openDraft(); }} resume={dirty ? () => { setDraftView('composer'); setTab('drafts'); } : undefined}
       recent={recent} onAllPosts={() => selectNav('posts')} aiEnabled={aiAllowed} aiOwner={aiOwner} onOpenAi={() => selectNav('ai')} onOpenReviews={fullAccess ? () => selectNav('reviews') : undefined} busy={busy} />}
     {activeTab === 'overview' && !sidebar && <>
       <View style={[styles.storeCard, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
@@ -654,12 +667,12 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
           <ThemedText type="small" themeColor="textSecondary">{tr("최근 14일 기준이에요.")}</ThemedText>
         </>}
       </View>
-      <Action primary label={tr("홍보글 쓰기")} disabled={busy} onPress={() => { void openDraft(undefined, true); }} />
+      <Action primary label={tr("소식 쓰기")} disabled={busy} onPress={() => { void openDraft(); }} />
       {dirty && <Action label={tr("작성 중인 초안 이어쓰기")} disabled={busy} onPress={() => { setDraftView('composer'); setTab('drafts'); }} />}
       {([
         [tr("알리기"), <>
-          <ToolTile title={tr("홍보글")} detail={tr("쓰고 있는 글과 저장한 초안")} icon={tileIcon('square.and.pencil', 'edit_note')} badge={openDrafts ? tr("작성 중 {0}", openDrafts) : undefined} disabled={busy} onPress={() => goTool('drafts')} />
-          <ToolTile title={tr("게시한 글")} detail={tr("올린 글을 고치거나 내려요")} icon={tileIcon('doc.text', 'description')} disabled={busy} onPress={() => goTool('posts')} />
+          <ToolTile title={tr("소식")} detail={tr("쓰고 있는 글과 저장한 초안")} icon={tileIcon('square.and.pencil', 'edit_note')} badge={openDrafts ? tr("작성 중 {0}", openDrafts) : undefined} disabled={busy} onPress={() => goTool('drafts')} />
+          <ToolTile title={tr("올린 소식")} detail={tr("올린 글을 고치거나 내려요")} icon={tileIcon('doc.text', 'description')} disabled={busy} onPress={() => goTool('posts')} />
           {fullAccess && <ToolTile title={tr("채널 연결")} detail={tr("네이버 카페·SNS에도 올려요")} icon={tileIcon('link', 'link')} disabled={busy} onPress={() => goTool('channels')} />}
         </>, true],
         [tr("손님"), <>
@@ -686,9 +699,9 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
     </View>}
     {activeTab === 'channels' && <><MerchantChannelList /><MerchantNaverCafe merchantId={id} drafts={data.drafts} onChanged={() => setRevision(v => v + 1)} /></>}
     {activeTab === 'drafts' && <>
-      <View style={styles.actions}>{draftView === 'composer' && <Action label={tr("홍보글 목록")} disabled={busy} onPress={() => setDraftView('list')} />}{draftView === 'list' && dirty && <Action label={tr("작성 중인 초안 이어쓰기")} disabled={busy} onPress={() => setDraftView('composer')} />}</View>
-      {draftView === 'list' && <Section title={sidebar ? tr('원고 목록') : tr("홍보글 관리")}>
-        {!sidebar && <Action primary label={tr("새 초안")} disabled={busy} onPress={() => { void openDraft(undefined, !aiAllowed); }} />}
+      {draftView === 'list' && dirty && <Action label={tr("작성 중인 초안 이어쓰기")} disabled={busy} onPress={() => setDraftView('composer')} />}
+      {draftView === 'list' && <Section title={tr("소식 관리")}>
+        {!sidebar && <Action primary label={tr("새 소식 쓰기")} disabled={busy} onPress={() => { void openDraft(); }} />}
         <MerchantSegments value={draftFilter} disabled={busy} onChange={(filter) => { setDraftFilter(filter); setSelection([]); }} items={[
           { key: 'open', label: tr('작성 중 {0}', data.drafts.filter(d => draftMatches(d, 'open')).length) },
           { key: 'published', label: tr('게시됨 {0}', data.drafts.filter(d => draftMatches(d, 'published')).length) },
@@ -701,59 +714,62 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
           <Pressable analyticsId="merchant.open_draft" accessibilityRole="button" accessibilityLabel={`${d.title}, ${MERCHANT_CHANNELS[d.channel]}`} disabled={busy} onPress={() => { play('selection'); void openDraft(d); }} style={styles.draftTitle}><ThemedText type="smallBold">{d.title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{MERCHANT_CHANNELS[d.channel]} · {new Date(d.updated_at).toLocaleDateString(appLocale)}</ThemedText></Pressable>
           <MerchantBadge label={d.published_at ? tr("글링 게시됨") : d.external_url ? tr("카페 URL 기록됨") : d.approved_at ? tr("승인됨") : tr("초안")} tone={d.published_at || d.external_url ? 'ok' : d.approved_at ? 'accent' : 'neutral'} />
         </View>)}
-        {!data.drafts.some((d) => draftMatches(d, draftFilter)) && <ThemedText type="small" themeColor="textSecondary">{draftFilter === 'archived' ? tr("보관한 원고가 없어요.") : draftFilter === 'published' ? tr('아직 게시한 원고가 없어요.') : tr("새 초안을 작성해 주세요.")}</ThemedText>}
+        {!data.drafts.some((d) => draftMatches(d, draftFilter)) && <ThemedText type="small" themeColor="textSecondary">{draftFilter === 'archived' ? tr("보관한 소식이 없어요.") : draftFilter === 'published' ? tr('아직 게시한 소식이 없어요.') : tr("새 초안을 작성해 주세요.")}</ThemedText>}
         {selection.length > 0 && <><ThemedText type="small">{selection.length}{tr("개 선택")}</ThemedText><View style={styles.actions}>
-          {!showArchived && <Action label={tr("선택 원고 승인")} disabled={busy || !canApprove || (!draftReady && selection.includes(editor.id)) || picked.some((d) => d.published_at || d.external_url)} onPress={() => {
+          {!showArchived && <Action label={tr("선택한 소식 승인")} disabled={busy || !canApprove || (!draftReady && selection.includes(editor.id)) || picked.some((d) => d.published_at || d.external_url)} onPress={() => {
             const expected = Object.fromEntries(picked.map((d) => [d.id, d.updated_at]));
             void run(async () => { await approveMerchantDrafts(supabase, id, selection, true, expected); if (selection.includes(editor.id)) editorReload.current = editor; }, '선택한 저장본을 승인했어요.');
           }} />}
-          <Action label={tr(showArchived ? '선택 원고 복원' : '선택 원고 보관')} disabled={busy} onPress={() => { void run(async () => { await archiveMerchantDrafts(supabase, id, selection, !showArchived); setSelection([]); }, showArchived ? '원고를 복원했어요.' : '원고를 보관했어요. 공개된 게시글은 그대로예요.'); }} />
+          <Action label={tr(showArchived ? '선택한 소식 복원' : '선택한 소식 보관')} disabled={busy} onPress={() => { void run(async () => { await archiveMerchantDrafts(supabase, id, selection, !showArchived); setSelection([]); }, showArchived ? '소식을 복원했어요.' : '소식을 보관했어요. 이미 올린 글은 그대로 보여요.'); }} />
           <Action label={tr("선택 해제")} disabled={busy} onPress={() => setSelection([])} />
         </View>{!canApprove && selection.length > 1 && <ThemedText type="small" themeColor="textSecondary">{tr("기본 이용에서는 한 건씩 승인할 수 있어요.")}</ThemedText>}</>}
       </Section>}
-      {draftView === 'composer' && <Section title={tr(draftStep === 'idea' ? tr("어떤 소식을 알릴까요?") : draftStep === 'channels' ? tr("게시 전 확인") : published ? tr("게시한 원고") : tr("초안을 확인해 주세요"))}>
-        {!published && <MerchantSteps steps={[tr('내용'), tr('원고 확인'), tr('게시할 곳')]} current={draftStep === 'idea' ? 0 : draftStep === 'edit' ? 1 : 2} />}
+      {draftView === 'composer' && <Section title={draftStep === 'channels' ? tr("어디에 올릴까요?") : published ? tr("올린 소식") : tr("새 소식")}>
+        {!published && <MerchantSteps steps={[tr('쓰기'), tr('올릴 곳')]} current={draftStep === 'edit' ? 0 : 1} />}
         {draftChanged && <ThemedText accessibilityRole="alert">{tr(errorText(new Error('MERCHANT_DRAFT_CHANGED')))}</ThemedText>}
-        {draftStep === 'idea' && !aiAllowed ? <>
-          <ThemedText type="small" themeColor="textSecondary">{tr('AI 초안은 유료 비즈니스 멤버십에서 쓸 수 있어요. 직접 작성은 계속할 수 있어요.')}</ThemedText>
-          <Action primary label={tr("직접 작성할게요")} disabled={busy} onPress={() => setDraftStep('edit')} />
-        </> : draftStep === 'idea' ? <>
-          <View style={styles.actions}>{draftPurposes.map((label) => <Action key={label} label={tr(label)} selected={purpose === label} disabled={busy} onPress={() => { setPurpose(label); setDirty(true); }} />)}</View>
-          <Field label={tr("이번에 알릴 내용 (필수)")} value={facts} maxLength={1000} multiline disabled={busy} placeholder={tr("예: 새 닭강정 도시락을 소개하고 싶어요.\n12달러이고 토요일부터 판매해요.")} onChange={(value) => { setFacts(value); setDirty(true); }} />
-          <ThemedText type="small" themeColor="textSecondary">{tr("입력하지 않은 가격·날짜는 만들어 넣지 않아요. 가게 이름·도시와 입력 내용이 AI에 전달돼요.")}</ThemedText>
-          <Action primary label={tr(busy ? tr("초안 만드는 중…") : tr("AI로 초안 만들기"))} disabled={busy || !facts.trim()} onPress={() => { void generateDraft(); }} />
-          <Action label={tr("직접 작성할게요")} disabled={busy} onPress={() => setDraftStep('edit')} />
-        </> : draftStep === 'edit' ? <>
-        {!published && <View style={styles.actions}>{aiAllowed && <Action label={tr("AI로 다시 작성")} disabled={busy} onPress={() => setDraftStep('idea')} />}<Action label={tr("초안 저장")} disabled={busy || draftChanged || !editor.title.trim() || !editor.body.trim() || !!saved?.archived_at} onPress={() => { void saveEditor(); }} /></View>}
+        {draftStep === 'edit' ? <>
+        {/* AI drafting stays one visible control at the top (owner 10-17); without the membership it explains instead of drafting. */}
+        {!published && <Disclosure key={`ai:${editor.id}`} analyticsId="merchant.action" title={tr("AI로 초안 만들기")} value={aiAllowed ? undefined : tr("멤버십")}>
+          {aiAllowed ? <>
+            <View style={styles.actions}>{draftPurposes.map((label) => <Action key={label} label={tr(label)} selected={purpose === label} disabled={busy} onPress={() => { setPurpose(label); setDirty(true); }} />)}</View>
+            <Field label={tr("이번에 알릴 내용 (필수)")} value={facts} maxLength={1000} multiline disabled={busy} placeholder={tr("예: 새 닭강정 도시락을 소개하고 싶어요.\n12달러이고 토요일부터 판매해요.")} onChange={(value) => { setFacts(value); setDirty(true); }} />
+            <ThemedText type="small" themeColor="textSecondary">{tr("입력하지 않은 가격·날짜는 만들어 넣지 않아요. 가게 이름·도시와 입력 내용이 AI에 전달돼요.")}</ThemedText>
+            <Action label={tr(busy ? tr("초안 만드는 중…") : tr("AI로 초안 만들기"))} disabled={busy || !facts.trim()} onPress={() => { void generateDraft(); }} />
+          </> : <ThemedText type="small" themeColor="textSecondary">{tr('AI 초안은 유료 비즈니스 멤버십에서 쓸 수 있어요. 직접 작성은 계속할 수 있어요.')}</ThemedText>}
+        </Disclosure>}
         {aiDraftReady && <ThemedText type="small" accessibilityLiveRegion="polite" themeColor="textSecondary">{tr("AI 초안이에요. 가격·시간·연락처를 확인하고 사장님 말투로 고쳐도 좋아요.")}</ThemedText>}
-        {editor.channel !== 'gling' && <><ThemedText type="small">{tr("원고 채널")}</ThemedText><View style={styles.actions}>{Object.entries(MERCHANT_CHANNELS).map(([key, label]) => <Action key={key} label={label} selected={editor.channel === key} disabled={busy || published} onPress={() => changeDraft({ channel: key as MerchantChannel })} />)}</View></>}
-        <Field label={tr("제목")} value={editor.title} maxLength={100} disabled={busy || published} onChange={(title) => changeDraft({ title })} />
-        <View style={styles.field}><ThemedText type="small" themeColor="textSecondary">{tr("게시글 본문")}</ThemedText>
-          <PostBodyEditor accessibilityLabel={tr("게시글 본문")} value={editor.body} cityName={CITIES.find(city => city.id === data.merchant.city_id)?.englishName} allowLocation={editor.channel === 'gling'} maxLength={editor.channel === 'gling' ? 1000 : 4700} multiline editable={!busy && !published} onChangeText={(body) => changeDraft({ body })}
+        {editor.channel !== 'gling' && <><ThemedText type="small">{tr("소식 채널")}</ThemedText><View style={styles.actions}>{Object.entries(MERCHANT_CHANNELS).map(([key, label]) => <Action key={key} label={label} selected={editor.channel === key} disabled={busy || published} onPress={() => changeDraft({ channel: key as MerchantChannel })} />)}</View></>}
+        <Field label={tr("제목")} value={editor.title} maxLength={100} disabled={busy || published} placeholder={tr("어떤 소식인지 한 줄로")} onChange={(title) => changeDraft({ title })} />
+        <View style={styles.field}><ThemedText type="small" themeColor="textSecondary">{tr("내용")}</ThemedText>
+          <PostBodyEditor accessibilityLabel={tr("내용")} value={editor.body} placeholder={tr("가격, 날짜, 시간처럼 손님이 물어볼 걸 먼저 적어 주세요")} placeholderTextColor={theme.textSecondary} cityName={CITIES.find(city => city.id === data.merchant.city_id)?.englishName} allowLocation={editor.channel === 'gling'} maxLength={editor.channel === 'gling' ? 1000 : 4700} multiline editable={!busy && !published} onChangeText={(body) => changeDraft({ body })}
             style={[styles.input, styles.multiline, { color: theme.text, borderColor: theme.line, backgroundColor: theme.backgroundElement }]} />
         </View>
         <ThemedText type="smallBold">{tr("사진") + " "}{draftPhotos.length}/{MAX_POST_IMAGES}</ThemedText>
         <PostPhotoEditor images={draftPhotos} disabled={busy || published} onChange={changeDraftPhotos} />
-        <Action label={tr("사진 추가")} disabled={busy || published || draftPhotos.length >= MAX_POST_IMAGES} onPress={() => { void pickDraftPhotos(); }} />
-        <ThemedText type="small" themeColor="textSecondary">{tr("첫 사진을 표지로 사용해요. 사진을 추가·제거하거나 순서를 바꾸면 초안을 저장하고 다시 승인해 주세요.")}</ThemedText>
-        <Action label={tr(draftOptions ? tr("추가 설정 닫기") : tr("분류·원문 주소"))} disabled={busy} onPress={() => setDraftOptions(!draftOptions)} />
-        {(draftOptions || editor.channel !== 'gling') && <>
-        <Field label={tr("원문 주소 · 선택")} value={editor.original_url} maxLength={2048} disabled={busy || published} onChange={(original_url) => changeDraft({ original_url })} />
-        {/* Published as the business, the server files these under 비즈니스 or 구인구직 only. */}
-        <View style={styles.actions}><Action label={tr("비즈니스 안내")} selected={editor.kind === 'story'} disabled={busy || published} onPress={() => changeDraft({ kind: 'story', tag_slug: 'business' })} /><Action label={tr("구인구직")} selected={editor.kind === 'listing'} disabled={busy || published} onPress={() => changeDraft({ kind: 'listing', tag_slug: 'jobs' })} /></View>
+        <View style={styles.actions}><Action label={tr("사진 추가")} disabled={busy || published || draftPhotos.length >= MAX_POST_IMAGES} onPress={() => { void pickDraftPhotos(); }} /></View>
+        {draftPhotos.length > 0 && <ThemedText type="small" themeColor="textSecondary">{tr("첫 사진이 표지로 나가요.")}</ThemedText>}
+        {/* Older cafe drafts keep both fields open; a Gling post folds them into one line showing the current choice. */}
+        {editor.channel === 'gling' ? <Disclosure key={`options:${editor.id}`} analyticsId="merchant.action" title={tr("분류 · 원문 주소")}
+          value={`${editor.kind === 'listing' ? tr("구인구직") : tr("비즈니스 안내")} · ${editor.original_url.trim() ? tr("원문 있음") : tr("원문 없음")}`}>
+          {draftKindChoice}
+          <Field label={tr("원문 주소 · 선택")} value={editor.original_url} maxLength={2048} disabled={busy || published} placeholder="https://" onChange={(original_url) => changeDraft({ original_url })} />
+        </Disclosure> : <>
+          <Field label={tr("원문 주소 · 선택")} value={editor.original_url} maxLength={2048} disabled={busy || published} onChange={(original_url) => changeDraft({ original_url })} />
+          {draftKindChoice}
         </>}
-        {published ? <>{editor.channel === 'gling' && <Action primary label={tr("카페용 원고 준비")} disabled={busy || !draftReady} onPress={() => setDraftStep('channels')} />}<Action label={tr("새 초안으로 복제")} disabled={busy} onPress={() => { setEditor({ ...editor, id: merchantEventId() }); setOpenedDraft(null); setDirty(true); setExternalUrl(''); setPreparedChannels(null); setChannels({ gling: true, naver: false, daum: false }); }} /></> : editor.channel === 'gling' ? <>
-          <ThemedText type="small" themeColor="textSecondary">{tr("채널 선택 전에 초안을 저장해요. 아직 게시되지 않아요.")}</ThemedText>
-          <Action primary label={tr("게시 채널 선택")} disabled={busy || draftChanged || !editor.title.trim() || !editor.body.trim() || !!saved?.archived_at} onPress={() => { if (draftReady) setDraftStep('channels'); else void saveEditor('channels'); }} />
-        </> : null}
+        {published ? <>{editor.channel === 'gling' && <Action primary label={tr("카페용 글 준비")} disabled={busy || !draftReady} onPress={() => setDraftStep('channels')} />}<Action label={tr("새 초안으로 복제")} disabled={busy} onPress={() => { setEditor({ ...editor, id: merchantEventId() }); setOpenedDraft(null); setDirty(true); setExternalUrl(''); setPreparedChannels(null); setChannels({ gling: true, naver: false, daum: false }); }} /></> : <View style={styles.footerRow}>
+          {/* The composer scrolls inside the business screen (and the web sidebar), so these sit at the end of the form instead of a screen-fixed bar. */}
+          <View style={styles.footerButton}><RaisedActionButton analyticsId="merchant.action" tone="secondary" label={tr("초안 저장")} disabled={busy || draftChanged || !editor.title.trim() || !editor.body.trim() || !!saved?.archived_at} onPress={() => { play('selection'); void saveEditor(); }} /></View>
+          {editor.channel === 'gling' && <View style={styles.footerButton}><RaisedActionButton analyticsId="merchant.primary" label={tr("다음")} disabled={busy || draftChanged || !editor.title.trim() || !editor.body.trim() || !!saved?.archived_at} onPress={() => { play('selection'); if (draftReady) setDraftStep('channels'); else void saveEditor('channels'); }} /></View>}
+        </View>}
         {editor.channel !== 'gling' && <>
         {saved && !published && !saved.archived_at && <Action label={tr(saved.approved_at ? tr("승인 취소") : tr("이 저장본 승인"))} disabled={busy || !draftReady} onPress={() => {
           const expected = { [saved.id]: saved.updated_at };
           void run(async () => { await approveMerchantDrafts(supabase, id, [saved.id], !saved.approved_at, expected); editorReload.current = editor; }, saved.approved_at ? tr("승인을 취소했어요.") : tr("최신 저장본을 승인했어요."));
         }} />}
-        <Action label={tr(Platform.OS === 'web' ? tr("게시글 복사") : tr("게시글 공유·복사"))} disabled={busy || !draftReady || !saved?.approved_at} onPress={() => { void run(() => shareText(merchantDraftCopy(saved!)), tr("저장된 원고를 준비했어요."), false); }} />
+        <Action label={tr(Platform.OS === 'web' ? tr("소식 복사") : tr("소식 공유·복사"))} disabled={busy || !draftReady || !saved?.approved_at} onPress={() => { void run(() => shareText(merchantDraftCopy(saved!)), tr("저장된 소식을 준비했어요."), false); }} />
           <ThemedText type="small" themeColor="textSecondary">{tr("카페의 가입·게시 규칙을 확인한 뒤 직접 올려주세요. 아래 주소는 직접 올린 글을 관리하기 위한 기록이에요.")}</ThemedText>
-          <Field label={tr("직접 올린 카페 게시글 주소")} value={externalUrl} maxLength={2048} disabled={busy} onChange={setExternalUrl} />
+          <Field label={tr("직접 올린 카페 글 주소")} value={externalUrl} maxLength={2048} disabled={busy} onChange={setExternalUrl} />
           <Action label={tr("게시 URL 기록")} disabled={busy || !draftReady || !saved?.approved_at || !externalUrl.trim() || !!saved.archived_at} onPress={() => {
             if (!saved || !draftReady) return;
             const expected = saved.updated_at;
@@ -763,15 +779,14 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
         </> : <>
           <ThemedText type="smallBold">{editor.title}</ThemedText><ThemedText>{editor.body}</ThemedText>
           {!!editor.original_url && <ThemedText type="small" themeColor="textSecondary">{editor.original_url}</ThemedText>}
-          {([['gling', tr("글링에 게시"), tr('{0} · 비즈니스 안내', tr(data.merchant.city_name))], ['naver', tr("네이버 카페용 원고 준비"), tr("원고 복사 후 직접 등록")], ['daum', tr("다음 카페용 원고 준비"), tr("원고 복사 후 직접 등록")]] as const).map(([key, label, detail]) => <View key={key} style={styles.channelRow}>
-            <View style={styles.channelText}><ThemedText type="smallBold">{tr(key === 'gling' ? tr("글링") : key === 'naver' ? tr("네이버 카페") : tr("다음 카페"))}</ThemedText><ThemedText type="small" themeColor="textSecondary">{detail}</ThemedText></View>
-            <Switch analyticsId={`merchant.channel.${key}`} accessibilityLabel={label} value={channels[key]} disabled={busy || (key === 'gling' && published)} onValueChange={(value) => { play('selection'); setChannels({ ...channels, [key]: value }); }} style={styles.channelSwitch} />
+          {([['gling', tr("글링"), tr('{0} · {1}', tr(data.merchant.city_name), editor.kind === 'listing' ? tr("구인구직") : tr("비즈니스 안내"))], ['naver', tr("네이버 카페"), tr("글을 복사해서 카페에 직접 올려요")], ['daum', tr("다음 카페"), tr("글을 복사해서 카페에 직접 올려요")]] as const).map(([key, name, detail]) => <View key={key} style={styles.channelRow}>
+            <View style={styles.channelText}><ThemedText type="smallBold">{name}</ThemedText><ThemedText type="small" themeColor="textSecondary">{detail}</ThemedText></View>
+            <Switch analyticsId={`merchant.channel.${key}`} accessibilityLabel={`${name}, ${detail}`} value={channels[key]} disabled={busy || (key === 'gling' && published)} onValueChange={(value) => { play('selection'); setChannels({ ...channels, [key]: value }); }} style={styles.channelSwitch} />
           </View>)}
-          {channels.gling && !data.merchant.owner_verified_at && <ThemedText type="small" themeColor="textSecondary">{tr("글링 공개 게시에는 비즈니스 소유 확인이 필요해요.")}</ThemedText>}
+          {channels.gling && !data.merchant.owner_verified_at && <ThemedText type="small" themeColor="textSecondary">{tr("글링에 올리려면 비즈니스 소유 확인이 필요해요.")}</ThemedText>}
           <ThemedText type="small" themeColor="textSecondary">{tr("글링에는 비즈니스 안내 표시와 게시 기준이 적용돼요. 카페는 가입·게시 규칙을 확인해 직접 올려주세요.")}</ThemedText>
-          {published ? <ThemedText accessibilityLiveRegion="polite">{tr("글링에 게시된 원고예요.")}</ThemedText> : <Action primary label={tr(channels.gling ? tr("선택한 내용으로 게시 확인") : channels.naver || channels.daum ? tr("원고 준비 확인") : tr("게시할 채널을 선택해 주세요"))} disabled={busy || !draftReady || !!saved?.archived_at || (!channels.gling && !channels.naver && !channels.daum) || (channels.gling && (!data.merchant.owner_verified_at || data.merchant.status === 'paused'))} onPress={() => { void confirmChannels(); }} />}
-          {(['naver', 'daum'] as const).map((key) => channels[key] && (preparedChannels?.[key] || published) && <Action key={key} label={tr("{0} 카페용 원고 {1}", key === 'naver' ? tr("네이버") : tr("다음"), Platform.OS === 'web' ? tr("복사") : tr("공유·복사"))} disabled={busy || !draftReady} onPress={() => { void run(() => shareText(merchantDraftCopy(saved!)), tr("원고를 준비했어요. 카페에서 직접 등록해 주세요."), false); }} />)}
-          <Action label={tr("원고 수정")} disabled={busy} onPress={() => setDraftStep('edit')} />
+          {published ? <ThemedText accessibilityLiveRegion="polite">{tr("글링에 올린 소식이에요.")}</ThemedText> : <Action primary label={tr(channels.gling ? tr("글링에 올리기") : channels.naver || channels.daum ? tr("카페용 글 준비하기") : tr("올릴 곳을 골라 주세요"))} disabled={busy || !draftReady || !!saved?.archived_at || (!channels.gling && !channels.naver && !channels.daum) || (channels.gling && (!data.merchant.owner_verified_at || data.merchant.status === 'paused'))} onPress={() => { void confirmChannels(); }} />}
+          {(['naver', 'daum'] as const).map((key) => channels[key] && (preparedChannels?.[key] || published) && <Action key={key} label={tr("{0} 카페용 글 {1}", key === 'naver' ? tr("네이버") : tr("다음"), Platform.OS === 'web' ? tr("복사") : tr("공유·복사"))} disabled={busy || !draftReady} onPress={() => { void run(() => shareText(merchantDraftCopy(saved!)), tr("글을 준비했어요. 카페 글쓰기에 붙여 넣어 주세요."), false); }} />)}
         </>}
       </Section>}
     </>}
@@ -899,7 +914,7 @@ function MerchantTools({ id, refreshSignal, onDirty, onConnectionsChanged, onCho
         tr("누적 표시 조회 {0}회는 익명 조회·운영 조정을 포함해 실제 열람 인원과 달라요.", data.metrics.displayed_views),
         tr("원문 클릭은 문의·주문 완료를 뜻하지 않아요."),
         tr("비즈니스 소유자·작성자·관리자 기록은 측정 성과에서 제외해요."),
-        tr("같은 홍보글은 새 글로 다시 올리지 않고 기존 글을 수정하거나 끌어올려 주세요."),
+        tr("같은 소식은 새 글로 다시 올리지 않고 기존 글을 수정하거나 끌어올려 주세요."),
         tr("체험·기존 운영 기간 또는 비즈니스 유료 멤버십에서는 여러 건을 한 번에 승인하거나 입출고할 수 있어요."),
         tr("개인 멤버십과 비즈니스 구독은 별도로 관리해요."),
         tr("앱의 멤버십 → 비즈니스에서 스토어 상품이 준비되면 가입할 수 있어요."),
@@ -914,6 +929,7 @@ const styles = StyleSheet.create({
   workspace: { gap: 16, width: '100%', maxWidth: 760, alignSelf: 'center' },
   section: { gap: 14, padding: 18, borderWidth: 1, borderRadius: 20, borderCurve: 'continuous' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
+  footerRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, footerButton: { flexGrow: 1, flexBasis: 140 },
   clayPad: { overflow: 'visible', paddingHorizontal: 18 },
   action: { minHeight: 44, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 10, justifyContent: 'center', maxWidth: '100%' },
   // A back arrow, so the pill and the business name beside it read as "back to overview · this business", not two tabs (QA G38-3).

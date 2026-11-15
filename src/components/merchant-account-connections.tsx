@@ -77,10 +77,10 @@ export function MerchantAccountEntry() {
   }
   const invitationOnly = !data?.merchants.length && !!data?.invitations.length;
   const only = data?.merchants.length === 1 ? data.merchants[0] : null, already = !!only && acting?.id === only.id;
-  // One business: the row says before the tap that the whole app switches, and where the way back is (QA A-menu-01).
-  const title = invitationOnly ? tr("비즈니스 계정 초대") : already ? tr('홍보글 쓰기') : only ? tr('비즈니스로 바꾸고 글쓰기') : tr("비즈니스");
+  // One business: the row says before the tap that the whole app switches, in one line (QA A-menu-01; the way back sits in the business menu).
+  const title = invitationOnly ? tr("비즈니스 계정 초대") : already ? tr('소식 쓰기') : only ? tr('비즈니스로 바꾸고 소식 쓰기') : tr("비즈니스");
   const detail = busy ? tr("현재 연결 확인 중…") : invitationOnly ? tr("초대한 비즈니스와 권한을 확인해 주세요.") : already ? tr('{0} 이름으로 올라가요', only.name)
-    : only ? tr('바꾸면 글과 대화가 {0} 이름으로 올라가요. 개인으로 돌아갈 때도 여기서 하면 돼요.', only.name) : tr('{0}개 비즈니스 · 프로필 전환', data?.merchants.length ?? 0);
+    : only ? tr('글과 대화가 {0} 이름으로 나가요', only.name) : tr('{0}개 비즈니스 · 프로필 전환', data?.merchants.length ?? 0);
   // VoiceOver and Voice Control use the same words the row shows.
   return <Pressable analyticsId="app_profile_index.merchant" accessibilityRole="button" accessibilityLabel={only && !busy ? `${title}, ${detail}` : title} disabled={busy}
     accessibilityState={{ disabled: busy }} onPress={() => { void open(); }} style={({ pressed }) => [styles.entry, clay && { borderTopWidth: 0 }, { backgroundColor: pressed ? theme.backgroundSelected : clay ? 'transparent' : theme.card, borderColor: theme.line }]}>
@@ -88,7 +88,7 @@ export function MerchantAccountEntry() {
       <SymbolView name={{ ios: 'storefront', android: 'storefront', web: 'storefront' }} size={22} tintColor={theme.navy} />
     </View>
     <View style={{ flex: 1, gap: 4 }}><ThemedText type="smallBold">{title}</ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">{detail}</ThemedText></View>
+      <ThemedText type="small" themeColor="textSecondary" numberOfLines={only ? 1 : undefined}>{detail}</ThemedText></View>
     <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
   </Pressable>;
 }

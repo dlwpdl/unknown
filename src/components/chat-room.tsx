@@ -6,7 +6,7 @@ import { Image, type ImageSource } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { chatBusinessIdentity } from '@/lib/chat-identity';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
-import { loadBusinessChatMessages, sendBusinessChatMessage, editBusinessChatMessage, deleteBusinessChatMessage, markBusinessChatRead, setBusinessChatReaction, endBusinessConversation, blockBusinessConversation, subscribeBusinessChat } from '@/lib/business-chat';
+import { loadBusinessChatMessages, sendBusinessChatMessage, editBusinessChatMessage, deleteBusinessChatMessage, markBusinessChatRead, setBusinessChatReaction, endBusinessConversation, blockBusinessConversation, subscribeBusinessChat, canReportBusinessConversation } from '@/lib/business-chat';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { KeyboardScreen } from '@/components/keyboard-screen';
@@ -147,7 +147,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const theme = useTheme(), clay = useClay();
   const hidden = useContentVisibility();
   const auth = useAuth(), selectedBusiness = useChatIdentity(), router = useRouter();
-  const business = conversation.kind === 'business';
+  const business = conversation.kind === 'business', peerBusiness = business && conversation.otherIdentity?.kind === 'business' ? conversation.otherIdentity : null;
   const publicSelfId = conversation.selfIdentity?.id ?? currentUserId;
   const publicSelfName = conversation.selfIdentity?.name ?? auth.me.nickname;
   const asBusinessId = conversation.selfIdentity?.kind === 'business' ? conversation.selfIdentity.id : null;
@@ -1000,7 +1000,11 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
             <Pressable analyticsId="components_chat-room.pressable.1" accessibilityRole="button" accessibilityLabel={closeSettingsLabel} onPress={closeSettings} style={({ pressed }) => [styles.iconAction, { opacity: pressed ? 0.82 : 1 }]}><SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={18} tintColor={theme.textSecondary} /></Pressable>
           </View>
           {access.write && <RoomAction label={group ? conversation.isGroupHost ? t.meetup.end : t.meetup.leave : t.chat.end} danger disabled={busy} onPress={() => { if (access.write) selectRoomSetting(() => { setError(null); setConfirmEnd(true); }); }} />}
-          {!group && <>{!business && <RoomAction label={t.report.short} onPress={() => selectRoomSetting(() => { const target: ReportSelection = { targetType: 'user', targetId: conversation.otherUser.id, reportedUserId: conversation.otherUser.id, reportedNickname: conversation.otherUser.nickname }; setReport(target); })} />}
+          {/* A business on the other side is reported as that business through the business chat scope, never as a personal user (QA A-chat-03). */}
+          {!group && <>{(!business || peerBusiness && canReportBusinessConversation()) && <RoomAction label={t.report.short} onPress={() => selectRoomSetting(() => {
+            const target: ReportSelection = peerBusiness ? { targetType: 'business', targetId: peerBusiness.id, reportedBusinessId: peerBusiness.id, reportedNickname: peerBusiness.name }
+              : { targetType: 'user', targetId: conversation.otherUser.id, reportedUserId: conversation.otherUser.id, reportedNickname: conversation.otherUser.nickname };
+            setReport(target); })} />}
             <RoomAction label={t.chat.block} disabled={busy} onPress={() => selectRoomSetting(() => { setError(null); setConfirmBlock({ id: conversation.otherUser.id, nickname: conversation.otherUser.nickname, open: true }); })} /></>}
         </SafeAreaView>
       </SafeAreaView></SafeAreaProvider>

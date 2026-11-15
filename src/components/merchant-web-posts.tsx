@@ -61,7 +61,7 @@ export function MerchantWebPosts({ merchantId, posts, onChanged, bare = false }:
   };
   if (!isAuthed) return null;
   return <View style={styles.list}>
-    {!bare && <View style={styles.head}><ThemedText type="subtitle" accessibilityRole="header">{tr("글·사진")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("게시한 글을 열어 고치거나 내릴 수 있어요.")}</ThemedText></View>}
+    {!bare && <View style={styles.head}><ThemedText type="subtitle" accessibilityRole="header">{tr("글·사진")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("올린 소식을 열어 고치거나 내릴 수 있어요.")}</ThemedText></View>}
     {error && <ThemedText accessibilityRole="alert">{tr(error)}</ThemedText>}
     {busy && <GlingLoader accessibilityLabel={tr("저장된 비즈니스 글과 사진을 여는 중")} />}
     {posts.filter(row => !removed.includes(row.post_id)).map(row => <Pressable key={row.post_id} analyticsId="merchant-web.post.open" accessibilityRole="button"
@@ -70,7 +70,7 @@ export function MerchantWebPosts({ merchantId, posts, onChanged, bare = false }:
       <View style={styles.rowText}><ThemedText type="smallBold" numberOfLines={2}>{titles[row.post_id] ?? row.title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("조회 {0}회", row.displayed_views)}</ThemedText></View>
       <View style={[styles.open, { borderColor: theme.line }]}><ThemedText type="smallBold" themeColor="accent">{tr("열기")}</ThemedText></View>
     </Pressable>)}
-    {posts.length === 0 && <ThemedText themeColor="textSecondary">{tr("아직 게시한 글이 없어요. 홍보글에서 첫 글을 올려 보세요.")}</ThemedText>}
+    {posts.length === 0 && <ThemedText themeColor="textSecondary">{tr("아직 올린 소식이 없어요. 소식 화면에서 첫 글을 써 보세요.")}</ThemedText>}
     <MerchantHelp items={[tr("사진을 추가하거나 순서를 바꾸면 첫 사진이 대표 사진이 돼요."), tr("비즈니스에서 관리하려면 소유 확인을 먼저 완료해 주세요.")]} />
     <Modal visible={!!post} animationType="fade" onRequestClose={close}>
       <SafeAreaView style={[styles.modal, { backgroundColor: theme.background }]}>
