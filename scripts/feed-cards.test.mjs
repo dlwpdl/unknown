@@ -64,7 +64,7 @@ function load(file, imports) {
   const source = ts.transpileModule(fs.readFileSync(new URL(`../src/components/${file}.tsx`, import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
+  vm.runInNewContext(source, { exports, setTimeout: (...args) => globalThis.setTimeout(...args), clearTimeout, require: withLanguageImports((name) => {
     if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name in imports) return imports[name];
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
@@ -218,8 +218,9 @@ test('a city picked from the top city button checks off 내 도시 고르기 onc
     'react-native-reanimated': { useReducedMotion: () => true }, 'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     '@/components/disclosure': { animateLayout() {} }, '@/components/state-card': { PopIn: 'PopIn' },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+    '@/components/coach-marks': { CoachMarks: 'CoachMarks', tabTarget: () => () => null },
   });
-  const render = cityPicks => { at = 0; return StartGuide({ cityName: '토론토', cityPicks, onPickCity() {}, onOpenMeetups() {} }); };
+  const render = cityPicks => { at = 0; return StartGuide({ cityName: '토론토', cityPicks, onPickCity() {}, onOpenMeetups() {}, touring: false, onTouring() {}, targets: {} }); };
   render(0);
   assert.deepEqual([...guide.done], [], 'opening the home screen alone does not count');
   render(1);
@@ -230,6 +231,52 @@ test('a city picked from the top city button checks off 내 도시 고르기 onc
   render(2);
   assert.equal(guide.hidden, true, 'a guide the member hid stays hidden');
   assert.equal(saved.length, 1);
+});
+
+// I-home-03 A: the tour lights Home's real buttons one at a time; seen through or skipped, it checks off 화면 둘러보기 as before.
+for (const os of ['ios', 'web']) test(`화면 둘러보기 points at Home's own buttons and counts as done when it closes (${os})`, async () => {
+  let guide = { hidden: false, done: [] }, focus;
+  const opened = [], timers = [];
+  const { StartGuide, resetStartGuide } = load('start-guide', {
+    react: { useState: initial => initial === null ? [guide, next => { guide = next; }] : [false, () => {}], useCallback: fn => fn, useEffect() {}, useRef: initial => ({ current: initial }) },
+    'expo-router': { useFocusEffect(effect) { focus = effect; } },
+    'react-native': { View: 'View', Platform: { OS: os }, StyleSheet: { create: value => value } },
+    '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async () => null, setItem: async () => {} } },
+    'react-native-reanimated': { useReducedMotion: () => true },
+    '@/components/disclosure': { animateLayout() {} },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+    '@/components/coach-marks': { CoachMarks: 'CoachMarks', tabTarget: (index, count, bar, inset) => ({ tab: index, of: count, web: bar !== undefined && inset === 0 }) },
+  });
+  const targets = { city: { current: 'city' }, search: { current: 'search' }, chips: { current: 'chips' }, write: { current: 'write' } };
+  const tree = () => StartGuide({ cityName: '밴쿠버', onPickCity() {}, onOpenMeetups() {}, touring: true, onTouring: open => opened.push(open), targets });
+  nodes(tree()).find(node => node.props?.analyticsId === 'start-guide.tour').props.onPress();
+  assert.deepEqual(opened, [true], 'the 화면 둘러보기 chip opens the tour');
+  const coach = nodes(tree()).find(node => node.type === 'CoachMarks');
+  assert.equal(coach.props.visible, true);
+  assert.deepEqual([...coach.props.steps.slice(0, 3).map(step => step.targets[0])], [targets.city, targets.search, targets.chips], 'city → magnifier → topic row');
+  const last = coach.props.steps[3];
+  assert.equal(coach.props.steps.length, 4, 'chat and notifications are left out');
+  if (os === 'web') {
+    assert.equal(last.title, '글쓰기는 아래에 있어요', 'the web has a 글쓰기 tab instead of the map tab and +');
+    assert.deepEqual({ ...last.targets[0] }, { tab: 2, of: 5, web: true });
+    assert.equal(last.targets.length, 1);
+  } else {
+    assert.equal(last.title, '지도와 글쓰기는 아래에 있어요');
+    assert.deepEqual({ ...last.targets[0] }, { tab: 2, of: 5, web: false }, 'the map is the middle of five native tabs');
+    assert.equal(last.targets[1], targets.write, 'and the floating + is measured where it is');
+  }
+  for (const id of Object.values(coach.props.analyticsIds)) assert.ok(['start-guide.tour.done', 'sheet.close'].includes(id), 'targets the server already accepts');
+  coach.props.onClose();
+  assert.deepEqual(opened, [true, false]);
+  assert.deepEqual([...guide.done], ['tour'], 'one step of 시작하기 filled, as before');
+
+  // Settings' 처음 안내 다시 보기 brings the guide back and opens the tour once Home is in front again.
+  await resetStartGuide();
+  const realSetTimeout = globalThis.setTimeout;
+  globalThis.setTimeout = (fn, ms) => { timers.push(ms); fn(); return 0; };
+  try { focus(); focus(); } finally { globalThis.setTimeout = realSetTimeout; }
+  assert.deepEqual(opened, [true, false, true], 'opens once, not on every later visit to Home');
+  assert.ok(timers[0] >= 300, 'after the settings screen has slid away');
 });
 
 test('returning from system settings or a permission sheet checks feed ad permission again', () => {

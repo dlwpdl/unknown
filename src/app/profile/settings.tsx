@@ -187,7 +187,7 @@ export default function SettingsScreen() {
           <Card>
             <Pressable analyticsId="settings.start-guide.reset" accessibilityRole="button" style={pressedRow}
               onPress={() => { play('selection'); void resetStartGuide().then(() => router.navigate('/')); }}>
-              <View style={styles.navCopy}><ThemedText type="smallBold">{tr("처음 안내 다시 보기")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("내 도시 고르기·화면 둘러보기·모임 구경하기 안내가 홈에 다시 나와요")}</ThemedText></View><Chevron />
+              <View style={styles.navCopy}><ThemedText type="smallBold">{tr("처음 안내 다시 보기")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("홈에 시작하기 세 단계가 다시 나오고, 화면 둘러보기도 바로 열려요")}</ThemedText></View><Chevron />
             </Pressable>
             {divider}
             <Pressable analyticsId="app_profile_settings.pressable.3" onPress={() => { play('selection'); openSupport(); }} accessibilityRole="link" style={pressedRow}>

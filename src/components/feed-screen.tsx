@@ -153,6 +153,9 @@ export default function FeedScreen({ meetupsOnly = false, writeRequest }: { meet
   // 내려 읽는 동안에도 비켜 있다가 올리면 다시 나온다(QA B8·H42-3). 카테고리를 바꿔 목록이 저절로 움직일 때는 따라 숨지 않는다.
   const [writeFabAway, setWriteFabAway] = useState(false);
   const writeFabTrack = useRef({ away: false, turn: 0 }), writeFabByHand = useRef(true);
+  // 화면 둘러보기(I-home-03)가 짚는 버튼들. 둘러보는 동안엔 + 버튼이 비켜 있지 않고 늘 보인다.
+  const [touring, setTouring] = useState(false);
+  const cityTarget = useRef<ViewInstance>(null), searchTarget = useRef<ViewInstance>(null), chipsTarget = useRef<ViewInstance>(null), writeTarget = useRef<ViewInstance>(null);
   // 실측: iOS 탭 화면의 insets.bottom은 이미 탭바까지 포함(탭마다 SafeAreaProvider), 안드로이드 탭 내용은 탭바 위에서 끝난다.
   const [posts, setPosts] = useState<Post[]>([]);
   const [justPosted, setJustPosted] = useState<JustPosted<Post> | null>(null);
@@ -946,7 +949,7 @@ export default function FeedScreen({ meetupsOnly = false, writeRequest }: { meet
             {/* Black clay on light screens, white clay on dark ones (owner 6aa0942b). */}
             <Image source={theme === Colors.dark ? require('@/assets/brand/gling-3d-wordmark-dark.png') : require('@/assets/brand/gling-3d-wordmark.png')} style={[styles.wordmark, (viewportWidth < 380 || fontScale > 1.2) && styles.wordmarkCompact]} contentFit="contain" accessible={false} />
           </Pressable>
-          <GlassSurface tone="control" clay="white" interactive style={[styles.cityGlass, expandedHeader && styles.cityGlassLarge]}><Pressable analyticsId="components_feed-screen.pressable.1"
+          <GlassSurface tone="control" clay="white" interactive style={[styles.cityGlass, expandedHeader && styles.cityGlassLarge]}><Pressable ref={cityTarget} analyticsId="components_feed-screen.pressable.1"
             onPress={() => { play('reaction'); setCityPicker(true); }} accessibilityRole="button"
             accessibilityLabel={`${tr(city.name)}, ${t.feed.cityPickerTitle}`}
             style={({ pressed }) => [styles.cityButton, clay && styles.cityButtonClay, controlPresentation(theme, { pressed, reducedMotion, clay }).container]}>
@@ -954,7 +957,7 @@ export default function FeedScreen({ meetupsOnly = false, writeRequest }: { meet
             <ClayIcon clay="chevron" name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.text} />
           </Pressable></GlassSurface>
           {/* 검색칸이 카테고리 줄과 겹쳐 보여 프로필 옆 돋보기로 (owner 2026-11-01). 읽어 주기 이름은 열리는 화면 이름과 같게(QA B12-4). */}
-          <View style={styles.iconGlass}><Pressable analyticsId="components_feed-screen.pressable.2"
+          <View ref={searchTarget} style={styles.iconGlass}><Pressable analyticsId="components_feed-screen.pressable.2"
             onPress={() => { play('selection'); openSearch(); }} accessibilityRole="button" accessibilityLabel={tr('통합검색')} accessibilityHint={tr('검색 화면이 열려요')}
             style={({ pressed }) => [styles.iconButton, controlPresentation(theme, { tone: 'ghost', pressed, reducedMotion }).container]}>
             <ClayIcon clay="search" claySize={26} name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={IconSize.toolbar} tintColor={theme.text} />
@@ -963,7 +966,7 @@ export default function FeedScreen({ meetupsOnly = false, writeRequest }: { meet
         </View>
         {cityOpen && !meetupsOnly && (
           <View style={styles.categoryHead}>
-            <GlassSurface tone="control" clay="tray" style={styles.chipGlass}>{/* 안드로이드 가로 스크롤은 둥근 모서리로 자르지 않아 끝 칩이 세로로 잘린다(QA B7-1): 감싼 View가 자르고, 더 넘길 칩이 있는 끝만 안드로이드가 흐리게 지운다(categoryRow.scroll, QA new-left-fade). */}<View style={clay && styles.chipClip}><ScrollView analyticsId="components_feed-screen.scrollview.1" {...categoryRow.scroll} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
+            <GlassSurface tone="control" clay="tray" style={styles.chipGlass}>{/* 안드로이드 가로 스크롤은 둥근 모서리로 자르지 않아 끝 칩이 세로로 잘린다(QA B7-1): 감싼 View가 자르고, 더 넘길 칩이 있는 끝만 안드로이드가 흐리게 지운다(categoryRow.scroll, QA new-left-fade). */}<View ref={chipsTarget} style={clay && styles.chipClip}><ScrollView analyticsId="components_feed-screen.scrollview.1" {...categoryRow.scroll} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
               {/* 처음 보이는 칩: PRIMARY_TAGS (owner 2026-11-01 순서); 나머지는 '더보기' 시트. */}
               {[...PRIMARY_TAGS, ...(tagFilter != null && !PRIMARY_TAGS.includes(tagFilter) ? [tagFilter] : [])].map((id) => {
                 const label = id == null ? t.feed.filterAll : tr(TAGS.find((tg) => tg.id === id)!.label);
@@ -1058,7 +1061,8 @@ export default function FeedScreen({ meetupsOnly = false, writeRequest }: { meet
               </View>}
               {/* 이번 주 많이 읽은 글(탑10)은 카테고리 바로 아래, 다른 섹션보다 먼저 (owner 2026-10-30). */}
               {!feedLoading && weeklyRanking}
-              {!meetupsOnly && <StartGuide cityName={city.name} cityPicks={cityPicks} onPickCity={() => setCityPicker(true)} onOpenMeetups={() => router.navigate('/meetups')} />}
+              {!meetupsOnly && <StartGuide cityName={city.name} cityPicks={cityPicks} onPickCity={() => setCityPicker(true)} onOpenMeetups={() => router.navigate('/meetups')}
+                touring={touring} onTouring={setTouring} targets={{ city: cityTarget, search: searchTarget, chips: chipsTarget, write: writeTarget }} />}
               {!meetupsOnly && isAuthed && <NewcomerProgressCard />}
               {meetupsOnly && <>
                 <MyMeetups onOpen={async (postId) => {
@@ -1135,8 +1139,8 @@ export default function FeedScreen({ meetupsOnly = false, writeRequest }: { meet
           style={[styles.loadingCover, loadingCover === 'page' && [styles.loadingCoverPage, { paddingBottom: bottomClear }], { backgroundColor: theme.background, backgroundImage: listGlow }]}>
           <GlingLoader color={theme.accent} accessibilityLabel={loadingCover === 'page' ? tr("{0} 소식 불러오는 중", tr(city.name)) : tr("글 불러오는 중")} />
         </Reanimated.View>}</View>
-        {writeFab && !writeFabAside && !writeFabAway && <Reanimated.View entering={reducedMotion ? undefined : FadeIn.duration(ControlMotion.settleMs)} exiting={reducedMotion ? undefined : FadeOut.duration(ControlMotion.pressMs)}
-          style={[styles.writeFabDock, { bottom: (Platform.OS === 'ios' ? insets.bottom : 0) + Spacing.three }]}><Pressable analyticsId="feed.write" accessibilityRole="button" accessibilityLabel={t.tabs.write} onPress={() => openWriter()}
+        {writeFab && (touring || (!writeFabAside && !writeFabAway)) && <Reanimated.View entering={reducedMotion ? undefined : FadeIn.duration(ControlMotion.settleMs)} exiting={reducedMotion ? undefined : FadeOut.duration(ControlMotion.pressMs)}
+          style={[styles.writeFabDock, { bottom: (Platform.OS === 'ios' ? insets.bottom : 0) + Spacing.three }]}><Pressable ref={writeTarget} analyticsId="feed.write" accessibilityRole="button" accessibilityLabel={t.tabs.write} onPress={() => openWriter()}
           style={({ pressed }) => [ControlStyles.pill, styles.writeFab, controlPresentation(theme, { tone: 'primary', clay, pressed, reducedMotion }).container]}>
           {/* A pill's two end caps meet in a lemon with a seam on a square button (QA new-fab-shape): 3D draws the round coin and + of the meetups tab's 만들기 instead. */}
           {clay && <ClayCoinFill me />}
