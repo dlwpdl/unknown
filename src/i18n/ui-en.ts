@@ -4933,7 +4933,6 @@ export const uiEnglish: Record<string, string> = {
   "다 봤어요": "Done",
   "{1}개 중 {0}번째": "{0} of {1}",
   // mock-post (2026-11-14)
-  "연락처": "Contact",
   "이메일 주소": "Email address",
   "지원 링크": "Application link",
   "번호나 주소가 맞는지 확인해 주세요": "Check the number and addresses",
