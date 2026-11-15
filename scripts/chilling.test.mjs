@@ -119,3 +119,24 @@ test('moving a start keeps the chosen duration and leaves an unreadable schedule
   assert.deepEqual(shiftChillingSchedule(draft, ''), { startsAt: '', endsAt: draft.endsAt });
   assert.deepEqual(shiftChillingSchedule({ ...draft, endsAt: '' }, '2099-09-27T09:00:00.000Z'), { startsAt: '2099-09-27T09:00:00.000Z', endsAt: '' });
 });
+
+test('picked weekdays read as a schedule with the next date on the meetup clock, and bad shapes fall back to the cadence text', async () => {
+  const { meetupRecurrenceText, nextMeetupLabel, normalizeMeetupRecurrence } = await import('../src/lib/chilling.ts');
+  const { nextWeeklyStart } = await import('../src/lib/chilling-date.ts');
+  const saturday = { days: [6], time: '19:00', timezone: 'America/Toronto' };
+  assert.match(meetupRecurrenceText(saturday, 'ko-KR'), /^매주 토요일 (?:오후|PM) 7:00$/); // ICU 78 (this Node) says PM; phones say 오후.
+  assert.equal(meetupRecurrenceText({ ...saturday, days: [1, 3] }, 'en-CA'), 'Every Mon, Wed, 7:00 p.m.');
+  // Friday 2026-11-20 20:00 Toronto (Saturday 01:00 UTC): the next start is Saturday the 21st, 19:00 Toronto.
+  const friday = Date.parse('2026-11-21T01:00:00Z');
+  assert.equal(new Date(nextWeeklyStart([6], '19:00', 'America/Toronto', friday)).toISOString(), '2026-11-22T00:00:00.000Z');
+  assert.equal(nextMeetupLabel(saturday, 'ko-KR', friday), '다음 모임 11월 21일');
+  // Today's slot already passed: a week later.
+  assert.equal(new Date(nextWeeklyStart([5], '19:00', 'America/Toronto', friday)).toISOString(), '2026-11-28T00:00:00.000Z');
+  assert.equal(nextWeeklyStart([], '19:00', 'America/Toronto', friday), null);
+  assert.deepEqual(normalizeMeetupRecurrence({ days: [3, 1, 3], time: '07:30', timezone: 'America/Vancouver' }), { days: [1, 3], time: '07:30', timezone: 'America/Vancouver' });
+  for (const bad of [null, { days: [], time: '19:00', timezone: 'America/Toronto' }, { days: [7], time: '19:00', timezone: 'America/Toronto' }, { days: [1], time: '24:00', timezone: 'America/Toronto' }, { days: [1], time: '19:00', timezone: 'Mars/Base' }]) assert.equal(normalizeMeetupRecurrence(bad), null);
+  assert.match(chillingSchedule({ eventKind: 'group', cadence: '매주 토요일 오후 7:00', recurrence: saturday }, 'ko-KR'), /^매주 토요일 (?:오후|PM) 7:00 · 다음 모임 \d+월 \d+일$/);
+  assert.equal(chillingSchedule({ eventKind: 'group', cadence: '첫째 주 토요일', recurrence: { days: [9] } }, 'ko-KR'), '첫째 주 토요일');
+  assert.throws(() => normalizeChillingEvent({ kind: 'group', startsAt: '', endsAt: '', timezone: '', cadence: '매주', recurrence: { days: [8], time: '19:00', timezone: 'America/Toronto' }, capacity: 6 }), /INVALID_CADENCE/);
+  assert.equal('recurrence' in normalizeChillingEvent({ kind: 'group', startsAt: '', endsAt: '', timezone: '', cadence: '매주', recurrence: null, capacity: 6 }), false);
+});

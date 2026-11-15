@@ -59,6 +59,7 @@ export interface RoomPreview {
   endsAt?: string | null;
   timezone?: string | null;
   cadence?: string | null;
+  recurrence?: { days: number[]; time: string; timezone: string } | null; // group: picked weekdays and time (20261114180000); read with normalizeMeetupRecurrence
   recommendedAgeMin?: number | null;
   recommendedAgeMax?: number | null;
   applicationQuestion?: string | null;
