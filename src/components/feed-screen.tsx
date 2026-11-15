@@ -1439,6 +1439,8 @@ export default function FeedScreen({ meetupsOnly = false, writeRequest }: { meet
                             setWriterOptionsOpen(false);
                           }}
                           accessibilityRole="button"
+                          // The label is the chip's name alone, so iOS does not read the ↗ icon's own name after it (QA I-compose-10).
+                          accessibilityLabel={tr(tg.label)}
                           accessibilityState={{ selected }}
                           accessibilityHint={tg.kind === 'meetup' ? tr('모임 만들기 화면으로 넘어가요') : undefined}
                           style={({ pressed }) => [
@@ -1455,7 +1457,7 @@ export default function FeedScreen({ meetupsOnly = false, writeRequest }: { meet
                             {tr(tg.label)}
                           </ThemedText>
                           {/* 모임 opens its own creation screen, so the chip says it leaves the writer (QA I-compose-10). */}
-                          {tg.kind === 'meetup' && <SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} size={IconSize.chevron} tintColor={selected ? theme.accentInk : theme.textSecondary} />}
+                          {tg.kind === 'meetup' && <SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} size={IconSize.chevron} tintColor={selected ? theme.accentInk : theme.textSecondary} accessible={false} />}
                         </Pressable>
                       );
                     })}

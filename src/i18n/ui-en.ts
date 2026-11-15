@@ -4927,5 +4927,7 @@ export const uiEnglish: Record<string, string> = {
   "스토어에서 구독 상품을 받지 못했어요. 잠시 후 다시 확인해 주세요.": "The store didn’t send the subscription options. Check again in a moment.",
   "복원 확인 중…": "Checking purchases…",
   "구매를 복원하지 못했어요. 연결 상태를 확인하고 잠시 후 다시 해 주세요.": "Couldn’t restore purchases. Check your connection and try again in a moment.",
-  "Lv2 다음": "After Lv2"
+  "Lv2 다음": "After Lv2",
+  // mock-vfix (2026-11-14)
+  "계정 설정 열기": "Open account settings"
 };

@@ -238,7 +238,8 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
     <KeyboardScreen>
       {loading && isAuthed ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={tr("프로필 불러오는 중")} /></View> : <ScrollView ref={scroll} analyticsId="app_meetup-profile.scrollview.1" keyboardShouldPersistTaps="handled" scrollEnabled={!drag} contentContainerStyle={styles.content}>
         {!isAuthed ? <Pressable analyticsId="app_meetup-profile.pressable.2" onPress={() => { play('selection'); promptLogin('모임 프로필을 확인하려면 로그인해 주세요.'); }} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent" style={styles.bodyText}>{tr("로그인하기")}</ThemedText></Pressable>
-          : postId ? loaded && !error && <><ChillingProfileCard profile={shown(profile)} /><MeetupProfileLoyalty postId={postId} userId={userId} /></>
+          // A host without a meetup name is '모임 호스트' on the card that opened this, so the profile says the same (QA I-meet-09).
+          : postId ? loaded && !error && <><ChillingProfileCard profile={shown(profile)} fallbackName={userId ? undefined : tr('모임 호스트')} /><MeetupProfileLoyalty postId={postId} userId={userId} /></>
               : loaded && <>
                 {!manage && <>
                   <View style={styles.field}>

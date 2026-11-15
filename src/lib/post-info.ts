@@ -44,8 +44,24 @@ export function postLinkLabel(url: string) {
 const EVENT_DAYS = /·\s*(\d{4})\.(\d{1,2})\.(\d{1,2})(?:\s*[–~-]\s*(?:(?:(\d{4})\.)?(\d{1,2})\.)?(\d{1,2}))?\s*$/;
 const pad = (value: string | number) => String(value).padStart(2, '0');
 
-/** The last day ('YYYY-MM-DD') a festival title names, or null when the title has no date. */
-export function eventLastDay(title: string): string | null {
+// Some titles name the days in Korean, often without a year: "… — 10월 30일–11월 7일", "… 2026년 11월 7일" (QA I-home-06).
+const KOREAN_DAYS = /(?:^|\D)(?:(\d{4})년\s*)?(\d{1,2})월\s*(\d{1,2})일(?:\s*[–~-]\s*(?:(\d{1,2})월\s*)?(\d{1,2})일)?\s*$/;
+const HALF_YEAR = 183 * 86_400_000;
+
+/** The last day ('YYYY-MM-DD') a festival title names, or null when the title has no date.
+ * A Korean date without a year takes the year that puts it within half a year of `posted` (the post's time, else now). */
+export function eventLastDay(title: string, posted: string | number = Date.now()): string | null {
+  const korean = title.trim().match(KOREAN_DAYS);
+  if (korean) {
+    const [, year, month, start, endMonth, end] = korean, lastMonth = Number(endMonth ?? month), lastDay = Number(end ?? start);
+    const at = new Date(posted), reference = Number.isNaN(at.getTime()) ? new Date() : at;
+    let lastYear = year ? Number(year) + (lastMonth < Number(month) ? 1 : 0) : reference.getUTCFullYear();
+    if (!year) {
+      const gap = Date.UTC(lastYear, lastMonth - 1, lastDay) - reference.getTime();
+      lastYear += gap < -HALF_YEAR ? 1 : gap > HALF_YEAR ? -1 : 0;
+    }
+    return `${lastYear}-${pad(lastMonth)}-${pad(lastDay)}`;
+  }
   const day = title.trim().match(EVENT_DAYS);
   if (!day) return null;
   const [, year, month, start, endYear, endMonth, end] = day;
@@ -55,8 +71,8 @@ export function eventLastDay(title: string): string | null {
 }
 
 /** True for a festival post once its city's local day is after the last day its title names. */
-export function isPastEvent(post: { title: string; cityId: string; tag: { slug: string } }, now = Date.now()) {
-  const last = post.tag.slug === 'festival' && post.cityId in EVENT_TIMEZONES ? eventLastDay(post.title) : null;
+export function isPastEvent(post: { title: string; cityId: string; tag: { slug: string }; createdAt?: string }, now = Date.now()) {
+  const last = post.tag.slug === 'festival' && post.cityId in EVENT_TIMEZONES ? eventLastDay(post.title, post.createdAt ?? now) : null;
   return !!last && last < festivalLocalDay(post.cityId as EventCity, now);
 }
 

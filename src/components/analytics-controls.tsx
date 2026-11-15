@@ -3,6 +3,7 @@ import { Platform, Switch as NativeSwitch, SectionList as NativeSectionList, typ
 import { behavior, behaviorView, scrollThresholds } from '@/lib/behavior-analytics';
 import { FlatPressable } from '@/components/flat-pressable';
 import { useTheme } from '@/hooks/use-theme';
+import { ControlMotion } from '@/constants/design-system';
 
 type Tracking = { analyticsId: string };
 export function Pressable({ analyticsId, onPress, style, lens: _legacyLens, ...props }: ComponentProps<typeof NativePressable> & Tracking & { lens?: boolean }) {
@@ -37,7 +38,9 @@ export function FlatList<T>({ analyticsId, onScroll, ...props }: FlatListProps<T
 // Android's off switch has no shadow or edge, so a white thumb on the pale track vanished on white cards (QA F34-2): it gets the secondary text grey, as Android's own off thumb does.
 export function Switch({ analyticsId, onValueChange, ...props }: Omit<ComponentProps<typeof NativeSwitch>, 'trackColor' | 'thumbColor' | 'ios_backgroundColor'> & Tracking) {
   const theme = useTheme();
-  return <NativeSwitch {...props} trackColor={{ false: theme.line, true: theme.accent }} thumbColor={Platform.OS === 'android' && !props.value ? theme.textSecondary : '#FFFFFF'} ios_backgroundColor={theme.line} {...(Platform.OS === 'web' ? { activeThumbColor: '#FFFFFF' } : {})} onValueChange={(value) => { behavior('press', `${analyticsId}.${value ? 'on' : 'off'}`); onValueChange?.(value); }} />;
+  // Android keeps these colours when the switch is disabled, so a switch that cannot change looked live (QA A-noti-01); it fades like other disabled controls. iOS dims its own.
+  const faded = Platform.OS === 'android' && props.disabled ? { opacity: ControlMotion.disabledOpacity } : null;
+  return <NativeSwitch {...props} style={[props.style, faded]} trackColor={{ false: theme.line, true: theme.accent }} thumbColor={Platform.OS === 'android' && !props.value ? theme.textSecondary : '#FFFFFF'} ios_backgroundColor={theme.line} {...(Platform.OS === 'web' ? { activeThumbColor: '#FFFFFF' } : {})} onValueChange={(value) => { behavior('press', `${analyticsId}.${value ? 'on' : 'off'}`); onValueChange?.(value); }} />;
 }
 export function SectionList<T, S>({ analyticsId, onScroll, ...props }: SectionListProps<T, S> & Tracking) {
   const record = useScroll(analyticsId, props.horizontal, onScroll);
