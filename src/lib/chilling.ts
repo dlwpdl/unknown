@@ -1,24 +1,57 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getLocale } from '../i18n/index.ts';
-import { clockZone } from './chilling-date.ts';
+import { clockZone, nextWeeklyStart } from './chilling-date.ts';
 import { normalizeLanguageExchange, type LanguageExchange } from './meetup-language.ts';
 
 export type ChillingKind = 'once' | 'group';
+/** A regular meetup's weekdays (0 = Sunday … 6 = Saturday) and start time on its city's clock (20261114180000). */
+export type MeetupRecurrence = { days: number[]; time: string; timezone: string };
 export type ChillingSchedule = {
   eventKind?: ChillingKind;
   startsAt?: string | null;
   endsAt?: string | null;
   timezone?: string | null;
   cadence?: string | null;
+  recurrence?: MeetupRecurrence | null;
   recommendedAgeMin?: number | null;
   recommendedAgeMax?: number | null;
 };
+
+/** The same shape the server accepts, sorted and de-duplicated; anything else is null. */
+export function normalizeMeetupRecurrence(value: unknown): MeetupRecurrence | null {
+  if (!value || typeof value !== 'object') return null;
+  const { days, time, timezone } = value as Record<string, unknown>;
+  if (!Array.isArray(days) || !days.length || days.some(day => !Number.isInteger(day) || day < 0 || day > 6)
+    || typeof time !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time) || typeof timezone !== 'string') return null;
+  try { new Intl.DateTimeFormat('en-US', { timeZone: timezone }); } catch { return null; }
+  return { days: [...new Set(days as number[])].sort((a, b) => a - b), time, timezone };
+}
+
+/** "매주 토요일 오후 7:00" / "Every Saturday, 7:00 p.m." in the reader's language; several days use short names. */
+export function meetupRecurrenceText(recurrence: MeetupRecurrence, locale = getLocale()) {
+  const [hour, minute] = recurrence.time.split(':').map(Number);
+  const time = new Intl.DateTimeFormat(locale, { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' }).format(Date.UTC(2000, 0, 1, hour, minute));
+  // 2023-01-01 was a Sunday, so day d is January 1 + d.
+  const weekday = new Intl.DateTimeFormat(locale, { timeZone: 'UTC', weekday: recurrence.days.length > 1 ? 'short' : 'long' });
+  const days = recurrence.days.map(day => weekday.format(Date.UTC(2023, 0, 1 + day)));
+  return locale === 'en-CA' ? `Every ${days.join(', ')}, ${time}` : `매주 ${days.join('·')} ${time}`;
+}
+
+/** "다음 모임 11월 21일" from the next start on the meetup's clock, or null without one. */
+export function nextMeetupLabel(recurrence: MeetupRecurrence, locale = getLocale(), now = Date.now()) {
+  const at = nextWeeklyStart(recurrence.days, recurrence.time, recurrence.timezone, now);
+  if (at == null) return null;
+  const day = new Intl.DateTimeFormat(locale, { timeZone: clockZone(recurrence.timezone, at), month: 'long', day: 'numeric' }).format(new Date(at));
+  return locale === 'en-CA' ? `Next meetup ${day}` : `다음 모임 ${day}`;
+}
 export type ChillingEventDraft = {
   kind: ChillingKind;
   startsAt: string;
   endsAt: string;
   timezone: string;
   cadence: string;
+  /** Group only: the picked weekdays and time; cadence then holds the text made from it for older apps and the web. */
+  recurrence?: MeetupRecurrence | null;
   capacity: number;
   category?: 'casual' | 'hobby' | 'travel' | 'party' | 'festival' | 'sports';
   recommendedAgeMin?: number | null;
@@ -50,7 +83,12 @@ export function meetupBarAction({ own, participating, loading, availability, new
 export function chillingSchedule(room: ChillingSchedule, locale = getLocale()): string {
   const missing = locale === 'en-CA' ? 'Schedule needs confirmation' : '일정 확인 필요';
   // Cards already label the kind, so an empty cadence says where the schedule comes from instead of repeating it.
-  if (chillingKind(room) === 'group') return room.cadence?.trim() || (locale === 'en-CA' ? 'Schedule set in the group' : '일정은 모임에서 정해요');
+  if (chillingKind(room) === 'group') {
+    // Picked weekdays read in the reader's language with the next date; typed cadence stays as written.
+    const recurrence = normalizeMeetupRecurrence(room.recurrence);
+    if (recurrence) return [meetupRecurrenceText(recurrence, locale), nextMeetupLabel(recurrence, locale)].filter(Boolean).join(' · ');
+    return room.cadence?.trim() || (locale === 'en-CA' ? 'Schedule set in the group' : '일정은 모임에서 정해요');
+  }
   if (!room.startsAt || !room.timezone) return missing;
   try {
     const timeZone = clockZone(room.timezone, Date.parse(room.startsAt));
@@ -145,9 +183,11 @@ export function normalizeChillingEvent(draft: ChillingEventDraft, maxCapacity = 
     catch { throw new Error('INVALID_TIMEZONE'); }
     startsAt = new Date(start).toISOString(); endsAt = new Date(end).toISOString();
   } else if (!cadence || cadence.length > 80) throw new Error('INVALID_CADENCE');
+  const recurrence = draft.kind === 'group' && draft.recurrence ? normalizeMeetupRecurrence(draft.recurrence) : null;
+  if (draft.kind === 'group' && draft.recurrence && !recurrence) throw new Error('INVALID_CADENCE');
   return { eventKind: draft.kind, startsAt, endsAt, timezone: draft.kind === 'once' ? timezone : null,
     cadence: draft.kind === 'group' ? cadence : null, capacity: draft.capacity, category: exchange ? 'casual' : draft.category ?? 'casual',
-    ...(min != null ? { recommendedAgeMin: min, recommendedAgeMax: max } : {}), ...(exchange ? { languageExchange: exchange } : {}) };
+    ...(min != null ? { recommendedAgeMin: min, recommendedAgeMax: max } : {}), ...(exchange ? { languageExchange: exchange } : {}), ...(recurrence ? { recurrence } : {}) };
 }
 
 export async function configureChillingEvent(client: SupabaseClient, postId: string, draft: ChillingEventDraft) {

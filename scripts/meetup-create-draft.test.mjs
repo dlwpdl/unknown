@@ -120,3 +120,17 @@ test('create screen wires the draft through login, callback and publish, and eve
   assert.ok(ids.length >= 8, ids.join());
   for (const id of ids) assert.ok(sql.includes(`('${id}')`), id);
 });
+
+test('a changed meetup city and picked weekdays come back; broken ones drop the whole draft like any other bad field', async t => {
+  t.mock.method(Date, 'now', () => now);
+  const store = storage();
+  await saveMeetupCreateDraft(store, draft({ kind: 'group', cityId: 'toronto', recurrence: { days: [1, 6], time: '19:30' } }));
+  const restored = await readMeetupCreateDraft(store, meetupDraftScope({}));
+  assert.equal(restored.cityId, 'toronto'); assert.deepEqual(restored.recurrence, { days: [1, 6], time: '19:30' });
+  for (const recurrence of [{ days: [], time: '19:00' }, { days: [7], time: '19:00' }, { days: [1], time: '7pm' }]) {
+    await saveMeetupCreateDraft(store, draft({ recurrence }));
+    assert.equal(await readMeetupCreateDraft(store, meetupDraftScope({})), null);
+  }
+  await saveMeetupCreateDraft(store, draft());
+  assert.equal((await readMeetupCreateDraft(store, meetupDraftScope({}))).recurrence, undefined);
+});

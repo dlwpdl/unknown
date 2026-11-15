@@ -35,6 +35,10 @@ export type MeetupCreateDraft = {
   pickedPlaceId: string | null;
   cover: MeetupDraftCover | null;
   coverDropped: boolean;
+  /** The meetup's own city when the host changed it; absent in older drafts. */
+  cityId?: string | null;
+  /** Picked weekdays (0 = Sunday) and time of a regular meetup; absent in older drafts and typed cadences. */
+  recurrence?: { days: number[]; time: string } | null;
 };
 type Stored = MeetupCreateDraft & { savedAt: number };
 
@@ -59,6 +63,11 @@ export function meetupDraftScope(params: MeetupDraftParams): string {
 }
 
 const text = (value: unknown, max: number) => typeof value === 'string' && value.length <= max;
+const recurrence = (value: unknown) => {
+  const { days, time } = (value ?? {}) as Record<string, unknown>;
+  return Array.isArray(days) && days.length > 0 && days.length <= 7 && days.every(day => Number.isInteger(day) && day >= 0 && day <= 6)
+    && typeof time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(time);
+};
 const iso = (value: unknown) => typeof value === 'string' && value.length <= 40 && Number.isFinite(Date.parse(value));
 function validCover(value: unknown): value is MeetupDraftCover {
   if (!value || typeof value !== 'object') return false;
@@ -87,7 +96,8 @@ function parse(raw: string | null, now: number): Stored | null {
     && (value.exchange == null || !!parseLanguageExchange({ languageExchange: value.exchange as LanguageExchange }))
     && (value.access === undefined || value.access === 'public' || value.access === 'invite')
     && (value.pickedPlaceId === null || text(value.pickedPlaceId, 200))
-    && (value.cover === null || validCover(value.cover)) && typeof value.coverDropped === 'boolean';
+    && (value.cover === null || validCover(value.cover)) && typeof value.coverDropped === 'boolean'
+    && (value.cityId == null || text(value.cityId, 40)) && (value.recurrence == null || recurrence(value.recurrence));
   return ok ? { ...(value as unknown as Stored), params } : null;
 }
 

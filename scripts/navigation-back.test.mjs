@@ -84,7 +84,8 @@ for (const [path, analyticsId, fallback] of [
       let hasHistory = false;
       const actions = [], city = { id: 'toronto' };
       const onPress = backHandler(`../src/app/${path}`, analyticsId, {
-        Platform: { OS }, city, selected: city,
+        // Meetup create's later steps go back a step first (I-meet-14); on its first step it leaves like the others.
+        Platform: { OS }, city, selected: city, step: 1, goStep: next => actions.push(`step ${next}`),
         play: kind => actions.push(kind),
         router: {
           canGoBack: () => hasHistory,
@@ -98,6 +99,11 @@ for (const [path, analyticsId, fallback] of [
       hasHistory = true;
       onPress();
       assert.deepEqual(actions, ['selection', 'back']);
+    }
+    if (path === 'meetup-create.tsx') {
+      const actions = [];
+      backHandler(`../src/app/${path}`, analyticsId, { step: 3, goStep: next => actions.push(`step ${next}`), play: kind => actions.push(kind), router: {} })();
+      assert.deepEqual(actions, ['selection', 'step 2']);
     }
   });
 }

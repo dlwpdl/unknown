@@ -192,12 +192,18 @@ export async function createChillingEvent(client: SupabaseClient, draft: {
   const event = normalizeChillingEvent(draft.event);
   if (draft.image && !draft.userId) throw new Error('AUTH_REQUIRED');
   const imagePath = draft.image ? await uploadPostImage(client, draft.userId!, draft.image) : null;
-  const result = await client.rpc('create_chilling_event', {
+  const send = (sent: Record<string, unknown>) => client.rpc('create_chilling_event', {
     p_city_id: draft.cityId, p_title: draft.title.trim(), p_body: draft.body.trim(),
-    p_event: { ...event, ...(draft.hostProfileRevision ? { hostProfileConsentVersion: CHILLING_HOST_CONSENT_VERSION, hostProfileRevision: draft.hostProfileRevision } : {}),
+    p_event: { ...sent, ...(draft.hostProfileRevision ? { hostProfileConsentVersion: CHILLING_HOST_CONSENT_VERSION, hostProfileRevision: draft.hostProfileRevision } : {}),
       ...(draft.access ? { access: draft.access } : {}) }, p_question: draft.question.trim(),
     ...(imagePath ? { p_image_paths: [imagePath] } : {}),
   });
+  let result = await send(event);
+  // A server before 20261114180000 rejects the unknown recurrence key before creating anything; the cadence text made from it still carries the schedule.
+  if (result.error && 'recurrence' in event && getChillingErrorCode(result.error) === 'INVALID_CHILLING_EVENT') {
+    const { recurrence: _recurrence, ...older } = event;
+    result = await send(older);
+  }
   if (result.error) {
     if (imagePath) await removePostImages(client, [imagePath]);
     throw result.error;

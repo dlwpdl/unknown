@@ -111,7 +111,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   const { isAuthed, me, promptLogin } = useAuth(), hidden = useContentVisibility();
   const isFocused = useIsFocused(), targetFocusRef = useRef<string | null>(null);
   const { play } = useInteractionFeedback();
-  const { category, placeRequest, cityId: routeCityId, bubbleRequest } = useLocalSearchParams<{ category?: string; placeRequest?: string; cityId?: string; bubbleRequest?: string }>();
+  const { category, placeRequest, cityId: routeCityId, bubbleRequest, only } = useLocalSearchParams<{ category?: string; placeRequest?: string; cityId?: string; bubbleRequest?: string; only?: string }>();
   const { selectCity } = useCommunityCity();
   const initialCategory = initialFilter ?? (onClose ? 'all' : category);
   // A comma list opens with the same union the chips make (home 'Rent·used map' sends housing,used).
@@ -207,6 +207,8 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
   // Not in the chat sheet's map (onClose), and only for members; the bubble parts only while the live map loaded (server, or the dev example).
   const live = useLive(), liveOn = !onClose && isAuthed && live.status === 'ready' && !!live.map, meetupsOn = !onClose && isAuthed;
   const [showBubbles, setShowBubbles] = useState(true), [showMeetups, setShowMeetups] = useState(true);
+  // From the meetups tab the map opens on meetups alone; its one chip brings everything back (owner 2026-11-14 '모임만 보기 만들기').
+  const [meetupsOnlyAsked, setMeetupsOnly] = useState(only === 'meetups'), meetupsOnly = meetupsOn && meetupsOnlyAsked;
   const [liveOpen, setLiveOpen] = useState<LiveOpen | null>(null), [dockHeight, setDockHeight] = useState(0), [openedRequest, setOpenedRequest] = useState<string | null>(null);
   const [cityLongitude, cityLatitude] = mapCityCenter(city.englishName);
   const listClear = useKeepClearOfNotice(); // a live notice sits above the list pill too, now that it shares the row over the dock
@@ -365,9 +367,9 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       ...(item.source === 'place' && (savedNow[`${viewerScope}:${placeKey(item)}`] ?? !!mySaved?.has(placeKey(item))) ? { saved: true } : {}) };
   }), [pins, savesOf, tr, savedNow, viewerScope, mySaved]);
   const liveMarkers = useLiveMarkers(liveOn ? live.map : null, now, showBubbles, city.id);
-  const meetupMarkers = useMeetupMarkers(city.id, viewerScope, now, meetupsOn && showMeetups && isFocused);
+  const meetupMarkers = useMeetupMarkers(city.id, viewerScope, now, meetupsOn && (showMeetups || meetupsOnly) && isFocused);
   // The map takes at most 500 pins; bubbles and meetups come first so a full city never pushes them out.
-  const mapMarkers = useMemo(() => [...liveMarkers, ...meetupMarkers, ...markers].slice(0, 500), [liveMarkers, meetupMarkers, markers]);
+  const mapMarkers = useMemo(() => meetupsOnly ? meetupMarkers : [...liveMarkers, ...meetupMarkers, ...markers].slice(0, 500), [meetupsOnly, liveMarkers, meetupMarkers, markers]);
   const more = scope === 'all' && current && !limited && (!top25Only || top25Ready) && (current.postMore || current.eventMore);
   const open = useCallback((item: DiscoveryItem) => {
     play('selection');
@@ -419,9 +421,10 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
     } finally { if (timer) clearTimeout(timer); if (revision === locationRevision.current) setLocating(false); }
   };
   // Opening the list from its own buttons asks for location once, as the full-screen list did; a category tap only raises it.
-  const showList = (snap: SheetSnap) => { play('selection'); setSelectedId(null); setSheet(snap); if (!userLocation) void locate(); };
+  const showList = (snap: SheetSnap) => { play('selection'); setMeetupsOnly(false); setSelectedId(null); setSheet(snap); if (!userLocation) void locate(); };
   const showMap = () => { play('selection'); setSheet('closed'); };
   const toggleFilter = (value: DiscoveryFilter) => {
+    setMeetupsOnly(false);
     play('selection'); setBump(current => ({ id: value, n: current.n + 1 }));
     if (value !== 'all' && !selectedFilters.includes(value) && !filtersOpen && (sheet === 'closed' || sheet === 'peek')) { setSelectedId(null); setSheet('half'); }
     setSubcategories([]);
@@ -453,7 +456,7 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       <ThemedText numberOfLines={1} style={[styles.artLabel, !selected ? { color: ink, backgroundColor: `${theme.card}F0`, borderColor: theme.line }
         : outline ? { backgroundColor: theme.card, borderWidth: 1.5, borderColor: theme.accent, color: theme.accent } : { backgroundColor: theme.accent, borderColor: theme.accent, color: theme.accentInk }]}>{label}</ThemedText>
     </Pressable>;
-  const quickFilters = <>
+  const quickFilters = !meetupsOnly ? <>
     <ScrollView horizontal analyticsId="discovery.filter" {...filterRow.scroll} showsHorizontalScrollIndicator={false} style={[styles.filterRow, styles.artRow]} contentContainerStyle={[styles.filters, styles.artRowItems]}>
       {artChip({ id: 'scope', label: `${tr(scope === 'all' ? '보여 줄 곳' : scopeName)} ⌄`, selected: scope !== 'all', outline: true, expanded: scopeOpen, analyticsId: 'discovery.scope',
         accessibilityLabel: tr('보여 줄 곳, {0}', tr(scopeName)), onPress: () => { play('selection'); setScopeOpen(true); } })}
@@ -470,12 +473,15 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
       {([{ id: 'today', label: tr('오늘') }, { id: 'week', label: tr('다가오는 7일') }, { id: 'weekend', label: tr('이번 주말') }] as const).map(value => <Pressable key={value.id} analyticsId="discovery.date" accessibilityRole="button" accessibilityState={{ selected: dateFilter === value.id }} onPress={() => chooseDate(value.id)} style={[styles.dateChip, { borderColor: dateFilter === value.id ? theme.accent : theme.line, backgroundColor: dateFilter === value.id ? theme.accent : chipBackground }]}><ThemedText type="smallBold" style={{ color: dateFilter === value.id ? theme.accentInk : theme.text }}>{value.label}</ThemedText></Pressable>)}
       {(dateFilter === 'all' || dateFilter === 'date') && <Pressable analyticsId="discovery.date" accessibilityRole="button" accessibilityLabel={tr('행사 날짜 변경')} onPress={() => { play('selection'); setFiltersOpen(true); }} style={[styles.dateChip, { borderColor: theme.accent, backgroundColor: chipBackground }]}><ThemedText type="smallBold" themeColor="accent">{dateFilter === 'all' ? tr('행사 · 전체 날짜') : date}</ThemedText></Pressable>}
     </ScrollView>}
-  </>;
+  </> : <ScrollView horizontal analyticsId="discovery.filter" showsHorizontalScrollIndicator={false} style={[styles.filterRow, styles.artRow]} contentContainerStyle={[styles.filters, styles.artRowItems]}>
+    {artChip({ id: 'events', label: `${tr('모임만 보기')} ✕`, selected: true, outline: true, analyticsId: 'livemap.filter', accessibilityLabel: tr('모임만 보기 끄기'),
+      onPress: () => { play('selection'); setMeetupsOnly(false); } })}
+  </ScrollView>;
   const chooseNearest = () => { play('selection'); setSortBy('near'); if (!userLocation) void locate(); };
   const chooseDiscount = () => { play('selection'); setSortBy('discount'); };
   const chooseSaves = () => { play('selection'); setSortBy('saves'); };
   const cardShown = !!selected && located(selected) && cardOpen;
-  const dockShown = liveOn && showBubbles && sheet === 'closed' && !cardShown, dockSpace = dockShown ? Math.min(dockHeight + 12, 400) : 0;
+  const dockShown = liveOn && showBubbles && !meetupsOnly && sheet === 'closed' && !cardShown, dockSpace = dockShown ? Math.min(dockHeight + 12, 400) : 0;
   // One floating row above the dock or place card: the list pill, the map credits (ⓘ, drawn by the map at this inset) and the card toggle share it (owner 691cf630 "정렬좀 잘해줘").
   // Cards, the list row and the ⓘ share a 20pt side line, close to the iOS 26 tab bar's edge.
   const rowBottom = cardShown ? Math.min(cardHeight + 24, 1000) : 12 + dockSpace;
@@ -630,21 +636,21 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
         <SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={IconSize.inline} tintColor={theme.accent} />
         <ThemedText type="smallBold" themeColor="accent">{tr('이 지역에서 다시 찾기')}</ThemedText>
       </Pressable>}
-      {sheet === 'closed' && <Pressable ref={listClear} analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={tr("리스트 보기")} onPress={() => showList('half')} style={[styles.listLink, { backgroundColor: clay ? 'transparent' : theme.card, borderColor: clay ? 'transparent' : theme.line, bottom: rowBottom }]}>{clay && <ClayPillFill kind="white" />}<ClayIcon clay="list" claySize={24} name={{ ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' }} size={18} tintColor={theme.text} /><View style={styles.listLinkText}><ThemedText type="smallBold" accessibilityLiveRegion="polite">{tr(limited || more ? '목록 {0}개+' : '목록 {0}개', items.length)}</ThemedText>{sortKnown && <ThemedText type="caption" themeColor="accent">{sortLabel}</ThemedText>}</View></Pressable>}
+      {sheet === 'closed' && !meetupsOnly && <Pressable ref={listClear} analyticsId="discovery.mode" accessibilityRole="button" accessibilityLabel={tr("리스트 보기")} onPress={() => showList('half')} style={[styles.listLink, { backgroundColor: clay ? 'transparent' : theme.card, borderColor: clay ? 'transparent' : theme.line, bottom: rowBottom }]}>{clay && <ClayPillFill kind="white" />}<ClayIcon clay="list" claySize={24} name={{ ios: 'list.bullet', android: 'format_list_bulleted', web: 'format_list_bulleted' }} size={18} tintColor={theme.text} /><View style={styles.listLinkText}><ThemedText type="smallBold" accessibilityLiveRegion="polite">{tr(limited || more ? '목록 {0}개+' : '목록 {0}개', items.length)}</ThemedText>{sortKnown && <ThemedText type="caption" themeColor="accent">{sortLabel}</ThemedText>}</View></Pressable>}
       {cardShown ? <Reanimated.View entering={reduced ? undefined : SlideInDown.duration(ControlMotion.expandMs)} exiting={reduced ? undefined : SlideOutDown.duration(ControlMotion.sheetCloseMs)}
         onLayout={event => setCardHeight(event.nativeEvent.layout.height)} style={[styles.selected, { maxHeight: cardMaxHeight, backgroundColor: theme.card, borderColor: theme.line }]}>
           <ScrollView analyticsId="discovery.detail" accessibilityLabel={tr("선택한 장소 상세, 스크롤로 더 보기")} style={styles.selectedScroll} contentContainerStyle={styles.selectedContent}>
             <View style={styles.cardRow}><View style={styles.flex}><DiscoveryCard item={selected} now={now} distance={discoveryDistanceKm(selected, userLocation)} externalInfo={!!onClose} viewerScope={viewerScope} savedBy={scopePlaces?.get(placeKey(selected))} saves={savesOf(selected)} onOpen={() => open(selected)} /></View><View>{saveButton}{composeButton}</View></View>
             {!!savedEntry.error && <ThemedText type="small" accessibilityRole="alert">{savedEntry.error}</ThemedText>}<Top25Note item={selected} /><GlingVisitNote item={selected} /></ScrollView>{orderButton(selected)}<Directions item={selected} reserveFromBusiness />
       </Reanimated.View>
-        : sheet === 'closed' && !loading && !deliveryUnavailable && items.length === 0 && <View style={[styles.mapEmpty, { bottom: rowBottom }]}>{refineCard || <StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : visitedOnly ? visitedReady ? tr("조건에 맞는 글링 방문 장소가 없어요") : tr("아직 글링이 방문한 장소가 없어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 50 장소가 없어요") : tr("이 도시의 TOP 50을 준비하고 있어요") : deliveryOnly ? tr("아직 배달 할인 가게가 없어요") : tr("아직 표시할 공개 위치가 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : visitedOnly ? visitedReady ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : tr("직접 다녀온 장소만 모아 보여드려요. 다른 분류에서 먼저 둘러보세요.") : top25Only ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : deliveryOnly ? tr("가게가 직접 받는 주문 페이지를 준비하고 있어요.") : tr("직접 첨부한 핀과 위치가 확인된 행사만 지도에 표시해요.")} actionLabel={current?.errors.length ? tr("다시 시도") : visitedOnly ? tr("전체 장소 보기") : tr("리스트 보기")} onAction={current?.errors.length ? refresh : visitedOnly ? () => { setSelectedFilters([]); setRevealedFilter('all'); setDateFilter(null); setDate(''); } : () => showList('half')} />}</View>}
+        : sheet === 'closed' && !meetupsOnly && !loading && !deliveryUnavailable && items.length === 0 && <View style={[styles.mapEmpty, { bottom: rowBottom }]}>{refineCard || <StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : visitedOnly ? visitedReady ? tr("조건에 맞는 글링 방문 장소가 없어요") : tr("아직 글링이 방문한 장소가 없어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 50 장소가 없어요") : tr("이 도시의 TOP 50을 준비하고 있어요") : deliveryOnly ? tr("아직 배달 할인 가게가 없어요") : tr("아직 표시할 공개 위치가 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : visitedOnly ? visitedReady ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : tr("직접 다녀온 장소만 모아 보여드려요. 다른 분류에서 먼저 둘러보세요.") : top25Only ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : deliveryOnly ? tr("가게가 직접 받는 주문 페이지를 준비하고 있어요.") : tr("직접 첨부한 핀과 위치가 확인된 행사만 지도에 표시해요.")} actionLabel={current?.errors.length ? tr("다시 시도") : visitedOnly ? tr("전체 장소 보기") : tr("리스트 보기")} onAction={current?.errors.length ? refresh : visitedOnly ? () => { setSelectedFilters([]); setRevealedFilter('all'); setDateFilter(null); setDate(''); } : () => showList('half')} />}</View>}
       {selected && located(selected) && <Pressable analyticsId="discovery.detail" accessibilityRole="button" accessibilityLabel={cardOpen ? tr('장소 카드 접기') : tr('장소 카드 펼치기')} accessibilityState={{ expanded: cardOpen }} onPress={() => { play('selection'); setClosedCardId(cardOpen ? selectedId : undefined); }} style={[styles.cardToggle, { backgroundColor: theme.card, borderColor: theme.line, bottom: rowBottom + 6 }]}>
         <SymbolView name={cardOpen ? { ios: 'chevron.down', android: 'expand_more', web: 'expand_more' } : { ios: 'chevron.up', android: 'expand_less', web: 'expand_less' }} size={IconSize.toolbar} tintColor={theme.text} />
       </Pressable>}
       {dockShown && <View style={styles.liveDock} onLayout={event => setDockHeight(event.nativeEvent.layout.height)}>
         <LiveDock map={live.map!} demo={live.demo} now={now} onCompose={() => setLiveOpen({ kind: 'compose', session: Date.now() })} onReceived={requestId => setLiveOpen({ kind: 'received', requestId })} />
       </View>}
-      <MapListSheet snap={cardShown ? 'closed' : sheet} positions={sheetStops} onSnap={setSheet} header={sheetHeader}>
+      <MapListSheet snap={cardShown ? 'closed' : sheet} positions={sheetStops} onSnap={snap => { if (snap !== 'closed') setMeetupsOnly(false); setSheet(snap); }} header={sheetHeader}>
         <FlatList analyticsId="discovery.list" refreshing={false} onRefresh={() => { play('selection'); refresh(); }} onViewableItemsChanged={trackTranslationResults} viewabilityConfig={CONTENT_TRANSLATION_VIEWABILITY} data={listData} keyExtractor={item => item.id}
           contentContainerStyle={[styles.list, { paddingBottom: 24 + Math.max(sheetStops[sheet] - sheetStops.full, 0) }]}
           ListHeaderComponent={pins.length !== items.length || limited ? <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{tr('지도 {0}개 · 목록 {1}개', pins.length, items.length)}{limited ? tr(" · 500개까지 표시") : ''}</ThemedText> : undefined}

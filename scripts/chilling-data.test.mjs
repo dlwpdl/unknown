@@ -137,3 +137,20 @@ test('approval sends the history choice only for approvals, recruiting pause cal
   assert.equal(data.getChillingErrorCode(new Error('MEETUP_RECRUITING_CLOSED')), 'MEETUP_RECRUITING_CLOSED');
   assert.match(data.getChillingError(new Error('MEETUP_RECRUITING_CLOSED')), /새 참여 신청을 받지 않아요/);
 });
+
+test('picked weekdays ride with the cadence text, and a server without them still opens the meetup from that text', async () => {
+  const recurrence={days:[6,6,1],time:'19:00',timezone:'America/Vancouver'};
+  const draft={cityId:'vancouver',title:'산책',body:'소개',question:'질문',event:{kind:'group',startsAt:'',endsAt:'',timezone:'',cadence:'매주 월·토 오후 7:00',recurrence,capacity:8,category:'hobby'}};
+  const calls=[];const current={rpc:async(name,args)=>{calls.push(args.p_event);return {data:'post-id',error:null};}};
+  assert.equal(await data.createChillingEvent(current,draft),'post-id');
+  assert.equal(calls.length,1);assert.deepEqual(calls[0].recurrence,{days:[1,6],time:'19:00',timezone:'America/Vancouver'});
+  // Before 20261114180000 the server rejects the unknown key before creating anything; the retry drops only that key.
+  const sent=[];const older={rpc:async(name,args)=>{sent.push(args.p_event);return 'recurrence' in args.p_event?{data:null,error:new Error('INVALID_CHILLING_EVENT')}:{data:'post-id',error:null};}};
+  assert.equal(await data.createChillingEvent(older,draft),'post-id');
+  assert.equal(sent.length,2);assert.equal('recurrence' in sent[1],false);assert.equal(sent[1].cadence,'매주 월·토 오후 7:00');
+  // Other rejections are not retried, and one-time meetups never carry the key.
+  const other={rpc:async(name,args)=>{sent.push(args.p_event);return {data:null,error:new Error('INVALID_EVENT_CADENCE')};}};
+  sent.length=0;await assert.rejects(data.createChillingEvent(other,draft),/INVALID_EVENT_CADENCE/);assert.equal(sent.length,1);
+  sent.length=0;await data.createChillingEvent(older,{...draft,event:{kind:'once',startsAt:new Date(Date.now()+86400000).toISOString(),endsAt:new Date(Date.now()+90000000).toISOString(),timezone:'America/Vancouver',cadence:'',recurrence,capacity:8}});
+  assert.equal(sent.length,1);assert.equal('recurrence' in sent[0],false);
+});

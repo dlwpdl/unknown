@@ -309,8 +309,8 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
               : <ClayIcon clay="sliders" claySize={22} name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }} size={16} tintColor={theme.text} />}</View>
             <ThemedText type="smallBold" style={Typography.menu} themeColor={activeFilters ? 'accent' : 'text'}>{tr("필터")}</ThemedText>
           </Pressable></GlassSurface>
-      <GlassSurface tone="control" clay="white" interactive style={styles.circleGlass}><Pressable analyticsId="meetups.discovery.open" accessibilityRole="button" accessibilityLabel={tr('부동산·중고거래·장소·행사 통합 지도')}
-        onPress={() => { play('reaction'); router.push('/map'); }} style={({ pressed }) => [styles.circle, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
+      <GlassSurface tone="control" clay="white" interactive style={styles.circleGlass}><Pressable analyticsId="meetups.discovery.open" accessibilityRole="button" accessibilityLabel={tr('모임 지도')}
+        onPress={() => { play('reaction'); router.push({ pathname: '/map', params: { only: 'meetups' } }); }} style={({ pressed }) => [styles.circle, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
         <ClayIcon clay="map" claySize={26} name={{ ios: 'map', android: 'map', web: 'map' }} size={21} tintColor={theme.text} />
       </Pressable></GlassSurface>
       <GlassSurface tone="control" clay="white" interactive style={styles.circleGlass}><Pressable analyticsId="app_tabs_meetups.pressable.13" accessibilityRole="button" accessibilityLabel={searchOpen ? tr("검색 닫기") : tr("모임 검색")} accessibilityState={{ expanded: searchOpen }}
