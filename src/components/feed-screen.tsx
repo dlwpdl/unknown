@@ -110,6 +110,7 @@ import { splitPostAttachments, withPostAttachments } from '../../supabase/functi
 
 // Feed list items: the intro and sort bar (null), a post, a grid row, a 중고거래 동네별 row, or the 나눔 band.
 // The 'rest' area row is only the heading over posts with no neighborhood; those posts follow as list items.
+// The list tells these rows from posts with `'area' in item`, so Post must never get a top-level `area` field.
 type AreaRow = { area: string; name: string; posts: Post[] };
 type FeedItem = Post | Post[] | AreaRow | 'free' | null;
 

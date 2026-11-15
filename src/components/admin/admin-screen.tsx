@@ -9,6 +9,7 @@ import { AdminTicketmasterView } from '@/components/admin/admin-ticketmaster';
 import { AdminMerchantsView } from '@/components/admin/admin-merchants';
 import { AdminPartnershipsView } from '@/components/admin/admin-partnerships';
 import { AdminMeetupsView } from '@/components/admin/admin-meetups';
+import { AdminHostQuestsView } from '@/components/admin/admin-host-quests';
 import { AdminCommandPalette } from '@/components/admin/admin-command-palette';
 import { AdminSectionView } from '@/components/admin/admin-section';
 import { AdminShell } from '@/components/admin/admin-shell';
@@ -54,12 +55,12 @@ export function AdminScreen() {
   const [partnershipGuard, setPartnershipGuard] = useState({ dirty: false, busy: false });
   const localPreview = false;
   const hasAdminAccess = isAdmin || localPreview;
-  const needsOperations = !['analytics', 'webshops', 'ticketmaster', 'merchants', 'creators', 'campaigns', 'benefits', 'meetups'].includes(section);
+  const needsOperations = !['analytics', 'webshops', 'ticketmaster', 'merchants', 'creators', 'campaigns', 'benefits', 'meetups', 'quests'].includes(section);
 
   function chooseSection(next: AdminSection) {
     if (next === section || partnershipGuard.busy) return;
     if (partnershipGuard.dirty && Platform.OS === 'web' && !window.confirm('저장하지 않은 입력을 버리고 이동할까요?')) return;
-    if (!needsOperations && !['analytics', 'webshops', 'ticketmaster', 'merchants', 'creators', 'campaigns', 'benefits', 'meetups'].includes(next)) { setLoading(true); setError(null); }
+    if (!needsOperations && !['analytics', 'webshops', 'ticketmaster', 'merchants', 'creators', 'campaigns', 'benefits', 'meetups', 'quests'].includes(next)) { setLoading(true); setError(null); }
     setPartnershipGuard({ dirty: false, busy: false });
     if (next === 'webshops') setWebshopMerchantId('');
     setSection(next);
@@ -143,7 +144,7 @@ export function AdminScreen() {
       return;
     }
     // 뜨는 글 알림 패널은 자체 RPC로 불러오므로 더 보기 대상이 아니다.
-    if (!data || section === 'overview' || section === 'analytics' || section === 'webshops' || section === 'ticketmaster' || section === 'merchants' || section === 'creators' || section === 'campaigns' || section === 'benefits' || section === 'meetups' || section === 'trending' || section === 'errors' || exhausted.has(section)) return;
+    if (!data || section === 'overview' || section === 'analytics' || section === 'webshops' || section === 'ticketmaster' || section === 'merchants' || section === 'creators' || section === 'campaigns' || section === 'benefits' || section === 'meetups' || section === 'quests' || section === 'trending' || section === 'errors' || exhausted.has(section)) return;
     const offset = section === 'reports'
       ? data.reports.length
       : section === 'safety'
@@ -209,7 +210,7 @@ export function AdminScreen() {
       {localPreview && <View accessibilityRole="alert" style={styles.preview}><ThemedText type="smallBold">로컬 미리보기 · 실제 운영 데이터와 권한은 변경되지 않습니다.</ThemedText></View>}
       {!!moderationResult && needsOperations && <View accessibilityLiveRegion="polite" style={styles.preview}><ThemedText>{moderationResult}</ThemedText></View>}
       {!!error && needsOperations && <View accessibilityRole="alert" style={styles.error}><ThemedText style={styles.errorText}>{error}</ThemedText></View>}
-      {section === 'creators' || section === 'campaigns' || section === 'benefits' ? <AdminPartnershipsView key={section} kind={section} refreshSignal={analyticsRefresh} onUser={setSelectedUserId} onStateChange={setPartnershipGuard} /> : section === 'analytics' ? <AdminAnalyticsView localPreview={localPreview} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : section === 'webshops' ? <AdminWebshopsView onBusinesses={() => chooseSection('merchants')} key={webshopMerchantId || 'all'} initialMerchantId={webshopMerchantId} localPreview={localPreview} refreshSignal={analyticsRefresh} onStateChange={setPartnershipGuard} /> : section === 'ticketmaster' ? <AdminTicketmasterView localPreview={localPreview} refreshSignal={analyticsRefresh} /> : section === 'merchants' ? <AdminMerchantsView refreshSignal={analyticsRefresh} onUser={setSelectedUserId} onWebshop={(merchantId) => { chooseSection('webshops'); setWebshopMerchantId(merchantId); }} localPreview={localPreview} /> : section === 'meetups' ? <AdminMeetupsView refreshSignal={analyticsRefresh} onUser={setSelectedUserId} localPreview={localPreview} /> : data && <AdminSectionView
+      {section === 'creators' || section === 'campaigns' || section === 'benefits' ? <AdminPartnershipsView key={section} kind={section} refreshSignal={analyticsRefresh} onUser={setSelectedUserId} onStateChange={setPartnershipGuard} /> : section === 'analytics' ? <AdminAnalyticsView localPreview={localPreview} onUser={setSelectedUserId} refreshSignal={analyticsRefresh} /> : section === 'webshops' ? <AdminWebshopsView onBusinesses={() => chooseSection('merchants')} key={webshopMerchantId || 'all'} initialMerchantId={webshopMerchantId} localPreview={localPreview} refreshSignal={analyticsRefresh} onStateChange={setPartnershipGuard} /> : section === 'ticketmaster' ? <AdminTicketmasterView localPreview={localPreview} refreshSignal={analyticsRefresh} /> : section === 'merchants' ? <AdminMerchantsView refreshSignal={analyticsRefresh} onUser={setSelectedUserId} onWebshop={(merchantId) => { chooseSection('webshops'); setWebshopMerchantId(merchantId); }} localPreview={localPreview} /> : section === 'meetups' ? <AdminMeetupsView refreshSignal={analyticsRefresh} onUser={setSelectedUserId} localPreview={localPreview} /> : section === 'quests' ? <AdminHostQuestsView refreshSignal={analyticsRefresh} onUser={setSelectedUserId} localPreview={localPreview} /> : data && <AdminSectionView
         key={section}
         section={section}
         data={data}

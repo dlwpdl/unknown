@@ -10,6 +10,7 @@ import { MeetupMemberList, MeetupNoticeManager } from '@/components/meetup-loyal
 import { MeetupReviews } from '@/components/meetup-reviews';
 import { MeetupAutomation } from '@/components/meetup-automation';
 import { MeetupSchedule } from '@/components/meetup-schedule';
+import { MeetupCheckInQr, MeetupQuestPhoto } from '@/components/meetup-quest-tools';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
@@ -18,7 +19,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
-const TITLES: Record<string, string> = { schedule: '일정·참석', session: '회차', members: '멤버', notices: '공지', dues: '회비', settings: '운영 설정' };
+const TITLES: Record<string, string> = { schedule: '일정·참석', session: '회차', members: '멤버', notices: '공지', dues: '회비', settings: '운영 설정', 'checkin-qr': '체크인 QR', 'quest-photo': '모임 인증샷' };
 
 /** Host management and attendance. Each area is the same route with a section, so the back gesture and transitions are the platform's. The server still decides what each viewer may do. */
 export default function MeetupToolsRoute() {
@@ -38,6 +39,8 @@ export default function MeetupToolsRoute() {
     : section === 'schedule' ? <MeetupSchedule key={id} postId={id} kind={kind} host={own} />
     : section === 'session' ? <MeetupReviews key={`${id}:${sessionId}`} postId={id} kind={kind} attendanceOnly sessionId={typeof sessionId === 'string' ? sessionId : undefined} />
     : section === 'members' ? <><MeetupMemberList key={id} postId={id} /><MeetupHostTools key={`waitlist:${id}`} postId={id} sections={['waitlist']} /></>
+    : section === 'checkin-qr' && typeof sessionId === 'string' ? <MeetupCheckInQr key={sessionId} sessionId={sessionId} />
+    : section === 'quest-photo' && typeof sessionId === 'string' ? <MeetupQuestPhoto key={sessionId} sessionId={sessionId} />
     : section === 'notices' ? <MeetupNoticeManager key={id} postId={id} />
     : section === 'dues' ? <MeetupHostTools key={id} postId={id} sections={['dues']} />
     : section === 'settings' ? <><MeetupHostTools key={id} postId={id} sections={['cohosts']} /><MeetupAutomation key={`automation:${id}`} postId={id} /><MeetupHostTools key={`stats:${id}`} postId={id} sections={['stats']} /></>

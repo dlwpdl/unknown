@@ -30,6 +30,7 @@ const sectionIcons = {
   users: { ios: 'person.2', web: 'group' },
   posts: { ios: 'doc.text', web: 'article' },
   meetups: { ios: 'calendar', web: 'event' },
+  quests: { ios: 'flag.checkered', web: 'emoji_events' },
   conversations: { ios: 'bubble.left.and.bubble.right', web: 'forum' },
 } as const;
 
