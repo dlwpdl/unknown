@@ -117,7 +117,7 @@ export function mount(file, exportName, data, props = {}, params = {}) {
       if (name === '@/lib/chat-identity') return { chatBusinessIdentity: () => data.businessIdentity ?? null, selectChatBusiness: (_user, value) => { data.businessIdentity = value; dirty = true; } };
       if (name === '@/lib/merchant-connections') return { loadMyMerchantConnections: async (_client, userId, chatOnly = false) => data.loadMyMerchantConnections
         ? data.loadMyMerchantConnections(userId, chatOnly) : ({ user_id: auth.me.id, merchants: data.connections ?? [] }) };
-      if (name === '@/lib/business-chat') return { subscribeBusinessChat: (_client, _user, changed) => { data.privateChanged = changed; return () => { data.privateChanged = null; }; }, ...data.businessChat };
+      if (name === '@/lib/business-chat') return { subscribeBusinessChat: (_client, _user, changed) => { data.privateChanged = changed; return () => { data.privateChanged = null; }; }, canReportBusinessConversation: () => true, ...data.businessChat };
       if (name === '@/lib/auth') return { useAuth: () => auth };
       if (name === '@/lib/membership-provider') return { useMembership: () => ({ refresh: refreshMembership }) };
       if (name === '@/components/relationship-slot-card') return { relationshipSlotData: () => null };
@@ -1834,6 +1834,22 @@ test('group and business room settings retain their existing role and safety act
   const labels = settingsActions(harness).map(node => node.props.label);
   assert.ok(labels.includes(t.chat.end)); assert.ok(labels.includes(t.chat.block));
   assert.equal(labels.includes(t.report.short), false, 'business chat never uses a raw personal-user report target');
+  // A business on the other side is reported as that business, in the business chat scope (mock-biz A-chat-03).
+  const peer = { kind: 'business', id: 'peer-business', name: '옆 가게', avatarUri: null };
+  for (const available of [true, false]) {
+    const room = { ...businessRoom, otherIdentity: peer };
+    const withPeer = mount('../src/components/chat-room.tsx', 'ChatRoom', { businessIdentity: { id: businessId, name: 'Public business' },
+      businessChat: { loadBusinessChatMessages: async () => ({ ...businessPage([]), conversation: room }), canReportBusinessConversation: () => available } }, { ...roomProps, conversation: room });
+    context.after(() => withPeer.cleanup()); await withPeer.settle();
+    withPeer.nodes().find(node => node.props?.analyticsId === 'chat.settings.open').props.onPress(); await withPeer.settle();
+    const report = settingsActions(withPeer).find(node => node.props.label === t.report.short);
+    assert.equal(Boolean(report), available, 'a server without the business report hides the row instead of failing');
+    if (!report) continue;
+    report.props.onPress(); await withPeer.settle(); await settingsGone(withPeer);
+    const sheet = withPeer.nodes().find(node => node.type === 'ReportSheet');
+    assert.equal(sheet.props.targetType, 'business'); assert.equal(sheet.props.targetId, peer.id); assert.equal(sheet.props.reportedBusinessId, peer.id);
+    assert.equal(sheet.props.reportedUserId, undefined); assert.equal(sheet.props.businessConversation.id, room.id);
+  }
 });
 
 test('retained room settings cannot block or hand off a report after an account change', async context => {

@@ -22,9 +22,9 @@ const errors: Record<string, string> = {
   NAVER_NOT_CONFIGURED: '네이버 카페 연결은 아직 준비 중이에요.', NAVER_STATUS_UNAVAILABLE: '네이버 연결 상태를 확인하지 못했어요. 잠시 후 다시 확인해 주세요.',
   INVALID_NAVER_STATE: '로그인 계정이 다르거나 연결 요청이 만료됐어요. 다시 연결해 주세요.', NAVER_RECONNECT_REQUIRED: '네이버 계정을 다시 연결해 주세요.',
   INVALID_NAVER_BOARD_URL: '카페의 게시판 주소를 붙여넣어 주세요. 카페 홈 주소만으로는 게시판을 선택할 수 없어요.',
-  MERCHANT_DRAFT_CHANGED: '원고가 바뀌었어요. 최신 저장본과 사진 순서를 다시 확인하고 승인해 주세요.', MERCHANT_DRAFT_APPROVAL_REQUIRED: '최신 저장 원고를 먼저 승인해 주세요.',
-  NAVER_CONTENT_REVIEW_REQUIRED: '안전 검토가 필요한 원고예요. 내용을 확인한 뒤 운영자에게 문의해 주세요.', CONTENT_NOT_ALLOWED: '게시 기준에 맞지 않는 내용이에요.',
-  NAVER_INVALID_PHOTO: '사진 형식 또는 용량을 확인하지 못했어요. 원고의 사진을 확인해 주세요.', NAVER_PENDING_STORAGE_REQUIRED: '발행 요청을 안전하게 저장하지 못했어요. 브라우저 저장 공간을 확인해 주세요.',
+  MERCHANT_DRAFT_CHANGED: '소식이 바뀌었어요. 최신 저장본과 사진 순서를 다시 확인하고 승인해 주세요.', MERCHANT_DRAFT_APPROVAL_REQUIRED: '최신 저장본을 먼저 승인해 주세요.',
+  NAVER_CONTENT_REVIEW_REQUIRED: '안전 검토가 필요한 소식이에요. 내용을 확인한 뒤 운영자에게 문의해 주세요.', CONTENT_NOT_ALLOWED: '게시 기준에 맞지 않는 내용이에요.',
+  NAVER_INVALID_PHOTO: '사진 형식 또는 용량을 확인하지 못했어요. 소식의 사진을 확인해 주세요.', NAVER_PENDING_STORAGE_REQUIRED: '발행 요청을 안전하게 저장하지 못했어요. 브라우저 저장 공간을 확인해 주세요.',
   NAVER_PUBLISH_UNCERTAIN: '게시 결과가 불확실해요. 중복 게시를 막기 위해 재발행을 멈췄어요. 카페에서 실제 글을 확인해 주세요.',
   MERCHANT_OPERATIONS_PAUSED: '중단된 비즈니스는 게시할 수 없어요.', RATE_LIMITED: '오늘 게시 한도 또는 연결 요청 한도에 도달했어요. 잠시 후 다시 확인해 주세요.',
 };
@@ -128,7 +128,7 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
           if (restored.observedArticleUrl !== undefined && (typeof restored.observedArticleUrl !== 'string' || !safeArticleUrl(restored.observedArticleUrl))) throw new Error('NAVER_PENDING_STORAGE_REQUIRED');
           if (next.requests.some(request => request.id === restored.requestId && ['succeeded', 'failed'].includes(request.status))) {
             await AsyncStorage.removeItem(storageKey);
-            if (active && contextRef.current === context) setNotice("이전 요청의 최종 결과를 확인했어요. 새 원고를 선택할 수 있어요.");
+            if (active && contextRef.current === context) setNotice("이전 요청의 최종 결과를 확인했어요. 새 소식을 고를 수 있어요.");
             return;
           }
           setPending(restored); setBoardUrl(restored.boardUrl); setDraftId(restored.draftId);
@@ -203,7 +203,7 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
       const result = await cancelMerchantNaverPreparation(supabase, merchantId, preparation.id);
       if (contextRef.current !== context) return;
       if (result.request.status === 'failed' && result.request.error_code === 'NAVER_PREPARATION_CANCELLED') {
-        await AsyncStorage.removeItem(storageKey); setPending(null); setNotice("발행 준비를 취소했어요. 최신 원고를 선택해 주세요."); play('success');
+        await AsyncStorage.removeItem(storageKey); setPending(null); setNotice("발행 준비를 취소했어요. 최신 소식을 골라 주세요."); play('success');
       } else setNotice(errors.NAVER_PUBLISH_UNCERTAIN);
       await refreshStatus();
     }); }} />}
@@ -219,20 +219,20 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
         placeholder="https://cafe.naver.com/f-e/cafes/…/menus/…" placeholderTextColor={theme.textSecondary}
         onFocus={() => play('selection')} onChangeText={value => { play('selection'); setBoardUrl(value); }}
         style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.backgroundElement }]} />
-      <ThemedText type="smallBold">{tr("올릴 원고 · 승인된 것만")}</ThemedText>
+      <ThemedText type="smallBold">{tr("올릴 소식 · 승인된 것만")}</ThemedText>
       <View style={styles.actions}>{eligible.map(value => <CafeAction key={value.id} label={value.title} onPress={() => { setDraftId(value.id); }} disabled={busy || !!pending && pending.draftId !== value.id} />)}</View>
-      {!eligible.length && <ThemedText type="small" themeColor="textSecondary">{tr("승인된 원고가 없어요. 홍보글에서 초안을 승인해 주세요.")}</ThemedText>}
+      {!eligible.length && <ThemedText type="small" themeColor="textSecondary">{tr("승인된 소식이 없어요. 소식 화면에서 초안을 승인해 주세요.")}</ThemedText>}
       {draft && <View style={styles.review}>
         <ThemedText type="smallBold">{draft.title}</ThemedText><ThemedText>{draft.body}</ThemedText>
         {draft.original_url && <ThemedText type="small">{draft.original_url}</ThemedText>}
         <ThemedText type="small" themeColor="textSecondary">{tr("사진 {0}장 · 아래 순서로 첨부해요.", imagePaths.length)}</ThemedText>
         {urls.map((uri, index) => <View key={uri}><ThemedText type="small">{index === 0 ? tr("{0} · 첫 사진", 1) : String(index + 1)}</ThemedText>
           <Image source={{ uri }} contentFit="contain" style={styles.photo} accessibilityLabel={tr("네이버에 첨부할 사진 {0}", (index + 1))} onError={() => setPhotoFailure(photoKey)} /></View>)}
-        {photoFailed && <ThemedText type="small" themeColor="danger">{tr("사진을 확인하지 못해 발행을 멈췄어요. 원고 사진을 다시 확인해 주세요.")}</ThemedText>}
+        {photoFailed && <ThemedText type="small" themeColor="danger">{tr("사진을 확인하지 못해 발행을 멈췄어요. 소식 사진을 다시 확인해 주세요.")}</ThemedText>}
         <View style={styles.publishRow}><CafeAction primary label={unresolved ? tr("게시 결과 확인") : tr("카페에 발행")} disabled={busy || !unresolved && (photoFailed || urls.length !== imagePaths.length)} onPress={() => { void run(async () => {
           if (unresolved) { await refreshStatus(); setNotice(errors.NAVER_PUBLISH_UNCERTAIN); return; }
           const board = parseCafeBoardUrl(boardUrl);
-          if (!await confirm('카페에 이 원고를 발행할까요?', `${draft.title}\n\n${board.url}\n사진 ${imagePaths.length}장 · 표시된 순서\n카페의 게시·홍보 규칙을 확인했어요.`)) return;
+          if (!await confirm('카페에 이 소식을 발행할까요?', `${draft.title}\n\n${board.url}\n사진 ${imagePaths.length}장 · 표시된 순서\n카페의 게시·홍보 규칙을 확인했어요.`)) return;
           play('selection');
           const input: PendingPublish = pending ?? { requestId: merchantEventId(), draftId: draft.id, expectedUpdatedAt: draft.updated_at, boardUrl: board.url, imagePaths, confirmed: true };
           if (input.draftId !== draft.id || input.expectedUpdatedAt !== draft.updated_at || JSON.stringify(input.imagePaths) !== JSON.stringify(imagePaths)) throw new Error('MERCHANT_DRAFT_CHANGED');
@@ -257,7 +257,7 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
         }); }} />
         <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>{tr("하루 3회까지 한 건씩, 회원 공개로 게시해요.")}</ThemedText></View>
       </View>}
-      {pending && !draft && <ThemedText type="small" themeColor="textSecondary">{tr("이전 원고의 결과를 아래에서 확인해 주세요. 현재 원고를 바꾸어 재전송하지 않아요.")}</ThemedText>}
+      {pending && !draft && <ThemedText type="small" themeColor="textSecondary">{tr("이전 소식의 결과를 아래에서 확인해 주세요. 지금 소식으로 바꿔 다시 보내지 않아요.")}</ThemedText>}
     </>}
     {status?.requests.map(request => <View key={request.id} style={[styles.receipt, { borderColor: theme.line }]}>
       <View style={styles.titleRow}>{request.error_code === 'NAVER_PREPARATION_CANCELLED' ? <MerchantBadge label={tr("발행 준비 취소됨")} /> : <MerchantBadge label={labels[request.status]} tone={receiptTones[request.status]} />}
@@ -267,9 +267,9 @@ function CafeWorkspace({ merchantId, drafts, onChanged, userId }: Props & { user
         await Linking.openURL(request.article_url!);
       }); }} />}
       {['in_flight', 'uncertain'].includes(request.status) && <ThemedText type="small" themeColor="textSecondary">{tr("중복을 막기 위해 재발행하지 않아요. 실제 카페 글을 확인한 뒤 운영자에게 결과 확인을 요청해 주세요.")}</ThemedText>}
-      {request.status === 'failed' && request.error_code !== 'NAVER_PREPARATION_CANCELLED' && <ThemedText type="small" themeColor="textSecondary">{tr("{0} · 카페 가입·게시 권한과 사진을 확인한 뒤 원고를 다시 저장·승인해 주세요.", request.error_code || tr("권한 확인"))}</ThemedText>}
+      {request.status === 'failed' && request.error_code !== 'NAVER_PREPARATION_CANCELLED' && <ThemedText type="small" themeColor="textSecondary">{tr("{0} · 카페 가입·게시 권한과 사진을 확인한 뒤 소식을 다시 저장·승인해 주세요.", request.error_code || tr("권한 확인"))}</ThemedText>}
     </View>)}
-    {status?.configured && <MerchantHelp items={[tr("카페 가입·등업과 게시판 쓰기 권한은 카페에서 직접 받아 주세요."), tr("발행 전에 저장된 원고와 사진을 표시된 순서대로 확인해요.")]} />}
+    {status?.configured && <MerchantHelp items={[tr("카페 가입·등업과 게시판 쓰기 권한은 카페에서 직접 받아 주세요."), tr("발행 전에 저장된 소식과 사진을 표시된 순서대로 확인해요.")]} />}
   </View>;
 }
 const styles = StyleSheet.create({

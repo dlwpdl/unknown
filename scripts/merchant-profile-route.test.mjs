@@ -21,11 +21,11 @@ function screen({ business = null, webshop = null, merchantSaves = async () => n
   const state = [], cleanup = new Map(), calls = [], postCalls = [], routes = [], feedback = [], rpcCalls = [], login = [], links = [];
   let index = 0, account = 'author', hidden = () => false, focused = true;
   // The shared saved sheet (saved-entry.test.mjs) owns reads, writes and their race guards; this screen only places it.
-  const savedTargets = [], entry = { error: '' };
+  const savedTargets = [], saveChoices = [], entry = { error: '', onPress() { saveChoices.push('toggle'); }, async choose(status) { saveChoices.push(status); setSaved(status !== null); return true; } };
   const setSaved = value => { entry.state = { target: { kind: 'merchant', id: company }, saved: value, available: true, savedAt: value ? '2026-10-23T12:00:00Z' : null, folderIds: [], status: value ? 'want' : null }; };
   setSaved(saved);
   const imports = {
-    '@/components/business-webshop': { usePublicWebshop: () => ({ shop: webshop, failed: false, retry() {} }), WebshopBanner: 'WebshopBanner', WebshopOrderButton: 'WebshopOrderButton', WebshopComparisonSheet: 'WebshopComparisonSheet' },
+    '@/components/business-webshop': { usePublicWebshop: () => ({ shop: webshop, failed: false, retry() {} }), WebshopOrderButton: 'WebshopOrderButton', WebshopComparisonSheet: 'WebshopComparisonSheet' },
     react: {
       useState(initial) { const slot = index++; if (!(slot in state)) state[slot] = typeof initial === 'function' ? initial() : initial; return [state[slot], value => { state[slot] = typeof value === 'function' ? value(state[slot]) : value; }]; },
       useRef(initial) { const slot = index++; return state[slot] ??= { current: initial }; },
@@ -69,7 +69,7 @@ function screen({ business = null, webshop = null, merchantSaves = async () => n
   };
   const exports = {}, source = ts.transpileModule(readFileSync(new URL('../src/app/company/[id].tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(source, { exports, Error, require: withLanguageImports(name => imports[name] ?? {}) });
-  return { calls, postCalls, routes, feedback, rpcCalls, savedTargets, setSaved, login, links, hidePost(id) { hidden = (type, target, author) => type === 'post' && (target === id || author === 'blocked-writer'); }, setAccount(value) { account = value; }, setFocus(value) { focused = value; }, unmount() { for (const fn of cleanup.values()) fn(); }, render() { index = 0; return exports.default(); } };
+  return { calls, postCalls, routes, feedback, rpcCalls, savedTargets, saveChoices, setSaved, login, links, hidePost(id) { hidden = (type, target, author) => type === 'post' && (target === id || author === 'blocked-writer'); }, setAccount(value) { account = value; }, setFocus(value) { focused = value; }, unmount() { for (const fn of cleanup.values()) fn(); }, render() { index = 0; return exports.default(); } };
 }
 
 const control = (root, id) => nodes(root).find(node => node.props?.analyticsId === id);
@@ -106,7 +106,7 @@ test('real zero counts keep all tabs and the no-jobs state removes the hiring ba
   control(view.render(), 'company.tab.posts').props.onPress(); view.render(); await settle(); view.render(); await settle();
   let root = view.render();
   assert.equal(control(root, 'company.hiring'), undefined);
-  assert.match(text(root), /아직 게시글이 없어요/);
+  assert.match(text(root), /아직 올린 소식이 없어요/);
   control(root, 'company.tab.jobs').props.onPress(); view.render(); await settle(); root = view.render();
   assert.match(text(root), /현재 모집 중인 공고가 없어요/);
   assert.equal(nodes(root).filter(node => node.props?.accessibilityRole === 'tab').length, 4);
@@ -136,7 +136,7 @@ test('late company list responses from the previous account cannot restore its p
   assert.ok(!text(view.render()).includes(post.title));
   assert.ok(!text(control(view.render(), 'company.tab.posts')).includes('3'));
   pending[1]({ ...content, post_count: 0, job_count: 0, posts: [] }); await settle();
-  assert.match(text(view.render()), /아직 게시글이 없어요/);
+  assert.match(text(view.render()), /아직 올린 소식이 없어요/);
 });
 
 test('visible retry resumes the failed page and preserves earlier pages without two concurrent reads', async () => {
@@ -223,27 +223,30 @@ test('unconnected businesses offer only registered public links and never report
   const view = screen({ loadProfile: async () => ({ ...profile, can_message: false }) });
   view.render(); await settle(); let root = view.render();
   assert.equal(control(root, 'company.inquiry'), undefined);
-  assert.match(text(root), /앱에서 연결할 수 있는 담당자가 없어요/);
+  assert.doesNotMatch(text(root), /담당자가 없어요/, 'mockup I-company-01 A: no note squeezed above the actions');
   control(root, 'company.contact.phone').props.onPress(); await settle();
   assert.deepEqual(view.links, ['tel:+16045550100']);
-  // The registered page is shown once, in the header, not again under the no-contact note (QA H43-6).
-  assert.equal(control(root, 'company.contact.source.0'), undefined);
-  assert.deepEqual(nodes(root).find(node => node.type === 'ProfileHeader').props.profile.links.map(link => [link.label, link.url]), [['shop.example.com', 'https://shop.example.com/']]);
+  // The registered page is shown once, in the action row, not again in the header (QA H43-6).
+  assert.equal(nodes(root).find(node => node.type === 'ProfileHeader').props.profile.links.length, 0);
+  const sources = nodes(root).filter(node => node.props?.analyticsId === 'company.source');
+  assert.deepEqual(sources.map(node => node.key), ['https://shop.example.com/']);
+  sources[0].props.onPress(); await settle();
+  assert.equal(view.links.at(-1), 'https://shop.example.com/');
   const unsafe = screen({ loadProfile: async () => ({ ...profile, links: [...profile.links, { url: 'javascript:alert(1)', label: 'bad' }] }) });
   unsafe.render(); await settle();
-  assert.deepEqual(nodes(unsafe.render()).find(node => node.type === 'ProfileHeader').props.profile.links.map(link => link.label), ['shop.example.com'], 'the header only gets links that pass the page filter');
+  assert.deepEqual(nodes(unsafe.render()).filter(node => node.props?.analyticsId === 'company.source').map(node => node.key), ['https://shop.example.com/'], 'only links that pass the page filter');
   assert.deepEqual(view.rpcCalls, []); assert.deepEqual(view.routes, []);
   const empty = screen({ loadProfile: async () => ({ ...profile, can_message: false, public_phone: '', links: [] }) });
   empty.render(); await settle(); root = empty.render();
   assert.equal(control(root, 'company.contact.phone'), undefined);
-  assert.match(text(root), /공개 연락처도 아직 등록되지 않았어요/);
+  control(root, 'company.tab.info').props.onPress(); root = empty.render();
+  assert.match(text(root), /아직 등록된 연락처가 없어요/);
 });
 
 test('a business never offers an inquiry to itself while personal visitors retain it', async () => {
   for (const business of [null, { id: company, name: '회사' }, { id: 'another-business', name: '다른 업체' }]) {
     const view = screen({ business }); view.render(); await settle(); const root = view.render();
     assert.equal(!!control(root, 'company.inquiry'), business?.id !== company);
-    assert.ok(!text(root).includes('앱에서 연결할 수 있는 담당자가 없어요'));
     assert.deepEqual(view.rpcCalls, []);
   }
 });
@@ -252,7 +255,7 @@ test('a failed or revoked recipient request preserves the profile and never open
   const view = screen({ rpc: async () => ({ error: { message: 'MERCHANT_CONTACT_UNAVAILABLE' } }) });
   view.render(); await settle(); control(view.render(), 'company.inquiry').props.onPress(); await settle();
   const root = view.render();
-  assert.match(text(root), /앱에서 연결할 수 있는 담당자가 없어요/);
+  assert.match(text(root), /문의를 시작하지 못했어요/);
   assert.equal(control(root, 'company.inquiry'), undefined);
   assert.deepEqual(view.routes, []); assert.ok(view.feedback.includes('warning'));
 });
@@ -286,16 +289,17 @@ test('late inquiry completion cannot navigate for the previous account', async (
   assert.deepEqual(view.routes, []);
 });
 
-test('about actions show actual hours and only fixed phone/map URLs using the registered address', async () => {
+test('the info tab shows actual hours and the action row uses only fixed phone/map URLs from the registered address', async () => {
   const view = screen(); view.render(); await settle(); let root = view.render();
-  control(root, 'company.tab.about').props.onPress(); root = view.render();
-  assert.ok(text(root).includes(profile.public_phone) && text(root).includes(profile.business_hours));
-  control(root, 'company.about.phone').props.onPress(); control(root, 'company.about.maps').props.onPress(); await settle();
+  control(root, 'company.tab.info').props.onPress(); root = view.render();
+  assert.ok(text(root).includes(profile.public_phone) && text(root).includes(profile.business_hours) && text(root).includes('shop.example.com'));
+  control(root, 'company.contact.phone').props.onPress(); control(root, 'company.location').props.onPress(); await settle();
   assert.deepEqual(view.links, ['tel:+16045550100', 'https://www.google.com/maps/search/?api=1&query=123+Main+St+%232+%26+A%2BB']);
   assert.ok(!text(root).includes('영업 중'));
   const invalid = screen({ loadProfile: async () => ({ ...profile, public_phone: 'javascript:alert(1)', business_hours: '', address: '' }) });
-  invalid.render(); await settle(); root = invalid.render(); control(root, 'company.tab.about').props.onPress(); root = invalid.render();
-  assert.equal(control(root, 'company.about.phone'), undefined); assert.equal(control(root, 'company.about.maps'), undefined);
+  invalid.render(); await settle(); root = invalid.render(); control(root, 'company.tab.info').props.onPress(); root = invalid.render();
+  assert.equal(control(root, 'company.contact.phone'), undefined); assert.equal(control(root, 'company.location'), undefined);
+  assert.doesNotMatch(text(root), /javascript/);
 });
 
 test('external-link failure is visible while leaving the current profile and controls available', async () => {
@@ -351,20 +355,17 @@ test('an inquiry completed after leaving this profile cannot navigate, and retur
   assert.equal(control(view.render(), 'company.notifications').props.accessibilityState.selected, false, 'the server drops it with the unsave');
  });
 
-test('webshop offer and main action open the same comparison while existing tabs and the sole bookmark remain', async () => {
+test('the order button is the one bottom action and opens the comparison while existing tabs and the sole bookmark remain', async () => {
   const webshop = { merchantId: company };
   const view = screen({ webshop }); view.render(); await settle(); view.render(); await settle();
   let root = view.render();
   const component = name => nodes(root).find(node => node.type === name);
-  assert.ok(component('WebshopBanner'));
-  assert.ok(component('WebshopOrderButton'));
+  assert.equal(component('WebshopBanner'), undefined, 'the discount is worded once, on the order button');
+  assert.equal(component('WebshopOrderButton').props.notice, false, 'the Uber notice stays in the comparison sheet');
+  assert.ok(control(root, 'company.inquiry'), 'inquiry moves to the action row under the order button');
   assert.equal(component('WebshopComparisonSheet').props.visible, false);
   assert.equal(nodes(root).filter(node => node.props?.analyticsId === 'company.save').length, 1);
   assert.equal(nodes(root).filter(node => node.props?.accessibilityRole === 'tab').length, 4);
-  component('WebshopBanner').props.onPress(); root = view.render();
-  assert.equal(component('WebshopComparisonSheet').props.visible, true);
-  component('WebshopComparisonSheet').props.onClose(); root = view.render();
-  assert.equal(component('WebshopComparisonSheet').props.visible, false);
   component('WebshopOrderButton').props.onPress(); root = view.render();
   assert.equal(component('WebshopComparisonSheet').props.visible, true);
   assert.equal(component('WebshopComparisonSheet').props.shop, webshop);
@@ -408,7 +409,7 @@ test('the business profile shows real saves, its own intro lines and opens its G
     businessLinks: { 'osm:node:42': company },
   });
   view.render(); await settle(); view.render(); await settle(); let root = view.render();
-  assert.match(text(root), /저장한 사람 7명\s+· 이번 주 \+3/);
+  assert.match(text(root), /7명이 저장했어요\s+· 이번 주 \+3/);
   assert.match(text(root), /내가 처음 저장했어요/, 'G5: the viewer sees that they were first');
   assert.match(text(root), /조용해요/); assert.match(text(root), /창가 자리가 먼저 차요/);
   assert.doesNotMatch(text(root), /뭘 시킬까/, 'an empty intro line is hidden');
@@ -421,7 +422,7 @@ test('the business profile shows real saves, its own intro lines and opens its G
   assert.deepEqual(view.links, [], 'a linked business stays inside Gling');
   const empty = screen({ merchantSaves: async () => ({ saverCount: 0, weekCount: 0, firstIsMe: false, friends: [], similar: [] }) });
   empty.render(); await settle(); root = empty.render();
-  assert.doesNotMatch(text(root), /저장한 사람|같이 저장된 곳|분위기/, 'sections without data stay hidden');
+  assert.doesNotMatch(text(root), /명이 저장했어요|같이 저장된 곳|분위기/, 'sections without data stay hidden');
   control(root, 'company.location').props.onPress(); await settle();
   assert.equal(empty.links.length, 1, 'an unlinked business still opens its registered address');
 });
@@ -431,7 +432,7 @@ test('redesign-business: empty lists share one state card, unreviewed businesses
   const listed = screen({ loadPosts: async (_, __, kind) => ({ ...content, kind, posts: [proxyPost] }) });
   listed.render(); await settle(); listed.render(); await settle();
   let root = listed.render();
-  assert.match(text(root), /최근 게시글/);
+  assert.doesNotMatch(text(root), /최근 게시글|최신순/, 'mockup I-company-01 A: the selected tab already names the list');
   assert.match(text(root), /글링이 비즈니스 허락을 받고 대신 올렸어요/, 'QA I-company-07: a small mark instead of the disclosure line');
   assert.doesNotMatch(text(root), /대신 게시한 안내입니다/);
   assert.equal(typeof nodes(root).find(node => node.type === 'ProfileHeader').props.onReviewPress, 'function', 'scored businesses keep their rating rows');
@@ -444,13 +445,40 @@ test('redesign-business: empty lists share one state card, unreviewed businesses
   const card = nodes(root).find(node => node.type === 'StateCard' && node.props.analyticsId === 'company.posts.about');
   assert.ok(card, 'the empty list is one StateCard');
   card.props.onAction(); root = empty.render();
-  assert.equal(control(root, 'company.tab.about').props.accessibilityState.selected, true);
-  assert.equal(nodes(root).find(node => node.type === 'ProfileHeader').props.onReviewPress, undefined, 'QA A-company-01: no reviews means the 후기 tab says it once');
-  control(root, 'company.tab.posts').props.onPress(); root = empty.render();
-  assert.equal(control(root, 'company.tab.about').props.accessibilityState.selected, false);
-  // The services link reuses the registered about id, so it is found as the non-card control with that id.
-  nodes(root).find(node => node.props?.analyticsId === 'company.posts.about' && node.type !== 'StateCard').props.onPress(); root = empty.render();
-  assert.equal(control(root, 'company.tab.about').props.accessibilityState.selected, true, '소개 더 보기 opens the about tab');
+  assert.equal(control(root, 'company.tab.info').props.accessibilityState.selected, true);
+  const header = nodes(root).find(node => node.type === 'ProfileHeader');
+  assert.equal(header.props.noReviews, true, 'mockup I-company-01 A: no reviews shrink to one 후기 line');
+  header.props.onReviewPress('usage'); root = empty.render();
+  assert.equal(control(root, 'company.tab.reviews').props.accessibilityState.selected, true);
+  assert.equal(nodes(root).filter(node => node.props?.analyticsId === 'company.posts.about' && node.type !== 'StateCard').length, 0, 'a short intro needs no 더 보기');
+  const long = screen({ loadProfile: async () => ({ ...profile, services: '토론토에서 커피를 볶아요.\n납품도 하고 온라인 스토어에서도 팔아요. 스토어는 웹사이트를 고치는 동안 쉬어요.' }) });
+  long.render(); await settle(); root = long.render();
+  const intro = () => nodes(long.render()).find(node => node.type === 'Text' && typeof node.props.children === 'string' && node.props.children.startsWith('토론토에서'));
+  assert.equal(intro().props.numberOfLines, 2);
+  // The intro toggle reuses the registered about id, so it is found as the non-card control with that id.
+  nodes(root).find(node => node.props?.analyticsId === 'company.posts.about' && node.type !== 'StateCard').props.onPress();
+  assert.equal(intro().props.numberOfLines, undefined, '더 보기 opens the full intro in place');
+  assert.match(text(long.render()), /접기/);
+});
+
+test('mockup I-company-01 A: with no way to reach the business, 저장하고 새 소식 받기 saves and turns news on with the existing calls', async () => {
+  const view = screen({ loadProfile: async () => ({ ...profile, can_message: false, public_phone: '', links: [], address: '', notifications_enabled: false }) });
+  view.render(); await settle(); let root = view.render();
+  const button = control(root, 'company.notifications');
+  assert.equal(button.props.accessibilityLabel, '저장하고 새 소식 받기');
+  assert.equal(nodes(root).filter(node => node.props?.analyticsId === 'company.notifications').length, 1, 'the bottom action only, no second bell');
+  button.props.onPress(); await settle(); root = view.render();
+  assert.deepEqual(view.saveChoices, ['want']);
+  assert.deepEqual(view.rpcCalls, [['set_saved_merchant_notifications', { p_merchant_id: company, p_enabled: true }]]);
+  assert.equal(control(root, 'company.notifications').props.accessibilityState.selected, true);
+  assert.match(text(root), /새 소식이 올라오면 알려 드려요/);
+  const guest = screen({ loadProfile: async () => ({ ...profile, can_message: false, public_phone: '', links: [] }) });
+  guest.setAccount(null); guest.render(); await settle();
+  control(guest.render(), 'company.notifications').props.onPress(); await settle();
+  assert.equal(guest.login.length, 1); assert.deepEqual(guest.saveChoices, []); assert.deepEqual(guest.rpcCalls, []);
+  const own = screen({ business: { id: company, name: '회사' }, loadProfile: async () => ({ ...profile, can_message: true, public_phone: '', links: [] }) });
+  own.render(); await settle();
+  assert.equal(nodes(own.render()).some(node => node.props?.analyticsId === 'company.notifications'), false, 'a business never subscribes to itself');
 });
 
 test('redesign-business: with no app contact, calling is the one bottom action (QA I-company-05)', async () => {

@@ -66,7 +66,7 @@
 | 부품 | 쓰는 곳 |
 | --- | --- |
 | `DragSheet` | 아래에서 올라오는 모든 시트. 손잡이·제목을 끌거나 바깥을 누르면 닫힌다. 진행 중에는 `dismissible={false}`. 닫힌 뒤 할 일은 `onDismissed`에 둔다 |
-| `Disclosure` | 드물게 필요한 설명과 이의제기처럼 접어 둘 내용. 펼침은 `animateLayout`이 맡는다 |
+| `Disclosure` | 드물게 필요한 설명과 이의제기처럼 접어 둘 내용. 펼침은 `animateLayout`이 맡는다. 닫혀 있을 때 지금 고른 값을 보여야 하면 `value`를 준다(새 소식 쓰기의 분류 · 원문 주소) |
 | `ListCard`·`ListRow` | 글자만으로 나눈 구역 대신 쓰는 묶음 목록. 작은 제목은 `SectionLabel`, 상태·등급은 `Tag`, 사람은 `InitialAvatar` |
 | `FactGrid` | 상세 제목 아래 두 칸씩 놓는 요약 카드(`src/components/fact-grid.tsx`). 칸마다 이름·값·(작은 설명)·(아래 붙는 것). 값이 없는 칸은 빠지고, 홀수 마지막 칸은 한 줄을 다 쓰고, 큰 글자(1.3배 이상)에서는 한 줄씩 쌓인다. 입체 디자인에서는 안쪽 선. 현재 쓰는 곳: 모임 상세·참여 신청(언제·어디·인원·나이), 부동산·구인구직·사고팔기 상세(I-post-01, 2026-11-14) |
 | 가로로 넘기는 칩 줄 `useRevealChip` | 고른 칩을 화면 안으로 넘겨 보여 준다. 안드로이드에서는 세 번째 값(`Platform.OS === 'android'`)을 주면 더 넘길 칩이 남은 끝만 흐리게 지운다. `fadingEdgeLength`를 숫자로 직접 주면 넘기기 전에도 양 끝이 흐려져 첫 칩이 흐리게 보인다(QA new-left-fade) |

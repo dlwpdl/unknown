@@ -65,7 +65,7 @@ function app(component = 'MerchantAccountEntry') {
   };
 }
 const context = (user = 'user-a', merchants = [{ id: 'company-a', name: '업체 A', role: 'owner', city_name: '밴쿠버' }], invitations = []) => ({ user_id: user, merchants, invitations });
-const SWITCH_LABEL = '비즈니스로 바꾸고 글쓰기, 바꾸면 글과 대화가 업체 A 이름으로 올라가요. 개인으로 돌아갈 때도 여기서 하면 돼요.';
+const SWITCH_LABEL = '비즈니스로 바꾸고 소식 쓰기, 글과 대화가 업체 A 이름으로 나가요';
 const flush = async () => { for (let i = 0; i < 10; i++) await Promise.resolve(); };
 function nodes(node) { return !node || typeof node !== 'object' ? [] : [node, ...[node.props?.children].flat(Infinity).flatMap(nodes)]; }
 function text(node) { return node == null || typeof node === 'boolean' ? '' : typeof node !== 'object' ? String(node) : [node.props?.children].flat(Infinity).map(text).join(' '); }
@@ -115,11 +115,11 @@ test('connected business owners and operators still switch to their business dra
 test('the menu row says the app switches before the tap, then reads as writing once already switched (QA A-menu-01)', async t => {
   chatIdentity.resetChatIdentity(); t.after(chatIdentity.resetChatIdentity);
   const view = app(); view.render(); view.pending.shift()(context()); await flush();
-  assert.match(text(view.render()), /비즈니스로 바꾸고 글쓰기/); assert.match(text(view.render()), /개인으로 돌아갈 때도 여기서 하면 돼요/);
+  assert.match(text(view.render()), /비즈니스로 바꾸고 소식 쓰기/); assert.match(text(view.render()), /글과 대화가 업체 A 이름으로 나가요/);
   view.render().props.onPress(); view.pending.shift()(context()); await flush();
   assert.deepEqual(view.announced, ['이제 업체 A 이름으로 써요']);
   const after = view.render();
-  assert.match(text(after), /홍보글 쓰기/); assert.doesNotMatch(text(after), /바꾸고/);
+  assert.match(text(after), /소식 쓰기/); assert.doesNotMatch(text(after), /바꾸고/);
   after.props.onPress(); view.pending.shift()(context()); await flush();
   assert.equal(view.announced.length, 1, 'an unchanged profile is not announced again');
   assert.equal(view.routes.length, 2, 'both taps still open the business drafts');
@@ -128,7 +128,7 @@ test('last connection removal hides the entry and a revoked click never navigate
   const view = app();
   assert.equal(view.render(), null);
   view.pending.shift()(context()); await flush();
-  const entry = view.render(); assert.match(text(entry), /비즈니스로 바꾸고 글쓰기/);
+  const entry = view.render(); assert.match(text(entry), /비즈니스로 바꾸고 소식 쓰기/);
   entry.props.onPress();
   assert.equal(view.calls.length, 2, 'every switch rechecks the current server connection');
   view.pending.shift()(context('user-a', [])); await flush();

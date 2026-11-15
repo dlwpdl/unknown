@@ -15,7 +15,7 @@ import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { chatBusinessIdentity } from '@/lib/chat-identity';
 import { useAuth } from '@/lib/auth';
 import { blockBusiness, blockUser, reportContent, type ConversationPreview, type ReportReason, type ReportTarget } from '@/lib/community-data';
-import { blockBusinessConversation, reportBusinessChatMessage } from '@/lib/business-chat';
+import { blockBusinessConversation, reportBusinessChatMessage, reportBusinessConversation } from '@/lib/business-chat';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 
@@ -95,7 +95,8 @@ export function ReportSheet({
     operation.busy = true;
     setSubmission({ scope: scopeKey, busy: true });
     try {
-      if (businessConversation) await reportBusinessChatMessage(supabase, businessConversation, targetId, reason, details);
+      if (businessConversation && targetType === 'business') await reportBusinessConversation(supabase, businessConversation, reason, details);
+      else if (businessConversation) await reportBusinessChatMessage(supabase, businessConversation, targetId, reason, details);
       else await reportContent(supabase, targetType, targetId, reason, details, me.id);
       if (!valid()) return;
       if (blockAfter && (reportedUserId || reportedBusinessId)) {
@@ -116,9 +117,11 @@ export function ReportSheet({
       play('warning');
       Alert.alert(t.report.doneTitle, blockAfter ? t.report.doneBlocked
         : targetType === 'user' ? tr("운영팀에 신고를 전달했어요. 활동 내역을 살펴볼게요.") : t.report.doneBody);
-    } catch {
+    } catch (error) {
       if (!valid()) return;
       play('warning');
+      // Before the server can take a whole-conversation report, a message report still reaches the safety team.
+      if (error instanceof Error && error.message === 'BUSINESS_REPORT_UNAVAILABLE') { close(); Alert.alert(t.report.errorTitle, tr('아직 대화 전체는 신고할 수 없어요. 문제가 된 메시지를 길게 눌러 신고해 주세요.')); return; }
       Alert.alert(t.report.errorTitle, t.report.errorBody);
     } finally {
       operation.busy = false;

@@ -15,8 +15,8 @@ export function animateLayout(reduced: boolean) {
   if (!reduced) LayoutAnimation.configureNext(LayoutAnimation.create(ControlMotion.expandMs, 'easeInEaseOut', 'opacity'));
 }
 
-/** A heading that opens the detail under it. The chevron turns and the content below slides. */
-export function Disclosure({ analyticsId, title, children, onOpen }: { analyticsId: string; title: string; children: ReactNode; onOpen?: () => void }) {
+/** A heading that opens the detail under it. The chevron turns and the content below slides. `value` shows the current choice while it is closed. */
+export function Disclosure({ analyticsId, title, value, children, onOpen }: { analyticsId: string; title: string; value?: string; children: ReactNode; onOpen?: () => void }) {
   const theme = useTheme(), { play } = useInteractionFeedback(), reduced = useReducedMotion();
   const [open, setOpen] = useState(false), [turn] = useState(() => new Animated.Value(0));
   useEffect(() => {
@@ -24,9 +24,10 @@ export function Disclosure({ analyticsId, title, children, onOpen }: { analytics
     else Animated.timing(turn, { toValue: open ? 1 : 0, duration: ControlMotion.expandMs, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, [open, reduced, turn]);
   return <View>
-    <Pressable analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={title} accessibilityState={{ expanded: open }} style={styles.row}
+    <Pressable analyticsId={analyticsId} accessibilityRole="button" accessibilityLabel={value ? `${title}, ${value}` : title} accessibilityState={{ expanded: open }} style={styles.row}
       onPress={() => { play('selection'); animateLayout(reduced); if (!open) onOpen?.(); setOpen(value => !value); }}>
       <ThemedText style={[Typography.body, styles.title]}>{title}</ThemedText>
+      {!!value && <ThemedText type="small" themeColor="textSecondary" style={styles.value} numberOfLines={1}>{value}</ThemedText>}
       <Animated.View style={{ transform: [{ rotate: turn.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] }) }] }}>
         <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} size={IconSize.chevron} tintColor={theme.textSecondary} />
       </Animated.View>
@@ -38,5 +39,6 @@ export function Disclosure({ analyticsId, title, children, onOpen }: { analytics
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, minHeight: 44 },
   title: { flex: 1 },
+  value: { flexShrink: 1, textAlign: 'right' },
   body: { paddingBottom: Spacing.two, gap: Spacing.two },
 });

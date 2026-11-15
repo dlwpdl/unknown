@@ -34,7 +34,7 @@ export function getCommunityActionError(error: unknown) {
 }
 
 export type PostDraftImage = { base64: string; mimeType: string; thumbBase64?: string; width?: number; height?: number };
-export type ReportTarget = 'user' | 'post' | 'comment' | 'message' | 'merchant_review' | 'merchant_review_reply' | 'meetup_review' | 'live_bubble';
+export type ReportTarget = 'user' | 'post' | 'comment' | 'message' | 'merchant_review' | 'merchant_review_reply' | 'meetup_review' | 'live_bubble' | 'business';
 export type ReportReason = 'spam' | 'harassment' | 'hate' | 'sexual' | 'privacy' | 'other';
 
 export type ConversationPreview = {
@@ -360,7 +360,7 @@ export async function reportContent(
     details: details.trim() || null,
   });
   if (result.error) throw result.error;
-  if (targetType !== 'user') hideContent(viewerId, targetType, targetId);
+  if (targetType !== 'user' && targetType !== 'business') hideContent(viewerId, targetType, targetId);
   return result.data as string;
 }
 
