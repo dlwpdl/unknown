@@ -1,6 +1,6 @@
 -- Run by scripts/check-minute-jobs.py on stubbed queues, vault, pg_net and pg_cron.
 begin;
-select plan(24);
+select plan(28);
 
 select is((select count(*) from cron.job where jobname in ('gling-safety-monitor-every-minute', 'gling-discovery-posts', 'gling-push-delivery',
   'gling-chilling-expiry', 'gling-meetup-reminders', 'gling-meetup-convenience', 'gling-meetup-announcements')), 0::bigint, 'the seven per-minute jobs are gone');
@@ -65,11 +65,31 @@ select is((select count(*) from net.calls), 0::bigint, 'exhausted, future, finis
 
 update public.safety_review_queue set updated_at = now() - interval '6 minutes' where target_type = 'post' and status = 'processing';
 select private.run_minute_jobs();
-select is((select count(*) from net.calls), 0::bigint, 'v2 reclaims only message leases, so an old post lease does not wake');
+select is((select count(*) from net.calls), 1::bigint, 'an abandoned post lease wakes safety');
 
+truncate net.calls;
+delete from public.safety_review_queue where target_type = 'post' and status = 'processing';
 update public.safety_review_queue set updated_at = now() - interval '6 minutes' where target_type = 'message';
 select private.run_minute_jobs();
 select is((select count(*) from net.calls), 1::bigint, 'an abandoned message lease wakes safety');
+
+-- The claim reclaims abandoned leases of every type, leaves fresh ones, and stops after five attempts.
+truncate public.safety_review_queue, net.calls;
+insert into public.safety_review_queue(target_type, status, attempts, updated_at) values
+  ('post', 'processing', 1, now() - interval '6 minutes'), ('comment', 'processing', 1, now() - interval '6 minutes'),
+  ('message', 'processing', 1, now() - interval '6 minutes'), ('post', 'processing', 1, now() - interval '1 minute'),
+  ('comment', 'processing', 5, now() - interval '6 minutes');
+set local test.role = 'service_role';
+select is((select array_agg(target_type order by id) from public.claim_safety_reviews_v2(20)),
+  array['post', 'comment', 'message'], 'abandoned post, comment and message leases are claimed again');
+select is((select array_agg(status || ':' || attempts || ':' || coalesce(last_error, '-') order by id) from public.safety_review_queue),
+  array['processing:2:REVIEW_LEASE_EXPIRED', 'processing:2:REVIEW_LEASE_EXPIRED', 'processing:2:REVIEW_LEASE_EXPIRED', 'processing:1:-',
+        'failed:5:REVIEW_LEASE_EXPIRED'],
+  'a fresh lease is left alone; a fifth-attempt lease is released but not claimed again');
+set local test.role = '';
+select is((select count(*) from net.calls), 0::bigint, 'the claim itself makes no calls');
+update public.safety_review_queue set status = 'done' where status = 'processing';
+select is(private.safety_work_due(), false, 'nothing left to claim: an exhausted lease does not keep waking safety');
 
 -- One failing step neither stops nor rolls back the others.
 truncate public.safety_review_queue, private.minute_calls, net.calls;

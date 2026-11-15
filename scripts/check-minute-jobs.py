@@ -11,7 +11,11 @@ ROOT = Path(__file__).resolve().parents[1]
 CONTAINER = 'gling-minute-jobs-check-' + uuid.uuid4().hex[:12]
 DATABASE = 'minute_jobs_check'
 IMAGE = 'public.ecr.aws/supabase/postgres:17.6.1.165'
-MIGRATION = ROOT / 'supabase/migrations/20261115200000_minute_jobs_one_run.sql'
+MIGRATIONS = [ROOT / 'supabase/migrations/20261115200000_minute_jobs_one_run.sql',
+              ROOT / 'supabase/migrations/20261115230000_safety_reclaim_all_targets.sql']
+# The real queue claim, so the reclaim test runs claim_safety_reviews_v2 on top of it unchanged.
+CLAIM = re.search(r'create function public\.claim_safety_reviews\(.*?\n\$\$;',
+                  (ROOT / 'supabase/migrations/0010_abuse_controls.sql').read_text(), re.S).group(0)
 
 
 def command(args, source=None, check=True):
@@ -29,12 +33,13 @@ def sql(source, check=True):
 STUBS = """
 create extension if not exists pgtap;
 create schema if not exists auth;
-create function auth.role() returns text language sql as $$ select null::text $$;
+create function auth.role() returns text language sql as $$ select nullif(current_setting('test.role', true), '') $$;
 create schema if not exists private;
 create table private.push_delivery_queue(id bigserial primary key, status text not null, next_attempt_at timestamptz not null default now(),
   lease_until timestamptz, created_at timestamptz not null default now());
 create table public.safety_review_queue(id bigserial primary key, target_type text not null, status text not null,
-  next_attempt_at timestamptz, attempts integer not null default 0, updated_at timestamptz not null default now());
+  next_attempt_at timestamptz, attempts integer not null default 0, updated_at timestamptz not null default now(),
+  target_id uuid not null default gen_random_uuid(), content_hash text, last_error text, created_at timestamptz not null default now());
 create table private.minute_calls(id bigserial primary key, step text);
 create function private.step(p text) returns integer language plpgsql as $$ begin
   insert into private.minute_calls(step) values (p);
@@ -83,8 +88,9 @@ try:
         time.sleep(0.25)
     command(['docker', 'exec', CONTAINER, 'createdb', '-U', 'supabase_admin', '--template=template0', DATABASE])
     sql(STUBS)
-    sql(MIGRATION.read_text())
-    sql(MIGRATION.read_text())  # rerunnable
+    sql(CLAIM)
+    for migration in MIGRATIONS + MIGRATIONS:  # rerunnable
+        sql(migration.read_text())
     result = sql((ROOT / 'supabase/tests/minute_jobs.test.sql').read_text(), False)
     output = result.stdout + result.stderr
     assert result.returncode == 0, output[-10000:]
