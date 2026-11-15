@@ -4935,4 +4935,6 @@ export const uiEnglish: Record<string, string> = {
   "후기와 평가는 이렇게 다뤄요": "How reviews and ratings work",
   "점수": "Score",
   "화면을 아래로 당기면 새로 불러와요": "Pull down to refresh",
+  // mock-vfix (2026-11-14)
+  "계정 설정 열기": "Open account settings",
 };

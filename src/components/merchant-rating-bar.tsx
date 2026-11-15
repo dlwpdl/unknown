@@ -1,6 +1,6 @@
 import { useLanguage } from '@/hooks/use-language';
 import { useEffect, useState } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useTheme } from '@/hooks/use-theme';
 import { Colors } from '@/constants/theme';
@@ -45,7 +45,8 @@ export function MerchantRatingBar({ score, reviewKind = 'usage', label }: { scor
     animation.start();
     return () => { animation.stop(); values.forEach(value => value.setValue(1)); };
   }, [rounded, pointsPerUnit, unitCount, reducedMotion, progress]);
-  const shape = (color: string) => <Text style={[styles.sparkle, { color }]} accessible={false}>✦</Text>;
+  // The marks are a drawing in a fixed 58×14 bar, so they keep their size when text grows (QA A-place-02).
+  const shape = (color: string) => <Text allowFontScaling={false} style={[styles.sparkle, { color }]} accessible={false}>✦</Text>;
   return <View style={styles.bar} accessible accessibilityLabel={tr("{0} {1}", (label ?? (employment ? tr('직원 후기') : tr('상품·서비스 후기'))), (rounded == null ? tr('점수 없음') : tr("평균 {0}점, 10점 만점", rounded.toFixed(1))))}>
     {progress.slice(0, unitCount).map((value, index) => <View key={index} style={styles.unit} accessible={false}>
       {shape(empty)}
@@ -69,14 +70,17 @@ export function ratingPickerNext(current: number | null, action: { mark: number 
 /** Picks a 1–10 score in 0.5 steps with the same five ✦ marks the score bar shows (QA A-place-02). Screen readers get one adjustable control. */
 export function RatingScorePicker({ value, onChange, label, analyticsId, disabled = false, testID }: { value: number | null; onChange: (score: number) => void; label: string; analyticsId: string; disabled?: boolean; testID?: string }) {
   const { tr } = useLanguage();
-  const theme = useTheme(), { play } = useInteractionFeedback();
+  const theme = useTheme(), { play } = useInteractionFeedback(), { fontScale } = useWindowDimensions();
   const dark = theme.background === Colors.dark.background, iris = dark ? IRIS.dark : IRIS.light;
   const empty = dark ? theme.line : `${theme.textSecondary}B3`;
+  // Large text grows the ✦ and − + only as far as their fixed 44pt targets hold, so the row still fits a narrow phone; the glyph box grows with it and nothing clips (QA A-place-02).
+  const grow = Math.min(Math.max(fontScale, 1), 1.3);
+  const glyph = { width: Math.round(30 * grow), fontSize: Math.round(30 * grow), lineHeight: Math.round(34 * grow) };
   const pick = (next: number | null) => { if (disabled || next == null || next === value) return; play('selection'); onChange(next); };
   const step = (direction: 1 | -1, edge: boolean) => <Pressable analyticsId={analyticsId} testID={testID && `${testID}.${direction > 0 ? 'up' : 'down'}`}
     accessibilityRole="button" accessibilityLabel={tr(direction > 0 ? '0.5점 올리기' : '0.5점 내리기')} disabled={disabled || edge} onPress={() => pick(ratingPickerNext(value, { step: direction }))}
     style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed, disabled: disabled || edge }).container, { opacity: disabled || edge ? 0.4 : 1 }]}>
-    <SymbolView name={direction > 0 ? { ios: 'plus', android: 'add', web: 'add' } : { ios: 'minus', android: 'remove', web: 'remove' }} size={18} tintColor={theme.text} />
+    <SymbolView name={direction > 0 ? { ios: 'plus', android: 'add', web: 'add' } : { ios: 'minus', android: 'remove', web: 'remove' }} size={Math.round(18 * grow)} tintColor={theme.text} />
   </Pressable>;
   return <View testID={testID} style={styles.picker} accessible accessibilityRole="adjustable" accessibilityLabel={label}
     accessibilityState={{ disabled }} accessibilityValue={{ min: 1, max: 10, now: value ?? undefined, text: value == null ? tr('점수를 선택해 주세요') : tr('{0}점 / 10점', value.toFixed(1)) }}
@@ -85,10 +89,10 @@ export function RatingScorePicker({ value, onChange, label, analyticsId, disable
     {step(-1, value == null || value <= 1)}
     <View style={styles.marks}>{[1, 2, 3, 4, 5].map(mark => <Pressable key={mark} analyticsId={analyticsId} testID={testID && `${testID}.mark.${mark}`}
       accessibilityRole="button" accessibilityLabel={tr('{0}점', mark * 2)} disabled={disabled} onPress={() => pick(ratingPickerNext(value, { mark }))} style={styles.mark}>
-      <View style={styles.markGlyph}>
-        <Text style={[styles.bigSparkle, { color: empty }]} accessible={false}>✦</Text>
+      <View style={{ width: glyph.width, height: glyph.lineHeight }}>
+        <Text allowFontScaling={false} style={[styles.bigSparkle, glyph, { color: empty }]} accessible={false}>✦</Text>
         <View style={[StyleSheet.absoluteFill, { width: `${value == null ? 0 : Math.max(0, Math.min(100, Math.round((value / 2 - (mark - 1)) * 100)))}%`, overflow: 'hidden' }]}>
-          <Text style={[styles.bigSparkle, { color: iris[mark * 2 - 1] }]} accessible={false}>✦</Text>
+          <Text allowFontScaling={false} style={[styles.bigSparkle, glyph, { color: iris[mark * 2 - 1] }]} accessible={false}>✦</Text>
         </View>
       </View>
     </Pressable>)}</View>
@@ -100,8 +104,7 @@ const styles = StyleSheet.create({
   picker: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   marks: { flexDirection: 'row' },
   mark: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  markGlyph: { width: 30, height: 34 },
-  bigSparkle: { width: 30, fontSize: 30, lineHeight: 34, textAlign: 'center', includeFontPadding: false },
+  bigSparkle: { textAlign: 'center', includeFontPadding: false },
   bar: { flexDirection: 'row', gap: 2, width: 58, height: 14 },
   unit: { width: 10, height: 14 },
   inlineSparkle: { fontSize: 14 },

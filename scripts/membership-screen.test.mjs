@@ -29,7 +29,7 @@ test('membership keeps stories and direct chat free while preserving meetup and 
     if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     // Only the link listener runs; the other effects stay off as before.
-    if (name === 'react') return { useCallback: fn => fn, useEffect(fn) { if (/onLinkOpen/.test(String(fn))) fn(); }, useState(initial) {
+    if (name === 'react') return { useCallback: fn => fn, useRef: value => ({ current: value }), useEffect(fn) { if (/onLinkOpen/.test(String(fn))) fn(); }, useState(initial) {
       const index = cursor++;
       if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial;
       return [states[index], next => { states[index] = typeof next === 'function' ? next(states[index]) : next; }];
@@ -153,7 +153,14 @@ test('membership keeps stories and direct chat free while preserving meetup and 
   const resultAt = order.findIndex(node => node && typeof node === 'object' && text(node) === '복원할 활성 구독이 없어요.');
   assert.ok(linksAt >= 0 && resultAt === linksAt + 1, 'the result follows the restore button');
   assert.equal(nodes(tree).filter(node => text(node) === '복원할 활성 구독이 없어요.' && node.type === 'Text').length, 1, 'not repeated at the top');
-  value.notice = null;
+  assert.equal(typeof order[resultAt].props.onLayout, 'function', 'the result line scrolls itself into view above the fixed checkout');
+  // A failed restore while the store sent no prices: the box keeps its own reason, the restore error shows only by the button.
+  value.notice = null; value.error = '구매를 복원하지 못했어요. 연결 상태를 확인하고 잠시 후 다시 해 주세요.';
+  tree = render();
+  const priceBox = nodes(tree).find(node => node.type === 'StateCard' && node.props.title === '가격을 불러오지 못했어요');
+  assert.equal(priceBox.props.body, '스토어에서 구독 상품을 받지 못했어요. 잠시 후 다시 확인해 주세요.');
+  assert.equal(nodes(tree).filter(node => node.type === 'Text' && text(node) === value.error).length, 1);
+  value.error = null;
   const monthly = { tier: 'premium', kind: 'general', planVersion: 2, period: 'month', productId: 'premium_monthly', price: 'CA$19.99' };
   // Synthetic eligible annual offer tests screen behavior, not a configured or purchasable store SKU.
   const annual = { id: 'annual-ui-fixture', tier: 'premium', kind: 'general', planVersion: 2, period: 'year', productId: 'annual-ui-fixture', price: 'CA$199.99' };

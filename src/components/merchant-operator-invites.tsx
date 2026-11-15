@@ -55,10 +55,11 @@ export function MerchantOperatorInvites({ merchantId, refreshSignal, onChanged, 
       {value && value.limit > 0 && <MerchantBadge label={tr('{0} / {1}명', used, value.limit)} tone={used >= value.limit ? 'warn' : 'accent'} />}
     </View>
     {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
-    {!!error && !value && <View style={styles.row}><SmallButton label={tr('다시 시도')} disabled={busy} onPress={() => { setError(''); setRevision(v => v + 1); }} /></View>}
+    {/* Same raised secondary button as the business invite card below, so the two new buttons look alike (QA A-biz-06). */}
+    {!!error && !value && <View style={styles.row}><RaisedActionButton compact tone="secondary" analyticsId="merchant.connection.action" label={tr('다시 시도')} disabled={busy} onPress={() => { play('selection'); setError(''); setRevision(v => v + 1); }} /></View>}
     {value && value.limit === 0 && <>
       <ThemedText type="small" themeColor="textSecondary">{tr('공동 관리자 초대는 유료 비즈니스 멤버십(플러스 이상)에서 쓸 수 있어요.')}</ThemedText>
-      {onPlans && <View style={styles.row}><SmallButton label={tr('요금제 보기')} disabled={busy} onPress={onPlans} /></View>}
+      {onPlans && <View style={styles.row}><RaisedActionButton compact tone="secondary" analyticsId="merchant.connection.action" label={tr('요금제 보기')} disabled={busy} onPress={() => { play('selection'); onPlans(); }} /></View>}
     </>}
     {value && value.limit > 0 && <>
       <ThemedText type="small" themeColor="textSecondary">{tr('링크를 받은 사람이 글링에 로그인해 열면 공동 관리자가 돼요. 7일 동안 한 번만 쓸 수 있어요.')}</ThemedText>

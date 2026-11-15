@@ -3,7 +3,7 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useFocusEffect, useLocalSearchParams, usePreventRemove, useRouter } from 'expo-router';
-import { Alert, Animated, AppState, DeviceEventEmitter, Easing, Keyboard, KeyboardAvoidingView, Modal, Platform, RefreshControl, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, Animated, AppState, DeviceEventEmitter, Easing, Keyboard, KeyboardAvoidingView, Modal, Platform, RefreshControl, StyleSheet, TextInput, useWindowDimensions, View, type ScrollViewInstance } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { requestPushPrompt } from '@/lib/push-prompt';
 import { SymbolView } from '@/components/symbol-view';
@@ -113,6 +113,9 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
   const [errorCode, setErrorCode] = useState<string | null>(null), [profileError, setProfileError] = useState('');
   const [sheetOpen, setSheetOpen] = useState(false), [whoOpen, setWhoOpen] = useState(false), [rulesOpen, setRulesOpen] = useState(false);
   const editAfterSheet = useRef(false);
+  // The answer field sits at the end of the form; once the keyboard has shrunk the form, it is scrolled back into view (QA I-meet-07).
+  const scroll = useRef<ScrollViewInstance>(null), answerFocused = useRef(false);
+  const showAnswer = () => requestAnimationFrame(() => requestAnimationFrame(() => { if (answerFocused.current) scroll.current?.scrollToEnd({ animated: !reducedMotion }); }));
   // Invite meetups never list members; public ones show who's coming once the server switched them on.
   const invite = post?.room?.access === 'invite';
   const who = useMeetupRoster(postId, isAuthed && post?.room?.membersVisible === true && !invite);
@@ -278,7 +281,7 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
   const question = () => <View style={[styles.card, styles.questionCard, { backgroundColor: theme.card, borderColor: theme.line }]}>
     <ThemedText style={Typography.label} themeColor="accent">{tr("{0}님이 궁금해요", post!.author.nickname)}</ThemedText>
     <ThemedText style={Typography.section}>{post!.room!.applicationQuestion || tr("함께하고 싶은 이유를 알려주세요")}</ThemedText>
-    <TextInput value={answer} onChangeText={setAnswer} accessibilityLabel={tr("신청 답변")} multiline maxLength={300} editable={!sending} placeholder={tr("나답게 편하게 답해주세요.")} placeholderTextColor={theme.textSecondary} style={[styles.input, { borderColor: theme.line, color: theme.text, backgroundColor: theme.background }]} />
+    <TextInput value={answer} onChangeText={setAnswer} onFocus={() => { answerFocused.current = true; showAnswer(); }} onBlur={() => { answerFocused.current = false; }} accessibilityLabel={tr("신청 답변")} multiline maxLength={300} editable={!sending} placeholder={tr("나답게 편하게 답해주세요.")} placeholderTextColor={theme.textSecondary} style={[styles.input, { borderColor: theme.line, color: theme.text, backgroundColor: theme.background }]} />
     <ThemedText themeColor="textSecondary" style={[Typography.caption, styles.count, styles.tabular]}>{answer.length}/300</ThemedText>
   </View>;
   const languagePicker = () => exchange && <>
@@ -312,11 +315,12 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
     </ScrollView>
   </View>;
   // What sending agrees to stays above the button; the full table opens in a sheet so it never covers the answer field.
+  const whoSeesLink = <Pressable analyticsId="meetup.join.policy" accessibilityRole="button" accessibilityLabel={copy('누가 무엇을 보나요', 'Who sees what')} onPress={() => { play('selection'); Keyboard.dismiss(); setRulesOpen(true); }} style={styles.rulesLink}>
+    <ThemedText type="smallBold" themeColor="accent">{copy('누가 무엇을 보나요 ›', 'Who sees what ›')}</ThemedText>
+  </Pressable>;
   const whoSees = (lead: string) => <>
     <ThemedText style={Typography.supporting} themeColor="textSecondary">{lead}</ThemedText>
-    <Pressable analyticsId="meetup.join.policy" accessibilityRole="button" accessibilityLabel={copy('누가 무엇을 보나요', 'Who sees what')} onPress={() => { play('selection'); Keyboard.dismiss(); setRulesOpen(true); }} style={styles.rulesLink}>
-      <ThemedText type="smallBold" themeColor="accent">{copy('누가 무엇을 보나요 ›', 'Who sees what ›')}</ThemedText>
-    </Pressable>
+    {whoSeesLink}
   </>;
   const whoSeesDetails = () => <>
       <View style={styles.who}>
@@ -378,7 +382,7 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
       <ThemedText accessibilityRole="header" style={[Typography.menu, styles.headTitle]}>{tr("참여 신청")}</ThemedText><View style={styles.headSide} />
     </View>
     <KeyboardAvoidingView style={styles.fill} behavior="padding">
-      <ScrollView analyticsId="app_meetup-join.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, view === 'loading' && styles.loading]}
+      <ScrollView ref={scroll} onLayout={showAnswer} analyticsId="app_meetup-join.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, view === 'loading' && styles.loading]}
         refreshControl={pullable ? <RefreshControl refreshing={false} tintColor={theme.accent} onRefresh={() => { play('selection'); reload(); }} /> : undefined}>
         {view === 'loading' ? <GlingLoader color={theme.accent} accessibilityLabel={tr("신청 정보 불러오는 중")} />
             : view === 'failed' ? <StateCard kind="error" title={tr("신청 정보를 불러오지 못했어요")} body={tr(error)} actionLabel={tr("다시 불러오기")} onAction={reload} />
@@ -472,7 +476,8 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
         {view === 'noprofile' && !!profileError && <RaisedActionButton analyticsId="app_meetup-join.pressable.5" onPress={() => { play('selection'); profileRoute(); }} label={tr("모임 프로필 열기")} />}
         {(view === 'form' || askingProfile) && <>
           {/* What 동의하고 agrees to sits right above the button that sends it (owner 2026-11-13); opened details scroll here so the button stays on screen.
-            It steps aside while the keyboard is up so the field being typed in keeps its room. */}
+            While the keyboard is up only the 누가 무엇을 보나요 link stays, so it can still be opened and the field being typed in keeps its room. */}
+          {modern && typing && whoSeesLink}
           {modern && !typing && <ScrollView analyticsId="app_meetup-join.scrollview.1" style={{ maxHeight: height * 0.3 }} contentContainerStyle={styles.consent} keyboardShouldPersistTaps="handled">{whoSees(profile
             // An older profile keeps its interests, prompts and photos, and those reach the host too.
             ? invite ? tr('초대용 모임이라 모임 밖에서는 내가 있는지 안 보여요. 신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요.')

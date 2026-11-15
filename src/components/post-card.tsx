@@ -377,7 +377,7 @@ export function PostCard({
                 </Pressable>
                 <ThemedText type="small" themeColor="textSecondary">{[kind, time].filter(Boolean).map(part => `· ${part}`).join(' ')}</ThemedText>
                 <PostAdLabel hashtags={post.hashtags} />
-                {pastEvent && <ThemedText type="smallBold" themeColor="textSecondary">{tr('지난 행사')}</ThemedText>}
+                {pastEvent && <ThemedText type="smallBold" themeColor="textSecondary">{`· ${tr('지난 행사')}`}</ThemedText>}
                 {mine && <ThemedText type="smallBold" style={{ color: theme.accent }}>{t.feed.mineBadge}</ThemedText>}
               </View>
               <Pressable analyticsId="post.manage.open" accessibilityRole="button" accessibilityLabel={tr('글 메뉴')}

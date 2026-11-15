@@ -5,7 +5,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 
-function rating({ score, reviewKind = 'usage', reduced = false, label, scheme = 'dark' }) {
+function rating({ score, reviewKind = 'usage', reduced = false, label, scheme = 'dark', fontScale = 1 }) {
   const animations = [], values = [], cleanups = [], played = [];
   const theme = scheme === 'dark'
     ? { accent: '#CBB9FF', line: '#222', background: '#0B0B12', card: '#171722', textSecondary: '#B7B4C3' }
@@ -18,7 +18,7 @@ function rating({ score, reviewKind = 'usage', reduced = false, label, scheme = 
   const imports = {
     react: { useState: initial => [initial()], useEffect: fn => { const cleanup = fn(); if (cleanup) cleanups.push(cleanup); } },
     'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) },
-    'react-native': { View: 'View', Text: 'Text', StyleSheet: { create: value => value, absoluteFill: {} },
+    'react-native': { View: 'View', Text: 'Text', StyleSheet: { create: value => value, absoluteFill: {} }, useWindowDimensions: () => ({ fontScale }),
       Animated: { Value, View: 'AnimatedView', timing: (value, config) => { animations.push(config); return { start() {}, stop() {} }; },
         stagger: () => ({ start() {}, stop() {} }) } },
     'react-native-reanimated': { useReducedMotion: () => reduced },
@@ -152,4 +152,14 @@ test('QA A-place-02: the ✦ picker reaches every 0.5 step from 1 to 10 and stay
   const locked = exports.RatingScorePicker({ value: 10, onChange: value => picked.push(value), label: 'x', testID: 'score', disabled: true });
   nodes(locked).find(node => node.props?.testID === 'score.mark.1').props.onPress();
   assert.deepEqual(picked, [9, 8], 'a disabled picker changes nothing');
+  // Accessibility text sizes: each ✦ grows a little and its box grows with it, so nothing is clipped, and − + stay inside their 44pt targets.
+  const big = rating({ score: null, fontScale: 3 }).exports.RatingScorePicker({ value: 7.5, onChange() {}, label: 'x', testID: 'score' });
+  const sparkles = nodes(big).filter(node => node.type === 'Text');
+  assert.ok(sparkles.length === 10 && sparkles.every(node => node.props.allowFontScaling === false), 'the glyph does not scale past its box');
+  const box = nodes(big).find(node => node.props?.testID === 'score.mark.1').props.children;
+  const glyph = Object.assign({}, ...sparkles[0].props.style);
+  assert.equal(box.props.style.width, glyph.width); assert.equal(box.props.style.height, glyph.lineHeight);
+  assert.ok(glyph.lineHeight <= 44 && glyph.fontSize > 30, 'bigger than at the default size, still inside the 44pt target');
+  const plus = nodes(big).find(node => node.props?.testID === 'score.up');
+  assert.ok(nodes(plus).find(node => node.type === 'SymbolView' || node.props?.size).props.size > 18);
 });

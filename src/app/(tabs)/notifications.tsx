@@ -104,6 +104,8 @@ export default function NotificationsScreen() {
   useLayoutEffect(() => { tabRef.current = activeTab; }, [activeTab]);
   const knownRows = useRef<{ userId: string; cityId?: string; ids: Set<string> } | null>(null);
   const [pulling, setPulling] = useState(false);
+  // The grouped sign-in alerts open in place to list each one (QA A-noti-03).
+  const [signinOpen, setSigninOpen] = useState(false);
   const [failure, setFailure] = useState<Token | null>(null);
   const error = failure === token;
   const initialLoading = rows.length === 0 && result?.token !== cache && !error;
@@ -250,6 +252,14 @@ export default function NotificationsScreen() {
       navigate: route => router.navigate(route as never), dashboardOrigin: () => loadAdminDashboardOrigin(supabase, userId), openURL: url => Linking.openURL(url) });
   };
 
+  const toggleSignin = (item: InboxItem<AppNotification>) => {
+    play('selection');
+    const operation = live.current;
+    if (operation && operation.token === token && valid(operation)) void markRead(operation, item.rows.filter(row => row.read_at == null).map(row => row.id)).catch(() => {});
+    if (!reducedMotion && Platform.OS !== 'web') { if (Platform.OS === 'android') UIManager.setLayoutAnimationEnabledExperimental?.(true); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); }
+    setSigninOpen(value => !value);
+  };
+
   if (isAuthLoading) return <TabContent style={styles.screen}><GlingLoader color={theme.accent} style={styles.center} /></TabContent>;
   if (!isAuthed) return <TabContent style={styles.fill}><LoginPanel reason={t.auth.reasonNotifications} onApple={signInApple} onKakao={signInKakao} onGoogle={signInGoogle} onDevLogin={signInDev} loading={isAuthLoading} error={authError} /></TabContent>;
 
@@ -276,7 +286,10 @@ export default function NotificationsScreen() {
     const rsvp = row.kind === 'meetup_reminder' || row.kind === 'meetup_morning';
     const chip = row.kind === 'comment' || row.kind === 'reply' ? tr("답글 달기") : row.kind === 'meetup_request' ? tr("신청 보기") : rsvp ? tr("참석 알려 주기") : null;
     const label = [tag, title, body, snippet, time, unread ? tr("읽지 않음") : null].filter(Boolean).join(', ');
-    return <Pressable analyticsId="app_tabs_notifications.pressable.2" onPress={() => open(item)} accessibilityRole="button" accessibilityLabel={label}
+    // Several sign-in alerts fold into one row that opens in place; each alert's time and the way to account settings sit under it.
+    const folded = item.kind === 'signin' && item.rows.length > 1, expanded = folded && signinOpen;
+    const line = <Pressable analyticsId="app_tabs_notifications.pressable.2" onPress={() => folded ? toggleSignin(item) : open(item)} accessibilityRole="button" accessibilityLabel={label}
+      accessibilityState={folded ? { expanded } : undefined} aria-expanded={folded ? expanded : undefined}
       style={({ pressed }) => [styles.row, { backgroundColor: unread ? theme.backgroundSelected : 'transparent', opacity: pressed ? 0.82 : 1 }]}>
       {unread && <View style={[styles.unreadDot, { backgroundColor: theme.accent }]} />}
       {people.length > 1
@@ -297,6 +310,19 @@ export default function NotificationsScreen() {
         </Pressable>}
       </View>
     </Pressable>;
+    if (!expanded) return line;
+    const at = new Intl.DateTimeFormat(appLocale, { month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    return <View>
+      {line}
+      <View style={styles.signins}>
+        {item.rows.map(other => <ThemedText key={other.id} type="small" themeColor="textSecondary">{at.format(new Date(other.created_at))}</ThemedText>)}
+        <Pressable analyticsId="app_tabs_notifications.pressable.4" accessibilityRole="button" accessibilityLabel={tr('계정 설정 열기')} onPress={() => open(item)}
+          style={({ pressed }) => [ControlStyles.pill, styles.chip, controlPresentation(theme, { tone: 'secondary', pressed, clay }).container]}>
+          {clay && <ClayPillFill kind="white" />}
+          <ThemedText type="smallBold" style={controlPresentation(theme, { tone: 'secondary' }).text}>{tr('계정 설정 열기')}</ThemedText>
+        </Pressable>
+      </View>
+    </View>;
   };
 
   return (
@@ -399,6 +425,8 @@ const styles = StyleSheet.create({
   row: { minHeight: 72, paddingVertical: Spacing.three, paddingLeft: Spacing.three, paddingRight: Spacing.two, flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.three, borderRadius: 12 },
   unreadDot: { position: 'absolute', left: 4, top: 30, width: 6, height: 6, borderRadius: 3 },
   rowBody: { flex: 1, minWidth: 0, gap: 2 },
+  // Lines up with the row text: row padding + avatar + gap.
+  signins: { paddingLeft: Spacing.three + 44 + Spacing.three, paddingBottom: Spacing.three, gap: 2 },
   chip: { alignSelf: 'flex-start', marginTop: Spacing.two, borderWidth: 1 },
   avatarWrap: { width: 44, height: 44 },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },

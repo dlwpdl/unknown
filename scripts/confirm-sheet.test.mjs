@@ -22,7 +22,7 @@ const luminance = color => {
 };
 const contrast = (a, b) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
 
-function load(theme, feedback = []) {
+function load(theme, feedback = [], labelWidth = 0) {
   const button = compile('components/raised-action-button.tsx', name => {
     if (name === 'react/jsx-runtime') return jsx;
     if (name === 'react-native') return { View: 'View', StyleSheet: { create: value => value } };
@@ -35,6 +35,7 @@ function load(theme, feedback = []) {
   });
   const sheet = compile('components/confirm-sheet.tsx', name => {
     if (name === 'react/jsx-runtime') return jsx;
+    if (name === 'react') return { useState: () => [labelWidth, () => {}] };
     if (name === 'react-native') return { View: 'View', StyleSheet: { create: value => value } };
     if (name === '@/components/drag-sheet') return { DragSheet: 'DragSheet' };
     if (name === '@/components/raised-action-button') return button;
@@ -81,4 +82,14 @@ test('the confirm sheet puts 취소 first and the action last, and locks both wh
   assert.equal(actions()[0].props.disabled, true); assert.equal(actions()[1].props.busy, true);
   const error = nodes(tree).find(node => node.props?.accessibilityRole === 'alert');
   assert.equal(error.props.children, '로그아웃하지 못했어요.'); assert.equal(error.props.style.color, Colors.light.danger);
+});
+
+test('both buttons share the action label width, so a label that would wrap at half width stacks them (QA A-set-06)', () => {
+  const props = { visible: true, onClose() {}, title: '모든 기기에서 로그아웃할까요?', confirmId: 'x', confirmLabel: '모든 기기에서 로그아웃', onConfirm() {} };
+  const bases = labelWidth => nodes(load(Colors.light, [], labelWidth).ConfirmSheet(props)).filter(node => node.type === 'View' && Array.isArray(node.props.style) && node.props.style[1]?.flexBasis).map(node => node.props.style[1].flexBasis);
+  assert.deepEqual(bases(40), [140, 140], 'a short label keeps the two side by side');
+  const [cancel, action] = bases(168);
+  assert.equal(cancel, action); assert.ok(cancel * 2 + 8 > 343, 'too wide for two on a 375pt phone, so they stack with the action last');
+  const measure = nodes(load(Colors.light).ConfirmSheet(props)).find(node => node.props?.onLayout);
+  assert.equal(measure.props.children, props.confirmLabel); assert.equal(measure.props.importantForAccessibility, 'no-hide-descendants');
 });

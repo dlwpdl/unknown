@@ -3,8 +3,8 @@ import { GlingLoader } from '@/components/gling-loader';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { SymbolView } from '@/components/symbol-view';
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, Animated, LayoutAnimation, Linking, Platform, StyleSheet, UIManager, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Animated, LayoutAnimation, Linking, Platform, StyleSheet, UIManager, View, type ScrollViewInstance } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -91,6 +91,7 @@ export default function MembershipScreen() {
   const [open, setOpen] = useState<{ compare: boolean; rules: boolean; picker: boolean }>({ compare: false, rules: false, picker: false });
   // After 구매 복원 its result shows beside the button, not at the top of the screen (QA A-mem-02).
   const [restoreAsked, setRestoreAsked] = useState(false);
+  const scroll = useRef<ScrollViewInstance>(null);
   const [periodWidth, setPeriodWidth] = useState(0);
   const [openedAt] = useState(() => Date.now());
   const [periodPosition] = useState(() => new Animated.Value(0));
@@ -169,7 +170,7 @@ export default function MembershipScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView edges={['bottom']} style={styles.safeArea}>
-        <ScrollView analyticsId="app_profile_membership.scrollview.1" contentContainerStyle={styles.content}>
+        <ScrollView ref={scroll} analyticsId="app_profile_membership.scrollview.1" contentContainerStyle={styles.content}>
           <View accessibilityRole="tablist" style={[styles.segment, { backgroundColor: clay ? 'transparent' : theme.backgroundElement }]}>
             {clay && <ClayPillFill kind="tray" />}
             {([['general', tr("개인")], ['business', tr("비즈니스")]] as const).map(([value, label]) => <Pressable analyticsId={`membership.family.${value}`} key={value} accessibilityRole="tab" accessibilityState={{ selected: kind === value, disabled: busy }} disabled={busy}
@@ -222,7 +223,8 @@ export default function MembershipScreen() {
             </>}
           </View>}
 
-          {offersFailed && <StateCard layout="start" mark="alert" title={tr("가격을 불러오지 못했어요")} body={tr(error ?? "스토어에서 구독 상품을 받지 못했어요. 잠시 후 다시 확인해 주세요.")}>
+          {/* After 구매 복원 the error is the restore's; it shows by that button, and this box keeps saying why prices are missing (QA A-mem-02). */}
+          {offersFailed && <StateCard layout="start" mark="alert" title={tr("가격을 불러오지 못했어요")} body={tr((!nearRestore && error) || "스토어에서 구독 상품을 받지 못했어요. 잠시 후 다시 확인해 주세요.")}>
             <View style={styles.retry}><RaisedActionButton compact tone="secondary" analyticsId="app_profile_membership.pressable.1" label={tr("다시 확인하기")} busy={busy || loading}
               onPress={() => { play('selection'); setRestoreAsked(false); void refresh(); }} /></View>
           </StateCard>}
@@ -343,7 +345,9 @@ export default function MembershipScreen() {
             <Pressable analyticsId="app_profile_membership.pressable.10" onPress={() => openLegal('terms')} accessibilityRole="link" style={styles.textButton}><ThemedText type="small" themeColor="textSecondary">{tr("이용약관")}</ThemedText></Pressable>
             <Pressable analyticsId="app_profile_membership.pressable.11" onPress={() => openLegal('privacy')} accessibilityRole="link" style={styles.textButton}><ThemedText type="small" themeColor="textSecondary">{tr("개인정보처리방침")}</ThemedText></Pressable>
           </View>
+          {/* The line appears below what was on screen when 구매 복원 was tapped at the bottom, so the list scrolls down to it above the fixed checkout. */}
           {nearRestore && !busy && (error || notice) && <ThemedText type="small" themeColor={error ? 'danger' : 'textSecondary'} style={styles.center}
+            onLayout={() => scroll.current?.scrollToEnd({ animated: !reducedMotion })}
             accessibilityRole={error ? 'alert' : undefined} accessibilityLiveRegion="polite">{tr(error ?? notice ?? '')}</ThemedText>}
         </ScrollView>
 

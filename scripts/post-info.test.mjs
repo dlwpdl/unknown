@@ -52,12 +52,20 @@ test('행사 글 제목의 마지막 날이 지나면 지난 행사로 본다', 
   assert.equal(eventLastDay('밴쿠버 새해 불꽃 · 2026.12.30–1.2'), '2027-01-02');
   assert.equal(eventLastDay('날짜 없는 행사 글'), null);
   assert.equal(eventLastDay('2026.11.07 에 본 공연 후기'), null, 'only a trailing date counts');
+  // Korean dates, usually without a year: the year closest to when the post went up (QA I-home-06).
+  const oct6 = '2026-10-06T18:00:00Z';
+  assert.equal(eventLastDay('밴쿠버 Heart of the City Festival — 10월 30일–11월 7일', oct6), '2026-11-07');
+  assert.equal(eventLastDay('밴쿠버 불꽃놀이 — 7월 26일', oct6), '2026-07-26', 'a recap of a summer event stays in that year');
+  assert.equal(eventLastDay('밴쿠버 새해 불꽃 · 12월 31일–1월 1일', '2026-12-10T00:00:00Z'), '2027-01-01');
+  assert.equal(eventLastDay('토론토 윈터 페어 · 2026년 12월 30일–1월 2일'), '2027-01-02');
+  assert.equal(eventLastDay('11월 7일에 본 공연 후기', oct6), null);
   const festival = (title, cityId = 'vancouver') => ({ title, cityId, tag: { slug: 'festival' } });
   const nov13 = Date.parse('2026-11-13T20:00:00Z'), nov7Evening = Date.parse('2026-11-08T05:00:00Z'); // 11-07 21:00 in Vancouver
   assert.equal(isPastEvent(festival('밴쿠버 Diwali in Vancouver 2026 · 2026.11.07'), nov13), true);
   assert.equal(isPastEvent(festival('밴쿠버 Diwali in Vancouver 2026 · 2026.11.07'), nov7Evening), false, 'the event day itself, in the city clock, is not past');
   assert.equal(isPastEvent(festival('토론토 로열 윈터 페어 · 2026.11.06–15', 'toronto'), nov13), false);
   assert.equal(isPastEvent(festival('날짜 없는 행사 글'), nov13), false);
+  assert.equal(isPastEvent({ ...festival('밴쿠버 Heart of the City Festival — 10월 30일–11월 7일'), createdAt: oct6 }, nov13), true);
   assert.equal(isPastEvent({ ...festival('밴쿠버 Diwali in Vancouver 2026 · 2026.11.07'), tag: { slug: 'life' } }, nov13), false, 'only festival posts');
 });
 
