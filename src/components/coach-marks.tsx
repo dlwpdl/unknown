@@ -45,13 +45,16 @@ export function coachTipPlace(holes: CoachRect[], screen: Screen, insets: { top:
 
 const radius = (hole: CoachRect) => Math.min(hole.width, hole.height) / 2;
 
+const SETTLE_MS = 150;
+
 function frame(target: CoachTarget, screen: Screen) {
   if (typeof target === 'function') return Promise.resolve<CoachRect | null>(target(screen));
   return new Promise<CoachRect | null>(resolve => {
     const view = target.current;
     if (!view) return resolve(null);
-    const timer = setTimeout(() => resolve(null), 500);
-    view.measureInWindow((x, y, width, height) => { clearTimeout(timer); resolve(width > 0 && height > 0 ? { x, y, width, height } : null); });
+    const timer = setTimeout(() => resolve(null), 500 + SETTLE_MS);
+    // A button that mounts for the tour (home's floating +) reads its own pre-layout spot, about 50pt low on a fresh start (QA I-home-03); a beat later it is where it rests.
+    setTimeout(() => view.measureInWindow((x, y, width, height) => { clearTimeout(timer); resolve(width > 0 && height > 0 ? { x, y, width, height } : null); }), SETTLE_MS);
   });
 }
 

@@ -88,12 +88,6 @@ export default function MeetupJoinRoute() {
 function JoinForm({ postId, code = null }: { postId: string; code?: string | null }) {
   const { fontScale, height } = useWindowDimensions();
   const [typing, setTyping] = useState(false);
-  useEffect(() => {
-    // iOS announces the keyboard before it rises; Android only once it is up.
-    const [show, hide] = Platform.OS === 'ios' ? ['keyboardWillShow', 'keyboardWillHide'] as const : ['keyboardDidShow', 'keyboardDidHide'] as const;
-    const shown = Keyboard.addListener(show, () => setTyping(true)), gone = Keyboard.addListener(hide, () => setTyping(false));
-    return () => { shown.remove(); gone.remove(); };
-  }, []);
   const { tr, t, language, locale: appLocale } = useLanguage();
   const theme = useTheme(), router = useRouter(), hidden = useContentVisibility(), clay = useClay();
   const copy = (ko: string, en: string) => language === 'en' ? en : ko;
@@ -116,6 +110,18 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
   // The answer field sits at the end of the form; once the keyboard has shrunk the form, it is scrolled back into view (QA I-meet-07).
   const scroll = useRef<ScrollViewInstance>(null), answerFocused = useRef(false);
   const showAnswer = () => requestAnimationFrame(() => requestAnimationFrame(() => { if (answerFocused.current) scroll.current?.scrollToEnd({ animated: !reducedMotion }); }));
+  // The first time the form shows, the answer card is brought above the fixed bar instead of peeking out under it (QA I-meet-07).
+  const revealed = useRef(false);
+  const revealAnswer = () => { if (revealed.current || (view !== 'form' && view !== 'noprofile')) return; revealed.current = true; scroll.current?.scrollToEnd({ animated: false }); };
+  useEffect(() => {
+    // iOS announces the keyboard before it rises; Android only once it is up.
+    const [show, hide] = Platform.OS === 'ios' ? ['keyboardWillShow', 'keyboardWillHide'] as const : ['keyboardDidShow', 'keyboardDidHide'] as const;
+    const shown = Keyboard.addListener(show, () => setTyping(true)), gone = Keyboard.addListener(hide, () => setTyping(false));
+    // The form's own layout callback can run before the keyboard has finished shrinking it, so the field stayed under the fixed bar on iOS; once the keyboard has landed it is scrolled up again.
+    const landed = Keyboard.addListener('keyboardDidShow', showAnswer);
+    return () => { shown.remove(); gone.remove(); landed.remove(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- showAnswer only reads refs and the reduced-motion flag
+  }, []);
   // Invite meetups never list members; public ones show who's coming once the server switched them on.
   const invite = post?.room?.access === 'invite';
   const who = useMeetupRoster(postId, isAuthed && post?.room?.membersVisible === true && !invite);
@@ -382,7 +388,7 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
       <ThemedText accessibilityRole="header" style={[Typography.menu, styles.headTitle]}>{tr("참여 신청")}</ThemedText><View style={styles.headSide} />
     </View>
     <KeyboardAvoidingView style={styles.fill} behavior="padding">
-      <ScrollView ref={scroll} onLayout={showAnswer} analyticsId="app_meetup-join.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, view === 'loading' && styles.loading]}
+      <ScrollView ref={scroll} onLayout={showAnswer} onContentSizeChange={revealAnswer} analyticsId="app_meetup-join.scrollview.1" keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, view === 'loading' && styles.loading]}
         refreshControl={pullable ? <RefreshControl refreshing={false} tintColor={theme.accent} onRefresh={() => { play('selection'); reload(); }} /> : undefined}>
         {view === 'loading' ? <GlingLoader color={theme.accent} accessibilityLabel={tr("신청 정보 불러오는 중")} />
             : view === 'failed' ? <StateCard kind="error" title={tr("신청 정보를 불러오지 못했어요")} body={tr(error)} actionLabel={tr("다시 불러오기")} onAction={reload} />
@@ -476,9 +482,10 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
         {view === 'noprofile' && !!profileError && <RaisedActionButton analyticsId="app_meetup-join.pressable.5" onPress={() => { play('selection'); profileRoute(); }} label={tr("모임 프로필 열기")} />}
         {(view === 'form' || askingProfile) && <>
           {/* What 동의하고 agrees to sits right above the button that sends it (owner 2026-11-13); opened details scroll here so the button stays on screen.
-            While the keyboard is up only the 누가 무엇을 보나요 link stays, so it can still be opened and the field being typed in keeps its room. */}
-          {modern && typing && whoSeesLink}
-          {modern && !typing && <ScrollView analyticsId="app_meetup-join.scrollview.1" style={{ maxHeight: height * 0.3 }} contentContainerStyle={styles.consent} keyboardShouldPersistTaps="handled">{whoSees(profile
+            While the keyboard is up, or before there is an answer to send, only the 누가 무엇을 보나요 link stays: it can still be opened, and the answer field is not
+            pushed under a three-line bar on first sight (QA I-meet-07). */}
+          {modern && (typing || !answered) && whoSeesLink}
+          {modern && !typing && answered && <ScrollView analyticsId="app_meetup-join.scrollview.1" style={{ maxHeight: height * 0.3 }} contentContainerStyle={styles.consent} keyboardShouldPersistTaps="handled">{whoSees(profile
             // An older profile keeps its interests, prompts and photos, and those reach the host too.
             ? invite ? tr('초대용 모임이라 모임 밖에서는 내가 있는지 안 보여요. 신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요.')
               : tr('신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요. 승인되고 나면 이 모임에 신청하려는 사람에게도 이름, 한 줄 소개, 관심사가 보여요. 사진과 답변은 안 보여요.')

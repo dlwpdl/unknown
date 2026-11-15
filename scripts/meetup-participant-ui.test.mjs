@@ -246,14 +246,19 @@ const firstApplication = async (options = {}) => {
 };
 test('the one-screen notice names everything the host will see, including what an older profile keeps', async () => {
   const fresh = mountParticipant('join', { profile: null }); await fresh.flush();
+  inputs(fresh).at(-1).props.onChangeText('쓰던 답변'); await fresh.flush();
   assert.match(text(fresh.tree), /내 이름, 지역, 소개, 답변을 봐요/); fresh.unmount();
   const older = mountParticipant('join', { profile: { ...participantProfile, version: 1 } }); await older.flush();
   assert.equal(inputs(older).length > 1, true, 'an older profile still gets the one-screen form');
+  inputs(older).at(-1).props.onChangeText('쓰던 답변'); await older.flush();
   assert.match(text(older.tree), /내 모임 프로필과 답변을 봐요/); assert.doesNotMatch(text(older.tree), /내 이름, 지역, 소개, 답변을 봐요/); older.unmount();
 });
 test('what the send button agrees to sits beside it, not up in the scrolled form', async () => {
   for (const profile of [participantProfile, null]) {
     const ui = mountParticipant('join', { profile }); await ui.flush();
+    // Before there is an answer only the link shows, so the answer card is not pushed under a three-line bar (QA I-meet-07).
+    assert.ok(ui.control('meetup.join.policy') && !/신청을 보내면 호스트가/.test(text(ui.tree)), `empty ${!!profile}`);
+    inputs(ui).at(-1).props.onChangeText('쓰던 답변'); await ui.flush();
     const scroll = ui.control('app_meetup-join.scrollview.1'), inScroll = id => nodes(scroll).some(node => node.props?.analyticsId === id);
     assert.ok(/신청을 보내면 호스트가/.test(text(ui.tree)) && !/신청을 보내면 호스트가/.test(text(scroll)), String(!!profile));
     assert.ok(ui.control('meetup.join.policy') && !inScroll('meetup.join.policy') && !inScroll('app_meetup-join.pressable.8')); ui.unmount();

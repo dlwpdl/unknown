@@ -430,6 +430,8 @@ export function relativeTime(value: string, now: number = Date.now(), locale = g
   if (elapsedMinutes < 60) return english ? `${elapsedMinutes} ${elapsedMinutes === 1 ? 'minute' : 'minutes'} ago` : `${elapsedMinutes}분 전`;
   const hours = Math.floor(elapsedMinutes / 60);
   if (hours < 24) return english ? `${hours} ${hours === 1 ? 'hour' : 'hours'} ago` : `${hours}시간 전`;
-  const days = Math.floor(hours / 24);
+  // Calendar days, not 24-hour blocks: something from the 13th is "2 days ago" on the 15th even when only 46 hours passed (QA A-noti-03).
+  const day = (time: number) => { const date = new Date(time); return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime(); };
+  const days = Math.max(1, Math.round((day(now) - day(new Date(value).getTime())) / 86_400_000));
   return english ? days === 1 ? 'Yesterday' : `${days} days ago` : days === 1 ? '어제' : `${days}일 전`;
 }

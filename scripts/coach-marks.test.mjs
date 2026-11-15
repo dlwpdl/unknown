@@ -37,7 +37,8 @@ function load() {
   return { ...exports, render: props => { at = 0; return exports.CoachMarks(props); }, played, announced };
 }
 
-const view = rect => ({ current: { measureInWindow: done => done(rect.x, rect.y, rect.width, rect.height) } });
+// A button that has just mounted reads about 50pt low until it settles (QA I-home-03): the tour must measure after that.
+const view = rect => { const born = Date.now(); return { current: { measureInWindow: done => done(rect.x, rect.y + (Date.now() - born < 100 ? 50 : 0), rect.width, rect.height) } }; };
 
 test('the tab bar a tour points at is placed from the screen size: the middle of five tabs, above the home indicator', () => {
   const { tabTarget } = load();
@@ -85,7 +86,7 @@ test('a tour measures its buttons once the overlay is up, skips steps with nothi
   const root = nodes(coach.render(props)).find(node => node.props?.onLayout);
   assert.ok(nodes(root).some(node => style(node).backgroundColor), 'the screen is dimmed while measuring');
   root.props.onLayout({ nativeEvent: { layout: { width: 390, height: 844 } } });
-  await new Promise(setImmediate);
+  await new Promise(resolve => setTimeout(resolve, 300));
 
   let tree = coach.render(props);
   assert.match(text(tree), /도시 설명/);
@@ -110,6 +111,6 @@ test('a tour with none of its buttons on screen closes instead of leaving a dim 
   let closed = 0;
   const props = { visible: true, analyticsIds: { next: 'n', skip: 's' }, onClose: () => { closed++; }, steps: [{ targets: [{ current: null }], title: 't', body: 'b' }] };
   nodes(coach.render(props)).find(node => node.props?.onLayout).props.onLayout({ nativeEvent: { layout: { width: 390, height: 844 } } });
-  await new Promise(setImmediate);
+  await new Promise(resolve => setTimeout(resolve, 300));
   assert.equal(closed, 1);
 });

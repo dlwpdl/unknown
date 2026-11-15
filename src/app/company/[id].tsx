@@ -79,6 +79,13 @@ export default function CompanyProfileRoute() {
   const saved = useSavedEntry(merchantId ? { kind: 'merchant', id: merchantId } : null, !!profile), isSaved = !!saved.state?.saved;
   // An unsave drops the 새 소식 받기 choice with it, as the server does (adjusted while rendering, so no extra pass).
   if (saved.state?.saved === false && profile?.notifications_enabled) setResult(previous => previous?.profile ? { ...previous, profile: { ...previous.profile, notifications_enabled: false } } : previous);
+  // An unsave also clears what the save said ("저장했어요…") and re-reads the save line ("1명이 저장했어요 · 내가 처음…"), which is held apart from the save state (QA I-company-03).
+  const wasSaved = useRef(false);
+  useEffect(() => {
+    const now = saved.state?.saved;
+    if (wasSaved.current && now === false) { setActionError(null); setRevision(value => value + 1); }
+    if (now !== undefined) wasSaved.current = now;
+  }, [saved.state?.saved]);
   const webshop = usePublicWebshop(supabase, profile?.id, `${key}:${revision}`);
   const [orderMerchant, setOrderMerchant] = useState<string | null>(null);
   const orderOpen = orderMerchant === merchantId;

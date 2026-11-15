@@ -26,6 +26,7 @@ export function ConfirmSheet({ visible, onClose, onDismissed, title, body, child
   const cancel = () => { play('selection'); onClose(); };
   // A hidden copy of the action label measures its one-line width. Both buttons take that width (plus the pill's padding), so a label
   // that would wrap at half width ('모든 기기에서 로그아웃', or any label at large text) stacks the buttons instead (QA A-set-06).
+  // The key remounts the row when the width arrives: Android kept the first-pass line breaks after the basis changed, so the pair stayed side by side.
   const [labelWidth, setLabelWidth] = useState(0);
   const basis = Math.max(140, Math.ceil(labelWidth) + 52);
   return <DragSheet visible={visible} onClose={onClose} onDismissed={onDismissed} dismissible={!busy} title={title}>
@@ -33,7 +34,7 @@ export function ConfirmSheet({ visible, onClose, onDismissed, title, body, child
       {!!body && <ThemedText type="small" themeColor="textSecondary">{body}</ThemedText>}
       {children}
       {!!error && <ThemedText type="small" accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ color: theme.danger }}>{error}</ThemedText>}
-      <View style={styles.actions}>
+      <View key={basis} style={styles.actions}>
         <ThemedText type="smallBold" style={styles.measure} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
           onLayout={({ nativeEvent }) => setLabelWidth(nativeEvent.layout.width)}>{confirmLabel}</ThemedText>
         <View style={[styles.action, { flexBasis: basis }]}><RaisedActionButton analyticsId="sheet.close" tone="secondary" label={cancelLabel ?? tr('취소')} disabled={busy} onPress={cancel} /></View>

@@ -355,6 +355,21 @@ test('an inquiry completed after leaving this profile cannot navigate, and retur
   assert.equal(control(view.render(), 'company.notifications').props.accessibilityState.selected, false, 'the server drops it with the unsave');
  });
 
+test('an unsave clears the save message and re-reads the save line (QA I-company-03)', async () => {
+  let reads = 0, count = 1;
+  const view = screen({ saved: true, loadProfile: async () => ({ ...profile, notifications_enabled: true }), rpc: async () => ({ error: { message: 'offline' } }),
+    merchantSaves: async () => { reads++; return { saverCount: count, weekCount: 0, firstIsMe: count > 0, friends: [], similar: [] }; } });
+  view.render(); await settle(); view.render(); await settle(); view.render();
+  control(view.render(), 'company.notifications').props.onPress(); await settle();
+  let root = view.render();
+  assert.match(text(root), /새 소식 설정을 바꾸지 못했어요/); assert.match(text(root), /1명이 저장했어요/);
+  const before = reads; count = 0;
+  view.setSaved(false); view.render(); await settle(); view.render(); await settle(); root = view.render();
+  assert.doesNotMatch(text(root), /새 소식 설정을 바꾸지 못했어요/);
+  assert.ok(reads > before, 'the save line is read again');
+  assert.doesNotMatch(text(root), /명이 저장했어요|내가 처음 저장했어요/);
+});
+
 test('the order button is the one bottom action and opens the comparison while existing tabs and the sole bookmark remain', async () => {
   const webshop = { merchantId: company };
   const view = screen({ webshop }); view.render(); await settle(); view.render(); await settle();

@@ -13,7 +13,7 @@ const compile = (file, require) => {
   }).outputText, { exports, require });
   return exports;
 };
-const jsx = { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
+const jsx = { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }) };
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 const { Colors } = compile('constants/theme.ts', name => name === 'react-native' ? { Platform: { OS: 'ios', select: values => values.default } } : {});
 const luminance = color => {
@@ -90,6 +90,9 @@ test('both buttons share the action label width, so a label that would wrap at h
   assert.deepEqual(bases(40), [140, 140], 'a short label keeps the two side by side');
   const [cancel, action] = bases(168);
   assert.equal(cancel, action); assert.ok(cancel * 2 + 8 > 343, 'too wide for two on a 375pt phone, so they stack with the action last');
+  // Android kept the first-pass line breaks when only the basis changed: the row remounts when the measured width arrives.
+  const row = labelWidth => nodes(load(Colors.light, [], labelWidth).ConfirmSheet(props)).find(node => node.props?.style?.flexWrap === 'wrap').key;
+  assert.notEqual(row(0), row(168));
   const measure = nodes(load(Colors.light).ConfirmSheet(props)).find(node => node.props?.onLayout);
   assert.equal(measure.props.children, props.confirmLabel); assert.equal(measure.props.importantForAccessibility, 'no-hide-descendants');
 });

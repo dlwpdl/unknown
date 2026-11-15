@@ -87,6 +87,11 @@ test('dates and relative times use the selected language without altering event 
     assert.match(chillingSchedule({ eventKind: 'once', startsAt: '2026-10-15T18:30:00Z', timezone: 'America/Vancouver' }), /11:30/);
     setActiveLanguage('ko');
     assert.equal(relativeTime(new Date(now - 5 * 60000).toISOString(), now), '5분 전');
+    // Days count by calendar date: 46 hours back from the afternoon of the 15th is the 13th, so "2일 전", not "어제" (QA A-noti-03).
+    const local = (day, hour, minute = 0) => new Date(2026, 10, day, hour, minute);
+    assert.equal(relativeTime(local(13, 15, 17).toISOString(), local(15, 14).getTime()), '2일 전');
+    assert.equal(relativeTime(local(14, 9).toISOString(), local(15, 14).getTime()), '어제');
+    assert.equal(relativeTime(local(14, 20).toISOString(), local(15, 14).getTime()), '18시간 전');
   } finally { setActiveLanguage('ko'); }
 });
 
