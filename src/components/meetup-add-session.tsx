@@ -31,7 +31,7 @@ const errors: Record<string, string> = {
 };
 
 /** One session, or up to four repeating dates at once. Nothing is created until the button is pressed. */
-export function MeetupAddSession({ postId, zone, visible, canRepeat, canSingle = true, onClose, onAdded }: { postId: string; zone: string; visible: boolean; canRepeat: boolean; canSingle?: boolean; onClose: () => void; onAdded: (count: number) => void }) {
+export function MeetupAddSession({ postId, zone, visible, canSingle = true, onClose, onAdded }: { postId: string; zone: string; visible: boolean; canSingle?: boolean; onClose: () => void; onAdded: (count: number) => void }) {
   const { tr, locale } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback(), focused = useIsFocused();
   // Tomorrow 7 p.m. in the meetup's city, two hours long.
@@ -94,12 +94,11 @@ export function MeetupAddSession({ postId, zone, visible, canRepeat, canSingle =
       <ThemedText style={Typography.label}>{tr('반복')}</ThemedText>
       <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel={tr('반복')}>
         {([['none', tr('한 번만')], ['weekly', tr('매주')], ['fortnightly', tr('격주')]] as const).map(([value, label]) => {
-          const locked = value === 'none' ? !canSingle : !canRepeat;
+          const locked = value === 'none' && !canSingle;
           return <SelectionChip key={value} analyticsId="meetup.session.repeat" selected={repeat === value} disabled={busy || locked} accessibilityRole="radio" accessibilityState={{ checked: repeat === value, disabled: busy || locked }}
             label={label} onPress={() => { play('selection'); setRepeat(value); setDates([]); setPicked([]); }} />;
         })}
       </View>
-      {!canRepeat && <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('매주, 격주로 한 번에 등록하는 건 프로 멤버십부터 쓸 수 있어요.')}</ThemedText>}
       {repeating && <>
         <ThemedText style={Typography.label}>{tr('등록할 날짜')}</ThemedText>
         {loadingDates && <GlingLoader color={theme.accent} accessibilityLabel={tr('날짜를 맞춰 보는 중…')} />}

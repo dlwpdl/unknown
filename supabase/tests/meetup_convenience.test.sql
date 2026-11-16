@@ -50,25 +50,22 @@ alter table public.posts enable trigger posts_meetup_abuse;
 select ok(exists(select 1 from public.conversations where group_post_id=(select a from ids) and status='active'),'Fixture: meetup chat exists');
 
 select pg_temp.member_tier(h,'free') from ids;
--- 0. Tier rank.
-select is(private.meetup_tier_rank((select m3 from ids)),1,'Plus ranks 1');
-select is(private.meetup_tier_rank((select m2 from ids)),0,'Free ranks 0');
+-- 0. Every host tool is free for every tier: the tool rank is the same for all.
+select is(private.meetup_tier_rank((select m3 from ids)),3,'Plus has every tool');
+select is(private.meetup_tier_rank((select m2 from ids)),3,'Free has every tool');
 
--- 1. RSVP buttons are free; counts need a plus host.
+-- 1. RSVP buttons and counts are free for every host.
 select pg_temp.as_user(m8) from ids; set local role authenticated;
 select throws_ok($$select public.set_meetup_rsvp((select a from ids),true)$$,'P0001','APPROVED_MEMBER_REQUIRED','Only approved members answer');
 reset role; select pg_temp.as_user(m2) from ids; set local role authenticated;
 select is(public.set_meetup_rsvp((select a from ids),true)->>'mine','going','Free member says 갈게요');
 select throws_ok($$select public.set_meetup_rsvp((select a from ids),true,true)$$,'P0001','INVALID_RESPONSE','Going cannot release a seat');
 reset role; select pg_temp.as_user(h) from ids; set local role authenticated;
-select is(public.get_meetup_rsvp((select a from ids))->>'canSeeCounts','false','Free host does not see counts');
-select ok(public.get_meetup_rsvp((select a from ids))->'counts'='null'::jsonb,'Free host gets no counts');
-select throws_ok($$select public.set_meetup_auto_approval((select a from ids),true,false,false)$$,'P0001','PLUS_REQUIRED','Auto-approval needs plus');
-reset role; select pg_temp.member_tier(h,'plus') from ids; select pg_temp.as_user(h) from ids; set local role authenticated;
-select is(public.get_meetup_rsvp((select a from ids))->'counts','{"going":1,"notGoing":0,"noAnswer":1}'::jsonb,'Plus host sees 갈게요 1 · 아직 1');
+select is(public.get_meetup_rsvp((select a from ids))->>'canSeeCounts','true','Free host sees counts');
+select is(public.get_meetup_rsvp((select a from ids))->'counts','{"going":1,"notGoing":0,"noAnswer":1}'::jsonb,'Free host sees 갈게요 1 · 아직 1');
 
 -- 2. Auto-approval by same city, checked at commit (deferred constraint trigger).
-select lives_ok($$select public.set_meetup_auto_approval((select a from ids),true,false,false)$$,'Plus host turns on same-city auto-approval');
+select lives_ok($$select public.set_meetup_auto_approval((select a from ids),true,false,false)$$,'Free host turns on same-city auto-approval');
 select throws_ok($$select public.set_meetup_auto_approval((select c from ids),false,false,true)$$,'P0001','AGE_RANGE_REQUIRED','Age rule needs a recommended age range');
 reset role;
 insert into public.meetup_requests(post_id,host_id,requester_id,status) select a,h,m4,'pending' from ids union all select a,h,m8,'pending' from ids;
@@ -93,11 +90,10 @@ reset role;
 select throws_ok($$insert into public.meetup_requests(post_id,host_id,requester_id,status) select c,h,m7,'pending' from ids$$,'P0001','MEETUP_WAITLIST_ONLY','Past the threshold: waitlist only');
 select lives_ok($$insert into public.meetup_requests(post_id,host_id,requester_id,status) select c,h,m2,'pending' from ids$$,'Excused absence does not count');
 
--- 4. Waitlist: signup order for every tier; pro promotion offers a freed seat with a deadline and auto-approves the reply.
-select pg_temp.member_tier(h,'pro') from ids;
+-- 4. Waitlist: signup order for every tier; promotion (free for every host) offers a freed seat with a deadline and auto-approves the reply.
 insert into private.meetup_waitlist(post_id,user_id,joined_at) select b,m5,now()-interval '2 hours' from ids union all select b,m6,now()-interval '1 hour' from ids;
 select pg_temp.as_user(h) from ids; set local role authenticated;
-select lives_ok($$select public.set_meetup_waitlist_promotion((select b from ids),true,3)$$,'Pro host turns on promotion');
+select lives_ok($$select public.set_meetup_waitlist_promotion((select b from ids),true,3)$$,'Free host turns on waitlist auto-pass');
 reset role;
 update public.meetup_requests set status='cancelled',responded_at=now() where post_id=(select b from ids) and requester_id=(select m3 from ids);
 select ok((select invited_at is not null and offer_expires_at between now()+interval '2 hours 59 minutes' and now()+interval '3 hours 1 minute'
@@ -119,10 +115,10 @@ select is(public.set_meetup_rsvp((select a from ids),false,true)->>'member','fal
 reset role;
 select is((select response from private.meetup_rsvps v,ids where v.post_id=a and v.user_id=m4),'not_going','The 못 가요 answer is kept');
 
--- 6. Title drafts: one per draft on free, more on plus.
+-- 6. Title drafts: regeneration is free for everyone.
 select pg_temp.as_user(m2) from ids; set local role authenticated;
-select is(public.reserve_meetup_title_draft('c0300000-0000-4000-8000-000000000001')->>'canRegenerate','false','Free: first title draft');
-select throws_ok($$select public.reserve_meetup_title_draft('c0300000-0000-4000-8000-000000000001')$$,'P0001','MEETUP_TITLE_DRAFT_PLUS_REQUIRED','Free: no second draft for the same meetup');
+select is(public.reserve_meetup_title_draft('c0300000-0000-4000-8000-000000000001')->>'canRegenerate','true','Free: first title draft');
+select lives_ok($$select public.reserve_meetup_title_draft('c0300000-0000-4000-8000-000000000001')$$,'Free: regenerate the same meetup draft');
 reset role; select pg_temp.as_user(m3) from ids; set local role authenticated;
 select lives_ok($$select public.reserve_meetup_title_draft('c0300000-0000-4000-8000-000000000002'); select public.reserve_meetup_title_draft('c0300000-0000-4000-8000-000000000002')$$,'Plus: regenerate');
 reset role;

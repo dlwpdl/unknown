@@ -23,7 +23,7 @@ import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { onLinkOpen } from '@/lib/link-open';
 import { CONTACT_EMAIL } from '@/lib/contact';
-import { BUSINESS_LIMITS, GENERAL_BUMP_HOURS, MEETUP_TOOL_PERKS, MEMBERSHIP_LIMITS, yearlyListPrice, yearlySavings, type BusinessMembershipSnapshot, type MembershipKind, type MembershipOffer } from '@/lib/membership';
+import { BUSINESS_LIMITS, GENERAL_BUMP_HOURS, MEMBERSHIP_LIMITS, yearlyListPrice, yearlySavings, type BusinessMembershipSnapshot, type MembershipKind, type MembershipOffer } from '@/lib/membership';
 import { useMembership } from '@/lib/membership-provider';
 import { loadMyMerchants, type BusinessMerchant } from '@/lib/merchant-workspace';
 import { supabase } from '@/lib/supabase';
@@ -269,12 +269,12 @@ export default function MembershipScreen() {
                   <ThemedText type="smallBold" style={styles.center}>{value}</ThemedText>
                 </View>)}
               </View>
-              {kind === 'general' && <ThemedText type="small" themeColor="textSecondary">{tr("모임 도구")} · {MEETUP_TOOL_PERKS[plan.tier].map(perk => tr(perk)).join(' · ')}</ThemedText>}
             </Pressable>;
           })}
           <View style={[styles.free, { borderColor: theme.line }]}>
             <ThemedText type="small" themeColor="textSecondary"><ThemedText type="smallBold">{tr("베이직 · 무료")}</ThemedText> — {planFacts('free').filter((_, index) => index !== 1).map(([label, value]) => `${label} ${value}`).join(' · ')}</ThemedText>
           </View>
+          {kind === 'general' && <InfoNote>{tr("모임 도구는 누구나 무료예요. 멤버십은 더 큰 모임, 더 많은 모임 자리와 공동 호스트, 판매·구인 글, 빠른 끌올에 쓰여요.")}</InfoNote>}
           {kind === 'business' && <>
             <InfoNote>{tr("끌올은 올린 글 중 하나를 골라 정해진 간격마다 한 번 할 수 있어요. 같은 내용을 새 글로 다시 올릴 수는 없어요.")}</InfoNote>
             <Pressable analyticsId="membership.business.managed" accessibilityRole="button" accessibilityHint={tr("메일로 문의해요")} onPress={askManaged}
@@ -296,14 +296,8 @@ export default function MembershipScreen() {
               {[['', ...(['free', ...plans.map((plan) => plan.tier)] as const).map((tier) => tr(tierNames[tier]))],
                 ...(kind === 'general' ? [
                   [tr("모임 정원"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => String(MEMBERSHIP_LIMITS[tier].seats))],
-                  [tr("공동 호스트"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => MEMBERSHIP_LIMITS[tier].cohosts ? String(MEMBERSHIP_LIMITS[tier].cohosts) : '–')],
+                  [tr("공동 호스트"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => String(MEMBERSHIP_LIMITS[tier].cohosts))],
                   [tr("모임 자리"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => String(MEMBERSHIP_LIMITS[tier].meetups))],
-                  [tr("템플릿"), '–', '✓', '✓', '✓'],
-                  [tr("조건 맞는 신청 바로 승인"), '–', '✓', '✓', '✓'],
-                  [tr("참석 인원 미리 보기 · 노쇼 규칙"), '–', '✓', '✓', '✓'],
-                  [tr("반복·대기 명단"), '–', '–', '✓', '✓'],
-                  [tr("빈자리 대기자에게 자동으로 넘기기"), '–', '–', '✓', '✓'],
-                  [tr("신청·참석 통계"), '–', '–', '–', '✓'],
                   [tr("판매·구인 글"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => String(MEMBERSHIP_LIMITS[tier].listings))],
                   [tr("글 끌올 간격"), ...(['free', 'plus', 'pro', 'premium'] as const).map((tier) => tr("{0}시간", GENERAL_BUMP_HOURS[tier]))],
                 ] : [

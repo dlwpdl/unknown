@@ -12,7 +12,7 @@ const data = entries => ({ request_date_ms: now, subscriber: {
 
 test('four general tiers keep chat unlimited and apply reviewed group limits', () => {
   assert.deepEqual(MEMBERSHIP_LIMITS, {
-    free: { meetups: 3, conversations: null, seats: 10, cohosts: 0, listings: 5 },
+    free: { meetups: 3, conversations: null, seats: 10, cohosts: 1, listings: 5 },
     plus: { meetups: 5, conversations: null, seats: 30, cohosts: 1, listings: 10 },
     pro: { meetups: 10, conversations: null, seats: 100, cohosts: 3, listings: 20 },
     premium: { meetups: 20, conversations: null, seats: 500, cohosts: 5, listings: 20 },

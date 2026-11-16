@@ -15,7 +15,7 @@ select is(private.membership_details('d4700000-0000-4000-8000-000000000001')->>'
 select is(private.membership_details('d4700000-0000-4000-8000-000000000002')->>'tier','free','other accounts keep their own tier');
 select is(private.meetup_tool_tier('d4700000-0000-4000-8000-000000000001'),'admin','admin never expires for meetup tools');
 select lives_ok($$select private.require_meetup_tool_tier('d4700000-0000-4000-8000-000000000001','premium')$$,'admin passes every meetup tool gate');
-select throws_ok($$select private.require_meetup_tool_tier('d4700000-0000-4000-8000-000000000002','plus')$$,'P0001','PLUS_REQUIRED','free members are still gated');
+select lives_ok($$select private.require_meetup_tool_tier('d4700000-0000-4000-8000-000000000002','premium')$$,'free members pass every meetup tool gate');
 select is(private.business_membership_details('d4710000-0000-4000-8000-000000000001')->>'tier','admin','the operator business has the business admin tier');
 select ok(private.business_membership_details('d4710000-0000-4000-8000-000000000001')->'postLimit'='null'::jsonb,'admin business posts are unlimited');
 select ok(private.business_membership_details('d4710000-0000-4000-8000-000000000001')->'bumpLimit'='null'::jsonb,'admin business bumps are unlimited');

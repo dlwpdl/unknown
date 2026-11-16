@@ -128,10 +128,7 @@ test('template application rechecks expiry and preserves edits made during that 
   resolve({ data: { canUse: true, templates: [template] } }); await ui.flush();
   assert.equal(applied.length, 0);
   assert.match(text(ui.tree), /작성 중인 내용이 바뀌었어요/);
-  ui.ctx.rpc = async () => ({ data: { canUse: false, templates: [template] } });
-  button(ui, '이 초안 적용').props.onPress(); await ui.flush();
-  assert.equal(applied.length, 0);
-  assert.equal(button(ui, '이 초안 적용').props.disabled, true);
+  assert.doesNotMatch(text(ui.tree), /Plus|플러스/, 'templates are not a paid tool');
 });
 
 test('template deletion requires explicit destructive confirmation', async () => {
@@ -356,7 +353,7 @@ test('fee server errors are explained and closed or waitlist-only panels hide fe
 });
 
 const addSession = (props, options) => { const added = [], closed = [];
-  const ui = mount('meetup-add-session', 'MeetupAddSession', { postId, zone: 'America/Toronto', visible: true, canRepeat: true, onClose: () => closed.push(true), onAdded: count => added.push(count), ...props }, options);
+  const ui = mount('meetup-add-session', 'MeetupAddSession', { postId, zone: 'America/Toronto', visible: true, onClose: () => closed.push(true), onAdded: count => added.push(count), ...props }, options);
   return { ui, added, closed }; };
 const chip = (ui, label) => nodes(ui.tree).find(node => node.type === 'SelectionChip' && node.props.label === label);
 const addButton = ui => nodes(ui.tree).find(node => node.props?.analyticsId === 'meetup.session.add');
@@ -414,7 +411,7 @@ test('add session: a partial failure says how many were added and removes them f
   assert.equal(addButton(ui).props.label, '1개 회차 등록'); assert.ok(ui.feedback.includes('warning'));
 });
 
-test('add session: server time codes get their own copy, a cohost without repeat rights sees it locked', async () => {
+test('add session: server time codes get their own copy, a cohost can only repeat', async () => {
   let failure = 'SESSION_OVERLAP';
   const { ui } = addSession({}, { rpc: async name => name === 'propose_meetup_dates' ? { error: { message: failure } } : { data: null } });
   await ui.flush(); chip(ui, '매주').props.onPress(); await ui.flush();
@@ -424,8 +421,8 @@ test('add session: server time codes get their own copy, a cohost without repeat
   assert.equal(nodes(ui.tree).filter(node => node.props?.accessibilityRole === 'alert').length, 1);
   const cohost = addSession({ canSingle: false }).ui; await cohost.flush();
   assert.equal(chip(cohost, '한 번만').props.disabled, true); assert.equal(chip(cohost, '매주').props.selected, true);
-  const free = addSession({ canRepeat: false }).ui; await free.flush();
-  assert.equal(chip(free, '매주').props.disabled, true); assert.match(text(free.tree), /프로 멤버십부터/);
+  const free = addSession().ui; await free.flush();
+  assert.equal(chip(free, '매주').props.disabled, false); assert.doesNotMatch(text(free.tree), /멤버십부터/);
 });
 
 test('add session: a retained press cannot dispatch after unmount, and an old focus reports nothing', async () => {

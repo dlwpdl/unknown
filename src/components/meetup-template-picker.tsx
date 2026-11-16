@@ -25,7 +25,7 @@ export function MeetupTemplatePicker(props: MeetupTemplatePickerProps) {
 function TemplatePicker({ draft, onApply, disabled = false }: MeetupTemplatePickerProps) {
   const theme = useTheme(), clayBox = useClayBox(), { language, tr } = useLanguage(), { play } = useInteractionFeedback();
   const say = (ko: string, en: string) => tr(language === 'ko' ? ko : en);
-  const [templates, setTemplates] = useState<MeetupTemplate[]>([]), [canUse, setCanUse] = useState(false);
+  const [templates, setTemplates] = useState<MeetupTemplate[]>([]);
   const [selected, setSelected] = useState<string | null>(null), [name, setName] = useState('');
   const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [retry, setRetry] = useState(0);
   const [error, setError] = useState(''), [notice, setNotice] = useState('');
@@ -35,12 +35,12 @@ function TemplatePicker({ draft, onApply, disabled = false }: MeetupTemplatePick
   useEffect(() => {
     let active = true;
     void loadMeetupTemplates(supabase).then(result => {
-      if (active) { setTemplates(result.templates); setCanUse(result.canUse); setError(''); }
+      if (active) { setTemplates(result.templates); setError(''); }
     }).catch(() => { if (active) setError('load'); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [retry]);
   async function save() {
-    if (pending.current || disabled || !canUse) return;
+    if (pending.current || disabled) return;
     const content = { ...draft };
     pending.current = true; setBusy(true); setError(''); setNotice(''); play('selection');
     try {
@@ -65,9 +65,9 @@ function TemplatePicker({ draft, onApply, disabled = false }: MeetupTemplatePick
     try {
       const result = await loadMeetupTemplates(supabase);
       if (!mounted.current) return;
-      setCanUse(result.canUse); setTemplates(result.templates);
+      setTemplates(result.templates);
       const saved = result.templates.find(template => template.id === id);
-      if (!result.canUse || !saved) throw new Error('TEMPLATE_UNAVAILABLE');
+      if (!saved) throw new Error('TEMPLATE_UNAVAILABLE');
       if (before !== JSON.stringify(currentDraft.current)) { setNotice('changed'); return; }
       if (onApply(applyMeetupTemplate(currentDraft.current, saved.draft)) === false) { setNotice('declined'); play('warning'); return; }
       setNotice('applied'); play('success');
@@ -77,13 +77,10 @@ function TemplatePicker({ draft, onApply, disabled = false }: MeetupTemplatePick
   const locked = disabled || busy || loading;
   const button = [styles.button, { borderColor: theme.line, opacity: locked ? 0.5 : 1 }];
   const preview = templates.find(template => template.id === selected);
-  // Free members with nothing saved get no Plus pitch in the middle of writing; the panel shows once there is something to use or see.
-  if (!canUse && !templates.length && !error) return null;
   return <View style={[styles.panel, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
-    <ThemedText type="smallBold">{say('내 모임 템플릿 · Plus', 'My meetup templates · Plus')}</ThemedText>
+    <ThemedText type="smallBold">{say('내 모임 템플릿', 'My meetup templates')}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">{say('제목과 소개, 신청 질문을 저장해두고 다시 쓸 수 있어요. 날짜·장소·정원·결제 정보는 직접 확인해주세요.', 'Save a title, description and application question to reuse. Confirm dates, venue, capacity and payment separately.')}</ThemedText>
     {loading && <GlingLoader color={theme.accent} accessibilityLabel={say('템플릿 불러오는 중', 'Loading templates')} />}
-    {!loading && !canUse && <ThemedText type="small" themeColor="textSecondary">{say('새 템플릿 저장·적용은 Plus부터 이용해요. 기존에 저장한 내용은 계속 볼 수 있어요.', 'Saving and using templates needs Plus. You can still view the ones you saved.')}</ThemedText>}
     {!loading && templates.length === 0 && !error && <ThemedText type="small" themeColor="textSecondary">{say('아직 저장한 템플릿이 없어요.', 'No saved templates yet.')}</ThemedText>}
     {templates.map(template => <Pressable analyticsId="meetup_template_picker.control.1" key={template.id} accessibilityRole="button" accessibilityState={{ expanded: selected === template.id, disabled: locked }} disabled={locked}
       accessibilityLabel={say(`${template.name} 미리보기`, `Preview ${template.name}`)} style={[button, selected === template.id && { borderColor: theme.accent }]}
@@ -96,7 +93,7 @@ function TemplatePicker({ draft, onApply, disabled = false }: MeetupTemplatePick
       {!!preview.draft.body && <ThemedText type="small">{preview.draft.body}</ThemedText>}
       {!!preview.draft.applicationQuestion && <ThemedText type="small">{say('신청 질문: ', 'Application question: ')}{preview.draft.applicationQuestion}</ThemedText>}
       <ThemedText type="small" themeColor="textSecondary">{say('저장한 문구만 바뀌어요. 질문만 저장했다면 작성 중인 제목과 소개는 유지돼요.', 'Only saved text is applied. A question-only template keeps your current title and description.')}</ThemedText>
-      <Pressable analyticsId="meetup_template_picker.control.2" accessibilityRole="button" disabled={locked || !canUse} accessibilityState={{ disabled: locked || !canUse }} style={[button, { backgroundColor: theme.backgroundSelected }, !canUse && styles.disabled]}
+      <Pressable analyticsId="meetup_template_picker.control.2" accessibilityRole="button" disabled={locked} accessibilityState={{ disabled: locked }} style={[button, { backgroundColor: theme.backgroundSelected }]}
         onPress={() => void apply(preview.id)}>
         <ThemedText type="smallBold">{say('이 초안 적용', 'Apply this draft')}</ThemedText>
       </Pressable>
@@ -107,7 +104,7 @@ function TemplatePicker({ draft, onApply, disabled = false }: MeetupTemplatePick
         <ThemedText type="small" themeColor="danger">{say('이 템플릿 삭제', 'Delete this template')}</ThemedText>
       </Pressable>
     </View>}
-    {canUse && <>
+    <>
       <ThemedText type="smallBold">{say('현재 초안 저장', 'Save the current draft')}</ThemedText>
       <TextInput accessibilityLabel={say('템플릿 이름', 'Template name')} placeholder={say('예: 주말 산책', 'e.g. Weekend walks')} placeholderTextColor={theme.textSecondary}
         value={name} onChangeText={setName} onFocus={() => play('selection')} editable={!locked} maxLength={60} style={[styles.input, { color: theme.text, borderColor: theme.line }]} />
@@ -115,7 +112,7 @@ function TemplatePicker({ draft, onApply, disabled = false }: MeetupTemplatePick
         accessibilityState={{ disabled: locked || !name.trim() || ![draft.title, draft.body, draft.applicationQuestion].some(value => value.trim()) }} style={[button, (!name.trim() || ![draft.title, draft.body, draft.applicationQuestion].some(value => value.trim())) && styles.disabled]} onPress={() => void save()}>
         <ThemedText type="smallBold">{busy ? say('저장 확인 중…', 'Checking save…') : say('템플릿 저장', 'Save template')}</ThemedText>
       </Pressable>
-    </>}
+    </>
     {!!error && <>
       <ThemedText type="small" accessibilityRole="alert">{error === 'load' ? say('템플릿을 불러오지 못했어요.', 'Couldn’t load templates.') : say('변경을 확인하지 못했어요. 연결과 멤버십 상태를 확인해주세요.', 'Couldn’t confirm the change. Check your connection and membership.')}</ThemedText>
       <Pressable analyticsId="meetup_template_picker.control.5" accessibilityRole="button" disabled={locked} accessibilityState={{ disabled: locked }} style={button} onPress={() => { play('selection'); setLoading(true); setRetry(value => value + 1); }}><ThemedText type="small">{say('다시 불러오기', 'Reload')}</ThemedText></Pressable>

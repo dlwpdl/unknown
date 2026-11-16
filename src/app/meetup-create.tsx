@@ -55,7 +55,7 @@ import { MEETUP_DRAFT_FIELDS, meetupAiDraftChanges, meetupAiDraftFields, parseMe
 import { splitEventMeetupBody } from '@/lib/meetup-ai';
 import { placeMapRoute } from '@/lib/discovery';
 import { placeMeetupTail, resolveMeetupDestination, splitPlaceMeetupBody, type MeetupDestinationParams } from '@/lib/meetup-destination';
-import { MEETUP_TITLE_MAX, functionErrorCode, newDraftKey } from '@/lib/meetup-convenience';
+import { MEETUP_TITLE_MAX, newDraftKey } from '@/lib/meetup-convenience';
 import { MeetupPlaceSuggestions } from '@/components/meetup-place-suggestions';
 import { getCityDiscoveryPlaces, type CityPlace } from '@/lib/city-places';
 import { clearMeetupCreateDraft, meetupDraftParams, meetupDraftScope, readMeetupCreateDraft, saveMeetupCreateDraft, takeMeetupLoginResume } from '@/lib/meetup-create-draft';
@@ -112,7 +112,7 @@ function MeetupCreateForm() {
   const draftBusy = useRef(false);
   const [draftEdited, setDraftEdited] = useState(false);
   // One key per screen: a free member fills from the title once, plus+ can fill again (counted on the server).
-  const [titleDraftKey] = useState(newDraftKey), [titleDraft, setTitleDraft] = useState<'unused' | 'again' | 'locked'>('unused');
+  const [titleDraftKey] = useState(newDraftKey), [titleDraft, setTitleDraft] = useState<'unused' | 'again'>('unused');
   const [pickedPlace, setPickedPlace] = useState<CityPlace | null>(null);
   const [question, setQuestion] = useState(() => tr('어떤 분위기의 모임을 기대하세요?'));
   const [hostPreview, setHostPreview] = useState<ChillingProfile | null>(null);
@@ -331,14 +331,13 @@ function MeetupCreateForm() {
       const fields = meetupAiDraftFields(parseMeetupAiDraftResponse(data), language);
       if (fields.body.length > 5000 - eventDetails.length) throw new Error('INVALID_AI_DRAFT');
       if (!mounted.current) return;
-      setTitleDraft((data as { canRegenerate?: boolean } | null)?.canRegenerate === true ? 'again' : 'locked');
+      setTitleDraft('again');
       setAiSelected({ title: false, body: true, question: true });
       setAiPreview({ fields, revision });
-    } catch (cause) {
-      const code = await functionErrorCode(cause);
+    } catch {
       if (!mounted.current) return;
       play('warning');
-      if (code === 'PLUS_REQUIRED') { setTitleDraft('locked'); setAiError('TITLE_DRAFT_PLUS'); } else setAiError('DRAFT_FAILED');
+      setAiError('DRAFT_FAILED');
     } finally {
       draftBusy.current = false;
       if (mounted.current) setCreatingDraft(false);
@@ -500,10 +499,7 @@ function MeetupCreateForm() {
         {exchange && <MeetupLanguageSetup value={exchange} onChange={next => { sourceEdited.current = true; setTouched(true); setExchange(next); }} capacity={Number(capacity)} disabled={saving} />}</View>
       {field('meetup.create.title', tr("모임 제목"), title, value => editDraftField('title', value), tr("예: 퇴근하고 노을 보러 갈래요?"), ticketmasterEventId ? 60 : MEETUP_TITLE_MAX)}
       {!ticketmasterEventId && <View style={styles.field}>
-        {titleDraft === 'locked'
-          ? <Pressable analyticsId="meetup-create.title-draft.membership" accessibilityRole="button" onPress={() => { play('selection'); router.push('/profile/membership'); }} style={styles.membership}><ThemedText type="smallBold" themeColor="accent" style={styles.label}>{aiCopy('다시 채우려면 플러스 멤버십이 필요해요', 'Plus lets you fill it in again')}</ThemedText></Pressable>
-          : <Pressable analyticsId="meetup-create.title-draft" accessibilityRole="button" accessibilityState={{ disabled: creatingDraft || saving || !eventReady || !title.trim(), busy: creatingDraft }} disabled={creatingDraft || saving || !eventReady || !title.trim()} onPress={() => { play('selection'); void createTitleDraft(); }} style={({ pressed }) => [styles.aiButton, clay ? styles.clayPill : Depth.control, { backgroundColor: clay ? 'transparent' : pressed ? theme.backgroundSelected : theme.backgroundElement, opacity: creatingDraft || saving || !eventReady || !title.trim() ? 0.5 : 1 }]}>{clay && <ClayPillFill kind="white" />}<SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} size={17} tintColor={theme.accent} /><ThemedText type="smallBold" style={[styles.label, { color: theme.accent }]}>{creatingDraft ? t.write.creatingDraft : titleDraft === 'again' ? aiCopy('제목으로 다시 채우기', 'Fill in again') : aiCopy('제목으로 소개·질문 채우기', 'Fill in from the title')}</ThemedText></Pressable>}
-        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('무료 멤버십은 모임마다 한 번이에요.')}</ThemedText>
+        <Pressable analyticsId="meetup-create.title-draft" accessibilityRole="button" accessibilityState={{ disabled: creatingDraft || saving || !eventReady || !title.trim(), busy: creatingDraft }} disabled={creatingDraft || saving || !eventReady || !title.trim()} onPress={() => { play('selection'); void createTitleDraft(); }} style={({ pressed }) => [styles.aiButton, clay ? styles.clayPill : Depth.control, { backgroundColor: clay ? 'transparent' : pressed ? theme.backgroundSelected : theme.backgroundElement, opacity: creatingDraft || saving || !eventReady || !title.trim() ? 0.5 : 1 }]}>{clay && <ClayPillFill kind="white" />}<SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} size={17} tintColor={theme.accent} /><ThemedText type="smallBold" style={[styles.label, { color: theme.accent }]}>{creatingDraft ? t.write.creatingDraft : titleDraft === 'again' ? aiCopy('제목으로 다시 채우기', 'Fill in again') : aiCopy('제목으로 소개·질문 채우기', 'Fill in from the title')}</ThemedText></Pressable>
       </View>}
       <MeetupCoverPicker value={cover} onChange={setCover} onPickingChange={setPickingCover} disabled={saving || creatingDraft || !eventReady} />
       <View onLayout={event => { fieldY.current[tr("모임 소개")] = event.nativeEvent.layout.y; }} style={styles.field}>
@@ -527,7 +523,7 @@ function MeetupCreateForm() {
       }} />
       {field('meetup.create.topic', aiCopy('모임 주제', 'Meetup topic'), topic, setTopic, aiCopy('예: 주말에 가볍게 산책하고 싶어요.', 'e.g. a relaxed weekend walk'), 500)}
       <Pressable analyticsId="app_meetup-create.ai-draft" accessibilityRole="button" accessibilityState={{ disabled: creatingDraft || saving || !eventReady || (!topic.trim() && !title.trim() && !body.trim() && !cover), busy: creatingDraft }} disabled={creatingDraft || saving || !eventReady || (!topic.trim() && !title.trim() && !body.trim() && !cover)} onPress={() => { play('selection'); void createAiDraft(); }} style={({ pressed }) => [styles.aiButton, clay ? styles.clayPill : Depth.control, { backgroundColor: clay ? 'transparent' : pressed ? theme.backgroundSelected : theme.backgroundElement, opacity: creatingDraft || saving || !eventReady || (!topic.trim() && !title.trim() && !body.trim() && !cover) ? 0.5 : 1 }]}>{clay && <ClayPillFill kind="white" />}<SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} size={17} tintColor={theme.accent} /><ThemedText type="smallBold" style={[styles.label, { color: theme.accent }]}>{creatingDraft ? t.write.creatingDraft : aiError ? aiCopy('AI 초안 다시 시도', 'Retry AI draft') : draftEdited && !topic.trim() ? t.write.polishDraft : t.write.createDraft}</ThemedText></Pressable>
-      {!!aiError && <ThemedText accessibilityRole="alert" type="small" themeColor="textSecondary" style={styles.helper}>{aiError === 'TITLE_DRAFT_PLUS' ? aiCopy('무료 멤버십은 모임마다 한 번만 채울 수 있어요. 작성한 내용은 그대로예요.', 'Free members can fill in once per meetup. Your writing is unchanged.') : aiError === 'INTRO_TOO_LONG' ? aiCopy('AI 다듬기는 소개 5000자까지 사용할 수 있어요. 글을 줄이거나 직접 작성해 주세요.', 'AI can polish introductions up to 5,000 characters. Shorten yours or keep writing it yourself.') : aiCopy('초안을 만들지 못했어요. 작성한 내용은 그대로예요. 다시 시도해 주세요.', 'Couldn’t create the draft. Your writing is unchanged. Try again.')}</ThemedText>}
+      {!!aiError && <ThemedText accessibilityRole="alert" type="small" themeColor="textSecondary" style={styles.helper}>{aiError === 'INTRO_TOO_LONG' ? aiCopy('AI 다듬기는 소개 5000자까지 사용할 수 있어요. 글을 줄이거나 직접 작성해 주세요.', 'AI can polish introductions up to 5,000 characters. Shorten yours or keep writing it yourself.') : aiCopy('초안을 만들지 못했어요. 작성한 내용은 그대로예요. 다시 시도해 주세요.', 'Couldn’t create the draft. Your writing is unchanged. Try again.')}</ThemedText>}
       {aiPreview && <MeetupAiDraftPreview fields={aiPreview.fields} selected={aiSelected} protectedFields={{ title: draftRevision.title !== aiPreview.revision.title, body: draftRevision.body !== aiPreview.revision.body, question: draftRevision.question !== aiPreview.revision.question }} disabled={saving || creatingDraft} onToggle={field => setAiSelected(current => ({ ...current, [field]: !current[field] }))} onApply={applyAiDraft} onDismiss={() => setAiPreview(null)} />}
       {aiDraftReady && <ThemedText accessibilityRole="alert" type="small" themeColor="textSecondary" style={styles.helper}>{t.write.reviewDraft}</ThemedText>}
       </View>}
