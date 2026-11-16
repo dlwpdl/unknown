@@ -25,7 +25,7 @@ export type CityPlace = {
   mapPhotoUri?: string;
   recommendation?: PlaceRecommendation;
   diningRecommendation?: PlaceRecommendation;
-  glingVisited?: { sourceUrl: string };
+  glingVisited?: { sourceUrl: string; line?: { ko: string; en: string } };
   // 소개 3칸 (G2), written by the place automation from the place's own site or menu; each line may be missing.
   intro?: PlaceIntro;
   // Korean names for search only, never shown (owner 2026-11-08 "영어를 한글로 쳐도 나오게하자", "물론 보이는건 영어로만 보이게하고").
@@ -269,9 +269,9 @@ export function getCityPlaces(cityId: string, category: PlaceCategory = 'all'): 
   const archived = (snapshot as PlaceCatalog).cities[cityId]?.places.filter(place => !currentIds.has(place.id)) ?? [];
   return [...current, ...archived].filter(place => category === 'all' || place.category === category)
     .map(place => {
-      const visit = (visitedPlaces as { cityId: string; placeId: string; sourceUrl: string; photo?: (typeof photos)[number] }[]).find(row => row.cityId === cityId && row.placeId === place.id);
+      const visit = (visitedPlaces as { cityId: string; placeId: string; sourceUrl: string; line?: { ko: string; en: string }; photo?: (typeof photos)[number] }[]).find(row => row.cityId === cityId && row.placeId === place.id);
       return { ...place, photo: photos[photoOrder.get(place.id) ?? -1] ?? visit?.photo ?? null, recommendation: reviewed.get(place.id), diningRecommendation: dining.get(place.id),
-        glingVisited: visit ? { sourceUrl: visit.sourceUrl } : undefined, searchNames: koreanNamesFor(place.id) };
+        glingVisited: visit ? { sourceUrl: visit.sourceUrl, ...(visit.line ? { line: visit.line } : {}) } : undefined, searchNames: koreanNamesFor(place.id) };
     })
     .sort((a, b) => (photoOrder.get(a.id) ?? photos.length) - (photoOrder.get(b.id) ?? photos.length));
 }

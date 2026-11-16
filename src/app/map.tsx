@@ -760,13 +760,15 @@ function GlingVisitedBadge() {
   return <VisitedBadge style={styles.visitedCard} />;
 }
 function GlingVisitNote({ item }: { item: DiscoveryItem }) {
-  const theme = useTheme(), { play } = useInteractionFeedback(), { tr } = useLanguage();
+  const theme = useTheme(), clay = useClay(), { play } = useInteractionFeedback(), { tr, language } = useLanguage();
   if (!item.glingVisited) return null;
+  const line = item.glingVisited.line;
   return <View style={[styles.top25Note, { borderTopColor: theme.line }]}>
-    <ThemedText type="small" themeColor="textSecondary">{tr("글링이 직접 다녀온 곳이에요.")}</ThemedText>
+    {line ? <ThemedText>{language === 'en' ? line.en : line.ko}</ThemedText> : <ThemedText type="small" themeColor="textSecondary">{tr("글링이 직접 다녀온 곳이에요.")}</ThemedText>}
     {!!item.glingVisited!.sourceUrl && <Pressable analyticsId="discovery.card" accessibilityRole="link" accessibilityLabel={tr("{0} 글링 방문 영상 보기, 외부 사이트", item.title)}
-      onPress={() => { play('selection'); void Linking.openURL(item.glingVisited!.sourceUrl).catch(() => { play('warning'); Alert.alert(tr("방문 영상을 열지 못했어요"), tr("인터넷 연결을 확인하고 다시 시도해 주세요.")); }); }} style={styles.top25Source}>
-      <ThemedText type="smallBold" themeColor="accent">{tr("글링 방문 영상 보기 ↗")}</ThemedText>
+      onPress={() => { play('selection'); void Linking.openURL(item.glingVisited!.sourceUrl).catch(() => { play('warning'); Alert.alert(tr("방문 영상을 열지 못했어요"), tr("인터넷 연결을 확인하고 다시 시도해 주세요.")); }); }} style={({ pressed }) => [ControlStyles.action, styles.visitVideo, clay && styles.visitVideoClay, controlPresentation(theme, { pressed, clay }).container]}>
+      {clay && <ClayPillFill kind="white" />}
+      <ThemedText type="smallBold">{tr("글링 방문 영상 보기 ↗")}</ThemedText>
     </Pressable>}
   </View>;
 }
@@ -799,7 +801,7 @@ const styles = StyleSheet.create({
   artChip: { minWidth: 52, minHeight: 44, alignItems: 'center', gap: 1, paddingHorizontal: 2 }, artLift: { transform: [{ translateY: -2 }, { scale: 1.06 }] },
   artLabel: { fontSize: 12, lineHeight: 16, fontWeight: '700', paddingHorizontal: 6, paddingVertical: 1, borderRadius: 8, borderWidth: 1, overflow: 'hidden' }, filters: { paddingHorizontal: 16, gap: 8, paddingBottom: 8 }, chip: { minHeight: 44, paddingHorizontal: 13, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 7 }, dot: { width: 8, height: 8, borderRadius: 4 },
   filterDot: { width: 6, height: 6, borderRadius: 3, position: 'absolute', right: 6, top: 6 },
-  top25Note: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 4, gap: 5 }, top25Source: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
+  top25Note: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 4, gap: 5 }, top25Source: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' }, visitVideo: { borderWidth: 1, marginTop: 4 }, visitVideoClay: { overflow: 'visible' },
   dates: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' }, date: { minHeight: 44, paddingHorizontal: 12, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   eventDateRow: { flexGrow: 0, flexShrink: 0 }, eventDates: { paddingHorizontal: 16, paddingBottom: 10, gap: 8, alignItems: 'center' }, dateChip: { minHeight: 44, paddingHorizontal: 12, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   cardToggle: { ...ControlStyles.icon, position: 'absolute', right: 20, bottom: 18, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4 },
