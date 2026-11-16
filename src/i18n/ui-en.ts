@@ -4131,6 +4131,8 @@ export const uiEnglish: Record<string, string> = {
   "메일로 승인 요청하기 ({0})": "Request approval by email ({0})",
   "배너·주소·영업시간을 채우면 더 잘 보여요": "Profiles with a banner, address and hours stand out more",
   "아직 비어 있어요: {0}": "Still empty: {0}",
+  "주소와 소개는 {0}로 보내 주시면 넣어 드려요.": "Send your address and description to {0} and we’ll add them.",
+  "제휴 혜택": "Partner perk",
   "주소는 {0} 메일로 보내 주세요. 넣어 드릴게요.": "Email your address to {0} and we’ll add it.",
   "언어교환": "Language exchange",
   "언어교환은 언어마다 한 명씩은 받아야 해서 정원은 호스트 포함 3명부터예요.": "A language exchange needs at least one person per language, so capacity starts at 3 including you.",
@@ -4586,7 +4588,6 @@ export const uiEnglish: Record<string, string> = {
   "잠깐 얘기 나눠요": "Let's chat for a bit",
   "말풍선": "Bubbles",
   "근처 모임": "Meetups nearby",
-  // Business categories as the directory and profiles show them (merchants.industry is free text; these are the values live on 2026-11-08).
   "교육·도서": "Education & books",
   "뷰티·피부관리": "Beauty & skincare",
   "뷰티·웰니스": "Beauty & wellness",

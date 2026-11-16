@@ -33,6 +33,7 @@ import { DragSheet } from '@/components/drag-sheet';
 import { meetupHostActions } from '@/components/meetup-room-summary';
 import { MeetupWaitlist } from '@/components/meetup-host-tools';
 import { SeatBar, meetupMenuActions, useHideMeetup } from '@/components/chilling-event';
+import { MeetupPartnerLine } from '@/components/meetup-partner-line';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { GlingLoader } from '@/components/gling-loader';
 import { ListCard, ListRow } from '@/components/list-card';
@@ -1236,6 +1237,7 @@ function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavi
     </DragSheet>
     {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
     <MeetupFacts post={post} canEnterChat={canEnterChat} own={own} />
+    <MeetupPartnerLine partner={room.partner} onBeforeNavigate={onClose} />
     {showWho && <MeetupWhoCard roster={who.roster} error={who.error} onRetry={who.reload} />}
     {invite && (own ? availability === 'open' || availability === 'full' ? <MeetupInviteHost post={post} /> : null : <MeetupInviteNote />)}
     {!!statusNote && <View style={[styles.statusNote, clayBox ? styles.clayCard : { backgroundColor: theme.backgroundSelected }]}>{clayBox && <ClayBoxFill kind="tile" />}<ThemedText type="small">{statusNote}</ThemedText></View>}

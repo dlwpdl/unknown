@@ -68,6 +68,7 @@ export interface RoomPreview {
   // Set by the server at creation and fixed after (20261108120000). Older meetups have neither until 20261108120100.
   access?: 'public' | 'invite'; // invite: only the host, invited people and applicants see it
   membersVisible?: boolean; // applicants see '누가 와요' (get_meetup_public_roster)
+  partner?: { businessId: string; name: string; benefit?: string; percent?: number }; // admin-only write (admin_set_meetup_partner)
 }
 
 export interface PostComment {
