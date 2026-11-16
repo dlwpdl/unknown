@@ -108,12 +108,23 @@ const josa = (word, withFinal, withoutFinal) => { const code = word.charCodeAt(w
 const memberPosts = entry => entry.posts.filter(post => !RATING.test(String(post.preview || post.teaser || '')));
 const hostOf = url => new URL(url).hostname.replace(/^www\./, '');
 
+// Google sets no length but cuts the snippet to fit the screen; the site audit asks for 70–160 characters.
+// Whole sentences that fit (if they reach 70), else whole words and "…": Korean and English both break at spaces, so no word is cut in half.
+function fit(text, min = 70, max = 160) {
+  if (text.length <= max) return text;
+  const sentences = text.slice(0, max + 1).match(/^.*[.!?](?=\s)/s)?.[0];
+  if (sentences?.length >= min) return sentences;
+  const words = text.slice(0, max);
+  return `${words.slice(0, words.search(/\s\S*$/)).replace(/[\s,·:;]+$/, '')}…`;
+}
+
 export function publicPlaceMeta(entry) {
   const { place, city } = entry, kind = KIND[entry.kind], hours = hoursText(place.openingHours);
   const items = [street(place, city) && '주소', hours && '영업시간', entry.reviews && '글링 회원이 남긴 후기', memberPosts(entry).length && '글링 회원 글', '지도 링크'].filter(Boolean);
   const list = items.length > 1 ? `${items[0]}${josa(items[0], '과', '와')} ${items.slice(1).join(', ')}` : items[0];
   return { title: `${place.name} · ${city.name} ${kind} | 글링`,
-    description: [`${city.name} ${kind} ${place.name}의 ${list}를 볼 수 있어요.`, entry.reason?.reason.trim()].filter(Boolean).join(' ') };
+    // The intro used to be joined whole (up to 259 characters); now it is cut to fit, while the page and schema keep it whole.
+    description: fit([`${city.name} ${kind} ${place.name}의 ${list}를 볼 수 있어요.`, entry.reason?.reason.trim()].filter(Boolean).join(' ')) };
 }
 
 const pageHead = (path, meta, cover) => [
@@ -189,8 +200,10 @@ export function renderCityPlaces(template, city, list, page, catalog) {
   const pages = Math.ceil(list.length / PLACE_PAGE_SIZE), shown = list.slice((page - 1) * PLACE_PAGE_SIZE, page * PLACE_PAGE_SIZE);
   const base = `/${city.id}/places`, path = page === 1 ? base : `${base}/${page}`, at = number => number === 1 ? base : `${base}/${number}`;
   const heading = `${city.name} 맛집·카페·가 볼 곳`;
+  const from = (page - 1) * PLACE_PAGE_SIZE + 1, to = from + shown.length - 1;
   const meta = { title: `${heading} ${list.length}곳${page > 1 ? ` · ${page}쪽` : ''} | 글링`,
-    description: `${city.name}에서 글링 회원 글이나 소개가 있는 장소 ${list.length}곳을 골랐어요. 맛집·카페·가 볼 곳마다 지도 링크가 있어요.` };
+    // Pages 2+ name their page and range, as the title does, so no two list pages share a description.
+    description: `${city.name}에서 글링 회원 글이나 소개가 있는 장소 ${list.length}곳을 골랐어요.${page > 1 ? ` ${page}쪽에는 ${from === to ? from : `${from}~${to}`}번째 곳이 있어요.` : ''} 맛집·카페·가 볼 곳마다 지도 링크가 있어요.` };
   const count = kind => list.filter(entry => entry.kind === kind).length;
   const chips = [['all', '전체', list.length], ['food', '맛집', count('food')], ['cafe', '카페', count('cafe')], ['places', '가볼 만한 곳', count('places')]]
     .map(([kind, label, number]) => `<button type="button" aria-pressed="${kind === 'all'}" data-cat="${kind}">${label}<span>${number}</span></button>`).join('');
@@ -207,7 +220,8 @@ export function renderCityPlaces(template, city, list, page, catalog) {
     + `<div class="reader-section-heading"><div><h1>${e(heading)}</h1><p>글링 회원이 글을 남겼거나 글링이 소개를 써 둔 곳만 모았어요. 누르면 주소와 영업시간, 지도 링크가 나와요.</p></div><span>${list.length}곳</span></div>`
     + `<div class="place-chips" role="group" aria-label="종류로 거르기">${chips}</div>`
     + `<p class="place-list-note" id="place-list-note" aria-live="polite" data-page="${page}" data-all="${e(note)}">${e(note)}</p>`
-    + `<section class="place-list" aria-label="${e(`${city.name} 장소 목록`)}">${cards}</section>`
+    // A screen-reader h2 between the page h1 and the card h3s keeps the heading levels in order; the page looks the same.
+    + `<section class="place-list" aria-labelledby="place-list-h"><h2 id="place-list-h" class="place-sr-only">${e(`${city.name} 장소 목록`)}</h2>${cards}</section>`
     + (pages > 1 ? `<div class="place-pager"><p class="reader-meta">${page} / ${pages}쪽</p>${page > 1 ? `<a class="reader-secondary" href="${at(page - 1)}" rel="prev">이전 30곳 보기</a>` : ''}${next > 0 ? `<a class="reader-secondary" href="${at(page + 1)}" rel="next">${e(`다음 ${Math.min(next, PLACE_PAGE_SIZE)}곳 보기`)}</a>` : ''}</div>` : '')
     + (credits ? `<details class="place-credits"><summary>이 페이지 사진 저작자·이용 조건</summary><ul>${credits}</ul>${PHOTO_NOTE}</details>` : '')
     + fineprint(catalog, null)
