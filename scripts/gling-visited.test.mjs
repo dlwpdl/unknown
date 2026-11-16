@@ -96,7 +96,7 @@ test('the real visit action opens only its supplied public visit link and gives 
   let reject = false;
   run(fn.getText(map) + '\nexports.render = GlingVisitNote;', { exports, View: 'view', ThemedText: 'text', Pressable: 'button', styles: {},
     React: { createElement: (type, props, ...children) => ({ type, props: { ...props, children } }) },
-    useTheme: () => ({ line: '#343443' }), useLanguage: () => ({ tr: (value, title) => value.replace('{0}', title) }),
+    useTheme: () => ({ line: '#343443' }), useClay: () => false, ClayPillFill: 'clay', ControlStyles: {}, controlPresentation: () => ({ container: {} }), useLanguage: () => ({ tr: (value, title) => value.replace('{0}', title) }),
     useInteractionFeedback: () => ({ play: value => feedback.push(value) }),
     Linking: { openURL: url => { links.push(url); return reject ? Promise.reject(new Error('offline')) : Promise.resolve(); } },
     Alert: { alert: (...args) => alerts.push(args) },
