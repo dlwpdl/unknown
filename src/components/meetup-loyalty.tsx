@@ -432,7 +432,7 @@ export function MeetupMemberList({ postId }: { postId: string }) {
   const count = pro ? members?.length : names?.length;
   const current = members?.find(member => member.userId === selected) ?? null;
   return <View>
-    <SectionLabel>{count == null ? tr('참여 멤버') : tr('호스트 빼고 {0}명', count)}</SectionLabel>
+    <SectionLabel>{count == null ? tr('참여 멤버') : count === 1 ? tr('호스트 빼고 1명') : tr('호스트 빼고 {0}명', count)}</SectionLabel>
     {!!error && <ThemedText type="small" accessibilityRole="alert" themeColor="danger">{tr(error)}</ThemedText>}
     {count === 0 && <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('아직 승인한 멤버가 없어요.')}</ThemedText>}
     {!!count && <ListCard>
