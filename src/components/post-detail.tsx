@@ -38,6 +38,7 @@ import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { GlingLoader } from '@/components/gling-loader';
 import { ListCard, ListRow } from '@/components/list-card';
 import { FactGrid } from '@/components/fact-grid';
+import { MeetupInfoCells } from '@/components/meetup-info-cells';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { ClayBoxFill, ClayCoinFill, ClayControlFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { PostCard, PostReactionToggle } from '@/components/post-card';
@@ -172,7 +173,7 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   // 글 수정 shows the 글쓰기 card fields to the author (the official account included). A business manager who is not the
   // author keeps the text-only edit: the card is written by the author's own update.
   const listingEditable = !management && !!post.listingDetails;
-  const draftOf = () => ({ title: post.title, body: post.room ? visibleMeetupBody(post.body) : listingEditable ? stripListingLead(post.body, post.listingDetails) : post.body });
+  const draftOf = () => ({ title: post.title, body: post.room ? visibleMeetupBody(post.body, true) : listingEditable ? stripListingLead(post.body, post.listingDetails) : post.body });
   const listingDraftOf = () => listingEditable ? listingDraftFromDetails(post.listingDetails!, post.price) : null;
   const imagesOf = () => (post.imagePaths ?? []).map((path, index) => ({ path, uri: post.imageUris![index] }));
   // 오늘 카드 ··· 의 고치기는 수정 화면으로 바로 연다 (owner 2026-11-04). 사진을 다 못 받았으면 보통 화면으로 열린다.
@@ -1237,6 +1238,7 @@ function MeetupDetailSummary({ post, status, canEnterChat, onClose, onBeforeNavi
     </DragSheet>
     {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
     <MeetupFacts post={post} canEnterChat={canEnterChat} own={own} />
+    <MeetupInfoCells body={post.body} />
     <MeetupPartnerLine partner={room.partner} onBeforeNavigate={onClose} />
     {showWho && <MeetupWhoCard roster={who.roster} error={who.error} onRetry={who.reload} />}
     {invite && (own ? availability === 'open' || availability === 'full' ? <MeetupInviteHost post={post} /> : null : <MeetupInviteNote />)}

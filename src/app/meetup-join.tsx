@@ -15,6 +15,7 @@ import { CityPicker } from '@/components/city-picker';
 import { SelectionChip } from '@/components/selection-chip';
 import { MeetupChips } from '@/components/chilling-host-profile';
 import { MeetupFacts } from '@/components/post-detail';
+import { MeetupInfoCells } from '@/components/meetup-info-cells';
 import { Disclosure } from '@/components/disclosure';
 import { DragSheet } from '@/components/drag-sheet';
 import { InitialAvatar, ListCard, ListRow } from '@/components/list-card';
@@ -270,6 +271,7 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
         <ThemedText type="small" themeColor="textSecondary">{tr('호스트')}</ThemedText>
       </View>
       <MeetupFacts post={post!} canEnterChat={status === 'approved' && (availability === 'open' || availability === 'full')} own={own} zone />
+      <MeetupInfoCells body={post!.body} />
       {notes.map(note => <ThemedText key={note} style={Typography.supporting} themeColor="textSecondary">{note}</ThemedText>)}
       {!!who.roster?.length && <View style={styles.whoLine}>
         <View style={styles.coins} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">

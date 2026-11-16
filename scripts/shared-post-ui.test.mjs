@@ -99,7 +99,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/lib/post-reactions': postReactions,
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
     '../../supabase/functions/_shared/post-links': postLinks, '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
-    '@/components/post-attachment-link': { PostAttachmentLink: 'PostAttachmentLink' }, '@/lib/post-info': { postInfoParts, isPastEvent, englishTail }, '@/lib/city-places': { getCityPlaces: () => [] }, '@/lib/webshops': { loadCityBusinessLinks: async () => ({}) }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' }, '@/lib/mock': { CITIES: [] },
+    '@/components/meetup-info-cells': { MeetupInfoCells: 'MeetupInfoCells' }, '@/components/post-attachment-link': { PostAttachmentLink: 'PostAttachmentLink' }, '@/lib/post-info': { postInfoParts, isPastEvent, englishTail }, '@/lib/city-places': { getCityPlaces: () => [] }, '@/lib/webshops': { loadCityBusinessLinks: async () => ({}) }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' }, '@/lib/mock': { CITIES: [] },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/components/drag-sheet': { DragSheet: 'DragSheet' },
     '@/components/meetup-members': { MeetupWhoCard: 'MeetupWhoCard', MeetupInviteHost: 'MeetupInviteHost', MeetupInviteNote: 'MeetupInviteNote', useMeetupRoster: () => ({ roster: null, error: '', reload() {} }) },

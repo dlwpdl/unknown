@@ -30,6 +30,12 @@ import { ChillingProfileCard } from '@/components/chilling-profile-card';
 import { MeetupTemplatePicker } from '@/components/meetup-template-picker';
 import { MeetupKindSwitch, SegmentSwitch } from '@/components/meetup-kind-switch';
 import { MeetupLanguageSetup } from '@/components/meetup-language';
+import { MeetupEntryCards, MeetupQuickFields } from '@/components/meetup-quick-create';
+import { MeetupTopicStart } from '@/components/meetup-topic-start';
+import { MeetupInfoCellsEditor } from '@/components/meetup-info-cells';
+import { infoCellsTail, type MeetupInfoCell } from '@/lib/meetup-info-cells';
+import { isUntouched, topicCells, type MeetupTopic } from '@/lib/meetup-topics';
+import { quickEnd, quickIntro, quickStart, type QuickWhen } from '@/lib/meetup-quick';
 import { DEFAULT_LANGUAGE_EXCHANGE, type LanguageExchange } from '@/lib/meetup-language';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { RelationshipSlotCard, relationshipSlotData } from '@/components/relationship-slot-card';
@@ -40,8 +46,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useCommunityCity } from '@/lib/community-city';
 import { chillingProfilePreview, createChillingEvent, getChillingError, getChillingErrorCode, loadChillingProfile, type ChillingProfile, type MeetupAccess } from '@/lib/chilling-data';
-import { defaultMeetupStart, meetupZone, moveMeetupZone, zoneClock, zoneClockIso } from '@/lib/chilling-date';
-import { chillingCapacityLimit, meetupRecurrenceText, nextMeetupLabel, normalizeChillingEvent, shiftChillingSchedule, type ChillingEventDraft } from '@/lib/chilling';
+import { defaultMeetupStart, formatMeetupTime, meetupZone, moveMeetupZone, zoneClock, zoneClockIso } from '@/lib/chilling-date';
+import { chillingCapacityLimit, chillingTimezoneLabel, meetupRecurrenceText, nextMeetupLabel, normalizeChillingEvent, shiftChillingSchedule, type ChillingEventDraft, type ChillingKind } from '@/lib/chilling';
 import { getCommunityActionError, MEETUPS_CHANGED_EVENT } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useMembership } from '@/lib/membership-provider';
@@ -83,6 +89,12 @@ function MeetupCreateForm() {
   const ticketmasterEventId = destination?.kind === 'event' ? destination.eventId : undefined, ticketmasterCityId = destination?.cityId;
   const requestedKind = params.kind === 'once' || params.kind === 'group' ? params.kind : null;
   const [kindChosen, setKindChosen] = useState(!!ticketmasterEventId || !!requestedKind);
+  // 'choose' shows one card per kind, 'quick' the one-screen 칠링; a place, an event or a requested kind goes straight to the full steps.
+  const [view, setView] = useState<'choose' | 'quick' | 'full'>(destination || invalidDestination || requestedKind ? 'full' : 'choose');
+  const [quickWhen, setQuickWhen] = useState<QuickWhen>('tomorrow');
+  // The topic start template: what it wrote into title and intro, and the topic waiting for the host's answer when they had typed their own text.
+  const [startTopic, setStartTopic] = useState<MeetupTopic | null>(null), [askTopic, setAskTopic] = useState<MeetupTopic | null>(null), [infoCells, setInfoCells] = useState<MeetupInfoCell[]>([]);
+  const filled = useRef({ title: '', body: '' });
   const [assistanceOpen, setAssistanceOpen] = useState(false), [advancedOpen, setAdvancedOpen] = useState(false);
   // 바꾸기 picks this meetup's city without moving the person's community city; a place or event fixes its own city.
   const [cityId, setCityId] = useState<string | null>(null), [cityOpen, setCityOpen] = useState(false);
@@ -175,6 +187,7 @@ function MeetupCreateForm() {
     setDraftEdited(true); setAiDraftReady(false);
   };
   useLayoutEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  const infoTail = infoCellsTail(infoCells);
   const dirty = draftEdited || touched || !!cover || !!topic.trim() || capacity !== '6' || !!ageMin || !!ageMax || newcomer.welcome || access !== 'public';
   const dirtyRef = useRef(dirty);
   useLayoutEffect(() => { authed.current = isAuthed; dirtyRef.current = dirty; });
@@ -212,7 +225,7 @@ function MeetupCreateForm() {
       // Never overwrite what the person already typed on this screen.
       if (!draft || !active || !mounted.current || dirtyRef.current) return;
       sourceEdited.current = true;
-      setKindChosen(draft.kindChosen);
+      setKindChosen(draft.kindChosen); setView('full');
       setEvent(current => ({ ...current, kind: draft.kind, startsAt: draft.startsAt, endsAt: draft.endsAt, cadence: draft.cadence, category: draft.category as ChillingEventDraft['category'] }));
       setTitle(draft.title); setBody(draft.body); setQuestion(draft.question); setTopic(draft.topic);
       setCapacity(draft.capacity); setAgeMin(draft.ageMin); setAgeMax(draft.ageMax); setNewcomer(draft.newcomer); setExchange(draft.exchange ?? null); setAccess(draft.access ?? 'public');
@@ -250,9 +263,9 @@ function MeetupCreateForm() {
     setError(message); setErrorCode(null); setErrorField(field ?? null); play('warning');
     if (!field) return;
     const target = STEP[fieldCard(field)];
-    if (target !== step) { pendingField.current = field; setStep(target); }
+    if (view === 'full' && target !== step) { pendingField.current = field; setStep(target); }
     if (field === 'age' && !advancedOpen) setAdvancedOpen(true);
-    else if (target === step) { scroll.current?.scrollTo({ y: fieldTop(field), animated: !reducedMotion }); inputs.current[field]?.focus(); }
+    else if (view !== 'full' || target === step) { scroll.current?.scrollTo({ y: fieldTop(field), animated: !reducedMotion }); inputs.current[field]?.focus(); }
   };
   // A cold link can become valid after the remote catalog arrives; seed it once.
   if (destination?.kind === 'place' && seededPlaceId !== destination.place.id) {
@@ -366,6 +379,7 @@ function MeetupCreateForm() {
     if (!ticketmasterEventId && title.trim().length > MEETUP_TITLE_MAX) { showValidation(aiCopy(`모임 제목은 ${MEETUP_TITLE_MAX}자까지 적어 주세요.`, `Keep the title to ${MEETUP_TITLE_MAX} characters.`), tr('모임 제목')); return false; }
     if (pickedPlace && !splitPlaceMeetupBody(body.trim() + eventDetails, meetupCity.id)) { play('warning'); setError(aiCopy('장소 연결 정보를 다시 확인해 주세요. 작성한 내용은 그대로예요.', 'Check the linked place again. Your writing is unchanged.')); setErrorField(null); return false; }
     if (!body.trim()) { showValidation(aiCopy('모임 소개를 적어주세요.', 'Add an introduction.'), tr('모임 소개')); return false; }
+    if ((body.trim() + infoTail + eventDetails).length > 5000) { showValidation(tr('소개가 길어 모임 정보를 붙이지 못했어요. 소개를 조금 줄여 주세요.'), tr('모임 소개')); return false; }
     if (upTo < 2) return true;
     if (event.kind === 'once' && new Date(event.startsAt) < new Date()) { showValidation(tr("시작 시각이 이미 지났어요. 지금 이후로 선택해 주세요."), 'schedule'); return false; }
     if (event.kind === 'group' && (!schedule.cadence.trim() || schedule.cadence.length > 80)) { showValidation(getChillingError(new Error('INVALID_CADENCE')), tr('활동 주기')); return false; }
@@ -408,7 +422,7 @@ function MeetupCreateForm() {
         showValidation(aiCopy('이 모임에서 공개할 소개와 선택한 사진을 확인하고 동의해 주세요.', 'Review and consent to the introduction and selected photo shared for this meetup.'), 'profile');
         return;
       }
-      const id = await createChillingEvent(supabase, { userId: me.id, image: cover ?? undefined, cityId: meetupCity.id, title: title.trim(), body: body.trim() + eventDetails, question: question.trim(), hostProfileRevision: profile.revision, event: { ...schedule, capacity: Number(capacity), ...(ageMin ? { recommendedAgeMin: Number(ageMin), recommendedAgeMax: Number(ageMax) } : {}), ...(exchange ? { languageExchange: exchange } : {}) }, access });
+      const id = await createChillingEvent(supabase, { userId: me.id, image: cover ?? undefined, cityId: meetupCity.id, title: title.trim(), body: body.trim() + infoTail + eventDetails, question: question.trim(), hostProfileRevision: profile.revision, event: { ...schedule, capacity: Number(capacity), ...(ageMin ? { recommendedAgeMin: Number(ageMin), recommendedAgeMax: Number(ageMax) } : {}), ...(exchange ? { languageExchange: exchange } : {}) }, access });
       // A failed label save leaves the meetup open without labels; the host can retry from edit.
       void clearMeetupCreateDraft(AsyncStorage).catch(() => {});
       const newcomerSaved = !newcomer.welcome || await setMeetupNewcomer(supabase, id, true, newcomer.only).then(() => true, () => false);
@@ -456,6 +470,40 @@ function MeetupCreateForm() {
       <SymbolView name={direction > 0 ? { ios: 'plus', android: 'add', web: 'add' } : { ios: 'minus', android: 'remove', web: 'remove' }} size={18} tintColor={theme.text} />
     </Pressable>;
   };
+  const fillTopic = (topic: MeetupTopic) => {
+    filled.current = { title: tr(topic.title), body: tr(topic.intro) };
+    editDraftField('title', filled.current.title); editDraftField('body', filled.current.body);
+  };
+  // The template goes only into fields that are empty or still hold the last template; the host's own words are asked about first.
+  const pickTopic = (topic: MeetupTopic) => {
+    sourceEdited.current = true; setTouched(true);
+    setStartTopic(topic); setInfoCells(topicCells(topic));
+    if (topic.category) { setExchange(null); setEvent(current => ({ ...current, category: topic.category! })); }
+    if (isUntouched(title, filled.current.title) && isUntouched(body, filled.current.body)) { setAskTopic(null); fillTopic(topic); }
+    else setAskTopic(topic);
+  };
+  const changeInfoCells = (next: MeetupInfoCell[]) => { sourceEdited.current = true; setTouched(true); setInfoCells(next); };
+  // Quick 칠링: the intro is made from the title and the time until the host takes the full steps and writes their own.
+  const quickIntroFor = (name: string, when: QuickWhen, startsAt: string) => quickIntro(name, when, startsAt, zone, language === 'en' ? 'en' : 'ko');
+  const quickPlan = (name: string, when: QuickWhen, startsAt: string) => {
+    setEvent(current => ({ ...current, kind: 'once', startsAt, endsAt: quickEnd(startsAt) }));
+    editDraftField('body', quickIntroFor(name, when, startsAt));
+  };
+  const chooseKind = (kind: ChillingKind) => {
+    if (kind === 'group') { changeKind('group'); setView('full'); return; }
+    const startsAt = quickStart('tomorrow', zone) ?? event.startsAt;
+    setKindChosen(true); setQuickWhen('tomorrow'); setView('quick');
+    setEvent(current => ({ ...current, kind: 'once', startsAt, endsAt: quickEnd(startsAt) }));
+  };
+  const quickWhenChoices = (['tonight', 'tomorrow', 'weekend', 'pick'] as const).filter(when => when === 'pick' || quickStart(when, zone));
+  const clockFormat = (iso: string, options: Intl.DateTimeFormatOptions) => formatMeetupTime(iso, locale, zone, options);
+  const quickWhenText = [clockFormat(event.startsAt, { month: 'long', day: 'numeric', weekday: 'short' }), `${clockFormat(event.startsAt, { hour: 'numeric', minute: '2-digit' })} – ${clockFormat(event.endsAt, { hour: 'numeric', minute: '2-digit' })}`, chillingTimezoneLabel({ timezone: zone })].filter(Boolean).join(' · ');
+  const seatStepper = <View accessible accessibilityRole="adjustable" accessibilityLabel={aiCopy(`정원, 2명부터 ${capacityLimit}명`, `Capacity, 2 to ${capacityLimit}`)} accessibilityState={{ disabled: saving }} accessibilityValue={{ min: 2, max: capacityLimit, now: seats, text: tr('{0}명', seats) }}
+    accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]} onAccessibilityAction={({ nativeEvent }) => changeSeats(nativeEvent.actionName === 'increment' ? 1 : -1)} style={styles.stepper}>
+    {seatButton(-1)}
+    <ThemedText style={[styles.bodyText, styles.seats, errorField === 'capacity' && { color: theme.danger }]}>{tr('{0}명', seats)}</ThemedText>
+    {seatButton(1)}
+  </View>;
   const changeCity = (next: { id: string }) => {
     if (next.id === meetupCity?.id) return;
     // A picked place belongs to the old city's map.
@@ -468,13 +516,15 @@ function MeetupCreateForm() {
   const whenReady = event.kind === 'group' ? !!schedule.cadence.trim() : Date.parse(event.startsAt) > now;
   const whoReady = !!question.trim() && (!hostPreview || hostConsent);
   const ready = [whatReady, whenReady, whoReady][step - 1];
-  const caption = step === 1 ? whatReady ? '' : tr('종류·제목·소개를 채우면 넘어가요')
+  const quickReady = eventReady && !!title.trim() && whenReady && !!question.trim() && (!hostPreview || hostConsent);
+  const quickCaption = !title.trim() ? tr('제목을 적으면 열 수 있어요') : hostPreview && !hostConsent ? tr('공개 동의에 체크하면 열 수 있어요') : !isAdmin && slots && !slotsFull ? tr('열면 모임 자리 하나를 써요 · {0}개 남음', slots.available) : '';
+  const caption = view === 'quick' ? quickCaption : view === 'choose' ? '' : step === 1 ? whatReady ? '' : tr('종류·제목·소개를 채우면 넘어가요')
     : step === 2 ? whenReady ? '' : event.kind === 'once' ? tr("시작 시각이 이미 지났어요. 지금 이후로 선택해 주세요.") : cadenceTyped ? tr('활동 주기를 적으면 넘어가요') : tr('요일을 고르면 넘어가요')
     : !question.trim() ? aiCopy('신청 질문을 적어주세요.', 'Add an application question.') : !whoReady ? tr('공개 동의에 체크하면 열 수 있어요')
     : !isAdmin && slots && !slotsFull ? tr('열면 모임 자리 하나를 써요 · {0}개 남음', slots.available) : '';
   return <SafeAreaView style={[styles.root, { backgroundColor: theme.background }]}>
-    <View style={[styles.head, { backgroundColor: theme.background }]}><Pressable analyticsId="meetup.create.back" accessibilityRole="button" accessibilityLabel={tr("뒤로가기")} disabled={saving} accessibilityState={{ disabled: saving }} onPress={() => { play('selection'); if (step > 1) goStep(step - 1); else if (router.canGoBack()) router.back(); else router.replace(Platform.OS === 'web' ? '/?tag=meetup' : '/(tabs)/meetups'); }} style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable><ThemedText accessibilityRole="header" style={styles.headTitle}>{tr("모임 열기")}</ThemedText></View>
-    <View style={styles.stepBar}><MerchantSteps steps={[tr('어떤 모임'), tr('언제·어디'), tr('누구와')]} current={step - 1} /></View>
+    <View style={[styles.head, { backgroundColor: theme.background }]}><Pressable analyticsId="meetup.create.back" accessibilityRole="button" accessibilityLabel={tr("뒤로가기")} disabled={saving} accessibilityState={{ disabled: saving }} onPress={() => { play('selection'); if (view === 'quick') setView('choose'); else if (step > 1) goStep(step - 1); else if (router.canGoBack()) router.back(); else router.replace(Platform.OS === 'web' ? '/?tag=meetup' : '/(tabs)/meetups'); }} style={({ pressed }) => [styles.back, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}><SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} /></Pressable><ThemedText accessibilityRole="header" style={styles.headTitle}>{view === 'quick' ? tr("칠링 열기") : tr("모임 열기")}</ThemedText></View>
+    {view === 'full' && <View style={styles.stepBar}><MerchantSteps steps={[tr('어떤 모임'), tr('언제·어디'), tr('누구와')]} current={step - 1} /></View>}
     <KeyboardAvoidingView style={styles.root} behavior="padding"><ScrollView ref={scroll} analyticsId="meetup.create.scroll" keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       {invalidDestination && <StateCard kind="error" title={aiCopy('장소·행사 정보를 확인하지 못했어요', 'Couldn’t verify this place or event')} body={aiCopy('원래 상세에서 다시 열어주세요. 작성한 내용은 그대로예요.', 'Open it again from its details. Your writing is unchanged.')} />}
       {slotsFull && <>
@@ -485,7 +535,18 @@ function MeetupCreateForm() {
         <InfoNote>{aiCopy('다 쓴 다음에 로그인해도 돼요. 쓰던 내용은 그대로 남아요.', 'You can sign in once you’re done. Your draft stays as it is.')}</InfoNote>
         <Pressable analyticsId="meetup.create.login" accessibilityRole="button" onPress={() => { play('selection'); askLogin('모임을 열려면 로그인해 주세요.'); }} style={({ pressed }) => [styles.membership, { opacity: pressed ? 0.82 : 1 }]}><ThemedText type="smallBold" themeColor="accent" style={styles.label}>{aiCopy('지금 로그인하기', 'Sign in now')}</ThemedText></Pressable>
       </View>}
-      <View onLayout={(layout) => stepLayout('what', layout)} style={[styles.step, step !== 1 && styles.hidden]}>
+      {view === 'choose' && <MeetupEntryCards onChoose={chooseKind} />}
+      {view === 'quick' && <MeetupQuickFields saving={saving}
+        title={title} titleMax={MEETUP_TITLE_MAX} onTitle={value => { setTouched(true); editDraftField('title', value); editDraftField('body', quickIntroFor(value, quickWhen, event.startsAt)); if (errorField === tr('모임 제목')) { setError(''); setErrorField(null); } }} titleError={errorField === tr('모임 제목') ? error : undefined}
+        when={quickWhen} whenChoices={[...quickWhenChoices]} onWhen={when => { setTouched(true); setQuickWhen(when); const startsAt = when === 'pick' ? event.startsAt : quickStart(when, zone); if (startsAt) quickPlan(title, when, startsAt); if (errorField === 'schedule') { setError(''); setErrorField(null); } }}
+        startsAt={event.startsAt} zone={zone} onStart={startsAt => { setTouched(true); quickPlan(title, 'pick', startsAt); }} whenText={quickWhenText} scheduleError={errorField === 'schedule' ? error : undefined}
+        seatControl={seatStepper} seatNote={tr('호스트 포함 · 지금 멤버십은 {0}명까지예요.', capacityLimit)} seatError={errorField === 'capacity' ? error : undefined}
+        access={access} onAccess={value => { setTouched(true); setAccess(value); }} question={question} onQuestion={value => editDraftField('question', value)} intro={body} cityName={meetupCity?.name ?? city.name}
+        profile={hostPreview ? { name: hostPreview.displayName ?? '', consent: hostConsent, onConsent: () => { setHostConsent(value => !value); if (errorField === 'profile') { setError(''); setErrorField(null); } }, onShow: () => setProfileSheet(true), onEdit: () => { setHostConsent(false); router.push('/meetup-profile'); }, error: errorField === 'profile' ? error : undefined } : null}
+        onProfileSetup={() => { setHostConsent(false); router.push('/meetup-profile'); }}
+        // Title, time and seats come along; the intro was made for the quick time, so the full steps start it empty.
+        onFull={() => { if (body) editDraftField('body', ''); setView('full'); }} />}
+      <View onLayout={(layout) => stepLayout('what', layout)} style={[styles.step, (step !== 1 || view !== 'full') && styles.hidden]}>
         <ThemedText accessibilityRole="header" style={styles.cardTitle}>{aiCopy('어떤 모임인가요?', 'What are we doing?')}</ThemedText>
       {ticketmasterEventId && (!isAuthed ? <StateCard kind="blocked" title={tr("로그인 후 모임을 열 수 있어요")} body={tr("로그인하면 행사 정보를 불러와요.")} actionLabel={tr("로그인")} analyticsId="meetup.create.event_login" onAction={() => askLogin('행사 모임을 열려면 로그인해 주세요.')} /> : !eventReady ? <StateCard kind={eventError ? 'error' : 'empty'} title={eventError ? tr("행사를 확인하지 못했어요") : tr("행사 정보를 확인하고 있어요")} body={eventError ? tr(eventError) : tr('확인 후 제목과 일정을 채워드려요.')} actionLabel={eventError ? tr('다시 시도') : undefined} onAction={eventError ? () => setEventAttempt(n => n + 1) : undefined} /> : sourceEvent && <View style={styles.eventHero} accessibilityRole="summary"><View style={styles.eventHeroText}><ThemedText type="smallBold" style={[styles.label, styles.eventHeroLabel]}>{isFestivalEvent(sourceEvent) ? tr("함께 가고 싶은 페스티벌") : tr("함께 갈 행사")}</ThemedText><ThemedText type="smallBold" numberOfLines={2} style={[styles.label, styles.eventHeroTitle]}>{sourceEvent.name}</ThemedText><ThemedText type="small" numberOfLines={2} style={[styles.helper, styles.eventHeroPlace]}>{/* 'Under the Big Top - Vancouver · Vancouver': the city once. */}{[sourceEvent.venue, sourceEvent.city].filter(Boolean).filter((part, index, parts) => index === 0 || !parts[0].includes(part)).join(' · ')}</ThemedText></View>
         {/* The event's own photo, not a decoration; without one the text takes the card (the seller's stand-in photos repeat across events). */}
@@ -496,6 +557,7 @@ function MeetupCreateForm() {
         {errorField === 'kind' && !!error && <ThemedText accessibilityRole="alert" themeColor="danger" style={styles.bodyText}>{tr(error)}</ThemedText>}
       </View>}
       {kindChosen && <MeetupPolicyNotice mode={event.kind === 'once' ? 'once' : 'host'} />}
+      {kindChosen && !sourcePlace && !ticketmasterEventId && <MeetupTopicStart topic={startTopic} ask={askTopic} onPick={pickTopic} onReplace={() => { if (askTopic) fillTopic(askTopic); setAskTopic(null); }} onKeep={() => setAskTopic(null)} disabled={saving} />}
       <View style={styles.field}><ThemedText type="smallBold" style={styles.label}>{tr("카테고리")}</ThemedText><View style={styles.categories} accessibilityRole="radiogroup" accessibilityLabel={tr("카테고리")}>{(['casual', 'party', 'festival', 'sports', 'hobby', 'travel', 'language'] as const).map((category, i) => { const checked = category === 'language' ? !!exchange : !exchange && event.category === category; return <SelectionChip analyticsId="meetup.create.category" key={category} selected={checked} disabled={saving} accessibilityRole="radio" accessibilityState={{ checked, disabled: saving }} label={[tr("가볍게"), tr("파티"), tr("페스티벌"), tr("스포츠"), tr("취미"), tr("여행"), tr("언어교환")][i]} onPress={() => { play('selection'); sourceEdited.current = true; setTouched(true); setExchange(current => category === 'language' ? current ?? DEFAULT_LANGUAGE_EXCHANGE : null); setEvent(current => ({ ...current, category: category === 'language' ? 'casual' : category })); }} />; })}</View>
         {exchange && <MeetupLanguageSetup value={exchange} onChange={next => { sourceEdited.current = true; setTouched(true); setExchange(next); }} capacity={Number(capacity)} disabled={saving} />}</View>
       {field('meetup.create.title', tr("모임 제목"), title, value => editDraftField('title', value), tr("예: 퇴근하고 노을 보러 갈래요?"), ticketmasterEventId ? 60 : MEETUP_TITLE_MAX)}
@@ -512,6 +574,11 @@ function MeetupCreateForm() {
         </MeetupSectionsEditor>
         {errorField === tr("모임 소개") && !!error && <ThemedText accessibilityRole="alert" themeColor="danger" style={styles.bodyText}>{tr(error)}</ThemedText>}
       </View>
+      {!!startTopic && !sourcePlace && !ticketmasterEventId && <View style={styles.field}>
+        <ThemedText type="smallBold" style={styles.label}>{tr('모임 정보')}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('세 칸이에요. 비워 두면 상세에 안 나와요.')}</ThemedText>
+        <MeetupInfoCellsEditor cells={infoCells} topic={startTopic} onChange={changeInfoCells} disabled={saving} />
+      </View>}
       <Pressable analyticsId="meetup-create.assistance" accessibilityRole="button" accessibilityState={{ expanded: assistanceOpen }} onPress={() => { play('selection'); animateLayout(!!reducedMotion); setAssistanceOpen(value => !value); }} style={({ pressed }) => [styles.disclosure, { opacity: pressed ? 0.82 : 1 }]}>
         <ThemedText style={styles.bodyText}>{aiCopy('소개 작성 도움받기', 'Help with your introduction')}</ThemedText>
         <SymbolView name={{ ios: assistanceOpen ? 'chevron.up' : 'chevron.down', android: assistanceOpen ? 'expand_less' : 'expand_more', web: assistanceOpen ? 'expand_less' : 'expand_more' }} size={IconSize.chevron} tintColor={theme.textSecondary} />
@@ -532,7 +599,7 @@ function MeetupCreateForm() {
       {aiDraftReady && <ThemedText accessibilityRole="alert" type="small" themeColor="textSecondary" style={styles.helper}>{t.write.reviewDraft}</ThemedText>}
       </View>}
       </View>
-      <View onLayout={(layout) => stepLayout('when', layout)} style={[styles.step, step !== 2 && styles.hidden]}>
+      <View onLayout={(layout) => stepLayout('when', layout)} style={[styles.step, (step !== 2 || view !== 'full') && styles.hidden]}>
         <ThemedText accessibilityRole="header" style={styles.cardTitle}>{aiCopy('언제, 어디서 만나요?', 'When and where?')}</ThemedText>
       {!kindChosen ? null : event.kind === 'group' ? cadenceTyped ? <>
         {field('meetup.create.cadence', tr("활동 주기"), event.cadence, cadence => setEvent({ ...event, cadence }), tr("예: 매주 토요일 오전"), 80)}
@@ -562,7 +629,7 @@ function MeetupCreateForm() {
       <View style={styles.field}><View style={styles.cityRow}><View style={styles.flex}><ThemedText type="smallBold" style={styles.label}>{tr("활동 지역")}</ThemedText><ThemedText style={styles.bodyText}>{tr(meetupCity?.name ?? city.name)}</ThemedText></View>
         {!destination && !invalidDestination && <Pressable analyticsId="meetup.create.city" accessibilityRole="button" accessibilityLabel={tr('활동 지역 바꾸기')} disabled={saving} onPress={() => { play('selection'); setCityOpen(true); }} style={({ pressed }) => [ControlStyles.pill, controlPresentation(theme, { tone: 'ghost', pressed, disabled: saving }).container]}><ThemedText type="smallBold" themeColor="accent" style={styles.label}>{tr('바꾸기')}</ThemedText></Pressable>}</View><InfoNote>{tr("정확한 집결 장소는 승인된 멤버에게 모임 대화에서 알려 주세요.")}</InfoNote></View>
       </View>
-      <View onLayout={(layout) => stepLayout('who', layout)} style={[styles.step, step !== 3 && styles.hidden]}>
+      <View onLayout={(layout) => stepLayout('who', layout)} style={[styles.step, (step !== 3 || view !== 'full') && styles.hidden]}>
         <ThemedText accessibilityRole="header" style={styles.cardTitle}>{aiCopy('누구와 함께해요?', 'Who can join?')}</ThemedText>
       <View style={styles.field}>
         <ThemedText type="smallBold" style={styles.label}>{tr('누가 신청할 수 있나요?')}</ThemedText>
@@ -573,12 +640,7 @@ function MeetupCreateForm() {
       </View>
       {field('meetup.create.question', tr("신청할 때 물어볼 질문"), question, value => editDraftField('question', value), tr("어떤 분위기의 모임을 기대하세요?"), 300)}
       <View onLayout={event => { fieldY.current.capacity = event.nativeEvent.layout.y; }} style={styles.field}><ThemedText type="smallBold" style={styles.label}>{aiCopy('정원', 'Capacity')}</ThemedText>
-        <View accessible accessibilityRole="adjustable" accessibilityLabel={aiCopy(`정원, 2명부터 ${capacityLimit}명`, `Capacity, 2 to ${capacityLimit}`)} accessibilityState={{ disabled: saving }} accessibilityValue={{ min: 2, max: capacityLimit, now: seats, text: tr('{0}명', seats) }}
-          accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]} onAccessibilityAction={({ nativeEvent }) => changeSeats(nativeEvent.actionName === 'increment' ? 1 : -1)} style={styles.stepper}>
-          {seatButton(-1)}
-          <ThemedText style={[styles.bodyText, styles.seats, errorField === 'capacity' && { color: theme.danger }]}>{tr('{0}명', seats)}</ThemedText>
-          {seatButton(1)}
-        </View>
+        {seatStepper}
         <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('호스트 포함 · 지금 멤버십은 {0}명까지예요.', capacityLimit)}</ThemedText>
         {errorField === 'capacity' && !!error && <ThemedText accessibilityRole="alert" themeColor="danger" style={styles.bodyText}>{tr(error)}</ThemedText>}
       </View>
@@ -616,12 +678,13 @@ function MeetupCreateForm() {
       </Pressable>}
       </View>
       <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('모임에서 일어난 일은 호스트와 멤버가 각자 책임져요. 문제가 생겨 신고해 주시면 글링이 기록을 확인하고 최대한 도울게요. 위급하면 911에 먼저 연락해 주세요.')}</ThemedText>
-    </ScrollView><View style={[styles.footer, { backgroundColor: theme.background, borderTopColor: theme.line }]}>
+    </ScrollView>{view !== 'choose' && <View style={[styles.footer, { backgroundColor: theme.background, borderTopColor: theme.line }]}>
       {!!error && !errorField && <ThemedText accessibilityRole="alert" accessibilityLiveRegion="assertive" themeColor="danger" style={styles.bodyText}>{tr(error)}</ThemedText>}
       {!!resumeNote && !error && !saving && <ThemedText accessibilityLiveRegion="polite" type="small" themeColor="textSecondary" style={styles.helper}>{resumeNote === 'signedIn' ? aiCopy('로그인했어요. 쓰던 내용은 그대로 있어요.', 'You’re signed in. Your draft is still here.') : resumeNote === 'restoredNoPhoto' ? aiCopy('쓰던 내용을 불러왔어요. 사진만 다시 골라 주세요.', 'Your draft is back. Please pick the photo again.') : aiCopy('쓰던 내용을 불러왔어요.', 'Your draft is back.')}</ThemedText>}
-      {step < 3 ? <RaisedActionButton analyticsId="meetup.create.next" disabled={!ready || creatingDraft || pickingCover} onPress={nextStep} label={tr("다음")} />
+      {view === 'quick' ? <RaisedActionButton analyticsId="meetup.create.quick.submit" disabled={saving || !quickReady} busy={saving} onPress={() => { play('selection'); void submit(); }} label={saving ? tr("모임을 여는 중…") : tr("칠링 열기")} />
+        : step < 3 ? <RaisedActionButton analyticsId="meetup.create.next" disabled={!ready || creatingDraft || pickingCover} onPress={nextStep} label={tr("다음")} />
         : <RaisedActionButton analyticsId="meetup.create.submit" disabled={saving || creatingDraft || pickingCover || !eventReady || invalidDestination || !whoReady} busy={saving || creatingDraft || pickingCover} onPress={() => { play('selection'); void submit(); }} label={saving ? tr("모임을 여는 중…") : pickingCover ? tr("사진을 준비하는 중…") : !kindChosen ? tr("모임 열기") : event.kind === 'group' ? tr('정기모임 열기') : tr('칠링 열기')} />}
-      {!!caption && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite" style={styles.caption}>{caption}</ThemedText>}</View></KeyboardAvoidingView>
+      {!!caption && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite" style={styles.caption}>{caption}</ThemedText>}</View>}</KeyboardAvoidingView>
     <DragSheet visible={profileSheet} onClose={() => setProfileSheet(false)} title={tr('공개할 호스트 소개')}>
       {!!hostPreview && <ScrollView analyticsId="app_meetup-create.scrollview.1" contentContainerStyle={styles.sheetBody}><ChillingProfileCard profile={chillingProfilePreview(hostPreview, 'public')} /></ScrollView>}
     </DragSheet>
