@@ -403,9 +403,9 @@ select is((select count(*)::int from private.host_quest_payouts),0,'A payout fro
 
 -- 송금 요청 틈: 24는 확정 직후, 25는 확정 뒤 9일, 둘 다 $20이고 60일에서 8일이 지났다.
 select pg_temp.person(n,'quest-'||n||'@example.invalid',n) from generate_series(24,25) n;
-insert into private.host_quest_codes(code,recipient_name) values ('WINDOW24','a'),('WINDOW25','b');
+insert into private.host_quest_codes(code,recipient_name) values ('QUESTW24','a'),('QUESTW25','b');
 insert into private.host_quests(user_id,code,started_at,ends_at)
-  select pg_temp.u(n),'WINDOW'||n,now()-interval '70 days',now()-interval '10 days' from generate_series(24,25) n;
+  select pg_temp.u(n),'QUESTW'||n,now()-interval '70 days',now()-interval '10 days' from generate_series(24,25) n;
 insert into private.host_quest_steps(quest_id,step,amount_cents,status,decided_at)
   select pg_temp.quest(n),x.step,x.amount,'confirmed',case when n=25 then now()-interval '9 days' else now() end
   from generate_series(24,25) n cross join (values (1,100),(2,300),(3,200),(5,400),(6,100),(7,600)) x(step,amount);
