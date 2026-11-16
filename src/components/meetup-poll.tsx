@@ -166,7 +166,7 @@ export function MeetupPollComposer({ postId, visible, onClose, onCreated }: { po
   };
   return <DragSheet visible={visible} onClose={onClose} dismissible={!busy} title={tr('날짜·장소 투표 만들기')}>
     <ScrollView keyboardShouldPersistTaps="handled" style={styles.sheetScroll} contentContainerStyle={styles.sheetContent}>
-      <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('멤버들이 되는 날짜와 가고 싶은 장소를 골라요. 날짜만, 장소만 열어도 돼요.')} {tr('날짜도 장소도, 넣는다면 후보는 2~5개예요.')}</ThemedText>
+      <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('멤버들이 되는 날짜와 가고 싶은 장소를 골라요. 날짜만, 장소만 열어도 돼요.')} {tr('날짜와 장소는 여는 쪽마다 후보를 2~5개 넣어요.')}</ThemedText>
       <ThemedText style={Typography.label}>{tr('날짜 후보')}</ThemedText>
       {dates.map((value, index) => <View key={index} style={styles.candidate}>
         <View style={styles.flex}><ChillingDateInput label={tr('날짜 {0}', index + 1)} value={value} zone={zone} disabled={busy} minimumDate={new Date()}

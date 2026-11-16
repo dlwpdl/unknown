@@ -5165,7 +5165,7 @@ export const uiEnglish: Record<string, string> = {
   "이미 끝난 투표예요.": "This poll has already ended.",
   "이미 지난 날짜예요. 투표를 끝내고 새로 열어 주세요.": "That date has already passed. End this poll and open a new one.",
   "같은 시간에 이미 등록된 회차가 있어요. 다른 날짜를 골라 주세요.": "There is already a session at that time. Pick another date.",
-  "날짜도 장소도, 넣는다면 후보는 2~5개예요.": "Dates and places each need 2 to 5 options if you use them.",
+  "날짜와 장소는 여는 쪽마다 후보를 2~5개 넣어요.": "Each side you open needs 2 to 5 options.",
   "지난 시각은 고를 수 없어요.": "You can't pick a time that has passed.",
   "장소는 1~60자로, 서로 다르게 적어 주세요.": "Write each place in 1 to 60 characters, and make them different.",
   "모임 소개가 너무 길어서 장소를 바꾸지 못했어요. 소개를 줄인 뒤 다시 해 주세요.": "The meetup intro is too long to change the place. Shorten it and try again.",
