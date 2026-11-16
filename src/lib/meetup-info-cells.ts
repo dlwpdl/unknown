@@ -11,12 +11,13 @@ export function infoCellsTail(cells: readonly MeetupInfoCell[]): string {
   return lines.length ? `\n\n${HEAD}\n${lines.slice(0, MAX_CELLS).join('\n')}` : '';
 }
 
-/** Lifts the trailing cells block off an intro; anything that is not exactly that block stays text. */
+/** Lifts the cells block (up to the next blank line) off an intro and keeps what follows it, e.g. a decided place line; anything that is not exactly that block stays text. */
 export function splitMeetupInfoCells(intro: string): { body: string; cells: MeetupInfoCell[] } {
   const at = intro.lastIndexOf(`\n\n${HEAD}\n`);
   if (at < 0) return { body: intro, cells: [] };
-  const lines = intro.slice(at + HEAD.length + 3).split('\n').map(line => line.replace(/\r$/, ''));
+  const start = at + HEAD.length + 3, next = intro.indexOf('\n\n', start), end = next < 0 ? intro.length : next;
+  const lines = intro.slice(start, end).split('\n').map(line => line.replace(/\r$/, ''));
   const cells = lines.map(line => LINE.exec(line));
   if (!lines.length || lines.length > MAX_CELLS || cells.some(match => !match)) return { body: intro, cells: [] };
-  return { body: intro.slice(0, at), cells: cells.map(match => ({ label: match![1], value: match![2] })) };
+  return { body: intro.slice(0, at) + intro.slice(end), cells: cells.map(match => ({ label: match![1], value: match![2] })) };
 }

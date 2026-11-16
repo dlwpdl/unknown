@@ -16,7 +16,7 @@ test('정보 칸은 소개 끝에 붙고 그대로 다시 읽힌다', () => {
 });
 
 test('정보 칸 모양이 아닌 글은 소개 그대로 둔다', () => {
-  for (const text of ['모임 정보\n수준: 누구나', '소개\n\n모임 정보\n그냥 문장이에요', '소개\n\n모임 정보\n수준: 누구나\n\n뒤에 글']) assert.deepEqual(splitMeetupInfoCells(text), { body: text, cells: [] });
+  for (const text of ['모임 정보\n수준: 누구나', '소개\n\n모임 정보\n그냥 문장이에요', '소개\n\n모임 정보\n수준: 누구나\n준비물\n\n뒤에 글']) assert.deepEqual(splitMeetupInfoCells(text), { body: text, cells: [] });
 });
 
 test('정보 칸은 화면용 소개에서 빠지고, 글 수정 때는 그대로 남는다', () => {
@@ -62,4 +62,13 @@ test('번개 소개는 제목과 시간으로 한 줄을 만든다', () => {
   assert.equal(quickIntro('퇴근하고 노을 보러 갈래요?', 'tomorrow', start, 'America/Vancouver', 'ko'), '퇴근하고 노을 보러 갈래요? 내일 저녁 7시에 만나요. 같이 하실 분은 신청해 주세요.');
   assert.equal(quickIntro('', 'tonight', start, 'America/Vancouver', 'ko'), '오늘 저녁 7시에 만나요. 같이 하실 분은 신청해 주세요.');
   assert.match(quickIntro('산책', 'pick', start, 'America/Vancouver', 'ko'), /^산책\. 11월 17일 \(?화\)? (오후|PM) 7:00에 만나요\./);
+});
+
+test('정보 칸 뒤에 확정된 장소 줄이 붙어도 칸을 읽고 장소 줄은 소개에 남긴다', () => {
+  const plain = '같이 걸어요.\n\n모임 정보\n수준: 초급\n\n장소: 강가 공원';
+  assert.deepEqual(splitMeetupInfoCells(plain), { body: '같이 걸어요.\n\n장소: 강가 공원', cells: [{ label: '수준', value: '초급' }] });
+  const osm = '같이 걸어요.\n\n모임 정보\n수준: 초급\n준비물: 물\n\n장소: 강가 공원\n장소 정보: https://www.openstreetmap.org/node/123';
+  assert.deepEqual(splitMeetupInfoCells(osm), { body: '같이 걸어요.\n\n장소: 강가 공원\n장소 정보: https://www.openstreetmap.org/node/123', cells: [{ label: '수준', value: '초급' }, { label: '준비물', value: '물' }] });
+  assert.deepEqual(meetupInfoCells(plain), [{ label: '수준', value: '초급' }]);
+  assert.equal(visibleMeetupBody(plain), '같이 걸어요.\n\n장소: 강가 공원');
 });
