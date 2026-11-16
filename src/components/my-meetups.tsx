@@ -107,7 +107,7 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = fal
     // A host with members is offered handing the meetup over before ending it; ending stays one step away.
     if (host && (meetup.room.memberCount ?? 1) > 1 && !meetup.room.closed) {
       const handOver = () => router.push({ pathname: '/meetup-tools', params: { postId: meetup.id, kind: meetup.room.eventKind ?? 'group', host: '1', section: 'settings' } });
-      const title = tr('모임을 닫기 전에, 호스트를 넘길 수 있어요'), body = tr('멤버 중 한 명이 수락하면 모임은 그대로 이어지고 나는 멤버로 남아요. 닫으면 모든 멤버의 참여가 끝나요.');
+      const title = tr('모임을 닫기 전에, 호스트를 넘길 수 있어요'), body = tr('멤버 한 명이 수락하면 모임은 그대로 이어지고 나는 멤버로 남아요. 닫으면 멤버 모두 더는 참여할 수 없어요.');
       if (Platform.OS === 'web') {
         if (globalThis.confirm(`${title}\n\n${body}\n\n${tr('호스트 넘기기')}`)) { handOver(); return; }
       } else {
