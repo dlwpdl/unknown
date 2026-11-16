@@ -83,6 +83,8 @@ select ok(private.newcomer_ends_at('e0000000-0000-4000-8000-000000000003') is no
 update private.newcomer_config set period_days=60;
 
 -- First-week nudges.
+-- Member 2 switched Meetups off: the newcomer notes are not a Meetups notification, so they still arrive.
+insert into public.notification_preferences(user_id,meetups) values ('e0000000-0000-4000-8000-000000000002',false);
 select is(private.send_newcomer_nudges((select noon from clock)),5,'Nudges go out');
 select is((select step from private.newcomer_nudges where user_id='e0000000-0000-4000-8000-000000000002'),'day1','Day one gets the day-1 nudge');
 select matches((select body from public.notifications n join private.newcomer_nudges s on s.notification_id=n.id where s.user_id='e0000000-0000-4000-8000-000000000002'),
@@ -99,6 +101,8 @@ select is((select target_id from public.notifications n join private.newcomer_nu
   'e0100000-0000-4000-8000-000000000004'::uuid,'It points at the same host''s next meetup');
 select is((select step from private.newcomer_nudges where user_id='e0000000-0000-4000-8000-000000000008'),'day7','Day seven without a meetup gets the general copy');
 select is((select count(*)::integer from public.notifications where kind='trending_meetup' and user_id::text like 'e0000000-%'),5,'One row per sent step');
+select is((select count(*)::integer from public.notifications where kind='trending_meetup' and user_id::text like 'e0000000-%' and category='system'),5,'Newcomer notes carry no switch and stay out of the push budget');
+select is((select count(*)::integer from public.notifications where kind='trending_meetup' and user_id='e0000000-0000-4000-8000-000000000002'),1,'Meetups switched off still gets the newcomer note');
 
 select * from finish();
 rollback;
