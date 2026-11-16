@@ -5014,5 +5014,6 @@ export const uiEnglish: Record<string, string> = {
   "사진은 한 장에 2MB까지, 내 컴퓨터에 있는 파일만 올릴 수 있어요. 다른 사이트의 사진 링크로는 못 올려요. Claude Code가 받는 사진 올릴 링크는 10분 동안만 쓸 수 있어요.": "Photos can be up to 2MB each, and only files on your computer can be uploaded. Photo links from other sites won't work. The upload links Claude Code receives work for only 10 minutes.",
   "바탕화면에 있는 의자.jpg로 중고거래 판매글 초안 써줘": "Draft a Buy & Sell listing for the chair in chair.jpg on my desktop",
   "내가 글링에 올린 글 보여줘": "Show me the posts I've put on Gling",
-  "AI는 연결할 때 고른 만큼만 할 수 있어요. '초안만'이면 글을 올리지 못해요.": "The AI can only do what you chose when connecting. With 'Drafts only', it can't post."
+  "AI는 연결할 때 고른 만큼만 할 수 있어요. '초안만'이면 글을 올리지 못해요.": "The AI can only do what you chose when connecting. With 'Drafts only', it can't post.",
+  "모임에서 일어난 일은 호스트와 멤버가 각자 책임져요. 문제가 생겨 신고해 주시면 글링이 기록을 확인하고 최대한 도울게요. 위급하면 911에 먼저 연락해 주세요.": "Hosts and members are each responsible for themselves at a meetup. If something goes wrong, report it. We'll look into it and do everything we can to help. In an emergency, call 911 first."
 };

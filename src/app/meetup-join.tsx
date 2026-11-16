@@ -338,6 +338,7 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
       </View>
       {/* Operator review is one more "who sees", so it sits in here and keeps the fixed bar short. */}
       <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.')}</ThemedText>
+      <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('모임에서 일어난 일은 호스트와 멤버가 각자 책임져요. 문제가 생겨 신고해 주시면 글링이 기록을 확인하고 최대한 도울게요. 위급하면 911에 먼저 연락해 주세요.')}</ThemedText>
       <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('승인 전까지는 자리가 잡히지 않아요. 신청은 호스트가 답하기 전까지 이 화면에서 취소할 수 있어요. 취소하거나 거절되면 24시간 뒤에 다시 신청할 수 있어요.')}</ThemedText>
       <MeetupPolicyNotice mode="join" />
   </>;
@@ -465,6 +466,7 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
                       <MeetupPolicyNotice mode="join" />
                     </Disclosure>
                     <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.')}</ThemedText>
+                    <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('모임에서 일어난 일은 호스트와 멤버가 각자 책임져요. 문제가 생겨 신고해 주시면 글링이 기록을 확인하고 최대한 도울게요. 위급하면 911에 먼저 연락해 주세요.')}</ThemedText>
                   </>}
                 </>}
               </Rise>}
