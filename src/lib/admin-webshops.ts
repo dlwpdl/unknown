@@ -153,6 +153,23 @@ export async function importAdminWebshopOrders(client: SupabaseClient, merchantI
   if (error || !data) throw new Error(error?.message ?? 'ADMIN_DATA_MISSING');
   return data as { reportId: string; imported: number; duplicates: number };
 }
+/** 웹샵 제휴 신청 (owner 2026-11-12), from /business or the app place screen. */
+export type WebshopApplicationStatus = 'new' | 'contacted' | 'done';
+export type AdminWebshopApplication = {
+  id: string; placeKey: string | null; cityId: string | null; placeName: string; name: string; contact: string; email: string | null;
+  webshop: 'yes' | 'no' | 'unknown'; webshopUrl: string | null; discount: '5' | '10' | '15_plus' | 'unknown'; source: 'place' | 'web';
+  status: WebshopApplicationStatus; emailStatus: 'pending' | 'sent' | 'failed' | 'not_configured'; createdAt: string; updatedAt: string;
+};
+export async function loadAdminWebshopApplications(client: SupabaseClient): Promise<AdminWebshopApplication[]> {
+  const { data, error } = await client.rpc('get_admin_webshop_applications');
+  if (error || !Array.isArray(data)) throw new Error(error?.message ?? 'ADMIN_DATA_MISSING');
+  return data as AdminWebshopApplication[];
+}
+export async function setAdminWebshopApplicationStatus(client: SupabaseClient, id: string, status: WebshopApplicationStatus): Promise<{ id: string; status: WebshopApplicationStatus; updatedAt: string }> {
+  const { data, error } = await client.rpc('set_admin_webshop_application_status', { p_id: id, p_status: status });
+  if (error || !data) throw new Error(error?.message ?? 'ADMIN_DATA_MISSING');
+  return data as { id: string; status: WebshopApplicationStatus; updatedAt: string };
+}
 export function webshopMoney(cents: number | null | undefined, currency: string | null = 'CAD'): string {
   if (currency && currency !== 'CAD') return `지원하지 않는 통화 (${currency})`;
   return cents == null || !Number.isSafeInteger(cents) || !currency ? '확인 불가' : new Intl.NumberFormat('ko-KR', { style: 'currency', currency, minimumFractionDigits: 2 }).format(cents / 100);
@@ -162,6 +179,7 @@ export function webshopError(error: unknown): string {
   if (/ADMIN_REQUIRED|MFA|AAL2|permission denied/i.test(message)) return '관리자 권한과 MFA 인증을 확인해주세요.';
   if (/revision|conflict|stale|changed|updated_at|updatedAt/i.test(message)) return '다른 변경 또는 같은 ID의 다른 보고서가 있습니다. 최신 기록을 다시 불러와 확인해주세요.';
   if (/BRANCH_MISMATCH|PLACE_CONFLICT|PLACE_ALREADY_LINKED/i.test(message)) return '비즈니스의 도시·지점 연결이 일치하지 않거나 다른 비즈니스가 이미 사용 중입니다. 지점 키를 확인해주세요.';
+  if (/WEBSHOP_APPLICATION_NOT_FOUND/i.test(message)) return '이 신청을 찾지 못했어요. 목록을 다시 불러와 주세요.';
   if (/WEBSHOP_UNAVAILABLE/i.test(message)) return '공개 동의 또는 운영 상태를 확인한 뒤 웹샵 주문을 활성화해주세요.';
   return '요청을 완료하지 못했습니다. 입력 내용과 연결 상태를 확인한 뒤 다시 시도해주세요.';
 }

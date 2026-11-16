@@ -4659,7 +4659,8 @@ export const uiEnglish: Record<string, string> = {
   "초대받은 모임": "Invited",
   "서로 친구인 사람만 초대할 수 있어요.": "You can only invite people who are your friends.",
   "이 초대 링크로는 들어갈 수 없어요": "This invite link doesn’t work",
-  // 렌트 신뢰·처음 할 일 (2026-11-13)
+  "이 가게 사장님이세요?": "Own this place?",
+  "웹샵 연결하고 글링 손님 받기": "Link your webshop and get orders from Gling",
   "{0} {1} 평균 {2} · CMHC 2025년 10월": "{0} {1} average {2} · CMHC Oct 2025",
   "시세보다 싸요": "Below market rate",
   "방 안 인증샷 · {0}": "In-room proof photo · {0}",

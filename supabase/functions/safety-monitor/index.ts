@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { sendAdminEmail } from '../_shared/admin-email.ts';
 
 // Covers 5,000 body + 80 title + 5×30 tags and either meetup metadata
 // or a 120-character poll question + 6×80-character options, including UTF-16 pairs.
@@ -61,7 +62,8 @@ Deno.serve(async (request) => {
         if (alert.error) throw alert.error;
         alerted += 1;
         try {
-          await sendAdminEmail(item.id, item.target_type, completed.riskLevel);
+          await sendAdminEmail(`[gling] ${completed.riskLevel} 안전 알림`,
+            `안전 검토 큐 ${item.id} (${item.target_type})에서 ${completed.riskLevel} 위험이 감지됐습니다. 관리자 화면에서 즉시 확인하세요.`, 'gling safety <onboarding@resend.dev>');
         } catch (error) {
           alertDeliveryFailed += 1;
           console.error('admin alert delivery failed', error instanceof Error ? error.message : 'unknown');
@@ -138,23 +140,6 @@ async function loadContent(client, targetType: string, targetId: string, claim =
       ? [result.data.title, result.data.body, (result.data.hashtags ?? []).join(' '), result.data.room_preview?.applicationQuestion, result.data.room_preview?.cadence, result.data.post_polls?.question, ...(result.data.post_polls?.options ?? [])].filter((value) => value != null).join('\n')
       : result.data.body,
   };
-}
-
-async function sendAdminEmail(queueId: number, targetType: string, riskLevel: string) {
-  const apiKey = Deno.env.get('RESEND_API_KEY');
-  const to = Deno.env.get('ADMIN_ALERT_EMAIL');
-  if (!apiKey || !to) throw new Error('ADMIN_EMAIL_NOT_CONFIGURED');
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from: 'gling safety <onboarding@resend.dev>',
-      to: [to],
-      subject: `[gling] ${riskLevel} 안전 알림`,
-      text: `안전 검토 큐 ${queueId} (${targetType})에서 ${riskLevel} 위험이 감지됐습니다. 관리자 화면에서 즉시 확인하세요.`,
-    }),
-  });
-  if (!response.ok) throw new Error(`ADMIN_EMAIL_${response.status}`);
 }
 
 async function analyze(openAiKey: string, targetType: string, content: string) {
