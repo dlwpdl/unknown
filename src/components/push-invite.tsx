@@ -20,10 +20,12 @@ import { supabase } from '@/lib/supabase';
 // 마친 바로 그 순간에 그 일과 이어서 묻고, 켜겠다고 한 사람에게만 진짜 창을 띄운다.
 const ASKED_KEY = 'gling.pushInviteAsked'; // "나중에"를 누른 시각. 14일 동안 다시 묻지 않는다.
 const REASONS_KEY = 'gling.pushPromptReasons'; // 이미 물어본 순간들
-const COPY: Record<PushPromptReason, { title: string; body: string; preview: string }> = {
+const COPY: Record<PushPromptReason, { title: string; body: string; preview?: string }> = {
   comment: { title: '답글 달리면 바로 알려 드릴까요?', body: '방금 쓴 댓글에 누가 답하면 휴대폰으로 알려 드려요. 알림 종류는 설정에서 언제든 바꿀 수 있어요.', preview: '내 댓글에 답글이 달렸어요' },
   post: { title: '댓글이 달리면 바로 알려 드릴까요?', body: '방금 올린 글에 댓글이 달리면 휴대폰으로 알려 드려요. 알림 종류는 설정에서 언제든 바꿀 수 있어요.', preview: '내 글에 댓글이 달렸어요' },
   meetup_request: { title: '호스트가 수락하면 바로 알려 드릴까요?', body: '호스트가 내 신청을 수락하면 휴대폰으로 알려 드려요. 알림 종류는 설정에서 언제든 바꿀 수 있어요.', preview: '모임 참여 신청이 수락됐어요' },
+  // 가입 직후 안내(contract push_ask_*). 예시 알림 줄 문구는 정해진 게 없어 보여 주지 않는다.
+  signup: { title: '새 글이나 답글이 올라오면 알려 드릴까요?', body: '동네 소식은 하루 세 번까지만 보내요. 받고 싶은 것만 설정에서 골라 둘 수 있어요.' },
   meetup_create: { title: '참여 신청이 오면 바로 알려 드릴까요?', body: '누가 내 모임에 신청하면 휴대폰으로 알려 드려요. 알림 종류는 설정에서 언제든 바꿀 수 있어요.', preview: '내 모임에 새 참여 신청이 왔어요' },
 };
 const readReasons = async () => { try { const value = JSON.parse(await AsyncStorage.getItem(REASONS_KEY) ?? '[]'); return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []; } catch { return []; } };
@@ -97,13 +99,13 @@ export function PushInvite() {
         <View style={styles.sheet}>
           <ThemedText accessibilityRole="header" type="sheetTitle">{tr(copy.title)}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{tr(copy.body)}</ThemedText>
-          <View style={[styles.preview, { backgroundColor: theme.backgroundElement }]} accessibilityLabel={tr("알림 예시: {0}", tr(copy.preview))}>
+          {copy.preview && <View style={[styles.preview, { backgroundColor: theme.backgroundElement }]} accessibilityLabel={tr("알림 예시: {0}", tr(copy.preview))}>
             <View style={[styles.previewIcon, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={{ color: theme.accentInk }}>g</ThemedText></View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <ThemedText type="smallBold">{tr("글링")}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">{tr(copy.preview)}</ThemedText>
             </View>
-          </View>
+          </View>}
           <Pressable lens analyticsId="components_push-invite.pressable.2" onPress={() => void allow()} disabled={busy} accessibilityRole="button"
             accessibilityState={{ disabled: busy, busy }}
             style={({ pressed }) => [styles.primary, clay && styles.primaryClay, { backgroundColor: clay ? 'transparent' : theme.accent, opacity: busy ? ControlMotion.disabledOpacity : pressed ? ControlMotion.pressedOpacity : 1 }]}>

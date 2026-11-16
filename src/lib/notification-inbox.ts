@@ -11,6 +11,8 @@ export type InboxItem<T extends InboxRow = InboxRow> = { key: string; kind: 'sin
 export const NOTIFICATION_PAGE_SIZE = 50;
 const CITY_CATEGORIES = new Set(['trending', 'weekly_ranking', 'city_food', 'city_places', 'interests', 'nearby', 'weekend_picks']);
 const CITY_KINDS = new Set(['trending_meetup', 'trending_hashtag']);
+// 20261117000000_notification_tune: the roundup and nearby-bubble alerts sit with the city news.
+for (const category of ['new_posts', 'bubble_alerts']) CITY_CATEGORIES.add(category);
 const LIKE_KINDS = new Set(['post_like', 'comment_like', 'like_summary']);
 // Chat-request kinds stay unread in the bell so the chat tab badge keeps counting them until the request is opened.
 export const BELL_KEEP_UNREAD_KINDS = new Set(['meetup_request', 'meetup_approved', 'meetup_rejected']);
