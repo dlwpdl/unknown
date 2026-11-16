@@ -2323,14 +2323,14 @@
    {
     "cityId": "vancouver",
     "placeId": "osm:node:4976343547",
-    "artist": "HANDSON Steak & Frites",
-    "title": "HANDSON Steak & Frites signature plate",
+    "artist": "By Handson",
+    "title": "By Handson seasonal tasting dishes on a moss-covered tray",
     "discoveredVia": "Business site",
-    "imageSha256": "ab97597dc75451b08525c8142688cb1649d8f375e9a40fe25f8ad6203a3e3d8a",
+    "imageSha256": "5f74e71b218fc2b11d6f88300a60ca05f03c71bb4c5e9e07c07cfd51531528f0",
     "license": "Business-provided photo",
-    "uri": "https://static.wixstatic.com/media/948858_69a5a669d22f4899bcc75a73d1fdf1f3~mv2.jpg",
-    "sourceUrl": "https://www.handsonyvr.ca",
-    "licenseUrl": "https://www.handsonyvr.ca"
+    "uri": "https://byhandson.ca/assets/photo-02.webp",
+    "sourceUrl": "https://byhandson.ca",
+    "licenseUrl": "https://byhandson.ca"
    },
    {
     "cityId": "vancouver",
