@@ -322,6 +322,8 @@ test('연락처 마이그레이션은 앱과 같은 모양만 받고 본문에 �
   assert.match(sql, /'apply','phone','email','link','lead'/);
   assert.match(sql, /in \('hours','duties','phone','email','link'\) then in_body := in_body and strpos/);
   assert.match(sql, /when 'lead' then 900/);
+  // This file replaces the whole guard after 20261113200000, so it must keep that file's 인스위트 세탁기.
+  assert.match(sql, /array\['furnished','utilities','parking','pets','laundry'\]/);
   assert.match(sql, /revoke all on function public\.listing_apply_contact_enabled\(\) from public, anon;/);
 });
 

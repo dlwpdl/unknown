@@ -1,5 +1,5 @@
 -- 구인 글 지원 방법 연락처 (redesign 2026-11-14, I-post-01): the author may add a phone number, an email address and
--- an https apply link to a hiring post. Same guard as 20261027060000 plus three jobs keys, each a single string the
+-- an https apply link to a hiring post. Same guard as 20261113200000 (with 인스위트 세탁기) plus three jobs keys, each a single string the
 -- author typed, checked for shape, and already in the checked body (the app writes them into the body's first line),
 -- so safety monitoring still reads every word and the contact is visible exactly where the post itself is visible.
 -- The lead limit grows from 600 to 900 for that extra line. Older apps never send these keys; existing rows are unaffected.
@@ -27,7 +27,7 @@ begin
       when 'rooms' then item.kind = 'string' and item.text = any(array['room','studio','1b','1b_den','2b','2b2b','3b','basement'])
       when 'payUnit' then item.kind = 'string' and item.text = any(array['hour','month','year','negotiable'])
       when 'condition' then item.kind = 'string' and item.text = any(array['new','like_new','used','parts'])
-      when 'includes' then private.listing_enum_list(item.value, array['furnished','utilities','parking','pets'])
+      when 'includes' then private.listing_enum_list(item.value, array['furnished','utilities','parking','pets','laundry'])
       when 'extras' then item.kind = 'array' and jsonb_array_length(item.value) <= 5
         and not exists (select 1 from jsonb_array_elements(item.value) as element
           where jsonb_typeof(element) <> 'string' or length(btrim(element #>> '{}')) = 0 or length(element #>> '{}') > 20)
