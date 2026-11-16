@@ -69,8 +69,9 @@ uri = "pg-functions://postgres/public/gling_access_token_hook"
 [functions.draft-post]
 verify_jwt = true
 
+# Members send their JWT (checked with auth.getUser); the web build sends the search build token instead (is_search_build_token).
 [functions.translate-content]
-verify_jwt = true
+verify_jwt = false
 
 [functions.extract-place-names]
 verify_jwt = true
