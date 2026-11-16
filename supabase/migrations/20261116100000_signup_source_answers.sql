@@ -19,7 +19,11 @@ $$;
 revoke all on function public.record_signup_source(text) from public,anon,authenticated;
 grant execute on function public.record_signup_source(text) to authenticated;
 
--- An unknown target rejects the whole analytics batch, so these must reach production before the app build.
+-- Controls on the new screen. Unregistered ids are stored only as 'unregistered' (20261111130000), so each one is listed.
+-- The app build that shows this screen needs this migration in production first: without record_signup_source every answer is lost.
 insert into private.behavior_targets(id) values
-  ('components_signup-source-question.scrollview.1'),('components_signup-source-question.submit'),('components_signup-source-question.skip')
+  ('components_signup-source-question.scrollview.1'),('components_signup-source-question.submit'),('components_signup-source-question.skip'),
+  ('components_signup-source-question.chip.instagram'),('components_signup-source-question.chip.threads'),('components_signup-source-question.chip.naver'),
+  ('components_signup-source-question.chip.friend'),('components_signup-source-question.chip.search'),('components_signup-source-question.chip.kakao'),
+  ('components_signup-source-question.chip.other')
 on conflict (id) do nothing;
