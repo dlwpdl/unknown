@@ -9,13 +9,14 @@ import * as personalInfo from '../src/lib/personal-info.ts';
 
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(v => Array.isArray(v) ? v.flatMap(nodes) : nodes(v))];
 function onboarding(existingProfile = null, appleSignIn = false) {
-  const state = [], refs = [], calls = [], opened = [], completed = [];
+  const state = [], refs = [], calls = [], opened = [], completed = [], prompts = [];
   let cursor = 0, refCursor = 0, fail = false;
   const exports = {};
   const source = ts.transpileModule(fs.readFileSync(new URL('../src/components/profile-onboarding.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, process: { env: {} }, require: withLanguageImports((name) => {
+  vm.runInNewContext(source, { exports, process: { env: {} }, setTimeout: fn => fn(), require: withLanguageImports((name) => {
+    if (name === '@/lib/push-prompt') return { requestPushPrompt: reason => { prompts.push(reason); } };
     if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name === 'react') return {
       useEffect() {}, useRef(initial) { return refs[refCursor++] ??= { current: initial }; },
@@ -44,7 +45,7 @@ if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () =
   const save = async () => { nodes(render()).find(n => n.props?.accessibilityState?.busy !== undefined).props.onPress(); for (let i = 0; i < 10; i++) await Promise.resolve(); };
   const question = () => nodes(render()).find(n => n.type === 'SignupSourceQuestion');
   const finishWelcome = () => { question()?.props.onDone(); nodes(render()).find(n => n.props?.onContinue)?.props.onContinue(); };
-  return { render, boxes, save, question, finishWelcome, calls, opened, completed, setFail: value => { fail = value; } };
+  return { render, boxes, save, question, finishWelcome, prompts, calls, opened, completed, setFail: value => { fail = value; } };
 }
 
 test('signup requires each mandatory agreement; select all is optional and reversible', async () => {
@@ -67,8 +68,10 @@ test('signup requires each mandatory agreement; select all is optional and rever
   assert.equal(ui.calls[0][0], 'create_profile_with_personal_info');
   assert.equal(ui.calls[0][1].p_personal_info_version, null);
   assert.equal(ui.completed.length, 0, 'signup waits for welcome acknowledgement');
+  assert.deepEqual(ui.prompts, [], 'no push sheet before the welcome screen is done');
   ui.finishWelcome();
   assert.equal(ui.completed.length, 1, 'required only can finish signup');
+  assert.deepEqual(ui.prompts, ['signup'], 'one push sheet right after the welcome screen');
 });
 
 test('details never check consent, optional information needs its own consent, failed persistence cannot finish', async () => {
@@ -83,6 +86,7 @@ test('details never check consent, optional information needs its own consent, f
   for (let i = 1; i <= 3; i++) ui.boxes()[i].props.onPress();
   ui.boxes()[4].props.onPress(); ui.setFail(true);
   await ui.save(); assert.equal(ui.completed.length, 0);
+  assert.deepEqual(ui.prompts, [], 'a failed save never asks for push');
   ui.setFail(false); await ui.save();
   assert.equal(ui.calls.at(-1)[1].p_personal_info_version, personalInfo.PERSONAL_INFO_VERSION);
   ui.finishWelcome();
@@ -91,6 +95,7 @@ test('details never check consent, optional information needs its own consent, f
   assert.equal(existing.boxes().length, 4);
   existing.boxes()[0].props.onPress(); await existing.save();
   assert.equal(existing.calls[0][0], 'create_profile_with_consent');
+  assert.deepEqual(existing.prompts, [], 'consent-only never asks for push');
 });
 
 

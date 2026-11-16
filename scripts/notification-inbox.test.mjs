@@ -89,9 +89,9 @@ test('admin routes open the server-provided dashboard, else the in-app admin scr
   assert.deepEqual(navigated, ['/admin?section=errors']);
 });
 
-test('settings rows cover every category once except the retired 1:1 request toggle', () => {
+test('settings rows cover every category once', () => {
   const keys = NOTIFICATION_SETTING_GROUPS.flatMap(group => group.rows.flatMap(item => item.keys));
-  assert.deepEqual([...keys].sort(), NOTIFICATION_CATEGORIES.map(item => item.key).filter(key => key !== 'direct_requests').sort());
+  assert.deepEqual([...keys].sort(), NOTIFICATION_CATEGORIES.map(item => item.key).sort());
   assert.equal(new Set(keys).size, keys.length);
   assert.deepEqual(NOTIFICATION_SETTING_GROUPS.map(group => group.id), ['mine', 'city', 'account']);
 });

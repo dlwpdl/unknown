@@ -5134,5 +5134,17 @@ export const uiEnglish: Record<string, string> = {
   "바탕화면에 있는 의자.jpg로 중고거래 판매글 초안 써줘": "Draft a Buy & Sell listing for the chair in chair.jpg on my desktop",
   "내가 글링에 올린 글 보여줘": "Show me the posts I've put on Gling",
   "AI는 연결할 때 고른 만큼만 할 수 있어요. '초안만'이면 글을 올리지 못해요.": "The AI can only do what you chose when connecting. With 'Drafts only', it can't post.",
-  "모임에서 일어난 일은 호스트와 멤버가 각자 책임져요. 문제가 생겨 신고해 주시면 글링이 기록을 확인하고 최대한 도울게요. 위급하면 911에 먼저 연락해 주세요.": "Hosts and members are each responsible for themselves at a meetup. If something goes wrong, report it. We'll look into it and do everything we can to help. In an emergency, call 911 first."
+  "모임에서 일어난 일은 호스트와 멤버가 각자 책임져요. 문제가 생겨 신고해 주시면 글링이 기록을 확인하고 최대한 도울게요. 위급하면 911에 먼저 연락해 주세요.": "Hosts and members are each responsible for themselves at a meetup. If something goes wrong, report it. We'll look into it and do everything we can to help. In an emergency, call 911 first.",
+  // 알림 정리 (copy/contract.json, 2026-11-16)
+  "새 글이나 답글이 올라오면 알려 드릴까요?": "Want a heads-up on new posts and replies?",
+  "동네 소식은 하루 세 번까지만 보내요. 받고 싶은 것만 설정에서 골라 둘 수 있어요.": "We send city updates three times a day at most. You can pick what you get in settings.",
+  "{0}님의 댓글": "{0} commented",
+  "{0}님의 답글": "{0} replied",
+  "{0} 새 글 {1}개": "{1} new posts in {0}",
+  "친구·말풍선 요청": "Friend and bubble requests",
+  "친구 요청, 폴더 초대, 말풍선 대화 신청": "Friend requests, folder invites and bubble chat requests",
+  "새 글 모아 보기": "New posts roundup",
+  "새 글이 쌓인 날 저녁에 한 번, 주 3번까지": "One evening notification on days with new posts, up to 3 a week",
+  "근처 말풍선": "Bubbles nearby",
+  "우리 도시에 말풍선이 올라오면, 하루 한 번까지": "When someone posts a bubble in your city, once a day at most",
 };
