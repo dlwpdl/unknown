@@ -117,6 +117,9 @@ export function useLiveMarkers(map: LiveMap | null, now: number, show: boolean, 
   }, [map, now, show, cityId, tr, locale, hidden]);
 }
 
+/** True until the meetup list for this map has been read once (the shared empty list means "not read"). */
+export const meetupMarkersPending = (markers: DiscoveryMarker[]) => markers === NO_MARKERS;
+
 /** 근처 모임: the city's open meetups from the existing meetup feed, pinned at their linked place. */
 export function useMeetupMarkers(cityId: string, viewerScope: string, now: number, show: boolean): DiscoveryMarker[] {
   const { tr, locale } = useLanguage(), hidden = useContentVisibility();

@@ -10,6 +10,9 @@ import * as designSystem from '../src/constants/design-system.ts';
 import * as chilling from '../src/lib/chilling.ts';
 import * as chillingDate from '../src/lib/chilling-date.ts';
 import * as meetupDraft from '../src/lib/meetup-create-draft.ts';
+import * as infoCells from '../src/lib/meetup-info-cells.ts';
+import * as meetupTopics from '../src/lib/meetup-topics.ts';
+import * as meetupQuick from '../src/lib/meetup-quick.ts';
 import { translateUi, translationsFor } from '../src/i18n/index.ts';
 
 import { splitEventMeetupBody, visibleMeetupBody, meetupDestination } from './test-meetup-source-imports.mjs';
@@ -38,6 +41,8 @@ const generated = { categorySlug: 'meetup', title: '함께 산책해요', body: 
 export const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
 
 export function form({ params = {}, sourceEvent, catalogReady = true, membership = {}, loadProfile, create, chooseKind = true, language = 'ko', themeOverride } = {}) {
+  // A generic entry now opens on the kind cards; flows that test the full steps arrive the way a requested kind does.
+  const effectiveParams = chooseKind && !params.kind && !params.placeId && !params.placeCityId && !params.ticketmasterEventId && !params.ticketmasterCityId ? { ...params, kind: 'once' } : params;
   const slots = [], requests = [], writes = [], feedback = [], layouts = [], effects = [], alerts = [], routes = [], profileReads = [], updates = [], events = [];
   let guard;
   let at = 0, focused, focusCleanup;
@@ -72,7 +77,7 @@ export function form({ params = {}, sourceEvent, catalogReady = true, membership
     },
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { View: 'View', TextInput: 'TextInput', KeyboardAvoidingView: 'KeyboardAvoidingView', Platform: { OS: 'web' }, StyleSheet: { create: x => x, hairlineWidth: 1 }, Alert: { alert: (...args) => alerts.push(args) }, DeviceEventEmitter: { emit: value => events.push(value) } },
-    'expo-router': { useLocalSearchParams: () => params, useFocusEffect: callback => { focused = callback; }, usePreventRemove(when) { guard = when; }, useRouter: () => ({ replace: path => routes.push(path), push: path => routes.push(path) }) },
+    'expo-router': { useLocalSearchParams: () => effectiveParams, useFocusEffect: callback => { focused = callback; }, usePreventRemove(when) { guard = when; }, useRouter: () => ({ replace: path => routes.push(path), push: path => routes.push(path) }) },
     'react-native-reanimated': { useReducedMotion: () => true },
     '@/hooks/use-language': { useLanguage: () => ({ language, tr: (s, ...args) => translateUi(language, s, ...args), t }) },
     '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => theme },
@@ -83,7 +88,7 @@ export function form({ params = {}, sourceEvent, catalogReady = true, membership
     '@/lib/supabase': { supabase: { functions: { invoke: (...args) => new Promise((resolve, reject) => requests.push({ args, resolve, reject })) } } },
     '@/components/live-bubbles': { useNow: () => Date.now() },
     '@/lib/chilling-data': { chillingProfilePreview, getChillingError: error => error.message, getChillingErrorCode: error => error.message, loadChillingProfile: async (_client, preview) => { profileReads.push(preview); return loadProfile ? loadProfile(hostProfile) : hostProfile; }, createChillingEvent: async (_client, value) => { writes.push(value); return create ? create(value) : 'new-meetup'; } },
-    '@/lib/chilling': chilling, '@/lib/chilling-date': chillingDate,
+    '@/lib/chilling': chilling, '@/lib/chilling-date': chillingDate, '@/lib/meetup-info-cells': infoCells, '@/lib/meetup-topics': meetupTopics, '@/lib/meetup-quick': meetupQuick,
     '@/lib/community-data': { getCommunityActionError: () => null, MEETUPS_CHANGED_EVENT: 'meetups.changed' },
     '@/lib/behavior-analytics': { behavior() {} },
     '@/lib/meetup-create-draft': meetupDraft,
@@ -135,20 +140,72 @@ export function form({ params = {}, sourceEvent, catalogReady = true, membership
 }
 const settle = () => new Promise(setImmediate);
 
-test('generic creation requires an explicit type, while a valid type handoff initializes the form', async () => {
+test('generic creation opens on the kind cards, while a valid type handoff initializes the form', async () => {
   const app = form({ chooseKind: false });
-  assert.equal(nodes(app.render()).find(node => node.type === 'MeetupKindSwitch').props.value, null);
-  app.edit('모임 제목', '산책'); app.edit('모임 소개', '함께 걸어요');
-  app.submitButton().props.onPress(); await settle();
-  assert.equal(app.writes.length, 0); assert.equal(app.profileReads.length, 0);
-  assert.ok(nodes(app.render()).some(node => node.props?.accessibilityRole === 'alert'));
-  nodes(app.render()).find(node => node.type === 'MeetupKindSwitch').props.onChange('group');
+  const cards = () => nodes(app.render()).find(node => node.type === 'MeetupEntryCards');
+  assert.ok(cards() && !nodes(app.render()).some(node => node.type === 'MeetupQuickFields'));
+  cards().props.onChoose('group');
   assert.equal(nodes(app.render()).find(node => node.type === 'MeetupKindSwitch').props.value, 'group');
+  assert.ok(!cards());
   const handoff = form({ params: { kind: 'group' }, chooseKind: false });
   assert.equal(nodes(handoff.render()).find(node => node.type === 'MeetupKindSwitch').props.value, 'group');
   assert.ok(handoff.find('활동 주기'));
   const malformed = form({ params: { kind: ['once', 'group'] }, chooseKind: false });
-  assert.equal(nodes(malformed.render()).find(node => node.type === 'MeetupKindSwitch').props.value, null);
+  assert.ok(nodes(malformed.render()).some(node => node.type === 'MeetupEntryCards'));
+});
+
+test('the one-screen 칠링 opens a normal meetup with its defaults through the same create call', async () => {
+  const app = form({ chooseKind: false });
+  const quick = () => nodes(app.render()).find(node => node.type === 'MeetupQuickFields');
+  nodes(app.render()).find(node => node.type === 'MeetupEntryCards').props.onChoose('once');
+  assert.ok(quick() && !nodes(app.render()).some(node => node.type === 'MeetupEntryCards'));
+  const submit = () => app.find('meetup.create.quick.submit');
+  app.focus(); await settle();
+  assert.equal(submit().props.disabled, true);
+  quick().props.onTitle('퇴근하고 노을 보러 갈래요?');
+  await settle();
+  assert.equal(quick().props.profile.consent, false);
+  assert.equal(submit().props.disabled, true);
+  quick().props.profile.onConsent();
+  assert.equal(submit().props.disabled, false);
+  submit().props.onPress(); await settle();
+  assert.equal(app.writes.length, 1);
+  const { event, title, body, question, access } = app.writes[0];
+  assert.equal(title, '퇴근하고 노을 보러 갈래요?');
+  assert.match(body, /^퇴근하고 노을 보러 갈래요\? 내일 저녁 7시에 만나요\. 같이 하실 분은 신청해 주세요\.$/);
+  assert.equal(question, '어떤 분위기의 모임을 기대하세요?');
+  assert.equal(access, 'public');
+  assert.equal(event.kind, 'once');
+  assert.equal(event.capacity, 6);
+  assert.equal(Date.parse(event.endsAt) - Date.parse(event.startsAt), 2 * 3600000);
+});
+
+test('a topic fills the start template only into empty fields, asks before replacing typed text, and its info cells ride the intro', async () => {
+  const [sports, food] = meetupTopics.MEETUP_TOPICS;
+  const app = form();
+  const picker = () => nodes(app.render()).find(n => n.type === 'MeetupTopicStart');
+  const editor = () => nodes(app.render()).find(n => n.type === 'MeetupInfoCellsEditor');
+  picker().props.onPick(sports);
+  assert.equal(app.find('모임 제목').props.value, sports.title);
+  assert.equal(app.find('모임 소개').props.value, sports.intro);
+  assert.equal(picker().props.ask, null);
+  assert.deepEqual(editor().props.cells, [{ label: '수준', value: '누구나' }, { label: '준비물', value: '' }, { label: '1인 비용', value: '' }]);
+  // Picking again while the fields still hold the template replaces it silently; category follows only where one fits.
+  picker().props.onPick(food);
+  assert.equal(app.find('모임 제목').props.value, food.title); assert.equal(picker().props.ask, null);
+  app.edit('모임 제목', '내 제목');
+  picker().props.onPick(sports);
+  assert.equal(picker().props.ask, sports); assert.equal(app.find('모임 제목').props.value, '내 제목');
+  picker().props.onKeep();
+  assert.equal(picker().props.ask, null); assert.equal(app.find('모임 제목').props.value, '내 제목'); assert.equal(editor().props.cells[0].label, '수준');
+  picker().props.onPick(food); picker().props.onReplace();
+  assert.equal(app.find('모임 제목').props.value, food.title); assert.equal(picker().props.ask, null);
+  editor().props.onChange([{ label: '가게', value: '라멘집' }, { label: '1인 예상 비용', value: '' }, { label: '인원 확정 마감', value: '하루 전' }]);
+  app.focus(); await settle();
+  app.find('meetup-create.host-consent').props.onPress();
+  app.submitButton().props.onPress(); await settle();
+  assert.equal(app.writes.length, 1);
+  assert.equal(app.writes[0].body, `${food.intro}\n\n모임 정보\n가게: 라멘집\n인원 확정 마감: 하루 전`);
 });
 
 test('host form goes what → when and where → who, ending with the host intro, while optional help and advanced settings remain accessible', () => {
@@ -401,17 +458,17 @@ test('the schedule waits for a chosen kind and a loaded event, keeps its duratio
   const dates = app => nodes(app.render()).filter(n => n.type === 'ChillingDateInput');
   const generic = form({ chooseKind: false });
   assert.equal(dates(generic).length, 0); assert.equal(nodes(generic.render()).some(n => n.type === 'MeetupPolicyNotice'), false);
-  nodes(generic.render()).find(n => n.type === 'MeetupKindSwitch').props.onChange('once');
-  const [start, end] = dates(generic);
+  const full = form();
+  const [start, end] = dates(full);
   assert.ok([start, end].every(n => Math.abs(n.props.minimumDate.getTime() - Date.now()) < 60000), 'Pickers cannot offer past times.');
   const duration = Date.parse(end.props.value) - Date.parse(start.props.value);
   const later = new Date(Date.parse(start.props.value) + 3 * 86400000).toISOString();
   start.props.onChange(later);
-  assert.equal(Date.parse(dates(generic)[1].props.value) - Date.parse(later), duration);
-  dates(generic)[0].props.onChange(new Date(Date.now() - 3600000).toISOString());
-  generic.submitButton().props.onPress(); await settle();
-  assert.equal(generic.writes.length, 0); assert.equal(generic.profileReads.length, 0);
-  assert.equal(nodes(generic.render()).filter(n => n.props?.accessibilityRole === 'alert').length, 1);
+  assert.equal(Date.parse(dates(full)[1].props.value) - Date.parse(later), duration);
+  dates(full)[0].props.onChange(new Date(Date.now() - 3600000).toISOString());
+  full.submitButton().props.onPress(); await settle();
+  assert.equal(full.writes.length, 0); assert.equal(full.profileReads.length, 0);
+  assert.equal(nodes(full.render()).filter(n => n.props?.accessibilityRole === 'alert').length, 1);
 
   const sourceEvent = { id: 'event-race', name: 'Race Festival', country: 'CA', status: 'onsale', startsAt: new Date(Date.now() + 7 * 86400000).toISOString(), ticketUrl: 'https://ticketmaster.ca/example', timeUnconfirmed: false };
   const event = form({ params: { ticketmasterEventId: sourceEvent.id, ticketmasterCityId: 'vancouver' }, sourceEvent });

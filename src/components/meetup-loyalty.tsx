@@ -21,11 +21,10 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadMeetupRsvp, setMeetupRsvp, type MeetupRsvp as Rsvp } from '@/lib/meetup-convenience';
-import { loadMeetupHostRoster, type MeetupHostIdentity } from '@/lib/meetup-host-tools';
 import { sessionWhen } from '@/lib/meetup-host-home';
 import {
   ANNOUNCEMENT_MAX, ANNOUNCEMENTS_PER_DAY, REGULAR_ATTENDANCE, badgeLabels, loadMeetupBadges, loadMeetupLoyalty, loadMeetupRoster, loyaltyError,
-  pinnedNotices, postMeetupAnnouncement, saveMemberNote, setCheckinStaff, setHostFollow, setMeetupAutoNext, setMeetupEncore, tierAtLeast, unreadNotices,
+  pinnedNotices, postMeetupAnnouncement, saveMemberNote, setCheckinStaff, setHostFollow, setMeetupAutoNext, setMeetupEncore, unreadNotices,
   updateMeetupAnnouncement, type AnnouncementAudience, type BadgeLevels, type MeetupLoyalty, type PinnedNotice, type RosterMember,
 } from '@/lib/meetup-loyalty';
 import { supabase } from '@/lib/supabase';
@@ -310,7 +309,6 @@ export function MeetupNoticeManager({ postId }: { postId: string }) {
   if (failed) return <StateCard kind="error" title={tr('공지를 불러오지 못했어요')} body={tr('연결을 확인하고 다시 시도해 주세요.')} actionLabel={tr('다시 불러오기')} onAction={refresh} />;
   if (!state) return <ListLoading label={tr('불러오는 중이에요')} />;
   if (!state.isHost) return null;
-  const plus = tierAtLeast(state.hostTier, 'plus');
   const left = Math.max(0, ANNOUNCEMENTS_PER_DAY - (state.sentToday ?? 0));
   const canMustRead = !!state.noticeBoard && audience === 'members' && !scheduled;
   const notices = pinnedNotices(state);
@@ -344,14 +342,13 @@ export function MeetupNoticeManager({ postId }: { postId: string }) {
       style={[ControlStyles.field, styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.card }]} />
     <SectionLabel>{tr('받는 사람')}</SectionLabel>
     <View style={styles.row}>{AUDIENCES.map(([value, label]) =>
-      <SelectionChip key={value} analyticsId="meetup.notice.audience" label={tr(label)} selected={audience === value} disabled={value !== 'members' && !plus} accessibilityRole="radio" accessibilityState={{ checked: audience === value, disabled: value !== 'members' && !plus }}
+      <SelectionChip key={value} analyticsId="meetup.notice.audience" label={tr(label)} selected={audience === value} accessibilityRole="radio" accessibilityState={{ checked: audience === value }}
         onPress={() => { play('selection'); setAudience(value); }} />)}</View>
     <SectionLabel>{tr('보내는 때')}</SectionLabel>
     <View style={styles.row}>
       <SelectionChip analyticsId="meetup.notice.schedule" label={tr('지금 보내기')} selected={!scheduled} accessibilityRole="radio" accessibilityState={{ checked: !scheduled }} onPress={() => { play('selection'); setScheduled(false); }} />
-      <SelectionChip analyticsId="meetup.notice.schedule" label={tr('시간 정해서 보내기')} selected={scheduled} disabled={!plus} accessibilityRole="radio" accessibilityState={{ checked: scheduled, disabled: !plus }} onPress={() => { play('selection'); setScheduled(true); }} />
+      <SelectionChip analyticsId="meetup.notice.schedule" label={tr('시간 정해서 보내기')} selected={scheduled} accessibilityRole="radio" accessibilityState={{ checked: scheduled }} onPress={() => { play('selection'); setScheduled(true); }} />
     </View>
-    {!plus && <ThemedText themeColor="textSecondary" style={[Typography.supporting, styles.note]}>{tr('받는 사람 고르기와 예약 보내기는 플러스 멤버십부터 쓸 수 있어요.')}</ThemedText>}
     {scheduled && <ChillingDateInput label={tr('보낼 시간')} value={sendAt} disabled={busy} minimumDate={new Date()} onChange={value => { play('selection'); setSendAt(value); }} />}
     {canMustRead && <View style={styles.listRow}>
       <ThemedText style={[Typography.body, styles.flex]}>{tr('필독으로 걸기')}</ThemedText>
@@ -380,7 +377,7 @@ export function MeetupNoticeManager({ postId }: { postId: string }) {
   </View>;
 }
 
-/** /meetup-tools schedule: open the next session by itself. Group meetups only; the host's Pro tier is checked by the server too. */
+/** /meetup-tools schedule: open the next session by itself. Group meetups only; free for every host. */
 export function MeetupAutoNext({ postId }: { postId: string }) {
   const { tr } = useLanguage();
   const theme = useTheme();
@@ -388,7 +385,6 @@ export function MeetupAutoNext({ postId }: { postId: string }) {
   const { state, refresh } = useMeetupLoyalty(postId);
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   if (!state?.isHost || state.kind !== 'group') return null;
-  const pro = tierAtLeast(state.hostTier, 'pro');
   const enabled = !!state.autoNext?.enabled, cadence = state.autoNext?.cadence ?? 'weekly';
   const save = async (next: boolean, nextCadence: 'weekly' | 'fortnightly') => {
     setBusy(true); setError('');
@@ -400,7 +396,7 @@ export function MeetupAutoNext({ postId }: { postId: string }) {
     <SectionLabel>{tr('반복')}</SectionLabel>
     <ListCard>
       <ListRow title={tr('다음 회차 자동으로 열기')} detail={tr('끝나면 같은 요일, 같은 시간으로 열고 멤버와 팔로워에게 알려요.')}
-        trailing={pro || enabled ? <Switch analyticsId="meetup.auto-next" accessibilityLabel={tr('다음 회차 자동으로 열기')} value={enabled} disabled={busy || (!pro && !enabled)} onValueChange={next => { play('selection'); void save(next, cadence); }} /> : <Tag label={tr('프로')} />} />
+        trailing={<Switch analyticsId="meetup.auto-next" accessibilityLabel={tr('다음 회차 자동으로 열기')} value={enabled} disabled={busy} onValueChange={next => { play('selection'); void save(next, cadence); }} />} />
       {enabled && <View style={[styles.row, styles.rowPad]}>{(['weekly', 'fortnightly'] as const).map(value =>
         <SelectionChip key={value} analyticsId="meetup.auto-next.cadence" label={value === 'weekly' ? tr('매주') : tr('2주마다')} selected={cadence === value} disabled={busy} accessibilityRole="radio" accessibilityState={{ checked: cadence === value, disabled: busy }} baseColor={theme.backgroundElement}
           onPress={() => { play('selection'); void save(true, value); }} />)}</View>}
@@ -409,39 +405,35 @@ export function MeetupAutoNext({ postId }: { postId: string }) {
   </View>;
 }
 
-/** /meetup-tools members. Every host sees who is in; attendance counts, notes, regulars and check-in staff are Pro. */
+/** /meetup-tools members. Free for every host: attendance counts, notes, regulars and check-in staff. */
 export function MeetupMemberList({ postId }: { postId: string }) {
   const { tr } = useLanguage();
   const { state, failed, refresh: reload } = useMeetupLoyalty(postId);
-  const pro = tierAtLeast(state?.hostTier, 'pro');
   const known = !!state;
-  const [names, setNames] = useState<MeetupHostIdentity[] | null>(null), [members, setMembers] = useState<RosterMember[] | null>(null), [error, setError] = useState(''), [revision, setRevision] = useState(0);
+  const [members, setMembers] = useState<RosterMember[] | null>(null), [error, setError] = useState(''), [revision, setRevision] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   useEffect(() => {
     if (!known) return;
     let active = true;
-    (pro ? loadMeetupRoster(supabase, postId).then(value => { if (active) { setMembers(value); setError(''); } })
-      : loadMeetupHostRoster(supabase, postId).then(value => { if (active) { setNames(value.filter(person => !person.isHost)); setError(''); } }))
+    loadMeetupRoster(supabase, postId).then(value => { if (active) { setMembers(value); setError(''); } })
       .catch(failure => { if (active) setError(loyaltyError(failure, '명단을 불러오지 못했어요.')); });
     return () => { active = false; };
-  }, [known, pro, postId, revision]);
+  }, [known, postId, revision]);
   const refresh = useCallback(() => setRevision(value => value + 1), []);
   if (failed) return <StateCard kind="error" title={tr('멤버를 불러오지 못했어요')} body={tr('연결을 확인하고 다시 시도해 주세요.')} actionLabel={tr('다시 불러오기')} onAction={reload} />;
   if (!state) return <ListLoading label={tr('불러오는 중이에요')} />;
   if (!state.isHost) return null;
-  const count = pro ? members?.length : names?.length;
+  const count = members?.length;
   const current = members?.find(member => member.userId === selected) ?? null;
   return <View>
     <SectionLabel>{count == null ? tr('참여 멤버') : count === 1 ? tr('호스트 빼고 1명') : tr('호스트 빼고 {0}명', count)}</SectionLabel>
     {!!error && <ThemedText type="small" accessibilityRole="alert" themeColor="danger">{tr(error)}</ThemedText>}
     {count === 0 && <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('아직 승인한 멤버가 없어요.')}</ThemedText>}
     {!!count && <ListCard>
-      {pro ? members?.map(member => <ListRow key={member.userId} analyticsId="meetup.roster.open" title={member.nickname} leading={<InitialAvatar name={member.nickname} />}
+      {members?.map(member => <ListRow key={member.userId} analyticsId="meetup.roster.open" title={member.nickname} leading={<InitialAvatar name={member.nickname} />}
         detail={[tr('참석 {0}번', member.attended), member.attended >= REGULAR_ATTENDANCE ? tr('단골') : ''].filter(Boolean).join(' · ')}
-        trailing={member.regular ? <Tag label={tr('정회원')} /> : undefined} onPress={() => setSelected(member.userId)} />)
-        : names?.map(person => <ListRow key={person.userId} title={person.displayName || tr('모임 멤버')} leading={<InitialAvatar name={person.displayName || tr('모임 멤버')} />} />)}
+        trailing={member.regular ? <Tag label={tr('정회원')} /> : undefined} onPress={() => setSelected(member.userId)} />)}
     </ListCard>}
-    {!pro && <ThemedText themeColor="textSecondary" style={[Typography.supporting, styles.note]}>{tr('참석 횟수, 단골, 나만 보는 메모, 정회원, 체크인 담당은 프로 멤버십부터 쓸 수 있어요.')}</ThemedText>}
     <MemberSheet key={selected ?? 'none'} postId={postId} member={current} onClose={() => setSelected(null)} onChanged={refresh} />
   </View>;
 }

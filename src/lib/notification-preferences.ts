@@ -21,6 +21,8 @@ export const NOTIFICATION_CATEGORIES = [
   { key: 'merchant_operations', label: '비즈니스 게시·연결 문제' },
   { key: 'friend_saves', label: '친구가 저장한 곳' },
   { key: 'weekend_picks', label: '주말 갈 만한 곳' },
+  { key: 'new_posts', label: '새 글 모아 보기' },
+  { key: 'bubble_alerts', label: '근처 말풍선' },
   { key: 'account_security', label: '계정 보안' },
 ] as const;
 export type NotificationCategory = typeof NOTIFICATION_CATEGORIES[number]['key'];
@@ -68,6 +70,10 @@ export function notificationRoute(value: unknown, notification?: { kind?: unknow
     const topic = /^(?:요즘 뜨는 해시태그 ·|요즘 관심이 모이는 주제예요\.?)\s*#([\p{L}\p{M}\p{N}_-]{1,64})$/u.exec(notification.body);
     if (topic) return `/?hashtag=${encodeURIComponent(topic[1])}`;
   }
+  if (value === '/notifications' && (notification?.kind === 'trending_hashtag' || notification?.category === 'trending') && typeof notification.body === 'string') {
+    const tuned = /^요즘 #([\p{L}\p{M}\p{N}_-]{1,64}) 글이 많이 올라와요\.$/u.exec(notification.body);
+    if (tuned) return `/?hashtag=${encodeURIComponent(tuned[1])}`;
+  }
   const topic = /^\/\?hashtag=([^&?#]+)$/.exec(value);
   if (topic) {
     try {
@@ -76,6 +82,8 @@ export function notificationRoute(value: unknown, notification?: { kind?: unknow
     } catch { /* Malformed topic links stay in the inbox. */ }
     return null;
   }
+  // The new-posts roundup opens the city home feed.
+  if (value === '/') return value;
   const event = /^\/events\/([A-Za-z0-9_-]{1,100})\?cityId=([a-z]+)$/.exec(value);
   if (event && Object.hasOwn(EVENT_CITIES, event[2])) return value;
   const uuid = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
@@ -148,6 +156,7 @@ export const NOTIFICATION_SETTING_GROUPS: { id: 'mine' | 'city' | 'account'; row
     // 👋 손 흔들기 on a live-map bubble rings under post_likes (20261105030000), so this row turns it off too.
     { id: 'likes', label: '좋아요·손 흔들기', description: '한 글에 몇 명이 눌러도 한 번에 묶어서', keys: ['post_likes', 'comment_likes'] },
     { id: 'messages', label: '메시지', description: '단톡방은 1분 안에 온 건 하나로', keys: ['messages'] },
+    { id: 'direct_requests', label: '친구·말풍선 요청', description: '친구 요청, 폴더 초대, 말풍선 대화 신청', keys: ['direct_requests'] },
     { id: 'meetups', label: '모임', description: '신청·수락·일정 변경·하루 전 안내', keys: ['meetups'] },
     { id: 'business', label: '비즈니스', description: '후기·답변·게시 문제', keys: ['merchant_reviews', 'merchant_operations'] },
     { id: 'merchant_updates', label: '저장한 비즈니스 새 소식', description: '새 소식 받기를 켠 비즈니스만', keys: ['merchant_updates'] },
@@ -161,6 +170,8 @@ export const NOTIFICATION_SETTING_GROUPS: { id: 'mine' | 'city' | 'account'; row
     { id: 'nearby', label: '근처 새 모임', keys: ['nearby'] },
     { id: 'weekly_ranking', label: '이번 주 인기 글', description: '월요일에 한 번', keys: ['weekly_ranking'] },
     { id: 'weekend_picks', label: '주말 갈 만한 곳', description: '금요일 낮에 한 번', keys: ['weekend_picks'], gated: true },
+    { id: 'new_posts', label: '새 글 모아 보기', description: '새 글이 쌓인 날 저녁에 한 번, 주 3번까지', keys: ['new_posts'], gated: true },
+    { id: 'bubble_alerts', label: '근처 말풍선', description: '우리 도시에 말풍선이 올라오면, 하루 한 번까지', keys: ['bubble_alerts'], gated: true },
   ] },
   { id: 'account', rows: [
     { id: 'account_security', label: '계정 보안', description: '새 기기 로그인·비밀번호 변경. 끌 수 없어요', keys: ['account_security'], locked: true },
@@ -185,7 +196,7 @@ export function settingPatch(preferences: Pick<NotificationPreferences, 'push_mu
 }
 
 export const PUSH_PROMPT_EVENT = 'pushPromptRequested';
-export type PushPromptReason = 'comment' | 'post' | 'meetup_request' | 'meetup_create';
+export type PushPromptReason = 'comment' | 'post' | 'meetup_request' | 'meetup_create' | 'signup';
 export const PUSH_PROMPT_SNOOZE_MS = 14 * 24 * 60 * 60 * 1000;
 /** Whether a contextual push sheet may open: not snoozed by "나중에", this reason not asked before, and the OS can still ask. */
 export function pushPromptAllowed(state: { authed: boolean; configured: boolean; snoozedAt: string | null; askedReasons: string[]; reason: PushPromptReason; permissionGranted: boolean; canAsk: boolean; now: number }) {

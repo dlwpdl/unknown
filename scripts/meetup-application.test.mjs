@@ -31,7 +31,7 @@ function mount(options = {}) {
     '@/hooks/use-content-visibility': { useContentVisibility: () => (_type, _id, authorId) => authorId === options.hiddenRequester },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => calls.push(['feedback', kind]) }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: 'host' } }) }, '@/lib/membership-provider': { useMembership: () => ({ refresh() {} }) },
-    '@/lib/chilling-data': { getChillingError: e => e.message, getChillingErrorCode: e => e.message, loadChillingApplication: async () => application, loadMeetupRequestStatus: async () => null,
+    '@/lib/chilling-data': { getChillingError: e => e.message, getChillingErrorCode: e => e.message, loadChillingApplication: async () => application, loadMeetupRequestStatus: async () => null, requestUnanswered: () => false,
       respondMeetupRequestV2: async (_c, id, response) => { calls.push(['respond', id, response]); } },
     '@/lib/community-data': { MEETUPS_CHANGED_EVENT: 'changed', loadPendingMeetupRequests: async () => { if (options.pendingError) throw new Error('offline'); return options.pending ?? []; } },
     '@/lib/user-profile': { loadMannerSummary: async () => null }, '@/lib/supabase': { supabase: {} }, '@/lib/mock': { CITIES: [] }, '@/constants/theme': { Spacing: {}, MaxContentWidth: 640 }, '@/constants/design-system': { ControlMotion: { settleMs: 180 } },

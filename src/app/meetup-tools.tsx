@@ -6,6 +6,7 @@ import { SymbolView } from '@/components/symbol-view';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MeetupEditLink, MeetupHostHome } from '@/components/meetup-host-home';
 import { MeetupHostTools } from '@/components/meetup-host-tools';
+import { MeetupHostTransfer } from '@/components/meetup-host-transfer';
 import { MeetupMemberList, MeetupNoticeManager } from '@/components/meetup-loyalty';
 import { MeetupReviews } from '@/components/meetup-reviews';
 import { MeetupAutomation } from '@/components/meetup-automation';
@@ -43,7 +44,7 @@ export default function MeetupToolsRoute() {
     : section === 'quest-photo' && typeof sessionId === 'string' ? <MeetupQuestPhoto key={sessionId} sessionId={sessionId} />
     : section === 'notices' ? <MeetupNoticeManager key={id} postId={id} />
     : section === 'dues' ? <MeetupHostTools key={id} postId={id} sections={['dues']} />
-    : section === 'settings' ? <><MeetupHostTools key={id} postId={id} sections={['cohosts']} /><MeetupAutomation key={`automation:${id}`} postId={id} /><MeetupHostTools key={`stats:${id}`} postId={id} sections={['stats']} /></>
+    : section === 'settings' ? <><MeetupHostTools key={id} postId={id} sections={['cohosts']} /><MeetupHostTransfer key={`transfer:${id}`} postId={id} side="host" /><MeetupAutomation key={`automation:${id}`} postId={id} /><MeetupHostTools key={`stats:${id}`} postId={id} sections={['stats']} /></>
     : <MeetupReviews key={id} postId={id} kind={kind} attendanceOnly />;
   return <SafeAreaView style={[styles.root, { backgroundColor: theme.background }]}>
     <View style={[styles.head, { backgroundColor: theme.background }]}>

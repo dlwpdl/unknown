@@ -11,6 +11,8 @@ type PushJob = {
   kind?: string | null; locale?: string | null; badge?: number | null;
   // Added 2026-10-30 (migration 20261030161000): set only when the reminder's recipient can answer it.
   rsvp_post_id?: string | null;
+  // Added 2026-11-17 (migration 20261117000000): a title the server composed, and a TTL (seconds) shorter than the default.
+  push_title?: string | null; push_ttl?: number | null;
 };
 type WorkerOptions = {
   secret?: string; expoAccessToken?: string; fetcher?: typeof fetch;
@@ -21,13 +23,21 @@ const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 const uuid = new RegExp(`^${UUID}$`, 'i');
 // 앱의 notificationRoute()와 같은 목적지 목록을 유지한다. 관리자 알림(/admin?section=…)이 빠지면
 // 서버가 보낸 화면 대신 /notifications 로 열리므로 두 곳을 함께 고쳐야 한다.
-const routePattern = new RegExp(`^(?:/post/${UUID}(?:\\?commentId=${UUID})?|/company/${UUID}\\?review=(?:usage|employment)|/chat\\?(?:conversationId=${UUID}(?:&view=requests|&businessId=${UUID})?|requestId=${UUID}|view=requests)|/profile/(?:guidelines|settings|meetup-reviews|merchant\\?merchant=${UUID})|/user/${UUID}|/places/(?:osm:(?:node|way|relation):[1-9][0-9]{0,19}|partner:[a-z0-9]+(?:-[a-z0-9]+)*)\\?cityId=[a-z][a-z0-9-]{0,63}|/notifications|/admin(?:\\?(?:section=(?:alerts|analytics|conversations|errors|overview|posts|reports|safety|trending|users)|(?:safety|alert)=(?:${UUID}|[1-9][0-9]*)))?)$`, 'i');
+const routePattern = new RegExp(`^(?:/post/${UUID}(?:\\?commentId=${UUID})?|/company/${UUID}\\?review=(?:usage|employment)|/chat\\?(?:conversationId=${UUID}(?:&view=requests|&businessId=${UUID})?|requestId=${UUID}|view=requests)|/profile/(?:guidelines|settings|meetup-reviews|merchant\\?merchant=${UUID})|/user/${UUID}|/places/(?:osm:(?:node|way|relation):[1-9][0-9]{0,19}|partner:[a-z0-9]+(?:-[a-z0-9]+)*)\\?cityId=[a-z][a-z0-9-]{0,63}|/notifications|/discover(?:\\?bubbleRequest=${UUID})?|/|/admin(?:\\?(?:section=(?:alerts|analytics|conversations|errors|overview|posts|reports|safety|trending|users)|(?:safety|alert)=(?:${UUID}|[1-9][0-9]*)))?)$`, 'i');
 const json = (value: unknown, status = 200) => Response.json(value, { status });
-const RECOMMENDATIONS = ['trending', 'city_food', 'city_places', 'merchant_updates', 'weekly_ranking', 'interests', 'nearby'];
+const RECOMMENDATIONS = ['trending', 'city_food', 'city_places', 'merchant_updates', 'weekly_ranking', 'interests', 'nearby', 'new_posts'];
 const ROUNDS = 5; // ~500 sends per invocation, in Expo's 100-message batches
 const MEETUP_RSVP_CATEGORY = 'meetup_rsvp'; // registered on the device by src/lib/meetup-push-rsvp.ts
 const translateEnglish = (text: string) => uiEnglish[text] ?? text;
 const object = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
+
+// English titles for the two server-made Korean titles (copy: "{0} commented", "{0} replied", "{1} new posts in {0}").
+function englishPushTitle(title: string): string {
+  const person = title.match(/^(.+)님의 (댓글|답글)$/u);
+  if (person) return `${person[1]} ${person[2] === '댓글' ? 'commented' : 'replied'}`;
+  const roundup = title.match(/^(.+) 새 글 ([0-9]+)개$/u);
+  return roundup ? `${roundup[2]} new posts in ${roundup[1]}` : title;
+}
 
 function postBodyPreview(title: string, preview: string): string {
   const heading = title.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/gu, '\\s+');
@@ -85,14 +95,19 @@ export async function handlePushNotifications(request: Request, options: WorkerO
           const admin = route.startsWith('/admin');
           // Admin copy stays Korean; member copy follows the device language.
           const english = job.locale === 'en' && !admin;
+          const serverTitle = typeof job.push_title === 'string' && job.push_title.trim() ? job.push_title.trim() : null;
+          // A comment or reply push carries the comment's own words: those are never translated.
+          const userText = serverTitle !== null && (job.kind === 'comment' || job.kind === 'reply');
           const body = postPreview ? postBodyPreview(job.post_title!, job.post_preview!)
-            : english ? englishNotificationBody({ kind: job.kind ?? '', body: job.body }, translateEnglish) : job.body;
+            : english && !userText ? englishNotificationBody({ kind: job.kind ?? '', body: job.body }, translateEnglish) : job.body;
           // '갈게요 / 못 가요' buttons. Apps that never registered the category (1.4.6 and older) show the plain push.
           const rsvp = job.kind === 'meetup_reminder' && typeof job.rsvp_post_id === 'string' && route === `/post/${job.rsvp_post_id}`;
           return {
-            to: job.token, title: eventPreview ? job.event_title : postPreview ? job.post_title : admin ? '글링 관리자' : english ? 'Gling' : '글링',
+            to: job.token, title: eventPreview ? job.event_title : postPreview ? job.post_title
+              : serverTitle ? (english ? englishPushTitle(serverTitle) : serverTitle) : admin ? '글링 관리자' : english ? 'Gling' : '글링',
             body, sound: 'default', channelId: 'gling-activity',
-            ttl: RECOMMENDATIONS.includes(job.category) || job.kind === 'trending_meetup' ? 3600 : 86400,
+            ttl: Number.isInteger(job.push_ttl) && job.push_ttl! > 0 ? Math.min(job.push_ttl!, 86400)
+              : RECOMMENDATIONS.includes(job.category) || job.kind === 'trending_meetup' ? 3600 : 86400,
             // Only devices registered with a locale run a client that also clears the badge.
             ...(job.locale && Number.isInteger(job.badge) ? { badge: job.badge } : {}),
             // Expo has no send idempotency key. Stable IDs collapse ambiguous retry copies on devices.

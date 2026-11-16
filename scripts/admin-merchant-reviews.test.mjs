@@ -84,7 +84,7 @@ test('a meetup session keeps check-in, attendance confirmation and personal feed
   assert.equal(nodes(render(end, { verified: true })).some(node => node.props?.analyticsId === 'meetup.review.submit'), false, 'one-off/private attendance does not acquire a public group review');
 });
 
-test('only checked-in hosts with the right tier mark others as here; everyone else sees status only', () => {
+test('only checked-in hosts mark others as here; everyone else sees status only', () => {
   const component = view('../src/components/meetup-reviews.tsx', 'Session', { extra: '\nexports.Session = Session;', imports: sessionImports() });
   const start = Date.parse('2026-10-10T18:00:00Z');
   const session = { id: 'session', startsAt: new Date(start).toISOString(), endsAt: new Date(start + 3600000).toISOString(), checkedIn: true, verified: false, claimStatus: 'none', canReview: false,
@@ -93,7 +93,7 @@ test('only checked-in hosts with the right tier mark others as here; everyone el
   const mark = tree => nodes(tree).some(node => node.props?.accessibilityLabel === '이웃님이 왔다고 표시해요');
   const upsell = tree => nodes(tree).some(node => node.props?.title === '호스트가 대신 체크인하기');
   assert.equal(mark(render({})), false); assert.equal(upsell(render({})), false, 'a member is not sold a host feature');
-  assert.equal(mark(render({ isHost: true })), false); assert.equal(upsell(render({ isHost: true })), true);
+  assert.equal(mark(render({ isHost: true })), false); assert.equal(upsell(render({ isHost: true })), false, 'no host tool is sold');
   assert.equal(mark(render({ isHost: true, canStaffCheckIn: true })), true); assert.equal(upsell(render({ isHost: true, canStaffCheckIn: true })), false);
 });
 

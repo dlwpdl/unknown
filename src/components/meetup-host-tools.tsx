@@ -97,10 +97,8 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
             const key = JSON.stringify(nextFee);
             if (savedFee.current !== key) { savedFee.current = key; setFeeAmount(nextFee ? Number(nextFee.amount).toFixed(2) : ''); setFeeNote(nextFee?.note ?? ''); setFeeDue(nextFee?.dueOn ?? ''); }
           }
-          if (next.tier === 'premium') {
-            try { const result = await loadMeetupHostAggregates(supabase, postId); if (active) setMetrics(result); }
-            catch { if (active) { setMetrics(null); setMetricError(true); } }
-          } else if (active) setMetrics(null);
+          try { const result = await loadMeetupHostAggregates(supabase, postId); if (active) setMetrics(result); }
+          catch { if (active) { setMetrics(null); setMetricError(true); } }
         }
       } catch { if (active) { setState(null); setRoster([]); setMetrics(null); setError('load'); } }
       finally { if (active) setLoading(false); }
@@ -160,8 +158,8 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
   const field = [styles.search, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }];
   const managing = !!state && (state.isHost || state.isCohost);
   const feeOpen = () => { play('selection'); setFeeSheet(true); };
-  const cohostLabel = state?.cohostLimit == null ? say('공동 호스트 · 프로', 'Co-hosts · Pro') : state.cohostLimit === 0 ? say('공동 호스트 · 플러스부터', 'Co-hosts · Plus and up') : state.cohostLimit >= 100 ? say(`공동 호스트 ${(state.cohosts ?? []).length}명`, `Co-hosts: ${(state.cohosts ?? []).length}`) : say(`공동 호스트 ${(state.cohosts ?? []).length}/${state.cohostLimit}명`, `Co-hosts ${(state.cohosts ?? []).length}/${state.cohostLimit}`);
-  const errorText = error === 'MEETUP_COHOST_LIMIT' ? say('공동 호스트 자리가 다 찼어요. 멤버십을 올리면 더 둘 수 있어요.', 'All co-host spots are taken. Upgrade your membership to add more.') : error === 'PLUS_REQUIRED' ? say('공동 호스트는 플러스 멤버십부터 둘 수 있어요.', 'Co-hosts are available from Plus.') : feeErrors[error] ? say(...feeErrors[error]) : say('상태를 확인하지 못했어요. 연결과 권한, 멤버십을 확인해 주세요.', 'Couldn’t check the status. Check your connection, access and membership.');
+  const cohostLabel = !state?.cohostLimit ? say('공동 호스트', 'Co-hosts') : state.cohostLimit >= 100 ? say(`공동 호스트 ${(state.cohosts ?? []).length}명`, `Co-hosts: ${(state.cohosts ?? []).length}`) : say(`공동 호스트 ${(state.cohosts ?? []).length}/${state.cohostLimit}명`, `Co-hosts ${(state.cohosts ?? []).length}/${state.cohostLimit}`);
+  const errorText = error === 'MEETUP_COHOST_LIMIT' ? say('공동 호스트 자리가 다 찼어요. 멤버십을 올리면 더 둘 수 있어요.', 'All co-host spots are taken. Upgrade your membership to add more.') : feeErrors[error] ? say(...feeErrors[error]) : say('상태를 확인하지 못했어요. 연결과 권한, 멤버십을 확인해 주세요.', 'Couldn’t check the status. Check your connection, access and membership.');
   const refresh = (error || metricError) && <Pressable analyticsId="meetup_host_tools.control.11" accessibilityRole="button" disabled={locked} accessibilityState={{ disabled: locked }} style={button} onPress={() => { play('selection'); setLoading(true); setMetricError(false); setRetry(value => value + 1); }}>{fill}<ThemedText type="small" style={styles.bodyText}>{say('다시 불러오기', 'Try again')}</ThemedText></Pressable>;
   const status = <>
     {!!error && <ThemedText type="small" accessibilityRole="alert" themeColor="danger" style={styles.helper}>{errorText}</ThemedText>}
@@ -253,13 +251,13 @@ function HostTools({ postId, onChanged, waitlistOnly, language: side, sections, 
           </DragSheet>
         </View>}
         {show('stats') && <View>
-          <SectionLabel>{say('내 모임 통계 · 프리미엄', 'My meetup totals · Premium')}</SectionLabel>
+          <SectionLabel>{say('내 모임 통계', 'My meetup totals')}</SectionLabel>
           {metrics ? <View style={styles.stats}>
             <ThemedText type="small" style={styles.bodyText}>{say(`신청한 사람 ${metrics.applications}명 · 현재 승인 ${metrics.approvals}명`, `${metrics.applications} applicants · ${metrics.approvals} currently approved`)}</ThemedText>
             <ThemedText type="small" style={styles.bodyText}>{say(`확인된 참석 ${metrics.confirmedAttendance}건 · 회차별 합계`, `Confirmed attendance: ${metrics.confirmedAttendance} · total across sessions`)}</ThemedText>
             <ThemedText type="small" style={styles.bodyText}>{say(`재참가자 ${metrics.repeatParticipants}명 · 두 회차 이상 참석 확인`, `Repeat participants: ${metrics.repeatParticipants} · confirmed in two or more sessions`)}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{say('신청한 사람은 계정당 한 번 세고, 참석은 회차별로 합산해요. 호스트 본인은 참석 집계에서 제외해요.', 'Each applicant is counted once. Attendance is added up across sessions, excluding the host.')}</ThemedText>
-          </View> : <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{metricError ? say('통계를 확인하지 못했어요. 수치를 추정하지 않아요.', 'Couldn’t load stats. We never show estimates.') : say('실제 참석 집계는 호스트의 프리미엄 멤버십에서 확인해요.', 'The host can view verified totals with Premium.')}</ThemedText>}
+          </View> : <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{metricError ? say('통계를 확인하지 못했어요. 수치를 추정하지 않아요.', 'Couldn’t load stats. We never show estimates.') : say('실제 참석 집계는 호스트만 볼 수 있어요.', 'Only the host can view verified totals.')}</ThemedText>}
         </View>}
       </>}
     </>}

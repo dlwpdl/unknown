@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import * as meetupSections from '../src/lib/meetup-sections.ts';
+import * as infoCells from '../src/lib/meetup-info-cells.ts';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
@@ -54,7 +55,7 @@ function screen({ meId = 'host', meetup = { id: 'p1', cityId: 'vancouver', title
     '@/lib/community-data': { MEETUPS_CHANGED_EVENT: 'meetups.changed', editPost: async (_client, postId, patch, replacement) => { edited.push({ postId, patch, replacement }); if (edit) await edit(patch); } },
     '@/lib/feed-data': { loadPublicMeetupContext: async () => meetup, loadPublicPost: photos },
     'react-native-reanimated': { useReducedMotion: () => true },
-    '@/lib/meetup-ai': { splitEventMeetupBody }, '@/lib/meetup-sections': meetupSections,
+    '@/lib/meetup-ai': { splitEventMeetupBody }, '@/lib/meetup-sections': meetupSections, '@/lib/meetup-info-cells': infoCells,
     '@/lib/meetup-destination': destinations,
     '@/lib/supabase': { supabase: {} },
     '@/constants/theme': { Spacing: { two: 8, three: 16, five: 32 } },
@@ -98,6 +99,18 @@ test('title/body save edits only the intro and preserves place and event machine
   assert.equal(event.find('모임 소개').props.value, '공연 같이 가요.');
   event.edit('모임 소개', '바뀐 소개'); await event.save();
   assert.equal(event.edited[0].patch.body, `바뀐 소개${eventTail}`);
+});
+
+test('info cells are edited in their own fields and stay at the end of the intro on save', async () => {
+  const cells = '\n\n모임 정보\n수준: 처음\n준비물: 물';
+  const app = screen({ meetup: { id: 'p1', cityId: 'vancouver', title: '운동', body: `같이 뛰어요.${cells}`, room: onceRoom, authorId: 'host' } }); await app.flush();
+  assert.equal(app.find('모임 소개').props.value, '같이 뛰어요.');
+  const editor = () => nodes(app.render()).find(node => node.type === 'MeetupInfoCellsEditor');
+  assert.deepEqual(editor().props.cells, [{ label: '수준', value: '처음' }, { label: '준비물', value: '물' }]);
+  assert.equal(app.guard().enabled, false);
+  editor().props.onChange([{ label: '수준', value: '처음' }, { label: '준비물', value: '' }]);
+  await app.save();
+  assert.equal(app.edited[0].patch.body, '같이 뛰어요.\n\n모임 정보\n수준: 처음');
 });
 
 test('schedule save calls configureChillingEvent with the kind unchanged', async () => {

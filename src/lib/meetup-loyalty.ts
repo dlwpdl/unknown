@@ -1,11 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { MembershipTier } from './membership.ts';
 
 // Server contract: supabase/migrations/20261029140000_host_loyalty.sql. Badge counts arrive as levels (0/1/5/10/25).
 export type BadgeLevels = { attended: number; hosted: number };
 export type AnnouncementAudience = 'members' | 'pending' | 'waitlist';
 export type MeetupLoyalty = {
-  isHost: boolean; hostTier: MembershipTier; kind: 'once' | 'group'; ended: boolean;
+  isHost: boolean; hostTier: string; kind: 'once' | 'group'; ended: boolean;
   following: boolean; canEncore: boolean; encored: boolean; isStaff: boolean;
   hostBadges: { hosted: number };
   pinned: PinnedNotice | null;
@@ -39,10 +38,6 @@ export const ANNOUNCEMENTS_PER_DAY = 3;
 // 단골 = 3+ attended sessions with this host (roster badge, host-only).
 export const REGULAR_ATTENDANCE = 3;
 
-const TIER_RANK: Record<MembershipTier, number> = { free: 0, plus: 1, pro: 2, premium: 3, admin: 4 };
-/** Same ranking as private.require_meetup_tool_tier; the server still decides. */
-export const tierAtLeast = (tier: MembershipTier | undefined, minimum: 'plus' | 'pro') => TIER_RANK[tier ?? 'free'] >= TIER_RANK[minimum];
-
 const ATTENDED: Record<number, string> = { 1: '첫 모임 참석', 5: '모임 5번 참석', 10: '모임 10번 참석', 25: '모임 25번 참석' };
 const HOSTED: Record<number, string> = { 1: '첫 모임 호스트', 5: '모임 5번 연 호스트', 10: '모임 10번 연 호스트', 25: '모임 25번 연 호스트' };
 /** Korean source labels (tr() keys) for the highest level of each badge; hosting first. */
@@ -51,8 +46,6 @@ export function badgeLabels(levels: Partial<BadgeLevels> | undefined): string[] 
 }
 
 const ERRORS: Record<string, string> = {
-  PLUS_REQUIRED: '플러스 멤버십부터 쓸 수 있어요.',
-  PRO_REQUIRED: '프로 멤버십부터 쓸 수 있어요.',
   ANNOUNCEMENT_DAILY_LIMIT: '공지는 하루에 3번까지 보낼 수 있어요.',
   ANNOUNCEMENT_SCHEDULE_LIMIT: '예약 공지는 5개까지 걸어 둘 수 있어요.',
   INVALID_ANNOUNCEMENT_TIME: '예약은 5분 뒤부터 30일 안, 모임이 끝나기 전으로 잡아 주세요.',

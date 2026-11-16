@@ -99,7 +99,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/lib/post-reactions': postReactions,
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
     '../../supabase/functions/_shared/post-links': postLinks, '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
-    '@/components/post-attachment-link': { PostAttachmentLink: 'PostAttachmentLink' }, '@/lib/post-info': { postInfoParts, isPastEvent, englishTail }, '@/lib/city-places': { getCityPlaces: () => [] }, '@/lib/webshops': { loadCityBusinessLinks: async () => ({}) }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' }, '@/lib/mock': { CITIES: [] },
+    '@/components/meetup-info-cells': { MeetupInfoCells: 'MeetupInfoCells' }, '@/components/post-attachment-link': { PostAttachmentLink: 'PostAttachmentLink' }, '@/lib/post-info': { postInfoParts, isPastEvent, englishTail }, '@/lib/city-places': { getCityPlaces: () => [] }, '@/lib/webshops': { loadCityBusinessLinks: async () => ({}) }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' }, '@/lib/mock': { CITIES: [] },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/components/drag-sheet': { DragSheet: 'DragSheet' },
     '@/components/meetup-members': { MeetupWhoCard: 'MeetupWhoCard', MeetupInviteHost: 'MeetupInviteHost', MeetupInviteNote: 'MeetupInviteNote', useMeetupRoster: () => ({ roster: null, error: '', reload() {} }) },
@@ -328,7 +328,7 @@ test('failed OAuth exchange preserves the invitation and shows a retry explanati
 });
 
 test('the exported PostDetail guest wrapper renders only a login gate and never loads comments or the supplied body', async context => {
-  const requests = [], components = ['TicketmasterSourceLink','MerchantSourceLink','MerchantReviews','MeetupReviews','PostPoll','MeetupRsvp','PostCard','PostBodyEditor','PostPhotoGallery','PostPhotoEditor','PostPhotoCredits','ChillingHostProfile','ReportSheet','TrustBadge','UserSheet','MeetupManageSheet','MeetupPartnerLine','MeetupRoomSummary','MeetupHostTools','ChillingEvent','ChillingProfileCard','ListCard','RaisedActionButton','ListingFields'];
+  const requests = [], components = ['TicketmasterSourceLink','MerchantSourceLink','MerchantReviews','MeetupReviews','PostPoll','MeetupRsvp','PostCard','PostBodyEditor','PostPhotoGallery','PostPhotoEditor','PostPhotoCredits','ChillingHostProfile','ReportSheet','TrustBadge','UserSheet','MeetupManageSheet','MeetupPartnerLine','MeetupRoomSummary','MeetupHostTools','MeetupHostTransfer','ChillingEvent','ChillingProfileCard','ListCard','RaisedActionButton','ListingFields'];
   const imports = Object.fromEntries(components.map(name => [`@/components/${name.replace(/[A-Z]/g, (letter, index) => `${index ? '-' : ''}${letter.toLowerCase()}`)}`, { [name]: name }]));
   Object.assign(imports, {
     'expo-image-picker': {}, '@/constants/theme': { Depth: {}, Spacing: {} }, '@/i18n/ko': { t: {}, count: () => '' },

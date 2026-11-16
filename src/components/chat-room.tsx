@@ -27,6 +27,7 @@ import { ChatMemberAvatar } from '@/components/chat-member-avatar';
 import { MeetupManageSheet } from '@/components/meetup-manage-sheet';
 import { MeetupRoomSummary } from '@/components/meetup-room-summary';
 import { MeetupRoomTop } from '@/components/meetup-loyalty';
+import { MeetupPollCard, MeetupPollComposer } from '@/components/meetup-poll';
 import { MeetupChatOverview } from '@/components/meetup-chat-overview';
 import { PostPinMap } from '@/components/post-pin-map';
 import { PostShareSheet } from '@/components/post-share-sheet';
@@ -191,6 +192,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
   const joinNotices = joinResult?.conversationId === conversation.id ? joinResult.members : [];
   const [searchOpen, setSearchOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
+  const [pollComposerOpen, setPollComposerOpen] = useState(false), [pollRefresh, setPollRefresh] = useState(0);
   const [hostActions, setHostActions] = useState<Parameters<typeof MeetupManageSheet>[0]['actions']>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
@@ -843,6 +845,7 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
       Keyboard.dismiss(); setOverviewOpen(true);
     }} onManage={conversation.isGroupHost && access.write ? actions => { if (valid()) { Keyboard.dismiss(); setHostActions(actions); setManageOpen(true); } } : undefined} />}
     {group && conversation.groupPostId && access.read && <MeetupRoomTop key={`notice:${currentUserId}:${conversation.groupPostId}`} postId={conversation.groupPostId} />}
+    {group && conversation.groupPostId && access.read && <MeetupPollCard key={`poll:${currentUserId}:${conversation.groupPostId}`} postId={conversation.groupPostId} refreshKey={pollRefresh} />}
     </View>
       {access.read ? loading && messages.length === 0 ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} /></View> : <View ref={listRegion} style={styles.messageList} onLayout={() => closeMessageMenu()}><FlatList ref={messageList} analyticsId="components_chat-room.flatlist.1" data={searchMatches} keyExtractor={(message) => message.id} contentContainerStyle={styles.scroll}
         onViewableItemsChanged={trackVisibleMessages} viewabilityConfig={viewability}
@@ -1019,9 +1022,11 @@ export function ChatRoom({ conversation, currentUserId, onClose, onChanged }: { 
     {manageOpen && group && conversation.isGroupHost && access.write && auth.isAuthed && auth.me.id === currentUserId && scopeMatches && <MeetupManageSheet visible onClose={() => setManageOpen(false)} actions={[
       { key: 'location', label: tr('집결지 공유'), hint: tr('지도 카드로 보내기'), icon: { ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }, onPress: () => setLocationOpen(true) },
       { key: 'requests', label: tr('참여 신청'), hint: tr('신청과 승인을 처리해요'), icon: { ios: 'person.2', android: 'group', web: 'group' }, onPress: () => router.replace({ pathname: '/chat', params: { view: 'requests' } }) },
+      { key: 'poll', analyticsId: 'meetup.poll.create', label: tr('날짜·장소 투표'), hint: tr('멤버들이 날짜나 장소를 골라요'), icon: { ios: 'chart.bar', android: 'poll', web: 'poll' }, onPress: () => setPollComposerOpen(true) },
       ...hostActions,
       { key: 'share', label: tr('모임 공유하기'), icon: { ios: 'square.and.arrow.up', android: 'share', web: 'share' }, onPress: () => { void Promise.resolve().then(() => loadPublicPost(supabase, conversation.groupPostId!)).then(post => { if (post) setSharePost(post); }).catch(() => {}); } },
     ]} />}
+    {pollComposerOpen && group && conversation.groupPostId && conversation.isGroupHost && access.write && <MeetupPollComposer postId={conversation.groupPostId} visible onClose={() => setPollComposerOpen(false)} onCreated={() => setPollRefresh(value => value + 1)} />}
     {sharePost && <PostShareSheet post={sharePost} visible onClose={() => setSharePost(null)} onShared={() => setSharePost(null)} />}
     {messageMenu && menuFrame && !deleteConfirm && !hidden('message', messageMenu.id, messageMenu.sender_id) && auth.isAuthed && auth.me.id === currentUserId && access.read && <Modal visible transparent statusBarTranslucent animationType="none" onRequestClose={() => { play('selection'); closeMessageMenu(); }}
       onShow={() => { menuFade.setValue(0); Animated.timing(menuFade, { toValue: 1, duration: ControlMotion.settleMs, useNativeDriver: true }).start(); }}>

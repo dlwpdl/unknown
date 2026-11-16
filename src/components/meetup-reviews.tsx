@@ -22,7 +22,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { formatMeetupTime, meetupZone } from '@/lib/chilling-date';
 import { loadPublicMeetupContext } from '@/lib/feed-data';
 import { focusSession, inAttendanceWindow, sessionRange, upcomingSessions } from '@/lib/meetup-host-home';
-import { loadMeetupLoyalty, staffCheckIn, tierAtLeast } from '@/lib/meetup-loyalty';
+import { loadMeetupLoyalty, staffCheckIn } from '@/lib/meetup-loyalty';
 import { checkInMeetup, claimMeetupAttendance, confirmMeetupAttendance, createMeetupSession, loadMeetupReviews, loadMeetupSessions, writeMeetupReview, type MeetupReviewPage, type MeetupSessions, type MeetupSession } from '@/lib/meetup-reviews';
 import { askForStoreReviewSoon } from '@/lib/store-review';
 import { supabase } from '@/lib/supabase';
@@ -56,7 +56,7 @@ function Reviews({ postId, kind, attendanceOnly = false, reviewsOnly = false, on
         const [next, participation, loyalty, context] = await Promise.all([kind === 'group' && !attendanceOnly ? loadMeetupReviews(supabase, postId) : null, isAuthed && !reviewsOnly ? loadMeetupSessions(supabase, postId) : null,
           isAuthed && attendanceOnly ? loadMeetupLoyalty(supabase, postId).catch(() => null) : null,
           isAuthed && !reviewsOnly ? loadPublicMeetupContext(supabase, postId).catch(() => null) : null]);
-        if (active) { setPage(next); setSessions(participation); setZone(meetupZone(context?.room, context?.cityId)); setCanStaffCheckIn(!!loyalty && (loyalty.isStaff || (loyalty.isHost && tierAtLeast(loyalty.hostTier, 'pro')))); setNow(Date.now()); setError(''); setLoaded(true); }
+        if (active) { setPage(next); setSessions(participation); setZone(meetupZone(context?.room, context?.cityId)); setCanStaffCheckIn(!!loyalty && (loyalty.isStaff || loyalty.isHost)); setNow(Date.now()); setError(''); setLoaded(true); }
       } catch { if (active) { setError("모임 후기·참석 정보를 불러오지 못했어요."); setLoaded(true); } }
     })();
     return () => { active = false; };
@@ -155,7 +155,7 @@ function ScoreStepper({ score, disabled, onChange }: { score: number; disabled: 
 
 function Session({ zone, session, meId, kind, isHost, canStaffCheckIn, onChanged, now }: { zone: string; session: MeetupSession; meId: string; kind: 'once' | 'group'; isHost: boolean; canStaffCheckIn: boolean; onChanged: () => void; now: number }) {
   const { tr, locale: appLocale } = useLanguage();
-  const theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback(), router = useRouter();
+  const theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback();
   const [busy, setBusy] = useState(false), pending = useRef(false), [notice, setNotice] = useState('');
   const [claim, setClaim] = useState(''), [body, setBody] = useState('');
   const [score, setScore] = useState(8), [submitted, setSubmitted] = useState(false), [staffBusy, setStaffBusy] = useState('');
@@ -201,7 +201,6 @@ function Session({ zone, session, meId, kind, isHost, canStaffCheckIn, onChanged
       <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.bar, { backgroundColor: theme.backgroundElement }]}><View style={[styles.barFill, { backgroundColor: theme.accent, width: `${others.length ? arrived / others.length * 100 : 0}%` }]} /></View>
       {others.length > 0 && <ListCard>{others.map(member => <ListRow key={member.id} title={member.nickname} leading={<InitialAvatar name={member.nickname} />}
         trailing={member.checkedIn ? <Tag label={tr('왔어요')} /> : canStaffCheckIn ? <ReviewPill label={tr('체크인')} onPress={() => void checkIn(member.id)} accessibilityLabel={tr('{0}님이 왔다고 표시해요', member.nickname)} selected blocked={!!staffBusy} /> : <Tag label={tr('아직')} tone="quiet" />} />)}</ListCard>}
-      {isHost && !canStaffCheckIn && <View style={styles.gapTop}><ListCard><ListRow analyticsId="meetup.automation.membership" title={tr('호스트가 대신 체크인하기')} detail={tr('멤버는 각자 화면에서 체크인할 수 있어요.')} trailing={<Tag label={tr('프로')} />} onPress={() => router.push('/profile/membership')} /></ListCard></View>}
     </View>}
     {ended && !inWindow && card(session.verified ? tr("참석 확인됨") : tr('확인 기간이 끝났어요'), tr('참석 확인은 끝나고 7일 안에 할 수 있어요.'))}
     {inWindow && others.length > 0 && <View>

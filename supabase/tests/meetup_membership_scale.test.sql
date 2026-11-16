@@ -24,7 +24,7 @@ select is(private.meetup_capacity_limit('cc500000-0000-4000-8000-000000000003'),
 select is(private.meetup_capacity_limit('cc500000-0000-4000-8000-000000000004'),500,'Premium hosts get five hundred seats');
 select is(private.meetup_capacity_limit('cc500000-0000-4000-8000-000000000005'),5000,'The operator keeps the validator maximum');
 select is(private.meetup_capacity_limit('cc500000-0000-4000-8000-000000000006'),10,'An inactive paid account falls back to ten seats');
-select is(private.meetup_cohost_limit('cc500000-0000-4000-8000-000000000001'),0,'Free hosts get no cohosts');
+select is(private.meetup_cohost_limit('cc500000-0000-4000-8000-000000000001'),1,'Free hosts get one cohost');
 select is(private.meetup_cohost_limit('cc500000-0000-4000-8000-000000000002'),1,'Plus hosts get one cohost');
 select is(private.meetup_cohost_limit('cc500000-0000-4000-8000-000000000003'),3,'Pro hosts get three cohosts');
 select is(private.meetup_cohost_limit('cc500000-0000-4000-8000-000000000004'),5,'Premium hosts get five cohosts');
@@ -50,9 +50,10 @@ insert into private.meetup_waitlist(post_id,user_id) values('cc520000-0000-4000-
 -- Free and Plus hosts.
 select set_config('request.jwt.claims','{"sub":"cc500000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
-select throws_ok($$select public.invite_meetup_cohost('cc520000-0000-4000-8000-000000000001','cc510000-0000-4000-8000-000000000001')$$,'P0001','PLUS_REQUIRED','Free hosts cannot invite cohosts');
-select is(public.get_meetup_host_tools('cc520000-0000-4000-8000-000000000001')->'cohostLimit','0'::jsonb,'Free host tools report no cohost seats');
-select is(public.get_meetup_host_tools('cc520000-0000-4000-8000-000000000001')->>'canInviteCohost','false','Free host tools hide cohost invitations');
+select is(public.get_meetup_host_tools('cc520000-0000-4000-8000-000000000001')->'cohostLimit','1'::jsonb,'Free host tools report one cohost seat');
+select is(public.get_meetup_host_tools('cc520000-0000-4000-8000-000000000001')->>'canInviteCohost','true','Free host tools offer a cohost invitation');
+select lives_ok($$select public.invite_meetup_cohost('cc520000-0000-4000-8000-000000000001','cc510000-0000-4000-8000-000000000001')$$,'A free host invites one cohost');
+select throws_ok($$select public.invite_meetup_cohost('cc520000-0000-4000-8000-000000000001','cc510000-0000-4000-8000-000000000002')$$,'P0001','MEETUP_COHOST_LIMIT','A second free invitation is rejected');
 select set_config('request.jwt.claims','{"sub":"cc500000-0000-4000-8000-000000000002","role":"authenticated"}',true);
 select is(public.get_meetup_host_tools('cc520000-0000-4000-8000-000000000002')->>'canInviteCohost','true','A Plus host with a free cohost seat may invite');
 select lives_ok($$select public.invite_meetup_cohost('cc520000-0000-4000-8000-000000000002','cc510000-0000-4000-8000-000000000001')$$,'A Plus host invites one cohost');
@@ -112,17 +113,17 @@ select set_config('request.jwt.claims','{"sub":"cc510000-0000-4000-8000-00000000
 select is(public.get_meetup_host_tools('cc520000-0000-4000-8000-000000000003')->>'isCohost','false','The non-acting cohost is not shown as a cohost');
 select throws_ok($$select public.invite_next_meetup_waitlist('cc520000-0000-4000-8000-000000000003')$$,'P0001','HOST_REQUIRED','A non-acting cohost cannot invite from the waitlist');
 select set_config('request.jwt.claims','{"sub":"cc510000-0000-4000-8000-000000000001","role":"authenticated"}',true);
-select throws_ok($$select public.invite_next_meetup_waitlist('cc520000-0000-4000-8000-000000000003')$$,'P0001','PRO_REQUIRED','The acting cohost still needs the host to hold Pro');
+select lives_ok($$select public.invite_next_meetup_waitlist('cc520000-0000-4000-8000-000000000003')$$,'The acting cohost needs no paid plan on the host');
 reset role;
 
--- Downgrade to free: no cohost acts, accepting and inviting need Plus.
+-- Downgrade to free: only the earliest accepted cohost acts; accepting and inviting stay within one seat.
 select public.apply_membership_snapshot('cc500000-0000-4000-8000-000000000003','[]',clock_timestamp());
-select ok(not private.meetup_tool_cohost('cc520000-0000-4000-8000-000000000003','cc510000-0000-4000-8000-000000000001'),'A free host has no acting cohost');
+select ok(private.meetup_tool_cohost('cc520000-0000-4000-8000-000000000003','cc510000-0000-4000-8000-000000000001'),'A free host keeps its earliest accepted cohost');
 select set_config('request.jwt.claims','{"sub":"cc510000-0000-4000-8000-000000000004","role":"authenticated"}',true);
 set local role authenticated;
-select throws_ok($$select public.respond_meetup_cohost('cc520000-0000-4000-8000-000000000003',true)$$,'P0001','PLUS_REQUIRED','A cohost cannot accept from a free host');
+select throws_ok($$select public.respond_meetup_cohost('cc520000-0000-4000-8000-000000000003',true)$$,'P0001','MEETUP_COHOST_LIMIT','A cohost cannot accept above the free seat');
 select set_config('request.jwt.claims','{"sub":"cc500000-0000-4000-8000-000000000003","role":"authenticated"}',true);
-select throws_ok($$select public.invite_meetup_cohost('cc520000-0000-4000-8000-000000000003','cc510000-0000-4000-8000-000000000005')$$,'P0001','PLUS_REQUIRED','A downgraded free host cannot invite cohosts');
+select throws_ok($$select public.invite_meetup_cohost('cc520000-0000-4000-8000-000000000003','cc510000-0000-4000-8000-000000000005')$$,'P0001','MEETUP_COHOST_LIMIT','A downgraded free host cannot invite past its seat');
 select throws_ok($$select * from private.meetup_role_audit$$,'42501',null,'Clients cannot read the role audit');
 reset role;
 

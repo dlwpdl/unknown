@@ -30,13 +30,15 @@ import { splitEventMeetupBody } from '@/lib/meetup-ai';
 import { splitPlaceMeetupBody } from '@/lib/meetup-destination';
 import { joinMeetupSections, parseMeetupSections } from '@/lib/meetup-sections';
 import { MeetupSectionsEditor } from '@/components/meetup-sections';
+import { MeetupInfoCellsEditor } from '@/components/meetup-info-cells';
+import { infoCellsTail, splitMeetupInfoCells, type MeetupInfoCell } from '@/lib/meetup-info-cells';
 import { MeetupNewcomerOption } from '@/components/newcomer';
 import { setMeetupNewcomer } from '@/lib/newcomer';
 import { supabase } from '@/lib/supabase';
 
 type Newcomer = { welcome: boolean; only: boolean };
 type FormCard = 'basics' | 'schedule';
-type Baseline = { title: string; intro: string; event: ChillingEventDraft; capacity: string; newcomer: Newcomer };
+type Baseline = { title: string; intro: string; cells: MeetupInfoCell[]; event: ChillingEventDraft; capacity: string; newcomer: Newcomer };
 
 // Place/event lines are appended at creation and drive map/event links; only the human intro is editable.
 // An unverifiable place tail still falls to the event split, so machine lines are kept rather than exposed.
@@ -58,7 +60,7 @@ function MeetupEditForm({ postId }: { postId: string }) {
   const [meetup, setMeetup] = useState<PublicMeetupContext | null>(null);
   const [loading, setLoading] = useState(isAuthed && !!postId), [loadError, setLoadError] = useState(''), [retry, setRetry] = useState(0);
   const [base, setBase] = useState<Baseline | null>(null);
-  const [title, setTitle] = useState(''), [intro, setIntro] = useState(''), [details, setDetails] = useState('');
+  const [title, setTitle] = useState(''), [intro, setIntro] = useState(''), [details, setDetails] = useState(''), [cells, setCells] = useState<MeetupInfoCell[]>([]);
   const [event, setEvent] = useState<ChillingEventDraft | null>(null), [capacity, setCapacity] = useState('');
   const [newcomer, setNewcomer] = useState<Newcomer>({ welcome: false, only: false });
   const [saving, setSaving] = useState(false), [error, setError] = useState(''), [errorField, setErrorField] = useState<string | null>(null);
@@ -80,10 +82,12 @@ function MeetupEditForm({ postId }: { postId: string }) {
       const parts = splitMeetupBody(value.body, value.cityId), room = value.room;
       const draft: ChillingEventDraft = { kind: room.eventKind ?? 'group', startsAt: room.startsAt ?? '', endsAt: room.endsAt ?? '', timezone: meetupZone(room, value.cityId), cadence: room.cadence ?? '', capacity: room.capacity ?? 8, category: room.category };
       // Headed intros are compared in their saved shape, so opening the editor alone never marks the form dirty.
-      const sections = parseMeetupSections(parts.intro);
-      const next = { title: value.title, intro: sections ? joinMeetupSections(sections) : parts.intro, event: draft, capacity: String(draft.capacity),
+      // The info cells ride at the end of the intro; they get their own fields here and go back after it on save.
+      const { body: text, cells: infoCells } = splitMeetupInfoCells(parts.intro);
+      const sections = parseMeetupSections(text);
+      const next = { title: value.title, intro: sections ? joinMeetupSections(sections) : text, cells: infoCells, event: draft, capacity: String(draft.capacity),
         newcomer: { welcome: room.newcomerWelcome === true, only: room.newcomerOnly === true } };
-      setBase(next); setNewcomer(next.newcomer); setTitle(next.title); setIntro(next.intro); setDetails(parts.details); setEvent(draft); setCapacity(next.capacity);
+      setBase(next); setNewcomer(next.newcomer); setTitle(next.title); setIntro(next.intro); setCells(next.cells); setDetails(parts.details); setEvent(draft); setCapacity(next.capacity);
       if (value.authorId !== me.id) return;
       setPhotosFailed(false);
       void loadPublicPost(supabase, postId).then(post => {
@@ -105,7 +109,8 @@ function MeetupEditForm({ postId }: { postId: string }) {
     return () => { active = false; };
   }, [isAuthed, me.id, postId, retry]);
 
-  const textDirty = !!base && (title !== base.title || intro !== base.intro);
+  const cellsTail = infoCellsTail(cells);
+  const textDirty = !!base && (title !== base.title || intro !== base.intro || cellsTail !== infoCellsTail(base.cells));
   const eventDirty = !!base && !!event && (capacity !== base.capacity || event.startsAt !== base.event.startsAt || event.endsAt !== base.event.endsAt || event.cadence !== base.event.cadence);
   const newcomerDirty = !!base && (newcomer.welcome !== base.newcomer.welcome || newcomer.only !== base.newcomer.only);
   const dirty = textDirty || eventDirty || newcomerDirty || photosEdited;
@@ -135,7 +140,7 @@ function MeetupEditForm({ postId }: { postId: string }) {
     if (busy.current || pickingPhoto || !meetup || !base || !event || !dirty) return;
     if (!title.trim()) return showValidation(tr('모임 제목을 적어주세요.'), 'title');
     if (!intro.trim()) return showValidation(tr('모임 소개를 적어주세요.'), 'intro');
-    if (intro.trim().length + details.length > 5000) return showValidation(tr('모임 소개가 너무 길어요. 조금 줄여 주세요.'), 'intro');
+    if (intro.trim().length + cellsTail.length + details.length > 5000) return showValidation(tr('모임 소개가 너무 길어요. 조금 줄여 주세요.'), 'intro');
     const draft = { ...event, capacity: Number(capacity) };
     if (eventDirty) {
       if (draft.kind === 'once' && (event.startsAt !== base.event.startsAt) && Date.parse(event.startsAt) < Date.now()) return showValidation(tr('시작 시각이 이미 지났어요. 지금 이후로 선택해 주세요.'), 'schedule');
@@ -150,7 +155,7 @@ function MeetupEditForm({ postId }: { postId: string }) {
       // Kind is passed back unchanged; the server rechecks ownership, expiry and the member floor.
       if (eventDirty) { await configureChillingEvent(supabase, meetup.id, draft); eventSaved = true; }
       if (textDirty || photosEdited) {
-        await editPost(supabase, meetup.id, { title: title.trim(), body: intro.trim() + details }, photosEdited && photos ? { userId: me.id, images: photos } : undefined);
+        await editPost(supabase, meetup.id, { title: title.trim(), body: intro.trim() + cellsTail + details }, photosEdited && photos ? { userId: me.id, images: photos } : undefined);
         // A retry after a later failure must not upload the same photos again.
         if (mounted.current) setPhotosEdited(false);
       }
@@ -215,6 +220,10 @@ function MeetupEditForm({ postId }: { postId: string }) {
             </MeetupSectionsEditor>
             {fieldError('intro')}
           </View>
+          {!!cells.length && <View style={styles.field}>
+            <ThemedText type="smallBold" style={styles.label}>{tr('모임 정보')}</ThemedText>
+            <MeetupInfoCellsEditor cells={cells} onChange={setCells} disabled={saving} />
+          </View>}
           {!!details && <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('연결된 장소·행사 정보는 그대로 남아요.')}</ThemedText>}
         </View>
         {modern && event && <>

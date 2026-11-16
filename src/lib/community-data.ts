@@ -106,12 +106,14 @@ export type MeetupRequest = {
   requester_id: string;
   message: string;
   status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  /** A cancelled request the server closed itself: no host answer in a week, or the meetup is gone. Null for people's own cancels. */
+  expired_reason?: 'no_answer' | 'meetup_closed' | null;
   created_at: string;
   requester: { nickname: string; verification_level: number } | null;
   post: { title: string; room?: RoomPreview | null } | null;
 };
 
-export type MyMeetup = { id: string; authorId: string; title: string; cityId: string; room: RoomPreview; role: 'host' | MeetupRequest['status'] | 'closed'; conversationId: string | null };
+export type MyMeetup = { id: string; authorId: string; title: string; cityId: string; room: RoomPreview; role: 'host' | MeetupRequest['status'] | 'unanswered' | 'closed'; conversationId: string | null };
 
 export type ProfileSummary = {
   cityId: string;
@@ -771,7 +773,7 @@ export async function loadMyMeetups(client: SupabaseClient, userId: string): Pro
   const [owned, requested, rooms] = await Promise.all([
     client.from('posts').select(fields).eq('author_id', userId).eq('status', 'published')
       .not('room_preview', 'is', null).order('created_at', { ascending: false }),
-    client.from('meetup_requests').select(`status,ended_with_meetup,post:posts!meetup_requests_post_id_fkey(${fields})`)
+    client.from('meetup_requests').select(`status,expired_reason,ended_with_meetup,post:posts!meetup_requests_post_id_fkey(${fields})`)
       .eq('requester_id', userId).in('status', ['approved', 'pending', 'rejected', 'cancelled'])
       .order('status').order('created_at', { ascending: false }),
     client.from('conversations').select('id,group_post_id').eq('kind', 'group').eq('status', 'active'),
@@ -782,23 +784,23 @@ export async function loadMyMeetups(client: SupabaseClient, userId: string): Pro
   const roomIds = new Map((rooms.data ?? []).map((room) => [room.group_post_id, room.id]));
   type Row = { id: string; author_id: string; title: string; city_id: string; status: string; room_preview: RoomPreview | null };
   const entries = [
-    ...((owned.data ?? []) as unknown as Row[]).map((post) => ({ post, role: 'host' as const, endedWithMeetup: false })),
-    ...((requested.data ?? []) as unknown as { post: Row | null; status: MeetupRequest['status']; ended_with_meetup?: boolean }[])
-      .map(({ post, status, ended_with_meetup }) => ({ post, role: status, endedWithMeetup: ended_with_meetup === true })),
+    ...((owned.data ?? []) as unknown as Row[]).map((post) => ({ post, role: 'host' as const, unanswered: false, endedWithMeetup: false })),
+    ...((requested.data ?? []) as unknown as { post: Row | null; status: MeetupRequest['status']; expired_reason?: string | null; ended_with_meetup?: boolean }[])
+      .map(({ post, status, expired_reason, ended_with_meetup }) => ({ post, role: status, unanswered: status === 'cancelled' && expired_reason === 'no_answer', endedWithMeetup: ended_with_meetup === true })),
   ];
   // Ended meetups (host closed it, which cancels members, or a 칠링 past its end) read as 종료된 모임, not as the member's own cancellation.
   const now = Date.now();
-  const resolved = entries.flatMap(({ post, role, endedWithMeetup }) => {
+  const resolved = entries.flatMap(({ post, role, unanswered, endedWithMeetup }) => {
     if (post?.status !== 'published' || !post.room_preview) return [];
     const closed = post.room_preview.closed === true;
     const ended = chillingAvailability(post.room_preview, now) === 'ended';
-    const status: MyMeetup['role'] = (closed && (role === 'host' || role === 'approved' || role === 'cancelled')) || (ended && (role === 'host' || role === 'approved')) ? 'closed' : role;
+    const status: MyMeetup['role'] = (closed && (role === 'host' || role === 'approved' || role === 'cancelled')) || (ended && (role === 'host' || role === 'approved')) ? 'closed' : unanswered && !closed && !ended ? 'unanswered' : role;
     if (closed && status !== 'closed' && status !== 'rejected' && status !== 'cancelled') return [];
     // Mirrors private.can_read_conversation: the host, approved members, and members who were approved when the host ended it keep a read-only room.
     const readable = role === 'host' || role === 'approved' || (role === 'cancelled' && endedWithMeetup && closed);
     return [{ id: post.id, authorId: post.author_id, title: post.title, cityId: post.city_id, room: post.room_preview, role: status, conversationId: readable ? roomIds.get(post.id) ?? null : null }];
   });
-  const rank = (role: MyMeetup['role']) => role === 'closed' ? 2 : role === 'rejected' || role === 'cancelled' ? 1 : 0;
+  const rank = (role: MyMeetup['role']) => role === 'closed' ? 2 : role === 'rejected' || role === 'cancelled' || role === 'unanswered' ? 1 : 0;
   return resolved.sort((a, b) => rank(a.role) - rank(b.role));
 }
 
