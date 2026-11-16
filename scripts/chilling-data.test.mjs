@@ -154,3 +154,12 @@ test('picked weekdays ride with the cadence text, and a server without them stil
   sent.length=0;await data.createChillingEvent(older,{...draft,event:{kind:'once',startsAt:new Date(Date.now()+86400000).toISOString(),endsAt:new Date(Date.now()+90000000).toISOString(),timezone:'America/Vancouver',cadence:'',recurrence,capacity:8}});
   assert.equal(sent.length,1);assert.equal('recurrence' in sent[0],false);
 });
+
+test('a saved choice answer shows in the viewer language while a written answer and the plural keys stay as they are', () => {
+  const shown = data.chillingProfileShown({ ...profile, intro: 'Likes doing things together', promptOne: 'A quiet café chat', promptTwo: '조용히 걷기' }, text => uiEnglish[text] ?? text);
+  assert.equal(shown.promptTwo, '조용히 걷기');
+  assert.equal(data.chillingAnswerShown('promptOne', '조용한 카페에서 수다', text => `[${text}]`), '[조용한 카페에서 수다]');
+  assert.equal(uiEnglish['호스트 포함 1명'], '1 person, including the host');
+  assert.equal(uiEnglish[' · 1자리 남음'], ' · 1 spot left');
+  assert.equal(uiEnglish['호스트 빼고 1명'], '1 member + host');
+});

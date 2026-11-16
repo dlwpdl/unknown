@@ -28,7 +28,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
-import { CHILLING_ANSWER_CHOICES, CHILLING_PROMPTS, chillingAnswerChoice, chillingProfilePreview, getChillingError, loadChillingHostProfile, loadChillingMemberProfile, loadChillingProfile, normalizeChillingProfile, saveChillingProfile, type ChillingProfile } from '@/lib/chilling-data';
+import { CHILLING_ANSWER_CHOICES, CHILLING_PROMPTS, chillingAnswerChoice, chillingAnswerShown, chillingProfilePreview, chillingProfileShown, getChillingError, loadChillingHostProfile, loadChillingMemberProfile, loadChillingProfile, normalizeChillingProfile, saveChillingProfile, type ChillingProfile } from '@/lib/chilling-data';
 import { removeUnsavedMeetupPhotos, uploadMeetupProfilePhoto } from '@/lib/chilling-profile-media';
 import { preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -185,8 +185,8 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
   const draftProfile = { ...profile, interests: tags, photoPaths: photos.map((photo, index) => photo.path ?? `${me.id}/pending-${index}.webp`),
     photoUris: photos.map(photo => photo.uri), publicPhotoPath: publicPhotoIndex === null ? null : photos[publicPhotoIndex]?.path ?? `${me.id}/pending-${publicPhotoIndex}.webp` };
   // A picked answer reads in the app's language, whichever language it was saved in; the saved text itself is untouched.
-  const shownAnswer = (field: keyof typeof CHILLING_ANSWER_CHOICES, text: string) => { const choice = chillingAnswerChoice(field, text); return choice ? tr(choice) : text; };
-  const shown = (value: ChillingProfile): ChillingProfile => ({ ...value, intro: shownAnswer('intro', value.intro), promptOne: shownAnswer('promptOne', value.promptOne), promptTwo: shownAnswer('promptTwo', value.promptTwo) });
+  const shownAnswer = (field: keyof typeof CHILLING_ANSWER_CHOICES, text: string) => chillingAnswerShown(field, text, tr);
+  const shown = (value: ChillingProfile) => chillingProfileShown(value, tr);
   const save = async () => {
     const request = saveScope.current;
     const current = () => mounted.current && focused.current && viewerRef.current === viewer && request === saveScope.current;
