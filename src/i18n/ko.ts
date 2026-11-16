@@ -192,6 +192,7 @@ export const t = {
     pending: '신청 대기',
     rejected: '신청 거절',
     cancelled: '신청·참여 취소',
+    unanswered: '호스트 답 없음',
     closed: '종료된 모임',
     end: '모임 종료',
     leave: '나가기',

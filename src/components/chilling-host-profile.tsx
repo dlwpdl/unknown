@@ -17,7 +17,7 @@ import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useAuth } from '@/lib/auth';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { selectChatBusiness } from '@/lib/chat-identity';
-import { getChillingError, loadMeetupParticipation, type MeetupParticipation } from '@/lib/chilling-data';
+import { getChillingError, loadMeetupParticipation, requestUnanswered, type MeetupParticipation } from '@/lib/chilling-data';
 import { chillingAvailability, chillingKind, chillingTimezoneLabel, meetupBarAction, recommendedAgeLabel } from '@/lib/chilling';
 import { loadMyOpenMeetupRequests, MEETUPS_CHANGED_EVENT } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -133,7 +133,7 @@ export function MeetupActionBar({ post, status, onJoin, onBeforeNavigate }: { po
   const seats = room.capacity ? tr('{0}자리 남음', Math.max(0, room.capacity - room.memberCount)) : tr('{0}명 참여 중', room.memberCount);
   const [title, detail] = own ? [tr('내가 연 모임'), seats]
     : participation?.status === 'pending' ? [tr('승인 대기 중'), tr('호스트가 확인하면 알려드려요')]
-    : participation ? [tr({ approved: '참여 승인', rejected: '신청이 거절됐어요', cancelled: '신청을 취소했어요' }[participation.status]), fee ? tr('회비 {0}', fee) : '']
+    : participation ? [requestUnanswered(participation) ? tr('호스트 답이 없어 신청이 닫혔어요') : tr({ approved: '참여 승인', rejected: '신청이 거절됐어요', cancelled: '신청을 취소했어요' }[participation.status]), fee ? tr('회비 {0}', fee) : '']
     : availability === 'open' ? [seats, fee ? tr('회비 {0} · 승인 후 참여', fee) : tr('승인 후 참여')]
     : [{ full: tr('정원이 모두 찼어요'), closed: tr('모집이 마감됐어요'), ended: tr('종료된 모임이에요') }[availability], ''];
   return <View style={[styles.bar, { borderTopColor: theme.line, backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>

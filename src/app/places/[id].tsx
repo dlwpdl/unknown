@@ -12,6 +12,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { MeetupManageSheet } from '@/components/meetup-manage-sheet';
+import { MeetupWaiting } from '@/components/meetup-waiting';
 import { KeyboardScreen } from '@/components/keyboard-screen';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { Disclosure } from '@/components/disclosure';
@@ -242,6 +243,7 @@ export default function PlaceDetailScreen() {
             leading={<SymbolView name={{ ios: 'person.2', android: 'group', web: 'group' }} size={IconSize.toolbar} tintColor={city.state === 'open' ? theme.accent : theme.textSecondary} accessible={false} />}
             onPress={city.state === 'open' ? () => router.push({ pathname: '/(tabs)/meetups', params: { placeId: place.id, placeCityId: city.id } }) : undefined} />
         </ListCard>}
+        {place.id.startsWith('osm:') && city.state === 'open' && <MeetupWaiting kind="place" refId={place.id} cityId={city.id} />}
         <PlaceSavedBy place={place} saves={saves} />
         <PlaceFriendFolders cityId={city.id} placeKey={place.id} />
         {place.id.startsWith('osm:') && <View style={styles.section} onLayout={event => { reviewsY.current = event.nativeEvent.layout.y; if (reviewPending.current) { reviewPending.current = false; openReview(); } }}>

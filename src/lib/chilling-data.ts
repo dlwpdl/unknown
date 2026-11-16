@@ -33,7 +33,10 @@ export type ChillingProfile = {
   preferences?: { activities: string[]; availability: string; pace: 'any' | 'relaxed' | 'active' };
   photoUris?: (string | null)[];
 };
-export type MeetupParticipation = { id: string; post_id: string; host_id: string; requester_id: string; status: 'pending' | 'approved' | 'rejected' | 'cancelled'; created_at: string; responded_at: string | null };
+export type MeetupParticipation = { id: string; post_id: string; host_id: string; requester_id: string; status: 'pending' | 'approved' | 'rejected' | 'cancelled'; expired_reason?: 'no_answer' | 'meetup_closed' | null; created_at: string; responded_at: string | null };
+/** A request the server closed because the host never answered. Apps before this one only know it as cancelled. */
+export const requestUnanswered = (request: { status: string; expired_reason?: string | null } | null | undefined) => request?.status === 'cancelled' && request.expired_reason === 'no_answer';
+
 export type ChillingApplication = { postId: string; requesterId: string; profile: ChillingProfile; answer: string; question: string; consentVersion: string; consentedAt: string;
   request: (MeetupParticipation & { requester: { nickname: string; city_id: string; avatar_path: string | null; photoUri?: string } | null; post: { title: string } | null }) | null };
 // v3: applicants to a public meetup also see approved members' name, one-line intro and interests (20261108120000).
@@ -45,14 +48,14 @@ export type MeetupAccess = 'public' | 'invite';
 export type MeetupRosterPerson = { userId: string; displayName: string; intro: string; interests: string[]; isHost: boolean };
 
 export async function loadMeetupParticipation(client: SupabaseClient, postId: string, userId: string): Promise<MeetupParticipation | null> {
-  const result = await client.from('meetup_requests').select('id,post_id,host_id,requester_id,status,created_at,responded_at')
+  const result = await client.from('meetup_requests').select('id,post_id,host_id,requester_id,status,expired_reason,created_at,responded_at')
     .eq('post_id', postId).eq('requester_id', userId).maybeSingle();
   if (result.error) throw result.error;
   return result.data;
 }
 
 export async function loadMeetupRequestStatus(client: SupabaseClient, requestId: string, viewerId: string): Promise<MeetupParticipation | null> {
-  const result = await client.from('meetup_requests').select('id,post_id,host_id,requester_id,status,created_at,responded_at')
+  const result = await client.from('meetup_requests').select('id,post_id,host_id,requester_id,status,expired_reason,created_at,responded_at')
     .eq('id', requestId).maybeSingle();
   if (result.error) throw result.error;
   return result.data && (result.data.requester_id === viewerId || result.data.host_id === viewerId) ? result.data : null;
@@ -131,7 +134,7 @@ export async function loadChillingApplication(client: SupabaseClient, requestId:
   if (result.error) throw result.error;
   if (!result.data) return null;
   const metadata = await client.from('meetup_requests')
-    .select('id,post_id,host_id,requester_id,status,created_at,responded_at,post:posts!meetup_requests_post_id_fkey(title)')
+    .select('id,post_id,host_id,requester_id,status,expired_reason,created_at,responded_at,post:posts!meetup_requests_post_id_fkey(title)')
     .eq('id', requestId).maybeSingle();
   if (metadata.error) throw metadata.error;
   const request = metadata.data as unknown as ChillingApplication['request'];

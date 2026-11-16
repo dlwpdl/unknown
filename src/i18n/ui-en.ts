@@ -5211,4 +5211,13 @@ export const uiEnglish: Record<string, string> = {
   "같은 후보가 두 번 들어 있어요.": "The same option is in twice.",
   "장소는 1~60자로 적어 주세요.": "Write each place in 1 to 60 characters.",
   "행사와 이어진 모임은 장소를 투표로 정할 수 없어요. 날짜만 열어 주세요.": "A meetup tied to an event can’t vote on places. Open a date poll instead.",
+  "열리면 알려 주세요": "Tell me when one opens",
+  "알림 받는 중 · 취소하기": "You'll be notified · Cancel",
+  "모임이 열리면 알림으로 알려 드려요.": "We'll send you a notification when one opens.",
+  "1명이 기다리고 있어요.": "1 person is waiting.",
+  "{0}명이 기다리고 있어요.": "{0} people are waiting.",
+  "아직 열린 모임이 없어요": "No open meetups yet",
+  "지도에 뜬 모임이 아직 없어요. 장소를 넣어 모임을 열면 여기 보여요.": "No meetups on the map yet. Add a place when you host one and it shows up here.",
+  "호스트 답 없음": "No host answer",
+  "호스트 답이 없어 신청이 닫혔어요": "The host didn't answer, so the request closed",
 };

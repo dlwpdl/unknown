@@ -263,7 +263,7 @@ test('내 모임은 진행 모임과 거절 결과를 보존하고 끝난 모임
   // Only the host, approved members and members approved when the host ended it keep the (read-only) room; leaving earlier or a pending request does not.
   assert.deepEqual((await loadMyMeetups(client, 'user-1')).map(({ id, role, conversationId }) => [id, role, conversationId]), [['host', 'host', null], ['joined', 'approved', 'joined-chat'], ['pending', 'pending', null], ['rejected', 'rejected', null], ['reopened', 'cancelled', null],
     ['closed', 'closed', 'host-closed-chat'], ['past', 'closed', 'past-chat'], ['cancelled', 'closed', null], ['ended-member', 'closed', 'ended-member-chat'], ['past-member', 'closed', 'past-member-chat']]);
-  assert.ok(selects.some(fields => fields.startsWith('status,ended_with_meetup,')), 'requests read the ended-with-meetup flag');
+  assert.ok(selects.some(fields => fields.startsWith('status,expired_reason,ended_with_meetup,')), 'requests read the ended-with-meetup flag');
   assert.deepEqual(ownershipFilters, [['posts', 'author_id', 'user-1'], ['meetup_requests', 'requester_id', 'user-1']]);
   await leaveMeetup(client, 'joined');
   client.rpc = async () => ({ error: new Error('AUTH_REQUIRED') });

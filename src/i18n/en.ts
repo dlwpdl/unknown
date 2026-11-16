@@ -72,7 +72,7 @@ export const en: Translations = {
   },
   meetup: {
     mine: 'My meetups', discover: 'Explore public meetups', empty: 'Meetups you host or join will show up here.', host: 'Hosting', approved: 'Going',
-    pending: 'Pending', rejected: 'Declined', cancelled: 'Cancelled', closed: 'Ended', end: 'End meetup', leave: 'Leave', cancelRequest: 'Cancel request',
+    pending: 'Pending', rejected: 'Declined', cancelled: 'Cancelled', unanswered: 'No host answer', closed: 'Ended', end: 'End meetup', leave: 'Leave', cancelRequest: 'Cancel request',
     endTitle: 'End this meetup?',
     endBody: 'This ends the meetup for everyone, and slots come back right away. If you end meetups with approved members early twice within 7 days, you can’t host new ones for 24 hours. Meetups that end on their own, or empty ones you cancel, don’t count.',
     leaveTitle: 'Leave this meetup?',

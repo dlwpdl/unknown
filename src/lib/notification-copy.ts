@@ -58,6 +58,8 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
     [/^기다리던 모임에 자리가 났어요\. (\d+)시간 안에 신청하면 바로 함께할 수 있어요\.$/, m => `A spot opened up in a meetup you’re waiting for. Apply within ${m[1]} ${m[1] === '1' ? 'hour' : 'hours'} and you’re in.`],
     [/^대기하던 분이 시간 안에 신청해서 바로 승인됐어요\.$/, () => 'Someone from your waitlist applied in time and was approved.'],
     [/^자동 승인 조건에 맞는 신청이라 바로 승인됐어요\.$/, () => 'A request matched your auto-approval rules and was approved.'],
+    // Unanswered requests: 20261116150000_meetup_request_expiry.sql.
+    [/^(.+)님의 참여 신청이 이틀째 답을 기다려요\. 한번 확인해 주세요\.$/, m => `${m[1]}’s request to join has been waiting two days. Take a look when you can.`],
   ],
   meetup_host_tip: [
     [/^(.+) 모임에 아직 신청이 없어요\. 날짜를 바꾸거나 '처음 와도 돼요'를 켜 보세요\.$/, m => `No one has applied to “${m[1]}” yet. Try another date, or turn on “First-timers welcome”.`],
@@ -67,6 +69,9 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
   meetup_visibility: [[/^이제 참여 중인 공개 모임에 신청하려는 사람도 내 이름, 한 줄 소개, 관심사를 볼 수 있어요\. 사진과 답변은 안 보여요\.$/, () => 'People applying to public meetups you’re in can now see your name, one-line intro and interests. Your photos and answers stay hidden.']],
   meetup_cancelled: [[/^(.+) 모임이 마감되거나 취소됐어요\. 모임 글에서 확인해 주세요\.$/, m => `“${m[1]}” was closed or cancelled. Check the meetup post for details.`]],
   meetup_changed: [
+    [/^「(.+)」 호스트 답이 없어 신청이 닫혔어요\.$/, m => `The host didn’t answer, so your request for “${m[1]}” closed.`],
+    // 열리면 알려 주세요: 20261116150100_meetup_waiting.sql.
+    [/^기다리던 모임이 열렸어요\. ([\s\S]+)$/, m => `A meetup you were waiting for just opened: ${m[1]}`],
     [/^(.+) 모임의 시간이나 장소가 바뀌었어요\. 바뀐 내용을 확인해 주세요\.$/, m => `The time or place for “${m[1]}” changed. Check the updated details.`],
     // Host loyalty copy: 20261029140000_host_loyalty.sql. Encore before follower: the follower pattern would also match it.
     [/^또 열어 달라고 했던 (.+?)님이 새 모임을 열었어요\. ([\s\S]+)$/, m => `You asked ${m[1]} to host again, and they just did: ${m[2]}`],

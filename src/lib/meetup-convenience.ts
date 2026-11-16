@@ -61,3 +61,11 @@ export function newDraftKey() {
     const r = Math.floor(Math.random() * 16); return (c === 'x' ? r : (r & 3) | 8).toString(16);
   });
 }
+
+// "열리면 알려 주세요": ask to hear when a public meetup opens for an event or place. The server returns a count, never who.
+export type MeetupWaitingKind = 'event' | 'place';
+export type MeetupWaiting = { open: boolean; count: number; mine: boolean };
+export const loadMeetupWaiting = (client: SupabaseClient, kind: MeetupWaitingKind, ref: string, cityId: string) =>
+  rpc<MeetupWaiting>(client, 'get_meetup_waiting', { p_kind: kind, p_ref: ref, p_city_id: cityId });
+export const setMeetupWaiting = (client: SupabaseClient, kind: MeetupWaitingKind, ref: string, cityId: string, on: boolean) =>
+  rpc<MeetupWaiting>(client, 'set_meetup_waiting', { p_kind: kind, p_ref: ref, p_city_id: cityId, p_on: on });
