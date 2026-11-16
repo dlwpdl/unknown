@@ -107,7 +107,7 @@ test('장소 페이지는 11개 도시에서 소개·글·후기·직접 방문�
     assert.match(handson, /<span class="place-tag">글링 직접 방문<\/span>/);
     assert.match(handson, /글링이 직접 다녀왔어요\.<\/p><a class="place-lead-link" href="https:\/\/www\.instagram\.com\//);
     assert.match(handson, /<dd>847 Denman Street, Vancouver<\/dd>/);
-    assert.match(handson, /<img src="https:\/\/static\.wixstatic\.com\//, 'the visit photo with its credit');
+    assert.match(handson, /<img src="https:\/\/byhandson\.ca\/assets\/photo-02\.webp"/, 'the visit photo with its credit');
     assert.match(handson, /아직 이 장소에 달린 글이 없어요\. 앱에서 열면 첫 후기를 남길 수 있어요\./);
     assert.match(handson, /<meta name="description" content="밴쿠버 맛집 By Handson의 주소와 지도 링크를 볼 수 있어요\."/);
     assert.doesNotMatch(handson, /영업시간|place-rating|소개에 참고한/, 'no hours, rating or intro: those parts are left out');
