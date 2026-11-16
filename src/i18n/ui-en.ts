@@ -5203,7 +5203,6 @@ export const uiEnglish: Record<string, string> = {
   "비워 둘 수 있어요": "You can leave this empty",
   "소개가 길어 모임 정보를 붙이지 못했어요. 소개를 조금 줄여 주세요.": "The intro is too long to add the meetup info. Shorten it a little.",
   "내 모임 프로필 확인": "Review your meetup profile",
-  "혼자 가기 애매했던 가게가 있다면 같이 가요. 먹은 만큼 각자 계산하고, 자리는 제가 예약해 둘게요.": "If there's a place that felt awkward to go to alone, let's go together. Everyone pays for what they ate, and I'll reserve the table.",
   "확정은 언제까지": "Confirm by",
   "공연 · 축제 동행": "Going to shows or festivals together",
   "혼자 가기엔 아까운 공연이에요. 같이 갈 분이 있으면 좋겠어요. 끝나고 가볍게 차 한잔 해도 좋아요.": "This one's too good to see alone, so I'd love some company. Tea afterwards would be nice too.",
@@ -5211,7 +5210,6 @@ export const uiEnglish: Record<string, string> = {
   "편한 신발, 간식": "Comfortable shoes, snacks",
   "준비물": "What to bring",
   "같은 취미 하는 분 모여요": "Anyone into the same hobby",
-  "같은 취미 하는 분들이랑 편하게 만나고 싶어요. 처음 온 분도 되는지는 아래 정보에 적어 둘게요.": "I'd like to meet people into the same hobby. Whether beginners are welcome is in the info below.",
   "새로 온 사람끼리 저녁 먹어요": "Dinner for newcomers",
   "얼마 전에 온 사람끼리 모여서 밥 먹어요. 처음 왔을 때 막막했던 얘기를 같이 나눠요.": "Dinner for people who just arrived. We'll share how overwhelming the first days felt.",
   "{0} · 신청 질문 1개 · 승인은 내가 해요": "{0} · 1 request question · I approve",
@@ -5223,4 +5221,6 @@ export const uiEnglish: Record<string, string> = {
   "이미 적은 글이 있어요. ‘{0}’ 예시로 바꿀까요?": "You already wrote something. Switch to the ‘{0}’ example?",
   "예시로 바꾸기": "Use example",
   "세 칸이에요. 비워 두면 모임 화면에 안 나와요.": "Three fields. Empty ones don't show on the meetup screen.",
+  "혼자 가기 애매했던 가게에 같이 가요. 먹은 만큼 각자 계산하고, 자리는 제가 예약해 둘게요.": "Let's go together to a place that felt awkward to go to alone. Everyone pays for what they ate, and I'll reserve the table.",
+  "같은 취미 하는 분들이랑 편하게 만나고 싶어요. 처음 해 보는 분도 괜찮은지는 아래에 적어 둘게요.": "I'd like to meet people into the same hobby. Whether first-timers are okay is written below.",
 };
