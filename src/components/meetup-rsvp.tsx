@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Platform, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { useRouter } from 'expo-router';
 import { Pressable } from '@/components/analytics-controls';
 import { animateLayout } from '@/components/disclosure';
 import { ClayBoxFill, ClayControlFill, useClay, useClayBox } from '@/components/clay';
@@ -24,7 +23,7 @@ export function MeetupRsvp({ postId, zone, flush = false }: { postId: string; zo
 
 function RsvpBlock({ postId, zone, flush }: { postId: string; zone: string; flush: boolean }) {
   const { tr, locale } = useLanguage();
-  const theme = useTheme(), clay = useClay(), clayBox = useClayBox(), router = useRouter(), { play } = useInteractionFeedback(), reduced = useReducedMotion();
+  const theme = useTheme(), clay = useClay(), clayBox = useClayBox(), { play } = useInteractionFeedback(), reduced = useReducedMotion();
   const [rsvp, setRsvp] = useState<Rsvp | null>(null), [failed, setFailed] = useState(false), [saving, setSaving] = useState(false), [error, setError] = useState(false);
   const [reload, setReload] = useState(0);
   const active = useRef(true);
@@ -61,11 +60,7 @@ function RsvpBlock({ postId, zone, flush }: { postId: string; zone: string; flus
     {clayBox && <ClayBoxFill kind="tile" />}
     <ThemedText accessibilityRole="header" style={Typography.section}>{rsvp.isHost ? tr('참석 현황') : tr('참석 알려 주기')}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">{tr('다음 만남 {0}', when)}</ThemedText>
-    {rsvp.isHost ? rsvp.canSeeCounts && counts
-      ? <ThemedText accessibilityLiveRegion="polite">{tr('갈게요 {0}명 · 못 가요 {1}명 · 아직 답 없음 {2}명', counts.going, counts.notGoing, counts.noAnswer)}</ThemedText>
-      : <Pressable analyticsId="meetup.automation.membership" accessibilityRole="button" onPress={() => { play('selection'); router.push('/profile/membership'); }} style={styles.retry}>
-        <ThemedText type="small" themeColor="accent">{tr('누가 오는지 미리 보려면 플러스 멤버십이 필요해요. 멤버십 보기')}</ThemedText>
-      </Pressable>
+    {rsvp.isHost ? counts && <ThemedText accessibilityLiveRegion="polite">{tr('갈게요 {0}명 · 못 가요 {1}명 · 아직 답 없음 {2}명', counts.going, counts.notGoing, counts.noAnswer)}</ThemedText>
       : <>
         <View style={styles.row} accessibilityRole="radiogroup" accessibilityLabel={tr('참석 알려 주기')}>
           {([[true, 'meetup.rsvp.going', '갈게요'], [false, 'meetup.rsvp.not_going', '못 가요']] as const).map(([going, id, label]) => {

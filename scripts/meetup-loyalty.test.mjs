@@ -6,7 +6,7 @@ import ts from 'typescript';
 import * as loyalty from '../src/lib/meetup-loyalty.ts';
 import { withLanguageImports } from './test-language-imports.mjs';
 import { englishNotificationBody } from '../src/lib/notification-preferences.ts';
-import { badgeLabels, loyaltyError, pinnedNotices, tierAtLeast, unreadNotices } from '../src/lib/meetup-loyalty.ts';
+import { badgeLabels, loyaltyError, pinnedNotices, unreadNotices } from '../src/lib/meetup-loyalty.ts';
 import { uiEnglish } from '../src/i18n/ui-en.ts';
 
 const en = body => englishNotificationBody({ kind: 'meetup_changed', body }, text => text);
@@ -27,10 +27,7 @@ test('badges show the highest level of each kind, hosting first, all translated'
   for (const level of [1, 5, 10, 25]) for (const label of badgeLabels({ attended: level, hosted: level })) assert.ok(uiEnglish[label], label);
 });
 
-test('tiers and server error codes', () => {
-  assert.equal(tierAtLeast(undefined, 'plus'), false);
-  assert.equal(tierAtLeast('plus', 'pro'), false);
-  assert.equal(tierAtLeast('premium', 'pro'), true);
+test('server error codes', () => {
   assert.equal(loyaltyError(new Error('ANNOUNCEMENT_DAILY_LIMIT')), '공지는 하루에 3번까지 보낼 수 있어요.');
   assert.equal(loyaltyError(new Error('boom'), '실패'), '실패');
 });

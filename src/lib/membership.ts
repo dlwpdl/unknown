@@ -6,17 +6,10 @@ export type MembershipKind = 'general' | 'business';
 
 // seats/cohosts mirror private meetup scale (20261026040000); listings = live buy/sell posts.
 export const MEMBERSHIP_LIMITS = {
-  free: { meetups: 3, conversations: null, seats: 10, cohosts: 0, listings: 5 },
+  free: { meetups: 3, conversations: null, seats: 10, cohosts: 1, listings: 5 },
   plus: { meetups: 5, conversations: null, seats: 30, cohosts: 1, listings: 10 },
   pro: { meetups: 10, conversations: null, seats: 100, cohosts: 3, listings: 20 },
   premium: { meetups: 20, conversations: null, seats: 500, cohosts: 5, listings: 20 },
-} as const;
-
-// Meetup tools per paid tier; each tier also has the ones below it. The server checks private.meetup_tier_rank.
-export const MEETUP_TOOL_PERKS = {
-  plus: ['템플릿 · 질문 재사용', '조건 맞는 신청 바로 승인', '참석 인원 미리 보기 · 노쇼 규칙'],
-  pro: ['플러스 + 반복 회차 · 대기 명단', '빈자리 대기자에게 자동으로 넘기기'],
-  premium: ['프로 + 신청·참석 통계'],
 } as const;
 
 export const GENERAL_BUMP_HOURS = { free: 48, plus: 36, pro: 30, premium: 24, admin: 0 } as const;

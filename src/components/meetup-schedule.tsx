@@ -77,7 +77,7 @@ export function MeetupSchedule({ postId, kind, host }: { postId: string; kind: '
         trailing={inAttendanceWindow(session, now) ? <Tag label={tr('{0}일 남음', daysLeftToConfirm(session, now))} tone="quiet" /> : undefined} onPress={() => open(session)} />)}</ListCard>
     </>}
     {sessions.isHost && <MeetupAutoNext postId={postId} />}
-    {canAdd && <MeetupAddSession postId={postId} zone={zone} visible={adding} canSingle={sessions.isHost} canRepeat={tools.canManageSessions} onClose={() => setAdding(false)} onAdded={count => { setAdded(count); setRevision(value => value + 1); }} />}
+    {canAdd && <MeetupAddSession postId={postId} zone={zone} visible={adding} canSingle={sessions.isHost} onClose={() => setAdding(false)} onAdded={count => { setAdded(count); setRevision(value => value + 1); }} />}
   </View>;
 }
 
