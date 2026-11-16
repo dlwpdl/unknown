@@ -416,7 +416,7 @@ test('listing cards drop what they do not have: an empty pay line, a photo-less 
     '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: 'me' } }) },
     '@/lib/feed-data': { getPostImageSource: post => post.imageUris?.[0] ? { uri: post.imageUris[0] } : null, relativeTime: () => '1시간 전' },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
-    '@/lib/listing-details': details, '@/lib/mock': { CITIES }, '@/lib/neighborhoods': { findNeighborhood: () => null }, '@/lib/post-maps': { postLocationUrl: () => null },
+    '@/lib/listing-details': details, '@/lib/mock': { CITIES }, '@/lib/neighborhoods': { findNeighborhood: () => null }, '@/lib/post-maps': { postLocationUrl: () => null }, '@/lib/rent-average': { rentAverage: () => null },
   });
   const base = { id: 'p', cityId: 'vancouver', title: '버나비 스시 롤맨 구인', body: '', comments: 0, createdAtLabel: '1시간 전', listingStatus: 'open', tag: { slug: 'jobs' } };
   const job = ListingCard({ post: { ...base, listingDetails: { type: 'jobs', deal: 'hiring' } }, onPress() {} });

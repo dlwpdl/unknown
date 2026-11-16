@@ -32,6 +32,14 @@ export function newcomerLocked(room: Pick<RoomPreview, 'newcomerOnly'> | undefin
   return room?.newcomerOnly === true && status?.newcomer !== true;
 }
 
+// 처음 할 일 on the newcomer card: under three months in Canada starts with the arrival paperwork, later answers skip it.
+// The card shows the next two not done; the sheet shows them all.
+export type Arrival = 'new' | 'year' | 'old';
+export function firstStepsFor<T extends { id: string; paperwork?: boolean }>(steps: readonly T[], arrival: Arrival, done: readonly string[]) {
+  const shown = steps.filter(step => arrival === 'new' || !step.paperwork);
+  return { shown, next: shown.filter(step => !done.includes(step.id)).slice(0, 2), finished: shown.filter(step => done.includes(step.id)).length };
+}
+
 let statusRequest: { userId: string; promise: Promise<NewcomerStatus> } | null = null;
 export function loadNewcomerStatus(client: SupabaseClient, userId: string, refresh = false): Promise<NewcomerStatus> {
   if (!refresh && statusRequest?.userId === userId) return statusRequest.promise;

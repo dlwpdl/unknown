@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-import { meetupLabels, newcomerDaysLeft, newcomerLocked } from '../src/lib/newcomer.ts';
+import { firstStepsFor, meetupLabels, newcomerDaysLeft, newcomerLocked } from '../src/lib/newcomer.ts';
 import { meetupBarAction } from '../src/lib/chilling.ts';
 import { englishNotificationBody } from '../src/lib/notification-copy.ts';
 
@@ -23,6 +23,22 @@ test('newcomer days left count today and stop at zero', () => {
   assert.equal(newcomerDaysLeft({ newcomer: true, endsAt: new Date(now + 52 * 86400000 - 1000).toISOString() }, now), 52);
   assert.equal(newcomerDaysLeft({ newcomer: true, endsAt: new Date(now + 3600000).toISOString() }, now), 1);
   assert.equal(newcomerDaysLeft({ newcomer: false, endsAt: null }, now), 0);
+});
+
+test('처음 할 일: 3개월 안은 서류부터 전부, 그 뒤 답은 방·일·친구만, 카드엔 안 끝낸 두 개', () => {
+  const steps = [{ id: 'sin', paperwork: true }, { id: 'msp', paperwork: true }, { id: 'room' }, { id: 'job' }, { id: 'friends' }];
+  const ids = list => list.map(step => step.id);
+  const fresh = firstStepsFor(steps, 'new', ['sin']);
+  assert.deepEqual(ids(fresh.shown), ['sin', 'msp', 'room', 'job', 'friends']);
+  assert.deepEqual(ids(fresh.next), ['msp', 'room'], 'done steps leave the card');
+  assert.equal(fresh.finished, 1);
+  for (const arrival of ['year', 'old']) {
+    const later = firstStepsFor(steps, arrival, ['sin', 'job']);
+    assert.deepEqual(ids(later.shown), ['room', 'job', 'friends'], arrival);
+    assert.deepEqual(ids(later.next), ['room', 'friends']);
+    assert.equal(later.finished, 1, 'a paperwork check from an earlier answer does not count');
+  }
+  assert.deepEqual(firstStepsFor(steps, 'year', ['room', 'job', 'friends']).next, [], 'all done: nothing left on the card');
 });
 
 test('newcomer-only meetups swap the apply button for a note unless I am a newcomer', () => {

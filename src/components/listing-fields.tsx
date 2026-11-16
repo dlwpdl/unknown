@@ -23,6 +23,7 @@ import {
 } from '@/lib/listing-details';
 import { CITIES } from '@/lib/mock';
 import { withRo } from '@/i18n/ko';
+import { rentAverage } from '@/lib/rent-average';
 import { findNeighborhood, nearestNeighborhood, neighborhoodName, neighborhoodsFor } from '@/lib/neighborhoods';
 
 const DEALS = { housing: HOUSING_DEALS, jobs: JOB_DEALS, used: USED_DEALS } as const;
@@ -94,6 +95,8 @@ export function ListingFields({ category, cityId, value, onChange, missing = [],
   const wanted = value.deal === 'rent_wanted' || value.deal === 'buy';
   const housingPrice = { rent_offer: '월세', rent_wanted: '예산', sale: '매매가', buy: '예산' }[value.deal as 'rent_offer'] ?? '가격';
   const show = (key: ListingMissing) => missing.includes(key);
+  // 렌트 내놓음 월세 칸 아래 참고 한 줄. 동네와 방 구성이 CMHC 표에 맞을 때만.
+  const average = category === 'housing' ? rentAverage(cityId, value, null, language) : null;
 
   const areaButton = (label: string, note: string) => <Section label={tr(label)} missing={show('area')}>
     <Pressable analyticsId="listing.fields.area" accessibilityRole="button" accessibilityLabel={`${tr(label)}, ${area ? neighborhoodName(area, language) : tr('동네 고르기')}`} disabled={disabled}
@@ -118,6 +121,10 @@ export function ListingFields({ category, cityId, value, onChange, missing = [],
       </Section>
       <Section label={tr(housingPrice)} missing={show('price')}>
         <Field label={tr(housingPrice)} value={value.price} onChange={price => set({ price })} prefix="$" suffix={value.deal === 'rent_offer' || value.deal === 'rent_wanted' ? tr('/월') : undefined} numeric disabled={disabled} maxLength={12} placeholder={wanted ? tr('비워 둬도 돼요') : undefined} />
+        {average && <View style={styles.reference}>
+          <SymbolView name={{ ios: 'info.circle', android: 'info', web: 'info' }} size={14} tintColor={theme.textSecondary} />
+          <ThemedText type="caption" themeColor="textSecondary" style={styles.flex}>{average.line}</ThemedText>
+        </View>}
       </Section>
       <Section label={tr(wanted ? '입주 희망일' : '입주 가능일')}>
         <View accessibilityRole="radiogroup" style={styles.chips}>
@@ -261,6 +268,7 @@ const styles = StyleSheet.create({
   clayCard: { overflow: 'visible' },
   preview: { borderRadius: 12, padding: 12, gap: 4 },
   flex: { flex: 1 },
+  reference: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   center: { textAlign: 'center' },
   screen: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.two, minHeight: 56 },
