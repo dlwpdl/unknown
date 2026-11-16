@@ -3627,7 +3627,7 @@ export const uiEnglish: Record<string, string> = {
   "메일로 문의해요": "Opens an email to us",
   "모든 등급 공통 · 오늘 글 무제한 · 1:1 대화 바로 시작": "Every plan · Unlimited Today posts · Start 1:1 chats right away",
   "모임 도구": "Meetup tools",
-  "모임 도구는 누구나 무료예요. 멤버십을 쓰면 정원이 더 큰 모임을 열고, 모임 자리와 공동 호스트, 판매·구인 글을 늘리고, 끌올도 더 자주 할 수 있어요.": "Every meetup tool is free for everyone. With a membership you can host meetups with a bigger capacity, get more meetup slots, add more co-hosts and listings, and bump more often.",
+  "모임 도구는 누구나 무료예요. 멤버십을 쓰면 정원이 더 큰 모임을 열고, 모임 자리와 공동 호스트, 판매·구인 글을 늘리고, 끌올도 더 자주 할 수 있어요.": "Every meetup tool is free for everyone. With a membership you can host bigger meetups, have more meetup slots, add more co-hosts and listings, and bump more often.",
   "모임 이용 규칙": "Meetup rules",
   "모임 정원": "Meetup size",
   "문의하기 ›": "Contact us ›",
