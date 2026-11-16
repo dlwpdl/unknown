@@ -105,7 +105,7 @@ export type MeetupRequest = {
   post_id: string;
   requester_id: string;
   message: string;
-  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled' | 'expired';
   created_at: string;
   requester: { nickname: string; verification_level: number } | null;
   post: { title: string; room?: RoomPreview | null } | null;
@@ -772,7 +772,7 @@ export async function loadMyMeetups(client: SupabaseClient, userId: string): Pro
     client.from('posts').select(fields).eq('author_id', userId).eq('status', 'published')
       .not('room_preview', 'is', null).order('created_at', { ascending: false }),
     client.from('meetup_requests').select(`status,ended_with_meetup,post:posts!meetup_requests_post_id_fkey(${fields})`)
-      .eq('requester_id', userId).in('status', ['approved', 'pending', 'rejected', 'cancelled'])
+      .eq('requester_id', userId).in('status', ['approved', 'pending', 'rejected', 'cancelled', 'expired'])
       .order('status').order('created_at', { ascending: false }),
     client.from('conversations').select('id,group_post_id').eq('kind', 'group').eq('status', 'active'),
   ]);
@@ -798,7 +798,7 @@ export async function loadMyMeetups(client: SupabaseClient, userId: string): Pro
     const readable = role === 'host' || role === 'approved' || (role === 'cancelled' && endedWithMeetup && closed);
     return [{ id: post.id, authorId: post.author_id, title: post.title, cityId: post.city_id, room: post.room_preview, role: status, conversationId: readable ? roomIds.get(post.id) ?? null : null }];
   });
-  const rank = (role: MyMeetup['role']) => role === 'closed' ? 2 : role === 'rejected' || role === 'cancelled' ? 1 : 0;
+  const rank = (role: MyMeetup['role']) => role === 'closed' ? 2 : role === 'rejected' || role === 'cancelled' || role === 'expired' ? 1 : 0;
   return resolved.sort((a, b) => rank(a.role) - rank(b.role));
 }
 

@@ -23,6 +23,7 @@ import { useAuth } from '@/lib/auth';
 import { recordProductEvent } from '@/lib/product-analytics';
 import { supabase } from '@/lib/supabase';
 import { CITIES } from '@/lib/mock';
+import { MeetupWaiting } from '@/components/meetup-waiting';
 import { eventNotice, eventPriceLabel, eventTime, loadTicketmasterEvent, meetupAllowed, recordTicketmasterEventClick, type TicketmasterEvent } from '@/lib/ticketmaster';
 
 export default function EventDetailScreen() {
@@ -104,7 +105,8 @@ export default function EventDetailScreen() {
         {!!intro && <View style={styles.description}><ThemedText type="smallBold" accessibilityRole="header">{tr("행사 소개")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{intro}</ThemedText></View>}
         {/* A started, cancelled or unconfirmed event can't take a meetup: the notice above says why, and one way on replaces two greyed-out buttons. */}
         {meetupAllowed(event) ? <><Pressable analyticsId="ticketmaster.meetup.find" accessibilityRole="button" onPress={findMeetups} style={[styles.button, clay ? styles.clayButton : [Depth.control, { borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card }]]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold">{tr("함께 갈 모임 찾기")}</ThemedText></Pressable>
-        <RaisedActionButton analyticsId="ticketmaster.meetup.create" label={tr("함께 갈 모임 만들기")} onPress={create} /></>
+        <RaisedActionButton analyticsId="ticketmaster.meetup.create" label={tr("함께 갈 모임 만들기")} onPress={create} />
+        <MeetupWaiting kind="event" refId={event.id} cityId={cityId} /></>
           : <RaisedActionButton analyticsId="ticketmaster.discover" tone="secondary" label={tr("다른 행사 보기")} onPress={() => { play('selection'); router.dismissTo('/events'); }} />}
         <Pressable analyticsId="ticketmaster.purchase" accessibilityRole="link" accessibilityState={{ disabled: !event.ticketUrl }} disabled={!event.ticketUrl} onPress={openTicket} style={({ pressed }) => [styles.button, clay ? styles.clayButton : [Depth.control, { borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card }], { opacity: !event.ticketUrl ? 0.4 : 1, }]}>{clay && <ClayPillFill kind="white" />}<ThemedText type="smallBold">{tr("티켓 확인하기")}</ThemedText></Pressable>
         {!!linkError && <ThemedText accessibilityRole="alert" themeColor="accent">{tr(linkError)}</ThemedText>}

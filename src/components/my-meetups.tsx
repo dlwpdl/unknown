@@ -167,7 +167,7 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = fal
       </StateCard> : <ThemedText type="small" style={styles.support} themeColor="textSecondary">{t.meetup.empty}</ThemedText>)}
       {/* 내가 연 모임 → 참여 중 → 신청 내역 순서. 종료·나가기 같은 되돌릴 수 없는 동작은 ⋯ 메뉴 안에만 둔다. */}
       {([['host', tr('내가 연 모임')], ['approved', tr('참여 중')], ['other', tr('신청 내역')], ['closed', tr('지난 모임')]] as const).map(([group, heading]) => {
-        const list = items.filter(item => group === 'other' ? item.role === 'pending' || item.role === 'rejected' || item.role === 'cancelled' : item.role === group);
+        const list = items.filter(item => group === 'other' ? item.role === 'pending' || item.role === 'rejected' || item.role === 'cancelled' || item.role === 'expired' : item.role === group);
         return list.length > 0 && <View key={group} style={styles.list}>
           <ThemedText type="smallBold" accessibilityRole="header" style={styles.support} themeColor="textSecondary">{heading}</ThemedText>
           {list.map(meetup => {

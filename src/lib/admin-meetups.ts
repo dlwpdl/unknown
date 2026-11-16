@@ -6,11 +6,11 @@ import type { RoomPreview } from '@/lib/types';
 export type AdminMeetup = AdminPost & { room_preview: RoomPreview };
 export type MeetupFilters = { query: string; cities: string[]; kind: 'all' | 'once' | 'group' };
 export type MeetupActivityMode = 'requests' | 'messages';
-export type MeetupRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+export type MeetupRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'expired';
 export type MeetupActivityRow = { id: string; user_id: string; body: string; created_at: string; status?: MeetupRequestStatus };
 export type MeetupPage<T> = { rows: T[]; total: number; profiles: AdminProfile[] };
 export const MEETUP_STATES = { open: '모집 중', full: '정원 마감', closed: '모집 종료', ended: '일정 종료', removed: '숨김', deleted: '삭제됨' };
-export const REQUEST_STATES: Record<MeetupRequestStatus, string> = { pending: '승인 대기', approved: '승인', rejected: '거절', cancelled: '취소·탈퇴' };
+export const REQUEST_STATES: Record<MeetupRequestStatus, string> = { pending: '승인 대기', approved: '승인', rejected: '거절', cancelled: '취소·탈퇴', expired: '답 없이 닫힘' };
 
 export function adminMeetupState(post: AdminMeetup, now = Date.now()): keyof typeof MEETUP_STATES {
   if (post.deleted_at) return 'deleted';

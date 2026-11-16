@@ -405,7 +405,7 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
                   <ThemedText style={styles.body}>{tr("내가 연 모임이에요. 채팅 탭에서 신청자를 볼 수 있어요.")}</ThemedText>
                 </>}
                 {view === 'inactive' && <>
-                  <StateCard layout="start" kind="blocked" mark="minus" title={availability === 'ended' ? tr("종료된 모임이에요") : tr("모집이 마감됐어요")} body={`${status ? tr('내 신청 · {0}. ', tr({ pending: '승인 대기', approved: '이전에 승인됨', rejected: '거절됨', cancelled: '취소됨' }[status])) : ''}${tr('새 참여 신청과 승인을 할 수 없어요.')}${status === 'approved' ? tr('승인 기록이 있어도 종료된 모임 대화에는 입장할 수 없어요.') : ''}`} />
+                  <StateCard layout="start" kind="blocked" mark="minus" title={availability === 'ended' ? tr("종료된 모임이에요") : tr("모집이 마감됐어요")} body={`${status ? tr('내 신청 · {0}. ', tr({ pending: '승인 대기', approved: '이전에 승인됨', rejected: '거절됨', cancelled: '취소됨', expired: '답 없이 닫힘' }[status])) : ''}${tr('새 참여 신청과 승인을 할 수 없어요.')}${status === 'approved' ? tr('승인 기록이 있어도 종료된 모임 대화에는 입장할 수 없어요.') : ''}`} />
                   {meetCard()}
                 </>}
                 {view === 'result' && <>
@@ -452,7 +452,7 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
                 </>}
                 {view === 'form' && <>
                   {meetCard()}
-                  {status && <StateCard layout="start" kind={status === 'rejected' ? 'blocked' : 'empty'} title={status === 'rejected' ? tr("이전 신청이 거절됐어요") : tr("이전 신청은 취소된 상태예요")} body={tr('현재 참여가 확정되지 않았어요. 답변과 공유 동의를 확인하고 다시 신청할 수 있어요.')} />}
+                  {status && <StateCard layout="start" kind={status === 'rejected' ? 'blocked' : 'empty'} title={status === 'rejected' ? tr("이전 신청이 거절됐어요") : status === 'expired' ? tr("이전 신청은 답 없이 닫혔어요") : tr("이전 신청은 취소된 상태예요")} body={status === 'expired' ? tr('일주일 동안 답이 없어서 닫혔어요. 괜찮으면 다시 신청해 주세요.') : tr('현재 참여가 확정되지 않았어요. 답변과 공유 동의를 확인하고 다시 신청할 수 있어요.')} />}
                   {languagePicker()}
                   {modern && !!profile && <ListCard>
                     <ListRow analyticsId="app_meetup-join.pressable.13" title={profile.displayName || tr('모임 멤버')} detail={tr('호스트에게 보낼 모임 프로필')} leading={<InitialAvatar name={profile.displayName || tr('모임 멤버')} />} onPress={() => setSheetOpen(true)} />

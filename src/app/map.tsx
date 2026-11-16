@@ -20,7 +20,7 @@ import { animateLayout, Disclosure } from '@/components/disclosure';
 import { ChillingDateInput } from '@/components/chilling-date-input';
 import { localDay, parseLocalDay } from '@/lib/chilling-date';
 import { DiscoveryMap } from '@/components/discovery-map';
-import { LiveDock, LiveSheets, useKeepClearOfNotice, useLive, useLiveMarkers, useMeetupMarkers, type LiveOpen } from '@/components/live-bubbles';
+import { LiveDock, LiveSheets, useKeepClearOfNotice, useLive, useLiveMarkers, useMeetupMarkers, meetupMarkersPending, type LiveOpen } from '@/components/live-bubbles';
 import { MapListSheet, type SheetSnap } from '@/components/map-list-sheet';
 import { FriendSavedLine, MapScopeSheet } from '@/components/map-scope';
 import { PlaceHours } from '@/components/place-hours';
@@ -656,6 +656,10 @@ function CityMap({ city, placeId, onClose, initialFilter, tab }: { city: (typeof
             {!!savedEntry.error && <ThemedText type="small" accessibilityRole="alert">{savedEntry.error}</ThemedText>}<Top25Note item={selected} /><GlingVisitNote item={selected} /></ScrollView>{orderButton(selected)}<Directions item={selected} reserveFromBusiness />
       </Reanimated.View>
         : sheet === 'closed' && !meetupsOnly && !loading && !deliveryUnavailable && items.length === 0 && <View style={[styles.mapEmpty, { bottom: rowBottom }]}>{refineCard || <StateCard kind={current?.errors.length ? 'error' : 'empty'} title={current?.errors.length ? tr("결과를 불러오지 못했어요") : visitedOnly ? visitedReady ? tr("조건에 맞는 글링 방문 장소가 없어요") : tr("아직 글링이 방문한 장소가 없어요") : top25Only ? top25Ready ? tr("조건에 맞는 TOP 50 장소가 없어요") : tr("이 도시의 TOP 50을 준비하고 있어요") : deliveryOnly ? tr("아직 배달 할인 가게가 없어요") : tr("아직 표시할 공개 위치가 없어요")} body={current?.errors.length ? tr("연결을 확인하고 다시 시도해 주세요.") : visitedOnly ? visitedReady ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : tr("직접 다녀온 장소만 모아 보여드려요. 다른 분류에서 먼저 둘러보세요.") : top25Only ? tr("검색어나 분류를 바꾸면 다른 장소를 볼 수 있어요.") : deliveryOnly ? tr("가게가 직접 받는 주문 페이지를 준비하고 있어요.") : tr("직접 첨부한 핀과 위치가 확인된 행사만 지도에 표시해요.")} actionLabel={current?.errors.length ? tr("다시 시도") : visitedOnly ? tr("전체 장소 보기") : tr("리스트 보기")} onAction={current?.errors.length ? refresh : visitedOnly ? () => { setSelectedFilters([]); setRevealedFilter('all'); setDateFilter(null); setDate(''); } : () => showList('half')} />}</View>}
+      {/* '모임만 보기' with nothing to show: say why the map is bare and how a meetup gets onto it (owner 2026-11-15 '다음 버전에 안내 한 줄'). */}
+      {meetupsOnly && !meetupMarkersPending(meetupMarkers) && meetupMarkers.length === 0 && sheet === 'closed' && <View style={[styles.mapEmpty, { bottom: rowBottom }]} pointerEvents="none">
+        <View style={[styles.mapNote, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="small" accessibilityLiveRegion="polite" style={styles.mapNoteText}>{tr('지도에 뜬 모임이 아직 없어요. 장소를 붙여 모임을 열면 여기 보여요.')}</ThemedText></View>
+      </View>}
       {selected && located(selected) && <Pressable analyticsId="discovery.detail" accessibilityRole="button" accessibilityLabel={cardOpen ? tr('장소 카드 접기') : tr('장소 카드 펼치기')} accessibilityState={{ expanded: cardOpen }} onPress={() => { play('selection'); setClosedCardId(cardOpen ? selectedId : undefined); }} style={[styles.cardToggle, { backgroundColor: theme.card, borderColor: theme.line, bottom: rowBottom + 6 }]}>
         <SymbolView name={cardOpen ? { ios: 'chevron.down', android: 'expand_more', web: 'expand_more' } : { ios: 'chevron.up', android: 'expand_less', web: 'expand_less' }} size={IconSize.toolbar} tintColor={theme.text} />
       </Pressable>}
@@ -820,7 +824,7 @@ const styles = StyleSheet.create({
   housingPrice: { fontSize: 18, lineHeight: 25, fontWeight: '700' },
   directions: { flexDirection: 'row', gap: 8 }, reserve: { flex: 1, borderRadius: 10 }, direction: { flex: 1, minHeight: 37, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
   liveDock: { position: 'absolute', left: 20, right: 20, bottom: 12, maxWidth: 560, alignSelf: 'center' },
-  list: { paddingHorizontal: 16, paddingBottom: 24, gap: 12 }, listCard: { padding: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, gap: 12 }, listCardClay: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' }, mapEmpty: { position: 'absolute', bottom: 12, left: 20, right: 20 },
+  list: { paddingHorizontal: 16, paddingBottom: 24, gap: 12 }, listCard: { padding: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, gap: 12 }, listCardClay: { backgroundColor: 'transparent', borderColor: 'transparent', overflow: 'visible' }, mapEmpty: { position: 'absolute', bottom: 12, left: 20, right: 20 }, mapNote: { borderWidth: 1, borderRadius: 16, paddingVertical: 8, paddingHorizontal: 16 }, mapNoteText: { textAlign: 'center' },
   loading: { position: 'absolute', top: 20, left: 16, right: 16, alignItems: 'center' },
   mapLoading: { top: 0, bottom: 0, justifyContent: 'center' },
   webshopError: { position: 'absolute', top: 20, alignSelf: 'center', maxWidth: '90%', paddingHorizontal: 14, borderRadius: 14, overflow: 'hidden' },

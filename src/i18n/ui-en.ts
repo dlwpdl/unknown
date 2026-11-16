@@ -5134,5 +5134,16 @@ export const uiEnglish: Record<string, string> = {
   "바탕화면에 있는 의자.jpg로 중고거래 판매글 초안 써줘": "Draft a Buy & Sell listing for the chair in chair.jpg on my desktop",
   "내가 글링에 올린 글 보여줘": "Show me the posts I've put on Gling",
   "AI는 연결할 때 고른 만큼만 할 수 있어요. '초안만'이면 글을 올리지 못해요.": "The AI can only do what you chose when connecting. With 'Drafts only', it can't post.",
-  "모임에서 일어난 일은 호스트와 멤버가 각자 책임져요. 문제가 생겨 신고해 주시면 글링이 기록을 확인하고 최대한 도울게요. 위급하면 911에 먼저 연락해 주세요.": "Hosts and members are each responsible for themselves at a meetup. If something goes wrong, report it. We'll look into it and do everything we can to help. In an emergency, call 911 first."
+  "모임에서 일어난 일은 호스트와 멤버가 각자 책임져요. 문제가 생겨 신고해 주시면 글링이 기록을 확인하고 최대한 도울게요. 위급하면 911에 먼저 연락해 주세요.": "Hosts and members are each responsible for themselves at a meetup. If something goes wrong, report it. We'll look into it and do everything we can to help. In an emergency, call 911 first.",
+  "열리면 알려 주세요": "Tell me when one opens",
+  "알림 받는 중 · 취소하기": "You'll be notified · Cancel",
+  "{0}명이 기다리고 있어요. 모임이 열리면 알림으로 알려 드려요.": "People waiting: {0}. We'll notify you when a meetup opens.",
+  "모임이 열리면 알림으로 알려 드려요.": "We'll notify you when a meetup opens.",
+  "아직 열린 모임이 없어요": "No open meetups yet",
+  "지도에 뜬 모임이 아직 없어요. 장소를 붙여 모임을 열면 여기 보여요.": "No meetups on the map yet. Add a place when you host one and it shows up here.",
+  "답 없이 닫힘": "Closed, no answer",
+  "답 없이 닫힌 신청이에요": "This request closed with no answer",
+  "이전 신청은 답 없이 닫혔어요": "Your earlier request closed with no answer",
+  "일주일 동안 답이 없어서 닫혔어요. 괜찮으면 다시 신청해 주세요.": "It closed after a week with no answer. You can apply again if you like.",
+  "답을 받지 못하고 닫혔어요": "Closed with no answer",
 };

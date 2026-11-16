@@ -133,7 +133,7 @@ export function MeetupActionBar({ post, status, onJoin, onBeforeNavigate }: { po
   const seats = room.capacity ? tr('{0}자리 남음', Math.max(0, room.capacity - room.memberCount)) : tr('{0}명 참여 중', room.memberCount);
   const [title, detail] = own ? [tr('내가 연 모임'), seats]
     : participation?.status === 'pending' ? [tr('승인 대기 중'), tr('호스트가 확인하면 알려드려요')]
-    : participation ? [tr({ approved: '참여 승인', rejected: '신청이 거절됐어요', cancelled: '신청을 취소했어요' }[participation.status]), fee ? tr('회비 {0}', fee) : '']
+    : participation ? [tr({ approved: '참여 승인', rejected: '신청이 거절됐어요', cancelled: '신청을 취소했어요', expired: '답을 받지 못하고 닫혔어요' }[participation.status]), fee ? tr('회비 {0}', fee) : '']
     : availability === 'open' ? [seats, fee ? tr('회비 {0} · 승인 후 참여', fee) : tr('승인 후 참여')]
     : [{ full: tr('정원이 모두 찼어요'), closed: tr('모집이 마감됐어요'), ended: tr('종료된 모임이에요') }[availability], ''];
   return <View style={[styles.bar, { borderTopColor: theme.line, backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.two) + Spacing.one }]}>

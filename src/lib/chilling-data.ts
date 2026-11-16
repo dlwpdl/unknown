@@ -33,7 +33,7 @@ export type ChillingProfile = {
   preferences?: { activities: string[]; availability: string; pace: 'any' | 'relaxed' | 'active' };
   photoUris?: (string | null)[];
 };
-export type MeetupParticipation = { id: string; post_id: string; host_id: string; requester_id: string; status: 'pending' | 'approved' | 'rejected' | 'cancelled'; created_at: string; responded_at: string | null };
+export type MeetupParticipation = { id: string; post_id: string; host_id: string; requester_id: string; status: 'pending' | 'approved' | 'rejected' | 'cancelled' | 'expired'; created_at: string; responded_at: string | null };
 export type ChillingApplication = { postId: string; requesterId: string; profile: ChillingProfile; answer: string; question: string; consentVersion: string; consentedAt: string;
   request: (MeetupParticipation & { requester: { nickname: string; city_id: string; avatar_path: string | null; photoUri?: string } | null; post: { title: string } | null }) | null };
 // v3: applicants to a public meetup also see approved members' name, one-line intro and interests (20261108120000).
