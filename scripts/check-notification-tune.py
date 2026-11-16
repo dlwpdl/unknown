@@ -20,7 +20,7 @@ IMAGE = 'public.ecr.aws/supabase/postgres:17.6.1.165'
 TUNE = ROOT / 'supabase/migrations/20261117000000_notification_tune.sql'
 TESTS = ['notification_tune', 'newcomer_welcome', 'notification_overhaul', 'push_notifications', 'account_security_notifications',
          'notification_patina', 'meetup_reminders', 'meetup_notification_extensions', 'live_bubbles', 'weekly_ranking_notifications',
-         'festival_notification_concise', 'meetup_convenience']
+         'festival_notification_concise', 'meetup_convenience', 'message_preview']
 
 # Kinds another branch adds later. Before and after the tune migration they must behave the same: a row, the default
 # category and an immediate push (the kind check is dropped inside the rolled-back probe because those kinds are not allowed yet).

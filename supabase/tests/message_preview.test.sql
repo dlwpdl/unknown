@@ -53,7 +53,7 @@ select ok(exists(select 1 from public.safety_review_queue where target_type='mes
 update public.notifications set body='이전 발신자: 오래된 비공개 본문' where target_id=:'message_id';
 insert into preview_claim select * from public.claim_push_notifications() where user_id='71440000-0000-0000-0000-000000000002';
 select is((select count(*)::int from preview_claim),1,'an eligible OFF message is still sent');
-select is((select body from preview_claim),'메시지가 도착했어요.','OFF sends only the generic message text');
+select is((select body from preview_claim),'채팅친구님이 메시지를 보냈어요.','OFF sends only the generic message text');
 update public.notifications set body='메시지가 도착했어요.' where target_id=:'message_id';
 select is((select route from preview_claim),'/chat?conversationId=71440000-0000-0000-0002-000000000001','generic pushes retain the actual accessible conversation');
 select is((select count(*)::int from public.claim_push_notifications()),0,'the existing lease still prevents a duplicate send');
@@ -78,7 +78,7 @@ select public.update_notification_preferences('{"message_preview":false}');
 reset role;
 truncate preview_claim;
 insert into preview_claim select * from public.claim_push_notifications() where user_id='71440000-0000-0000-0000-000000000002';
-select is((select body from preview_claim),'메시지가 도착했어요.','withdrawing preview before a retry suppresses the actual body');
+select is((select body from preview_claim),'채팅친구님이 메시지를 보냈어요.','withdrawing preview before a retry suppresses the actual body');
 select public.complete_push_notification(id,lease_id,'failed') from preview_claim;
 
 set local role authenticated;
