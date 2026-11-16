@@ -138,7 +138,8 @@ update public.profiles set account_status='active' where id='d1000000-0000-4000-
 -- Suspending an account already closes its memberships; approve the receiver again for the next steps.
 update public.meetup_requests set status='approved' where requester_id='d1000000-0000-4000-8000-000000000002' and post_id::text like 'd11%' and post_id<>'d1100000-0000-4000-8000-000000000002';
 
--- Accept.
+-- Accept. The receiver has a public name, so the meetup's public host name can follow the transfer.
+update private.chilling_profiles set profile=profile||'{"displayName":"새 호스트"}' where id='d1000000-0000-4000-8000-000000000002';
 select set_config('request.jwt.claims','{"sub":"d1000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
 select public.offer_meetup_host_transfer('d1100000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000002');
@@ -156,6 +157,7 @@ select is((select answer from private.chilling_applications where id='d1200000-0
 select is((select author_id from private.chilling_applications where id='d1200000-0000-4000-8000-000000000002'),'d1000000-0000-4000-8000-000000000001'::uuid,'that row now belongs to the previous host');
 select is((select profile->>'displayName' from private.chilling_applications where id='d1200000-0000-4000-8000-000000000002'),'예전 호스트','the previous host profile moved to their member row');
 select is((select author_id from private.chilling_host_profiles where post_id='d1100000-0000-4000-8000-000000000001'),'d1000000-0000-4000-8000-000000000002'::uuid,'the public host profile is the new host');
+select is((select room_preview->>'hostDisplayName' from public.posts where id='d1100000-0000-4000-8000-000000000001'),'새 호스트','the public host name follows the transfer');
 select is((select status from private.meetup_cohosts where post_id='d1100000-0000-4000-8000-000000000001' and user_id='d1000000-0000-4000-8000-000000000002'),'revoked','the new host is no longer a co-host');
 select is((select host_id from private.meetup_sessions where post_id='d1100000-0000-4000-8000-000000000001' and starts_at>now()),'d1000000-0000-4000-8000-000000000002'::uuid,'upcoming sessions follow the new host');
 select is((select host_id from private.meetup_sessions where post_id='d1100000-0000-4000-8000-000000000001' and starts_at<now()),'d1000000-0000-4000-8000-000000000001'::uuid,'past sessions keep their host');
