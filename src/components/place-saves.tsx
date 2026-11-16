@@ -10,19 +10,33 @@ import { ControlStyles, controlPresentation } from '@/constants/design-system';
 import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { getCityPlaces, type CityPlace } from '@/lib/city-places';
+import { placeCategory } from '@/lib/discovery';
+import { relativeTime } from '@/lib/feed-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { loadPlaceSaves, type PlaceSaves } from '@/lib/profile-friends';
+import { cityPlaceRank, loadCityPlaceSaves, loadPlaceSaveKinds, loadPlaceSaves, type CityPlaceSave, type PlaceSaveKinds, type PlaceSaves } from '@/lib/profile-friends';
 import { supabase } from '@/lib/supabase';
+
+// The place's own saves, plus the 가 봤어요·가 보고 싶어요 split and its rank in the city; either extra is null on an older server.
+export type PlaceSavesView = PlaceSaves & { kinds: PlaceSaveKinds | null; rank: number | null };
+
+function rankInCity(cityId: string, placeId: string, saves: Map<string, CityPlaceSave>) {
+  try {
+    const places = getCityPlaces(cityId), self = places.find(place => place.id === placeId);
+    return self ? cityPlaceRank(placeId, places.filter(place => placeCategory(place) === placeCategory(self)).map(place => place.id), saves) : null;
+  } catch { return null; }
+}
 
 // G2 on a map place, laid out like the business page: who saved it and the 소개 3칸 near the top, similar places and the
 // lists it is in further down. Nothing shows when the server has no real saves or the catalog has no intro.
 export function usePlaceSaves(cityId: string | undefined, placeId: string | undefined, enabled: boolean, viewer: string | null) {
   const key = cityId && placeId ? `${cityId}:${placeId}:${viewer ?? ''}` : null;
-  const [state, setState] = useState<{ key: string; value: PlaceSaves | null } | null>(null);
+  const [state, setState] = useState<{ key: string; value: PlaceSavesView | null } | null>(null);
   useEffect(() => {
     if (!enabled || !key || !cityId || !placeId) return;
     let active = true;
-    void loadPlaceSaves(supabase, cityId, placeId).then(value => { if (active) setState({ key, value }); }).catch(() => { if (active) setState({ key, value: null }); });
+    void Promise.all([loadPlaceSaves(supabase, cityId, placeId), loadPlaceSaveKinds(supabase, cityId, placeId).catch(() => null), loadCityPlaceSaves(supabase, cityId).catch(() => null)])
+      .then(([saves, kinds, city]) => { if (active) setState({ key, value: saves && { ...saves, kinds, rank: city && rankInCity(cityId, placeId, city) } }); })
+      .catch(() => { if (active) setState({ key, value: null }); });
     return () => { active = false; };
   }, [enabled, key, cityId, placeId]);
   return state?.key === key ? state.value : null;
@@ -31,7 +45,7 @@ export function usePlaceSaves(cityId: string | undefined, placeId: string | unde
 const week = (saverCount: number, weekCount: number, locale: string, tr: (text: string, ...args: string[]) => string) => weekCount > 0
   ? tr('저장 {0} · 이번 주 +{1}', saverCount.toLocaleString(locale), weekCount.toLocaleString(locale)) : tr('저장 {0}', saverCount.toLocaleString(locale));
 
-export function PlaceSavedBy({ place, saves }: { place: CityPlace; saves: PlaceSaves | null }) {
+export function PlaceSavedBy({ place, saves }: { place: CityPlace; saves: PlaceSavesView | null }) {
   const { tr, language, locale } = useLanguage(), theme = useTheme(), clay = useClay(), clayBox = useClayBox(), router = useRouter(), { play } = useInteractionFeedback();
   const en = language === 'en', intro = place.intro;
   const rows = intro ? ([[tr('분위기'), en ? intro.vibeEn ?? intro.vibe : intro.vibe], [place.category === 'places' ? tr('뭘 할까') : tr('뭘 시킬까'), en ? intro.orderEn ?? intro.order : intro.order],
@@ -40,13 +54,14 @@ export function PlaceSavedBy({ place, saves }: { place: CityPlace; saves: PlaceS
     {!!saves && (saves.saverCount > 0 || saves.friends.length > 0) && <View style={[styles.box, clayBox ? styles.clayCard : { backgroundColor: theme.backgroundElement }]}>
       {clayBox && <ClayBoxFill kind="tile" />}
       <ThemedText type="smallBold">{tr('저장한 사람 {0}명', saves.saverCount.toLocaleString(locale))}{saves.weekCount > 0 ? ` · ${tr('이번 주 +{0}', saves.weekCount.toLocaleString(locale))}` : ''}</ThemedText>
+      {!!saves.kinds && saves.saverCount > 0 && <ThemedText type="small" themeColor="textSecondary">{tr('가 봤어요 {0}명 · 가 보고 싶어요 {1}명', saves.kinds.beenCount.toLocaleString(locale), saves.kinds.wantCount.toLocaleString(locale))}</ThemedText>}
       {saves.firstIsMe && <ThemedText type="smallBold" themeColor="accent">{tr('내가 처음 저장했어요')}</ThemedText>}
       {saves.friends.length > 0 ? <View style={styles.chips}>
         {saves.friends.map(friend => <Pressable key={friend.id} analyticsId="places.saves.friend" accessibilityRole="link" accessibilityLabel={tr('{0} 프로필 보기', friend.nickname)}
           onPress={() => { play('selection'); router.push({ pathname: '/user/[id]', params: { id: friend.id, nickname: friend.nickname } }); }}
           style={({ pressed }) => [ControlStyles.pill, styles.chip, clay && styles.clayChip, controlPresentation(theme, { pressed, clay }).container]}>
           {clay && <ClayControlFill />}
-          <ThemedText type="small">{friend.first ? tr('{0}님이 처음 저장', friend.nickname) : tr('{0}님이 저장', friend.nickname)}</ThemedText>
+          <ThemedText type="small">{friend.first ? tr('{0}님이 처음 저장', friend.nickname) : tr('{0}님이 저장', friend.nickname)} · {relativeTime(friend.savedAt, undefined, locale)}</ThemedText>
         </Pressable>)}
       </View> : <ThemedText type="small" themeColor="textSecondary">{tr('친구가 저장하면 여기에 이름이 보여요. 다른 사람은 숫자로만 보여요.')}</ThemedText>}
     </View>}

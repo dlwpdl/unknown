@@ -28,7 +28,7 @@ import {
   classifyImportInput, extractPlaceNames, googlePlaceFromUrl, matchPlaces, parseTakeoutFile, readGoogleList, readInstagramCaption,
   type ImportCandidate,
 } from '@/lib/place-import';
-import { createSavedFolder, loadSavedFolders, setSavedItem, setSavedItemFolders } from '@/lib/saved-items';
+import { loadSavedFolders, saveSavedFolder, setSavedItem, setSavedItemFolders } from '@/lib/saved-items';
 import { supabase } from '@/lib/supabase';
 
 // Where a name came from, as the suggest_places RPC records it.
@@ -73,7 +73,8 @@ export default function ImportScreen() {
   // Same-day imports share one folder instead of piling up folders with the same name.
   async function folderFor(name: string) {
     const same = (await loadSavedFolders(supabase)).find(item => item.name === name);
-    return same ?? createSavedFolder(supabase, name);
+    // An imported list stays private: this screen never asks who may see it.
+    return same ?? saveSavedFolder(supabase, null, name, 'private', null);
   }
 
   // Returns false when a request could not be sent; names go grouped by where they came from.

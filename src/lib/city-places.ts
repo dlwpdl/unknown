@@ -30,6 +30,9 @@ export type CityPlace = {
   intro?: PlaceIntro;
   // Korean names for search only, never shown (owner 2026-11-08 "영어를 한글로 쳐도 나오게하자", "물론 보이는건 영어로만 보이게하고").
   searchNames?: string[];
+  // Map states from a cited source (owner 2026-11-13), filled by the place automation; absent means unknown. on/since are YYYY-MM-DD.
+  opened?: { on: string; sourceUrl: string };
+  hot?: { since: string; sourceUrl: string; sourceName: string };
 };
 export type PlaceIntro = { vibe?: string; order?: string; when?: string; vibeEn?: string; orderEn?: string; whenEn?: string; sourceUrl: string };
 const INTRO_FIELDS = ['vibe', 'order', 'when', 'vibeEn', 'orderEn', 'whenEn'] as const;
@@ -90,6 +93,9 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
     try { const u = new URL(v as string); return u.protocol === 'https:' && !u.username && !u.password; } catch { return false; }
   };
   const invalid = () => { throw new Error('INVALID_PLACE_CATALOG'); };
+  const day = (v: unknown) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && Number.isFinite(Date.parse(`${v}T00:00:00Z`)) && new Date(`${v}T00:00:00Z`).toISOString().startsWith(v);
+  const cited = (v: unknown, dateKey: 'on' | 'since', extra: readonly string[]) => !!v && typeof v === 'object' && !Array.isArray(v) && day((v as Record<string, unknown>)[dateKey])
+    && https((v as Record<string, unknown>).sourceUrl) && Object.keys(v).every(key => [dateKey, 'sourceUrl', ...extra].includes(key));
   const validateFlickrPhoto = (photo: PlacePhoto, cityId: string, ids: Set<string>, discoveredVia: 'Openverse' | 'Flickr') => {
     if (!photo || photo.cityId !== cityId || !ids.has(photo.placeId)
       || !text(photo.artist, 1000) || !text(photo.title, 1000) || photo.discoveredVia !== discoveredVia
@@ -131,6 +137,8 @@ export function replaceCityPlacesCatalog(value: unknown, now = Date.now()): bool
           || (p.website != null && !https(p.website)) || (p.openingHours != null && !text(p.openingHours, 1000))
           || (p.nightlife !== undefined && p.nightlife !== true)
           || (p.priceLevel !== undefined && ![1, 2, 3, 4].includes(p.priceLevel))
+          || (p.opened !== undefined && !cited(p.opened, 'on', []))
+          || (p.hot !== undefined && (!cited(p.hot, 'since', ['sourceName']) || !text(p.hot.sourceName, 80)))
           // Unknown subcategory names are ignored on read, so a later value does not reject the catalog.
           || (p.subcategories !== undefined && (!Array.isArray(p.subcategories) || p.subcategories.length > 12 || p.subcategories.some(value => !text(value, 40))))
           || (p.intro !== undefined && (!p.intro || typeof p.intro !== 'object' || !https(p.intro.sourceUrl) || !INTRO_FIELDS.some(key => p.intro![key] !== undefined)

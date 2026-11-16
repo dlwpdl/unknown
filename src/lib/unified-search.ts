@@ -4,8 +4,9 @@ import { DELIVERY_PARTNERS } from './delivery-partners.ts';
 import { CITIES } from './mock.ts';
 
 export type UnifiedSearchKind = 'all' | 'business' | 'place' | 'person' | 'post' | 'meetup';
-export type UnifiedSearchItem = { kind: Exclude<UnifiedSearchKind, 'all'>; id: string; cityId: string; title: string; subtitle: string; merchantId?: string; placeId?: string; imageUri?: string };
-export type UnifiedSearchPage = { items: UnifiedSearchItem[]; hasMore: boolean; nextOffset: number };
+export type UnifiedSearchItem = { kind: Exclude<UnifiedSearchKind, 'all'>; id: string; cityId: string; title: string; subtitle: string; merchantId?: string; placeId?: string; imageUri?: string; priceLevel?: number };
+// priced: on 장소, whether any matching place has a price, so the price chip shows only when it can narrow something.
+export type UnifiedSearchPage = { items: UnifiedSearchItem[]; hasMore: boolean; nextOffset: number; priced?: boolean };
 const kinds = ['all', 'business', 'place', 'person', 'post', 'meetup'];
 const cities = CITIES.filter(city => city.state === 'open').map(city => city.id);
 const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
@@ -20,16 +21,18 @@ function wordStart(title: string, query: string) {
   return -1;
 }
 
-export async function loadUnifiedSearch(client: SupabaseClient, options: { query: string; cityId: string | null; kind: UnifiedSearchKind; offset?: number; signal?: AbortSignal }): Promise<UnifiedSearchPage> {
-  const { cityId, kind, signal } = options, offset = options.offset ?? 0;
+// priceLevels narrows 장소 to places with one of those levels (1-4); a place without a price is left out, never assumed to match.
+export async function loadUnifiedSearch(client: SupabaseClient, options: { query: string; cityId: string | null; kind: UnifiedSearchKind; offset?: number; priceLevels?: readonly number[]; signal?: AbortSignal }): Promise<UnifiedSearchPage> {
+  const { cityId, kind, signal } = options, offset = options.offset ?? 0, prices = options.priceLevels ?? [];
   if (typeof options.query !== 'string' || options.query.trim().length > 120 || (cityId !== null && !cities.includes(cityId)) || !kinds.includes(kind)
-    || !Number.isSafeInteger(offset) || offset < 0 || offset > 2_147_483_600 || (kind === 'all' && offset !== 0)) throw new Error('INVALID_UNIFIED_SEARCH_REQUEST');
+    || !Number.isSafeInteger(offset) || offset < 0 || offset > 2_147_483_600 || (kind === 'all' && offset !== 0)
+    || !Array.isArray(prices) || prices.length > 4 || prices.some(level => ![1, 2, 3, 4].includes(level)) || (prices.length > 0 && kind !== 'place')) throw new Error('INVALID_UNIFIED_SEARCH_REQUEST');
   if (signal?.aborted) throw new Error('SEARCH_ABORTED');
   const query = fold(options.query);
   if (!query) return { items: [], hasMore: false, nextOffset: 0 };
   const cafeQuery = ['cafe', 'café', 'coffee', '카페', '커피'].includes(query);
   const local = (cityId === null ? cities : [cityId]).flatMap(city => [
-    ...getCityDiscoveryPlaces(city).map(place => ({ id: place.id, cityId: city, title: place.name, subtitle: place.address, category: place.category, korean: koreanNameMatches(place.searchNames, query) })),
+    ...getCityDiscoveryPlaces(city).map(place => ({ id: place.id, cityId: city, title: place.name, subtitle: place.address, category: place.category, priceLevel: place.priceLevel, korean: koreanNameMatches(place.searchNames, query) })),
     ...DELIVERY_PARTNERS.filter(place => place.cityId === city).map(place => ({ id: `partner:${place.id}`, cityId: city, title: place.name, subtitle: place.label, category: place.category })),
   ]).flatMap(place => {
     const title = fold(place.title), index = wordStart(title, query);
@@ -71,16 +74,18 @@ export async function loadUnifiedSearch(client: SupabaseClient, options: { query
     : data.nextOffset !== offset + items.length || (data.hasMore && items.length !== 20)) invalid();
   if (kind !== 'all' && kind !== 'place') return { items, hasMore: data.hasMore, nextOffset: data.nextOffset as number };
   const branches = new Set<string>();
+  const level = (place: (typeof candidates)[number]) => 'priceLevel' in place ? place.priceLevel : undefined;
   const places = candidates.flatMap(place => {
     if (!placeKey.test(place.id)) invalid();
+    if (prices.length && !prices.includes(level(place) ?? 0)) return [];
     const merchantId = links.get(`${place.cityId}:${place.id}`);
     if (kind === 'all' && merchantId) return [];
     const branch = merchantId ? `${place.cityId}:${merchantId}` : `${place.cityId}:${place.id}`;
     if (branches.has(branch)) return [];
     branches.add(branch);
-    return [{ kind: 'place' as const, id: place.id, placeId: place.id, cityId: place.cityId, title: place.title, subtitle: place.subtitle, ...(merchantId ? { merchantId } : {}) }];
+    return [{ kind: 'place' as const, id: place.id, placeId: place.id, cityId: place.cityId, title: place.title, subtitle: place.subtitle, ...(merchantId ? { merchantId } : {}), ...(level(place) ? { priceLevel: level(place) } : {}) }];
   });
   if (kind === 'all') return { items: [...items, ...places.slice(0, 3)], hasMore: false, nextOffset: 0 };
   const page = places.slice(offset, offset + 20);
-  return { items: page, hasMore: places.length > offset + page.length, nextOffset: offset + page.length };
+  return { items: page, hasMore: places.length > offset + page.length, nextOffset: offset + page.length, priced: candidates.some(place => !!level(place)) };
 }

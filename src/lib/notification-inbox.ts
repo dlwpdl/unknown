@@ -9,7 +9,7 @@ export type InboxTab = 'mine' | 'city' | 'admin';
 export type InboxItem<T extends InboxRow = InboxRow> = { key: string; kind: 'single' | 'likes' | 'hashtag' | 'signin'; lead: T; rows: T[] };
 
 export const NOTIFICATION_PAGE_SIZE = 50;
-const CITY_CATEGORIES = new Set(['trending', 'weekly_ranking', 'city_food', 'city_places', 'interests', 'nearby']);
+const CITY_CATEGORIES = new Set(['trending', 'weekly_ranking', 'city_food', 'city_places', 'interests', 'nearby', 'weekend_picks']);
 const CITY_KINDS = new Set(['trending_meetup', 'trending_hashtag']);
 const LIKE_KINDS = new Set(['post_like', 'comment_like', 'like_summary']);
 // Chat-request kinds stay unread in the bell so the chat tab badge keeps counting them until the request is opened.

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { friendErrorMessage, loadCityPlaceSaves, loadFriendSavedPlaces, loadMapScope, loadMerchantSaves, loadPlaceSaves, parseFriendSavedPlaces, parseProfileOverview, savedPlaceCities, setFriendship } from '../src/lib/profile-friends.ts';
+import { cityPlaceRank, friendErrorMessage, loadCityPlaceSaves, loadPlaceSaveKinds, loadFriendSavedPlaces, loadMapScope, loadMerchantSaves, loadPlaceSaves, parseFriendSavedPlaces, parseProfileOverview, savedPlaceCities, setFriendship } from '../src/lib/profile-friends.ts';
 import { saveMerchantIntro } from '../src/lib/merchant-conveniences.ts';
 import { mapMerchantProfile } from '../src/lib/merchant-profile.ts';
 import { notificationRoute } from '../src/lib/notification-preferences.ts';
@@ -69,6 +69,30 @@ test('place saves: keys only for similar places, friends checked like a business
   assert.equal(await loadPlaceSaves({ rpc: async () => ({ data: null, error: { code: 'PGRST202' } }) }, 'vancouver', 'osm:node:1'), null, 'an older server shows nothing');
   for (const bad of [{ ...data, weekCount: -1 }, { ...data, similar: [{ placeKey: 'javascript:1', saverCount: 1, weekCount: 0 }] }, { ...data, similar: Array(6).fill(data.similar[0]) }, { ...data, friends: [{ id: 'x', nickname: 'a', savedAt: 'now' }] }, { ...data, firstIsMe: null }, { ...data, friends: [{ ...data.friends[0], first: 'yes' }] }])
     await assert.rejects(loadPlaceSaves(client(bad), 'vancouver', 'osm:node:1'), /INVALID_PROFILE_RESPONSE/);
+});
+
+test('place save kinds: 가 봤어요·가 보고 싶어요 counts; an older server is null and bad data is refused', async () => {
+  const calls = [];
+  const client = (data, error = null) => ({ rpc: async (name, args) => { calls.push([name, args]); return { data, error }; } });
+  assert.deepEqual(await loadPlaceSaveKinds(client({ beenCount: 2, wantCount: 5 }), 'vancouver', 'osm:node:1'), { beenCount: 2, wantCount: 5 });
+  assert.deepEqual(calls, [['get_place_save_kinds', { p_city_id: 'vancouver', p_place_key: 'osm:node:1' }]]);
+  assert.equal(await loadPlaceSaveKinds(client(null), 'vancouver', 'osm:node:1'), null);
+  assert.equal(await loadPlaceSaveKinds(client(null, { code: 'PGRST202' }), 'vancouver', 'osm:node:1'), null, 'an older server shows no split');
+  await assert.rejects(loadPlaceSaveKinds(client(null, { code: '57014', message: 'timeout' }), 'vancouver', 'osm:node:1'));
+  for (const bad of [[], { beenCount: -1, wantCount: 0 }, { beenCount: 1 }, { beenCount: '1', wantCount: 0 }])
+    await assert.rejects(loadPlaceSaveKinds(client(bad), 'vancouver', 'osm:node:1'), /INVALID_PROFILE_RESPONSE/);
+});
+
+test('city rank: ties share a rank, and fewer than 2 saves or past 50th shows none', () => {
+  const saves = new Map([['a', 9], ['b', 5], ['c', 5], ['d', 3], ['e', 1], ['other-kind', 99]].map(([key, saverCount]) => [key, { saverCount, status: null }]));
+  const peers = ['a', 'b', 'c', 'd', 'e', 'f'];
+  assert.deepEqual(['a', 'b', 'c', 'd'].map(key => cityPlaceRank(key, peers, saves)), [1, 2, 2, 4], 'same saves, same rank; the next one skips');
+  assert.equal(cityPlaceRank('e', peers, saves), null, 'one save is not a rank');
+  assert.equal(cityPlaceRank('f', peers, saves), null, 'an unsaved place has no rank');
+  const crowd = new Map(Array.from({ length: 51 }, (_, index) => [`p${index}`, { saverCount: 100 - index, status: null }]));
+  const all = [...crowd.keys()];
+  assert.equal(cityPlaceRank('p49', all, crowd), 50);
+  assert.equal(cityPlaceRank('p50', all, crowd), null, '51st is past the top 50');
 });
 
 test('the business intro is trimmed, checked before sending and verified after saving', async () => {

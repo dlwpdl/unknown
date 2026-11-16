@@ -12,7 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ClayPhoto } from '@/components/clay';
 import { PostCard } from '@/components/post-card';
 import { DragSheet } from '@/components/drag-sheet';
-import { FriendButton, ProfileSavedMap } from '@/components/profile-overview';
+import { FriendButton, ProfileRecordTiles, ProfileSavedMap } from '@/components/profile-overview';
+import { FriendFolders } from '@/components/friend-folders';
 import { ReportSheet } from '@/components/report-sheet';
 import { MannerSummary } from '@/components/manner-summary';
 import { TrustBadge } from '@/components/trust-badge';
@@ -182,6 +183,8 @@ export default function AuthorPostsRoute() {
               {!!mapNote && <View style={styles.mapNote}><SymbolView name={{ ios: 'lock', android: 'lock', web: 'lock' }} size={IconSize.inline} tintColor={theme.textSecondary} /><ThemedText type="small" themeColor="textSecondary" style={styles.mapNoteText}>{mapNote}</ThemedText></View>}
               <MannerSummary summary={publicProfile.manner} />
               {publicProfile.completedCount > 0 && <ThemedText type="small" themeColor="textSecondary">{tr('거래 완료 {0}건 · 글쓴이가 직접 표시한 거라 실제 거래나 신원을 확인한 건 아니에요', count(publicProfile.completedCount))}</ThemedText>}
+              {shownOverview && <ProfileRecordTiles overview={shownOverview} />}
+              {shownOverview?.friendship === 'friends' && <FriendFolders key={overviewKey} userId={authorId} nickname={publicProfile.nickname} />}
         <View style={[styles.segments, { borderBottomColor: theme.line }]} accessibilityRole="tablist" onLayout={event => setSegmentWidth(event.nativeEvent.layout.width)}>
           {segmentWidth > 0 && <Animated.View pointerEvents="none" style={[styles.segmentIndicator, Depth.control, { width: segmentWidth / 2, backgroundColor: theme.backgroundElement, borderBottomColor: theme.accent, transform: [{ translateX: segmentPosition.interpolate({ inputRange: [0, 1], outputRange: [0, segmentWidth / 2] }) }] }]} />}
           {(['story', 'listing'] as const).map(value => <Pressable analyticsId={`user.activity.${value}`} key={value} accessibilityRole="tab" accessibilityState={{ selected: kind === value }}

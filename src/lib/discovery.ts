@@ -9,8 +9,24 @@ import { merchantMapsUrl } from './merchant-source.ts';
 import { CITIES } from './mock.ts';
 
 export const TOP25_GOLD = '#F4CA78';
-// M1 (owner 2026-11-05): a place's state, decided on the server from our own save numbers. The dot always comes with the word, so colour is never the only signal.
-export const PLACE_STATUS = { trending: { label: '뜨는 중', empty: '지금 뜨는 곳이 없어요', color: '#E8743B' }, popular: { label: '인기', empty: '인기 있는 곳이 없어요', color: '#E0559A' } } as const;
+// M1 (owner 2026-11-05): a place's state. The dot always comes with the word, so colour is never the only signal; a pin names the first that holds, in this order.
+// 뜨는 중·인기 come from the server (members' activity, get_city_place_saves), or 뜨는 중 from a cited outside source (CityPlace.hot);
+// 새로 생김 from the place data (CityPlace.opened); 친구가 저장 from the viewer's friends who share their saves.
+export const PLACE_STATUS = {
+  new: { label: '새로 생김', empty: '새로 생긴 곳이 없어요', color: '#3FA34D' },
+  trending: { label: '뜨는 중', empty: '지금 뜨는 곳이 없어요', color: '#E8743B' },
+  popular: { label: '인기', empty: '인기 있는 곳이 없어요', color: '#E0559A' },
+  friends: { label: '친구가 저장', empty: '친구가 저장한 곳이 없어요', color: '#4A7FE0' },
+} as const;
+export type MapPlaceStatus = keyof typeof PLACE_STATUS;
+// A place opened in the last 90 days is new; an outside source's word that it is hot holds for 60 days.
+const recentDay = (day: string | undefined, days: number, now: number) => { const at = Date.parse(`${day}T00:00:00Z`); return at <= now && now - at < (days + 1) * 86_400_000; };
+export const placeHot = (place: Pick<CityPlace, 'hot'> | undefined, now: number) => place?.hot && recentDay(place.hot.since, 60, now) ? place.hot : null;
+/** Every state a map place has, in PLACE_STATUS order. `saved` is the server's state; an older server gives none. */
+export function placeStatuses(place: Pick<CityPlace, 'opened' | 'hot'> | undefined, saved: 'trending' | 'popular' | null | undefined, friendSaved: boolean, now: number): MapPlaceStatus[] {
+  return (Object.keys(PLACE_STATUS) as MapPlaceStatus[]).filter(id => id === 'new' ? recentDay(place?.opened?.on, 90, now)
+    : id === 'trending' ? saved === 'trending' || !!placeHot(place, now) : id === 'popular' ? saved === 'popular' : friendSaved);
+}
 
 // `art` is the 3D picture drawn in the category's map pin (src/lib/map-pin-art.ts); categories without their own share the nearest one.
 export const DISCOVERY_CATEGORIES = [
@@ -63,7 +79,6 @@ export const SITUATION_SUBCATEGORIES: ReadonlySet<string> = new Set(['breakfast'
 export const pinSubcategory = (subcategories: readonly string[] | undefined) =>
   PLACE_SUBCATEGORIES.find(option => !SITUATION_SUBCATEGORIES.has(option.id) && subcategories?.includes(option.id));
 export type PlaceSubcategory = typeof PLACE_SUBCATEGORIES[number]['id'];
-export const PRICE_FILTERS: readonly DiscoveryFilter[] = ['dining', 'cafe', 'nightlife'];
 export const PRICE_LEVELS = [1, 2, 3, 4] as const;
 export const priceSymbol = (level: number) => '$'.repeat(level);
 /** '$–$$' for a run, '$ · $$$' for a gap, '' for none. */

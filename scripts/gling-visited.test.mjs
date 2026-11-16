@@ -74,7 +74,7 @@ test('the real map marker and explicit map entry identify team visits without ch
   const expression = nodes(map, node => ts.isVariableDeclaration(node) && node.name.getText(map) === 'markers')[0].initializer;
   const visited = discoveryPlace({ ...place, glingVisited: visit });
   const markers = run(expression.getText(map), { pins: [visited, discoveryPlace({ ...place, id: 'osm:node:101' }), discoveryPlace({ ...place, id: 'osm:node:102', subcategories: ['lunch', 'korean'] })],
-    useMemo: fn => fn(), DISCOVERY_CATEGORIES, discoveryKind, pinSubcategory, tr: value => value, hasAdLabel: () => false, savedNow: {}, viewerScope: 'guest', mySaved: null, placeKey: item => item.place?.id ?? item.sourceId, savesOf: () => undefined });
+    useMemo: fn => fn(), DISCOVERY_CATEGORIES, discoveryKind, pinSubcategory, tr: value => value, hasAdLabel: () => false, savedNow: {}, viewerScope: 'guest', mySaved: null, placeKey: item => item.place?.id ?? item.sourceId, savesOf: () => undefined, statusesOf: () => [] });
   assert.equal(markers[0].label, place.name);
   assert.equal(markers[0].color, DISCOVERY_CATEGORIES.find(value => value.id === 'dining').color);
   assert.equal(markers[0].latitude, place.latitude);

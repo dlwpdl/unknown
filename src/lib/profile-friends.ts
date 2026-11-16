@@ -141,6 +141,17 @@ export async function loadPlaceSaves(client: SupabaseClient, cityId: string, pla
   return parsePlaceSaves(data);
 }
 
+// 가 봤어요·가 보고 싶어요 (owner 2026-11-13): the same people as saverCount, split by the 가 봤음 mark. null is an older server.
+export type PlaceSaveKinds = { beenCount: number; wantCount: number };
+export async function loadPlaceSaveKinds(client: SupabaseClient, cityId: string, placeKey: string): Promise<PlaceSaveKinds | null> {
+  const { data, error } = await client.rpc('get_place_save_kinds', { p_city_id: cityId, p_place_key: placeKey });
+  if (error?.code === 'PGRST202') return null;
+  if (error) throw error;
+  if (data === null) return null;
+  if (!object(data)) invalid();
+  return { beenCount: count(data.beenCount), wantCount: count(data.wantCount) };
+}
+
 // 지도 목록·핀 (M1·M3, owner 2026-11-05): every saved place's total in one city, never who. null is an older server without the function; the map then shows none of it.
 export type PlaceStatus = 'trending' | 'popular';
 export type CityPlaceSave = { saverCount: number; status: PlaceStatus | null };
@@ -156,6 +167,15 @@ export async function loadCityPlaceSaves(client: SupabaseClient, cityId: string)
   if (error?.code === 'PGRST202') return null;
   if (error) throw error;
   return parseCityPlaceSaves(data);
+}
+
+// 도시 안 순위 (owner 2026-11-13): the place's rank by saves among `peers` (the same city and map category), ties sharing a rank.
+// Only from 2 saves and within the top 50, so a place one person saved never reads as "1위".
+export function cityPlaceRank(placeKey: string, peers: readonly string[], saves: ReadonlyMap<string, CityPlaceSave>): number | null {
+  const mine = saves.get(placeKey)?.saverCount ?? 0;
+  if (mine < 2) return null;
+  const rank = 1 + peers.filter(key => (saves.get(key)?.saverCount ?? 0) > mine).length;
+  return rank <= 50 ? rank : null;
 }
 
 // 지도 '보여 줄 곳': places in one city saved by friends who share them (get_friend_saved_places). friendCount is every

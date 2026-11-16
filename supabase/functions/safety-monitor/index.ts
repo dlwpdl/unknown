@@ -123,8 +123,8 @@ async function loadContent(client, targetType: string, targetId: string, claim =
     if (result.error) throw result.error;
     return result.data;
   }
-  if (targetType === 'live_bubble') {
-    const result = await client.rpc('get_live_bubble_safety_content', { p_target_id: targetId });
+  if (targetType === 'live_bubble' || targetType === 'saved_folder') {
+    const result = await client.rpc(targetType === 'live_bubble' ? 'get_live_bubble_safety_content' : 'get_saved_folder_safety_content', { p_target_id: targetId });
     if (result.error) throw result.error;
     return result.data;
   }

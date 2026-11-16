@@ -5,9 +5,9 @@ import { Image } from 'expo-image';
 import { SymbolView } from '@/components/symbol-view';
 import { openBrowserAsync } from 'expo-web-browser';
 // shortcut: React Native's own Clipboard is deprecated (a dev-only warning); move to expo-clipboard with the next native build.
-import { Alert, Clipboard, Keyboard, Linking, Platform, StyleSheet, View, type ScrollViewInstance } from 'react-native';
+import { Alert, Clipboard, Keyboard, Linking, Modal, Platform, StyleSheet, View, type ScrollViewInstance } from 'react-native';
 import Reanimated, { FadeIn, SlideInDown, useReducedMotion } from 'react-native-reanimated';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { Pressable, ScrollView } from '@/components/analytics-controls';
 import { CityPlacePhoto } from '@/components/city-place-photo';
@@ -20,9 +20,11 @@ import { GlingVisitedBadge, Top50Badge } from '@/components/place-badges';
 import { ReservationButton } from '@/components/reservation-button';
 import { PlaceReviews } from '@/components/place-reviews';
 import { PlaceExternalRatings } from '@/components/place-external-ratings';
+import { PlaceCorrection } from '@/components/place-correction';
 import { PlaceHours } from '@/components/place-hours';
 import { PageHeader } from '@/components/page-header';
 import { PlaceRelated, PlaceSavedBy, usePlaceSaves } from '@/components/place-saves';
+import { PlaceFriendFolders } from '@/components/friend-folders';
 import { PostMapLink } from '@/components/post-map-link';
 import { PostPhotoCredits } from '@/components/post-photo-credits';
 import { StateCard } from '@/components/state-card';
@@ -56,7 +58,7 @@ export default function PlaceDetailScreen() {
   const { tr, language, locale: appLocale } = useLanguage();
   const [viewport, setViewport] = useState({ y: 0, height: 0 });
   const [sharing, setSharing] = useState(false), [reviewRequest, setReviewRequest] = useState(0);
-  const [directions, setDirections] = useState(false), [copied, setCopied] = useState(false);
+  const [directions, setDirections] = useState(false), [copied, setCopied] = useState(false), [viewingPhoto, setViewingPhoto] = useState(false);
   const scroll = useRef<ScrollViewInstance>(null), reviewsY = useRef(0);
   // The fixed buttons step aside while a review is being typed, so they never sit on the keyboard.
   const [typing, setTyping] = useState(false);
@@ -164,7 +166,11 @@ export default function PlaceDetailScreen() {
       {!place || !city ? <StateCard kind="error" title={tr("장소를 찾지 못했어요")} body={tr("선택한 도시의 장소 목록에서 다시 열어 주세요.")} /> : <>
         {/* Without a photo the name and kinds lead the page instead of an empty frame (QA A-place-01). */}
         {hasPhoto && <View>
-          <CityPlacePhoto place={place} style={styles.photo} />
+          {/* Both catalogs hold one licensed photo per place, so tapping opens that one full screen; there is nothing to swipe to yet. */}
+          {place.photo ? <Pressable analyticsId="post.photo.open" accessibilityRole="button" accessibilityLabel={tr('{0} 사진 크게 보기', place.name)}
+            onPress={() => { play('selection'); setViewingPhoto(true); }}>
+            <CityPlacePhoto place={place} style={styles.photo} />
+          </Pressable> : <CityPlacePhoto place={place} style={styles.photo} />}
           {badges && <View style={styles.badges}>{badges}</View>}
           {!!credits && <View style={styles.credit}><PostPhotoCredits credits={credits} variant="photo" /></View>}
         </View>}
@@ -174,6 +180,7 @@ export default function PlaceDetailScreen() {
           <ThemedText accessibilityRole="header" style={styles.title}>{place.name}</ThemedText>
           {/* Named like the map card (owner 2026-11-11): the map category, then the place's kinds in the map's own order. */}
           <ThemedText type="small" themeColor="textSecondary">{kinds.join(' · ')}</ThemedText>
+          {!!saves?.rank && <ThemedText type="smallBold" themeColor="accent">{tr('{0} {1} 중 저장 {2}위', tr(city.name), kinds[0], saves.rank.toLocaleString(appLocale))}</ThemedText>}
         </View>
         {!!place.recommendation && <ThemedText>{language === 'en' ? place.recommendation.reasonEn ?? place.recommendation.reason : place.recommendation.reason}</ThemedText>}
         {/* A안 요약 칸: 가격대 and 영업 시간 side by side (a missing one leaves no empty box), then the address with its copy button. */}
@@ -236,6 +243,7 @@ export default function PlaceDetailScreen() {
             onPress={city.state === 'open' ? () => router.push({ pathname: '/(tabs)/meetups', params: { placeId: place.id, placeCityId: city.id } }) : undefined} />
         </ListCard>}
         <PlaceSavedBy place={place} saves={saves} />
+        <PlaceFriendFolders cityId={city.id} placeKey={place.id} />
         {place.id.startsWith('osm:') && <View style={styles.section} onLayout={event => { reviewsY.current = event.nativeEvent.layout.y; if (reviewPending.current) { reviewPending.current = false; openReview(); } }}>
           <PlaceReviews cityId={city.id} placeId={place.id} viewport={viewport} writeRequest={reviewRequest} onEditingChange={setReviewing} />
           <PlaceExternalRatings key={`${city.id}:${place.id}`} cityId={city.id} placeId={place.id} />
@@ -247,8 +255,10 @@ export default function PlaceDetailScreen() {
           <View style={styles.ownerGo}><ThemedText type="smallBold" themeColor="accent">{tr('웹샵 연결하고 글링 손님 받기')}</ThemedText>
             <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={IconSize.chevron} tintColor={theme.accent} accessible={false} /></View>
         </Pressable>}
+        {isAuthed && <PlaceCorrection place={place} />}
         {/* OSM attribution has to show without a tap: the map card prints it, otherwise it rides in the folded title (QA A-place-01). */}
         <Disclosure analyticsId="places.detail.attribution" title={tr(mapsUrl ? '출처·이용 조건' : '출처·이용 조건 · © OpenStreetMap')}>
+
           {!!place.recommendation && <Pressable analyticsId="places.detail.source" accessibilityRole="link" accessibilityLabel={tr("사진 명소 선정 출처 보기")} onPress={() => openSource(place.recommendation!.sourceUrl)} style={styles.link}>
             <ThemedText type="smallBold" themeColor="accent">{tr("사진 명소 선정 출처 보기")}</ThemedText>
           </Pressable>}
@@ -271,6 +281,20 @@ export default function PlaceDetailScreen() {
       </View>
     </Reanimated.View>}
     {place && city && <ShareCardSheet target={{ kind: 'place', place, city }} visible={sharing} onClose={() => setSharing(false)} />}
+    {place?.photo && viewingPhoto && <Modal visible transparent animationType="fade" onRequestClose={() => { play('selection'); setViewingPhoto(false); }}>
+      <SafeAreaProvider accessibilityViewIsModal style={styles.viewer}>
+        <SafeAreaView style={styles.viewer}>
+          <View style={styles.viewerBar}>
+            <Pressable analyticsId="post.photo.close" accessibilityRole="button" accessibilityLabel={tr("사진 닫기")} onPress={() => { play('selection'); setViewingPhoto(false); }} style={styles.viewerClose}>
+              <ThemedText style={styles.viewerText}>{tr("닫기 ✕")}</ThemedText>
+            </Pressable>
+          </View>
+          <CityPlacePhoto place={place} contentFit="contain" style={styles.viewerPhoto} />
+          {/* The same credit chip as on the page, so the licence line stays one tap away full screen too. */}
+          {!!credits && <View style={styles.viewerBar}><PostPhotoCredits credits={credits} variant="photo" /></View>}
+        </SafeAreaView>
+      </SafeAreaProvider>
+    </Modal>}
     {place && directions && <MeetupManageSheet visible title={place.name} onClose={() => setDirections(false)} actions={[
       ...(place.address ? [{ key: 'copy', analyticsId: 'post.share.copy', label: tr("주소 복사"), hint: place.address, icon: { ios: 'doc.on.doc', android: 'content_copy', web: 'content_copy' } as const,
         onPress: copyAddress }] : []),
@@ -309,4 +333,10 @@ const styles = StyleSheet.create({
   pillIcon: { width: IconSize.inline, height: IconSize.inline },
   footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: Spacing.two },
   footerRow: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', flexDirection: 'row', gap: Spacing.two, paddingHorizontal: Spacing.three },
+  // Full-screen photo: the same black stage and white close text as the post photo viewer.
+  viewer: { flex: 1, backgroundColor: '#000' },
+  viewerBar: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: Spacing.three },
+  viewerClose: { minWidth: 64, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  viewerText: { color: '#fff' },
+  viewerPhoto: { flex: 1, backgroundColor: '#000' },
 });

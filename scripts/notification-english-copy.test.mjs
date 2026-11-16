@@ -69,6 +69,13 @@ test('meetup invite notices read in English and match the server text', async ()
   assert.ok(readFileSync(migration('20261108120000_meetup_members_and_invites'), 'utf8').includes(`'님이 「'||left(meetup.title,80)||'」 모임에 초대했어요.'`), 'invite body the pattern reads');
 });
 
+test('a folder invite reads in English, matches the server text and opens the saved list', async () => {
+  const { readFileSync } = await import('node:fs');
+  assert.equal(en('saved_folder_invite', '민지님이 「주말 「산책」 코스」 폴더를 같이 만들자고 했어요.'), '민지 invited you to build “주말 「산책」 코스” together.');
+  assert.ok(readFileSync(migration('20261114020000_saved_folder_sharing'), 'utf8').includes(`'님이 「'||left(f.name,40)||'」 폴더를 같이 만들자고 했어요.'`), 'invite body the pattern reads');
+  assert.equal(notificationRoute('/profile/saved'), '/profile/saved');
+});
+
 // The one-time switch for older meetups ships as its own migration and may be held back.
 const notice = migration('20261108120100_meetup_members_existing_notice');
 test('the member-visibility notice reads in English and opens the meetup profile', { skip: !(await import('node:fs')).existsSync(notice) }, async () => {
