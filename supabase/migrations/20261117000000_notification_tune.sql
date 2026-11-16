@@ -406,4 +406,20 @@ begin
   execute def;
 end $$;
 
+-- The claim changed above, so its wake condition is restated here (scripts/minute-jobs.test.mjs). Checked against the new
+-- claim: it still picks rows by status, next_attempt_at and lease only, and the night postponement works through
+-- next_attempt_at, so the body is the same as in 20261115200000.
+create or replace function private.push_work_due()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists(select 1 from private.push_delivery_queue q
+                where q.status in ('pending', 'ticket') and q.next_attempt_at <= now()
+                  and (q.lease_until is null or q.lease_until <= now()))
+      or exists(select 1 from private.push_delivery_queue q where q.created_at < now() - interval '7 days');
+$$;
+
 notify pgrst, 'reload schema';

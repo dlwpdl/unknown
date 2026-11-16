@@ -5147,4 +5147,5 @@ export const uiEnglish: Record<string, string> = {
   "새 글이 쌓인 날 저녁에 한 번, 주 3번까지": "One evening notification on days with new posts, up to 3 a week",
   "근처 말풍선": "Bubbles nearby",
   "우리 도시에 말풍선이 올라오면, 하루 한 번까지": "When someone posts a bubble in your city, once a day at most",
+  "공동 호스트 초대가 왔어요. 수락하면 회차·참석 확인과 대기자 초대를 함께 해요. 비공개 신청 답변과 계정 관리는 공유되지 않아요.": "You’ve been invited to co-host. If you accept, you’ll help manage sessions, attendance check-ins and waitlist invites. Private application answers and account management aren’t shared.",
 };
