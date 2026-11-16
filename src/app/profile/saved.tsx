@@ -1,15 +1,16 @@
 import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { FlatList, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable } from '@/components/analytics-controls';
 import { ClayBoxFill, useClayBox } from '@/components/clay';
+import { SharedFolders } from '@/components/folder-together';
 import { WebshopComparisonSheet } from '@/components/business-webshop';
 import { GlingLoader } from '@/components/gling-loader';
 import { LoginPanel } from '@/components/login-panel';
-import { SavedFolderSheet, SavedItemCard, SavedLibraryButton, type SavedFolderEditor } from '@/components/saved-library';
+import { SavedFolderSheet, SavedItemCard, SavedLibraryButton, SavedNoteSheet, type SavedFolderEditor } from '@/components/saved-library';
 import { ShareCardSheet } from '@/components/share-card';
 import { StateCard } from '@/components/state-card';
 import { ThemedText } from '@/components/themed-text';
@@ -23,13 +24,14 @@ import { useAuth } from '@/lib/auth';
 import { getCityPlaces } from '@/lib/city-places';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import {
-  createSavedFolder, deleteSavedFolder, loadSavedFolders, loadSavedItems, renameSavedFolder,
-  setSavedItem, setSavedItemFolders, type SavedFilter, type SavedFolder, type SavedItem, type SavedPage,
+  deleteSavedFolder, loadSavedFolders, loadSavedItems, saveSavedFolder,
+  setSavedItem, setSavedItemFolders, setSavedNote, type FolderVisibility, type SavedFilter, type SavedFolder, type SavedItem, type SavedPage,
 } from '@/lib/saved-items';
 import { savedListPlaces } from '@/lib/share-card';
 import { supabase } from '@/lib/supabase';
 import { loadPublicWebshop } from '@/lib/webshops';
 
+type SavedEditor = SavedFolderEditor | { kind: 'note'; item: SavedItem };
 type SavedReadOperation = { active: boolean; reading: boolean; accountId: string; key: string; visibility: ReturnType<typeof useContentVisibility> };
 
 export default function SavedScreen() {
@@ -45,7 +47,7 @@ export default function SavedScreen() {
   const [result, setResult] = useState<{ key: string; visibility: typeof hidden; operation: SavedReadOperation; page: SavedPage | null; folders: SavedFolder[]; failed: boolean; appendFailed: boolean } | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null), [mutationKey, setMutationKey] = useState<string | null>(null);
   const [message, setMessage] = useState<{ key: string; text: string } | null>(null);
-  const [editor, setEditor] = useState<{ key: string; visibility: typeof hidden; value: SavedFolderEditor } | null>(null);
+  const [editor, setEditor] = useState<{ key: string; visibility: typeof hidden; value: SavedEditor } | null>(null);
   const [offer, setOffer] = useState<{ key: string; visibility: typeof hidden; name: string; shop: NonNullable<Awaited<ReturnType<typeof loadPublicWebshop>>> } | null>(null);
   const request = useRef<SavedReadOperation | null>(null);
   const mutation = useRef<object | null>(null), comparing = useRef<object | null>(null);
@@ -54,7 +56,7 @@ export default function SavedScreen() {
   const page = current?.page, folders = current?.folders ?? [], loading = busyKey === key || !current;
   const rows = (page?.items ?? []).filter(item => item.target.kind === 'post' ? !hidden('post', item.target.id) : item.target.kind !== 'user' || !hidden('user', item.target.id));
   const busy = mutationKey !== null;
-  const editingItem = editor?.value.kind === 'item' ? editor.value.item : editor?.value.kind === 'create' ? editor.value.returnItem : null;
+  const editingItem = editor?.value.kind === 'item' || editor?.value.kind === 'note' ? editor.value.item : editor?.value.kind === 'create' ? editor.value.returnItem : null;
   const activeEditor = !pendingSearch && editor?.key === key && editor.visibility === hidden
     && (!editingItem || rows.some(item => item.key === editingItem.key)) ? editor.value : null;
   const error = message?.key === key ? message.text : null;
@@ -136,11 +138,11 @@ export default function SavedScreen() {
       if (operation.active && request.current === operation) update(page => ({ ...page, items: page.items.filter(row => row.key !== item.key) }));
     }, ko ? '저장을 해제하지 못했어요. 항목은 그대로 남아 있어요. 다시 눌러주세요.' : 'Couldn’t remove this item. It’s still saved. Try again.', false);
   };
-  const saveFolder = (name: string) => {
+  const saveFolder = (name: string, visibility: FolderVisibility, description: string | null) => {
     if (!activeEditor || !['create', 'rename'].includes(activeEditor.kind)) return;
     const editing = activeEditor;
     void perform(async operation => {
-      const folder = editing.kind === 'rename' ? await renameSavedFolder(supabase, editing.folder.id, name) : await createSavedFolder(supabase, name);
+      const folder = await saveSavedFolder(supabase, editing.kind === 'rename' ? editing.folder.id : null, name, visibility, description);
       if (!operation.active || request.current !== operation) return;
       update(page => page, folders => editing.kind === 'rename' ? folders.map(row => row.id === folder.id ? folder : row) : [...folders, folder]);
       setEditor(editing.kind === 'create' && editing.returnItem ? { key, visibility: hidden, value: { kind: 'item', item: { ...editing.returnItem, folderIds: [...editing.returnItem.folderIds, folder.id] } } } : null);
@@ -167,6 +169,16 @@ export default function SavedScreen() {
       setEditor(null);
     }, ko ? '폴더 정리를 저장하지 못했어요. 기존 정리는 유지돼요. 다시 시도해 주세요.' : 'Couldn’t save folder changes. Your items stay where they were. Try again.');
   };
+  const saveNote = (note: string | null) => {
+    if (activeEditor?.kind !== 'note') return;
+    const item = activeEditor.item;
+    void perform(async operation => {
+      const saved = await setSavedNote(supabase, item.target, note);
+      if (!operation.active || request.current !== operation) return;
+      update(page => ({ ...page, items: page.items.map(row => row.key === item.key ? { ...row, note: saved } : row) }));
+      setEditor(null);
+    }, ko ? '메모를 저장하지 못했어요. 다시 시도해 주세요.' : 'Couldn’t save the memo. Try again.');
+  };
   async function compare(item: SavedItem) {
     const operation = activeOperation();
     if (!operation || comparing.current || !operation.active || item.target.kind !== 'merchant') return;
@@ -189,13 +201,16 @@ export default function SavedScreen() {
   }
   if (!auth.isAuthed) return <LoginPanel reason={ko ? '저장한 항목을 보려면 로그인해 주세요.' : 'Sign in to see your saved items.'} onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
   const selectedFolder = folders.find(folder => folder.id === folderId);
+  const emptyKind: Record<SavedFilter, string> = ko
+    ? { all: '아직 저장한 항목이 없어요', places: '저장한 장소·비즈니스가 없어요', posts: '저장한 글·모임이 없어요', jobs: '저장한 채용 정보가 없어요', users: '저장한 사람이 없어요' }
+    : { all: 'No saved items here yet', places: 'No saved places or businesses', posts: 'No saved posts or meetups', jobs: 'No saved jobs', users: 'No saved people' };
   const filters: [SavedFilter, string][] = [['all', ko ? '전체' : 'All'], ['places', ko ? '장소·비즈니스' : 'Places & businesses'], ['posts', ko ? '글·모임' : 'Posts & meetups'], ['jobs', ko ? '채용' : 'Jobs'], ['users', ko ? '사람' : 'People']];
   return <ThemedView style={styles.root}><SafeAreaView edges={['bottom']} style={styles.safeArea}>
     <FlatList<SavedItem> data={rows} keyExtractor={item => item.key} contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled"
       refreshing={loading && !busy} onRefresh={reload}
       ListHeaderComponent={<View style={styles.header}>
         <View style={styles.intro}><ThemedText type="section">{ko ? '다시 보고 싶은 것들' : 'Worth coming back to'}</ThemedText>
-          <ThemedText type="supporting" themeColor="textSecondary">{ko ? '저장한 장소는 친구에게도 보여요. 설정에서 끌 수 있고, 나머지는 나만 볼 수 있어요.' : 'Friends can see your saved places unless you turn it off in Settings. Everything else stays private.'}</ThemedText></View>
+          <ThemedText type="supporting" themeColor="textSecondary">{ko ? '저장한 장소와 친구에게 보이게 둔 폴더는 친구도 볼 수 있어요. 설정에서 한 번에 끌 수 있고, 나머지는 나만 봐요.' : 'Friends can see your saved places and the folders you share with them. Turn it all off in Settings. Everything else stays private.'}</ThemedText></View>
         {/* Owner 2026-11-04 "가져오기: 검색창 위 한 줄로": its own row, so it never reads as a folder. */}
         <Pressable analyticsId="saved.import" accessibilityRole="button" accessibilityLabel={ko ? '다른 앱에서 가져오기' : 'Import from other apps'} disabled={busy}
           onPress={() => { play('selection'); closeTransient(); router.push('/profile/import'); }}
@@ -211,23 +226,36 @@ export default function SavedScreen() {
             style={[styles.input, { color: theme.text }]} returnKeyType="search" onChangeText={value => { closeTransient(); setSearch(value); }} onSubmitEditing={() => { play('selection'); setQuery(search.trim()); }} />
           {!!search && <Pressable analyticsId="saved.search.clear" accessibilityRole="button" accessibilityLabel={ko ? '검색어 지우기' : 'Clear search'} disabled={busy} style={ControlStyles.icon} onPress={() => { play('selection'); closeTransient(); setSearch(''); setQuery(''); }}><ThemedText accessible={false}>×</ThemedText></Pressable>}
         </View>
-        <View style={styles.wrap}>{filters.map(([kind, label]) => <SavedLibraryButton key={kind} analyticsId={`saved.filter.${kind}`} label={label} selected={filter === kind} disabled={busy} onPress={() => { closeTransient(); setFilter(kind); }} />)}</View>
-        <View style={styles.folders}><ThemedText type="label" themeColor="textSecondary">{ko ? '내 폴더' : 'My folders'}</ThemedText>
-          <View style={styles.wrap}><SavedLibraryButton analyticsId="saved.folder.all" label={ko ? '전체 저장' : 'All saved'} selected={!folderId} disabled={busy} onPress={() => { closeTransient(); setFolderId(null); }} />
-            {folders.map(folder => <SavedLibraryButton key={folder.id} analyticsId="saved.folder.select" testID={`saved.folder.${folder.id}`} label={folder.name} selected={folderId === folder.id} disabled={busy} onPress={() => { closeTransient(); setFolderId(folder.id); }} />)}
-            <SavedLibraryButton analyticsId="saved.folder.new" label={ko ? '+ 새 폴더' : '+ New folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'create' } }); }} />
-            {!!selectedFolder && <SavedLibraryButton analyticsId="saved.folder.manage" label={ko ? '폴더 관리' : 'Manage folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'rename', folder: selectedFolder } }); }} />}
+        {/* QA A-saved-01: kinds and folders share one sideways line, so the first saved items show without scrolling.
+            Tapping the chosen folder again goes back to everything saved. */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={styles.chipLine} contentContainerStyle={styles.chips}
+          accessibilityLabel={ko ? '종류와 폴더' : 'Kinds and folders'}>
+          {filters.map(([kind, label]) => <SavedLibraryButton key={kind} analyticsId={`saved.filter.${kind}`} label={label} selected={filter === kind} disabled={busy} onPress={() => { closeTransient(); setFilter(kind); }} />)}
+          <View style={[styles.chipDivider, { backgroundColor: theme.line }]} />
+          {folders.map(folder => <SavedLibraryButton key={folder.id} analyticsId={folderId === folder.id ? 'saved.folder.all' : 'saved.folder.select'} testID={`saved.folder.${folder.id}`} label={folder.name} selected={folderId === folder.id} disabled={busy}
+            onPress={() => { closeTransient(); setFolderId(folderId === folder.id ? null : folder.id); }} />)}
+          <SavedLibraryButton analyticsId="saved.folder.new" label={ko ? '+ 새 폴더' : '+ New folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'create' } }); }} />
+        </ScrollView>
+          <SharedFolders disabled={busy} />
+        <View style={styles.summary}><ThemedText type="supporting" themeColor="textSecondary" style={styles.summaryText}>{selectedFolder?.name ?? (ko ? '전체 저장' : 'All saved')}{selectedFolder?.visibility === 'friends' ? ko ? ' · 친구에게 보여요' : ' · Friends can see it' : selectedFolder ? ko ? ' · 나만 보기' : ' · Only you' : ''}{current && !current.failed ? ko ? ` · ${rows.length}개 표시 중` : ` · ${rows.length} shown` : ''}</ThemedText>
+          {selectedFolder ? <View style={styles.wrap}>
+            <SavedLibraryButton analyticsId="saved.folder.manage" label={ko ? '폴더 관리' : 'Manage folder'} disabled={busy || loading} onPress={() => { closeTransient(); setEditor({ key, visibility: hidden, value: { kind: 'rename', folder: selectedFolder } }); }} />
+            {/* The folder page shows it the way friends see it: places only. */}
+            <SavedLibraryButton analyticsId="saved.folder.open" label={ko ? '폴더 페이지' : 'Folder page'} disabled={busy} onPress={() => { closeTransient(); router.push({ pathname: '/profile/folder', params: { id: selectedFolder.id } }); }} />
             {/* Filters and search drop places from the list, so sharing waits until the whole folder shows. */}
-            {!!selectedFolder && !query && (filter === 'all' || filter === 'places') && <SavedLibraryButton analyticsId="saved.folder.share" label={ko ? '목록 공유' : 'Share list'} disabled={busy || loading} onPress={() => { closeTransient(); setSharingList(true); }} />}</View>
-        </View>
-        <View style={styles.summary}><ThemedText type="supporting" themeColor="textSecondary">{selectedFolder?.name ?? (ko ? '전체 저장' : 'All saved')}{current && !current.failed ? ko ? ` · ${rows.length}개 표시 중` : ` · ${rows.length} shown` : ''}</ThemedText>
-          <ThemedText type="supporting" themeColor="textSecondary">{ko ? '최근 저장순' : 'Recently saved'}</ThemedText></View>
+            {!query && (filter === 'all' || filter === 'places') && <SavedLibraryButton analyticsId="saved.folder.share" label={ko ? '목록 공유' : 'Share list'} disabled={busy || loading} onPress={() => { closeTransient(); setSharingList(true); }} />}
+          </View> : <ThemedText type="supporting" themeColor="textSecondary">{ko ? '최근 저장순' : 'Recently saved'}</ThemedText>}</View>
         {!!error && !activeEditor && <ThemedText accessibilityRole="alert">{error}</ThemedText>}
       </View>}
       ListEmptyComponent={loading ? <GlingLoader color={theme.accent} accessibilityLabel={ko ? '저장 목록 불러오는 중' : 'Loading saved items'} style={styles.state} />
-        : <View style={styles.state}><StateCard kind={current?.failed ? 'error' : 'empty'} title={current?.failed ? ko ? '저장 목록을 불러오지 못했어요' : 'Couldn’t load saved items' : query ? ko ? '검색 결과가 없어요' : 'No matching saved items' : ko ? '아직 저장한 항목이 없어요' : 'No saved items here yet'}
-          body={current?.failed ? ko ? '연결을 확인하고 다시 시도해 주세요.' : 'Check your connection and try again.' : query || folderId || filter !== 'all' ? ko ? '검색어나 필터, 폴더를 바꿔 보세요.' : 'Try another search, filter or folder.' : ko ? '마음에 드는 장소, 글, 채용 정보나 사람을 저장해 보세요. 폴더 정리는 나중에 해도 돼요.' : 'Save places, posts, jobs or people. Organize them in folders whenever you like.'}
-          actionLabel={current?.failed ? ko ? '다시 시도' : 'Try again' : undefined} onAction={current?.failed ? retry : undefined} /></View>}
+        : <View style={styles.state}>{current?.failed
+          ? <StateCard kind="error" title={ko ? '저장 목록을 불러오지 못했어요' : 'Couldn’t load saved items'} body={ko ? '연결을 확인하고 다시 시도해 주세요.' : 'Check your connection and try again.'}
+            actionLabel={ko ? '다시 시도' : 'Try again'} onAction={retry} />
+          // QA A-saved-02: an empty kind says which kind is empty and offers the whole list, instead of "nothing saved yet".
+          : !query && !folderId && filter !== 'all' ? <StateCard kind="empty" title={emptyKind[filter]} body={ko ? '다른 종류는 ‘전체’에서 볼 수 있어요.' : 'Everything else you saved is under All.'}
+            actionLabel={ko ? '전체 보기' : 'Show all'} onAction={() => { closeTransient(); setFilter('all'); }} analyticsId="saved.filter.all" />
+          : <StateCard kind="empty" title={query ? ko ? '검색 결과가 없어요' : 'No matching saved items' : ko ? '아직 저장한 항목이 없어요' : 'No saved items here yet'}
+            body={query || folderId ? ko ? '검색어나 폴더를 바꿔 보세요.' : 'Try another search or folder.' : ko ? '마음에 드는 장소, 글, 채용 정보나 사람을 저장해 보세요. 폴더 정리는 나중에 해도 돼요.' : 'Save places, posts, jobs or people. Organize them in folders whenever you like.'} />}</View>}
       ListFooterComponent={<View style={styles.footer}>
         {loading && !!rows.length && <GlingLoader color={theme.accent} accessibilityLabel={ko ? '불러오는 중' : 'Loading'} />}
         {current?.failed && !!rows.length && <><ThemedText type="supporting" accessibilityRole="alert">{ko ? '목록을 불러오지 못했어요. 앞서 불러온 항목은 유지돼요.' : 'Couldn’t load the list. Items you already loaded are still here.'}</ThemedText><SavedLibraryButton analyticsId="saved.retry" label={ko ? '다시 시도' : 'Try again'} disabled={busy || loading} onPress={retry} /></>}
@@ -235,9 +263,12 @@ export default function SavedScreen() {
       </View>}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       renderItem={({ item }) => <SavedItemCard item={item} folders={folders} disabled={busy || loading} compareBusy={compareKey === item.key} onOpen={() => open(item)} onRemove={() => remove(item)}
-        onOrganize={() => { setMessage(null); setEditor({ key, visibility: hidden, value: { kind: 'item', item } }); }} onCompare={item.hasWebshop && item.target.kind === 'merchant' ? () => void compare(item) : undefined} />}
+        onOrganize={() => { setMessage(null); setEditor({ key, visibility: hidden, value: { kind: 'item', item } }); }}
+        onNote={() => { setMessage(null); setEditor({ key, visibility: hidden, value: { kind: 'note', item } }); }} onCompare={item.hasWebshop && item.target.kind === 'merchant' ? () => void compare(item) : undefined} />}
     />
-    {activeEditor && <SavedFolderSheet key={`${key}:${activeEditor.kind}:${activeEditor.kind === 'item' ? activeEditor.item.key : activeEditor.kind === 'create' ? 'new' : activeEditor.folder.id}`}
+    {activeEditor?.kind === 'note' && <SavedNoteSheet key={`${key}:note:${activeEditor.item.key}`} item={activeEditor.item} busy={busy} error={error}
+      onClose={() => { if (!busy) { setEditor(null); setMessage(null); } }} onSave={saveNote} />}
+    {activeEditor && activeEditor.kind !== 'note' && <SavedFolderSheet key={`${key}:${activeEditor.kind}:${activeEditor.kind === 'item' ? activeEditor.item.key : activeEditor.kind === 'create' ? 'new' : activeEditor.folder.id}`}
       editor={activeEditor} folders={folders} busy={busy} error={error} onClose={() => { if (!busy) { setEditor(null); setMessage(null); } }} onCreate={saveFolder} onRename={saveFolder} onDelete={() => void deleteFolder()} onAssign={assign}
       onCreateForItem={ids => { if (activeEditor.kind === 'item') { setMessage(null); setEditor({ key, visibility: hidden, value: { kind: 'create', returnItem: { ...activeEditor.item, folderIds: ids } } }); } }}
       onRequestDelete={() => { if (activeEditor.kind === 'rename') { setMessage(null); setEditor({ key, visibility: hidden, value: { kind: 'delete', folder: activeEditor.folder } }); } }} />}
@@ -251,7 +282,10 @@ const styles = StyleSheet.create({
   list: { flexGrow: 1, paddingHorizontal: Spacing.three, paddingBottom: Spacing.five }, header: { paddingTop: Spacing.three, paddingBottom: Spacing.three, gap: Spacing.three },
   intro: { gap: Spacing.one }, import: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 56, borderWidth: 1, borderRadius: 14, paddingHorizontal: Spacing.three, paddingVertical: Spacing.two },
   importText: { flex: 1, minWidth: 0, gap: 2 }, search: { flexDirection: 'row', alignItems: 'center' }, input: { flex: 1, minWidth: 0, minHeight: 48, fontSize: 16, paddingVertical: Spacing.two },
-  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two }, folders: { gap: Spacing.two },
-  summary: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: Spacing.two },
+  wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  // The chip line bleeds to the screen edge so a half-shown chip says there is more to swipe.
+  chipLine: { marginHorizontal: -Spacing.three }, chips: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.three },
+  chipDivider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', marginVertical: Spacing.two },
+  summary: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.two }, summaryText: { flexShrink: 1 },
   separator: { height: Spacing.two }, state: { marginTop: Spacing.three }, footer: { gap: Spacing.two, paddingVertical: Spacing.three },
 });

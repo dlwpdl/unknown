@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import test from 'node:test';
+import { pillSlices } from '../src/constants/design-system.ts';
 
 const clay = readFileSync('src/components/clay.tsx', 'utf8');
 const dir = 'assets/images/ui-3d/';
@@ -33,6 +34,41 @@ test('clay follows the 2D·3D choice in both themes, is off on the web and the a
 
 test('a dimmed pill fades as one piece on Android, so the slices do not show as two vertical lines', () => {
   assert.match(clay, /<View pointerEvents="none" renderToHardwareTextureAndroid style=\{\[styles\.pill,/);
+});
+
+// Yoga's pixel rounding (PixelGrid.cpp): a view's offset in its parent is rounded alone, its width from the rounded absolute edges.
+const gridPx = (value, scale) => {
+  const scaled = value * scale, near = (a, b) => Math.abs(a - b) < 0.0001;
+  let fraction = scaled % 1; if (fraction < 0) fraction += 1;
+  return Math.round(near(fraction, 0) ? scaled - fraction : near(fraction, 1) ? scaled - fraction + 1 : scaled - fraction + (fraction > 0.5 || near(fraction, 0.5) ? 1 : 0));
+};
+const place = (parent, rel, width, scale) => {
+  const abs = parent.abs + rel, left = parent.left + gridPx(rel, scale);
+  return { abs, left, right: left + gridPx(abs + width, scale) - gridPx(abs, scale) };
+};
+const clip = (node, box) => ({ left: Math.max(node.left, box.left), right: Math.min(node.right, box.right) });
+
+test('3D pill slices meet on one device pixel at any density and offset, with no gap or overlap (QA D24-1)', () => {
+  let oldGaps = 0, cases = 0;
+  for (const scale of [1.5, 2, 2.625, 2.75, 3, 3.5]) for (let offset = 0; offset < 2; offset += 0.037) for (const width of [40.2, 44, 61.7, 100.45, 187.2, 333.33]) for (const height of [46.6, 50.8, 55.2]) for (const ratio of [0.7366, 0.7446, 0.7202, 0.7312, 0.6978]) {
+    const fit = pillSlices(width, height, ratio, scale), control = { abs: offset, left: 0 };
+    const slices = place(place(control, 0, width, scale), 0, fit.width, scale);
+    const middle = place(slices, fit.end, Math.max(0, fit.width - 2 * fit.end), scale);
+    const leftHalf = place(slices, 0, fit.half, scale), rightHalf = place(slices, fit.half, fit.width - fit.half, scale);
+    const leftEnd = clip(place(leftHalf, 0, fit.end, scale), leftHalf), rightEnd = clip(place(rightHalf, fit.width - fit.half - fit.end, fit.end, scale), rightHalf);
+    const where = `scale ${scale} offset ${offset.toFixed(3)} width ${width} height ${height}`;
+    assert.equal(leftEnd.left, slices.left, where);
+    assert.equal(rightEnd.right, slices.right, where);
+    if (2 * fit.end <= fit.width) {
+      assert.equal(leftEnd.right, middle.left, where);
+      assert.equal(middle.right, rightEnd.left, where);
+    } else assert.equal(leftEnd.right, rightEnd.left, where);
+    // The ratio layout this replaces: the middle starts at a fractional offset and misses the end's edge.
+    const old = place(control, 0, width, scale);
+    if (place(old, 0, height * ratio, scale).right !== place(old, height * ratio, 1, scale).left) oldGaps++;
+    cases++;
+  }
+  assert.ok(oldGaps > cases / 10, 'the check sees the 1px seam the old layout left');
 });
 
 test('every pill, box and photo dome has its dark drawing, and a dark icon only names a drawing the light set has', () => {

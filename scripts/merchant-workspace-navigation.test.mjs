@@ -61,8 +61,7 @@ function mount(name = 'MerchantTools', options = {}) {
 async function composer(screen) {
   await screen.settle();
   if (find(screen.tree, '소식 쓰기')) await screen.press('소식 쓰기');
-  else { const drafts = find(screen.tree, '홍보글'); assert.ok(drafts); await drafts.props.onPress(); await screen.settle(); }
-  if (find(screen.tree, '직접 작성할게요')) await screen.press('직접 작성할게요');
+  else { const drafts = find(screen.tree, '소식'); assert.ok(drafts); await drafts.props.onPress(); await screen.settle(); }
 }
 
 test('temporary workspace failures preserve unsaved text, photos and dirty state while hiding stale data', async () => {
@@ -86,7 +85,6 @@ test('actual access loss clears private editor state before a later successful r
     assert.ok(!find(screen.tree, '제목'));
     screen.api.workspace = async () => fixture(); await screen.press('다시 불러오기');
     if (find(screen.tree, '소식 쓰기')) await screen.press('소식 쓰기');
-    if (find(screen.tree, '직접 작성할게요')) if (find(screen.tree, '직접 작성할게요')) await screen.press('직접 작성할게요');
     assert.equal(find(screen.tree, '제목').props.value, '', reason); assert.equal(dirty.at(-1), false, reason);
   }
 });
@@ -127,14 +125,24 @@ test('merchant web selects only assigned businesses even when the account also h
 
 test('overview exposes every authorized tool, separates draft list/composer, and resumes dirty editing', async () => {
   const screen = mount(); await screen.settle();
-  assert.ok(find(screen.tree, '소식 쓰기')); assert.ok(!find(screen.tree, '직접 작성할게요'));
-  for (const title of ['게시한 글', '프로필·사진', '이용 후기', '소식·초안', '채널 연결', '대화함', '원가 계산', '재고', '성과·멤버십', '계정·권한']) assert.ok(find(screen.tree, title), title);
+  assert.ok(find(screen.tree, '소식 쓰기'));
+  for (const title of ['올린 소식', '프로필·사진', '이용 후기', '소식', '채널 연결', '대화함', '원가 계산', '재고', '성과·멤버십', '계정·권한']) assert.ok(find(screen.tree, title), title);
   await composer(screen); screen.edit('제목', '돌아와도 남는 제목'); await screen.settle();
-  await screen.press('업체 관리'); await screen.press('소식·초안');
+  await screen.press('소식 목록'); await screen.press('업체 관리'); await screen.press('소식');
   assert.ok(!find(screen.tree, '제목'), 'list does not show composer');
   await screen.press('작성 중인 초안 이어쓰기'); assert.equal(find(screen.tree, '제목').props.value, '돌아와도 남는 제목');
-  await screen.press('업체 관리'); await screen.press('작성 중인 초안 이어쓰기'); assert.equal(find(screen.tree, '제목').props.value, '돌아와도 남는 제목');
+  await screen.press('소식 목록'); await screen.press('업체 관리'); await screen.press('작성 중인 초안 이어쓰기'); assert.equal(find(screen.tree, '제목').props.value, '돌아와도 남는 제목');
   assert.equal(screen.confirmations.length, 0, 'navigation does not discard drafts');
+});
+
+test('under a header back button a tool shows the business name without a second back pill (QA A-biz-04)', async () => {
+  const pushed = mount('MerchantTools', { props: { nativeBack: true } }); await pushed.settle();
+  await pushed.press('원가 계산');
+  assert.ok(!find(pushed.tree, '비즈니스 관리'));
+  assert.ok(visibleNodes(pushed.tree).some(n => n.props?.children === '테스트 가게'));
+  assert.ok(find(pushed.tree, '메뉴로 저장'), 'saving a menu stays available below the inputs');
+  const tab = mount(); await tab.settle(); await tab.press('원가 계산');
+  assert.ok(find(tab.tree, '비즈니스 관리'), 'inside the tab the pill is still the only way back');
 });
 
 test('operator overview keeps private business tools unavailable and OAuth initial channels remains supported', async () => {
@@ -230,6 +238,9 @@ test('the personal business-profile route stays in business mode without the adm
   const bottom = tree => nodes(tree).find(n => n.type === 'ScrollView').props.contentContainerStyle.paddingBottom;
   assert.equal(bottom(tree), 40 + 34, 'from the profile only the home indicator is in the way');
   assert.equal(bottom(exports.default({ inTab: true })), 40 + 34 + 49, "as the '내 가게' tab the last card also clears the tab bar");
+  const workspace = tree => nodes(tree).find(n => n.type === 'MerchantWorkspace').props;
+  assert.equal(workspace(tree).nativeBack, true, 'under the profile header back button the tools keep one way back (QA A-biz-04)');
+  assert.equal(workspace(exports.default({ inTab: true })).nativeBack, false, 'the tab has no header back button, so the tools keep theirs');
 });
 
 test('the business web sidebar shows the home composer and only the tools the account may use', async () => {
@@ -254,6 +265,25 @@ test('back inside an app business tool returns to the business home instead of l
   listeners.at(-1)[1](); await screen.settle();
   assert.ok(find(screen.tree, '원가 계산'), 'the business home with its tool list is shown again');
   assert.equal(listeners.at(-1)[0], false, 'the next back leaves normally');
+});
+
+test('mockup A-biz-01 A: the composer starts at 쓰기 even without a membership and one back walks 올릴 곳 → 쓰기 → list → home', async () => {
+  const listeners = [];
+  const screen = mount('MerchantTools', { listeners }); await screen.settle();
+  await screen.press('소식 쓰기');
+  const steps = nodes(screen.tree).find(n => n.type === 'MerchantSteps');
+  assert.deepEqual(Array.from(steps.props.steps), ['쓰기', '올릴 곳']); assert.equal(steps.props.current, 0);
+  assert.ok(find(screen.tree, '제목'), 'a basic-plan business writes right away');
+  assert.equal(find(screen.tree, 'AI로 초안 만들기').props.value, '멤버십', 'AI drafting stays visible and says why it is locked');
+  assert.ok(find(screen.tree, '초안 저장')); assert.ok(find(screen.tree, '다음'));
+  assert.equal(find(screen.tree, '분류 · 원문 주소').props.value, '비즈니스 안내 · 원문 없음');
+  screen.edit('원문 주소 · 선택', 'https://example.com/a'); await screen.settle();
+  assert.equal(find(screen.tree, '분류 · 원문 주소').props.value, '비즈니스 안내 · 원문 있음');
+  assert.ok(!find(screen.tree, '홍보글 목록') && !find(screen.tree, '원고 수정'), 'one way back only');
+  listeners.at(-1)[1](); await screen.settle();
+  assert.ok(find(screen.tree, '소식 관리'), 'back from 쓰기 opens the news list');
+  listeners.at(-1)[1](); await screen.settle();
+  assert.ok(find(screen.tree, '원가 계산'), 'back from the list opens the business home');
 });
 
 test('saved cost menus keep only readable entries and never block the calculator', () => {

@@ -142,6 +142,9 @@ export default function ChatScreen() {
   }, [reducedMotion]);
   const pendingCount = (inbox?.userId === scopeKey ? inbox.pendingCount : 0) + requests.length;
   const displayed = conversations;
+  // A failed read with nothing to show is one error card with a retry, never an error line over an empty-state card (QA A-chat-01).
+  const failed = error?.userId === scopeKey ? error : null;
+  const failedEmpty = !!failed && !loading && !displayed.length && !(filter === 'requests' && requests.length);
   const initialLoading = loading && (inbox?.userId !== scopeKey || inbox.filter !== filter);
 
   const refresh = useCallback(async () => {
@@ -307,7 +310,8 @@ export default function ChatScreen() {
         onPress={() => { play('reaction'); router.push('/map'); }} style={({ pressed }) => [styles.refreshAction, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
         <SymbolView name={{ ios: 'map', android: 'map', web: 'map' }} size={21} tintColor={theme.text} />
       </Pressable></GlassSurface>
-      <ProfileAvatarButton />
+      {/* The identity card below already switches inboxes, so the header keeps only the name (QA A-chat-01). */}
+      <ProfileAvatarButton enableBusinessSwitch={false} />
       <GlassSurface tone="control" clay="white" interactive style={styles.refreshGlass}><Pressable analyticsId="app_tabs_chat.pressable.1" onPress={() => { play('selection'); void changed(); }} accessibilityRole="button" accessibilityLabel={t.chat.refresh} disabled={loading} accessibilityState={{ disabled: loading }} style={({ pressed }) => [styles.refreshAction, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent', opacity: loading ? 0.45 : 1 }]}><SymbolView name={{ ios: 'arrow.clockwise', android: 'refresh', web: 'refresh' }} size={19} tintColor={theme.accent} /></Pressable></GlassSurface>
     </View>
     <ChatIdentitySwitcher onChanged={() => { setSelection(null); setModalConversation(undefined); router.setParams({ conversationId: undefined, businessId: undefined }); setFilter('direct'); }} />
@@ -320,7 +324,7 @@ export default function ChatScreen() {
         {/* 자리(슬롯)는 상태라 칩 안의 숫자와 한 줄 안내로만 보여준다. 큰 카드는 대화 목록을 밀어냈다. */}
         <View style={styles.filters}>{([['all', t.chat.all],
           // 관리자에게는 자리 한도가 적용되지 않으므로 숫자 대신 제한 없음을 알린다.
-          ['group', auth.isAdmin ? tr("{0} 제한 없음", (t.chat.groups)) : `${t.chat.groups}${meetupSlots ? ` ${meetupSlots.active}/${meetupSlots.limit}` : ''}`],
+          ['group', auth.isAdmin ? tr("{0} 제한 없음", (t.chat.groups)) : meetupSlots ? tr('모임 {0}/{1}', String(meetupSlots.active), String(meetupSlots.limit)) : t.chat.groups],
           ['direct', t.chat.direct],
           ['requests', `${t.chat.requestTab} ${pendingCount}${moreRequests ? '+' : ''}`]] as const).filter(([key]) => !asBusinessId || key === 'all' || key === 'direct').map(([key, label]) => <SelectionChip analyticsId="app_tabs_chat.pressable.2" key={key} label={label} selected={filter === key} onPress={() => { play('selection'); if (key !== filter) { animateList(); setLoading(true); setFilter(key); } }} accessibilityRole="tab" accessibilityState={{ selected: filter === key }} />)}</View>
         {filter === 'requests' && <>
@@ -348,11 +352,13 @@ export default function ChatScreen() {
           })}</ListCard></View>}
           {moreRequests && <RaisedActionButton compact tone="secondary" analyticsId="meetup.requests.more" disabled={loadingMore} onPress={() => { play('selection'); void loadOlderRequests(); }} label={loadingMore ? tr('신청 불러오는 중…') : tr('이전 참여 신청 더 보기')} />}
         </>}
-        {error?.userId === scopeKey && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{tr(error.text)}</ThemedText>}
+        {failed && !failedEmpty && <ThemedText type="small" themeColor="accent" accessibilityRole="alert">{tr(failed.text)}</ThemedText>}
       </View>}
       ListEmptyComponent={initialLoading ? <GlingLoader color={theme.accent} accessibilityLabel={t.chat.loading} />
         : loading ? undefined
+        : failedEmpty && failed ? <StateCard kind="error" analyticsId="app_tabs_chat.pressable.1" title={tr('대화를 불러오지 못했어요')} body={failed.text === sourceCopy.chat.loadError || failed.text === t.chat.loadError ? tr('잠시 후 다시 시도해 주세요.') : tr(failed.text)} actionLabel={tr('다시 시도')} onAction={() => { void changed(); }} />
         : filter === 'requests' ? (requests.length ? undefined : <StateCard title={tr("대기 중인 참여 신청이 없어요")} body={tr("모임에 신청이 들어오면 여기서 승인하거나 거절할 수 있어요.")} />)
+          : asBusinessId ? <StateCard title={tr('아직 손님 문의가 없어요')} body={tr('손님이 비즈니스 페이지에서 문의하기를 누르면 대화가 여기로 와요.')} />
           : <StateCard title={t.chat.emptyTitle} body={t.chat.emptyBody} />}
       renderItem={({ item, index }) => <Pressable analyticsId="app_tabs_chat.pressable.7" onPress={() => { play('selection'); presentConversation(item); }} accessibilityRole="button" style={({ pressed }) => [styles.room, { borderBottomColor: theme.line, backgroundColor: pressed ? theme.backgroundElement : 'transparent' }]}>
         <ChatAvatar kind={item.kind} title={item.title} meetupCategory={item.meetupCategory} initial={item.kind !== 'group' ? item.otherUser.nickname[0] : ''} avatarUri={item.otherIdentity?.avatarUri} active={focused && !shownConversation && index < 8} delay={index * 260} />

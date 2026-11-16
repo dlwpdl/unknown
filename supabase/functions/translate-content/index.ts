@@ -9,12 +9,16 @@ const CORS = {
 const UUID = /^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i;
 // shortcut: flat per-user cap on cache misses; move to membership-based quotas if real usage approaches it.
 const DAILY_LIMIT = 300;
+// The daily web build's English post pages (scripts/english-posts.mjs) share one cap; it reuses the cache, so only new or edited posts count.
+const SEARCH_DAILY_LIMIT = 200;
 const MODEL = Deno.env.get('TRANSLATION_MODEL') ?? 'gpt-5-nano';
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (request.method !== 'POST') return jsonError('METHOD_NOT_ALLOWED', 405);
   try {
+    const searchToken = request.headers.get('x-gling-search-token');
+    if (searchToken) return await translateForSearch(request, searchToken);
     const authorization = request.headers.get('Authorization');
     if (!authorization) return jsonError('AUTH_REQUIRED', 401);
     const viewer = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
@@ -46,58 +50,85 @@ Deno.serve(async (request) => {
       }
     }
     if (row.error || !row.data) return jsonError('NOT_FOUND', 404);
-    const original = [row.data.title ?? '', row.data.body].join('\n');
-    const lines = [input.source.title ?? '', ...input.source.body.split(/\r?\n/)].map(line => line.trim()).filter(Boolean);
-    if (!lines.length || lines.some(line => !original.includes(line))) return jsonError('SOURCE_MISMATCH', 409);
-
-    const hash = await sha256(JSON.stringify([input.source.title, input.source.body]));
-    const key = { p_kind: input.kind, p_id: input.id, p_language: input.language, p_hash: hash };
-    const cached = await service.rpc('get_content_translation', { ...key, p_user: user.id });
-    if (cached.error) throw cached.error;
-    if (cached.data?.translation) return json({ translation: cached.data.translation });
-    if (cached.data?.usage >= DAILY_LIMIT) return jsonError('RATE_LIMITED', 429);
-
-    const openAiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAiKey) throw new Error('OPENAI_API_KEY_NOT_CONFIGURED');
-    const protectedSource = protectTranslationSource(input.source);
-    const response = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${openAiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: MODEL,
-        store: false,
-        reasoning: { effort: 'minimal' },
-        instructions: prompt(input.language),
-        input: [{ role: 'user', content: [{ type: 'input_text', text: JSON.stringify(protectedSource.source) }] }],
-        text: {
-          format: {
-            type: 'json_schema', name: 'gling_translation', strict: true,
-            schema: {
-              type: 'object', additionalProperties: false, required: ['title', 'body'],
-              properties: { title: { type: ['string', 'null'] }, body: { type: 'string' } },
-            },
-          },
-        },
-      }),
-    });
-    if (!response.ok) throw new Error(`OPENAI_${response.status}`);
-    const result = await response.json();
-    const outputText = result.output
-      ?.flatMap((item) => item.content ?? [])
-      .find((item) => item.type === 'output_text')?.text;
-    if (typeof outputText !== 'string') throw new Error('OPENAI_EMPTY_OUTPUT');
-    const translation = restoreTranslationSource(JSON.parse(outputText), protectedSource);
-
-    const saved = await service.rpc('put_content_translation', {
-      ...key, p_title: translation.title, p_body: translation.body, p_model: MODEL, p_user: user.id,
-    });
-    if (saved.error) console.error('translate-content cache write failed', saved.error.message);
-    return json({ translation });
+    return await translateSource(service, input, [row.data.title ?? '', row.data.body].join('\n'), user.id, DAILY_LIMIT);
   } catch (error) {
     console.error('translate-content failed', error instanceof Error ? error.message : 'unknown');
     return jsonError('TRANSLATION_UNAVAILABLE', 500);
   }
 });
+
+// Translates `input.source` once its every line is found in `original` (the text this caller may read), then caches it.
+async function translateSource(service, input, original, requester, limit) {
+  const lines = [input.source.title ?? '', ...input.source.body.split(/\r?\n/)].map(line => line.trim()).filter(Boolean);
+  if (!lines.length || lines.some(line => !original.includes(line))) return jsonError('SOURCE_MISMATCH', 409);
+
+  const hash = await sha256(JSON.stringify([input.source.title, input.source.body]));
+  const key = { p_kind: input.kind, p_id: input.id, p_language: input.language, p_hash: hash };
+  const cached = await service.rpc('get_content_translation', { ...key, p_user: requester });
+  if (cached.error) throw cached.error;
+  if (cached.data?.translation) return json({ translation: cached.data.translation });
+  if (cached.data?.usage >= limit) return jsonError('RATE_LIMITED', 429);
+
+  const openAiKey = Deno.env.get('OPENAI_API_KEY');
+  if (!openAiKey) throw new Error('OPENAI_API_KEY_NOT_CONFIGURED');
+  const protectedSource = protectTranslationSource(input.source);
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${openAiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: MODEL,
+      store: false,
+      reasoning: { effort: 'minimal' },
+      instructions: prompt(input.language),
+      input: [{ role: 'user', content: [{ type: 'input_text', text: JSON.stringify(protectedSource.source) }] }],
+      text: {
+        format: {
+          type: 'json_schema', name: 'gling_translation', strict: true,
+          schema: {
+            type: 'object', additionalProperties: false, required: ['title', 'body'],
+            properties: { title: { type: ['string', 'null'] }, body: { type: 'string' } },
+          },
+        },
+      },
+    }),
+  });
+  if (!response.ok) throw new Error(`OPENAI_${response.status}`);
+  const result = await response.json();
+  const outputText = result.output
+    ?.flatMap((item) => item.content ?? [])
+    .find((item) => item.type === 'output_text')?.text;
+  if (typeof outputText !== 'string') throw new Error('OPENAI_EMPTY_OUTPUT');
+  const translation = restoreTranslationSource(JSON.parse(outputText), protectedSource);
+
+  const saved = await service.rpc('put_content_translation', {
+    ...key, p_title: translation.title, p_body: translation.body, p_model: MODEL, p_user: requester,
+  });
+  if (saved.error) console.error('translate-content cache write failed', saved.error.message);
+  return json({ translation });
+}
+
+// The web build (holding the search build token) gets the English copy of an official business post, limited to
+// exactly what a guest's public preview shows, the same text the Korean page at /posts/:id prints.
+async function translateForSearch(request, token) {
+  const input = validate(await request.json().catch(() => null));
+  if (!input || input.kind !== 'post' || input.language !== 'en') return jsonError('INVALID_INPUT', 400);
+  const service = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  const allowed = await service.rpc('is_search_build_token', { p_token: token });
+  if (allowed.error) throw allowed.error;
+  if (allowed.data !== true) return jsonError('FORBIDDEN', 403);
+  // A client without a user: the same guest reads the build itself makes.
+  const guest = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!);
+  const [preview, business] = await Promise.all([
+    guest.rpc('get_shared_link_preview', { p_post_id: input.id }),
+    guest.rpc('get_public_post_businesses', { p_post_ids: [input.id] }),
+  ]);
+  if (preview.error) throw preview.error;
+  if (business.error) throw business.error;
+  const shown = preview.data;
+  if (shown?.id?.toLowerCase() !== input.id.toLowerCase() || shown.kind === 'meetup'
+    || !business.data?.some((item) => String(item.post_id).toLowerCase() === input.id.toLowerCase())) return jsonError('NOT_FOUND', 404);
+  return await translateSource(service, input, [shown.title ?? '', shown.preview ?? '', shown.teaser ?? ''].join('\n'), null, SEARCH_DAILY_LIMIT);
+}
 
 function validate(value) {
   if (!value || typeof value !== 'object') return null;

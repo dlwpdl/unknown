@@ -3,6 +3,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
+import * as recentSearches from '../src/lib/recent-searches.ts';
+import { priceLabel, priceSymbol } from '../src/lib/discovery.ts';
 
 const ids = ['10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000003'];
 const city = { id: 'vancouver', name: '밴쿠버', englishName: 'Vancouver' };
@@ -12,9 +14,10 @@ const settle = () => new Promise(setImmediate);
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree,...Object.values(tree).flatMap(value=>Array.isArray(value)?value.flatMap(nodes):nodes(value))];
 const text = tree => tree==null||typeof tree==='boolean'?'':typeof tree==='string'||typeof tree==='number'?String(tree):Array.isArray(tree)?tree.map(text).join(' '):text(tree.props?.children);
 const control = (tree,id) => nodes(tree).find(node=>node.props?.testID===id||node.props?.analyticsId===id);
+const catalog=[{id:'osm:node:9',cityId:'vancouver',name:'Café Lumière',latitude:49.28,longitude:-123.12}];
 function screen({load=async()=>page(),initialQuery='',initialKind='all'}={}) {
   const file=new URL('../src/components/unified-search.tsx',import.meta.url);assert(existsSync(file),'Unified search UI is not implemented');
-  const slots=[],cleanups=[],passive=[],timers=[],calls=[],routes=[],feedback=[];
+  const slots=[],cleanups=[],passive=[],timers=[],calls=[],routes=[],feedback=[],stored=new Map();
   let at=0,defer=false,focused=true,account='viewer',loading=false,hidden=()=>false;
   const hooks={
     useState(initial){const i=at++;if(!(i in slots))slots[i]=typeof initial==='function'?initial():initial;return[slots[i],value=>{slots[i]=typeof value==='function'?value(slots[i]):value;}];},
@@ -28,16 +31,19 @@ function screen({load=async()=>page(),initialQuery='',initialKind='all'}={}) {
     'react-native':{View:'View',ScrollView:'ScrollView',TextInput:'TextInput',Keyboard:{dismiss(){}},Platform:{OS:'ios'},StyleSheet:{create:x=>x,flatten:x=>Object.assign({},...[x].flat(Infinity).filter(Boolean)),hairlineWidth:1},useWindowDimensions:()=>({width:390,fontScale:1})},
     'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},'expo-image':{Image:'Image'},'expo-symbols':{SymbolView:'Symbol'},'@/components/symbol-view':{SymbolView:'Symbol'},
     'expo-router':{useIsFocused:()=>focused,useRouter:()=>({push:route=>routes.push(route),canGoBack:()=>true,back:()=>routes.push('back'),replace:route=>routes.push(route)})},
-    '@/components/analytics-controls':{Pressable:'Pressable',FlatList:'FlatList'},'@/components/selection-chip':{SelectionChip:'Chip'},'@/components/state-card':{StateCard:'StateCard'},'@/components/themed-text':{ThemedText:'Text'},'@/components/gling-loader':{GlingLoader:'Loader'},'@/components/post-zoom-link':{PostZoomLink:'PostZoomLink'},
+    '@/components/analytics-controls':{Pressable:'Pressable',FlatList:'FlatList'},'@/components/selection-chip':{SelectionChip:'Chip'},'@/components/state-card':{StateCard:'StateCard'},'@/components/themed-text':{ThemedText:'Text'},'@/components/gling-loader':{GlingLoader:'Loader'},'@/components/post-zoom-link':{PostZoomLink:'PostZoomLink'},'@/components/price-sheet':{PriceSheet:'PriceSheet'},'@/lib/discovery':{priceLabel,priceSymbol},
     '@/constants/theme':{Spacing:{one:4,two:8,three:12,four:16,five:20,six:24},MaxContentWidth:800},'@/constants/design-system':{ControlMotion:{settleMs:180},ControlStyles:{icon:{},pill:{},field:{},action:{}},ControlMetrics:{touch:44},IconSize:{toolbar:21},Typography:{body:{fontSize:16}}},
     '@/hooks/use-language':{useLanguage:()=>({language:'ko',tr:x=>x})},'@/hooks/use-theme':{useTheme:()=>({})},'react-native-reanimated':{useReducedMotion:()=>false},'@/hooks/use-reveal-chip':{useRevealChip:kind=>({scroll:{revealing:kind},chip:key=>`layout:${key}`})},'@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },'@/hooks/use-content-visibility':{useContentVisibility:()=>hidden},
     '@/lib/auth':{useAuth:()=>({isAuthed:!!account,isAuthLoading:loading,me:{id:account??'guest'}})},'@/lib/mock':{CITIES:[city,{id:'toronto',name:'토론토',englishName:'Toronto'}]},
     '@/lib/supabase':{supabase:{}},'@/lib/interaction-feedback':{useInteractionFeedback:()=>({play:value=>feedback.push(value)})},
     '@/lib/unified-search':{loadUnifiedSearch:(_client,options)=>{calls.push(options);return load(options);}},
+    '@/components/city-place-photo':{CityPlacePhoto:'CityPlacePhoto'},'@/lib/city-places':{getCityPlaces:cityId=>cityId===city.id?catalog:[]},
+    '@react-native-async-storage/async-storage':{__esModule:true,default:{getItem:async key=>stored.get(key)??null,setItem:async(key,value)=>{stored.set(key,value);}}},'@/lib/recent-searches':recentSearches,
+    '@/lib/neighborhoods':{nearestNeighborhood:(cityId,pin)=>cityId==='vancouver'&&pin.latitude===49.28?{nameKo:'개스타운'}:null,neighborhoodName:area=>area.nameKo},
   };
   const exports={},code=ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
   vm.runInNewContext(code,{exports,AbortController,Symbol,Map,Set,setTimeout:fn=>{const timer={fn,active:true};timers.push(timer);return timer;},clearTimeout:timer=>{timer.active=false;},require:name=>{assert(name in modules,name);return modules[name];}});
-  return{calls,routes,feedback,account(value){account=value;},focus(value){focused=value;},loading(value){loading=value;},hide(fn){hidden=fn;},defer(value){defer=value;},flushPassive(){passive.splice(0).forEach(fn=>fn());},async flush(){timers.splice(0).filter(timer=>timer.active).forEach(timer=>timer.fn());await settle();},
+  return{calls,routes,feedback,stored,account(value){account=value;},focus(value){focused=value;},loading(value){loading=value;},hide(fn){hidden=fn;},defer(value){defer=value;},flushPassive(){passive.splice(0).forEach(fn=>fn());},async flush(){timers.splice(0).filter(timer=>timer.active).forEach(timer=>timer.fn());await settle();},
     render(){at=0;let tree=exports.UnifiedSearch({initialCityId:city.id,initialQuery,initialKind});if(typeof tree.type==='function')tree=tree.type(tree.props);const list=nodes(tree).find(node=>node.type==='FlatList');return{tree,list,rows:list?.props.data.map((item,index)=>list.props.renderItem({item,index}))??[],empty:list?.props.ListEmptyComponent,footer:list?.props.ListFooterComponent};},
     unmount(){cleanups.forEach(fn=>fn?.());timers.forEach(timer=>{timer.active=false;});},
   };
@@ -150,4 +156,90 @@ test('result type chips sit on one sideways-scrolling line instead of wrapping (
   assert.equal(row.props.style.flexGrow,0,'the row keeps its own height beside the result list');
   assert.equal(row.props.contentContainerStyle.flexWrap,undefined);
   assert.deepEqual(nodes(row).filter(node=>node.props?.analyticsId?.startsWith('search.kind.')).map(node=>node.props.analyticsId),['search.kind.all','search.kind.business','search.kind.place','search.kind.person','search.kind.post','search.kind.meetup']);
+});
+
+test('rows show what they have: a place photo with its neighbourhood, a person initial, and more only for a full group (QA I-search-02·04)',async()=>{
+  const place=item('place','osm:node:9',{placeId:'osm:node:9',title:'Café Lumière',subtitle:'103-42 Sixth Street, Vancouver, BC, Canada'});
+  const people=[item('person',ids[1],{title:'포근한수달',subtitle:''}),item('person',ids[2],{title:'하늘',subtitle:''})];
+  const app=screen({initialQuery:'카페',load:async()=>page([place,...people])});app.render();await app.flush();const view=app.render();
+  const rows=view.rows.flatMap(nodes);
+  assert.ok(rows.some(node=>node.type==='CityPlacePhoto'&&node.props.place===catalog[0]),'the catalog photo, not a grey pin');
+  assert.match(text(view.rows),/개스타운 · 103-42 Sixth Street/);
+  assert.ok(rows.some(node=>node.props?.children==='포'),'a person without a photo gets their first letter');
+  assert.equal(rows.filter(node=>node.props?.analyticsId==='search.group.more').length,0,'two people and one place: nothing more to see');
+  app.unmount();
+});
+
+test('no results offers the wider search as buttons; before typing it shows a search glyph (QA I-search-01·03)',async()=>{
+  const app=screen({initialQuery:'없는말',initialKind:'business',load:async()=>page([])});app.render();await app.flush();let view=app.render();
+  const state=nodes(view.empty).find(node=>node.type==='StateCard');
+  assert.equal(state.props.analyticsId,'search.scope.canada');assert.equal(state.props.actionLabel,'캐나다 전체에서 찾기');
+  state.props.onAction();app.render();await app.flush();assert.equal(app.calls.at(-1).cityId,null);
+  view=app.render();const kinds=nodes(view.empty).find(node=>node.props?.analyticsId==='search.kind.all');
+  assert.equal(nodes(view.empty).find(node=>node.type==='StateCard').props.actionLabel,undefined,'already Canada-wide');
+  kinds.props.onPress();app.render();await app.flush();assert.equal(app.calls.at(-1).kind,'all');
+  app.unmount();
+  const blank=screen();const idle=nodes(blank.render().empty).find(node=>node.type==='StateCard');
+  assert.equal(idle.props.kind,'search');assert.doesNotMatch(idle.props.title,/찾고 계세요/);blank.unmount();
+});
+
+test('recent searches stay on this phone for each account: saved on search, reopened, removed one at a time or all',async()=>{
+  const app=screen();let view=app.render();await settle();view=app.render();
+  assert.equal(nodes(view.empty).find(node=>node.type==='StateCard').props.kind,'search','no recent searches yet');
+  const input=()=>nodes(app.render().tree).find(node=>node.type==='TextInput');
+  input().props.onChangeText('  지모코 ');input().props.onSubmitEditing();
+  input().props.onChangeText('#파스타');input().props.onSubmitEditing();
+  input().props.onChangeText('지모코');input().props.onSubmitEditing();await settle();
+  assert.deepEqual(JSON.parse(app.stored.get('gling.search.recent:viewer')),['지모코','#파스타'],'newest first, no repeats');
+  control(app.render().tree,'search.input.clear').props.onPress();view=app.render();
+  assert.match(text(view.empty),/최근 검색어/);assert.ok(!nodes(view.empty).some(node=>node.type==='StateCard'));
+  nodes(view.empty).find(node=>node.props?.analyticsId==='search.recent.open'&&node.props.accessibilityLabel==='#파스타 검색').props.onPress();
+  assert.equal(input().props.value,'#파스타');assert.ok(control(app.render().tree,'search.kind.post').props.selected,'a hashtag opens posts');
+  control(app.render().tree,'search.input.clear').props.onPress();view=app.render();
+  nodes(view.empty).find(node=>node.props?.accessibilityLabel==='지모코 지우기').props.onPress();await settle();
+  assert.deepEqual(JSON.parse(app.stored.get('gling.search.recent:viewer')),['#파스타']);
+  app.account('other');app.render();await settle();view=app.render();
+  assert.ok(!text(view.empty).includes('#파스타'),'another account on the same phone sees its own list');
+  app.account('viewer');app.render();await settle();view=app.render();
+  nodes(view.empty).find(node=>node.props?.analyticsId==='search.recent.clear').props.onPress();await settle();view=app.render();
+  assert.equal(app.stored.get('gling.search.recent:viewer'),'[]');assert.equal(nodes(view.empty).find(node=>node.type==='StateCard').props.kind,'search');
+  assert.deepEqual(recentSearches.parseRecentSearches('{"bad":1}'),[]);assert.deepEqual(recentSearches.parseRecentSearches('not json'),[]);
+  assert.equal(recentSearches.addRecentSearch(Array.from({length:10},(_,n)=>`q${n}`),'new').length,10);
+  app.unmount();
+  });
+
+test('place results narrow by price with the map\'s sheet; places without a price leave and an empty price result clears in one tap (owner 2026-11-13)',async()=>{
+  const priced=[item('place','osm:1',{placeId:'osm:1',priceLevel:1}),item('place','osm:2',{placeId:'osm:2',priceLevel:3})];
+  const app=screen({initialQuery:'지모코',initialKind:'place',load:async options=>({...page(options.priceLevels?.length?priced.filter(value=>options.priceLevels.includes(value.priceLevel)):[...priced,item('place','osm:3',{placeId:'osm:3'})]),priced:options.kind==='place'})});
+  app.render();await app.flush();let view=app.render();
+  const chip=()=>nodes(view.tree).find(node=>node.type==='Chip'&&node.props.analyticsId==='search.price');
+  const sheet=()=>nodes(view.tree).find(node=>node.type==='PriceSheet');
+  assert.equal(chip().props.accessibilityLabel,'가격 필터');
+  assert.equal(sheet().props.draft,null);assert.equal(sheet().props.analyticsId,'search.price');
+  assert.deepEqual([...app.calls[0].priceLevels],[]);
+  assert.match(text(view.rows),/\$ · 오스틴 지점/,'a priced row leads with its price');
+  assert.ok(view.rows.flatMap(nodes).some(node=>/가격대/.test(node.props?.accessibilityLabel??'')),'and says it to a screen reader');
+  chip().props.onPress();view=app.render();assert.deepEqual([...sheet().props.draft],[]);assert.ok(app.feedback.includes('selection'));
+  sheet().props.onDraft([1]);view=app.render();assert.equal(app.calls.length,1,'a draft reads nothing');
+  sheet().props.onApply([...sheet().props.draft]);app.render();await app.flush();view=app.render();
+  assert.equal(sheet().props.draft,null,'applying closes the sheet');
+  assert.deepEqual([...app.calls.at(-1).priceLevels],[1]);
+  assert.equal(chip().props.accessibilityLabel,'가격 {0}, 바꾸기');assert.equal(text(chip()).replace(/\s+/g,' ').trim(),'$ ⌄');
+  assert.match(text(view.tree),/가격 정보가 있는 곳만 보여요/);
+  assert.equal(view.rows.flatMap(nodes).filter(node=>node.props?.analyticsId==='search.result.place').length,1);
+  sheet().props.onApply([4]);app.render();await app.flush();view=app.render();
+  const empty=nodes(view.empty).find(node=>node.type==='StateCard');
+  assert.equal(empty.props.title,'이 가격대에 맞는 곳이 없어요');assert.equal(empty.props.actionLabel,'가격 필터 풀기');
+  empty.props.onAction();app.render();await app.flush();view=app.render();
+  assert.deepEqual([...app.calls.at(-1).priceLevels],[]);assert.equal(view.rows.flatMap(nodes).filter(node=>node.props?.analyticsId==='search.result.place').length,3);
+  sheet().props.onApply([2]);app.render();await app.flush();
+  control(app.render().tree,'search.kind.business').props.onPress();app.render();await app.flush();view=app.render();
+  assert.equal(app.calls.at(-1).kind,'business');assert.deepEqual([...app.calls.at(-1).priceLevels],[],'other kinds never send a price');
+  assert.equal(chip(),undefined,'and show no price chip');app.unmount();
+});
+
+test('the price chip stays hidden on 장소 when no matching place has a price',async()=>{
+  const app=screen({initialQuery:'지모코',initialKind:'place',load:async()=>({...page([item('place','osm:3',{placeId:'osm:3'})]),priced:false})});
+  app.render();await app.flush();const view=app.render();
+  assert.equal(nodes(view.tree).find(node=>node.type==='Chip'&&node.props.analyticsId==='search.price'),undefined);app.unmount();
 });

@@ -1,0 +1,75 @@
+/* 웹샵 제휴 (approved mockup 2026-11-12). New colors: error #F09AAA and field border #6B6178 (3:1 on the page). */
+.ws{scroll-margin-top:16px;container-type:inline-size}
+.ws :where(button,input){font:inherit;color:inherit}
+.ws :where(button){cursor:pointer;border:0;background:none;text-align:inherit}
+.ws [hidden]{display:none!important}
+.ws svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ws-gets{list-style:none;margin:20px 0 0;padding:0;display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr))}
+.ws-gets li{padding:18px;border:1px solid #36303F;border-radius:16px;background:#19161E}
+.ws-gets .ic{width:36px;height:36px;border-radius:12px;background:#2A2333;color:#CBB9FF;display:grid;place-items:center;margin-bottom:10px}
+.biz .ws-gets p{margin:0;color:#B4ADB8;font-size:15px;line-height:1.6}
+.ws-rule{margin-top:12px;padding:18px;border:1px solid #5E4E7A;border-radius:16px;background:#1E1926}
+.ws-rule .k{display:inline-block;font-size:12px;font-weight:800;line-height:18px;color:#171123;background:#CBB9FF;border-radius:6px;padding:1px 8px;margin-bottom:8px}
+.biz .ws-rule p{margin:0}
+.biz .ws-rule p+p{margin-top:6px;color:#B4ADB8;font-size:15px}
+.ws-form{margin-top:24px;padding:22px 20px;border:1px solid #36303F;border-radius:20px;background:#19161E;display:grid;gap:22px}
+.biz .ws-form>h3{font-size:20px;margin:0}
+.ws .f{display:grid;gap:8px;border:0;min-width:0;padding:0;margin:0}
+.ws .f-label{font-size:15px;font-weight:700;color:#ECE8E5;line-height:1.5;padding:0}
+.ws .opt-t{font-weight:500;color:#B4ADB8}
+.biz .f-hint{margin:0;font-size:14px;color:#B4ADB8;line-height:1.55}
+.ws-input{width:100%;min-height:48px;padding:11px 14px;border-radius:13px;border:1px solid #6B6178;background:#0D0C10;color:#ECE8E5;font-size:16px;line-height:1.4;transition:border-color .15s}
+.ws-input::placeholder{color:#8E8796}
+.biz .ws-input:focus-visible{outline:3px solid #CBB9FF;outline-offset:2px;border-color:#CBB9FF}
+.ws-input[aria-invalid="true"]{border:2px solid #F09AAA;padding:10px 13px}
+.ws .srch{position:relative}
+.ws .srch>svg{position:absolute;left:14px;top:15px;width:18px;height:18px;color:#B4ADB8;pointer-events:none}
+.ws .srch .ws-input{padding-left:42px}
+.ws .srch .ws-input[aria-invalid="true"]{padding-left:41px}
+.biz .f-err{margin:0;display:flex;gap:6px;align-items:flex-start;font-size:14px;font-weight:600;color:#F09AAA;line-height:1.5}
+.ws .f-err::before{content:"!";flex:none;width:18px;height:18px;margin-top:2px;border-radius:50%;background:#F09AAA;color:#171123;font-size:12px;font-weight:900;display:grid;place-items:center;line-height:1}
+.ws .opts{display:flex;flex-wrap:wrap;gap:8px}
+.ws .opt{position:relative;display:inline-flex;cursor:pointer}
+.ws .opt input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:pointer}
+.ws .opt span{min-height:44px;padding:0 16px;border-radius:999px;border:1px solid #6B6178;background:#26212C;display:inline-flex;align-items:center;gap:6px;font-size:15px;font-weight:700;transition:transform .09s ease-out,background-color .15s}
+.ws .opt input:checked+span{background:#CBB9FF;border-color:#CBB9FF;color:#171123}
+.ws .opt input:checked+span::before{content:"✓"}
+.ws .opt input:focus-visible+span{outline:3px solid #CBB9FF;outline-offset:3px}
+.ws .opt:active span{transform:scale(.96)}
+.ws .opts[aria-invalid="true"] .opt span{border:2px solid #F09AAA;padding:0 15px}
+.ws .tlink{min-height:44px;display:inline-flex;align-items:center;justify-self:start;color:#CBB9FF;font-size:14px;font-weight:700;text-decoration:underline;text-underline-offset:4px;padding:0 2px}
+.ws .cb-list{list-style:none;margin:6px 0 0;padding:6px;border:1px solid #36303F;border-radius:14px;background:#211C28;display:grid;gap:2px}
+.ws .cb-list [role=option]{min-height:52px;padding:7px 10px;border-radius:10px;display:flex;flex-direction:column;justify-content:center;cursor:pointer;line-height:1.4}
+.ws .cb-list [role=option] b{font-size:15px}
+.ws .cb-list [role=option] small{font-size:13px;color:#B4ADB8}
+.ws .cb-list [role=option]:hover,.ws .cb-list [aria-selected="true"]{background:#36303F}
+.ws .cb-list [role=option]:active{opacity:.82}
+.ws .cb-list .cb-empty{cursor:default;font-size:14px;color:#B4ADB8}
+.ws .picked{display:flex;align-items:center;gap:12px;padding:10px 10px 10px 12px;border:1px solid #6B6178;border-radius:14px;background:#0D0C10}
+.ws .pk-ic{flex:none;width:40px;height:40px;border-radius:12px;background:#2A2333;color:#CBB9FF;display:grid;place-items:center}
+.ws .pk-t{flex:1;min-width:0;display:flex;flex-direction:column}
+.ws .pk-t b{font-size:16px;line-height:1.4}
+.ws .pk-t small{font-size:13px;color:#B4ADB8;line-height:1.45}
+.ws .pk-change{flex:none;min-height:44px;padding:0 14px;border-radius:12px;background:#26212C;border:1px solid #36303F;font-weight:700;font-size:14px;color:#ECE8E5;transition:transform .09s ease-out}
+.ws .pk-change:active,.ws .tlink:active{transform:scale(.96)}
+.ws .f-sub{display:grid;gap:8px;padding-top:4px}
+.ws .hint-row{display:flex;flex-wrap:wrap;align-items:center;gap:0 10px;margin-top:-4px}
+.biz .f-sum{margin:0}
+.ws-submit{width:100%;font-size:16px;border:0;cursor:pointer;font-family:inherit}
+.ws-submit[aria-busy="true"]{opacity:.7}
+.biz .ws-priv{margin:-6px 0 0;font-size:13px;color:#B4ADB8}
+/* A field people never see; bots that fill every input fill this one too. */
+.ws-trap{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+@container (min-width:640px){.ws-submit{width:auto;min-width:220px;justify-self:start}}
+.ws-done{outline:none}
+.ws .ok-ic{width:48px;height:48px;border-radius:50%;background:#7FD1A6;color:#0D0C10;display:grid;place-items:center}
+.ws .ok-ic svg{width:26px;height:26px;stroke-width:2.6}
+.biz .ws-done h3{font-size:22px;margin:0}
+.biz .ws-done p{margin:0}
+.ws-next{margin:0;padding:0;list-style:none;counter-reset:n;display:grid;gap:10px}
+.ws-next li{counter-increment:n;display:flex;gap:10px;font-size:15px;line-height:1.55}
+.ws-next li::before{content:counter(n);flex:none;width:24px;height:24px;border-radius:50%;background:#2A2333;color:#CBB9FF;font-size:13px;font-weight:800;display:grid;place-items:center;margin-top:1px}
+.ws-sum{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;padding:14px;border-radius:14px;background:#0D0C10;border:1px solid #36303F;font-size:14px;margin:0;line-height:1.5}
+.ws-sum dt{color:#B4ADB8}
+.ws-sum dd{margin:0;font-weight:600}
+@media (prefers-reduced-motion:reduce){.ws .opt span,.ws .pk-change,.ws-input{transition:none}.ws .opt:active span,.ws .pk-change:active,.ws .tlink:active{transform:none}}

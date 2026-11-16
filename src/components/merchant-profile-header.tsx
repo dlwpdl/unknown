@@ -12,9 +12,11 @@ import type { MerchantProfile } from '@/lib/merchant-profile';
 import type { MerchantReviewKind, MerchantReviewPage } from '@/lib/merchant-reviews';
 import { MerchantRatingBar } from '@/components/merchant-rating-bar';
 
-type Props = { profile: MerchantProfile; ratings?: Partial<Record<MerchantReviewKind, Pick<MerchantReviewPage, 'rating_average' | 'review_count'> | null>>; onReviewPress?: (kind: MerchantReviewKind) => void };
+type Props = { profile: MerchantProfile; ratings?: Partial<Record<MerchantReviewKind, Pick<MerchantReviewPage, 'rating_average' | 'review_count'> | null>>; onReviewPress?: (kind: MerchantReviewKind) => void;
+  // noReviews: one 후기 line instead of the two rating rows while nothing is reviewed (business profile, mockup I-company-01 A).
+  noReviews?: boolean };
 
-export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props) {
+export function MerchantProfileHeader({ profile, ratings, onReviewPress, noReviews = false }: Props) {
   const { tr } = useLanguage();
   const theme = useTheme(), { play } = useInteractionFeedback();
   const [linkError, setLinkError] = useState('');
@@ -31,26 +33,26 @@ export function MerchantProfileHeader({ profile, ratings, onReviewPress }: Props
         <ThemedText type="subtitle" style={styles.businessName}>{profile.name}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">{[profile.city_name, profile.industry].filter((value): value is string => !!value).map(value => tr(value)).join(' · ')}</ThemedText>
       </View>
-      {onReviewPress && <View style={styles.ratings}>{(['usage', 'employment'] as const).map((kind, index) => {
-        const rating = ratings?.[kind], average = rating?.rating_average ?? null, label = tr(kind === 'usage' ? '상품·서비스 후기' : '직원 후기');
+      {onReviewPress && <View style={styles.ratings}>{(noReviews ? ['usage'] as const : ['usage', 'employment'] as const).map((kind, index) => {
+        const rating = noReviews ? undefined : ratings?.[kind], average = rating?.rating_average ?? null, label = noReviews ? tr('후기') : tr(kind === 'usage' ? '상품·서비스 후기' : '직원 후기');
         const score = average == null ? null : (Math.round(average * 10) / 10).toFixed(1);
-        const value = rating === undefined ? '…' : rating === null ? tr('다시 확인해 주세요') : score == null ? tr('–/10 · 아직 없어요') : tr('{0}/10 · {1}개', score, rating.review_count);
+        const value = noReviews ? tr('아직 없어요') : rating === undefined ? '…' : rating === null ? tr('다시 확인해 주세요') : score == null ? tr('–/10 · 아직 없어요') : tr('{0}/10 · {1}개', score, rating.review_count);
         return <Pressable key={kind} analyticsId={`company.rating.${kind}`} accessibilityRole="button"
-          accessibilityLabel={tr("{0} 보기, {1}", (label), (rating === undefined ? tr('불러오는 중') : rating === null ? tr('점수를 다시 확인해 주세요') : score == null ? tr('아직 후기가 없어요') : tr('10점 만점에 평균 {0}점, 인증 후기 {1}개', score, rating.review_count)))}
+          accessibilityLabel={tr("{0} 보기, {1}", (label), (noReviews ? tr('아직 후기가 없어요') : rating === undefined ? tr('불러오는 중') : rating === null ? tr('점수를 다시 확인해 주세요') : score == null ? tr('아직 후기가 없어요') : tr('10점 만점에 평균 {0}점, 인증 후기 {1}개', score, rating.review_count)))}
           style={({ pressed }) => [styles.rating, index > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.line }, { opacity: pressed ? 0.82 : 1 }]}
           onPress={() => { play('selection'); onReviewPress(kind); }}>
           <ThemedText type="smallBold" style={styles.ratingLabel}>{label}</ThemedText>
-          <MerchantRatingBar score={average} reviewKind={kind} label={label} />
+          {!noReviews && <MerchantRatingBar score={average} reviewKind={kind} label={label} />}
           <ThemedText type="small" themeColor="textSecondary" style={styles.ratingValue}>{value}</ThemedText>
           <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={16} tintColor={theme.textSecondary} />
         </Pressable>;
       })}</View>}
     </View>
-    <View style={[styles.banner, !banner && styles.bannerEmpty, { backgroundColor: theme.card }]}>
-      {banner ? <Image source={{ uri: banner }} transition={ControlMotion.settleMs} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("{0} 배너", (profile.name))}
+    {/* No banner, no box: an empty gling. strip still read as a missing picture (QA Q09 → H43-6). The editor asks for a banner on its own. */}
+    {banner && <View style={[styles.banner, { backgroundColor: theme.card }]}>
+      <Image source={{ uri: banner }} transition={ControlMotion.settleMs} contentFit="cover" style={StyleSheet.absoluteFill} accessibilityLabel={tr("{0} 배너", (profile.name))}
         onError={() => setFailedImage(value => ({ ...value, banner }))} />
-        : <ThemedText style={[styles.bannerG, { color: theme.accent }]} accessible={false}>gling.</ThemedText>}
-    </View>
+    </View>}
     {!!profile.services && <ThemedText>{profile.services}</ThemedText>}
     {!!profile.address && <ThemedText type="small" themeColor="textSecondary">{profile.address}</ThemedText>}
     {!!profile.links?.length && <View style={styles.links}>{profile.links.map(link => <Pressable key={link.url}
@@ -68,9 +70,6 @@ const styles = StyleSheet.create({
   links: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   link: { minHeight: 44, maxWidth: '100%', justifyContent: 'center', paddingHorizontal: 14, borderWidth: 1, borderRadius: 12 },
   banner: { width: '100%', aspectRatio: 1.18, maxHeight: 360, borderRadius: 14, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
-  // Without a banner the gling. mark is a short strip, not a third of the screen (QA Q09).
-  bannerEmpty: { aspectRatio: 3 },
-  bannerG: { fontSize: 38, lineHeight: 44, fontWeight: '800', opacity: 0.35 },
   identity: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'center' },
   avatar: { width: 46, height: 46, borderRadius: 10, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   name: { flexGrow: 1, flexShrink: 1, flexBasis: 160, gap: 9 },

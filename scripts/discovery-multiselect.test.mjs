@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { IconSize } from '../src/constants/design-system.ts';
-import { PLACE_SUBCATEGORIES, PRICE_FILTERS, discoveryMatches, discoveryRefines, mergeCityTop25, discoveryEvent, discoveryEventOnDays } from '../src/lib/discovery.ts';
+import { PLACE_STATUS, PLACE_SUBCATEGORIES, discoveryMatches, placeStatuses, discoveryRefines, mergeCityTop25, discoveryEvent, discoveryEventOnDays } from '../src/lib/discovery.ts';
 import { cityClock, openState } from '../src/lib/opening-hours.ts';
 
 // Legacy programmatic union compatibility; the map UI now selects one category.
@@ -79,7 +79,7 @@ test('real map chips toggle a union and All clears category and date state', () 
     styles: {}, theme: { accent: '#CBB9FF', line: '#ccc', backgroundSelected: '#ddd', backgroundElement: '#eee', text: '#222' },
     ScrollView: 'scroll', Pressable: 'button', SelectionChip: 'button', chipBackground: '#eee', View: 'view', ThemedText: 'text', GlingVisitedBadge: 'visited-badge', SymbolView: 'symbol', CategoryIcon: 'category-icon', IconSize, tr: value => value,
     filterRow: { scroll: {}, chip: () => undefined },
-    bump: { id: '', n: 0 }, setBump() {}, liveOn: false, meetupsOn: false, scope: 'all', scopeOpen: false, setScopeOpen() {}, scopeName: '모두', openNow: false, setOpenNow() {}, setShowUnknown() {}, setSubcategories() {}, filtersOpen: false, sheet: 'closed', setSheet() {}, setSelectedId() {},
+    bump: { id: '', n: 0 }, setBump() {}, liveOn: false, meetupsOn: false, scope: 'all', scopeOpen: false, setScopeOpen() {}, scopeName: '모두', openNow: false, setOpenNow() {}, setShowUnknown() {}, setMeetupsOnly() {}, setSubcategories() {}, filtersOpen: false, sheet: 'closed', setSheet() {}, setSelectedId() {},
     play: value => feedback.push(value), setRevealedFilter: () => {}, setSelectedFilters: update => { selected = Array.from(typeof update === 'function' ? update(selected) : update); },
     setDateFilter() {}, setDate() {}, setDateOpen() {}, setDateError() {}, setSortBy: value => { sort = typeof value === 'function' ? value(sort) : value; },
     get selectedFilters() { return selected; },
@@ -107,7 +107,7 @@ test('real map chips toggle a union and All clears category and date state', () 
   assert.equal(button('cafe').props.accessibilityState.selected, true);
   button('visited').props.onPress();
   assert.deepEqual(selected, ['cafe', 'visited']);
-  assert.equal(button('visited').props.accessibilityLabel, 'gling Visited');
+  assert.equal(button('visited').props.accessibilityLabel, '다녀온 곳', 'read aloud as the name it shows (QA C15-1)');
   assert.equal(button('top25').props.accessibilityState.selected, false);
   sort = 'discount';
   button('all').props.onPress();
@@ -132,7 +132,7 @@ test('the real result pipeline applies city, hidden author, listing expiry and e
     city: { id: cityId }, now: Date.parse('2026-10-15T12:00:00Z'), selectedFilters: ['top25', 'cafe', 'used', 'festival'], query: '', days: ['2026-10-17'],
     hidden: (_type, _id, author) => author === 'blocked-author', discoveryEvent, discoveryEventOnDays, discoveryMatches,
     mergeCityTop25: (items, city) => mergeCityTop25(items, city, picks.slice(0, 1)),
-    PRICE_FILTERS, PLACE_SUBCATEGORIES, discoveryRefines, cityClock, openState, priceLevels: [], subcategories: [], region: null, openNow: false, showUnknown: false, placeSaves: null, statusFilter: null,
+    PLACE_STATUS, placeStatuses, friendsScope: false, friendsResult: null, mineKey: '', PLACE_SUBCATEGORIES, discoveryRefines, cityClock, openState, priceLevels: [], subcategories: [], region: null, openNow: false, showUnknown: false, placeSaves: null, statusFilter: null,
   };
   vm.runInNewContext(ts.transpileModule(`exports.run = () => { ${source.slice(start, end)} return items; };`, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, context);
   assert.deepEqual(Array.from(exports.run(), item => item.sourceId), ['fixture-pick-0', 'ordinary', '2026-10-17']);

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { ClayBoxFill, ClayControlFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
-import { Pressable } from '@/components/analytics-controls';
+import { Pressable, Switch } from '@/components/analytics-controls';
 import { UberOrderNotice } from '@/components/business-webshop';
 import { CityPlacePhoto } from '@/components/city-place-photo';
 import { DragSheet } from '@/components/drag-sheet';
@@ -17,7 +17,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useTheme } from '@/hooks/use-theme';
 import { getCityPlaces } from '@/lib/city-places';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import type { SavedFolder, SavedItem } from '@/lib/saved-items';
+import type { FolderVisibility, SavedFolder, SavedItem } from '@/lib/saved-items';
 
 const KIND_SYMBOL = { merchant: ['building.2', 'storefront'], place: ['mappin.and.ellipse', 'place'], post: ['doc.text', 'article'], user: ['person', 'person'] } as const;
 function savedPlace(item: SavedItem) {
@@ -39,9 +39,9 @@ export function SavedLibraryButton({ analyticsId: id, testID, label, onPress, di
   </Pressable>;
 }
 
-export function SavedItemCard({ item, folders, disabled = false, compareBusy = false, onOpen, onRemove, onOrganize, onCompare }: {
+export function SavedItemCard({ item, folders, disabled = false, compareBusy = false, onOpen, onRemove, onOrganize, onNote, onCompare }: {
   item: SavedItem; folders: SavedFolder[]; disabled?: boolean; compareBusy?: boolean;
-  onOpen: () => void; onRemove: () => void; onOrganize: () => void; onCompare?: () => void;
+  onOpen: () => void; onRemove: () => void; onOrganize: () => void; onNote?: () => void; onCompare?: () => void;
 }) {
   const theme = useTheme(), clayBox = useClayBox(), { language } = useLanguage(), { play } = useInteractionFeedback(), ko = language === 'ko';
   const kind = item.target.kind === 'merchant' ? ko ? '비즈니스' : 'Business'
@@ -76,8 +76,14 @@ export function SavedItemCard({ item, folders, disabled = false, compareBusy = f
       </Pressable>
     </View>
     {item.target.kind === 'user' && <ThemedText type="supporting" themeColor="textSecondary">{ko ? '저장해도 상대에게 알림이 가지 않아요.' : 'They won’t be notified when you save them.'}</ThemedText>}
+    {!!item.note && <View style={styles.note} accessible accessibilityLabel={`${ko ? '나만 보는 메모' : 'Private memo'}: ${item.note}`}>
+      <SymbolView name={{ ios: 'lock', android: 'lock', web: 'lock' }} size={14} tintColor={theme.textSecondary} accessible={false} />
+      <ThemedText type="supporting" themeColor="textSecondary" style={styles.grow}>{item.note}</ThemedText>
+    </View>}
     {menuOpen && <MeetupManageSheet visible title={item.title} onClose={() => setMenuOpen(false)} actions={[
       { key: 'organize', analyticsId: 'saved.organize', label: ko ? '폴더 정리' : 'Organize', onPress: onOrganize, icon: { ios: 'folder', android: 'folder', web: 'folder' } },
+      ...onNote ? [{ key: 'note', analyticsId: 'saved.note', label: item.note ? ko ? '메모 고치기' : 'Edit memo' : ko ? '메모 남기기' : 'Add a memo', onPress: onNote,
+        icon: { ios: 'square.and.pencil', android: 'edit_note', web: 'edit_note' } as const }] : [],
       { key: 'remove', analyticsId: 'saved.remove', label: ko ? '저장 해제' : 'Unsave', danger: true, onPress: onRemove, icon: { ios: 'bookmark.slash', android: 'bookmark_remove', web: 'bookmark_remove' } },
     ]} />}
     {item.hasWebshop && onCompare && <View style={[styles.offer, { borderTopColor: theme.line }]}>
@@ -87,18 +93,47 @@ export function SavedItemCard({ item, folders, disabled = false, compareBusy = f
   </View>;
 }
 
+// A memo only its writer sees. Saying why it stays private sits right above the field.
+export function SavedNoteSheet({ item, busy, error, onClose, onSave }: {
+  item: SavedItem; busy: boolean; error: string | null; onClose: () => void; onSave: (note: string | null) => void;
+}) {
+  const theme = useTheme(), { language } = useLanguage(), ko = language === 'ko';
+  const [note, setNote] = useState(item.note ?? ''), [open, setOpen] = useState(true);
+  const unchanged = note.trim() === (item.note ?? '');
+  return <DragSheet visible={open} onClose={() => setOpen(false)} onDismissed={onClose} dismissible={!busy}>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.sheetContent}>
+      <View style={styles.heading}><ThemedText type="sheetTitle" style={styles.grow}>{ko ? '메모' : 'Memo'}</ThemedText>
+        <SavedLibraryButton analyticsId="saved.note.close" label={ko ? '닫기' : 'Close'} onPress={() => setOpen(false)} disabled={busy} /></View>
+      <ThemedText type="menu">{item.title}</ThemedText>
+      <ThemedText type="supporting" themeColor="textSecondary">{ko ? '나만 보는 메모라 편하게 적어도 돼요. 친구에게 보이는 폴더에 넣어도 친구는 메모를 못 봐요.' : 'Only you see this memo, so write whatever helps. Even in a folder friends can see, they never see it.'}</ThemedText>
+      <TextInput value={note} onChangeText={value => setNote(value.replace(/\n/g, ' '))} maxLength={200} editable={!busy} autoFocus multiline submitBehavior="blurAndSubmit"
+        accessibilityLabel={ko ? '메모' : 'Memo'} placeholder={ko ? '예: 창가 자리가 좋아요. 주말엔 줄이 길어요.' : 'e.g. Window seats are best. Long line on weekends.'} placeholderTextColor={theme.textSecondary}
+        style={[ControlStyles.field, styles.description, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]} />
+      {!!error && <ThemedText accessibilityRole="alert">{error}</ThemedText>}
+      <SavedLibraryButton analyticsId="saved.note.submit" primary disabled={busy || unchanged} label={busy ? ko ? '저장 중…' : 'Saving…' : ko ? '저장' : 'Save'}
+        onPress={() => onSave(note.trim() || null)} />
+      {!!item.note && <SavedLibraryButton analyticsId="saved.note.delete" label={ko ? '메모 지우기' : 'Delete memo'} disabled={busy} onPress={() => onSave(null)} />}
+    </ScrollView>
+  </DragSheet>;
+}
+
 export type SavedFolderEditor = { kind: 'create'; returnItem?: SavedItem }
   | { kind: 'rename' | 'delete'; folder: SavedFolder }
   | { kind: 'item'; item: SavedItem };
 
 export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCreate, onRename, onDelete, onAssign, onCreateForItem, onRequestDelete }: {
   editor: SavedFolderEditor; folders: SavedFolder[]; busy: boolean; error: string | null;
-  onClose: () => void; onCreate: (name: string) => void; onRename: (name: string) => void; onDelete: () => void;
+  onClose: () => void; onCreate: (name: string, visibility: FolderVisibility, description: string | null) => void;
+  onRename: (name: string, visibility: FolderVisibility, description: string | null) => void; onDelete: () => void;
   onAssign: (ids: string[]) => void; onCreateForItem: (ids: string[]) => void; onRequestDelete: () => void;
 }) {
   const theme = useTheme(), { language } = useLanguage(), { play } = useInteractionFeedback(), ko = language === 'ko';
   const clay = useClay();
   const [name, setName] = useState(editor.kind === 'rename' ? editor.folder.name : '');
+  // New folders start shown to friends, like saved places; a folder from before keeps what it was.
+  const [visibility, setVisibility] = useState<FolderVisibility>(editor.kind === 'rename' ? editor.folder.visibility ?? 'private' : 'friends');
+  const [description, setDescription] = useState(editor.kind === 'rename' ? editor.folder.description ?? '' : '');
+  const submit = () => { if (editor.kind === 'create') onCreate(name.trim(), visibility, description.trim() || null); else if (editor.kind === 'rename') onRename(name.trim(), visibility, description.trim() || null); };
   const [ids, setIds] = useState(editor.kind === 'item' ? editor.item.folderIds : []);
   // Closing slides the sheet down first; the parent unmounts it once DragSheet reports it is gone.
   const [open, setOpen] = useState(true);
@@ -110,11 +145,26 @@ export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCrea
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.sheetContent}>
           <View style={styles.heading}><ThemedText type="sheetTitle" style={styles.grow}>{title}</ThemedText>
             <SavedLibraryButton analyticsId="saved.editor.close" label={ko ? '닫기' : 'Close'} onPress={() => setOpen(false)} disabled={busy} /></View>
-          <ThemedText type="supporting" themeColor="textSecondary">{ko ? '폴더는 나만 볼 수 있어요. 폴더를 삭제해도 저장한 항목은 남아요.' : 'Folders are private. Deleting a folder keeps your saved items.'}</ThemedText>
-          {(editor.kind === 'create' || editor.kind === 'rename') && <TextInput value={name} onChangeText={setName} maxLength={80} editable={!busy} autoFocus
-            accessibilityLabel={ko ? '폴더 이름' : 'Folder name'} placeholder={ko ? '폴더 이름' : 'Folder name'} placeholderTextColor={theme.textSecondary}
-            style={[ControlStyles.field, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]}
-            returnKeyType="done" onSubmitEditing={() => { if (!busy && !invalid) { play('selection'); if (editor.kind === 'create') onCreate(name.trim()); else onRename(name.trim()); } }} />}
+          <ThemedText type="supporting" themeColor="textSecondary">{ko ? '폴더를 지워도 저장한 항목은 그대로 남아요.' : 'Deleting a folder keeps your saved items.'}</ThemedText>
+          {(editor.kind === 'create' || editor.kind === 'rename') && <>
+            <TextInput value={name} onChangeText={setName} maxLength={80} editable={!busy} autoFocus
+              accessibilityLabel={ko ? '폴더 이름' : 'Folder name'} placeholder={ko ? '폴더 이름' : 'Folder name'} placeholderTextColor={theme.textSecondary}
+              style={[ControlStyles.field, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]}
+              returnKeyType="done" onSubmitEditing={() => { if (!busy && !invalid) { play('selection'); submit(); } }} />
+            <TextInput value={description} onChangeText={value => setDescription(value.replace(/\n/g, ' '))} maxLength={150} editable={!busy} multiline submitBehavior="blurAndSubmit"
+              accessibilityLabel={ko ? '폴더 설명' : 'Folder description'} placeholder={ko ? '어떤 곳을 모았는지 한 줄로 (안 써도 돼요)' : 'What’s in it, in a line (optional)'} placeholderTextColor={theme.textSecondary}
+              style={[ControlStyles.field, styles.description, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]} />
+            <View style={styles.toggle}>
+              <View style={styles.grow}>
+                <ThemedText type="menu">{ko ? '친구에게 보여요' : 'Friends can see it'}</ThemedText>
+                <ThemedText type="supporting" themeColor="textSecondary">{visibility === 'friends'
+                  ? ko ? '친구는 이 폴더에 든 장소와 비즈니스만 볼 수 있어요. 저장한 글과 사람은 나만 봐요.' : 'Friends see only the places and businesses in it. Saved posts and people stay private.'
+                  : ko ? '끄면 나만 볼 수 있어요.' : 'Off: only you can see it.'}</ThemedText>
+              </View>
+              <Switch analyticsId="saved.editor.visibility" value={visibility === 'friends'} disabled={busy} accessibilityLabel={ko ? '친구에게 보여요' : 'Friends can see it'}
+                onValueChange={on => { play('selection'); setVisibility(on ? 'friends' : 'private'); }} />
+            </View>
+          </>}
           {editor.kind === 'delete' && <ThemedText type="menu">{editor.folder.name}</ThemedText>}
           {editor.kind === 'item' && <>
             <ThemedText type="menu">{editor.item.title}</ThemedText>
@@ -124,7 +174,8 @@ export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCrea
               onPress={() => { play('selection'); setIds(previous => previous.includes(folder.id) ? previous.filter(id => id !== folder.id) : [...previous, folder.id]); }}
               style={({ pressed }) => [styles.check, clay && styles.clayPad, controlPresentation(theme, { pressed, selected: ids.includes(folder.id), disabled: busy, clay }).container]}>
               <ClayControlFill selected={ids.includes(folder.id)} />
-              <ThemedText style={[styles.grow, controlPresentation(theme, { selected: ids.includes(folder.id) }).text]}>{folder.name}</ThemedText>
+              <View style={styles.grow}><ThemedText style={controlPresentation(theme, { selected: ids.includes(folder.id) }).text}>{folder.name}</ThemedText>
+                {folder.visibility === 'friends' && <ThemedText type="supporting" style={controlPresentation(theme, { selected: ids.includes(folder.id) }).text}>{ko ? '친구에게 보여요' : 'Friends can see it'}</ThemedText>}</View>
               <ThemedText accessible={false} style={controlPresentation(theme, { selected: ids.includes(folder.id) }).text}>{ids.includes(folder.id) ? '✓' : '○'}</ThemedText>
             </Pressable>)}
             <SavedLibraryButton analyticsId="saved.editor.new" label={ko ? '새 폴더 만들기' : 'Create a folder'} disabled={busy} onPress={() => onCreateForItem(ids)} />
@@ -132,7 +183,7 @@ export function SavedFolderSheet({ editor, folders, busy, error, onClose, onCrea
           {!!error && <ThemedText accessibilityRole="alert">{error}</ThemedText>}
           <SavedLibraryButton analyticsId="saved.editor.submit" primary disabled={busy || ((editor.kind === 'create' || editor.kind === 'rename') && invalid)}
             label={busy ? ko ? '저장 중…' : 'Saving…' : editor.kind === 'delete' ? ko ? '폴더 삭제' : 'Delete folder' : ko ? '완료' : 'Done'}
-            onPress={() => { if (editor.kind === 'item') onAssign(ids); else if (editor.kind === 'create') onCreate(name.trim()); else if (editor.kind === 'rename') onRename(name.trim()); else onDelete(); }} />
+            onPress={() => { if (editor.kind === 'item') onAssign(ids); else if (editor.kind === 'delete') onDelete(); else submit(); }} />
           {editor.kind === 'rename' && <SavedLibraryButton analyticsId="saved.editor.delete" label={ko ? '폴더 삭제' : 'Delete folder'} disabled={busy} onPress={onRequestDelete} />}
         </ScrollView>
   </DragSheet>;
@@ -149,4 +200,7 @@ const styles = StyleSheet.create({
   offer: { borderTopWidth: 1, paddingTop: Spacing.two, gap: Spacing.two },
   sheetContent: { padding: Spacing.three, gap: Spacing.three }, heading: { flexDirection: 'row', alignItems: 'flex-start', flexWrap: 'wrap', gap: Spacing.two },
   check: { minHeight: 48, borderWidth: 1, borderRadius: 14, padding: 12, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  toggle: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 44 },
+  description: { textAlignVertical: 'top', paddingVertical: 12 },
+  note: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.one },
 });

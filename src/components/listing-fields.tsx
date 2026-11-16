@@ -22,6 +22,8 @@ import {
   type ListingCategory, type ListingDraft, type ListingMissing,
 } from '@/lib/listing-details';
 import { CITIES } from '@/lib/mock';
+import { withRo } from '@/i18n/ko';
+import { rentAverage } from '@/lib/rent-average';
 import { findNeighborhood, nearestNeighborhood, neighborhoodName, neighborhoodsFor } from '@/lib/neighborhoods';
 
 const DEALS = { housing: HOUSING_DEALS, jobs: JOB_DEALS, used: USED_DEALS } as const;
@@ -57,14 +59,17 @@ function Section({ label, hint, missing, children }: { label: string; hint?: str
   </View>;
 }
 
-function Field({ label, value, onChange, placeholder, disabled, prefix, suffix, numeric, multiline, maxLength = 40, onSubmit }: {
+// keyboard: contact fields, typed as written (no capitals or autocorrect).
+function Field({ label, value, onChange, placeholder, disabled, prefix, suffix, numeric, multiline, maxLength = 40, onSubmit, keyboard }: {
   label: string; value: string; onChange: (value: string) => void; placeholder?: string; disabled?: boolean; prefix?: string; suffix?: string; numeric?: boolean; multiline?: boolean; maxLength?: number; onSubmit?: () => void;
+  keyboard?: 'phone-pad' | 'email-address' | 'url';
 }) {
   const theme = useTheme(), { play } = useInteractionFeedback();
   return <View style={[ControlStyles.field, styles.field, multiline && styles.multiline, { borderColor: theme.line, backgroundColor: theme.card }]}>
     {prefix && <ThemedText style={Typography.menu} themeColor="textSecondary">{prefix}</ThemedText>}
     <TextInput accessibilityLabel={label} value={value} onChangeText={onChange} onFocus={() => play('selection')} editable={!disabled} placeholder={placeholder}
-      placeholderTextColor={theme.textSecondary} keyboardType={numeric ? 'decimal-pad' : 'default'} multiline={multiline} maxLength={maxLength}
+      placeholderTextColor={theme.textSecondary} keyboardType={keyboard ?? (numeric ? 'decimal-pad' : 'default')} multiline={multiline} maxLength={maxLength}
+      autoCapitalize={keyboard ? 'none' : undefined} autoCorrect={keyboard ? false : undefined}
       onSubmitEditing={onSubmit} returnKeyType={onSubmit ? 'done' : undefined} autoFocus={!!onSubmit}
       style={[styles.input, Typography.menu, multiline && styles.multilineInput, { color: theme.text }]} />
     {suffix && <ThemedText type="supporting" themeColor="textSecondary">{suffix}</ThemedText>}
@@ -72,9 +77,10 @@ function Field({ label, value, onChange, placeholder, disabled, prefix, suffix, 
 }
 
 // Category fields for the composer. The parent owns the draft and builds the body lead from it.
-export function ListingFields({ category, cityId, value, onChange, missing = [], disabled, lead, fixedDeal }: {
+// contact: show the job post 연락처 fields, only once the server accepts them (loadApplyContactEnabled).
+export function ListingFields({ category, cityId, value, onChange, missing = [], disabled, lead, fixedDeal, contact }: {
   category: ListingCategory; cityId: string; value: ListingDraft; onChange: (next: ListingDraft) => void; missing?: ListingMissing[];
-  disabled?: boolean; lead?: string; fixedDeal?: boolean;
+  disabled?: boolean; lead?: string; fixedDeal?: boolean; contact?: boolean;
 }) {
   const theme = useTheme(), { tr, language } = useLanguage(), { play } = useInteractionFeedback(), clay = useClay(), clayBox = useClayBox();
   const [picking, setPicking] = useState(false);
@@ -89,6 +95,8 @@ export function ListingFields({ category, cityId, value, onChange, missing = [],
   const wanted = value.deal === 'rent_wanted' || value.deal === 'buy';
   const housingPrice = { rent_offer: '월세', rent_wanted: '예산', sale: '매매가', buy: '예산' }[value.deal as 'rent_offer'] ?? '가격';
   const show = (key: ListingMissing) => missing.includes(key);
+  // 렌트 내놓음 월세 칸 아래 참고 한 줄. 동네와 방 구성이 CMHC 표에 맞을 때만.
+  const average = category === 'housing' ? rentAverage(cityId, value, null, language) : null;
 
   const areaButton = (label: string, note: string) => <Section label={tr(label)} missing={show('area')}>
     <Pressable analyticsId="listing.fields.area" accessibilityRole="button" accessibilityLabel={`${tr(label)}, ${area ? neighborhoodName(area, language) : tr('동네 고르기')}`} disabled={disabled}
@@ -113,6 +121,10 @@ export function ListingFields({ category, cityId, value, onChange, missing = [],
       </Section>
       <Section label={tr(housingPrice)} missing={show('price')}>
         <Field label={tr(housingPrice)} value={value.price} onChange={price => set({ price })} prefix="$" suffix={value.deal === 'rent_offer' || value.deal === 'rent_wanted' ? tr('/월') : undefined} numeric disabled={disabled} maxLength={12} placeholder={wanted ? tr('비워 둬도 돼요') : undefined} />
+        {average && <View style={styles.reference}>
+          <SymbolView name={{ ios: 'info.circle', android: 'info', web: 'info' }} size={14} tintColor={theme.textSecondary} />
+          <ThemedText type="caption" themeColor="textSecondary" style={styles.flex}>{average.line}</ThemedText>
+        </View>}
       </Section>
       <Section label={tr(wanted ? '입주 희망일' : '입주 가능일')}>
         <View accessibilityRole="radiogroup" style={styles.chips}>
@@ -132,7 +144,7 @@ export function ListingFields({ category, cityId, value, onChange, missing = [],
           {extra == null && value.extras.length < MAX_LISTING_EXTRAS && <Chip action label={tr('+ 직접 추가')} selected={false} disabled={disabled} onPress={() => setExtra('')} />}
         </View>
         {extra != null && <View style={styles.extraRow}>
-          <View style={styles.flex}><Field label={tr('직접 추가할 항목')} value={extra} onChange={setExtra} placeholder={tr('예: 세탁기')} disabled={disabled} maxLength={20} onSubmit={addExtra} /></View>
+          <View style={styles.flex}><Field label={tr('직접 추가할 항목')} value={extra} onChange={setExtra} placeholder={tr('예: 식기세척기')} disabled={disabled} maxLength={20} onSubmit={addExtra} /></View>
           <RaisedActionButton compact analyticsId="listing.fields.extra-add" label={tr('추가')} disabled={disabled || !canAddExtra} onPress={addExtra} />
         </View>}
         {extra != null && <ThemedText type="caption" themeColor="textSecondary">{tr('20자까지, {0}개까지 넣을 수 있어요.', MAX_LISTING_EXTRAS)}</ThemedText>}
@@ -158,6 +170,13 @@ export function ListingFields({ category, cityId, value, onChange, missing = [],
       {value.deal === 'hiring' && <Section label={tr('지원 방법')}>
         <View style={styles.chips}>{APPLY_WAYS.map(item => <Chip key={item} multi label={tr(LISTING_LABELS.apply[item])} selected={value.apply.includes(item)} disabled={disabled} onPress={() => set({ apply: toggle(value.apply, item) })} />)}</View>
       </Section>}
+      {value.deal === 'hiring' && contact && <Section label={tr('연락처')} hint={tr('비워 둬도 돼요')}>
+        <Field label={tr('전화번호')} value={value.phone} onChange={phone => set({ phone })} placeholder="604-555-0123" keyboard="phone-pad" disabled={disabled} maxLength={24} />
+        <Field label={tr('이메일 주소')} value={value.email} onChange={email => set({ email })} placeholder="jobs@example.com" keyboard="email-address" disabled={disabled} maxLength={80} />
+        <Field label={tr('지원 링크')} value={value.link} onChange={link => set({ link })} placeholder="https://" keyboard="url" disabled={disabled} maxLength={160} />
+        {show('contact') && <ThemedText type="caption" style={{ color: theme.accent }}>{tr('번호나 주소가 맞는지 확인해 주세요')}</ThemedText>}
+        <ThemedText type="caption" themeColor="textSecondary">{tr('적어 둔 연락처는 이 글을 연 멤버에게 보여요.')}</ThemedText>
+      </Section>}
     </>}
 
     {category === 'used' && <>
@@ -176,7 +195,7 @@ export function ListingFields({ category, cityId, value, onChange, missing = [],
 
     {!!lead && <View style={[styles.preview, clayBox ? styles.clayCard : { backgroundColor: theme.backgroundElement }]} accessible accessibilityLabel={`${tr('본문 첫 줄 미리보기')}, ${lead}`}>
       {clayBox && <ClayBoxFill kind="tile" />}
-      <ThemedText type="caption" themeColor="textSecondary">{tr('본문 첫 줄 미리보기 (구버전 앱에도 이렇게 보여요)')}</ThemedText>
+      <ThemedText type="caption" themeColor="textSecondary">{tr('본문 첫 줄 미리보기')}</ThemedText>
       <ThemedText type="supporting">{lead}</ThemedText>
     </View>}
     {picking && <NeighborhoodPicker visible cityId={cityId} initial={value.area} onClose={() => setPicking(false)} onConfirm={id => { set({ area: id }); setPicking(false); }} />}
@@ -213,13 +232,17 @@ export function NeighborhoodPicker({ visible, cityId, initial, onClose, onConfir
         {visible && <DiscoveryMap markers={markers} cityName={city?.englishName ?? ''} selectedId={selected} center={center} bottomInset={0}
           onSelect={id => choose(id, false)}
           onMoved={bounds => { const next = nearestNeighborhood(cityId, { latitude: (bounds.south + bounds.north) / 2, longitude: (bounds.west + bounds.east) / 2 }, 4); if (next) setSelected(next.id); }} />}
+        {/* The centre the picker reads, drawn from the first frame (QA I-compose-06). */}
+        <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.centerPin}>
+          <SymbolView name={{ ios: 'mappin', android: 'location_on', web: 'location_on' }} size={CENTER_PIN} tintColor={theme.accent} />
+        </View>
       </View>
       <View style={[styles.sheet, { backgroundColor: theme.background, borderTopColor: theme.line }]}>
         <ScrollView analyticsId="listing.area.list" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
           {items.map(item => <Chip key={item.id} label={neighborhoodName(item, language)} selected={selected === item.id} onPress={() => choose(item.id)} />)}
         </ScrollView>
         <ThemedText type="caption" themeColor="textSecondary">{tr('지도를 움직이면 가운데 동네가 골라져요. 누른 지점은 저장하지 않고, 동네 이름과 동네 중심만 저장해요.')}</ThemedText>
-        <RaisedActionButton analyticsId="listing.area.confirm" disabled={!current} label={current ? tr('{0}(으)로 정하기', neighborhoodName(current, language)) : tr('동네를 골라 주세요')}
+        <RaisedActionButton analyticsId="listing.area.confirm" disabled={!current} label={current ? language === 'ko' ? `${withRo(neighborhoodName(current, language))} 정하기` : tr('{0}(으)로 정하기', neighborhoodName(current, language)) : tr('동네를 골라 주세요')}
           onPress={() => { if (current) { play('selection'); onConfirm(current.id); } }} />
       </View>
     </SafeAreaView>
@@ -227,7 +250,10 @@ export function NeighborhoodPicker({ visible, cityId, initial, onClose, onConfir
   </Modal>;
 }
 
+const CENTER_PIN = 32;
 const styles = StyleSheet.create({
+  // The pin's tip sits on the map centre.
+  centerPin: { position: 'absolute', left: '50%', top: '50%', marginLeft: -CENTER_PIN / 2, marginTop: -CENTER_PIN },
   root: { gap: Spacing.three, marginTop: Spacing.two },
   section: { gap: Spacing.two },
   sectionHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: Spacing.two },
@@ -242,6 +268,7 @@ const styles = StyleSheet.create({
   clayCard: { overflow: 'visible' },
   preview: { borderRadius: 12, padding: 12, gap: 4 },
   flex: { flex: 1 },
+  reference: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   center: { textAlign: 'center' },
   screen: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.two, minHeight: 56 },

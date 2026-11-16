@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { finishPublicWeb } from './finish-public-web.mjs';
@@ -15,7 +15,12 @@ test('기존 export는 공개 도시별 라이브 sitemap/AI 탐색과 보호 �
     writeFileSync(join(directory, 'post.html'), 'public-reader-route');
     writeFileSync(join(directory, 'company.html'), 'exported-company-route');
     writeFileSync(join(directory, 'auth', 'keep.html'), 'preserved');
+    mkdirSync(join(directory, 'share-covers'));
+    writeFileSync(join(directory, 'share-covers', 'meetup.png'), 'image');
     finishPublicWeb(directory);
+    // /auth would loop between the folder redirect and 404.html's slash strip without a page of its own; asset folders get none.
+    assert.equal(readFileSync(join(directory, 'auth.html'), 'utf8'), 'existing-fallback');
+    assert.equal(existsSync(join(directory, 'share-covers.html')), false);
     assert.equal(readFileSync(join(directory, '404.html'), 'utf8'), 'existing-fallback');
     assert.equal(readFileSync(join(directory, 'company.html'), 'utf8'), 'exported-company-route');
     assert.equal(readFileSync(join(directory, 'auth', 'keep.html'), 'utf8'), 'preserved');

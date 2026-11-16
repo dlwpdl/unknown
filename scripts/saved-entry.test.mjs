@@ -50,7 +50,7 @@ function mount({ load = async () => state(), save = async (_client, _target, val
     auth, reads, writes, feedback, logins,
     render() { index = 0; entry = exported.useSavedEntry(target, visible); while (effects.length) effects.shift()(); return entry; },
     // The button's own state lives in fixed slots so a second render keeps the open sheet.
-    button() { index = 500; return exported.SavedEntryButton({ entry, kind: target.kind === 'user' ? 'user' : 'place', analyticsId: target.kind === 'user' ? 'save.user' : 'save.place', onBeen }); },
+    button(kind = target.kind === 'user' ? 'user' : 'place') { index = 500; return exported.SavedEntryButton({ entry, kind, analyticsId: target.kind === 'user' ? 'save.user' : 'save.place', onBeen }); },
     target(value) { target = value; }, focus(value) { focused = value; }, visibility() { hidden = () => true; }, visible(value) { visible = value; },
     unmount() { cleanups.forEach(fn => fn?.()); },
   };
@@ -150,6 +150,16 @@ test('G1: a place with save kinds opens 가 보고 싶어요/가 봤어요, and 
   saved.props.actions[2].onPress(); await tick(); await tick();
   assert.equal(view.render().state.saved, false);
   assert.equal(view.feedback.slice(before).includes('success'), false);
+  view.unmount();
+});
+
+test('a business profile saves with the same choice but says business, not place (QA I-company-03)', async () => {
+  const view = mount({ load: async () => ({ ...state(false), status: null }) });
+  view.render(); await tick(); view.render();
+  const press = () => nodes(view.button('business')).find(node => node.type === 'Pressable');
+  assert.equal(press().props.accessibilityLabel, '비즈니스 저장');
+  press().props.onPress();
+  assert.equal(nodes(view.button('business')).find(node => node.type === 'Sheet').props.title, '이 비즈니스 저장');
   view.unmount();
 });
 

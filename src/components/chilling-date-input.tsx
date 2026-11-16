@@ -10,7 +10,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { fromPickerValue, mergePickerDate, toPickerValue, type ChillingDateInputProps } from '@/lib/chilling-date';
 import { Typography } from '@/constants/design-system';
 
-export function ChillingDateInput({ analyticsId = 'components_chilling-date-input.pressable.1', label, value, onChange, disabled, minimumDate, dateOnly, zone }: ChillingDateInputProps & { minimumDate?: Date }) {
+export function ChillingDateInput({ analyticsId = 'components_chilling-date-input.pressable.1', label, value, onChange, disabled, minimumDate, dateOnly, timeOnly, zone }: ChillingDateInputProps & { minimumDate?: Date }) {
   const { tr, locale: appLocale } = useLanguage();
   const theme = useTheme(), clay = useClay();
   const { play } = useInteractionFeedback();
@@ -18,7 +18,8 @@ export function ChillingDateInput({ analyticsId = 'components_chilling-date-inpu
   const shown = toPickerValue(value, zone), date = new Date(shown);
   return <View style={{ gap: 8, marginVertical: 8 }}>
     <ThemedText type="smallBold" style={Typography.menu}>{label}</ThemedText>
-    <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>{(dateOnly ? ['date'] as const : ['date', 'time'] as const).map(part => <Pressable analyticsId={analyticsId} key={part} disabled={disabled} accessibilityRole="button" accessibilityLabel={tr("{0} {1} 선택", (label), (part === 'date' ? tr('날짜') : tr('시간')))} onPress={() => { play('selection'); setMode(part); }} style={({ pressed }) => ({ minHeight: 48, justifyContent: 'center', padding: 12, opacity: pressed ? 0.65 : 1, ...(clay ? { overflow: 'visible', paddingHorizontal: 18 } : { borderWidth: 1, borderRadius: 10, borderColor: theme.line }) })}>{clay && <ClayPillFill kind="white" />}<ThemedText style={Typography.menu}>{part === 'date' ? date.toLocaleDateString(appLocale) : date.toLocaleTimeString(appLocale, { hour: 'numeric', minute: '2-digit' })}</ThemedText></Pressable>)}</View>
-    {mode && !disabled ? <DateTimePicker value={date} mode={mode} minimumDate={mode === 'date' && minimumDate ? new Date(toPickerValue(minimumDate.toISOString(), zone)) : undefined} accentColor={theme.accent} positiveButton={{ label: tr('선택') }} negativeButton={{ label: tr('취소') }} onDismiss={() => setMode(null)} onValueChange={(_, selected) => { onChange(fromPickerValue(mergePickerDate(shown, selected, mode), zone)); setMode(null); }} /> : null}
+    <View style={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>{(dateOnly ? ['date'] as const : timeOnly ? ['time'] as const : ['date', 'time'] as const).map(part => <Pressable analyticsId={analyticsId} key={part} disabled={disabled} accessibilityRole="button" accessibilityLabel={tr("{0} {1} 선택", (label), (part === 'date' ? tr('날짜') : tr('시간')))} onPress={() => { play('selection'); setMode(part); }} style={({ pressed }) => ({ minHeight: 48, justifyContent: 'center', padding: 12, opacity: pressed ? 0.65 : 1, ...(clay ? { overflow: 'visible', paddingHorizontal: 18 } : { borderWidth: 1, borderRadius: 10, borderColor: theme.line }) })}>{clay && <ClayPillFill kind="white" />}<ThemedText style={Typography.menu}>{part === 'date' ? date.toLocaleDateString(appLocale) : date.toLocaleTimeString(appLocale, { hour: 'numeric', minute: '2-digit' })}</ThemedText></Pressable>)}</View>
+    {/* The native clock defaults to 24-hour; the field reads 오후 7:00 / 7:00 p.m. in both app languages, so the clock matches it (QA D25-1). */}
+    {mode && !disabled ? <DateTimePicker value={date} mode={mode} is24Hour={false} minimumDate={mode === 'date' && minimumDate ? new Date(toPickerValue(minimumDate.toISOString(), zone)) : undefined} accentColor={theme.accent} positiveButton={{ label: tr('선택') }} negativeButton={{ label: tr('취소') }} onDismiss={() => setMode(null)} onValueChange={(_, selected) => { onChange(fromPickerValue(mergePickerDate(shown, selected, mode), zone)); setMode(null); }} /> : null}
   </View>;
 }

@@ -11,11 +11,12 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { AppUpdateGate } from '@/components/app-update-gate';
 import { AppActivity } from '@/components/app-activity';
 import { AppBadgeSync } from '@/components/app-badge-sync';
-import { ErrorBoundary } from '@/components/error-boundary';
+import { ErrorBoundary, ScreenErrorFallback } from '@/components/error-boundary';
 import { LIVE_ACCESSORY, LiveBubbleBar, LiveNotice } from '@/components/live-bubble-bar';
 import { NotificationObserver } from '@/components/notification-observer';
 import { PushInvite } from '@/components/push-invite';
 import { PostUploadCard } from '@/components/post-upload-card';
+import { PlaceWriterHost } from '@/components/feed-screen';
 import { SharedImport } from '@/components/shared-import';
 import { AuthProvider } from '@/lib/auth';
 import { CommunityCityProvider } from '@/lib/community-city';
@@ -30,6 +31,9 @@ void SplashScreen.preventAutoHideAsync().catch(() => {});
 SplashScreen.setOptions({ fade: false });
 // 렌더 트리 밖에서 난 예외도 잡으려면 화면이 뜨기 전에 걸어야 한다.
 installErrorReporting();
+
+// A screen that fails to draw keeps the tabs and offers retry or a way back; the root boundary below is the last resort.
+export const unstable_settings = { screenErrorBoundary: ScreenErrorFallback };
 
 export default function TabLayout() {
   // The share-intent provider sits outside the others, as the package asks; the web layout has no share sheet.
@@ -71,6 +75,8 @@ function AppLayout() {
           </View>}
           {/* Opens only right after a first comment, post, meetup request or meetup creation. */}
           <PushInvite />
+          {/* '이 장소로 글쓰기'는 보던 장소 화면 위에 뜬다(사장님 2026-11-13, QA B10-2). */}
+          <PlaceWriterHost />
           {/* 글쓰기 창을 닫은 뒤에도 올리기를 앱 맨 위에서 보여 준다 (owner 2026-11-04 ③). */}
           <PostUploadCard />
           <LiveNotice />

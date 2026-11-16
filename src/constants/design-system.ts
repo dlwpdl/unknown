@@ -51,3 +51,10 @@ export function controlPresentation(theme: ControlPalette, { tone = 'secondary',
     text: { color: filled ? theme.accentInk : selected ? theme.accent : theme.text },
   };
 }
+
+// A 3D pill's three slices on whole device pixels (QA D24-1). Yoga rounds a view's position and its width separately,
+// so slices that meet on a fractional pixel leave a 1px gap (light line) or overlap (dark line in the shadow) on Android.
+export function pillSlices(width: number, height: number, end: number, scale: number) {
+  const pixels = Math.round(width * scale);
+  return { width: pixels / scale, end: Math.round(height * end * scale) / scale, half: Math.floor(pixels / 2) / scale };
+}

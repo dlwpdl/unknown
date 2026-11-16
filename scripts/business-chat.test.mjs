@@ -225,3 +225,14 @@ test('business pages keep timeline order and deleted photo tombstones contain no
   assert.deepEqual(page.messages[0].image_paths, []);
   assert.ok(!JSON.stringify(page).includes('PRIVATE_OLD_TEXT'));
 });
+
+test('a whole-conversation business report uses the business scope and hides itself on a server without the migration', async () => {
+  const ok = client(token);
+  assert.equal(await chat.reportBusinessConversation(ok, conversation(), 'spam', '  Repeated ads  '), token);
+  assert.deepEqual(ok.calls, [['report_business_conversation', { p_conversation_id: room, p_as_business_id: business, p_reason_code: 'spam', p_details: 'Repeated ads' }]]);
+  assert.equal(chat.canReportBusinessConversation(), true);
+  await assert.rejects(chat.reportBusinessConversation(client(null, { message: 'permission denied', code: '42501' }), conversation(), 'spam'), /permission denied/);
+  assert.equal(chat.canReportBusinessConversation(), true, 'other failures keep the row');
+  await assert.rejects(chat.reportBusinessConversation(client(null, { message: 'Could not find the function', code: 'PGRST202' }), conversation(), 'spam'), /BUSINESS_REPORT_UNAVAILABLE/);
+  assert.equal(chat.canReportBusinessConversation(), false, 'without 20261114184000_report_business_target.sql the row hides for this run');
+});

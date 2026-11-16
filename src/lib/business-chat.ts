@@ -155,6 +155,19 @@ export async function setBusinessChatReaction(client: SupabaseClient, conversati
 }
 export const reportBusinessChatMessage = (client: SupabaseClient, conversation: ConversationPreview, id: string, reason: ReportReason, details?: string) =>
   savedId(client, 'report_business_chat_message', { p_message_id: id, ...scope(conversation), p_reason_code: reason, p_details: details?.trim() || null });
+// shortcut: remembered for this app run only; a server without 20261114184000_report_business_target.sql answers "function missing", so the row hides until the next launch.
+let conversationReportMissing = false;
+export const canReportBusinessConversation = () => !conversationReportMissing;
+/** Reports the business on the other side of a conversation, not one message. */
+export async function reportBusinessConversation(client: SupabaseClient, conversation: ConversationPreview, reason: ReportReason, details?: string) {
+  try {
+    return await savedId(client, 'report_business_conversation', { p_conversation_id: conversation.id, ...scope(conversation), p_reason_code: reason, p_details: details?.trim() || null });
+  } catch (error) {
+    if (!['PGRST202', '42883'].includes((error as { code?: string }).code ?? '')) throw error;
+    conversationReportMissing = true;
+    throw new Error('BUSINESS_REPORT_UNAVAILABLE');
+  }
+}
 export async function endBusinessConversation(client: SupabaseClient, conversation: ConversationPreview) {
   await rpc(client, 'end_business_conversation', { p_conversation_id: conversation.id, ...scope(conversation) });
 }

@@ -101,3 +101,17 @@ test('a post that is up but missed a follow-up save finishes done and carries on
   startPostUpload(job([Promise.resolve({ first: true })])); await settle();
   assert.equal(getPostUpload().first, true, 'the first post asks the card for the full celebration');
 });
+
+test('a post from the place writer keeps its own 수정하기, through a retry too (QA B10-2)', async () => {
+  const edits = [];
+  const failing = { ...job([() => Promise.reject(new Error('offline')), () => Promise.reject(new Error('offline'))]), edit: () => edits.push('place writer') };
+  startPostUpload(failing, 1000); await settle();
+  assert.equal(getPostUpload().status, 'failed');
+  retryPostUpload(1100); await settle();
+  assert.equal(getPostUpload().status, 'failed');
+  getPostUpload().edit();
+  assert.deepEqual(edits, ['place writer'], 'the card reopens the writer that holds the draft');
+  clearPostUpload();
+  startPostUpload(job([() => Promise.reject(new Error('offline'))]), 2000); await settle();
+  assert.equal(getPostUpload().edit, undefined, 'the 오늘 writer leaves it empty, so the card goes to compose=1 as before');
+});

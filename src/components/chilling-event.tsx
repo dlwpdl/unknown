@@ -3,13 +3,14 @@ import { Pressable } from '@/components/analytics-controls';
 import { memo, useState } from 'react';
 import { Image } from 'expo-image';
 import { ControlMotion } from '@/constants/design-system';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { ReportSheet } from '@/components/report-sheet';
+import { MeetupManageSheet } from '@/components/meetup-manage-sheet';
 import { TrustBadge } from '@/components/trust-badge';
 import { PostShareSheet } from '@/components/post-share-sheet';
-import { recordPostShare } from '@/lib/community-data';
+import { recordPostShare, setPostHidden } from '@/lib/community-data';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
@@ -19,6 +20,7 @@ import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { meetupFeeAmount, meetupFeeDue } from '@/lib/meetup-host-tools';
 import { MeetupLabelBadges, useMeetupLabelPrefix } from '@/components/newcomer';
 import { languagePairLabel, meetupCategoryOf, parseLanguageExchange } from '@/lib/meetup-language';
+import { MeetupPartnerLine } from '@/components/meetup-partner-line';
 import type { Post, RoomPreview } from '@/lib/types';
 
 export function ChillingKindTabs({ value, onChange }: { value: ChillingKind; onChange: (kind: ChillingKind) => void }) {
@@ -61,6 +63,32 @@ export function SeatBar({ room, flush = false }: { room: Pick<RoomPreview, 'memb
   </View>;
 }
 
+/** 이 모임 숨기기: the same hide as a post's ··· menu (내 화면에서만, 신고 없음), with 되돌리기 once the server saved it. */
+export function useHideMeetup(postId: string) {
+  const { tr, t } = useLanguage();
+  const { me, isAuthed, promptLogin } = useAuth();
+  const { play } = useInteractionFeedback();
+  const hide = async (hidden = true) => {
+    if (!isAuthed) return promptLogin(tr('글을 숨기려면 로그인이 필요해요'));
+    try {
+      await setPostHidden(supabase, me.id, postId, hidden);
+      if (hidden) Alert.alert(tr('모임을 숨겼어요'), tr('이제 내 화면에 이 모임이 안 보여요.'), [
+        { text: tr('되돌리기'), onPress: () => { play('selection'); void hide(false); } },
+        { text: tr('확인'), onPress: () => play('selection') },
+      ]);
+    } catch { play('warning'); Alert.alert(tr(hidden ? '글을 숨기지 못했어요.' : '되돌리지 못했어요.'), t.detail.sendErrorBody); }
+  };
+  return hide;
+}
+
+/** ··· on someone else's meetup: hide it or report it (the report also reaches the host), never straight into a report. */
+export function meetupMenuActions({ tr, onHide, onReport }: { tr: (key: string) => string; onHide: () => void; onReport: () => void }) {
+  return [
+    { key: 'hide', analyticsId: 'post.manage.hide', label: tr('이 모임 숨기기'), hint: tr('내 화면에서만 사라지고, 신고는 가지 않아요.'), onPress: onHide, icon: { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' } as const },
+    { key: 'report', analyticsId: 'components_post-card.pressable.5', label: tr('이 모임 신고하기'), danger: true, onPress: onReport, icon: { ios: 'flag', android: 'flag', web: 'flag' } as const },
+  ];
+}
+
 export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, onAuthor, requestStatus }: {
   post: Post; city: string; onOpen: () => void; onAuthor: () => void; requestStatus?: 'pending' | 'approved';
 }) {
@@ -68,7 +96,8 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
   const theme = useTheme(), clay = useClay();
   const { me, isAuthed, promptLogin } = useAuth();
   const { play } = useInteractionFeedback();
-  const [report, setReport] = useState(false);
+  const [report, setReport] = useState(false), [menu, setMenu] = useState(false);
+  const hide = useHideMeetup(post.id);
   const [sharing, setSharing] = useState(false);
   const [failed, setFailed] = useState<string>();
   const source = getPostImageSource(post, isAuthed ? me.id : 'guest');
@@ -106,19 +135,23 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
       {room?.fee ? <MeetupFeeLine fee={room.fee} /> : null}
       <View style={styles.footer}>
         <ThemedText type="small" style={styles.support} themeColor="textSecondary">{city}</ThemedText>
-        <ThemedText type="small" style={styles.support} themeColor="textSecondary">{post.room?.capacity ? tr("{0} / {1}명", post.room.memberCount ?? 0, post.room.capacity) : t.feed.members(post.room?.memberCount ?? 0)}{seatsLeft !== null ? seatsLeft > 0 ? tr(" · {0}자리 남음", (seatsLeft)) : tr(" · 정원 마감") : ''}</ThemedText>
+        <ThemedText type="small" style={styles.support} themeColor="textSecondary">{post.room?.capacity ? tr("{0} / {1}명", post.room.memberCount ?? 0, post.room.capacity) : t.feed.members(post.room?.memberCount ?? 0)}{seatsLeft !== null ? seatsLeft === 1 ? tr(" · 1자리 남음") : seatsLeft > 0 ? tr(" · {0}자리 남음", (seatsLeft)) : tr(" · 정원 마감") : ''}</ThemedText>
       </View>
       {/* 자리 현황은 숫자보다 막대가 먼저 읽힌다(정원이 있는 모임만). */}
       {room ? <SeatBar room={room} /> : null}
       </View>
     </Pressable>
+    {/* Outside the card's open button so screen readers reach the business link on its own. */}
+    <MeetupPartnerLine partner={room?.partner} style={styles.partner} />
     <View style={[styles.footer, styles.cardActions, { borderTopColor: theme.line }]}>
       <Pressable analyticsId="components_chilling-event.pressable.3" onPress={() => { play('selection'); onAuthor(); }} accessibilityRole="button" accessibilityLabel={tr("{0} 프로필", (post.author.nickname))} style={styles.author}><TrustBadge verified={post.author.verified} trustLevel={post.author.trustLevel} /><ThemedText type="small" style={[styles.support, styles.flex]} themeColor="textSecondary" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{tr("{0}님이 열었어요 ›", post.author.nickname)}</ThemedText></Pressable>
-      <Pressable analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={post.author.id === me.id ? tr("내 모임에 초대하기") : tr("모임 공유하기")} style={[styles.action, clay && styles.clayAction]}
-        onPress={() => { play('selection'); if (isAuthed) setSharing(true); else promptLogin('모임을 공유하려면 로그인해주세요.'); }}>{clay && <ClayPillFill kind="white" />}<ThemedText style={styles.schedule} themeColor="accent">{post.author.id === me.id ? tr("초대") : tr("공유")}</ThemedText></Pressable>
-      {post.author.id !== me.id && <Pressable analyticsId="components_chilling-event.pressable.4" accessibilityRole="button" accessibilityLabel={tr("신고 및 차단")} style={styles.action} onPress={() => { play('selection'); if (isAuthed) setReport(true); else promptLogin('신고하려면 로그인해 주세요.'); }}><ThemedText style={{ color: theme.textSecondary }}>···</ThemedText></Pressable>}
+      <Pressable analyticsId="meetup.share.open" accessibilityRole="button" accessibilityLabel={post.author.id === me.id ? tr("내 모임에 초대하기") : tr("이 모임에 초대하기")} style={[styles.action, clay && styles.clayAction]}
+        onPress={() => { play('selection'); if (isAuthed) setSharing(true); else promptLogin('모임을 공유하려면 로그인해주세요.'); }}>{clay && <ClayPillFill kind="white" />}<ThemedText style={styles.schedule} themeColor="accent">{tr("초대")}</ThemedText></Pressable>
+      {post.author.id !== me.id && <Pressable analyticsId="components_chilling-event.pressable.4" accessibilityRole="button" accessibilityLabel={tr("모임 메뉴")} style={styles.action} onPress={() => { play('selection'); setMenu(true); }}><ThemedText style={{ color: theme.textSecondary }}>···</ThemedText></Pressable>}
     </View>
-    <ReportSheet visible={report} targetType="post" targetId={post.id} reportedUserId={post.business ? undefined : post.author.id} reportedBusinessId={post.business?.id} reportedNickname={post.business?.name ?? post.author.nickname} onClose={() => setReport(false)} />
+    {menu && <MeetupManageSheet visible title={tr('모임 메뉴')} onClose={() => setMenu(false)} actions={meetupMenuActions({ tr, onHide: () => void hide(),
+      onReport: () => { if (isAuthed) setReport(true); else promptLogin('신고하려면 로그인해 주세요.'); } })} />}
+    <ReportSheet visible={report} title={tr('이 모임 신고하기')} targetType="post" targetId={post.id} reportedUserId={post.business ? undefined : post.author.id} reportedBusinessId={post.business?.id} reportedNickname={post.business?.name ?? post.author.nickname} onClose={() => setReport(false)} />
     {sharing && <PostShareSheet post={post} visible={sharing} onClose={() => setSharing(false)} onShared={() => { void recordPostShare(supabase, post.id).catch(() => {}); }} />}
   </View>;
 });
@@ -137,5 +170,6 @@ const styles = StyleSheet.create({
   schedule: { fontSize: 16, lineHeight: 24 }, support: { fontSize: 14, lineHeight: 20 },
   footer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   seat: { height: 6, borderRadius: 999, overflow: 'hidden', marginTop: 8 }, seatFlush: { marginTop: 0 }, seatFill: { height: '100%', borderRadius: 999 },
+  partner: { paddingHorizontal: 16 },
   flex: { flex: 1, minWidth: 0 }, author: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }, clayLabel: { overflow: 'visible', paddingHorizontal: 13, paddingVertical: 2 }, clayAction: { overflow: 'visible', paddingHorizontal: 18 }, action: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });

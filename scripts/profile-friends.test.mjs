@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { friendErrorMessage, loadCityPlaceSaves, loadFriendSavedPlaces, loadMapScope, loadMerchantSaves, loadPlaceSaves, parseFriendSavedPlaces, parseProfileOverview, savedPlaceCities, setFriendship } from '../src/lib/profile-friends.ts';
+import { cityPlaceRank, friendErrorMessage, loadCityPlaceSaves, loadPlaceSaveKinds, loadFriendSavedPlaces, loadMapScope, loadMerchantSaves, loadPlaceSaves, parseFriendSavedPlaces, parseProfileOverview, savedPlaceCities, setFriendship } from '../src/lib/profile-friends.ts';
 import { saveMerchantIntro } from '../src/lib/merchant-conveniences.ts';
 import { mapMerchantProfile } from '../src/lib/merchant-profile.ts';
 import { notificationRoute } from '../src/lib/notification-preferences.ts';
@@ -69,6 +69,30 @@ test('place saves: keys only for similar places, friends checked like a business
   assert.equal(await loadPlaceSaves({ rpc: async () => ({ data: null, error: { code: 'PGRST202' } }) }, 'vancouver', 'osm:node:1'), null, 'an older server shows nothing');
   for (const bad of [{ ...data, weekCount: -1 }, { ...data, similar: [{ placeKey: 'javascript:1', saverCount: 1, weekCount: 0 }] }, { ...data, similar: Array(6).fill(data.similar[0]) }, { ...data, friends: [{ id: 'x', nickname: 'a', savedAt: 'now' }] }, { ...data, firstIsMe: null }, { ...data, friends: [{ ...data.friends[0], first: 'yes' }] }])
     await assert.rejects(loadPlaceSaves(client(bad), 'vancouver', 'osm:node:1'), /INVALID_PROFILE_RESPONSE/);
+});
+
+test('place save kinds: 가 봤어요·가 보고 싶어요 counts; an older server is null and bad data is refused', async () => {
+  const calls = [];
+  const client = (data, error = null) => ({ rpc: async (name, args) => { calls.push([name, args]); return { data, error }; } });
+  assert.deepEqual(await loadPlaceSaveKinds(client({ beenCount: 2, wantCount: 5 }), 'vancouver', 'osm:node:1'), { beenCount: 2, wantCount: 5 });
+  assert.deepEqual(calls, [['get_place_save_kinds', { p_city_id: 'vancouver', p_place_key: 'osm:node:1' }]]);
+  assert.equal(await loadPlaceSaveKinds(client(null), 'vancouver', 'osm:node:1'), null);
+  assert.equal(await loadPlaceSaveKinds(client(null, { code: 'PGRST202' }), 'vancouver', 'osm:node:1'), null, 'an older server shows no split');
+  await assert.rejects(loadPlaceSaveKinds(client(null, { code: '57014', message: 'timeout' }), 'vancouver', 'osm:node:1'));
+  for (const bad of [[], { beenCount: -1, wantCount: 0 }, { beenCount: 1 }, { beenCount: '1', wantCount: 0 }])
+    await assert.rejects(loadPlaceSaveKinds(client(bad), 'vancouver', 'osm:node:1'), /INVALID_PROFILE_RESPONSE/);
+});
+
+test('city rank: ties share a rank, and fewer than 2 saves or past 50th shows none', () => {
+  const saves = new Map([['a', 9], ['b', 5], ['c', 5], ['d', 3], ['e', 1], ['other-kind', 99]].map(([key, saverCount]) => [key, { saverCount, status: null }]));
+  const peers = ['a', 'b', 'c', 'd', 'e', 'f'];
+  assert.deepEqual(['a', 'b', 'c', 'd'].map(key => cityPlaceRank(key, peers, saves)), [1, 2, 2, 4], 'same saves, same rank; the next one skips');
+  assert.equal(cityPlaceRank('e', peers, saves), null, 'one save is not a rank');
+  assert.equal(cityPlaceRank('f', peers, saves), null, 'an unsaved place has no rank');
+  const crowd = new Map(Array.from({ length: 51 }, (_, index) => [`p${index}`, { saverCount: 100 - index, status: null }]));
+  const all = [...crowd.keys()];
+  assert.equal(cityPlaceRank('p49', all, crowd), 50);
+  assert.equal(cityPlaceRank('p50', all, crowd), null, '51st is past the top 50');
 });
 
 test('the business intro is trimmed, checked before sending and verified after saving', async () => {
@@ -185,4 +209,38 @@ test('the friend sharing notice shows once while sharing is on, and 숨기고 �
   assert.equal(failing.render().sheet.props.visible, true);
   assert.deepEqual(failing.feedback, ['selection', 'warning']);
   assert.equal(failing.storage.size, 0);
+});
+
+test('QA A-prof-01: saved-place pins are named, framed per city without zoom buttons, and open the place itself', async () => {
+  const { readFileSync } = await import('node:fs'), vm = (await import('node:vm')).default, ts = (await import('typescript')).default;
+  const { tr } = await import('../src/i18n/index.ts'), discovery = await import('../src/lib/discovery.ts'), { CITIES } = await import('../src/lib/mock.ts');
+  const merchant = '5b0e7f1c-7a7e-4c33-9d0a-3f3a7b6b2d11', routes = [];
+  const places = { vancouver: [{ id: 'osm:node:1', cityId: 'vancouver', name: 'Stanley Park', latitude: 49.30, longitude: -123.14, category: 'park' },
+    { id: 'osm:node:2', cityId: 'vancouver', name: 'Cafe', latitude: 49.28, longitude: -123.12, category: 'cafe' }],
+  toronto: [{ id: 'osm:node:3', cityId: 'toronto', name: 'Toronto Cafe', latitude: 43.65, longitude: -79.38, category: 'cafe' }] };
+  const imports = {
+    react: { useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}], useRef: value => ({ current: value }), useMemo: fn => fn(), useEffect() {} },
+    'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }), Fragment: 'Fragment' },
+    'expo-router': { useRouter: () => ({ push: route => routes.push(route) }) },
+    '@/hooks/use-language': { useLanguage: () => ({ tr }) }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/i18n': { count: value => String(value) },
+    '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayBoxFill: () => null, ClayPillFill: () => null },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+    '@/lib/city-places': { getCityPlaces: cityId => places[cityId] ?? [] }, '@/lib/delivery-partners': { deliveryPartnerPlace: () => undefined },
+    '@/lib/discovery': discovery, '@/lib/mock': { CITIES }, '@/lib/profile-friends': { savedPlaceCities },
+    '@/constants/design-system': { ControlStyles: {}, controlPresentation: () => ({ container: {}, text: {} }) },
+    'react-native': { StyleSheet: { create: value => value }, View: 'View', Alert: {} },
+  };
+  const exports = {};
+  const code = ts.transpileModule(readFileSync(new URL('../src/components/profile-overview.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
+  vm.runInNewContext(code, { exports, require: name => imports[name] ?? new Proxy({}, { get: (_target, key) => key === '__esModule' ? true : String(key) }) });
+  const walk = node => !node || typeof node !== 'object' ? [] : [node, ...[node.props?.children].flat(Infinity).flatMap(walk)];
+  const savedPlaces = [{ cityId: 'vancouver', placeKey: 'osm:node:1', merchantId: null }, { cityId: 'vancouver', placeKey: 'osm:node:2', merchantId: merchant }, { cityId: 'toronto', placeKey: 'osm:node:3', merchantId: null }];
+  const map = own => walk(exports.ProfileSavedMap({ overview: { own, savedPlaces }, homeCityId: 'vancouver' })).find(node => node.type === 'DiscoveryMap');
+  const mine = map(true);
+  assert.equal(mine.props.preview, true);
+  assert.deepEqual(mine.props.markers.map(marker => marker.label), ['Stanley Park', 'Cafe'], 'only the chosen city, so the frame fits every pin');
+  assert.ok(mine.props.markers.every(marker => marker.featured && marker.saved && marker.icon), 'named pins drawn as my saved bookmarks');
+  mine.props.onSelect(mine.props.markers[0].id); mine.props.onSelect(mine.props.markers[1].id);
+  assert.deepEqual(JSON.parse(JSON.stringify(routes)), [{ pathname: '/places/[id]', params: { id: 'osm:node:1', cityId: 'vancouver' } }, { pathname: '/company/[id]', params: { id: merchant } }]);
+  assert.ok(map(false).props.markers.every(marker => !marker.saved), "someone else's saved places are not my bookmarks");
 });

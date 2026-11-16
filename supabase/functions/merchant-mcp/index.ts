@@ -2,6 +2,7 @@
 // eslint-disable-next-line import/no-unresolved -- Deno resolves the native npm: specifier.
 import { createClient } from 'npm:@supabase/supabase-js@2.112.4';
 import { handleMerchantMcpRequest } from '../_shared/merchant-mcp-http.ts';
+import { personalMcpTool, signPersonalPhotoUploads } from '../_shared/merchant-mcp.ts';
 
 const url = Deno.env.get('SUPABASE_URL'), key = Deno.env.get('SUPABASE_ANON_KEY'), serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 const options = { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } };
@@ -17,9 +18,10 @@ Deno.serve(async request => {
     if (error || !data) throw new Error('AUTH_REQUIRED');
     return data.claims;
   }, async (actor, name, args) => {
-    const { data, error } = await service.rpc('dispatch_merchant_mcp', { p_actor_id: actor.actorId, p_client_id: actor.clientId,
-      p_connection_id: actor.connectionId, p_session_id: actor.sessionId, p_tool: name, p_arguments: args });
+    // _context goes to the personal dispatch, which hands business-only connections the unchanged business context.
+    const { data, error } = await service.rpc(name === '_context' || personalMcpTool(name) ? 'dispatch_personal_mcp' : 'dispatch_merchant_mcp', { p_actor_id: actor.actorId,
+      p_client_id: actor.clientId, p_connection_id: actor.connectionId, p_session_id: actor.sessionId, p_tool: name, p_arguments: args });
     if (error) throw new Error(error.message);
-    return data;
+    return name === 'create_photo_uploads' ? signPersonalPhotoUploads(data, actor.actorId, path => service.storage.from('post-images').createSignedUploadUrl(path)) : data;
   });
 });

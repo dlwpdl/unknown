@@ -87,7 +87,7 @@ export default function FriendsScreen() {
         {section('friends', tr('친구'), friends.friends, () => null)}
         {!friends.incoming.length && !friends.outgoing.length && !friends.friends.length && <View style={styles.state}>
           <ThemedText type="smallBold">{tr('아직 친구가 없어요')}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" style={styles.center}>{tr('이웃 프로필에서 친구 추가를 누르고, 상대가 받으면 친구가 돼요.')}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.center}>{tr('이웃 이름을 눌러 ‘공개한 글 보기’로 들어가면 친구 추가 버튼이 있어요. 상대가 받으면 친구가 돼요.')}</ThemedText>
         </View>}
       </>}
     </ScrollView>

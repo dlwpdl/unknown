@@ -42,6 +42,7 @@ function app({ query = {}, places = [visit], hydrated = true, catalogError = fal
     '@/lib/public-web-client': { publicWebClient: { rpc: name => { reads.push(name); return { abortSignal: async () => ({ data: catalogError ? null : { publicFixture: true }, error: catalogError ? Error('offline') : null }) }; } } },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     './analytics': { useReaderAnalytics() {} },
+    './public-header': { PublicHeader: 'PublicHeader', PublicFooter: 'PublicFooter', readerPalette: {} },
     '@/components/city-place-photo': { CityPlacePhoto: 'PlacePhoto' }, '@/components/discovery-map': { DiscoveryMap: 'DiscoveryMap' },
   };
   const exports = {};
@@ -64,6 +65,9 @@ test('only exact attested city places appear on the public Visited page', () => 
   assert.ok(text(tree).includes('Test café'));
   assert.ok(!text(tree).includes('Unvisited') && !text(tree).includes('Other city'));
   assert.deepEqual(plain(nodes(tree).find(node => node.type === 'DiscoveryMap').props.markers).map(marker => marker.id), [visit.id]);
+  // Visited places draw the Visited picture pin, not a bare dot, before the close-up zoom too.
+  assert.deepEqual(plain(nodes(tree).find(node => node.type === 'DiscoveryMap').props.markers).map(marker => [marker.icon, marker.featured]), [['visited', true]]);
+  assert.equal(nodes(tree).find(node => node.type === 'PublicHeader').props.current, 'visited');
 });
 
 test('card and pin open the same city-scoped canonical destination with feedback', () => {

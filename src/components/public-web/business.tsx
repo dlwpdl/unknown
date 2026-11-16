@@ -2,6 +2,8 @@ import './business.css';
 
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { BUSINESS_LIMITS } from '@/lib/membership';
+import { useReaderAnalytics } from './analytics';
+import { BusinessWebshop } from './business-webshop';
 
 // Owner-confirmed store prices (CA$); the server limits come from BUSINESS_LIMITS (mirrors private.business_membership_details_base).
 const PLANS = [
@@ -33,7 +35,7 @@ const EXAMPLES = [
   { id: 'cced331d-59c4-433a-a68d-285a51f4db7a', name: 'Purple Penguin Cafe', meta: '카페 · 토론토' },
 ];
 const FEATURES = [
-  ['동네 한인에게 보여요', '올린 소식은 밴쿠버·토론토·몬트리올 한인들이 보는 피드와 비즈니스 찾기에 나와요.'],
+  ['동네 글링 사용자에게 보여요', '올린 소식은 밴쿠버·토론토·몬트리올에서 글링을 쓰는 사람들이 보는 피드와 비즈니스 찾기에 나와요.'],
   ['영수증으로 확인한 후기', '손님이 영수증으로 인증한 후기만 평점에 들어가요. 후기마다 사장님 답글을 달 수 있어요.'],
   ['웹에서 바로 올리기', '컴퓨터에서 가게 소식, 이벤트, 직원 구하는 글을 쓰고 끌어올릴 수 있어요.'],
   ['AI로 초안 쓰기', '유료 요금제에서는 Claude나 ChatGPT를 글링에 연결해 초안을 만들 수 있어요. 게시는 웹에서 직접 확인한 뒤에 해요.'],
@@ -43,20 +45,23 @@ export const MANAGED_MAIL = `mailto:gling@ej-entertainment.com?subject=${encodeU
 export default function PublicBusiness() {
   const { play } = useInteractionFeedback();
   const tap = () => play('selection');
+  useReaderAnalytics('business', 'business');
   return <div className="biz">
     <main className="biz-main">
       <p className="biz-kicker"><a href="/" onClick={tap}>글링</a> 비즈니스</p>
-      <h1>한인 손님이 모이는 곳에 가게를 알려 보세요</h1>
-      <p className="biz-lede">글링은 밴쿠버·토론토·몬트리올에 사는 한인들이 동네 이야기를 나누는 앱이에요. 가게 프로필을 만들어 두면 그 도시 한인들이 비즈니스를 찾을 때 함께 보여요.</p>
+      <h1>광고비 없이, 새 손님이 먼저 찾아오는 가게</h1>
+      <p className="biz-lede">한국 음식과 한국 가게를 찾는 손님이 글링에서 사장님 가게를 봐요. 등록은 무료고, 결제 정보는 받지 않아요.</p>
       <div className="biz-actions">
         <a className="biz-primary" href="/merchant/" onClick={tap}>무료로 시작하기</a>
         <a className="biz-secondary" href="#pricing" onClick={tap}>요금제 보기</a>
       </div>
-      <p className="biz-note">등록과 기본 기능은 무료예요. 결제 정보 없이 시작할 수 있어요.</p>
+      <p className="biz-note">음식점은 글링 지도에 ‘웹샵 주문’ 버튼도 달 수 있어요. <a href="#webshop" onClick={tap}>웹샵 제휴 보기</a></p>
 
       <section aria-labelledby="biz-features"><h2 id="biz-features">글링에서 할 수 있는 일</h2>
         <ul className="biz-features">{FEATURES.map(([title, body]) => <li key={title}><h3>{title}</h3><p>{body}</p></li>)}</ul>
       </section>
+
+      <BusinessWebshop />
 
       <section aria-labelledby="biz-examples"><h2 id="biz-examples">먼저 시작한 가게들</h2>
         <ul className="biz-examples">{EXAMPLES.map(item => <li key={item.id}><a href={`/company/${item.id}`} onClick={tap}><strong>{item.name}</strong><span>{item.meta}</span></a></li>)}</ul>

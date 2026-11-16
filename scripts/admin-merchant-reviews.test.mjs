@@ -194,7 +194,7 @@ test('a moderation response after panel unmount does not read back with the next
 
 test('member summary shows ten-point reviews and suppresses legacy ratios and small samples', () => {
   const component = view('../src/components/manner-summary.tsx', 'MannerSummary', {
-    imports: { '@/lib/user-profile': module('../src/lib/user-profile.ts'), '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) } },
+    imports: { '@/lib/user-profile': module('../src/lib/user-profile.ts'), '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) }, '@/constants/design-system': { Typography: {} } },
   });
   const tree = component.render({ summary: {
     meeting: { participants: 8, score: 80, rating: { participants: 5, score: 8.7 } },
@@ -205,6 +205,9 @@ test('member summary shows ten-point reviews and suppresses legacy ratios and sm
   assert.ok(nodes(tree).some(n => n.props?.children === '5명이 남긴 리뷰'));
   assert.ok(!nodes(tree).some(n => typeof n.props?.children === 'string' && n.props.children.includes('9.5')));
   assert.ok(!nodes(tree).some(n => typeof n.props?.children === 'string' && n.props.children.includes('/100')));
+  const gathering = component.render({ summary: { meeting: { participants: 3, score: null, rating: { participants: 3, score: null } }, chat: { participants: 1, score: null, rating: { participants: 1, score: null } } } });
+  assert.ok(nodes(gathering).some(n => n.props?.children === '리뷰 4개가 모였어요'));
+  assert.ok(nodes(gathering).some(n => n.props?.children === '서로 다른 5명이 남기면 점수가 보여요.'));
 });
 
 test('member review criteria expand on demand with feedback', () => {
@@ -213,16 +216,22 @@ test('member review criteria expand on demand with feedback', () => {
     imports: {
       '@/components/analytics-controls': { Pressable: 'Pressable' },
       '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
-      '@/lib/user-profile': module('../src/lib/user-profile.ts'),
+      '@/lib/user-profile': module('../src/lib/user-profile.ts'), '@/constants/design-system': { Typography: {} },
     },
   });
   let tree = component.render(props);
+  assert.ok(nodes(tree).some(node => node.props?.children === '아직 받은 리뷰가 없어요'), 'two empty cells fold into one card');
+  assert.ok(!nodes(tree).some(node => node.props?.children === '만남'));
   let criteria = nodes(tree).find(node => node.props?.analyticsId === 'user.manner.criteria'); assert.ok(criteria);
   assert.equal(criteria.props.accessibilityState.expanded, false);
   criteria.props.onPress(); tree = component.render(props);
   criteria = nodes(tree).find(node => node.props?.analyticsId === 'user.manner.criteria');
   assert.equal(criteria.props.accessibilityState.expanded, true); assert.deepEqual(feedback, ['selection']);
   assert.ok(nodes(tree).some(node => typeof node.props?.children === 'string' && node.props.children.includes('최근 30일')));
+  // The review screen labels the section itself and keeps the criteria in its folded rules.
+  const bare = component.render({ ...props, header: false });
+  assert.ok(!nodes(bare).some(node => node.props?.analyticsId === 'user.manner.criteria' || node.props?.children === '이웃이 남긴 리뷰'));
+  assert.ok(nodes(bare).some(node => node.props?.children === '아직 받은 리뷰가 없어요'));
 });
 
 test('personal feedback requires a specific negative reason and preserves it across an uncertain send', async () => {

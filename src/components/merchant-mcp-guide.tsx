@@ -36,13 +36,24 @@ function clients(endpoint: string): Client[] {
     ] },
   ];
 }
+// Personal posts need a local shell for curl photo uploads, so their guide is Claude Code only.
+function personalClaudeCode(endpoint: string): Client {
+  return { key: 'claude-code', name: 'Claude Code', note: '사진은 한 장에 2MB까지, 내 컴퓨터에 있는 파일만 올릴 수 있어요. 다른 사이트의 사진 링크로는 못 올려요. Claude Code가 받는 사진 올릴 링크는 10분 동안만 쓸 수 있어요.', steps: [
+    { title: '터미널에 붙여 넣기', detail: 'Claude Code가 설치된 컴퓨터의 터미널에서 실행해요.', copy: `claude mcp add --transport http --scope user gling ${endpoint}` },
+    { title: '로그인', detail: 'Claude Code를 열고 아래 명령을 입력해요. 뜨는 목록에서 gling을 골라 로그인하면 돼요.', copy: '/mcp' },
+    { title: "'내 개인 계정 글' 켜기", detail: "브라우저에 뜬 글링 화면에서 '내 개인 계정 글'을 켜고 '초안만'이나 '바로 올리기'를 고르면 끝이에요." },
+    { title: '사진 올리기', detail: '올릴 사진이 있으면 Claude Code에 파일 위치를 알려 주세요. Claude Code가 curl 명령으로 사진을 글링에 올리고 글에 붙여요.' },
+  ] };
+}
 const prompts = ['글링에 주말 알바 구인글 초안 써줘', '우리 가게 최근 글링 글 보여줘', '다음 주 휴무 안내 글 초안 만들어줘'];
+const personalPrompts = ['바탕화면에 있는 의자.jpg로 중고거래 판매글 초안 써줘', '내가 글링에 올린 글 보여줘'];
 
-export function MerchantMcpGuide({ endpoint }: { endpoint: string }) {
+export function MerchantMcpGuide({ endpoint, personal = false, business = true }: { endpoint: string; personal?: boolean; business?: boolean }) {
   const { tr } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox(), { play } = useInteractionFeedback();
-  const [selected, setSelected] = useState('claude'), [copied, setCopied] = useState('');
-  const list = clients(endpoint), client = list.find(item => item.key === selected) ?? list[0];
+  const [selected, setSelected] = useState(personal ? 'claude-code' : 'claude'), [copied, setCopied] = useState('');
+  const list = clients(endpoint).flatMap(item => item.key === 'claude-code' && personal ? [personalClaudeCode(endpoint)] : business ? [item] : []);
+  const client = list.find(item => item.key === selected) ?? list[0];
   async function copy(text: string) {
     try {
       if (!navigator.clipboard?.writeText) throw new Error('CLIPBOARD_UNAVAILABLE');
@@ -55,7 +66,7 @@ export function MerchantMcpGuide({ endpoint }: { endpoint: string }) {
   </Pressable>;
   return <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
     <ThemedText type="subtitle" accessibilityRole="header">{tr('쓰는 AI에 글링 연결하기')}</ThemedText>
-    <ThemedText themeColor="textSecondary">{tr('쓰고 있는 AI를 고르고 아래 3단계를 따라 하세요. AI가 만든 초안은 여기서 확인한 뒤 게시해요.')}</ThemedText>
+    <ThemedText themeColor="textSecondary">{personal ? tr('쓰고 있는 AI를 고르고 아래 단계를 따라 하세요. 개인 계정 글은 Claude Code를 추천해요. 사진까지 올릴 수 있거든요.') : tr('쓰고 있는 AI를 고르고 아래 3단계를 따라 하세요. AI가 만든 초안은 여기서 확인한 뒤 게시해요.')}</ThemedText>
     <View style={[styles.tabs, { backgroundColor: theme.backgroundElement }]} accessibilityRole="tablist">
       {list.map(item => {
         const active = item.key === client.key;
@@ -81,11 +92,12 @@ export function MerchantMcpGuide({ endpoint }: { endpoint: string }) {
     {client.note && <ThemedText type="small" themeColor="textSecondary">{tr(client.note)}</ThemedText>}
     <View style={[styles.examples, { borderColor: theme.line }]}>
       <ThemedText type="smallBold">{tr('연결한 뒤 이렇게 말해 보세요')}</ThemedText>
-      <View style={styles.row}>{prompts.map(prompt => <Pressable key={prompt} analyticsId="merchant.ai.action" accessibilityRole="button" accessibilityLabel={tr('{0} 복사', tr(prompt))}
+      <View style={styles.row}>{[...(personal ? personalPrompts : []), ...(business ? prompts : [])].map(prompt => <Pressable key={prompt} analyticsId="merchant.ai.action" accessibilityRole="button" accessibilityLabel={tr('{0} 복사', tr(prompt))}
         onPress={() => { void copy(tr(prompt)); }} style={({ pressed }) => [styles.prompt, { borderColor: theme.line, opacity: pressed ? 0.7 : 1 }]}>
         <ThemedText type="small">{copied === tr(prompt) ? tr('복사했어요') : `“${tr(prompt)}”`}</ThemedText>
       </Pressable>)}</View>
-      <ThemedText type="small" themeColor="textSecondary">{tr('AI는 초안만 저장할 수 있어요. 공개 게시는 사장님이 여기서 확인한 글만 돼요.')}</ThemedText>
+      {business && <ThemedText type="small" themeColor="textSecondary">{tr('AI는 초안만 저장할 수 있어요. 공개 게시는 사장님이 여기서 확인한 글만 돼요.')}</ThemedText>}
+      {personal && <ThemedText type="small" themeColor="textSecondary">{tr("AI는 연결할 때 고른 만큼만 할 수 있어요. '초안만'이면 글을 올리지 못해요.")}</ThemedText>}
     </View>
   </View>;
 }

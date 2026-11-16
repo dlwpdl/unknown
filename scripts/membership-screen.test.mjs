@@ -29,12 +29,12 @@ test('membership keeps stories and direct chat free while preserving meetup and 
     if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
     // Only the link listener runs; the other effects stay off as before.
-    if (name === 'react') return { useCallback: fn => fn, useEffect(fn) { if (/onLinkOpen/.test(String(fn))) fn(); }, useState(initial) {
+    if (name === 'react') return { useCallback: fn => fn, useRef: value => ({ current: value }), useEffect(fn) { if (/onLinkOpen/.test(String(fn))) fn(); }, useState(initial) {
       const index = cursor++;
       if (!(index in states)) states[index] = typeof initial === 'function' ? initial() : initial;
       return [states[index], next => { states[index] = typeof next === 'function' ? next(states[index]) : next; }];
     } };
-    if (name === 'expo-router') return { useFocusEffect() {}, useRouter: () => ({ canGoBack: () => false, replace() {} }),
+    if (name === 'expo-router') return { useFocusEffect() {}, useLocalSearchParams: () => ({}), useRouter: () => ({ canGoBack: () => false, replace() {} }),
       useNavigation: () => ({ getState: () => ({ index: profileStack.index }), dispatch: action => profileStack.actions.push(action) }) };
     if (name === '@/lib/link-open') return { onLinkOpen: fn => { linkOpen = fn; return () => {}; } };
     if (name === 'expo-symbols' || name === '@/components/symbol-view') return { SymbolView: 'SymbolView' };
@@ -47,6 +47,8 @@ test('membership keeps stories and direct chat free while preserving meetup and 
     if (name === '@/lib/legal-documents' || name === '@/lib/contact') return { CONTACT_EMAIL: 'gling@example.com' };
     if (name === '@/components/meetup-policy-notice') return { MeetupPolicyNotice: 'MeetupPolicyNotice' };
     if (name === '@/components/notice-blocks') return { InfoNote: 'InfoNote' };
+    if (name === '@/components/state-card') return { StateCard: 'StateCard' };
+    if (name === '@/components/raised-action-button') return { RaisedActionButton: 'RaisedActionButton' };
     if (name === '@/components/themed-text') return { ThemedText: 'Text' };
     if (name === '@/components/themed-view') return { ThemedView: 'View' };
     if (name === '@/constants/theme') return { Spacing: { one: 4, two: 8, three: 16, five: 32 }, MaxContentWidth: 800, Depth: { card: {}, control: {} } };
@@ -80,7 +82,11 @@ test('membership keeps stories and direct chat free while preserving meetup and 
   assert.match(text(tree), /오늘 글 무제한 · 1:1 대화 바로 시작/);
   assert.match(text(tree), /베이직 · 무료 — 모임 정원 10명 · 모임 자리 3개/);
   assert.doesNotMatch(text(tree), /처음 요청한 사람/);
-  assert.equal(button(tree, '구독 준비 중').props.disabled, true, 'checkout is visible immediately but requires a store offer');
+  assert.equal(button(tree, '가격을 불러오지 못했어요').props.disabled, true, 'checkout is visible immediately but requires a store offer');
+  // QA A-mem-01: no store plans means one error box with a retry, not 준비 중 on every price.
+  assert.doesNotMatch(text(tree), /준비 중/);
+  assert.equal(nodes(tree).filter(node => node.type === 'StateCard' && node.props.title === '가격을 불러오지 못했어요').length, 1);
+  assert.equal(nodes(tree).find(node => node.type === 'RaisedActionButton').props.analyticsId, 'app_profile_membership.pressable.1');
   assert.doesNotMatch(text(tree), /자리가 잠기지 않아요/, 'meetup rules start folded');
   nodes(tree).find(node => node.props?.analyticsId === 'membership.compare').props.onPress();
   tree = render();
@@ -101,7 +107,7 @@ test('membership keeps stories and direct chat free while preserving meetup and 
   assert.doesNotMatch(text(tree), /모임 이용 규칙/, 'meetup rules belong to the personal family');
   nodes(tree).find(node => node.props?.analyticsId === 'membership.business.managed').props.onPress();
   assert.match(opened.at(-1), /^mailto:gling@example\.com\?subject=/, 'Gling management is sold by inquiry');
-  assert.equal(button(tree,'구독 준비 중').props.disabled,true,'unverified business cannot purchase');
+  assert.equal(button(tree,'가격을 불러오지 못했어요').props.disabled,true,'unverified business cannot purchase');
   value.membership.businessSubscription = { tier:'free', merchantId:'bound-business' };
   assert.match(text(render()), /결제 연결은 다른 비즈니스에 묶여 있어요/, 'an expired or pending business binding must remain visible');
   value.offers = ['plus', 'pro', 'premium'].map(tier => ({ id: `business_${tier}_yearly`, kind: 'business', planVersion: 2, tier, period: 'year', price: 'CA$1', productId: `com.dlwpdl.gling.business.${tier}.yearly.v2` }));
@@ -114,10 +120,21 @@ test('membership keeps stories and direct chat free while preserving meetup and 
   value.offers = [];
   delete value.membership.businessSubscription;
   value.error = '업체 결제 확인 실패'; value.notice = '복원 확인 중'; value.pendingApproval = true;
-  assert.match(text(render()), /업체 결제 확인 실패/);
+  // With no store plans the error is the failure box's body, said once.
+  assert.equal(nodes(render()).find(node => node.type === 'StateCard').props.body, '업체 결제 확인 실패');
+  assert.doesNotMatch(text(render()), /업체 결제 확인 실패/);
   assert.match(text(render()), /복원 확인 중/);
   assert.ok(button(render(),'스토어에서 대기 구매 취소·거절을 확인했어요'),'business approval pending must retain the same recovery controls');
   value.error = null; value.notice = null; value.pendingApproval = false;
+  // The server refills business posts at the UTC month start (business_membership_details_base); west of UTC that instant is still the day before.
+  const kindAt = states.indexOf('business'), zoneBefore = process.env.TZ;
+  states[kindAt + 2] = 'biz-a';
+  states[kindAt + 3] = { userId: 'member', value: { merchantId: 'biz-a', tier: 'free', expiresAt: null, productId: null, store: null, willRenew: null, canPurchase: false,
+    postLimit: 1, bumpLimit: 2, postsUsed: 0, bumpsUsed: 0, managedPostLimit: 0, managedBumpLimit: 0, managedPostsUsed: 0, managedBumpsUsed: 0, reportLimit: 0, reportsUsed: 0,
+    resetsAt: '2026-12-01T00:00:00+00:00', nextBumpAt: null } };
+  process.env.TZ = 'America/Vancouver';
+  try { assert.match(text(render()), /12월 1일에 글 수가 다시 채워져요/, 'the business refill reads as the 1st, the same rule as the personal tab'); }
+  finally { if (zoneBefore === undefined) delete process.env.TZ; else process.env.TZ = zoneBefore; states[kindAt + 2] = null; states[kindAt + 3] = null; }
   button(render(),'개인').props.onPress();
   assert.deepEqual(planOrder(render()), ['플러스', '프로', '프리미엄'], 'switching families preserves ascending general ordering');
   assert.match(t.write.listingNote, /14일 뒤 자동 마감/);
@@ -128,6 +145,22 @@ test('membership keeps stories and direct chat free while preserving meetup and 
   tree = render();
   button(tree, '구매 복원').props.onPress();
   assert.equal(restored, 1);
+  // QA A-mem-02: the restore result sits beside the button, not at the top of the screen.
+  value.notice = '복원할 활성 구독이 없어요.';
+  tree = render();
+  const order = [nodes(tree).find(node => node.type === 'ScrollView').props.children].flat(Infinity);
+  const linksAt = order.findIndex(node => node && typeof node === 'object' && nodes(node).some(child => child.props?.analyticsId === 'app_profile_membership.pressable.8'));
+  const resultAt = order.findIndex(node => node && typeof node === 'object' && text(node) === '복원할 활성 구독이 없어요.');
+  assert.ok(linksAt >= 0 && resultAt === linksAt + 1, 'the result follows the restore button');
+  assert.equal(nodes(tree).filter(node => text(node) === '복원할 활성 구독이 없어요.' && node.type === 'Text').length, 1, 'not repeated at the top');
+  assert.equal(typeof order[resultAt].props.onLayout, 'function', 'the result line scrolls itself into view above the fixed checkout');
+  // A failed restore while the store sent no prices: the box keeps its own reason, the restore error shows only by the button.
+  value.notice = null; value.error = '구매를 복원하지 못했어요. 연결 상태를 확인하고 잠시 후 다시 해 주세요.';
+  tree = render();
+  const priceBox = nodes(tree).find(node => node.type === 'StateCard' && node.props.title === '가격을 불러오지 못했어요');
+  assert.equal(priceBox.props.body, '스토어에서 구독 상품을 받지 못했어요. 잠시 후 다시 확인해 주세요.');
+  assert.equal(nodes(tree).filter(node => node.type === 'Text' && text(node) === value.error).length, 1);
+  value.error = null;
   const monthly = { tier: 'premium', kind: 'general', planVersion: 2, period: 'month', productId: 'premium_monthly', price: 'CA$19.99' };
   // Synthetic eligible annual offer tests screen behavior, not a configured or purchasable store SKU.
   const annual = { id: 'annual-ui-fixture', tier: 'premium', kind: 'general', planVersion: 2, period: 'year', productId: 'annual-ui-fixture', price: 'CA$199.99' };

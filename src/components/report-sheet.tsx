@@ -8,18 +8,20 @@ import { useReducedMotion } from 'react-native-reanimated';
 
 import { ClayPillFill, useClay } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
-import { ControlMotion } from '@/constants/design-system';
+import { ControlMotion, ControlStyles, IconSize, controlPresentation } from '@/constants/design-system';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { chatBusinessIdentity } from '@/lib/chat-identity';
 import { useAuth } from '@/lib/auth';
 import { blockBusiness, blockUser, reportContent, type ConversationPreview, type ReportReason, type ReportTarget } from '@/lib/community-data';
-import { blockBusinessConversation, reportBusinessChatMessage } from '@/lib/business-chat';
+import { blockBusinessConversation, reportBusinessChatMessage, reportBusinessConversation } from '@/lib/business-chat';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 
 const REASONS: ReportReason[] = ['spam', 'harassment', 'hate', 'sexual', 'privacy', 'other'];
+// 부동산·구인구직·중고거래 글에서만 맨 위에 '허위 매물·사기'를 둔다.
+const LISTING_REASONS: ReportReason[] = ['scam', ...REASONS];
 
 export function ReportSheet({
   visible,
@@ -28,7 +30,9 @@ export function ReportSheet({
   reportedUserId,
   reportedBusinessId,
   reportedNickname = '비즈니스 답변',
+  title,
   businessConversation,
+  listing = false,
   onClose,
 }: {
   visible: boolean;
@@ -37,10 +41,16 @@ export function ReportSheet({
   reportedUserId?: string;
   reportedBusinessId?: string;
   reportedNickname?: string;
+  /** What is being reported when it isn't the person, e.g. 이 모임 신고하기. Blocking still names the person. */
+  title?: string;
   businessConversation?: ConversationPreview;
+  listing?: boolean;
   onClose: () => void;
 }) {
   const { tr, t } = useLanguage();
+  // A post or comment report names what is reported, with its author under it (QA I-post-04).
+  const byline = targetType === 'post' || targetType === 'comment';
+  const heading = title ?? (targetType === 'post' ? t.report.postTitle : targetType === 'comment' ? t.report.commentTitle : t.report.title(reportedNickname));
   const theme = useTheme();
   const clay = useClay();
   const insets = useSafeAreaInsets();
@@ -89,7 +99,8 @@ export function ReportSheet({
     operation.busy = true;
     setSubmission({ scope: scopeKey, busy: true });
     try {
-      if (businessConversation) await reportBusinessChatMessage(supabase, businessConversation, targetId, reason, details);
+      if (businessConversation && targetType === 'business') await reportBusinessConversation(supabase, businessConversation, reason, details);
+      else if (businessConversation) await reportBusinessChatMessage(supabase, businessConversation, targetId, reason, details);
       else await reportContent(supabase, targetType, targetId, reason, details, me.id);
       if (!valid()) return;
       if (blockAfter && (reportedUserId || reportedBusinessId)) {
@@ -109,10 +120,12 @@ export function ReportSheet({
       close();
       play('warning');
       Alert.alert(t.report.doneTitle, blockAfter ? t.report.doneBlocked
-        : targetType === 'user' ? tr("운영팀에 신고를 전달했어요. 활동 내역을 검토하겠습니다.") : t.report.doneBody);
-    } catch {
+        : targetType === 'user' ? tr("운영팀에 신고를 전달했어요. 활동 내역을 살펴볼게요.") : t.report.doneBody);
+    } catch (error) {
       if (!valid()) return;
       play('warning');
+      // Before the server can take a whole-conversation report, a message report still reaches the safety team.
+      if (error instanceof Error && error.message === 'BUSINESS_REPORT_UNAVAILABLE') { close(); Alert.alert(t.report.errorTitle, tr('아직 대화 전체는 신고할 수 없어요. 문제가 된 메시지를 길게 눌러 신고해 주세요.')); return; }
       Alert.alert(t.report.errorTitle, t.report.errorBody);
     } finally {
       operation.busy = false;
@@ -134,22 +147,25 @@ export function ReportSheet({
         />
         <Animated.View
           accessibilityViewIsModal
-          accessibilityLabel={t.report.title(reportedNickname)}
+          accessibilityLabel={heading}
           style={[styles.sheet, { backgroundColor: theme.card, paddingBottom: Math.max(insets.bottom, Spacing.three), transform: [{ translateY: sheetOffset }] }]}>
           <View style={styles.header}>
             <View style={styles.copy}>
-              <ThemedText type="subtitle">{t.report.title(reportedNickname)}</ThemedText>
+              <ThemedText type="subtitle">{heading}</ThemedText>
+              {byline && <ThemedText type="small" themeColor="textSecondary">{t.report.author(reportedNickname)}</ThemedText>}
               <ThemedText type="small" themeColor="textSecondary">{t.report.body}</ThemedText>
             </View>
-            <Pressable analyticsId="components_report-sheet.pressable.2" onPress={() => { play('selection'); close(); }} accessibilityRole="button" hitSlop={12} style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}>
-              <ThemedText type="smallBold" themeColor="textSecondary">{t.report.close}</ThemedText>
+            {/* The same X as every other sheet (QA E32-2). */}
+            <Pressable analyticsId="components_report-sheet.pressable.2" onPress={() => { play('selection'); close(); }} accessibilityRole="button" accessibilityLabel={t.report.close}
+              style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
+              <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={IconSize.inline} tintColor={theme.textSecondary} />
             </Pressable>
           </View>
 
           <ScrollView style={styles.formScroll} contentContainerStyle={styles.formContent}
             keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
           <View style={styles.reasons} accessibilityRole="radiogroup">
-            {REASONS.map((item) => {
+            {(listing ? LISTING_REASONS : REASONS).map((item) => {
               const selected = reason === item;
               return (
                 <Pressable lens analyticsId="components_report-sheet.pressable.3"

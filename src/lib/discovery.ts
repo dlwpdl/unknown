@@ -1,5 +1,5 @@
 import { getLocale, tr } from '../i18n/index.ts';
-import { coarseListingPin, neighborhoodName } from './neighborhoods.ts';
+import { coarseListingPin, exactListingAddress, neighborhoodName } from './neighborhoods.ts';
 import { googleMapsPin, googlePinUrl, postMapBody, type PostPin } from './post-maps.ts';
 import type { Post } from './types.ts';
 import { EVENT_TIMEZONES, festivalLocalDay, type EventCity, type TicketmasterEvent } from '../../supabase/functions/_shared/ticketmaster.ts';
@@ -9,8 +9,24 @@ import { merchantMapsUrl } from './merchant-source.ts';
 import { CITIES } from './mock.ts';
 
 export const TOP25_GOLD = '#F4CA78';
-// M1 (owner 2026-11-05): a place's state, decided on the server from our own save numbers. The dot always comes with the word, so colour is never the only signal.
-export const PLACE_STATUS = { trending: { label: '뜨는 중', empty: '지금 뜨는 곳이 없어요', color: '#E8743B' }, popular: { label: '인기', empty: '인기 있는 곳이 없어요', color: '#E0559A' } } as const;
+// M1 (owner 2026-11-05): a place's state. The dot always comes with the word, so colour is never the only signal; a pin names the first that holds, in this order.
+// 뜨는 중·인기 come from the server (members' activity, get_city_place_saves), or 뜨는 중 from a cited outside source (CityPlace.hot);
+// 새로 생김 from the place data (CityPlace.opened); 친구가 저장 from the viewer's friends who share their saves.
+export const PLACE_STATUS = {
+  new: { label: '새로 생김', empty: '새로 생긴 곳이 없어요', color: '#3FA34D' },
+  trending: { label: '뜨는 중', empty: '지금 뜨는 곳이 없어요', color: '#E8743B' },
+  popular: { label: '인기', empty: '인기 있는 곳이 없어요', color: '#E0559A' },
+  friends: { label: '친구가 저장', empty: '친구가 저장한 곳이 없어요', color: '#4A7FE0' },
+} as const;
+export type MapPlaceStatus = keyof typeof PLACE_STATUS;
+// A place opened in the last 90 days is new; an outside source's word that it is hot holds for 60 days.
+const recentDay = (day: string | undefined, days: number, now: number) => { const at = Date.parse(`${day}T00:00:00Z`); return at <= now && now - at < (days + 1) * 86_400_000; };
+export const placeHot = (place: Pick<CityPlace, 'hot'> | undefined, now: number) => place?.hot && recentDay(place.hot.since, 60, now) ? place.hot : null;
+/** Every state a map place has, in PLACE_STATUS order. `saved` is the server's state; an older server gives none. */
+export function placeStatuses(place: Pick<CityPlace, 'opened' | 'hot'> | undefined, saved: 'trending' | 'popular' | null | undefined, friendSaved: boolean, now: number): MapPlaceStatus[] {
+  return (Object.keys(PLACE_STATUS) as MapPlaceStatus[]).filter(id => id === 'new' ? recentDay(place?.opened?.on, 90, now)
+    : id === 'trending' ? saved === 'trending' || !!placeHot(place, now) : id === 'popular' ? saved === 'popular' : friendSaved);
+}
 
 // `art` is the 3D picture drawn in the category's map pin (src/lib/map-pin-art.ts); categories without their own share the nearest one.
 export const DISCOVERY_CATEGORIES = [
@@ -63,7 +79,6 @@ export const SITUATION_SUBCATEGORIES: ReadonlySet<string> = new Set(['breakfast'
 export const pinSubcategory = (subcategories: readonly string[] | undefined) =>
   PLACE_SUBCATEGORIES.find(option => !SITUATION_SUBCATEGORIES.has(option.id) && subcategories?.includes(option.id));
 export type PlaceSubcategory = typeof PLACE_SUBCATEGORIES[number]['id'];
-export const PRICE_FILTERS: readonly DiscoveryFilter[] = ['dining', 'cafe', 'nightlife'];
 export const PRICE_LEVELS = [1, 2, 3, 4] as const;
 export const priceSymbol = (level: number) => '$'.repeat(level);
 /** '$–$$' for a run, '$ · $$$' for a gap, '' for none. */
@@ -84,7 +99,7 @@ export type DiscoveryItem = {
   startsAt?: string | null; endsAt?: string | null; localDate?: string | null;
   top25?: CityTop25Place;
   place?: CityPlace;
-  glingVisited?: { sourceUrl: string };
+  glingVisited?: { sourceUrl: string; line?: { ko: string; en: string } };
   delivery?: boolean;
   merchantId?: string;
   webshopDiscount?: number;
@@ -96,9 +111,17 @@ export function placeMapRoute(place: Pick<CityPlace, 'id' | 'cityId' | 'glingVis
     placeRequest: Date.now().toString(36) + '-' + (++placeMapRequestId).toString(36) } };
 }
 
+/** The kind a card or pin names; a game in the festival row says 스포츠 so it never reads as a festival (QA C22-2). */
+export const discoveryKind = (item: Pick<DiscoveryItem, 'category' | 'event'>) =>
+  item.event?.segment === 'Sports' ? '스포츠' : DISCOVERY_CATEGORIES.find(value => value.id === item.category)!.label;
+
 /** The map category a place is filed under; the place screen names it the same way (owner 2026-11-11). */
 export const placeCategory = (place: Pick<CityPlace, 'nightlife' | 'category'>) =>
   place.nightlife ? 'nightlife' : place.category === 'food' ? 'dining' : place.category === 'cafe' ? 'cafe' : 'place';
+
+/** 웹샵 제휴 (owner 2026-11-12): a map restaurant or cafe that no business holds yet. `links` is null until the business links load. */
+export const webshopApplicable = (place: Pick<CityPlace, 'id' | 'nightlife' | 'category'>, links: Record<string, string> | null) =>
+  !!links && !links[place.id] && place.id.startsWith('osm:') && ['dining', 'cafe'].includes(placeCategory(place));
 
 export function discoveryPlace(place: CityPlace): DiscoveryItem | null {
   if (!Number.isFinite(place.latitude) || Math.abs(place.latitude) > 90 || !Number.isFinite(place.longitude) || Math.abs(place.longitude) > 180) return null;
@@ -167,8 +190,11 @@ export function discoveryPost(post: Post, now = Date.now()): DiscoveryItem | nul
   if (!location.url) return null;
   const address = new URL(location.url).searchParams.get('query');
   // 부동산·중고거래 never show a home or meeting point: snap to the neighborhood centre and name only the neighborhood.
-  const listing = post.tag.slug === 'housing' || post.tag.slug === 'used', coarse = listing && exact ? coarseListingPin(post.cityId, exact) : null, pin = coarse ?? exact;
-  const label = listing ? coarse?.neighborhood ? neighborhoodName(coarse.neighborhood, getLocale() === 'en-CA' ? 'en' : 'ko') : tr('이 근처') : location.label ?? (!pin && address ? address : tr('공개 위치'));
+  // A business's rent post keeps the listing address it published (exactListingAddress).
+  const listing = post.tag.slug === 'housing' || post.tag.slug === 'used', business = listing && exactListingAddress(post);
+  const coarse = listing && exact ? coarseListingPin(post.cityId, exact) : null, pin = business ? exact : coarse ?? exact;
+  const area = coarse?.neighborhood ? neighborhoodName(coarse.neighborhood, getLocale() === 'en-CA' ? 'en' : 'ko') : tr('이 근처');
+  const label = listing ? business && exact && location.label ? location.label : area : location.label ?? (!pin && address ? address : tr('공개 위치'));
   return { id: `post:${post.id}`, source: 'post', sourceId: post.id, cityId: post.cityId, title: post.title,
     category: categoryFor(post), label, latitude: pin?.latitude ?? null, longitude: pin?.longitude ?? null,
     price: typeof post.price === 'number' && Number.isFinite(post.price) ? post.price : null, imageUri: post.imageThumbs?.[0] ?? post.imageUris?.[0], post };
@@ -185,17 +211,12 @@ export function discoveryEvent(event: TicketmasterEvent, cityId: string, now = D
     latitude: pin?.latitude ?? null, longitude: pin?.longitude ?? null, price: event.price?.min ?? null,
     imageUri: event.image ?? undefined, startsAt: event.startsAt, endsAt: event.endsAt, localDate: event.localDate, event };
 }
-export function directionsUrl(pin: PostPin, app: 'google' | 'waze') {
-  googlePinUrl(pin);
-  const coordinate = `${pin.latitude},${pin.longitude}`;
-  return app === 'google'
-    ? `https://www.google.com/maps/dir/?${new URLSearchParams({ api: '1', destination: coordinate, dir_action: 'navigate' })}`
-    : `https://waze.com/ul?${new URLSearchParams({ ll: coordinate, navigate: 'yes' })}`;
-}
-// Owner 2026-11-09: the map's Google Maps/Waze buttons open the place first; that app's own directions button starts navigation.
-export function mapAppUrl(item: DiscoveryItem & PostPin, app: 'google' | 'waze') {
+// Owner 2026-11-09: the map's and the place screen's Apple Maps/Google Maps/Waze buttons open the place first; that app's own directions button starts navigation.
+export function mapAppUrl(item: Pick<DiscoveryItem, 'cityId' | 'place'> & PostPin, app: 'apple' | 'google' | 'waze') {
   const pinUrl = googlePinUrl(item);
   if (app === 'waze') return `https://waze.com/ul?${new URLSearchParams({ ll: `${item.latitude},${item.longitude}` })}`;
+  // Apple Maps drops a pin named after the place at its exact spot (q labels the pin when ll is given), not a route.
+  if (app === 'apple') return `https://maps.apple.com/?${new URLSearchParams({ ...(item.place?.name ? { q: item.place.name } : {}), ll: `${item.latitude},${item.longitude}` })}`;
   // Google search has no location bias, so only a street address pins the right branch; anything else opens the exact pin.
   const place = item.place, city = CITIES.find(entry => entry.id === item.cityId);
   return place && city && /\d/.test(place.address)

@@ -57,14 +57,15 @@ function mount(file, component, imports, globals = {}, props = {}) {
     '@/lib/live-bubbles': { loadLiveMap: async () => {} }, '@/lib/profile-friends': { loadCityPlaceSaves: async () => null }, '@/lib/post-map-html': { mapCityCenter: () => [-123.12, 49.28] },
     '@/components/saved-entry': { SavedEntryButton: 'SavedEntryButton', useSavedEntry: () => ({ state: null }) },
     '@/hooks/use-place-compose': { usePlaceCompose: () => null },
-    '@/lib/ads': { adsSupported: true }, './lazy-sections': { FeedAd: 'FeedAd' },
+    '@/lib/ads': { adsSupported: true }, './lazy-sections': { FeedAd: 'FeedAd' }, './static-slot': { adoptStatic: () => () => {}, revealStatic() {} },
     '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value, locale: 'ko-KR' }) },
     '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
-    '@/hooks/use-theme': { useTheme: () => ({}) }, '@/hooks/use-reveal-chip': { useRevealChip: selected => ({ scroll: { revealing: selected }, chip: key => `layout:${key}` }) }, '@/constants/theme': { Colors: {}, WebNightColors: {} },
+    '@/hooks/use-theme': { useTheme: () => ({}) }, '@/hooks/use-reveal-chip': { useRevealChip: selected => ({ scroll: { revealing: selected }, chip: key => `layout:${key}` }) }, '@/constants/theme': { Colors: {}, WebNightColors: {}, Spacing: { half: 2, one: 4, two: 8, three: 16, four: 24 } }, '@/lib/event-videos': { eventPhoto: event => event.image ?? null },
     '@/lib/community-city': { useCommunityCity: () => ({ city }) }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/auth': { useAuth: () => ({ isAuthed: false, me: { id: 'guest' } }) }, '@/hooks/use-content-visibility': { useContentVisibility: () => () => false },
     '@/lib/hashtags': { hasAdLabel: () => false }, '@/lib/opening-hours': openingHours, '@/lib/mock': { CITIES: [city] },
     '@/lib/merchant-source': { safeMerchantSourceUrl }, '@/lib/public-seo': { PUBLIC_SITE: 'https://gling.ej-entertainment.com' },
+    '@/lib/public-web': { loadPublicFestivals: async () => ({ events: [] }) },
   };
   const exports = {};
   vm.runInNewContext(ts.transpileModule(readFileSync(new URL(file, import.meta.url), 'utf8') + `\nexports.TestComponent = ${component};`, {
@@ -78,6 +79,48 @@ function mount(file, component, imports, globals = {}, props = {}) {
   const render = () => { at = 0; dirty = false; tree = exports.TestComponent({ ...(component === 'CityMap' ? { city } : {}), ...props }); pending.splice(0).forEach(fn => fn()); return tree; };
   return { render, get tree() { return tree; }, async settle() { for (let count = 0; count < 12; count++) { if (dirty) render(); await new Promise(setImmediate); if (!dirty) return; } assert.fail('render loop'); } };
 }
+
+test('QA C22-3: the event list shows a page in start order, with an untimed event last on its day', async () => {
+  const events = [
+    { id: 'boy', name: 'BOYNEXTDOOR', startsAt: '2026-11-14T03:30:00Z', localDate: '2026-11-13' },
+    { id: 'alley', name: 'ALLEYCVT w/ Cyclops', startsAt: '2026-11-14T02:30:00Z', localDate: '2026-11-13' },
+    { id: 'playoffs', name: 'CW Playoffs', startsAt: '2026-11-14T21:00:00Z', localDate: '2026-11-14' },
+    { id: 'tba', name: 'Time TBA', startsAt: null, localDate: '2026-11-13' },
+    { id: 'luzia', name: 'Luzia', startsAt: '2026-11-14T20:00:00Z', localDate: '2026-11-14' },
+  ];
+  const view = mount('../src/app/events/index.tsx', 'EventListScreen', {
+    '@/lib/ticketmaster': { EVENT_CITIES: { vancouver: {} }, EVENT_CATEGORY_LABELS: {}, eventMatchesPriceFilter: () => true, eventTime: () => '', eventNotice: () => '', eventPriceLabel: () => '', loadTicketmasterEvents: async () => ({ events }), loadTicketmasterEventDays: async () => ({ days: [] }) },
+  });
+  await view.settle();
+  const list = nodes(view.tree).find(node => node.props?.analyticsId === 'ticketmaster.events').props;
+  assert.deepEqual(list.data.map(event => event.id), ['alley', 'boy', 'tba', 'luzia', 'playoffs']);
+  assert.deepEqual(events.map(event => event.id), ['boy', 'alley', 'playoffs', 'tba', 'luzia'], 'the loaded page itself is left as it came');
+});
+
+test('QA I-event-05: 행사 더 보기 adds the next page under the loaded one, once per event, and a failed page can be retried', async () => {
+  const requested = [];
+  let failNext = true;
+  const pages = [
+    { events: [{ id: 'a', name: 'A', localDate: '2026-11-13' }, { id: 'b', name: 'B', localDate: '2026-11-14' }], hasMore: true },
+    { events: [{ id: 'b', name: 'B', localDate: '2026-11-14' }, { id: 'c', name: 'C', localDate: '2026-11-15' }], hasMore: false },
+  ];
+  const view = mount('../src/app/events/index.tsx', 'EventListScreen', {
+    '@/lib/ticketmaster': { EVENT_CITIES: { vancouver: {} }, EVENT_CATEGORY_LABELS: {}, eventMatchesPriceFilter: () => true, eventTime: () => '', eventNotice: () => '', eventPriceLabel: () => '', loadTicketmasterEventDays: async () => ({ days: [] }),
+      loadTicketmasterEvents: async ({ page }) => { requested.push(page); if (page === 1 && failNext) { failNext = false; throw new Error('offline'); } return pages[page]; } },
+  });
+  await view.settle();
+  const list = () => nodes(view.tree).find(node => node.props?.analyticsId === 'ticketmaster.events').props;
+  const more = () => nodes(list().ListFooterComponent).find(node => node.props?.analyticsId === 'ticketmaster.next');
+  const ids = () => Array.from(list().data, event => event.id);
+  assert.deepEqual(ids(), ['a', 'b']);
+  more().props.onPress(); await view.settle();
+  assert.deepEqual(ids(), ['a', 'b'], 'a failed page keeps what was loaded');
+  assert.ok(JSON.stringify(list().ListFooterComponent).includes('offline'));
+  more().props.onPress(); await view.settle();
+  assert.deepEqual(requested, [0, 1, 1]);
+  assert.deepEqual(ids(), ['a', 'b', 'c']);
+  assert.equal(more(), undefined, 'no button once the last page is in');
+});
 
 test('event index adds standalone ads after four organic cards, preserving every event and keeping header/actions clear', async () => {
   for (const [count, expected] of [[4, 0], [5, 1], [8, 1], [9, 2]]) {

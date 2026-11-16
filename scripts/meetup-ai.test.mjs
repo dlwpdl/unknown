@@ -81,6 +81,7 @@ export function form({ params = {}, sourceEvent, catalogReady = true, membership
     '@/lib/membership-provider': { useMembership: () => ({ membership, refresh() {} }) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/supabase': { supabase: { functions: { invoke: (...args) => new Promise((resolve, reject) => requests.push({ args, resolve, reject })) } } },
+    '@/components/live-bubbles': { useNow: () => Date.now() },
     '@/lib/chilling-data': { chillingProfilePreview, getChillingError: error => error.message, getChillingErrorCode: error => error.message, loadChillingProfile: async (_client, preview) => { profileReads.push(preview); return loadProfile ? loadProfile(hostProfile) : hostProfile; }, createChillingEvent: async (_client, value) => { writes.push(value); return create ? create(value) : 'new-meetup'; } },
     '@/lib/chilling': chilling, '@/lib/chilling-date': chillingDate,
     '@/lib/community-data': { getCommunityActionError: () => null, MEETUPS_CHANGED_EVENT: 'meetups.changed' },
@@ -90,7 +91,7 @@ export function form({ params = {}, sourceEvent, catalogReady = true, membership
     '@/components/relationship-slot-card': { relationshipSlotData: () => ({ available: 3, active: 0, limit: 3 }) },
     '@/components/disclosure': { Disclosure: 'Disclosure', animateLayout() {} },
     '@/lib/ai-draft': aiDraft, '@/lib/meetup-ai': { splitEventMeetupBody },
-    '@/lib/meetup-destination': destinations, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
+    '@/lib/meetup-destination': destinations, '@/lib/event-videos': { eventPhoto: event => event.image ?? null }, '@/hooks/use-city-places': { useCityPlacesRevision: () => 0 },
     '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버', state: 'open' }, { id: 'toronto', name: '토론토', state: 'open' }] },
     '@/constants/theme': { Depth: { control: {} }, Spacing: { two: 8, three: 16, five: 32 } },
     '@/constants/design-system': designSystem,
@@ -109,9 +110,24 @@ export function form({ params = {}, sourceEvent, catalogReady = true, membership
   const find = key => nodes(render()).find(n => n.props?.analyticsId === key || n.props?.accessibilityLabel === key);
   const openAssistance = () => { const toggle = find('meetup-create.assistance'); if (toggle && !toggle.props.accessibilityState.expanded) toggle.props.onPress(); };
   const edit = (label, value) => { if (label === '모임 주제') openAssistance(); const input = find(label); assert.ok(input, label); input.props.onChangeText(value); };
+  // Opening goes through three steps; 다음 is pressed while it is lit, so a step that is not filled hands back its (disabled) 다음 button.
+  const submitButton = () => {
+    for (let i = 0; i < 3; i++) { const next = find('meetup.create.next'); if (!next || next.props.disabled) break; next.props.onPress(); }
+    return find('meetup.create.submit') ?? find('meetup.create.next');
+  };
+  const seats = target => {
+    for (let i = 0; i < 100; i++) {
+      const stepper = nodes(render()).find(n => n.props?.accessibilityRole === 'adjustable');
+      const now = stepper.props.accessibilityValue.now;
+      if (now === target) return;
+      const button = find(now < target ? '한 명 늘리기' : '한 명 줄이기');
+      if (button.props.disabled) return;
+      button.props.onPress();
+    }
+  };
   if (chooseKind) nodes(render()).find(node => node.type === 'MeetupKindSwitch')?.props.onChange('once');
   const flushEffects = () => effects.splice(0).forEach(effect => effect());
-  return { guarded: () => guard, render, find, edit, openAssistance, requests, writes, feedback, alerts, routes, profileReads, updates, events, unmount: () => { focusCleanup?.(); unmount?.(); }, focus: () => { focusCleanup?.(); focusCleanup = focused?.(); }, blur: () => focusCleanup?.(), loadEvent: flushEffects, changeProfileRevision: revision => { hostProfile = { ...hostProfile, revision }; }, removeProfile: () => { hostProfile = null; },
+  return { guarded: () => guard, render, find, edit, submitButton, seats, openAssistance, requests, writes, feedback, alerts, routes, profileReads, updates, events, unmount: () => { focusCleanup?.(); unmount?.(); }, focus: () => { focusCleanup?.(); focusCleanup = focused?.(); }, blur: () => focusCleanup?.(), loadEvent: flushEffects, changeProfileRevision: revision => { hostProfile = { ...hostProfile, revision }; }, removeProfile: () => { hostProfile = null; },
     hydrateCatalog: () => { catalog = JSON.parse(readFileSync(new URL('../src/lib/city-places.catalog.json', import.meta.url), 'utf8')); render(); flushEffects(); },
     preview: () => nodes(render()).find(n => typeof n.type === 'string' && n.type === 'MeetupAiDraftPreview'),
     generate: () => { openAssistance(); find('app_meetup-create.ai-draft').props.onPress(); },
@@ -123,7 +139,7 @@ test('generic creation requires an explicit type, while a valid type handoff ini
   const app = form({ chooseKind: false });
   assert.equal(nodes(app.render()).find(node => node.type === 'MeetupKindSwitch').props.value, null);
   app.edit('모임 제목', '산책'); app.edit('모임 소개', '함께 걸어요');
-  app.find('meetup.create.submit').props.onPress(); await settle();
+  app.submitButton().props.onPress(); await settle();
   assert.equal(app.writes.length, 0); assert.equal(app.profileReads.length, 0);
   assert.ok(nodes(app.render()).some(node => node.props?.accessibilityRole === 'alert'));
   nodes(app.render()).find(node => node.type === 'MeetupKindSwitch').props.onChange('group');
@@ -135,14 +151,16 @@ test('generic creation requires an explicit type, while a valid type handoff ini
   assert.equal(nodes(malformed.render()).find(node => node.type === 'MeetupKindSwitch').props.value, null);
 });
 
-test('host form starts with the profile check and readable cards while optional help and advanced settings remain accessible', () => {
+test('host form goes what → when and where → who, ending with the host intro, while optional help and advanced settings remain accessible', () => {
   const app = form(), tree = app.render();
   const headings = nodes(tree).filter(node => node.props?.accessibilityRole === 'header').map(node => node.props.children);
   assert.ok(headings.includes('어떤 모임인가요?'));
   assert.ok(headings.includes('언제, 어디서 만나요?'));
   assert.ok(headings.includes('누구와 함께해요?'));
   const order = nodes(tree).map(node => node.props?.analyticsId);
-  assert.ok(order.indexOf('meetup-create.profile-edit') < order.indexOf('meetup.create.category'), 'The required profile check comes before the first card.');
+  assert.ok(nodes(tree).findIndex(node => node.props?.accessibilityLabel === '신청할 때 물어볼 질문') < order.indexOf('meetup-create.profile-edit'), 'The host intro and consent sit last, right above the open button.');
+  assert.equal(nodes(tree).find(node => node.type === 'MerchantSteps').props.current, 0);
+  assert.equal(app.find('meetup.create.submit'), undefined, 'The first step shows 다음, not the open button.');
   assert.ok(order.indexOf('meetup.create.category') < nodes(tree).findIndex(node => node.props?.accessibilityLabel === '모임 제목'), 'Category sits at the top of the first card.');
   assert.equal(app.find('app_meetup-create.ai-draft'), undefined);
   app.openAssistance(); assert.ok(app.find('app_meetup-create.ai-draft'));
@@ -165,25 +183,25 @@ test('returning from the shared meetup-profile editor refreshes consent without 
   assert.equal(app.find('meetup-create.host-consent').props.accessibilityState.checked, false);
   assert.equal(app.writes.length, 0, 'Returning or loading a profile must never publish it.');
   app.find('meetup-create.host-consent').props.onPress();
-  app.find('meetup.create.submit').props.onPress(); await settle();
+  app.submitButton().props.onPress(); await settle();
   assert.equal(app.writes[0].hostProfileRevision, 'edited-revision');
   assert.ok(app.profileReads.every(preview => preview === 'hosting'));
 });
 
-test('invalid capacity is shown at the input and fixed CTA, focuses that input, and never opens profile setup', async () => {
+test('invalid capacity is shown at the stepper, scrolls there, and never opens profile setup', async () => {
   const app = form(), moves = [];
-  app.edit('모임 제목', '산책'); app.edit('모임 소개', '함께 산책해요'); app.edit('정원, 2명부터 10명', '11');
+  app.edit('모임 제목', '산책'); app.edit('모임 소개', '함께 산책해요'); app.seats(2);
+  nodes(app.render()).find(node => node.props?.analyticsId === 'meetup.create.category' && node.props.label === '언어교환').props.onPress();
+  assert.equal(app.submitButton().props.analyticsId, 'meetup.create.submit', 'Filled steps lead to the open button.');
   const tree = app.render();
-  const input = app.find('정원, 2명부터 10명');
-  input.props.ref?.({ focus: () => moves.push('focus') });
   // The field's y is relative to its card, so the target is the card's y plus the field's.
   const [card, field] = nodes(tree).filter(node => node.props?.onLayout && nodes(node).some(child => child.props?.accessibilityLabel === '정원, 2명부터 10명'));
   card.props.onLayout({ nativeEvent: { layout: { y: 600 } } });
   field.props.onLayout({ nativeEvent: { layout: { y: 40 } } });
   const scroll = nodes(tree).find(node => node.props?.analyticsId === 'meetup.create.scroll');
   if (scroll.props.ref) scroll.props.ref.current = { scrollTo: value => moves.push(value.y) };
-  app.find('meetup.create.submit').props.onPress(); await settle();
-  assert.deepEqual(moves, [640, 'focus']);
+  app.submitButton().props.onPress(); await settle();
+  assert.deepEqual(moves, [640]);
   const result = app.render();
   assert.equal(nodes(result).filter(node => node.props?.accessibilityRole === 'alert').length, 1, 'A field-owned error is announced once, at its field.');
   const footer = nodes(result).find(node => node.type === 'View' && node.props?.children?.some?.(child => child?.props?.analyticsId === 'meetup.create.submit'));
@@ -194,7 +212,7 @@ test('invalid capacity is shown at the input and fixed CTA, focuses that input, 
 test('postponing required one-account profile setup explicitly returns to the preserved draft', async () => {
   const app = form(); app.removeProfile();
   app.edit('모임 제목', '내 초안'); app.edit('모임 소개', '나중에 이어서 쓸 소개');
-  app.find('meetup.create.submit').props.onPress(); await settle();
+  app.submitButton().props.onPress(); await settle();
   const prompt = app.alerts.at(-1);
   assert.match(prompt[1], /한 번|하나/);
   const cancel = prompt[2].find(item => item.style === 'cancel');
@@ -224,7 +242,7 @@ test('a created meetup leaves for its post without asking to discard the form', 
   app.focus(); await settle(); app.edit('모임 제목', '산책'); app.edit('모임 소개', '함께 걸어요');
   app.find('meetup-create.host-consent').props.onPress();
   app.render(); assert.equal(app.guarded(), true, 'The filled form is protected before it is sent.');
-  app.find('meetup.create.submit').props.onPress(); await settle(); app.render();
+  app.submitButton().props.onPress(); await settle(); app.render();
   assert.equal(app.routes.length, 1);
   assert.equal(app.guarded(), false, 'A guard back on would block the move and invite creating the meetup twice.');
 });
@@ -235,7 +253,7 @@ test('a created meetup response cannot navigate or celebrate a form that blurred
     const app = form({ create: () => new Promise(done => { resolve = done; }) });
     app.focus(); await settle(); app.edit('모임 제목', '산책'); app.edit('모임 소개', '함께 걸어요');
     app.find('meetup-create.host-consent').props.onPress();
-    app.find('meetup.create.submit').props.onPress(); await settle();
+    app.submitButton().props.onPress(); await settle();
     assert.equal(app.writes.length, 1);
     if (leave === 'unmount') app.unmount();
     else { app.blur(); if (leave === 'refocus') { app.focus(); await settle(); } }
@@ -250,7 +268,7 @@ test('a created meetup response cannot navigate or celebrate a form that blurred
 test('a retained profile-setup action cannot push a new screen after its request loses focus', async () => {
   const app = form(); app.removeProfile(); app.focus(); await settle();
   app.edit('모임 제목', '내 모임'); app.edit('모임 소개', '내 소개');
-  app.find('meetup.create.submit').props.onPress(); await settle();
+  app.submitButton().props.onPress(); await settle();
   const setup = app.alerts.at(-1)[2].find(item => item.style !== 'cancel').onPress;
   app.blur(); app.focus(); await settle(); setup();
   assert.deepEqual(app.routes, []);
@@ -258,15 +276,16 @@ test('a retained profile-setup action cannot push a new screen after its request
 
 test('capacity input and submitted draft use the actual unexpired personal membership limit', async () => {
   const app = form({ membership: { tier: 'plus', expiresAt: new Date(Date.now() + 3600000).toISOString() } });
-  assert.equal(app.find('정원, 2명부터 30명').props.maxLength, 2);
-  app.edit('모임 제목', '큰 모임'); app.edit('모임 소개', '함께 만나요'); app.edit('정원, 2명부터 30명', '30');
-  app.find('meetup.create.submit').props.onPress(); await settle();
+  assert.equal(app.find('정원, 2명부터 30명').props.accessibilityValue.max, 30);
+  app.edit('모임 제목', '큰 모임'); app.edit('모임 소개', '함께 만나요'); app.seats(31);
+  assert.equal(app.find('정원, 2명부터 30명').props.accessibilityValue.now, 30, 'The stepper stops at the membership limit.');
+  app.submitButton().props.onPress(); await settle();
   assert.equal(app.writes.length, 0, 'Paid capacity never bypasses the per-meetup profile consent.');
   app.find('meetup-create.host-consent').props.onPress();
-  app.find('meetup.create.submit').props.onPress(); await settle();
+  app.submitButton().props.onPress(); await settle();
   assert.equal(app.writes[0].event.capacity, 30);
   const expired = form({ membership: { tier: 'premium', expiresAt: '2020-01-01T00:00:00Z', businessSubscription: { tier: 'premium' } } });
-  assert.equal(expired.find('정원, 2명부터 10명').props.maxLength, 2, 'Business membership and expired personal access do not raise the free limit.');
+  assert.equal(expired.find('정원, 2명부터 10명').props.accessibilityValue.max, 10, 'Business membership and expired personal access do not raise the free limit.');
 });
 
 test('a place invitation keeps its source city and immutable reference through AI and explicit host consent', async () => {
@@ -281,8 +300,8 @@ test('a place invitation keeps its source city and immutable reference through A
   assert.equal(app.requests[0].args[1].body.bodyHint, invitation);
   assert.equal(JSON.stringify(app.requests[0].args).includes(place.sourceUrl), false, 'source metadata stays outside the AI prose');
   app.requests[0].resolve({ data: { draft: generated } }); await settle(); app.preview().props.onApply();
-  app.find('meetup.create.submit').props.onPress(); await settle(); assert.equal(app.writes.length, 0);
-  app.find('meetup-create.host-consent').props.onPress(); app.find('meetup.create.submit').props.onPress(); await settle();
+  app.submitButton().props.onPress(); await settle(); assert.equal(app.writes.length, 0);
+  app.find('meetup-create.host-consent').props.onPress(); app.submitButton().props.onPress(); await settle();
   assert.equal(app.writes.length, 1); assert.equal(app.writes[0].cityId, 'toronto');
   assert.ok(app.writes[0].body.endsWith(tail)); assert.equal(meetupDestination.splitPlaceMeetupBody(app.writes[0].body, 'toronto').place.id, place.id);
   assert.equal('placeId' in app.writes[0].event, false, 'the existing SQL event contract is unchanged');
@@ -290,7 +309,7 @@ test('a place invitation keeps its source city and immutable reference through A
 
 test('an invalid destination cannot silently create a meetup in the preferred city', async () => {
   const app = form({ params: { placeId: 'osm:node:999999999999999999', placeCityId: 'vancouver' } });
-  const submit = app.find('meetup.create.submit'); assert.equal(submit.props.disabled, true);
+  const submit = app.submitButton(); assert.equal(submit.props.disabled, true);
   await submit.props.onPress(); assert.equal(app.writes.length, 0); assert.equal(app.requests.length, 0);
 });
 
@@ -299,10 +318,10 @@ test('a cold place link unlocks after catalog hydration and preserves edits thro
   const place = catalog.cities.toronto.places.find(item => item.category === 'cafe');
   const tail = `\n\n장소: ${place.name}\n장소 정보: ${place.sourceUrl}`;
   const app = form({ params: { placeId: place.id, placeCityId: 'toronto' }, catalogReady: false });
-  assert.equal(app.find('meetup.create.submit').props.disabled, true);
+  assert.equal(app.submitButton().props.disabled, true);
   assert.equal(app.find('모임 소개').props.editable, false);
   app.hydrateCatalog();
-  assert.equal(app.find('meetup.create.submit').props.disabled, false);
+  assert.equal(app.submitButton().props.disabled, false);
   assert.equal(app.find('모임 소개').props.editable, true);
   assert.ok(app.find('모임 제목').props.value.includes(place.name));
   assert.ok(app.find('모임 소개').props.value.includes(place.name));
@@ -310,10 +329,10 @@ test('a cold place link unlocks after catalog hydration and preserves edits thro
   app.hydrateCatalog();
   assert.equal(app.find('모임 제목').props.value, '직접 쓴 제목');
   assert.equal(app.find('모임 소개').props.value, '직접 쓴 소개');
-  app.find('meetup.create.submit').props.onPress(); await settle();
+  app.submitButton().props.onPress(); await settle();
   assert.equal(app.writes.length, 0);
   app.find('meetup-create.host-consent').props.onPress();
-  app.find('meetup.create.submit').props.onPress(); await settle();
+  app.submitButton().props.onPress(); await settle();
   assert.equal(app.writes.length, 1);
   assert.equal(app.writes[0].cityId, 'toronto');
   assert.equal(app.writes[0].body, '직접 쓴 소개' + tail);
@@ -336,7 +355,7 @@ test('topic generation renders a preview without publishing or changing form fac
   assert.ok(app.find('모임 소개').props.value.includes(generated.purpose));
   assert.equal(app.find('신청할 때 물어볼 질문').props.value, generated.applicationQuestion);
   assert.deepEqual(nodes(app.render()).filter(n => n.type === 'ChillingDateInput').map(n => n.props.value), before);
-  assert.equal(app.find('정원, 2명부터 10명').props.value, '6');
+  assert.equal(app.find('정원, 2명부터 10명').props.accessibilityValue.now, 6);
   assert.equal(app.writes.length, 0);
 });
 
@@ -390,7 +409,7 @@ test('the schedule waits for a chosen kind and a loaded event, keeps its duratio
   start.props.onChange(later);
   assert.equal(Date.parse(dates(generic)[1].props.value) - Date.parse(later), duration);
   dates(generic)[0].props.onChange(new Date(Date.now() - 3600000).toISOString());
-  generic.find('meetup.create.submit').props.onPress(); await settle();
+  generic.submitButton().props.onPress(); await settle();
   assert.equal(generic.writes.length, 0); assert.equal(generic.profileReads.length, 0);
   assert.equal(nodes(generic.render()).filter(n => n.props?.accessibilityRole === 'alert').length, 1);
 
@@ -436,10 +455,10 @@ test('the event bridge preserves its seeded schedule and saved source when apply
   app.requests[0].resolve({ data: { draft: generated } }); await settle();
   app.preview().props.onApply();
   assert.deepEqual(nodes(app.render()).filter(n => n.type === 'ChillingDateInput').map(n => n.props.value), before);
-  app.find('meetup.create.submit').props.onPress(); await settle();
+  app.submitButton().props.onPress(); await settle();
   assert.equal(app.writes.length, 0, 'first publish only reveals the public host profile');
   app.find('meetup-create.host-consent').props.onPress();
-  app.find('meetup.create.submit').props.onPress(); await settle();
+  app.submitButton().props.onPress(); await settle();
   assert.equal(app.writes.length, 1);
   assert.ok(app.writes[0].body.endsWith('\n\n행사 ID: event-example'));
   assert.equal(app.writes[0].event.startsAt, sourceEvent.startsAt);
@@ -448,14 +467,14 @@ test('the event bridge preserves its seeded schedule and saved source when apply
 
 test('publishing requires consent to the current host profile revision', async () => {
   const app = form(); app.edit('모임 제목', '산책해요'); app.edit('모임 소개', '느긋하게 걸어요.');
-  app.find('meetup.create.submit').props.onPress(); await settle();
+  app.submitButton().props.onPress(); await settle();
   assert.equal(app.writes.length, 0);
   app.find('meetup-create.host-consent').props.onPress(); app.changeProfileRevision('revision-two');
-  app.find('meetup.create.submit').props.onPress(); await settle();
+  app.submitButton().props.onPress(); await settle();
   assert.equal(app.writes.length, 0, 'a profile changed elsewhere needs a fresh preview');
   assert.equal(app.find('meetup-create.host-consent').props.accessibilityState.checked, false);
   app.find('meetup-create.host-consent').props.onPress();
-  app.find('meetup.create.submit').props.onPress(); await settle();
+  app.submitButton().props.onPress(); await settle();
   assert.equal(app.writes.length, 1);
   assert.equal(app.writes[0].hostProfileRevision, 'revision-two');
 });

@@ -107,3 +107,42 @@ test('a Korean search name finds an English-named place; the result still shows 
   assert.equal(page.items.length, 1); assert.equal(page.items[0].title, 'Crew Collective & Café');
   assert.equal((await setup(value => value, { vancouver: [{ id: 'osm:node:4', cityId: 'vancouver', name: 'Crew Collective & Café', address: 'x' }] }).load({ query: '크루', cityId: 'vancouver', kind: 'place' })).items.length, 0);
 });
+
+test('English place names match from the start of a word, so pho never finds a taphouse (QA B12-3)', async () => {
+  const catalog = { vancouver: [
+    { id: 'osm:node:21', name: "Malone's Social Lounge & Taphouse", category: 'food', address: '' },
+    { id: 'osm:node:22', name: 'Saigon Pho', category: 'food', address: '' },
+    { id: 'osm:node:23', name: 'Pho Hoa', category: 'food', address: '' },
+    { id: 'osm:node:24', name: '강남순두부', category: 'food', address: '' },
+  ] };
+  const ids = async query => [...(await setup(value => value, catalog).load({ query, cityId: 'vancouver', kind: 'place' })).items.map(item => item.id)];
+  assert.deepEqual(await ids('pho'), ['osm:node:23', 'osm:node:22'], 'a name that starts with it first, then a later word');
+  assert.deepEqual(await ids('순두부'), ['osm:node:24'], 'Korean names still match inside the word');
+  assert.deepEqual(await ids('lounge'), ['osm:node:21']);
+  });
+
+test('장소 price levels keep only places with one of those levels, say whether any place is priced, and never reach the server (owner 2026-11-13)', async () => {
+  const catalog = { vancouver: [
+    { id: 'osm:node:1', cityId: 'vancouver', name: 'Jimoco Cheap', address: 'A', priceLevel: 1 },
+    { id: 'osm:node:2', cityId: 'vancouver', name: 'Jimoco Fancy', address: 'B', priceLevel: 3 },
+    { id: 'osm:node:3', cityId: 'vancouver', name: 'Jimoco Unknown', address: 'C' },
+  ] };
+  const h = setup(value => value, catalog);
+  const all = await h.load({ ...request, kind: 'place' });
+  assert.deepEqual(Array.from(all.items, item => item.priceLevel), [1, 3, undefined], 'a row carries its price');
+  assert.equal(all.priced, true);
+  const cheap = await h.load({ ...request, kind: 'place', priceLevels: [1, 2] });
+  assert.deepEqual(Array.from(cheap.items, item => item.title), ['Jimoco Cheap'], 'a place without a price is left out, never assumed to match');
+  assert.equal(cheap.priced, true, 'still priced, so the chip stays to undo the choice');
+  assert.equal(cheap.hasMore, false); assert.equal(cheap.nextOffset, 1);
+  assert.deepEqual(Array.from(Object.keys(h.calls.at(-1).args)).sort(), Array.from(Object.keys(h.calls[0].args)).sort(), 'the server call keeps its shape');
+  assert.equal(h.calls.at(-1).args.p_places.length, 3, 'the server still sees every candidate; the price is applied here');
+  assert.equal((await setup(value => value, { vancouver: [catalog.vancouver[2]] }).load({ ...request, kind: 'place' })).priced, false);
+  assert.equal((await h.load({ ...request, kind: 'all', priceLevels: [] })).priced, undefined, 'only 장소 says whether it is priced');
+  for (const priceLevels of [[0], [5], [1.5], ['1'], [1, 2, 3, 4, 1], 'x']) {
+    const bad = setup(value => value, catalog); await assert.rejects(bad.load({ ...request, kind: 'place', priceLevels }), /INVALID_UNIFIED_SEARCH_REQUEST/); assert.equal(bad.calls.length, 0);
+  }
+  for (const kind of ['all', 'business', 'person', 'post', 'meetup']) {
+    const bad = setup(value => value, catalog); await assert.rejects(bad.load({ ...request, kind, priceLevels: [1] }), /INVALID_UNIFIED_SEARCH_REQUEST/, kind); assert.equal(bad.calls.length, 0);
+  }
+});

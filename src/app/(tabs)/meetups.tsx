@@ -25,7 +25,6 @@ import { StateCard } from '@/components/state-card';
 import { useScreenGlow } from '@/components/screen-glow';
 import { TabContent } from '@/components/tab-content';
 import { ThemedText } from '@/components/themed-text';
-import { UserSheet, type SheetUser } from '@/components/user-sheet';
 import { Spacing, TabBarHeight } from '@/constants/theme';
 import { ControlMotion, ControlStyles, IconSize, Typography, controlPresentation } from '@/constants/design-system';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
@@ -109,7 +108,6 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
   const [cityPicker, setCityPicker] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [user, setUser] = useState<SheetUser | null>(null);
   const [listOpacity] = useState(() => new Animated.Value(1));
   const [searchMotion] = useState(() => new Animated.Value(0));
   // One progress (0 둘러보기, 1 내 모임) moves the tab underline and both panes together.
@@ -211,9 +209,10 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
     listOpacity.setValue(0.55);
     Animated.timing(listOpacity, { toValue: 1, duration: 220, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
   };
-  const switchView = (next: ChillingDiscoveryView) => {
+  // quiet: the caller already played the press (the empty card's button).
+  const switchView = (next: ChillingDiscoveryView, quiet = false) => {
     if (!remember(kind, next)) return;
-    play('selection');
+    if (!quiet) play('selection');
     if (next === view) return;
     setView(next);
     const toValue = next === 'mine' ? 1 : 0;
@@ -261,7 +260,8 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
     <View style={[styles.head, styles.headFixed]}>
       <ThemedText accessibilityRole="header" style={[styles.title, compactHeader && styles.titleLarge]}>{t.tabs.meetups}</ThemedText>
       <View style={[styles.headActions, compactHeader && styles.headActionsLarge]}>
-        <GlassSurface tone="control" clay="white" interactive={!destination} style={[styles.cityGlass, compactHeader && styles.cityGlassLarge]}>{destination ? <View style={styles.city}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.cityText}>{tr("{0}에서", tr(city.name))}</ThemedText></View> : <Pressable analyticsId="app_tabs_meetups.pressable.1" onPress={() => { play('selection'); setCityPicker(true); }} accessibilityRole="button" accessibilityLabel={tr("{0} 활동 지역 선택", tr(city.name))} style={({ pressed }) => [styles.city, clay && styles.cityClay, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.cityText}>{tr("{0}에서", tr(city.name))}</ThemedText><ClayIcon clay="chevron" name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={IconSize.chevron} tintColor={theme.textSecondary} /></Pressable>}</GlassSurface>
+        {/* A place or event fixes the city and the banner below names it, so the city button only shows when it can be pressed. */}
+        {!destination && <GlassSurface tone="control" clay="white" interactive style={[styles.cityGlass, compactHeader && styles.cityGlassLarge]}><Pressable analyticsId="app_tabs_meetups.pressable.1" onPress={() => { play('selection'); setCityPicker(true); }} accessibilityRole="button" accessibilityLabel={tr("{0} 활동 지역 선택", tr(city.name))} style={({ pressed }) => [styles.city, clay && styles.cityClay, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}><ThemedText type="small" themeColor="textSecondary" numberOfLines={1} style={styles.cityText}>{tr("{0}에서", tr(city.name))}</ThemedText><ClayIcon clay="chevron" name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={IconSize.chevron} tintColor={theme.textSecondary} /></Pressable></GlassSurface>}
         {/* 만들기는 화면당 하나뿐인 primary. 하단에 떠 있으면 카드를 가려서 헤더에 고정한다. */}
         <Pressable analyticsId="app_tabs_meetups.pressable.3" accessibilityRole="button" accessibilityLabel={destination ? copy('이곳에 갈 모임 만들기', 'Start a meetup here') : tr("모임 만들기")} accessibilityState={{ disabled: createDisabled }} disabled={createDisabled}
           onPress={() => { play('selection'); action('/meetup-create'); }}
@@ -304,11 +304,13 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
           <View style={styles.filterActions}><GlassSurface tone="control" clay="tile" interactive style={[styles.filterGlass, activeFilters > 0 && { borderColor: theme.accent }]}><Pressable analyticsId="app_tabs_meetups.pressable.14" accessibilityRole="button" accessibilityLabel={activeFilters ? tr("필터, {0}개 적용됨", (activeFilters)) : tr("필터")}
             onPress={() => { play('reaction'); setFiltersOpen(true); }}
             style={({ pressed }) => [styles.filterButton, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
-            <ClayIcon clay="sliders" claySize={22} name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }} size={16} tintColor={activeFilters ? theme.accent : theme.text} />
-            <ThemedText type="smallBold" style={Typography.menu} themeColor={activeFilters ? 'accent' : 'text'}>{activeFilters ? tr("필터 · {0}", (activeFilters)) : tr("필터")}</ThemedText>
+            {/* The count takes the icon's fixed box, so turning a filter on never widens the button and pushes the row onto two lines. */}
+            <View style={styles.filterMark}>{activeFilters > 0 ? <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[styles.badge, { backgroundColor: theme.accent }]}><ThemedText type="smallBold" style={[styles.badgeText, { color: theme.accentInk }]}>{activeFilters}</ThemedText></View>
+              : <ClayIcon clay="sliders" claySize={22} name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }} size={16} tintColor={theme.text} />}</View>
+            <ThemedText type="smallBold" style={Typography.menu} themeColor={activeFilters ? 'accent' : 'text'}>{tr("필터")}</ThemedText>
           </Pressable></GlassSurface>
-      <GlassSurface tone="control" clay="white" interactive style={styles.circleGlass}><Pressable analyticsId="meetups.discovery.open" accessibilityRole="button" accessibilityLabel={tr('부동산·중고거래·장소·행사 통합 지도')}
-        onPress={() => { play('reaction'); router.push('/map'); }} style={({ pressed }) => [styles.circle, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
+      <GlassSurface tone="control" clay="white" interactive style={styles.circleGlass}><Pressable analyticsId="meetups.discovery.open" accessibilityRole="button" accessibilityLabel={tr('모임 지도')}
+        onPress={() => { play('reaction'); router.push({ pathname: '/map', params: { only: 'meetups' } }); }} style={({ pressed }) => [styles.circle, { backgroundColor: pressed ? 'rgba(255,255,255,0.12)' : 'transparent' }]}>
         <ClayIcon clay="map" claySize={26} name={{ ios: 'map', android: 'map', web: 'map' }} size={21} tintColor={theme.text} />
       </Pressable></GlassSurface>
       <GlassSurface tone="control" clay="white" interactive style={styles.circleGlass}><Pressable analyticsId="app_tabs_meetups.pressable.13" accessibilityRole="button" accessibilityLabel={searchOpen ? tr("검색 닫기") : tr("모임 검색")} accessibilityState={{ expanded: searchOpen }}
@@ -323,15 +325,17 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
           <RaisedActionButton compact analyticsId="app_tabs_meetups.pressable.8" label={tr("검색")} onPress={() => { play('reaction'); setQuery(search.trim()); Keyboard.dismiss(); }} />
         </Animated.View>}
         {!!query && <Pressable analyticsId="app_tabs_meetups.pressable.9" accessibilityRole="button" accessibilityLabel={tr("검색어 {0} 해제", (query))}
-          onPress={() => { play('selection'); setSearch(''); setQuery(''); }} style={({ pressed }) => [styles.clear, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="small" style={Typography.menu} themeColor="accent">{tr("“{0}” 검색 중 · 지우기", (query))}</ThemedText></Pressable>}
+          onPress={() => { play('selection'); setSearch(''); setQuery(''); }} style={({ pressed }) => [styles.clear, { opacity: pressed ? 0.65 : 1 }]}><ThemedText type="small" style={Typography.menu} themeColor="accent">{tr("검색어 “{0}” · 지우기", (query))}</ThemedText></Pressable>}
       </>}
-      renderItem={({ item, index }) => <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: listOpacity }}><ChillingEvent post={item} city={tr(city.name)} requestStatus={myRequests[item.id]} onOpen={() => void open(item.id)} onAuthor={() => setUser({ ...item.author, mine: item.author.id === me.id })} /></Animated.View></Reanimated.View>}
+      renderItem={({ item, index }) => <Reanimated.View entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(index, 5) * 65).duration(360)}><Animated.View style={{ opacity: listOpacity }}><ChillingEvent post={item} city={tr(city.name)} requestStatus={myRequests[item.id]} onOpen={() => void open(item.id)} onAuthor={() => router.push({ pathname: '/meetup-profile', params: { postId: item.id } })} /></Animated.View></Reanimated.View>}
       ListEmptyComponent={sourceInvalid ? <StateCard kind="error" title={copy('장소·행사 정보를 확인하지 못했어요', 'Couldn’t verify this place or event')} body={copy('원래 상세에서 다시 열거나 전체 모임을 둘러보세요.', 'Open it again from its details, or browse all meetups.')} actionLabel={copy('전체 모임 보기', 'Browse all meetups')} onAction={clearDestination} /> : initialLoading ? <View style={styles.loadingState}><GlingLoader color={theme.accent} accessibilityLabel={tr("모임 불러오는 중")} /></View>
         : !loading && !error ? <Animated.View style={{ opacity: listOpacity }}>{city.state !== 'open'
         ? <StateCard title={tr("이 지역은 아직 준비 중이에요")} body={tr("다른 동네를 골라보거나, 곧 문을 열 때 알려드릴게요.")} />
         : cursor ? <StateCard title={copy('아직 모든 모임을 확인하지 않았어요', 'More meetups to check')} body={copy('현재 페이지에는 조건에 맞는 모임이 없어요. 아래에서 더 확인해 보세요.', 'No matches on this page. Load more to keep looking.')} />
-          : destination ? <StateCard title={copy('선택한 조건에 맞는 모임이 아직 없어요', 'No meetups match these filters yet')} body={copy('모임 종류·검색어·필터를 바꾸거나, 이곳에 갈 모임을 직접 열어보세요.', 'Try another meetup type or filter, or start a meetup here.')} actionLabel={createDisabled ? undefined : copy('이곳에 갈 모임 만들기', 'Start a meetup here')} onAction={() => action('/meetup-create')} />
-          : narrowed ? <StateCard title={tr("조건에 맞는 모임이 없어요")} body={tr("검색어나 필터를 바꾸면 더 찾을 수 있어요.")} actionLabel={tr("필터 초기화")} onAction={() => { setSearch(''); setQuery(''); clearFilters(); }} />
+          : destination ? <StateCard title={narrowed ? tr("조건에 맞는 모임이 없어요") : copy('이곳에 갈 모임이 아직 없어요', 'No meetups for this yet')} body={copy('모임 종류·검색어·필터를 바꾸거나, 이곳에 갈 모임을 직접 열어보세요.', 'Try another meetup type or filter, or start a meetup here.')} actionLabel={createDisabled ? undefined : copy('이곳에 갈 모임 만들기', 'Start a meetup here')} onAction={() => action('/meetup-create')} />
+          // A search alone offers to clear the search; filters (with or without one) clear everything, and the button says so.
+          : narrowed ? <StateCard title={query && !activeFilters ? tr("“{0}”에 맞는 모임이 없어요", query) : tr("조건에 맞는 모임이 없어요")} body={tr(query && !activeFilters ? "다른 검색어로 찾아보세요." : "검색어나 필터를 바꾸면 더 찾을 수 있어요.")}
+            actionLabel={tr(!activeFilters ? "검색어 지우기" : query ? "검색어·필터 지우기" : "필터 초기화")} onAction={() => { setSearch(''); setQuery(''); clearFilters(); }} />
             : <StateCard title={tr("아직 등록된 모임이 없어요")} body={tr("가까운 동네에서 첫 모임을 열어보세요. 한 명이 신청하면 바로 알려드려요.")} actionLabel={tr("모임 만들기")} onAction={() => action('/meetup-create')} />}</Animated.View> : undefined}
       ListFooterComponent={initialLoading ? undefined : <View style={{ gap: 16, paddingTop: Spacing.four }}>{loading && <GlingLoader color={theme.accent} accessibilityLabel={tr("모임 더 불러오는 중")} />}
         {error && <StateCard kind="error" title={tr("모임을 불러오지 못했어요")} body={sourceError ? copy(sourceError, 'Couldn’t verify the event or load meetups. Check the event details or try again.') : tr("연결이 잠시 끊겼어요. 다시 시도해 주세요.")} actionLabel={tr("다시 시도")} onAction={() => { play('selection'); void fetchPage(failedCursor.current); }} />}
@@ -343,9 +347,9 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
       <ScrollView analyticsId="components_my-meetups.scrollview.1" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + TabBarHeight + Spacing.four }]}>
         {pendingCount > 0 && <View style={styles.pendingCard}><ListCard><ListRow analyticsId="app_tabs_meetups.pressable.7" title={tr("참여 신청 {0}건", pendingCount === 50 ? '50+' : pendingCount)} detail={tr("프로필을 검토하고 승인·거절해요")} label={tr("참여 신청 {0}건 처리하기", pendingCount === 50 ? '50+' : pendingCount)}
             trailing={<View style={[styles.dot, { backgroundColor: theme.accent }]} />} onPress={() => router.push({ pathname: '/chat', params: { view: 'requests' } })} /></ListCard></View>}
-        <MyMeetups onOpen={open} hideTitle summaryRows={[
+        <MyMeetups onOpen={open} hideTitle onBrowse={() => switchView('browse', true)} onCreate={() => action('/meetup-create')} summaryRows={[
           <ListRow key="profile" analyticsId="app_tabs_meetups.pressable.2" title={tr("내 모임 프로필")} onPress={() => action('/meetup-profile')} />,
-          !!slots && <ListRow key="slots" analyticsId="app_tabs_meetups.pressable.12" title={isAdmin ? tr('관리자 계정 · 제한 없음') : tr("모임 자리 {0} / {1}", slots.active, slots.limit)} detail={tr("멤버십과 모임 자리 보기")} onPress={() => router.push('/profile/membership')} />,
+          !!slots && <ListRow key="slots" analyticsId="app_tabs_meetups.pressable.12" title={isAdmin ? tr('관리자 계정 · 제한 없음') : tr("모임 자리 {0} / {1}", slots.active, slots.limit)} detail={tr("지금 함께하는 모임 수예요 · 멤버십 보기")} onPress={() => router.push('/profile/membership')} />,
         ]} />
       </ScrollView>
     </Animated.View>}
@@ -372,7 +376,6 @@ function MeetupDiscovery({ destination, sourceInvalid, routedMine = false }: { d
         <View style={styles.sheetAction}><RaisedActionButton analyticsId="app_tabs_meetups.pressable.15" label={tr("목록 보기")} onPress={() => { play('selection'); setFiltersOpen(false); }} /></View>
       </View>
     </DragSheet>
-    <UserSheet user={user} onClose={() => setUser(null)} />
   </SafeAreaView></TabContent>;
 }
 const styles = StyleSheet.create({
@@ -402,6 +405,7 @@ const styles = StyleSheet.create({
   clear: { minHeight: 44, justifyContent: 'center' },
   tabLabel: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   badge: { minWidth: 20, height: 20, paddingHorizontal: 6, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }, badgeText: { fontSize: 12, lineHeight: 16 },
+  filterMark: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
   more: { minHeight: 48, alignItems: 'center', justifyContent: 'center' },
   sheetChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: Spacing.one },
   switchRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two, marginTop: Spacing.three },

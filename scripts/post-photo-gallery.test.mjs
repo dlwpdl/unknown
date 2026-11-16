@@ -240,6 +240,18 @@ test('사진을 불러오거나 가로·세로·정사각 사진을 넘겨도 �
   }
 });
 
+test('사진이 한 장이면 틀이 사진 비율을 따라가 양옆 회색 띠가 남지 않는다 (QA I-post-05)', () => {
+  for (const [dimensions, ratio] of [[[1600, 900], 16 / 9], [[1000, 1000], 1], [[600, 1200], 4 / 5], [[400, 2000], 4 / 5], [[3000, 1000], 16 / 9]]) {
+    const gallery = loadGallery(null, 390);
+    const props = { post: { id: `lone-${dimensions.join('x')}`, title: '사진', imageUris: ['only'] } };
+    let tree = gallery.Gallery(props);
+    assert.equal(nodes(hero(tree)).find(node => node.props?.onLoad).props.style.aspectRatio, 4 / 3, 'before it loads');
+    nodes(hero(tree)).find(node => node.props?.onLoad).props.onLoad({ source: { width: dimensions[0], height: dimensions[1] } });
+    tree = gallery.Gallery(props);
+    assert.equal(nodes(hero(tree)).find(node => node.props?.onLoad).props.style.aspectRatio, ratio);
+  }
+});
+
 test('사진이 한 장이어도 상세 갤러리에서 원본을 보여준다', () => {
   const { Gallery } = loadGallery();
   assert.ok(nodes(Gallery({ post: { id: 'post-1', imageUris: ['signed:one'] } })).some(n => n.props?.source?.uri === 'signed:one'));

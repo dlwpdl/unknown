@@ -64,7 +64,7 @@ function load(file, imports) {
   const source = ts.transpileModule(fs.readFileSync(new URL(`../src/components/${file}.tsx`, import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  vm.runInNewContext(source, { exports, require: withLanguageImports((name) => {
+  vm.runInNewContext(source, { exports, setTimeout: (...args) => globalThis.setTimeout(...args), clearTimeout, require: withLanguageImports((name) => {
     if (name === '@/lib/behavior-analytics') return { behavior() {}, flushBehavior: async () => {} };
     if (name in imports) return imports[name];
     if (name === 'react/jsx-runtime') return { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) };
@@ -121,6 +121,7 @@ test('location collection requires the visible disclosure and a separate consent
     '@/lib/location-provider': { useCommunityLocation: () => location },
     '@/lib/mock': { CITIES: [{ id: 'vancouver', name: '밴쿠버' }] },
     '@/components/disclosure': { animateLayout() {} }, 'react-native-reanimated': { useReducedMotion: () => true },
+    '@/components/confirm-sheet': { ConfirmSheet: 'ConfirmSheet' },
   });
   const render = () => NearbyCityCard({ onSelect: id => { selected = id; }, onChooseCity: () => { manual++; }, onFix: value => { received = value; } });
   const button = (tree, label) => nodes(tree).find(node => node.type === 'Pressable' && text(node) === label);
@@ -190,7 +191,12 @@ test('city picker searches Canadian cities and keeps upcoming cities and the US 
     nodes(render()).find(node => node.type === 'TextInput').props.onChangeText(search);
     assert.deepEqual(Array.from(list().sections).flatMap(section => section.data.map(city => city.id)), ids);
   }
-  assert.equal(text(list().ListEmptyComponent), '일치하는 도시가 없어요.');
+  assert.equal(text(list().ListEmptyComponent), '일치하는 도시가 없어요.밴쿠버토론토몬트리올검색 지우기', 'no match offers the open cities and clearing the search (QA I-home-02)');
+  const emptyCity = nodes(list().ListEmptyComponent).find(node => node.props?.accessibilityLabel === '토론토');
+  await emptyCity.props.onPress();
+  assert.equal(selected, 'toronto');
+  assert.equal(closed, 1);
+  selected = null; closed = 0;
   nodes(render()).find(node => node.props?.accessibilityLabel === '도시 검색 지우기').props.onPress();
   assert.equal(query, '');
   assert.equal(cityRow(renderCityRow(list(), CITIES[0])).props.accessibilityState.selected, true);
@@ -212,8 +218,9 @@ test('a city picked from the top city button checks off 내 도시 고르기 onc
     'react-native-reanimated': { useReducedMotion: () => true }, 'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     '@/components/disclosure': { animateLayout() {} }, '@/components/state-card': { PopIn: 'PopIn' },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+    '@/components/coach-marks': { CoachMarks: 'CoachMarks', tabTarget: () => () => null },
   });
-  const render = cityPicks => { at = 0; return StartGuide({ cityName: '토론토', cityPicks, onPickCity() {}, onOpenMeetups() {} }); };
+  const render = cityPicks => { at = 0; return StartGuide({ cityName: '토론토', cityPicks, onPickCity() {}, onOpenMeetups() {}, touring: false, onTouring() {}, targets: {} }); };
   render(0);
   assert.deepEqual([...guide.done], [], 'opening the home screen alone does not count');
   render(1);
@@ -224,6 +231,52 @@ test('a city picked from the top city button checks off 내 도시 고르기 onc
   render(2);
   assert.equal(guide.hidden, true, 'a guide the member hid stays hidden');
   assert.equal(saved.length, 1);
+});
+
+// I-home-03 A: the tour lights Home's real buttons one at a time; seen through or skipped, it checks off 화면 둘러보기 as before.
+for (const os of ['ios', 'web']) test(`화면 둘러보기 points at Home's own buttons and counts as done when it closes (${os})`, async () => {
+  let guide = { hidden: false, done: [] }, focus;
+  const opened = [], timers = [];
+  const { StartGuide, resetStartGuide } = load('start-guide', {
+    react: { useState: initial => initial === null ? [guide, next => { guide = next; }] : [false, () => {}], useCallback: fn => fn, useEffect() {}, useRef: initial => ({ current: initial }) },
+    'expo-router': { useFocusEffect(effect) { focus = effect; } },
+    'react-native': { View: 'View', Platform: { OS: os }, StyleSheet: { create: value => value } },
+    '@react-native-async-storage/async-storage': { __esModule: true, default: { getItem: async () => null, setItem: async () => {} } },
+    'react-native-reanimated': { useReducedMotion: () => true },
+    '@/components/disclosure': { animateLayout() {} },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+    '@/components/coach-marks': { CoachMarks: 'CoachMarks', tabTarget: (index, count, bar, inset) => ({ tab: index, of: count, web: bar !== undefined && inset === 0 }) },
+  });
+  const targets = { city: { current: 'city' }, search: { current: 'search' }, chips: { current: 'chips' }, write: { current: 'write' } };
+  const tree = () => StartGuide({ cityName: '밴쿠버', onPickCity() {}, onOpenMeetups() {}, touring: true, onTouring: open => opened.push(open), targets });
+  nodes(tree()).find(node => node.props?.analyticsId === 'start-guide.tour').props.onPress();
+  assert.deepEqual(opened, [true], 'the 화면 둘러보기 chip opens the tour');
+  const coach = nodes(tree()).find(node => node.type === 'CoachMarks');
+  assert.equal(coach.props.visible, true);
+  assert.deepEqual([...coach.props.steps.slice(0, 3).map(step => step.targets[0])], [targets.city, targets.search, targets.chips], 'city → magnifier → topic row');
+  const last = coach.props.steps[3];
+  assert.equal(coach.props.steps.length, 4, 'chat and notifications are left out');
+  if (os === 'web') {
+    assert.equal(last.title, '글쓰기는 아래에 있어요', 'the web has a 글쓰기 tab instead of the map tab and +');
+    assert.deepEqual({ ...last.targets[0] }, { tab: 2, of: 5, web: true });
+    assert.equal(last.targets.length, 1);
+  } else {
+    assert.equal(last.title, '지도와 글쓰기는 아래에 있어요');
+    assert.deepEqual({ ...last.targets[0] }, { tab: 2, of: 5, web: false }, 'the map is the middle of five native tabs');
+    assert.equal(last.targets[1], targets.write, 'and the floating + is measured where it is');
+  }
+  for (const id of Object.values(coach.props.analyticsIds)) assert.ok(['start-guide.tour.done', 'sheet.close'].includes(id), 'targets the server already accepts');
+  coach.props.onClose();
+  assert.deepEqual(opened, [true, false]);
+  assert.deepEqual([...guide.done], ['tour'], 'one step of 시작하기 filled, as before');
+
+  // Settings' 처음 안내 다시 보기 brings the guide back and opens the tour once Home is in front again.
+  await resetStartGuide();
+  const realSetTimeout = globalThis.setTimeout;
+  globalThis.setTimeout = (fn, ms) => { timers.push(ms); fn(); return 0; };
+  try { focus(); focus(); } finally { globalThis.setTimeout = realSetTimeout; }
+  assert.deepEqual(opened, [true, false, true], 'opens once, not on every later visit to Home');
+  assert.ok(timers[0] >= 300, 'after the settings screen has slid away');
 });
 
 test('returning from system settings or a permission sheet checks feed ad permission again', () => {
@@ -342,4 +395,37 @@ test('a chosen chip cut at the edge or off screen scrolls fully into view; a vis
   assert.equal(revealOffset(0, 390, 900, 820, 76), 900 - 390, 'off screen at the end: stops at the content end');
   assert.equal(revealOffset(400, 390, 900, 10, 60), 0, 'off screen to the left: back to the start');
   assert.equal(revealOffset(0, 390, 300, 200, 60), 0, 'a row that fits never scrolls');
+});
+
+test('a sideways row fades only an end with more chips past it (QA new-left-fade)', async () => {
+  const { scrollEdges } = await import('../src/hooks/use-reveal-chip.ts');
+  assert.deepEqual(scrollEdges(0, 390, 900), { start: false, end: true }, 'at the start the first chip stays clear');
+  assert.deepEqual(scrollEdges(200, 390, 900), { start: true, end: true });
+  assert.deepEqual(scrollEdges(510, 390, 900), { start: true, end: false }, 'at the end the last chip stays clear');
+  assert.deepEqual(scrollEdges(0, 390, 300), { start: false, end: false }, 'a row that fits fades nowhere');
+  assert.deepEqual(scrollEdges(0.5, 390, 390.6), { start: false, end: false }, 'sub-pixel rounding is no scroll');
+});
+
+test('listing cards drop what they do not have: an empty pay line, a photo-less thumbnail, a repeated title (QA I-home-08·09)', async () => {
+  const details = await import('../src/lib/listing-details.ts');
+  const { ListingCard } = load('listing-card', {
+    react: { useState: value => [value, () => {}] },
+    'expo-image': { Image: 'Image' },
+    '@/components/post-pin-map': { PostPinMap: 'PostPinMap' }, '@/components/fact-grid': { FactGrid: 'FactGrid' },
+    '@/constants/design-system': { ControlMotion: { pressedOpacity: 0.7 }, IconSize: { toolbar: 21, inline: 16 }, Typography: { menu: {} } },
+    '@/lib/auth': { useAuth: () => ({ isAuthed: true, me: { id: 'me' } }) },
+    '@/lib/feed-data': { getPostImageSource: post => post.imageUris?.[0] ? { uri: post.imageUris[0] } : null, relativeTime: () => '1시간 전' },
+    '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
+    '@/lib/listing-details': details, '@/lib/mock': { CITIES }, '@/lib/neighborhoods': { findNeighborhood: () => null }, '@/lib/post-maps': { postLocationUrl: () => null }, '@/lib/rent-average': { rentAverage: () => null },
+  });
+  const base = { id: 'p', cityId: 'vancouver', title: '버나비 스시 롤맨 구인', body: '', comments: 0, createdAtLabel: '1시간 전', listingStatus: 'open', tag: { slug: 'jobs' } };
+  const job = ListingCard({ post: { ...base, listingDetails: { type: 'jobs', deal: 'hiring' } }, onPress() {} });
+  assert.equal(nodes(job).filter(n => n.props?.themeColor === 'accent' && n.props?.type === 'smallBold').length, 0, 'no empty accent line');
+  const used = { ...base, title: '소파 팔아요', tag: { slug: 'used' }, listingDetails: { type: 'used', deal: 'sell' }, price: 40 };
+  assert.ok(!nodes(ListingCard({ post: used, onPress() {} })).some(n => n.type === 'SymbolView'), 'no empty box in the row');
+  const big = ListingCard({ post: used, onPress() {}, variant: 'big' });
+  assert.equal(big.props.analyticsId, 'listing.card.used');
+  assert.ok(!nodes(big).some(n => n.props?.children === '사진 없는 글'), 'a big card without a photo falls back to the row');
+  const tile = ListingCard({ post: used, onPress() {}, variant: 'tile' });
+  assert.equal(nodes(tile).filter(n => n.props?.children === '소파 팔아요').length, 1, 'the title shows once');
 });

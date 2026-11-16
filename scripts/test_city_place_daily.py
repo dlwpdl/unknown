@@ -160,6 +160,19 @@ class DailyPlaces(unittest.TestCase):
             bad = json.loads(json.dumps(seed)); bad['cities']['vancouver']['places'][0].update(patch_value)
             with self.assertRaises(ValueError, msg=str(patch_value)): m.build_catalog(bad, osm, now)
 
+    def test_opened_and_hot_states_pass_through_with_the_app_checks(self):
+        m = implementation(); seed, osm, now = self.fixture()
+        opened, hot = dict(on='2026-10-01', sourceUrl='https://example.org/opening'), dict(since='2026-11-01', sourceUrl='https://example.org/hot', sourceName='Example Eats')
+        seed['cities']['vancouver']['places'][0].update(opened=opened, hot=hot)
+        place = m.build_catalog(seed, osm, now)['cities']['vancouver']['places'][0]
+        self.assertEqual((place['opened'], place['hot']), (opened, hot))
+        plain = json.loads(json.dumps(seed)); plain['cities']['vancouver']['places'][0].pop('opened'); plain['cities']['vancouver']['places'][0].pop('hot')
+        self.assertFalse({'opened', 'hot'} & set(m.build_catalog(plain, osm, now)['cities']['vancouver']['places'][0]), 'absent stays absent, never guessed')
+        for patch_value in [dict(opened='2026-10-01'), dict(opened=dict(opened, on='2026-02-30')), dict(opened=dict(opened, on='10/01/2026')), dict(opened=dict(opened, sourceUrl='http://example.org')),
+                            dict(opened=dict(opened, note='x')), dict(hot=dict(hot, sourceName='')), dict(hot=dict(hot, sourceName='  ')), dict(hot=dict(hot, sourceName='x' * 81)), dict(hot={k: v for k, v in hot.items() if k != 'sourceName'})]:
+            bad = json.loads(json.dumps(seed)); bad['cities']['vancouver']['places'][0].update(patch_value)
+            with self.assertRaises(ValueError, msg=str(patch_value)): m.build_catalog(bad, osm, now)
+
     def test_extra_places_carry_picks_and_photos_past_the_legacy_200_without_touching_base_arrays(self):
         m = implementation(); seed, osm, now = self.fixture()
         city = seed['cities']['vancouver']
@@ -217,6 +230,17 @@ class DailyPlaces(unittest.TestCase):
         closed = json.loads(json.dumps(osm)); closed[-1]['tags']['closed'] = 'yes'
         removed = m.build_catalog(seed, closed, now)['cities']['vancouver']
         self.assertEqual((removed['morePlaces'], removed['moreRecommendations'], removed['morePhotos']), ([], [], []))
+
+    def test_osm_phone_and_instagram_reach_the_catalog_only_in_the_app_shape(self):
+        m = implementation(); seed, osm, now = self.fixture()
+        osm[0]['tags'].update({'phone': '+1 604-555-0100;+1 604-555-0199', 'contact:instagram': 'https://www.instagram.com/Verified.Cafe/?hl=en'})
+        place = m.build_catalog(seed, osm, now)['cities']['vancouver']['places'][0]
+        self.assertEqual((place['phone'], place['instagram']), ('+1 604-555-0100', 'https://www.instagram.com/verified.cafe/'))
+        self.assertEqual([m.osm_instagram(v) for v in ['@cafe_1', 'cafe_1', 'instagram.com/reel', 'https://evil.example/cafe', 'a..b', None]],
+                         ['https://www.instagram.com/cafe_1/', 'https://www.instagram.com/cafe_1/', None, None, None, None])
+        self.assertEqual([m.osm_phone(v) for v in ['604-555-0100', '12345', 'call us', 'x' * 41]], ['604-555-0100', None, None, None])
+        osm[0]['tags'] = dict(name='Verified Cafe', amenity='cafe')
+        self.assertNotIn('phone', m.build_catalog(seed, osm, now)['cities']['vancouver']['places'][0])
 
     def fixture(self):
         now = '2026-10-18T01:00:00+00:00'

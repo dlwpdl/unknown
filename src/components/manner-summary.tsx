@@ -4,23 +4,32 @@ import { View } from 'react-native';
 import { Pressable } from '@/components/analytics-controls';
 import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
+import { Typography } from '@/constants/design-system';
 import { useTheme } from '@/hooks/use-theme';
 import type { MannerSummary as Summary } from '@/lib/user-profile';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 
-export function MannerSummary({ summary }: { summary: Summary }) {
+// header={false}: the screen puts its own section label above and its rules hold the criteria (모임 후기 · 매너 평가).
+export function MannerSummary({ summary, header = true }: { summary: Summary; header?: boolean }) {
   const { tr, locale: appLocale } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox();
   const { play } = useInteractionFeedback();
   const [criteriaOpen, setCriteriaOpen] = useState(false);
+  const ratings = (['meeting', 'chat'] as const).map(key => summary[key].rating ?? { participants: 0, score: null });
+  // Two cells of "no rating yet" said the same thing twice; until one side has a score it is one card.
+  const reviews = ratings.every(rating => rating.participants < 5 || rating.score == null) ? ratings.reduce((sum, rating) => sum + rating.participants, 0) : null;
   return <View style={{ alignSelf: 'stretch', gap: 8 }}>
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+    {header && <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
       <ThemedText type="smallBold" style={{ flexShrink: 1 }}>{tr('이웃이 남긴 리뷰')}</ThemedText>
       <Pressable analyticsId="user.manner.criteria" accessibilityRole="button" accessibilityState={{ expanded: criteriaOpen }} onPress={() => { play('selection'); setCriteriaOpen(value => !value); }} style={{ minHeight: 44, justifyContent: 'center' }}><ThemedText type="small" themeColor="textSecondary">{tr('평점 기준')} ⓘ</ThemedText></Pressable>
-    </View>
+    </View>}
     <View style={{ flexDirection: 'row', padding: 16, borderRadius: 16, backgroundColor: clayBox ? 'transparent' : theme.backgroundElement }}>
       {clayBox && <ClayBoxFill kind="tile" />}
-      {([['meeting', tr('만남')], ['chat', tr('대화')]] as const).map(([key, label], index) => {
+      {reviews != null ? <View style={{ flex: 1, gap: 2 }}>
+        <ThemedText style={Typography.menu}>{reviews ? tr('리뷰 {0}개가 모였어요', reviews.toLocaleString(appLocale)) : tr('아직 받은 리뷰가 없어요')}</ThemedText>
+        <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('서로 다른 5명이 남기면 점수가 보여요.')}</ThemedText>
+      </View>
+      : ([['meeting', tr('만남')], ['chat', tr('대화')]] as const).map(([key, label], index) => {
         const rating = summary[key].rating ?? { participants: 0, score: null };
         const score = rating.participants >= 5 ? rating.score : null;
         return <View key={key} style={{ flex: 1, minWidth: 0, gap: 8, paddingRight: index === 0 ? 12 : 0, paddingLeft: index === 1 ? 16 : 0, borderRightWidth: index === 0 ? 1 : 0, borderRightColor: theme.line }}>

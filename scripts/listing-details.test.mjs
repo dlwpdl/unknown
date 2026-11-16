@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 
 import {
-  buildListingLead, emptyListingDraft, freeBand, groupListingsByArea, isFreeListing, listingAreaRows, listingExtras, listingFromDraft, listingPin, listingPriceLabel, matchesListingFilters,
-  NO_LISTING_FILTERS, parseListingDetails, parseListingView, stripListingLead, withListingLead,
+  buildListingLead, dialNumber, editedListingBody, emptyListingDraft, freeBand, listingContacts, loadApplyContactEnabled, groupListingsByArea, isFreeListing, listingAreaRows, listingDraftFromDetails, listingExtras, listingFromDraft, listingMapFit, listingPin, listingPriceLabel, matchesListingFilters,
+  NO_LISTING_FILTERS, pairTiles, parseListingDetails, parseListingView, stripListingLead, withListingLead,
 } from '../src/lib/listing-details.ts';
 import { coarseListingPin, findNeighborhood, NEIGHBORHOODS, neighborhoodGroups } from '../src/lib/neighborhoods.ts';
 import { hydratePublicPosts } from '../src/lib/feed-data.ts';
@@ -175,6 +176,10 @@ test('칸이 없는 옛 글과 서버 마이그레이션 전에는 지금처럼 
   const mismatched = await hydratePublicPosts({ rpc: async name => name === 'get_public_post_listing_details'
     ? { data: [{ post_id: post.id, details: { type: 'housing', deal: 'rent_offer' } }], error: null } : { data: [], error: null } }, [post]);
   assert.equal(mismatched[0].listingDetails, undefined, 'fields from another category are ignored');
+  const checked = await hydratePublicPosts({ rpc: async name => name === 'get_public_post_listing_details'
+    ? { data: [{ post_id: post.id, details: { type: 'used', deal: 'sell', lead: '팝니다 · $40' }, photo_checked_at: '2026-11-12T20:00:00Z' }], error: null } : { data: [], error: null } }, [post]);
+  assert.equal(checked[0].photoCheckedAt, '2026-11-12T20:00:00Z', '사진 확인 날짜만 온다');
+  assert.equal(after[0].photoCheckedAt, undefined, 'and only when the team checked it');
   const noListings = [];
   await hydratePublicPosts({ rpc: async name => { noListings.push(name); return { data: [], error: null }; } }, [story]);
   assert.deepEqual(noListings, ['get_public_post_businesses']);
@@ -195,11 +200,12 @@ test('비즈니스 구인글은 posts.price 없이도 시급을 보여 준다', 
 // already be in the body that the content filter and safety review read.
 test('저장하는 칸의 글자는 모두 본문 안에 있다 (서버 트리거와 같은 규칙)', () => {
   const keys = { housing: ['type', 'deal', 'rooms', 'moveIn', 'area', 'includes', 'extras', 'lead'],
-    jobs: ['type', 'deal', 'payUnit', 'pay', 'jobTypes', 'area', 'hours', 'duties', 'apply', 'lead'], used: ['type', 'deal', 'offers', 'condition', 'area', 'lead'] };
+    jobs: ['type', 'deal', 'payUnit', 'pay', 'jobTypes', 'area', 'hours', 'duties', 'apply', 'phone', 'email', 'link', 'lead'], used: ['type', 'deal', 'offers', 'condition', 'area', 'lead'] };
   const cases = [
     ['housing', draft('housing', { rooms: '2b2b', price: '3200', moveIn: 'now', area: 'metrotown', includes: ['pets'], extras: [' 세탁기 ', '헬스장\t이용'] }), '방 사진은 대화로 보내 드려요'],
     ['jobs', draft('jobs', { price: '20', jobTypes: ['full'], area: 'downtown', hours: '평일 9–6시\n야간 없음', duties: '  재고 정리,\t계산  ', apply: ['email', 'phone'] }), ''],
     ['jobs', draft('jobs', { deal: 'seeking', payUnit: 'negotiable', hours: '주말', duties: '바리스타 경력 3년' }), '연락 주세요'],
+    ['jobs', draft('jobs', { price: '18', area: 'downtown', apply: ['phone'], phone: ' 250-961-5431 ', email: 'jobs@ocean.ca', link: 'https://ocean.ca/apply' }), ''],
     ['used', draft('used', { price: '15', offers: true, condition: 'used', area: 'joyce' }), '직거래만'],
   ];
   for (const language of ['ko', 'en']) for (const [category, item, written] of cases) {
@@ -207,7 +213,7 @@ test('저장하는 칸의 글자는 모두 본문 안에 있다 (서버 트리�
     const body = withPostMap(withListingLead(details.lead, written), details.area ? googlePinUrl(findNeighborhood('vancouver', details.area)) : '', '동네');
     assert.deepEqual(Object.keys(details).filter(key => !keys[category].includes(key)), []);
     assert.ok(body.startsWith(details.lead));
-    for (const key of ['hours', 'duties']) if (details[key]) assert.ok(body.includes(details[key]), `${category}.${key}`);
+    for (const key of ['hours', 'duties', 'phone', 'email', 'link']) if (details[key]) assert.ok(body.includes(details[key]), `${category}.${key}`);
     for (const extra of details.extras ?? []) assert.ok(body.includes(extra), extra);
     assert.deepEqual(parseListingDetails(details, body), details);
   }
@@ -253,4 +259,130 @@ test('Vancouver job areas are grouped so every neighborhood sits in exactly one 
   const ids = neighborhoodGroups('vancouver').flatMap(group => group.items.map(item => item.id));
   assert.deepEqual([...ids].sort(), NEIGHBORHOODS.vancouver.map(item => item.id).sort());
   assert.equal(neighborhoodGroups('toronto'), null, 'a short list stays flat');
+});
+
+test('the photo grid pairs listings and gives a story without listing fields its own full row after the pair (QA B13-1)', () => {
+  const tile = item => item === item.toUpperCase();
+  assert.deepEqual(pairTiles(['A', 'B', 'C', 'D'], tile), [['A', 'B'], ['C', 'D']]);
+  assert.deepEqual(pairTiles(['A', 'x', 'B', 'C'], tile), [['A', 'B'], 'x', ['C']], 'the story waits until the half row fills, never sits in half a cell');
+  assert.deepEqual(pairTiles(['x', 'A', 'y', 'z', 'B'], tile), ['x', ['A', 'B'], 'y', 'z']);
+  assert.deepEqual(pairTiles(['A', 'x'], tile), [['A'], 'x'], 'a last tile alone still ends its row');
+  assert.deepEqual(pairTiles([], tile), []);
+});
+
+test('카테고리 지도는 모든 동네가 들어오게 열린다 (QA B13-2)', () => {
+  assert.equal(listingMapFit([]), null);
+  const one = listingMapFit([{ latitude: 49.28, longitude: -123.12 }]);
+  assert.deepEqual(one.center, { latitude: 49.28, longitude: -123.12 });
+  assert.equal(one.zoom, 11, 'one area keeps the city view');
+  const coquitlam = { latitude: 49.2838, longitude: -122.7932 }, edmonds = { latitude: 49.2120, longitude: -122.9590 };
+  const two = listingMapFit([coquitlam, edmonds]);
+  assert.ok(Math.abs(two.center.longitude - (-122.8761)) < 1e-4);
+  const halfWidth = 215 * 360 / (512 * 2 ** two.zoom); // half of a 430pt-wide phone map in degrees, 512px world at zoom 0 like MapLibre
+  assert.ok(Math.abs(coquitlam.longitude - two.center.longitude) < halfWidth && Math.abs(edmonds.longitude - two.center.longitude) < halfWidth, 'both areas on the first screen');
+  assert.equal(listingMapFit([{ latitude: 49.28, longitude: -123.3 }, { latitude: 49.1, longitude: -122.3 }]).zoom < 11, true, 'far apart areas zoom out');
+});
+
+test('구인 연락처: 쓴 사람이 적은 것만 본문 첫 줄에 넣고, 모양이 틀리면 올리지 않는다', () => {
+  const base = { price: '18', area: 'downtown' }, input = { title: '롤맨', cityId: 'vancouver' };
+  const typed = listingFromDraft('jobs', draft('jobs', { ...base, phone: '250-961-5431', email: 'jobs@ocean.ca' }), input, 'ko');
+  assert.deepEqual(typed.missing, []);
+  assert.ok(typed.details.lead.endsWith('\n연락처: 250-961-5431 · jobs@ocean.ca'), typed.details.lead);
+  assert.equal(typed.details.link, undefined);
+  for (const bad of [{ phone: '12' }, { email: 'jobs@' }, { link: 'http://ocean.ca' }, { link: 'https://bit.ly/x' }]) {
+    assert.deepEqual(listingFromDraft('jobs', draft('jobs', { ...base, ...bad }), input, 'ko').missing, ['contact'], JSON.stringify(bad));
+  }
+  // 일 찾아요 posts never carry the hiring contact fields.
+  assert.equal(listingFromDraft('jobs', draft('jobs', { deal: 'seeking', phone: '250-961-5431' }), input, 'ko').details.phone, undefined);
+  const body = withListingLead(typed.details.lead, '편하게 연락 주세요.');
+  assert.equal(parseListingDetails(typed.details, body).phone, '250-961-5431');
+  assert.equal(parseListingDetails({ ...typed.details, phone: '604-000-1111' }, body).phone, undefined, 'a number missing from the body is dropped');
+  assert.equal(parseListingDetails({ type: 'jobs', deal: 'hiring', email: 'not an email' }, 'not an email').email, undefined);
+});
+
+test('지원하기 창: 적은 연락처가 없으면 본문 속 번호·이메일을 쓰고, 가격·시간은 번호로 잡지 않는다', () => {
+  const body = '시급 $17.85, 11-19시, 2026-11-14 시작.\n문자 (604) 555-0123 또는 250.961.5431, 이력서는 Jobs.Ocean@gmail.com 으로.\n한국 번호 010-1234-5678도 돼요. 세 번째 604-555-9999';
+  assert.deepEqual(listingContacts({ type: 'jobs', deal: 'hiring' }, body), { phones: ['(604) 555-0123', '250.961.5431'], emails: ['Jobs.Ocean@gmail.com'], links: [] });
+  assert.deepEqual(listingContacts({ type: 'jobs', deal: 'hiring', email: 'hr@ocean.ca', link: 'https://ocean.ca/apply' }, body),
+    { phones: [], emails: ['hr@ocean.ca'], links: ['https://ocean.ca/apply'] }, 'typed contacts replace the body');
+  assert.deepEqual(listingContacts(null, '연락은 대화로 주세요.'), { phones: [], emails: [], links: [] });
+  assert.equal(dialNumber('+1 (604) 555-0123'), '+16045550123');
+});
+
+test('연락처 칸은 서버가 받을 때만 켠다 (20261114182000 이전 운영 DB에서는 꺼짐)', async () => {
+  assert.equal(await loadApplyContactEnabled({ rpc: async () => ({ data: null, error: { code: 'PGRST202' } }) }), false);
+  assert.equal(await loadApplyContactEnabled({ rpc: async () => { throw new Error('offline'); } }), false);
+  assert.equal(await loadApplyContactEnabled({ rpc: async () => ({ data: 'yes', error: null }) }), false);
+  assert.equal(await loadApplyContactEnabled({ rpc: async name => ({ data: name === 'listing_apply_contact_enabled', error: null }) }), true);
+});
+
+// The server guard (20261114182000) checks the same shapes as the app, so nothing the app sends is rejected there.
+test('연락처 마이그레이션은 앱과 같은 모양만 받고 본문에 있는지 확인한다', () => {
+  const sql = readFileSync(new URL('../supabase/migrations/20261114182000_job_post_apply_contact.sql', import.meta.url), 'utf8');
+  assert.match(sql, /'apply','phone','email','link','lead'/);
+  assert.match(sql, /in \('hours','duties','phone','email','link'\) then in_body := in_body and strpos/);
+  assert.match(sql, /when 'lead' then 900/);
+  // This file replaces the whole guard after 20261113200000, so it must keep that file's 인스위트 세탁기.
+  assert.match(sql, /array\['furnished','utilities','parking','pets','laundry'\]/);
+  assert.match(sql, /revoke all on function public\.listing_apply_contact_enabled\(\) from public, anon;/);
+});
+
+test('인스위트 세탁기는 포함 옵션으로 첫 줄·카드에 들어가고, 모르는 값은 건너뛴다 (owner 2026-11-13)', () => {
+  const { details } = listingFromDraft('housing', draft('housing', { rooms: '1b', price: '2100', area: 'metrotown', includes: ['furnished', 'laundry', 'parking'] }),
+    { title: '1베드', cityId: 'vancouver' }, 'ko');
+  assert.equal(details.lead, '렌트 내놓음 · 1베드 · $2,100/월 · 메트로타운 · 가구 포함, 주차, 인스위트 세탁기');
+  assert.deepEqual(details.includes, ['furnished', 'parking', 'laundry']);
+  assert.equal(buildListingLead({ type: 'housing', deal: 'rent_offer', includes: ['laundry'] }, { title: '', price: null, cityId: 'vancouver' }, 'en'), 'For rent · In-suite laundry');
+  const body = withListingLead(details.lead, '연락 주세요');
+  assert.deepEqual(parseListingDetails({ ...details, includes: ['laundry', 'sauna', 'pets'] }, body).includes, ['pets', 'laundry'], 'a value this app does not know is skipped, the card still reads');
+  assert.deepEqual(listingExtras(['인스위트 세탁기', 'In-suite laundry', '식기세척기']), ['식기세척기'], 'the preset is not added again as the author\'s own item');
+});
+
+test('글 수정은 저장된 카드를 같은 칸으로 되살리고, 그대로 저장하면 같은 카드가 된다', () => {
+  const input = { title: '홀 서버', cityId: 'vancouver' };
+  for (const [category, patch] of [
+    ['housing', { rooms: '2b', price: '2,400', moveIn: '2026-12-01', area: 'metrotown', includes: ['laundry', 'pets'], extras: ['식기세척기'] }],
+    ['housing', { deal: 'rent_wanted', rooms: 'studio', area: 'downtown' }],
+    ['jobs', { price: '18.5', jobTypes: ['part'], area: 'downtown', hours: '주말', duties: '서빙', apply: ['chat', 'phone'] }],
+    ['jobs', { deal: 'seeking', payUnit: 'negotiable' }],
+    ['used', { price: '40', condition: 'like_new', area: 'joyce', offers: true }],
+    ['used', { free: true, condition: 'used', area: 'joyce' }],
+    ['used', { deal: 'buy', area: 'joyce' }],
+  ]) {
+    const saved = listingFromDraft(category, draft(category, patch), input, 'ko');
+    const again = listingFromDraft(category, listingDraftFromDetails(saved.details, saved.price), input, 'ko');
+    assert.deepEqual(again.details, saved.details, `${category} ${JSON.stringify(patch)}`);
+    assert.equal(again.price, saved.price);
+    assert.deepEqual(again.missing, saved.missing);
+  }
+  // Business job posts keep the pay only in the card.
+  assert.equal(listingDraftFromDetails({ type: 'jobs', deal: 'hiring', payUnit: 'hour', pay: 19 }, null).price, '19');
+});
+
+test('글 수정 본문은 새 첫 줄을 붙이고, 동네가 바뀔 때만 지도 줄을 그 동네 중심으로 옮긴다', () => {
+  const address = 'https://www.google.com/maps/search/?api=1&query=49.2259,-123.0004';
+  const text = withPostMap('뷰잉은 연락 주세요.', address, '6000 McKay Ave');
+  const kept = listingFromDraft('housing', draft('housing', { rooms: '1b', price: '2100', area: 'metrotown', includes: ['laundry'] }), { title: 't', cityId: 'vancouver' }, 'ko').details;
+  const body = editedListingBody(kept, text, 'metrotown', 'vancouver', 'ko');
+  assert.equal(body, `${kept.lead}\n\n${text}`, 'the published listing address stays');
+  assert.equal(stripListingLead(body, parseListingDetails(kept, body)), text);
+  const moved = listingFromDraft('housing', draft('housing', { rooms: '1b', price: '2100', area: 'downtown' }), { title: 't', cityId: 'vancouver' }, 'ko').details;
+  const area = findNeighborhood('vancouver', 'downtown');
+  assert.equal(editedListingBody(moved, text, 'metrotown', 'vancouver', 'ko'), withPostMap(`${moved.lead}\n\n뷰잉은 연락 주세요.`, googlePinUrl(area), '다운타운'));
+  assert.throws(() => editedListingBody(moved, 'ㄱ'.repeat(1000), 'metrotown', 'vancouver', 'ko'), /POST_BODY_TOO_LONG/);
+});
+
+test('부동산 목록 지도: 업체 렌트 글은 매물 주소에, 개인 글·좌표 없는 글은 동네 중심에, 같은 주소는 한 핀으로 묶는다', () => {
+  const map = 'Google 지도: https://www.google.com/maps/search/?api=1&query=49.22594%2C-123.00041\n위치: 6000 McKay Ave';
+  const base = { cityId: 'vancouver', tag: { slug: 'housing' }, listingDetails: { type: 'housing', deal: 'rent_offer', area: 'metrotown' }, price: 2100 };
+  const business = { id: 'a', ...base, business: { id: 'b1', name: '메트로 렌탈' }, body: `첫 줄\n\n${map}` };
+  assert.deepEqual(listingPin(business, 'ko'), { key: '49.22594,-123.00041', latitude: 49.22594, longitude: -123.00041, name: '메트로타운' });
+  const member = { id: 'b', ...base, body: `첫 줄\n\n${map}` };
+  assert.equal(listingPin(member, 'ko').key, 'metrotown', 'a member\'s address snaps to the card neighborhood');
+  const plain = { id: 'c', ...base, business: { id: 'b1', name: '메트로 렌탈' }, body: '주소 없는 글' };
+  assert.equal(listingPin(plain, 'ko').key, 'metrotown', 'no coordinates: the card neighborhood');
+  const sameBuilding = { ...business, id: 'd', price: 2400 };
+  const areas = groupListingsByArea([business, sameBuilding, member, plain], 'ko');
+  assert.deepEqual(areas.map(area => [area.id, area.posts.map(item => item.id), area.label]),
+    [['area:49.22594,-123.00041', ['a', 'd'], '메트로타운 · 2'], ['area:metrotown', ['b', 'c'], '메트로타운 · 2']]);
 });

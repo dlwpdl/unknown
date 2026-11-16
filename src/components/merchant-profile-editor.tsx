@@ -101,8 +101,9 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
     finally { working.current = false; if (mounted.current) setBusy(false); }
   };
 
-  const save = async () => {
-    if (working.current || !profile?.can_edit || !draft.current || !photoDirty) return;
+  // Each part saves against the revision the previous part returned, so one 저장 can write photos, contact and intro in turn.
+  const save = async (base: MyMerchantProfile) => {
+    if (working.current || !base.can_edit || !draft.current || !photoDirty) return null;
     working.current = true; setBusy(true); setError(''); setNotice('');
     try {
       const session = await supabase.auth.getSession();
@@ -113,35 +114,36 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
         if (!photo.image) continue;
         const path = await uploadMerchantProfileImage(supabase, me.id, merchantId, photo.image);
         uploads.current.add(path);
-        if (!mounted.current) { void supabase.storage.from('merchant-profile-images').remove([path]).catch(() => {}); return; }
+        if (!mounted.current) { void supabase.storage.from('merchant-profile-images').remove([path]).catch(() => {}); return null; }
         next = { ...next, [kind]: { path, uri: photo.uri } }; change(next);
       }
-      const patch = { avatarPath: next.avatar.path, bannerPath: next.banner.path, mapPhotoPath: next.map.path, updatedAt: profile.updated_at };
-      const saved = next.map.path !== (profile.map_photo_path ?? null)
+      const patch = { avatarPath: next.avatar.path, bannerPath: next.banner.path, mapPhotoPath: next.map.path, updatedAt: base.updated_at };
+      const saved = next.map.path !== (base.map_photo_path ?? null)
         ? await saveMyMerchantProfilePhotos(supabase, merchantId, patch) : await saveMyMerchantProfile(supabase, merchantId, patch);
-      if (!mounted.current) return;
-      setProfile(saved); change(savedPhotos(saved)); setNotice("프로필 사진을 저장했어요. 공개 가능한 비즈니스 프로필에 표시돼요."); play('success');
-      const old = [profile.avatar_path, profile.banner_path, profile.map_photo_path, ...uploads.current].filter((path): path is string => !!path);
+      if (!mounted.current) return null;
+      setProfile(saved); change(savedPhotos(saved));
+      const old = [base.avatar_path, base.banner_path, base.map_photo_path, ...uploads.current].filter((path): path is string => !!path);
       if (old.length) void supabase.storage.from('merchant-profile-images').remove([...new Set(old)]).catch(() => {});
+      return saved;
     } catch (failure) {
-      if (!mounted.current) return;
+      if (!mounted.current) return null;
       const message = failure instanceof Error ? failure.message : '';
       setError(message.includes('MERCHANT_PROFILE_CHANGED') ? "다른 곳에서 프로필이 바뀌었어요. 선택한 사진은 남아 있어요. 최근 저장본을 확인하려면 취소 후 다시 열어주세요."
         : message.includes('ACCOUNT_CHANGED') ? "계정이 바뀌었어요. 현재 계정으로 다시 열어주세요."
         : "저장을 확인하지 못했어요. 사진은 남아 있으니 같은 내용으로 다시 시도해 주세요.");
-      play('warning');
+      play('warning'); return null;
     } finally { working.current = false; if (mounted.current) setBusy(false); }
   };
-  const saveContact = async () => {
-    if (working.current || !profile?.can_edit || !contactDraft.current || !contactDirty) return;
+  const saveContact = async (base: MyMerchantProfile) => {
+    if (working.current || !base.can_edit || !contactDraft.current || !contactDirty) return null;
     working.current = true; setBusy(true); setError(''); setNotice('');
     try {
       const session = await supabase.auth.getSession();
       if (!mounted.current || session.data.session?.user.id !== me.id) throw new Error('ACCOUNT_CHANGED');
-      const saved = await saveMerchantContact(supabase, merchantId, contactDraft.current.phone, contactDraft.current.hours, profile.updated_at);
-      if (!mounted.current) return;
+      const saved = await saveMerchantContact(supabase, merchantId, contactDraft.current.phone, contactDraft.current.hours, base.updated_at);
+      if (!mounted.current) return null;
       setProfile(saved); changeContact({ phone: saved.public_phone ?? '', hours: saved.business_hours ?? '' });
-      setNotice("공개 전화번호와 영업시간을 저장했어요."); play('success');
+      return saved;
     } catch (failure) {
       if (mounted.current) {
         const message = failure instanceof Error ? failure.message : '';
@@ -151,18 +153,19 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
           : "연락 정보 저장을 확인하지 못했어요. 입력한 내용은 남아 있으니 다시 시도해 주세요.");
         play('warning');
       }
+      return null;
     } finally { working.current = false; if (mounted.current) setBusy(false); }
   };
-  const saveIntro = async () => {
-    if (working.current || !profile?.can_edit || !introDraft.current || !introDirty) return;
+  const saveIntro = async (base: MyMerchantProfile) => {
+    if (working.current || !base.can_edit || !introDraft.current || !introDirty) return null;
     working.current = true; setBusy(true); setError(''); setNotice('');
     try {
       const session = await supabase.auth.getSession();
       if (!mounted.current || session.data.session?.user.id !== me.id) throw new Error('ACCOUNT_CHANGED');
-      const saved = await saveMerchantIntro(supabase, merchantId, introDraft.current, profile.updated_at);
-      if (!mounted.current) return;
+      const saved = await saveMerchantIntro(supabase, merchantId, introDraft.current, base.updated_at);
+      if (!mounted.current) return null;
       setProfile(saved); changeIntro(savedIntro(saved));
-      setNotice("가게 소개를 저장했어요. 비워 둔 칸은 프로필에 안 보여요."); play('success');
+      return saved;
     } catch (failure) {
       if (mounted.current) {
         const message = failure instanceof Error ? failure.message : '';
@@ -172,7 +175,17 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
           : "소개 저장을 확인하지 못했어요. 입력한 내용은 남아 있으니 다시 시도해 주세요.");
         play('warning');
       }
+      return null;
     } finally { working.current = false; if (mounted.current) setBusy(false); }
+  };
+  // One save for the whole page (QA A-biz-05). A failed part stops the rest and keeps every unsaved edit.
+  const saveAll = async () => {
+    const steps = ([[photoDirty, save, "프로필 사진을 저장했어요. 공개 가능한 비즈니스 프로필에 표시돼요."], [contactDirty, saveContact, "공개 전화번호와 영업시간을 저장했어요."],
+      [introDirty, saveIntro, "가게 소개를 저장했어요. 비워 둔 칸은 프로필에 안 보여요."]] as const).filter(([needed]) => needed);
+    let base = profile;
+    for (const [, step] of steps) { if (!base) return; base = await step(base); }
+    if (!base || !steps.length || !mounted.current) return;
+    setNotice(steps.length === 1 ? steps[0][2] : "바꾼 내용을 모두 저장했어요."); play('success');
   };
   const reload = () => { setLoading(true); setError(''); setRevision((value) => value + 1); };
   const cancel = () => {
@@ -184,11 +197,11 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
   const card = [styles.card, clayBox ? styles.clayCard : { borderColor: theme.line, backgroundColor: theme.card }];
   // Public profile fields guests see; [label, fillable on this screen].
   const missing = !profile ? [] : ([[tr("배너"), !profile.banner_path], [tr("로고"), !profile.avatar_path], [tr("주소"), !profile.address?.trim(), false],
-    [tr("영업시간"), !profile.business_hours?.trim()], [tr("전화번호"), !profile.public_phone?.trim()], [tr("소개"), !profile.services?.trim(), false]] as [string, boolean, boolean?][])
+    [tr("영업시간"), !profile.business_hours?.trim()], [tr("전화번호"), !profile.public_phone?.trim()], [tr("소개"), !profile.services?.trim() && !Object.values(savedIntro(profile)).some(line => line.trim())]] as [string, boolean, boolean?][])
     .filter(([, empty]) => empty).map(([label, , here = true]) => [label, here] as const);
   return <View style={styles.page}>
     {(!bare || profile) && <View style={[styles.row, bare && styles.end]}>
-      {!bare && <ThemedText type="subtitle">{tr("비즈니스 프로필")}</ThemedText>}
+      {!bare && <ThemedText type="section" accessibilityRole="header">{tr("비즈니스 프로필")}</ThemedText>}
       {profile && <ProfileAction label={tr("공개 프로필 보기")} onPress={() => {
         if (Platform.OS === 'web') void Linking.openURL(publicCompanyUrl(merchantId)).catch(() => setError("프로필을 열지 못했어요. 잠시 후 다시 시도해 주세요."));
         else router.push({ pathname: '/company/[id]', params: { id: merchantId } });
@@ -199,7 +212,7 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
         {profile.can_edit && missing.length > 0 && <View style={card} accessibilityRole="summary">{clayBox && <ClayBoxFill kind="tile" />}
           <ThemedText type="smallBold">{tr("배너·주소·영업시간을 채우면 더 잘 보여요")}</ThemedText>
           <ThemedText type="small">{tr("아직 비어 있어요: {0}", missing.map(([label]) => label).join(', '))}</ThemedText>
-          {missing.some(([, here]) => !here) && <ThemedText type="small" themeColor="textSecondary">{tr("주소와 소개는 {0}로 보내 주시면 넣어 드려요.", CONTACT_EMAIL)}</ThemedText>}
+          {missing.some(([, here]) => !here) && <ThemedText type="small" themeColor="textSecondary">{tr("주소는 {0} 메일로 보내 주세요. 넣어 드릴게요.", CONTACT_EMAIL)}</ThemedText>}
         </View>}
         <View style={card}>{clayBox && <ClayBoxFill kind="tile" />}
           <ThemedText type="smallBold">{tr("사진")}</ThemedText>
@@ -210,26 +223,24 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
               const photo = photos[kind], has = !!(photo.uri || photo.path || photo.image);
               return <View key={kind} style={styles.tile}>
                 <ThemedText type="smallBold">{name(kind)}</ThemedText>
-                {photo.uri ? <Image source={{ uri: photo.uri }} style={[styles.thumb, { backgroundColor: theme.backgroundElement }, kind === 'avatar' && styles.logo, kind === 'map' && styles.mapCard]} contentFit="cover"
-                  accessibilityLabel={kind === 'banner' ? tr("채널 배너 미리보기") : kind === 'avatar' ? tr("가게 로고 미리보기") : tr("지도에 뜨는 사진 미리보기")}
-                  onError={kind !== 'map' ? undefined : () => { if (!draft.current || draft.current.map.uri !== photos.map.uri) return;
-                    setProfile(current => current ? { ...current, imageLoadFailed: true } : current); change({ ...draft.current, map: { ...draft.current.map, uri: null } }); }} />
-                  : <Pressable analyticsId="merchant.profile.action" accessibilityRole="button" accessibilityLabel={tr("{0} {1}", short(kind), has ? tr('교체') : tr('선택'))} accessibilityState={{ disabled: busy }}
-                    disabled={busy} onPress={() => { play('selection'); void choose(kind); }}
-                    style={({ pressed }) => [styles.thumb, styles.empty, { borderColor: theme.line, opacity: busy ? 0.45 : pressed ? 0.7 : 1 }, kind === 'avatar' && styles.logo, kind === 'map' && styles.mapCard]}>
-                    <ThemedText type="smallBold" themeColor="accent">{tr("+ 추가")}</ThemedText>
-                  </Pressable>}
+                {/* The box itself picks or replaces the photo; a separate button did the same thing (QA A-biz-05). */}
+                <Pressable analyticsId="merchant.profile.action" accessibilityRole="button" accessibilityLabel={tr("{0} {1}", short(kind), has ? tr('교체') : tr('선택'))} accessibilityState={{ disabled: busy }}
+                  disabled={busy} onPress={() => { play('selection'); void choose(kind); }}
+                  style={({ pressed }) => [photo.uri ? kind !== 'banner' && styles.start : [styles.thumb, styles.empty, { borderColor: theme.line }, kind === 'avatar' && styles.logo, kind === 'map' && styles.mapCard], { opacity: busy ? 0.45 : pressed ? 0.7 : 1 }]}>
+                  {photo.uri ? <>
+                    <Image source={{ uri: photo.uri }} style={[styles.thumb, { backgroundColor: theme.backgroundElement }, kind === 'avatar' && styles.logo, kind === 'map' && styles.mapCard]} contentFit="cover"
+                      accessibilityLabel={kind === 'banner' ? tr("채널 배너 미리보기") : kind === 'avatar' ? tr("가게 로고 미리보기") : tr("지도에 뜨는 사진 미리보기")}
+                      onError={kind !== 'map' ? undefined : () => { if (!draft.current || draft.current.map.uri !== photos.map.uri) return;
+                        setProfile(current => current ? { ...current, imageLoadFailed: true } : current); change({ ...draft.current, map: { ...draft.current.map, uri: null } }); }} />
+                    <View style={[styles.swap, { backgroundColor: theme.card, borderColor: theme.line }]}><ThemedText type="small" themeColor="accent">{tr('교체')}</ThemedText></View>
+                  </> : <ThemedText type="smallBold" themeColor="accent">{has ? tr('교체') : tr("+ 추가")}</ThemedText>}
+                </Pressable>
                 <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{kind === 'banner' ? tr("가로 · 가운데 기준") : kind === 'avatar' ? tr("원형으로 보여요") : tr("지도에서 가게를 누르면 보여요")}</ThemedText>
-                <View style={styles.actions}>
-                  <ProfileAction label={tr("{0} {1}", short(kind), has ? tr('교체') : tr('선택'))} onPress={() => { void choose(kind); }} disabled={busy} />
-                  {has && <ProfileAction label={tr("{0} 제거", short(kind))} onPress={() => change({ ...photos, [kind]: { path: null, uri: null } })} disabled={busy} />}
-                </View>
+                {has && <View style={styles.actions}>
+                  <ProfileAction label={tr("{0} 제거", short(kind))} onPress={() => change({ ...photos, [kind]: { path: null, uri: null } })} disabled={busy} />
+                </View>}
               </View>;
             })}</View>
-            <View style={[styles.actions, styles.end]}>
-              {dirty && <ProfileAction label={tr("취소")} onPress={cancel} disabled={busy} />}
-              <ProfileAction label={busy ? tr("처리 중…") : tr("프로필 사진 저장")} onPress={() => { void save(); }} disabled={busy || !photoDirty} primary={photoDirty} />
-            </View>
           </>}
           {profile.imageLoadFailed && !dirty && <View style={styles.row}><ThemedText type="small" themeColor="textSecondary">{tr("사진 일부를 불러오지 못했어요. 저장된 사진은 유지돼요.")}</ThemedText><ProfileAction label={tr("사진 다시 확인")} onPress={() => { change(null); reload(); }} disabled={busy} /></View>}
         </View>
@@ -242,20 +253,17 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
             <View style={styles.field}>
               <ThemedText type="smallBold">{tr("전화번호")}</ThemedText>
               <TextInput accessibilityLabel={tr("비즈니스 공개 전화번호")} value={contact.phone} editable={!busy} maxLength={40} keyboardType="phone-pad" autoCapitalize="none"
-                placeholder="+1 604 555 0101" placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')} onChangeText={phone => changeContact({ ...contact, phone })}
+                placeholder={tr("예: +1 604 555 0101")} placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')} onChangeText={phone => changeContact({ ...contact, phone })}
                 style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
             </View>
             <View style={styles.field}>
               <ThemedText type="smallBold">{tr("영업시간")}</ThemedText>
               <TextInput accessibilityLabel={tr("비즈니스 영업시간")} value={contact.hours} editable={!busy} maxLength={500} multiline
-                placeholder={tr("월–금 09:00–18:00\n토·일 휴무")} placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')} onChangeText={hours => changeContact({ ...contact, hours })}
+                placeholder={tr("예: 월–금 09:00–18:00\n토·일 휴무")} placeholderTextColor={theme.textSecondary} onFocus={() => play('selection')} onChangeText={hours => changeContact({ ...contact, hours })}
                 style={[styles.input, styles.hours, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
             </View>
           </View>
           <ThemedText type="small" themeColor="textSecondary">{tr("손님에게 공개돼요. 내부 담당자 연락처와는 따로예요.")}</ThemedText>
-          <View style={[styles.actions, styles.end]}>
-            <ProfileAction label={busy ? tr("연락 정보 처리 중…") : tr("연락 정보 저장")} onPress={() => { void saveContact(); }} disabled={busy || !contactDirty} primary={!photoDirty && contactDirty} />
-          </View>
         </View>}
         {profile.can_edit && intro && <View style={card}>{clayBox && <ClayBoxFill kind="tile" />}
           <View style={styles.title}>
@@ -273,9 +281,10 @@ function ScopedProfileEditor({ merchantId, onDirty, bare = false }: { merchantId
               onChangeText={value => changeIntro({ ...intro, [key]: value.replace(/[\r\n]+/g, ' ') })}
               style={[styles.input, { color: theme.text, borderColor: theme.line, backgroundColor: theme.background }]} />
           </View>)}
-          <View style={[styles.actions, styles.end]}>
-            <ProfileAction label={busy ? tr("소개 저장 중…") : tr("소개 저장")} onPress={() => { void saveIntro(); }} disabled={busy || !introDirty} primary={!photoDirty && !contactDirty && introDirty} />
-          </View>
+        </View>}
+        {profile.can_edit && <View style={[styles.actions, styles.end]}>
+          {dirty && <ProfileAction label={tr("취소")} onPress={cancel} disabled={busy} />}
+          <ProfileAction label={busy ? tr("저장 중…") : tr("저장")} onPress={() => { void saveAll(); }} disabled={busy || !dirty} primary={dirty} />
         </View>}
       </>}
     {!!error && <ThemedText type="small" accessibilityRole="alert">{tr(error)}</ThemedText>}
@@ -299,6 +308,8 @@ const styles = StyleSheet.create({
   // The map card's thumbnail frame (map.tsx styles.thumbnail), so the preview crops the photo the way the map does.
   mapCard: { width: 72, height: 84, borderRadius: 12 },
   empty: { borderWidth: 1, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
+  start: { alignSelf: 'flex-start' },
+  swap: { position: 'absolute', right: 6, bottom: 6, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, borderWidth: 1 },
   button: { minHeight: 44, minWidth: 44, paddingHorizontal: 14, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderRadius: 10 },
   title: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: 8 },
   fields: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },

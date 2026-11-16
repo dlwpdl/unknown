@@ -1,7 +1,9 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { translateUi } from '../i18n/index.ts';
+import { safePostLink } from '../../supabase/functions/_shared/post-links.ts';
 import type { AppLanguage } from '../i18n/language.ts';
-import { coarseListingPin, findNeighborhood, neighborhoodName } from './neighborhoods.ts';
-import { googleMapsPin, postMapBody } from './post-maps.ts';
+import { coarseListingPin, exactListingAddress, findNeighborhood, nearestNeighborhood, neighborhoodName } from './neighborhoods.ts';
+import { googleMapsPin, googlePinUrl, postMapBody, withPostMap } from './post-maps.ts';
 import type { ListingStatus, Post } from './types.ts';
 
 // Category fields for 부동산·구인구직·중고거래 (owner-approved mockup 2026-10-27, direction A).
@@ -13,7 +15,8 @@ export const isListingCategory = (slug: string | null | undefined): slug is List
 
 export const HOUSING_DEALS = ['rent_offer', 'rent_wanted', 'sale', 'buy'] as const;
 export const ROOMS = ['room', 'studio', '1b', '1b_den', '2b', '2b2b', '3b', 'basement'] as const;
-export const HOUSING_INCLUDES = ['furnished', 'utilities', 'parking', 'pets'] as const;
+// Append only: older apps keep the values they know and skip the rest (parseListingDetails).
+export const HOUSING_INCLUDES = ['furnished', 'utilities', 'parking', 'pets', 'laundry'] as const;
 export const JOB_DEALS = ['hiring', 'seeking'] as const;
 export const PAY_UNITS = ['hour', 'month', 'year', 'negotiable'] as const;
 export const JOB_TYPES = ['full', 'part', 'weekend', 'contract'] as const;
@@ -35,7 +38,9 @@ export type Condition = typeof CONDITIONS[number];
 // extras: the author's own 포함된 것 items (≤5, ≤20 chars), shown only while they are in the body.
 export type HousingDetails = { type: 'housing'; deal: HousingDeal; rooms?: Room; moveIn?: string; area?: string; includes?: HousingInclude[]; extras?: string[]; lead?: string };
 // pay repeats posts.price for business job posts, which are published without a price.
-export type JobsDetails = { type: 'jobs'; deal: JobDeal; payUnit?: PayUnit; pay?: number; jobTypes?: JobType[]; area?: string; hours?: string; duties?: string; apply?: ApplyWay[]; lead?: string };
+// phone·email·link: the author's own 지원 방법 contacts (server 20261114182000), kept only while they are in the body like hours.
+export type JobsDetails = { type: 'jobs'; deal: JobDeal; payUnit?: PayUnit; pay?: number; jobTypes?: JobType[]; area?: string; hours?: string; duties?: string; apply?: ApplyWay[];
+  phone?: string; email?: string; link?: string; lead?: string };
 export type UsedDetails = { type: 'used'; deal: UsedDeal; offers?: boolean; condition?: Condition; area?: string; lead?: string };
 export type ListingDetails = HousingDetails | JobsDetails | UsedDetails;
 
@@ -45,7 +50,7 @@ export const LISTING_LABELS = {
   jobs: { hiring: '구인', seeking: '구직' } satisfies Record<JobDeal, string>,
   used: { sell: '팝니다', buy: '삽니다' } satisfies Record<UsedDeal, string>,
   rooms: { room: '방 한 칸', studio: '스튜디오', '1b': '1베드', '1b_den': '1+덴', '2b': '2베드', '2b2b': '2베드 2배스', '3b': '3베드 이상', basement: '베이스먼트' } satisfies Record<Room, string>,
-  includes: { furnished: '가구 포함', utilities: '유틸 포함', parking: '주차', pets: '반려동물 가능' } satisfies Record<HousingInclude, string>,
+  includes: { furnished: '가구 포함', utilities: '유틸 포함', parking: '주차', pets: '반려동물 가능', laundry: '인스위트 세탁기' } satisfies Record<HousingInclude, string>,
   payUnit: { hour: '시급', month: '월급', year: '연봉', negotiable: '협의' } satisfies Record<PayUnit, string>,
   jobTypes: { full: '풀타임', part: '파트타임', weekend: '주말만', contract: '계약직' } satisfies Record<JobType, string>,
   apply: { chat: '글링 대화', email: '이메일', phone: '전화', visit: '직접 방문' } satisfies Record<ApplyWay, string>,
@@ -95,7 +100,7 @@ export function listingPriceLabel(details: ListingDetails, price: number | null 
 function includesText(includes: readonly HousingInclude[], language: AppLanguage) {
   if (language === 'en') return includes.map(item => translateUi('en', LISTING_LABELS.includes[item])).join(', ');
   const covered = includes.filter(item => item === 'furnished' || item === 'utilities').map(item => item === 'furnished' ? '가구' : '유틸');
-  return [covered.length ? `${covered.join('·')} 포함` : '', ...includes.filter(item => item === 'parking' || item === 'pets').map(item => LISTING_LABELS.includes[item])].filter(Boolean).join(', ');
+  return [covered.length ? `${covered.join('·')} 포함` : '', ...includes.filter(item => item !== 'furnished' && item !== 'utilities').map(item => LISTING_LABELS.includes[item])].filter(Boolean).join(', ');
 }
 
 // The first line(s) written into the body. Old app versions read only this text.
@@ -117,6 +122,8 @@ export function buildListingLead(details: ListingDetails, input: { title: string
     parts.push(input.title.trim(), pay, details.jobTypes?.map(item => t(LISTING_LABELS.jobTypes[item])).join(', '), area, details.hours);
     if (details.duties) extra.push(`${t('하는 일')}: ${details.duties}`);
     if (details.apply?.length) extra.push(`${t('지원 방법')}: ${details.apply.map(item => t(LISTING_LABELS.apply[item])).join(', ')}`);
+    const contacts = [details.phone, details.email, details.link].filter(Boolean);
+    if (contacts.length) extra.push(`${t('연락처')}: ${contacts.join(' · ')}`);
   } else {
     parts.push(listingPriceLabel(details, input.price, language), details.condition && t(LISTING_LABELS.condition[details.condition]), area, details.offers ? t('가격 제안 받아요') : null);
   }
@@ -124,6 +131,14 @@ export function buildListingLead(details: ListingDetails, input: { title: string
 }
 
 export const withListingLead = (lead: string, body: string) => body.trim() ? `${lead}\n\n${body.trim()}` : lead;
+
+// 글 수정: the new first line on the edited text. The map line stays unless the neighborhood changed (it may be a listing
+// address the business published); a new neighborhood moves it to that neighborhood's centre, as a new post does.
+export function editedListingBody(details: ListingDetails, text: string, previousArea: string | undefined, cityId: string, language: AppLanguage) {
+  const body = withListingLead(details.lead!, text);
+  const area = details.area !== previousArea ? findNeighborhood(cityId, details.area) : null;
+  return area ? withPostMap(body, googlePinUrl(area), neighborhoodName(area, language)) : body;
+}
 
 // New apps show the fields, so the lead is dropped once. An edited lead no longer matches and stays visible.
 export function stripListingLead(body: string, details: ListingDetails | null | undefined) {
@@ -134,15 +149,27 @@ export function stripListingLead(body: string, details: ListingDetails | null | 
 // ---- composer draft ---------------------------------------------------------------------------
 export type ListingDraft = {
   deal: string; rooms: Room | null; moveIn: string | null; area: string | null; includes: HousingInclude[]; extras: string[];
-  payUnit: PayUnit; jobTypes: JobType[]; hours: string; duties: string; apply: ApplyWay[];
+  payUnit: PayUnit; jobTypes: JobType[]; hours: string; duties: string; apply: ApplyWay[]; phone: string; email: string; link: string;
   condition: Condition | null; offers: boolean; free: boolean; price: string;
 };
 export const emptyListingDraft = (category: ListingCategory): ListingDraft => ({
   deal: category === 'housing' ? 'rent_offer' : category === 'jobs' ? 'hiring' : 'sell',
-  rooms: null, moveIn: null, area: null, includes: [], extras: [], payUnit: 'hour', jobTypes: [], hours: '', duties: '', apply: [],
+  rooms: null, moveIn: null, area: null, includes: [], extras: [], payUnit: 'hour', jobTypes: [], hours: '', duties: '', apply: [], phone: '', email: '', link: '',
   condition: null, offers: false, free: false, price: '',
 });
-export type ListingMissing = 'deal' | 'rooms' | 'area' | 'price' | 'condition';
+export type ListingMissing = 'deal' | 'rooms' | 'area' | 'price' | 'condition' | 'contact';
+// 글 수정: the saved card back into the composer's draft. listingFromDraft on the result gives the same card.
+export function listingDraftFromDetails(details: ListingDetails, price: number | null | undefined): ListingDraft {
+  const draft = emptyListingDraft(details.type);
+  const amount = details.type === 'jobs' ? price ?? details.pay : price;
+  draft.deal = details.deal;
+  draft.area = details.area ?? null;
+  draft.price = amount == null ? '' : String(amount);
+  if (details.type === 'housing') Object.assign(draft, { rooms: details.rooms ?? null, moveIn: details.moveIn ?? null, includes: details.includes ?? [], extras: details.extras ?? [] });
+  else if (details.type === 'jobs') Object.assign(draft, { payUnit: details.payUnit ?? 'hour', jobTypes: details.jobTypes ?? [], hours: details.hours ?? '', duties: details.duties ?? '', apply: details.apply ?? [], phone: details.phone ?? '', email: details.email ?? '', link: details.link ?? '' });
+  else Object.assign(draft, { condition: details.condition ?? null, offers: details.offers === true, free: details.deal === 'sell' && price === 0, price: details.deal === 'sell' && price === 0 ? '' : draft.price });
+  return draft;
+}
 
 const clean = (value: string, max: number) => value.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 export const MAX_LISTING_EXTRAS = 5;
@@ -159,6 +186,41 @@ export function listingExtras(list: readonly unknown[]): string[] {
 }
 const pick = <T extends string>(values: readonly T[], value: unknown): T | undefined => values.includes(value as T) ? value as T : undefined;
 const pickAll = <T extends string>(values: readonly T[], list: unknown) => Array.isArray(list) ? values.filter(value => list.includes(value)) : [];
+// 지원 방법 contacts. The server guard (20261114182000) checks the same shapes, so a value the app accepts is never rejected there.
+const PHONE = /^\+?[0-9][0-9 ().-]{5,22}[0-9]$/;
+const EMAIL = /^[^\s@<>()",;:]{1,64}@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}$/i;
+const LINK = /^https:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}(?:\/\S*)?$/i;
+export const validPhone = (value: string) => PHONE.test(value) && (value.match(/\d/g)?.length ?? 0) >= 7 && (value.match(/\d/g)?.length ?? 0) <= 15;
+export const validEmail = (value: string) => value.length <= 80 && EMAIL.test(value);
+export const validLink = (value: string) => value.length <= 160 && LINK.test(value) && safePostLink(value) !== null;
+// Phone numbers (North American, or Korean with separators) and emails written in a job post body. Prices, dates and times never match.
+const BODY_PHONE = /(^|[^\d$.,:])((?:\+?1[ .-]?)?(?:\(\d{3}\)|\d{3})[ .-]?\d{3}[ .-]?\d{4}|0\d{1,2}[ .-]\d{3,4}[ .-]\d{4})(?![\d])/g;
+const BODY_EMAIL = /[a-z0-9._%+-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}/gi;
+const firstTwo = (items: string[]) => [...new Set(items)].slice(0, 2);
+// What 지원하기 offers: the author's own fields when the post has them, otherwise the numbers and emails in the body.
+export function listingContacts(details: ListingDetails | null | undefined, body: string) {
+  const jobs = details?.type === 'jobs' ? details : null;
+  const typed = !!(jobs?.phone || jobs?.email || jobs?.link);
+  return {
+    phones: typed ? jobs?.phone ? [jobs.phone] : [] : firstTwo([...body.matchAll(BODY_PHONE)].map(match => match[2])),
+    emails: typed ? jobs?.email ? [jobs.email] : [] : firstTwo(body.match(BODY_EMAIL) ?? []),
+    links: jobs?.link ? [jobs.link] : [],
+  };
+}
+// tel:/sms: take digits and a leading plus only.
+export const dialNumber = (phone: string) => phone.replace(/(?!^\+)[^\d]/g, '');
+
+// The 연락처 fields need the server guard that accepts them. Before 20261114182000 this call is missing (PGRST202),
+// and on any error the composer keeps hiding the fields, so a post never loses its card to a rejected key.
+export async function loadApplyContactEnabled(client: Pick<SupabaseClient, 'rpc'>) {
+  try {
+    const result = await client.rpc('listing_apply_contact_enabled');
+    return !result.error && result.data === true;
+  } catch {
+    return false;
+  }
+}
+
 export function parsePrice(text: string): number | null {
   const value = text.replace(/[,\s$]/g, '');
   if (!/^\d{1,8}(?:\.\d{1,2})?$/.test(value)) return null;
@@ -180,8 +242,11 @@ export function listingFromDraft(category: ListingCategory, draft: ListingDraft,
     if (!area) missing.push('area');
   } else if (category === 'jobs') {
     const deal = pick(JOB_DEALS, draft.deal) ?? 'hiring';
+    const contact = deal === 'hiring' ? { phone: clean(draft.phone, 24), email: clean(draft.email, 80), link: clean(draft.link, 160) } : { phone: '', email: '', link: '' };
+    if ((contact.phone && !validPhone(contact.phone)) || (contact.email && !validEmail(contact.email)) || (contact.link && !validLink(contact.link))) missing.push('contact');
     details = { type: 'jobs', deal, payUnit: draft.payUnit, jobTypes: pickAll(JOB_TYPES, draft.jobTypes), area,
-      hours: clean(draft.hours, 40) || undefined, duties: clean(draft.duties, 200) || undefined, apply: deal === 'hiring' ? pickAll(APPLY_WAYS, draft.apply) : [] };
+      hours: clean(draft.hours, 40) || undefined, duties: clean(draft.duties, 200) || undefined, apply: deal === 'hiring' ? pickAll(APPLY_WAYS, draft.apply) : [],
+      phone: contact.phone || undefined, email: contact.email || undefined, link: contact.link || undefined };
     if (draft.payUnit === 'negotiable') price = null;
     else if (deal === 'hiring' && price == null && !missing.includes('price')) missing.push('price');
     details.pay = price ?? undefined;
@@ -209,7 +274,8 @@ export function parseListingDetails(raw: unknown, body: string): ListingDetails 
   const area = typeof value.area === 'string' && /^[a-z0-9-]{1,40}$/.test(value.area) ? value.area : undefined;
   // Free text is shown only while the same words are in the body, which the safety monitoring reads.
   const text = (field: unknown, max: number) => typeof field === 'string' && field.length <= max && !/[\u0000-\u001f\u007f]/.test(field) && field.trim() && body.includes(field) ? field : undefined;
-  const lead = typeof value.lead === 'string' && value.lead.length <= 600 && body.startsWith(value.lead) ? value.lead : undefined;
+  // 900 since 20261114182000 (the 연락처 line); older servers stop at 600.
+  const lead = typeof value.lead === 'string' && value.lead.length <= 900 && body.startsWith(value.lead) ? value.lead : undefined;
   let details: ListingDetails;
   if (value.type === 'housing') {
     const deal = pick(HOUSING_DEALS, value.deal);
@@ -221,8 +287,10 @@ export function parseListingDetails(raw: unknown, body: string): ListingDetails 
     const deal = pick(JOB_DEALS, value.deal);
     if (!deal) return null;
     const pay = typeof value.pay === 'number' && Number.isFinite(value.pay) && value.pay >= 0 && value.pay < 1e8 ? value.pay : undefined;
+    const contact = (field: unknown, valid: (value: string) => boolean) => { const kept = text(field, 160); return kept && valid(kept) ? kept : undefined; };
     details = { type: 'jobs', deal, payUnit: pick(PAY_UNITS, value.payUnit), pay, jobTypes: pickAll(JOB_TYPES, value.jobTypes), area,
-      hours: text(value.hours, 40), duties: text(value.duties, 200), apply: pickAll(APPLY_WAYS, value.apply) };
+      hours: text(value.hours, 40), duties: text(value.duties, 200), apply: pickAll(APPLY_WAYS, value.apply),
+      phone: contact(value.phone, validPhone), email: contact(value.email, validEmail), link: contact(value.link, validLink) };
   } else if (value.type === 'used') {
     const deal = pick(USED_DEALS, value.deal);
     if (!deal) return null;
@@ -239,11 +307,17 @@ export function listingStatusLabel(category: ListingCategory, status: ListingSta
 
 // ---- map ---------------------------------------------------------------------------------------
 export type ListingPin = { key: string; latitude: number; longitude: number; name: string | null };
-// Neighborhood centre only. Older posts with an exact pin are snapped too, so no listing shows a home or meeting point.
-export function listingPin(post: Pick<Post, 'cityId' | 'body' | 'listingDetails'>, language: AppLanguage): ListingPin | null {
+// Neighborhood centre, and older posts with an exact pin are snapped too, so no member's listing shows a home or meeting point.
+// A business's rent post sits at the address in its map line (exactListingAddress); listings there share one marker.
+type PinnedPost = Pick<Post, 'cityId' | 'body' | 'listingDetails' | 'business' | 'tag'>;
+export function listingPin(post: PinnedPost, language: AppLanguage): ListingPin | null {
+  const mapped = postMapBody(post.body), pin = mapped.url ? googleMapsPin(mapped.url) : null;
+  if (pin && exactListingAddress(post)) {
+    const near = nearestNeighborhood(post.cityId, pin);
+    return { key: `${pin.latitude},${pin.longitude}`, latitude: pin.latitude, longitude: pin.longitude, name: near ? neighborhoodName(near, language) : null };
+  }
   const area = findNeighborhood(post.cityId, post.listingDetails?.area);
   if (area) return { key: area.id, latitude: area.latitude, longitude: area.longitude, name: neighborhoodName(area, language) };
-  const mapped = postMapBody(post.body), pin = mapped.url ? googleMapsPin(mapped.url) : null;
   if (!pin) return null;
   const coarse = coarseListingPin(post.cityId, pin);
   return { key: coarse.neighborhood?.id ?? `${coarse.latitude},${coarse.longitude}`, latitude: coarse.latitude, longitude: coarse.longitude,
@@ -251,7 +325,7 @@ export function listingPin(post: Pick<Post, 'cityId' | 'body' | 'listingDetails'
 }
 
 export type ListingArea<P> = { id: string; latitude: number; longitude: number; name: string | null; label: string; posts: P[] };
-export function groupListingsByArea<P extends Pick<Post, 'cityId' | 'body' | 'listingDetails' | 'price'>>(posts: readonly P[], language: AppLanguage): ListingArea<P>[] {
+export function groupListingsByArea<P extends PinnedPost & Pick<Post, 'price'>>(posts: readonly P[], language: AppLanguage): ListingArea<P>[] {
   const areas = new Map<string, ListingArea<P>>();
   for (const post of posts) {
     const pin = listingPin(post, language);
@@ -270,6 +344,17 @@ export function groupListingsByArea<P extends Pick<Post, 'cityId' | 'body' | 'li
 export type MapBounds = { west: number; south: number; east: number; north: number };
 export const inBounds = (bounds: MapBounds, point: { latitude: number; longitude: number }) =>
   point.latitude >= bounds.south && point.latitude <= bounds.north && point.longitude >= bounds.west && point.longitude <= bounds.east;
+
+// Opening camera for a category map: the middle of every area, zoomed out from the city view (11) until all fit about 280pt across.
+export function listingMapFit(points: readonly { latitude: number; longitude: number }[]) {
+  if (!points.length) return null;
+  const lats = points.map(point => point.latitude), lons = points.map(point => point.longitude);
+  const south = Math.min(...lats), north = Math.max(...lats), west = Math.min(...lons), east = Math.max(...lons), middle = (south + north) / 2;
+  const span = Math.max(east - west, (north - south) / Math.cos(middle * Math.PI / 180), 1e-6); // latitude span in longitude degrees (Mercator)
+  // MapLibre draws the world 512px wide at zoom 0 (final QA: with 256 the rent map opened a step too close and hid both prices).
+  const zoom = Math.max(8, Math.min(11, Math.floor(Math.log2(280 * 360 / (512 * span)) * 4) / 4));
+  return { center: { latitude: middle, longitude: (west + east) / 2 }, zoom };
+}
 
 // ---- filters (shared by list and map) ----------------------------------------------------------
 // 부동산 렌트·매매: rent covers 렌트 내놓음/구함, sale covers 매매 판매/구매.
@@ -323,8 +408,19 @@ export function freeBand<P extends Pick<Post, 'price' | 'listingDetails' | 'titl
   const free = posts.filter(isFreeListing);
   return { count: free.length, tiles: free.slice(0, 8), more: Math.max(0, free.length - 8), names: free.slice(0, 2).map(post => post.title), others: Math.max(0, free.length - 2) };
 }
+// Photo grids pair two tiles per row. An item that is not a tile (a used-goods story with no listing fields) gets a full row instead of half of one,
+// placed right after the row it interrupted fills up, so no tile row is left half empty mid-list (QA 2026-11-13 B13-1).
+export function pairTiles<T>(items: readonly T[], tile: (item: T) => boolean): (T | T[])[] {
+  const rows: (T | T[])[] = [];
+  let open: T[] | null = null, waiting: T[] = [];
+  for (const item of items) {
+    if (!tile(item)) { if (open) waiting.push(item); else rows.push(item); continue; }
+    if (open) { open.push(item); rows.push(...waiting); waiting = []; open = null; } else rows.push(open = [item]);
+  }
+  return [...rows, ...waiting];
+}
 // The loaded posts by neighborhood, the same grouping as the map, busiest first (ties keep feed order). Posts with no place come last.
-export function listingAreaRows<P extends Pick<Post, 'cityId' | 'body' | 'listingDetails' | 'price'>>(posts: readonly P[], language: AppLanguage) {
+export function listingAreaRows<P extends PinnedPost & Pick<Post, 'price'>>(posts: readonly P[], language: AppLanguage) {
   const areas = groupListingsByArea(posts.filter(post => post.listingDetails), language).sort((a, b) => b.posts.length - a.posts.length);
   const placed = new Set(areas.flatMap(area => area.posts));
   return { areas, rest: posts.filter(post => !placed.has(post)) };

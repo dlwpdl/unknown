@@ -85,13 +85,13 @@ export function MerchantSegments<T extends string>({ items, value, onChange, dis
   </View>;
 }
 
-// Where the owner is in a multi-step flow (e.g. 내용 → 원고 확인 → 게시할 곳).
+// Where the owner is in a multi-step flow (e.g. 쓰기 → 올릴 곳).
 export function MerchantSteps({ steps, current }: { steps: string[]; current: number }) {
   const theme = useTheme();
   return <View style={styles.steps} accessibilityRole="progressbar" accessibilityValue={{ min: 1, max: steps.length, now: current + 1 }}>
     {steps.map((step, index) => <View key={step} style={styles.step}>
       {index > 0 && <ThemedText type="small" themeColor="textSecondary" accessible={false}>›</ThemedText>}
-      <View style={[styles.stepNumber, { backgroundColor: index === current ? theme.accent : theme.backgroundElement }]}><ThemedText type="small" style={{ color: index === current ? theme.accentInk : theme.textSecondary }}>{index + 1}</ThemedText></View>
+      <View style={[styles.stepNumber, { backgroundColor: index === current ? theme.accent : theme.backgroundElement }]}><ThemedText type="small" maxFontSizeMultiplier={1} style={{ color: index === current ? theme.accentInk : theme.textSecondary }}>{index + 1}</ThemedText></View>
       <ThemedText type="smallBold" themeColor={index === current ? 'text' : 'textSecondary'}>{step}</ThemedText>
     </View>)}
   </View>;

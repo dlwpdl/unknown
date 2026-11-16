@@ -36,7 +36,7 @@ export function mountParticipant(screen, options = {}) {
   };
   class Value { constructor(value) { this.value = value; } setValue(value) { this.value = value; } interpolate() { return 1; } stopAnimation() {} }
   const animated = { Value, View: 'View', timing: () => ({ start: fn => fn?.() }), spring: () => ({ start: fn => fn?.() }), parallel: () => ({ start: fn => fn?.() }) };
-  const native = { StyleSheet: { create: value => value, hairlineWidth: 1 }, View: 'View', TextInput: 'TextInput', RefreshControl: 'RefreshControl', KeyboardAvoidingView: 'View', Modal: 'Modal', Animated: animated, Easing: { out: value => value }, Keyboard: { dismiss() {} }, LayoutAnimation: { configureNext() {}, Presets: { easeInEaseOut: {} } }, Platform: { OS: ctx.os ?? 'ios' }, useWindowDimensions: () => ({ width: ctx.width ?? 390, height: 844, fontScale: ctx.fontScale ?? 1 }), Alert: { alert: (...args) => alerts.push(args) }, AppState: { addEventListener: () => ({ remove() {} }) }, DeviceEventEmitter: { addListener: () => ({ remove() {} }), emit: value => calls.push(['emit', value]) } };
+  const native = { StyleSheet: { create: value => value, hairlineWidth: 1 }, View: 'View', TextInput: 'TextInput', RefreshControl: 'RefreshControl', KeyboardAvoidingView: 'View', Modal: 'Modal', Animated: animated, Easing: { out: value => value }, Keyboard: { dismiss() {}, addListener: () => ({ remove() {} }) }, LayoutAnimation: { configureNext() {}, Presets: { easeInEaseOut: {} } }, Platform: { OS: ctx.os ?? 'ios' }, useWindowDimensions: () => ({ width: ctx.width ?? 390, height: 844, fontScale: ctx.fontScale ?? 1 }), Alert: { alert: (...args) => alerts.push(args) }, AppState: { addEventListener: () => ({ remove() {} }) }, DeviceEventEmitter: { addListener: () => ({ remove() {} }), emit: value => calls.push(['emit', value]) } };
   const imports = {
     react, 'react/jsx-runtime': { jsx: (type, props, key) => ({ type, props, key }), jsxs: (type, props, key) => ({ type, props, key }), Fragment: 'Fragment' }, 'react-native': native,
     'expo-router': { useFocusEffect: fn => effect(fn, [fn]), usePreventRemove: (active, fn) => { ctx.preventRemove = active ? fn : null; }, useRouter: () => ({ push: route => calls.push(['push', JSON.parse(JSON.stringify(route))]), replace: route => calls.push(['replace', JSON.parse(JSON.stringify(route))]), back: () => calls.push(['back']), canGoBack: () => !!ctx.canGoBack, setParams: value => calls.push(['params', value]) }) },
@@ -60,7 +60,7 @@ export function mountParticipant(screen, options = {}) {
     '@/lib/city-places': { subscribeCityPlaces() {}, cityPlacesRevision() {} }, '@/lib/meetup-destination': { matchesMeetupDestination: () => true, meetupDestinationQuery: () => 'source' }, '@/lib/ticketmaster': { meetupAllowed: () => true, loadTicketmasterEvent: async () => ({ event: { id: ctx.destination?.eventId, name: '실제 행사' } }) },
     '@/lib/feed-data': { loadPublicFeed: async () => ctx.posts ?? [ctx.post], appendUniquePosts: (a, b) => [...a, ...b], loadPublicPost: async () => ctx.post },
     '@/lib/community-data': { loadMyMeetups: async () => ctx.myItems ?? [{ ...ctx.post, authorId: ctx.post.author.id, role: 'approved', conversationId: 'conversation' }], recordPostShare: async () => {}, loadPendingMeetupRequests: async () => [], MEETUPS_CHANGED_EVENT: 'changed', leaveMeetup: async () => calls.push(['leave']), requestMeetupJoin: async () => calls.push(['legacy-join']) },
-    '@/lib/chilling-data': { chillingProfilePreview: value => value, getChillingError: value => value.message, getChillingErrorCode: value => value.message, loadChillingProfile: async () => { if (ctx.profileError) throw new Error(ctx.profileError); return ctx.profile; }, loadMeetupParticipation: async () => { calls.push(['status-read']); return ctx.loadParticipation ? ctx.loadParticipation() : ctx.request; }, requestChillingJoin: async (...args) => { calls.push(['join', ...args.slice(1)]); if (ctx.submit) return ctx.submit(); }, saveChillingProfile: async (_, input) => { calls.push(['save-profile', input]); if (ctx.saveError) throw new Error(ctx.saveError); ctx.profile = { ...input, revision: 'made-r1' }; } },
+    '@/lib/chilling-data': { chillingProfilePreview: value => value, chillingProfileShown: value => value, getChillingError: value => value.message, getChillingErrorCode: value => value.message, loadChillingProfile: async () => { if (ctx.profileError) throw new Error(ctx.profileError); return ctx.profile; }, loadMeetupParticipation: async () => { calls.push(['status-read']); return ctx.loadParticipation ? ctx.loadParticipation() : ctx.request; }, requestChillingJoin: async (...args) => { calls.push(['join', ...args.slice(1)]); if (ctx.submit) return ctx.submit(); }, saveChillingProfile: async (_, input) => { calls.push(['save-profile', input]); if (ctx.saveError) throw new Error(ctx.saveError); ctx.profile = { ...input, revision: 'made-r1' }; } },
     '@/components/meetup-members': { MeetupWhoSheet: 'MeetupWhoSheet', useMeetupRoster: () => ctx.roster ?? { roster: null, error: '', reload: noop } },
     '@/components/chilling-host-profile': { MeetupChips: 'MeetupChips', useMyOpenMeetupRequests: () => ctx.myRequests ?? {} },
   };
@@ -246,10 +246,23 @@ const firstApplication = async (options = {}) => {
 };
 test('the one-screen notice names everything the host will see, including what an older profile keeps', async () => {
   const fresh = mountParticipant('join', { profile: null }); await fresh.flush();
+  inputs(fresh).at(-1).props.onChangeText('쓰던 답변'); await fresh.flush();
   assert.match(text(fresh.tree), /내 이름, 지역, 소개, 답변을 봐요/); fresh.unmount();
   const older = mountParticipant('join', { profile: { ...participantProfile, version: 1 } }); await older.flush();
   assert.equal(inputs(older).length > 1, true, 'an older profile still gets the one-screen form');
+  inputs(older).at(-1).props.onChangeText('쓰던 답변'); await older.flush();
   assert.match(text(older.tree), /내 모임 프로필과 답변을 봐요/); assert.doesNotMatch(text(older.tree), /내 이름, 지역, 소개, 답변을 봐요/); older.unmount();
+});
+test('what the send button agrees to sits beside it, not up in the scrolled form', async () => {
+  for (const profile of [participantProfile, null]) {
+    const ui = mountParticipant('join', { profile }); await ui.flush();
+    // Before there is an answer only the link shows, so the answer card is not pushed under a three-line bar (QA I-meet-07).
+    assert.ok(ui.control('meetup.join.policy') && !/신청을 보내면 호스트가/.test(text(ui.tree)), `empty ${!!profile}`);
+    inputs(ui).at(-1).props.onChangeText('쓰던 답변'); await ui.flush();
+    const scroll = ui.control('app_meetup-join.scrollview.1'), inScroll = id => nodes(scroll).some(node => node.props?.analyticsId === id);
+    assert.ok(/신청을 보내면 호스트가/.test(text(ui.tree)) && !/신청을 보내면 호스트가/.test(text(scroll)), String(!!profile));
+    assert.ok(ui.control('meetup.join.policy') && !inScroll('meetup.join.policy') && !inScroll('app_meetup-join.pressable.8')); ui.unmount();
+  }
 });
 test('without a profile one screen saves it and sends the request, in that order, with the saved revision', async () => {
   const ui = mountParticipant('join', { profile: null }); await ui.flush();
@@ -338,7 +351,7 @@ test('logged out (시안 A): guest read, meetup head and one bottom action per s
   assert.ok(open.ui.calls.some(([name]) => name === 'guest-read')); assert.ok(text(open.ui.tree).includes(participantPost.title)); assert.ok(!text(open.ui.tree).includes('AUTHED_ONLY_READ'));
   assert.equal(nodes(open.ui.tree).find(node => node.type === 'Image').props.accessibilityLabel, `${participantPost.title} 사진`);
   assert.equal(nodes(open.ui.tree).find(node => node.type === 'MeetupChips').props.hideOpen, true);
-  assert.deepEqual({ ...nodes(open.ui.tree).find(node => node.type === 'MeetupFacts').props, post: undefined }, { post: undefined, canEnterChat: false, own: false });
+  assert.deepEqual({ ...nodes(open.ui.tree).find(node => node.type === 'MeetupFacts').props, post: undefined }, { post: undefined, canEnterChat: false, own: false, zone: true });
   assert.ok(text(open.ui.tree).includes('로그인하면 소라님이 남긴 질문에 답하고 신청을 보낼 수 있어요.'));
   let { action, text: meta } = bar(open.ui); assert.equal(meta, '5자리 남음승인 후 참여'); assert.equal(action.props.label, '로그인하고 신청하기'); assert.equal(action.props.compact, true);
   action.props.onPress(); assert.deepEqual(open.asked, ['참여하려면 로그인해 주세요.']); assert.ok(open.ui.calls.some(([name, kind]) => name === 'feedback' && kind === 'selection'));
@@ -371,8 +384,11 @@ test('a paused meetup offers no form; a host pause during submit reads the same'
 
 const feeRoom = { ...participantPost.room, fee: { amount: 15.5, note: 'e-Transfer', dueOn: '2031-11-01' } };
 test('applicants see the fee on the meetup card and approved members see their own mark', async () => {
+  // The fee and its due date sit in the shared 회비 cell (the web invite's card shape); the note that cell leaves out stays under it.
   const applicant = mountParticipant('join', { post: { ...participantPost, room: feeRoom } }); await applicant.flush();
-  assert.match(text(applicant.tree), /회비 \$15\.50/); assert.match(text(applicant.tree), /e-Transfer · 11월 1일까지/); applicant.unmount();
+  const facts = nodes(applicant.tree).find(node => node.type === 'MeetupFacts').props;
+  assert.deepEqual([facts.post.room.fee, facts.canEnterChat, facts.own, facts.zone], [feeRoom.fee, false, false, true]);
+  assert.match(text(applicant.tree), /e-Transfer/); assert.match(text(applicant.tree), /연령대 무관/, 'the fee takes the age cell, so the age stays under it'); applicant.unmount();
   const feeRow = ui => nodes(ui.tree).find(node => node.type === 'ListRow' && /회비/.test(node.props.title));
   for (const [payments, mark] of [[[{ user_id: 'viewer', paid_at: '2031-01-01' }], /냈음$/], [[], /아직 안 냈어요$/], ['error', /까지$/]]) {
     const ui = mountParticipant('join', { post: { ...participantPost, room: feeRoom }, request: { id: 'request', status: 'approved' }, payments }); await ui.flush();
@@ -387,7 +403,7 @@ test('applicants see the fee on the meetup card and approved members see their o
 test('the meetup card, schedule and fee line render the compact CAD fee in both languages', () => {
   const source = readFileSync(new URL('../src/components/chilling-event.tsx', import.meta.url), 'utf8');
   // English copy comes from the shared i18n table; here it only needs the CAD amount and a localized date.
-  for (const [language, expected, status] of [['ko', /^회비 \$15\.50 · e-Transfer · 11월 1일까지$/, /^회비 \$20\.00 · 아직 안 냈어요$/], ['en', /\$15\.50 · e-Transfer · .*November 1/, /\$20\.00 · /]]) {
+  for (const [language, expected, status] of [['ko', /^회비 \$15\.50 · e-Transfer · 11월 1일까지$/, /^회비 \$20 · 아직 안 냈어요$/], ['en', /\$15\.50 · e-Transfer · .*November 1/, /\$20 · /]]) {
     const exports = {}, imports = {
       react: { memo: value => value, useState: value => [value, () => {}] }, 'react/jsx-runtime': { jsx: (type, props) => typeof type === 'function' ? type(props) : { type, props }, jsxs: (type, props) => typeof type === 'function' ? type(props) : { type, props }, Fragment: 'Fragment' },
       'react-native': { StyleSheet: { create: value => value, hairlineWidth: 1 }, View: 'View' }, 'expo-image': { Image: 'Image' }, '@/constants/design-system': { ControlMotion: { settleMs: 180 } },

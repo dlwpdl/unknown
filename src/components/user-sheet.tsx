@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Alert, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
+import { ClayPhoto } from '@/components/clay';
 import { DragSheet } from '@/components/drag-sheet';
 import { ReportSheet } from '@/components/report-sheet';
 import { RaisedActionButton } from '@/components/raised-action-button';
@@ -21,7 +22,7 @@ import { chatBusinessIdentity } from '@/lib/chat-identity';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
 import { startBusinessConversation } from '@/lib/business-chat';
 import { useAuth } from '@/lib/auth';
-import { getCommunityActionError, loadTradeProfile, startDirectConversation, type TradeProfile } from '@/lib/community-data';
+import { blockUser, getCommunityActionError, loadTradeProfile, startDirectConversation, type TradeProfile } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { supabase } from '@/lib/supabase';
 import { loadMannerSummary, type MannerSummary as Summary } from '@/lib/user-profile';
@@ -30,6 +31,7 @@ import { loadMannerSummary, type MannerSummary as Summary } from '@/lib/user-pro
 export type SheetUser = {
   id?: string;
   nickname: string;
+  avatarUrl?: string; // the same signed photo the post card shows; without it the first letter shows
   neighborhood?: string;
   verified?: boolean;
   trustLevel?: 2 | 3;
@@ -54,6 +56,9 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
   const [requesting, setRequesting] = useState(false);
   const [openTradeKey, setOpenTradeKey] = useState<string | null>(null);
   const [reporting, setReporting] = useState<SheetUser | null>(null);
+  // ··· opens a small menu so blocking never needs a report (QA E32-2), as on the full profile.
+  const [menu, setMenu] = useState<SheetUser | null>(null), afterMenu = useRef<(() => void) | null>(null);
+  const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const [trade, setTrade] = useState<{ key: string; value: TradeProfile } | null>(null);
   const [manner, setManner] = useState<{ key: string; value: Summary } | null>(null);
   const busy = useRef(false);
@@ -63,6 +68,17 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
   if (user !== shownUser) { setShownUser(user); if (user) setOpen(true); }
   const afterClose = useRef<(() => void) | null>(null);
   const close = (then?: () => void) => { afterClose.current = then ?? null; setOpen(false); };
+  const closeMenu = (then?: () => void) => { afterMenu.current = then ?? null; setMenu(null); };
+  const confirmBlock = (target: SheetUser) => {
+    if (!target.id || !isAuthed) return;
+    Alert.alert(t.report.block(target.nickname), t.report.blockBody, [
+      { text: t.profile.cancel, style: 'cancel', onPress: () => play('selection') },
+      { text: t.chat.block, style: 'destructive', onPress: () => {
+        void blockUser(supabase, me.id, target.id!).then(() => { play('warning'); Alert.alert(t.chat.blockDone); })
+          .catch(() => { play('warning'); Alert.alert(t.chat.blockError); });
+      } },
+    ]);
+  };
 
   // 대화 기반 거래 이력과 현장 참석 확인은 서로 다른 신호다.
   const userId = user?.id;
@@ -133,7 +149,7 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
         <View style={styles.sheetTools}>
           <ThemedText type="small" themeColor="textSecondary">{tr('이웃 프로필')}</ThemedText>
           <View style={styles.tools}>
-            {!!user && !user.mine && !!user.id && <Pressable analyticsId="components_user-sheet.pressable.5" onPress={() => { play('selection'); close(() => setReporting(user)); }} accessibilityRole="button" accessibilityLabel={t.report.userAction}
+            {!!user && !user.mine && !!user.id && <Pressable analyticsId="components_user-sheet.pressable.5" onPress={() => { play('selection'); close(() => setMenu(user)); }} accessibilityRole="button" accessibilityLabel={t.report.userAction}
               style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
               <SymbolView name={{ ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' }} size={IconSize.toolbar} tintColor={theme.textSecondary} />
             </Pressable>}
@@ -146,7 +162,10 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
         {user && <>
           <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
             <View style={styles.identity}>
-              <View style={[styles.avatar, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle" style={{ color: theme.accent }}>{user.nickname[0]}</ThemedText></View>
+              <View style={[styles.avatar, { backgroundColor: user.avatarUrl && failedPhoto !== user.avatarUrl ? 'transparent' : theme.backgroundElement }]}>
+                {user.avatarUrl && failedPhoto !== user.avatarUrl ? <ClayPhoto uri={user.avatarUrl} size={64} onError={() => setFailedPhoto(user.avatarUrl!)} />
+                  : <ThemedText type="subtitle" style={{ color: theme.accent }}>{user.nickname[0]}</ThemedText>}
+              </View>
               <View style={styles.identityCopy}>
                 <View style={styles.nickRow}><ThemedText type="subtitle" style={styles.nickname}>{user.nickname}</ThemedText><TrustBadge verified={user.verified} trustLevel={user.trustLevel} /></View>
                 {user.neighborhood && <ThemedText type="small" themeColor="textSecondary">{user.neighborhood}</ThemedText>}
@@ -170,6 +189,18 @@ export function UserSheet({ user, onClose, onBeforeNavigate }: {
           </ScrollView>
           {!user.mine && user.id && <View style={styles.actionArea}><RaisedActionButton analyticsId="components_user-sheet.pressable.4" onPress={() => void requestChat(user)} disabled={requesting} busy={requesting} label={requesting ? t.chat.joinSending : t.profileSheet.chatRequest} /></View>}
         </>}
+      </DragSheet>
+      <DragSheet visible={!!menu} onClose={() => closeMenu()} onDismissed={() => { const then = afterMenu.current; afterMenu.current = null; then?.(); }}>
+        {menu && <View style={styles.menu}>
+          <Pressable analyticsId="user.menu.report" accessibilityRole="button" onPress={() => { play('selection'); closeMenu(() => setReporting(menu)); }}
+            style={({ pressed }) => [styles.menuRow, { borderBottomColor: theme.line }, pressed && { backgroundColor: theme.backgroundSelected }]}>
+            <ThemedText type="smallBold">{t.report.title(menu.nickname)}</ThemedText>
+          </Pressable>
+          {isAuthed && <Pressable analyticsId="user.menu.block" accessibilityRole="button" onPress={() => { play('selection'); closeMenu(() => confirmBlock(menu)); }}
+            style={({ pressed }) => [styles.menuRow, { borderBottomColor: theme.line }, pressed && { backgroundColor: theme.backgroundSelected }]}>
+            <ThemedText type="smallBold" style={{ color: theme.danger }}>{t.report.block(menu.nickname)}</ThemedText>
+          </Pressable>}
+        </View>}
       </DragSheet>
       {reporting?.id && (
         <ReportSheet visible targetType="user" targetId={reporting.id} reportedUserId={reporting.id} reportedNickname={reporting.nickname} onClose={() => setReporting(null)} />
@@ -256,4 +287,7 @@ const styles = StyleSheet.create({
   listings: { gap: Spacing.one },
   listing: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.two, borderWidth: 1, borderRadius: 8 },
   review: { gap: 2, paddingHorizontal: Spacing.two },
+  // Same rows as the ··· sheet on the full profile (user/[id].tsx).
+  menu: { paddingBottom: 8 },
+  menuRow: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 8, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
 });

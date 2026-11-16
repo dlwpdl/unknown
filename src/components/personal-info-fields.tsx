@@ -26,7 +26,8 @@ export function PersonalInfoFields({ value, onChange, disabled = false, showCons
   const toggleConsent = () => { if (!disabled) { play('selection'); onChange({ ...value, accepted: !value.accepted }); } };
   return <View style={styles.section}>
     <ThemedText type="smallBold" accessibilityRole="header" aria-level={2}>{tr("비공개 계정 정보 · 선택")}</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary">{tr("생년월일은 모임의 권장 연령대 안내에 사용해요. 이름은 비공개 계정 확인용이에요. 입력하지 않아도 가입하거나 모임에 신청할 수 있어요.")}</ThemedText>
+    {/* The consent notice below says the same and more, so the short version shows only without it (QA A-set-08). */}
+    {!showConsent && <ThemedText type="small" themeColor="textSecondary">{tr("생년월일은 모임의 권장 연령대 안내에 사용해요. 이름은 비공개 계정 확인용이에요. 입력하지 않아도 가입하거나 모임에 신청할 수 있어요.")}</ThemedText>}
     <View style={styles.field}>
       <ThemedText type="smallBold">{tr("이름")}</ThemedText>
       <TextInput value={value.fullName} onChangeText={(fullName) => onChange({ ...value, fullName })} onBlur={() => setTouched(true)}
@@ -40,9 +41,9 @@ export function PersonalInfoFields({ value, onChange, disabled = false, showCons
         editable={!disabled} accessibilityLabel={tr("비공개 생년월일, 연도 네 자리-월 두 자리-일 두 자리")} placeholder="YYYY-MM-DD" placeholderTextColor={theme.textSecondary}
         keyboardType="number-pad" autoComplete="off" autoCorrect={false} autoCapitalize="none" maxLength={10}
         style={[styles.input, { color: theme.text, backgroundColor: theme.card, borderColor: theme.line }]} />
-      {age != null && <ThemedText type="small" themeColor="textSecondary">{tr('만 {0}세 · 본인 입력 · 생년월일 미인증', age)}</ThemedText>}
+      {age != null && <ThemedText type="small" themeColor="textSecondary">{tr('만 {0}세 · 본인 입력 · 미인증', age)}</ThemedText>}
     </View>
-    {touched && error && <ThemedText type="small" accessibilityRole="alert" style={{ color: theme.accent }}>{tr(error)}</ThemedText>}
+    {touched && error && <ThemedText type="small" accessibilityRole="alert" style={{ color: theme.danger }}>{tr(error)}</ThemedText>}
     <View style={styles.field}>
       <ThemedText type="smallBold">{tr("성별 · 선택")}</ThemedText>
       <View accessibilityRole="radiogroup" accessibilityLabel={tr("성별")} style={styles.genderRow}>
@@ -76,7 +77,8 @@ const styles = StyleSheet.create({
   section: { gap: Spacing.three }, field: { gap: Spacing.two },
   genderRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   genderClay: { borderWidth: 0, overflow: 'visible' },
-  genderOption: { minHeight: 44, minWidth: 84, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10 },
+  // Two even columns: four choices never leave one alone on a second line (QA A-set-08).
+  genderOption: { minHeight: 44, flexGrow: 1, flexBasis: '40%', paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 10 },
   input: { minHeight: 48, paddingHorizontal: Spacing.three, borderWidth: 1, borderRadius: 8, fontSize: 16 },
   consent: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, padding: Spacing.three, borderWidth: 1, borderRadius: 10 },
   checkbox: { width: 22, height: 22, borderRadius: 5, borderWidth: 1, justifyContent: 'center', alignItems: 'center' },

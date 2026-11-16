@@ -5,7 +5,7 @@ import { useFonts } from 'expo-font';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import { useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View, type TextInputInstance } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, TextInput, View, type ScrollViewInstance, type TextInputInstance } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ClayPillFill, useClay } from '@/components/clay';
@@ -51,9 +51,13 @@ export function LoginPanel({
   const [password, setPassword] = useState('');
   const adminPasswordInput = useRef<TextInputInstance>(null);
   const [adminFocusedField, setAdminFocusedField] = useState<'email' | 'password' | null>(null);
+  const scroll = useRef<ScrollViewInstance>(null), passwordInput = useRef<TextInputInstance>(null), formFocused = useRef(false);
   const disabled = loading;
   const showWelcome = !onAdminLogin && !onReviewLogin;
   const passwordLogin = onAdminLogin ?? onReviewLogin ?? (__DEV__ ? onDevLogin : undefined);
+  // Android settles the scroll on a focused field after layout, so the form is brought up two frames later; the flag is read then, after a field-to-field move (QA A3-1).
+  const showForm = () => requestAnimationFrame(() => requestAnimationFrame(() => { if (formFocused.current) scroll.current?.scrollToEnd({ animated: true }); }));
+  const submitPassword = () => { if (passwordLogin && !disabled && email.trim() && password) { play('selection'); passwordLogin(email, password); } };
   const publicSiteUrl = (process.env.EXPO_PUBLIC_APP_URL ?? 'https://gling.ej-entertainment.com').replace(/\/$/, '');
 
   if (onAdminLogin) {
@@ -61,7 +65,7 @@ export function LoginPanel({
     const submitAdmin = () => { if (!submitDisabled) { play('selection'); onAdminLogin(email, password); } };
     return <ThemeOverrideProvider scheme="dark">
       <View style={[styles.wrap, styles.adminBackground]}><SafeAreaView style={styles.wrap}>
-        <KeyboardAvoidingView style={styles.wrap} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <KeyboardAvoidingView style={styles.wrap} behavior="padding">
           <ScrollView analyticsId="components_login-panel.scrollview.1" contentContainerStyle={styles.adminCenter} keyboardShouldPersistTaps="handled">
             <Image source={require('@/assets/brand/gling-night-wordmark.png')} style={styles.adminLogo} contentFit="contain" accessibilityLabel={t.appName} />
             <View style={styles.adminHeader}>
@@ -114,7 +118,9 @@ export function LoginPanel({
     <ThemedView style={styles.wrap}>
       <SafeAreaView style={styles.wrap}>
       <KeyboardAvoidingView style={styles.wrap} behavior="padding">
-      <ScrollView analyticsId="components_login-panel.scrollview.1" contentContainerStyle={styles.center} keyboardShouldPersistTaps="handled">
+      {/* The keyboard shrinks this view; bring the whole password form above it, not just the focused field (QA A3-1). */}
+      <ScrollView ref={scroll} onLayout={showForm}
+        analyticsId="components_login-panel.scrollview.1" contentContainerStyle={styles.center} keyboardShouldPersistTaps="handled">
         <View style={styles.brandRow}>
           <Image source={dark ? require('@/assets/brand/gling-night-wordmark.png') : require('@/assets/brand/gling-night-wordmark-light.png')}
             style={styles.brandLogo} contentFit="contain" accessibilityLabel={t.appName} />
@@ -137,10 +143,13 @@ export function LoginPanel({
               <Image source={require('@/assets/brand/kakao-login-symbol.svg')} style={styles.googleIcon} contentFit="contain" accessible={false} />
               <ThemedText type="smallBold" style={styles.kakaoText}>{t.auth.kakao}</ThemedText>
             </Pressable>}
-            {Platform.OS === 'ios' && onApple && <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN} buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK} cornerRadius={12}
-              onPress={() => { if (!disabled) { play('selection'); onApple(); } }} accessibilityState={{ disabled, busy: loading }}
-              style={[styles.appleButton, { opacity: disabled ? 0.6 : 1 }]} />}
+            {/* White on dark, black on light. iOS sizes the title to the button height, so a 44pt button sits in a 56pt plate of the same colour to match the other rows. */}
+            {Platform.OS === 'ios' && onApple && <View style={[styles.appleButton, { backgroundColor: dark ? '#FFFFFF' : '#000000', opacity: disabled ? 0.6 : 1 }]}>
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN} buttonStyle={dark ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK} cornerRadius={12}
+                onPress={() => { if (!disabled) { play('selection'); onApple(); } }} accessibilityState={{ disabled, busy: loading }}
+                style={styles.appleNative} />
+            </View>}
             {onGoogle && <Pressable analyticsId="components_login-panel.pressable.2" accessibilityRole="button" accessibilityLabel={t.auth.google}
               onPress={() => { if (!disabled) { play('selection'); onGoogle(); } }} disabled={disabled} accessibilityState={{ disabled, busy: loading }}
               style={({ pressed }) => [styles.socialButton, { backgroundColor: dark ? '#131314' : '#FFFFFF', borderColor: dark ? '#8E918F' : '#747775', opacity: disabled ? 0.6 : pressed ? 0.8 : 1 }]}>
@@ -163,9 +172,14 @@ export function LoginPanel({
                   accessibilityLabel={onAdminLogin ? tr("관리자 이메일") : onReviewLogin ? t.auth.reviewEmail : t.auth.devEmail}
                   autoCorrect={false}
                   spellCheck={false}
+                  returnKeyType="next"
+                  onSubmitEditing={() => passwordInput.current?.focus()}
+                  onFocus={() => { formFocused.current = true; showForm(); }}
+                  onBlur={() => { formFocused.current = false; }}
                   style={[styles.devInput, { color: theme.text, borderColor: theme.line }]}
                 />
                 <TextInput
+                  ref={passwordInput}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
@@ -174,13 +188,17 @@ export function LoginPanel({
                   autoCorrect={false}
                   spellCheck={false}
                   autoComplete="current-password"
+                  returnKeyType="go"
+                  onSubmitEditing={submitPassword}
+                  onFocus={() => { formFocused.current = true; showForm(); }}
+                  onBlur={() => { formFocused.current = false; }}
                   placeholder={onAdminLogin ? tr("관리자 비밀번호") : onReviewLogin ? t.auth.reviewPassword : t.auth.devPassword}
                   placeholderTextColor={theme.textSecondary}
                   accessibilityLabel={onAdminLogin ? tr("관리자 비밀번호") : onReviewLogin ? t.auth.reviewPassword : t.auth.devPassword}
                   style={[styles.devInput, { color: theme.text, borderColor: theme.line }]}
                 />
                 <Pressable analyticsId="components_login-panel.pressable.3"
-                  onPress={() => { if (!disabled && email.trim() && password) { play('selection'); passwordLogin(email, password); } }}
+                  onPress={submitPassword}
                   disabled={disabled || !email.trim() || !password}
                   accessibilityRole="button"
                   accessibilityState={{ disabled: disabled || !email.trim() || !password, busy: loading }}
@@ -230,7 +248,7 @@ const styles = StyleSheet.create({
   authArea: { alignSelf: 'stretch' }, actions: { alignSelf: 'stretch', gap: 12 },
   socialButton: { minHeight: 56, borderWidth: 1, borderRadius: 12, paddingHorizontal: Spacing.three, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   kakaoButton: { backgroundColor: '#FEE500', borderColor: '#FEE500' }, kakaoText: { fontSize: 16, lineHeight: 24, color: '#191919' },
-  appleButton: { width: '100%', height: 56, borderWidth: 1, borderColor: '#777780', borderRadius: 12 },
+  appleButton: { width: '100%', height: 56, borderRadius: 12, justifyContent: 'center' }, appleNative: { width: '100%', height: 44 },
   googleIcon: { width: 20, height: 20 }, googleText: { fontSize: 16, flexShrink: 1 },
   errorBox: { borderLeftWidth: 2, paddingLeft: 12, marginBottom: Spacing.three }, error: { fontSize: 13, lineHeight: 20 },
   note: { textAlign: 'center', fontSize: 12, lineHeight: 19 },

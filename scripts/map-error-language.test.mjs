@@ -21,6 +21,7 @@ function mount() {
   let language = 'en', permissionCalls = 0;
   const context = {
     exports: {}, Error, Promise, Date, setTimeout, clearTimeout, styles: {}, ThemedText: 'Text',
+    LOCATION_OFF: '위치 권한이 꺼져 있어요. 선택한 도시의 지도는 계속 볼 수 있어요.',
     AppState: { currentState: 'active' }, locating: false, locationRevision: { current: 0 },
     locationError: '', dateError: '', dateDraft: 'invalid', dateOpen: true, city: { id: 'vancouver' },
     play() {}, setLocating() {},
@@ -50,10 +51,10 @@ test('map permission feedback switches language on the same view without another
 test('invalid map date feedback switches language while preserving the entered draft', () => {
   const view = mount();
   view.context.exports.submit();
-  assert.equal(view.render('dateError'), 'Enter a date within the next year as YYYY-MM-DD.');
+  assert.equal(view.render('dateError'), 'Pick a date within the next year.');
   view.setLanguage('ko');
-  assert.equal(view.render('dateError'), '오늘부터 1년 안의 날짜를 YYYY-MM-DD로 입력해 주세요.');
+  assert.equal(view.render('dateError'), '오늘부터 1년 안에서 골라 주세요.');
   view.setLanguage('en');
-  assert.equal(view.render('dateError'), 'Enter a date within the next year as YYYY-MM-DD.');
+  assert.equal(view.render('dateError'), 'Pick a date within the next year.');
   assert.equal(view.context.dateDraft, 'invalid');
 });

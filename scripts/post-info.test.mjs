@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { postInfoParts, postLinkLabel } from '../src/lib/post-info.ts';
+import { englishTail, eventLastDay, isPastEvent, postInfoParts, postLinkLabel } from '../src/lib/post-info.ts';
 
 test('맛집 글 끝의 📍 주소와 인스타 링크는 정보 카드로, 나머지는 문단으로 나뉜다', () => {
   const body = '가을을 통째로 먹고 온 기분이에요.\n첫 챕터는 작은 요리 다섯 가지예요.\n📍 847 Denman St, Vancouver\n같이 갈 사람은 글링에서 찾아보세요.\n\nhttps://www.instagram.com/handsonyvr/';
@@ -43,4 +43,38 @@ test('구인 글의 시급·근무 줄과 장소 후기의 평점·참조 줄은
   assert.equal(review.rating, 8);
   assert.deepEqual(review.paragraphs, ['노을이 좋았어요.']);
   assert.deepEqual(postInfoParts('시급은 얼마인가요?').facts, []);
+});
+
+test('행사 글 제목의 마지막 날이 지나면 지난 행사로 본다', () => {
+  assert.equal(eventLastDay('밴쿠버 Diwali in Vancouver 2026 · 2026.11.07'), '2026-11-07');
+  assert.equal(eventLastDay('토론토 로열 윈터 페어 · 2026.11.06–15'), '2026-11-15');
+  assert.equal(eventLastDay('몬트리올 크리스마스 마켓 · 2026.11.28–12.3'), '2026-12-03');
+  assert.equal(eventLastDay('밴쿠버 새해 불꽃 · 2026.12.30–1.2'), '2027-01-02');
+  assert.equal(eventLastDay('날짜 없는 행사 글'), null);
+  assert.equal(eventLastDay('2026.11.07 에 본 공연 후기'), null, 'only a trailing date counts');
+  // Korean dates, usually without a year: the year closest to when the post went up (QA I-home-06).
+  const oct6 = '2026-10-06T18:00:00Z';
+  assert.equal(eventLastDay('밴쿠버 Heart of the City Festival — 10월 30일–11월 7일', oct6), '2026-11-07');
+  assert.equal(eventLastDay('밴쿠버 불꽃놀이 — 7월 26일', oct6), '2026-07-26', 'a recap of a summer event stays in that year');
+  assert.equal(eventLastDay('밴쿠버 새해 불꽃 · 12월 31일–1월 1일', '2026-12-10T00:00:00Z'), '2027-01-01');
+  assert.equal(eventLastDay('토론토 윈터 페어 · 2026년 12월 30일–1월 2일'), '2027-01-02');
+  assert.equal(eventLastDay('11월 7일에 본 공연 후기', oct6), null);
+  const festival = (title, cityId = 'vancouver') => ({ title, cityId, tag: { slug: 'festival' } });
+  const nov13 = Date.parse('2026-11-13T20:00:00Z'), nov7Evening = Date.parse('2026-11-08T05:00:00Z'); // 11-07 21:00 in Vancouver
+  assert.equal(isPastEvent(festival('밴쿠버 Diwali in Vancouver 2026 · 2026.11.07'), nov13), true);
+  assert.equal(isPastEvent(festival('밴쿠버 Diwali in Vancouver 2026 · 2026.11.07'), nov7Evening), false, 'the event day itself, in the city clock, is not past');
+  assert.equal(isPastEvent(festival('토론토 로열 윈터 페어 · 2026.11.06–15', 'toronto'), nov13), false);
+  assert.equal(isPastEvent(festival('날짜 없는 행사 글'), nov13), false);
+  assert.equal(isPastEvent({ ...festival('밴쿠버 Heart of the City Festival — 10월 30일–11월 7일'), createdAt: oct6 }, nov13), true);
+  assert.equal(isPastEvent({ ...festival('밴쿠버 Diwali in Vancouver 2026 · 2026.11.07'), tag: { slug: 'life' } }, nov13), false, 'only festival posts');
+});
+
+test('한국어 글 끝에 같은 내용 영어가 붙으면 영어 부분만 따로 접을 수 있다', () => {
+  const korean = ['지모코에서 점심 2인 세트를 시작했어요. 메인 두 개와 음료 두 잔이 함께 나와요.', '평일 11시부터 3시까지만 주문할 수 있어요.'];
+  const english = ['Jimoco now has a lunch set for two. It comes with two mains and two drinks.', 'Available weekdays from 11am to 3pm.'];
+  assert.deepEqual(englishTail([...korean, ...english]), { main: korean, tail: english });
+  assert.equal(englishTail(korean), null, 'nothing to fold');
+  assert.equal(englishTail(english), null, 'an English-only post stays whole');
+  assert.equal(englishTail([...korean, 'Open 11am–3pm']), null, 'a short English note stays in place');
+  assert.equal(englishTail([...korean, ...english, '#코퀴틀람 #점심']), null, 'only a trailing English run folds');
 });

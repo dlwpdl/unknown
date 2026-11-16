@@ -69,8 +69,9 @@ uri = "pg-functions://postgres/public/gling_access_token_hook"
 [functions.draft-post]
 verify_jwt = true
 
+# Members send their JWT (checked with auth.getUser); the web build sends the search build token instead (is_search_build_token).
 [functions.translate-content]
-verify_jwt = true
+verify_jwt = false
 
 [functions.extract-place-names]
 verify_jwt = true
@@ -116,4 +117,8 @@ verify_jwt = false
 
 # Public event apply/store links; the function validates input, hashes tokens and IPs, and calls service-role-only RPCs.
 [functions.event-link]
+verify_jwt = false
+
+# Public webshop partnership applications; the function validates input, hashes IPs and calls service-role-only RPCs.
+[functions.webshop-apply]
 verify_jwt = false

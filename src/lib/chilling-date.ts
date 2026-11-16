@@ -23,8 +23,8 @@ export function mergePickerDate(iso: string, selected: Date, mode: 'date' | 'tim
 export const localDay = (iso: string) => localDateInput(iso).slice(0, 10);
 export const parseLocalDay = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) ? parseLocalDateInput(`${value}T12:00`) : '';
 
-// dateOnly hides the time; callers read the day with localDay.
-export type ChillingDateInputProps = { analyticsId?: string; label: string; value: string; onChange: (iso: string) => void; disabled?: boolean; dateOnly?: boolean; zone?: string | null };
+// dateOnly hides the time; callers read the day with localDay. timeOnly hides the day; callers read the time with zoneClock.
+export type ChillingDateInputProps = { analyticsId?: string; label: string; value: string; onChange: (iso: string) => void; disabled?: boolean; dateOnly?: boolean; timeOnly?: boolean; zone?: string | null };
 
 // Same as public.cities.timezone. A meetup runs on its city's clock, wherever the phone is.
 export const CITY_ZONE: Record<string, string> = { vancouver: 'America/Vancouver', toronto: 'America/Toronto', montreal: 'America/Toronto', ottawa: 'America/Toronto', calgary: 'America/Edmonton', edmonton: 'America/Edmonton', winnipeg: 'America/Winnipeg', saskatoon: 'America/Regina', regina: 'America/Regina', 'saint-john': 'America/Moncton', halifax: 'America/Halifax' };
@@ -85,3 +85,24 @@ export function moveMeetupZone(iso: string, from: string, to: string) {
 
 const DAY = 86400000;
 export const zoneDayGap = (from: number, to: number, zone: string) => Math.floor(toWall(to, zone) / DAY) - Math.floor(toWall(from, zone) / DAY);
+
+/** 'HH:MM' on the city's clock for an instant (a regular meetup's time-only picker). */
+export function zoneClock(iso: string, zone: string) {
+  const wall = new Date(toWall(Date.parse(iso), zone)), pad = (value: number) => String(value).padStart(2, '0');
+  return `${pad(wall.getUTCHours())}:${pad(wall.getUTCMinutes())}`;
+}
+/** Today at 'HH:MM' on the city's clock, so a time-only picker has an instant to show. */
+export function zoneClockIso(time: string, zone: string, now = Date.now()) {
+  const today = new Date(toWall(now, zone)), [hour, minute] = time.split(':').map(Number);
+  return new Date(fromWall(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), hour, minute), zone)).toISOString();
+}
+/** The next start of a weekly meetup (days 0 = Sunday … 6 = Saturday at 'HH:MM' on the city's clock), or null with no day. */
+export function nextWeeklyStart(days: number[], time: string, zone: string, now = Date.now()) {
+  const today = new Date(toWall(now, zone)), [hour, minute] = time.split(':').map(Number);
+  for (let offset = 0; offset <= 7; offset++) {
+    const wall = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() + offset, hour, minute);
+    const at = fromWall(wall, zone);
+    if (days.includes(new Date(wall).getUTCDay()) && at > now) return at;
+  }
+  return null;
+}

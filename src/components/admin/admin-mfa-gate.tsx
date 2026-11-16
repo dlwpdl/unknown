@@ -102,7 +102,7 @@ export function AdminMfaGate({ children }: { children: ReactNode }) {
     </>}
     {!!error && <Pressable disabled={busy} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]} onPress={() => { play('selection'); setError(''); setRevision((v) => v + 1); }}><ThemedText type="small" themeColor="textSecondary">다시 확인</ThemedText></Pressable>}
     </View></View><View style={styles.footer}>
-    <Pressable disabled={busy} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]} onPress={() => { play('selection'); void signOut(); }}><ThemedText type="small" themeColor="textSecondary">로그아웃</ThemedText></Pressable>
+    <Pressable disabled={busy} accessibilityRole="button" style={({ pressed }) => [styles.secondary, pressed && styles.pressed]} onPress={() => { play('selection'); void signOut('global'); }}><ThemedText type="small" themeColor="textSecondary">로그아웃</ThemedText></Pressable>
     </View></ScrollView></KeyboardAvoidingView>
   </View></ThemeOverrideProvider>;
 }

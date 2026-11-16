@@ -20,7 +20,7 @@ import { DISCOVERY_CATEGORIES } from '@/lib/discovery';
 import { localDay, parseLocalDay } from '@/lib/chilling-date';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import {
-  CONDITIONS, formatMoney, JOB_DEALS, JOB_TYPES, formatMoveIn, groupListingsByArea, inBounds, LISTING_LABELS, ROOMS, type ListingCategory, type ListingFilters, type ListingView, type MapBounds,
+  CONDITIONS, formatMoney, JOB_DEALS, JOB_TYPES, formatMoveIn, groupListingsByArea, inBounds, listingMapFit, LISTING_LABELS, ROOMS, type ListingCategory, type ListingFilters, type ListingView, type MapBounds,
 } from '@/lib/listing-details';
 import { neighborhoodGroups, neighborhoodName, neighborhoodsFor } from '@/lib/neighborhoods';
 import type { City, Post } from '@/lib/types';
@@ -231,11 +231,12 @@ export function ListingMapScreen({ visible, category, city, posts, filters, onFi
   const [free, setFree] = useState(false); // after the first pan or tap the camera is the person's
   const color = DISCOVERY_CATEGORIES.find(item => item.id === category)!.color;
   const areas = useMemo(() => groupListingsByArea(posts, language).filter(area => !region || inBounds(region, area)), [posts, language, region]);
-  const markers = useMemo(() => areas.map(area => ({ id: area.id, latitude: area.latitude, longitude: area.longitude, color, label: area.label })), [areas, color]);
+  // featured: every area keeps its price or count tag from further out, not just a small dot (QA B13-2: 'two posts here' showed one faint dot).
+  const markers = useMemo(() => areas.map(area => ({ id: area.id, latitude: area.latitude, longitude: area.longitude, color, label: area.label, featured: true })), [areas, color]);
   const selected = areas.find(area => area.id === selectedId) ?? null;
-  // Open on the busiest neighborhood: the city centre can sit outside every listing.
-  const busiest = areas.reduce<typeof areas[number] | null>((top, area) => !top || area.posts.length > top.posts.length ? area : top, null);
-  const focus = free || !busiest ? null : { latitude: busiest.latitude, longitude: busiest.longitude };
+  // Open on the listings, not the city centre, zoomed out until every area fits (QA B13-2: 'two posts here' showed one).
+  const fit = listingMapFit(areas);
+  const focus = free || !fit ? null : fit.center;
   const count = areas.reduce((sum, area) => sum + area.posts.length, 0);
   const close = () => { play('selection'); setFree(false); setMoved(null); setRegion(null); setSelectedId(null); onClose(); };
   return <Modal visible={visible} animationType={reduced ? 'fade' : 'slide'} onRequestClose={onClose}>
@@ -252,7 +253,7 @@ export function ListingMapScreen({ visible, category, city, posts, filters, onFi
       <View style={styles.mapFilters}><ListingFilterBar category={category} cityId={city.id} filters={filters} onChange={next => { setSelectedId(null); onFilters(next); }} /></View>
       <View style={styles.flex}>
         {visible && <DiscoveryMap markers={markers} cityName={city.englishName} selectedId={selected?.id ?? null}
-          center={focus} onSelect={id => { setFree(true); setSelectedId(id); }} onMoved={bounds => { setFree(true); setMoved(bounds); }} bottomInset={selected ? 300 : 72} />}
+          center={focus} zoom={fit?.zoom} onSelect={id => { setFree(true); setSelectedId(id); }} onMoved={bounds => { setFree(true); setMoved(bounds); }} bottomInset={selected ? 300 : 72} />}
         {moved && moved !== region && <Pressable analyticsId="listing.map.search-here" accessibilityRole="button" onPress={() => { play('selection'); setRegion(moved); setSelectedId(null); }}
           style={({ pressed }) => [styles.searchHere, clay && styles.mapPillClay, { backgroundColor: clay ? 'transparent' : theme.card, borderColor: clay ? 'transparent' : theme.line, opacity: pressed ? 0.82 : 1 }]}>
           {clay && <ClayPillFill kind="white" />}

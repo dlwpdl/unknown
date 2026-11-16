@@ -5,7 +5,8 @@ import test from 'node:test';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { tr, setActiveLanguage } from '../src/i18n/index.ts';
-import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, priceSymbol } from '../src/lib/discovery.ts';
+import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, priceSymbol, webshopApplicable } from '../src/lib/discovery.ts';
+import { publicPlaceId } from '../src/lib/public-seo.ts';
 
 const author = '11111111-1111-4111-8111-111111111111';
 const settle = () => new Promise(setImmediate);
@@ -35,7 +36,7 @@ function view({ load = async () => ({ posts: [], cursor: null, hasMore: false })
     'expo-router': { useRouter: () => ({ push: route => calls.routes.push(route) }) },
     '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/themed-text': { ThemedText: 'Text' },
     '@/components/post-card': { PostCard: 'PostCard' }, '@/components/state-card': { StateCard: 'StateCard' }, '@/components/raised-action-button': { RaisedActionButton: 'RaisedActionButton' },
-    '@/components/merchant-rating-bar': { MerchantRatingBar: 'MerchantRatingBar', GlingRatingIcon: 'GlingRatingIcon' },
+    '@/components/merchant-rating-bar': { MerchantRatingBar: 'MerchantRatingBar', GlingRatingIcon: 'GlingRatingIcon', RatingScorePicker: 'RatingScorePicker' },
     '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({ line: '#343443', card: '#171722', text: '#F6F3F0', accent: '#CBB9FF' }) },
     '@/hooks/use-language': { useLanguage: () => ({ language, tr }) }, '@/i18n': { tr },
     '@/hooks/use-content-visibility': { useContentVisibility: () => (_type, id, writer) => hidden.has(id) || hidden.has(writer) },
@@ -74,13 +75,19 @@ test('a real half-point score must be explicitly selected before publishing a re
   find(ui.render(), 'places.reviews.write').props.onPress();
   find(ui.render(), 'places.reviews.body').props.onChangeText('내가 남기는 경험');
   let tree = ui.render(); assert.equal(find(tree, 'places.reviews.publish').props.disabled, true);
-  find(tree, 'places.reviews.score.8.5').props.onPress(); tree = ui.render();
-  assert.equal(find(tree, 'places.reviews.score.8.5').props.accessibilityState.checked, true);
-  assert.equal(find(tree, 'places.reviews.score.8.5').props['aria-checked'], true);
-  assert.equal(find(tree, 'places.reviews.score.8').props['aria-checked'], false);
+  // QA A-place-02: one ✦ picker replaces the 19 score buttons; the saved value keeps its 0.5 steps.
+  assert.equal(find(tree, 'places.reviews.score').type, 'RatingScorePicker');
+  find(tree, 'places.reviews.score').props.onChange(8.5); tree = ui.render();
+  assert.equal(find(tree, 'places.reviews.score').props.value, 8.5);
   assert.equal(find(tree, 'places.reviews.publish').props.disabled, false);
   find(tree, 'places.reviews.publish').props.onPress(); await settle();
   assert.equal(ui.calls.writes[0][3], 8.5);
+});
+
+test('QA C19-1: a place with no ratings says it once, in the empty review card', async () => {
+  const ui = view(); ui.render(); await settle(); const tree = ui.render();
+  assert.ok(!nodes(tree).some(n => n.type === 'MerchantRatingBar'), 'no empty 0-rating bar above the empty card');
+  assert.ok(nodes(tree).some(n => n.type === 'StateCard' && n.props.kind === 'empty'));
 });
 
 test('editing restores the member score and text while a rating outage preserves readable posts', async () => {
@@ -89,7 +96,7 @@ test('editing restores the member score and text while a rating outage preserves
   assert.equal(nodes(tree).find(n => n.type === 'MerchantRatingBar')?.props.score, 7.5);
   find(tree, 'places.reviews.write').props.onPress(); tree = ui.render();
   assert.equal(find(tree, 'places.reviews.body').props.value, '기존 경험');
-  assert.equal(find(tree, 'places.reviews.score.7.5').props.accessibilityState.checked, true);
+  assert.equal(find(tree, 'places.reviews.score').props.value, 7.5);
   const failed = view({ load: async () => ({ posts: [row('readable')], cursor: null, hasMore: false }), ratings: async () => { throw Error('offline'); } });
   failed.render(); await settle(); tree = failed.render();
   assert.equal(cards(tree).length, 1); assert.equal(find(tree, 'places.reviews.write').props.disabled, true);
@@ -107,7 +114,7 @@ test('place detail starts with three member reviews and expands locally without 
 async function open(ui, text = '초안은 남아 있어야 해요.') {
   ui.render(); await settle(); const tree = ui.render(); find(tree, 'places.reviews.write').props.onPress();
   const editor = ui.render(); find(editor, 'places.reviews.body').props.onChangeText(text);
-  find(editor, 'places.reviews.score.8').props.onPress(); return ui.render();
+  find(editor, 'places.reviews.score').props.onChange(8); return ui.render();
 }
 
 test('guest gets a login gate without any review-body request; account keys clear old rows and drafts', async () => {
@@ -140,6 +147,18 @@ test('successful save clears only this local draft and refreshes; input focus an
   find(tree, 'places.reviews.write').props.onPress(); tree = ui.render();
   assert.equal(find(tree, 'places.reviews.body').props.value, '');
   find(tree, 'places.reviews.cancel').props.onPress(); assert.ok(ui.calls.feedback.includes('selection'));
+});
+
+test('QA A-place-01/02: one 후기 title with one write action, and the screen learns while the editor is open', async () => {
+  const ui = view(), seen = []; ui.place({ onEditingChange: value => seen.push(value) });
+  ui.render(); await settle(); let tree = ui.render();
+  const header = nodes(tree).filter(node => node.props?.accessibilityRole === 'header');
+  assert.equal(header.length, 1); assert.equal(header[0].props.children, '후기');
+  assert.equal(nodes(tree).filter(node => node.props?.analyticsId === 'places.reviews.refresh').length, 0, 'refresh only appears to retry a failed rating');
+  find(tree, 'places.reviews.write').props.onPress(); tree = ui.render();
+  assert.equal(find(tree, 'places.reviews.write'), undefined, 'the editor replaces the header button');
+  find(tree, 'places.reviews.cancel').props.onPress(); ui.render();
+  assert.deepEqual(seen.filter((value, index) => value !== seen[index - 1]), [false, true, false]);
 });
 
 test('late reads after place/account changes cannot show old review bodies', async () => {
@@ -257,8 +276,9 @@ function detailViewport(mode = 'auto') {
     'react-native': { StyleSheet: { create: x => x }, View: 'View' },
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView' },
     'react-native-reanimated': { __esModule: true, default: { View: 'ReanimatedView' }, FadeIn: { duration: () => 'fade' }, SlideInDown: { duration: () => 'slide' }, useReducedMotion: () => true },
-    '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, priceSymbol },
-    'expo-router': { useIsFocused: () => true, useLocalSearchParams: () => ({ cityId: 'toronto', id: 'osm:node:1' }), useRouter: () => ({}) },
+    '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, priceSymbol, webshopApplicable }, '@/lib/public-seo': { publicPlaceId },
+    // node-1 is how a public place page link names osm:node:1 (QA H40-1).
+    'expo-router': { useIsFocused: () => true, useLocalSearchParams: () => ({ cityId: 'toronto', id: 'node-1' }), useRouter: () => ({}) },
     '@/components/analytics-controls': { Pressable: 'Pressable', ScrollView: 'ScrollView' },
     '@/components/place-reviews': { PlaceReviews: 'PlaceReviews' },
     '@/hooks/use-language': { useLanguage: () => ({ tr, locale: 'en-CA' }) }, '@/i18n': { tr, getLocale: () => 'en-CA' },

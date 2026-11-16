@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { discoveryPost, discoveryEvent, discoveryDays, discoveryMatches, directionsUrl, mapAppUrl, DISCOVERY_CATEGORIES } from '../src/lib/discovery.ts';
+import { discoveryPost, discoveryEvent, discoveryDays, discoveryKind, discoveryMatches, mapAppUrl, DISCOVERY_CATEGORIES } from '../src/lib/discovery.ts';
 
 const post = { id: 'p1', cityId: 'vancouver', author: { id: 'u1' }, tag: { slug: 'used' }, kind: 'listing', listingStatus: 'open', expiresAt: '2027-01-01T00:00:00Z', price: 20, title: '책상', body: '거래 장소\n\nGoogle 지도: https://www.google.com/maps/search/?api=1&query=49.28%2C-123.12\n위치: 도서관 앞' };
 test('a Google Maps attachment does not turn an unrelated community topic into a discovery listing', () => {
@@ -26,6 +26,18 @@ test('지도에는 공개 첨부 핀만 쓰며 거래 종료·만료 위치는 �
   assert.equal(unresolved.label, '이 근처');
   assert.equal(discoveryPost({ ...post, kind: 'story', tag: { slug: 'food' }, body: post.body }).label, '도서관 앞');
 });
+test('업체가 올린 렌트 글은 공개한 매물 주소에, 개인 렌트 글과 중고는 동네 중심에 핀을 찍는다 (owner 2026-11-13)', () => {
+  const at = Date.parse('2026-10-15T00:00:00Z'), address = '뷰잉 예약\n\nGoogle 지도: https://www.google.com/maps/search/?api=1&query=49.22594%2C-123.00041\n위치: 6000 McKay Ave, Burnaby';
+  const rent = { ...post, tag: { slug: 'housing' }, body: address };
+  const business = discoveryPost({ ...rent, business: { id: 'b1', name: '메트로 렌탈' } }, at);
+  assert.deepEqual([business.latitude, business.longitude, business.label], [49.22594, -123.00041, '6000 McKay Ave, Burnaby']);
+  const member = discoveryPost(rent, at);
+  assert.deepEqual([member.latitude, member.longitude, member.label], [49.226, -123.004, '메트로타운'], 'a member\'s home is never shown');
+  const used = discoveryPost({ ...post, body: address, business: { id: 'b1', name: '메트로 렌탈' } }, at);
+  assert.deepEqual([used.latitude, used.longitude], [49.226, -123.004], 'only rent posts keep the address');
+  const nameOnly = discoveryPost({ ...rent, business: { id: 'b1', name: '메트로 렌탈' }, body: 'Google 지도: https://www.google.com/maps/search/?api=1&query=Metrotown%2C+Burnaby' }, at);
+  assert.deepEqual([nameOnly.latitude, nameOnly.label], [null, '이 근처'], 'no coordinates, no pin');
+});
 test('릴스 카테고리 색을 바꾸지 않고 장소 유형을 구분한다', () => {
   const colors = JSON.parse(readFileSync(new URL('./fixtures/discovery-category-colors.json', import.meta.url))).categoryPointColors;
   for (const category of DISCOVERY_CATEGORIES.filter(item => colors[item.label])) assert.equal(category.color, colors[category.label]);
@@ -47,18 +59,7 @@ test('본문과 해시태그로 찾은 장소·리스팅을 다시 숨기지 않
   assert.equal(discoveryMatches(item, 'used', '가구정리'), true);
   assert.equal(discoveryMatches(item, 'housing', 'ubc'), false);
 });
-test('길찾기는 검증한 좌표만 전달하고 출발지나 별도 API 키는 보내지 않는다', () => {
-  const google = new URL(directionsUrl({ latitude: 49.28, longitude: -123.12 }, 'google'));
-  assert.equal(google.pathname, '/maps/dir/');
-  assert.equal(google.searchParams.get('destination'), '49.28,-123.12');
-  assert.equal(google.searchParams.has('origin'), false);
-  assert.equal(google.searchParams.has('key'), false);
-  const waze = new URL(directionsUrl({ latitude: 49.28, longitude: -123.12 }, 'waze'));
-  assert.equal(waze.host, 'waze.com');
-  assert.equal(waze.searchParams.get('navigate'), 'yes');
-  for (const bad of [{ latitude: NaN, longitude: 0 }, { latitude: 0, longitude: 181 }, { latitude: '49', longitude: 0 }]) assert.throws(() => directionsUrl(bad, 'google'));
-});
-test('지도 화면의 Google Maps·Waze 버튼은 길안내를 바로 시작하지 않고 장소부터 연다', () => {
+test('지도 화면·장소 화면의 Google Maps·Waze 버튼은 길안내를 바로 시작하지 않고 장소부터 연다 (QA C19-1)', () => {
   const at = { latitude: 49.28, longitude: -123.12, cityId: 'toronto' };
   const place = new URL(mapAppUrl({ ...at, place: { name: 'Anewen Greenbelt', address: '17 Anewen Drive, North York' } }, 'google'));
   assert.equal(place.pathname, '/maps/search/');
@@ -72,10 +73,20 @@ test('지도 화면의 Google Maps·Waze 버튼은 길안내를 바로 시작하
     assert.equal(url.pathname, '/maps/search/');
     assert.equal(url.searchParams.get('query'), '49.28,-123.12');
   }
+  // Apple Maps: a pin named after the place at its spot, never a route (daddr).
+  const apple = new URL(mapAppUrl({ ...at, place: { name: 'Science World', address: '1455 Quebec St' } }, 'apple'));
+  assert.equal(apple.origin, 'https://maps.apple.com');
+  assert.equal(apple.searchParams.get('q'), 'Science World');
+  assert.equal(apple.searchParams.get('ll'), '49.28,-123.12');
+  assert.equal(apple.searchParams.has('daddr'), false);
+  assert.equal(new URL(mapAppUrl(at, 'apple')).searchParams.has('q'), false, 'without a name it is the exact pin');
+  assert.throws(() => mapAppUrl({ latitude: 91, longitude: 0 }, 'apple'));
   const waze = new URL(mapAppUrl(at, 'waze'));
   assert.equal(waze.searchParams.get('ll'), '49.28,-123.12');
   assert.equal(waze.searchParams.has('navigate'), false);
-  for (const bad of [{ latitude: NaN, longitude: 0 }, { latitude: 0, longitude: 181 }]) assert.throws(() => mapAppUrl(bad, 'waze'));
+  for (const bad of [{ latitude: NaN, longitude: 0 }, { latitude: 0, longitude: 181 }, { latitude: '49', longitude: 0 }]) assert.throws(() => mapAppUrl(bad, 'google'));
+  assert.equal(new URL(mapAppUrl(at, 'google')).searchParams.has('key'), false, 'no API key or origin leaves the app');
+  assert.doesNotMatch(readFileSync(new URL('../src/app/places/[id].tsx', import.meta.url), 'utf8'), /maps\/dir|dir_action|directionsUrl|daddr/);
   const map = readFileSync(new URL('../src/app/map.tsx', import.meta.url), 'utf8');
   assert.match(map, /Linking\.openURL\(mapAppUrl\(item, app\)\)/);
   assert.doesNotMatch(map, /directionsUrl/);
@@ -95,4 +106,11 @@ test('행사 좌표를 만들어내지 않고 취소·종료 일정은 숨긴다
   assert.equal(discoveryEvent({ ...event, location: null }, 'vancouver', Date.parse('2026-10-15T20:00:00Z')).latitude, null);
   assert.equal(discoveryEvent({ ...event, status: 'cancelled' }, 'vancouver'), null);
   assert.equal(discoveryEvent({ ...event, endsAt: '2020-01-01T00:00:00Z' }, 'vancouver'), null);
+});
+
+test('QA C22-2: a game in the festival row is named 스포츠 on its card and pin, other events keep their category', () => {
+  const event = { id: 'e1', name: 'UBC Soccer Championship', venue: 'Thunderbird Stadium', startsAt: '2026-11-14T03:00:00Z', localDate: '2026-11-13', status: 'onsale', country: 'CA', location: { latitude: 49.25, longitude: -123.24 } };
+  assert.equal(discoveryKind(discoveryEvent({ ...event, segment: 'Sports' }, 'vancouver', Date.parse('2026-11-13T20:00:00Z'), true)), '스포츠');
+  assert.equal(discoveryKind(discoveryEvent({ ...event, segment: 'Music' }, 'vancouver', Date.parse('2026-11-13T20:00:00Z'), true)), '페스티벌');
+  assert.equal(discoveryKind({ category: 'cafe' }), DISCOVERY_CATEGORIES.find(value => value.id === 'cafe').label);
 });

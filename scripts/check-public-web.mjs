@@ -3,6 +3,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkMerchantWeb } from './check-merchant-web.mjs';
 import { checkWebChunks } from './check-web-chunks.mjs';
+import { languagePairProblems } from './english-posts.mjs';
 
 const directory = process.argv[2] ?? 'dist';
 assert.ok(existsSync(join(directory, 'index.html')), 'Public web export is missing');
@@ -36,6 +37,12 @@ if (process.env.GLING_PRERENDER_POSTS === '1') {
   assert.ok(companies.length > 0 && sitemap.includes('https://gling.ej-entertainment.com/company/'), 'Public business profiles were not prerendered');
   const company = readFileSync(join(directory, 'company', companies[0]), 'utf8');
   assert.ok(company.includes(`rel="canonical" href="https://gling.ej-entertainment.com/company/${companies[0].replace(/\.html$/, '')}"`) && company.includes('"LocalBusiness"') && company.includes('id="gling-static-company"') && !/noindex/.test(company), 'Prerendered business profile must be indexable with its own canonical');
+  // English copies of business posts (scripts/english-posts.mjs, off until the owner's start date) must pair with their Korean page.
+  for (const file of existsSync(join(directory, 'en', 'posts')) ? readdirSync(join(directory, 'en', 'posts')) : []) {
+    const id = file.replace(/\.html$/, '');
+    assert.deepEqual(languagePairProblems(readFileSync(join(directory, 'posts', file), 'utf8'), readFileSync(join(directory, 'en', 'posts', file), 'utf8'), id), [], `English post ${id} is not paired with its Korean page`);
+    assert.ok(sitemap.includes(`https://gling.ej-entertainment.com/en/posts/${id}<`), `English post ${id} is missing from the sitemap`);
+  }
 }
 assert.ok(robots.includes('Disallow: /merchant/') && robots.includes('Disallow: /admin'), 'Private surfaces must remain outside public discovery');
 assert.ok(readFileSync(join(directory, 'index.html'), 'utf8').includes('application/ld+json'), 'Public home structured data is missing');
@@ -70,7 +77,7 @@ for (const file of readdirSync(directory, { recursive: true })) {
   if (!/\.(html|js)$/.test(file)) continue;
   const content = readFileSync(join(directory, file), 'utf8');
   for (const marker of ['react-native-google-mobile-ads', 'RNGoogleMobileAds']) assert.ok(!content.includes(marker), `Native ad SDK in public web export: ${file}`);
-  for (const marker of ['get_admin_user_businesses', 'write_user_review', 'write_manner_review', 'get_manner_review_state', 'get_my_manner_feedback', 'appeal_manner_review', 'write_meetup_review', 'get_my_meetup_review_inbox', 'get_meetup_sessions', 'create_meetup_session', 'check_in_meetup', 'confirm_meetup_attendance', 'claim_meetup_attendance', 'get_chat_suggestion_context', 'send_suggested_message', 'get_admin_trust_content','review_admin_trust_target','get_trust_safety_content','get_message_safety_context','get_admin_merchant_review_reply_content', 'get_admin_analytics', 'get_admin_performance', 'get_admin_merchants', 'get_admin_partnerships', 'get_admin_creator_directory', 'get_admin_creator_deal', 'record_admin_creator_deal', 'link_admin_creator_deal_merchant', 'get_admin_merchant_creator_deals', 'save_admin_partnership', 'issue_admin_benefit_coupon', 'act_admin_benefit_coupon', 'save_admin_merchant', 'get_admin_merchant_review_content', 'get_admin_merchant_receipt_reviews', 'set_admin_merchant_review_receipt', 'get_my_merchant_profile', 'save_my_merchant_profile', 'get_admin_dashboard_origin', 'MFA_ADMIN_CONNECTION_REQUIRED', 'GLING / INSIGHTS', 'create_meetup_with_post']) {
+  for (const marker of ['get_admin_user_businesses', 'write_user_review', 'write_manner_review', 'get_manner_review_state', 'get_my_manner_feedback', 'appeal_manner_review', 'write_meetup_review', 'get_my_meetup_review_inbox', 'get_my_meetup_review_queue', 'get_meetup_sessions', 'create_meetup_session', 'check_in_meetup', 'confirm_meetup_attendance', 'claim_meetup_attendance', 'get_chat_suggestion_context', 'send_suggested_message', 'get_admin_trust_content','review_admin_trust_target','get_trust_safety_content','get_message_safety_context','get_admin_merchant_review_reply_content', 'get_admin_analytics', 'get_admin_performance', 'get_admin_merchants', 'get_admin_partnerships', 'get_admin_creator_directory', 'get_admin_creator_deal', 'record_admin_creator_deal', 'link_admin_creator_deal_merchant', 'get_admin_merchant_creator_deals', 'save_admin_partnership', 'issue_admin_benefit_coupon', 'act_admin_benefit_coupon', 'save_admin_merchant', 'get_admin_merchant_review_content', 'get_admin_merchant_receipt_reviews', 'set_admin_merchant_review_receipt', 'get_my_merchant_profile', 'save_my_merchant_profile', 'get_admin_dashboard_origin', 'MFA_ADMIN_CONNECTION_REQUIRED', 'GLING / INSIGHTS', 'create_meetup_with_post']) {
     assert.ok(!content.includes(marker), `App-only code (${marker}) in public export: ${file}`);
   }
 }

@@ -15,20 +15,21 @@ import { hideContent, subscribeVisibility, visibilityRevision } from '../src/lib
 import { count, t } from '../src/i18n/ko.ts';
 import { uniqueHashtags } from '../src/lib/hashtags.ts';
 import { postLocationUrl, postMapBody } from '../src/lib/post-maps.ts';
-import { postInfoParts } from '../src/lib/post-info.ts';
-import { stripListingLead } from '../src/lib/listing-details.ts';
+import { englishTail, isPastEvent, postInfoParts } from '../src/lib/post-info.ts';
+import { dealLabel, stripListingLead } from '../src/lib/listing-details.ts';
 import { parseMeetupSections } from '../src/lib/meetup-sections.ts';
 import { translationSource } from './test-meetup-source-imports.mjs';
 import { photoCreditNames, splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 import * as postLinks from '../supabase/functions/_shared/post-links.ts';
 import * as postReactions from '../src/lib/post-reactions.ts';
 import * as postOpen from '../src/lib/post-open.ts';
+import { deliveryPartnerPlace } from '../src/lib/delivery-partners.ts';
 
 const id = '9f100000-0000-4000-8000-000000000001';
 const otherId = '9f100000-0000-4000-8000-000000000002';
 const link = `https://gling.ej-entertainment.com/post?id=${id}`;
 const legacyGatewayLink = `https://gling-share-preview.vercel.app/share/${id}`;
-const gatewayLink = 'https://gling-share-preview.vercel.app/s/nxAAAAAAQACAAAAAAAAAAQ';
+const gatewayLink = 'https://share.gling.ej-entertainment.com/s/nxAAAAAAQACAAAAAAAAAAQ';
 const deferred = () => { let resolve, reject; const promise = new Promise((yes, no) => { resolve = yes; reject = no; }); return { promise, resolve, reject }; };
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...Object.values(tree).flatMap(value => Array.isArray(value) ? value.flatMap(nodes) : nodes(value))];
@@ -98,7 +99,7 @@ function mount(file, name, data = {}, props = {}) {
     '@/lib/post-reactions': postReactions,
     '@/lib/content-translation': { CONTENT_TRANSLATION_VIEWABILITY: { viewAreaCoveragePercentThreshold: 2, minimumViewTime: 250 } },
     '../../supabase/functions/_shared/post-links': postLinks, '@/components/post-map-link': { PostMapLink: 'PostMapLink' },
-    '@/components/post-attachment-link': { PostAttachmentLink: 'PostAttachmentLink' }, '@/lib/post-info': { postInfoParts }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' }, '@/lib/mock': { CITIES: [] },
+    '@/components/post-attachment-link': { PostAttachmentLink: 'PostAttachmentLink' }, '@/lib/post-info': { postInfoParts, isPastEvent, englishTail }, '@/lib/city-places': { getCityPlaces: () => [] }, '@/lib/webshops': { loadCityBusinessLinks: async () => ({}) }, '@/lib/meetup-sections': { parseMeetupSections }, '@/components/meetup-sections': { MeetupSectionsView: 'MeetupSectionsView' }, '@/lib/mock': { CITIES: [] },
     '@/components/report-sheet': { ReportSheet: 'ReportSheet' }, '@/components/trust-badge': { TrustBadge: 'TrustBadge' },
     '@/components/drag-sheet': { DragSheet: 'DragSheet' },
     '@/components/meetup-members': { MeetupWhoCard: 'MeetupWhoCard', MeetupInviteHost: 'MeetupInviteHost', MeetupInviteNote: 'MeetupInviteNote', useMeetupRoster: () => ({ roster: null, error: '', reload() {} }) },
@@ -109,7 +110,8 @@ function mount(file, name, data = {}, props = {}) {
     '@/constants/theme': { Depth: {}, MaxContentWidth: 800, Spacing: { one: 4, two: 8, three: 16, four: 24 } }, '@/i18n/ko': { count, t },
     '@/components/meetup-manage-sheet': { MeetupManageSheet: 'MeetupManageSheet' }, '@/components/post-place-card': { PostPlaceCard: 'PostPlaceCard' },
     '@/lib/meetup-destination': { splitPlaceMeetupBody: () => null }, '@/lib/place-reviews': { placeReviewPlace: () => null, placeReviewText: body => body, mapPinPlace: () => null },
-    '@/lib/listing-details': { stripListingLead }, '@/components/listing-card': { ListingInfo: 'ListingInfo' },
+    '@/lib/listing-details': { dealLabel, stripListingLead }, '@/components/listing-card': { ListingInfo: 'ListingInfo' },
+    '@/lib/delivery-partners': { deliveryPartnerPlace: () => undefined }, '@/components/list-card': { SectionLabel: 'SectionLabel', ListCard: 'ListCard', ListRow: 'ListRow' }, '@/components/fact-grid': { FactGrid: 'FactGrid' },
     '@/lib/hashtags': { uniqueHashtags }, '@/lib/post-maps': { postLocationUrl, postMapBody }, '@/lib/meetup-ai': { visibleMeetupBody: body => body },
     '@/components/post-share-sheet': { PostShareSheet: 'PostShareSheet' }, '@/components/post-detail': { PostDetail: 'PostDetail' }, '@/components/shared-link-card': { SharedPreviewContent: 'SharedPreviewContent' },
     '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: ({ name, size, tintColor }) => name ? { type: 'SymbolView', props: { name, size, tintColor } } : null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null },
@@ -326,7 +328,7 @@ test('failed OAuth exchange preserves the invitation and shows a retry explanati
 });
 
 test('the exported PostDetail guest wrapper renders only a login gate and never loads comments or the supplied body', async context => {
-  const requests = [], components = ['TicketmasterSourceLink','MerchantSourceLink','MerchantReviews','MeetupReviews','PostPoll','MeetupRsvp','PostCard','PostBodyEditor','PostPhotoGallery','PostPhotoEditor','PostPhotoCredits','ChillingHostProfile','ReportSheet','TrustBadge','UserSheet','MeetupManageSheet','MeetupRoomSummary','MeetupHostTools','ChillingEvent','ChillingProfileCard','ListCard','RaisedActionButton'];
+  const requests = [], components = ['TicketmasterSourceLink','MerchantSourceLink','MerchantReviews','MeetupReviews','PostPoll','MeetupRsvp','PostCard','PostBodyEditor','PostPhotoGallery','PostPhotoEditor','PostPhotoCredits','ChillingHostProfile','ReportSheet','TrustBadge','UserSheet','MeetupManageSheet','MeetupPartnerLine','MeetupRoomSummary','MeetupHostTools','ChillingEvent','ChillingProfileCard','ListCard','RaisedActionButton','ListingFields'];
   const imports = Object.fromEntries(components.map(name => [`@/components/${name.replace(/[A-Z]/g, (letter, index) => `${index ? '-' : ''}${letter.toLowerCase()}`)}`, { [name]: name }]));
   Object.assign(imports, {
     'expo-image-picker': {}, '@/constants/theme': { Depth: {}, Spacing: {} }, '@/i18n/ko': { t: {}, count: () => '' },
@@ -591,9 +593,86 @@ test('host invites and closed meetups share a link while preserving join applica
 
 
 test('web chat preview opens the hosted flat post route and keeps the invitation flag', async context => {
-  for (const url of [link, gatewayLink, legacyGatewayLink]) {
+  for (const url of [link, gatewayLink, legacyGatewayLink, 'https://gling-share-preview.vercel.app/s/nxAAAAAAQACAAAAAAAAAAQ']) {
     const harness = mount('../src/components/shared-link-card.tsx', 'SharedLinkCard', { os: 'web' }, { url }); context.after(() => harness.unmount()); await harness.settle();
     control(harness, 'chat.shared-link.open').props.onPress();
     assert.equal(harness.calls.find(call => call[0] === 'navigate')[1], `/post?id=${id}&invite=1`);
   }
+});
+
+test('a listing card whose first line already gives the price does not repeat it under the text (QA B8-2)', async context => {
+  const lead = '팝니다 · $46,800 · 사용감 있음 · 코퀴틀람';
+  const base = { ...post(), room: undefined, kind: 'listing', price: 46800, tag: { slug: 'used', label: '중고거래' }, author: { id: 'viewer', nickname: '이웃' }, likes: 0, saves: 0, comments: 0, createdAtLabel: '방금' };
+  for (const [item, repeated] of [[{ ...base, body: `${lead}\n\n무사고예요`, listingDetails: { type: 'used', deal: 'sell', lead } }, false], [{ ...base, body: '무사고예요' }, true]]) {
+    for (const feed of [true, false]) {
+      const harness = mount('../src/components/post-card.tsx', 'PostCard', {}, { post: item, feed }); context.after(() => harness.unmount());
+      assert.equal(harness.nodes().some(node => node.props?.children === t.detail.price(46800)), repeated, `${feed ? 'feed' : 'flat'} card, lead ${!repeated}`);
+    }
+  }
+});
+
+test('a detail card names a listing by its own kind, so a job or rent post never reads as 구해요·팔아요 (QA H43-7·B12-2)', async context => {
+  const base = { ...post(), room: undefined, kind: 'listing', body: '본문', author: { id: 'viewer', nickname: '이웃' }, likes: 0, saves: 0, comments: 0, createdAtLabel: '방금' };
+  for (const [item, label] of [
+    [{ ...base, tag: { slug: 'jobs', label: '구인구직' }, listingDetails: { type: 'jobs', deal: 'hiring' } }, '구인구직 · 구인'],
+    [{ ...base, tag: { slug: 'housing', label: '부동산' }, listingDetails: { type: 'housing', deal: 'rent_offer' } }, '부동산 · 렌트 내놓음'],
+    [{ ...base, tag: { slug: 'used', label: '중고거래' } }, '중고거래 · 구해요·팔아요'],
+  ]) {
+    const harness = mount('../src/components/post-card.tsx', 'PostCard', {}, { post: item, flat: true, postDetail: true }); context.after(() => harness.unmount());
+    assert.equal([control(harness, 'components_post-card.pressable.2').props.children[0].props.children].flat().join(''), label);
+  }
+});
+
+test('a business post detail opens the business on the Gling map and folds its English copy (QA I-post-06)', async context => {
+  const korean = '지모코에서 점심 2인 세트를 시작했어요. 메인 두 개와 음료 두 잔이 함께 나와요.';
+  const english = 'Jimoco now has a lunch set for two. It comes with two mains and two drinks.';
+  const item = { ...post(), room: undefined, tag: { slug: 'business', label: '비즈니스' }, business: { id: 'merchant-1', name: '지모코' }, cityId: 'vancouver',
+    body: `${korean}\n\n${english}\n\n📍 1046A Austin Ave, Coquitlam`, author: { id: 'other', nickname: '지모코' }, likes: 0, saves: 0, comments: 0, createdAtLabel: '방금' };
+  const place = { id: 'osm:node:7', cityId: 'vancouver', name: 'Jimoco' };
+  const harness = mount('../src/components/post-card.tsx', 'PostCard', { imports: {
+    '@/lib/webshops': { loadCityBusinessLinks: async (_client, cityId) => cityId === 'vancouver' ? { 'osm:node:7': 'merchant-1' } : {} },
+    '@/lib/city-places': { getCityPlaces: () => [place] },
+  } }, { post: item, flat: true, postDetail: true }); context.after(() => harness.unmount());
+  assert.ok(harness.nodes().some(node => node.type === 'PostMapLink'), 'the address link shows until the place is known');
+  await harness.settle();
+  assert.equal(harness.nodes().find(node => node.type === 'PostPlaceCard')?.props.place, place);
+  assert.ok(!harness.nodes().some(node => node.type === 'PostMapLink'));
+  const body = () => harness.nodes().find(node => Array.isArray(node.props?.paragraphs)).props.paragraphs;
+  assert.deepEqual(body(), [korean]);
+  const toggle = harness.nodes().find(node => node.props?.analyticsId === 'components_post-card.pressable.1' && node.props.accessibilityState);
+  toggle.props.onPress(); harness.render();
+  assert.deepEqual(body(), [korean, english]);
+});
+
+test('a business linked to a delivery partner place opens that place on the Gling map, not Google (QA I-post-06)', async context => {
+  const item = { ...post(), room: undefined, tag: { slug: 'business', label: '비즈니스' }, business: { id: 'merchant-1', name: '지모코' }, cityId: 'vancouver',
+    body: '점심 세트를 시작했어요.\n\n📍 1046A Austin Ave, Coquitlam', author: { id: 'other', nickname: '지모코' }, likes: 0, saves: 0, comments: 0, createdAtLabel: '방금' };
+  const harness = mount('../src/components/post-card.tsx', 'PostCard', { imports: {
+    '@/lib/webshops': { loadCityBusinessLinks: async () => ({ 'partner:jimoco-coquitlam': 'merchant-1' }) },
+    '@/lib/city-places': { getCityPlaces: () => [] }, '@/lib/delivery-partners': { deliveryPartnerPlace },
+  } }, { post: item, flat: true, postDetail: true }); context.after(() => harness.unmount());
+  await harness.settle();
+  assert.equal(harness.nodes().find(node => node.type === 'PostPlaceCard')?.props.place.id, 'partner:jimoco-coquitlam');
+  assert.ok(!harness.nodes().some(node => node.type === 'PostMapLink'));
+});
+
+test('a listing detail folds its body under 자세한 내용 after three lines, and only when the text is cut (I-post-01)', async context => {
+  const paragraphs = ['다운타운에서 15분 거리예요.', '· 직무: 핫푸드, 주방보조', '· 시간: 풀타임과 파트타임', '· 지원: 문자로 보내 주세요.'];
+  const item = { ...post(), room: undefined, kind: 'listing', tag: { slug: 'jobs', label: '구인구직' }, body: paragraphs.join('\n\n'), author: { id: 'other', nickname: '수달' }, likes: 0, saves: 0, comments: 0, createdAtLabel: '방금' };
+  for (const [lines, cut] of [[5, true], [2, false]]) {
+    const harness = mount('../src/components/post-card.tsx', 'PostCard', {}, { post: item, flat: true, postDetail: true, foldBody: true }); context.after(() => harness.unmount());
+    assert.ok(harness.nodes().some(node => node.type === 'SectionLabel' && node.props.children === '자세한 내용'));
+    const measure = () => harness.nodes().find(node => node.type === 'PostBody' && node.props.onTextLayout);
+    measure().props.onTextLayout({ nativeEvent: { lines: Array.from({ length: lines }) } }); harness.render();
+    const clamped = () => harness.nodes().find(node => node.type === 'PostBody' && node.props.numberOfLines === 3);
+    const more = () => harness.nodes().find(node => node.props?.analyticsId === 'post.detail.body-more');
+    assert.equal(!!clamped(), cut); assert.equal(!!more(), cut);
+    if (!cut) { assert.deepEqual(harness.nodes().find(node => Array.isArray(node.props?.paragraphs)).props.paragraphs, paragraphs); continue; }
+    more().props.onPress(); harness.render();
+    assert.ok(!clamped()); assert.equal(more().props.accessibilityState.expanded, true);
+    assert.deepEqual(harness.nodes().find(node => Array.isArray(node.props?.paragraphs)).props.paragraphs, paragraphs);
+    assert.ok(harness.calls.some(call => call[0] === 'feedback' && call[1] === 'selection'));
+  }
+  const web = mount('../src/components/post-card.tsx', 'PostCard', { os: 'web' }, { post: item, flat: true, postDetail: true, foldBody: true }); context.after(() => web.unmount());
+  assert.ok(!web.nodes().some(node => node.type === 'SectionLabel'), 'web cannot count lines and keeps the whole body');
 });

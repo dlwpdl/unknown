@@ -21,6 +21,7 @@ async function open(device) {
       if (name === '@/hooks/use-language') return { useLanguage: () => ({ language: 'ko' }) };
       if (name === '@/lib/behavior-analytics') return { behavior: (...args) => events.push(args), flushBehavior: async () => {} };
       if (name === './analytics') return { useReaderAnalytics() {} };
+      if (name === './public-header') return { PublicHeader: 'PublicHeader', PublicFooter: 'PublicFooter', readerPalette: {} };
       if (name === './app-store-choices') return { AppStoreChoices: 'AppStoreChoices', AppStoreRating: 'AppStoreRating', appStoreUrl: () => 'https://apps.apple.com/campaign', playUrl: () => 'https://play.google.com/referrer', useDevice: () => device };
       return {};
     },
@@ -28,9 +29,9 @@ async function open(device) {
   const tree = exports.default();
   effects.forEach(effect => effect());
   await new Promise(resolve => setImmediate(resolve));
-  const types = [], walk = node => { if (!node || typeof node !== 'object') return; types.push(node.type); [node.props?.children].flat().forEach(walk); };
+  const types = [], props = {}, walk = node => { if (!node || typeof node !== 'object') return; types.push(node.type); props[node.type] ??= node.props; [node.props?.children].flat().forEach(walk); };
   walk(tree);
-  return { events, replaced, types };
+  return { events, replaced, types, choices: props.AppStoreChoices };
 }
 
 test('/get sends an iPhone straight to the App Store campaign link', async () => {
@@ -51,5 +52,7 @@ test('/get keeps computers and the static render on the store choices', async ()
     assert.equal(page.events.length, 0, `${device}: no store-open event`);
     assert.equal(page.replaced.length, 0, `${device}: stays on the page`);
     assert.ok(page.types.includes('AppStoreChoices'), `${device}: the store choices render`);
+    assert.ok(page.types.includes('PublicHeader') && page.types.includes('PublicFooter'), `${device}: the shared header and footer frame the page`);
+    assert.equal(page.choices.returnHint, false, `${device}: nothing to return to on /get`);
   }
 });

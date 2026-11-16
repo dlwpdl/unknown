@@ -117,7 +117,7 @@ export function mount(file, exportName, data, props = {}, params = {}) {
       if (name === '@/lib/chat-identity') return { chatBusinessIdentity: () => data.businessIdentity ?? null, selectChatBusiness: (_user, value) => { data.businessIdentity = value; dirty = true; } };
       if (name === '@/lib/merchant-connections') return { loadMyMerchantConnections: async (_client, userId, chatOnly = false) => data.loadMyMerchantConnections
         ? data.loadMyMerchantConnections(userId, chatOnly) : ({ user_id: auth.me.id, merchants: data.connections ?? [] }) };
-      if (name === '@/lib/business-chat') return { subscribeBusinessChat: (_client, _user, changed) => { data.privateChanged = changed; return () => { data.privateChanged = null; }; }, ...data.businessChat };
+      if (name === '@/lib/business-chat') return { subscribeBusinessChat: (_client, _user, changed) => { data.privateChanged = changed; return () => { data.privateChanged = null; }; }, canReportBusinessConversation: () => true, ...data.businessChat };
       if (name === '@/lib/auth') return { useAuth: () => auth };
       if (name === '@/lib/membership-provider') return { useMembership: () => ({ refresh: refreshMembership }) };
       if (name === '@/components/relationship-slot-card') return { relationshipSlotData: () => null };
@@ -313,6 +313,19 @@ test('report then block stops when its sheet, account, profile or target changes
     assert.equal(alerts.length, change === 'none' ? 1 : 0, change);
     harness.cleanup();
   }
+});
+
+test('a post or comment report says what is reported and who wrote it; a person report keeps the name (QA I-post-04)', () => {
+  const data = { native: { Animated: { Value: class { interpolate() { return this; } }, View: 'AnimatedView' }, Easing: {}, Alert: { alert() {} } } };
+  const header = props => {
+    const harness = mount('../src/components/report-sheet.tsx', 'ReportSheet', data, { visible: true, targetId: 'target', reportedUserId: 'author', reportedNickname: '포근한수달', onClose() {}, ...props });
+    const texts = harness.nodes().filter(node => node.props?.type === 'subtitle' || node.props?.type === 'small').map(node => node.props.children).slice(0, 2);
+    harness.cleanup();
+    return texts;
+  };
+  assert.deepEqual(header({ targetType: 'post' }), ['이 글 신고하기', '작성자 포근한수달']);
+  assert.deepEqual(header({ targetType: 'comment' }), ['이 댓글 신고하기', '작성자 포근한수달']);
+  assert.deepEqual(header({ targetType: 'user' }), ['포근한수달 신고하기', '운영팀이 내용과 관련 활동을 함께 확인해요.']);
 });
 
 test('suggested sends retry with the same identity and preserve the typed draft', async context => {
@@ -773,8 +786,11 @@ test('rendered messages keep report and confirmed block in the message menu and 
   assert.ok(harness.nodes().some(node => node.props?.accessibilityLabel === t.report.short));
   harness.nodes().find(node => node.props?.accessibilityLabel === t.chat.block).props.onPress(); await harness.settle();
   assert.equal(blocks, 0, 'block waits for confirmation');
-  assert.ok(harness.nodes().some(node => node.props?.children === `${t.chat.member}님을 차단할까요?`));
-  harness.nodes().find(node => node.props?.label === t.chat.block && node.props.primary).props.onPress(); await harness.settle();
+  // The shared confirm sheet asks, not a strip between messages (QA A-chat-03).
+  const blockSheet = harness.nodes().find(node => node.type === 'ConfirmSheet' && node.props.confirmLabel === t.chat.block);
+  assert.equal(blockSheet.props.visible, true);
+  assert.equal(blockSheet.props.title, `${t.chat.member}님을 차단할까요?`);
+  blockSheet.props.onConfirm(); await harness.settle();
   assert.equal(blocks, 1);
 });
 
@@ -1152,6 +1168,23 @@ test('legacy personal deep links clear business mode, while revoked business lin
   context.after(() => revoked.cleanup()); await revoked.settle();
   assert.equal(reads, 0);
   assert.ok(revoked.nodes().some(node => node.props?.accessibilityRole === 'alert'));
+});
+
+test('QA A-chat-01: a failed business inbox shows one error card with retry, and an empty one speaks to customers', async context => {
+  let fail = true, reads = 0;
+  const data = { businessIdentity: { id: businessId, name: '공개 비즈니스' },
+    loadConversations: async () => { reads++; if (fail) throw new Error('MERCHANT_ACCESS_REQUIRED'); return { conversations: [], selectedConversation: null, pendingCount: 0, cursor: null }; } };
+  const harness = mount('../src/app/(tabs)/chat.tsx', 'default', data);
+  context.after(() => harness.cleanup()); await harness.settle();
+  const cards = () => harness.nodes().filter(node => node.type === 'StateCard');
+  assert.equal(cards().length, 1); assert.equal(cards()[0].props.kind, 'error');
+  assert.equal(cards()[0].props.title, '대화를 불러오지 못했어요');
+  assert.ok(!harness.nodes().some(node => node.props?.accessibilityRole === 'alert'), 'no second error line above the card');
+  assert.ok(!harness.nodes().some(node => node.type === 'ProfileAvatarButton' && node.props.enableBusinessSwitch !== false), 'the header does not repeat the inbox switcher');
+  fail = false; cards()[0].props.onAction(); await harness.settle();
+  assert.ok(reads >= 2);
+  assert.equal(cards().length, 1); assert.equal(cards()[0].props.kind ?? 'empty', 'empty');
+  assert.equal(cards()[0].props.title, '아직 손님 문의가 없어요');
 });
 
 test('business notifications use actual connected admin scope without an admin-wide lookup', async context => {
@@ -1689,6 +1722,9 @@ test('a summary unmounted before its deferred read starts makes no request', asy
 });
 
 const settingsSheet = harness => harness.nodes().find(node => node.props?.testID === 'chat-room-settings');
+const endSheet = (harness, label = t.chat.end) => harness.nodes().find(node => node.type === 'ConfirmSheet' && node.props.confirmLabel === label);
+// iOS presents the confirm only once the settings sheet has gone (the harness runs as iOS).
+const settingsGone = async harness => { harness.nodes().find(node => node.props?.testID === 'chat-room-settings-modal').props.onDismiss(); await harness.settle(); };
 const settingsActions = harness => {
   const walk = value => !value || typeof value !== 'object' ? [] : [...(value.type ? [value] : []), ...Object.values(value).flatMap(walk)];
   return walk(settingsSheet(harness)).filter(node => node.props?.label);
@@ -1716,10 +1752,14 @@ test('the neutral header close only dismisses; end, report and block are nested 
   }
   assert.equal(ends, 0); assert.equal(blocks, 0);
   actions.find(node => node.props.label === t.chat.end).props.onPress(); await harness.settle();
+  assert.equal(endSheet(harness).props.visible, false, 'the confirm waits for the settings sheet to leave');
+  await settingsGone(harness);
   assert.equal(ends, 0, 'choosing end still requires the existing confirmation');
-  const confirmation = harness.nodes().find(node => node.props?.label === t.chat.end && node.props.primary);
-  assert.ok(confirmation); assert.equal(confirmation.props.danger, true);
-  harness.nodes().find(node => node.props?.label === t.profile.cancel).props.onPress(); await harness.settle();
+  const confirmation = endSheet(harness);
+  assert.equal(confirmation.props.visible, true); assert.equal(confirmation.props.tone ?? 'danger', 'danger');
+  assert.equal(confirmation.props.cancelLabel, t.profile.cancel);
+  confirmation.props.onClose(); await harness.settle();
+  assert.equal(endSheet(harness).props.visible, false);
   assert.equal(ends, 0); assert.equal(closes, 1);
 });
 
@@ -1742,48 +1782,33 @@ test('room settings preserve ended and pending capabilities, report targets, and
     if (!end) continue;
     harness.nodes().find(node => node.props?.analyticsId === 'chat.settings.open').props.onPress(); await harness.settle();
     settingsActions(harness).find(node => node.props.label === t.chat.end).props.onPress(); await harness.settle();
-    const confirm = harness.nodes().find(node => node.props?.label === t.chat.end && node.props.primary);
-    confirm.props.onPress(); confirm.props.onPress(); await harness.settle();
+    await settingsGone(harness);
+    const confirm = endSheet(harness);
+    confirm.props.onConfirm(); confirm.props.onConfirm(); await harness.settle();
     assert.equal(ends, 1, 'only the confirmed action ends; repeat taps are single-flight');
   }
 });
 
-test('destructive confirmation uses the actual theme danger color with readable contrast and disabled feedback', async context => {
-  const constants = {};
-  vm.runInNewContext(ts.transpileModule(fs.readFileSync(new URL('../src/constants/theme.ts', import.meta.url), 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS },
-  }).outputText, { exports: constants, require: () => ({ Platform: { OS: 'ios', select: values => values.default } }) });
-  const luminance = color => {
-    const rgb = color.slice(1).match(/../g).map(value => parseInt(value, 16) / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
-    return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
-  };
-  for (const theme of [constants.Colors.light, constants.Colors.dark]) {
-    let finish, ends = 0;
-    const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { theme, loadConversationMessages: async () => [], endConversation: () => { ends++; return new Promise(resolve => { finish = resolve; }); } },
-      { ...roomProps, conversation: { ...conversation, kind: 'direct' } });
-    context.after(() => harness.cleanup()); await harness.settle();
-    const close = harness.nodes().find(node => node.props?.accessibilityLabel === t.detail.close);
-    assert.equal(close.props.children.props.tintColor, theme.textSecondary, 'close stays neutral');
-    harness.nodes().find(node => node.props?.analyticsId === 'chat.settings.open').props.onPress(); await harness.settle();
-    const destructive = settingsActions(harness).find(node => node.props.label === t.chat.end);
-    assert.equal(destructive.props.danger, true);
-    destructive.props.onPress(); await harness.settle();
-    const confirmation = () => harness.nodes().find(node => node.props?.label === t.chat.end && node.props.primary);
-    const rendered = confirmation().type(confirmation().props);
-    const style = Object.assign({}, ...rendered.props.style({ pressed: false }).flat(Infinity).filter(value => value && typeof value === 'object'));
-    assert.equal(style.borderColor, theme.danger); assert.ok(style.minHeight >= 44);
-    assert.equal(rendered.props.accessibilityLabel, t.chat.end);
-    const icon = rendered.props.children.find(node => node?.type === 'SymbolView');
-    const label = rendered.props.children.find(node => node?.type === 'ThemedText');
-    assert.equal(icon.props.tintColor, theme.danger); assert.equal(label.props.style.color, theme.danger);
-    const a = luminance(label.props.style.color), b = luminance(style.backgroundColor);
-    assert.ok((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) >= 4.5, 'destructive text contrast remains readable');
-    confirmation().props.onPress(); await harness.settle();
-    const disabled = confirmation().type(confirmation().props);
-    assert.equal(disabled.props.disabled, true); assert.equal(disabled.props.accessibilityState.disabled, true);
-    disabled.props.onPress(); assert.equal(ends, 1);
-    finish(); await harness.settle();
-  }
+test('destructive confirmation goes through the shared danger sheet and stays single-flight while busy', async context => {
+  let finish, ends = 0;
+  const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { loadConversationMessages: async () => [], endConversation: () => { ends++; return new Promise(resolve => { finish = resolve; }); } },
+    { ...roomProps, conversation: { ...conversation, kind: 'direct' } });
+  context.after(() => harness.cleanup()); await harness.settle();
+  const close = harness.nodes().find(node => node.props?.accessibilityLabel === t.detail.close);
+  assert.ok(close, 'the neutral close stays');
+  harness.nodes().find(node => node.props?.analyticsId === 'chat.settings.open').props.onPress(); await harness.settle();
+  const destructive = settingsActions(harness).find(node => node.props.label === t.chat.end);
+  assert.equal(destructive.props.danger, true);
+  destructive.props.onPress(); await harness.settle();
+  await settingsGone(harness);
+  // Colour and contrast of the sheet's danger action are checked in confirm-sheet.test.mjs.
+  assert.equal(endSheet(harness).props.tone ?? 'danger', 'danger');
+  assert.equal(endSheet(harness).props.confirmId, 'components_chat-room.pressable.1');
+  endSheet(harness).props.onConfirm(); await harness.settle();
+  assert.equal(endSheet(harness).props.busy, true, 'the sheet shows the end as busy and cannot be dismissed');
+  endSheet(harness).props.onConfirm(); assert.equal(ends, 1);
+  finish(); await harness.settle();
+  assert.equal(endSheet(harness).props.visible, false, 'a finished end closes the sheet');
 });
 
 test('group and business room settings retain their existing role and safety action boundaries', async context => {
@@ -1797,7 +1822,9 @@ test('group and business room settings retain their existing role and safety act
     assert.ok(labels.includes(isGroupHost ? t.meetup.end : t.meetup.leave));
     assert.equal(labels.includes(t.report.short) || labels.includes(t.chat.block), false, 'message-specific group safety controls keep their own context');
     settingsActions(harness).find(node => node.props.label === (isGroupHost ? t.meetup.end : t.meetup.leave)).props.onPress(); await harness.settle();
-    assert.ok(harness.nodes().some(node => node.props?.children === (isGroupHost ? t.meetup.endTitle : t.meetup.leaveTitle)));
+    await settingsGone(harness);
+    const sheet = endSheet(harness, isGroupHost ? t.meetup.end : t.meetup.leave);
+    assert.equal(sheet.props.visible, true); assert.equal(sheet.props.title, isGroupHost ? t.meetup.endTitle : t.meetup.leaveTitle);
     assert.equal(harness.nodes().some(node => node.props?.children === '나가면 이 모임 대화방에 더 이상 들어올 수 없어요.'), !isGroupHost);
   }
   const harness = mount('../src/components/chat-room.tsx', 'ChatRoom', { businessIdentity: { id: businessId, name: 'Public business' },
@@ -1807,6 +1834,22 @@ test('group and business room settings retain their existing role and safety act
   const labels = settingsActions(harness).map(node => node.props.label);
   assert.ok(labels.includes(t.chat.end)); assert.ok(labels.includes(t.chat.block));
   assert.equal(labels.includes(t.report.short), false, 'business chat never uses a raw personal-user report target');
+  // A business on the other side is reported as that business, in the business chat scope (mock-biz A-chat-03).
+  const peer = { kind: 'business', id: 'peer-business', name: '옆 가게', avatarUri: null };
+  for (const available of [true, false]) {
+    const room = { ...businessRoom, otherIdentity: peer };
+    const withPeer = mount('../src/components/chat-room.tsx', 'ChatRoom', { businessIdentity: { id: businessId, name: 'Public business' },
+      businessChat: { loadBusinessChatMessages: async () => ({ ...businessPage([]), conversation: room }), canReportBusinessConversation: () => available } }, { ...roomProps, conversation: room });
+    context.after(() => withPeer.cleanup()); await withPeer.settle();
+    withPeer.nodes().find(node => node.props?.analyticsId === 'chat.settings.open').props.onPress(); await withPeer.settle();
+    const report = settingsActions(withPeer).find(node => node.props.label === t.report.short);
+    assert.equal(Boolean(report), available, 'a server without the business report hides the row instead of failing');
+    if (!report) continue;
+    report.props.onPress(); await withPeer.settle(); await settingsGone(withPeer);
+    const sheet = withPeer.nodes().find(node => node.type === 'ReportSheet');
+    assert.equal(sheet.props.targetType, 'business'); assert.equal(sheet.props.targetId, peer.id); assert.equal(sheet.props.reportedBusinessId, peer.id);
+    assert.equal(sheet.props.reportedUserId, undefined); assert.equal(sheet.props.businessConversation.id, room.id);
+  }
 });
 
 test('retained room settings cannot block or hand off a report after an account change', async context => {

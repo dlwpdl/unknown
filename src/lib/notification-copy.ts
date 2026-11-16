@@ -32,6 +32,14 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
   post_like: [[/^(.+)님이 내 글에 공감했어요\.$/, m => `${m[1]} liked your post.`]],
   friend_request: [[/^(.+)님이 친구 요청을 보냈어요\.$/, m => `${m[1]} sent you a friend request.`]],
   friend_accepted: [[/^(.+)님과 친구가 됐어요\.$/, m => `You and ${m[1]} are now friends.`]],
+  // Friend saves and Friday picks: 20261114030000_friend_save_and_weekend_alerts.sql.
+  friend_saved_place: [
+    [/^(.+?)님이 장소 (\d+)곳을 저장했어요\.$/, m => `${m[1]} saved ${m[2]} places.`],
+    [/^(.+?)님이 ‘(.+)’ 저장했어요\.$/, m => `${m[1]} saved “${m[2]}”.`],
+  ],
+  weekend_picks: [[/^이번 주말 갈 만한 곳 골라 뒀어요\. (.+)$/, m => `A few picks for this weekend: ${m[1]}`]],
+  // 같이 만드는 저장 폴더 (20261114020000).
+  saved_folder_invite: [[/^(.+?)님이 「(.+)」 폴더를 같이 만들자고 했어요\.$/, m => `${m[1]} invited you to build “${m[2]}” together.`]],
   // 동네 말풍선 지도 (20261105030000).
   live_bubble_request: [
     [/^(.+)님이 말풍선을 보고 대화를 신청했어요\.$/, m => `${m[1]} saw your bubble and asked to chat.`],
@@ -108,7 +116,12 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
 // Server bodies keep 24-hour text: stored rows, pushes and 1.4.7's English patterns above read it. Only the Korean inbox shows the app's clock.
 const SERVER_CLOCK = /^(.+)(\d{2}):(\d{2})(에 시작해요\. \(모임 (?:장소 기준|현지 시간)\)| · 모임 (?:장소 기준|현지 시간)\)| \(모임 현지 시간\))$/;
 const FESTIVAL_CLOCK = /^(.+(?:공연이에요|경기예요|행사예요)\. \d{1,2}월 \d{1,2}일 )(\d{2}):(\d{2})(, .+)$/;
+// The server wrote a sign-in on an unknown device two ways (new_login / new_device in private.flush_account_security_logins)
+// until 20261113210000 made them one sentence (QA E31-1). Rows stored before keep the old text, so the inbox still shows it as one alert; ui-en gives both the same English.
+export const NEW_SIGN_IN = '새 기기 또는 브라우저에서 로그인했어요. 본인이 아니라면 계정 설정을 확인해 주세요.';
+export const OTHER_SIGN_IN = '새 로그인이 확인됐어요. 본인이 아니라면 계정 설정을 확인해 주세요.';
 export function koreanNotificationBody(item: { kind: string; body: string }) {
+  if (item.kind === 'account_security' && item.body === OTHER_SIGN_IN) return NEW_SIGN_IN;
   // A member's own words (chat previews, host notices) are never rewritten.
   const match = item.kind === 'message' ? null : SERVER_CLOCK.exec(item.body) ?? FESTIVAL_CLOCK.exec(item.body);
   return match ? `${match[1]}${new Intl.DateTimeFormat('ko-KR', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }).format(Date.UTC(2000, 0, 1, Number(match[2]), Number(match[3])))}${match[4]}` : item.body;

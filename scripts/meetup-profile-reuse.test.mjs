@@ -142,7 +142,7 @@ test('leaving an edited own profile asks first, an untouched one leaves freely',
   assert.equal(app.guarded(), false, 'The loaded profile itself is not an unsaved change.');
   openItem(app, '모임에서 쓸 이름');
   nodes(app.render()).find(node => node.props?.accessibilityLabel === '모임에서 쓸 이름').props.onChangeText('새 이름');
-  nodes(app.render()).find(node => node.props?.analyticsId === 'app_meetup-profile.pressable.1').props.onPress();
+  nodes(app.render()).find(node => node.props?.analyticsId === 'app_meetup-profile.pressable.1').props.onBack();
   app.render();
   assert.equal(app.guarded(), true);
 });
@@ -166,14 +166,15 @@ test('one item opens straight from the list, the arrow returns to the list and t
   let tree = app.render();
   assert.equal(nodes(tree).some(node => node.props?.accessibilityLabel === '모임에서 쓸 이름'), false);
   assert.ok(nodes(tree).some(node => node.type === 'ListRow' && node.props.title === '공개 호스트 사진'), 'The public photo setting is on the list itself.');
-  assert.ok(nodes(tree).some(node => node.type === 'WhoSees'), 'Who sees what stays visible next to the list.');
+  assert.ok(nodes(tree).some(node => node.type === 'Disclosure' && node.props.title === '누가 무엇을 보나요' && nodes(node).some(child => child.type === 'WhoSees')), 'Who sees what folds to one line next to the list.');
+  assert.ok(nodes(tree).some(node => node.type === 'ListRow' && node.props.title === '승인된 멤버에게 사진 보여 주기' && node.props.trailing?.props.analyticsId === 'meetup-profile.share-members'), 'The photo switch is a named row.');
   openItem(app, '모임에서 쓸 이름'); tree = app.render();
   const input = nodes(tree).find(node => node.props?.accessibilityLabel === '모임에서 쓸 이름');
   assert.equal(input.props.autoFocus, true);
   assert.equal(nodes(tree).some(node => node.props?.analyticsId === 'app_meetup-profile.pressable.5'), false, 'Only the chosen item opens.');
   input.props.onChangeText('새 이름'); tree = app.render();
   assert.ok(nodes(tree).some(node => node.props?.analyticsId === 'app_meetup-profile.pressable.8'), 'Saving is one tap away from the item.');
-  nodes(tree).find(node => node.props?.analyticsId === 'app_meetup-profile.pressable.1').props.onPress(); tree = app.render();
+  nodes(tree).find(node => node.props?.analyticsId === 'app_meetup-profile.pressable.1').props.onBack(); tree = app.render();
   assert.equal(nodes(tree).find(node => node.props?.analyticsId === 'meetup-profile.edit-item' && node.props.title === '모임에서 쓸 이름').props.detail, '새 이름');
   nodes(tree).find(node => node.props?.analyticsId === 'app_meetup-profile.pressable.8').props.onPress(); await new Promise(setImmediate);
   assert.equal(app.writes[0].displayName, '새 이름');

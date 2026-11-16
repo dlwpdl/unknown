@@ -7,7 +7,7 @@ test('unauthenticated API responses emit the auth-expired event exactly for 401 
   const emitted = [];
   const hooks = registerHooks({
     resolve(specifier, context, nextResolve) {
-      if (specifier === 'react-native' || specifier === '@react-native-async-storage/async-storage') {
+      if (specifier === 'react-native' || specifier === '@react-native-async-storage/async-storage' || specifier === 'expo-secure-store') {
         return { url: `data:text/javascript,export const Platform={OS:"web"}; export const DeviceEventEmitter={emit(name){globalThis.__emitted.push(name)},addListener(){return {remove(){}}}}; export default {};`, shortCircuit: true };
       }
       if (specifier.startsWith('@/lib/')) return nextResolve(new URL(`../src/${specifier.slice(2)}.ts`, import.meta.url).href, context);

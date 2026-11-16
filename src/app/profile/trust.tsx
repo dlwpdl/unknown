@@ -38,14 +38,15 @@ export default function TrustScreen() {
     : auth.trustLevel === 2 ? tr("기준을 다 채우면 한 시간 안에 배지가 붙어요.")
     : tr("기준에서 벗어나면 배지가 빠질 수 있어요.");
   const levels = [
-    { level: 1, title: tr("계정 확인"), summary: tr("소셜 로그인 + 휴대폰 문자 인증"),
-      checks: tr("Apple·카카오·Google 계정으로 로그인했는지 보고, 내 휴대폰 번호로 문자 인증 코드를 받아 확인해요."),
-      keeps: tr("이름과 나이는 묻지 않아요. 휴대폰 번호는 다른 회원에게 보이지 않아요."),
-      status: tr("소셜 로그인은 가입하면 바로 적용돼요. 문자 인증은 준비 중이에요.") },
+    // Lv1 says only what the app checks today (QA A-trust-01); 준비 중 is said once, on Lv2.
+    { level: 1, title: tr("계정 확인"), summary: tr("Apple·카카오·Google 로그인"),
+      checks: tr("가입할 때 쓴 소셜 로그인 계정을 확인해요."),
+      keeps: tr("이름과 나이는 묻지 않아요."),
+      status: tr("가입하면 바로 적용돼요.") },
     { level: 2, title: tr("신분증 확인"), summary: tr("신분증 + 얼굴 자동 대조"),
-      checks: tr("전문 인증 업체가 신분증 사진과 그 자리에서 찍은 얼굴이 같은 사람인지 자동으로 대조하고, 성인인지도 확인해요."),
+      checks: tr("인증 전문 회사가 신분증 사진과 그 자리에서 찍은 얼굴이 같은 사람인지 자동으로 대조하고, 성인인지도 확인해요."),
       keeps: tr("신분증과 얼굴 사진은 글링에 저장하지 않아요. 확인됐다는 사실과 성인 여부만 남겨요."),
-      status: tr("준비 중이라 아직 앱에서 신청할 수 없어요.") },
+      status: tr("아직 앱에서 신청할 수 없어요.") },
     { level: 3, title: tr("믿을 수 있는 호스트"), summary: tr("Lv2 + 모임 참석·매너 기준"),
       checks: tr("Lv2를 마친 뒤 모임 참석 확인과 직접 연 모임 기록이 쌓이고, 최근에 노쇼·처리된 신고·낮은 매너 평가가 없으면 배지가 자동으로 붙어요."),
       keeps: tr("새로 받는 정보는 없어요. 다른 회원은 배지만 볼 수 있고, 노쇼나 신고 기록은 알 수 없어요."),
@@ -58,7 +59,7 @@ export default function TrustScreen() {
     : step.key === 'noShow' ? tr("최근 {0}일 노쇼 없음", step.days)
     : tr("최근 {0}일 처리된 신고·낮은 매너 평가 없음", step.days);
   const levelState = (level: number) => level === auth.trustLevel ? tr("현재 단계") : level < auth.trustLevel ? tr("지난 단계")
-    : level === 3 && auth.trustLevel === 2 ? tr("자동 계산") : tr("준비 중");
+    : level === 3 && auth.trustLevel === 2 ? tr("자동 계산") : level === 3 ? tr("Lv2 다음") : tr("준비 중");
 
   if (!auth.isAuthed) return <LoginPanel reason="내 인증 단계를 확인하려면 로그인해 주세요." onApple={auth.signInApple} onKakao={auth.signInKakao} onGoogle={auth.signInGoogle} onDevLogin={auth.signInDev} loading={auth.isAuthLoading} error={auth.authError} />;
 
@@ -78,7 +79,7 @@ export default function TrustScreen() {
         </View>
         <ThemedText type="small" themeColor="textSecondary" style={styles.heroBody}>
           {auth.trustLevel === 1
-            ? tr("소셜 로그인은 확인됐어요. 휴대폰 문자 인증은 아직 준비 중이에요.")
+            ? tr("소셜 로그인으로 확인된 계정이에요. 다음은 Lv2 신분증 확인이에요.")
             : tr("앱에 등록된 현재 단계예요. 신분증·얼굴 사진은 글링에 남기지 않아 앱에서도 볼 수 없어요.")}
         </ThemedText>
         <View style={[styles.account, { borderTopColor: theme.line }]}>

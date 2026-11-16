@@ -9,8 +9,8 @@ test('the shared language provider updates web document language and leaves nati
   const code = ts.transpileModule(readFileSync(new URL('../src/hooks/use-language.tsx', import.meta.url), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
   }).outputText;
-  for (const [platform, language, expected] of [['web', 'en', 'en'], ['web', 'ko', 'ko'], ['ios', 'en', 'original']]) {
-    const effects = [], exported = {}, document = { documentElement: { lang: 'original' } };
+  for (const [platform, language, expected, fixedLang] of [['web', 'en', 'en'], ['web', 'ko', 'ko'], ['ios', 'en', 'original'], ['web', 'ko', 'original', 'en']]) {
+    const effects = [], exported = {}, document = { documentElement: { lang: 'original', dataset: fixedLang ? { fixedLang } : {} } };
     const modules = {
       react: { createContext: () => ({ Provider: 'Provider' }), useContext: () => null,
         useCallback: fn => fn, useRef: value => ({ current: value }), useState: initial => [initial, () => {}], useEffect: fn => effects.push(fn) },

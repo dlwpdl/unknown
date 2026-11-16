@@ -59,6 +59,7 @@ export interface RoomPreview {
   endsAt?: string | null;
   timezone?: string | null;
   cadence?: string | null;
+  recurrence?: { days: number[]; time: string; timezone: string } | null; // group: picked weekdays and time (20261114180000); read with normalizeMeetupRecurrence
   recommendedAgeMin?: number | null;
   recommendedAgeMax?: number | null;
   applicationQuestion?: string | null;
@@ -67,6 +68,7 @@ export interface RoomPreview {
   // Set by the server at creation and fixed after (20261108120000). Older meetups have neither until 20261108120100.
   access?: 'public' | 'invite'; // invite: only the host, invited people and applicants see it
   membersVisible?: boolean; // applicants see '누가 와요' (get_meetup_public_roster)
+  partner?: { businessId: string; name: string; benefit?: string; percent?: number }; // admin-only write (admin_set_meetup_partner)
 }
 
 export interface PostComment {
@@ -113,6 +115,7 @@ export interface Post {
   kind?: PostKind; // story(기본) | listing(구인구직·렌트·중고·차량). 규칙은 카테고리가 아니라 종류를 따른다
   listingStatus?: ListingStatus;
   listingDetails?: ListingDetails; // 부동산·구인구직·중고거래 칸. 없으면 지금처럼 본문만 보여준다
+  photoCheckedAt?: string; // 운영팀이 확인 사진을 보고 '사진 확인'을 단 때. 사진 자체는 글에 오지 않는다
   price?: number | null;
   expiresAt?: string | null;
   bumpedAt?: string | null;

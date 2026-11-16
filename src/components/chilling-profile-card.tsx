@@ -9,15 +9,17 @@ import { useTheme } from '@/hooks/use-theme';
 import { CHILLING_PROMPTS, type ChillingProfile } from '@/lib/chilling-data';
 import { CITIES } from '@/lib/mock';
 
-export function ChillingProfileCard({ profile }: { profile: ChillingProfile }) {
+/** fallbackName: the name the screen already showed for this person (the meetup host line), so one person never has two names. */
+export function ChillingProfileCard({ profile, fallbackName }: { profile: ChillingProfile; fallbackName?: string }) {
   const { tr, language } = useLanguage();
   const theme = useTheme(), clayBox = useClayBox();
+  const name = profile.displayName || fallbackName || tr("모임 멤버");
   const city = CITIES.find(value => value.id === profile.cityId);
   return <View style={styles.card}>
     <View style={styles.identity}>
-      {profile.photoUris?.[0] ? <Image source={{ uri: profile.photoUris[0] }} transition={ControlMotion.settleMs} cachePolicy="none" style={styles.avatar} contentFit="cover" accessibilityLabel={tr("{0} 모임 사진", profile.displayName || tr("모임 멤버"))} />
-        : <View style={[styles.avatar, styles.initial, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle">{profile.displayName?.slice(0, 1) || '✦'}</ThemedText></View>}
-      <View style={styles.identityBody}><ThemedText type="smallBold" themeColor="accent" style={styles.label}>{tr("모임 프로필")}</ThemedText><ThemedText type="subtitle" style={styles.name}>{profile.displayName || tr("모임 멤버")}</ThemedText>
+      {profile.photoUris?.[0] ? <Image source={{ uri: profile.photoUris[0] }} transition={ControlMotion.settleMs} cachePolicy="none" style={styles.avatar} contentFit="cover" accessibilityLabel={tr("{0} 모임 사진", name)} />
+        : <View style={[styles.avatar, styles.initial, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle">{[...name][0]}</ThemedText></View>}
+      <View style={styles.identityBody}><ThemedText type="smallBold" themeColor="accent" style={styles.label}>{tr("모임 프로필")}</ThemedText><ThemedText type="subtitle" style={styles.name}>{name}</ThemedText>
         {profile.cityId && <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("활동 지역 ·") + " "}{(language === 'en' ? city?.englishName : city?.name) ?? profile.cityId}</ThemedText>}
       </View>
     </View>

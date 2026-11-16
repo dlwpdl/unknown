@@ -28,7 +28,7 @@ import {
   classifyImportInput, extractPlaceNames, googlePlaceFromUrl, matchPlaces, parseTakeoutFile, readGoogleList, readInstagramCaption,
   type ImportCandidate,
 } from '@/lib/place-import';
-import { createSavedFolder, loadSavedFolders, setSavedItem, setSavedItemFolders } from '@/lib/saved-items';
+import { loadSavedFolders, saveSavedFolder, setSavedItem, setSavedItemFolders } from '@/lib/saved-items';
 import { supabase } from '@/lib/supabase';
 
 // Where a name came from, as the suggest_places RPC records it.
@@ -73,7 +73,8 @@ export default function ImportScreen() {
   // Same-day imports share one folder instead of piling up folders with the same name.
   async function folderFor(name: string) {
     const same = (await loadSavedFolders(supabase)).find(item => item.name === name);
-    return same ?? createSavedFolder(supabase, name);
+    // An imported list stays private: this screen never asks who may see it.
+    return same ?? saveSavedFolder(supabase, null, name, 'private', null);
   }
 
   // Returns false when a request could not be sent; names go grouped by where they came from.
@@ -172,10 +173,17 @@ export default function ImportScreen() {
     setError(null);
     const fileError = ko ? '이 파일은 읽지 못했어요. 구글에서 받은 CSV나 JSON 파일을 골라 주세요.' : 'Couldn’t read this file. Pick the CSV or JSON file from Google.';
     const ticket = ++run.current;
+    // A picker that never opened is not the file's fault, so it says so separately (QA A-import-01).
+    let result: Awaited<ReturnType<typeof import('expo-document-picker')['getDocumentAsync']>>;
     try {
       // Loaded on tap: builds made before this picker shipped have no native module, and a top-level import would stop the whole app.
       const DocumentPicker = await import('expo-document-picker');
-      const result = await DocumentPicker.getDocumentAsync({ type: ['text/csv', 'text/comma-separated-values', 'application/json', 'application/geo+json', 'text/plain'], copyToCacheDirectory: true, multiple: false });
+      result = await DocumentPicker.getDocumentAsync({ type: ['text/csv', 'text/comma-separated-values', 'application/json', 'application/geo+json', 'text/plain'], copyToCacheDirectory: true, multiple: false });
+    } catch {
+      if (ticket === run.current) { play('warning'); setError(ko ? '파일 고르는 창을 열지 못했어요. 앱을 최신 버전으로 업데이트한 뒤 다시 골라 주세요.' : 'Couldn’t open the file picker. Update the app, then try again.'); }
+      return;
+    }
+    try {
       if (result.canceled || !result.assets[0]) return;
       const asset = result.assets[0];
       if (asset.size != null && asset.size > MAX_FILE) { setError(ko ? '파일이 너무 커요. 5MB까지 읽을 수 있어요.' : 'That file is too big. Up to 5 MB.'); return; }
@@ -204,7 +212,7 @@ export default function ImportScreen() {
         <TextInput value={text} onChangeText={value => { setText(value); setError(null); }} multiline maxLength={10000} textAlignVertical="top"
           accessibilityLabel={ko ? '가져올 메모나 링크' : 'Note or link to import'} placeholder={ko ? '가게 이름을 한 줄에 하나씩 적거나 링크를 붙여 넣어 주세요' : 'One place per line, or paste a link'}
           placeholderTextColor={theme.textSecondary} style={[...field, styles.note]} />
-        {!!error && <ThemedText accessibilityRole="alert">{error}</ThemedText>}
+        {!!error && <ThemedText type="small" themeColor="danger" accessibilityRole="alert" accessibilityLiveRegion="polite">{error}</ThemedText>}
         <RaisedActionButton analyticsId="import.find" label={ko ? '찾아서 저장하기' : 'Find and save'} disabled={!text.trim()} onPress={() => { play('selection'); void find(text); }} />
         <View style={[styles.tip, { borderColor: theme.line }]}>
           <ThemedText type="label">{ko ? '구글맵 목록이 안 읽히면' : 'If a Google Maps list won’t load'}</ThemedText>

@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { Linking, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
-import type { SymbolViewProps } from 'expo-symbols';
 import { SymbolView } from '@/components/symbol-view';
 
 import { Pressable } from '@/components/analytics-controls';
-import { ClayBoxFill, useClayBox } from '@/components/clay';
+import { FactGrid, type Fact } from '@/components/fact-grid';
 import { PostPinMap } from '@/components/post-pin-map';
 import { ThemedText } from '@/components/themed-text';
 import { ControlMotion, IconSize, Typography } from '@/constants/design-system';
@@ -19,18 +18,38 @@ import { areaName, dealLabel, formatMoveIn, isFreeListing, LISTING_LABELS, listi
 import { CITIES } from '@/lib/mock';
 import { findNeighborhood } from '@/lib/neighborhoods';
 import { postLocationUrl } from '@/lib/post-maps';
+import { rentAverage } from '@/lib/rent-average';
+import type { AppLanguage } from '@/i18n/language';
 import type { Post } from '@/lib/types';
 
 export type DetailedPost = Post & { listingDetails: ListingDetails };
 const wanting = (details: ListingDetails) => details.deal === 'rent_wanted' || details.deal === 'buy' || details.deal === 'seeking';
 
-function Badge({ label, tone }: { label: string; tone: 'accent' | 'want' | 'done' }) {
+function Badge({ label, tone, checked }: { label: string; tone: 'accent' | 'want' | 'done'; checked?: boolean }) {
   const theme = useTheme();
   const color = tone === 'accent' ? theme.accent : tone === 'want' ? theme.navy : theme.textSecondary;
-  return <View style={[styles.badge, { backgroundColor: tone === 'accent' ? theme.backgroundSelected : theme.backgroundElement }]}>
+  return <View style={[styles.badge, checked && styles.checkedBadge, { backgroundColor: tone === 'accent' ? theme.backgroundSelected : theme.backgroundElement }]}>
+    {checked && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={12} tintColor={color} />}
     <ThemedText type="micro" style={[styles.badgeText, { color }]}>{label}</ThemedText>
   </View>;
 }
+
+// A 렌트 내놓음 post: where the rent sits against the CMHC average, with "시세보다 싸요" in front when it is far below.
+function RentFacts({ post }: { post: DetailedPost }) {
+  const { language } = useLanguage();
+  if (post.listingDetails.type !== 'housing') return null;
+  const average = rentAverage(post.cityId, post.listingDetails, post.price, language);
+  if (!average) return null;
+  return <ThemedText type="small" themeColor="textSecondary" style={styles.average}>
+    {average.cheap && <ThemedText type="smallBold">{`${average.cheap} · `}</ThemedText>}
+    {average.line}
+  </ThemedText>;
+}
+
+const checkedDay = (value: string, language: AppLanguage) => {
+  const day = new Date(value);
+  return formatMoveIn(`${day.getFullYear()}-${day.getMonth() + 1}-${day.getDate()}`, language);
+};
 
 function Tags({ items }: { items: string[] }) {
   const theme = useTheme();
@@ -91,11 +110,13 @@ export function ListingCard({ post, onPress, variant = 'row' }: { post: Detailed
       {photoBadge && <View style={styles.tileBadge}>{photoBadge}</View>}
     </View>
     {text.price && <ThemedText style={styles.tilePrice}>{text.price}</ThemedText>}
-    <ThemedText type="supporting" numberOfLines={fontScale > 1.2 ? 2 : 1}>{post.title}</ThemedText>
+    {/* Without a photo the box already shows the title (QA I-home-09). */}
+    {showPhoto && <ThemedText type="supporting" numberOfLines={fontScale > 1.2 ? 2 : 1}>{post.title}</ThemedText>}
     <ThemedText type="caption" themeColor="textSecondary" numberOfLines={1}>{[text.area, text.time].filter(Boolean).join(' · ')}</ThemedText>
   </Pressable>;
 
-  if (variant === 'big') return <Pressable analyticsId="listing.card.used" accessibilityRole="button" accessibilityLabel={label} onPress={press}
+  // A big card with no photo reads as the list row instead of a screen-wide grey box (QA I-home-09).
+  if (variant === 'big' && showPhoto) return <Pressable analyticsId="listing.card.used" accessibilityRole="button" accessibilityLabel={label} onPress={press}
     style={({ pressed }) => [styles.big, { opacity: pressed ? ControlMotion.pressedOpacity : text.closed ? 0.55 : 1 }]}>
     <View>
       {image(styles.wide, true)}
@@ -114,19 +135,21 @@ export function ListingCard({ post, onPress, variant = 'row' }: { post: Detailed
     <ThemedText type="caption" numberOfLines={1} style={styles.tagText}>{post.title}</ThemedText>
   </Pressable>;
 
+  const jobLine = [text.price, text.jobTypes.join(', '), post.business ? text.area : null].filter(Boolean).join(' · ');
   const meta = <View style={styles.meta}>
     <Badge label={text.closed ? text.status : text.deal} tone={text.closed ? 'done' : wanting(details) ? 'want' : 'accent'} />
     <ThemedText type="small" themeColor="textSecondary" style={styles.flex} numberOfLines={1}>{[where, text.time].filter(Boolean).join(' · ')}</ThemedText>
   </View>;
   return <Pressable analyticsId={`listing.card.${category}`} accessibilityRole="button" accessibilityLabel={label} onPress={press}
     style={({ pressed }) => [styles.row, { borderBottomColor: theme.line, opacity: pressed ? ControlMotion.pressedOpacity : text.closed ? 0.55 : 1 }]}>
-    {category === 'used' && image(styles.thumb)}
+    {category === 'used' && showPhoto && image(styles.thumb)}
     <View style={styles.copy}>
       {category !== 'used' && meta}
       <ThemedText numberOfLines={fontScale > 1.2 ? undefined : 2} style={[styles.title, category === 'jobs' && Typography.menu]}>{post.title}</ThemedText>
       {category === 'used' && <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>{[text.area, text.time].filter(Boolean).join(' · ')}</ThemedText>}
+      {/* No pay or work type: the line drops out instead of leaving a gap (QA I-home-08). */}
       {category === 'jobs'
-        ? <ThemedText type="smallBold" themeColor="accent">{[text.price, text.jobTypes.join(', '), post.business ? text.area : null].filter(Boolean).join(' · ')}</ThemedText>
+        ? !!jobLine && <ThemedText type="smallBold" themeColor="accent">{jobLine}</ThemedText>
         : text.price && <View style={styles.meta}><ThemedText style={styles.price}>{text.price}</ThemedText>
           {category === 'used' && text.closed && <Badge label={text.status} tone="done" />}
           {category === 'used' && !text.closed && details.type === 'used' && details.deal === 'buy' && <Badge label={text.deal} tone="want" />}</View>}
@@ -138,46 +161,37 @@ export function ListingCard({ post, onPress, variant = 'row' }: { post: Detailed
   </Pressable>;
 }
 
-function Row({ icon, label, value }: { icon: SymbolViewProps['name']; label: string; value: string }) {
-  const theme = useTheme(), clayBox = useClayBox();
-  return <View style={[styles.infoRow, clayBox && styles.clayInfoRow, { borderTopColor: theme.line }]} accessible accessibilityLabel={`${label}, ${value}`}>
-    <SymbolView name={icon} size={IconSize.inline} tintColor={theme.textSecondary} />
-    <ThemedText type="small" themeColor="textSecondary" style={styles.infoLabel}>{label}</ThemedText>
-    <ThemedText type="small" style={styles.flex}>{value}</ThemedText>
-  </View>;
-}
-
-// Detail, direction A: one info card under the title, then the neighborhood circle map.
+// Detail, 시안 A (I-post-01): the status, the price (부동산·사고팔기 only; a job's pay is a cell), one four-cell card, then the neighborhood circle map.
+// The category line above already names the deal, so it is not repeated as a badge.
 export function ListingInfo({ post }: { post: DetailedPost }) {
-  const theme = useTheme(), clayBox = useClayBox(), { tr, language } = useLanguage();
+  const { tr, language } = useLanguage();
   const text = useListingText(post), { details } = text;
-  const rows: { icon: SymbolViewProps['name']; label: string; value: string | null }[] = details.type === 'housing' ? [
-    { icon: { ios: 'house', android: 'home', web: 'home' }, label: tr('방 구성'), value: text.rooms },
-    { icon: { ios: 'calendar', android: 'calendar_today', web: 'calendar_today' }, label: tr(wanting(details) ? '입주 희망일' : '입주 가능일'), value: details.moveIn ? details.moveIn === 'now' ? tr('바로 입주') : tr('{0}부터', formatMoveIn(details.moveIn, language)) : null },
-    { icon: { ios: 'mappin', android: 'location_on', web: 'location_on' }, label: tr('동네'), value: text.area },
+  const seeking = details.deal === 'seeking';
+  const facts: Fact[] = details.type === 'housing' ? [
+    { label: tr('방 구성'), value: text.rooms },
+    { label: tr(wanting(details) ? '입주 희망일' : '입주 가능일'), value: details.moveIn ? details.moveIn === 'now' ? tr('바로 입주') : tr('{0}부터', formatMoveIn(details.moveIn, language)) : null },
+    { label: tr('동네'), value: text.area },
+    { label: tr('포함된 것'), value: text.includes.join(', ') || null },
   ] : details.type === 'jobs' ? [
-    { icon: { ios: 'mappin', android: 'location_on', web: 'location_on' }, label: tr('근무지'), value: text.area },
-    { icon: { ios: 'clock', android: 'schedule', web: 'schedule' }, label: tr('근무 시간'), value: details.hours ?? null },
-    { icon: { ios: 'list.bullet', android: 'list', web: 'list' }, label: tr('하는 일'), value: details.duties ?? null },
-    { icon: { ios: 'envelope', android: 'mail', web: 'mail' }, label: tr('지원 방법'), value: details.apply?.length ? details.apply.map(item => tr(LISTING_LABELS.apply[item])).join(', ') : null },
+    { label: tr(seeking ? '희망 급여' : '급여'), value: details.payUnit === 'negotiable' ? tr('협의') : text.price },
+    { label: tr(seeking ? '일하고 싶은 동네' : '근무지'), value: text.area },
+    { label: tr(seeking ? '가능한 시간' : '근무 시간'), value: details.hours ?? (text.jobTypes.join(' · ') || null), note: details.hours && text.jobTypes.length ? text.jobTypes.join(' · ') : null },
+    { label: tr(seeking ? '해 본 일' : '하는 일'), value: details.duties ?? null },
   ] : [
-    { icon: { ios: 'shippingbox', android: 'inventory_2', web: 'inventory_2' }, label: tr('물건 상태'), value: text.condition },
-    { icon: { ios: 'mappin', android: 'location_on', web: 'location_on' }, label: tr('만날 곳'), value: text.area },
+    { label: tr('물건 상태'), value: text.condition },
+    { label: tr('만날 곳'), value: text.area },
   ];
-  const chips = details.type === 'housing' ? text.includes : details.type === 'jobs' ? text.jobTypes : details.type === 'used' && details.offers ? [tr('가격 제안 받아요')] : [];
   return <View style={styles.info}>
     <View style={styles.meta}>
-      <Badge label={text.deal} tone={wanting(details) ? 'want' : 'accent'} />
       <Badge label={text.status} tone={text.closed ? 'done' : 'accent'} />
+      {post.photoCheckedAt && <Badge checked label={tr('방 안 인증샷 · {0}', checkedDay(post.photoCheckedAt, language))} tone="accent" />}
     </View>
-    {text.price && <ThemedText style={styles.detailPrice}>{text.price}</ThemedText>}
-    {rows.some(row => row.value) && <View style={clayBox ? undefined : [styles.infoCard, { borderColor: theme.line, backgroundColor: theme.card }]}>
-      {clayBox && <ClayBoxFill kind="tile" />}
-      <View style={clayBox && styles.clayRows}>
-        {rows.filter((row): row is typeof row & { value: string } => !!row.value).map((row, index) => <View key={row.label} style={index === 0 && styles.firstRow}><Row icon={row.icon} label={row.label} value={row.value} /></View>)}
-      </View>
+    {details.type !== 'jobs' && text.price && <View>
+      <ThemedText style={styles.detailPrice}>{text.price}</ThemedText>
+      <RentFacts post={post} />
     </View>}
-    <Tags items={chips} />
+    <FactGrid facts={facts} />
+    <Tags items={details.type === 'used' && details.offers ? [tr('가격 제안 받아요')] : []} />
     {details.type !== 'jobs' && <ListingAreaMap post={post} />}
   </View>;
 }
@@ -218,6 +232,8 @@ const styles = StyleSheet.create({
   detailPrice: { ...Typography.sheetTitle, fontSize: 22, lineHeight: 30 },
   badge: { minHeight: 22, paddingHorizontal: 8, borderRadius: 6, justifyContent: 'center' },
   badgeText: { letterSpacing: 0 },
+  checkedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  average: { marginTop: 2 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   tag: { minHeight: 24, paddingHorizontal: 8, borderRadius: 6, justifyContent: 'center' },
   tagText: { fontWeight: '600' },
@@ -233,12 +249,6 @@ const styles = StyleSheet.create({
   mini: { width: 58, gap: 4 },
   miniPhoto: { width: 58, height: 58, borderRadius: 12 },
   info: { gap: Spacing.two, marginTop: Spacing.two },
-  infoCard: { borderWidth: 1, borderRadius: 16, overflow: 'hidden' },
-  clayRows: { borderRadius: 16, overflow: 'hidden' },
-  clayInfoRow: { marginHorizontal: Spacing.three, paddingHorizontal: 0 },
-  firstRow: { marginTop: -StyleSheet.hairlineWidth },
-  infoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two, paddingHorizontal: 14, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth },
-  infoLabel: { width: 84 },
   areaWrap: { gap: 6, marginTop: Spacing.one },
   area: { borderWidth: 1, borderRadius: 14, overflow: 'hidden' },
   areaMap: { height: 150 },

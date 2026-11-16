@@ -77,6 +77,8 @@ function TemplatePicker({ draft, onApply, disabled = false }: MeetupTemplatePick
   const locked = disabled || busy || loading;
   const button = [styles.button, { borderColor: theme.line, opacity: locked ? 0.5 : 1 }];
   const preview = templates.find(template => template.id === selected);
+  // Free members with nothing saved get no Plus pitch in the middle of writing; the panel shows once there is something to use or see.
+  if (!canUse && !templates.length && !error) return null;
   return <View style={[styles.panel, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
     <ThemedText type="smallBold">{say('내 모임 템플릿 · Plus', 'My meetup templates · Plus')}</ThemedText>
     <ThemedText type="small" themeColor="textSecondary">{say('제목과 소개, 신청 질문을 저장해두고 다시 쓸 수 있어요. 날짜·장소·정원·결제 정보는 직접 확인해주세요.', 'Save a title, description and application question to reuse. Confirm dates, venue, capacity and payment separately.')}</ThemedText>

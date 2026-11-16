@@ -10,8 +10,8 @@ import { ClayBoxFill, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
-import { connectMerchantMcp, denyMerchantMcp, loadMerchantMcpAuthorization, loadMerchantMcpChangePhotos, loadMerchantMcpChanges, loadMerchantMcpConnections,
-  revokeMerchantMcp, reviewMerchantMcpChange, type MerchantMcpAuthorization, type MerchantMcpChange, type MerchantMcpConnection, type MerchantMcpPhotoGroup } from '@/lib/merchant-mcp';
+import { connectMerchantMcp, denyMerchantMcp, loadMerchantMcpAuthorization, loadMerchantMcpChangePhotos, loadMerchantMcpChanges, loadMerchantMcpConnections, loadPersonalMcpAccess,
+  revokeMerchantMcp, reviewMerchantMcpChange, type MerchantMcpAuthorization, type MerchantMcpChange, type MerchantMcpConnection, type MerchantMcpPhotoGroup, type PersonalMcpPosts } from '@/lib/merchant-mcp';
 import { MerchantMcpGuide } from '@/components/merchant-mcp-guide';
 import { mcpClientTrust } from '@/lib/mcp-client-trust';
 import { loadMyMerchants, type BusinessMerchant } from '@/lib/merchant-workspace';
@@ -33,6 +33,7 @@ function errorText(error: unknown) {
   if (code.includes('MCP_PLAN_REQUIRED')) return 'AI 연결은 유료 비즈니스 멤버십에서 쓸 수 있어요. 무료 비즈니스는 선택을 빼고 연결해 주세요.';
   if (code.includes('MCP_PUBLISH_CLIENT_UNVERIFIED')) return '확인되지 않은 AI 도구에는 게시 권한을 줄 수 없어요. 게시 권한을 끄고 연결해 주세요.';
   if (code.includes('MCP_CHANGE_EXPIRED')) return '이 제안은 만료됐어요. AI에게 새 제안을 요청해 주세요.';
+  if (code.includes('MCP_PERSONAL_POSTS_REQUIRED')) return "이 계정은 아직 '내 개인 계정 글'을 쓸 수 없어요. 이 항목을 끄고 비즈니스만 골라 연결해 주세요.";
   return '처리를 확인하지 못했어요. 연결 상태를 확인한 뒤 다시 시도해 주세요.';
 }
 function Action({ label, onPress, disabled = false, primary = false, danger = false }: { label: string; onPress: () => void; disabled?: boolean; primary?: boolean; danger?: boolean }) {
@@ -43,16 +44,16 @@ function Action({ label, onPress, disabled = false, primary = false, danger = fa
     <ThemedText type="smallBold" style={{ color: primary ? theme.accentInk : danger ? '#FFA5AF' : theme.text }}>{label}</ThemedText>
   </Pressable>;
 }
-function Choice({ title, detail, checked, onPress, disabled = false }: { title: string; detail: string; checked: boolean; onPress: () => void; disabled?: boolean }) {
+function Choice({ title, detail, checked, onPress, disabled = false, radio = false }: { title: string; detail: string; checked: boolean; onPress: () => void; disabled?: boolean; radio?: boolean }) {
 
   const theme = useTheme(), { play } = useInteractionFeedback();
   // The installed web Pressable handles Space for buttons, but not checkbox roles.
   const keyboard = Platform.OS === 'web' ? { onKeyDown: (event: KeyDownEvent) => {
     if (event.nativeEvent.key === ' ') { event.preventDefault(); if (!disabled && !event.nativeEvent.repeat) { play('selection'); onPress(); } }
   } } : {};
-  return <Pressable lens {...keyboard} analyticsId="merchant.ai.permission" accessibilityRole="checkbox" accessibilityLabel={`${title}. ${detail}`} accessibilityState={{ checked, disabled }} aria-checked={checked} aria-disabled={disabled} disabled={disabled}
+  return <Pressable lens {...keyboard} analyticsId="merchant.ai.permission" accessibilityRole={radio ? 'radio' : 'checkbox'} accessibilityLabel={`${title}. ${detail}`} accessibilityState={{ checked, disabled }} aria-checked={checked} aria-disabled={disabled} disabled={disabled}
     onPress={() => { play('selection'); onPress(); }} style={({ pressed }) => [styles.choice, { borderColor: checked ? theme.accent : theme.textSecondary, opacity: disabled || pressed ? 0.65 : 1 }]}>
-    <View style={[styles.check, { borderColor: checked ? theme.accent : theme.line, backgroundColor: checked ? theme.accent : 'transparent' }]}>
+    <View style={[styles.check, radio && styles.radio, { borderColor: checked ? theme.accent : theme.line, backgroundColor: checked ? theme.accent : 'transparent' }]}>
       {checked && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={14} tintColor={theme.accentInk} />}
     </View><View style={styles.grow}><ThemedText type="smallBold">{title}</ThemedText><ThemedText type="small" themeColor="textSecondary">{detail}</ThemedText></View>
   </Pressable>;
@@ -102,6 +103,7 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
   const [merchants, setMerchants] = useState<BusinessMerchant[]>([]), [connections, setConnections] = useState<MerchantMcpConnection[]>([]);
   const [authorization, setAuthorization] = useState<MerchantMcpAuthorization | null>(null), [selected, setSelected] = useState<string[]>([]);
   const [drafts, setDrafts] = useState(false), [publish, setPublish] = useState(false);
+  const [personalAllowed, setPersonalAllowed] = useState(false), [personal, setPersonal] = useState<PersonalMcpPosts | null>(null);
   const [loading, setLoading] = useState(true), [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState(''), [revision, setRevision] = useState(0);
   const [reviewMerchant, setReviewMerchant] = useState<string | null>(null), [changeResponse, setChangeResponse] = useState<{ merchantId: string; revision: number; items: MerchantMcpChange[] } | null>(null);
   const [checkedAt, setCheckedAt] = useState(Date.now);
@@ -111,18 +113,23 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
   useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
   useEffect(() => {
     let current = true;
-    void Promise.allSettled([loadMyMerchants(supabase), loadMerchantMcpConnections(supabase), authorizationId ? loadMerchantMcpAuthorization(supabase, authorizationId) : Promise.resolve(null)])
-      .then(([businessResponse, linkResponse, requestResponse]) => {
+    void Promise.allSettled([loadMyMerchants(supabase), loadMerchantMcpConnections(supabase), authorizationId ? loadMerchantMcpAuthorization(supabase, authorizationId) : Promise.resolve(null), loadPersonalMcpAccess(supabase)])
+      .then(([businessResponse, linkResponse, requestResponse, personalResponse]) => {
         if (!current) return;
         const businesses = businessResponse.status === 'fulfilled' ? businessResponse.value : [];
         const links = linkResponse.status === 'fulfilled' ? linkResponse.value : [];
         const request = requestResponse.status === 'fulfilled' ? requestResponse.value : null;
         const owned = businesses.filter(m => m.role === 'owner' && m.owner_id === userId && !!m.owner_verified_at);
-        setMerchants(owned); setConnections(links); setAuthorization(request); setCheckedAt(Date.now());
-        const failure = [businessResponse, linkResponse, requestResponse].find(response => response.status === 'rejected');
+        const personalOk = personalResponse.status === 'fulfilled' && personalResponse.value;
+        setMerchants(owned); setConnections(links); setAuthorization(request); setCheckedAt(Date.now()); setPersonalAllowed(personalOk);
+        // A member allowed personal posts may have no business account at all; only that refusal is expected.
+        const noBusiness = personalOk && businessResponse.status === 'rejected' && String((businessResponse.reason as Error)?.message).includes('MERCHANT_ACCOUNT_REQUIRED');
+        const failure = [noBusiness ? null : businessResponse, linkResponse, requestResponse].find(response => response?.status === 'rejected');
         setError(failure?.status === 'rejected' ? errorText(failure.reason) : '');
         // With a single business there is nothing to choose; pre-tick it so the approve button isn't silently disabled.
         setSelected(ids => { const kept = ids.filter(id => owned.some(m => m.id === id)); return kept.length || !request || owned.length !== 1 ? kept : [owned[0].id]; });
+        // Same reason for a personal-only member: start at the safer drafts level.
+        setPersonal(level => !personalOk ? null : level ?? (request && !owned.length ? 'drafts' : null));
         setReviewMerchant(id => owned.some(m => m.id === id) ? id : owned[0]?.id ?? null);
       }).catch(failure => { if (current) { setError(errorText(failure)); setAuthorization(null); setMerchants([]); setConnections([]); setChangeResponse(null); } })
       .finally(() => { if (current) setLoading(false); });
@@ -156,21 +163,23 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
   const currentChanges = changeResponse?.merchantId === reviewMerchant && changeResponse?.revision === revision ? changeResponse : null;
   const changes = currentChanges?.items ?? [], changesLoading = !!reviewMerchant && !currentChanges;
   const trust = authorization ? mcpClientTrust(authorization.redirect_uri) : null, canPublish = !!trust?.verified;
+  const business = merchants.length > 0 || !personalAllowed, personalOnly = !business;
   return <View style={styles.sections}>
     <View style={styles.hero}><View style={[styles.ai, { backgroundColor: theme.accent }]}><ThemedText type="subtitle" style={{ color: theme.accentInk }}>AI</ThemedText></View>
-      <ThemedText type="title" accessibilityRole="header">{tr("평소 쓰는 AI로,")}{`\n`}{tr("내 가게 소식을 만들어요.")}</ThemedText>
-      <ThemedText themeColor="textSecondary">{tr("Codex · Claude Code · ChatGPT · Claude에서 글과 프로필을 준비하고, 글링에서 검토해요.")}</ThemedText>
+      <ThemedText type="title" accessibilityRole="header">{tr("평소 쓰는 AI로,")}{`\n`}{personalOnly ? tr("내 글을 써요.") : tr("내 가게 소식을 만들어요.")}</ThemedText>
+      <ThemedText themeColor="textSecondary">{personalOnly ? tr("Claude Code 같은 AI에게 글과 사진을 맡기면 내 이름으로 게시판에 올릴 수 있어요.") : tr("Codex · Claude Code · ChatGPT · Claude에서 글과 프로필을 준비하고, 글링에서 검토해요.")}</ThemedText>
     </View>
     {error && <View style={[styles.card, { borderColor: theme.line }]}><ThemedText accessibilityRole="alert">{tr(error)}</ThemedText><Action label={tr("다시 확인")} onPress={refresh} disabled={busy} /></View>}
     {notice && <ThemedText accessibilityLiveRegion="polite" aria-live="polite" themeColor="accent">{tr(notice)}</ThemedText>}
     {loading ? <GlingLoader accessibilityLabel={tr("AI 연결과 비즈니스 권한을 확인하는 중")} /> : <>
       {authorization && <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ThemedText type="subtitle" accessibilityRole="header">{tr('{0} 연결하기', authorization.client_name)}</ThemedText>
-        <ThemedText themeColor="textSecondary">{tr("이 도구에 허용할 비즈니스와 작업을 골라 주세요. 연결은 30일 동안 유지돼요.")}</ThemedText>
+        <ThemedText themeColor="textSecondary">{personalAllowed ? tr("이 AI 도구에 맡길 일을 골라 주세요. 연결은 30일 동안 유지돼요.") : tr("이 도구에 허용할 비즈니스와 작업을 골라 주세요. 연결은 30일 동안 유지돼요.")}</ThemedText>
         <View style={[styles.included, { borderColor: theme.line }]} accessibilityRole={canPublish ? undefined : 'alert'}>
           <ThemedText type="smallBold" selectable style={canPublish ? undefined : { color: theme.danger }}>{canPublish ? tr("✓ 확인된 연결 주소 · {0}", trust?.host ?? '') : tr("⚠︎ 확인되지 않은 연결 주소 · {0}", trust?.host ?? '')}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">{canPublish ? tr("이름이 아니라 실제 연결 주소로 확인했어요.") : tr("직접 시작한 연결이 아니면 취소해 주세요. 이 주소에는 게시 권한을 줄 수 없어요.")}</ThemedText>
         </View>
+        {business && <>
         <ThemedText type="smallBold">{tr("연결할 내 비즈니스")}</ThemedText>
         {merchants.map(m => <Choice key={m.id} title={m.name} detail={m.plan === 'basic' ? tr('{0} · 유료 멤버십 필요', m.city_name || m.city_id) : (m.city_name || m.city_id)} checked={selected.includes(m.id)} disabled={busy || m.plan === 'basic'}
           onPress={() => setSelected(ids => ids.includes(m.id) ? ids.filter(id => id !== m.id) : [...ids, m.id])} />)}
@@ -179,16 +188,25 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
         <View style={[styles.included, { borderColor: theme.line }]}><ThemedText type="smallBold">{tr("✓ 선택한 비즈니스의 글·초안·공개 프로필 읽기")}</ThemedText><ThemedText type="small" themeColor="textSecondary">{tr("연결하면 기본으로 허용돼요.")}</ThemedText></View>
         <Choice title={tr("초안 저장과 변경 제안")} detail={tr("새 원고를 저장하고 프로필·게시글 수정이나 삭제를 제안해요. 공개 변경은 웹에서 직접 검토해요.")} checked={drafts} disabled={busy} onPress={() => setDrafts(value => !value)} />
         <Choice title={tr("내가 승인한 원고 게시")} detail={tr("글링 웹에서 검토·승인한 최신 원고만 게시해요. AI가 원고를 승인할 수는 없어요.")} checked={publish && canPublish} disabled={busy || !canPublish} onPress={() => setPublish(value => !value)} />
-        <ThemedText type="small" themeColor="textSecondary">{tr("일반 회원 기능과 개인 대화는 이 연결에 포함되지 않아요. 연결 후에도 비즈니스 권한을 매번 확인하며, 언제든 해제할 수 있어요.")}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">{tr("AI에게 보여 준 비즈니스 글과 프로필은 해당 AI 회사의 서버를 거쳐요.")}</ThemedText>
-        <View style={styles.row}><Action label={busy ? tr("처리 중…") : tr("선택한 권한으로 연결")} primary disabled={busy || !selected.length} onPress={() => { void run(async () => redirect(await connectMerchantMcp(supabase, userId, authorization, { merchantIds: selected, allowDrafts: drafts, allowPublish: publish && canPublish }))); }} />
+        </>}
+        {personalAllowed && <>
+          <Choice title={tr("내 개인 계정 글")} detail={tr("중고거래·부동산·구인구직 같은 게시판에 내 이름으로 글과 사진을 올려요. 앱에서 직접 쓴 글과 똑같이 내용 검사와 중복 글 검사를 받아요.")} checked={!!personal} disabled={busy} onPress={() => setPersonal(level => level ? null : 'drafts')} />
+          {personal && <View accessibilityRole="radiogroup" accessibilityLabel={tr("AI가 할 수 있는 일")} style={styles.levels}>
+            <Choice radio title={tr("초안만")} detail={tr("AI는 초안을 저장하고 보여 주기만 해요. AI가 직접 올리게 하려면 다시 연결하면서 '바로 올리기'를 골라 주세요.")} checked={personal === 'drafts'} disabled={busy} onPress={() => setPersonal('drafts')} />
+            <Choice radio title={tr("바로 올리기")} detail={canPublish ? tr("AI가 내 이름으로 게시판에 바로 올려요. 같은 요청이 두 번 와도 글은 한 번만 올라가요.") : tr("확인되지 않은 연결 주소라서 고를 수 없어요.")} checked={personal === 'publish'} disabled={busy || !canPublish} onPress={() => setPersonal('publish')} />
+          </View>}
+        </>}
+        <ThemedText type="small" themeColor="textSecondary">{personal ? tr("다른 회원과 나눈 대화는 AI가 볼 수 없고, 관리자 기능도 쓸 수 없어요. AI가 요청할 때마다 글링이 권한을 다시 확인해요. 연결은 아래 목록에서 언제든 해제할 수 있어요.") : tr("일반 회원 기능과 개인 대화는 이 연결에 포함되지 않아요. 연결 후에도 비즈니스 권한을 매번 확인하며, 언제든 해제할 수 있어요.")}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{personal ? tr("AI에게 보여 준 글과 사진은 그 AI 회사 서버를 거쳐요.") : tr("AI에게 보여 준 비즈니스 글과 프로필은 해당 AI 회사의 서버를 거쳐요.")}</ThemedText>
+        <View style={styles.row}><Action label={busy ? tr("처리 중…") : tr("선택한 권한으로 연결")} primary disabled={busy || (!selected.length && !personal)} onPress={() => { void run(async () => redirect(await connectMerchantMcp(supabase, userId, authorization,
+          { merchantIds: selected, allowDrafts: !!selected.length && drafts, allowPublish: !!selected.length && publish && canPublish, personalPosts: personal }))); }} />
           <Action label={tr("취소")} disabled={busy} onPress={() => { void run(async () => redirect(await denyMerchantMcp(supabase, userId, authorization))); }} /></View>
       </View>}
-      {!merchants.length && <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
+      {!merchants.length && !personalAllowed && <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ThemedText type="subtitle" accessibilityRole="header">{tr("AI 신규 연결은 비즈니스 오너만 이용할 수 있어요.")}</ThemedText>
         <ThemedText themeColor="textSecondary">{tr("소유권이 확인된 내 비즈니스가 필요해요. 운영 담당자는 웹에서 배정된 비즈니스를 관리할 수 있어요. 이전에 연결한 AI는 아래에서 해제할 수 있어요.")}</ThemedText>
       </View>}
-      {!authorizationId && merchants.some(m => m.plan !== 'basic') && <MerchantMcpGuide endpoint={endpoint} />}
+      {!authorizationId && (personalAllowed || merchants.some(m => m.plan !== 'basic')) && <MerchantMcpGuide endpoint={endpoint} personal={personalAllowed} business={merchants.some(m => m.plan !== 'basic')} />}
       {merchants.length > 0 && !merchants.some(m => m.plan !== 'basic') && <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ThemedText type="subtitle" accessibilityRole="header">{tr("AI 연결은 유료 비즈니스 멤버십에서 쓸 수 있어요.")}</ThemedText>
         <ThemedText themeColor="textSecondary">{tr("플러스 이상으로 바꾸면 Claude·ChatGPT에서 바로 글링 초안을 만들 수 있어요. 무료에서는 직접 쓰기를 계속 이용할 수 있어요.")}</ThemedText>
@@ -199,14 +217,14 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
         {!connected.length && <ThemedText themeColor="textSecondary">{tr("아직 연결된 도구가 없어요.")}</ThemedText>}
         {connected.map(c => <View key={c.id} style={[styles.connection, { borderColor: theme.line }]}>
           <ThemedText type="smallBold">{c.client_name} · {c.is_connected ? tr("연결됨") : tr("AI 도구에서 완료 필요")}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">{c.businesses.map(m => m.name).join(' · ') || tr("현재 연결된 비즈니스 없음")}{`\n`}{tr("읽기")}{c.allow_drafts ? tr(" · 초안과 제안") : ''}{c.allow_publish ? tr(" · 승인한 원고 게시") : ''}{`\n`}{tr('{0}까지', dateText(c.expires_at))}</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">{[...c.businesses.map(m => m.name), ...(c.personal_posts ? [tr("내 개인 계정")] : [])].join(' · ') || tr("현재 연결된 비즈니스 없음")}{`\n`}{tr("읽기")}{c.allow_drafts ? tr(" · 초안과 제안") : ''}{c.allow_publish ? tr(" · 승인한 원고 게시") : ''}{c.personal_posts === 'publish' ? tr(" · 개인 계정 글 바로 올리기") : c.personal_posts === 'drafts' ? tr(" · 개인 계정 글 초안만") : ''}{`\n`}{tr('{0}까지', dateText(c.expires_at))}</ThemedText>
           {revokeId === c.id ? <><ThemedText>{tr("해제하면 이 도구에서 글링에 접근할 수 없어요.")}</ThemedText><View style={styles.row}>
             <Action label={tr("연결 해제하기")} danger disabled={busy} onPress={() => { void run(async () => { await revokeMerchantMcp(supabase, userId, c.id); if (active.current) { setRevokeId(null); setNotice("AI 연결을 해제했어요."); refresh(); play('success'); } }); }} />
             <Action label={tr("계속 연결")} disabled={busy} onPress={() => setRevokeId(null)} /></View></>
             : <Action label={tr("연결 해제")} disabled={busy} onPress={() => setRevokeId(c.id)} />}
         </View>)}
       </View>
-      <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
+      {business && <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}
         <ThemedText type="subtitle" accessibilityRole="header">{tr("공개 변경 제안 검토")}</ThemedText>
         <ThemedText themeColor="textSecondary">{tr("AI가 제안한 프로필·게시글 수정과 삭제를 여기서 확인해요. 새 원고 승인은 비즈니스 관리의 초안에서 진행해요.")}</ThemedText>
         <View style={styles.row}>{merchants.map(m => <Action key={m.id} label={m.name} primary={reviewMerchant === m.id} disabled={busy} onPress={() => { setApplyId(null); setReviewMerchant(m.id); }} />)}</View>
@@ -214,7 +232,7 @@ export function MerchantMcpConnections({ userId, authorizationId }: { userId: st
         {changes.filter(c => c.status === 'pending').map(change => <ChangeReview key={`${revision}:${change.id}`} change={change} busy={busy} expired={Date.parse(change.expires_at) <= checkedAt} confirming={applyId === change.id}
           onApply={() => { if (applyId !== change.id) { setApplyId(change.id); return; } void run(async () => { const result = await reviewMerchantMcpChange(supabase, userId, change.id, true); if (active.current) { setNotice(result.status === 'applied' ? "검토한 내용을 적용했어요." : "이 제안은 이미 검토됐어요."); refresh(); play('success'); } }); }}
           onReject={() => { void run(async () => { await reviewMerchantMcpChange(supabase, userId, change.id, false); if (active.current) { setNotice("제안을 거절했어요."); refresh(); play('success'); } }); }} />)}
-      </View>
+      </View>}
     </>}
   </View>;
 }
@@ -224,7 +242,8 @@ const styles = StyleSheet.create({
   card: { gap: 16, padding: 24, borderRadius: 20, borderWidth: 1 }, row: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'center' },
   button: { minHeight: 44, minWidth: 44, borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
   choice: { minHeight: 64, borderWidth: 1, borderRadius: 14, padding: 16, flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  check: { width: 22, height: 22, borderWidth: 1, borderRadius: 6, alignItems: 'center', justifyContent: 'center' }, grow: { flex: 1, gap: 4 },
+  check: { width: 22, height: 22, borderWidth: 1, borderRadius: 6, alignItems: 'center', justifyContent: 'center' }, radio: { borderRadius: 11 }, grow: { flex: 1, gap: 4 },
+  levels: { gap: 10, paddingLeft: 16 },
   included: { gap: 4, paddingBottom: 16, borderBottomWidth: 1 }, connection: { gap: 12, paddingTop: 20, borderTopWidth: 1 }, diff: { gap: 6 },
   photoGroup: { flexGrow: 1, flexBasis: 0, minWidth: 180, gap: 8 }, photo: { width: '100%', height: 180, borderRadius: 12 },
 });

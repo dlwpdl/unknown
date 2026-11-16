@@ -1,0 +1,18 @@
+Share a saved folder with friends, or invite them to fill one together. You can copy a friend’s folder into your own, and give any folder a cover and a one-line description.
+Add a private memo to anything you’ve saved. Friends never see it, even in a folder you share with them.
+Tap a place photo to see it full screen. If the hours or address are off, tap “Report wrong info”. Place pages also show which of your friends’ folders have the place.
+Filter places by price range on the map and in search.
+Housing, Jobs and Buy & Sell posts now have “Fake listing or scam” as a report reason.
+Vancouver rentals now show the average rent for the same neighbourhood and unit type under the price, where we have data. If the rent is well below it, you’ll see “Below market rate”.
+The “couldn’t load the map” message no longer shows up first when you open the map for the first time. In dark mode, the map goes dark too.
+Creating a meetup now takes three steps, and for regular meetups you pick the weekdays and a time.
+Settings has a new “Sign out everywhere” option.
+When you edit a housing, job or Buy & Sell post, you can now change details like the price and area too. Rentals can list in-suite laundry, and job posts can include a phone number, email and application link.
+Rentals posted by businesses are pinned on the map at the address they chose to show.
+In Vancouver, the new-member card asks how long you’ve been in Canada and gives you a to-do list to start with.
+Your meetup reviews screen leads with the review to leave next and shows how many days are left to do it.
+The join and create screens now say that hosts and members are each responsible for what happens at a meetup, and that you should call 911 first in an emergency.
+The write button is now a round + with no text, and it tucks away while you scroll down.
+The quick tour now points out categories, search, the map and the write button one at a time. Search keeps your recent searches on your phone, and you can remove them one by one or clear them all.
+On the map, places Gling has visited show a one-line intro and a “Watch Gling’s visit” link on their card.
+Settings, the map, meetups, posts and business profiles also have a fresh look.

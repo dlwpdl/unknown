@@ -4593,13 +4593,13 @@
         {
           "id": "osm:node:4976343547",
           "cityId": "vancouver",
-          "name": "Handson Steak and Frites",
+          "name": "By Handson",
           "category": "food",
           "latitude": 49.2909675,
           "longitude": -123.136495,
           "address": "847 Denman Street, Vancouver, BC",
           "sourceUrl": "https://www.openstreetmap.org/node/4976343547",
-          "website": "https://www.handsonyvr.ca",
+          "website": "https://byhandson.ca",
           "openingHours": null
         },
         {
@@ -22634,5 +22634,5 @@
   "complete": true,
   "recommendationTheme": "photo-spots",
   "photoSelectionsReviewedAt": "2026-10-22T00:00:00.000000Z",
-  "selectionRevision": 14
+  "selectionRevision": 15
 }

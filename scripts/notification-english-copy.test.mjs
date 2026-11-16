@@ -69,6 +69,13 @@ test('meetup invite notices read in English and match the server text', async ()
   assert.ok(readFileSync(migration('20261108120000_meetup_members_and_invites'), 'utf8').includes(`'님이 「'||left(meetup.title,80)||'」 모임에 초대했어요.'`), 'invite body the pattern reads');
 });
 
+test('a folder invite reads in English, matches the server text and opens the saved list', async () => {
+  const { readFileSync } = await import('node:fs');
+  assert.equal(en('saved_folder_invite', '민지님이 「주말 「산책」 코스」 폴더를 같이 만들자고 했어요.'), '민지 invited you to build “주말 「산책」 코스” together.');
+  assert.ok(readFileSync(migration('20261114020000_saved_folder_sharing'), 'utf8').includes(`'님이 「'||left(f.name,40)||'」 폴더를 같이 만들자고 했어요.'`), 'invite body the pattern reads');
+  assert.equal(notificationRoute('/profile/saved'), '/profile/saved');
+});
+
 // The one-time switch for older meetups ships as its own migration and may be held back.
 const notice = migration('20261108120100_meetup_members_existing_notice');
 test('the member-visibility notice reads in English and opens the meetup profile', { skip: !(await import('node:fs')).existsSync(notice) }, async () => {
@@ -76,4 +83,17 @@ test('the member-visibility notice reads in English and opens the meetup profile
   const body = /'(이제 참여 중인 공개 모임에[^']+)'/.exec(readFileSync(notice, 'utf8'))?.[1];
   assert.equal(en('meetup_visibility', body), 'People applying to public meetups you’re in can now see your name, one-line intro and interests. Your photos and answers stay hidden.');
   assert.equal(notificationRoute('/meetup-profile'), '/meetup-profile');
+});
+
+test('both server sign-in alerts read as one alert in the inbox, in Korean and English', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { koreanNotificationBody } = await import('../src/lib/notification-copy.ts');
+  const { uiEnglish } = await import('../src/i18n/ui-en.ts');
+  const sql = readFileSync(migration('0153_account_security_notifications'), 'utf8');
+  const device = /'new_device' then '([^']+)'/.exec(sql)[1], login = /'new_login' then '([^']+)'/.exec(sql)[1];
+  assert.notEqual(device, login, 'the server still writes two texts');
+  assert.equal(koreanNotificationBody({ kind: 'account_security', body: login }), device);
+  assert.equal(koreanNotificationBody({ kind: 'account_security', body: device }), device);
+  assert.equal(koreanNotificationBody({ kind: 'message', body: login }), login, 'only the security alert is rewritten');
+  assert.equal(uiEnglish[login], uiEnglish[device]);
 });

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { meetupZone, zoneDayGap } from './chilling-date.ts';
 
 export type MannerSignals = { punctual: boolean | null; respectful: boolean | null; boundaries: boolean | null };
 export type MannerContext = { sessionId?: string; conversationId?: string };
@@ -28,6 +29,23 @@ export const loadMeetupSessions = (client: SupabaseClient, postId: string) => rp
 export const loadMeetupUpcomingSessions = (client: SupabaseClient, postId: string) => rpc<MeetupSessions>(client, 'get_meetup_upcoming_sessions', { p_post_id: postId });
 export const loadMeetupReviews = (client: SupabaseClient, postId: string, offset = 0) => rpc<MeetupReviewPage>(client, 'get_meetup_reviews', { p_post_id: postId, p_offset: offset });
 export const loadMyMeetupReviewInbox = (client: SupabaseClient) => rpc<{ postId: string; title: string; kind: 'once' | 'group' }[]>(client, 'get_my_meetup_review_inbox');
+export type MeetupReviewQueueItem = {
+  sessionId: string; postId: string; title: string; kind: 'once' | 'group'; timezone: string | null; cityId: string | null;
+  startsAt: string; endsAt: string; reviewUntil: string; isHost: boolean; verified: boolean; canReview: boolean; reviewStatus: string | null;
+};
+export type MeetupReviewQueue = { sessions: MeetupReviewQueueItem[] } | { meetups: { postId: string; title: string; kind: 'once' | 'group' }[] };
+/** One row per attended session. Servers without 20261114181000 have no such call yet, so the meetup list the older app reads comes back instead. */
+export async function loadMyMeetupReviewQueue(client: SupabaseClient): Promise<MeetupReviewQueue> {
+  const result = await client.rpc('get_my_meetup_review_queue');
+  if (result.error && ['PGRST202', '42883'].includes(result.error.code)) return { meetups: await loadMyMeetupReviewInbox(client) };
+  if (result.error) throw new Error(result.error.message);
+  return { sessions: (result.data ?? []) as MeetupReviewQueueItem[] };
+}
+export const reviewDue = (item: MeetupReviewQueueItem) => item.canReview && !item.reviewStatus;
+/** The review that closes first, for the card at the top of the screen. */
+export const nextReview = (sessions: MeetupReviewQueueItem[]) => sessions.filter(reviewDue).sort((a, b) => Date.parse(a.reviewUntil) - Date.parse(b.reviewUntil))[0] ?? null;
+/** Calendar days left in the meetup's own zone: 0 is the last day, 1 is tomorrow. */
+export const reviewDaysLeft = (item: MeetupReviewQueueItem, now: number) => Math.max(0, zoneDayGap(now, Date.parse(item.reviewUntil), meetupZone({ timezone: item.timezone }, item.cityId)));
 export const createMeetupSession = (client: SupabaseClient, postId: string, startsAt?: string, endsAt?: string) => rpc<string>(client, 'create_meetup_session', { p_post_id: postId, p_starts_at: startsAt ?? null, p_ends_at: endsAt ?? null });
 export const checkInMeetup = (client: SupabaseClient, sessionId: string) => rpc<null>(client, 'check_in_meetup', { p_session_id: sessionId });
 export const confirmMeetupAttendance = (client: SupabaseClient, sessionId: string, attendeeId: string) => rpc<null>(client, 'confirm_meetup_attendance', { p_session_id: sessionId, p_attendee_id: attendeeId });

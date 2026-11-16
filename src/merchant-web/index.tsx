@@ -58,7 +58,7 @@ export default function MerchantWebIndex() {
   async function exit() {
     if (signOutBusy.current) return;
     signOutBusy.current = true; setSigningOut(true); play('selection');
-    try { await signOut(); } finally { signOutBusy.current = false; setSigningOut(false); }
+    try { await signOut('global'); } finally { signOutBusy.current = false; setSigningOut(false); }
   }
   const retry = () => { play('selection'); setAccess(null); setRevision(value => value + 1); };
   function login() {
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   brand: { flexDirection: 'row', alignItems: 'center', gap: 12 }, wordmark: { width: 76, height: 30 },
   account: { flexDirection: 'row', gap: 12, alignItems: 'center', maxWidth: '100%', flexShrink: 1 }, nickname: { flexShrink: 1 },
   content: { width: '100%', maxWidth: 1228, alignSelf: 'center', padding: 24, gap: 16, paddingBottom: 64 },
-  state: { gap: 16, padding: 24, borderWidth: 1, borderRadius: 20, alignItems: 'flex-start', width: '100%', maxWidth: 760, alignSelf: 'center' },
+  state: { gap: 16, padding: 24, borderWidth: 1, borderRadius: 20, alignItems: 'flex-start', width: '100%', maxWidth: 760 },
   storeChoices: { alignSelf: 'stretch' },
   action: { minHeight: 44, minWidth: 44, borderWidth: 1, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 10, alignItems: 'center', justifyContent: 'center' },
   primary: { minHeight: 48, minWidth: 44, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },

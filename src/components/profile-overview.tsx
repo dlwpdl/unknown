@@ -17,7 +17,7 @@ import { count } from '@/i18n';
 import { useAuth } from '@/lib/auth';
 import { getCityPlaces } from '@/lib/city-places';
 import { deliveryPartnerPlace } from '@/lib/delivery-partners';
-import { placeMapRoute } from '@/lib/discovery';
+import { DISCOVERY_CATEGORIES, placeCategory } from '@/lib/discovery';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { CITIES } from '@/lib/mock';
 import { friendErrorMessage, loadProfileOverview, savedPlaceCities, setFriendship, setProfileSharing, type FriendAction, type FriendshipResult, type ProfileOverview } from '@/lib/profile-friends';
@@ -40,12 +40,17 @@ export function ProfileSavedMap({ overview, homeCityId }: { overview: ProfileOve
       if (!places) { try { places = getCityPlaces(pin.cityId); } catch { places = []; } byCity.set(pin.cityId, places); }
       const place = places.find(item => item.id === pin.placeKey) ?? deliveryPartnerPlace(pin.cityId, pin.placeKey);
       if (!place || !Number.isFinite(place.latitude) || !Number.isFinite(place.longitude)) return [];
-      return [{ id: `${pin.cityId}|${pin.placeKey}`, latitude: place.latitude, longitude: place.longitude, color: pin.merchantId ? theme.accent : theme.navy, label: place.name }];
+      // Drawn like the big map's pins with the name always on (featured), and as my saved bookmark on my own profile, which the map's description promises (QA A-prof-01).
+      const category = DISCOVERY_CATEGORIES.find(item => item.id === placeCategory(place))!;
+      return [{ id: `${pin.cityId}|${pin.placeKey}|${pin.merchantId ?? ''}`, latitude: place.latitude, longitude: place.longitude, color: category.color, icon: category.art,
+        label: place.name.slice(0, 80), featured: true, ...(overview.own ? { saved: true } : {}) }];
     });
-  }, [pins, theme.accent, theme.navy]);
+  }, [pins, overview.own]);
   const [picked, setPicked] = useState<string | null>(null);
   const cityId = cities.some(city => city.cityId === picked) ? picked! : cities.find(city => city.cityId === homeCityId)?.cityId ?? cities[0]?.cityId ?? null;
   const city = cityOf(cityId);
+  // Only this city's pins, so the preview frames all of them (QA A-prof-01).
+  const shown = useMemo(() => markers.filter(marker => marker.id.startsWith(`${cityId}|`)), [markers, cityId]);
   if (!pins || !markers.length || !city) {
     const own = overview.own, locked = overview.mapHiddenReason === 'not_friends';
     const title = own ? tr('첫 장소 저장하기') : locked ? tr('친구가 되면 저장한 곳이 보여요')
@@ -66,9 +71,11 @@ export function ProfileSavedMap({ overview, homeCityId }: { overview: ProfileOve
   }
   return <View style={styles.mapBlock}>
     <View style={[styles.map, { borderColor: theme.line }]}>
-      <DiscoveryMap markers={markers} cityName={city.englishName} onSelect={id => {
-        const [pinCity, placeKey] = id.split('|');
-        if (pinCity && placeKey) router.push(placeMapRoute({ id: placeKey, cityId: pinCity }));
+      {/* A pin opens that place's own page: the business page for a business, otherwise the place page (QA A-prof-01). */}
+      <DiscoveryMap preview markers={shown} cityName={city.englishName} onSelect={id => {
+        const [pinCity, placeKey, merchantId] = id.split('|');
+        if (merchantId) router.push({ pathname: '/company/[id]', params: { id: merchantId } });
+        else if (pinCity && placeKey) router.push({ pathname: '/places/[id]', params: { id: placeKey, cityId: pinCity } });
       }} />
     </View>
     {cities.length > 1 && <ScrollView analyticsId="profile.map.cities" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
@@ -98,7 +105,7 @@ export function ProfileRecordTiles({ overview }: { overview: ProfileOverview }) 
     { id: 'meetups', value: count(overview.meetupCount), label: tr('연 모임') },
   ];
   return <ScrollView analyticsId="profile.records" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tiles}>
-    {tiles.map((tile, index) => <Reanimated.View key={tile.id} entering={reduced ? FadeIn.duration(150) : FadeInDown.delay(index * 60).duration(250)}>
+    {tiles.map((tile, index) => <Reanimated.View key={tile.id} style={styles.tileSlot} entering={reduced ? FadeIn.duration(150) : FadeInDown.delay(index * 60).duration(250)}>
       <Pressable analyticsId={`profile.record.${tile.id}`} accessibilityRole={tile.open ? 'button' : 'text'} disabled={!tile.open}
         accessibilityLabel={`${tile.label} ${tile.value}`} onPress={() => { if (!tile.open) return; play('selection'); tile.open(); }}
         style={({ pressed }) => [styles.tile, clayBox ? [styles.clayCard, { opacity: pressed && tile.open ? 0.8 : 1 }] : { backgroundColor: pressed && tile.open ? theme.backgroundSelected : theme.backgroundElement }]}>
@@ -150,7 +157,7 @@ export function useFriendShareNotice() {
     </Pressable>;
   const sheet = <DragSheet visible={!!pending} dismissible={!busy} onClose={() => setPending(null)} title={tr('저장한 곳은 친구에게 보여요')}>
     <View style={styles.notice}>
-      <ThemedText type="small" themeColor="textSecondary">{tr('친구를 맺으면 내가 저장한 장소와 비즈니스를 그 친구가 지도에서 볼 수 있어요. 저장해 둔 구해요·팔아요 글과 프로필은 안 보이고, 설정에서 언제든 끌 수 있어요.')}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">{tr('친구를 맺으면 내가 저장한 장소와 비즈니스를 그 친구가 지도에서 볼 수 있어요. 친구에게 보이게 켜 둔 폴더도 함께 보여요. 저장해 둔 구해요·팔아요 글과 프로필은 안 보이고, 설정에서 언제든 끌 수 있어요.')}</ThemedText>
       {!!error && <ThemedText type="small" accessibilityRole="alert">{error}</ThemedText>}
       {action('continue', tr('그대로 계속'), false)}
       {action('hide', tr('저장한 곳은 숨기고 계속'), true)}
@@ -222,7 +229,7 @@ export function ProfileSharingCard() {
     <View style={styles.cardRow}>
       <View style={styles.grow}>
         <ThemedText type="small">{tr('친구에게 저장한 곳 보여 주기')}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">{tr('켜면 내가 저장한 장소와 비즈니스를 친구가 지도에서 볼 수 있어요. 저장해 둔 구해요·팔아요 글과 프로필은 안 보여요.')}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">{tr('켜면 내가 저장한 장소와 비즈니스를 친구가 지도에서 볼 수 있어요. 친구에게 보이게 켜 둔 폴더도 함께 보여요. 저장해 둔 구해요·팔아요 글과 프로필은 안 보여요.')}</ThemedText>
       </View>
       <Switch analyticsId="profile.settings.share-saved-places" value={current?.on ?? true} disabled={!current || current.busy || current.on === null}
         onValueChange={on => void change(on)} accessibilityLabel={tr('친구에게 저장한 곳 보여 주기')} />
@@ -241,7 +248,9 @@ const styles = StyleSheet.create({
   center: { textAlign: 'center' },
   chips: { gap: Spacing.two },
   border: { borderWidth: 1 },
-  tiles: { gap: Spacing.two },
+  // The tiles share the full row like the buttons above (QA H43-5); with large text they keep their width and the row scrolls.
+  tiles: { flexGrow: 1, gap: Spacing.two },
+  tileSlot: { flexGrow: 1 },
   tile: { minWidth: 104, minHeight: 76, borderRadius: 14, paddingHorizontal: Spacing.three, paddingVertical: 12, gap: 2, justifyContent: 'center' },
   tileValue: { fontVariant: ['tabular-nums'] },
   friend: { gap: Spacing.two },

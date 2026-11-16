@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers } from '../src/lib/discovery-map-html.ts';
 import { MAP_PIN_ART } from '../src/lib/map-pin-art.ts';
+import { MAP_ZOOM_ART } from '../src/lib/map-zoom-art.ts';
 import { facingDegrees } from '../src/lib/location.ts';
 
 
@@ -12,7 +13,7 @@ const marker = { id: 'place:1', latitude: 49.28, longitude: -123.12, color: '#d8
 const sessionId = 'canvas-1';
 const options = { markers: [marker], cityName: 'Vancouver', sessionId, parentOrigin: 'https://gling.app' };
 
-test('native map startup has a bounded fallback, cancels after ready and rearms on retry', () => {
+test('native map startup has a bounded fallback, cancels after ready and rearms on retry; loading and failure never show together (QA C14-1)', () => {
   const slots = [], timers = new Map();
   let index = 0, nextTimer = 0, effects = [];
   const react = {
@@ -31,8 +32,8 @@ test('native map startup has a bounded fallback, cancels after ready and rearms 
     'react-native': { Platform: { OS: 'ios' }, View: 'View', StyleSheet: { create: value => value } },
     'react-native-webview': { __esModule: true, default: 'WebView' },
     '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value }) },
-    '@/components/clay': { useClay: () => true }, '@/hooks/use-theme': { useTheme: () => ({}) },
-    '@/components/analytics-controls': { Pressable: 'Pressable' },
+    '@/components/clay': { useClay: () => true, useDark: () => false }, '@/hooks/use-theme': { useTheme: () => ({}) },
+    '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
     '@/components/themed-text': { ThemedText: 'Text' },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/discovery-map-html': { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers },
@@ -51,12 +52,24 @@ test('native map startup has a bounded fallback, cancels after ready and rearms 
   const nodes = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(nodes)];
   const render = () => { index = 0; effects = []; const tree = Canvas(props); effects.forEach(fn => fn()); return nodes(tree); };
   const failed = tree => tree.some(node => node.props?.accessibilityLiveRegion === 'polite');
+  const loader = tree => tree.find(node => node.type === 'GlingLoader')?.props.accessibilityLabel;
+  props.active = false;
   let tree = render();
+  assert.equal(timers.size, 0, 'a map tab mounted in the background does not count its slow start as a failure');
+  assert.equal(loader(tree), '지도 불러오는 중');
+  props.active = true;
+  tree = render();
   assert.equal(failed(tree), false);
+  assert.equal(loader(tree), '지도 불러오는 중', 'the first load shows the logo, not the failure card');
   assert.equal(timers.size, 1, 'native startup cannot rely on JavaScript inside a stalled WebView');
   assert.equal([...timers.values()][0].delay, 15000);
+  const first = [...timers.keys()][0], page = () => tree.find(node => node.type === 'WebView').props;
+  page().onMessage({ nativeEvent: { data: JSON.stringify({ type: 'progress', sessionId: 'native-canvas.0' }) } });
+  assert.equal(timers.size, 1); assert.notEqual([...timers.keys()][0], first, 'page progress restarts the wait, so a slow first download is no failure (corner check m00 11-13)');
+  page().onMessage({ nativeEvent: { data: JSON.stringify({ type: 'progress', sessionId: 'stale' }) } });
+  assert.equal(timers.size, 1);
   [...timers.values()][0].fn();
-  tree = render(); assert.equal(failed(tree), true);
+  tree = render(); assert.equal(failed(tree), true); assert.equal(loader(tree), undefined, 'no logo on top of the failure');
   tree.find(node => node.props?.analyticsId === 'discovery.map.retry').props.onPress();
   tree = render(); assert.equal(failed(tree), false); assert.equal(timers.size, 1);
   const web = tree.find(node => node.type === 'WebView');
@@ -65,7 +78,13 @@ test('native map startup has a bounded fallback, cancels after ready and rearms 
   web.props.onMessage({ nativeEvent: { data: JSON.stringify({ type: 'ready', sessionId: 'native-canvas.0' }) } });
   render(); assert.equal(timers.size, 1, 'old map readiness cannot cancel the new attempt');
   web.props.onMessage({ nativeEvent: { data: JSON.stringify({ type: 'ready', sessionId: 'native-canvas.1' }) } });
-  tree = render(); assert.equal(failed(tree), false); assert.equal(timers.size, 0);
+  tree = render(); assert.equal(failed(tree), false); assert.equal(timers.size, 0); assert.equal(loader(tree), undefined);
+  props.loading = true;
+  tree = render(); assert.equal(loader(tree), '지도 결과 불러오는 중', 'results loading shows over the drawn map');
+  const cover = tree.find(node => [node.props?.children].flat().some(child => child?.type === 'GlingLoader'));
+  assert.equal(cover.props.pointerEvents, 'none');
+  assert.ok(![cover.props.style].flat().some(style => style && 'backgroundColor' in style), 'a drawn map stays visible under the results loader');
+  props.loading = false;
   props.markers = [{ ...marker, label: 'updated' }];
   render(); assert.equal(timers.size, 0, 'ordinary marker updates do not restart a loaded map');
   slots.forEach(slot => slot?.cleanup?.());
@@ -77,6 +96,20 @@ test('zoom buttons are clay only while 3D is on, and the picture pins stay eithe
   assert.doesNotMatch(page(false), /maplibregl-ctrl-zoom-in \.maplibregl-ctrl-icon\{background:url/);
   assert.match(page(false), /\.maplibregl-ctrl-group button\{width:44px;height:44px\}/);
   assert.equal(page(false).includes(Object.values(MAP_PIN_ART)[0]), page(true).includes(Object.values(MAP_PIN_ART)[0]));
+});
+
+test('the dark theme draws the free dark style, and the map own tags, counts, pills and zoom art in the dark palette', () => {
+  const dark = { background: '#0B0B12', card: '#171722', text: '#F6F3F0', textSecondary: '#B7B4C3', line: '#343443', backgroundSelected: '#343443' };
+  const light = discoveryMapHtml(options), night = discoveryMapHtml({ ...options, dark });
+  assert.ok(light.includes("style:'https://tiles.openfreemap.org/styles/positron'") && !light.includes('styles/dark'));
+  assert.ok(night.includes("style:'https://tiles.openfreemap.org/styles/dark'") && !night.includes('styles/positron'));
+  assert.ok(light.includes("namePaint={'text-color':'#302047'}") && light.includes("tx.fillStyle='rgba(255,255,255,0.95)'"));
+  assert.ok(night.includes("namePaint={'text-color':'#F6F3F0'}") && night.includes("tx.fillStyle='#171722f2'") && night.includes("'circle-color':'#171722','circle-stroke-color':'#9283ac'"));
+  assert.ok(night.includes('.city-pill{border-color:#343443;background:#171722;color:#F6F3F0}') && night.includes('html,body,#map{background:#0B0B12}'));
+  assert.ok(night.includes(`url(${MAP_ZOOM_ART.inDark})`) && !light.includes(MAP_ZOOM_ART.inDark));
+  assert.ok(discoveryMapHtml({ ...options, dark, clay: false }).includes('.maplibregl-ctrl-icon{filter:invert(1)}'));
+  assert.ok(night.includes('© OpenStreetMap</a>'));
+  assert.throws(() => discoveryMapHtml({ ...options, dark: { ...dark, card: '#fff' } }));
 });
 
 test('validates marker bounds, coordinates, unique identifiers and CSS colors', () => {
@@ -108,7 +141,7 @@ test('escapes dynamic JSON in HTML and injected scripts without forwarding extra
 
 test('only accepts current session messages, known selection IDs and exact credit URLs', () => {
   const parse = message => discoveryMapMessage(JSON.stringify({ sessionId, ...message }), sessionId, [marker]);
-  for (const type of ['ready', 'error', 'feedback']) assert.deepEqual(parse({ type, privateText: 'secret' }), { type });
+  for (const type of ['ready', 'error', 'feedback', 'progress']) assert.deepEqual(parse({ type, privateText: 'secret' }), { type });
   assert.deepEqual(parse({ type: 'select', id: marker.id }), { type: 'select', id: marker.id });
   for (const url of ['https://openfreemap.org/', 'https://www.openmaptiles.org/', 'https://www.openstreetmap.org/copyright']) {
     assert.deepEqual(parse({ type: 'credits', url }), { type: 'credits', url });
@@ -176,6 +209,22 @@ test('a passing map error while loading never shows the failure; one that outlas
   assert.equal(stuck.errors(), 1, 'still not loaded after the grace: show the failure');
 });
 
+test('a slow first download is not a failure: progress pushes the 15s wait back, cancels an error grace and tells the app it is alive (corner check m00 11-13)', () => {
+  let now = 0, next = 0; const timers = new Map();
+  const c = canvas([marker], undefined, {}, { deferLoad: true, Date: { now: () => now }, setTimeout: (fn, ms) => { timers.set(++next, { fn, ms }); return next; }, clearTimeout: id => timers.delete(id) });
+  const count = type => c.messages.filter(m => m.type === type).length, waits = ms => [...timers.values()].filter(t => t.ms === ms);
+  assert.equal(waits(15000).length, 1);
+  c.listeners.error({}); assert.equal(waits(5000).length, 1);
+  now = 3000; c.listeners.data({});
+  assert.equal(waits(5000).length, 0, 'progress after an error cancels its grace'); assert.equal(waits(15000).length, 1, 'one 15s wait, restarted');
+  assert.equal(count('progress'), 1);
+  now = 4000; c.listeners.dataloading({}); assert.equal(count('progress'), 1, 'at most one alive message every 2s');
+  now = 6000; c.listeners.data({}); assert.equal(count('progress'), 2);
+  waits(15000)[0].fn(); assert.equal(count('error'), 1, 'a real stall still fails');
+  c.listeners.load(); assert.equal(count('ready'), 1);
+  c.listeners.data({}); assert.equal(count('progress'), 2, 'nothing more once loaded');
+});
+
 test('the map canvas draws at most two pixels per point (map lag 2026-11-11 "지도 화질 2배")', () => {
   for (const [device, drawn] of [[undefined, 1], [1, 1], [2, 2], [3, 2]]) assert.equal(canvas([marker], undefined, {}, { devicePixelRatio: device }).map.config.pixelRatio, drawn, String(device));
 });
@@ -239,7 +288,7 @@ test('M1: a state colour crosses the map boundary only as a hex value and draws 
   assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.statusColor), ['', '#E0559A'], 'a new read moves the dot without a reload');
   c.window.glingDiscoveryUpdate(sessionId, { markers: [marker, { ...marker, id: 'place:2', statusColor: 'url(x)' }] });
   assert.deepEqual(Array.from(c.sources.discovery.data.features, feature => feature.properties.statusColor), ['', '#E0559A'], 'the page refuses a bad colour too');
-  assert.ok(c.html.includes('주황색 점은 요즘 뜨는 곳, 분홍색 점은 인기 있는 곳이에요.'), 'the map label says what the colours mean');
+  assert.ok(c.html.includes('초록색 점은 새로 생긴 곳, 주황색 점은 요즘 뜨는 곳, 분홍색 점은 인기 있는 곳, 파란색 점은 친구가 저장한 곳이에요.'), 'the map label says what each colour means');
 });
 
 test('M5: a saved flag crosses the map boundary only as a boolean and draws the bookmark mark above the pins', () => {
@@ -366,8 +415,8 @@ test('crowded TOP 50 places fold only among themselves into a gold count with no
     assert.equal(count.paint['text-color'], '#6F5129');
     assert.ok(index('discovery-counts') < index(source + '-clusters') && index(source + '-counts') < index('discovery-pins-grouped'), 'gold counts sit above grey ones and under the places');
   }
-  // Only the circle, its number and the tap area draw a folded count: a gold count carries no name tag.
-  assert.deepEqual(Array.from(c.layers.filter(value => tops.includes(value.source) && !JSON.stringify(value.filter ?? null).includes('["!",["has","point_count"]]')).map(value => value.id)), ['discovery-top-clusters', 'discovery-top-counts', 'discovery-top-near-clusters', 'discovery-top-near-counts', 'discovery-hit-top', 'discovery-hit-top-near']);
+  // Only the circle, its number, the tap area and its invisible room draw a folded count: a gold count carries no name tag.
+  assert.deepEqual(Array.from(c.layers.filter(value => tops.includes(value.source) && !JSON.stringify(value.filter ?? null).includes('["!",["has","point_count"]]')).map(value => value.id)), ['discovery-top-clusters', 'discovery-top-counts', 'discovery-top-near-clusters', 'discovery-top-near-counts', 'discovery-hit-top', 'discovery-hit-top-near', 'discovery-top-near-room']);
   // Every mark a single TOP 50 place has comes from its copy on the source of each stage the mark shows at; saved and discount marks never fold, so they have none.
   // Circles (dot, ring, state dot) are drawn by both copies at every zoom and fade by stage, so the tile on screen while crossing 13 still holds them; names and mid picture pins keep their own zoom range, as before.
   const stage = (value, mid) => { const v = value ?? 1, [m, n] = Array.isArray(v) && v[0] === 'step' ? [v[2], v[4]] : [v, v]; return JSON.stringify(mid ? ['step', ['zoom'], m, 13, 0] : ['step', ['zoom'], 0, 13, n]); };
@@ -557,6 +606,40 @@ test('credits fold into an ⓘ on the floating row and close when the map moves 
   assert.equal(c.credits['credits-toggle']['aria-expanded'], 'false');
 });
 
+test('a strip too short for the zoom buttons over the ⓘ moves the ⓘ beside them (QA new-map-attrib-over-zoom)', () => {
+  const c = canvas([marker], undefined, { bottomInset: 120 });
+  assert.ok(c.html.includes('#credits{position:absolute;left:var(--map-credits-left,10px);'));
+  assert.equal(c.rootVars['--map-credits-left'], '10px', '400px map, 120px under the list row: the ⓘ stays in the corner under the buttons');
+  // The festival list sheet half open: chips 100px on top, the sheet 200px from the bottom leave a 100px strip.
+  c.window.glingDiscoveryUpdate(sessionId, { markers: [marker], topInset: 100, bottomInset: 200 });
+  assert.equal(c.rootVars['--map-credits-left'], '66px', 'beside the 44px buttons at 12px, not on top of +');
+  c.window.glingDiscoveryUpdate(sessionId, { markers: [marker], topInset: 100, bottomInset: 0 });
+  assert.equal(c.rootVars['--map-credits-left'], '10px', 'the sheet closed: back to the corner');
+});
+
+test('a place name gives way to a count circle instead of covering it (QA C17-1)', () => {
+  const c = canvas([marker, { ...marker, id: 'place:2' }]), index = id => c.layers.findIndex(layer => layer.id === id);
+  const names = c.layers.filter(layer => layer.type === 'symbol' && layer.layout['text-field'] && !layer.id.startsWith('discovery-selected')).map(layer => layer.id);
+  assert.ok(names.includes('discovery-labels') && names.includes('discovery-art-featured-labels'));
+  // Further out the mid picture pins (icon-allow-overlap false) would collide with a room and drop back to dots, so the rooms start at NEAR.
+  assert.equal(index('discovery-top-room'), -1, 'no room for the mid gold count');
+  for (const source of ['discovery-grouped', 'discovery-top-near']) {
+    const room = c.layers[index(source + '-room')];
+    assert.ok(room, source + ': every close-up count has a room');
+    assert.equal(JSON.stringify(room.filter), '["has","point_count"]');
+    assert.deepEqual([room.minzoom, room.maxzoom], [13, undefined], source + ': up close only');
+    assert.equal(room.layout['icon-allow-overlap'], true, 'the count is always drawn, so its box always counts');
+    assert.notEqual(room.layout['icon-ignore-placement'], true, 'its box is kept for the names placed after it');
+    assert.equal(room.paint['icon-opacity'], 0);
+    // saved-mark is 18px: the box is the 12/15/18px circle itself, and the name's own 4px text padding keeps it off the stroke.
+    assert.equal(JSON.stringify(room.layout['icon-size']), '["step",["get","point_count"],1.4,10,1.7,50,2]');
+    assert.equal(room.layout['icon-padding'], 0, 'no extra margin that would hide names that only come near');
+    for (const [size, radius] of [[1.4, 12], [1.7, 15], [2, 18]]) assert.ok(Math.abs(18 * size - 2 * radius) <= 1.5, source + ': box covers a ' + radius + 'px count');
+    // MapLibre places the top layer first: the room has to sit above every name.
+    for (const id of names) assert.ok(index(source + '-room') > index(id), source + '-room above ' + id);
+  }
+});
+
 test('keeps bundled CSP and attribution, and rejects invalid explicit centers', () => {
   const { html } = canvas();
   assert.ok(html.includes("script-src 'nonce-gling-map' blob:"));
@@ -589,6 +672,13 @@ test('pins and selected pins show tappable labels with the live style glyph font
   }
   assert.ok(c.images['name-tag'].options.stretchX, 'the tag stretches around the name');
   assert.equal(c.layers.find(layer => layer.id === 'discovery-art-featured').layout['text-field'], undefined, 'the picture pin keeps its own image');
+  // MapLibre places the higher name layer before the pin: the name's left edge (tag padding 6 + icon padding 2) must clear the pin's right edge, or the pin is dropped (QA W6-3).
+  for (const [pinId, tagId, pinSize] of [['discovery-art-featured', 'discovery-art-featured-labels', 36 * 0.75], ['discovery-art', 'discovery-labels', 36]]) {
+    const pin = c.layers.find(layer => layer.id === pinId).layout, tag = c.layers.find(layer => layer.id === tagId).layout;
+    const offset = tag['text-offset'][0] === 'case' ? tag['text-offset'][2][1][0] : tag['text-offset'][0], size = tag['text-size'];
+    assert.equal(pin['icon-size'] ?? 1, pinSize / 36);
+    assert.ok(offset * size - 8 > pinSize / 2 + 2, `${tagId} clears its ${pinSize}px pin`);
+  }
   await c.listeners.click({ point: { x: 0, y: 0 } });
   assert.ok(c.map.queryOptions.layers.includes('discovery-labels'));
   assert.ok(c.map.queryOptions.layers.includes('discovery-selected-label'));
@@ -780,7 +870,7 @@ function mountedBridge(props, platform) {
     'react-native': { Platform: { OS: platform }, View: 'View', StyleSheet: { create: value => value }, Linking: { openURL() {} } },
     'react-native-webview': { __esModule: true, default: 'WebView' },
     '@/hooks/use-language': { useLanguage: () => ({ language: 'ko', tr: value => value }) },
-    '@/components/clay': { useClay: () => true }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/components/analytics-controls': { Pressable: 'Pressable' },
+    '@/components/clay': { useClay: () => true, useDark: () => false }, '@/hooks/use-theme': { useTheme: () => ({}) }, '@/components/analytics-controls': { Pressable: 'Pressable' }, '@/components/gling-loader': { GlingLoader: 'GlingLoader' },
     '@/components/themed-text': { ThemedText: 'Text' }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play() {} }) },
     '@/lib/discovery-map-html': { discoveryMapHtml, discoveryMapMessage, discoveryMapScript, discoveryMarkers },
     'expo-location': { watchHeadingAsync: async fn => { compass.watches.push(fn); return { remove() { compass.removed++; } }; } }, '@/lib/location': { facingDegrees },
@@ -945,4 +1035,15 @@ test('up close a place with 3D art is drawn as a white picture pin once the art 
   assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-art-featured').layout['icon-image']), JSON.stringify(['concat', 'pin-', ['get', 'icon']]), 'mid-zoom pins keep the 36px image so collisions do not grow');
   assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-top25').paint['circle-stroke-opacity']), JSON.stringify(['step', ['zoom'], 1, 13, ['case', ['==', ['get', 'art'], true], 0, 1]]));
   assert.equal(JSON.stringify(c.layers.find(layer => layer.id === 'discovery-pins').paint['circle-opacity'].at(-1)), JSON.stringify(['case', ['==', ['get', 'art'], true], 0, 1]));
+});
+
+test('QA A-prof-01: a preview map drops its zoom buttons and opens framed on every starting pin', () => {
+  const pins = [{ ...marker, id: 'a', latitude: 49.30, longitude: -123.14 }, { ...marker, id: 'b', latitude: 49.27, longitude: -123.10 }];
+  const framed = canvas(pins, undefined, { controls: false, fit: true });
+  assert.deepEqual(JSON.parse(JSON.stringify(framed.map.config.bounds)), [[-123.14, 49.27], [-123.10, 49.30]]);
+  assert.deepEqual(JSON.parse(JSON.stringify(framed.map.config.fitBoundsOptions)), { padding: 40, maxZoom: 14 });
+  assert.ok(framed.html.includes('"controls":false'), 'no zoom buttons on the small map');
+  const full = canvas(pins);
+  assert.equal(full.map.config.bounds, undefined, 'the full map still opens on its city');
+  assert.ok(full.html.includes('"controls":true'));
 });

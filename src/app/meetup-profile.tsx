@@ -8,7 +8,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { SymbolView } from '@/components/symbol-view';
 import { ClayBoxFill, ClayPillFill, useClay, useClayBox } from '@/components/clay';
-import { AccessibilityInfo, Alert, AppState, Keyboard, KeyboardAvoidingView, LayoutAnimation, Modal, Platform, type ScrollViewInstance, StyleSheet, TextInput, UIManager, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, Alert, AppState, Keyboard, LayoutAnimation, Modal, Platform, type ScrollViewInstance, StyleSheet, TextInput, UIManager, useWindowDimensions, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChillingProfileCard } from '@/components/chilling-profile-card';
@@ -17,7 +17,9 @@ import { DragSheet } from '@/components/drag-sheet';
 import { ListCard, ListRow, SectionLabel, Tag } from '@/components/list-card';
 import { MeetupProfileLoyalty } from '@/components/meetup-loyalty';
 import { MeetupProfilePhotoRow } from '@/components/meetup-profile-photo-row';
-import { InfoNote, MoreDetails, WhoSees } from '@/components/notice-blocks';
+import { InfoNote, WhoSees } from '@/components/notice-blocks';
+import { KeyboardScreen } from '@/components/keyboard-screen';
+import { PageHeader } from '@/components/page-header';
 import { CityPicker } from '@/components/city-picker';
 import { RaisedActionButton } from '@/components/raised-action-button';
 import { SelectionChip } from '@/components/selection-chip';
@@ -26,7 +28,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Depth, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
-import { CHILLING_PROMPTS, chillingProfilePreview, getChillingError, loadChillingHostProfile, loadChillingMemberProfile, loadChillingProfile, normalizeChillingProfile, saveChillingProfile, type ChillingProfile } from '@/lib/chilling-data';
+import { CHILLING_ANSWER_CHOICES, CHILLING_PROMPTS, chillingAnswerChoice, chillingAnswerShown, chillingProfilePreview, chillingProfileShown, getChillingError, loadChillingHostProfile, loadChillingMemberProfile, loadChillingProfile, normalizeChillingProfile, saveChillingProfile, type ChillingProfile } from '@/lib/chilling-data';
 import { removeUnsavedMeetupPhotos, uploadMeetupProfilePhoto } from '@/lib/chilling-profile-media';
 import { preparePostImage, type PreparedImage } from '@/lib/post-image-picker';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -182,6 +184,9 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
   };
   const draftProfile = { ...profile, interests: tags, photoPaths: photos.map((photo, index) => photo.path ?? `${me.id}/pending-${index}.webp`),
     photoUris: photos.map(photo => photo.uri), publicPhotoPath: publicPhotoIndex === null ? null : photos[publicPhotoIndex]?.path ?? `${me.id}/pending-${publicPhotoIndex}.webp` };
+  // A picked answer reads in the app's language, whichever language it was saved in; the saved text itself is untouched.
+  const shownAnswer = (field: keyof typeof CHILLING_ANSWER_CHOICES, text: string) => chillingAnswerShown(field, text, tr);
+  const shown = (value: ChillingProfile) => chillingProfileShown(value, tr);
   const save = async () => {
     const request = saveScope.current;
     const current = () => mounted.current && focused.current && viewerRef.current === viewer && request === saveScope.current;
@@ -212,31 +217,29 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
   const itemRow = (item: Item, title: string, detail: string, required?: boolean) => <ListRow analyticsId="meetup-profile.edit-item" title={title} detail={detail} trailing={required ? <Tag tone="danger" label={tr("필수")} /> : undefined} onPress={() => openItem(item)} />;
   const preview = <>
     <View accessibilityRole="tablist" style={[styles.segment, clay ? styles.clayTray : { backgroundColor: theme.backgroundElement }]}>{clay && <ClayPillFill kind="tray" />}{(['host', 'members', 'public'] as const).map(value => <Pressable analyticsId="meetup-profile.preview-audience" key={value} accessibilityRole="tab" accessibilityState={{ selected: audience === value }} style={[styles.segmentItem, clay ? styles.clayTray : audience === value && { backgroundColor: theme.background }]} onPress={() => { play('selection'); setAudience(value); }}>{clay && audience === value && <ClayPillFill kind="on" />}<ThemedText type="smallBold" themeColor={audience === value ? 'accent' : undefined} style={clay && audience === value ? { color: theme.accentInk } : undefined}>{tr(value === 'host' ? '호스트' : value === 'members' ? '멤버' : '공개할 때')}</ThemedText></Pressable>)}</View>
-    <ChillingProfileCard profile={chillingProfilePreview(draftProfile, audience)} />
+    <ChillingProfileCard profile={shown(chillingProfilePreview(draftProfile, audience))} />
   </>;
   const whoSees = (title?: string) => <>
     <WhoSees title={title} rows={[
       { icon: { ios: 'person', android: 'person', web: 'person' }, label: tr("신청받는 호스트"), detail: tr("모임 이름 · 사진 · 소개 · 신청 답변") },
-      { icon: { ios: 'person.2', android: 'group', web: 'group' }, label: tr("승인된 멤버"), detail: profile.shareWithMembers ? tr("모임 이름 · 한 줄 소개 · 관심사, 그리고 사진") : tr("모임 이름 · 한 줄 소개 · 관심사"),
-        accessory: <Switch analyticsId="meetup-profile.share-members" accessibilityLabel={tr("승인된 멤버에게 사진 보여 주기")} value={profile.shareWithMembers === true} disabled={saving} onValueChange={next => { play('selection'); setProfile(current => ({ ...current, shareWithMembers: next })); }} /> },
+      { icon: { ios: 'person.2', android: 'group', web: 'group' }, label: tr("승인된 멤버"), detail: profile.shareWithMembers ? tr("모임 이름 · 한 줄 소개 · 관심사, 그리고 사진") : tr("모임 이름 · 한 줄 소개 · 관심사") },
       { icon: { ios: 'person.3', android: 'groups', web: 'groups' }, label: tr("신청하려는 사람"), detail: tr("공개 모임에서 승인된 뒤 모임 이름 · 한 줄 소개 · 관심사") },
       { icon: { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' }, label: tr("승인 전"), detail: tr("호스트만 봐요"), hidden: true },
     ]} />
     <InfoNote>{tr("상대가 이미 본 내용이나 저장한 사진은 되돌릴 수 없어요.")}</InfoNote>
   </>;
+  // The switch says what it turns on, in its own row, instead of sitting unnamed beside a table row.
+  const shareRow = <ListRow title={tr("승인된 멤버에게 사진 보여 주기")} trailing={<Switch analyticsId="meetup-profile.share-members" accessibilityLabel={tr("승인된 멤버에게 사진 보여 주기")} value={profile.shareWithMembers === true} disabled={saving} onValueChange={next => { play('selection'); setProfile(current => ({ ...current, shareWithMembers: next })); }} />} />;
   const privacyDetails = [tr("프로필을 고쳐도 이미 보낸 신청은 그대로예요."), tr("신청이 취소·거절되거나 탈퇴·차단·모임 종료가 되면 그 뒤로는 새로 볼 수 없어요."), tr("안전을 위해 자동 분석과 권한 있는 운영자 검토가 적용돼요.")];
-  return <ThemedView style={styles.fill}><SafeAreaView style={styles.fill}>
-    <View style={[styles.appbar, { backgroundColor: theme.background }]}>
-      <Pressable analyticsId="app_meetup-profile.pressable.1" disabled={saving || photoSaving} onPress={() => { play('selection'); if (editing) closeItem(); else back(); }} accessibilityRole="button" accessibilityLabel={editing ? tr("항목 목록으로") : tr("뒤로가기")} style={({ pressed }) => [styles.appbarButton, { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' }]}>
-        <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} size={22} tintColor={theme.text} />
-      </Pressable>
-      <ThemedText accessibilityRole="header" style={styles.appbarTitle}>{postId ? tr("모임 프로필") : loaded && !manage ? tr("모임 프로필 만들기") : tr("모임 프로필 관리")}</ThemedText>
-      <View style={styles.appbarButton} />
-    </View>
-    <KeyboardAvoidingView style={styles.fill} behavior="padding">
+  // The same top bar as the other pushed screens (left title on Android, centered on iOS); its stack header sits above, so the keyboard offset is measured.
+  return <ThemedView style={styles.fill}><SafeAreaView style={styles.fill} edges={['left', 'right', 'bottom']}>
+    <PageHeader analyticsId="app_meetup-profile.pressable.1" title={postId ? tr("모임 프로필") : loaded && !manage ? tr("모임 프로필 만들기") : tr("모임 프로필 관리")}
+      backLabel={editing ? tr("항목 목록으로") : undefined} disabled={saving || photoSaving} onBack={() => { if (editing) closeItem(); else back(); }} />
+    <KeyboardScreen>
       {loading && isAuthed ? <View style={styles.center}><GlingLoader color={theme.accent} accessibilityLabel={tr("프로필 불러오는 중")} /></View> : <ScrollView ref={scroll} analyticsId="app_meetup-profile.scrollview.1" keyboardShouldPersistTaps="handled" scrollEnabled={!drag} contentContainerStyle={styles.content}>
         {!isAuthed ? <Pressable analyticsId="app_meetup-profile.pressable.2" onPress={() => { play('selection'); promptLogin('모임 프로필을 확인하려면 로그인해 주세요.'); }} style={styles.button} accessibilityRole="button"><ThemedText themeColor="accent" style={styles.bodyText}>{tr("로그인하기")}</ThemedText></Pressable>
-          : postId ? loaded && !error && <><ChillingProfileCard profile={profile} /><MeetupProfileLoyalty postId={postId} userId={userId} /></>
+          // A host without a meetup name is '모임 호스트' on the card that opened this, so the profile says the same (QA I-meet-09).
+          : postId ? loaded && !error && <><ChillingProfileCard profile={shown(profile)} fallbackName={userId ? undefined : tr('모임 호스트')} /><MeetupProfileLoyalty postId={postId} userId={userId} /></>
               : loaded && <>
                 {!manage && <>
                   <View style={styles.field}>
@@ -262,13 +265,14 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
                     <ThemedText style={Typography.label}>{tr("한 줄 소개")}</ThemedText>
                     <TextInput accessibilityLabel={tr("한 줄 소개")} value={profile.intro} maxLength={160} editable={!saving} placeholder={tr('직접 쓰거나 아래에서 골라요')} placeholderTextColor={theme.textSecondary} onChangeText={intro => setProfile(current => ({ ...current, intro }))} style={[ControlStyles.field, styles.cardInput, { borderColor: theme.line, color: theme.text, backgroundColor: theme.background }]} />
                     <ScrollView analyticsId="app_meetup-profile.scrollview.1" horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.examples} style={styles.examplesRow}>
-                      {[tr("처음엔 조용하지만 금방 편해져요"), tr("먼저 말을 거는 편이에요"), tr("함께 활동하는 걸 좋아해요")].map(example => <SelectionChip key={example} analyticsId="app_meetup-profile.pressable.4" label={example} selected={profile.intro === example} disabled={saving} accessibilityState={{ selected: profile.intro === example, disabled: saving }} onPress={() => { play('selection'); setProfile(current => ({ ...current, intro: current.intro === example ? '' : example })); }} />)}
+                      {CHILLING_ANSWER_CHOICES.intro.map(example => { const selected = chillingAnswerChoice('intro', profile.intro) === example; return <SelectionChip key={example} analyticsId="app_meetup-profile.pressable.4" label={tr(example)} selected={selected} disabled={saving} accessibilityState={{ selected, disabled: saving }} onPress={() => { play('selection'); setProfile(current => ({ ...current, intro: chillingAnswerChoice('intro', current.intro) === example ? '' : tr(example) })); }} />; })}
                     </ScrollView>
                   </View>
                   <View>
                     {/* An older profile also sends its photos, prompts and interests, so only a fresh one can name exactly what goes. */}
                     <ThemedText style={Typography.supporting} themeColor="textSecondary">{photos.length || tags.length || profile.promptOne.trim() || profile.promptTwo.trim() ? tr('신청을 보내면 호스트가 내 모임 프로필과 답변을 봐요. 공개 모임에서 승인되고 나면 그 모임에 신청하려는 사람에게도 이름, 한 줄 소개, 관심사가 보여요. 사진과 답변은 안 보여요.') : tr('신청을 보내면 호스트가 내 이름, 지역, 소개, 답변을 봐요. 공개 모임에서 승인되고 나면 그 모임에 신청하려는 사람에게도 이름, 한 줄 소개, 관심사가 보여요. 사진과 답변은 안 보여요.')}</ThemedText>
                     <Disclosure analyticsId="meetup-profile.privacy-details" title={tr("누가 무엇을 보나요")}>
+                      <ListCard>{shareRow}</ListCard>
                       {whoSees()}
                       {privacyDetails.map(item => <ThemedText key={item} style={Typography.supporting} themeColor="textSecondary">{item}</ThemedText>)}
                     </Disclosure>
@@ -284,9 +288,9 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
                   </ListCard>
                   <SectionLabel>{tr("소개와 취향")}</SectionLabel>
                   <ListCard>
-                    {itemRow('intro', tr("한 줄 소개"), profile.intro.trim() ? brief(profile.intro.trim()) : tr("비어 있음"), !profile.intro.trim())}
-                    {itemRow('promptOne', tr(CHILLING_PROMPTS[profile.promptOneId ?? 'meet']), brief(profile.promptOne.trim()) || tr("비어 있음"))}
-                    {itemRow('promptTwo', tr(CHILLING_PROMPTS[profile.promptTwoId ?? 'join']), brief(profile.promptTwo.trim()) || tr("비어 있음"))}
+                    {itemRow('intro', tr("한 줄 소개"), profile.intro.trim() ? brief(shownAnswer('intro', profile.intro.trim())) : tr("비어 있음"), !profile.intro.trim())}
+                    {itemRow('promptOne', tr(CHILLING_PROMPTS[profile.promptOneId ?? 'meet']), brief(shownAnswer('promptOne', profile.promptOne.trim())) || tr("비어 있음"))}
+                    {itemRow('promptTwo', tr(CHILLING_PROMPTS[profile.promptTwoId ?? 'join']), brief(shownAnswer('promptTwo', profile.promptTwo.trim())) || tr("비어 있음"))}
                     {itemRow('interests', tr("관심사"), brief(tags.join(' · ')) || tr("비어 있음"))}
                     {itemRow('preferences', tr("나만 보는 선호 설정"), tr("나에게만 보여요"))}
                   </ListCard>
@@ -294,10 +298,14 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
                   <View style={styles.field}>
                     <ListCard>
                       {itemRow('publicPhoto', tr("공개 호스트 사진"), publicPhotoIndex === null ? tr("공개 사진 없음") : tr("사진 {0}", publicPhotoIndex + 1))}
+                      {shareRow}
                       <ListRow analyticsId="meetup-profile.preview" title={tr("내 프로필 미리보기")} detail={tr("호스트와 멤버에게 어떻게 보이는지 확인해요")} onPress={() => { Keyboard.dismiss(); setPreviewOpen(true); }} />
                     </ListCard>
-                    {whoSees(tr("누가 무엇을 보나요"))}
-                    <MoreDetails label={tr("자세히")} analyticsId="meetup-profile.privacy-details" items={privacyDetails} />
+                    {/* The same table is on the join screen; here it folds to one line. */}
+                    <Disclosure analyticsId="meetup-profile.privacy-details" title={tr("누가 무엇을 보나요")}>
+                      {whoSees()}
+                      {privacyDetails.map(item => <ThemedText key={item} style={Typography.supporting} themeColor="textSecondary">{item}</ThemedText>)}
+                    </Disclosure>
                   </View>
                 </View>}
                 {showing('name') && <View style={styles.field}><ThemedText type="smallBold" style={styles.label}>{tr("모임에서 쓸 이름")}</ThemedText>
@@ -327,25 +335,25 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
                   <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr("저장할 때만 반영돼요. 일반 프로필 사진은 바뀌지 않아요.")}</ThemedText>
                 </View>}
                 {([
-                  { key: 'intro', label: tr("한 줄 소개"), hint: tr("하나를 고르거나 직접 적어주세요."), limit: 160, examples: [tr("처음엔 조용하지만 금방 편해져요"), tr("먼저 말을 거는 편이에요"), tr("함께 활동하는 걸 좋아해요")] },
-                  { key: 'promptOne', label: tr(CHILLING_PROMPTS[profile.promptOneId ?? 'meet']), hint: tr("실제 나와 맞는 답변을 적어주세요."), limit: 300, examples: [tr("페스티벌 같이 가기"), tr("라이브 공연 보기"), tr("조용한 카페에서 수다"), tr("가볍게 걷기"), tr("맛집 원정"), tr("보드게임"), tr("맥주 한잔")] },
-                  { key: 'promptTwo', label: tr(CHILLING_PROMPTS[profile.promptTwoId ?? 'join']), hint: tr("실제 나와 맞는 답변을 적어주세요."), limit: 300, examples: [tr("공연 취향이 맞는 사람들"), tr("소규모(4명 이하)"), tr("주말 낮"), tr("처음 보는 사람과도 편한 분위기")] },
+                  { key: 'intro', label: tr("한 줄 소개"), hint: tr("하나를 고르거나 직접 적어주세요."), limit: 160 },
+                  { key: 'promptOne', label: tr(CHILLING_PROMPTS[profile.promptOneId ?? 'meet']), hint: tr("하나를 고르거나 직접 적어주세요."), limit: 300 },
+                  { key: 'promptTwo', label: tr(CHILLING_PROMPTS[profile.promptTwoId ?? 'join']), hint: tr("하나를 고르거나 직접 적어주세요."), limit: 300 },
                 ] as const).filter(field => showing(field.key)).map(field => <View key={field.key} style={[styles.promptPanel, { backgroundColor: theme.card }]}>
                   {(field.key === 'promptOne' || field.key === 'promptTwo') && <View style={styles.chips}>{(field.key === 'promptOne' ? ['meet', 'weekend', 'comfort'] as const : ['join', 'learn', 'ritual'] as const).map(id => <Pressable analyticsId="meetup-profile.prompt" key={id} accessibilityRole="button" accessibilityState={{ selected: (field.key === 'promptOne' ? profile.promptOneId : profile.promptTwoId) === id }} disabled={saving} onPress={() => { play('selection'); setProfile(current => ({ ...current, [field.key === 'promptOne' ? 'promptOneId' : 'promptTwoId']: id })); }} style={[styles.promptChip, clay ? styles.clayChip : { borderColor: theme.line, backgroundColor: (field.key === 'promptOne' ? profile.promptOneId : profile.promptTwoId) === id ? theme.backgroundSelected : theme.backgroundElement }]}>{clay && <ClayPillFill kind={(field.key === 'promptOne' ? profile.promptOneId : profile.promptTwoId) === id ? 'on' : 'white'} />}<ThemedText type="small" style={[styles.helper, clay && (field.key === 'promptOne' ? profile.promptOneId : profile.promptTwoId) === id && { color: theme.accentInk }]}>{tr(CHILLING_PROMPTS[id])}</ThemedText></Pressable>)}</View>}
                   <ThemedText style={[styles.bodyText, styles.question]}>{field.label}</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{field.hint}</ThemedText>
-                  <View style={styles.choices}>{field.examples.map(example => {
-                    const selected = profile[field.key] === example;
-                    return <Pressable analyticsId="app_meetup-profile.pressable.4" key={example} accessibilityRole="button" accessibilityLabel={example}
+                  <View style={styles.choices}>{CHILLING_ANSWER_CHOICES[field.key].map(example => {
+                    const selected = chillingAnswerChoice(field.key, profile[field.key]) === example;
+                    return <Pressable analyticsId="app_meetup-profile.pressable.4" key={example} accessibilityRole="button" accessibilityLabel={tr(example)}
                       accessibilityState={{ selected, disabled: saving }} disabled={saving}
-                      onPress={() => { play('selection'); Keyboard.dismiss(); setCustomOpen(null); setProfile(p => ({ ...p, [field.key]: p[field.key] === example ? '' : example })); }}
+                      onPress={() => { play('selection'); Keyboard.dismiss(); setCustomOpen(null); setProfile(p => ({ ...p, [field.key]: chillingAnswerChoice(field.key, p[field.key]) === example ? '' : tr(example) })); }}
                       style={({ pressed }) => [styles.choice, clayBox ? styles.clayChoice : { borderColor: selected ? theme.accent : theme.line, backgroundColor: selected ? theme.backgroundSelected : theme.card }, { opacity: pressed ? 0.7 : 1 }]}>
                       {clayBox && <ClayBoxFill kind="tile" />}
-                      <ThemedText style={[styles.bodyText, styles.choiceText]}>{example}</ThemedText>
+                      <ThemedText style={[styles.bodyText, styles.choiceText]}>{tr(example)}</ThemedText>
                       <SymbolView name={selected ? { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' } : { ios: 'circle', android: 'radio_button_unchecked', web: 'radio_button_unchecked' }} size={20} tintColor={selected ? theme.accent : theme.textSecondary} />
                     </Pressable>;
                   })}</View>
-                  {customOpen === field.key || (profile[field.key] && !field.examples.some(example => profile[field.key] === example))
+                  {customOpen === field.key || (profile[field.key] && !chillingAnswerChoice(field.key, profile[field.key]))
                     ? <TextInput accessibilityLabel={tr("{0} 직접 입력", (field.label))} value={profile[field.key]} autoFocus={customOpen === field.key}
                         placeholder={tr("직접 적어주세요")} placeholderTextColor={theme.textSecondary} multiline maxLength={field.limit} editable={!saving}
                         onFocus={() => scroll.current?.scrollToEnd({ animated: false })}
@@ -412,7 +420,7 @@ function ProfileForm({ postId, userId, returnPostId }: { postId?: string; userId
         <ThemedText type="small" themeColor={activitiesInvalid || missing.length ? 'accent' : 'textSecondary'} style={styles.helper} accessibilityLiveRegion="polite">{activitiesInvalid ? tr("선호 활동은 8개까지, 각 30자 이내로 적어주세요") : missing.length ? tr("남은 필수 항목: {0}", missing.join(' · ')) : tr("저장하면 다음 모임에서도 사용할 수 있어요")}</ThemedText>
         <RaisedActionButton analyticsId="app_meetup-profile.pressable.8" disabled={saving || photoSaving || !ready || !!drag} busy={saving} onPress={() => void save()} label={saving ? tr("저장 중…") : returnPostId ? tr("저장하고 신청 계속") : language === 'en' ? 'Save meetup profile' : '모임 프로필 저장'} />
       </View>}
-    </KeyboardAvoidingView>
+    </KeyboardScreen>
     <Modal visible={cityOpen} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => { play('selection'); setCityOpen(false); }}>
       <SafeAreaProvider style={[styles.fill, { backgroundColor: theme.background }]}>
         <View style={[styles.fill, { paddingTop: insets.top, paddingBottom: insets.bottom }]}><CityPicker title={tr("활동 지역")} onClose={() => setCityOpen(false)} draft={{ city: selectedCity, onSelect: city => { setProfile(current => ({ ...current, cityId: city.id })); setCityOpen(false); } }} /></View>
@@ -430,10 +438,9 @@ const styles = StyleSheet.create({
   cardInput: { borderWidth: 1, paddingHorizontal: Spacing.three, fontSize: 16 },
   city: { borderWidth: 1, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center', gap: Spacing.one }, flex: { flex: 1, minWidth: 0 },
   examples: { gap: Spacing.one, paddingHorizontal: Spacing.three }, examplesRow: { marginHorizontal: -Spacing.three },
-  fill: { flex: 1 }, center: { flex: 1, alignItems: 'center', justifyContent: 'center' }, content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', padding: Spacing.four, gap: Spacing.four, paddingBottom: Spacing.six },
-  appbar: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.three },
-  appbarButton: { minHeight: 44, minWidth: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }, appbarTitle: { ...Typography.screenTitle, flex: 1, textAlign: 'center' },
-  footer: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', borderTopWidth: 1, padding: Spacing.four, gap: Spacing.two },
+  // 16pt sides like the other pushed screens.
+  fill: { flex: 1 }, center: { flex: 1, alignItems: 'center', justifyContent: 'center' }, content: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', paddingHorizontal: Spacing.three, paddingTop: Spacing.three, gap: Spacing.four, paddingBottom: Spacing.six },
+  footer: { width: '100%', maxWidth: MaxContentWidth, alignSelf: 'center', borderTopWidth: 1, paddingHorizontal: Spacing.three, paddingVertical: Spacing.three, gap: Spacing.two },
   stepTitle: { ...Typography.subtitle }, question: { fontSize: 22, lineHeight: 30, fontWeight: '600' },
   promptPanel: { borderRadius: 22, padding: Spacing.four, gap: Spacing.three },
   choices: { gap: Spacing.two }, choice: { minHeight: 52, borderRadius: 14, borderWidth: 1, padding: Spacing.three, flexDirection: 'row', alignItems: 'center', gap: Spacing.two },

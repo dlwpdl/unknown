@@ -87,6 +87,11 @@ test('dates and relative times use the selected language without altering event 
     assert.match(chillingSchedule({ eventKind: 'once', startsAt: '2026-10-15T18:30:00Z', timezone: 'America/Vancouver' }), /11:30/);
     setActiveLanguage('ko');
     assert.equal(relativeTime(new Date(now - 5 * 60000).toISOString(), now), '5분 전');
+    // Days count by calendar date: 46 hours back from the afternoon of the 15th is the 13th, so "2일 전", not "어제" (QA A-noti-03).
+    const local = (day, hour, minute = 0) => new Date(2026, 10, day, hour, minute);
+    assert.equal(relativeTime(local(13, 15, 17).toISOString(), local(15, 14).getTime()), '2일 전');
+    assert.equal(relativeTime(local(14, 9).toISOString(), local(15, 14).getTime()), '어제');
+    assert.equal(relativeTime(local(14, 20).toISOString(), local(15, 14).getTime()), '18시간 전');
   } finally { setActiveLanguage('ko'); }
 });
 
@@ -183,4 +188,14 @@ test('web fetches the English UI dictionary only on demand and translates once i
   finish({ 설정: 'Settings' }); await pending;
   assert.equal(exports.translateUi('en', '설정'), 'Settings');
   assert.equal(exports.uiEnglishPending(), null);
+});
+
+test('동네 이름 뒤 조사는 받침에 맞춰 붙는다 (QA I-compose-06)', async () => {
+  const { withRo } = await import('../src/i18n/ko.ts');
+  assert.equal(withRo('예일타운'), '예일타운으로');
+  assert.equal(withRo('버나비'), '버나비로');
+  assert.equal(withRo('롭슨'), '롭슨으로');
+  assert.equal(withRo('밴쿠버 서쪽'), '밴쿠버 서쪽으로');
+  assert.equal(withRo('노스 밴쿠버'), '노스 밴쿠버로');
+  assert.equal(withRo('Yaletown'), 'Yaletown(으)로');
 });

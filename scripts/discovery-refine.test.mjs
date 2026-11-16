@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { PLACE_SUBCATEGORIES, SITUATION_SUBCATEGORIES, discoveryRefines, pinSubcategory, priceLabel } from '../src/lib/discovery.ts';
+import { PLACE_STATUS, PLACE_SUBCATEGORIES, SITUATION_SUBCATEGORIES, discoveryRefines, pinSubcategory, placeHot, placeStatuses, priceLabel } from '../src/lib/discovery.ts';
 import { uiEnglish } from '../src/i18n/ui-en.ts';
 
 test('price chip text shows a run as a range and a gap as separate levels', () => {
@@ -48,4 +48,26 @@ test('a pin names the kind of place, never a situation chip like 점심', () => 
 
 test('every sub-filter label has an English translation', () => {
   for (const { label } of PLACE_SUBCATEGORIES) assert.ok(Object.hasOwn(uiEnglish, label), label);
+});
+
+test('place states: 새로 생김 within 90 days of opening, 뜨는 중 from the server or an outside mention within 60 days, 인기 from the server, 친구가 저장 from friends', () => {
+  const now = Date.parse('2026-11-13T12:00:00Z');
+  const opened = on => ({ opened: { on, sourceUrl: 'https://example.com/open' } }), hot = since => ({ hot: { since, sourceUrl: 'https://example.com/hot', sourceName: 'Fixture Daily' } });
+  assert.deepEqual(placeStatuses(undefined, null, false, now), []);
+  assert.deepEqual(placeStatuses(opened('2026-11-13'), null, false, now), ['new'], 'opening today is new');
+  assert.deepEqual(placeStatuses(opened('2026-08-15'), null, false, now), ['new'], '90 days ago still counts');
+  assert.deepEqual(placeStatuses(opened('2026-08-14'), null, false, now), [], 'older is not');
+  assert.deepEqual(placeStatuses(opened('2026-11-20'), null, false, now), [], 'a future opening is not new yet');
+  assert.deepEqual(placeStatuses(hot('2026-10-01'), null, false, now), ['trending']);
+  assert.deepEqual(placeStatuses(hot('2026-09-13'), null, false, now), [], 'an outside mention lapses after 60 days');
+  assert.equal(placeHot(hot('2026-09-13'), now), null);
+  assert.equal(placeHot(hot('2026-10-01'), now).sourceName, 'Fixture Daily');
+  assert.deepEqual(placeStatuses(undefined, 'trending', false, now), ['trending']);
+  assert.deepEqual(placeStatuses(undefined, 'popular', true, now), ['popular', 'friends']);
+  assert.deepEqual(placeStatuses({ ...opened('2026-11-01'), ...hot('2026-11-01') }, 'popular', true, now), ['new', 'trending', 'popular', 'friends'], 'the pin shows the first; every filter still finds it');
+  for (const id of Object.keys(PLACE_STATUS)) {
+    assert.match(PLACE_STATUS[id].color, /^#[0-9A-F]{6}$/, 'a plain hex value crosses into the map');
+    for (const text of [PLACE_STATUS[id].label, PLACE_STATUS[id].empty]) assert.ok(uiEnglish[text], `English for ${text}`);
+  }
+  assert.equal(new Set(Object.values(PLACE_STATUS).map(value => value.color)).size, 4, 'each state has its own colour');
 });

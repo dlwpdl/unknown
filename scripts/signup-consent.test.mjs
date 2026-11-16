@@ -34,6 +34,7 @@ if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () =
     if (name === '@/lib/nickname') return { generateNickname: () => '새회원' };
     if (name === '@/lib/mock') return { CITIES: [] };
     if (name === '@/lib/personal-info') return personalInfo;
+    if (name === '@/components/signup-source-question') return { SignupSourceQuestion: 'SignupSourceQuestion' };
     if (name === '@/components/personal-info-fields') return { PersonalInfoFields: 'PersonalInfoFields' };
     if (name === '@/lib/supabase') return { supabase: { rpc: async (...args) => { calls.push(args); return { error: fail ? new Error('offline') : null }; } } };
     return {};
@@ -41,8 +42,9 @@ if (name === '@/lib/interaction-feedback') return { useInteractionFeedback: () =
   const render = () => { cursor = refCursor = 0; return exports.ProfileOnboarding({ visible: true, userId: 'member', socialPhoto: null, existingProfile, appleSignIn, onComplete: x => completed.push(x) }); };
   const boxes = () => nodes(render()).filter(n => n.props?.accessibilityRole === 'checkbox');
   const save = async () => { nodes(render()).find(n => n.props?.accessibilityState?.busy !== undefined).props.onPress(); for (let i = 0; i < 10; i++) await Promise.resolve(); };
-  const finishWelcome = () => nodes(render()).find(n => n.props?.onContinue)?.props.onContinue();
-  return { render, boxes, save, finishWelcome, calls, opened, completed, setFail: value => { fail = value; } };
+  const question = () => nodes(render()).find(n => n.type === 'SignupSourceQuestion');
+  const finishWelcome = () => { question()?.props.onDone(); nodes(render()).find(n => n.props?.onContinue)?.props.onContinue(); };
+  return { render, boxes, save, question, finishWelcome, calls, opened, completed, setFail: value => { fail = value; } };
 }
 
 test('signup requires each mandatory agreement; select all is optional and reversible', async () => {
@@ -128,4 +130,28 @@ test('Sign in with Apple signup never asks for name again (App Review 4)', async
   await ui.save();
   assert.equal(ui.calls[0][0], 'create_profile_with_personal_info');
   assert.equal(ui.calls[0][1].p_full_name, null);
+});
+
+test('new signup asks where they heard about gling once, between saving and the welcome moment', async () => {
+  const ui = onboarding();
+  assert.equal(ui.question(), undefined);
+  ui.boxes()[0].props.onPress();
+  await ui.save();
+  assert.ok(ui.question(), 'question comes right after the profile is saved');
+  assert.equal(nodes(ui.render()).find(n => n.props?.onContinue), undefined, 'welcome waits for the question');
+  ui.question().props.onDone();
+  assert.equal(ui.question(), undefined);
+  assert.equal(ui.completed.length, 0);
+  nodes(ui.render()).find(n => n.props?.onContinue).props.onContinue();
+  assert.equal(ui.completed.length, 1);
+});
+
+test('consent-only and failed saves never show the question', async () => {
+  const existing = onboarding({ nickname: '기존회원', city_id: 'vancouver', avatar_path: null, photoUri: null });
+  existing.boxes()[0].props.onPress(); await existing.save();
+  assert.equal(existing.question(), undefined);
+  assert.equal(existing.completed.length, 1);
+  const failing = onboarding();
+  failing.boxes()[0].props.onPress(); failing.setFail(true); await failing.save();
+  assert.equal(failing.question(), undefined);
 });

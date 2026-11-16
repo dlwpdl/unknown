@@ -37,17 +37,19 @@ export default function ProfileLayout() {
       <Stack.Screen name="index" options={{ title: t.tabs.profile }} />
       <Stack.Screen name="guidelines" options={{ title: t.profile.guidelines }} />
       <Stack.Screen name="membership" options={{ title: tr('멤버십'), presentation: 'modal', animation: reducedMotion ? 'none' : 'slide_from_bottom' }} />
-      <Stack.Screen name="merchant" options={{ title: tr('비즈니스') }} />
-      <Stack.Screen name="meetup-reviews" options={{ title: tr('모임 후기') }} />
+      <Stack.Screen name="merchant" options={{ title: tr('내 가게') }} />
+      <Stack.Screen name="meetup-reviews" options={{ title: tr('모임 후기 · 매너 평가') }} />
       <Stack.Screen name="invite" options={{ title: tr('친구 초대') }} />
       <Stack.Screen name="host-quest" options={{ title: tr('모임장 퀘스트') }} />
       <Stack.Screen name="host-quest-step" options={{ title: tr('모임장 퀘스트') }} />
       <Stack.Screen name="host-quest-payout" options={{ title: tr('$20 받기') }} />
       <Stack.Screen name="trust" options={{ title: tr('인증 단계') }} />
       <Stack.Screen name="saved" options={{ title: t.profile.saved }} />
+      <Stack.Screen name="folder" options={{ title: tr('폴더') }} />
       <Stack.Screen name="import" options={{ title: tr('가져오기') }} />
       <Stack.Screen name="promotions" options={{ title: tr(PROMOTIONS_PREVIEW_ENABLED ? '홍보 크레딧' : ''), headerShown: PROMOTIONS_PREVIEW_ENABLED }} />
       <Stack.Screen name="settings" options={{ title: t.profile.settings }} />
+      <Stack.Screen name="account" options={{ title: tr('닉네임·계정 정보') }} />
       <Stack.Screen name="menu" options={{ title: tr('더보기') }} />
       <Stack.Screen name="friends" options={{ title: tr('친구') }} />
       <Stack.Screen name="notifications" options={{ title: tr('알림 설정') }} />

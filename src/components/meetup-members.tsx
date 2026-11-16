@@ -71,7 +71,7 @@ export function MeetupWhoCard({ roster, error, onRetry }: { roster: MeetupRoster
   return <View style={styles.who}>
     <View style={styles.whoHead}>
       <ThemedText accessibilityRole="header" style={[Typography.menu, styles.shrink]}>{tr('누가 와요')}</ThemedText>
-      {!!roster && <ThemedText style={Typography.supporting} themeColor="textSecondary">{tr('호스트 포함 {0}명', roster.length)}</ThemedText>}
+      {!!roster && <ThemedText style={Typography.supporting} themeColor="textSecondary">{roster.length === 1 ? tr('호스트 포함 1명') : tr('호스트 포함 {0}명', roster.length)}</ThemedText>}
     </View>
     {error ? <View style={styles.retry}>
       <ThemedText style={[Typography.supporting, styles.shrink]} themeColor="textSecondary" accessibilityRole="alert">{tr(error)}</ThemedText>

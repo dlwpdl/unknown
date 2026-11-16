@@ -8,6 +8,7 @@ import { buildCommentListRows } from '../src/lib/comment-list.ts';
 import { chillingAvailability } from '../src/lib/chilling.ts';
 import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 import * as maps from '../src/lib/post-maps.ts';
+import * as listingDetails from '../src/lib/listing-details.ts';
 
 const pin = 'https://www.google.com/maps/search/?api=1&query=49.2827,-123.1207';
 const search = 'https://www.google.com/maps/search/?api=1&query=1100+Chestnut+Street%2C+Vancouver';
@@ -75,6 +76,7 @@ function renderDetail(post, { isAuthed = true, hidden = false, status = {}, busi
     '@/lib/chilling': { chillingAvailability },
     '@/lib/meetup-destination': { splitPlaceMeetupBody: () => null },
     '../../supabase/functions/_shared/ticketmaster': { ticketmasterReference: () => null },
+    '@/lib/listing-details': listingDetails,
   };
   vm.runInNewContext(source, { exports, require: withLanguageImports(name => imports[name] ?? new Proxy({}, { get: (_target, key) => key })) });
   const wrapper = exports.PostDetail({ post, onClose() {} });
@@ -160,4 +162,33 @@ test('the meetup detail bar and notes follow the viewer: member chat, full waitl
   assert.deepEqual(host.labels, ['신청자 검토']); assert.equal(nodes(host.tree).find(node => node.type === 'RaisedActionButton').props.tone, 'secondary');
   assert.equal(host.notes, false);
   assert.equal(detail({}, { status: { own: true } }).bar, true);
+});
+
+test('a job opening swaps the comment composer for 공감·저장·지원하기, and the sheet offers only the contacts the post has (I-post-01)', () => {
+  const body = '키친 직원을 뽑아요.\n\n지원: 250-961-5431로 문자, 이력서는 Jobs.Ocean@gmail.com 으로 보내요. 시급 $17.85, 11-19시.';
+  const job = (patch = {}) => ({ ...listing(body), id: 'job', tag: { slug: 'jobs', kind: 'listing', label: '구인구직' }, listingStatus: 'open',
+    listingDetails: { type: 'jobs', deal: 'hiring', apply: ['email', 'phone'] }, ...patch });
+  const tree = renderDetail(job());
+  const bar = nodes(tree).find(node => node.type === 'RaisedActionButton' && node.props.analyticsId === 'post.detail.apply');
+  assert.equal(bar?.props.label, '지원하기');
+  assert.ok(!nodes(tree).some(node => node.type === 'TextInput'), 'the composer opens from 질문 남기기');
+  assert.ok(nodes(tree).some(node => node.props?.analyticsId === 'post.detail.ask'));
+  assert.deepEqual(nodes(tree).filter(node => node.type === 'PostReactionToggle').map(node => node.props.kind), ['like', 'save']);
+  assert.equal(nodes(tree).find(node => node.type === 'PostCard').props.foldBody, true);
+  const sheet = nodes(tree).find(node => node.type === 'DragSheet' && node.props.title === '지원하기');
+  const rows = nodes(sheet).filter(node => node.type === 'ListRow').map(node => [node.props.analyticsId, node.props.detail]);
+  assert.deepEqual(rows, [['post.apply.sms', '250-961-5431'], ['post.apply.call', '250-961-5431'], ['post.apply.email', 'Jobs.Ocean@gmail.com'], ['post.apply.chat', '작성자님에게']]);
+  assert.ok(text(sheet).includes('지원 방법: 이메일, 전화'));
+  // The author's own fields win over the body once the server keeps them (20261114182000).
+  const typed = renderDetail(job({ body: `${body}\n연락처: 604-555-0123`, listingDetails: { type: 'jobs', deal: 'hiring', phone: '604-555-0123' } }));
+  assert.deepEqual(nodes(nodes(typed).find(node => node.type === 'DragSheet' && node.props.title === '지원하기')).filter(node => node.type === 'ListRow').map(node => node.props.detail),
+    ['604-555-0123', '604-555-0123', '작성자님에게']);
+  for (const [other, why] of [[job({ author: { id: 'viewer', nickname: '나' } }), 'my own post'], [job({ listingStatus: 'closed' }), 'a closed post']]) {
+    const plain = renderDetail(other);
+    assert.ok(!nodes(plain).some(node => node.props?.analyticsId === 'post.detail.apply'), why);
+    assert.ok(nodes(plain).some(node => node.type === 'TextInput'), why);
+  }
+  const housing = renderDetail({ ...listing(prose), listingStatus: 'open', listingDetails: { type: 'housing', deal: 'rent_offer' } });
+  assert.equal(nodes(housing).find(node => node.props?.analyticsId === 'post.detail.ask-author')?.props.label, '글링 대화로 물어보기');
+  assert.ok(!nodes(housing).some(node => node.type === 'DragSheet' && node.props.title === '지원하기'));
 });

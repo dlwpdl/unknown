@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { normalizeChillingEvent, type ChillingEventDraft } from './chilling.ts';
-import { getLocale, t, tr } from '../i18n/index.ts';
+import { getLocale, t, tr, translateUi } from '../i18n/index.ts';
 import { meetupRestrictionError } from './meetup-policy.ts';
 import { removePostImages, uploadPostImage, type PostDraftImage } from './community-data.ts';
 import { loadMeetupProfilePhoto } from './chilling-profile-media.ts';
@@ -10,6 +10,22 @@ export const CHILLING_PROMPTS = {
   meet: '나랑 만나면 주로…', weekend: '내가 좋아하는 주말은', comfort: '내가 편해지는 순간은',
   join: '이런 모임이면 바로 신청해요', learn: '함께 배워보고 싶은 것은', ritual: '같이 해보고 싶은 작은 습관은',
 } as const;
+// The answers offered on the meetup profile. A pick is saved as the words on screen, in either app language.
+export const CHILLING_ANSWER_CHOICES = {
+  intro: ['처음엔 조용하지만 금방 편해져요', '먼저 말을 거는 편이에요', '함께 활동하는 걸 좋아해요'],
+  promptOne: ['페스티벌 같이 가기', '라이브 공연 보기', '조용한 카페에서 수다', '가볍게 걷기', '맛집 원정', '보드게임', '맥주 한잔'],
+  promptTwo: ['공연 취향이 맞는 사람들', '소규모(4명 이하)', '주말 낮', '처음 보는 사람과도 편한 분위기'],
+} as const;
+/** The offered choice (its Korean source) a saved answer was picked from, whichever language it was saved in; null for a written answer. */
+export function chillingAnswerChoice(field: keyof typeof CHILLING_ANSWER_CHOICES, answer: string): string | null {
+  const text = answer.trim();
+  return text ? CHILLING_ANSWER_CHOICES[field].find(choice => choice === text || translateUi('en', choice) === text) ?? null : null;
+}
+/** Saved choice answers shown in the viewer's language; free text stays as written. */
+export function chillingAnswerShown(field: keyof typeof CHILLING_ANSWER_CHOICES, text: string, tr: (text: string) => string): string { const choice = chillingAnswerChoice(field, text); return choice ? tr(choice) : text; }
+export function chillingProfileShown(value: ChillingProfile, tr: (text: string) => string): ChillingProfile {
+  return { ...value, intro: chillingAnswerShown('intro', value.intro, tr), promptOne: chillingAnswerShown('promptOne', value.promptOne, tr), promptTwo: chillingAnswerShown('promptTwo', value.promptTwo, tr) };
+}
 export type ChillingProfile = {
   intro: string; interests: string[]; promptOne: string; promptTwo: string;
   version?: 2; revision?: string; displayName?: string; cityId?: string; photoPaths?: string[]; publicPhotoPath?: string | null;
@@ -181,12 +197,18 @@ export async function createChillingEvent(client: SupabaseClient, draft: {
   const event = normalizeChillingEvent(draft.event);
   if (draft.image && !draft.userId) throw new Error('AUTH_REQUIRED');
   const imagePath = draft.image ? await uploadPostImage(client, draft.userId!, draft.image) : null;
-  const result = await client.rpc('create_chilling_event', {
+  const send = (sent: Record<string, unknown>) => client.rpc('create_chilling_event', {
     p_city_id: draft.cityId, p_title: draft.title.trim(), p_body: draft.body.trim(),
-    p_event: { ...event, ...(draft.hostProfileRevision ? { hostProfileConsentVersion: CHILLING_HOST_CONSENT_VERSION, hostProfileRevision: draft.hostProfileRevision } : {}),
+    p_event: { ...sent, ...(draft.hostProfileRevision ? { hostProfileConsentVersion: CHILLING_HOST_CONSENT_VERSION, hostProfileRevision: draft.hostProfileRevision } : {}),
       ...(draft.access ? { access: draft.access } : {}) }, p_question: draft.question.trim(),
     ...(imagePath ? { p_image_paths: [imagePath] } : {}),
   });
+  let result = await send(event);
+  // A server before 20261114180000 rejects the unknown recurrence key before creating anything; the cadence text made from it still carries the schedule.
+  if (result.error && 'recurrence' in event && getChillingErrorCode(result.error) === 'INVALID_CHILLING_EVENT') {
+    const { recurrence: _recurrence, ...older } = event;
+    result = await send(older);
+  }
   if (result.error) {
     if (imagePath) await removePostImages(client, [imagePath]);
     throw result.error;

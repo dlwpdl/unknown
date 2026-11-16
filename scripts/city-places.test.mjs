@@ -1,5 +1,5 @@
 import { withLanguageImports } from './test-language-imports.mjs';
-import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, discoveryMatches, discoveryPlace, placeCategory, placeMapRoute, priceSymbol } from '../src/lib/discovery.ts';
+import { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, discoveryMatches, discoveryPlace, placeCategory, placeMapRoute, priceSymbol, webshopApplicable } from '../src/lib/discovery.ts';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
@@ -9,6 +9,7 @@ import { createRequire } from 'node:module';
 import ts from 'typescript';
 import * as product from '../src/lib/product-analytics.ts';
 import * as distance from '../src/lib/discovery-sort.ts';
+import { publicPlaceId } from '../src/lib/public-seo.ts';
 
 const root = new URL('../', import.meta.url);
 const citySource = readFileSync(new URL('src/lib/mock.ts', root), 'utf8').split('export const TAGS')[0];
@@ -237,6 +238,24 @@ test('optional price level and sub-filter values download with the catalog while
   let time = fixtureTime;
   for (const bad of [{ priceLevel: 0 }, { priceLevel: 5 }, { priceLevel: '2' }, { priceLevel: 1.5 }, { priceLevel: true }, { subcategories: 'lunch' }, { subcategories: [''] },
     { subcategories: ['x'.repeat(41)] }, { subcategories: Array(13).fill('lunch') }, { subcategories: ['bad\u0000value'] }]) {
+    time += 1000;
+    assert.throws(() => api.replaceCityPlacesCatalog(next(bad, time), fixtureNow), /INVALID_PLACE_CATALOG/, JSON.stringify(bad));
+  }
+});
+
+test('optional opening and outside-trending dates download with their source while malformed ones reject the catalog (owner 2026-11-13)', () => {
+  const api = data();
+  const next = (patch, time) => { const value = catalog(); value.collectedAt = new Date(time).toISOString(); Object.assign(value.cities.vancouver.places[0], patch); return value; };
+  const opened = { on: '2026-11-01', sourceUrl: 'https://example.com/opening' }, hot = { since: '2026-11-05', sourceUrl: 'https://example.com/hot', sourceName: 'Fixture Daily' };
+  assert.equal(api.replaceCityPlacesCatalog(next({ opened, hot }, fixtureTime), fixtureNow), true);
+  const place = api.getCityPlaces('vancouver').find(row => row.id === catalog().cities.vancouver.places[0].id);
+  assert.deepEqual({ ...place.opened }, opened);
+  assert.deepEqual({ ...place.hot }, hot);
+  assert.equal(api.getCityPlaces('vancouver').find(row => row.id === catalog().cities.vancouver.places[1].id).opened, undefined, 'a place without the field has none');
+  let time = fixtureTime;
+  for (const bad of [{ opened: '2026-11-01' }, { opened: { on: '2026-11-31', sourceUrl: opened.sourceUrl } }, { opened: { on: '2026/11/01', sourceUrl: opened.sourceUrl } }, { opened: { on: opened.on } },
+    { opened: { ...opened, sourceUrl: 'http://example.com/opening' } }, { opened: { ...opened, note: 'x' } }, { hot: { ...hot, sourceName: '' } }, { hot: { ...hot, sourceName: 'x'.repeat(81) } },
+    { hot: { ...hot, since: 'soon' } }, { hot: { since: hot.since, sourceUrl: hot.sourceUrl } }, { hot: [] }]) {
     time += 1000;
     assert.throws(() => api.replaceCityPlacesCatalog(next(bad, time), fixtureNow), /INVALID_PLACE_CATALOG/, JSON.stringify(bad));
   }
@@ -511,7 +530,8 @@ function screen(file, params = { cityId: 'toronto' }, dev = true, placeData = da
       getPlaceReviewRating: (cityId, placeId) => ({ cityId, placeId, score: null, source: null, count: null, externalScore: null }) },
     '@/constants/theme': { Spacing: { one: 4, two: 8, three: 16, four: 24 }, MaxContentWidth: 920 },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: v => feedback.push(v) }) },
-    '@/lib/city-places': placeData, '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, placeMapRoute, priceSymbol }, '@/lib/post-maps': module('src/lib/post-maps.ts'),
+    '@/lib/city-places': placeData, '@/lib/discovery': { DISCOVERY_CATEGORIES, PLACE_SUBCATEGORIES, placeCategory, placeMapRoute, priceSymbol, webshopApplicable }, '@/lib/post-maps': module('src/lib/post-maps.ts'),
+    '@/lib/public-seo': { publicPlaceId },
     '@/lib/merchant-source': module('src/lib/merchant-source.ts', {
       '../../supabase/functions/_shared/post-links.ts': { safePostLink: value => value },
     }),
@@ -673,6 +693,21 @@ test('native detail searches Google maps by name, available address and Canadian
   const header = nodes(tree).find(n => n.type === 'PageHeader');
   assert.equal(header.props.analyticsId, 'places.detail.back');
   assert.deepEqual(JSON.parse(JSON.stringify(header.props.fallback)), { pathname: '/places', params: { cityId: 'toronto' } });
+});
+test('a place photo opens full screen with its credit and closes again; a guest gets no 정보가 달라요 row', () => {
+  const p = data().getCityPlaces('toronto').find(place => place.photo);
+  const ui = screen('src/app/places/[id].tsx', { cityId: 'toronto', id: p.id });
+  const viewer = tree => nodes(tree).find(n => n.type === 'CityPlacePhoto' && n.props?.contentFit === 'contain');
+  let tree = ui.render();
+  assert.equal(viewer(tree), undefined);
+  assert.equal(nodes(tree).some(n => n.type === 'PlaceCorrection'), false, 'only signed-in members can send corrections');
+  nodes(tree).find(n => n.props?.analyticsId === 'post.photo.open').props.onPress();
+  tree = ui.render();
+  assert.ok(viewer(tree), 'the tapped photo shows whole on the full-screen stage');
+  assert.ok(nodes(tree).filter(n => n.type === 'PostPhotoCredits').length >= 2, 'the credit stays reachable full screen');
+  nodes(tree).find(n => n.props?.analyticsId === 'post.photo.close').props.onPress();
+  assert.equal(viewer(ui.render()), undefined);
+  assert.deepEqual(ui.feedback.slice(-2), ['selection', 'selection']);
 });
 test('places without street addresses still search their names in the correct city, including French and Saint John NB', () => {
   for (const cityId of ['toronto', 'montreal', 'saint-john']) {
@@ -1263,16 +1298,20 @@ test('G2 place saves: friends by name, similar places named from the catalog, li
     '@/hooks/use-language': { useLanguage: () => ({ tr, language: 'ko', locale: 'ko-KR' }) }, '@/components/clay': { useClay: () => false, useClayBox: () => false, ClayIcon: () => null, ClayPillFill: () => null, ClayBoxFill: () => null, ClayCoinFill: () => null, ClayControlFill: () => null, ClayPhoto: () => null }, '@/hooks/use-theme': { useTheme: () => ({}) },
     '@/lib/city-places': { getCityPlaces: () => catalogPlaces }, '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: v => feedback.push(v) }) },
     '@/lib/profile-friends': { loadPlaceSaves: async () => null }, '@/lib/supabase': { supabase: {} },
+    '@/lib/feed-data': { relativeTime: (value, _now, locale) => `${value.slice(0, 10)}:${locale}` }, '@/lib/discovery': { placeCategory: () => 'cafe' },
   });
   const nodes = tree => { const out = []; const walk = n => { if (Array.isArray(n)) n.forEach(walk); else if (n && typeof n === 'object') { out.push(n); walk(n.props?.children); } }; walk(tree); return out; };
   const text = tree => nodes(tree).filter(n => n.type === 'ThemedText').map(n => [n.props.children].flat().join('')).join(' | ');
   const place = { id: 'osm:node:1', cityId: 'vancouver', name: 'First', category: 'food', recommendation: { placeId: 'osm:node:1' }, glingVisited: { sourceUrl: 'https://gling.ca' },
     intro: { vibe: '조용해요', when: '평일 저녁', sourceUrl: 'https://example.ca/menu' } };
   const saves = { saverCount: 12, weekCount: 2, firstIsMe: true, friends: [{ id: 'u1', nickname: '민지', savedAt: '2026-11-04T00:00:00Z', first: true }],
-    similar: [{ placeKey: 'osm:node:9', saverCount: 9, weekCount: 0 }, { placeKey: 'osm:node:2', saverCount: 5, weekCount: 1 }, { placeKey: 'osm:node:3', saverCount: 3, weekCount: 0 }] };
+    similar: [{ placeKey: 'osm:node:9', saverCount: 9, weekCount: 0 }, { placeKey: 'osm:node:2', saverCount: 5, weekCount: 1 }, { placeKey: 'osm:node:3', saverCount: 3, weekCount: 0 }],
+    kinds: { beenCount: 4, wantCount: 8 }, rank: null };
   const top = ui.PlaceSavedBy({ place, saves }), top_text = text(top);
   assert.match(top_text, /저장한 사람 12명 · 이번 주 \+2/);
-  assert.match(top_text, /민지님이 처음 저장/, 'G5: a sharing friend who saved it first is marked');
+  assert.match(top_text, /가 봤어요 4명 · 가 보고 싶어요 8명/, 'the savers split into been and want to go');
+  assert.match(top_text, /민지님이 처음 저장 · 2026-11-04:ko-KR/, 'G5: a sharing friend who saved it first is marked, with when they saved it');
+  assert.ok(!text(ui.PlaceSavedBy({ place, saves: { ...saves, kinds: null } })).includes('가 봤어요'), 'an older server shows the total only');
   assert.match(top_text, /내가 처음 저장했어요/);
   assert.match(top_text, /분위기 \| 조용해요 \| 언제 갈까 \| 평일 저녁/, 'a missing line is left out, never guessed');
   assert.ok(!top_text.includes('뭘 시킬까'));

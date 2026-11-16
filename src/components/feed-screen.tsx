@@ -51,8 +51,9 @@ import { PollDraftFields } from '@/components/poll-draft-fields';
 import { ProfileAvatarButton } from '@/components/profile-avatar-button';
 import { BusinessWriter } from '@/components/business-writer';
 import { useChatIdentity } from '@/hooks/use-chat-identity';
+import { openPlaceWriter, PLACE_WRITE_EVENT } from '@/hooks/use-place-compose';
 import { RaisedActionButton } from '@/components/raised-action-button';
-import { ClayBoxFill, ClayIcon, ClayPillFill, useClay, useClayBox, type ClayName } from '@/components/clay';
+import { ClayBoxFill, ClayCoinFill, ClayIcon, ClayPillFill, useClay, useClayBox, type ClayName } from '@/components/clay';
 import { SelectionChip } from '@/components/selection-chip';
 import { StateCard } from '@/components/state-card';
 import { StartGuide } from '@/components/start-guide';
@@ -77,6 +78,7 @@ import { useCommunityLocation } from '@/lib/location-provider';
 import { isShortNote, MAX_AI_IMAGES, parseAiDraftResponse, withDraftFields, type DraftField } from '@/lib/ai-draft';
 import {
   createCommunityPost,
+  submitListingPhotoCheck,
   loadListingQuota,
   getCommunityActionError,
   isContentRejected,
@@ -85,7 +87,7 @@ import {
   MEETUPS_CHANGED_EVENT,
   requestMeetupJoin,
 } from '@/lib/community-data';
-import { appendUniquePosts, limitBusinessPosts, loadPublicFeed, loadPublicPost, pinJustPosted, todayRowsAfter, writeFabOverIntro, type FeedSort, type JustPosted } from '@/lib/feed-data';
+import { appendUniquePosts, limitBusinessPosts, loadPublicFeed, loadPublicPost, pinJustPosted, todayRowsAfter, writeFabOverIntro, writeFabScroll, type FeedSort, type JustPosted } from '@/lib/feed-data';
 import { addHashtag, canonicalizeHashtag, getSuggestedHashtags, hasAdLabel, MAX_HASHTAGS, parseHashtags, toggleAdLabel } from '@/lib/hashtags';
 import { canAddPostImage, MAX_POST_IMAGES } from '@/lib/image-upload';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
@@ -97,7 +99,7 @@ import { isSupportedImage, preparePostImage, type PreparedImage } from '@/lib/po
 import { googleMapsPin, googlePinUrl, postMapBody, withPlacePin, withPostMap } from '@/lib/post-maps';
 import { composePlace, type CityPlace } from '@/lib/city-places';
 import {
-  BUSINESS_VIEW_KEY, emptyListingDraft, FREE_FOLDED_KEY, freeBand, isListingCategory, LISTING_VIEW_KEY, listingAreaRows, listingFiltersActive, listingFromDraft, matchesListingFilters, NO_LISTING_FILTERS, parseListingView, withListingLead,
+  BUSINESS_VIEW_KEY, emptyListingDraft, FREE_FOLDED_KEY, freeBand, isListingCategory, LISTING_VIEW_KEY, listingAreaRows, listingFiltersActive, listingFromDraft, loadApplyContactEnabled, matchesListingFilters, NO_LISTING_FILTERS, pairTiles, parseListingView, withListingLead,
   type ListingCategory, type ListingDraft, type ListingFilters, type ListingView,
 } from '@/lib/listing-details';
 import { findNeighborhood, neighborhoodName } from '@/lib/neighborhoods';
@@ -117,25 +119,30 @@ type FeedItem = Post | Post[] | AreaRow | 'free' | null;
 // 전체 · 라이프 · 맛집 · 비즈니스 · 페스티벌 · 부동산 · 정착, the rest in 더보기 (owner 2026-11-01).
 const PRIMARY_TAGS: (number | null)[] = [null, 1, 4, 17, 16, 14, 12];
 const TAG_ART: Record<string, ClayName> = { all: 'chip_all', 1: 'chip_life', 4: 'chip_dining', 17: 'chip_business', 16: 'chip_festival', 14: 'chip_housing', 12: 'chip_settlement' };
+// The AI hint's example follows the category; categories without one show the plain line (QA I-compose-01).
+const AI_EXAMPLES: Record<string, string> = { used: '이케아 책상 팔아요 40불', jobs: '버나비 카페 주말 알바 구해요', housing: '다운타운 원룸 렌트 내놔요 월 2100불' };
 const TAG_HINTS: Record<string, string> = {
   housing: '렌트·매매·쉐어 구하기', jobs: '알바·채용·구직', used: '물건 사고팔기', settlement: '비자·PR·보험·은행',
   food: '식당·카페 후기와 추천', meetup: '같이 할 사람 찾기', life: '일상 이야기·잡담', business: '한인 가게 소식',
   festival: '행사·공연·축제', education: '학교·학원·유학', shopping: '세일·장보기 정보', travel: '근교·여행 후기',
 };
 
-export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: boolean }) {
+// writeRequest: only the writer, floated over the screen in view by PlaceWriterHost (QA B10-2). No feed is loaded or drawn.
+export default function FeedScreen({ meetupsOnly = false, writeRequest }: { meetupsOnly?: boolean; writeRequest?: { place: CityPlace | null } }) {
+  const writerOnly = !!writeRequest;
   const { tr, t, language, locale: appLocale } = useLanguage();
   const theme = useTheme();
   const hidden = useContentVisibility();
   const myRequests = useMyOpenMeetupRequests();
   const reducedMotion = useReducedMotion();
-  const { fontScale, width: viewportWidth } = useWindowDimensions();
+  const { fontScale, width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const [hasBusinessSwitch, setHasBusinessSwitch] = useState(false);
-  const expandedHeader = fontScale > 1.2 || (hasBusinessSwitch && viewportWidth < 380);
   const router = useRouter();
   const { compose, hashtag, place: placeParam, placeCity } = useLocalSearchParams<{ compose?: string; hashtag?: string; place?: string; placeCity?: string }>();
   const { isAuthed, isAuthLoading, promptLogin, me, isAdmin } = useAuth();
   const business = useChatIdentity();
+  // The business-name pill (up to 45% of the screen + its ⌄) leaves the city too little room on a phone, so the header takes two lines below 500 (QA G38-1).
+  const expandedHeader = fontScale > 1.2 || (hasBusinessSwitch && viewportWidth < 380) || (!!business && viewportWidth < 500);
   const [businessWriting, setBusinessWriting] = useState(false);
   const { play } = useInteractionFeedback();
   const insets = useSafeAreaInsets();
@@ -143,9 +150,14 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   // 글쓰기 탭 대신 떠 있는 버튼 (owner 2026-11-01 A안). 웹은 아래 탭에 글쓰기가 그대로 있다.
   const clay = useClay(), clayBox = useClayBox();
   const writeFab = Platform.OS !== 'web' && !meetupsOnly;
-  const writeFabCompact = viewportWidth < 380; // 폴드 바깥 화면 같은 좁은 폭에서는 + 하나만
   // 머리 카드(처음 안내·새로 온 멤버)가 버튼 자리에 있으면 글자를 가리니 비켜 준다 (1.4.8 QA "모임 보기"). 카드가 지나가면 다시 나온다.
   const [writeFabAside, setWriteFabAside] = useState(false);
+  // 내려 읽는 동안에도 비켜 있다가 올리면 다시 나온다(QA B8·H42-3). 카테고리를 바꿔 목록이 저절로 움직일 때는 따라 숨지 않는다.
+  const [writeFabAway, setWriteFabAway] = useState(false);
+  const writeFabTrack = useRef({ away: false, turn: 0 }), writeFabByHand = useRef(true);
+  // 화면 둘러보기(I-home-03)가 짚는 버튼들. 둘러보는 동안엔 + 버튼이 비켜 있지 않고 늘 보인다.
+  const [touring, setTouring] = useState(false);
+  const cityTarget = useRef<ViewInstance>(null), searchTarget = useRef<ViewInstance>(null), chipsTarget = useRef<ViewInstance>(null), writeTarget = useRef<ViewInstance>(null);
   // 실측: iOS 탭 화면의 insets.bottom은 이미 탭바까지 포함(탭마다 SafeAreaProvider), 안드로이드 탭 내용은 탭바 위에서 끝난다.
   const [posts, setPosts] = useState<Post[]>([]);
   const [justPosted, setJustPosted] = useState<JustPosted<Post> | null>(null);
@@ -184,12 +196,22 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const hasDraftText = !!title.trim() || !!splitPostAttachments(body).body.trim();
   // 부동산·구인구직·중고거래 listings get category fields; the summary line also goes into the body for older apps.
   const writerListing = postKind === 'listing' && isListingCategory(tag.slug) ? tag.slug as ListingCategory : null;
+  // A job post is not 구해요·팔아요 (QA I-compose-02).
+  const listingKindName = tag.slug === 'jobs' ? tr('사람 구해요·일 찾아요') : t.write.kindListing;
   const writerListingDraft = writerListing ? listingDraft?.category === writerListing ? listingDraft.draft : { ...emptyListingDraft(writerListing), price: priceInput } : null;
   const writerListingResult = writerListing && writerListingDraft ? listingFromDraft(writerListing, writerListingDraft, { title: title.trim(), cityId: draftCity.id }, language) : null;
   const [hashtagInput, setHashtagInput] = useState('');
   const [draftImages, setDraftImages] = useState<PreparedImage[]>([]);
+  // 렌트 내놓음의 확인 사진. 글 사진과 따로 두고, 글이 올라간 뒤 비공개 칸으로만 보낸다.
+  const [checkPhoto, setCheckPhoto] = useState<PreparedImage | null>(null);
+  const rentOffer = writerListing === 'housing' && writerListingDraft?.deal === 'rent_offer';
   // 공식 SNS 소개 동의 칸(사진을 붙였을 때만 보인다). null: 아직 모르거나 구서버라 칸을 숨긴다.
   const [photoConsent, setPhotoConsent] = useState<boolean | null>(null);
+  // 구인 글 연락처 칸: hidden until the server accepts those keys (20261114182000), so an older server never drops the card.
+  const [applyContact, setApplyContact] = useState(false);
+  useEffect(() => {
+    if (writerListing === 'jobs' && !applyContact) void loadApplyContactEnabled(supabase).then(on => { if (on) setApplyContact(true); });
+  }, [writerListing, applyContact]);
   const [creatingDraft, setCreatingDraft] = useState(false);
   const [aiDraftReady, setAiDraftReady] = useState(false);
   const [aiFields, setAiFields] = useState<DraftField[]>([]);
@@ -201,11 +223,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const openAuthor = (post: Post) => {
     if (post.business) { router.push({ pathname: '/company/[id]', params: { id: post.business.id } }); return; }
     if (post.room) { router.push({ pathname: '/meetup-profile', params: { postId: post.id } }); return; }
-    setSheetUser({ id: post.author.id, nickname: post.author.nickname, neighborhood: post.author.neighborhood, verified: post.author.verified, trustLevel: post.author.trustLevel, mine: post.author.id === me.id });
+    setSheetUser({ id: post.author.id, nickname: post.author.nickname, avatarUrl: post.author.avatarUrl, neighborhood: post.author.neighborhood, verified: post.author.verified, trustLevel: post.author.trustLevel, mine: post.author.id === me.id });
   };
   const [pendingPostId, setPendingPostId] = useState<string | null>(null); // 로그인 후 이어서 열 글
   const [tagFilter, setTagFilter] = useState<number | null>(meetupsOnly ? TAGS.find((item) => item.kind === 'meetup')!.id : null); // 카테고리 칩
-  const categoryRow = useRevealChip(String(tagFilter ?? 'all'), !reducedMotion);
+  const categoryRow = useRevealChip(String(tagFilter ?? 'all'), !reducedMotion, Platform.OS === 'android');
   const [feedSort, setFeedSort] = useState<FeedSort>('latest');
   const activeSort = meetupsOnly ? 'latest' : feedSort;
   const [categoryLoading, setCategoryLoading] = useState(false);
@@ -251,6 +273,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const cancelFeedRequests = useCallback(() => { feedRevision.current++; setLoadingMore(false); }, []);
 
   const refreshFeed = useCallback(() => {
+    if (writerOnly) return Promise.resolve(); // 장소 위 글쓰기 창은 목록이 없다(QA B10-2)
     if (feedRequest.current?.key === feedKey && feedRequest.current.revision === feedRevision.current) {
       return feedRequest.current.promise;
     }
@@ -286,7 +309,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       });
     feedRequest.current = { key: feedKey, revision, promise };
     return promise;
-  }, [activeSort, city.id, feedKey, feedOpacity, reducedMotion, tagFilter, viewerScope]);
+  }, [activeSort, city.id, feedKey, feedOpacity, reducedMotion, tagFilter, viewerScope, writerOnly]);
 
   useEffect(() => {
     const listener = DeviceEventEmitter.addListener(MEETUPS_CHANGED_EVENT, () => void refreshFeed().catch(() => {}));
@@ -325,6 +348,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const showFeedSort = cityOpen && !meetupsOnly;
   const businessCategory = !meetupsOnly && TAGS.find(item => item.id === tagFilter)?.slug === 'business';
   const listingCategory = !meetupsOnly && isListingCategory(TAGS.find(item => item.id === tagFilter)?.slug) ? TAGS.find(item => item.id === tagFilter)!.slug as ListingCategory : null;
+  // 세로 760pt 미만(1080×1920 안드로이드 731dp, iPhone SE 667pt)은 위 고정 영역과 아래 탭이 화면 절반을 넘겨 글이 1.5개만 보였다. 그 화면의 부동산·구인구직·중고거래만 정렬 줄을 접는다(사장님 2026-11-13, QA B12-1).
+  const shortListingHeader = !!listingCategory && viewportHeight < 760;
   const listingPosts = useMemo(() => {
     if (!listingCategory || !listingFiltersActive(listingFilters)) return feedData;
     const now = new Date(), today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -344,7 +369,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     ...areaRows.areas.map(area => ({ area: area.id, name: area.name ?? tr('이 근처'), posts: area.posts })),
     ...areaRows.rest.length ? [{ area: 'rest', name: tr('그 밖의 글'), posts: areaRows.rest }, ...areaRows.rest] : [],
   ] : usedGrid || businessGrid
-    ? listingPosts.reduce<Post[][]>((rows, post, index) => (index % 2 ? rows[rows.length - 1].push(post) : rows.push([post]), rows), [])
+    ? pairTiles(listingPosts, post => businessGrid || !!post.listingDetails)
     : listingPosts;
   const firstRow = (showFeedSort ? 2 : 1) + (band?.count ? 1 : 0);
   const feedLoading = categoryLoading || loadedFeedKey !== feedKey;
@@ -368,12 +393,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   const selectedHashtags = parseHashtags(hashtagInput);
 
   useEffect(() => {
+    if (writerOnly) return; // 인기 태그는 목록 검색 줄에만 쓴다(QA B10-2)
     let active = true;
     void loadTrendingHashtags(supabase, city.id, tagFilter)
       .then((next) => active && setTrendingTags(next))
       .catch(() => active && setTrendingTags([]));
     return () => { active = false; };
-  }, [city.id, tagFilter]);
+  }, [city.id, tagFilter, writerOnly]);
 
   useEffect(() => {
     const revision = ++searchRevision.current;
@@ -391,7 +417,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
   }, [canonicalQuery, city.id, q, searching, viewerScope]);
 
 
-  const searchHint = tr('{0}에서 집·일자리·중고 찾기', tr(city.name));
   const openSearch = (initial?: string) => {
     router.push({ pathname: '/search', params: { ...(initial ? { query: initial } : {}), ...(meetupsOnly ? { kind: 'meetup' } : {}) } });
   };
@@ -608,6 +633,13 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     router.setParams({ compose: undefined, place: undefined, placeCity: undefined });
     queueMicrotask(() => openWriter(place));
   }, [compose, placeParam, placeCity, openWriter, router]);
+  // 장소 화면 위 글쓰기: 부를 때마다 한 번 연다(QA B10-2). 같은 요청으로 다시 그려도 다시 열지 않는다.
+  const handledWrite = useRef<typeof writeRequest>(undefined);
+  useEffect(() => {
+    if (!writeRequest || handledWrite.current === writeRequest) return;
+    handledWrite.current = writeRequest;
+    queueMicrotask(() => openWriter(writeRequest.place));
+  }, [writeRequest, openWriter]);
 
   const pickDraftImage = async (source: 'camera' | 'library') => {
     try {
@@ -653,6 +685,23 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     }
   };
 
+  const pickCheckPhoto = async () => {
+    try {
+      if (Platform.OS !== 'web' && !(await ImagePicker.requestCameraPermissionsAsync()).granted) {
+        Alert.alert(t.write.photoPermissionTitle, t.write.photoPermissionBody);
+        return;
+      }
+      const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 1, preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible };
+      const result = Platform.OS === 'web' ? await ImagePicker.launchImageLibraryAsync(options) : await ImagePicker.launchCameraAsync(options);
+      const asset = result.canceled ? null : result.assets?.[0];
+      if (!asset?.uri) return;
+      if (!isSupportedImage(asset.mimeType ?? 'image/jpeg')) { Alert.alert(t.write.photoErrorTitle, t.write.photoUnsupported); return; }
+      setCheckPhoto(await preparePostImage(asset));
+    } catch (cause) {
+      Alert.alert(t.write.photoErrorTitle, cause instanceof Error && cause.message === 'IMAGE_TOO_LARGE' ? t.write.photoTooLarge : t.write.photoErrorBody);
+    }
+  };
+
   const createAiDraft = async () => {
     const titleHint = title.trim();
     const mapped = postMapBody(body);
@@ -677,6 +726,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       aiUndo.current ??= { title, body, tag, hashtagInput, postKind, priceInput };
       const nextTag = TAGS.find(({ slug }) => slug === draft.categorySlug && (isAdmin || slug !== 'business')) ?? tag;
       setTag(nextTag);
+      // AI가 맛집 같은 일반 카테고리로 옮기면 금액 칸·글 수 안내도 같이 내린다(QA B10-1). 구해요·팔아요로 옮길 때는 지금처럼 가격이 있는 중고만 바꾼다.
+      if (nextTag.id !== tag.id && !isListingCategory(nextTag.slug)) setPostKind('story');
       setAiFields(draft.fields);
       if (draft.price != null && nextTag.slug === 'used') { setPostKind('listing'); setPriceInput(String(draft.price)); }
       const notes = [
@@ -766,6 +817,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       price: writerListingResult ? writerListingResult.price : postKind === 'listing' && priceInput.trim() ? Number(priceInput.replace(/[^0-9.]/g, '')) : null,
       listingDetails: writerListingResult?.details,
     };
+    const check = rentOffer ? checkPhoto : null;
     // 글쓰기 창은 바로 닫히고 위 카드가 이 일을 끝까지 보여 준다. 초안은 다 올라간 뒤에만 비운다.
     const send = async (retry: boolean) => {
       let created: { id: string | null; post: Post | null } = { id: null, post: null };
@@ -785,7 +837,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       const post = created.post;
       // 올리는 동안 목록을 새로 고쳐도 위치 기록은 글에 붙인다(계정이 바뀌면 record가 스스로 거른다).
       if (created.id) void location.record(fix, created.id);
-      if (revision === feedRevision.current) {
+      // 장소 위 글쓰기는 보던 화면에 남으니 도시·오늘 목록과 '방금 올린 글' 카드를 건드리지 않는다(사장님 2026-11-13, QA B10-2).
+      if (!writerOnly && revision === feedRevision.current) {
         setCity(draftCity);
         if (post && !meetupsOnly) setJustPosted({ post, at: Date.now(), viewer: viewerScope });
         if (post && activeSort !== 'popular') setPosts((prev) => [post, ...prev.filter(({ id }) => id !== created.id)]);
@@ -799,6 +852,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       setPollDraft(null);
       setHashtagInput('');
       setDraftImages([]);
+      setCheckPhoto(null);
       setAiDraftReady(false);
       setAiFields([]);
       setAiNote(null);
@@ -811,6 +865,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       const first = !post?.room && await Promise.race([isFirstPost(supabase, input.userId).catch(() => false), new Promise<boolean>(done => setTimeout(() => done(false), 3000))]);
       // 글은 이미 올라갔다. 동의가 저장되지 않으면 실패로 돌리지 않고 다 올라간 카드에 한 줄로만 알린다.
       if (consent && !(created.id && await savePostPhotoConsent(supabase, created.id))) return { notice: tr('SNS에 소개해도 된다는 체크만 저장이 안 됐어요'), first };
+      if (check && !(created.id && await submitListingPhotoCheck(supabase, input.userId, created.id, check).then(() => true, () => false))) return { notice: tr('확인 사진만 올리지 못했어요'), first };
       return { first };
     };
     // 위 카드로 날아갈 앞의 세 장이 지금 화면 어디 있는지 잰다. 못 재면 날지 않고 카드에만 쌓인다.
@@ -820,7 +875,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
       const timer = setTimeout(() => resolve({ uri: image.uri }), 120);
       tile.measureInWindow((x, y, width, height) => { clearTimeout(timer); resolve({ uri: image.uri, from: width > 0 ? { x, y, width, height } : undefined }); });
     })));
-    if (!startPostUpload({ owner: me.id, title: input.title, photoCount: draftImages.length, photos, send })) {
+    // 실패 카드의 수정하기는 초안이 있는 이 창을 다시 연다(장소 위 글쓰기, QA B10-2). 오늘 화면 글쓰기는 원래대로 compose=1.
+    if (!startPostUpload({ owner: me.id, title: input.title, photoCount: draftImages.length, photos, send, ...(writerOnly ? { edit: () => openPlaceWriter(null) } : {}) })) {
       setSubmitting(false);
       stillUploading();
       return;
@@ -911,26 +967,28 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
     )
   );
 
+  // 장소 위 글쓰기는 창(Modal)만 그린다. Modal은 크기 0인 자리에서도 화면 전체에 뜬다(QA B10-2).
+  const Shell = writerOnly ? View : TabContent;
   return (
-    <TabContent style={[styles.container, screenGlow != null && { backgroundImage: screenGlow }]}
+    <Shell style={writerOnly ? styles.writerHost : [styles.container, screenGlow != null && { backgroundImage: screenGlow }]}
       onLayout={glow.onLayout}>
-      <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}><View style={styles.safeArea} onLayout={({ nativeEvent: { layout } }) => measureList({ x: layout.x, y: layout.y })}>
+      {!writerOnly && <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}><View style={styles.safeArea} onLayout={({ nativeEvent: { layout } }) => measureList({ x: layout.x, y: layout.y })}>
         <View style={[styles.headRow, expandedHeader && styles.headRowLarge]}>
           <Pressable analyticsId="feed.home" accessibilityRole="button" accessibilityLabel={`${t.appName}, ${t.tabs.today}`}
             onPress={() => { play('selection'); router.navigate('/'); }} style={[styles.homeButton, expandedHeader && styles.homeButtonLarge]}>
             {/* Black clay on light screens, white clay on dark ones (owner 6aa0942b). */}
             <Image source={theme === Colors.dark ? require('@/assets/brand/gling-3d-wordmark-dark.png') : require('@/assets/brand/gling-3d-wordmark.png')} style={[styles.wordmark, (viewportWidth < 380 || fontScale > 1.2) && styles.wordmarkCompact]} contentFit="contain" accessible={false} />
           </Pressable>
-          <GlassSurface tone="control" clay="white" interactive style={[styles.cityGlass, expandedHeader && styles.cityGlassLarge]}><Pressable analyticsId="components_feed-screen.pressable.1"
+          <GlassSurface tone="control" clay="white" interactive style={[styles.cityGlass, expandedHeader && styles.cityGlassLarge]}><Pressable ref={cityTarget} analyticsId="components_feed-screen.pressable.1"
             onPress={() => { play('reaction'); setCityPicker(true); }} accessibilityRole="button"
             accessibilityLabel={`${tr(city.name)}, ${t.feed.cityPickerTitle}`}
             style={({ pressed }) => [styles.cityButton, clay && styles.cityButtonClay, controlPresentation(theme, { pressed, reducedMotion, clay }).container]}>
             <ThemedText type="smallBold" numberOfLines={1} style={styles.city}>{tr(city.name)}</ThemedText>
             <ClayIcon clay="chevron" name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={14} tintColor={theme.text} />
           </Pressable></GlassSurface>
-          {/* 검색칸이 카테고리 줄과 겹쳐 보여 프로필 옆 돋보기로 (owner 2026-11-01); 읽어 주기 이름에 찾는 것을 남김. */}
-          <View style={styles.iconGlass}><Pressable analyticsId="components_feed-screen.pressable.2"
-            onPress={() => { play('selection'); openSearch(); }} accessibilityRole="button" accessibilityLabel={searchHint} accessibilityHint={tr('검색 화면이 열려요')}
+          {/* 검색칸이 카테고리 줄과 겹쳐 보여 프로필 옆 돋보기로 (owner 2026-11-01). 읽어 주기 이름은 열리는 화면 이름과 같게(QA B12-4). */}
+          <View ref={searchTarget} style={styles.iconGlass}><Pressable analyticsId="components_feed-screen.pressable.2"
+            onPress={() => { play('selection'); openSearch(); }} accessibilityRole="button" accessibilityLabel={tr('통합검색')} accessibilityHint={tr('검색 화면이 열려요')}
             style={({ pressed }) => [styles.iconButton, controlPresentation(theme, { tone: 'ghost', pressed, reducedMotion }).container]}>
             <ClayIcon clay="search" claySize={26} name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} size={IconSize.toolbar} tintColor={theme.text} />
           </Pressable></View>
@@ -938,7 +996,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         </View>
         {cityOpen && !meetupsOnly && (
           <View style={styles.categoryHead}>
-            <GlassSurface tone="control" clay="tray" style={styles.chipGlass}><ScrollView analyticsId="components_feed-screen.scrollview.1" {...categoryRow.scroll} horizontal showsHorizontalScrollIndicator={false} style={clay && styles.chipClip} contentContainerStyle={styles.chipBar}>
+            <GlassSurface tone="control" clay="tray" style={styles.chipGlass}>{/* 안드로이드 가로 스크롤은 둥근 모서리로 자르지 않아 끝 칩이 세로로 잘린다(QA B7-1): 감싼 View가 자르고, 더 넘길 칩이 있는 끝만 안드로이드가 흐리게 지운다(categoryRow.scroll, QA new-left-fade). */}<View ref={chipsTarget} style={clay && styles.chipClip}><ScrollView analyticsId="components_feed-screen.scrollview.1" {...categoryRow.scroll} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipBar}>
               {/* 처음 보이는 칩: PRIMARY_TAGS (owner 2026-11-01 순서); 나머지는 '더보기' 시트. */}
               {[...PRIMARY_TAGS, ...(tagFilter != null && !PRIMARY_TAGS.includes(tagFilter) ? [tagFilter] : [])].map((id) => {
                 const label = id == null ? t.feed.filterAll : tr(TAGS.find((tg) => tg.id === id)!.label);
@@ -961,7 +1019,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 <ThemedText type="smallBold" themeColor="accent">{tr('더보기')}</ThemedText>
                 <ClayIcon clay="chevron" name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} size={IconSize.chevron} tintColor={theme.accent} />
               </Pressable>
-            </ScrollView></GlassSurface>
+            </ScrollView></View></GlassSurface>
           </View>
         )}
         <View style={styles.feedArea} onLayout={({ nativeEvent: { layout } }) => { measureList({ top: layout.y }); feedViewportHeight.current = layout.height; placeWriteFab(); }}><FlatList analyticsId="components_feed-screen.flatlist.1" ref={feedListRef}
@@ -970,7 +1028,10 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             const stuck = feedOffset.current >= feedIntroHeight.current - 0.5;
             if (stuck !== sortStuck) setSortStuck(stuck);
             placeWriteFab();
+            writeFabTrack.current = writeFabByHand.current ? writeFabScroll(writeFabTrack.current, feedOffset.current) : { away: false, turn: feedOffset.current };
+            setWriteFabAway(writeFabTrack.current.away);
           } : undefined}
+          onScrollBeginDrag={() => { writeFabByHand.current = true; }}
           scrollEventThrottle={16}
           accessibilityElementsHidden={loadingCover != null} importantForAccessibility={loadingCover ? 'no-hide-descendants' : 'auto'}
           onViewableItemsChanged={trackTranslationFeed}
@@ -980,6 +1041,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           onContentSizeChange={() => {
             if (!feedLoading && scrollToResults.current) {
               scrollToResults.current = false;
+              writeFabByHand.current = false;
               feedListRef.current?.scrollToOffset({ offset: feedIntroHeight.current, animated: !reducedMotion });
             }
           }}
@@ -1001,18 +1063,18 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           renderItem={({ item, index }) => item == null && index === 1 && showFeedSort ? (
             <FeedSortControl sort={activeSort} title={businessCategory ? tr('새 소식') : selectedFilterTag ? tr("{0} 글", tr(selectedFilterTag.label)) : tr("오늘 글")} onChange={changeFeedSort}
               style={[styles.sortBar, glowOn && (sortStuck ? { backgroundImage: listGlow } : { backgroundColor: 'transparent' })]}
-              action={businessCategory ? <Pressable analyticsId="business.directory.open" accessibilityRole="button" accessibilityLabel={tr('비즈니스 찾기')}
+              // The list/grid switch sits beside 비즈니스 찾기 instead of on a third line of its own (QA I-home-05).
+              action={businessCategory ? <View style={styles.sortActions}><Pressable analyticsId="business.directory.open" accessibilityRole="button" accessibilityLabel={tr('비즈니스 찾기')}
                 onPress={() => { play('selection'); router.push('/businesses'); }}
                 style={({ pressed }) => [ControlStyles.pill, { flexDirection: 'row', gap: Spacing.two }, clay && styles.clayPad, controlPresentation(theme, { tone: 'ghost', pressed, clay }).container]}>
                 {clay && <ClayPillFill kind="white" />}
                 <SymbolView name={{ ios: 'storefront', android: 'storefront', web: 'storefront' }} size={IconSize.inline} tintColor={theme.accent} />
                 <ThemedText type="smallBold" themeColor="accent">{tr('비즈니스 찾기')}</ThemedText>
                 <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} size={IconSize.chevron} tintColor={theme.accent} />
-              </Pressable> : listingCategory === 'used' ? <ListingViewSwitch view={listingView} onView={changeListingView} onMap={() => setListingMap(true)} disabled={byArea} />
+              </Pressable><ListingViewSwitch view={businessView} onView={changeBusinessView} /></View> : listingCategory === 'used' ? <ListingViewSwitch view={listingView} onView={changeListingView} onMap={() => setListingMap(true)} disabled={byArea} />
               : listingCategory === 'housing' ? <ListingModeSwitch mode="list" onChange={mode => setListingMap(mode === 'map')} /> : undefined}
-              byArea={listingCategory === 'used'}>
+              byArea={listingCategory === 'used'} compact={shortListingHeader}>
               {listingCategory && <ListingFilterBar category={listingCategory} cityId={city.id} filters={listingFilters} onChange={setListingFilters} />}
-              {businessCategory && <ListingViewSwitch view={businessView} onView={changeBusinessView} />}
             </FeedSortControl>
           ) : item == null ? (
             <View style={[styles.header, !meetupsOnly && styles.todayHeader]} onLayout={event => {
@@ -1029,8 +1091,9 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
               </View>}
               {/* 이번 주 많이 읽은 글(탑10)은 카테고리 바로 아래, 다른 섹션보다 먼저 (owner 2026-10-30). */}
               {!feedLoading && weeklyRanking}
-              {!meetupsOnly && <StartGuide cityName={city.name} cityPicks={cityPicks} onPickCity={() => setCityPicker(true)} onOpenMeetups={() => router.navigate('/meetups')} />}
-              {!meetupsOnly && isAuthed && <NewcomerProgressCard />}
+              {!meetupsOnly && <StartGuide cityName={city.name} cityPicks={cityPicks} onPickCity={() => setCityPicker(true)} onOpenMeetups={() => router.navigate('/meetups')}
+                touring={touring} onTouring={setTouring} targets={{ city: cityTarget, search: searchTarget, chips: chipsTarget, write: writeTarget }} />}
+              {!meetupsOnly && isAuthed && <NewcomerProgressCard cityId={city.id} onOpenCategory={slug => changeTagFilter(TAGS.find(item => item.slug === slug)?.id ?? null)} />}
               {meetupsOnly && <>
                 <MyMeetups onOpen={async (postId) => {
                   const post = await loadPublicPost(supabase, postId);
@@ -1072,13 +1135,14 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
             Array.isArray(item) ? <Animated.View style={[styles.listingGrid, { opacity: feedOpacity }]}>
               {item.map(post => businessGrid ? zoomCard(post, <BusinessNewsCard key={post.id} variant="tile" post={post} onPress={() => pressCard(post)} onAuthor={() => openAuthor(post)}
                 translationVisible={visibleFeedIds.has(post.id) && !searching && !writing} />)
-                : post.listingDetails ? zoomCard(post, <ListingCard key={post.id} variant="tile" post={post as DetailedPost} onPress={() => pressCard(post)} />)
-                : <View key={post.id} style={styles.flexText}>{zoomCard(post, <PostCard flat post={post} onPress={() => pressCard(post)} onJoin={() => void onJoin(post)} joinStatus={myRequests[post.id]} onHashtag={openSearch} onAuthor={() => openAuthor(post)} />)}</View>)}
+                : zoomCard(post, <ListingCard key={post.id} variant="tile" post={post as DetailedPost} onPress={() => pressCard(post)} />))}
               {item.length === 1 && <View style={styles.flexText} />}
             </Animated.View> :
             'area' in item ? <Animated.View style={[styles.areaRow, { opacity: feedOpacity }]}>
               <ThemedText accessibilityRole="header" type="label">{`${item.name} · ${tr('{0}개', item.posts.length)}`}</ThemedText>
-              {item.area !== 'rest' && <ScrollView analyticsId="listing.filters" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.areaTiles}>
+              {/* An area with one listing gets the full-width list row, not a half-empty tile strip (QA I-home-09). */}
+              {item.area !== 'rest' && item.posts.length === 1 ? zoomCard(item.posts[0], <ListingCard post={item.posts[0] as DetailedPost} onPress={() => pressCard(item.posts[0])} />)
+                : item.area !== 'rest' && <ScrollView analyticsId="listing.filters" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.areaTiles}>
                 {item.posts.map(post => <View key={post.id} style={styles.areaTile}>{zoomCard(post, <ListingCard variant="tile" post={post as DetailedPost} onPress={() => pressCard(post)} />)}</View>)}
               </ScrollView>}
             </Animated.View> :
@@ -1105,38 +1169,41 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
           style={[styles.loadingCover, loadingCover === 'page' && [styles.loadingCoverPage, { paddingBottom: bottomClear }], { backgroundColor: theme.background, backgroundImage: listGlow }]}>
           <GlingLoader color={theme.accent} accessibilityLabel={loadingCover === 'page' ? tr("{0} 소식 불러오는 중", tr(city.name)) : tr("글 불러오는 중")} />
         </Reanimated.View>}</View>
-        {writeFab && !writeFabAside && <Reanimated.View entering={reducedMotion ? undefined : FadeIn.duration(ControlMotion.settleMs)} exiting={reducedMotion ? undefined : FadeOut.duration(ControlMotion.pressMs)}
-          style={[styles.writeFabDock, { bottom: (Platform.OS === 'ios' ? insets.bottom : 0) + Spacing.three }]}><Pressable analyticsId="feed.write" accessibilityRole="button" accessibilityLabel={t.tabs.write} onPress={() => openWriter()}
-          style={({ pressed }) => [ControlStyles.pill, styles.writeFab, writeFabCompact && styles.writeFabCompact, controlPresentation(theme, { tone: 'primary', clay, pressed, reducedMotion }).container]}>
-          {clay && <ClayPillFill kind="cta" />}
-          <ClayIcon clay="pencil" claySize={24} name={{ ios: 'plus', android: 'add', web: 'add' }} size={IconSize.toolbar} tintColor={theme.accentInk} />
-          {!writeFabCompact && <ThemedText type="label" style={{ color: theme.accentInk }}>{t.tabs.write}</ThemedText>}
+        {writeFab && (touring || (!writeFabAside && !writeFabAway)) && <Reanimated.View entering={reducedMotion ? undefined : FadeIn.duration(ControlMotion.settleMs)} exiting={reducedMotion ? undefined : FadeOut.duration(ControlMotion.pressMs)}
+          style={[styles.writeFabDock, { bottom: (Platform.OS === 'ios' ? insets.bottom : 0) + Spacing.three }]}><Pressable ref={writeTarget} analyticsId="feed.write" accessibilityRole="button" accessibilityLabel={t.tabs.write} onPress={() => openWriter()}
+          style={({ pressed }) => [ControlStyles.pill, styles.writeFab, controlPresentation(theme, { tone: 'primary', clay, pressed, reducedMotion }).container]}>
+          {/* A pill's two end caps meet in a lemon with a seam on a square button (QA new-fab-shape): 3D draws the round coin and + of the meetups tab's 만들기 instead. */}
+          {clay && <ClayCoinFill me />}
+          <ClayIcon clay="plus" claySize={24} name={{ ios: 'plus', android: 'add', web: 'add' }} size={IconSize.toolbar} tintColor={theme.accentInk} />
         </Pressable></Reanimated.View>}
-      </View></SafeAreaView>
+      </View></SafeAreaView>}
 
       <Modal visible={categorySheet} animationType={reducedMotion ? 'fade' : 'slide'} presentationStyle="pageSheet" onRequestClose={() => { play('selection'); setCategorySheet(false); }}>
         <SafeAreaView style={[styles.categorySheet, { backgroundColor: theme.background }]}>
           <View style={styles.categorySheetHead}>
             <View style={{ flex: 1 }}>
               <ThemedText accessibilityRole="header" style={Typography.sheetTitle}>{tr('카테고리')}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">{tr('무엇을 올리는 곳인지 보고 골라 보세요. 자주 쓰는 6개는 위 줄에 늘 있어요.')}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">{tr('보고 싶은 주제를 골라요. 자주 보는 6개는 위 줄에도 있어요.')}</ThemedText>
             </View>
-            <Pressable analyticsId="feed.categories.close" accessibilityRole="button" onPress={() => { play('selection'); setCategorySheet(false); }}
-              style={({ pressed }) => [ControlStyles.pill, clay && styles.clayPad, controlPresentation(theme, { tone: 'ghost', pressed, clay }).container]}>
-              {clay && <ClayPillFill kind="white" />}
-              <ThemedText type="smallBold" themeColor={clay ? undefined : 'textSecondary'}>{tr('닫기')}</ThemedText>
+            {/* The same X as the area and save sheets (QA I-home-07). */}
+            <Pressable analyticsId="feed.categories.close" accessibilityRole="button" accessibilityLabel={tr('닫기')} onPress={() => { play('selection'); setCategorySheet(false); }}
+              style={({ pressed }) => [ControlStyles.icon, controlPresentation(theme, { tone: 'ghost', pressed }).container]}>
+              <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={IconSize.inline} tintColor={theme.textSecondary} />
             </Pressable>
           </View>
           <ScrollView analyticsId="feed.categories.sheet" contentContainerStyle={styles.categoryGrid}>
-            {TAGS.map(tg => {
-              const active = tagFilter === tg.id;
+            {/* 전체 first, then the chip row's order, then the rest (QA I-home-07). */}
+            {[null, ...PRIMARY_TAGS.filter(id => id != null), ...TAGS.map(tg => tg.id).filter(id => !PRIMARY_TAGS.includes(id))].map(id => {
+              const tg = id == null ? null : TAGS.find(item => item.id === id);
+              if (id != null && !tg) return null;
+              const active = tagFilter === id;
               return (
-                <Pressable key={tg.id} analyticsId="feed.categories.pick" accessibilityRole="button" accessibilityState={{ selected: active }}
-                  onPress={() => { setCategorySheet(false); changeTagFilter(tg.id); }}
+                <Pressable key={id ?? 'all'} analyticsId="feed.categories.pick" accessibilityRole="button" accessibilityState={{ selected: active }}
+                  onPress={() => { setCategorySheet(false); changeTagFilter(id); }}
                   style={({ pressed }) => [styles.categoryCell, clayBox && { overflow: 'visible' }, { backgroundColor: clayBox ? 'transparent' : active ? theme.backgroundSelected : theme.card, borderColor: clayBox ? 'transparent' : active ? theme.accent : theme.line }, pressed && { opacity: 0.82 }]}>
                   {clayBox && <ClayBoxFill kind="tile" />}
-                  <ThemedText type="smallBold" style={active && { color: theme.accent }}>{tr(tg.label)}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">{tr(TAG_HINTS[tg.slug] ?? '')}</ThemedText>
+                  <ThemedText type="smallBold" style={active && { color: theme.accent }}>{tg ? tr(tg.label) : t.feed.filterAll}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">{tr(tg ? TAG_HINTS[tg.slug] ?? '' : '모든 주제를 한 번에')}</ThemedText>
                 </Pressable>
               );
             })}
@@ -1330,14 +1397,14 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   label={submitting ? t.write.submitting : t.write.submit} />
               </View>
               <PostBodyEditor value={body} onChangeText={setBody} cityName={draftCity.englishName} allowLocation={tag.kind !== 'meetup' && !writerListing} editable={!submitting && !creatingDraft} accessibilityLabel={t.write.bodyLabel}
-                placeholder={tag.kind !== 'meetup' && postKind === 'listing' ? t.write.listingBodyPlaceholder : t.write.bodyPlaceholder[tag.slug]} placeholderTextColor={theme.textSecondary} multiline
+                placeholder={tag.kind !== 'meetup' && postKind === 'listing' && !writerListing ? t.write.listingBodyPlaceholder : t.write.bodyPlaceholder[tag.slug]} placeholderTextColor={theme.textSecondary} multiline
                 style={[styles.bodyInput, { color: theme.text }]}
                 renderLayout={({ input, actions, attachments }) => <View style={styles.writer}>
               <ScrollView analyticsId="components_feed-screen.scrollview.2" keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.writerScroll}>
                 <View style={styles.writerContext}>
-                  <Pressable analyticsId="components_feed-screen.writer-options" accessibilityRole="button" accessibilityLabel={tr("게시 설정 변경, {0}, {1}, {2}", (tr(draftCity.name)), (tr(tag.label)), (postKind === 'listing' ? t.write.kindListing : t.write.kindStory))} accessibilityState={{ expanded: writerOptionsOpen }} onPress={() => { play('reaction'); Keyboard.dismiss(); animateLayout(); setWriterOptionsOpen(open => !open); setWriterPanel(null); }} style={({ pressed }) => [styles.writerContextSummary, !clay && Depth.control, clay && styles.clayPad, { backgroundColor: clay ? 'transparent' : theme.card, }]}>
+                  <Pressable analyticsId="components_feed-screen.writer-options" accessibilityRole="button" accessibilityLabel={tr("게시 설정 변경, {0}, {1}, {2}", (tr(draftCity.name)), (tr(tag.label)), (postKind === 'listing' ? listingKindName : t.write.kindStory))} accessibilityState={{ expanded: writerOptionsOpen }} onPress={() => { play('reaction'); Keyboard.dismiss(); animateLayout(); setWriterOptionsOpen(open => !open); setWriterPanel(null); }} style={({ pressed }) => [styles.writerContextSummary, !clay && Depth.control, clay && styles.clayPad, { backgroundColor: clay ? 'transparent' : theme.card, }]}>
                     {clay && <ClayPillFill kind="white" />}
-                    <ThemedText type="smallBold" numberOfLines={1} style={styles.writerContextValue}>{tr(draftCity.name)} · {tr(tag.label)}{tag.kind !== 'meetup' ? ` · ${postKind === 'listing' ? t.write.kindListing : t.write.kindStory}` : ''}</ThemedText>
+                    <ThemedText type="smallBold" numberOfLines={1} style={styles.writerContextValue}>{tr(draftCity.name)} · {tr(tag.label)}{tag.kind !== 'meetup' ? ` · ${postKind === 'listing' ? listingKindName : t.write.kindStory}` : ''}</ThemedText>
                     <ThemedText type="smallBold" themeColor="accent">{tr("변경")}</ThemedText>
                     <SymbolView name={{ ios: writerOptionsOpen ? 'chevron.up' : 'chevron.right', android: writerOptionsOpen ? 'expand_less' : 'chevron_right', web: writerOptionsOpen ? 'expand_less' : 'chevron_right' }} size={14} tintColor={theme.accent} />
                   </Pressable>
@@ -1357,11 +1424,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                     <ThemedText type="smallBold" style={styles.contextText}>{tr(tag.label)}</ThemedText>
                     <SymbolView name={{ ios: writerPanel === 'category' ? 'chevron.up' : 'chevron.down', android: writerPanel === 'category' ? 'expand_less' : 'expand_more', web: writerPanel === 'category' ? 'expand_less' : 'expand_more' }} size={12} tintColor={theme.textSecondary} />
                   </Pressable>
-                  {tag.kind !== 'meetup' && <Pressable analyticsId="components_feed-screen.pressable.18" accessibilityRole="button" accessibilityLabel={`${t.write.pickKind}, ${postKind === 'listing' ? t.write.kindListing : t.write.kindStory}`} accessibilityState={{ expanded: writerPanel === 'kind' }}
+                  {tag.kind !== 'meetup' && <Pressable analyticsId="components_feed-screen.pressable.18" accessibilityRole="button" accessibilityLabel={`${t.write.pickKind}, ${postKind === 'listing' ? listingKindName : t.write.kindStory}`} accessibilityState={{ expanded: writerPanel === 'kind' }}
                     onPress={() => { play('reaction'); Keyboard.dismiss(); changeWriterPanel(writerPanel === 'kind' ? null : 'kind'); }}
                     style={({ pressed }) => [styles.contextButton, !clay && Depth.control, clay && styles.clayPad, { backgroundColor: clay ? 'transparent' : pressed || writerPanel === 'kind' ? theme.backgroundSelected : theme.backgroundElement, opacity: clay && pressed ? 0.82 : 1 }]}>
                     {clay && <ClayPillFill kind={writerPanel === 'kind' ? 'on' : 'white'} />}
-                    <ThemedText type="smallBold" style={styles.contextText}>{postKind === 'listing' ? t.write.kindListing : t.write.kindStory}</ThemedText>
+                    <ThemedText type="smallBold" style={styles.contextText}>{postKind === 'listing' ? listingKindName : t.write.kindStory}</ThemedText>
                     <SymbolView name={{ ios: writerPanel === 'kind' ? 'chevron.up' : 'chevron.down', android: writerPanel === 'kind' ? 'expand_less' : 'expand_more', web: writerPanel === 'kind' ? 'expand_less' : 'expand_more' }} size={12} tintColor={theme.textSecondary} />
                   </Pressable>}
                   </View>}
@@ -1369,7 +1436,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                 {writerPanel === 'kind' && <View>
                   <ThemedText type="small" themeColor="textSecondary" style={styles.writerLabel}>{t.write.pickKind}</ThemedText>
                   <View style={styles.tagRow} accessibilityRole="radiogroup">
-                    {([['story', t.write.kindStory, t.write.kindStoryHint], ['listing', t.write.kindListing, t.write.kindListingHint]] as const).map(([kind, label, hint]) => {
+                    {([['story', t.write.kindStory, t.write.kindStoryHint], ['listing', listingKindName, t.write.kindListingHint]] as const).map(([kind, label, hint]) => {
                       const selected = postKind === kind;
                       return <Pressable analyticsId="components_feed-screen.pressable.19" key={kind} onPress={() => { play('selection'); animateLayout(); setPostKind(kind); setWriterPanel(null); setWriterOptionsOpen(false); }} accessibilityRole="radio"
                         accessibilityLabel={`${label}, ${hint}`} accessibilityState={{ selected, checked: selected }}
@@ -1400,14 +1467,19 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                             }
                             animateLayout();
                             setTag(tg);
-                            if (isListingCategory(tg.slug)) setPostKind('listing');
+                            // 종류도 새 카테고리 기본으로 다시 맞춘다: 맛집으로 옮긴 중고거래 글에 금액 칸·글 수 안내가 남지 않게(QA B10-1).
+                            setPostKind(isListingCategory(tg.slug) ? 'listing' : 'story');
                             setWriterPanel(null);
                             setWriterOptionsOpen(false);
                           }}
                           accessibilityRole="button"
+                          // The label is the chip's name alone, so iOS does not read the ↗ icon's own name after it (QA I-compose-10).
+                          accessibilityLabel={tr(tg.label)}
                           accessibilityState={{ selected }}
+                          accessibilityHint={tg.kind === 'meetup' ? tr('모임 만들기 화면으로 넘어가요') : undefined}
                           style={({ pressed }) => [
                             styles.tagChip,
+                            tg.kind === 'meetup' && styles.tagChipLink,
                             !clay && Depth.control,
                             clay && styles.clayPad,
                             { backgroundColor: clay ? 'transparent' : selected ? theme.accent : theme.backgroundElement, borderBottomColor: clay ? 'transparent' : selected ? theme.accentDepth : theme.line, },
@@ -1418,6 +1490,8 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                             style={{ color: selected ? theme.accentInk : theme.textSecondary }}>
                             {tr(tg.label)}
                           </ThemedText>
+                          {/* 모임 opens its own creation screen, so the chip says it leaves the writer (QA I-compose-10). */}
+                          {tg.kind === 'meetup' && <SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} size={IconSize.chevron} tintColor={selected ? theme.accentInk : theme.textSecondary} accessible={false} />}
                         </Pressable>
                       );
                     })}
@@ -1428,7 +1502,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   style={[styles.titleInput, { color: theme.text, borderBottomColor: theme.line }]} />
                 {writerListing && writerListingDraft && <View style={styles.writerAttachments}><ListingFields category={writerListing} cityId={draftCity.id} value={writerListingDraft}
                   onChange={draft => setListingDraft({ category: writerListing, draft })} missing={listingTried ? writerListingResult?.missing : []}
-                  disabled={submitting || creatingDraft} lead={writerListingResult?.details.lead} /></View>}
+                  disabled={submitting || creatingDraft} lead={writerListingResult?.details.lead} contact={applyContact} /></View>}
                 {input}
                 <View style={styles.writerAttachments}>{attachments}</View>
                 {tag.kind !== 'meetup' && postKind === 'story' && pollDraft && <View style={styles.writerAttachments}><PollDraftFields poll={pollDraft} onChange={setPollDraft} disabled={submitting || creatingDraft} /></View>}
@@ -1458,6 +1532,23 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                     style={[styles.hashtagInput, { color: theme.text, borderBottomColor: theme.line }]} />
                   <ThemedText type="small" themeColor="textSecondary" style={styles.meetupNote}>{t.write.listingNote}</ThemedText>
                 </>}
+                {rentOffer && <View style={[styles.aiCard, { borderColor: theme.line }]}>
+                  <ThemedText type="small" themeColor="textSecondary">{tr("방 안에서 찍은 사진을 세 장 이상 올려 주세요. 종이에 닉네임이랑 오늘 날짜를 적어 방 안에서 한 장 더 찍어 올리면, 운영팀이 보고 글에 '방 안 인증샷' 표시를 달아 드려요.")}</ThemedText>
+                  <View style={styles.photoGrid}>
+                    {checkPhoto ? <View style={styles.photoTile}>
+                      <Image source={{ uri: checkPhoto.uri }} style={styles.photoTileImage} contentFit="cover" accessibilityLabel={tr('확인 사진')} />
+                      <Pressable analyticsId="compose.rent-check-photo.remove" onPress={() => { play('selection'); setCheckPhoto(null); }} disabled={submitting}
+                        accessibilityRole="button" accessibilityLabel={tr('확인 사진 삭제')} style={[styles.photoRemove, { backgroundColor: theme.card }]}>
+                        <SymbolView name={{ ios: 'xmark', android: 'close', web: 'close' }} size={14} tintColor={theme.text} />
+                      </Pressable>
+                    </View> : <Pressable analyticsId="compose.rent-check-photo" onPress={() => { play('selection'); void pickCheckPhoto(); }} disabled={submitting || creatingDraft}
+                      accessibilityRole="button" accessibilityLabel={tr('확인 사진 찍기')}
+                      style={({ pressed }) => [styles.photoTile, styles.checkSlot, { borderColor: theme.accent, backgroundColor: theme.card, opacity: pressed ? ControlMotion.pressedOpacity : 1 }]}>
+                      <SymbolView name={{ ios: 'camera', android: 'photo_camera', web: 'photo_camera' }} size={IconSize.toolbar} tintColor={theme.accent} />
+                      <ThemedText type="smallBold" themeColor="accent">{tr('확인 사진')}</ThemedText>
+                    </Pressable>}
+                  </View>
+                </View>}
                 {draftImages.length > 0 && <View style={[styles.aiCard, { borderColor: theme.line }]}>
                   {draftImages.length > 0 && (
                     <View style={styles.photoGrid}>
@@ -1486,7 +1577,11 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                     <ThemedText type="small" themeColor="textSecondary">{tr('체크해 두면 글링이 릴스나 게시물을 만들 때 이 사진을 골라 쓸 수 있어요. 마음이 바뀌면 설정에서 취소하면 돼요.')}</ThemedText>
                   </Pressable>}
                 </View>}
-                  {selectedHashtags.length > 0 && <View style={styles.selectedHashtags}>
+
+              </ScrollView>
+              <View style={[styles.writerFooter, { backgroundColor: theme.background, borderTopColor: theme.line }]}>
+                {/* Picked #tags sit above the toolbar, so they stay in view however long the form is (QA I-compose-02). */}
+                  {selectedHashtags.length > 0 && <View style={[styles.selectedHashtags, styles.footerHashtags]}>
                     {selectedHashtags.map((hashtag) => <Pressable analyticsId="components_feed-screen.pressable.27" key={hashtag} accessibilityRole="button" accessibilityLabel={tr("#{0} 삭제", (hashtag))}
                       onPress={() => { play('reaction'); animateLayout(); setHashtagInput(current => parseHashtags(current).filter(value => value !== hashtag).join(' ')); }}
                       style={({ pressed }) => [styles.selectedHashtag, !clay && Depth.control, clay && styles.clayPad, { backgroundColor: clay ? 'transparent' : theme.accent, borderBottomColor: theme.accentDepth, }]}>
@@ -1494,9 +1589,6 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                       <ThemedText type="smallBold" style={{ color: theme.accentInk }}>#{hashtag} ×</ThemedText>
                     </Pressable>)}
                   </View>}
-
-              </ScrollView>
-              <View style={[styles.writerFooter, { backgroundColor: theme.background, borderTopColor: theme.line }]}>
                 <View style={styles.writerAiRow}>
                 <Pressable analyticsId="components_feed-screen.pressable.23"
                   onPress={() => { play('selection'); void createAiDraft(); }}
@@ -1514,7 +1606,7 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
                   <ThemedText type="small" accessibilityLiveRegion="polite" themeColor={aiNote?.tone === 'warn' ? undefined : 'textSecondary'} style={[styles.writerAiHint, aiNote?.tone === 'warn' && { color: theme.danger }]}>
                     {creatingDraft ? (draftImages.length ? tr("사진 {0}장이랑 메모 보고 쓰는 중이에요", Math.min(draftImages.length, MAX_AI_IMAGES)) : tr("메모로 글 쓰는 중이에요"))
                       : aiNote ? aiNote.text
-                      : !hasDraftText && draftImages.length === 0 ? tr("한 줄만 적어도 돼요. 예) 이케아 책상 팔아요 40불")
+                      : !hasDraftText && draftImages.length === 0 ? AI_EXAMPLES[tag.slug] ? tr("한 줄만 적어도 돼요. 예) {0}", tr(AI_EXAMPLES[tag.slug])) : tr("한 줄만 적어도 돼요.")
                       : writesNew ? (draftImages.length ? tr("메모랑 사진 {0}장 보고 글 한 편 써 드려요", Math.min(draftImages.length, MAX_AI_IMAGES)) : tr("메모로 글 한 편 써 드려요"))
                       : tr("적어둔 내용으로 글을 다듬어요")}
                   </ThemedText>
@@ -1613,8 +1705,22 @@ export default function FeedScreen({ meetupsOnly = false }: { meetupsOnly?: bool
         </SafeAreaProvider>
       </Modal>
     <UserSheet user={sheetUser} onClose={() => setSheetUser(null)} />
-    </TabContent>
+    </Shell>
   );
+}
+
+/**
+ * '이 장소로 글쓰기' floats the writer over the place in view, so closing it goes back to that place (owner 2026-11-13, QA B10-2).
+ * It sits in the root layout: a Modal inside a screen covered by another one is dropped on Android, so the 오늘 writer cannot open over a place.
+ * Made on the first call and kept, so a draft stays here like the 오늘 writer's; that draft is its own. A post from here shows no '방금 올린 글' card on 오늘.
+ */
+export function PlaceWriterHost() {
+  const [request, setRequest] = useState<{ place: CityPlace | null } | null>(null);
+  useEffect(() => {
+    const listener = DeviceEventEmitter.addListener(PLACE_WRITE_EVENT, (place: CityPlace | null) => setRequest({ place }));
+    return () => listener.remove();
+  }, []);
+  return request && <FeedScreen writeRequest={request} />;
 }
 
 const styles = StyleSheet.create({
@@ -1658,10 +1764,11 @@ const styles = StyleSheet.create({
   todayHeader: { paddingBottom: Spacing.one },
   journalStatusRow: { minHeight: 24, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
   writeFabDock: { position: 'absolute', right: Spacing.three },
-  writeFab: { minHeight: ControlMetrics.action, flexDirection: 'row', gap: Spacing.one, borderWidth: 1 },
+  writerHost: { position: 'absolute', width: 0, height: 0 },
+  // 글자 없는 48pt 둥근 + 버튼: 카드를 덮는 면적을 절반쯤으로 줄인다(사장님 2026-11-13, QA B8-1·B8-3·H42-3). 읽어 주기 이름은 그대로 '글쓰기'.
+  writeFab: { minHeight: ControlMetrics.action, width: ControlMetrics.action, paddingHorizontal: 0, borderWidth: 1 },
   clayPad: { overflow: 'visible', paddingHorizontal: 18 }, clayCta: { overflow: 'visible', paddingHorizontal: 24, borderBottomWidth: 0, borderWidth: 0 },
   clayChip: { flexDirection: 'row', gap: 4, paddingLeft: 8, paddingRight: 12 },
-  writeFabCompact: { width: ControlMetrics.action, paddingHorizontal: 0 },
   journalDate: { fontSize: 12, lineHeight: 18, letterSpacing: 0.8 },
   feedArea: { flex: 1 },
   // 목록 좌우 여백까지 덮어, 위에 붙었을 때 꽉 찬 사진이 정렬 줄 옆으로 비치지 않게.
@@ -1802,6 +1909,7 @@ const styles = StyleSheet.create({
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   photoTile: { width: '31%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden' },
   photoTileImage: { width: '100%', height: '100%' },
+  checkSlot: { borderWidth: 1.5, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 2 },
   photoConsent: { minHeight: 44, justifyContent: 'center', gap: 2 },
   photoLaunched: { opacity: 0 },
   photoAiBadge: { position: 'absolute', left: 6, bottom: 6, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
@@ -1813,6 +1921,7 @@ const styles = StyleSheet.create({
   aiUndo: { minHeight: 44, justifyContent: 'center' },
   flexText: { flex: 1 },
   listingGrid: { flexDirection: 'row', gap: Spacing.three },
+  sortActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.two },
   freeBand: { marginTop: Spacing.two, borderWidth: 1, borderRadius: 16, paddingHorizontal: Spacing.two, paddingVertical: Spacing.one, gap: Spacing.one },
   freeBandClay: { borderWidth: 0, overflow: 'visible' },
   freeHead: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: Spacing.one, paddingLeft: Spacing.one },
@@ -1863,12 +1972,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
   },
+  tagChipLink: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   writerHashtags: {
     gap: Spacing.two,
     paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.two,
   },
   selectedHashtags: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, paddingHorizontal: Spacing.four, paddingVertical: Spacing.two },
+  footerHashtags: { paddingHorizontal: 0, paddingVertical: 0 },
   selectedHashtag: { minHeight: 44, borderRadius: 999, borderBottomWidth: 2, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center' },
   suggestionChip: {
     minHeight: 44,

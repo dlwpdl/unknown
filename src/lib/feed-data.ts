@@ -4,7 +4,7 @@ import { getLocale, tr } from '../i18n/index.ts';
 import { thumbPathFor } from './image-upload.ts';
 import { businessMediaUrl } from './business-media.ts';
 import type { ListingStatus, Post, PostComment, PostKind, RoomPreview, TagSlug } from './types.ts';
-import { isListingCategory, parseListingDetails, type ListingDetails } from './listing-details.ts';
+import { isListingCategory, parseListingDetails } from './listing-details.ts';
 
 export type PublicFeedRow = {
   id: string;
@@ -71,6 +71,18 @@ let businessImageSessionRevision = 0;
 export function setBusinessImageSession(viewer: string | null, token: string | null) {
   businessImageSession = viewer && token ? { viewer, token } : null;
   businessImageSessionRevision++;
+}
+
+/**
+ * The floating write button steps away while the list is read downward and comes back on the way up, so it never rests on a card's save,
+ * ··· or 내 위치로 보기 button while someone reads past it (QA 2026-11-13 B8·H42-3). `turn` is the farthest point in the current direction;
+ * moving back more than `slack` from it flips the button. The top of the list (and pull-to-refresh) always shows it.
+ */
+export type WriteFabScroll = { away: boolean; turn: number };
+export function writeFabScroll(state: WriteFabScroll, offset: number, slack = 24): WriteFabScroll {
+  if (offset <= 0) return { away: false, turn: 0 };
+  if (state.away ? offset >= state.turn : offset <= state.turn) return { away: state.away, turn: offset };
+  return Math.abs(offset - state.turn) > slack ? { away: !state.away, turn: offset } : state;
 }
 
 /** True while the top cards (first-steps, newcomer) still reach the floating write button, so its label would cover their text. */
@@ -316,7 +328,7 @@ export async function hydratePublicPosts(client: SupabaseClient, posts: Post[], 
   const ids = [...new Set(posts.map(post => post.id))];
   const [images, response] = await Promise.all([
     Promise.all([attachSignedPostImages(client, posts, viewerScope), loadListingDetails(client, posts)])
-      .then(([signed, details]) => details.size ? signed.map(post => details.has(post.id) ? { ...post, listingDetails: details.get(post.id) } : post) : signed)
+      .then(([signed, details]) => details.size ? signed.map(post => details.has(post.id) ? { ...post, ...details.get(post.id) } : post) : signed)
       .then(hydrated => attachAuthorPhotos(client, hydrated)),
     client.rpc('get_public_post_businesses', { p_post_ids: ids }),
   ]);
@@ -336,17 +348,19 @@ export async function hydratePublicPosts(client: SupabaseClient, posts: Post[], 
 }
 
 // 부동산·구인구직·중고거래 칸. Optional: before the migration, or on any read error, posts render from the body lead as before.
-export async function loadListingDetails(client: SupabaseClient, posts: readonly Post[]): Promise<Map<string, ListingDetails>> {
+export async function loadListingDetails(client: SupabaseClient, posts: readonly Post[]): Promise<Map<string, Pick<Post, 'listingDetails' | 'photoCheckedAt'>>> {
   const listings = posts.filter(post => post.kind === 'listing' && isListingCategory(post.tag.slug));
   if (!listings.length) return new Map();
   const response = await client.rpc('get_public_post_listing_details', { p_post_ids: [...new Set(listings.map(post => post.id))] });
   if (response.error || !Array.isArray(response.data)) return new Map();
   const bodies = new Map(listings.map(post => [post.id, post.body]));
-  const details = new Map<string, ListingDetails>();
-  for (const row of response.data as { post_id?: unknown; details?: unknown }[]) {
+  const details = new Map<string, Pick<Post, 'listingDetails' | 'photoCheckedAt'>>();
+  for (const row of response.data as { post_id?: unknown; details?: unknown; photo_checked_at?: unknown }[]) {
     const body = typeof row?.post_id === 'string' ? bodies.get(row.post_id) : undefined;
     const parsed = body == null ? null : parseListingDetails(row.details, body);
-    if (parsed && parsed.type === listings.find(post => post.id === row.post_id)?.tag.slug) details.set(row.post_id as string, parsed);
+    // 사진 확인 is the review date only; anything that is not a date is dropped.
+    const checked = typeof row.photo_checked_at === 'string' && !Number.isNaN(Date.parse(row.photo_checked_at)) ? row.photo_checked_at : undefined;
+    if (parsed && parsed.type === listings.find(post => post.id === row.post_id)?.tag.slug) details.set(row.post_id as string, checked ? { listingDetails: parsed, photoCheckedAt: checked } : { listingDetails: parsed });
   }
   return details;
 }
@@ -418,6 +432,8 @@ export function relativeTime(value: string, now: number = Date.now(), locale = g
   if (elapsedMinutes < 60) return english ? `${elapsedMinutes} ${elapsedMinutes === 1 ? 'minute' : 'minutes'} ago` : `${elapsedMinutes}분 전`;
   const hours = Math.floor(elapsedMinutes / 60);
   if (hours < 24) return english ? `${hours} ${hours === 1 ? 'hour' : 'hours'} ago` : `${hours}시간 전`;
-  const days = Math.floor(hours / 24);
+  // Calendar days, not 24-hour blocks: something from the 13th is "2 days ago" on the 15th even when only 46 hours passed (QA A-noti-03).
+  const day = (time: number) => { const date = new Date(time); return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime(); };
+  const days = Math.max(1, Math.round((day(now) - day(new Date(value).getTime())) / 86_400_000));
   return english ? days === 1 ? 'Yesterday' : `${days} days ago` : days === 1 ? '어제' : `${days}일 전`;
 }

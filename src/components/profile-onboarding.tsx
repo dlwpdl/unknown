@@ -14,6 +14,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ClayBoxFill, ClayCoinFill, ClayPhoto, ClayPillFill, useClay, useClayBox } from '@/components/clay';
 import { ThemedText } from '@/components/themed-text';
 import { PersonalInfoFields, type PersonalInfoDraft } from '@/components/personal-info-fields';
+import { SignupSourceQuestion } from '@/components/signup-source-question';
 import { WelcomeMoment } from '@/components/welcome-moment';
 import { ControlMotion } from '@/constants/design-system';
 import { Depth, Spacing } from '@/constants/theme';
@@ -71,6 +72,7 @@ export function ProfileOnboarding({
   const [expandedConsent, setExpandedConsent] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [welcomeProfile, setWelcomeProfile] = useState<CompletedProfile | null>(null);
+  const [askSource, setAskSource] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Every signup failure (photo, consent, nickname, save) is felt as well as read.
   useEffect(() => { if (error) play('warning'); }, [error, play]);
@@ -199,7 +201,7 @@ export function ProfileOnboarding({
         ai_safety_consent_at: new Date().toISOString(),
       };
       if (consentOnly) onComplete(completed);
-      else setWelcomeProfile(completed);
+      else { setAskSource(true); setWelcomeProfile(completed); }
     } catch {
       if (active.current) setError(t.onboarding.errorGeneric);
     } finally {
@@ -211,7 +213,7 @@ export function ProfileOnboarding({
   return (
     <Modal visible={visible} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => {}}>
       <SafeAreaProvider style={[styles.screen, { backgroundColor: theme.background }]}>
-      {welcomeProfile ? <WelcomeMoment nickname={welcomeProfile.nickname} cityId={welcomeProfile.city_id} onContinue={() => onComplete(welcomeProfile)} /> : <>
+      {welcomeProfile && askSource ? <SignupSourceQuestion onDone={() => setAskSource(false)} /> : welcomeProfile ? <WelcomeMoment nickname={welcomeProfile.nickname} cityId={welcomeProfile.city_id} onContinue={() => onComplete(welcomeProfile)} /> : <>
         <KeyboardAvoidingView behavior="padding" style={styles.safeArea}><SafeAreaView style={styles.safeArea}>
           <ScrollView analyticsId="components_profile-onboarding.scrollview.1" contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <ThemedText type="smallBold" style={{ color: theme.accent }}>{t.onboarding.step}</ThemedText>
