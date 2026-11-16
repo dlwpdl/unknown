@@ -75,7 +75,7 @@ select is((select outcome from private.invite_redemptions where invitee_id=pg_te
 insert into private.meetup_attendance_confirmations(session_id,witness_id,attendee_id) values ('e1200000-0000-4000-8000-000000000001',pg_temp.u(3),pg_temp.u(2));
 update private.meetup_attendance set confirmed_at=coalesce(confirmed_at,now()) where session_id='e1200000-0000-4000-8000-000000000001' and user_id=pg_temp.u(2);
 select is((select outcome from private.invite_redemptions where invitee_id=pg_temp.u(2)),'rewarded','Host-confirmed first meetup rewards the inviter');
-select is((select tier||':'||days from private.invite_rewards where invitee_id=pg_temp.u(2)),'plus:14','Inviter without hosting gets Plus 2 weeks');
+select is((select tier||':'||days from private.invite_rewards where invitee_id=pg_temp.u(2)),'plus:28','Inviter without hosting gets Plus 4 weeks');
 select is((select private.membership_details(pg_temp.u(1))->>'tier'),'plus','membership_details shows the reward tier');
 select is((select private.membership_details(pg_temp.u(1))->>'store'),'reward','Reward is marked as a non-store grant');
 select is((select private.membership_details(pg_temp.u(1))->'willRenew'),'false'::jsonb,'Reward never renews');
@@ -89,7 +89,7 @@ insert into private.meetup_attendance(session_id,user_id,confirmed_at,confirmati
 select is((select outcome from private.invite_redemptions where invitee_id=pg_temp.u(7)),null,'Attendance at the inviter''s own meetup does not count');
 select is((select count(*)::int from private.invite_rewards where invitee_id=pg_temp.u(7)),0,'No reward from the inviter''s own meetup');
 insert into private.meetup_attendance(session_id,user_id,confirmed_at,confirmation_source) values ('e1200000-0000-4000-8000-000000000001',pg_temp.u(7),now(),'admin');
-select is((select tier from private.invite_rewards where invitee_id=pg_temp.u(7)),'pro','A host whose friend attends another host''s meetup gets Pro 2 weeks');
+select is((select tier from private.invite_rewards where invitee_id=pg_temp.u(7)),'pro','A host whose friend attends another host''s meetup gets Pro 4 weeks');
 
 -- More invitees of A: periods queue, the 8-week cap holds, duplicates and self-invites never count.
 insert into private.meetup_attendance(session_id,user_id,confirmed_at,confirmation_source)

@@ -274,7 +274,7 @@ export default function MembershipScreen() {
           <View style={[styles.free, { borderColor: theme.line }]}>
             <ThemedText type="small" themeColor="textSecondary"><ThemedText type="smallBold">{tr("베이직 · 무료")}</ThemedText> — {planFacts('free').filter((_, index) => index !== 1).map(([label, value]) => `${label} ${value}`).join(' · ')}</ThemedText>
           </View>
-          {kind === 'general' && <InfoNote>{tr("모임 도구는 누구나 무료예요. 멤버십을 쓰면 정원이 더 큰 모임을 열고, 열어 둘 수 있는 모임 수와 공동 호스트, 판매·구인 글을 늘리고, 끌올도 더 자주 할 수 있어요.")}</InfoNote>}
+          {kind === 'general' && <InfoNote>{tr("모임 도구는 누구나 무료예요. 멤버십을 쓰면 정원이 더 큰 모임을 열고, 모임 자리와 공동 호스트, 판매·구인 글을 늘리고, 끌올도 더 자주 할 수 있어요.")}</InfoNote>}
           {kind === 'business' && <>
             <InfoNote>{tr("끌올은 올린 글 중 하나를 골라 정해진 간격마다 한 번 할 수 있어요. 같은 내용을 새 글로 다시 올릴 수는 없어요.")}</InfoNote>
             <Pressable analyticsId="membership.business.managed" accessibilityRole="button" accessibilityHint={tr("메일로 문의해요")} onPress={askManaged}

@@ -4,7 +4,7 @@ select no_plan();
 
 -- The whole invite reward path through the app's own RPCs, as each signed-in account (what PostgREST does):
 -- a code on a meetup link → sign-up → request → host approves → both check in → the meetup ends → host and guest
--- confirm each other → the sharer gets Plus 2 weeks, or Pro 2 weeks when the sharer hosts meetups (owner 2026-11-13).
+-- confirm each other → the sharer gets Plus 4 weeks, or Pro 4 weeks when the sharer hosts meetups (owner 2026-11-13).
 -- A friend the host brought counts only at a meetup somebody else hosts (owner 2026-11-13 inbox adb25323 Q1).
 insert into auth.users(id,email) select ('9f000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,'reward-flow-'||n||'@example.invalid' from generate_series(1,5)n;
 -- 1 member who shares a meetup (never hosted), 2 host, 3 friend from member 1's link, 4 friend from the host's own link,
@@ -88,13 +88,13 @@ select lives_ok($$select public.confirm_meetup_attendance((select id from sess),
 reset role;
 
 -- ⑥ The rewards.
-select is((select tier||':'||days||':'||reason from private.invite_rewards where invitee_id=pg_temp.u(3)),'plus:14:attended','The sharing member gets Plus for 2 weeks');
+select is((select tier||':'||days||':'||reason from private.invite_rewards where invitee_id=pg_temp.u(3)),'plus:28:attended','The sharing member gets Plus for 4 weeks');
 select is((select user_id from private.invite_rewards where invitee_id=pg_temp.u(3)),pg_temp.u(1),'…credited to the member who shared the link');
 select is((select count(*)::int from private.invite_rewards where invitee_id=pg_temp.u(4)),0,'The host''s own meetup does not count for the friend the host brought');
 select is((select coalesce(outcome,'waiting') from private.invite_redemptions where invitee_id=pg_temp.u(4)),'waiting','…the host''s invite keeps waiting');
 select pg_temp.act(1); set local role authenticated;
 select is(public.get_membership()->>'tier','plus','The sharing member''s membership reads Plus now');
-select is((public.get_my_invite()->>'rewarded')::int||'/'||(public.get_my_invite()->>'grantedDays')::int,'1/14','Their invite screen shows one reward of 14 days');
+select is((public.get_my_invite()->>'rewarded')::int||'/'||(public.get_my_invite()->>'grantedDays')::int,'1/28','Their invite screen shows one reward of 28 days');
 reset role;
 
 -- ⑦ The host's friend joins another host's meetup the same way; once that one is confirmed, the host gets Pro.
@@ -124,7 +124,7 @@ reset role;
 select pg_temp.act(4); set local role authenticated;
 select lives_ok($$select public.confirm_meetup_attendance((select id from sess2),pg_temp.u(5))$$,'The friend confirms the other host');
 reset role;
-select is((select tier||':'||days||':'||reason from private.invite_rewards where invitee_id=pg_temp.u(4)),'pro:14:attended','A host who brought a friend gets Pro for 2 weeks');
+select is((select tier||':'||days||':'||reason from private.invite_rewards where invitee_id=pg_temp.u(4)),'pro:28:attended','A host who brought a friend gets Pro for 4 weeks');
 select is((select user_id from private.invite_rewards where invitee_id=pg_temp.u(4)),pg_temp.u(2),'…credited to the host who shared their link');
 select is((select string_agg(outcome,',' order by invitee_id) from private.invite_redemptions where invitee_id in (pg_temp.u(3),pg_temp.u(4))),'rewarded,rewarded','Both links are marked rewarded');
 select pg_temp.act(2); set local role authenticated;

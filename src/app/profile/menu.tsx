@@ -77,7 +77,7 @@ export default function ProfileMenuScreen() {
             {row('profile.menu.settings', { ios: 'gearshape', android: 'settings', web: 'settings' }, t.profile.settings, tr('닉네임 · 활동 지역 · 화면 모드'), '/profile/settings')}
             {row('profile.meetup-profile', { ios: 'person.crop.rectangle', android: 'badge', web: 'badge' }, tr('모임 프로필 관리'), tr('모임 사진·소개·공개 범위를 따로 설정해요'), '/meetup-profile')}
             {row('profile.meetup-reviews', { ios: 'person.2', android: 'group', web: 'group' }, tr('모임 후기 · 매너 평가'), tr('내 후기와 매너 평가 관리'), '/profile/meetup-reviews')}
-            {row('profile.invite', { ios: 'gift', android: 'redeem', web: 'redeem' }, tr('친구 초대'), tr('친구가 첫 모임에 다녀오면 2주 이용권'), '/profile/invite')}
+            {row('profile.invite', { ios: 'gift', android: 'redeem', web: 'redeem' }, tr('친구 초대'), tr('친구가 첫 모임에 다녀오면 4주 이용권'), '/profile/invite')}
             {/* Writing as a business: the way back sits next to the business entry (QA G38-2). Same store as the chat and meetup switches. */}
             {business && row('chat.identity.personal', { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }, tr('개인으로 돌아가기'), tr('지금은 {0} 이름으로 쓰는 중', business.name), () => selectChatBusiness(me.id, null))}
             {showQuestEntry(quest?.userId === me.id ? quest.value : null) && row('profile.host-quest', { ios: 'flag', android: 'flag', web: 'flag' }, tr('모임장 퀘스트'), tr('운영팀에서 받은 코드로 시작해요'), '/profile/host-quest')}

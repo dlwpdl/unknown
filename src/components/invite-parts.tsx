@@ -43,10 +43,10 @@ export function InviteStats({ items, nested = false }: { items: [string, number]
 }
 
 export function rewardName(reward: InviteReward, business: boolean, tr: (text: string, ...values: unknown[]) => string) {
-  const full = reward.days === 14;
+  const full = reward.days === 14, four = reward.days === 28; // passes granted before the 4-week change are 14 days
   if (business) return full ? tr('비즈니스 2주 이용권') : tr('비즈니스 {0}일 이용권', reward.days);
-  if (reward.tier === 'pro') return full ? tr('프로 2주 이용권') : tr('프로 {0}일 이용권', reward.days);
-  return full ? tr('플러스 2주 이용권') : tr('플러스 {0}일 이용권', reward.days);
+  if (reward.tier === 'pro') return four ? tr('프로 4주 이용권') : full ? tr('프로 2주 이용권') : tr('프로 {0}일 이용권', reward.days);
+  return four ? tr('플러스 4주 이용권') : full ? tr('플러스 2주 이용권') : tr('플러스 {0}일 이용권', reward.days);
 }
 
 /** QR drawn with plain views (no SVG dependency in the app): one strip per run of dark cells. */
