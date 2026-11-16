@@ -315,7 +315,10 @@ select is((private.host_quest_totals(pg_temp.quest(1))->>'confirmed')::int,100+3
 -- 60일: 확정된 만큼 멤버십(10달러마다 14일, 모임을 열었으면 프로).
 update private.host_quest_steps set confirm_after=now()-interval '1 second' where quest_id=pg_temp.quest(20) and status='pending';
 select private.run_host_quests();
-select is((select status||':'||converted_days from private.host_quests where user_id=pg_temp.u(20)),'converted:5','After 60 days $4 confirmed becomes 5 days');
+select is((select status from private.host_quests where user_id=pg_temp.u(20)),'active','Steps confirmed in this run are not converted in the same run');
+update private.host_quest_steps set decided_at=now()-interval '9 days' where quest_id=pg_temp.quest(20) and status='confirmed';
+select private.run_host_quests();
+select is((select status||':'||converted_days from private.host_quests where user_id=pg_temp.u(20)),'converted:5','After 60 days and 8 days since the last confirmation, $4 confirmed becomes 5 days');
 select is((select tier||':'||days||':'||reason from private.invite_rewards where user_id=pg_temp.u(20)),'pro:5:quest','The conversion reuses the invite reward grant as Pro');
 select is(private.membership_details(pg_temp.u(20))->>'tier','pro','Membership shows the converted Pro pass');
 select is(private.grant_invite_reward(pg_temp.u(20),null,'plus',pg_temp.u(35),'attended'),14,'Quest days do not use up the invite reward cap');
@@ -398,5 +401,26 @@ update private.host_quest_payouts set sent_at=(date_trunc('year',now() at time z
 select private.purge_host_quest_records();
 select is((select count(*)::int from private.host_quest_payouts),0,'A payout from the last hour of seven years ago (Vancouver time) is deleted');
 
+-- 송금 요청 틈: 24는 확정 직후, 25는 확정 뒤 9일, 둘 다 $20이고 60일에서 8일이 지났다.
+select pg_temp.person(n,'quest-'||n||'@example.invalid',n) from generate_series(24,25) n;
+insert into private.host_quest_codes(code,recipient_name) values ('WINDOW24','a'),('WINDOW25','b');
+insert into private.host_quests(user_id,code,started_at,ends_at)
+  select pg_temp.u(n),'WINDOW'||n,now()-interval '70 days',now()-interval '10 days' from generate_series(24,25) n;
+insert into private.host_quest_steps(quest_id,step,amount_cents,status,decided_at)
+  select pg_temp.quest(n),x.step,x.amount,'confirmed',case when n=25 then now()-interval '9 days' else now() end
+  from generate_series(24,25) n cross join (values (1,100),(2,300),(3,200),(5,400),(6,100),(7,600)) x(step,amount);
+insert into private.host_quest_steps(quest_id,step,amount_cents,status,person_id,decided_at)
+  select pg_temp.quest(n),4,100,'confirmed',gen_random_uuid(),case when n=25 then now()-interval '9 days' else now() end from generate_series(24,25) n cross join generate_series(1,3);
+select is((private.host_quest_totals(pg_temp.quest(24))->>'confirmed')::int,2000,'The window quests have $20 confirmed');
+select private.settle_host_quest(pg_temp.quest(24));
+select is((select status from private.host_quests where user_id=pg_temp.u(24)),'active','A step confirmed just now leaves time to ask for the payout');
+select pg_temp.act(24); set local role authenticated;
+select is(public.request_host_quest_payout('window24@example.invalid','Window Twentyfour')->>'requested','true','The host can still request the payout');
+reset role;
+update private.host_quest_steps set decided_at=now()-interval '9 days' where quest_id=pg_temp.quest(24);
+select private.settle_host_quest(pg_temp.quest(24));
+select is((select status from private.host_quests where user_id=pg_temp.u(24)),'active','A quest with a payout request is never converted');
+select private.settle_host_quest(pg_temp.quest(25));
+select is((select status from private.host_quests where user_id=pg_temp.u(25)),'converted','8 days after the last confirmation the quest becomes a membership pass');
 select * from finish();
 rollback;
