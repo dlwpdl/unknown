@@ -31,6 +31,7 @@ begin
     where pl.status='open' and (not private.meetup_is_open(p.status,p.room_preview) or private.meetup_poll_deadline(pl.id)<=p_now)
     order by pl.created_at limit 100 for update of pl skip locked
   loop
+   begin -- one poll failing must not roll back the rest of the tidy job (it is one transaction)
     changed:=changed+1;
     if not r.is_open then -- the meetup is gone or over: close quietly
       update private.meetup_polls set status='closed',closed_at=clock_timestamp() where id=r.id;
@@ -65,6 +66,9 @@ begin
       perform private.create_notification(r.author_id,'meetup_changed',null,'post',r.post_id,body,
         case when r.room is null then '/post/'||r.post_id::text else '/chat?conversationId='||r.room::text end);
     end if;
+   exception when others then
+    changed:=changed-1; raise warning 'close_meetup_polls % skipped: %',r.id,sqlerrm; -- shortcut: the poll stays open and is tried again in ten minutes.
+   end;
   end loop;
   return changed;
 end $$;

@@ -69,6 +69,14 @@ select pg_temp.mk(7,array[20,30],'{}') as p7 \gset
 set local session_replication_role=replica; -- a host's own closing would count toward the host-closing limit
 update public.posts set room_preview=room_preview||'{"closed":true}' where id='a1820000-0000-0000-0000-000000000007';
 reset session_replication_role;
+-- 9. The host's notice cannot be made: this poll is skipped and stays open, the others still close.
+set local session_replication_role=replica;
+insert into public.posts(id,author_id,city_id,tag_id,title,body,posted_on,room_preview)
+values('a1820000-0000-0000-0000-000000000009','a1810000-0000-0000-0000-000000000001','pollclose-test',31997,'실패유도 모임','본문',current_date,'{"eventKind":"group","capacity":8,"cadence":"매주"}');
+reset session_replication_role;
+create function public.pollclose_fail_notice() returns trigger language plpgsql as $$ begin if new.body like '%실패유도%' then raise exception 'NOTICE_FAILED'; end if; return new; end $$;
+create trigger pollclose_fail_notice before insert on public.notifications for each row execute function public.pollclose_fail_notice();
+select pg_temp.mk(9,array[20,30],'{}') as p9 \gset
 -- 4. Group, place only, no session yet: never closes.
 select pg_temp.mk(4,'{}',array['강가','카페']) as p4 \gset
 select pg_temp.vote(:'p4',2,2); select pg_temp.vote(:'p4',2,3);
@@ -99,7 +107,8 @@ select is((select status from private.meetup_polls where id=:'p7'),'closed','a c
 select is((select count(*)::int from public.notifications where target_id='a1820000-0000-0000-0000-000000000007' and kind='meetup_changed'),0,'a closed meetup: no notification');
 select is((select status from private.meetup_polls where id=:'p4'),'open','a place poll with no session stays open');
 
-select is((select private.close_meetup_polls()),0,'a second run changes nothing');
+select is((select status from private.meetup_polls where id=:'p9'),'open','a poll whose notice fails stays open, the sweep still ran to the end');
+select is((select private.close_meetup_polls()),0,'a second run changes nothing (the failing poll is tried again and skipped again)');
 select is((select count(*)::int from public.notifications where body like '%직접 골라 주세요%'),4,'the host is asked once per closed poll, not again');
 
 -- The next session decides the place poll: a session in 20 hours closes it, the most-voted place goes into the body.
