@@ -381,6 +381,14 @@ export const t = {
     errorGeneric: '프로필을 만들지 못했어요. 잠시 후 다시 시도해주세요.',
     errorConsent: '이용약관, 개인정보 수집·이용, 외부 AI 안전 처리의 필수 항목에 동의해주세요.',
     photoError: '사진을 불러오지 못했어요. 다른 사진을 골라주세요.',
+    sourceStep: '마지막 한 가지',
+    sourceTitle: 'gling은 어디서 알게 됐어요?',
+    sourceBody: '어디서 오는 분이 많은지 보려고 한 번만 여쭤볼게요. 안 골라도 괜찮아요.',
+    sourceOptions: { instagram: '인스타그램', threads: '스레드', naver: '네이버 블로그·카페', friend: '친구·지인 소개', search: '검색 (구글·앱스토어)', kakao: '카카오톡', other: '기타' },
+    sourceSubmit: '답하고 시작하기',
+    sourceSkip: '건너뛰기',
+    sourceThanks: '알려 줘서 고마워요.',
+    sourceSkipped: '괜찮아요. 바로 들어가요.',
   },
 
   // 오프라인 만남 전 안전 경고 (차단이 아니라 인지)
