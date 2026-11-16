@@ -36,7 +36,7 @@ function mount({href=canonical,load=async()=>preview,language='ko',copy=async()=
     '@/hooks/use-language':{useLanguage:()=>({language})},'@/lib/interaction-feedback':{useInteractionFeedback:()=>({play:kind=>feedback.push(kind)})},
     '@/lib/shared-link-preview':{loadSharedLinkPost:(client,postId)=>{calls.push(['post',client,postId,auth.me.id]);return loadPost(postId);},loadSharedLinkPreview:(client,postId)=>{calls.push(['preview',client,postId]);return load(postId);}},
     '@/lib/public-web-client':{publicWebClient:'ANON_ONLY'},'@/lib/public-seo':{publicSiteName,publicPostDescription,publicPostSchema,jsonLd:JSON.stringify,PUBLIC_SITE:'https://gling.ej-entertainment.com'},'@/lib/mock':{CITIES,TAGS},'./static-slot':{adoptStatic:()=>()=>{}},
-    '@/lib/auth':{useAuth:()=>({...auth,promptLogin:reason=>calls.push(['login',reason])})},'@/hooks/use-content-visibility':{useContentVisibility:()=>hidden},'@/lib/supabase':{supabase:'AUTHENTICATED'},'./shared-post-article':{SharedPostArticle:'SharedPostArticle'},'./meetup-invite':{MeetupInvite:'MeetupInvite'},'@/lib/sharing':{sharedLinkTarget,SHARED_POST_RETURN_KEY},'@/lib/public-web':{publicWebTarget},'./analytics':{useReaderAnalytics(){}}};
+    '@/lib/auth':{useAuth:()=>({...auth,promptLogin:reason=>calls.push(['login',reason])})},'@/hooks/use-content-visibility':{useContentVisibility:()=>hidden},'@/lib/supabase':{supabase:'AUTHENTICATED'},'./shared-post-article':{SharedPostArticle:'SharedPostArticle'},'./meetup-invite':{MeetupInvite:'MeetupInvite'},'@/lib/sharing':{sharedLinkTarget,SHARED_POST_RETURN_KEY},'./app-store-choices':{appStoreUrl:source=>`https://apps.apple.com/app/apple-store/id6809273242?pt=129396942&ct=${source}&mt=8`},'@/lib/public-web':{publicWebTarget},'./analytics':{useReaderAnalytics(){}}};
   const exported={},source=ts.transpileModule(readFileSync(new URL('../src/components/public-web/shared-post-landing.tsx',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
   vm.runInNewContext(source,{exports:exported,require:name=>{if(name.includes('assets/brand/'))return'brand';assert.ok(name in modules,`Known preview-only import: ${name}`);return modules[name];},window:{location,addEventListener(){},removeEventListener(){},sessionStorage:{setItem:(key,value)=>{if(storageFailure)throw Error('PRIVATE_STORAGE_ERROR');stored.set(key,value);}}},document:{visibilityState:'visible',addEventListener(){},removeEventListener(){}},navigator:{clipboard:{writeText:value=>{calls.push(['copy',value]);return copy(value);}}},URL,URLSearchParams,Math,Map});
   return{calls,feedback,encoded,stored,location,flushPassive(){pendingEffects.splice(0).forEach(fn=>fn());},render(name='default',props){index=0;return exported[name](props);},unmount(){cleanups.forEach(fn=>fn?.());}};
@@ -153,11 +153,11 @@ test('store picker creates only the selected store QR while the explicit post ap
   let tree=app.render('SharedPostLandingContent',props);
   assert.equal(nodes(tree).filter(node=>node.type==='svg').length,0,'No store is guessed');
   action(tree,'shared.web.store.ios').props.onClick();tree=app.render('SharedPostLandingContent',props);
-  assert.deepEqual(app.encoded,['https://apps.apple.com/ca/app/id6809273242']);
+  assert.deepEqual(app.encoded,['https://apps.apple.com/app/apple-store/id6809273242?pt=129396942&ct=share&mt=8'],'Shared-post installs are counted as share');
   assert.equal(nodes(tree).filter(node=>node.type==='svg').length,1);
-  assert.equal(action(tree,'shared.web.ios_store').props.href,'https://apps.apple.com/ca/app/id6809273242');
+  assert.equal(action(tree,'shared.web.ios_store').props.href,'https://apps.apple.com/app/apple-store/id6809273242?pt=129396942&ct=share&mt=8');
   action(tree,'shared.web.store.android').props.onClick();tree=app.render('SharedPostLandingContent',props);
-  assert.equal(app.encoded.at(-1),'https://play.google.com/store/apps/details?id=com.dlwpdl.gling&referrer=utm_source%3Dweb%26utm_campaign%3Dshared-post');
+  assert.equal(app.encoded.at(-1),'https://play.google.com/store/apps/details?id=com.dlwpdl.gling&referrer=utm_source%3Dshare%26utm_campaign%3Dshared-post');
   assert.equal(nodes(tree).filter(node=>node.type==='svg').length,1);
   assert.equal(action(tree,'shared.web.ios_store'),undefined);
   assert.match(text(tree),/Google Play에서 받기|Get it on Google Play/);assert.doesNotMatch(text(tree),/비공개 테스트|private testing|테스트 참여/);
