@@ -85,7 +85,7 @@ for (const [path, analyticsId, fallback] of [
       const actions = [], city = { id: 'toronto' };
       const onPress = backHandler(`../src/app/${path}`, analyticsId, {
         // Meetup create's later steps go back a step first (I-meet-14); on its first step it leaves like the others.
-        Platform: { OS }, city, selected: city, step: 1, goStep: next => actions.push(`step ${next}`),
+        Platform: { OS }, city, selected: city, step: 1, goStep: next => actions.push(`step ${next}`), view: 'full', setView: next => actions.push(`view ${next}`),
         play: kind => actions.push(kind),
         router: {
           canGoBack: () => hasHistory,
@@ -102,8 +102,11 @@ for (const [path, analyticsId, fallback] of [
     }
     if (path === 'meetup-create.tsx') {
       const actions = [];
-      backHandler(`../src/app/${path}`, analyticsId, { step: 3, goStep: next => actions.push(`step ${next}`), play: kind => actions.push(kind), router: {} })();
+      backHandler(`../src/app/${path}`, analyticsId, { step: 3, view: 'full', goStep: next => actions.push(`step ${next}`), play: kind => actions.push(kind), router: {} })();
       assert.deepEqual(actions, ['selection', 'step 2']);
+      actions.length = 0;
+      backHandler(`../src/app/${path}`, analyticsId, { step: 1, view: 'quick', setView: next => actions.push(`view ${next}`), play: kind => actions.push(kind), router: {} })();
+      assert.deepEqual(actions, ['selection', 'view choose']);
     }
   });
 }

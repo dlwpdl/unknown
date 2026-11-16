@@ -21,6 +21,6 @@ function load(path) {
   return module.exports;
 }
 export const meetupDestination = load(resolve(root, 'src/lib/meetup-destination.ts'));
-export const { splitEventMeetupBody, visibleMeetupBody } = load(resolve(root, 'src/lib/meetup-ai.ts'));
+export const { splitEventMeetupBody, visibleMeetupBody, meetupInfoCells } = load(resolve(root, 'src/lib/meetup-ai.ts'));
 export const translationSource = load(resolve(root, 'src/lib/translation-source.ts'));
 export const { visibleTranslationSource, needsContentTranslation } = translationSource;
