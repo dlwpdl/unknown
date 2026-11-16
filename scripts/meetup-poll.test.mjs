@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { englishNotificationBody } from '../src/lib/notification-preferences.ts';
 import { createMeetupPoll, decideMeetupPoll, leadingOption, pollDraftError, pollError, voteMeetupPoll } from '../src/lib/meetup-poll.ts';
 
 const future = days => new Date(Date.now() + days * 86400000).toISOString();
@@ -45,4 +46,16 @@ test('RPC wrappers send the contract the migration expects', async () => {
     ['decide_meetup_poll', { p_poll_id: 'poll', p_date_option: 'o1', p_place_option: null }],
   ]);
   await assert.rejects(voteMeetupPoll({ rpc: async () => ({ data: null, error: { message: 'POLL_NOT_OPEN' } }) }, 'poll', []), /POLL_NOT_OPEN/);
+});
+
+test('poll notification bodies render English in the inbox and push', () => {
+  const en = body => englishNotificationBody({ kind: 'meetup_changed', body }, text => text);
+  assert.equal(en('「러닝」 날짜와 장소 투표가 열렸어요. 되는 날과 가고 싶은 곳을 골라 주세요.'), 'A date and place poll is open for “러닝”. Pick the days that work and the places you like.');
+  assert.equal(en('「러닝」 날짜 투표가 열렸어요. 되는 날을 골라 주세요.'), 'A date poll is open for “러닝”. Pick the days that work for you.');
+  assert.equal(en('「러닝」 장소 투표가 열렸어요. 가고 싶은 곳을 골라 주세요.'), 'A place poll is open for “러닝”. Pick the places you’d like to go.');
+  assert.equal(en('「러닝」 투표 결과가 나왔어요. 12/05 19:30 · 강가 공원'), 'Poll results are in for “러닝”: Dec 5 at 7:30 p.m. (local time) · 강가 공원');
+  assert.equal(en('「러닝」 투표 결과가 나왔어요. 12/05 19:30'), 'Poll results are in for “러닝”: Dec 5 at 7:30 p.m. (local time)');
+  assert.equal(en('「러닝」 투표 결과가 나왔어요. 도서관 카페'), 'Poll results are in for “러닝”: 도서관 카페');
+  // The host-notice pattern must not swallow these.
+  assert.equal(en('「러닝」 공지: 내일 만나요'), 'Note from the host of “러닝”: 내일 만나요');
 });
