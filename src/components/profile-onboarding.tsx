@@ -16,6 +16,7 @@ import { ThemedText } from '@/components/themed-text';
 import { PersonalInfoFields, type PersonalInfoDraft } from '@/components/personal-info-fields';
 import { SignupSourceQuestion } from '@/components/signup-source-question';
 import { WelcomeMoment } from '@/components/welcome-moment';
+import { requestPushPrompt } from '@/lib/push-prompt';
 import { ControlMotion } from '@/constants/design-system';
 import { Depth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -213,7 +214,7 @@ export function ProfileOnboarding({
   return (
     <Modal visible={visible} animationType={reducedMotion ? 'none' : 'slide'} onRequestClose={() => {}}>
       <SafeAreaProvider style={[styles.screen, { backgroundColor: theme.background }]}>
-      {welcomeProfile && askSource ? <SignupSourceQuestion onDone={() => setAskSource(false)} /> : welcomeProfile ? <WelcomeMoment nickname={welcomeProfile.nickname} cityId={welcomeProfile.city_id} onContinue={() => onComplete(welcomeProfile)} /> : <>
+      {welcomeProfile && askSource ? <SignupSourceQuestion onDone={() => setAskSource(false)} /> : welcomeProfile ? <WelcomeMoment nickname={welcomeProfile.nickname} cityId={welcomeProfile.city_id} onContinue={() => { onComplete(welcomeProfile); setTimeout(() => requestPushPrompt('signup'), 600); }} /> : <>
         <KeyboardAvoidingView behavior="padding" style={styles.safeArea}><SafeAreaView style={styles.safeArea}>
           <ScrollView analyticsId="components_profile-onboarding.scrollview.1" contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <ThemedText type="smallBold" style={{ color: theme.accent }}>{t.onboarding.step}</ThemedText>

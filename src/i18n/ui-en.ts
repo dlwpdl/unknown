@@ -5308,4 +5308,17 @@ export const uiEnglish: Record<string, string> = {
   "세 칸이에요. 비워 두면 모임 화면에 안 나와요.": "Three fields. Empty ones don't show on the meetup screen.",
   "혼자 가기 애매했던 가게에 같이 가요. 먹은 만큼 각자 계산하고, 자리는 제가 예약해 둘게요.": "Let's go together to a place that felt awkward to go to alone. Everyone pays for what they ate, and I'll reserve the table.",
   "같은 취미 하는 분들이랑 편하게 만나고 싶어요. 처음 해 보는 분도 괜찮은지는 아래에 적어 둘게요.": "I'd like to meet people into the same hobby. Whether first-timers are okay is written below.",
+  // 알림 정리 (copy/contract.json, 2026-11-16)
+  "새 글이나 답글이 올라오면 알려 드릴까요?": "Want a heads-up on new posts and replies?",
+  "동네 소식은 하루 세 번까지만 보내요. 받고 싶은 것만 설정에서 골라 둘 수 있어요.": "We send city updates three times a day at most. You can pick what you get in settings.",
+  "{0}님의 댓글": "{0} commented",
+  "{0}님의 답글": "{0} replied",
+  "{0} 새 글 {1}개": "{1} new posts in {0}",
+  "친구·말풍선 요청": "Friend and bubble requests",
+  "친구 요청, 폴더 초대, 말풍선 대화 신청": "Friend requests, folder invites and bubble chat requests",
+  "새 글 모아 보기": "New posts roundup",
+  "새 글이 쌓인 날 저녁에 한 번, 주 3번까지": "One evening notification on days with new posts, up to 3 a week",
+  "근처 말풍선": "Bubbles nearby",
+  "우리 도시에 말풍선이 올라오면, 하루 한 번까지": "When someone posts a bubble in your city, once a day at most",
+  "공동 호스트 초대가 왔어요. 수락하면 회차·참석 확인과 대기자 초대를 함께 해요. 비공개 신청 답변과 계정 관리는 공유되지 않아요.": "You’ve been invited to co-host. If you accept, you’ll help manage sessions, attendance check-ins and waitlist invites. Private application answers and account management aren’t shared.",
 };

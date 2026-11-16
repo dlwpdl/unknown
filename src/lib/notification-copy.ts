@@ -130,6 +130,28 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
   admin_security: [[/^최근 10분 동안 요청이 (\d+)건 들어왔어요\. 관리자 화면에서 확인해 주세요\.$/, m => `${m[1]} requests from one account in the last 10 minutes. Check the admin dashboard.`]],
 };
 
+// Copy of the 2026-11 notification tune (contract.json). The older patterns above stay for rows stored before it.
+const TUNED_PATTERNS: Record<string, Pattern[]> = {
+  message: [[/^(.+)님이 메시지를 보냈어요\.$/, m => `${m[1]} sent you a message.`]],
+  meetup_request: [[/^(.+?)님이 (.+) 모임에 같이 가고 싶대요\.$/, m => `${m[1]} wants to join “${m[2]}”.`]],
+  interest_post: [[/^#(.+?)에 새 글이 올라왔어요\. ‘(.+)’$/, m => `New post in #${m[1]}: “${m[2]}”`]],
+  nearby_meetup: [[/^(.+?)에 새 모임이 생겼어요\. ‘(.+)’$/, (m, translate) => `New meetup in ${translate(m[1])}: “${m[2]}”`]],
+  saved_merchant_post: [[/^(.+)에 새 소식이 올라왔어요\.$/, m => `${m[1]} posted an update.`]],
+  trending_hashtag: [[/^요즘 (#[\p{L}\p{M}\p{N}_-]{1,64}) 글이 많이 올라와요\.$/u, m => `${m[1]} is getting a lot of posts lately.`]],
+  meetup_review_request: [[/^(.+) 모임 잘 다녀왔어요\? 같이 간 분들 후기 남겨 주세요\.$/, m => `How was “${m[1]}”? Leave a review for the people you went with.`]],
+  // The server keeps the kind meetup_cancelled for both; the body says which.
+  meetup_cancelled: [
+    [/^(.+) 모임이 취소됐어요\.$/, m => `“${m[1]}” was cancelled.`],
+    [/^(.+) 모임 모집이 끝났어요\.$/, m => `Sign-ups for “${m[1]}” are closed.`],
+  ],
+  weekly_ranking: [[/^이번 주 (.+?)에서 제일 많이 읽은 글이에요\. ‘(.+)’$/, (m, translate) => `This week’s most-read post in ${translate(m[1])}: “${m[2]}”`]],
+  meetup_approved: [[/^(.+) 모임에 같이 가게 됐어요\. 채팅방에 인사 한마디 남겨 보세요\.$/, m => `You’re going to “${m[1]}”. Say hello in the group chat.`]],
+  merchant_review_received: [[/^(.+)에 새 후기가 올라왔어요\.$/, m => `${m[1]} got a new review.`]],
+  live_bubble_accepted: [[/^(.+)님이 대화 신청을 수락했어요\. 지금 말 걸어 보세요\.$/, m => `${m[1]} accepted your chat request. You can chat now.`]],
+  city_new_posts: [[/^‘(.+)’ 말고도 (\d+)개 더 올라왔어요\.$/, m => `“${m[1]}” and ${m[2]} more.`]],
+  live_bubble_nearby: [[/^지금 (.+?)에 말풍선이 떴어요\. ‘(.+)’$/, (m, translate) => `A bubble just popped up in ${translate(m[1])}: “${m[2]}”`]],
+};
+
 // Server bodies keep 24-hour text: stored rows, pushes and 1.4.7's English patterns above read it. Only the Korean inbox shows the app's clock.
 const SERVER_CLOCK = /^(.+)(\d{2}):(\d{2})(에 시작해요\. \(모임 (?:장소 기준|현지 시간)\)| · 모임 (?:장소 기준|현지 시간)\)| \(모임 현지 시간\))$/;
 const FESTIVAL_CLOCK = /^(.+(?:공연이에요|경기예요|행사예요)\. \d{1,2}월 \d{1,2}일 )(\d{2}):(\d{2})(, .+)$/;
@@ -147,7 +169,7 @@ export function koreanNotificationBody(item: { kind: string; body: string }) {
 // English inbox copy for server-written Korean bodies; stored rows (and routing above) keep the Korean text.
 export function englishNotificationBody(item: { kind: string; body: string }, translate: Translate = same, actorName?: string) {
   if (item.kind === 'message_reaction' && actorName) return `${actorName} loved your message.`;
-  for (const [pattern, render] of NOTIFICATION_PATTERNS[item.kind] ?? []) {
+  for (const [pattern, render] of [...(NOTIFICATION_PATTERNS[item.kind] ?? []), ...(TUNED_PATTERNS[item.kind] ?? [])]) {
     const match = pattern.exec(item.body);
     const text = match && render(match, translate);
     if (text) return text;
