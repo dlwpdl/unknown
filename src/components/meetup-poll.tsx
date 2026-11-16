@@ -74,9 +74,9 @@ export function MeetupPollCard({ postId, refreshKey = 0 }: { postId: string; ref
         <ThemedText accessibilityRole="header" style={Typography.label}>{open ? title : tr('투표 결과')}</ThemedText>
         {open && <ThemedText themeColor="textSecondary" accessibilityLiveRegion="polite" style={Typography.caption}>{tr('{0}명 중 {1}명이 골랐어요', poll.members, poll.voters)}</ThemedText>}
       </View>
-      {open && poll.canManage && <Pressable analyticsId="meetup.poll.decide" accessibilityRole="button" accessibilityLabel={tr('투표 마치기')} hitSlop={8}
+      {open && poll.canManage && <Pressable analyticsId="meetup.poll.decide" accessibilityRole="button" accessibilityLabel={tr('투표 끝내기')} hitSlop={8}
         onPress={() => { play('selection'); setDeciding(true); }} style={({ pressed }) => [styles.finish, { opacity: pressed ? 0.6 : 1 }]}>
-        <ThemedText style={[Typography.label, { color: theme.accent }]}>{tr('투표 마치기')}</ThemedText>
+        <ThemedText style={[Typography.label, { color: theme.accent }]}>{tr('투표 끝내기')}</ThemedText>
       </Pressable>}
     </View>
     <ScrollView style={styles.list} nestedScrollEnabled>
@@ -132,14 +132,14 @@ function PollDecideSheet({ poll, text, onClose, onDone }: { poll: MeetupPoll; te
       </Pressable>)}
     </View>;
   };
-  return <DragSheet visible onClose={onClose} dismissible={!busy} title={tr('결과 정하기')}>
+  return <DragSheet visible onClose={onClose} dismissible={!busy} title={tr('투표 끝내기')}>
     <ScrollView keyboardShouldPersistTaps="handled" style={styles.sheetScroll} contentContainerStyle={styles.sheetContent}>
       {group('date', date, setDate)}{group('place', place, setPlace)}
       <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('고른 걸 모임에 반영하고 멤버들에게 알려요.')}</ThemedText>
       {!!error && <ThemedText themeColor="danger" accessibilityRole="alert" style={Typography.supporting}>{tr(error)}</ThemedText>}
     </ScrollView>
-    <RaisedActionButton analyticsId="meetup.poll.decide" busy={busy} label={tr('이대로 정하기')} onPress={() => void send(date, place)} />
-    <RaisedActionButton analyticsId="meetup.poll.close" tone="secondary" disabled={busy} label={tr('고르지 않고 닫기')} onPress={() => void send(null, null)} />
+    <RaisedActionButton analyticsId="meetup.poll.decide" busy={busy} label={tr('이걸로 정하기')} onPress={() => void send(date, place)} />
+    <RaisedActionButton analyticsId="meetup.poll.close" tone="secondary" disabled={busy} label={tr('정하지 않고 끝내기')} onPress={() => void send(null, null)} />
   </DragSheet>;
 }
 
@@ -166,7 +166,7 @@ export function MeetupPollComposer({ postId, visible, onClose, onCreated }: { po
   };
   return <DragSheet visible={visible} onClose={onClose} dismissible={!busy} title={tr('날짜·장소 투표 만들기')}>
     <ScrollView keyboardShouldPersistTaps="handled" style={styles.sheetScroll} contentContainerStyle={styles.sheetContent}>
-      <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('멤버들이 되는 날짜와 가고 싶은 곳을 골라요. 날짜나 장소 중 필요한 것만 넣어도 돼요. 한 종류에 2개 이상 넣어 주세요.')}</ThemedText>
+      <ThemedText themeColor="textSecondary" style={Typography.supporting}>{tr('멤버들이 되는 날짜와 가고 싶은 장소를 골라요. 날짜만, 장소만 열어도 돼요.')} {tr('날짜도 장소도, 넣는다면 후보는 2~5개예요.')}</ThemedText>
       <ThemedText style={Typography.label}>{tr('날짜 후보')}</ThemedText>
       {dates.map((value, index) => <View key={index} style={styles.candidate}>
         <View style={styles.flex}><ChillingDateInput label={tr('날짜 {0}', index + 1)} value={value} zone={zone} disabled={busy} minimumDate={new Date()}

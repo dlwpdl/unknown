@@ -77,6 +77,8 @@ begin
   event:=private.meetup_tool_context(p_post_id,u);
   if private.meetup_poll_role(event.id,u) not in('host','cohost') then raise exception 'HOST_REQUIRED'; end if;
   p_dates:=coalesce(p_dates,'{}'); p_places:=coalesce(p_places,'{}');
+  -- An event-linked meetup keeps its machine lines in the body; a place line after them would show them in the intro of released apps.
+  if cardinality(p_places)>0 and event.body ~ E'(^|\n)행사 ID: ' then raise exception 'POLL_PLACE_EVENT'; end if;
   if array_position(p_dates,null) is not null or array_position(p_places,null) is not null then raise exception 'INVALID_POLL'; end if;
   -- Each kind that is asked needs at least two choices; five of each at most.
   if cardinality(p_dates) not in(0,2,3,4,5) or cardinality(p_places) not in(0,2,3,4,5) or cardinality(p_dates)+cardinality(p_places)=0 then raise exception 'INVALID_POLL'; end if;
@@ -146,6 +148,7 @@ begin
     if date_opt.id is null then raise exception 'POLL_OPTION_NOT_FOUND'; end if;
     if date_opt.starts_at<=clock_timestamp() then raise exception 'POLL_DATE_PASSED'; end if;
   end if;
+  if p_place_option is not null and event.body ~ E'(^|\n)행사 ID: ' then raise exception 'POLL_PLACE_EVENT'; end if;
   if p_place_option is not null then
     select * into place_opt from private.meetup_poll_options where id=p_place_option and poll_id=poll.id and kind='place';
     if place_opt.id is null then raise exception 'POLL_OPTION_NOT_FOUND'; end if;

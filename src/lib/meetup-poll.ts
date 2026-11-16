@@ -11,8 +11,8 @@ export const POLL_PLACE_MAX = 60;
 /** Same rules the server checks: each kind is either absent or has 2 to 5 distinct choices. */
 export function pollDraftError(draft: PollDraft): string | null {
   const places = draft.places.map(place => place.trim());
-  for (const count of [draft.dates.length, places.length]) if (count === 1 || count > POLL_MAX_PER_KIND) return '후보는 날짜와 장소 각각 2개 이상 5개까지 넣어 주세요.';
-  if (!draft.dates.length && !places.length) return '날짜나 장소 후보를 2개 이상 넣어 주세요.';
+  for (const count of [draft.dates.length, places.length]) if (count === 1 || count > POLL_MAX_PER_KIND) return '날짜도 장소도, 넣는다면 후보는 2~5개예요.';
+  if (!draft.dates.length && !places.length) return '날짜나 장소 후보를 넣어 주세요.';
   if (new Set(draft.dates).size !== draft.dates.length || new Set(places.map(place => place.toLowerCase())).size !== places.length) return '같은 후보가 두 번 들어 있어요.';
   if (places.some(place => !place || [...place].length > POLL_PLACE_MAX)) return '장소는 1~60자로 적어 주세요.';
   if (draft.dates.some(date => !(Date.parse(date) > Date.now()))) return '지난 시각은 고를 수 없어요.';
@@ -28,9 +28,10 @@ const ERRORS: Record<string, string> = {
   HOST_REQUIRED: '호스트와 공동 호스트만 할 수 있어요.',
   POLL_ALREADY_OPEN: '이미 진행 중인 투표가 있어요. 채팅 맨 위에서 확인해 주세요.',
   POLL_NOT_OPEN: '이미 끝난 투표예요.',
-  POLL_DATE_PASSED: '이미 지난 날짜예요. 투표를 닫고 새로 열어 주세요.',
+  POLL_DATE_PASSED: '이미 지난 날짜예요. 투표를 끝내고 새로 열어 주세요.',
   SESSION_OVERLAP: '같은 시간에 이미 등록된 회차가 있어요. 다른 날짜를 골라 주세요.',
-  INVALID_POLL: '후보는 날짜와 장소 각각 2개 이상 5개까지 넣어 주세요.',
+  INVALID_POLL: '날짜도 장소도, 넣는다면 후보는 2~5개예요.',
+  POLL_PLACE_EVENT: '행사와 이어진 모임은 장소를 투표로 정할 수 없어요. 날짜만 열어 주세요.',
   INVALID_POLL_DATE: '지난 시각은 고를 수 없어요.',
   INVALID_POLL_PLACE: '장소는 1~60자로, 서로 다르게 적어 주세요.',
   POST_BODY_TOO_LONG: '모임 소개가 너무 길어서 장소를 바꾸지 못했어요. 소개를 줄인 뒤 다시 해 주세요.',

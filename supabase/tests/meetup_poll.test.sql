@@ -83,6 +83,15 @@ select is(public.get_meetup_poll('a1720000-0000-0000-0000-000000000001')->>'stat
 select throws_ok(format($$select public.vote_meetup_poll(%L,'{}')$$,:'poll1'),'P0001','POLL_NOT_OPEN','a decided poll takes no votes');
 reset role;
 
+-- An event-linked body (machine lines) never gets a place line.
+reset role;
+update public.posts set body=E'본문\n\n행사 ID: abc123' where id='a1720000-0000-0000-0000-000000000002';
+select set_config('request.jwt.claims','{"sub":"a1710000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+set local role authenticated;
+select throws_ok($$select public.create_meetup_poll('a1720000-0000-0000-0000-000000000002','{}',array['가','나'])$$,'P0001','POLL_PLACE_EVENT','event-linked meetups cannot vote on places');
+reset role;
+update public.posts set body='본문' where id='a1720000-0000-0000-0000-000000000002';
+
 -- Recurring group: the winner becomes the next session; members are told.
 select set_config('request.jwt.claims','{"sub":"a1710000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 set local role authenticated;
