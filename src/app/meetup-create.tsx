@@ -150,7 +150,7 @@ function MeetupCreateForm() {
   const inputs = useRef<Record<string, TextInputInstance | null>>({});
   // A problem on another step opens that step first; the field is scrolled to once the step has laid out.
   const pendingField = useRef<string | null>(null);
-  const stepLayout = (card: FormCard) => (layout: { nativeEvent: { layout: { y: number } } }) => {
+  const stepLayout = (card: FormCard, layout: { nativeEvent: { layout: { y: number } } }) => {
     cardY.current[card] = layout.nativeEvent.layout.y;
     const name = pendingField.current;
     if (!name || fieldCard(name) !== card) return;
@@ -485,7 +485,7 @@ function MeetupCreateForm() {
         <InfoNote>{aiCopy('다 쓴 다음에 로그인해도 돼요. 쓰던 내용은 그대로 남아요.', 'You can sign in once you’re done. Your draft stays as it is.')}</InfoNote>
         <Pressable analyticsId="meetup.create.login" accessibilityRole="button" onPress={() => { play('selection'); askLogin('모임을 열려면 로그인해 주세요.'); }} style={({ pressed }) => [styles.membership, { opacity: pressed ? 0.82 : 1 }]}><ThemedText type="smallBold" themeColor="accent" style={styles.label}>{aiCopy('지금 로그인하기', 'Sign in now')}</ThemedText></Pressable>
       </View>}
-      <View onLayout={stepLayout('what')} style={[styles.step, step !== 1 && styles.hidden]}>
+      <View onLayout={(layout) => stepLayout('what', layout)} style={[styles.step, step !== 1 && styles.hidden]}>
         <ThemedText accessibilityRole="header" style={styles.cardTitle}>{aiCopy('어떤 모임인가요?', 'What are we doing?')}</ThemedText>
       {ticketmasterEventId && (!isAuthed ? <StateCard kind="blocked" title={tr("로그인 후 모임을 열 수 있어요")} body={tr("로그인하면 행사 정보를 불러와요.")} actionLabel={tr("로그인")} analyticsId="meetup.create.event_login" onAction={() => askLogin('행사 모임을 열려면 로그인해 주세요.')} /> : !eventReady ? <StateCard kind={eventError ? 'error' : 'empty'} title={eventError ? tr("행사를 확인하지 못했어요") : tr("행사 정보를 확인하고 있어요")} body={eventError ? tr(eventError) : tr('확인 후 제목과 일정을 채워드려요.')} actionLabel={eventError ? tr('다시 시도') : undefined} onAction={eventError ? () => setEventAttempt(n => n + 1) : undefined} /> : sourceEvent && <View style={styles.eventHero} accessibilityRole="summary"><View style={styles.eventHeroText}><ThemedText type="smallBold" style={[styles.label, styles.eventHeroLabel]}>{isFestivalEvent(sourceEvent) ? tr("함께 가고 싶은 페스티벌") : tr("함께 갈 행사")}</ThemedText><ThemedText type="smallBold" numberOfLines={2} style={[styles.label, styles.eventHeroTitle]}>{sourceEvent.name}</ThemedText><ThemedText type="small" numberOfLines={2} style={[styles.helper, styles.eventHeroPlace]}>{/* 'Under the Big Top - Vancouver · Vancouver': the city once. */}{[sourceEvent.venue, sourceEvent.city].filter(Boolean).filter((part, index, parts) => index === 0 || !parts[0].includes(part)).join(' · ')}</ThemedText></View>
         {/* The event's own photo, not a decoration; without one the text takes the card (the seller's stand-in photos repeat across events). */}
@@ -532,7 +532,7 @@ function MeetupCreateForm() {
       {aiDraftReady && <ThemedText accessibilityRole="alert" type="small" themeColor="textSecondary" style={styles.helper}>{t.write.reviewDraft}</ThemedText>}
       </View>}
       </View>
-      <View onLayout={stepLayout('when')} style={[styles.step, step !== 2 && styles.hidden]}>
+      <View onLayout={(layout) => stepLayout('when', layout)} style={[styles.step, step !== 2 && styles.hidden]}>
         <ThemedText accessibilityRole="header" style={styles.cardTitle}>{aiCopy('언제, 어디서 만나요?', 'When and where?')}</ThemedText>
       {!kindChosen ? null : event.kind === 'group' ? cadenceTyped ? <>
         {field('meetup.create.cadence', tr("활동 주기"), event.cadence, cadence => setEvent({ ...event, cadence }), tr("예: 매주 토요일 오전"), 80)}
@@ -562,7 +562,7 @@ function MeetupCreateForm() {
       <View style={styles.field}><View style={styles.cityRow}><View style={styles.flex}><ThemedText type="smallBold" style={styles.label}>{tr("활동 지역")}</ThemedText><ThemedText style={styles.bodyText}>{tr(meetupCity?.name ?? city.name)}</ThemedText></View>
         {!destination && !invalidDestination && <Pressable analyticsId="meetup.create.city" accessibilityRole="button" accessibilityLabel={tr('활동 지역 바꾸기')} disabled={saving} onPress={() => { play('selection'); setCityOpen(true); }} style={({ pressed }) => [ControlStyles.pill, controlPresentation(theme, { tone: 'ghost', pressed, disabled: saving }).container]}><ThemedText type="smallBold" themeColor="accent" style={styles.label}>{tr('바꾸기')}</ThemedText></Pressable>}</View><InfoNote>{tr("정확한 집결 장소는 승인된 멤버에게 모임 대화에서 알려 주세요.")}</InfoNote></View>
       </View>
-      <View onLayout={stepLayout('who')} style={[styles.step, step !== 3 && styles.hidden]}>
+      <View onLayout={(layout) => stepLayout('who', layout)} style={[styles.step, step !== 3 && styles.hidden]}>
         <ThemedText accessibilityRole="header" style={styles.cardTitle}>{aiCopy('누구와 함께해요?', 'Who can join?')}</ThemedText>
       <View style={styles.field}>
         <ThemedText type="smallBold" style={styles.label}>{tr('누가 신청할 수 있나요?')}</ThemedText>

@@ -25,7 +25,7 @@ export function SignupSourceQuestion({ onDone }: { onDone: () => void }) {
   const reducedMotion = useReducedMotion();
   const [choice, setChoice] = useState<SignupSource | null>(null);
   const [farewell, setFarewell] = useState<'thanks' | 'skipped' | null>(null);
-  const fade = useRef(new Animated.Value(reducedMotion ? 1 : 0)).current;
+  const [fade] = useState(() => new Animated.Value(reducedMotion ? 1 : 0));
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
 
