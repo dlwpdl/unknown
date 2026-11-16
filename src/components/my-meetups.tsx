@@ -104,6 +104,25 @@ function MyMeetupsContent({ onOpen, showLoadingIndicator = true, hideTitle = fal
   const confirmChange = (meetup: MyMeetup) => {
     play('selection');
     const host = meetup.role === 'host';
+    // A host with members is offered handing the meetup over before ending it; ending stays one step away.
+    if (host && (meetup.room.memberCount ?? 1) > 1 && !meetup.room.closed) {
+      const handOver = () => router.push({ pathname: '/meetup-tools', params: { postId: meetup.id, kind: meetup.room.eventKind ?? 'group', host: '1', section: 'settings' } });
+      const title = tr('모임을 닫기 전에, 호스트를 넘길 수 있어요'), body = tr('멤버 중 한 명이 수락하면 모임은 그대로 이어지고 나는 멤버로 남아요. 닫으면 모든 멤버의 참여가 끝나요.');
+      if (Platform.OS === 'web') {
+        if (globalThis.confirm(`${title}\n\n${body}\n\n${tr('호스트 넘기기')}`)) { handOver(); return; }
+      } else {
+        Alert.alert(title, body, [
+          { text: t.profile.cancel, style: 'cancel' },
+          { text: tr('호스트 넘기기'), onPress: handOver },
+          { text: t.meetup.end, style: 'destructive', onPress: () => confirmEnd(meetup) },
+        ]);
+        return;
+      }
+    }
+    confirmEnd(meetup);
+  };
+  const confirmEnd = (meetup: MyMeetup) => {
+    const host = meetup.role === 'host';
     const pending = meetup.role === 'pending';
     // react-native-web's Alert is a no-op, so web needs the browser confirm.
     if (Platform.OS === 'web') {
