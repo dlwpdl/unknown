@@ -49,6 +49,7 @@ import { supabase } from '@/lib/supabase';
 import { behavior } from '@/lib/behavior-analytics';
 import { MeetupSectionsEditor } from '@/components/meetup-sections';
 import { MeetupNewcomerOption } from '@/components/newcomer';
+import { useNow } from '@/components/live-bubbles';
 import { setMeetupNewcomer } from '@/lib/newcomer';
 import { MEETUP_DRAFT_FIELDS, meetupAiDraftChanges, meetupAiDraftFields, parseMeetupAiDraftResponse, type MeetupDraftField, type MeetupDraftFields, type MeetupDraftRevision } from '@/lib/ai-draft';
 import { splitEventMeetupBody } from '@/lib/meetup-ai';
@@ -87,7 +88,7 @@ function MeetupCreateForm() {
   const [cityId, setCityId] = useState<string | null>(null), [cityOpen, setCityOpen] = useState(false);
   const meetupCity = destination ? CITIES.find(item => item.id === destination.cityId && item.state === 'open') : invalidDestination ? undefined : CITIES.find(item => item.id === cityId && item.state === 'open') ?? city;
   const [eventReady, setEventReady] = useState(!invalidDestination && !ticketmasterEventId), [eventError, setEventError] = useState(''), [eventAttempt, setEventAttempt] = useState(0);
-  const [sourceEvent, setSourceEvent] = useState<TicketmasterEvent | null>(null);
+  const now = useNow(), [sourceEvent, setSourceEvent] = useState<TicketmasterEvent | null>(null);
   const loadedEvent = useRef('');
   const sourceEdited = useRef(false);
   const { isAuthed, me, promptLogin, isAdmin } = useAuth();
@@ -464,7 +465,7 @@ function MeetupCreateForm() {
   const weekdays = [0, 1, 2, 3, 4, 5, 6].map(day => new Intl.DateTimeFormat(locale, { timeZone: 'UTC', weekday: 'short' }).format(Date.UTC(2023, 0, 1 + day)));
   // The next button lights up only when its step is filled; checkStep still names the problem if something changes underneath.
   const whatReady = eventReady && !invalidDestination && kindChosen && !!title.trim() && !!body.trim();
-  const whenReady = event.kind === 'group' ? !!schedule.cadence.trim() : Date.parse(event.startsAt) > Date.now();
+  const whenReady = event.kind === 'group' ? !!schedule.cadence.trim() : Date.parse(event.startsAt) > now;
   const whoReady = !!question.trim() && (!hostPreview || hostConsent);
   const ready = [whatReady, whenReady, whoReady][step - 1];
   const caption = step === 1 ? whatReady ? '' : tr('종류·제목·소개를 채우면 넘어가요')
