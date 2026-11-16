@@ -59,7 +59,7 @@ export function SegmentSwitch<T extends string>({ choices, value, onSelect, disa
       accessibilityRole="tab" accessibilityState={{ selected: choice.value === value, disabled }} disabled={disabled}
       onPress={() => { play('reaction'); onSelect(choice.value); }}
       style={({ pressed }) => [styles.tab, { opacity: pressed ? 0.8 : 1 }]}>
-      <ThemedText type="smallBold" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[Typography.menu, { color: choice.value === value ? theme.accentInk : theme.text, textAlign: 'center' }]}>
+      <ThemedText type="smallBold" numberOfLines={1} maxFontSizeMultiplier={1.3} style={[Typography.menu, { color: choice.value === value ? theme.accentInk : theme.text, textAlign: 'center' }]}>
         {choice.label}
       </ThemedText>
     </Pressable>)}

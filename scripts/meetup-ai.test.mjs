@@ -81,6 +81,7 @@ export function form({ params = {}, sourceEvent, catalogReady = true, membership
     '@/lib/membership-provider': { useMembership: () => ({ membership, refresh() {} }) },
     '@/lib/interaction-feedback': { useInteractionFeedback: () => ({ play: kind => feedback.push(kind) }) },
     '@/lib/supabase': { supabase: { functions: { invoke: (...args) => new Promise((resolve, reject) => requests.push({ args, resolve, reject })) } } },
+    '@/components/live-bubbles': { useNow: () => Date.now() },
     '@/lib/chilling-data': { chillingProfilePreview, getChillingError: error => error.message, getChillingErrorCode: error => error.message, loadChillingProfile: async (_client, preview) => { profileReads.push(preview); return loadProfile ? loadProfile(hostProfile) : hostProfile; }, createChillingEvent: async (_client, value) => { writes.push(value); return create ? create(value) : 'new-meetup'; } },
     '@/lib/chilling': chilling, '@/lib/chilling-date': chillingDate,
     '@/lib/community-data': { getCommunityActionError: () => null, MEETUPS_CHANGED_EVENT: 'meetups.changed' },

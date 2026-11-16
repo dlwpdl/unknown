@@ -135,7 +135,7 @@ export const ChillingEvent = memo(function ChillingEvent({ post, city, onOpen, o
       {room?.fee ? <MeetupFeeLine fee={room.fee} /> : null}
       <View style={styles.footer}>
         <ThemedText type="small" style={styles.support} themeColor="textSecondary">{city}</ThemedText>
-        <ThemedText type="small" style={styles.support} themeColor="textSecondary">{post.room?.capacity ? tr("{0} / {1}명", post.room.memberCount ?? 0, post.room.capacity) : t.feed.members(post.room?.memberCount ?? 0)}{seatsLeft !== null ? seatsLeft > 0 ? tr(" · {0}자리 남음", (seatsLeft)) : tr(" · 정원 마감") : ''}</ThemedText>
+        <ThemedText type="small" style={styles.support} themeColor="textSecondary">{post.room?.capacity ? tr("{0} / {1}명", post.room.memberCount ?? 0, post.room.capacity) : t.feed.members(post.room?.memberCount ?? 0)}{seatsLeft !== null ? seatsLeft === 1 ? tr(" · 1자리 남음") : seatsLeft > 0 ? tr(" · {0}자리 남음", (seatsLeft)) : tr(" · 정원 마감") : ''}</ThemedText>
       </View>
       {/* 자리 현황은 숫자보다 막대가 먼저 읽힌다(정원이 있는 모임만). */}
       {room ? <SeatBar room={room} /> : null}

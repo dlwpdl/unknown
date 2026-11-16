@@ -563,7 +563,7 @@ export function PostCard({
             style={[styles.category, { color: isMeetup ? theme.accent : theme.textSecondary }]}>
             {tr(post.tag.label)}{isListing ? ` · ${listingKind}` : ''}
           </ThemedText>}
-          <ThemedText accessibilityRole={meetupDetail ? 'header' : undefined} style={[styles.title, flat && !onPress && styles.detailTitle, meetupDetail && Typography.sheetTitle]}>
+          <ThemedText accessibilityRole={meetupDetail ? 'header' : undefined} {...(meetupDetail && { maxFontSizeMultiplier: 2 })} style={[styles.title, flat && !onPress && styles.detailTitle, meetupDetail && Typography.sheetTitle]}>
             {translation.display.title}
           </ThemedText>
           {photo && (

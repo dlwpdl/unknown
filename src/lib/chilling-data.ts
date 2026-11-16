@@ -21,6 +21,11 @@ export function chillingAnswerChoice(field: keyof typeof CHILLING_ANSWER_CHOICES
   const text = answer.trim();
   return text ? CHILLING_ANSWER_CHOICES[field].find(choice => choice === text || translateUi('en', choice) === text) ?? null : null;
 }
+/** Saved choice answers shown in the viewer's language; free text stays as written. */
+export function chillingAnswerShown(field: keyof typeof CHILLING_ANSWER_CHOICES, text: string, tr: (text: string) => string): string { const choice = chillingAnswerChoice(field, text); return choice ? tr(choice) : text; }
+export function chillingProfileShown(value: ChillingProfile, tr: (text: string) => string): ChillingProfile {
+  return { ...value, intro: chillingAnswerShown('intro', value.intro, tr), promptOne: chillingAnswerShown('promptOne', value.promptOne, tr), promptTwo: chillingAnswerShown('promptTwo', value.promptTwo, tr) };
+}
 export type ChillingProfile = {
   intro: string; interests: string[]; promptOne: string; promptTwo: string;
   version?: 2; revision?: string; displayName?: string; cityId?: string; photoPaths?: string[]; publicPhotoPath?: string | null;

@@ -33,7 +33,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { chillingAvailability, recommendedAgeLabel } from '@/lib/chilling';
 import { useAuth } from '@/lib/auth';
-import { chillingProfilePreview, getChillingError, getChillingErrorCode, loadChillingProfile, loadMeetupParticipation, requestChillingJoin, saveChillingProfile, type ChillingProfile, type MeetupParticipation } from '@/lib/chilling-data';
+import { chillingProfilePreview, chillingProfileShown, getChillingError, getChillingErrorCode, loadChillingProfile, loadMeetupParticipation, requestChillingJoin, saveChillingProfile, type ChillingProfile, type MeetupParticipation } from '@/lib/chilling-data';
 import { leaveMeetup, MEETUPS_CHANGED_EVENT, requestMeetupJoin } from '@/lib/community-data';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { loadPublicPost } from '@/lib/feed-data';
@@ -507,7 +507,7 @@ function JoinForm({ postId, code = null }: { postId: string; code?: string | nul
     <DragSheet visible={sheetOpen} onClose={() => setSheetOpen(false)} title={tr('호스트에게 이렇게 보여요')}
       onDismissed={() => { if (editAfterSheet.current) { editAfterSheet.current = false; profileRoute(); } }}>
       {!!profile && <ScrollView analyticsId="app_meetup-join.scrollview.1" contentContainerStyle={styles.sheetBody}>
-        <ChillingProfileCard profile={chillingProfilePreview(profile, 'host')} />
+        <ChillingProfileCard profile={chillingProfileShown(chillingProfilePreview(profile, 'host'), tr)} />
         <RaisedActionButton analyticsId="app_meetup-join.pressable.6" tone="secondary" onPress={() => { play('selection'); editAfterSheet.current = true; setSheetOpen(false); }} label={tr("프로필 수정")} />
       </ScrollView>}
     </DragSheet>
