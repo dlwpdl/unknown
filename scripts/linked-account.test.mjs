@@ -37,7 +37,7 @@ process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://gling-test.supabase.co';
 process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'test-anon';
 registerHooks({
   resolve(specifier, context, nextResolve) {
-    if (specifier === 'react-native' || specifier === '@react-native-async-storage/async-storage') {
+    if (specifier === 'react-native' || specifier === '@react-native-async-storage/async-storage' || specifier === 'expo-secure-store') {
       return { url: 'data:text/javascript,export const Platform={OS:"web"}; export const DeviceEventEmitter={emit(){},addListener(){return {remove(){}}}}; export default {};', shortCircuit: true };
     }
     if (specifier.startsWith('@/lib/')) return nextResolve(new URL(`../src/${specifier.slice(2)}.ts`, import.meta.url).href, context);

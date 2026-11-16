@@ -5,7 +5,7 @@ import test from 'node:test';
 test('관리자·심사 로그인은 서버 역할을 확인한 뒤에만 앱 세션을 바꾼다', async (t) => {
   const hooks = registerHooks({
     resolve(specifier, context, nextResolve) {
-      if (specifier === 'react-native' || specifier === '@react-native-async-storage/async-storage') {
+      if (specifier === 'react-native' || specifier === '@react-native-async-storage/async-storage' || specifier === 'expo-secure-store') {
         return { url: 'data:text/javascript,export const Platform={OS:"web"}; export const DeviceEventEmitter={emit(){},addListener(){return {remove(){}}}}; export default {};', shortCircuit: true };
       }
       if (specifier.startsWith('@/lib/')) return nextResolve(new URL(`../src/${specifier.slice(2)}.ts`, import.meta.url).href, context);
