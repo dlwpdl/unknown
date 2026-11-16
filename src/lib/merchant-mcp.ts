@@ -5,11 +5,13 @@ import { tr } from '../i18n/index.ts';
 
 export type MerchantMcpAuthorization = { authorization_id: string; client_id: string; client_name: string; redirect_uri: string; scope: string; expires_at: string };
 export type MerchantMcpConnection = { id: string; client_id: string; client_name: string; merchant_ids: string[]; allow_drafts: boolean; allow_publish: boolean; is_connected: boolean;
-  businesses: { id: string; name: string }[]; created_at: string; expires_at: string; revoked_at: string | null; last_used_at: string | null };
+  personal_posts?: PersonalMcpPosts | null; businesses: { id: string; name: string }[]; created_at: string; expires_at: string; revoked_at: string | null; last_used_at: string | null };
 export type MerchantMcpChange = { id: string; kind: 'profile' | 'edit_post' | 'delete_post'; post_id: string | null;
   before_value: Record<string, unknown>; changes: Record<string, unknown>; status: 'pending' | 'applied' | 'rejected'; created_at: string; expires_at: string };
 export type MerchantMcpPhotoGroup = { label: string; uris: string[] };
-type Grant = { merchantIds: string[]; allowDrafts: boolean; allowPublish: boolean };
+// Personal posting is only for members on the operator's unlimited-posting list.
+export type PersonalMcpPosts = 'drafts' | 'publish';
+type Grant = { merchantIds: string[]; allowDrafts: boolean; allowPublish: boolean; personalPosts?: PersonalMcpPosts | null };
 type ReturnStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
 const returnKey = 'gling:merchant-ai:return:v1';
 export function clearMerchantMcpReturn(storage: ReturnStorage) { storage.removeItem(returnKey); }
@@ -47,13 +49,20 @@ async function expectAccount(client: SupabaseClient, userId: string) {
 }
 export const loadMerchantMcpConnections = (client: SupabaseClient) => call<MerchantMcpConnection[]>(client, 'get_my_merchant_mcp_connections');
 export const loadMerchantMcpChanges = (client: SupabaseClient, merchantId: string) => call<MerchantMcpChange[]>(client, 'get_my_merchant_mcp_changes', { p_merchant_id: merchantId });
+export async function loadPersonalMcpAccess(client: SupabaseClient) {
+  const { data, error } = await client.rpc('get_my_personal_mcp_access');
+  return !error && data === true;
+}
 export const loadMerchantMcpAuthorization = (client: SupabaseClient, authorizationId: string) => call<MerchantMcpAuthorization>(client, 'get_merchant_mcp_authorization', { p_authorization_id: authorizationId });
 export async function connectMerchantMcp(client: SupabaseClient, userId: string, authorization: MerchantMcpAuthorization, grant: Grant): Promise<string> {
   if (!validMerchantMcpAuthorizationId(authorization.authorization_id) || authorization.scope !== 'offline_access') throw new Error('MCP_SCOPE_NOT_ALLOWED');
-  if (!grant.merchantIds.length || grant.merchantIds.length > 50 || new Set(grant.merchantIds).size !== grant.merchantIds.length) throw new Error('INVALID_MCP_INPUT');
+  const personal = grant.personalPosts ?? null;
+  if ((!grant.merchantIds.length && !personal) || grant.merchantIds.length > 50 || new Set(grant.merchantIds).size !== grant.merchantIds.length
+    || (personal !== null && personal !== 'drafts' && personal !== 'publish')) throw new Error('INVALID_MCP_INPUT');
   await expectAccount(client, userId);
   const connection = await call<{ id: string }>(client, 'save_merchant_mcp_connection', { p_expected_actor_id: userId, p_client_id: authorization.client_id, p_merchant_ids: grant.merchantIds,
-    p_allow_drafts: grant.allowDrafts, p_allow_publish: grant.allowPublish });
+    // Business-only grants keep the original five arguments.
+    p_allow_drafts: grant.allowDrafts, p_allow_publish: grant.allowPublish, ...(personal ? { p_personal_posts: personal } : {}) });
   try {
     await expectAccount(client, userId);
     // Delay native auto-approval until the owner has reviewed the business grant.
