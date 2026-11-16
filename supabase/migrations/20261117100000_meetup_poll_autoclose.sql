@@ -62,7 +62,7 @@ begin
     end if;
     if private.is_active_account(r.author_id) then
       body:=case when decided then '「'||r.title||'」 투표가 닫혀서 표가 가장 많은 후보로 정해졌어요.'
-        else '「'||r.title||'」 투표가 닫혔어요. 동점이거나 표가 없는 항목이 있어서 아무것도 정하지 않았어요. 직접 골라 주세요.' end;
+        else '「'||r.title||'」 투표가 닫혔어요. 날짜나 장소 중 1등이 하나로 가려지지 않은 쪽이 있어서 아무것도 정하지 않았어요. 직접 골라 주세요.' end;
       perform private.create_notification(r.author_id,'meetup_changed',null,'post',r.post_id,body,
         case when r.room is null then '/post/'||r.post_id::text else '/chat?conversationId='||r.room::text end);
     end if;
