@@ -106,6 +106,7 @@ try:
     before = sql(PROBE).stdout.strip()
     assert len(before.splitlines()) == 6 and before.splitlines()[0] == '5', before
     sql(TUNE.read_text())
+    sql((ROOT / 'supabase/migrations/20261117010000_notification_bc_clock.sql').read_text())
     sql(OWNERS)
     after = sql(PROBE).stdout.strip()
     assert before == after, f'unknown kinds changed:\n{before}\n--- after ---\n{after}'
