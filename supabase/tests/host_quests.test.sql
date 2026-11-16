@@ -318,9 +318,9 @@ select private.run_host_quests();
 select is((select status||':'||converted_days from private.host_quests where user_id=pg_temp.u(20)),'converted:5','After 60 days $4 confirmed becomes 5 days');
 select is((select tier||':'||days||':'||reason from private.invite_rewards where user_id=pg_temp.u(20)),'pro:5:quest','The conversion reuses the invite reward grant as Pro');
 select is(private.membership_details(pg_temp.u(20))->>'tier','pro','Membership shows the converted Pro pass');
-select is(private.grant_invite_reward(pg_temp.u(20),null,'plus',pg_temp.u(35),'attended'),14,'Quest days do not use up the invite reward cap');
+select is(private.grant_invite_reward(pg_temp.u(20),null,'plus',pg_temp.u(35),'attended'),28,'Quest days do not use up the invite reward cap');
 select pg_temp.act(20); set local role authenticated;
-select is((public.get_my_invite()->>'grantedDays')::int,14,'The invite screen leaves quest days out');
+select is((public.get_my_invite()->>'grantedDays')::int,28,'The invite screen leaves quest days out');
 reset role;
 
 -- $20 송금: 사진 속 사람 수, 참석자 2명 확인, 받는 이름, 은행 이름 확인이 다 있어야 "보냄".
