@@ -36,7 +36,7 @@ export function ProfileAvatarButton({ enableBusinessSwitch = true, onBusinessSwi
       {isAuthed && me.photoUri
         ? <ClayPhoto uri={me.photoUri} size={IconSize.avatar} transition={ControlMotion.settleMs} />
         : isAuthed
-          ? <View style={[styles.avatar, { backgroundColor: clay ? 'transparent' : theme.accent }]}>{clay && <ClayCoinFill me />}<ThemedText type="smallBold" style={{ color: theme.accentInk }}>{me.nickname[0]}</ThemedText></View>
+          ? <View style={[styles.avatar, { backgroundColor: clay ? 'transparent' : theme.accent }]}>{clay && <ClayCoinFill me />}<ThemedText type="smallBold" maxFontSizeMultiplier={1} style={{ color: theme.accentInk }}>{me.nickname[0]}</ThemedText></View>
           : <ClayIcon clay="person" claySize={28} name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} size={24} tintColor={theme.text} />}
     </Pressable>
     </View>}{enableBusinessSwitch && <ChatIdentitySwitcher target="business" onAvailabilityChange={onBusinessSwitchAvailabilityChange} />}</View>
