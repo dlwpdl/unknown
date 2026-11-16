@@ -5179,6 +5179,7 @@ export const uiEnglish: Record<string, string> = {
   "투표 결과": "Poll result",
   "{0}명 중 {1}명이 골랐어요": "{1} of {0} have voted",
   "투표 끝내기": "End the poll",
+  "모임 하루 전에 저절로 닫혀요. 표가 가장 많은 후보로 정해지고, 같으면 호스트가 골라요.": "Closes on its own a day before the meetup. Most votes wins, and if it's tied the host picks.",
   "{0}표": "Votes: {0}",
   "정해졌어요": "Picked",
   "여러 개 고를 수 있고 언제든 바꿀 수 있어요. 누가 골랐는지는 보이지 않아요.": "Pick as many as you like and change them any time. Nobody can see who picked what.",

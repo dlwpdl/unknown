@@ -1,8 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-// Server contract: supabase/migrations/20261116140000_meetup_poll.sql. Counts only: the server never returns who voted.
+// Server contract: supabase/migrations/20261116140000_meetup_poll.sql (autoCloseAt: 20261117100000_meetup_poll_autoclose.sql, null = never closes by itself). Counts only: the server never returns who voted.
 export type PollOption = { id: string; kind: 'date' | 'place'; startsAt: string | null; label: string | null; chosen: boolean; votes: number; mine: boolean };
-export type MeetupPoll = { id: string; status: 'open' | 'decided'; canManage: boolean; closedAt: string | null; members: number; voters: number; options: PollOption[] };
+export type MeetupPoll = { id: string; status: 'open' | 'decided'; canManage: boolean; closedAt: string | null; autoCloseAt?: string | null; members: number; voters: number; options: PollOption[] };
 export type PollDraft = { dates: string[]; places: string[] };
 
 export const POLL_MAX_PER_KIND = 5;

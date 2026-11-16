@@ -73,6 +73,7 @@ export function MeetupPollCard({ postId, refreshKey = 0 }: { postId: string; ref
       <View style={styles.flex}>
         <ThemedText accessibilityRole="header" style={Typography.label}>{open ? title : tr('투표 결과')}</ThemedText>
         {open && <ThemedText themeColor="textSecondary" accessibilityLiveRegion="polite" style={Typography.caption}>{tr('{0}명 중 {1}명이 골랐어요', poll.members, poll.voters)}</ThemedText>}
+        {open && !!poll.autoCloseAt && <ThemedText themeColor="textSecondary" style={Typography.caption}>{tr('모임 하루 전에 저절로 닫혀요. 표가 가장 많은 후보로 정해지고, 같으면 호스트가 골라요.')}</ThemedText>}
       </View>
       {open && poll.canManage && <Pressable analyticsId="meetup.poll.decide" accessibilityRole="button" accessibilityLabel={tr('투표 끝내기')} hitSlop={8}
         onPress={() => { play('selection'); setDeciding(true); }} style={({ pressed }) => [styles.finish, { opacity: pressed ? 0.6 : 1 }]}>
