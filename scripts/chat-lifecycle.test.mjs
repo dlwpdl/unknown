@@ -1352,7 +1352,7 @@ test('a group room shows the meetup summary and only the host gets the manage sh
     const sheet = harness.nodes().find(node => node.type === 'MeetupManageSheet');
     assert.ok(sheet?.props.visible, 'pressing manage opens the sheet');
     const actions = sheet.props.actions.map(action => action.key);
-    assert.equal(actions.join(','), 'location,requests,share', 'ending stays in the header room settings only');
+    assert.equal(actions.join(','), 'location,requests,poll,share', 'ending stays in the header room settings only');
   }
 });
 
