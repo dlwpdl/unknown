@@ -69,7 +69,7 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
   meetup_visibility: [[/^이제 참여 중인 공개 모임에 신청하려는 사람도 내 이름, 한 줄 소개, 관심사를 볼 수 있어요\. 사진과 답변은 안 보여요\.$/, () => 'People applying to public meetups you’re in can now see your name, one-line intro and interests. Your photos and answers stay hidden.']],
   meetup_cancelled: [[/^(.+) 모임이 마감되거나 취소됐어요\. 모임 글에서 확인해 주세요\.$/, m => `“${m[1]}” was closed or cancelled. Check the meetup post for details.`]],
   meetup_changed: [
-    [/^「(.+)」 신청이 답을 받지 못한 채 일주일이 지나 닫혔어요\. 열려 있는 다른 모임을 둘러보세요\.$/, m => `Your request for “${m[1]}” closed after a week with no answer. Take a look at other open meetups.`],
+    [/^「(.+)」 호스트 답이 없어 신청이 닫혔어요\.$/, m => `The host didn’t answer, so your request for “${m[1]}” closed.`],
     // 열리면 알려 주세요: 20261116150100_meetup_waiting.sql.
     [/^기다리던 모임이 열렸어요\. ([\s\S]+)$/, m => `A meetup you were waiting for just opened: ${m[1]}`],
     [/^(.+) 모임의 시간이나 장소가 바뀌었어요\. 바뀐 내용을 확인해 주세요\.$/, m => `The time or place for “${m[1]}” changed. Check the updated details.`],

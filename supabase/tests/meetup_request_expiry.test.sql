@@ -35,14 +35,16 @@ update public.posts set status='removed' where id=(select dead_post from ids);
 select is(private.expire_meetup_requests(),4,'One sweep: one silent close, two no-answer closes, one host reminder');
 
 -- Removed meetup: closed quietly, nobody told, waitlist entry freed.
-select is((select status||'/'||expired_reason from public.meetup_requests where requester_id=(select gone from ids)),'expired/meetup_closed','Request on a removed meetup closes as meetup_closed');
+select is((select status||'/'||expired_reason from public.meetup_requests where requester_id=(select gone from ids)),'cancelled/meetup_closed','Request on a removed meetup closes as meetup_closed');
 select is((select count(*)::int from public.notifications where user_id in((select gone from ids),(select h from ids)) and target_id=(select id from public.meetup_requests where requester_id=(select gone from ids))),0,'The silent close sends nothing');
 select isnt((select cancelled_at from private.meetup_waitlist where user_id=(select gone from ids)),null,'Its waitlist entry is freed');
 
 -- Seven days: closed with its own reason, the applicant is told, the host is not (and it is not a rejection).
-select is((select status||'/'||expired_reason from public.meetup_requests where requester_id=(select eight from ids)),'expired/no_answer','Eight days pending closes as no_answer');
-select is((select count(*)::int from public.notifications where user_id=(select eight from ids) and kind='meetup_changed' and route='/meetups' and body like '%답을 받지 못한 채%'),1,'The applicant hears it closed without an answer, pointing to the meetups tab');
+select is((select status||'/'||expired_reason from public.meetup_requests where requester_id=(select eight from ids)),'cancelled/no_answer','Eight days pending closes as no_answer');
+select is((select count(*)::int from public.notifications where user_id=(select eight from ids) and kind='meetup_changed' and body like '%호스트 답이 없어 신청이 닫혔어요%' and route='/post/'||(select open_post from ids)),1,'The applicant hears it closed without an answer, and the notice opens that meetup');
 select is((select count(*)::int from public.notifications where user_id=(select eight from ids) and kind='meetup_rejected'),0,'It never reads as a rejection');
+select is((select count(*)::int from public.meetup_requests where expired_reason is not null and responded_at is not null),0,'Closed requests keep responded_at empty (no re-apply wait, no cancelled-notice access)');
+select is((select count(*)::int from public.notifications where user_id=(select h from ids) and target_id in(select id from public.meetup_requests where expired_reason is not null)),0,'The host is not told about the close');
 select isnt((select cancelled_at from private.meetup_waitlist where user_id=(select eight from ids)),null,'Its waitlist entry is freed');
 
 -- Two days: one reminder to the host, once.
@@ -59,6 +61,13 @@ select is((select status from public.meetup_requests where requester_id=(select 
 update public.meetup_requests set status='pending',created_at=now()-interval '3 days' where requester_id=(select again from ids);
 select ok((select reminded_at is null and expired_reason is null from public.meetup_requests where requester_id=(select again from ids)),'A re-applied request is reset');
 select is(private.expire_meetup_requests(),1,'The re-applied request is reminded after two days');
+
+-- Someone whose request closed unanswered still sees the meetup; a requester who cancelled themselves does not.
+update public.meetup_requests set status='cancelled' where requester_id=(select fresh from ids);
+select set_config('request.jwt.claims',jsonb_build_object('sub',eight,'role','authenticated')::text,true) from ids;
+select is(private.chilling_context_visible((select open_post from ids),(select eight from ids)),true,'An unanswered-closed requester still sees the meetup');
+select set_config('request.jwt.claims',jsonb_build_object('sub',fresh,'role','authenticated')::text,true) from ids;
+select is(private.chilling_context_visible((select open_post from ids),(select fresh from ids)),false,'A requester who cancelled does not');
 
 select ok((select command from cron.job where jobname='gling-meetup-tidy') like '%private.expire_meetup_requests()%' and (select command from cron.job where jobname='gling-meetup-tidy') like '%tidy_empty_meetups%','The existing tidy job runs it and keeps its old work');
 select * from finish();

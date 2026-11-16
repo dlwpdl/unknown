@@ -24,7 +24,7 @@ import { useContentVisibility } from '@/hooks/use-content-visibility';
 import { useTheme } from '@/hooks/use-theme';
 import { useInteractionFeedback } from '@/lib/interaction-feedback';
 import { useAuth } from '@/lib/auth';
-import { getChillingError, getChillingErrorCode, loadChillingApplication, loadMeetupRequestStatus, respondMeetupRequestV2, type ChillingApplication, type MeetupParticipation } from '@/lib/chilling-data';
+import { getChillingError, getChillingErrorCode, loadChillingApplication, loadMeetupRequestStatus, requestUnanswered, respondMeetupRequestV2, type ChillingApplication, type MeetupParticipation } from '@/lib/chilling-data';
 import { CITIES } from '@/lib/mock';
 import { loadPendingMeetupRequests, MEETUPS_CHANGED_EVENT, type MeetupRequest } from '@/lib/community-data';
 import { useMembership } from '@/lib/membership-provider';
@@ -138,7 +138,7 @@ function Application({ requestId }: { requestId: string }) {
           : <View style={[styles.avatar, styles.initial, { backgroundColor: theme.backgroundElement }]}><ThemedText type="subtitle">{(identity?.nickname ?? tr("신청자")).slice(0, 1)}</ThemedText></View>}
         <View style={styles.identityBody}><ThemedText style={styles.name}>{identity?.nickname ?? tr("신청자")}</ThemedText>
           {!!identity?.city_id && <ThemedText type="small" themeColor="textSecondary">{tr(CITIES.find(city => city.id === identity.city_id)?.name ?? identity.city_id)}</ThemedText>}
-          {application.request && <ThemedText type="smallBold" themeColor="accent">{{ pending: tr("승인 대기"), approved: tr("참여 승인"), rejected: tr("신청 거절"), cancelled: tr("신청 취소됨"), expired: tr("답 없이 닫힘") }[application.request.status]}</ThemedText>}
+          {application.request && <ThemedText type="smallBold" themeColor="accent">{{ pending: tr("승인 대기"), approved: tr("참여 승인"), rejected: tr("신청 거절"), cancelled: requestUnanswered(application.request) ? tr("호스트 답 없음") : tr("신청 취소됨") }[application.request.status]}</ThemedText>}
         </View>
       </View>
       {application.request?.host_id === me.id && <MeetupLanguageCounts postId={application.postId} requestId={requestId} />}
@@ -148,7 +148,7 @@ function Application({ requestId }: { requestId: string }) {
       <ChillingProfileCard profile={application.profile} />
       {!own && manner && <MannerSummary summary={manner} />}
       <InfoNote>{tr("이름·사진·소개·답변은 신청할 때 보낸 그대로예요. 그 뒤에 프로필을 고쳐도 여기는 바뀌지 않아요.")}</InfoNote>
-    </> : <StateCard kind={error ? 'error' : requestStatus?.status === 'approved' ? 'success' : 'blocked'} title={error ? tr("신청 정보를 불러오지 못했어요") : requestStatus ? { pending: tr("신청은 승인 대기 중이에요"), approved: tr("이미 승인된 신청이에요"), rejected: tr("거절된 신청이에요"), cancelled: tr("취소된 신청이에요"), expired: tr("답 없이 닫힌 신청이에요") }[requestStatus.status] : tr("신청 프로필을 볼 수 없어요")} body={tr(error || '공유된 신청 프로필은 현재 열람할 수 없어요.')} actionLabel={error ? tr('다시 불러오기') : undefined} onAction={() => setRetry(x => x + 1)} />}
+    </> : <StateCard kind={error ? 'error' : requestStatus?.status === 'approved' ? 'success' : 'blocked'} title={error ? tr("신청 정보를 불러오지 못했어요") : requestStatus ? { pending: tr("신청은 승인 대기 중이에요"), approved: tr("이미 승인된 신청이에요"), rejected: tr("거절된 신청이에요"), cancelled: requestUnanswered(requestStatus) ? tr("호스트 답이 없어 신청이 닫혔어요") : tr("취소된 신청이에요") }[requestStatus.status] : tr("신청 프로필을 볼 수 없어요")} body={tr(error || '공유된 신청 프로필은 현재 열람할 수 없어요.')} actionLabel={error ? tr('다시 불러오기') : undefined} onAction={() => setRetry(x => x + 1)} />}
     {!!actionError && <Pressable analyticsId="app_meetup-application.pressable.2" onPress={() => { play('selection'); setRetry(x => x + 1); }} style={[styles.button, clay && styles.clayPad]} accessibilityRole="button">{clay && <ClayPillFill kind="white" />}<ThemedText themeColor="accent">{tr("현재 상태 다시 확인")}</ThemedText></Pressable>}
   </ScrollView>}
   {!loading && canRespond && <View style={[styles.footer, { backgroundColor: theme.background, borderColor: theme.line }]}>

@@ -51,9 +51,8 @@ function WaitingBlock({ kind, refId, cityId }: { kind: MeetupWaitingKind; refId:
   return <View style={[styles.card, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>
     {clayBox && <ClayBoxFill kind="tile" />}
     <ThemedText accessibilityRole="header" style={Typography.section}>{tr('아직 열린 모임이 없어요')}</ThemedText>
-    <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">
-      {state.count > 0 ? tr('{0}명이 기다리고 있어요. 모임이 열리면 알림으로 알려 드려요.', state.count) : tr('모임이 열리면 알림으로 알려 드려요.')}
-    </ThemedText>
+    <ThemedText type="small" themeColor="textSecondary">{tr('모임이 열리면 알림으로 알려 드려요.')}</ThemedText>
+    {state.count > 0 && <ThemedText type="small" themeColor="textSecondary" accessibilityLiveRegion="polite">{state.count === 1 ? tr('1명이 기다리고 있어요.') : tr('{0}명이 기다리고 있어요.', state.count)}</ThemedText>}
     <RaisedActionButton analyticsId={state.mine ? 'meetup.waiting.leave' : 'meetup.waiting.join'} tone="secondary" busy={saving}
       label={state.mine ? tr('알림 받는 중 · 취소하기') : tr('열리면 알려 주세요')} onPress={() => { play('selection'); void toggle(); }} />
     {error && <ThemedText type="small" accessibilityRole="alert">{tr('저장하지 못했어요. 다시 시도해 주세요.')}</ThemedText>}
