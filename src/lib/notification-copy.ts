@@ -79,6 +79,13 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
     [/^(.+?)님이 「(.+)」 호스트를 넘겨받았어요\. 이제 멤버로 함께해요\.$/, m => `${m[1]} took over hosting “${m[2]}”. You’re a member now.`],
     [/^「(.+)」 모임의 호스트가 (.+)님으로 바뀌었어요\. 일정과 장소는 그대로예요\.$/, m => `The host of “${m[1]}” is now ${m[2]}. The time and place haven’t changed.`],
     [/^「(.+?)」 체크인을 맡게 됐어요\./, m => `You’re on check-in for “${m[1]}”. When the meetup starts, check people in from the attendance screen.`],
+    // Meetup polls: 20261116140000_meetup_poll.sql. Result patterns go date+place, date, then place so a place never reads as a date.
+    [/^「(.+?)」 날짜와 장소 투표가 열렸어요\. 되는 날과 가고 싶은 곳을 골라 주세요\.$/, m => `A date and place poll is open for “${m[1]}”. Pick the days that work and the places you like.`],
+    [/^「(.+?)」 날짜 투표가 열렸어요\. 되는 날을 골라 주세요\.$/, m => `A date poll is open for “${m[1]}”. Pick the days that work for you.`],
+    [/^「(.+?)」 장소 투표가 열렸어요\. 가고 싶은 곳을 골라 주세요\.$/, m => `A place poll is open for “${m[1]}”. Pick the places you’d like to go.`],
+    [/^「(.+?)」 투표 결과가 나왔어요\. (\d{2})\/(\d{2}) (\d{2}):(\d{2}) · ([\s\S]+)$/, m => `Poll results are in for “${m[1]}”: ${monthDay(m[2], m[3])} at ${clock(m[4], m[5])} (local time) · ${m[6]}`],
+    [/^「(.+?)」 투표 결과가 나왔어요\. (\d{2})\/(\d{2}) (\d{2}):(\d{2})$/, m => `Poll results are in for “${m[1]}”: ${monthDay(m[2], m[3])} at ${clock(m[4], m[5])} (local time)`],
+    [/^「(.+?)」 투표 결과가 나왔어요\. ([\s\S]+)$/, m => `Poll results are in for “${m[1]}”: ${m[2]}`],
   ],
   trending_post: [[/^오늘 (.+?) 소식, 같이 읽어볼까요\? (.+)$/, (m, translate) => `Today in ${translate(m[1])}: ${m[2]}`], eventPattern],
   city_places: [eventPattern],
