@@ -15,8 +15,8 @@ from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT = 'wjvahbdwmctzpkndqaxa'
-# Same limit as the octet_length(payload::text) check in supabase/migrations/20261018040000_city_place_catalog.sql; raise both together.
-CATALOG_DB_LIMIT = 2_000_000
+# Same limit as the octet_length(payload::text) check in supabase/migrations/20261116180000_city_place_catalog_4mb.sql; raise both together.
+CATALOG_DB_LIMIT = 4_000_000
 
 def https(value):
     if not isinstance(value, str) or len(value) > 2500: return False

@@ -185,7 +185,7 @@ def main():
         before = size(catalog)
         applied = apply(catalog, places)
         after = size(catalog)
-        summary['catalog'] = dict(path=str(args.catalog), collectedAt=catalog['collectedAt'], placesTagged=applied, before=before, after=after, limit=2_000_000)
+        summary['catalog'] = dict(path=str(args.catalog), collectedAt=catalog['collectedAt'], placesTagged=applied, before=before, after=after, limit=4_000_000)
         # Simulator preview only: a newer collectedAt keeps the bundled copy ahead of the live one. Never commit it.
         catalog['collectedAt'] = datetime.now(timezone.utc).isoformat()
         (args.output / 'catalog-preview.json').write_text(json.dumps(catalog, ensure_ascii=False, separators=(',', ':')))
