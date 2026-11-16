@@ -60,7 +60,7 @@ export const LEGAL_DOCUMENTS = {
   terms: {
     title: '이용약관',
     eyebrow: 'Terms of Use',
-    effectiveDate: '2026년 11월 13일',
+    effectiveDate: '2026년 11월 16일',
     summary: '이 약관은 캐나다 한인 커뮤니티 gling의 계정, 콘텐츠, 대화와 안전 운영에 적용됩니다.',
     sections: [
       {
@@ -160,7 +160,7 @@ export const LEGAL_DOCUMENTS = {
   privacy: {
     title: '개인정보처리방침',
     eyebrow: 'Privacy Policy',
-    effectiveDate: '2026년 11월 13일',
+    effectiveDate: '2026년 11월 16일',
     summary: 'gling은 게시글, 댓글과 대화를 포함한 서비스 데이터를 처리하며, 모든 새 콘텐츠에 자동 안전 분석을 적용하고 권한 있는 관리자가 감사 기록을 남기며 검토할 수 있습니다.',
     sections: [
       {
