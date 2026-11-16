@@ -75,12 +75,12 @@ export function MeetupQuickFields(props: QuickFieldsProps) {
       {error(props.scheduleError)}
     </View>
     <View style={styles.field}>
-      <ThemedText type="smallBold" style={styles.label}>{tr('몇 명')}</ThemedText>
+      <ThemedText type="smallBold" style={styles.label}>{tr('정원 (호스트 포함)')}</ThemedText>
       {props.seatControl}
       <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{props.seatNote}</ThemedText>
       {error(props.seatError)}
     </View>
-    <Disclosure analyticsId="meetup.create.quick.rest" title={tr('나머지는 이렇게 정해 뒀어요')} value={tr('{0} · 질문 1개 · 내가 승인', props.access === 'invite' ? tr('초대용') : tr('공개'))}>
+    <Disclosure analyticsId="meetup.create.quick.rest" title={tr('나머지는 이렇게 정해 뒀어요')} value={tr('{0} · 신청 질문 1개 · 승인은 내가 해요', props.access === 'invite' ? tr('초대용') : tr('공개'))}>
       <View style={styles.field}>
         <ThemedText type="smallBold" style={styles.label}>{tr('누가 신청할 수 있나요?')}</ThemedText>
         <SegmentSwitch analyticsId="meetup.create.access" accessibilityLabel={tr('누가 신청할 수 있나요?')} disabled={saving} value={props.access} onSelect={props.onAccess}

@@ -23,11 +23,11 @@ export function MeetupTopicStart({ topic, ask, onPick, onReplace, onKeep, disabl
       return <SelectionChip key={item.id} analyticsId="meetup.create.topic_start" selected={selected} disabled={disabled} accessibilityRole="radio" accessibilityState={{ checked: selected, disabled }}
         label={tr(item.label)} onPress={() => { play('selection'); onPick(item); }} />;
     })}</View>
-    <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('주제를 고르면 제목과 소개의 시작 틀이 채워져요. 고르지 않아도 돼요.')}</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('주제를 고르면 제목과 소개 예시를 넣어 드려요. 안 골라도 돼요.')}</ThemedText>
     {!!ask && <View style={styles.field} accessibilityLiveRegion="polite">
-      <InfoNote>{tr('이미 적은 글이 있어요. ‘{0}’ 틀로 바꿀까요?', tr(ask.label))}</InfoNote>
+      <InfoNote>{tr('이미 적은 글이 있어요. ‘{0}’ 예시로 바꿀까요?', tr(ask.label))}</InfoNote>
       <View style={styles.chips}>
-        <RaisedActionButton compact analyticsId="meetup.create.topic_start.replace" disabled={disabled} label={tr('틀로 바꾸기')} onPress={() => { play('selection'); onReplace(); }} />
+        <RaisedActionButton compact analyticsId="meetup.create.topic_start.replace" disabled={disabled} label={tr('예시로 바꾸기')} onPress={() => { play('selection'); onReplace(); }} />
         <RaisedActionButton compact tone="secondary" analyticsId="meetup.create.topic_start.keep" disabled={disabled} label={tr('내 글 그대로')} onPress={() => { play('selection'); onKeep(); }} />
       </View>
     </View>}

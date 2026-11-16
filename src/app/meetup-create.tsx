@@ -576,7 +576,7 @@ function MeetupCreateForm() {
       </View>
       {!!startTopic && !sourcePlace && !ticketmasterEventId && <View style={styles.field}>
         <ThemedText type="smallBold" style={styles.label}>{tr('모임 정보')}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('세 칸이에요. 비워 두면 상세에 안 나와요.')}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('세 칸이에요. 비워 두면 모임 화면에 안 나와요.')}</ThemedText>
         <MeetupInfoCellsEditor cells={infoCells} topic={startTopic} onChange={changeInfoCells} disabled={saving} />
       </View>}
       <Pressable analyticsId="meetup-create.assistance" accessibilityRole="button" accessibilityState={{ expanded: assistanceOpen }} onPress={() => { play('selection'); animateLayout(!!reducedMotion); setAssistanceOpen(value => !value); }} style={({ pressed }) => [styles.disclosure, { opacity: pressed ? 0.82 : 1 }]}>
