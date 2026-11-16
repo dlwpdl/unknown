@@ -71,6 +71,7 @@ test('the attested HANDSON visit binds to the actual847Denman venue without inve
   const visits = json('src/lib/gling-visited.json');
   const place = catalog.cities.vancouver.places.find(item => item.id === 'osm:node:4976343547');
   assert.ok(place?.address.includes('847 Denman'));
+  assert.equal(place.name, 'By Handson');
   assert.equal(place.website, 'https://www.handsonyvr.ca');
   const visit = visits.find(item => item.placeId === place.id);
   assert.deepEqual({ cityId: visit.cityId, placeId: visit.placeId, sourceUrl: visit.sourceUrl },

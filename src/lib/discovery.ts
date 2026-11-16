@@ -84,7 +84,7 @@ export type DiscoveryItem = {
   startsAt?: string | null; endsAt?: string | null; localDate?: string | null;
   top25?: CityTop25Place;
   place?: CityPlace;
-  glingVisited?: { sourceUrl: string };
+  glingVisited?: { sourceUrl: string; line?: { ko: string; en: string } };
   delivery?: boolean;
   merchantId?: string;
   webshopDiscount?: number;

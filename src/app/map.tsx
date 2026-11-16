@@ -755,10 +755,11 @@ function GlingVisitedBadge() {
   return <VisitedBadge style={styles.visitedCard} />;
 }
 function GlingVisitNote({ item }: { item: DiscoveryItem }) {
-  const theme = useTheme(), { play } = useInteractionFeedback(), { tr } = useLanguage();
+  const theme = useTheme(), { play } = useInteractionFeedback(), { tr, language } = useLanguage();
   if (!item.glingVisited) return null;
+  const line = item.glingVisited.line;
   return <View style={[styles.top25Note, { borderTopColor: theme.line }]}>
-    <ThemedText type="small" themeColor="textSecondary">{tr("글링이 직접 다녀온 곳이에요.")}</ThemedText>
+    {line ? <ThemedText type="smallBold">{language === 'en' ? line.en : line.ko}</ThemedText> : <ThemedText type="small" themeColor="textSecondary">{tr("글링이 직접 다녀온 곳이에요.")}</ThemedText>}
     {!!item.glingVisited!.sourceUrl && <Pressable analyticsId="discovery.card" accessibilityRole="link" accessibilityLabel={tr("{0} 글링 방문 영상 보기, 외부 사이트", item.title)}
       onPress={() => { play('selection'); void Linking.openURL(item.glingVisited!.sourceUrl).catch(() => { play('warning'); Alert.alert(tr("방문 영상을 열지 못했어요"), tr("인터넷 연결을 확인하고 다시 시도해 주세요.")); }); }} style={styles.top25Source}>
       <ThemedText type="smallBold" themeColor="accent">{tr("글링 방문 영상 보기 ↗")}</ThemedText>
