@@ -130,7 +130,8 @@ select is((select outcome from private.invite_redemptions where invitee_id=pg_te
 -- Summary for the member: counts only.
 select pg_temp.act(1); set local role authenticated;
 select is((public.get_my_invite()->>'joined')::int,7,'Invite summary counts sign-ups');
-select is((public.get_my_invite()->>'rewarded')::int,4,'Invite summary counts rewarded invites');
+-- Two 4-week passes reach the 8-week cap, so of A's 7 sign-ups only 2 are rewarded (it was 4 two-week passes).
+select is((public.get_my_invite()->>'rewarded')::int,2,'Invite summary counts rewarded invites');
 select ok(public.get_my_invite()::text !~ 'e1000000-','No invitee ids leak');
 reset role;
 
@@ -164,7 +165,9 @@ update auth.users set raw_app_meta_data='{"role":"admin"}' where id=pg_temp.u(5)
 insert into auth.sessions(id,user_id,aal) values ('e1400000-0000-4000-8000-000000000001',pg_temp.u(5),'aal2');
 select set_config('request.jwt.claims',json_build_object('sub',pg_temp.u(5),'role','authenticated','aal','aal2','session_id','e1400000-0000-4000-8000-000000000001','app_metadata',json_build_object('role','admin'))::text,true);
 set local role authenticated;
-select is((select (r->>'joined')::int||'/'||(r->>'attended')::int||'/'||(r->>'rewarded')::int from jsonb_array_elements(public.get_admin_invite_links()) r where r->>'code'=(select code from codes where owner=1)),'7/7/4','Admin sees sign-ups, confirmed meetups and rewards per link');
+select is((select (r->>'joined')::int||'/'||(r->>'attended')::int||'/'||(r->>'rewarded')::int from jsonb_array_elements(public.get_admin_invite_links()) r where r->>'code'=(select code from codes where owner=1)),'7/7/2','Admin sees sign-ups, confirmed meetups and rewards per link');
+-- Not counted: 3 past the cap + 1 shared device + 1 self-invite.
+select is((select (r->>'notCounted')::int from jsonb_array_elements(public.get_admin_invite_links()) r where r->>'code'=(select code from codes where owner=1)),5,'Invites past the cap show as not counted for the admin');
 select is((select (r->>'businessPosted')::int from jsonb_array_elements(public.get_admin_invite_links()) r where r->>'businessName'='Invite cafe X'),1,'Admin sees first business posts per business link');
 reset role;
 
