@@ -128,6 +128,11 @@ test('사진 수정은 기존 사진을 유지·개별 삭제하고 추가한 �
   assert.equal(uploaded.length, 1, '순서 변경은 기존 사진을 다시 업로드하지 않는다');
   await editPost(client, 'post', { title: '사진', body: '모두 제거' }, { userId: 'author', images: [] });
   assert.deepEqual(patches[2].image_paths, []);
+  const listingDetails = { type: 'housing', deal: 'rent_offer', includes: ['laundry'], lead: '렌트 내놓음 · 인스위트 세탁기' };
+  await editPost(client, 'post', { title: '렌트', body: '렌트 내놓음 · 인스위트 세탁기', listingDetails, price: 2100 });
+  assert.deepEqual(patches[3], { title: '렌트', body: '렌트 내놓음 · 인스위트 세탁기', listing_details: listingDetails, price: 2100 }, '글 수정 saves the card with the body that carries its first line');
+  await editPost(client, 'post', { title: '렌트', body: '렌트 내놓음 · 인스위트 세탁기', listingDetails });
+  assert.equal('price' in patches[4], false, 'an unchanged price is not sent');
   assert.deepEqual(removed, [], '기존 원본은 수정 취소와 다른 참조를 위해 삭제하지 않는다');
   await assert.rejects(editPost(client, 'post', { title: '사진', body: '수정' }, { userId: 'author', images: [{ path: 'other/private.webp' }] }), /INVALID_IMAGE_PATH/);
 });

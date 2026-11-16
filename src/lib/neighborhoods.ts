@@ -91,6 +91,11 @@ export function nearestNeighborhood(cityId: string, pin: PostPin, maxKm = 6): Ne
   return best;
 }
 
+// A rent post published as a business shows the listing address it gave (owner 2026-11-13 "그 주소위 지도에 그 렌트 매물이 보여져야").
+// post.business is the server's business_author_id, which a member cannot set; café copies get it from link_admin_merchant_post.
+// A member's own post never shows a home, so it snaps below.
+export const exactListingAddress = (post: { business?: object | null; tag: { slug: string } }) => !!post.business && post.tag.slug === 'housing';
+
 // A listing never appears at a tapped point: snap to a neighborhood centre, otherwise round to ~1 km.
 export function coarseListingPin(cityId: string, pin: PostPin): { latitude: number; longitude: number; neighborhood: Neighborhood | null } {
   const neighborhood = nearestNeighborhood(cityId, pin);
