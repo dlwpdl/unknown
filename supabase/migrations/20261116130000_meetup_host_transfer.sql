@@ -73,7 +73,7 @@ begin
   insert into private.meetup_role_audit(post_id,actor_id,action,target_id) values(event.id,u,'transfer_offer',p_user_id);
   select nickname::text into host_name from public.profiles where id=u;
   perform private.create_notification(p_user_id,'meetup_changed',u,'post',event.id,
-    host_name||'님이 「'||left(event.title,60)||'」 모임의 호스트를 넘기고 싶어 해요. 수락하면 이 모임을 이어서 맡아요.','/post/'||event.id::text);
+    host_name||'님이 「'||left(event.title,60)||'」 모임의 호스트를 넘기고 싶어 해요. 수락하면 이 모임을 넘겨받아요.','/post/'||event.id::text);
   return transfer_id;
 end;
 $$;
@@ -110,7 +110,7 @@ begin
       insert into private.meetup_role_audit(post_id,actor_id,action,target_id) values(p_post_id,u,'transfer_decline',offer.from_user_id);
       select nickname::text into new_name from public.profiles where id=u;
       perform private.create_notification(offer.from_user_id,'meetup_changed',u,'post',p_post_id,
-        new_name||'님이 「'||left((select title from public.posts where id=p_post_id),60)||'」 호스트를 맡지 않기로 했어요. 모임은 그대로 열려 있어요.','/post/'||p_post_id::text);
+        new_name||'님이 「'||left((select title from public.posts where id=p_post_id),60)||'」 호스트를 넘겨받지 않기로 했어요. 모임은 그대로 열려 있어요.','/post/'||p_post_id::text);
     end if;
     return;
   end if;
@@ -164,7 +164,7 @@ begin
 
   headline:=left(event.title,60);
   -- shortcut: one notification per member inside this transaction; move to a queue if meetups routinely pass a few hundred members.
-  perform private.create_notification(old_host,'meetup_changed',u,'post',event.id,new_name||'님이 「'||headline||'」 호스트를 이어받았어요. 이제 멤버로 함께해요.','/post/'||event.id::text);
+  perform private.create_notification(old_host,'meetup_changed',u,'post',event.id,new_name||'님이 「'||headline||'」 호스트를 넘겨받았어요. 이제 멤버로 함께해요.','/post/'||event.id::text);
   for person in select r.requester_id from public.meetup_requests r where r.post_id=event.id and r.status='approved' and r.requester_id not in(old_host,u) loop
     perform private.create_notification(person.requester_id,'meetup_changed',u,'post',event.id,'「'||headline||'」 모임의 호스트가 '||new_name||'님으로 바뀌었어요. 일정과 장소는 그대로예요.','/post/'||event.id::text);
   end loop;

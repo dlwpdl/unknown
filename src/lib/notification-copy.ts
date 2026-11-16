@@ -74,9 +74,9 @@ const NOTIFICATION_PATTERNS: Record<string, Pattern[]> = {
     [/^「(.+?)」 공지: ([\s\S]+)$/, m => `Note from the host of “${m[1]}”: ${m[2]}`],
     [/^「(.+?)」 다음 모임 날짜가 잡혔어요\. (\d{2})\/(\d{2}) (\d{2}):(\d{2}) \(모임 현지 시간\)$/, m => `The next “${m[1]}” is set for ${monthDay(m[2], m[3])} at ${clock(m[4], m[5])} (local time).`],
     // Host transfer: 20261116130000_meetup_host_transfer.sql.
-    [/^(.+?)님이 「(.+)」 모임의 호스트를 넘기고 싶어 해요\. 수락하면 이 모임을 이어서 맡아요\.$/, m => `${m[1]} wants to hand over hosting of “${m[2]}”. Accept to take the meetup over.`],
-    [/^(.+?)님이 「(.+)」 호스트를 맡지 않기로 했어요\. 모임은 그대로 열려 있어요\.$/, m => `${m[1]} chose not to take over hosting “${m[2]}”. The meetup stays open.`],
-    [/^(.+?)님이 「(.+)」 호스트를 이어받았어요\. 이제 멤버로 함께해요\.$/, m => `${m[1]} took over hosting “${m[2]}”. You’re a member now.`],
+    [/^(.+?)님이 「(.+)」 모임의 호스트를 넘기고 싶어 해요\. 수락하면 이 모임을 넘겨받아요\.$/, m => `${m[1]} wants to hand over hosting of “${m[2]}”. Accept to take the meetup over.`],
+    [/^(.+?)님이 「(.+)」 호스트를 넘겨받지 않기로 했어요\. 모임은 그대로 열려 있어요\.$/, m => `${m[1]} chose not to take over hosting “${m[2]}”. The meetup stays open.`],
+    [/^(.+?)님이 「(.+)」 호스트를 넘겨받았어요\. 이제 멤버로 함께해요\.$/, m => `${m[1]} took over hosting “${m[2]}”. You’re a member now.`],
     [/^「(.+)」 모임의 호스트가 (.+)님으로 바뀌었어요\. 일정과 장소는 그대로예요\.$/, m => `The host of “${m[1]}” is now ${m[2]}. The time and place haven’t changed.`],
     [/^「(.+?)」 체크인을 맡게 됐어요\./, m => `You’re on check-in for “${m[1]}”. When the meetup starts, check people in from the attendance screen.`],
   ],

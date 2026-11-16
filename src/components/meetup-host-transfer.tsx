@@ -78,31 +78,31 @@ function Transfer({ postId, side, onChanged }: { postId: string; side: 'host' | 
   };
 
   const noticeText = notice === 'offered' ? tr('제안을 보냈어요. 상대가 수락하면 호스트가 바뀌어요.') : notice === 'cancelled' ? tr('제안을 취소했어요.')
-    : notice === 'accepted' ? tr('호스트를 맡았어요. 이제 모임을 이끌어 주세요.') : notice === 'declined' ? tr('제안을 거절했어요.') : '';
+    : notice === 'accepted' ? tr('호스트를 넘겨받았어요.') : notice === 'declined' ? tr('제안을 거절했어요.') : '';
   const status = <>
     {!!error && <ThemedText type="small" accessibilityRole="alert" themeColor="danger" style={styles.helper}>{error}</ThemedText>}
     {!!noticeText && <ThemedText type="small" accessibilityLiveRegion="polite" themeColor="textSecondary" style={styles.helper}>{noticeText}</ThemedText>}
   </>;
   const card = (children: React.ReactNode) => <View style={[styles.panel, clayBox ? styles.clayCard : { backgroundColor: theme.card, borderColor: theme.line }]}>{clayBox && <ClayBoxFill kind="tile" />}{children}</View>;
-  const left = (expiresAt: string) => { const days = transferDaysLeft(expiresAt); return days <= 1 ? tr('오늘 안에 답하지 않으면 제안이 끝나요') : tr('{0}일 안에 답하지 않으면 제안이 끝나요', days); };
+  const left = (expiresAt: string) => { const days = transferDaysLeft(expiresAt); return days <= 1 ? tr('오늘 안에 답이 없으면 제안이 닫혀요') : tr('{0}일 안에 답이 없으면 제안이 닫혀요', days); };
 
   if (!state) return null;
 
   if (state.offer) {
     if (side === 'host') return null;
     const offer = state.offer;
-    const blocked = offer.blocker === 'TRANSFER_CAPACITY_EXCEEDED' ? tr('정원 {0}명이 내 정원 한도 {1}명보다 커서 받을 수 없어요.', offer.capacity ?? 0, offer.seatLimit)
-      : offer.blocker ? tr(hostTransferErrorText(new Error(offer.blocker)) ?? '지금은 받을 수 없어요.') : '';
+    const blocked = offer.blocker === 'TRANSFER_CAPACITY_EXCEEDED' ? tr('이 모임 정원은 {0}명인데 내 한도는 {1}명이라 넘겨받을 수 없어요.', offer.capacity ?? 0, offer.seatLimit)
+      : offer.blocker ? tr(hostTransferErrorText(new Error(offer.blocker)) ?? '지금은 넘겨받을 수 없어요.') : '';
     // A profile without photos loaded still publishes; only a failed read of what will be shown stops the answer.
     const ready = !blocked && !busy && !!profile && !profileFailed;
     return card(<>
       <ThemedText type="smallBold" accessibilityRole="header">{tr('{0}님이 호스트를 넘기고 싶어 해요', offer.hostName)}</ThemedText>
-      <ThemedText type="small" style={styles.body}>{tr('수락하면 이 모임의 호스트는 내가 돼요. 신청 승인·일정·공지를 맡고, {0}님은 멤버로 남아요.', offer.hostName)}</ThemedText>
+      <ThemedText type="small" style={styles.body}>{tr('수락하면 내가 이 모임의 호스트가 돼요. 신청 승인, 회차, 공지는 내가 맡고, {0}님은 멤버로 남아요.', offer.hostName)}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{left(offer.expiresAt)}</ThemedText>
       {!!profile && <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{tr('호스트 소개로 이렇게 보여요: {0}', [profile.displayName, profile.intro].filter(Boolean).join(' · '))}</ThemedText>}
       {profileFailed && <ThemedText type="small" themeColor="danger" accessibilityRole="alert" style={styles.helper}>{tr('모임 프로필을 불러오지 못했어요. 다시 시도해 주세요.')}</ThemedText>}
       {!!blocked && <ThemedText type="small" themeColor="danger" accessibilityRole="alert" style={styles.helper}>{blocked}</ThemedText>}
-      <RaisedActionButton analyticsId="meetup.transfer.accept" label={tr('호스트 맡기')} busy={busy} disabled={!ready}
+      <RaisedActionButton analyticsId="meetup.transfer.accept" label={tr('넘겨받기')} busy={busy} disabled={!ready}
         onPress={() => void run(() => respondMeetupHostTransfer(supabase, postId, true, { consentVersion: CHILLING_HOST_CONSENT_VERSION, profileRevision: profile?.revision ?? null }), 'accepted')} />
       <RaisedActionButton analyticsId="meetup.transfer.decline" tone="secondary" label={tr('거절')} disabled={busy}
         onPress={() => void run(() => respondMeetupHostTransfer(supabase, postId, false), 'declined')} />
@@ -117,7 +117,7 @@ function Transfer({ postId, side, onChanged }: { postId: string; side: 'host' | 
   const nameOf = (id: string) => names.get(id) || tr('모임 멤버');
   return <View>
     <SectionLabel>{tr('호스트 넘기기')}</SectionLabel>
-    <ThemedText type="small" themeColor="textSecondary" style={styles.helperGap}>{tr('다른 멤버에게 이 모임을 맡길 수 있어요. 상대가 수락하면 호스트가 바뀌고, 나는 멤버로 남아요. 수락하기 전까지는 내가 계속 호스트예요.')}</ThemedText>
+    <ThemedText type="small" themeColor="textSecondary" style={styles.helperGap}>{tr('멤버 한 명에게 이 모임을 넘길 수 있어요. 상대가 수락하면 호스트가 바뀌고, 나는 멤버로 남아요. 수락하기 전까지는 내가 계속 호스트예요.')}</ThemedText>
     {pending ? card(<>
       <ThemedText type="smallBold">{tr('{0}님의 답을 기다려요', nameOf(pending.toUserId))}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary" style={styles.helper}>{left(pending.expiresAt)}</ThemedText>
@@ -125,7 +125,7 @@ function Transfer({ postId, side, onChanged }: { postId: string; side: 'host' | 
     </>)
       : candidates.length ? <ListCard>{candidates.map(candidate => {
         const name = nameOf(candidate.userId);
-        const why = candidate.blocker === 'TRANSFER_CAPACITY_EXCEEDED' ? tr('정원이 이 분의 한도보다 커요') : candidate.blocker ? tr(hostTransferErrorText(new Error(candidate.blocker)) ?? '지금은 넘길 수 없어요.') : undefined;
+        const why = candidate.blocker === 'TRANSFER_CAPACITY_EXCEEDED' ? tr('정원이 상대 한도보다 커요') : candidate.blocker ? tr(hostTransferErrorText(new Error(candidate.blocker)) ?? '지금은 넘길 수 없어요.') : undefined;
         return <ListRow key={candidate.userId} title={name} detail={why} leading={<InitialAvatar name={name} />}
           trailing={<RaisedActionButton compact analyticsId="meetup.transfer.pick" label={tr('넘기기')} disabled={busy || !!candidate.blocker}
             onPress={() => confirm(tr('{0}님에게 호스트를 넘길까요?', name), tr('상대가 수락하면 호스트 권한이 옮겨 가요. 아직 수락하지 않았다면 내가 계속 호스트예요.'), tr('제안 보내기'),

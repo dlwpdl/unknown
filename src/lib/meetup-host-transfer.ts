@@ -10,12 +10,12 @@ export type MeetupHostTransferState = {
 
 // Shown in the same words on both screens; keys are the server error codes.
 export const hostTransferErrors: Record<string, string> = {
-  TRANSFER_CAPACITY_EXCEEDED: '이 모임 정원이 받는 분의 정원 한도보다 커서 넘길 수 없어요.',
-  TRANSFER_RECEIVER_RESTRICTED: '받는 분이 지금은 모임을 열 수 없는 상태예요.',
+  TRANSFER_CAPACITY_EXCEEDED: '이 모임 정원이 상대의 정원 한도보다 커서 넘길 수 없어요.',
+  TRANSFER_RECEIVER_RESTRICTED: '상대가 지금은 모임을 열 수 없어요.',
   TRANSFER_NOT_AVAILABLE: '이 모임은 호스트를 넘길 수 없어요.',
   TRANSFER_ALREADY_PENDING: '이미 답을 기다리는 제안이 있어요.',
-  TRANSFER_NOT_FOUND: '이 제안은 이미 끝났어요.',
-  TRANSFER_EXPIRED: '제안 기간이 끝났어요. 호스트에게 다시 보내 달라고 해 주세요.',
+  TRANSFER_NOT_FOUND: '이 제안은 이미 닫혔어요.',
+  TRANSFER_EXPIRED: '제안이 닫혔어요. 호스트에게 다시 보내 달라고 해 보세요.',
   APPROVED_MEMBER_REQUIRED: '승인된 멤버에게만 넘길 수 있어요.',
   HOST_REQUIRED: '호스트만 할 수 있어요.',
   MEETUP_NOT_FOUND: '이 모임을 찾을 수 없어요.',
@@ -24,7 +24,7 @@ export const hostTransferErrors: Record<string, string> = {
   CHILLING_PROFILE_REQUIRED: '먼저 모임 프로필을 작성해 주세요.',
   CHILLING_PROFILE_CHANGED: '모임 프로필이 바뀌었어요. 새 내용을 확인한 뒤 다시 동의해 주세요.',
   CHILLING_HOST_CONSENT_REQUIRED: '공개할 호스트 소개를 미리 보고 동의해 주세요.',
-  MEETUP_JOIN_RESTRICTED: '지금은 모임 참여가 제한돼 있어서 호스트를 넘길 수 없어요.',
+  MEETUP_JOIN_RESTRICTED: '모임 참여가 제한된 계정이 있어서 호스트를 넘길 수 없어요.',
   RATE_LIMITED: '잠시 뒤에 다시 시도해 주세요.',
 };
 export const hostTransferErrorText = (error: unknown): string | null => {

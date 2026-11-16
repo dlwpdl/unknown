@@ -43,9 +43,9 @@ test('days left rounds up and never goes negative', () => {
 
 test('the four server notices read naturally in English', () => {
   const en = (body) => englishNotificationBody({ kind: 'meetup_changed', body }, translate);
-  assert.equal(en('민지님이 「주말 산책」 모임의 호스트를 넘기고 싶어 해요. 수락하면 이 모임을 이어서 맡아요.'), '민지 wants to hand over hosting of “주말 산책”. Accept to take the meetup over.');
-  assert.equal(en('수아님이 「주말 산책」 호스트를 맡지 않기로 했어요. 모임은 그대로 열려 있어요.'), '수아 chose not to take over hosting “주말 산책”. The meetup stays open.');
-  assert.equal(en('수아님이 「주말 산책」 호스트를 이어받았어요. 이제 멤버로 함께해요.'), '수아 took over hosting “주말 산책”. You’re a member now.');
+  assert.equal(en('민지님이 「주말 산책」 모임의 호스트를 넘기고 싶어 해요. 수락하면 이 모임을 넘겨받아요.'), '민지 wants to hand over hosting of “주말 산책”. Accept to take the meetup over.');
+  assert.equal(en('수아님이 「주말 산책」 호스트를 넘겨받지 않기로 했어요. 모임은 그대로 열려 있어요.'), '수아 chose not to take over hosting “주말 산책”. The meetup stays open.');
+  assert.equal(en('수아님이 「주말 산책」 호스트를 넘겨받았어요. 이제 멤버로 함께해요.'), '수아 took over hosting “주말 산책”. You’re a member now.');
   assert.equal(en('「주말 산책」 모임의 호스트가 수아님으로 바뀌었어요. 일정과 장소는 그대로예요.'), 'The host of “주말 산책” is now 수아. The time and place haven’t changed.');
 });
 

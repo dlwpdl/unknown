@@ -94,7 +94,7 @@ select is(public.get_meetup_host_transfer('d1100000-0000-4000-8000-000000000001'
 select lives_ok($$select public.respond_meetup_host_transfer('d1100000-0000-4000-8000-000000000001',false)$$,'the receiver declines');
 reset role;
 select is((select author_id from public.posts where id='d1100000-0000-4000-8000-000000000001'),'d1000000-0000-4000-8000-000000000001'::uuid,'declining changes nothing');
-select is((select count(*)::int from public.notifications where user_id='d1000000-0000-4000-8000-000000000001' and body like '%호스트를 맡지 않기로 했어요%'),1,'the host is told about the decline');
+select is((select count(*)::int from public.notifications where user_id='d1000000-0000-4000-8000-000000000001' and body like '%호스트를 넘겨받지 않기로 했어요%'),1,'the host is told about the decline');
 
 -- Expired offers cannot be accepted and no longer block a new offer.
 select set_config('request.jwt.claims','{"sub":"d1000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
@@ -161,7 +161,7 @@ select is((select host_id from private.meetup_sessions where post_id='d1100000-0
 select is((select host_id from private.meetup_sessions where post_id='d1100000-0000-4000-8000-000000000001' and starts_at<now()),'d1000000-0000-4000-8000-000000000001'::uuid,'past sessions keep their host');
 select ok((select cancelled_at is not null from private.meetup_announcements where post_id='d1100000-0000-4000-8000-000000000001'),'announcements the previous host scheduled are cancelled');
 select is((select status from private.meetup_host_transfers where post_id='d1100000-0000-4000-8000-000000000001' order by created_at desc limit 1),'accepted','the offer is closed as accepted');
-select is((select count(*)::int from public.notifications where user_id='d1000000-0000-4000-8000-000000000001' and body like '%호스트를 이어받았어요%'),1,'the previous host is told');
+select is((select count(*)::int from public.notifications where user_id='d1000000-0000-4000-8000-000000000001' and body like '%호스트를 넘겨받았어요%'),1,'the previous host is told');
 select is((select count(*)::int from public.notifications where user_id='d1000000-0000-4000-8000-000000000003' and body like '%호스트가%바뀌었어요%'),1,'members are told once');
 select is((select count(*)::int from public.notifications where user_id='d1000000-0000-4000-8000-000000000002' and body like '%호스트가%바뀌었어요%'),0,'the new host is not sent a change notice');
 select is(private.membership_meetup_count('d1000000-0000-4000-8000-000000000002'),3,'the new host slot count is unchanged');
