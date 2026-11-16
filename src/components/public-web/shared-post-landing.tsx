@@ -8,6 +8,7 @@ import { toQR } from 'toqr';
 import { MeetupInvite } from './meetup-invite';
 import { SharedPostArticle } from './shared-post-article';
 import { useReaderAnalytics } from './analytics';
+import { appStoreUrl } from './app-store-choices';
 import { ControlMetrics, Typography } from '@/constants/design-system';
 import { Colors, Spacing } from '@/constants/theme';
 import { useContentVisibility } from '@/hooks/use-content-visibility';
@@ -27,8 +28,8 @@ import type { Post } from '@/lib/types';
 const wordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark.png')).uri;
 const lightWordmark = Asset.fromModule(require('../../../assets/brand/gling-night-wordmark-light.png')).uri;
 const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
-// The Play referrer names this landing; App Store campaign links need a provider token we don't have yet.
-const stores = { ios: 'https://apps.apple.com/ca/app/id6809273242', android: 'https://play.google.com/store/apps/details?id=com.dlwpdl.gling&referrer=utm_source%3Dweb%26utm_campaign%3Dshared-post' };
+// Visitors here came through a shared post, so both stores count the install as 'share', a source the app already knows.
+const stores = { ios: appStoreUrl('share'), android: 'https://play.google.com/store/apps/details?id=com.dlwpdl.gling&referrer=utm_source%3Dshare%26utm_campaign%3Dshared-post' };
 type Status = 'loading' | 'ready' | 'error' | 'unavailable';
 function subscribeLocation(onChange: () => void) {
   window.addEventListener('popstate', onChange);
