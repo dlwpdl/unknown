@@ -396,5 +396,29 @@ select is((select confdeltype::text from pg_constraint where conrelid = 'private
 select is((select count(*)::int from cron.job where jobname = 'gling-minute-jobs'), 1, 'still one minute job (no extra schedule)');
 select ok((select pg_get_functiondef('private.run_minute_jobs()'::regprocedure) like '%process_bubble_alerts%' and pg_get_functiondef('private.run_minute_jobs()'::regprocedure) like '%send_new_posts_roundup%'), 'the minute job runs both new steps');
 
+-- ===== B.C. fixed clock (20261117010000): Vancouver hours are the UTC-7 ones even where the zone data still says UTC-8
+select ok((select bool_and(pg_get_functiondef(p.oid) like '%private.meetup_clock_zone(%') from pg_proc p where p.oid in (
+  'private.night_push_due(text,text,uuid,text)'::regprocedure, 'private.send_new_posts_roundup(timestamptz)'::regprocedure,
+  'private.process_bubble_alerts(integer)'::regprocedure, 'private.send_newcomer_nudges(timestamptz)'::regprocedure)), 'the four local-hour checks use the fixed B.C. clock');
+select is(private.night_push_due('meetup_host_tip', 'x', null, 'America/Vancouver'), private.night_push_due('meetup_host_tip', 'x', null, 'America/Phoenix'),
+  'Vancouver quiet hours follow the UTC-7 clock');
+create temporary table van_clock as
+  select ((date_trunc('day', now() at time zone 'America/Phoenix') + interval '18 hours 5 minutes') at time zone 'America/Phoenix') p_now;
+insert into public.cities(id, name, province, timezone) values ('tune-van', '밴도시', 'BC', 'America/Vancouver');
+insert into auth.users(id, email) values ('ec000000-0000-4000-8000-000000000013', 'tune-13@example.invalid');
+insert into public.profiles(id, nickname, city_id) values ('ec000000-0000-4000-8000-000000000013', '튠13', 'tune-van');
+insert into auth.sessions(id, user_id, aal) values ('ec100000-0000-4000-8000-000000000013', 'ec000000-0000-4000-8000-000000000013', null);
+insert into private.push_devices(user_id, session_id, token, timezone, timezone_updated_at)
+values ('ec000000-0000-4000-8000-000000000013', 'ec100000-0000-4000-8000-000000000013', 'ExpoPushToken[tune000000000013]', 'America/Vancouver', now());
+set local session_replication_role = replica;
+insert into public.posts(id, author_id, city_id, tag_id, title, body, posted_on, view_count, created_at)
+select ('ec410000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid, 'ec000000-0000-4000-8000-000000000002', 'tune-van', 1, '밴 글 ' || n, '본문', current_date,
+  n, (select p_now from van_clock) - make_interval(hours => n) from generate_series(1, 4) n;
+set local session_replication_role = origin;
+update private.notification_switches set new_posts = true;
+select ok(private.send_new_posts_roundup((select p_now from van_clock)) >= 1, '18:05 on the real Vancouver clock is inside the roundup window');
+select is((select count(*)::int from public.notifications where kind = 'city_new_posts' and user_id = 'ec000000-0000-4000-8000-000000000013'), 1,
+  '... and the Vancouver member gets it then, not an hour later');
+
 select * from finish();
 rollback;
