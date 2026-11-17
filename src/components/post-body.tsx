@@ -12,11 +12,11 @@ import { instagramPostLink, splitPostAttachments, splitPostLinks } from '../../s
 // The notice comes first so it is read before 카톡 takes the screen. No canOpenURL on purpose (iOS would need an Info.plist entry and a native build).
 export function openKakaoId(id: string, tr: (text: string) => string, play: (kind: 'selection' | 'warning') => void) {
   try { Clipboard.setString(id); } catch { /* the notice below still names the id */ }
-  const title = tr('카톡 아이디를 복사했어요'), message = tr('카톡 앱에서 친구 추가 → ID로 추가에 붙여 넣어 주세요.');
+  const title = tr('카톡 아이디를 복사했어요'), message = tr('카톡 앱의 친구 탭에서 친구 추가, ID로 추가를 차례로 눌러 붙여 넣어 주세요.');
   if (Platform.OS === 'web') { window.alert(`${title}\n${message}`); return; }
   Alert.alert(title, message, [
     { text: tr('닫기'), style: 'cancel', onPress: () => play('selection') },
-    { text: tr('카톡 열기'), onPress: () => { play('selection'); void Linking.openURL('kakaotalk://').catch(() => { play('warning'); Alert.alert(tr('이 기기에서 카톡을 열지 못했어요.')); }); } },
+    { text: tr('카톡 열기'), onPress: () => { play('selection'); void Linking.openURL('kakaotalk://').catch(() => { play('warning'); Alert.alert(tr('카톡을 열지 못했어요')); }); } },
   ]);
 }
 
