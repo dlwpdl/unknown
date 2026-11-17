@@ -49,6 +49,8 @@ import { useTranslationVisibleIds } from '@/hooks/use-content-translation';
 import { PostShareSheet } from '@/components/post-share-sheet';
 import { MeetupInviteHost, MeetupInviteNote, MeetupWhoCard, useMeetupRoster } from '@/components/meetup-members';
 import { PostBodyEditor } from '@/components/post-body-editor';
+import { openKakaoId } from '@/components/post-body';
+import { kakaoIds } from '@/lib/kakao-id';
 import { PostPhotoGallery } from '@/components/post-photo-gallery';
 import { PostPhotoEditor, type EditablePostImage } from '@/components/post-photo-editor';
 import { PostPhotoCredits } from '@/components/post-photo-credits';
@@ -200,6 +202,22 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   const listingAction = !post.room && post.listingDetails && !canManagePost && post.listingStatus !== 'closed'
     ? post.listingDetails.type === 'jobs' && post.listingDetails.deal === 'hiring' ? 'apply' : 'ask' : null;
   const [applyOpen, setApplyOpen] = useState(false);
+  // A business post copied in from outside has no owner on Gling yet: its profile cannot be messaged (can_message false), so asking there dead-ends.
+  const [unclaimed, setUnclaimed] = useState<string | null>(null);
+  const businessId = post.business?.id;
+  useEffect(() => {
+    if (!listingAction || !businessId) return;
+    let active = true;
+    void Promise.resolve(supabase.rpc('get_merchant_profile', { p_merchant_id: businessId })).then(({ data, error }) => {
+      if (active && !error && data && data.can_message !== true && data.can_business_message !== true) setUnclaimed(businessId);
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [listingAction, businessId]);
+  // Same contacts the sheet lists; with none found the button keeps asking in a chat as before.
+  const contactFirst = listingAction === 'ask' && !!businessId && unclaimed === businessId && !!post.listingDetails && (() => {
+    const found = listingContacts(post.listingDetails, photoCredits.body);
+    return !!(found.phones.length || found.emails.length || found.links.length || kakaoIds(photoCredits.body).length);
+  })();
   const afterApply = useRef<(() => void) | null>(null);
   const meetupStatus = useMeetupParticipation(post);
   const [meetupMenuOpen, setMeetupMenuOpen] = useState(false), [openingChat, setOpeningChat] = useState(false);
@@ -778,12 +796,15 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
   };
   // Only what the post has: the author's own contacts, or the numbers and emails written in the body, then a Gling chat.
   const applySheet = () => {
-    if (listingAction !== 'apply' || !post.listingDetails) return null;
+    if (!post.listingDetails || !listingAction) return null;
     const contacts = listingContacts(post.listingDetails, photoCredits.body);
+    const kakao = kakaoIds(photoCredits.body);
+    const noChat = !!businessId && unclaimed === businessId && !!(contacts.phones.length || contacts.emails.length || contacts.links.length || kakao.length);
+    if (listingAction !== 'apply' && !noChat) return null;
     const ways = post.listingDetails.type === 'jobs' ? (post.listingDetails.apply ?? []).map(item => tr(LISTING_LABELS.apply[item])).join(', ') : '';
     const open = (url: string) => { void Linking.openURL(url).catch(() => { play('warning'); Alert.alert(tr('연결을 열지 못했어요. 이 기기의 전화 앱이나 브라우저를 확인해 주세요.')); }); };
     const icon = (name: ComponentProps<typeof SymbolView>['name']) => <SymbolView name={name} size={20} tintColor={theme.accent} />;
-    return <DragSheet visible={applyOpen} onClose={() => setApplyOpen(false)} title={tr('지원하기')}
+    return <DragSheet visible={applyOpen} onClose={() => setApplyOpen(false)} title={tr(listingAction === 'apply' ? '지원하기' : '연락하기')}
       onDismissed={() => { const next = afterApply.current; afterApply.current = null; next?.(); }}>
       {!!ways && <ThemedText type="supporting" themeColor="textSecondary" style={styles.applyWays}>{`${tr('지원 방법')}: ${ways}`}</ThemedText>}
       <ListCard>
@@ -791,11 +812,13 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           <ListRow key={`sms:${phone}`} analyticsId="post.apply.sms" title={tr('문자 보내기')} detail={phone} leading={icon({ ios: 'text.bubble', android: 'sms', web: 'sms' })} onPress={() => open(`sms:${dialNumber(phone)}`)} />,
           <ListRow key={`tel:${phone}`} analyticsId="post.apply.call" title={tr('전화 걸기')} detail={phone} leading={icon({ ios: 'phone', android: 'call', web: 'call' })} onPress={() => open(`tel:${dialNumber(phone)}`)} />,
         ])}
+        {kakao.map(id => <ListRow key={`kakao:${id}`} analyticsId="post.apply.chat" title={tr('카톡 아이디 복사하기')} detail={id} leading={icon({ ios: 'bubble.left', android: 'chat', web: 'chat' })}
+          onPress={() => { play('selection'); void openKakaoId(id, tr); }} />)}
         {contacts.emails.map(email => <ListRow key={email} analyticsId="post.apply.email" title={tr('이메일 보내기')} detail={email} leading={icon({ ios: 'envelope', android: 'mail', web: 'mail' })} onPress={() => open(`mailto:${email}`)} />)}
         {contacts.links.map(link => <View key={link} style={styles.applyLink}><PostAttachmentLink url={link} row /></View>)}
         {/* The same chat as tapping the author: their profile sheet (or a business's page) with this post attached. */}
-        <ListRow analyticsId="post.apply.chat" title={tr('글링 대화로 물어보기')} detail={post.business?.name ?? tr('{0}님에게', post.author.nickname)} leading={icon({ ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' })}
-          onPress={() => { afterApply.current = openPostAuthor; setApplyOpen(false); }} />
+        {!noChat && <ListRow analyticsId="post.apply.chat" title={tr('글링 대화로 물어보기')} detail={post.business?.name ?? tr('{0}님에게', post.author.nickname)} leading={icon({ ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' })}
+          onPress={() => { afterApply.current = openPostAuthor; setApplyOpen(false); }} />}
       </ListCard>
     </DragSheet>;
   };
@@ -982,8 +1005,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           <View style={styles.composerRow}>
             <PostReactionToggle post={post} kind="like" showCount /><PostReactionToggle post={post} kind="save" showCount />
             <View style={styles.flexText}>
-              <RaisedActionButton analyticsId={listingAction === 'apply' ? 'post.detail.apply' : 'post.detail.ask-author'} label={tr(listingAction === 'apply' ? '지원하기' : '글링 대화로 물어보기')}
-                onPress={() => { play('selection'); if (listingAction === 'apply') setApplyOpen(true); else openPostAuthor(); }} />
+              <RaisedActionButton analyticsId={listingAction === 'apply' ? 'post.detail.apply' : 'post.detail.ask-author'} label={tr(listingAction === 'apply' ? '지원하기' : contactFirst ? '연락하기' : '글링 대화로 물어보기')}
+                onPress={() => { play('selection'); if (listingAction === 'apply' || contactFirst) setApplyOpen(true); else openPostAuthor(); }} />
             </View>
           </View>
         </View>}

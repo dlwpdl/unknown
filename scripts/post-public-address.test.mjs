@@ -9,6 +9,7 @@ import { chillingAvailability } from '../src/lib/chilling.ts';
 import { splitPostPhotoCredits } from '../src/lib/post-photo-credits.ts';
 import * as maps from '../src/lib/post-maps.ts';
 import * as listingDetails from '../src/lib/listing-details.ts';
+import * as kakaoId from '../src/lib/kakao-id.ts';
 
 const pin = 'https://www.google.com/maps/search/?api=1&query=49.2827,-123.1207';
 const search = 'https://www.google.com/maps/search/?api=1&query=1100+Chestnut+Street%2C+Vancouver';
@@ -76,7 +77,7 @@ function renderDetail(post, { isAuthed = true, hidden = false, status = {}, busi
     '@/lib/chilling': { chillingAvailability },
     '@/lib/meetup-destination': { splitPlaceMeetupBody: () => null },
     '../../supabase/functions/_shared/ticketmaster': { ticketmasterReference: () => null },
-    '@/lib/listing-details': listingDetails,
+    '@/lib/listing-details': listingDetails, '@/lib/kakao-id': kakaoId,
   };
   vm.runInNewContext(source, { exports, require: withLanguageImports(name => imports[name] ?? new Proxy({}, { get: (_target, key) => key })) });
   const wrapper = exports.PostDetail({ post, onClose() {} });
