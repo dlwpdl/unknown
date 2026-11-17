@@ -8,13 +8,16 @@ import { localizeBusinessDisclosure } from '@/lib/translation-source';
 import { splitKakaoIds } from '@/lib/kakao-id';
 import { instagramPostLink, splitPostAttachments, splitPostLinks } from '../../supabase/functions/_shared/post-links';
 
-// A 카톡 id has no official link that opens a chat: copy it, open the app when this device has one, and say where to paste it.
-// No canOpenURL on purpose (iOS would need an Info.plist entry and a native build); a failed open leaves the copy and the notice.
-export async function openKakaoId(id: string, tr: (text: string) => string) {
+// A 카톡 id has no official link that opens a chat: copy it, say where to paste it, then open the app on request.
+// The notice comes first so it is read before 카톡 takes the screen. No canOpenURL on purpose (iOS would need an Info.plist entry and a native build).
+export function openKakaoId(id: string, tr: (text: string) => string, play: (kind: 'selection' | 'warning') => void) {
   try { Clipboard.setString(id); } catch { /* the notice below still names the id */ }
-  if (Platform.OS !== 'web') { try { await Linking.openURL('kakaotalk://'); } catch { /* no 카톡 on this device */ } }
   const title = tr('카톡 아이디를 복사했어요'), message = tr('카톡 앱에서 친구 추가 → ID로 추가에 붙여 넣어 주세요.');
-  if (Platform.OS === 'web') window.alert(`${title}\n${message}`); else Alert.alert(title, message);
+  if (Platform.OS === 'web') { window.alert(`${title}\n${message}`); return; }
+  Alert.alert(title, message, [
+    { text: tr('닫기'), style: 'cancel', onPress: () => play('selection') },
+    { text: tr('카톡 열기'), onPress: () => { play('selection'); void Linking.openURL('kakaotalk://').catch(() => { play('warning'); Alert.alert(tr('이 기기에서 카톡을 열지 못했어요.')); }); } },
+  ]);
 }
 
 // `paragraphs` renders pre-split lines with breathing room; the caller then shows attachments itself.
@@ -25,7 +28,7 @@ export function PostBody({ body, paragraphs, lead, linksEnabled = true, ...props
   const attached = splitPostAttachments(body);
   const kakao = (text: string, key: number) => splitKakaoIds(text).map((piece, index) => !piece.kakaoId || !linksEnabled ? piece.text
     : <ThemedText key={`${key}-${index}`} themeColor="accent" style={styles.link} accessibilityRole="link"
-        accessibilityLabel={tr('카톡 아이디 {0} 복사', piece.kakaoId)} onPress={event => { event.stopPropagation(); play('selection'); void openKakaoId(piece.kakaoId!, tr); }}>{piece.text}</ThemedText>);
+        accessibilityLabel={tr('카톡 아이디 {0} 복사', piece.kakaoId)} onPress={event => { event.stopPropagation(); play('selection'); openKakaoId(piece.kakaoId!, tr, play); }}>{piece.text}</ThemedText>);
   const linked = (text: string) => splitPostLinks(text).map((part, index) => !part.url || !linksEnabled ? kakao(part.text, index)
     : Platform.OS === 'web'
       ? <a key={index} href={part.url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"

@@ -5073,6 +5073,8 @@ export const uiEnglish: Record<string, string> = {
   "카톡 아이디를 복사했어요": "KakaoTalk ID copied",
   "카톡 앱에서 친구 추가 → ID로 추가에 붙여 넣어 주세요.": "In KakaoTalk, tap Add Friend, then Add by ID, and paste it.",
   "카톡 아이디 {0} 복사": "Copy KakaoTalk ID {0}",
+  "카톡 열기": "Open KakaoTalk",
+  "이 기기에서 카톡을 열지 못했어요.": "Couldn't open KakaoTalk on this device.",
   "{0}님에게": "To {0}",
   "어떤 모임": "What",
   "언제·어디": "When & where",

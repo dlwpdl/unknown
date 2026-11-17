@@ -812,8 +812,8 @@ function PostDetailContent({ post: initialPost, commentId, onClose, onJoin, onCo
           <ListRow key={`sms:${phone}`} analyticsId="post.apply.sms" title={tr('문자 보내기')} detail={phone} leading={icon({ ios: 'text.bubble', android: 'sms', web: 'sms' })} onPress={() => open(`sms:${dialNumber(phone)}`)} />,
           <ListRow key={`tel:${phone}`} analyticsId="post.apply.call" title={tr('전화 걸기')} detail={phone} leading={icon({ ios: 'phone', android: 'call', web: 'call' })} onPress={() => open(`tel:${dialNumber(phone)}`)} />,
         ])}
-        {kakao.map(id => <ListRow key={`kakao:${id}`} analyticsId="post.apply.chat" title={tr('카톡 아이디 복사하기')} detail={id} leading={icon({ ios: 'bubble.left', android: 'chat', web: 'chat' })}
-          onPress={() => { play('selection'); void openKakaoId(id, tr); }} />)}
+        {kakao.map(id => <ListRow key={`kakao:${id}`} analyticsId="post.apply.chat" title={tr('카톡 아이디 복사하기')} detail={id} leading={icon({ ios: 'doc.on.doc', android: 'content_copy', web: 'content_copy' })}
+          onPress={() => { play('selection'); openKakaoId(id, tr, play); }} />)}
         {contacts.emails.map(email => <ListRow key={email} analyticsId="post.apply.email" title={tr('이메일 보내기')} detail={email} leading={icon({ ios: 'envelope', android: 'mail', web: 'mail' })} onPress={() => open(`mailto:${email}`)} />)}
         {contacts.links.map(link => <View key={link} style={styles.applyLink}><PostAttachmentLink url={link} row /></View>)}
         {/* The same chat as tapping the author: their profile sheet (or a business's page) with this post attached. */}
