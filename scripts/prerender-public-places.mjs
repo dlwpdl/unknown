@@ -246,7 +246,7 @@ export function writePublicPlaces(directory, template, places, catalog) {
       const html = renderCityPlaces(template, city, list, page, catalog), path = page === 1 ? `${city.id}/places` : `${city.id}/places/${page}`;
       write(`${path}.html`, html);
       if (page === 1) write(`${path}/index.html`, html);
-      rows.push([`/${path}`, newest]);
+      if (page === 1) rows.push([`/${path}`, newest]); // later list pages are reached from page 1, not the sitemap
     }
     // The next six in list order (wrapping), so every place is linked from other place pages as well as from its list page.
     list.forEach((entry, index) => {

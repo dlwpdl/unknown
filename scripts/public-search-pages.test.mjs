@@ -168,12 +168,12 @@ test('검색용 글·허브·옛 주소 페이지는 H1 하나, 70자 이상 설
     for (const path of ['/vancouver/rent', '/montreal/settlement', '/immigration']) assert.ok(rss.includes(`<link>${PUBLIC_SITE}${path}</link>`), path);
 
     const sitemap = readFileSync(join(directory, 'sitemap.xml'), 'utf8');
-    for (const path of ['/', '/vancouver', '/vancouver/2', '/vancouver/rent', '/vancouver/life', '/vancouver/meetups', '/toronto/meetups', '/montreal/settlement', '/immigration', '/meetups', '/visited', '/en', '/faq']) {
+    for (const path of ['/', '/vancouver', '/vancouver/rent', '/vancouver/life', '/vancouver/meetups', '/toronto/meetups', '/montreal/settlement', '/immigration', '/meetups', '/visited', '/en', '/faq']) {
       assert.match(sitemap, new RegExp(`<loc>${PUBLIC_SITE}${path === '/' ? '/' : path}</loc>`), path);
     }
     assert.match(sitemap, new RegExp(`<loc>${PUBLIC_SITE}/vancouver/rent</loc><lastmod>2026-10-30</lastmod>`));
-    assert.ok(!sitemap.includes('?city=') && !sitemap.includes('/vancouver/jobs'));
-    assert.equal((sitemap.match(/<url>/g) ?? []).length, 41 + 23, '41 posts + home, 3 cities, page 2, 2 hubs, 3 settlement guides, 3 city meetups, meetups, visited, immigration, faq, business, en, 4 legal');
+    assert.ok(!sitemap.includes('?city=') && !sitemap.includes('/vancouver/jobs') && !sitemap.includes('/vancouver/2<') && !sitemap.includes('/account-deletion'));
+    assert.equal((sitemap.match(/<url>/g) ?? []).length, 41 + 20, '41 posts + home, 3 cities, 2 hubs, 3 settlement guides, 3 city meetups, meetups, visited, immigration, faq, business, en, terms, privacy');
 
     const notFound = readFileSync(join(directory, '404.html'), 'utf8');
     assert.match(notFound, /l\.replace\(t\+l\.search\+l\.hash\)/, 'the 404 page sends old links to the canonical address');
