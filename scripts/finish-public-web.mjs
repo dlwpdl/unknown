@@ -227,11 +227,11 @@ export function finishPublicWeb(directory = 'dist', posts = [], companies = [], 
   for (const city of cities) {
     const own = posts.filter(post => post.cityId === city.id), pages = Math.max(1, Math.ceil(own.length / CITY_PAGE_SIZE));
     entries.push([`/${city.id}`, newest(own)]);
+    // Pages 2+ stay linked from page 1 but are left out of the sitemap: Google left them unindexed (GSC 2026-11-15) and they used its crawl visits.
     for (let page = 2; page <= pages && shell; page++) {
       const slice = own.slice((page - 1) * CITY_PAGE_SIZE, page * CITY_PAGE_SIZE);
       mkdirSync(join(directory, city.id), { recursive: true });
       writeFileSync(join(directory, city.id, `${page}.html`), cityPage(template, city, page, pages, slice));
-      entries.push([`/${city.id}/${page}`, newest(slice)]);
     }
     for (const hub of [...hubs.values()].filter(item => item.cityId === city.id && shell)) {
       mkdirSync(join(directory, city.id), { recursive: true });
@@ -278,7 +278,7 @@ export function finishPublicWeb(directory = 'dist', posts = [], companies = [], 
   }
   const day = value => { const time = Date.parse(value); return Number.isFinite(time) ? `<lastmod>${new Date(time).toISOString().slice(0, 10)}</lastmod>` : ''; };
   // `/?city=` pages canonicalize to `/`, so only distinct pages are listed. /visited canonicalizes to itself for the first city.
-  const paths = [...entries, ['/meetups', newest(meetups.map(item => ({ lastmod: item.createdAt })))], ['/visited'], ['/immigration', publicImmigrationMeta.checked], ['/faq'], ['/business'], ['/en'], ['/terms'], ['/privacy'], ['/account-deletion'], ['/child-safety']];
+  const paths = [...entries, ['/meetups', newest(meetups.map(item => ({ lastmod: item.createdAt })))], ['/visited'], ['/immigration', publicImmigrationMeta.checked], ['/faq'], ['/business'], ['/en'], ['/terms'], ['/privacy']];
   writeFileSync(join(directory, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${paths.map(([path, lastmod]) => `<url><loc>${PUBLIC_SITE}${path}</loc>${day(lastmod)}</url>`).join('')}${posts.map(post => `<url><loc>${publicPostUrl(post.id)}</loc>${day(post.lastmod)}</url>`).join('')}${companies.map(company => `<url><loc>${publicCompanyUrl(company.id)}</loc></url>`).join('')}</urlset>\n`);
   const protectedPaths = ['/merchant/', '/auth/', '/admin', '/chat', '/compose', '/profile', '/notifications', '/user/', '/meetup-create', '/meetup-join', '/meetup-application', '/meetup-profile'];
   // Owner 2026-11-13: block AI-training crawlers only; search and answer crawlers (Googlebot, Bingbot, Yeti, OAI-SearchBot, Claude-SearchBot, PerplexityBot, Google-Extended) stay allowed.

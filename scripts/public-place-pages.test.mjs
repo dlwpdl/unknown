@@ -155,7 +155,8 @@ test('장소 페이지는 11개 도시에서 소개·글·후기·직접 방문�
     assert.match(read(directory, `posts/${uuid(5)}.html`), /<meta property="og:title" content="렌트 \$&#39; 아끼는 법 \$\$"/, 'a $\' in a title does not pull in the rest of the page');
 
     const sitemap = read(directory, 'sitemap.xml');
-    for (const path of ['/vancouver/places', '/vancouver/places/way-1', '/vancouver/places/node-4976343547', '/calgary/places', '/calgary/places/2', '/calgary/places/node-930']) assert.match(sitemap, new RegExp(`<loc>${PUBLIC_SITE}${path}</loc>`), path);
+    for (const path of ['/vancouver/places', '/vancouver/places/way-1', '/vancouver/places/node-4976343547', '/calgary/places', '/calgary/places/node-930']) assert.match(sitemap, new RegExp(`<loc>${PUBLIC_SITE}${path}</loc>`), path);
+    assert.ok(!sitemap.includes('/calgary/places/2<'), 'list pages after the first are left out of the sitemap');
     assert.match(sitemap, new RegExp(`<loc>${PUBLIC_SITE}/vancouver/places/way-1</loc><lastmod>2026-11-12</lastmod>`));
     assert.ok(!sitemap.includes('/toronto/places'));
     assert.match(read(directory, 'llms.txt'), /장소 페이지\(주소·영업시간·지도 링크\): \[밴쿠버 맛집·카페·가 볼 곳\]\(https:\/\/gling\.ej-entertainment\.com\/vancouver\/places\) · \[캘거리 맛집·카페·가 볼 곳\]/);
