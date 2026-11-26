@@ -235,6 +235,11 @@ export function renderCityPlaces(template, city, list, page, catalog) {
   return withStaticPage(template, pageHead(path, meta, postCover(city.id)) + `<script type="application/ld+json">${jsonLd(schema)}</script>`, body);
 }
 
+// A page whose only text is a one-line intro (an address line, a rating line, a single sentence) and nothing from members or Gling's own visit.
+// It stays published and linked but is left out of the sitemap; once the intro is longer or a post, review or visit exists it comes back.
+const thinIntro = entry => !entry.visit && !entry.posts.length && !entry.reviews
+  && ((entry.reason?.reason.match(/[.!?](?:\s|$)/g) ?? []).length <= 1 || entry.reason.reason.includes('Google'));
+
 // Writes every list page and place page (GitHub Pages serves /x from x.html, and /x/ from x/index.html) and returns their sitemap rows.
 export function writePublicPlaces(directory, template, places, catalog) {
   const rows = [], write = (path, html) => { mkdirSync(dirname(join(directory, path)), { recursive: true }); writeFileSync(join(directory, path), html); };
@@ -252,7 +257,7 @@ export function writePublicPlaces(directory, template, places, catalog) {
     list.forEach((entry, index) => {
       const others = Array.from({ length: Math.min(6, list.length - 1) }, (_, step) => list[(index + step + 1) % list.length]);
       write(`${entry.path.slice(1)}.html`, renderPublicPlace(template, entry, others, list.length, catalog));
-      rows.push([entry.path, entry.lastmod]);
+      if (!thinIntro(entry)) rows.push([entry.path, entry.lastmod]);
     });
   }
   return rows;
